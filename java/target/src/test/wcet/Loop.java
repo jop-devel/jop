@@ -28,10 +28,10 @@ public class Loop {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		measure(true, 123);
+		foo(true, 123);
 	}
 
-	public static int measure(boolean b, int val) {
+	public static int foo(boolean b, int val) {
 		
 		// measured: 1369
 		// wcet: 1393

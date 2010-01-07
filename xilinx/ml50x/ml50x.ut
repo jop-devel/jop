@@ -1,0 +1,7 @@
+-g StartUpClk:JTAGCLK
+-g UnusedPin:Pullnone
+-g LCK_cycle:NoWait
+-g Match_cycle:NoWait
+-g DriveDone:Yes
+-w
+

@@ -83,10 +83,15 @@ in JOP.
         10.12.2008 & 20081012 & 19907 & 8837 & 18930 & 3486 & static access with index as address \\
         05.03.2009 & 20090305 & 19907 & 8837 & 18930 & 3496 & long operations in microcode \\
         05.09.2009 & 20090905 & 20004 & 8856 & 18962 & 3502 & use jmp microcode (usb100 LCs) \\
+        17.11.2009 & 20091117 & 20004 & 9031 & 20454 & 3615! & MMU uses opd for get/putfield (usb100 LCs) \\
+        23.11.2009 & 20091123 & 20699 & 9168 & 20569 & 3666! & MMU support for get/putstatic (usb100 LCs) \\
+        28.11.2009 & 20091128 & 20699 & 9256 & 21005 & 3748! & Single word object cache (usb100 LCs) \\
+        30.11.2009 & 20091128 & 24058 & 10144 & 24308 & 3748! & with JOPtimizer \\
         \bottomrule
     \end{tabular}
     \caption{JOP performance with 100MHz, 4KB/16 cache, cycmin}
     \label{tab:perf}
+
 
 \end{table}
 Nokia 6300 with Jazelle is the real target ;-)
@@ -266,6 +271,14 @@ for a ROM access (various top level).
 \paragraph{20090904} MS: microcode redesign, new unconditional jmp
 instruction, branch and jump offset in the instruction (no offtbl.vhd
 anymore).
+
+\paragraph{20091117} MS: put/getfield in mmu (\code{stpf}, \code{stgf})
+uses bytecode operand directly for the index.
+
+\paragraph{20091123} MS: MMU support for get/putstatic (\code{stps}, \code{stgs})
+uses bytecode operand directly for the index.
+
+\paragraph{20091128} MS: Single word object cache for put/getfield.
 
 \subsection{Software}
 

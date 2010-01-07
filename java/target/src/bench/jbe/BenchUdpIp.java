@@ -21,12 +21,12 @@
 
 package jbe;
 
-import jbe.ejip.LinkLayer;
-import jbe.ejip.Loopback;
-import jbe.ejip.Net;
-import jbe.ejip.Packet;
-import jbe.ejip.Udp;
-import jbe.ejip.UdpHandler;
+import jbe.udpip.UdpIpLinkLayer;
+import jbe.udpip.UdpIpLoopback;
+import jbe.udpip.UdpIpNet;
+import jbe.udpip.UdpIpPacket;
+import jbe.udpip.UdpIpUdp;
+import jbe.udpip.UdpIpUdpHandler;
 
 /**
 *	Ejip.java: Benchmark with ejip TCP/IP stack.
@@ -38,8 +38,8 @@ import jbe.ejip.UdpHandler;
 	
 public class BenchUdpIp extends BenchMark {
 
-	static Net net;
-	static LinkLayer ipLink;
+	static UdpIpNet net;
+	static UdpIpLinkLayer ipLink;
 	
 	static boolean sent;
 	static int received;
@@ -51,35 +51,35 @@ public class BenchUdpIp extends BenchMark {
 */
 	public BenchUdpIp() {
 
-		net = Net.init();
-		ipLink = Loopback.init();
+		net = UdpIpNet.init();
+		ipLink = UdpIpLoopback.init();
 
-		UdpHandler adder;
-		adder = new UdpHandler() {
-			public void request(Packet p) {
-				if (p.len != ((Udp.DATA+1)<<2)) {
-					p.setStatus(Packet.FREE);
+		UdpIpUdpHandler adder;
+		adder = new UdpIpUdpHandler() {
+			public void request(UdpIpPacket p) {
+				if (p.len != ((UdpIpUdp.DATA+1)<<2)) {
+					p.setStatus(UdpIpPacket.FREE);
 				} else {
-					p.buf[Udp.DATA] += p.buf[Udp.DATA+1];
-					p.len = (Udp.DATA)<<2;
-					Udp.build(p, (127<<24)+(0<<16)+(0<<8)+1, 5678);
+					p.buf[UdpIpUdp.DATA] += p.buf[UdpIpUdp.DATA+1];
+					p.len = (UdpIpUdp.DATA)<<2;
+					UdpIpUdp.build(p, (127<<24)+(0<<16)+(0<<8)+1, 5678);
 				}
 			}
 		};
-		Udp.addHandler(1234, adder);
+		UdpIpUdp.addHandler(1234, adder);
 
-		UdpHandler result;
-		result = new UdpHandler() {
-			public void request(Packet p) {
-				if (p.len == ((Udp.DATA)<<2)) {
-					sum = p.buf[Udp.DATA];
+		UdpIpUdpHandler result;
+		result = new UdpIpUdpHandler() {
+			public void request(UdpIpPacket p) {
+				if (p.len == ((UdpIpUdp.DATA)<<2)) {
+					sum = p.buf[UdpIpUdp.DATA];
 				}
 				sent = false;
 				++received;
-				p.setStatus(Packet.FREE);
+				p.setStatus(UdpIpPacket.FREE);
 			}
 		};
-		Udp.addHandler(5678, result);
+		UdpIpUdp.addHandler(5678, result);
 
 		sent = false;
 		a = 0x1234;
@@ -105,14 +105,14 @@ public class BenchUdpIp extends BenchMark {
 	private static void request() {
 		
 		if (!sent) {
-			Packet p = Packet.getPacket(Packet.FREE, Packet.ALLOC, ipLink);
+			UdpIpPacket p = UdpIpPacket.getPacket(UdpIpPacket.FREE, UdpIpPacket.ALLOC, ipLink);
 			if (p == null) {				// got no free buffer!
 				return;
 			}
-			p.buf[Udp.DATA] = a;
-			p.buf[Udp.DATA+1] = b;
-			p.len = (Udp.DATA+1)<<2;
-			Udp.build(p, (127<<24)+(0<<16)+(0<<8)+1, 1234);
+			p.buf[UdpIpUdp.DATA] = a;
+			p.buf[UdpIpUdp.DATA+1] = b;
+			p.len = (UdpIpUdp.DATA+1)<<2;
+			UdpIpUdp.build(p, (127<<24)+(0<<16)+(0<<8)+1, 1234);
 			sent = true;
 			// just generate new 'funny' values and use sum
 			a = (a<<1)^b;

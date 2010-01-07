@@ -26,7 +26,7 @@
 package serutil;
 
 import java.io.*;
-import javax.comm.*;
+import gnu.io.*;
 
 public class BenchRead extends Thread {
 

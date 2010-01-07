@@ -96,7 +96,7 @@ end component;
 
 begin
 
-	cmp_jop: jop port map(
+	joptop: jop port map(
 		clk => clk,
 		ser_txd => txd,
 		ser_rxd => ser_rxd,

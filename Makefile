@@ -102,7 +102,7 @@ P3=HelloWorld
 
 #P2=wcet
 #P3=Loop
-WCET_METHOD=measure
+WCET_METHOD=foo
 
 #P1=.
 #P2=dsvmmcp
@@ -199,9 +199,9 @@ DEBUG_JOPSIM=
 #	application optimization with JOPtimizer
 #	uncomment the following lines to use it
 #
-#OPTIMIZE=java -classpath $(EXT_CP)$(S)$(TOOLS)/dist/lib/joptimizer.jar joptimizer.JOPtimizerRunner \
-#	 -config jar:file:$(TOOLS)/dist/lib/joptimizer.jar!/jop.conf $(MAIN_CLASS) && \
-#	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
+OPTIMIZE=java $(TOOLS_CP)$(S)$(TOOLS)/dist/lib/joptimizer.jar joptimizer.JOPtimizerRunner \
+	 -config jar:file:$(TOOLS)/dist/lib/joptimizer.jar!/jop.conf $(MAIN_CLASS) && \
+	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
 
 
 
@@ -214,18 +214,22 @@ ifeq ($(USB),true)
 else
 	make jopser
 endif
+	make config
 	make japp
 
 # build the Java application and download it
 japp:
 	make java_app
+	make config
+	make download
+
+# configure the FPGA
+config:
 ifeq ($(USB),true)
 	make config_usb
 else
 	make config_byteblaster
 endif
-	make download
-
 
 install:
 	@echo nothing to install
@@ -235,13 +239,13 @@ EXTENSIONS=class rbf rpt sof pin summary ttf qdf dat wlf
 
 clean:
 	for ext in $(EXTENSIONS); do \
-		find . -name \*.$$ext -print -exec rm -r -f {} \; ; \
+		find `ls` -name \*.$$ext -print -exec rm -r -f {} \; ; \
 	done
-	find . -name jop.pof -print -exec rm -r -f {} \;
-	find . -name db -print -exec rm -r -f {} \;
-	find . -name incremental_db -print -exec rm -r -f {} \;
-	rm -rf asm/generated
-	rm -f vhdl/*.vhd
+	-find `ls` -name jop.pof -print -exec rm -r -f {} \;
+	-find `ls` -name db -print -exec rm -r -f {} \;
+	-find `ls` -name incremental_db -print -exec rm -r -f {} \;
+	-rm -rf asm/generated
+	-rm -f vhdl/*.vhd
 	-rm -rf $(TOOLS)/dist
 	-rm -rf $(PCTOOLS)/dist
 	-rm -rf $(TARGET)/dist
@@ -270,7 +274,7 @@ tools:
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wcet/*.java
 	cp $(TOOLS)/src/com/jopdesign/wcet/report/*.vm $(TOOLS)/dist/classes/com/jopdesign/wcet/report
 # Build libgraph and joptimizer
-	#make joptimizer -e TOOLS_JFLAGS="$(TOOLS_JFLAGS)" TOOLS="$(TOOLS)"
+#	make joptimizer -e TOOLS_JFLAGS="$(TOOLS_JFLAGS)" TOOLS="$(TOOLS)"
 # quick hack to get the tools with the debugger ok
 # the build.xml from the debugger contains the correct info
 # but also some more (old?) stuff
@@ -349,7 +353,7 @@ java_app:
 	javac $(TARGET_JFLAGS) $(TARGET)/src/jdk_base/java/lang/annotation/*.java	# oh new Java 1.5 world!
 	javac $(TARGET_JFLAGS) $(TARGET_APP)
 	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
-	$(OPTIMIZE)
+#	$(OPTIMIZE)
 # use SymbolManager for Paulo's version of JOPizer instead
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
@@ -368,8 +372,6 @@ jopser:
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		make qsyn -e QBT=$$target; \
-		cd quartus/$$target; \
-		cd ../..; \
 	done
 
 
@@ -381,9 +383,7 @@ jopusb:
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		make qsyn -e QBT=$$target; \
-		cd quartus/$$target; \
-		quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
-		cd ../..; \
+		cd quartus/$$target && quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
 	done
 
 #
@@ -572,9 +572,9 @@ jop_blink_test:
 		quartus_fit $$qp; \
 		quartus_asm $$qp; \
 		quartus_tan $$qp; \
-		cd quartus/$$target && quartus_cpf -c jop.cdf ../../jbc/$$target.jbc; \
+		cd quartus/$$target && quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
 	done
-	cd quartus/$(DLPROJ) && quartus_pgm -c $(BLASTER_TYPE) -m JTAG jop.cdf
+	make config
 	e $(COM_PORT)
 
 
@@ -590,9 +590,9 @@ jop_testmon:
 		quartus_fit $$qp; \
 		quartus_asm $$qp; \
 		quartus_tan $$qp; \
-		cd quartus/$$target && quartus_cpf -c jop.cdf ../../jbc/$$target.jbc; \
+		cd quartus/$$target && quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
 	done
-	cd quartus/$(DLPROJ) && quartus_pgm -c $(BLASTER_TYPE) -m JTAG jop.cdf
+	make config
 
 
 #
@@ -627,6 +627,12 @@ wca_rup:
 # WCET help
 wcet_help:
 	java $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis -help
+
+# set library path to current directory for the Mac
+DYLD_FALLBACK_LIBRARY_PATH:=.:$(DYLD_FALLBACK_LIBRARY_PATH)
+export DYLD_FALLBACK_LIBRARY_PATH 
+
+
 # WCET analyzer
 # make before     : java_app
 # make after (dot): (cd java/target/wcet/<project-name>; make)
@@ -638,6 +644,8 @@ wcet_help:
 # WCET_OPTIONS: Additional WCET options (run 'make wcet_help')
 #
 # Profiling: add -Xss16M -agentlib:hprof=cpu=samples,interval=2,depth=8 to java arguments
+# On Mac don't forget:
+# export DYLD_FALLBACK_LIBRARY_PATH=.
 WCET_DFA?=no
 WCET_UPPAAL?=no
 WCET_VERIFYTA?=verifyta	 # only needed if WCET_UPPAAL=yes
@@ -646,10 +654,7 @@ wcet:
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
 	-mkdir -p $(TARGET)/wcet
-	-mkdir $(TARGET)/tmp
-	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
-		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
-	java -Xss16M -Xmx512M \
+	java -Xss16M -Xmx512M $(JAVA_OPT) \
 	  $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis \
 		-cp $(TARGET)/tmp -sp $(TARGET_SOURCE) \
 		-app-class $(MAIN_CLASS) -target-method $(WCET_METHOD) \
@@ -660,9 +665,9 @@ wcet:
 	-rm -rf $(TARGET)/tmp
 
 
-# dot2eps works for both rasmus WCETAnalyser and wcet.WCETAnalyser
-dot2eps:
-	cd $(TARGET)/wcet && make
+# dotgraph works for wcet.WCETAnalyser
+dotgraph:
+	cd $(TARGET)/wcet/$(P2).$(P3)_$(WCET_METHOD)/report && make
 
 dfa:
 	java -Xss16M $(TOOLS_CP) com.jopdesign.dfa.Main \

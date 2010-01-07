@@ -48,7 +48,6 @@ public class Net implements Runnable {
 		ip = new Ip(ejip);
 		udp = new Udp(ejip);
 		tcp = new Tcp(ejip);
-		TcpIp.init();
 	}
 
 
@@ -89,6 +88,7 @@ public class Net implements Runnable {
 		len = i & 0xffff; // length from IP header
 		// NO options are assumed in ICMP/TCP/IP...
 		// => copy if options present
+		// but we just drop it now - too lazy
 		if (len > p.len || (i >>> 24 != 0x45)) {
 			if (Logging.LOG) Logging.wr("IP options -> discard");
 			ejip.returnPacket(p); // packet to short or ip options => drop it
@@ -106,15 +106,9 @@ public class Net implements Runnable {
 
 		int prot = (buf[2] >> 16) & 0xff; // protocol
 		if (prot == PROT_ICMP) {
-			TcpIp.doICMP(p);
+			doICMP(p);
 			ip.doIp(p, prot);
 		} else if (prot == Tcp.PROTOCOL) {
-// that's the old, simple HTML server (for the TAL)
-			if ((buf[5] & 0xffff) == 80) {
-				// still do our simple HTML server
-				TcpIp.doTCP(p);
-				ip.doIp(p, prot);
-			} else 
 			if (Ejip.TCP_ENABLED) {
 				// that's the new TCP processing
 				tcp.process(p);					
@@ -125,6 +119,24 @@ public class Net implements Runnable {
 			udp.process(p); // Udp generates the reply
 		} else {
 			ejip.returnPacket(p); // mark packet free
+		}
+	}
+
+	/**
+	 * the famous ping.
+	 */
+	private void doICMP(Packet p) {
+
+		int type_code = p.buf[5] >>> 16;
+		if (Logging.LOG) Logging.wr('P');
+		if (Logging.LOG) Logging.hexVal(type_code);
+		if (type_code == 0x0800) {
+			// TODO check received ICMP checksum
+			p.buf[5] = 0; // echo replay plus clear checksum,
+			p.buf[5] = Ip.chkSum(p.buf, 5, p.len - 20); // echo replay (0x0000)
+														// plus checksum
+		} else {
+			p.len = 0;
 		}
 	}
 

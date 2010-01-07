@@ -46,7 +46,7 @@ public class Ip {
 	}
 
 	/**
-	 * very simple generation of IP header. just swap source and destination.
+	 * Very simple generation of IP header. Just swap source and destination.
 	 * Still used by ICMP and TCP.
 	 */
 	void doIp(Packet p, int prot) {
@@ -91,23 +91,23 @@ public class Ip {
 	
 		int i;
 		int sum = 0;
-		int max = (buf.length+3)>>2;
+		int max = buf.length;
 		cnt = (cnt + 3) >> 2; // word count
-// the following has a bug that shows up in the
-// simple Html server
-//		for (int j=0; j<cnt && j<max; ++j) {
-//			i = buf[off];
-//			sum += i & 0xffff;
-//			sum += i >>> 16;
-//			++off;
-//		}
-		while (cnt != 0) {
+		// add max condition for DFA loop bound analysis
+		for (int j=0; j<cnt && j<max; ++j) {
 			i = buf[off];
 			sum += i & 0xffff;
 			sum += i >>> 16;
 			++off;
-			--cnt;
 		}
+// that's the original ejip code
+//		while (cnt != 0) {
+//			i = buf[off];
+//			sum += i & 0xffff;
+//			sum += i >>> 16;
+//			++off;
+//			--cnt;
+//		}
 	
 		while ((sum >> 16) != 0) // @WCA loop<=2
 			sum = (sum & 0xffff) + (sum >> 16);

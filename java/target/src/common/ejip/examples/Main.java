@@ -65,6 +65,8 @@ public class Main {
 		int[] eth = {0x00, 0xe0, 0x98, 0x33, 0xb0, 0xf8};
 		int ip = Ejip.makeIp(192, 168, 0, 123); 
 		ipLink = new CS8900(ejip, eth, ip);
+		net.getUdp().addHandler(Tftp.PORT, new Tftp(ejip));
+
 
 		forever();
 	}

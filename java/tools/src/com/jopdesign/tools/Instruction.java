@@ -102,9 +102,7 @@ public class Instruction implements Serializable {
 			// 5 bits: 0x20-0x3f
 			new Instruction("stm", 0x020, 5, JmpType.NOP, StackType.POP),
 
-			// extension 'address' selects function of memory/multiplication
-			// with 4 bits in extension.vhd
-
+			// MMU 4 bit subfield selects function (pop type)
 			new Instruction("stmul", 0x040 + 0, 0, JmpType.NOP, StackType.POP),
 			new Instruction("stmwa", 0x040 + 1, 0, JmpType.NOP, StackType.POP),
 			new Instruction("stmra", 0x040 + 2, 0, JmpType.NOP, StackType.POP),
@@ -119,6 +117,10 @@ public class Instruction implements Serializable {
 			new Instruction("stcp",  0x040 + 8, 0, JmpType.NOP, StackType.POP),
 			// bytecode read
 			new Instruction("stbcrd", 0x040 + 9, 0, JmpType.NOP, StackType.POP),
+			// store TOS to MMU index register for jopsys_*field
+			new Instruction("stidx", 0x040 + 0xa, 0, JmpType.NOP, StackType.POP),
+			// putstatic
+			new Instruction("stps", 0x040 + 0xb, 0, JmpType.NOP, StackType.POP),
 
 			//
 			// 'push' instructions
@@ -129,7 +131,7 @@ public class Instruction implements Serializable {
 			// 5 bits: 0xc0-0xdf
 			new Instruction("ldi", 0x0c0, 5, JmpType.NOP, StackType.PUSH),
 
-			// extension 'address' selects function 4 bits
+			// MMU 4 bit subfield selects function (push type)
 			new Instruction("ldmrd", 0x0e0 + 0, 0, JmpType.NOP, StackType.PUSH),
 			new Instruction("ldmul", 0x0e0 + 1, 0, JmpType.NOP, StackType.PUSH),
 			new Instruction("ldbcstart", 0x0e0 + 2, 0, JmpType.NOP, StackType.PUSH),
@@ -156,11 +158,18 @@ public class Instruction implements Serializable {
 			new Instruction("dup", 0x0f8, 0, JmpType.NOP, StackType.PUSH),
 
 			//
-			// 'no sp change' instructions
+			// 'no SP change' instructions
 			//
 			new Instruction("nop", 0x100, 0, JmpType.NOP, StackType.NOP),
 			new Instruction("wait", 0x101, 0, JmpType.NOP, StackType.NOP),
 			new Instruction("jbr", 0x102, 0, JmpType.NOP, StackType.NOP),
+			
+			// no SP change instructions for MMU
+			// 4 bit subfield selects function (pop type)
+
+			// getstatic
+			new Instruction("stgs", 0x110 + 0x0, 0, JmpType.NOP, StackType.NOP),
+
 
 			// branches
 			new Instruction("bz", 0x180, 6, JmpType.BR, StackType.POP),
@@ -248,8 +257,8 @@ public class Instruction implements Serializable {
 
 	public static void printTable() {
 
-		Instruction table[] = new Instruction[256];
-		for (int i = 0; i < 256; i++)
+		Instruction table[] = new Instruction[1024];
+		for (int i = 0; i < 1024; i++)
 			table[i] = null;
 		for (int i = 0; i < ia.length; ++i) {
 			Instruction ins = ia[i];
@@ -299,13 +308,82 @@ public class Instruction implements Serializable {
 		sb.append("};");
 		return sb.toString();
 	}
+	
+	/**
+	 * Reserved VHDL keywords
+	 */
+	static String[] reserved = {
+		"and", "or", "xor", "wait"
+	};
+	static String substReserved(String s) {
+		
+		for (int i=0; i<reserved.length; ++i) {
+			if (reserved[i].equals(s)) {
+				return s+"_x";
+			}
+		}
+		return s;
+	}
+	/**
+	 * Print the VHDL code for microcode mnemonics in the simulation.
+	 */
+	public static void printVhdlMicrocode() {
+		
+		System.out.println("\ttype mcval is (");
+		for (int i = 0; i < ia.length; ++i) {
+			Instruction ins = ia[i];
+			System.out.println("\t\t"+substReserved(ins.name)+",");
+		}
+		System.out.println("\t\tunknown");
+
+		System.out.println("\t);");
+		System.out.println("\tsignal val : mcval;");
+
+		System.out.println("");
+		System.out.println("");
+		System.out.println("begin");
+		System.out.println("");
+		System.out.println("process(instr)");
+		System.out.println("begin");
+		System.out.println("");
+		System.out.println("\tval <= unknown;");
+		System.out.println("\tif instr(9)='1' then");
+		System.out.println("\t\tval <= jmp;");
+		System.out.println("\telsif instr(9 downto 6)=\"0110\" then");
+		System.out.println("\t\tval <= bz;");
+		System.out.println("\telsif instr(9 downto 6)=\"0111\" then");
+		System.out.println("\t\tval <= bnz;");
+		System.out.println("\telse");
+		System.out.println("\t\tcase instr is");
+		for (int i = 0; i < ia.length; ++i) {
+			Instruction ins = ia[i];
+			if (ins.opdSize>=6) {
+				continue;			// jmp, bz, and bnz
+			}
+			for (int j=0; j<1<<ins.opdSize; ++j) {
+				System.out.print("\t\t\twhen \"");
+				System.out.print(Jopa.bin(ins.opcode+j, INSTLEN));
+				System.out.print("\" => val <= ");
+				System.out.println(substReserved(ins.name)+";");
+			}
+		}
+
+		System.out.println("");
+		System.out.println("\t\t\twhen others => null;");
+		System.out.println("\t\tend case;");
+		System.out.println("\tend if;");
+		System.out.println("");
+		System.out.println("end process;");
+		System.out.println("");
+	}
 
 	public static void main(String[] args) {
 
 		// printVhdl();
-		printCsv();
+		// printCsv();
 		// printTable();
 		// System.out.println(genJavaConstants());
+		printVhdlMicrocode();
 	}
 
 }

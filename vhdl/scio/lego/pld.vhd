@@ -120,7 +120,7 @@ begin  -- rtl
 
     g1: for i in FORWARDED_PINS'high-2 downto 0 generate
         g2: if FORWARDED_PINS_DIRECTIONS(i) = din generate
-            cmp_input_synchronizer_0: input_synchronizer
+            input_synchronizer_0: input_synchronizer
                 port map (
                         clk    => clk,
                         reset  => reset,
@@ -134,7 +134,7 @@ begin  -- rtl
     end generate g1;
 
     g4: for i in 1 downto 0 generate
-        cmp_input_synchronizer_1: input_synchronizer
+        input_synchronizer_1: input_synchronizer
             port map (
                     clk    => clk,
                     reset  => reset,

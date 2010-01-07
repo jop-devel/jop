@@ -180,7 +180,7 @@ begin
 
 	wd <= wd_out;
 
-	cpm_cpu: entity work.jopcpu
+	cpu: entity work.jopcpu
 		generic map(
 			jpc_width => jpc_width,
 			block_bits => block_bits,
@@ -191,7 +191,7 @@ begin
 			sc_io_out, sc_io_in,
 			irq_in, irq_out, exc_req);
 
-	cmp_io: entity work.scio 
+	io: entity work.scio 
 		port map (clk_int, int_res,
 			sc_io_out, sc_io_in,
 			irq_in, irq_out, exc_req,

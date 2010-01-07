@@ -154,14 +154,14 @@ B <= reset_sync;
 C <= lock;
 D <= clk_int;
 
-cmp_pll: actelpll
+pll: actelpll
   port map (
     POWERDOWN => '1',
     CLKA      => clk,
     LOCK      => lock,
     GLA       => clk_int );
 
-cmp_cpu: entity work.jopcpu
+cpu: entity work.jopcpu
   generic map(
     jpc_width => jpc_width,
 	block_bits => block_bits,
@@ -177,7 +177,7 @@ cmp_cpu: entity work.jopcpu
     irq_out => irq_out,
     exc_req => exc_req);
 
-cmp_io: entity work.scio 
+io: entity work.scio 
   port map (
     clk => clk_int,
     reset => int_res,

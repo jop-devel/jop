@@ -40,7 +40,7 @@ import ejip.*;
 import sdcard.*;
 
 /**
- * Test main for TCP.
+ * Simple HTTP server. Uses the SD card file system. 
  */	
 public class HTTPServer extends TcpHandler {
 

@@ -45,6 +45,10 @@ public abstract class TcpHandler implements Runnable {
 	
 	/**
 	 * Connection is established. Transfer can start.
+	 * 
+	 * If no packet is returned the argument packet will be
+	 * used. Do we really want it this way?????
+	 * 
 	 * @return
 	 */
 	public abstract Packet established(Packet p);

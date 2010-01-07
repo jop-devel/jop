@@ -339,7 +339,7 @@ begin
 		end if;
 	end process;
 			
-	cmp_sys: entity work.sc_sys generic map (
+	sys: entity work.sc_sys generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 			cpu_id => cpu_id,
@@ -366,7 +366,7 @@ begin
 			wd => wd
 		);
 
-	cmp_ua: entity work.sc_uart_tal generic map (
+	ua: entity work.sc_uart_tal generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 			baud_rate => 115200,
@@ -417,7 +417,7 @@ begin
 	--
 	--	TAL stuff (IO ports, sigdel converter)
 	--
-	cmp_tal: entity work.sc_tal generic map (
+	tal: entity work.sc_tal generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq
 		)
@@ -460,7 +460,7 @@ begin
 	t(5) <= isa_a(1);
 	t(6) <= isa_a(0);
 
-	cmp_isa: entity work.sc_isa generic map (
+	isa: entity work.sc_isa generic map (
 			addr_bits => SLAVE_ADDR_BITS
 		)
 		port map(

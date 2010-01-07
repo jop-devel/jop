@@ -1516,7 +1516,6 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 			InstructionHandle exit = mi.getMethodGen().getInstructionList().getEnd();
 			if (r.get(exit) != null) {
 				Map<Location, ValueMapping> returned = r.get(exit).get(c.callString);
-				//System.out.println("returned: "+returned.get(new Location("byte[]@com.parthus.CryptoBench.CryptoBench.performDecrypt([B[B)Ljava/lang/String;:25.length")));
 				if (returned != null) {
 					for (Iterator<Location> i = returned.keySet().iterator(); i.hasNext(); ) {
 						Location l = i.next();
@@ -1556,7 +1555,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 	
 		if (methodId.equals("com.jopdesign.sys.Native.rd(I)I")
 				|| methodId.equals("com.jopdesign.sys.Native.rdMem(I)I")
-				|| methodId.equals("com.jopdesign.sys.Native.rdIntMem(I)I")) {
+				|| methodId.equals("com.jopdesign.sys.Native.rdIntMem(I)I")
+				|| methodId.equals("com.jopdesign.sys.Native.getStatic(I)I")) {
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
 				if (l.stackLoc < context.stackPtr-1) {
@@ -1566,7 +1566,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 			out.put(new Location(context.stackPtr-1), new ValueMapping());
 		} else if (methodId.equals("com.jopdesign.sys.Native.wr(II)V")
 				|| methodId.equals("com.jopdesign.sys.Native.wrMem(II)V")
-				|| methodId.equals("com.jopdesign.sys.Native.wrIntMem(II)V")) {
+				|| methodId.equals("com.jopdesign.sys.Native.wrIntMem(II)V")
+				|| methodId.equals("com.jopdesign.sys.Native.putStatic(II)V")) {
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
 				if (l.stackLoc < context.stackPtr-2) {

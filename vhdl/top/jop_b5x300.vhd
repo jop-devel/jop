@@ -238,7 +238,7 @@ end process;
 --
 --	components of jop
 --
-	cmp_core: core 
+	core: core 
 		port map (clk, int_res,
 			mem_bsy,
 			mem_dout, mem_addr,
@@ -247,13 +247,13 @@ end process;
 			memio_din
 		);
 
-	cmp_mem: mem generic map (width, ioa_width, ram_cnt, rom_cnt)
+	mem: mem generic map (width, ioa_width, ram_cnt, rom_cnt)
 		port map (clk, int_res, memio_din, mem_addr, mem_rd, mem_wr, mem_bsy, mem_dout,
 			aint, d, nram_cs, nrom_cs, nmem_rd, nmem_wr,
 			io_dout, io_rd, io_wr, io_addr_wr
 		);
 
-	cmp_io: io generic map (clk_freq)
+	io: io generic map (clk_freq)
 		port map (clk, int_res, memio_din,
 			io_rd, io_wr, io_addr_wr, io_dout,
 			io_irq, io_irq_ena,

@@ -46,7 +46,13 @@ class Scheduler implements Runnable {
 		sched[core] = this;
 	}
 	
-	final static int IDL_TICK = 10000;
+	/**
+	 * If no thread gets ready within some time the scheduler is
+	 * still invoked after IDL_TICK.
+	 * TODO: a cross-core SW event is only detected at a scheduler
+	 * invocation due to a thread on this core or at idle tick. 
+	 */
+	final static int IDL_TICK = 1000000;
 
 	// use local memory for two values
 	private final static int TIM_VAL_ADDR = 0x1e;

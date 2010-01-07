@@ -308,7 +308,7 @@ begin
 		end if;
 	end process;
 			
-	cmp_sys: entity work.sc_sys generic map (
+	sys: entity work.sc_sys generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 			cpu_id => cpu_id,
@@ -335,7 +335,7 @@ begin
 			wd => wd
 		);
 
-	cmp_ua: entity work.sc_uart generic map (
+	ua: entity work.sc_uart generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 			baud_rate => 115200,
@@ -361,7 +361,7 @@ begin
 			nrts => nrts
 	);
 
-	cmp_usb: entity work.sc_usb generic map (
+	usb: entity work.sc_usb generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq
 		)
@@ -387,7 +387,7 @@ begin
 
 
 	-- SimpCon Wishbone bridge for Simple SPI
-	cmp_wbspi: entity work.sc2wb generic map (
+	wbspi: entity work.sc2wb generic map (
 			addr_bits => SLAVE_ADDR_BITS
 		)
 		port map(
@@ -407,7 +407,7 @@ begin
 
 
 	-- SimpCon Wishbone bridge for AC97
-	cmp_wb: entity work.sc2wb generic map (
+	wb: entity work.sc2wb generic map (
 			addr_bits => SLAVE_ADDR_BITS
 		)
 		port map(

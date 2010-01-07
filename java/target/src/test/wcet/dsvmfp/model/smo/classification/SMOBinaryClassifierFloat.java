@@ -10,12 +10,15 @@ import com.jopdesign.sys.Native;
 import wcet.dsvmfp.model.smo.kernel.FloatUtil;
 import wcet.dsvmfp.model.smo.kernel.KFloat;
 
-//BUGTEST 1 
 /**
  * Class SMOBinaryClassifier with float.
  */
 public class SMOBinaryClassifierFloat {
-	// BUGTEST 2
+
+    // make false to get reproduceable results
+    // or make true to get different stochastic index generation
+    boolean RANDOMLOOP = false;
+
 	// final boolean PRINT = true;
 
 	// enum TRACELEVELS {TR0, TR1, TR2, TR3, TR4};
@@ -34,15 +37,13 @@ public class SMOBinaryClassifierFloat {
 	/** The [m] Lagrange multipliers. */
 	public float[] alph;
 	static float alph1, alph2;
-	// BUGTEST 3
 	static float y1, y2;
 
 	/** The target vector of {-1,+1}. */
 	static public float[] target;
 
-	/** The data vector [rows][columns]. */
+	/** The data vector [rows][columns]. One observation is one row */
 	static public float[][] point;
-	// BUGTEST 4
 	/** The high bound. */
 	static public float C;
 
@@ -54,12 +55,12 @@ public class SMOBinaryClassifierFloat {
 
 	// E1 and E1 as used in takestep
 	static public float E1, E2;
-	// BUGTEST 5
+
 	/** The bias_fp. */
 	static public float bias;
 
 	static public int i1, i2;
-	
+
 	float WTemp;
 
 	/**
@@ -70,7 +71,6 @@ public class SMOBinaryClassifierFloat {
 
 	/** The input space dimensionality. */
 	static public int n;
-	// BUGTEST 6
 
 	// ////////////Performance Variables////////////////////
 	static public int takeStepCount;
@@ -84,11 +84,11 @@ public class SMOBinaryClassifierFloat {
 	/**
 	 * Method mainRoutine, which estimates the SVM parameters. The parameters
 	 * are intialized before the training of the SVM is conducted.
-	 * 
+	 *
 	 * @return true if the training went well
 	 */
 	public boolean mainRoutine() {
-		// BUGTEST 7
+
 		// The number of updated that significantly changed the
 		// Lagrange multipliers
 		numChanged = 0;
@@ -102,57 +102,75 @@ public class SMOBinaryClassifierFloat {
         //smoInfo();
 		loop = 0;
 
-		// BUGTEST 8
-		if (true) {
+float W = getObjectiveFunctionFP();
+P("*********************", TR1);
+P("W initial:", TR1);
+P(W, TR1);
+P("*********************", TR1);
+// use this to just get one round of training, which is fine sometimes
+boolean quickstop = false;
 
-			while (numChanged > 0 || examineAll) { // @WCA loop=2
-				P("*********************", TR1);
-				P("loop:", TR1);
-				P(loop, TR1);
-				loop++;
+        resetKernelCalls(); // set the counter to zero
 
-				numChanged = 0;
-				if (examineAll) {
-					// loop I over all training examples
-					for (i2 = 0; i2 < m; i2++) { // @WCA loop=2
+		do { // @WCA loop=2
+			W = getObjectiveFunctionFP();
+			P("*********************", TR1);
+			P("loop:", TR1);
+			P(loop, TR1);
+			if(TRACELEVEL == TR2)
+			  smoInfo();
+			loop++;
+
+			numChanged = 0;
+			if (examineAll) {
+				// loop I over all training examples
+				for (i2 = 0; i2 < m; i2++) { // @WCA loop=14
+					if (examineExample()) {
+						numChanged++;
+					}
+					P("i2:", TR2);
+					P(i2, TR2);
+				}
+				P("W all (after): ", TR2);
+				P(getObjectiveFunctionFP(), TR2);
+				P("numChanged:", TR2);
+				P(numChanged, TR2);
+			} else {
+				// Inner loop success
+				for (i2 = 0; i2 < m; i2++) { // @WCA loop=14
+					if (alph[i2] > 0 && alph[i2] < C) {
 						if (examineExample()) {
 							numChanged++;
 						}
-						P("i2:", TR2);
-						P(i2, TR2);
 					}
-					P("W all (after): ", TR2);
-					P(getObjectiveFunctionFP(), TR2);
-					P("numChanged:", TR2);
-					P(numChanged, TR2);
-				} else {
-					// Inner loop success
-					for (i2 = 0; i2 < m; i2++) { // @WCA loop=2
-						if (alph[i2] > 0 && alph[i2] < C) {
-							if (examineExample()) {
-								numChanged++;
-							}
-						}
-						P("i2:", TR2);
-						P(i2, TR2);
-					}
-					P("W inner (after): ", TR2);
-					P(getObjectiveFunctionFP(), TR2);
-					P("numChanged:", TR2);
-					P(numChanged, TR2);
+					P("i2:", TR2);
+					P(i2, TR2);
 				}
-				if (examineAll) {
-					examineAll = false;
-				} else if (numChanged == 0) {
-					examineAll = true;
-				}
-				// break;
+				P("W inner (after): ", TR2);
+				P(getObjectiveFunctionFP(), TR2);
+				P("numChanged:", TR2);
+				P(numChanged, TR2);
 			}
-			P("SMO.mainroutine.trained", TR4);
-		}// false
+			if (examineAll) {
+				examineAll = false;
+			} else if (numChanged == 0) {
+				examineAll = true;
+			}
+			// break;
+
+
+			P("*********************", TR1);
+			P("Delta W:", TR1);
+			P(getObjectiveFunctionFP()-W, TR1);
+			P("*********************", TR1);
+			P("", TR1);
+
+		} // stop if improvement is less than 10%
+		while (((numChanged > 0 || examineAll) && (getObjectiveFunctionFP()-W)>(0.1*W)) && !quickstop);
+		P("SMO.mainroutine.trained", TR4);
+
 		measure();
 		smoInfo();
-		// BUGTEST 9
 		return true;
 	}
 
@@ -160,7 +178,7 @@ public class SMOBinaryClassifierFloat {
 	 * Method takeStep, which optimizes two lagrange multipliers at a time. The
 	 * method uses DsvmUtilABC.epsEqual to determine if there was positive
 	 * progress.
-	 * 
+	 *
 	 * @param i1
 	 *            - second choice heuristics
 	 * @param i2
@@ -179,7 +197,7 @@ public class SMOBinaryClassifierFloat {
 		P(i2, TR4);
 
 		WTemp = getObjectiveFunctionFP();
-		
+
 		// If the first and second point is the same then return false
 		if (i1 == i2) {
 			return false;
@@ -217,7 +235,7 @@ public class SMOBinaryClassifierFloat {
 
 		// on
 		float a2, a1;
-		// BUGTEST 10
+
 		if (eta < 0) {
 			a2 = alph2 - (y2 * (E1 - E2)) / eta;
 			P("eta < 0: a2:", TR4);
@@ -250,7 +268,7 @@ public class SMOBinaryClassifierFloat {
 				a2 = H;
 			} else {
 				a2 = alph2;
-			}			
+			}
 			P("eta > 0: a2:", TR4);
 			P(a2, TR4);
 
@@ -260,7 +278,7 @@ public class SMOBinaryClassifierFloat {
 			a2 = 0;
 		else if (a2 > C - 1e-8f)
 			a2 = C;
-		// BUGTEST 11
+
 		if (Math.abs(a2 - alph2) < eps * (a2 + alph2 + eps))
 			return false;
 
@@ -304,8 +322,8 @@ public class SMOBinaryClassifierFloat {
 		P(getFunctionOutputFloat(0, false), TR4);
 		P("f(i 1):", TR4);
 		P(getFunctionOutputFloat(1, false), TR4);
-        
-		
+
+
 		if(WTemp> getObjectiveFunctionFP()){
 			P("Objectivefunction error!!!!", TR1);
 			P(WTemp, TR1);
@@ -321,6 +339,9 @@ public class SMOBinaryClassifierFloat {
 		}
 		P("W:", TR1);
 		P(getObjectiveFunctionFP(),TR1);
+		P("kernelCalls:",TR1);
+		P(getKernelCalls(), TR1);
+
 		takeStepCount++;
 		// BUGTEST 12
 		return true;
@@ -331,7 +352,7 @@ public class SMOBinaryClassifierFloat {
 	 * Method examineExample, which will take a step using a number of
 	 * heuristics. The points coming into this method is from the outer in the
 	 * SMO main routine: first choice heuristic
-	 * 
+	 *
 	 * @param i2
 	 *            - zero based index of second point to classify, which is
 	 *            chosen by the outer loop in smo
@@ -415,7 +436,7 @@ public class SMOBinaryClassifierFloat {
 					return true;
 				}
 			}
-			// BUGTEST 12
+
 		}
 
 		return false;
@@ -441,7 +462,7 @@ public class SMOBinaryClassifierFloat {
 	/**
 	 * Will generate a random point if lastIndex == -1. It will return -1 when
 	 * full loop is done.
-	 * 
+	 *
 	 * @param firstTime
 	 *            true for the first call;
 	 * @return -1 when done
@@ -449,7 +470,11 @@ public class SMOBinaryClassifierFloat {
 	int randomLoop(boolean firstTime) {
 		// random index init for first call
 		if (firstTime) {
-			firstIndex = nextIndex = (int) (System.currentTimeMillis() % m);
+			if(RANDOMLOOP)
+			  firstIndex = nextIndex = (int) (System.currentTimeMillis() % m);
+            else
+               firstIndex = nextIndex = 0;
+
 			if (firstIndex < 0) {
 				firstIndex *= -1;
 				nextIndex *= -1;
@@ -458,7 +483,7 @@ public class SMOBinaryClassifierFloat {
 			P(firstIndex, TR3);
 			return firstIndex;
 		}
-		// BUGTEST 13
+
 		// next index
 		nextIndex = nextIndex + 1;
 		// start from 0 if past last index
@@ -492,7 +517,7 @@ public class SMOBinaryClassifierFloat {
 		eps = 0.01f;
 
 		tol = 0.01f;
-		// BUGTEST 14
+
 		KFloat.setSigma2(FloatUtil.mul(FloatUtil.ONE, FloatUtil.ONE));
 		KFloat.setKernelType(KFloat.DOTKERNEL);// GAUSSIANKERNEL or DOTKERNEL
 
@@ -505,7 +530,7 @@ public class SMOBinaryClassifierFloat {
 	/**
 	 * Method getf, which calculates and returns the functional output without
 	 * using a bias_fp. see keerti99
-	 * 
+	 *
 	 * @param i
 	 *            - index
 	 * @return the non-biased functional output.
@@ -521,10 +546,10 @@ public class SMOBinaryClassifierFloat {
 		return f_fp;
 	}
 
-	// BUGTEST 15
+
 	/**
 	 * The error of the training example i.
-	 * 
+	 *
 	 * @param i
 	 * @return error
 	 */
@@ -537,7 +562,7 @@ public class SMOBinaryClassifierFloat {
 	 * assumes that the constrained Lagrange multipliers has been explicitly set
 	 * to the the appropriate boundary value zero or C. This equation relates to
 	 * equation 12.2 in Platts paper.
-	 * 
+	 *
 	 * @param p
 	 *            the example to check
 	 * @return true if example violates KKT
@@ -567,7 +592,7 @@ public class SMOBinaryClassifierFloat {
 	/**
 	 * Method getObjectiveFunction, which calculates and returns the value of
 	 * the objective function based on the values in the alpha_fp array.
-	 * 
+	 *
 	 * @return the objective function (6.1 in Christianini).
 	 */
 	float getObjectiveFunctionFP() {
@@ -590,10 +615,10 @@ public class SMOBinaryClassifierFloat {
 		return objfunc_fp;
 	}
 
-	// BUGTEST 16
+
 	/**
 	 * Method calculatedError, which calculates the error from from scratch.
-	 * 
+	 *
 	 * @param p
 	 *            - point to calculte error for
 	 * @return calculated error
@@ -612,25 +637,25 @@ public class SMOBinaryClassifierFloat {
 	/**
 	 * Method getFunctionOutput, which will return the functional output for
 	 * point p.
-	 * 
+	 *
 	 * @param p
 	 *            - the point index
 	 * @param parallel
 	 *            - true if to be done in parallel
 	 * @return the functinal output
 	 */
-	float getFunctionOutputFloat(int p, boolean parallel) {
+	public float getFunctionOutputFloat(int p, boolean parallel) {
 		float functionalOutput_fp = 0;
 		svmHelp.p = p;
 		if (parallel) {
 			svmHelp.functionalOutput_fp = 0.0f;
-			System.out.print("m:");
-			System.out.println(m);
+			//System.out.print("m:");
+			//System.out.println(m);
 			pe.executeParallel(new SVMHelp(), m);
 			svmHelp.functionalOutput_fp -= bias;
 			functionalOutput_fp = svmHelp.functionalOutput_fp;
 		} else {
-			for (int i = 0; i < m; i++) {
+			for (int i = 0; i < m; i++) { // @WCA loop=14
 				// Don't do the kernel if it is epsequal
 				if (alph[i] > 0) {
 					functionalOutput_fp += target[i] * alph[i]
@@ -642,10 +667,10 @@ public class SMOBinaryClassifierFloat {
 		return functionalOutput_fp;
 	}
 
-	// BUGTEST 17
+
 	/**
 	 * Method getKernelOutput, which returns the kernel of two points.
-	 * 
+	 *
 	 * @param i1
 	 *            - index of alpha_fp 1
 	 * @param i2
@@ -654,12 +679,31 @@ public class SMOBinaryClassifierFloat {
 	 */
 	float getKernelOutputFloat(int i1, int i2) {
 
+		kernelCalls++;
+
 		return KFloat.kernel(i1, i2);
+	}
+
+	// keeps track of how many times the kernel function has been called
+	int kernelCalls = 0;
+
+	/**
+	 * Return the kernel calls;
+	 */
+	public int getKernelCalls(){
+	  return kernelCalls;
+	}
+
+    /**
+     * Set the kernelCalls to zero.
+     */
+	public void resetKernelCalls(){
+		kernelCalls = 0;
 	}
 
 	/**
 	 * Method getEta, which returns eta_fp = 2*k12-k11-k22
-	 * 
+	 *
 	 * @param i1
 	 *            - index of first point
 	 * @param i2
@@ -681,7 +725,7 @@ public class SMOBinaryClassifierFloat {
 	/**
 	 * Method getLowerClip, which returns the lower clip value for some pair of
 	 * Lagrange multipliers. Pls. refer to Nello's book for more info.
-	 * 
+	 *
 	 * @param i1
 	 *            - first point
 	 * @param i2
@@ -704,11 +748,11 @@ public class SMOBinaryClassifierFloat {
 		return u_fp;
 	}
 
-	// BUGTEST 18
+
 	/**
 	 * Method getUpperClip, which will return the upper clip based on two
 	 * Lagrange multipliers.
-	 * 
+	 *
 	 * @param i1
 	 *            - first point
 	 * @param i2
@@ -753,11 +797,10 @@ public class SMOBinaryClassifierFloat {
 		return errorCount;
 	}
 
-	// BUGTEST 19
 	/**
 	 * Method calculateW, which calculates the weight vector. This is used for
 	 * linear SVMs.
-	 * 
+	 *
 	 * @return the weight [n] vector
 	 */
 	float[] calculateWFP() {
@@ -775,7 +818,7 @@ public class SMOBinaryClassifierFloat {
 	/**
 	 * Method isExampleBound, which will return true if the point p is on the
 	 * bound as defined as less then (0+tol_fp) or greater than (C-tol_fp).
-	 * 
+	 *
 	 * @param p
 	 *            - index of point
 	 * @return true if p is on bound
@@ -788,10 +831,11 @@ public class SMOBinaryClassifierFloat {
 		return aTest < tol || aTest > (C - tol);
 	}
 
+
 	/**
 	 * Method getFunctionOutput, which will return the functional output for
 	 * point represented by a input vector only.
-	 * 
+	 *
 	 * @param xtest
 	 *            - the input vector
 	 * @return the functinal output
@@ -804,17 +848,15 @@ public class SMOBinaryClassifierFloat {
 		int n = xtest.length;
 		int n2 = data_fp_local[0].length;
 		// RT bound it to ALPHA_RT
-		for (int i = 0; i < ALPHA_RT; i++) { // @WCA loop=2
+		for (int i = 0; i < ALPHA_RT; i++) { // @WCA loop=14
 			n = xtest.length;
-			// MS: is the following bound correct?
-			while (n != 0) { // @WCA loop=2
+			while (n != 0) { // @WCA loop=14
 				n = n - 1;
-				// TODO
 				// func_out += (data_fp_local[alpha_index_sorted[i]][n])
 				// * (xtest[n]);
 			}
 			// if (alpha_fp[alpha_index_sorted[i]] > 0) {
-			// functionalOutput_fp += func_out;
+			//   functionalOutput_fp += func_out;
 			// }
 			func_out = 0;
 		}
@@ -822,11 +864,11 @@ public class SMOBinaryClassifierFloat {
 		return functionalOutput_fp;
 	}
 
-	// BUGTEST 20
+
 	/**
 	 * Method getFunctionOutput, which will return the functional output for
 	 * point represented by a input vector only.
-	 * 
+	 *
 	 * @param xtest
 	 *            - the input vector
 	 * @return the functinal output
@@ -867,11 +909,11 @@ public class SMOBinaryClassifierFloat {
 		P(Native.rd(com.jopdesign.sys.Const.IO_WD), TR4);
 	}
 
-	// BUGTEST 21
 	public void smoInfo() {
 		// printScalar("wd",Native.rd(Const.IO_WD)); //TODO: Can it be read?
 		P("======SMO INFO START======", TR4);
 		// printScalar("sp",Native.rd(com.jopdesign.sys.Const.IO_WD));
+		printScalar("W", getObjectiveFunctionFP());
 		printScalar("i1", i1);
 		printScalar("i2", i2);
 		printScalar("bias_fp", bias);
@@ -922,7 +964,7 @@ public class SMOBinaryClassifierFloat {
 			;
 	}
 
-	// BUGTEST 22
+
 	void printVector(String str, float[] ve) {
 		System.out.print(str);
 		System.out.print(" {");
@@ -959,7 +1001,7 @@ public class SMOBinaryClassifierFloat {
 			;
 	}
 
-	// BUGTEST 23
+
 	void printMatrix(String str, float[][] ma) {
 		for (int i = 0; i < ma.length; i++) {
 			System.out.print(str);
@@ -989,11 +1031,6 @@ public class SMOBinaryClassifierFloat {
 
 	void P(float f, int traceLevel) {
 		if (traceLevel <= TRACELEVEL) {
-			// StringBuffer NYI
-			// if (sb.length() > 0)
-			// sb.delete(0, sb.length() - 1);
-			// sb.append(f);
-			// System.out.println(sb);
 			int i = (int) f;
 			int j = (int) (f * 100 - (float)i * 100+1);
 			System.out.print(i);
@@ -1049,7 +1086,6 @@ public class SMOBinaryClassifierFloat {
 		}
 	}
 
-	// BUGTEST 24
 	// First measure
 	public void measure() {
 

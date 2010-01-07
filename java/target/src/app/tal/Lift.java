@@ -51,7 +51,7 @@ import util.Dbg;
 import util.Timer;
 import ejip.CS8900;
 import ejip.Ejip;
-import ejip.Html;
+import ejip.HtmlBaseio;
 import ejip.LinkLayer;
 import ejip.Net;
 
@@ -98,7 +98,12 @@ evn = true;
 		net = new Net(ejip);
 		int[] outReg = new int[1];
 		outReg[0] = 0;
-		Html.setOutValArray(outReg);
+		HtmlBaseio http = new HtmlBaseio();
+		// register the simple HTTP server
+		net.getTcp().addHandler(80, http);
+
+		http.setOutValArray(outReg);
+
 		//
 		//	start device driver threads
 		//

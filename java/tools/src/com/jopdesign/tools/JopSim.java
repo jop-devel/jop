@@ -1677,11 +1677,12 @@ System.out.println("new heap: "+heap);
 				case 237 :		// resED
 					noim(237);
 					break;
-				case 238 :		// resEE
-					noim(238);
+				case 238 :		// resEE - jopsys_getstatic
+					stack[sp] = readMem(stack[sp], Access.STATIC);
 					break;
-				case 239 :		// resEF
-					noim(239);
+				case 239 :		// resEF - jopsys_putstatic
+					writeMem(stack[sp], stack[sp-1], Access.STATIC);
+					sp -= 2;
 					break;
 				case 240 :		// sys_int
 					--pc;		// correct wrong increment on jpc

@@ -28,7 +28,7 @@ package simhw;
 
 import java.io.*;
 
-import javax.comm.*;
+import gnu.io.*;
 
 import com.jopdesign.sys.Const;
 

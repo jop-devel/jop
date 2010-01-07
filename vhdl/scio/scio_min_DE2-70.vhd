@@ -233,7 +233,7 @@ begin
 		end if;
 	end process;
 			
-	cmp_sys: entity work.sc_sys generic map (
+	sys: entity work.sc_sys generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 			cpu_id => cpu_id,
@@ -265,7 +265,7 @@ begin
 	-- remove the comment for RAM access counting
 	-- ram_count <= ram_cnt;
 
-	cmp_ua: entity work.sc_uart generic map (
+	ua: entity work.sc_uart generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 			baud_rate => 115200,
@@ -291,7 +291,7 @@ begin
 			nrts => nrts
 	);
 	
---	cmp_ps2kbd : kbd_cntrl
+--	ps2kbd : kbd_cntrl
 --  generic map(
 --    addr_bits => SLAVE_ADDR_BITS,
 --    CLK_FREQ => 50000000,
@@ -314,7 +314,7 @@ begin
 --    kbd_data_out => kbd_data_out
 --    );    
 
--- cmp_ps2mouse : entity work.mouse_cntrl   
+-- ps2mouse : entity work.mouse_cntrl   
 --  generic map (
 --    addr_bits => SLAVE_ADDR_BITS,
 --    CLK_FREQ => 50000000,

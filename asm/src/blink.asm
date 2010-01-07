@@ -23,6 +23,7 @@
 //		Blinking WD LED to see if FPGA is running.
 //		Also writes to serial line.
 //
+version		= 20091128
 
 //
 //	io address
@@ -141,8 +142,6 @@ bl1:		ldi	1
 			nop
 			pop
 
-			ldi	1
-			nop
-			bnz	blink
+			jmp blink
 			nop
 			nop
