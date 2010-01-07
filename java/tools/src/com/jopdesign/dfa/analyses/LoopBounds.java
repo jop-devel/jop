@@ -401,25 +401,21 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 
 		Instruction instruction = stmt.getInstruction();
 
-//		if (context.method.startsWith("wcet.LBAnalysisTest.measure")) {
-//			System.out.println(context.method+": "+stmt);
-//			System.out.println("###"+context.stackPtr+" + "+instruction.produceStack(context.constPool)+" - "+instruction.consumeStack(context.constPool));		
-//			System.out.println(stmt+" "+(edge.getType() == FlowEdge.TRUE_EDGE ? "TRUE" : (edge.getType() == FlowEdge.FALSE_EDGE) ? "FALSE" : "NORMAL")+" "+edge);
-//			System.out.println(context.callString+"/"+context.method);
-//			System.out.print(stmt.getInstruction()+":\t{ ");
-//			System.out.print(input.get(context.callString));
-//			System.out.println("}");
-//		}		
+// 		System.out.println(context.method+": "+stmt);
+// 		System.out.println("###"+context.stackPtr+" + "+instruction.produceStack(context.constPool)+" - "+instruction.consumeStack(context.constPool));		
+// 		System.out.println(stmt+" "+(edge.getType() == FlowEdge.TRUE_EDGE ? "TRUE" : (edge.getType() == FlowEdge.FALSE_EDGE) ? "FALSE" : "NORMAL")+" "+edge);
+// 		System.out.println(context.callString+"/"+context.method);
+// 		System.out.print(stmt.getInstruction()+":\t{ ");
+// 		System.out.print(input.get(context.callString));
+// 		System.out.println("}");
 		
-//		if (stmt.hasTargeters() && context.method.startsWith("wcet.LBAnalysisTest.measure")) {
-//			for (int i = 0; i < stmt.getTargeters().length; i++) {
-//				InstructionTargeter targeter = stmt.getTargeters()[i];
-//				if (targeter instanceof BranchInstruction) {
-//					checkScope(context, stmt);
-//					break;
-//				}
-//			}
-//		}
+// 		for (int i = 0; i < stmt.getTargeters().length; i++) {
+// 			InstructionTargeter targeter = stmt.getTargeters()[i];
+// 			if (targeter instanceof BranchInstruction) {
+// 				checkScope(context, stmt);
+// 				break;
+// 			}
+// 		}
 		
 		switch (instruction.getOpcode()) {
 

@@ -169,18 +169,18 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		
 		Instruction instruction = stmt.getInstruction();
 		
-//		System.out.println(context.method+": "+stmt);
-//		System.out.print(stmt.getInstruction()+":\t{ ");
-//		for (Iterator k = input.keySet().iterator(); k.hasNext(); ) {
-//			ReceiverTypes.TypeMapping m = (ReceiverTypes.TypeMapping) k.next();
-//			if (m.stackLoc >= 0) {
-//				System.out.print("<stack[" + m.stackLoc + "], " + m.type +">, ");
-//			} else {
-//				System.out.print("<" + m.heapLoc + ", " + m.type +">, ");						
-//			}
-//		}
-//		System.out.println("}");
-
+// 		System.out.println(context.method+": "+stmt);
+// 		System.out.print(stmt.getInstruction()+":\t{ ");
+// 		for (Iterator k = input.keySet().iterator(); k.hasNext(); ) {
+// 			ReceiverTypes.TypeMapping m = (ReceiverTypes.TypeMapping) k.next();
+// 			if (m.stackLoc >= 0) {
+// 				System.out.print("<stack[" + m.stackLoc + "], " + m.type +">, ");
+// 			} else {
+// 				System.out.print("<" + m.heapLoc + ", " + m.type +">, ");						
+// 			}
+// 		}
+// 		System.out.println("}");
+		
 		switch (instruction.getOpcode()) {
 		
 		case Constants.NOP:
@@ -1101,9 +1101,20 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			}
 			if (m.stackLoc == varPtr) {
 				// add "this"
-				if (receiver.equals(m.type.split("@")[0])) {
+				ClassInfo staticClass = (ClassInfo)p.cliMap.get(receiver);
+				ClassInfo dynamicClass = (ClassInfo)p.cliMap.get(m.type.split("@")[0]);
+				try {
+					if (dynamicClass.clazz.instanceOf(staticClass.clazz)) {
+						tmpresult.add(new TypeMapping(0, m.type));					
+					}
+				} catch (ClassNotFoundException exc) {
+					// just do it
 					tmpresult.add(new TypeMapping(0, m.type));
 				}
+				
+//				if (receiver.equals(m.type.split("@")[0])) {
+//					tmpresult.add(new TypeMapping(0, m.type));					
+//				}
 			}
 		}
 
