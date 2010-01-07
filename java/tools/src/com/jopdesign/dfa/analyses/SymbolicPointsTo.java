@@ -116,7 +116,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 //		System.out.println("A: "+s1);
 //		System.out.println("B: "+s2);
 		
-		SymbolicAddressMap merged = new SymbolicAddressMap(a);
+		SymbolicAddressMap merged = a.clone();
 		merged.join(b);
 		
 		result.put(s2.getContext().callString, merged);		
