@@ -46,11 +46,7 @@ public class SymbolicAddressMap {
 		this(bsFactory, new HashMap<Location,BoundedSet<SymbolicAddress>>());
 		this.topOfStack = -1;
 	}
-	/** copy constructor */
-	public SymbolicAddressMap(SymbolicAddressMap a) {
-		this(a.bsFactory, new HashMap<Location,BoundedSet<SymbolicAddress>>(a.map));
-		this.topOfStack = a.topOfStack;
-	}
+
 	/** top element */
 	public static SymbolicAddressMap top() {
 		return _top;
@@ -95,7 +91,8 @@ public class SymbolicAddressMap {
 	@Override
 	protected SymbolicAddressMap clone() {
 		if(this.isTop()) return this;
-		return new SymbolicAddressMap(this);
+		return new SymbolicAddressMap(this.bsFactory,
+				new HashMap<Location, BoundedSet<SymbolicAddress>>(this.map));
 	}
 	
 	/** Clone address map, but only those stack variables below {@code bound} */
