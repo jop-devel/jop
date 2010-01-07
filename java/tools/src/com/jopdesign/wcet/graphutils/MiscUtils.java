@@ -137,19 +137,32 @@ public class MiscUtils {
 		}
 		return sb.toString();
 	}
-
-	public static void printMap(PrintStream out,Map<?,?> map, int fill) {
-		for(Entry<?, ?> entry : map.entrySet()) {
-			StringBuilder sb = new StringBuilder();
-			String s1 = entry.getKey().toString();
-			sb.append(s1);
-			for(int i = s1.length(); i < fill; i++) sb.append(' ');
-			sb.append(" ==> ");
-			sb.append(entry.getValue().toString());
-			out.println(sb.toString());
-		}
+	/**
+	 * Pretty print the given map
+	 * @param out out stream
+	 * @param map the map to print
+	 * @param fill minimal length of the key, filled with whitespace
+	 */
+	public static <K,V>
+	void printMap(PrintStream out, Map<K,V> map, int fill) {
+		_fill = fill; // not thread safe
+		printMap(out,map,new Function2<K,V,String>() {
+			public String apply(K v1,V v2) {
+				return String.format("%"+_fill+"s ==> %s",v1,v2);
+			}			
+		});
 	}
-
+	private static int _fill;
+	
+	public static <K,V> 
+	void printMap(PrintStream out,
+			Map<? extends K, ? extends V> map,
+			Function2<K,V, String> printer) {
+		for(Entry<? extends K, ? extends V> entry : map.entrySet()) {
+			out.println(printer.apply(entry.getKey(), entry.getValue()));
+		}		
+	}
+	
 	public static <V,E>
 	List<V> topologicalOrder(DirectedGraph<V,E> acyclicGraph)
 	{
@@ -170,6 +183,7 @@ public class MiscUtils {
 		return revTopo;
 	}
 	public static final int BYTES_PER_WORD = 4;
+
 
 
 }
