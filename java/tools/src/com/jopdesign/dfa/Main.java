@@ -20,8 +20,6 @@
 
 package com.jopdesign.dfa;
 
-import java.io.IOException;
-
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.ReceiverTypes;
 import com.jopdesign.dfa.analyses.SymbolicPointsTo;
