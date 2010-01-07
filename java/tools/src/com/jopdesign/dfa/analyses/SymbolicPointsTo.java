@@ -187,10 +187,13 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		}
 		break;
 		
-		case Constants.ACONST_NULL:
-			// We do not consider constants for now
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
-			break;
+		case Constants.ACONST_NULL: {
+			// Null -> No reference
+			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
+			result.putStack(newStackPtr-1, bsFactory.empty());
+			retval.put(context.callString, result);		
+		}
+		break;
 			
 		case Constants.LDC:
 		case Constants.LDC_W: {

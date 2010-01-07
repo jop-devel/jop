@@ -47,8 +47,9 @@ public class ObjectCache {
         public long lval;
         public long[] lvals;
         public static Obj1 create() {
-            if(to > 10) return new Obj1a();
-            else        return new Obj1b();
+            if(to > 10)    return new Obj1a();
+            else if(to>12) return new Obj1b();
+            else           return new Obj1c();
         }
 	    public int test2(Obj1 other, Obj2 sub) {
 	        int v1 = this.next.val;  // GF: $this, $this.next
@@ -77,6 +78,11 @@ public class ObjectCache {
             else if(te > 12) selected = other.next.next.sub1;
             else             selected = def;
             return selected;
+        }
+    }
+    public static class Obj1c extends Obj1 {
+        protected Obj2 selectSub2(Obj1 other, Obj2 def) {
+            return null;
         }
     }
     public static class Obj2 {
