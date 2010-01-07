@@ -19,10 +19,12 @@
 */
 package com.jopdesign.wcet.ipet;
 
+import java.util.Map;
 import java.util.Vector;
 import java.util.Map.Entry;
 
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.SuperGraph;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
@@ -44,6 +46,20 @@ public class ILPModelBuilder {
 	 */
 	public interface CostProvider<T> {
 		public long getCost(T obj);
+	}
+	
+	public static class MapCostProvider<T> implements CostProvider<T> {
+			private Map<T, Long> costMap;
+			private long defCost;
+			public MapCostProvider(Map<T,Long> costMap, long defCost) {
+				this.costMap = costMap;
+				this.defCost = defCost;
+			}
+			public long getCost(T obj) {
+				Long cost = costMap.get(obj);
+				if(cost == null) return defCost;
+				else             return cost;
+			}		
 	}
 
 	private IpetConfig ipetConfig;
