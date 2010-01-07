@@ -1,6 +1,10 @@
 package com.jopdesign.dfa.analyses;
 
-
+/**
+ * 
+ * @author Benedikt Huber <benedikt.huber@gmail.com>
+ *
+ */
 public class SymbolicAddress {
 	private String impl;
 	public SymbolicAddress(String root) {
@@ -11,6 +15,12 @@ public class SymbolicAddress {
 	}
 	public SymbolicAddress access(String fieldName) {
 		return new SymbolicAddress(impl + "." + fieldName); 
+	}
+	public SymbolicAddress accessArrayAny() {
+		return new SymbolicAddress(impl + "[]");
+	}
+	public SymbolicAddress accessArray(int j) {
+		return new SymbolicAddress(impl + "["+j+"]"); 
 	}
 	public static SymbolicAddress staticField(String fieldName) {
 		return new SymbolicAddress(fieldName);

@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.LineNumberTable;
+import org.apache.bcel.generic.AALOAD;
 import org.apache.bcel.generic.ARRAYLENGTH;
 import org.apache.bcel.generic.ArrayInstruction;
 import org.apache.bcel.generic.GETFIELD;
@@ -36,11 +37,11 @@ import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap> {
 
 	private static final int CALLSTRING_LENGTH = 0;
-	private static final boolean DEBUG_PRINT = false;
+	private static final boolean DEBUG_PRINT = true;
 	private BoundedSetFactory<SymbolicAddress> bsFactory;
-	private Map<InstructionHandle, ContextMap<CallString, SymbolicAddressMap>> objects = 
-		new HashMap<InstructionHandle, ContextMap<CallString,SymbolicAddressMap>>();
 	private MethodInfo entryMethod;
+	private HashMap<InstructionHandle, ContextMap<CallString, BoundedSet<SymbolicAddress>>> usedRefs =
+		new HashMap<InstructionHandle, ContextMap<CallString,BoundedSet<SymbolicAddress>>>();
 
 	public SymbolicPointsTo(int maxSetSize) {
 		bsFactory = new BoundedSetFactory<SymbolicAddress>(maxSetSize);
@@ -252,14 +253,15 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			retval.put(context.callString, result);		
 		}
 		break;	
-
-		case Constants.ARRAYLENGTH: {	
-			objects.put(stmt, input);
+		// Access Object Handle (area), top of stack
+		case Constants.ARRAYLENGTH: {
+			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-1));
 			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
 		}
 		break;
-
+		// Access Object Handle, second on stack
 		case Constants.PUTFIELD: {			
+			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-2));
 			PUTFIELD instr = (PUTFIELD)instruction;
 			// If PUTFIELD has object type, set result to TOP
 			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
@@ -269,12 +271,15 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			}
 		}
 		break;
+		
+		
+		// Access Object Handle, top of stack
 		// if value has reference type:
 		//   stackptr ^ objectref | ... ==> stackptr ^ value | ... 
 		//   value <- getfield objectref F ==> value |-> map (.F) M(objectref)
 		case Constants.GETFIELD: {			
+			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-1));
 			GETFIELD instr = (GETFIELD)instruction;
-			objects.put(stmt, input);
 			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
 			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
 				BoundedSet<SymbolicAddress> objectMapping = in.getStack(context.stackPtr-1);
@@ -321,12 +326,13 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.CASTORE:
 		case Constants.SASTORE:
 		case Constants.BASTORE: {
-			objects.put(stmt, input);
+			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-3));
 			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
 		}
 		break;
 		// changing the heap -> TOP
 		case Constants.AASTORE: {
+			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-3));
 			retval.put(context.callString, SymbolicAddressMap.top());						
 		}
 		break;
@@ -335,13 +341,45 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.CALOAD:
 		case Constants.SALOAD:			
 		case Constants.BALOAD: {
-			objects.put(stmt, input);
+			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-2));
 			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
 		}
 		break;
-		// Similar to getfield, but not supported YET
+		// AALOAD objectref, index -> objectref
 		case Constants.AALOAD: {
-			retval.put(context.callString, SymbolicAddressMap.top());						
+			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-2));
+			AALOAD instr = (AALOAD)instruction;
+			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
+			BoundedSet<SymbolicAddress> objectMapping = in.getStack(context.stackPtr-2);
+			BoundedSet<SymbolicAddress> newMapping;
+			if(objectMapping.isSaturated()) {
+				newMapping = bsFactory.top();
+			} else {
+				newMapping = bsFactory.empty();
+				for(SymbolicAddress addr: objectMapping.getSet()) {
+					newMapping.add(addr.accessArrayAny());
+				}
+			}					
+				
+//				Doesn't work, but is probably stupid anyway :(
+//  			LoopBounds bounds = interpreter.getProgram().getLoopBounds();
+//              bounds.getArraySizes().get(stmt).get(context.callString);
+//			    newMapping = bsFactory.empty();
+//				Interval[] sizeBounds = { new Interval(2,3) }; 
+//				for(Interval i : sizeBounds) {
+//					if(! i.hasUb()) {
+//						newMapping = bsFactory.top();
+//					}
+//					int ub = i.getUb();
+//					for(int j = 0; j <= ub; j++) {
+//						for(SymbolicAddress addr: objectMapping.getSet()) {
+//							newMapping.add(addr.accessArray(j));
+//						}					
+//					}
+//				}
+//			}
+			result.putStack(context.stackPtr-2, newMapping);
+			retval.put(context.callString, result);
 		}
 		break;
 					
@@ -510,19 +548,16 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			// store results
 			result.putStack(0, in.getStack(context.stackPtr-1));
 			retval.put(context.callString, result);
-			objects.put(stmt, retval);
 		}
 		break;
 		
 		case Constants.RETURN: {
-			objects.put(stmt, input);
 			retval.put(context.callString, in.cloneFilterStack(newStackPtr));						
 			// We are interested in the references here
 		}
 		break;						
 
 		case Constants.IRETURN: {
-			objects.put(stmt, input);
 			retval.put(context.callString, in.cloneFilterStack(newStackPtr));						
 			// We are interested in the references here
 		}
@@ -549,7 +584,17 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		return retval;
 	}
 	
-	
+	/** Save used object handle */
+	private void putResult(InstructionHandle stmt,
+						   Context ctx,
+		     	           BoundedSet<SymbolicAddress> stackEntry) {
+		if(! usedRefs.containsKey(stmt)) {
+			usedRefs.put(stmt, new ContextMap<CallString, BoundedSet<SymbolicAddress>>(ctx,
+					new HashMap<CallString, BoundedSet<SymbolicAddress>>()));
+		}
+		usedRefs.get(stmt).put(ctx.callString,stackEntry);
+	}
+
 	private void doInvoke(String methodName,
 			InstructionHandle stmt,
 			Context context,
@@ -661,9 +706,9 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 	
 	public void printResult(DFAAppInfo program) {
 		Map<String,String> getFields = new TreeMap<String,String>();
-		for(InstructionHandle instr : objects.keySet()) {
+		for(InstructionHandle instr : usedRefs.keySet()) {
 			
-			ContextMap<CallString, SymbolicAddressMap> r = objects.get(instr);
+			ContextMap<CallString, BoundedSet<SymbolicAddress>> r = usedRefs.get(instr);
 			Context c = r.getContext();
 			MethodInfo method = program.getMethod(c.method);
 			if(method == null) {
@@ -676,31 +721,33 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 				CallString callString = k.next();
 
 				System.out.println(c.method+":"+sourceLine+":"+callString+": "+instr);
-				SymbolicAddressMap symAddr = r.get(callString);
-
-				String infoStr = null;
+				BoundedSet<SymbolicAddress> symAddr = r.get(callString);
+				
+				String infoStr;
 				if(instr.getInstruction() instanceof GETFIELD) {
 					GETFIELD gfInstr = (GETFIELD) instr.getInstruction();
 					infoStr = String.format("GETFIELD %s %s %s",
-							symAddr.getTopOfStack().toString(),
+							symAddr.toString(),
 							gfInstr.getFieldName(c.constPool),
 							gfInstr.getFieldType(c.constPool));
 				} else if(instr.getInstruction() instanceof ARRAYLENGTH) {
 					infoStr = String.format("ARRAYLENGTH %s",
-							symAddr.getTopOfStack().toString());
+							symAddr.toString());
 				} else if(instr.getInstruction() instanceof ArrayInstruction) {
 					ArrayInstruction aInstr = (ArrayInstruction) instr.getInstruction();
 					infoStr = String.format("%s %s %s[]",
 							aInstr.getName().toUpperCase(),
-							symAddr.getTopOfStack().toString(),										
+							symAddr.toString(),										
 							aInstr.getType(c.constPool));
+				} else {
+					infoStr = String.format("%s %s",instr.getInstruction().getName().toUpperCase(),
+							symAddr.toString());
 				}
 				if(infoStr != null) {
 					String infoKey = String.format("%s:%04d:%s",c.method,sourceLine,callString);
 					while(getFields.containsKey(infoKey)) infoKey = infoKey + "'";
 					getFields.put(infoKey,infoStr);					
 				}
-				symAddr.print(System.out,2);
 			}						
 		}
 		for(Entry<String, String> entry : getFields.entrySet()) {
@@ -708,8 +755,18 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			System.out.println("  "+entry.getValue());
 		}
 	}
-	public Map getResult() {
-		return objects;
+	
+	/** Return symbolic object names used at instructions which use a handle 
+	  *  <ul>
+	  *   <li/> getfield (top of stack)
+	  *   <li/> putfield (second on stack)
+	  *   <li/> arraylen (top of stack, handle area)
+	  *   <li/> a*load (second on stack)
+	  *   <li/> a*store (third on stack)
+	  * </ul>
+	 */
+	public HashMap<InstructionHandle, ContextMap<CallString, BoundedSet<SymbolicAddress>>> getResult() {
+		return usedRefs;
 	}
 	
 }

@@ -39,12 +39,12 @@ public class SymbolicAddressMap {
 		this.map = null;
 	}
 	
-	private int topOfStack;
+	private int maxStackIndex;
 
 	/** empty constructor */
 	public SymbolicAddressMap(BoundedSetFactory<SymbolicAddress> bsFactory) {
 		this(bsFactory, new HashMap<Location,BoundedSet<SymbolicAddress>>());
-		this.topOfStack = -1;
+		this.maxStackIndex = -1;
 	}
 
 	/** top element */
@@ -182,25 +182,23 @@ public class SymbolicAddressMap {
 		if(this.isTop()) return bsFactory.top();
 		Location stackLoc = new Location(index);
 		BoundedSet<SymbolicAddress> val = map.get(stackLoc);
-		if(val == null) throw new AssertionError("Undefined stack loc: "+index);
 		return val;
 	}
 	
-	public BoundedSet<SymbolicAddress> getTopOfStack() {
-		if(this.isTop()) return bsFactory.top();
-		return map.get(new Location(topOfStack));
+	public int getMaxStackIndex() {
+		return maxStackIndex;
 	}
 
 	public void put(Location l, BoundedSet<SymbolicAddress> bs) {
+		if(bs == null) return;
 		if(this.isTop()) return;
-		if(! l.isHeapLoc() && l.stackLoc > this.topOfStack) {
-			this.topOfStack = l.stackLoc;
+		if(! l.isHeapLoc() && l.stackLoc > this.maxStackIndex) {
+			this.maxStackIndex = l.stackLoc;
 		}
 		this.map.put(l, bs);
 	}
 	
 	public void putStack(int index, BoundedSet<SymbolicAddress> bs) {
-		if(this.isTop()) return;
 		this.put(new Location(index), bs);
 	}
 	

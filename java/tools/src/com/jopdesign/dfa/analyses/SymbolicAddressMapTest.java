@@ -109,8 +109,8 @@ public class SymbolicAddressMapTest {
 		assert(m2.isSubset(top));
 		assert(! top.isSubset(m1));
 		assert(! top.isSubset(m2));
-		SymbolicAddressMap m12 = new SymbolicAddressMap(m1); m12.join(m2);
-		SymbolicAddressMap m21 = new SymbolicAddressMap(m2); m21.join(m1);
+		SymbolicAddressMap m12 = m1.clone(); m12.join(m2);
+		SymbolicAddressMap m21 = m2.clone(); m21.join(m1);
 		assert(m12.equals(m21));
 		assert(m1.isSubset(m12));
 		assert(m1.isSubset(m12));
@@ -122,7 +122,7 @@ public class SymbolicAddressMapTest {
 	public void testClone() {
 		SymbolicAddressMap m1 = map1();
 		SymbolicAddressMap m2 = map2();
-		SymbolicAddressMap top = SymbolicAddressMap.top();
+		SymbolicAddressMap top = SymbolicAddressMap.top().clone();
 		assert(m1.equals(m1.clone()));
 		assert(m1.equals(m2.clone()));
 		assert(m1.equals(top.clone()));
@@ -253,19 +253,6 @@ public class SymbolicAddressMapTest {
 		assertEquals(m1.getStack(3),SymbolicAddressMap.top().getStack(3));
 	}
 
-	@Test
-	public void testGetTopOfStack() {
-		SymbolicAddressMap m1 = map1();
-		assertEquals(m1.getTopOfStack(), m1.getStack(2));
-		m1.putStack(4,m1.getStack(1));
-		assertEquals(m1.getTopOfStack(), m1.getStack(1));
-		m1.putStack(3,m1.getStack(0));
-		assertEquals(m1.getTopOfStack(), m1.getStack(1));
-		m1 = map1();
-		SymbolicAddressMap m1a = m1.cloneFilterStack(1);
-		assertEquals(m1a.getTopOfStack(), m1.getStack(0));
-		// FIXME: What about join with different TOS ?
-	}
 
 	@Test
 	public void testPut() {
