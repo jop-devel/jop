@@ -76,13 +76,13 @@ public class ILPModelBuilder {
 	/**
 	 * Create an interprocedural max-cost max-flow problem for the given flow graph 
 	 * based on a given node to cost mapping.
-	 * @param key a unique identifier for the problem (for reporting)
-	 * @param g the graph
-	 * @param nodeWCET cost of nodes
+	 * @param key      A unique identifier for the problem (for reporting)
+	 * @param sg       The supergraph to build the ILP for
+	 * @param nodeCosts Cost of nodes (or {@code null} if no cost is associated with nodes)
 	 * @return The max-cost maxflow problem
 	 */
 	public MaxCostFlow<CFGNode,CFGEdge> 
-		buildGlobalILPModel(String key, SuperGraph sg, CostProvider<CFGNode> nodeWCET) {
+		buildGlobalILPModel(String key, SuperGraph sg, CostProvider<CFGNode> nodeCosts) {
 		ControlFlowGraph top = sg.getTopCFG();
 		Vector<FlowConstraint> flowCs = topLevelEntryExitConstraints(top);
 		for(ControlFlowGraph cfg : sg.getControlFlowGraphs()) {
@@ -93,9 +93,18 @@ public class ILPModelBuilder {
 		}
 		MaxCostFlow<CFGNode,CFGEdge> maxflow = 
 			new MaxCostFlow<CFGNode,CFGEdge>(key,sg,sg.getTopEntry(),sg.getTopExit());
-		for(CFGNode n : sg.vertexSet()) {
-			maxflow.setCost(n, nodeWCET.getCost(n));
+		
+		if(nodeCosts == null) {
+			nodeCosts = new CostProvider<CFGNode>() {
+				public long getCost(CFGNode obj) {
+					return 0;
+				}			
+			};
 		}
+		for(CFGNode n : sg.vertexSet()) {
+			maxflow.setCost(n, nodeCosts.getCost(n));
+		}
+
 		for(FlowConstraint c : flowCs) maxflow.addFlowConstraint(c);
 		maxflow.setDumpILP(ipetConfig.dumpIlp);
 		return maxflow;
