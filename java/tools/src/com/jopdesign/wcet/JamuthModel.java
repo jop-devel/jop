@@ -12,6 +12,7 @@ import com.jopdesign.build.MethodInfo;
 import com.jopdesign.timing.jamuth.JamuthInstructionInfo;
 import com.jopdesign.timing.jamuth.JamuthTimingTable;
 import com.jopdesign.tools.JopInstr;
+import com.jopdesign.wcet.analysis.ExecutionContext;
 import com.jopdesign.wcet.frontend.BasicBlock;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.WcetAppInfo;
@@ -26,7 +27,7 @@ public class JamuthModel implements ProcessorModel {
 		tt = new JamuthTimingTable();
 		NO_METHOD_CACHE = new NoMethodCache(p);
 	}
-	public long basicBlockWCET(BasicBlock codeBlock) {
+	public long basicBlockWCET(ExecutionContext ctx, BasicBlock codeBlock) {
 		ArrayList<JamuthInstructionInfo> instructions =
 			new ArrayList<JamuthInstructionInfo>();
 		for(InstructionHandle ih : codeBlock.getInstructions()) {
@@ -34,13 +35,13 @@ public class JamuthModel implements ProcessorModel {
 		}
 		return tt.getCycles(instructions);
 	}
-	
+
 	private JamuthInstructionInfo getInstructionInfo(InstructionHandle ih)
 	{
 		int alignment = getAlignmentOfTarget(ih);
 		return new JamuthInstructionInfo(ih.getInstruction().getOpcode(),alignment);
 	}
-	
+
 	// <su> It is sufficient to know the instruction address within a method.
 	// <su> The start of a method is linked to 64-bit boundaries
 	private int getAlignmentOfTarget(InstructionHandle ih)
@@ -53,7 +54,7 @@ public class JamuthModel implements ProcessorModel {
 		}
 	}
 
-	public int getExecutionTime(MethodInfo ctx, InstructionHandle instr) {
+	public int getExecutionTime(ExecutionContext ctx, InstructionHandle instr) {
 		return (int) tt.getCycles(getInstructionInfo(instr));
 	}
 
@@ -97,7 +98,7 @@ public class JamuthModel implements ProcessorModel {
 		return false;
 	}
 
-	public boolean isImplementedInJava(Instruction i) {		
+	public boolean isImplementedInJava(Instruction i) {
 		return false;
 	}
 

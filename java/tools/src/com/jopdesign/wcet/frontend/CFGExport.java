@@ -8,6 +8,7 @@ import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.ReturnInstruction;
 import org.jgrapht.DirectedGraph;
 
+import com.jopdesign.wcet.analysis.ExecutionContext;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
@@ -27,7 +28,7 @@ import com.jopdesign.wcet.graphutils.LoopColoring.IterationBranchLabel;
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  */
 public class CFGExport {
-	public class FGCustomNodeLabeller extends   MapLabeller<CFGNode> 
+	public class FGCustomNodeLabeller extends   MapLabeller<CFGNode>
 								 	 implements DOTNodeLabeller<CFGNode> {
 		public FGCustomNodeLabeller(Map<CFGNode, ?> nodeAnnotations) {
 			super(nodeAnnotations);
@@ -37,11 +38,11 @@ public class CFGExport {
 				return "[" +object.getName() + "] "+ annots.get(object);
 			} else {
 				return super.getLabel(object);
-			}			
+			}
 		}
 		public int getID(CFGNode node) { return node.getId(); }
 	}
-	public class FGEdgeLabeller extends DefaultDOTLabeller<CFGEdge> {		
+	public class FGEdgeLabeller extends DefaultDOTLabeller<CFGEdge> {
 		public boolean setAttributes(CFGEdge edge, Map<String,String> ht) {
 			super.setAttributes(edge,ht);
 			if(flowGraph.getLoopColoring().isBackEdge(edge)) ht.put("arrowhead", "empty");
@@ -55,7 +56,7 @@ public class CFGExport {
 			case ENTRY_EDGE : lab.append("entry");break;
 			default: break;
 			}
-			IterationBranchLabel<CFGNode> branchLabels = 
+			IterationBranchLabel<CFGNode> branchLabels =
 				flowGraph.getLoopColoring().getIterationBranchEdges().get(edge);
 			if(branchLabels != null && ! branchLabels.isEmpty()) {
 				lab.append("{");boolean mark=false;
@@ -109,7 +110,9 @@ public class CFGExport {
 			}
 			nodeInfo.append(infoHeader);
 			nodeInfo.append("{"+codeBlock.getNumberOfBytes()+" By, ");
-			nodeInfo.append(n.getBasicBlock().getAppInfo().getProcessorModel().basicBlockWCET(codeBlock)+" Cyc");
+			nodeInfo.append(n.getBasicBlock().getAppInfo().getProcessorModel().basicBlockWCET(
+					new ExecutionContext(codeBlock.getMethodInfo()),
+					codeBlock)+" Cyc");
 			if(loops.getHeadOfLoops().contains(n)) {
 				nodeInfo.append(", LOOP "+n.getId()+"/"+flowGraph.getLoopBounds().get(n));
 			}
@@ -123,7 +126,7 @@ public class CFGExport {
 					ht.put("peripheries",""+(1+flowGraph.getLoopColoring().getLoopColors().get(n).size()));
 				}
 			}
-		}		
+		}
 	}
 
 	private ControlFlowGraph flowGraph;
@@ -146,7 +149,7 @@ public class CFGExport {
 	public void exportDOT(Writer writer, DirectedGraph<CFGNode, CFGEdge> graph) throws IOException {
 		if(nl == null) nl = new FGNodeLabeller();
 		if(el == null) el = new FGEdgeLabeller();
-		AdvancedDOTExporter<CFGNode,CFGEdge> dotExport = 
+		AdvancedDOTExporter<CFGNode,CFGEdge> dotExport =
 			new AdvancedDOTExporter<CFGNode,CFGEdge>(nl,el);
 		dotExport.exportDOT(writer, flowGraph.getGraph());
 	}

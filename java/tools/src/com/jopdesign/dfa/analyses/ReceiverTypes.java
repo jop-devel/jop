@@ -31,6 +31,8 @@ import org.apache.bcel.Constants;
 import org.apache.bcel.generic.ANEWARRAY;
 import org.apache.bcel.generic.GETFIELD;
 import org.apache.bcel.generic.GETSTATIC;
+import org.apache.bcel.generic.INVOKEINTERFACE;
+import org.apache.bcel.generic.INVOKEVIRTUAL;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
@@ -46,6 +48,8 @@ import org.apache.bcel.generic.ReferenceType;
 import org.apache.bcel.generic.StoreInstruction;
 import org.apache.bcel.generic.Type;
 
+import com.jopdesign.build.ClassInfo;
+import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.framework.Analysis;
 import com.jopdesign.dfa.framework.Context;
 import com.jopdesign.dfa.framework.ContextMap;
@@ -112,7 +116,8 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		return init;
 	}
 
-	public void initialize(String sig, Context context) {
+	public void initialize(MethodInfo mi, Context context) {
+		String sig = mi.getFQMethodName();
 		threads.put(sig, new ContextMap<TypeMapping, TypeMapping>(context, new HashMap<TypeMapping, TypeMapping>()));
 	}
 
@@ -164,18 +169,18 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		
 		Instruction instruction = stmt.getInstruction();
 		
-//		System.out.println(context.method+": "+stmt);
-//		System.out.print(stmt.getInstruction()+":\t{ ");
-//		for (Iterator k = input.keySet().iterator(); k.hasNext(); ) {
-//			ReceiverTypes.TypeMapping m = (ReceiverTypes.TypeMapping) k.next();
-//			if (m.stackLoc >= 0) {
-//				System.out.print("<stack[" + m.stackLoc + "], " + m.type +">, ");
-//			} else {
-//				System.out.print("<" + m.heapLoc + ", " + m.type +">, ");						
-//			}
-//		}
-//		System.out.println("}");
-
+// 		System.out.println(context.method+": "+stmt);
+// 		System.out.print(stmt.getInstruction()+":\t{ ");
+// 		for (Iterator k = input.keySet().iterator(); k.hasNext(); ) {
+// 			ReceiverTypes.TypeMapping m = (ReceiverTypes.TypeMapping) k.next();
+// 			if (m.stackLoc >= 0) {
+// 				System.out.print("<stack[" + m.stackLoc + "], " + m.type +">, ");
+// 			} else {
+// 				System.out.print("<" + m.heapLoc + ", " + m.type +">, ");						
+// 			}
+// 		}
+// 		System.out.println("}");
+		
 		switch (instruction.getOpcode()) {
 		
 		case Constants.NOP:
@@ -909,19 +914,40 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			
 			InvokeInstruction instr = (InvokeInstruction)instruction;
 			int argSize = MethodHelper.getArgSize(instr, context.constPool);
+
+			DFAAppInfo p = interpreter.getProgram();
+			String constClassName = instr.getClassName(context.constPool);
+			ClassInfo constClass = p.cliMap.get(constClassName);
 			
 			// find possible revceiver types
 			List<String> receivers = new LinkedList<String>();
 			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc == context.stackPtr-argSize) {
-					receivers.add(m.type.split("@")[0]);
+					String clName = m.type.split("@")[0];
+					
+					// check whether this class can possibly be a receiver
+					ClassInfo dynamicClass = (ClassInfo)p.cliMap.get(clName);
+
+					try {
+						if ((instr instanceof INVOKEVIRTUAL
+								&& dynamicClass.clazz.instanceOf(constClass.clazz))
+								|| (instr instanceof INVOKEINTERFACE
+										&& dynamicClass.clazz.implementationOf(constClass.clazz))) {
+							receivers.add(clName);
+						} else {
+							System.out.println(context.method+": class "+constClassName+" is not a superclass of "+clName);
+						}
+					} catch (ClassNotFoundException exc) {
+						System.err.println("class not found: "+exc.getMessage());
+					}
 				}
 			}
-
+			
 			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 				// find receiving method
 				String receiver = i.next();
+				
 				String signature = instr.getMethodName(context.constPool)+instr.getSignature(context.constPool);
 				String methodName = receiver+"."+signature;
 				
@@ -1075,9 +1101,20 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			}
 			if (m.stackLoc == varPtr) {
 				// add "this"
-				if (receiver.equals(m.type.split("@")[0])) {
+				ClassInfo staticClass = (ClassInfo)p.cliMap.get(receiver);
+				ClassInfo dynamicClass = (ClassInfo)p.cliMap.get(m.type.split("@")[0]);
+				try {
+					if (dynamicClass.clazz.instanceOf(staticClass.clazz)) {
+						tmpresult.add(new TypeMapping(0, m.type));					
+					}
+				} catch (ClassNotFoundException exc) {
+					// just do it
 					tmpresult.add(new TypeMapping(0, m.type));
 				}
+				
+//				if (receiver.equals(m.type.split("@")[0])) {
+//					tmpresult.add(new TypeMapping(0, m.type));					
+//				}
 			}
 		}
 

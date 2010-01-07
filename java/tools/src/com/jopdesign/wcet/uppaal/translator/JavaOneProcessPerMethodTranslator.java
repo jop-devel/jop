@@ -5,6 +5,8 @@ import java.util.Map;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.analysis.LocalAnalysis;
+import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
@@ -26,7 +28,7 @@ import com.jopdesign.wcet.uppaal.model.Transition;
 public class JavaOneProcessPerMethodTranslator extends JavaTranslator {
 	public class InvokeViaSyncBuilder extends InvokeBuilder {
 
-		public InvokeViaSyncBuilder(JavaTranslator mt, 
+		public InvokeViaSyncBuilder(JavaTranslator mt,
 				                    TemplateBuilder tBuilder) {
 			super(mt,tBuilder, mt.cacheSim);
 		}
@@ -37,7 +39,7 @@ public class JavaOneProcessPerMethodTranslator extends JavaTranslator {
 		 *   - A invokeMissNode (for waiting the miss of the invoked method)
 		 *     with (bb -> invokeMissNode, invokeMissNode -> wait)
 		 *     and  (access (-> bb), guard (bb -> invokeMissNode), guard (bb -> invokeNode))
-		 *   - A returnAccessNode, a returnMissNode and a exitInvokeNode 
+		 *   - A returnAccessNode, a returnMissNode and a exitInvokeNode
 		 *     (for waiting the miss of the returned method)
 		 * (non-Javadoc)
 		 * @see com.jopdesign.wcet.uppaal.translator.InvokeBuilder#translateInvoke(com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode)
@@ -46,12 +48,12 @@ public class JavaOneProcessPerMethodTranslator extends JavaTranslator {
 		public SubAutomaton translateInvoke(MethodBuilder mBuilder, InvokeNode n, long staticWCET) {
 			/* location for executing the code */
 			SubAutomaton basicBlock = mBuilder.createBasicBlock(n.getId(),staticWCET);
-			Location startInvoke = basicBlock.getEntry(), finishInvoke;		
+			Location startInvoke = basicBlock.getEntry(), finishInvoke;
 			Location basicBlockNode = basicBlock.getExit();
 			/* location for waiting */
 			Location waitInvokeNode = tBuilder.createLocation("INVOKE_WAIT_"+n.getId());
 			simulateMethodInvocation(waitInvokeNode, n);
-			/* If dynamic cache sim */		
+			/* If dynamic cache sim */
 			if(javaTranslator.getCacheSim().isDynamic()) {
 				Location invokeMissNode   = tBuilder.createLocation("INVOKE_MISS_"+n.getId());
 				Transition toInvokeHit    = tBuilder.createTransition(basicBlockNode, waitInvokeNode);
@@ -85,9 +87,10 @@ public class JavaOneProcessPerMethodTranslator extends JavaTranslator {
 		}
 		public void simulateMethodInvocation(Location waitInvokeLoc, InvokeNode n) {
 			if(n.receiverFlowGraph().isLeafMethod() && config.collapseLeaves) {
-				RecursiveAnalysis<StaticCacheApproximation> ilpAn = 
-					new RecursiveAnalysis<StaticCacheApproximation>(project,new RecursiveAnalysis.LocalIPETStrategy());
-				WcetCost wcet = ilpAn.computeWCET(n.getImplementedMethod(), StaticCacheApproximation.ALWAYS_HIT);
+				RecursiveAnalysis<AnalysisContextLocal> ilpAn =
+					new RecursiveAnalysis<AnalysisContextLocal>(project,new LocalAnalysis());
+				WcetCost wcet = ilpAn.computeWCET(n.getImplementedMethod(),
+						new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_HIT));
 				tBuilder.waitAtLocation(waitInvokeLoc, wcet.getCost());
 			} else {
 				int mid = javaTranslator.getMethodID(n.getImplementedMethod());
@@ -95,7 +98,7 @@ public class JavaOneProcessPerMethodTranslator extends JavaTranslator {
 					.setSync(SystemBuilder.methodChannel(mid)+"!");
 				tBuilder.getOutgoingAttrs(waitInvokeLoc)
 					.setSync(SystemBuilder.methodChannel(mid)+"?");
-			}		
+			}
 		}
 
 	}
@@ -119,7 +122,7 @@ public class JavaOneProcessPerMethodTranslator extends JavaTranslator {
 								   bbClock);
 			recordLoops(mi,tBuilder);
 			processes.put(mi,tBuilder);
-			translateMethod(tBuilder, tBuilder.getTemplateAutomaton(), pid, mi, 
+			translateMethod(tBuilder, tBuilder.getTemplateAutomaton(), pid, mi,
 							new InvokeViaSyncBuilder(this,tBuilder));
 			if(mi.equals(root)) {
 				tBuilder.getInitial().setCommited();

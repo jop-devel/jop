@@ -20,10 +20,7 @@
 
 package com.jopdesign.dfa.framework;
 
-import java.util.LinkedList;
-
 import org.apache.bcel.generic.ConstantPoolGen;
-
 
 public class Context {
 
@@ -32,7 +29,7 @@ public class Context {
 	public boolean threaded;
 	public ConstantPoolGen constPool;
 	public String method;
-	public LinkedList<HashedString> callString;	
+	public CallString callString;	
 	
 	public Context() {
 		stackPtr = -1;
@@ -40,7 +37,7 @@ public class Context {
 		threaded = _threaded;
 		constPool = new ConstantPoolGen();
 		method = null;
-		callString = new LinkedList<HashedString>();
+		callString = new CallString();
 	}
 
 	public Context(Context c) {

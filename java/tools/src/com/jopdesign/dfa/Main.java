@@ -24,23 +24,33 @@ import java.io.IOException;
 
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.ReceiverTypes;
+import com.jopdesign.dfa.analyses.SymbolicPointsTo;
 import com.jopdesign.dfa.framework.DFAClassInfo;
 import com.jopdesign.dfa.framework.DFAAppInfo;
 
 public class Main {
-	
+
+//  wcet.StartLift
+	private static final String POINTS_TO_TARGET = "jbe.lift.LiftControl.loop(Ljbe/lift/TalIo;)V";
+//	private static final String POINTS_TO_TARGET = "jbe.lift.LiftControl.waitForMotorStart(Ljbe/lift/TalIo;)V";
+//	wcet.devel.ObjectCache
+//	private static final String POINTS_TO_TARGET = "wcet.devel.ObjectCache.test1()I";
+//	private static final String POINTS_TO_TARGET = "wcet.devel.ObjectCache.test2()I";
+//	private static final String POINTS_TO_TARGET = 
+//		"wcet.devel.ObjectCache$Obj1.test2(Lwcet/devel/ObjectCache$Obj1;Lwcet/devel/ObjectCache$Obj2;)I";
+
 	public static void main(String[] args) {
 		
 		DFAAppInfo program = new DFAAppInfo(new DFAClassInfo());
 		
 		// basic initializations
 		program.parseOptions(args);
-		
 		// load the program, ready to be analyzed
 		try {
 			program.load();
 		} catch (Exception exc) {
 			exc.printStackTrace();
+			System.exit(1);
 		}
 
 		System.out.println("Starting analysis...");
@@ -65,9 +75,14 @@ public class Main {
 		long lbTime = System.currentTimeMillis();
 		
 		lb.printResult(program);				
-
+		lb.printSizeResult(program);
+		
 		System.out.println("Time for LoopBounds: "+(lbTime - startLbTime));
 
+		// run SymbolicPointsTo Analysis (local)
+		SymbolicPointsTo pointsTo = new SymbolicPointsTo(8);
+		program.runLocalAnalysis(pointsTo, POINTS_TO_TARGET);
+		pointsTo.printResult(program);
 	}
 
 }

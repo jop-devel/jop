@@ -34,6 +34,7 @@ import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.ReferenceType;
 
+import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.framework.Analysis;
 import com.jopdesign.dfa.framework.Context;
 import com.jopdesign.dfa.framework.ContextMap;
@@ -148,8 +149,8 @@ public class MethodCache implements	Analysis<List<HashedString>, MethodCache.Cac
 
 	private String signature;
 
-	public void initialize(String sig, Context context) {
-		signature = sig;
+	public void initialize(MethodInfo mi, Context context) {
+		signature = mi.getFQMethodName();
 	}
 
 	public boolean compare(ContextMap<List<HashedString>, CacheMapping> s1,

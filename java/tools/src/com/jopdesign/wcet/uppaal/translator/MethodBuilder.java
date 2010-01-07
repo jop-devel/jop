@@ -25,6 +25,9 @@ import java.util.Set;
 import java.util.Map.Entry;
 
 import com.jopdesign.wcet.ProcessorModel;
+import com.jopdesign.wcet.analysis.ExecutionContext;
+import com.jopdesign.wcet.analysis.LocalAnalysis;
+import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
@@ -44,11 +47,11 @@ import com.jopdesign.wcet.uppaal.model.Transition;
 import com.jopdesign.wcet.uppaal.model.TransitionAttributes;
 /**
  * Build UppAal templates for a Java method.
- * We map the CFG's nodes and edges to 
+ * We map the CFG's nodes and edges to
  * {@link Location}s and {@link Transition}s.
  * Nodes are mapped to subgraphs (with unique start and end node),
  * i.e. instances of <code>FlowGraph<Location,Transition></code>
- * 
+ *
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  *
  */
@@ -84,7 +87,7 @@ public class MethodBuilder implements CfgVisitor {
 			buildEdge(edge);
 		}
 	}
-	
+
 	public void visitSpecialNode(DedicatedNode n) {
 		SubAutomaton localTranslation = null;
 		switch(n.getKind()) {
@@ -94,37 +97,41 @@ public class MethodBuilder implements CfgVisitor {
 		case JOIN:  localTranslation = createSpecialCommited("JOIN_"+n.getId(), n);break;
 		}
 		this.nodeTemplates.put(n,localTranslation);
-	}	
+	}
 	private SubAutomaton createSpecialCommited(String name, DedicatedNode n) {
 		Location split = tBuilder.createLocation(name+"_"+this.mId+"_"+n.getId());
 		split.setCommited();
 		return SubAutomaton.singleton(split);
 	}
-	
+
 	public void visitBasicBlockNode(BasicBlockNode n) {
-		SubAutomaton bbLoc = 
-			createBasicBlock(n.getId(),jTrans.getProject().getProcessorModel().basicBlockWCET(n.getBasicBlock()));
+		ExecutionContext ctx = new ExecutionContext(n.getBasicBlock().getMethodInfo());
+		SubAutomaton bbLoc =
+			createBasicBlock(n.getId(),jTrans.getProject().getProcessorModel().basicBlockWCET(ctx,n.getBasicBlock()));
 		this.nodeTemplates.put(n,bbLoc);
 	}
-	
+
 	public void visitInvokeNode(InvokeNode n) {
+		ExecutionContext ctx = new ExecutionContext(n.getBasicBlock().getMethodInfo());
 		ProcessorModel proc = jTrans.getProject().getProcessorModel();
 		SubAutomaton invokeAuto;
-		long staticWCET = proc.basicBlockWCET(n.getBasicBlock());
+		long staticWCET = proc.basicBlockWCET(ctx, n.getBasicBlock());
 		if(jTrans.getCacheSim().isAlwaysMiss()) {
 			staticWCET+=proc.getInvokeReturnMissCost(n.invokerFlowGraph(),n.receiverFlowGraph());
 		}
 		invokeAuto = invokeBuilder.translateInvoke(this,n,staticWCET);
-		this.nodeTemplates.put(n,invokeAuto);		
+		this.nodeTemplates.put(n,invokeAuto);
 	}
-	
+
 	public void visitSummaryNode(SummaryNode n) {
-		RecursiveAnalysis<StaticCacheApproximation> an = 
-			new RecursiveAnalysis<StaticCacheApproximation>(
+		RecursiveAnalysis<AnalysisContextLocal> an =
+			new RecursiveAnalysis<AnalysisContextLocal>(
 					jTrans.getProject(),
-					new RecursiveAnalysis.LocalIPETStrategy());
-		WcetCost cost = an.runWCETComputation("SUBGRAPH"+n.getId(), n.getSubGraph(), StaticCacheApproximation.ALWAYS_MISS)
-				          .getTotalCost();
+					new LocalAnalysis());
+		WcetCost cost = an.runWCETComputation("SUBGRAPH"+n.getId(),
+				n.getSubGraph(),
+				new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_MISS)
+		).getTotalCost();
 		SubAutomaton sumLoc = createBasicBlock(n.getId(),cost.getCost());
 		this.nodeTemplates.put(n,sumLoc);
 	}
@@ -132,7 +139,7 @@ public class MethodBuilder implements CfgVisitor {
 		FlowGraph<CFGNode, CFGEdge> graph = cfg.getGraph();
 		Set<CFGNode> hols = cfg.getLoopColoring().getHeadOfLoops();
 		Set<CFGEdge> backEdges = cfg.getLoopColoring().getBackEdges();
-		Map<CFGEdge, IterationBranchLabel<CFGNode>> edgeColoring = 
+		Map<CFGEdge, IterationBranchLabel<CFGNode>> edgeColoring =
 			cfg.getLoopColoring().getIterationBranchEdges();
 		CFGNode src = graph.getEdgeSource(edge);
 		CFGNode target = graph.getEdgeTarget(edge);
@@ -169,11 +176,11 @@ public class MethodBuilder implements CfgVisitor {
 			attrs.appendUpdate(tBuilder.resetLoopCounter(target));
 		}
 	}
-	
+
 	SubAutomaton createBasicBlock(int nID, long blockWCET) {
 		Location bbNode = tBuilder.createLocation("N"+this.mId+"_"+nID);
 		tBuilder.waitAtLocation(bbNode,blockWCET);
-		return SubAutomaton.singleton(bbNode);		
+		return SubAutomaton.singleton(bbNode);
 	}
 
 	public int getId() {

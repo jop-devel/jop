@@ -22,23 +22,34 @@ import com.jopdesign.wcet.graphutils.ProgressMeasure.RelativeProgress;
 
 /** While implementing progress measure, I found that they can be used for tree based
  *  WCET analysis. Why not ?
- *  This can be implemented in almost linear (graph size) time, 
- *  but our suboptimal implementation depends the depth of the loop nest tree. 
+ *  This can be implemented in almost linear (graph size) time,
+ *  but our suboptimal implementation depends the depth of the loop nest tree.
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  */
 public class TreeAnalysis {
 	private class LocalCostVisitor extends WcetVisitor {
-		public LocalCostVisitor(Project p) { super(p); }
+		private AnalysisContext ctx;
+
+		public LocalCostVisitor(AnalysisContext c, Project p) {
+			super(p);
+			ctx = c;
+		}
 
 		@Override
 		public void visitInvokeNode(InvokeNode n) {
 			visitBasicBlockNode(n);
 			cost.addCacheCost(project.getProcessorModel().getInvokeReturnMissCost(
-					n.invokerFlowGraph(), 
+					n.invokerFlowGraph(),
 					n.receiverFlowGraph()));
 			cost.addNonLocalCost(methodWCET.get(n.getImplementedMethod()));
-		}		
+		}
+
+		@Override
+		public void visitBasicBlockNode(BasicBlockNode n) {
+			cost.addLocalCost(project.getProcessorModel().basicBlockWCET(ctx.getExecutionContext(n), n.getBasicBlock()));
+		}
 	}
+
 	private class ProgressVisitor implements CfgVisitor {
 		private Map<MethodInfo, Long> subProgress;
 
@@ -55,7 +66,7 @@ public class TreeAnalysis {
 		}
 
 		public void visitSpecialNode(DedicatedNode n) {
-			progress = 1;			
+			progress = 1;
 		}
 
 		public void visitSummaryNode(SummaryNode n) {
@@ -72,13 +83,13 @@ public class TreeAnalysis {
 		= new HashMap<MethodInfo, Map<CFGEdge,RelativeProgress<CFGNode>>>();
 	private HashMap<MethodInfo, Long> maxProgress = new HashMap<MethodInfo,Long>();
 	private boolean  filterLeafMethods;
-	
+
 	public TreeAnalysis(Project p, boolean filterLeafMethods) {
 		this.project = p;
 		this.filterLeafMethods = filterLeafMethods;
 		computeProgress(p.getTargetMethod());
 	}
-	
+
 	/* FIXME: filter leaf methods is really a ugly hack,
 	 * but needs some work to play nice with uppaal eliminate-leaf-methods optimizations
 	 */
@@ -90,9 +101,9 @@ public class TreeAnalysis {
 			Map<CFGNode, Long> localProgress = new HashMap<CFGNode,Long>();
 			ProgressVisitor progressVisitor = new ProgressVisitor(maxProgress);
 			for(CFGNode n : cfg.getGraph().vertexSet()) {
-				localProgress.put(n, progressVisitor.getProgress(n)); 
+				localProgress.put(n, progressVisitor.getProgress(n));
 			}
-			ProgressMeasure<CFGNode, CFGEdge> pm = 
+			ProgressMeasure<CFGNode, CFGEdge> pm =
 				new ProgressMeasure<CFGNode, CFGEdge>(cfg.getGraph(),cfg.getLoopColoring(),
 													  extractUBs(cfg.getLoopBounds()) ,localProgress);
 			long progress = pm.getMaxProgress().get(cfg.getExit());
@@ -115,8 +126,8 @@ public class TreeAnalysis {
 
 	private Map<CFGNode, Integer> extractUBs(Map<CFGNode, LoopBound> loopBounds) {
 		Map<CFGNode, Integer> ubMap = new HashMap<CFGNode, Integer>();
-		for(Entry<CFGNode, LoopBound> entry : loopBounds.entrySet()) { 
-			ubMap.put(entry.getKey(),entry.getValue().getUpperBound()); 
+		for(Entry<CFGNode, LoopBound> entry : loopBounds.entrySet()) {
+			ubMap.put(entry.getKey(),entry.getValue().getUpperBound());
 		}
 		return ubMap;
 	}
@@ -127,11 +138,11 @@ public class TreeAnalysis {
 		for(MethodInfo mi: reachable) {
 			ControlFlowGraph cfg = project.getFlowGraph(mi);
 			Map<CFGNode, Long> localCost = new HashMap<CFGNode,Long>();
-			LocalCostVisitor lcv = new LocalCostVisitor(project);
+			LocalCostVisitor lcv = new LocalCostVisitor(new AnalysisContext(), project);
 			for(CFGNode n : cfg.getGraph().vertexSet()) {
-				localCost.put(n, lcv.computeCost(n).getCost()); 
+				localCost.put(n, lcv.computeCost(n).getCost());
 			}
-			ProgressMeasure<CFGNode, CFGEdge> pm = 
+			ProgressMeasure<CFGNode, CFGEdge> pm =
 				new ProgressMeasure<CFGNode, CFGEdge>(cfg.getGraph(),cfg.getLoopColoring(),
 													  extractUBs(cfg.getLoopBounds()) ,localCost);
 			long wcet = pm.getMaxProgress().get(cfg.getExit());

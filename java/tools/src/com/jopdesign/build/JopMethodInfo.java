@@ -67,7 +67,8 @@ public class JopMethodInfo extends MethodInfo implements Serializable {
 	}
 
 	/**
-	 * @param m
+	 * Extract linking information for this method
+	 * @param addr the bytecode start address
 	 */
 	public void setInfo(int addr) {
 		codeAddress = addr;
