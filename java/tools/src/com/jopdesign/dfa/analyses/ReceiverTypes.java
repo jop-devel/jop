@@ -169,19 +169,17 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		
 		Instruction instruction = stmt.getInstruction();
 		
-//		if (context.method.startsWith("ttpa.Node.")) {
-//			System.out.println(context.method+": "+stmt);
-//			System.out.print(stmt.getInstruction()+":\t{ ");
-//			for (Iterator k = input.keySet().iterator(); k.hasNext(); ) {
-//				ReceiverTypes.TypeMapping m = (ReceiverTypes.TypeMapping) k.next();
-//				if (m.stackLoc >= 0) {
-//					System.out.print("<stack[" + m.stackLoc + "], " + m.type +">, ");
-//				} else {
-//					System.out.print("<" + m.heapLoc + ", " + m.type +">, ");						
-//				}
-//			}
-//			System.out.println("}");
-//		}
+// 		System.out.println(context.method+": "+stmt);
+// 		System.out.print(stmt.getInstruction()+":\t{ ");
+// 		for (Iterator k = input.keySet().iterator(); k.hasNext(); ) {
+// 			ReceiverTypes.TypeMapping m = (ReceiverTypes.TypeMapping) k.next();
+// 			if (m.stackLoc >= 0) {
+// 				System.out.print("<stack[" + m.stackLoc + "], " + m.type +">, ");
+// 			} else {
+// 				System.out.print("<" + m.heapLoc + ", " + m.type +">, ");						
+// 			}
+// 		}
+// 		System.out.println("}");
 		
 		switch (instruction.getOpcode()) {
 		
