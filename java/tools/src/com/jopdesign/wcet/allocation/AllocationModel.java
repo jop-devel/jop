@@ -46,6 +46,10 @@ public class AllocationModel implements ProcessorModel {
 		project = p;
 		NO_METHOD_CACHE = new NoMethodCache(p);
 	}
+	
+	public String getName() {
+		return "allocation";
+	}
 
 	public long basicBlockWCET(ExecutionContext ctx, BasicBlock bb) {
 		int size = 0;
