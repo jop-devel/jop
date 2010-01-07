@@ -37,7 +37,7 @@ import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap> {
 
 	private static final int CALLSTRING_LENGTH = 0;
-	private static final boolean DEBUG_PRINT = true;
+	private static final boolean DEBUG_PRINT = false;
 	private BoundedSetFactory<SymbolicAddress> bsFactory;
 	private MethodInfo entryMethod;
 	private HashMap<InstructionHandle, ContextMap<CallString, BoundedSet<SymbolicAddress>>> usedRefs =
