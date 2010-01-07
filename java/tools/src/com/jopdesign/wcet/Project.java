@@ -352,6 +352,9 @@ public class Project {
 	}
 
 	public com.jopdesign.dfa.framework.DFAAppInfo getDfaProgram() {
+		if(! (this.wcetAppInfo.getAppInfo() instanceof com.jopdesign.dfa.framework.DFAAppInfo)) {
+			throw new AssertionError("getDfaProgram(): DFA not enabled");
+		}
 		return (com.jopdesign.dfa.framework.DFAAppInfo) this.wcetAppInfo.getAppInfo();
 	}
 
