@@ -20,6 +20,7 @@
 package com.jopdesign.wcet.frontend;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -223,12 +224,13 @@ public class WcetAppInfo  {
 		staticImpls = dfaReceivers(ih, staticImpls);
 		return staticImpls;
 	}
-	// TODO: rather slow, for debugging purposes
+
+	// TODO: [wcet-app-info] dfaReceivers() is rather slow, for debugging purposes
 	private List<MethodInfo> dfaReceivers(InstructionHandle ih, List<MethodInfo> staticImpls) {
 		if(this.receiverAnalysis != null && receiverAnalysis.containsKey(ih)) {
 			ContextMap<String, String> receivers = receiverAnalysis.get(ih);
 			List<MethodInfo> dynImpls = new Vector<MethodInfo>();
-			Set<String> dynReceivers = receivers.keySet();
+			Set<String> dynReceivers = new HashSet<String>(receivers.keySet());
 			for(MethodInfo impl : staticImpls) {
 				if(dynReceivers.contains(impl.getFQMethodName())) {
 					dynReceivers.remove(impl.getFQMethodName());

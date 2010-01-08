@@ -87,7 +87,7 @@ public class ObjectRefAnalysis {
 			project.getCallGraph().topDownIterator();
 
 		while(iter.hasNext()) {
-			try{
+
 			CallGraphNode scope = iter.next();
 			System.out.println("Running SPT analysis for: "+scope.getMethodImpl().getFQMethodName());
 			/* Perform a local symbolic points to analysis */
@@ -166,9 +166,6 @@ public class ObjectRefAnalysis {
 			}
 			long accessedReferences = (long) (lpCost+0.5);
 			this.usedReferences.put(scope, accessedReferences);
-			} catch(NullPointerException nullex) {
-				nullex.printStackTrace();				
-			}
 		}
 	}
 	
