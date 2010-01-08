@@ -177,18 +177,29 @@ public class SymbolicAddressMap {
 		Location stackLoc = new Location(index);
 		BoundedSet<SymbolicAddress> val = map.get(stackLoc);
 		if(val == null) {
-			Logger.getLogger(this.getClass()).error("Undefined Stack Location: "+val);
+			Logger.getLogger(this.getClass()).error("Undefined Stack Location: "+stackLoc);
 			throw new AssertionError("Undefined stacklock");
 		}
 		return val;
 	}
-	
-	public int getMaxStackIndex() {
-		return maxStackIndex;
+
+	public void copyStack(SymbolicAddressMap in, int dst, int src) {
+		if(in.isTop()) return;
+		if(this.isTop()) return;
+		Location srcLoc = new Location(src);
+		BoundedSet<SymbolicAddress> val = in.map.get(srcLoc);
+		if(val == null) return;
+		putStack(dst, val);
+	}
+
+	public void putStack(int index, BoundedSet<SymbolicAddress> bs) {
+		this.put(new Location(index), bs);
 	}
 
 	public void put(Location l, BoundedSet<SymbolicAddress> bs) {
-		if(bs == null) return;
+		if(bs == null) {
+			throw new AssertionError("put "+l+": null");
+		}
 		if(this.isTop()) return;
 		if(! l.isHeapLoc() && l.stackLoc > this.maxStackIndex) {
 			this.maxStackIndex = l.stackLoc;
@@ -196,10 +207,10 @@ public class SymbolicAddressMap {
 		this.map.put(l, bs);
 	}
 	
-	public void putStack(int index, BoundedSet<SymbolicAddress> bs) {
-		this.put(new Location(index), bs);
+	public int getMaxStackIndex() {
+		return maxStackIndex;
 	}
-	
+
 	/** Print results
 	 * 
 	 * @param indent Indentation (amount of leading whitespace)

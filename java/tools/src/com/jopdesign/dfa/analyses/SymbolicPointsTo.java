@@ -37,7 +37,7 @@ import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap> {
 
 	private static final int CALLSTRING_LENGTH = 0;
-	private static final boolean DEBUG_PRINT = false;
+	private static final boolean DEBUG_PRINT = System.getenv("SPT_DEBUG") != null;
 	private BoundedSetFactory<SymbolicAddress> bsFactory;
 	private MethodInfo entryMethod;
 	private HashMap<InstructionHandle, ContextMap<CallString, BoundedSet<SymbolicAddress>>> usedRefs =
@@ -231,7 +231,11 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			// copy value to local variable
 			StoreInstruction instr = (StoreInstruction)instruction; 
 			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
-			result.putStack(instr.getIndex(), in.getStack(context.stackPtr-1));
+			if(DEBUG_PRINT) {
+				System.out.println(String.format("[DD] Copy: stack[%d] <- stack[%d]",
+						instr.getIndex(), context.stackPtr-1));
+			}
+			result.copyStack(in, instr.getIndex(), context.stackPtr-1);
 			retval.put(context.callString, result);
 		}
 		break;	
@@ -254,7 +258,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			LoadInstruction instr = (LoadInstruction)instruction; 
 			// copy value from local variable
 			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
-			result.putStack(context.stackPtr, in.getStack(instr.getIndex()));
+			result.copyStack(in, context.stackPtr, instr.getIndex());
 			retval.put(context.callString, result);		
 		}
 		break;	
@@ -353,7 +357,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		// AALOAD objectref, index -> objectref
 		case Constants.AALOAD: {
 			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-2));
-			AALOAD instr = (AALOAD)instruction;
+			//AALOAD instr = (AALOAD)instruction;
 			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
 			BoundedSet<SymbolicAddress> objectMapping = in.getStack(context.stackPtr-2);
 			BoundedSet<SymbolicAddress> newMapping;
@@ -391,16 +395,16 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.DUP: {
 			// copy value on stack
 			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
-			result.putStack(context.stackPtr, in.getStack(context.stackPtr-1));
+			result.copyStack(in, context.stackPtr, context.stackPtr-1);
 			retval.put(context.callString, result);		
 		}
 		break;
 		case Constants.DUP_X1: {
 			// copy value on stack
 			SymbolicAddressMap result = in.cloneFilterStack(context.stackPtr-2);
-			result.putStack(context.stackPtr-2, in.getStack(context.stackPtr-1));
-			result.putStack(context.stackPtr-1, in.getStack(context.stackPtr-2));
-			result.putStack(context.stackPtr, in.getStack(context.stackPtr-1));
+			result.copyStack(in, context.stackPtr-2, context.stackPtr-1);
+			result.copyStack(in, context.stackPtr-1, context.stackPtr-2);
+			result.copyStack(in, context.stackPtr, context.stackPtr-1);
 			retval.put(context.callString, result);		
 		}
 		break;
@@ -408,8 +412,8 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.DUP2: {
 			// v1,v2 -> v1,v2,v1,v2
 			SymbolicAddressMap result = in.cloneFilterStack(context.stackPtr);
-			result.putStack(context.stackPtr, in.getStack(context.stackPtr-2));
-			result.putStack(context.stackPtr+1, in.getStack(context.stackPtr-1));
+			result.copyStack(in, context.stackPtr, context.stackPtr-2);
+			result.copyStack(in, context.stackPtr+1, context.stackPtr-1);
 			retval.put(context.callString, result);		
 		}
 		break;
@@ -554,7 +558,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.ARETURN: {
 			SymbolicAddressMap result = in.cloneFilterStack(0);
 			// store results
-			result.putStack(0, in.getStack(context.stackPtr-1));
+			result.copyStack(in, 0, context.stackPtr-1);
 			retval.put(context.callString, result);
 		}
 		break;
