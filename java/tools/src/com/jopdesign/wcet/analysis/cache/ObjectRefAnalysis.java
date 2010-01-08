@@ -3,6 +3,7 @@ package com.jopdesign.wcet.analysis.cache;
 import static com.jopdesign.wcet.graphutils.MiscUtils.addToSet;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -44,6 +45,7 @@ import com.jopdesign.wcet.ipet.MaxCostFlow.DecisionVariable;
 public class ObjectRefAnalysis {
 	private static final int MAX_SET_SIZE = 32;
 	private Map<CallGraphNode, Long> usedReferences;
+	private Map<CallGraphNode, Set<SymbolicAddress>> usedSymbolicNames;
 	private Project project;
 	private Map<DecisionVariable, SymbolicAddress> decisionVariables =
 		new HashMap<DecisionVariable, SymbolicAddress>();
@@ -80,6 +82,7 @@ public class ObjectRefAnalysis {
 	public void analyzeRefUsage() {
 		/* Prepare return value */
 		usedReferences = new HashMap<CallGraphNode, Long>();
+		usedSymbolicNames = new HashMap<CallGraphNode, Set<SymbolicAddress>>();
 
 		CallString emptyCallString = new CallString();
 		/* Top Down the Scope Graph */
@@ -89,7 +92,6 @@ public class ObjectRefAnalysis {
 		while(iter.hasNext()) {
 
 			CallGraphNode scope = iter.next();
-			System.out.println("Running SPT analysis for: "+scope.getMethodImpl().getFQMethodName());
 			/* Perform a local symbolic points to analysis */
 			DFAAppInfo dfa = project.getDfaProgram();
 			SymbolicPointsTo spt = new SymbolicPointsTo(MAX_SET_SIZE);
@@ -157,14 +159,25 @@ public class ObjectRefAnalysis {
 
 			/* solve */
 			Map<CFGEdge, Long> flowMap = new HashMap<CFGEdge, Long>();
-			Map<DecisionVariable, Boolean> cacheMissMap = new HashMap<DecisionVariable, Boolean>();
+			Map<DecisionVariable, Boolean> refUseMap = new HashMap<DecisionVariable, Boolean>();
 			double lpCost;
 			try {
-				lpCost = maxCostFlow.solve(flowMap,cacheMissMap);
+				lpCost = maxCostFlow.solve(flowMap,refUseMap);
 			} catch (Exception e) {
-				throw new AssertionError("Failed to calculate block number for : "+scope);
+				throw new AssertionError("Failed to calculate references for : "+scope);
 			}
 			long accessedReferences = (long) (lpCost+0.5);
+			
+			/* extract solution */
+			HashSet<SymbolicAddress> usedSet = new HashSet<SymbolicAddress>();
+			for(Entry<DecisionVariable, SymbolicAddress> entry : this.decisionVariables.entrySet()) {
+				DecisionVariable dvar = entry.getKey();
+				if(refUseMap.containsKey(dvar) && refUseMap.get(dvar)) {
+					SymbolicAddress addr = entry.getValue();
+					usedSet.add(addr);
+				}
+			}
+			this.usedSymbolicNames.put(scope, usedSet);
 			this.usedReferences.put(scope, accessedReferences);
 		}
 	}
@@ -206,6 +219,10 @@ public class ObjectRefAnalysis {
 	public Map<CallGraphNode, Long> getRefUsage() {
 		if(usedReferences == null) analyzeRefUsage();
 		return usedReferences;
+	}
+	public Map<CallGraphNode, Set<SymbolicAddress>> getUsedSymbolicNames() {
+		if(usedSymbolicNames == null) analyzeRefUsage();
+		return usedSymbolicNames;		
 	}
 
 }

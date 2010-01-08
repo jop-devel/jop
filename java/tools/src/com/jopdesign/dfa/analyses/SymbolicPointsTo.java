@@ -703,16 +703,25 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		} else if (methodId.equals("com.jopdesign.sys.Native.toObject(I)Ljava/lang/Object;")
 				|| methodId.equals("com.jopdesign.sys.Native.toIntArray(I)[I")) {
 			out = in.cloneFilterStack(context.stackPtr - 1);
+			out.putStack(context.stackPtr - 1, bsFactory.top());
 		} else if (methodId.equals("com.jopdesign.sys.Native.getSP()I")) {
 			out = in.cloneFilterStack(context.stackPtr);
 		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")) {
 			out = in.cloneFilterStack(context.stackPtr - 1);
-		} else if (methodId.equals("com.jopdesign.sys.Native.condMove(IIZ)I")
-				|| methodId.equals("com.jopdesign.sys.Native.condMoveRef(Ljava/lang/Object;Ljava/lang/Object;Z)Ljava/lang/Object;")) {
+		} else if (methodId.equals("com.jopdesign.sys.Native.condMove(IIZ)I")) {
 			out = in.cloneFilterStack(context.stackPtr - 3);
+		} else if(methodId.equals("com.jopdesign.sys.Native.arrayLoad(II)I")) {
+			out = in.cloneFilterStack(context.stackPtr - 2);
+		} else if(methodId.equals("com.jopdesign.sys.Native.arrayStore(III)V")) {
+			out = in.cloneFilterStack(context.stackPtr - 3);			
+		} else if(methodId.equals("com.jopdesign.sys.Native.condMoveRef(Ljava/lang/Object;Ljava/lang/Object;Z)Ljava/lang/Object;")) { 
+			out = in.cloneFilterStack(context.stackPtr - 3);
+			BoundedSet<SymbolicAddress> joined =
+				in.getStack(context.stackPtr-3).join(in.getStack(context.stackPtr-2));
+			out.putStack(context.stackPtr-3, joined);
 		} else {
 			out = null;
-			System.err.println("Unknown native method: "+methodId);
+			System.err.println("SymbolicPointsTo: Unknown native method: "+methodId);
 			System.exit(-1);
 		}
 		

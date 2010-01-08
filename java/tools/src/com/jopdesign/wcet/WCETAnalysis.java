@@ -28,6 +28,7 @@
 package com.jopdesign.wcet;
 
 import java.util.Map;
+import java.util.Set;
 
 import lpsolve.LpSolve;
 import lpsolve.VersionInfo;
@@ -35,6 +36,7 @@ import lpsolve.VersionInfo;
 import org.apache.log4j.Logger;
 
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.dfa.analyses.SymbolicAddress;
 import com.jopdesign.wcet.analysis.AnalysisContextIpet;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
@@ -292,7 +294,7 @@ public class WCETAnalysis {
 		MiscUtils.printMap(System.out, blockUsage, new Function2<CallGraphNode, Long,String>() {
 			public String apply(CallGraphNode v1, Long maxBlocks) {
 		        MethodCache mc = project.getProcessorModel().getMethodCache();
-				return String.format("%40s ==> %2d <= %2d",
+				return String.format("%-50s ==> %2d <= %2d",
 						v1.getMethodImpl().getFQMethodName(),
 						maxBlocks,
 						mc.getAllFitCacheBlocks(v1.getMethodImpl()));
@@ -300,21 +302,28 @@ public class WCETAnalysis {
 		});
 		// Object Cache (total)
 		refUsageTotal_ = new ObjectRefAnalysis(project,true).getRefUsage();
-		// Object Cache
+		// Object Cache (allfit)
+		ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project);
 		LpSolveWrapper.resetSolverTime();
-		Map<CallGraphNode, Long> refUsageDistinct = new ObjectRefAnalysis(project).getRefUsage();
+		orefAnalysis.analyzeRefUsage();
+		refUsageNames_ = orefAnalysis.getUsedSymbolicNames();
+		Map<CallGraphNode, Long> refUsageDistinct = orefAnalysis.getRefUsage();
 		System.err.println("Total solver time (Obj Ref Analysis) : "+LpSolveWrapper.getSolverTime());        
+
 		MiscUtils.printMap(System.out, refUsageDistinct, new Function2<CallGraphNode, Long,String>() {
 			public String apply(CallGraphNode v1, Long usedRefs) {
-				return String.format("%40s ==> %3d <= %3d",
+				return String.format("%-50s ==> %3d <= %3d (%s)",
 						v1.getMethodImpl().getFQMethodName(),
 						usedRefs,
-						refUsageTotal_.get(v1));
+						refUsageTotal_.get(v1),
+						refUsageNames_.get(v1)
+						);
 			}        	
 		});		
 		
 	}
 	private Map<CallGraphNode, Long> refUsageTotal_;
+	private Map<CallGraphNode, Set<SymbolicAddress>> refUsageNames_;
 	
     private void reportMetric(String metric, Object... args) {
         project.recordMetric(metric, args);
