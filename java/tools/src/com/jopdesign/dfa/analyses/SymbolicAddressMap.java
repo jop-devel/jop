@@ -2,13 +2,12 @@ package com.jopdesign.dfa.analyses;
 
 import java.io.PrintStream;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.jopdesign.dfa.analyses.LoopBounds.ValueMapping;
+import org.apache.log4j.Logger;
+
 import com.jopdesign.dfa.framework.BoundedSetFactory;
-import com.jopdesign.dfa.framework.MethodHelper;
 import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 
 
@@ -158,10 +157,7 @@ public class SymbolicAddressMap {
 			setTop();
 			return;
 		}
-//		System.out.println("JOIN RETURNED [returned]");
-//		returned.print(System.out, 2);
-//		System.out.println("JOIN RETURNED [before]");
-//		this.print(System.out, 2);
+
 		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : returned.map.entrySet()) {
 			Location locReturnedFrame = entry.getKey();
 			Location locCallerFrame; 
@@ -174,14 +170,16 @@ public class SymbolicAddressMap {
 			BoundedSet<SymbolicAddress> returnedSet = returned.map.get(locReturnedFrame);
 			put(locCallerFrame, returnedSet.join(callerSet));
 		}		
-//		System.out.println("JOIN RETURNED [after]");
-//		this.print(System.out, 2);
 	}
 	
 	public BoundedSet<SymbolicAddress> getStack(int index) {
 		if(this.isTop()) return bsFactory.top();
 		Location stackLoc = new Location(index);
 		BoundedSet<SymbolicAddress> val = map.get(stackLoc);
+		if(val == null) {
+			Logger.getLogger(this.getClass()).error("Undefined Stack Location: "+val);
+			throw new AssertionError("Undefined stacklock");
+		}
 		return val;
 	}
 	

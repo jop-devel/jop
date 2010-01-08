@@ -141,8 +141,13 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			ContextMap<CallString, SymbolicAddressMap> input,
 			Interpreter<CallString, SymbolicAddressMap> interpreter,
 			Map<InstructionHandle, ContextMap<CallString, SymbolicAddressMap>> state) {
-
+				
 		Context context = new Context(input.getContext());
+		
+		if(DEBUG_PRINT) {
+			System.out.println("[S] "+context.method+" / "+stmt);
+		}
+		
 		SymbolicAddressMap in = input.get(context.callString);
 		ContextMap<CallString, SymbolicAddressMap> retval = new ContextMap<CallString, SymbolicAddressMap>(context, input);
 
@@ -532,12 +537,15 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			DFAAppInfo p = interpreter.getProgram();
 			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
 			retval.put(context.callString, new SymbolicAddressMap(bsFactory));
-			if (receivers == null) {
-				String errMsg = context.method + ": invoke "	+ instruction.toString(context.constPool.getConstantPool()) + " unknown receivers";
+
+			if (receivers == null || receivers.size() == 0) {
+				String errMsg = String.format("%s : invoke %s: %s receivers",
+				  context.method, instruction.toString(context.constPool.getConstantPool()),
+				  (receivers == null ? "Unknown" : "No"));
 				throw new AssertionError(errMsg);
 			}
-			for (Iterator<String> i = receivers.keySet().iterator(); i.hasNext(); ) {
-				String methodName = i.next();
+
+			for (String methodName : receivers.keySet()) {
 				doInvoke(methodName, stmt, context, input, interpreter, state, retval);
 			}
 		}
@@ -572,7 +580,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		
 		// DEBUGGING
 		if(DEBUG_PRINT) {
-			System.out.println("[D] "+context+" / "+stmt);
+			System.out.println("[F] "+context.method+" / "+stmt);
 			System.out.println("  Stackptr: "+context.stackPtr + " -> "+newStackPtr);
 			System.out.println("  Before: ");
 			input.get(context.callString).print(System.out, 4);		
@@ -658,9 +666,14 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			} else {
 				System.err.println("doInvoke(): No exit information ?");				
 			}
-
+			
 			// add relevant information to result
-			ctxInfo.addStackUpto(in, context.stackPtr-MethodHelper.getArgSize(method));
+			ctxInfo.addStackUpto(in, context.stackPtr - MethodHelper.getArgSize(method));
+			if(DEBUG_PRINT) {
+				System.out.println("[I] Invoke: "+mi.methodId);
+				System.out.println(String.format("  StackPtr: %d, framePtr: %d, args: %d",
+						context.stackPtr, varPtr, MethodHelper.getArgSize(method)));
+			}
 		}
 	}
 	

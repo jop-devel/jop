@@ -33,10 +33,12 @@ public class Main {
 //	private static final String POINTS_TO_TARGET = "jbe.lift.LiftControl.waitForMotorStart(Ljbe/lift/TalIo;)V";
 //	wcet.devel.ObjectCache
 //	private static final String POINTS_TO_TARGET = "wcet.devel.ObjectCache.test1()I";
-//	private static final String POINTS_TO_TARGET = "wcet.devel.ObjectCache.test2()I";
+//	private static final String POINTS_TO_TARGET = "wcet.devel.ObjectCache.test5()I";
 //	private static final String POINTS_TO_TARGET = 
 //		"wcet.devel.ObjectCache$Obj1.test2(Lwcet/devel/ObjectCache$Obj1;Lwcet/devel/ObjectCache$Obj2;)I";
-
+//  wcet.StartEjipCmp
+//	private static final String POINTS_TO_TARGET = "cmp.EjipBenchCMP.loop()V";
+//	private static final String POINTS_TO_TARGET = "cmp.EjipBenchCMP.macServer()V";
 	public static void main(String[] args) {
 		
 		DFAAppInfo program = new DFAAppInfo(new DFAClassInfo());
@@ -69,7 +71,7 @@ public class Main {
 		// run loop bounds analysis
 		LoopBounds lb = new LoopBounds();
 		program.runAnalysis(lb);
-
+		//program.setLoopBounds(lb);
 		long lbTime = System.currentTimeMillis();
 		
 		lb.printResult(program);				
