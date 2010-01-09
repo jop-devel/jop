@@ -8,11 +8,11 @@ import java.util.Map.Entry;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.LineNumberTable;
-import org.apache.bcel.generic.AALOAD;
 import org.apache.bcel.generic.ARRAYLENGTH;
 import org.apache.bcel.generic.ArrayInstruction;
 import org.apache.bcel.generic.GETFIELD;
 import org.apache.bcel.generic.GETSTATIC;
+import org.apache.bcel.generic.IASTORE;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.LoadInstruction;
@@ -21,6 +21,7 @@ import org.apache.bcel.generic.PUTFIELD;
 import org.apache.bcel.generic.PUTSTATIC;
 import org.apache.bcel.generic.ReferenceType;
 import org.apache.bcel.generic.StoreInstruction;
+import org.apache.bcel.generic.Type;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.framework.Analysis;
@@ -33,22 +34,44 @@ import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.dfa.framework.Interpreter;
 import com.jopdesign.dfa.framework.MethodHelper;
 import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
+import com.jopdesign.wcet.graphutils.MiscUtils.Query;
 
 public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap> {
 
 	private static final int CALLSTRING_LENGTH = 0;
-	private static final boolean DEBUG_PRINT = System.getenv("SPT_DEBUG") != null;
+
+	private static final boolean DEBUG_PRINT = false;
+	
+	// Set this to true to see how good one could get
+	private static final boolean ASSUME_NO_ALIASING = true;
+	// Set this to true to see how good one could get
+	private static final boolean ASSUME_NO_CONC = true;
+	
 	private BoundedSetFactory<SymbolicAddress> bsFactory;
 	private MethodInfo entryMethod;
+	
 	private HashMap<InstructionHandle, ContextMap<CallString, BoundedSet<SymbolicAddress>>> usedRefs =
 		new HashMap<InstructionHandle, ContextMap<CallString,BoundedSet<SymbolicAddress>>>();
+	private Query<InstructionHandle> executedOnce;
 
+	// optional extra info: Max flow for each instruction handle
+	
 	public SymbolicPointsTo(int maxSetSize) {
 		bsFactory = new BoundedSetFactory<SymbolicAddress>(maxSetSize);
+		executedOnce = new Query<InstructionHandle>() {
+			public boolean query(InstructionHandle a) { return false; }			
+		};
 	}
+
+	public SymbolicPointsTo(int maxSetSize, Query<InstructionHandle> eoAna) {
+		bsFactory = new BoundedSetFactory<SymbolicAddress>(maxSetSize);
+		executedOnce = eoAna;
+	}
+
 	public ContextMap<CallString, SymbolicAddressMap> bottom() {
 		return null;
 	}
+	
 	/* A `compare` B <=> contexts are equals and A subseteq B */
 	public boolean compare(ContextMap<CallString, SymbolicAddressMap> s1, 
 			               ContextMap<CallString, SymbolicAddressMap> s2) {
@@ -77,14 +100,19 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		CallString l = new CallString();
 		SymbolicAddressMap init = new SymbolicAddressMap(bsFactory);
 		// Add symbolic stack names
-		int i = 0;
+		int stackPtr = 0;
 		if(! entryMethod.getMethod().isStatic()) {
-			init.putStack(i++, bsFactory.singleton(new SymbolicAddress("$this")));
+			init.putStack(stackPtr++, bsFactory.singleton(new SymbolicAddress("$this")));
 		}
-		String[] args = entryMethod.getMethodGen().getArgumentNames();
-		for(int j = 0; j < args.length; j++)
-		{
-			init.putStack(i++, bsFactory.singleton(new SymbolicAddress("$"+args[j])));
+		MethodGen mgen = entryMethod.getMethodGen();
+		String[] args = mgen.getArgumentNames();
+		for(int i = 0; i < args.length; i++)
+		{	
+			Type ty = mgen.getArgumentType(i);
+			if(ty instanceof ReferenceType) {
+				init.putStack(stackPtr, bsFactory.singleton(new SymbolicAddress("$"+args[i])));
+			}
+			stackPtr += ty.getSize();
 		}
 		retval.put(l, init);
 		return retval;
@@ -113,9 +141,6 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		// a and b are the DF results for the respectively active contexts
 		SymbolicAddressMap a = s1.get(s1.getContext().callString);
 		SymbolicAddressMap b = s2.get(s2.getContext().callString);
-
-//		System.out.println("A: "+s1);
-//		System.out.println("B: "+s2);
 		
 		SymbolicAddressMap merged = a.clone();
 		merged.join(b);
@@ -157,26 +182,6 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			+ instruction.produceStack(context.constPool) 
 			- instruction.consumeStack(context.constPool);
 
-//		if (context.method.startsWith("wcet.LBAnalysisTest.measure")) {
-//			System.out.println(context.method+": "+stmt);
-//			System.out.println("###"+context.stackPtr+" + "+instruction.produceStack(context.constPool)+" - "+instruction.consumeStack(context.constPool));		
-//			System.out.println(stmt+" "+(edge.getType() == FlowEdge.TRUE_EDGE ? "TRUE" : (edge.getType() == FlowEdge.FALSE_EDGE) ? "FALSE" : "NORMAL")+" "+edge);
-//			System.out.println(context.callString+"/"+context.method);
-//			System.out.print(stmt.getInstruction()+":\t{ ");
-//			System.out.print(input.get(context.callString));
-//			System.out.println("}");
-//		}		
-		
-		//		if (stmt.hasTargeters() && context.method.startsWith("wcet.LBAnalysisTest.measure")) {
-//			for (int i = 0; i < stmt.getTargeters().length; i++) {
-//				InstructionTargeter targeter = stmt.getTargeters()[i];
-//				if (targeter instanceof BranchInstruction) {
-//					checkScope(context, stmt);
-//					break;
-//				}
-//			}
-//		}
-//		
 		switch (instruction.getOpcode()) {
 
 		case Constants.ICONST_M1:
@@ -274,7 +279,8 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			PUTFIELD instr = (PUTFIELD)instruction;
 			// If PUTFIELD has object type, set result to TOP
 			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
-				retval.put(context.callString, SymbolicAddressMap.top());						
+				if(ASSUME_NO_ALIASING) retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
+				else                    retval.put(context.callString, SymbolicAddressMap.top());						
 			} else {
 				retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
 			}
@@ -312,7 +318,8 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			PUTSTATIC instr = (PUTSTATIC)instruction;
 			// If PUTSTATIC has object type, set result to TOP
 			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
-				retval.put(context.callString, SymbolicAddressMap.top());						
+				if(ASSUME_NO_ALIASING) retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
+				else                    retval.put(context.callString, SymbolicAddressMap.top());						
 			} else {
 				retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
 			}
@@ -335,6 +342,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.CASTORE:
 		case Constants.SASTORE:
 		case Constants.BASTORE: {
+			IASTORE ias;
 			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-3));
 			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
 		}
@@ -342,7 +350,9 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		// changing the heap -> TOP
 		case Constants.AASTORE: {
 			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-3));
-			retval.put(context.callString, SymbolicAddressMap.top());						
+
+			if(ASSUME_NO_ALIASING) retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
+			else                   retval.put(context.callString, SymbolicAddressMap.top());						
 		}
 		break;
 			
@@ -365,10 +375,14 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 				newMapping = bsFactory.top();
 			} else {
 				newMapping = bsFactory.empty();
-				for(SymbolicAddress addr: objectMapping.getSet()) {
-					newMapping.add(addr.accessArrayAny());
+				if(executedOnce.query(stmt)) {
+					for(SymbolicAddress addr: objectMapping.getSet()) {
+						newMapping.add(addr.accessArrayUnique());
+					}
+				} else {
+					newMapping = bsFactory.top();					
 				}
-			}					
+			}
 				
 //				Doesn't work, but is probably stupid anyway :(
 //  			LoopBounds bounds = interpreter.getProgram().getLoopBounds();
@@ -454,12 +468,15 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 
 		case Constants.MONITORENTER:
 			// not supported yet
-			retval.put(context.callString, SymbolicAddressMap.top());						
+			// Assuming Heaven
+			if(ASSUME_NO_CONC) retval.put(context.callString, in.cloneFilterStack(newStackPtr));
+			else               retval.put(context.callString, SymbolicAddressMap.top());						
 			break;
 
 		case Constants.MONITOREXIT:
 			// not supported yet
-			retval.put(context.callString, SymbolicAddressMap.top());						
+			// Assuming Heaven
+			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
 			break;
 
 		case Constants.CHECKCAST:
@@ -538,6 +555,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.INVOKEINTERFACE:
 		case Constants.INVOKESTATIC:
 		case Constants.INVOKESPECIAL: {
+			
 			DFAAppInfo p = interpreter.getProgram();
 			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
 			retval.put(context.callString, new SymbolicAddressMap(bsFactory));
@@ -547,6 +565,15 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 				  context.method, instruction.toString(context.constPool.getConstantPool()),
 				  (receivers == null ? "Unknown" : "No"));
 				throw new AssertionError(errMsg);
+			}
+
+			if( instruction.getOpcode() == Constants.INVOKEVIRTUAL
+			 || instruction.getOpcode() == Constants.INVOKEINTERFACE) {
+				MethodInfo mi = p.getMethod(receivers.keySet().iterator().next());
+				int refPos = MethodHelper.getArgSize(mi.getMethodGen());
+//				System.out.println(String.format("%s: args+1: %d; stack[%d] %s",
+//						mi.methodId,refPos,context.stackPtr,input.get(context.callString)));
+				putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-refPos));
 			}
 
 			for (String methodName : receivers.keySet()) {

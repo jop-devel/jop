@@ -232,4 +232,18 @@ public class SymbolicAddressMap {
 			out.print("\n");
 		}
 	}
+	
+	@Override
+	public String toString() {
+		StringBuffer sb = new StringBuffer();
+		sb.append("SymbolicAddressMap");
+		if(this.isTop()) {
+			sb.append(".TOP");
+		} else {
+			sb.append("{ ");
+			sb.append(map);
+			sb.append(" }");
+		}
+		return sb.toString();
+	}
 }

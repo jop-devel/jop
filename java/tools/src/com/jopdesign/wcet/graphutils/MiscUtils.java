@@ -16,15 +16,25 @@ import java.util.Map.Entry;
 
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
-
+/**
+ * Misc. Stuff I found useful.
+ * 
+ * FIXME: [refactor] MiscUtils should not live in WCET - maybe start a 
+ *                   package com.jopdesign.util, and split functionalities ?
+ * @author Benedikt Huber <benedikt.huber@gmail.com>
+ *
+ */
 public class MiscUtils {
+	public interface Query<Arg> {
+		public boolean query(Arg a);
+	}
 	public interface Function1<Arg,Ret> {
 		public Ret apply(Arg v);
 	}
 	public interface Function2<Arg1,Arg2,Ret> {
 		public Ret apply(Arg1 v1, Arg2 v2);
 	}
-
+	
 	public static<K,V> void addToSet(Map<K,Set<V>> map,K key, V val) {
 
 		Set<V> set = map.get(key);

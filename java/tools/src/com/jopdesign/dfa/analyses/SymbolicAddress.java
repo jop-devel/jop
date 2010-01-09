@@ -7,6 +7,8 @@ package com.jopdesign.dfa.analyses;
  */
 public class SymbolicAddress {
 	private String impl;
+	// uh, bad coding style :( Sometimes I'm lazy too
+	private static int globalGen = 0;
 	public SymbolicAddress(String root) {
 		this.impl = root;
 	}
@@ -18,6 +20,9 @@ public class SymbolicAddress {
 	}
 	public SymbolicAddress accessArrayAny() {
 		return new SymbolicAddress(impl + "[]");
+	}
+	public SymbolicAddress accessArrayUnique() {
+		return new SymbolicAddress(impl + "[?x"+(globalGen ++)+"]");
 	}
 	public SymbolicAddress accessArray(int j) {
 		return new SymbolicAddress(impl + "["+j+"]"); 
