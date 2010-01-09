@@ -185,9 +185,12 @@ public class CallGraph {
 			}
 		}
 	}
-	private CallGraphNode getNode(MethodInfo m) {
+	
+	/** Get node for a method info */
+	public CallGraphNode getNode(MethodInfo m) {
 		return nodeMap.get(m);
 	}
+	
 	/* calculate the depth of each node, the height of the subgraph
 	 * rooted at that node, and a maximum call-stack tree.
 	 */

@@ -8,7 +8,7 @@ import org.apache.log4j.Logger;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveWCETStrategy;
+import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.uppaal.AnalysisContextUppaal;
@@ -42,10 +42,10 @@ public class UppaalAnalysis {
 		return calculateWCET(targetMethod, upperBound);
 	}
 	public WcetCost computeWCETWithTreshold(MethodInfo targetMethod, long complexityTreshold) {
-		RecursiveAnalysis<AnalysisContextUppaal> sa =
-			new RecursiveAnalysis< AnalysisContextUppaal>(
+		RecursiveWcetAnalysis<AnalysisContextUppaal> sa =
+			new RecursiveWcetAnalysis< AnalysisContextUppaal>(
 					project, new UppaalTresholdStrategy(this,complexityTreshold));
-		return sa.computeWCET(targetMethod,
+		return sa.computeCost(targetMethod,
 							  new AnalysisContextUppaal(uppaalConfig.getCacheApproximation()));
 	}
 	public WcetCost calculateWCET(MethodInfo m) throws IOException, DuplicateKeyException, XmlSerializationException {
@@ -79,7 +79,8 @@ public class UppaalAnalysis {
 	public double getSolvertimemax() {
 		return solvertimemax;
 	}
-	static class UppaalTresholdStrategy implements RecursiveWCETStrategy<AnalysisContextUppaal> {
+	static class UppaalTresholdStrategy 
+	implements RecursiveStrategy<AnalysisContextUppaal, WcetCost> {
 
 		private UppaalAnalysis uppaalAnalysis;
 		private long treshold;
@@ -89,8 +90,8 @@ public class UppaalAnalysis {
 			this.treshold = treshold;
 		}
 		/* FIXME: Some code duplication with GlobalAnalysis / LocalAnalysis */
-		public WcetCost recursiveWCET(
-				RecursiveAnalysis<AnalysisContextUppaal> stagedAnalysis,
+		public WcetCost recursiveCost(
+				RecursiveAnalysis<AnalysisContextUppaal, WcetCost> stagedAnalysis,
 				InvokeNode n,
 				AnalysisContextUppaal ctx) {
 			Project project = stagedAnalysis.getProject();
@@ -107,7 +108,7 @@ public class UppaalAnalysis {
 			   && ! stagedAnalysis.isCached(invoked, ctx)
 			   ) {
 				WcetCost uppaalCost;
-				WcetCost ubCost = stagedAnalysis.computeWCET(invoked, ctx.withCacheApprox(UppaalCacheApproximation.ALWAYS_MISS));
+				WcetCost ubCost = stagedAnalysis.computeCost(invoked, ctx.withCacheApprox(UppaalCacheApproximation.ALWAYS_MISS));
 				try {
 					uppaalAnalysis.logger.info("Complexity of "+invoked+" below treshold: "+cc);
 					uppaalCost = uppaalAnalysis.calculateWCET(invoked,ubCost.getCost());
@@ -122,7 +123,7 @@ public class UppaalAnalysis {
 				if(cc > treshold) {
 					uppaalAnalysis.logger.info("Complexity of "+invoked+" above treshold: "+cc);
 				}
-				WcetCost recCost = stagedAnalysis.computeWCET(invoked, ctx);
+				WcetCost recCost = stagedAnalysis.computeCost(invoked, ctx);
 				cacheCost = recCost.getCacheCost() + invokeReturnCost ;
 				nonLocalExecCost = recCost.getCost() - recCost.getCacheCost();
 			}

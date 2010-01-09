@@ -8,7 +8,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
+import org.apache.bcel.generic.ARRAYLENGTH;
+import org.apache.bcel.generic.ArrayInstruction;
+import org.apache.bcel.generic.GETFIELD;
+import org.apache.bcel.generic.INVOKEINTERFACE;
+import org.apache.bcel.generic.INVOKEVIRTUAL;
+import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.PUTFIELD;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
@@ -27,6 +34,7 @@ import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.frontend.SuperGraph.SuperInvokeEdge;
 import com.jopdesign.wcet.frontend.SuperGraph.SuperReturnEdge;
+import com.jopdesign.wcet.graphutils.MiscUtils.Query;
 import com.jopdesign.wcet.ipet.ILPModelBuilder;
 import com.jopdesign.wcet.ipet.IpetConfig;
 import com.jopdesign.wcet.ipet.LinearVector;
@@ -43,19 +51,42 @@ import com.jopdesign.wcet.ipet.MaxCostFlow.DecisionVariable;
  *
  */
 public class ObjectRefAnalysis {
-	private static final int MAX_SET_SIZE = 32;
+	private static final int DEFAULT_SET_SIZE = 32;
+	private int maxSetSize;
 	private Map<CallGraphNode, Long> usedReferences;
 	private Map<CallGraphNode, Set<SymbolicAddress>> usedSymbolicNames;
 	private Project project;
 	private Map<DecisionVariable, SymbolicAddress> decisionVariables =
 		new HashMap<DecisionVariable, SymbolicAddress>();
-	private boolean countNonDistinct;
+	private boolean countAllAccesses;
+	private ExecuteOnceAnalysis executeOnce;
 	public ObjectRefAnalysis(Project p) {
-		this(p, false);
+		this(p, false, DEFAULT_SET_SIZE);
+	}
+	public ObjectRefAnalysis(Project p, int maxSetSize) {
+		this(p, false, maxSetSize);
 	}
 	public ObjectRefAnalysis(Project p, boolean countNonDistinct) {
+		this(p, countNonDistinct, DEFAULT_SET_SIZE);
+	}
+	public ObjectRefAnalysis(Project p, boolean countNonDistinct, int setSize) {
 		this.project = p;
-		this.countNonDistinct = countNonDistinct;
+		this.countAllAccesses = countNonDistinct;
+		this.maxSetSize = setSize;
+	}
+	
+	private class ExecOnceQuery implements Query<InstructionHandle> {
+		private ExecuteOnceAnalysis eoAna;
+		private CallGraphNode scope;
+		public ExecOnceQuery(ExecuteOnceAnalysis eoAnalysis, CallGraphNode scope) {
+			this.eoAna = eoAnalysis;
+			this.scope = scope;
+		}
+		public boolean query(InstructionHandle a) {
+			CFGNode n = BasicBlock.getHandleNode(a);
+			return eoAna.isExecutedOnce(scope, n);
+		}
+		
 	}
 	/**
 	 * Analyze the number of references used in each scope.
@@ -85,16 +116,18 @@ public class ObjectRefAnalysis {
 		usedSymbolicNames = new HashMap<CallGraphNode, Set<SymbolicAddress>>();
 
 		CallString emptyCallString = new CallString();
+		
 		/* Top Down the Scope Graph */
 		TopologicalOrderIterator<CallGraphNode, DefaultEdge> iter =
 			project.getCallGraph().topDownIterator();
 
+		ExecuteOnceAnalysis eoAna = new ExecuteOnceAnalysis(project);
 		while(iter.hasNext()) {
 
 			CallGraphNode scope = iter.next();
 			/* Perform a local symbolic points to analysis */
 			DFAAppInfo dfa = project.getDfaProgram();
-			SymbolicPointsTo spt = new SymbolicPointsTo(MAX_SET_SIZE);
+			SymbolicPointsTo spt = new SymbolicPointsTo(maxSetSize, new ExecOnceQuery(eoAna,scope));
 			dfa.runLocalAnalysis(spt, scope.getMethodImpl().getFQMethodName());
 			HashMap<InstructionHandle, ContextMap<CallString, BoundedSet<SymbolicAddress>>> usedRefs =
 				spt.getResult();
@@ -117,12 +150,13 @@ public class ObjectRefAnalysis {
 				BasicBlock bb = n.getBasicBlock();
 				long topCost = 0;
 				if(bb == null) continue;
-				InstructionHandle ih = bb.getFirstInstruction();
-				while(ih.getNext() != null) {
+
+				for(InstructionHandle ih : bb.getInstructions()) {
 					BoundedSet<SymbolicAddress> refs;
 					if(usedRefs.containsKey(ih)) {
 						refs = usedRefs.get(ih).get(emptyCallString);
-						if(refs.isSaturated() || countNonDistinct) {
+						if(! hasHandleAccess(ih)) continue;
+						if(refs.isSaturated() || countAllAccesses) {
 							topCost += 1;
 						} else {
 							for(SymbolicAddress ref : refs.getSet()) {
@@ -130,33 +164,33 @@ public class ObjectRefAnalysis {
 							}
 						}
 					}
-					ih = ih.getNext();
 				}
 				costMap.put(n,topCost);
 			}
-			
+
 			MaxCostFlow<CFGNode, CFGEdge> maxCostFlow = imb.buildGlobalILPModel(key, sg, 
 					new MapCostProvider<CFGNode>(costMap,0));
 
 			/* Add decision variables for all references */
-			for(Entry<SymbolicAddress, Map<CFGNode, Integer>> accessEntry : accessSets.entrySet()) {
-				SymbolicAddress ref = accessEntry.getKey();
-				Map<CFGNode, Integer> accessSet = accessEntry.getValue();
-				DecisionVariable dvar = maxCostFlow.createDecisionVariable();				
-				decisionVariables .put(dvar,ref);
-				maxCostFlow.addDecisionCost(dvar, 1);
-				/* dvar <= sum(i `in` I) frequency(b_i) */
-				LinearVector<CFGEdge> ub = new LinearVector<CFGEdge>();
-				for(Entry<CFGNode, Integer> entry : accessSet.entrySet()) {
-					CFGNode node = entry.getKey();
-					// we do not really need the count (entry.getValue()) for this constraint
-					for(CFGEdge edge : sg.incomingEdgesOf(node)) {
-						ub.add(edge,1);						
+			if(! countAllAccesses) {
+				for(Entry<SymbolicAddress, Map<CFGNode, Integer>> accessEntry : accessSets.entrySet()) {
+					SymbolicAddress ref = accessEntry.getKey();
+					Map<CFGNode, Integer> accessSet = accessEntry.getValue();
+					DecisionVariable dvar = maxCostFlow.createDecisionVariable();				
+					decisionVariables .put(dvar,ref);
+					maxCostFlow.addDecisionCost(dvar, 1);
+					/* dvar <= sum(i `in` I) frequency(b_i) */
+					LinearVector<CFGEdge> ub = new LinearVector<CFGEdge>();
+					for(Entry<CFGNode, Integer> entry : accessSet.entrySet()) {
+						CFGNode node = entry.getKey();
+						// we do not really need the count (entry.getValue()) for this constraint
+						for(CFGEdge edge : sg.incomingEdgesOf(node)) {
+							ub.add(edge,1);						
+						}
 					}
+					maxCostFlow.addDecisionUpperBound(dvar, ub);				
 				}
-				maxCostFlow.addDecisionUpperBound(dvar, ub);				
 			}
-
 			/* solve */
 			Map<CFGEdge, Long> flowMap = new HashMap<CFGEdge, Long>();
 			Map<DecisionVariable, Boolean> refUseMap = new HashMap<DecisionVariable, Boolean>();
@@ -223,6 +257,17 @@ public class ObjectRefAnalysis {
 	public Map<CallGraphNode, Set<SymbolicAddress>> getUsedSymbolicNames() {
 		if(usedSymbolicNames == null) analyzeRefUsage();
 		return usedSymbolicNames;		
+	}
+
+	public static boolean hasHandleAccess(InstructionHandle ih) {
+		Instruction instr = ih.getInstruction();
+		if(instr instanceof GETFIELD) return true;
+		else if(instr instanceof PUTFIELD) return true;
+		else if(instr instanceof ArrayInstruction
+			 || instr instanceof ARRAYLENGTH) return true;
+		else if(instr instanceof INVOKEINTERFACE ||
+				instr instanceof INVOKEVIRTUAL) return true;
+		else return false;
 	}
 
 }

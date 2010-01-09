@@ -6,13 +6,14 @@ package com.jopdesign.wcet.analysis;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveWCETStrategy;
+import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet.ipet.IpetConfig;
 import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.jop.MethodCache;
 
-public class LocalAnalysis implements RecursiveWCETStrategy<AnalysisContextLocal> {
+public class LocalAnalysis 
+implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 	private boolean assumeMissOnceOnInvoke;
 	private int maxCallstringLength;
 
@@ -23,8 +24,8 @@ public class LocalAnalysis implements RecursiveWCETStrategy<AnalysisContextLocal
 	public LocalAnalysis() {
 		this.assumeMissOnceOnInvoke = false;
 	}
-	public WcetCost recursiveWCET(
-			RecursiveAnalysis<AnalysisContextLocal> stagedAnalysis,
+	public WcetCost recursiveCost(
+			RecursiveAnalysis<AnalysisContextLocal,WcetCost> stagedAnalysis,
 			InvokeNode n,
 			AnalysisContextLocal ctx) {
 		StaticCacheApproximation cacheMode = ctx.cacheApprox;
@@ -39,7 +40,7 @@ public class LocalAnalysis implements RecursiveWCETStrategy<AnalysisContextLocal
 		MethodCache cache = proc.getMethodCache();
 		long cacheCost;
 		AnalysisContextLocal recCtx = ctx.withCallString(ctx.getCallString().push(n,maxCallstringLength));
-		WcetCost recCost = stagedAnalysis.computeWCET(invoked, recCtx);
+		WcetCost recCost = stagedAnalysis.computeCost(invoked, recCtx);
 		long nonLocalExecCost = recCost.getCost() - recCost.getCacheCost();
 		long nonLocalCacheCost = recCost.getCacheCost();
 		long invokeReturnCost = cache.getInvokeReturnMissCost(
@@ -56,7 +57,7 @@ public class LocalAnalysis implements RecursiveWCETStrategy<AnalysisContextLocal
 			long noAllFitCost = recCost.getCost() + invokeReturnCost;
 			/* Compute cost without method cache */
 			AnalysisContextLocal ahCtx = recCtx.withCacheApprox(StaticCacheApproximation.ALWAYS_HIT);
-			long alwaysHitCost = stagedAnalysis.computeWCET(invoked, ahCtx).getCost();
+			long alwaysHitCost = stagedAnalysis.computeCost(invoked, ahCtx).getCost();
 			/* Compute penalty for loading each method exactly once */
 			long allFitPenalty = cache.getMissOnceCummulativeCacheCost(invoked,assumeMissOnceOnInvoke);
 			long allFitCacheCost = allFitPenalty  + returnCost;
@@ -79,7 +80,7 @@ public class LocalAnalysis implements RecursiveWCETStrategy<AnalysisContextLocal
 		WcetCost cost = new WcetCost();
 		cost.addNonLocalCost(nonLocalExecCost);
 		cost.addCacheCost(cacheCost);
-		RecursiveAnalysis.logger.info("Recursive WCET computation: " + invoked.getMethod() +
+		RecursiveWcetAnalysis.logger.info("Recursive WCET computation: " + invoked.getMethod() +
 				". invoke return cache cost: " + invokeReturnCost+
 				". non-local cache cost: "    + nonLocalCacheCost+
 				". cummulative cache cost: "+cacheCost+

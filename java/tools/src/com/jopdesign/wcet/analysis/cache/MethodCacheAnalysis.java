@@ -69,7 +69,7 @@ public class MethodCacheAnalysis {
 					                 " has not method cache");
 		}
 		MethodCache methodCache = project.getProcessorModel().getMethodCache();
-		
+
 		/* Prepare return value */
 		blocksNeeded = new HashMap<CallGraphNode, Long>();
 

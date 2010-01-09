@@ -8,16 +8,14 @@ import java.util.Map.Entry;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.analysis.RecursiveAnalysis.WcetCostProvider;
-import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveWCETStrategy;
+import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
+import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis.WcetCostProvider;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.frontend.SuperGraph;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
-import com.jopdesign.wcet.frontend.SuperGraph.SuperInvokeEdge;
-import com.jopdesign.wcet.frontend.SuperGraph.SuperReturnEdge;
 import com.jopdesign.wcet.ipet.ILPModelBuilder;
 import com.jopdesign.wcet.ipet.IpetConfig;
 import com.jopdesign.wcet.ipet.LinearVector;
@@ -26,8 +24,6 @@ import com.jopdesign.wcet.ipet.ILPModelBuilder.CostProvider;
 import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.ipet.MaxCostFlow.DecisionVariable;
 import com.jopdesign.wcet.jop.MethodCache;
-
-import static com.jopdesign.wcet.graphutils.MiscUtils.addToSet;
 
 /**
  * Global IPET-based analysis, supporting variable block caches (all fit region approximation).
@@ -123,13 +119,14 @@ public class GlobalAnalysis {
 	}
 	
 	
-	public static class GlobalIPETStrategy implements RecursiveWCETStrategy<AnalysisContextIpet> {
+	public static class GlobalIPETStrategy 
+	implements RecursiveStrategy<AnalysisContextIpet,WcetCost> {
 		private IpetConfig ipetConfig;
 		public GlobalIPETStrategy(IpetConfig ipetConfig) {
 			this.ipetConfig = ipetConfig;
 		}
-		public WcetCost recursiveWCET(
-				RecursiveAnalysis<AnalysisContextIpet> stagedAnalysis,
+		public WcetCost recursiveCost(
+				RecursiveAnalysis<AnalysisContextIpet,WcetCost> stagedAnalysis,
 				InvokeNode n,
 				AnalysisContextIpet ctx) {
 			if(ctx.cacheApprox != StaticCacheApproximation.ALL_FIT_REGIONS) {
@@ -157,7 +154,7 @@ public class GlobalAnalysis {
 				cost.addPotentialCacheFlushes(1);
 				//System.err.println("Potential cache flush: "+invoked+" from "+invoker);
 			} else {
-				WcetCost recCost = stagedAnalysis.computeWCET(invoked, ctx);
+				WcetCost recCost = stagedAnalysis.computeCost(invoked, ctx);
 				cost.addCacheCost(recCost.getCacheCost() + invokeReturnCost);
 				cost.addNonLocalCost(recCost.getCost() - recCost.getCacheCost());
 			}
