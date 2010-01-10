@@ -25,7 +25,8 @@ public class SymbolicAddress {
 		return new SymbolicAddress(impl + "[]");
 	}
 	public SymbolicAddress accessArrayUnique() {
-		return new SymbolicAddress(impl + "[?x"+(globalGen ++)+"]");
+		String name = genName();
+		return new SymbolicAddress(impl + "["+name+"]");
 	}
 	public SymbolicAddress accessArray(int j) {
 		return new SymbolicAddress(impl + "["+j+"]"); 
@@ -63,5 +64,11 @@ public class SymbolicAddress {
 			}
 		}
 		return newMapping;
+	}
+	public static SymbolicAddress newName() {
+		return new SymbolicAddress(genName());
+	}
+	private static String genName() {
+		return "?x"+(globalGen++);
 	}
 }

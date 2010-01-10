@@ -46,6 +46,7 @@ import com.jopdesign.build.WcetPreprocess;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.ReceiverTypes;
 import com.jopdesign.dfa.framework.ContextMap;
+import com.jopdesign.dfa.framework.DFAAppInfo;
 import com.jopdesign.wcet.allocation.HandleAllocationModel;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.config.Config;
@@ -143,8 +144,6 @@ public class Project {
 	private CallGraph callGraph;
 
 	private Map<ClassInfo, SortedMap<Integer, LoopBound>> annotationMap;
-
-	private LoopBounds dfaLoopBounds;
 
 	private boolean genWCETReport;
 	private Report results;
@@ -365,17 +364,22 @@ public class Project {
 		ReceiverTypes recTys = new ReceiverTypes();
 		Map<InstructionHandle, ContextMap<String, String>> receiverResults =
 			program.runAnalysis(recTys);
+		
 		program.setReceivers(receiverResults);
 		wcetAppInfo.setReceivers(receiverResults);
+		
 		topLevelLogger.info("Loop bound analysis");
-		dfaLoopBounds = new LoopBounds();
+		LoopBounds dfaLoopBounds = new LoopBounds();
 		program.runAnalysis(dfaLoopBounds);
+		program.setLoopBounds(dfaLoopBounds);
 	}
 	/**
 	 * Get the loop bounds found by dataflow analysis
 	 */
 	public LoopBounds getDfaLoopBounds() {
-		return this.dfaLoopBounds;
+		DFAAppInfo p = getDfaProgram();
+		if(p == null) return null;
+		return p.getLoopBounds();
 	}
 	/**
 	 * Convenience delegator to get the flowgraph of the given method

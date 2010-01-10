@@ -44,6 +44,7 @@ import org.apache.bcel.generic.Type;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.build.ClinitOrder;
+import com.jopdesign.dfa.analyses.LoopBounds;
 
 public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 
@@ -61,6 +62,8 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 	private List<InstructionHandle> statements;
 	private Flow flow;
 	private Map<InstructionHandle, ContextMap<String, String>> receivers;
+
+	private LoopBounds loopBounds;
 	
 	public DFAAppInfo(DFAClassInfo cliTemplate) {		
 		super(cliTemplate);
@@ -228,6 +231,14 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 		DFAClassInfo cli = (DFAClassInfo)cliMap.get(className);
 		//System.out.println("contains: "+cli+" vs "+fieldName);
 		return cli.getFields().contains(signature);
+	}
+
+	public LoopBounds getLoopBounds() {
+		return loopBounds;
+	}
+	
+	public void setLoopBounds(LoopBounds lb) {
+		this.loopBounds = lb;
 	}
 	
 }

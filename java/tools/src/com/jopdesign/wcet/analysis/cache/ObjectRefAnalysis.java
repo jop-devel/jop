@@ -158,7 +158,7 @@ public class ObjectRefAnalysis {
 						refs = usedRefs.get(ih).get(emptyCallString);
 						if(! hasHandleAccess(ih)) continue;
 						if(refs.isSaturated() || countAllAccesses) {
-							topCost += 1;
+							topCost += 1000;
 						} else {
 							for(SymbolicAddress ref : refs.getSet()) {
 								addAccessSite(accessSets, ref, n);

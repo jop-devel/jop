@@ -319,7 +319,7 @@ public class WCETAnalysis {
 		});		
 		// Object cache, evaluation
 		ObjectCacheAnalysisDemo oca;
-		int[] cacheSizes = { 0,1,2,4,8,16,32,64 };
+		int[] cacheSizes = { 0,1,2,4,8,16,32,64, 128 };
 		long accesses = 0;
 		for(int cacheSize : cacheSizes) {
 			oca = new ObjectCacheAnalysisDemo(project, cacheSize);

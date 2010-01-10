@@ -183,17 +183,6 @@ public class SymbolicAddressMap {
 		}		
 	}
 	
-	public BoundedSet<SymbolicAddress> getStack(int index) {
-		if(this.isTop()) return bsFactory.top();
-		Location stackLoc = new Location(index);
-		BoundedSet<SymbolicAddress> val = mapP.get(stackLoc);
-		if(val == null) {
-			Logger.getLogger(this.getClass()).error("Undefined Stack Location: "+stackLoc);
-			throw new AssertionError("Undefined stacklock");
-		}
-		return val;
-	}
-
 	public void copyStack(SymbolicAddressMap in, int dst, int src) {
 		if(in.isTop()) return;
 		if(this.isTop()) return;
@@ -203,8 +192,30 @@ public class SymbolicAddressMap {
 		putStack(dst, val);
 	}
 
+	public BoundedSet<SymbolicAddress> getStack(int index) {
+		if(this.isTop()) return bsFactory.top();
+		Location loc = new Location(index);
+		BoundedSet<SymbolicAddress> val = mapP.get(loc);
+		if(val == null) {
+			Logger.getLogger(this.getClass()).error("Undefined stack location: "+loc);
+			throw new AssertionError("Undefined stack Location");
+		}
+		return val;
+	}
 	public void putStack(int index, BoundedSet<SymbolicAddress> bs) {
 		this.put(new Location(index), bs);
+	}
+	public BoundedSet<SymbolicAddress> getHeap(String staticfield) {
+		if(this.isTop()) return bsFactory.top();
+		Location loc = new Location(staticfield);
+		BoundedSet<SymbolicAddress> val = mapP.get(loc);
+		if(val == null) {
+			val = bsFactory.singleton(new SymbolicAddress(staticfield));
+		}
+		return val;
+	}
+	public void putHeap(String staticfield, BoundedSet<SymbolicAddress> pointers) {
+		this.put(new Location(staticfield), pointers);		
 	}
 
 	public void put(Location l, BoundedSet<SymbolicAddress> bs) {

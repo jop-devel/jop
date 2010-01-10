@@ -55,6 +55,7 @@ import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.dfa.framework.Interpreter;
 import com.jopdesign.dfa.framework.MethodHelper;
 import com.jopdesign.dfa.framework.DFAAppInfo;
+import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 
 public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds.ValueMapping>> {
 
@@ -296,6 +297,9 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 	private Map<InstructionHandle, ContextMap<CallString, Pair<ValueMapping>>> bounds = new HashMap<InstructionHandle, ContextMap<CallString, Pair<ValueMapping>>>();
 	private Map<InstructionHandle, ContextMap<CallString, Integer>> scopes = new HashMap<InstructionHandle, ContextMap<CallString, Integer>>();
 	private Map<InstructionHandle, ContextMap<CallString, Interval[]>> sizes = new HashMap<InstructionHandle, ContextMap<CallString, Interval[]>>();
+
+	private Map<InstructionHandle, ContextMap<CallString, Interval>> arrayIndices =
+		new HashMap<InstructionHandle, ContextMap<CallString, Interval>>();
 	
 	public void initialize(MethodInfo sig, Context context) {
 	}
@@ -766,6 +770,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 		break;
 		
 		case Constants.AALOAD: {
+			ValueMapping v = in.get(new Location(context.stackPtr-1));
+			recordArrayIndex(stmt, context, v.assigned);
 			filterSet(in, result, context.stackPtr-2);
 		}
 		break;
@@ -1234,6 +1240,15 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 		
 		context.stackPtr += instruction.produceStack(context.constPool) - instruction.consumeStack(context.constPool);
 		return retval;
+	}
+
+	private void recordArrayIndex(InstructionHandle stmt, Context context, Interval assigned) {
+		ContextMap<CallString, Interval> indexMap = arrayIndices.get(stmt);
+		if(indexMap == null) {
+			indexMap = new ContextMap<CallString, Interval>(context, new HashMap<CallString,Interval>());
+			arrayIndices.put(stmt, indexMap);
+		}
+		indexMap.put(context.callString, assigned);
 	}
 
 	private void filterSet(HashMap<Location, ValueMapping> in, HashMap<Location, ValueMapping> result, int bound) {
@@ -1777,6 +1792,10 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 
 	public Map<InstructionHandle, ContextMap<CallString, Interval[]>> getArraySizes() {
 		return sizes;
+	}
+
+	public Map<InstructionHandle, ContextMap<CallString, Interval>> getArrayIndices() {
+		return arrayIndices;
 	}
 
 }
