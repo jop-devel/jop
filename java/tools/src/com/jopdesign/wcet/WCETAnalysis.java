@@ -320,10 +320,15 @@ public class WCETAnalysis {
 		// Object cache, evaluation
 		ObjectCacheAnalysisDemo oca;
 		int[] cacheSizes = { 0,1,2,4,8,16,32,64 };
+		long accesses = 0;
 		for(int cacheSize : cacheSizes) {
 			oca = new ObjectCacheAnalysisDemo(project, cacheSize);
+			long cost = oca.computeCost();
+			double ratio;
+			if(cacheSize == 0) { accesses = cost; ratio = 1.0; }
+			else               { ratio = (double)(accesses-cost)/(double)accesses; }
 			System.out.println(
-				String.format("Cache Misses [N=%3d]: %d", cacheSize, oca.computeCost()));				
+				String.format("Cache Misses [N=%3d]: %d  (%.2f %%)", cacheSize, cost, ratio*100));				
 		}
 	}
 	private Map<CallGraphNode, Long> refUsageTotal_;

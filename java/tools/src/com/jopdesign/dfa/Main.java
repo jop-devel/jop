@@ -29,7 +29,7 @@ import com.jopdesign.dfa.framework.DFAAppInfo;
 public class Main {
 
 //  wcet.StartLift
-	private static final String POINTS_TO_TARGET = "jbe.lift.LiftControl.loop(Ljbe/lift/TalIo;)V";
+//	private static final String POINTS_TO_TARGET = "jbe.lift.LiftControl.loop(Ljbe/lift/TalIo;)V";
 //	private static final String POINTS_TO_TARGET = "jbe.lift.LiftControl.waitForMotorStart(Ljbe/lift/TalIo;)V";
 //	wcet.devel.ObjectCache
 //	private static final String POINTS_TO_TARGET = "wcet.devel.ObjectCache.test1()I";
@@ -39,6 +39,7 @@ public class Main {
 //  wcet.StartEjipCmp
 //	private static final String POINTS_TO_TARGET = "cmp.EjipBenchCMP.loop()V";
 //	private static final String POINTS_TO_TARGET = "cmp.EjipBenchCMP.macServer()V";
+	private static final String POINTS_TO_TARGET = "ejip.Ejip.returnPacket(Lejip/Packet;)V";
 	public static void main(String[] args) {
 		
 		DFAAppInfo program = new DFAAppInfo(new DFAClassInfo());

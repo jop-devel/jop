@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.LineNumberTable;
+import org.apache.bcel.generic.AASTORE;
 import org.apache.bcel.generic.ARRAYLENGTH;
 import org.apache.bcel.generic.ArrayInstruction;
 import org.apache.bcel.generic.GETFIELD;
@@ -43,7 +44,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 	private static final boolean DEBUG_PRINT = false;
 	
 	// Set this to true to see how good one could get
-	private static final boolean ASSUME_NO_ALIASING = true;
+	//private static final boolean ASSUME_NO_ALIASING = true;
 	// Set this to true to see how good one could get
 	private static final boolean ASSUME_NO_CONC = true;
 	
@@ -277,52 +278,43 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.PUTFIELD: {			
 			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-2));
 			PUTFIELD instr = (PUTFIELD)instruction;
-			// If PUTFIELD has object type, set result to TOP
+			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
+			// Change alias information
 			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
-				if(ASSUME_NO_ALIASING) retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
-				else                    retval.put(context.callString, SymbolicAddressMap.top());						
-			} else {
-				retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
+				String ty = instr.getFieldType(context.constPool).getSignature();
+				result.addAlias(ty, in.getStack(context.stackPtr-1));
 			}
+			retval.put(context.callString, result);		
 		}
 		break;
 		
 		
 		// Access Object Handle, top of stack
-		// if value has reference type:
-		//   stackptr ^ objectref | ... ==> stackptr ^ value | ... 
-		//   value <- getfield objectref F ==> value |-> map (.F) M(objectref)
 		case Constants.GETFIELD: {			
 			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-1));
 			GETFIELD instr = (GETFIELD)instruction;
 			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
 			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
-				BoundedSet<SymbolicAddress> objectMapping = in.getStack(context.stackPtr-1);
-				BoundedSet<SymbolicAddress> newMapping;
-				if(objectMapping.isSaturated()) {
-					newMapping = bsFactory.top();
-				} else {
-					newMapping = bsFactory.empty();
-					for(SymbolicAddress addr: objectMapping.getSet()) {
-						newMapping.add(addr.access(instr.getFieldName(context.constPool)));
-					}
-				}
+				BoundedSet<SymbolicAddress> newMapping =
+					SymbolicAddress.fieldAccess(bsFactory,
+												in.getStack(context.stackPtr-1),
+							                    instr.getFieldName(context.constPool));
+				newMapping.addAll(in.getAliases(instr.getFieldType(context.constPool).getSignature()));
 				result.putStack(context.stackPtr-1, newMapping);
 			}
 			retval.put(context.callString, result);
-			// We are interested in the references here
 		}
 		break;
-		
+		// Put object is on top of stack
 		case Constants.PUTSTATIC: {			
 			PUTSTATIC instr = (PUTSTATIC)instruction;
-			// If PUTSTATIC has object type, set result to TOP
+			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
+			// Change alias information
 			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
-				if(ASSUME_NO_ALIASING) retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
-				else                    retval.put(context.callString, SymbolicAddressMap.top());						
-			} else {
-				retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
+				String ty = instr.getFieldType(context.constPool).getSignature();
+				result.addAlias(ty, in.getStack(context.stackPtr-1));
 			}
+			retval.put(context.callString, result);		
 		}
 		break;
 		// Assign TOS the symbolic name
@@ -332,6 +324,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
 				BoundedSet<SymbolicAddress> newMapping = bsFactory.empty();
 				newMapping.add(SymbolicAddress.staticField(instr.getFieldName(context.constPool)));
+				newMapping.addAll(in.getAliases(instr.getFieldType(context.constPool).getSignature()));
 				result.putStack(context.stackPtr, newMapping);				
 			}
 			retval.put(context.callString, result);		
@@ -350,9 +343,15 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		// changing the heap -> TOP
 		case Constants.AASTORE: {
 			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-3));
-
-			if(ASSUME_NO_ALIASING) retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
-			else                   retval.put(context.callString, SymbolicAddressMap.top());						
+			
+			AASTORE instr = (AASTORE) stmt.getInstruction();
+			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
+			// Change alias information
+			if(instr.getType(context.constPool) instanceof ReferenceType) {
+				String ty = instr.getType(context.constPool).getSignature();
+				result.addAlias(ty, in.getStack(context.stackPtr-1));
+			}
+			retval.put(context.callString, result);		
 		}
 		break;
 			
@@ -365,6 +364,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		}
 		break;
 		// AALOAD objectref, index -> objectref
+		// TODO: Use index info
 		case Constants.AALOAD: {
 			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-2));
 			//AALOAD instr = (AALOAD)instruction;
@@ -377,7 +377,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 				newMapping = bsFactory.empty();
 				if(executedOnce.query(stmt)) {
 					for(SymbolicAddress addr: objectMapping.getSet()) {
-						newMapping.add(addr.accessArrayUnique());
+						newMapping.add(addr.accessArrayAny());
 					}
 				} else {
 					newMapping = bsFactory.top();					

@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
 import com.jopdesign.dfa.framework.BoundedSetFactory;
@@ -22,28 +23,29 @@ public class SymbolicAddressMap {
 	// a.isTop() and b.isTop() does not imply a==b, but top() always returns _top
 	@SuppressWarnings("unchecked")
 	private static SymbolicAddressMap _top =
-		new SymbolicAddressMap(new BoundedSetFactory(0), (HashMap)null);
+		new SymbolicAddressMap(new BoundedSetFactory(0), (HashMap)null, (HashMap) null);
 
 	private BoundedSetFactory<SymbolicAddress> bsFactory;
 
 	/* Invariant: obj.map == null iff obj == TOP */
-	private Map<Location, BoundedSet<SymbolicAddress>> map;
+	private Map<Location, BoundedSet<SymbolicAddress>> mapP;
+	private HashMap<String, BoundedSet<SymbolicAddress>> mapA;
 
 	public boolean isTop()
 	{
-		return(this.map == null);
+		return(this.mapP == null);
 	}
 	private void setTop()
 	{
-		this.map = null;
+		this.mapP = null;
+		this.mapA = null;
 	}
 	
-	private int maxStackIndex;
 
 	/** empty constructor */
 	public SymbolicAddressMap(BoundedSetFactory<SymbolicAddress> bsFactory) {
-		this(bsFactory, new HashMap<Location,BoundedSet<SymbolicAddress>>());
-		this.maxStackIndex = -1;
+		this(bsFactory, new HashMap<Location,BoundedSet<SymbolicAddress>>(),
+				        new HashMap<String,BoundedSet<SymbolicAddress>>());
 	}
 
 	/** top element */
@@ -53,15 +55,17 @@ public class SymbolicAddressMap {
 	
 	/* full, private constructor */
 	private SymbolicAddressMap(BoundedSetFactory<SymbolicAddress> bsFactory,
-							   HashMap<Location,BoundedSet<SymbolicAddress>> initMap) {
+							   HashMap<Location,BoundedSet<SymbolicAddress>> initP,
+							   HashMap<String,BoundedSet<SymbolicAddress>> initA) {
 		this.bsFactory = bsFactory;
-		this.map = initMap;
+		this.mapP = initP;
+		this.mapA = initA;
 	}
 
 	@Override
 	public int hashCode() {
 		if(isTop()) return 1;
-		else return 2 + map.hashCode();
+		else return 2 + 31 * mapP.hashCode() + mapA.hashCode();
 	}
 	@Override
 	public boolean equals(Object obj) {
@@ -70,7 +74,7 @@ public class SymbolicAddressMap {
 		if (getClass() != obj.getClass()) return false;
 		SymbolicAddressMap other = (SymbolicAddressMap) obj;
 		if(this.isTop() || other.isTop()) return (this.isTop() && other.isTop());
-		return map.equals(other.map);
+		return mapP.equals(other.mapP) && mapA.equals(other.mapA);
 	}
 
 	public boolean isSubset(SymbolicAddressMap other) {
@@ -78,9 +82,15 @@ public class SymbolicAddressMap {
 		else if(this.isTop())   return false;
 		else if(other == null)  return false;
 		/* Neither is \bot or \top -> pointwise subseteq */
-		for(Location l : this.map.keySet()) {
-			BoundedSet<SymbolicAddress> thisEntry = map.get(l);
-			BoundedSet<SymbolicAddress> otherEntry = other.map.get(l);
+		for(Location l : this.mapP.keySet()) {
+			BoundedSet<SymbolicAddress> thisEntry = mapP.get(l);
+			BoundedSet<SymbolicAddress> otherEntry = other.mapP.get(l);
+			if(otherEntry == null) return false;
+			if(! thisEntry.isSubset(otherEntry)) return false;
+		}
+		for(String l : this.mapA.keySet()) {
+			BoundedSet<SymbolicAddress> thisEntry = mapP.get(l);
+			BoundedSet<SymbolicAddress> otherEntry = other.mapP.get(l);
 			if(otherEntry == null) return false;
 			if(! thisEntry.isSubset(otherEntry)) return false;
 		}
@@ -91,14 +101,15 @@ public class SymbolicAddressMap {
 	protected SymbolicAddressMap clone() {
 		if(this.isTop()) return this;
 		return new SymbolicAddressMap(this.bsFactory,
-				new HashMap<Location, BoundedSet<SymbolicAddress>>(this.map));
+				new HashMap<Location, BoundedSet<SymbolicAddress>>(this.mapP),
+				new HashMap<String, BoundedSet<SymbolicAddress>>(this.mapA));
 	}
 	
 	/** Clone address map, but only those stack variables below {@code bound} */
 	public SymbolicAddressMap cloneFilterStack(int bound) {
 		if(this.isTop()) return this;
 		SymbolicAddressMap copy = new SymbolicAddressMap(this.bsFactory);
-		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : map.entrySet()) {
+		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : mapP.entrySet()) {
 			Location loc = entry.getKey();
 			if(loc.isHeapLoc() || loc.stackLoc < bound) {
 				copy.put(loc, entry.getValue());
@@ -112,7 +123,7 @@ public class SymbolicAddressMap {
 	public SymbolicAddressMap cloneInvoke(int framePtr) {
 		if(this.isTop()) return this;
 		SymbolicAddressMap copy = new SymbolicAddressMap(this.bsFactory);
-		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : map.entrySet()) {
+		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : mapP.entrySet()) {
 			Location loc = entry.getKey();
 			if(loc.isHeapLoc()) {
 				copy.put(loc, entry.getValue());
@@ -134,10 +145,10 @@ public class SymbolicAddressMap {
 			setTop();
 			return;
 		}
-		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : in.map.entrySet()) {
+		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : in.mapP.entrySet()) {
 			Location loc = entry.getKey();
 			if(! loc.isHeapLoc() && loc.stackLoc < bound) {
-				map.put(loc, in.getStack(loc.stackLoc));
+				mapP.put(loc, in.getStack(loc.stackLoc));
 			}
 		}		
 	}
@@ -158,7 +169,7 @@ public class SymbolicAddressMap {
 			return;
 		}
 
-		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : returned.map.entrySet()) {
+		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : returned.mapP.entrySet()) {
 			Location locReturnedFrame = entry.getKey();
 			Location locCallerFrame; 
 			if(locReturnedFrame.isHeapLoc()) {
@@ -166,8 +177,8 @@ public class SymbolicAddressMap {
 			} else {
 				locCallerFrame = new Location(locReturnedFrame.stackLoc + framePtr); 
 			}
-			BoundedSet<SymbolicAddress> callerSet = map.get(locCallerFrame);
-			BoundedSet<SymbolicAddress> returnedSet = returned.map.get(locReturnedFrame);
+			BoundedSet<SymbolicAddress> callerSet = mapP.get(locCallerFrame);
+			BoundedSet<SymbolicAddress> returnedSet = returned.mapP.get(locReturnedFrame);
 			put(locCallerFrame, returnedSet.join(callerSet));
 		}		
 	}
@@ -175,7 +186,7 @@ public class SymbolicAddressMap {
 	public BoundedSet<SymbolicAddress> getStack(int index) {
 		if(this.isTop()) return bsFactory.top();
 		Location stackLoc = new Location(index);
-		BoundedSet<SymbolicAddress> val = map.get(stackLoc);
+		BoundedSet<SymbolicAddress> val = mapP.get(stackLoc);
 		if(val == null) {
 			Logger.getLogger(this.getClass()).error("Undefined Stack Location: "+stackLoc);
 			throw new AssertionError("Undefined stacklock");
@@ -187,7 +198,7 @@ public class SymbolicAddressMap {
 		if(in.isTop()) return;
 		if(this.isTop()) return;
 		Location srcLoc = new Location(src);
-		BoundedSet<SymbolicAddress> val = in.map.get(srcLoc);
+		BoundedSet<SymbolicAddress> val = in.mapP.get(srcLoc);
 		if(val == null) return;
 		putStack(dst, val);
 	}
@@ -201,14 +212,22 @@ public class SymbolicAddressMap {
 			throw new AssertionError("put "+l+": null");
 		}
 		if(this.isTop()) return;
-		if(! l.isHeapLoc() && l.stackLoc > this.maxStackIndex) {
-			this.maxStackIndex = l.stackLoc;
-		}
-		this.map.put(l, bs);
+		this.mapP.put(l, bs);
+	}
+
+	public void addAlias(String ty, BoundedSet<SymbolicAddress> newAliases) {
+		if(this.isTop()) return;
+		BoundedSet<SymbolicAddress> oldAlias = this.mapA.get(ty);
+		if(oldAlias == null) oldAlias = bsFactory.empty();
+		oldAlias.addAll(newAliases);
+		mapA.put(ty, newAliases);
 	}
 	
-	public int getMaxStackIndex() {
-		return maxStackIndex;
+	public BoundedSet<SymbolicAddress> getAliases(String fieldType) {
+		if(this.isTop()) return bsFactory.top();
+		BoundedSet<SymbolicAddress> aliases = this.mapA.get(fieldType);
+		if(aliases == null) return bsFactory.empty();
+		return aliases;
 	}
 
 	/** Print results
@@ -222,12 +241,19 @@ public class SymbolicAddressMap {
 		if(this.isTop()) {
 			out.println("TOP"); return;
 		}
-		out.println("SymbolicAddressMap ("+map.size()+")");
+		out.println("SymbolicAddressMap ("+mapP.size()+")");
 		indentstr.append(' ');
-		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : map.entrySet()) {
+		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : mapP.entrySet()) {
 			out.print(indentstr.toString());
 			out.print(entry.getKey());
 			out.print(": ");
+			out.print(entry.getValue());
+			out.print("\n");
+		}
+		for(Entry<String, BoundedSet<SymbolicAddress>> entry : mapA.entrySet()) {
+			out.print(indentstr.toString());
+			out.print(entry.getKey());
+			out.print("~~> ");
 			out.print(entry.getValue());
 			out.print("\n");
 		}
@@ -241,7 +267,9 @@ public class SymbolicAddressMap {
 			sb.append(".TOP");
 		} else {
 			sb.append("{ ");
-			sb.append(map);
+			sb.append(mapP);
+			sb.append(", ");
+			sb.append(mapA);
 			sb.append(" }");
 		}
 		return sb.toString();

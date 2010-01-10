@@ -51,6 +51,7 @@ import com.jopdesign.wcet.ipet.MaxCostFlow.DecisionVariable;
  *
  */
 public class ObjectRefAnalysis {
+	public static final boolean FIELD_ACCESS_ONLY = true;
 	private static final int DEFAULT_SET_SIZE = 32;
 	private int maxSetSize;
 	private Map<CallGraphNode, Long> usedReferences;
@@ -263,11 +264,11 @@ public class ObjectRefAnalysis {
 		Instruction instr = ih.getInstruction();
 		if(instr instanceof GETFIELD) return true;
 		else if(instr instanceof PUTFIELD) return true;
-		else if(instr instanceof ArrayInstruction
+		if(FIELD_ACCESS_ONLY) return false;
+		if(instr instanceof ArrayInstruction
 			 || instr instanceof ARRAYLENGTH) return true;
 		else if(instr instanceof INVOKEINTERFACE ||
 				instr instanceof INVOKEVIRTUAL) return true;
 		else return false;
 	}
-
 }

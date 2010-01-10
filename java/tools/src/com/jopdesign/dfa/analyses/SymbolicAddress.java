@@ -1,5 +1,8 @@
 package com.jopdesign.dfa.analyses;
 
+import com.jopdesign.dfa.framework.BoundedSetFactory;
+import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
+
 /**
  * 
  * @author Benedikt Huber <benedikt.huber@gmail.com>
@@ -44,5 +47,21 @@ public class SymbolicAddress {
 			return false;
 		SymbolicAddress other = (SymbolicAddress) obj;
 		return impl.equals(other.impl);
+	}
+	
+	public static BoundedSet<SymbolicAddress> fieldAccess(
+			BoundedSetFactory<SymbolicAddress> bsFactory,
+			BoundedSet<SymbolicAddress> objectMapping,
+			String fieldName) {
+		BoundedSet<SymbolicAddress> newMapping;
+		if(objectMapping.isSaturated()) {
+			newMapping = bsFactory.top();
+		} else {
+			newMapping = bsFactory.empty();
+			for(SymbolicAddress addr: objectMapping.getSet()) {
+				newMapping.add(addr.access(fieldName));
+			}
+		}
+		return newMapping;
 	}
 }

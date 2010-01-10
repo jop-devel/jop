@@ -39,7 +39,6 @@ import com.jopdesign.wcet.ipet.ILPModelBuilder.MapCostProvider;
  *  
  */
 public class ObjectCacheAnalysisDemo {
-	
 	public class RecursiveOCacheAnalysis extends
 			RecursiveAnalysis<AnalysisContext, Long> {
 
@@ -91,9 +90,8 @@ public class ObjectCacheAnalysisDemo {
 		// Simply the number of object accesses in this node
 		public void visitBasicBlockNode(BasicBlockNode n) {
 			for(InstructionHandle ih : n.getBasicBlock().getInstructions()) {
-				if(ObjectRefAnalysis.hasHandleAccess(ih)) {
-					cost += 1;
-				}
+				if(! ObjectRefAnalysis.hasHandleAccess(ih)) continue;
+				cost += 1;
 			}
 		}
 
@@ -156,7 +154,7 @@ public class ObjectCacheAnalysisDemo {
 	
 	public long computeCost() {
 		/* Cache Analysis */
-		objRefAnalysis = new ObjectRefAnalysis(project, this.cacheSize);
+		objRefAnalysis = new ObjectRefAnalysis(project, 1024);
 		objRefAnalysis.analyzeRefUsage();
 		
 		RecursiveAnalysis<AnalysisContext, Long> recAna =
