@@ -144,7 +144,7 @@ public class WcetAppInfo  {
 				for(MethodInfo candidate : cli.getMethods()) {
 					candidates.add(candidate.getMethod().getName());
 				}
-				throw new MethodNotFoundException("The method "+methodName+"could not be found in "+cli.toString()+". "+
+				throw new MethodNotFoundException("The method "+methodName+" could not be found in "+cli.toString()+". "+
 												  "Candidates: "+candidates);
 			}
 		}

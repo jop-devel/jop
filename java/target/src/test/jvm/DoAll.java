@@ -69,7 +69,8 @@ public class DoAll {
 				new InvokeSpecial(),
 				new InvokeSuper(),
 				new PutRef(),
-				new NullPointer()
+				new NullPointer(),
+				new NativeMethods()
 		};
 		
 		for (int i=0; i<tc.length; ++i) {

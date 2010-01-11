@@ -28,7 +28,6 @@ vcom %options% ^
 %jopdir%/memory/mem_sc_new.vhd ^
 %jopdir%/memory/sdpram.vhd ^
 %jopdir%/core/mul.vhd ^
-%jopdir%/core/extension.vhd ^
 %jopdir%/core/bcfetch.vhd ^
 %jopdir%/core/fetch.vhd ^
 %jopdir%/core/decode.vhd ^

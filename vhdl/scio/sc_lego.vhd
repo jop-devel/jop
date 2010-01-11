@@ -169,9 +169,9 @@ architecture rtl of sc_lego is
 
 	signal micro_dout:			std_logic_vector(adc_width-1 downto 0);
 	
-	signal cmp_micro_counter: unsigned(clkint_prescaler_width-1 downto 0);
-	signal cmp_micro_clksd: std_logic;
-	signal cmp_micro_clkint: std_logic;
+	signal micro_counter: unsigned(clkint_prescaler_width-1 downto 0);
+	signal micro_clksd: std_logic;
+	signal micro_clkint: std_logic;
 	
 	-- speaker
 	
@@ -311,7 +311,7 @@ begin
     end process;
         
 
-    cmp_pld_interface: entity work.pld_interface
+    pld_interface: entity work.pld_interface
         port map(
             clk => clk,
             reset => reset,
@@ -321,7 +321,7 @@ begin
             pld_clk => pld_clk,
             data => pld_data);
 
-	cmp_sensor0: entity work.lesens generic map (
+	sensor0: entity work.lesens generic map (
         clk_freq => clk_freq
         )
 		port map(
@@ -332,7 +332,7 @@ begin
         	sdi => s0di,
 			sdo => s0do);
 
-	cmp_sensor1: entity work.lesens generic map (
+	sensor1: entity work.lesens generic map (
         clk_freq => clk_freq
         )
 		port map(
@@ -343,7 +343,7 @@ begin
         	sdi => s1di,
 			sdo => s1do);
 			
-	cmp_sensor2: entity work.lesens generic map (
+	sensor2: entity work.lesens generic map (
         clk_freq => clk_freq
         )
 		port map(
@@ -354,7 +354,7 @@ begin
         	sdi => s2di,
 			sdo => s2do);
 				
-	cmp_motor0: entity work.lego_motor
+	motor0: entity work.lego_motor
         generic map (
             duty_cycle_width        => duty_cycle_width,
             counter_width           => counter_width,
@@ -378,7 +378,7 @@ begin
             mdib                    => m0dib,
             mdob                    => m0dob);
 
-	cmp_motor1: entity work.lego_motor
+	motor1: entity work.lego_motor
         generic map (
             duty_cycle_width        => duty_cycle_width,
             counter_width           => counter_width,
@@ -403,7 +403,7 @@ begin
             mdob                    => m1dob);
 
 	-- no back-emf measurement available for this motor due to lack of pins :(
-	cmp_motor2: entity work.lego_motor
+	motor2: entity work.lego_motor
         generic map (
             duty_cycle_width        => duty_cycle_width,
             counter_width           => counter_width,
@@ -429,31 +429,31 @@ begin
 			);
 			
 	-- XXX
-	cmp_micro_count: process(clk, reset)
+	micro_count: process(clk, reset)
   	begin
     	if reset = '1' then
-      		cmp_micro_counter <= (others => '0');
+      		micro_counter <= (others => '0');
     	elsif rising_edge(clk) then
-      		cmp_micro_counter <= cmp_micro_counter + 1;
+      		micro_counter <= micro_counter + 1;
     	end if;
   	end process;
 
-  	cmp_micro_clksd <= '1' when (cmp_micro_counter(clksd_prescaler_width-1 downto 0) = 0) else '0';
-  	cmp_micro_clkint <= '1' when (cmp_micro_counter(clkint_prescaler_width-1 downto 0) = 0) else '0';	
+  	micro_clksd <= '1' when (micro_counter(clksd_prescaler_width-1 downto 0) = 0) else '0';
+  	micro_clkint <= '1' when (micro_counter(clkint_prescaler_width-1 downto 0) = 0) else '0';	
 	
-	cmp_micro: entity work.sigma_delta
+	micro: entity work.sigma_delta
     generic map (
       dout_width => adc_width)
     port map (
       clk    => clk,
       reset  => reset,
-      clksd  => cmp_micro_clksd,
-      clkint => cmp_micro_clkint,
+      clksd  => micro_clksd,
+      clkint => micro_clkint,
       dout   => micro_dout,
       sdi    => mic1,
       sdo    => mic1do);
 
-	cmp_audio: entity work.audio
+	audio: entity work.audio
 	generic map (
 		input_width => audio_input_width)
 	port map (

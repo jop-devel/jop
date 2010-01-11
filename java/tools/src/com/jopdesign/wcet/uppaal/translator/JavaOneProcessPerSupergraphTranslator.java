@@ -6,6 +6,8 @@ import java.util.Map.Entry;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.analysis.LocalAnalysis;
+import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
@@ -82,15 +84,16 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 			return new SubAutomaton(startInvokeNode, finishInvokeNode);
 		}
 		private void simulateMethodInvocation(
-				Location startInvokeNode, 
+				Location startInvokeNode,
 				Location endInvokeNode,
 				int invokedID,
 				InvokeNode n) {
 			MethodInfo invoked = n.getImplementedMethod();
 			if(n.receiverFlowGraph().isLeafMethod() && config.collapseLeaves) {
-				RecursiveAnalysis<StaticCacheApproximation> ilpAn = 
-					new RecursiveAnalysis<StaticCacheApproximation>(project,new RecursiveAnalysis.LocalIPETStrategy());
-				WcetCost wcet = ilpAn.computeWCET(n.getImplementedMethod(), StaticCacheApproximation.ALWAYS_HIT);
+				RecursiveAnalysis<AnalysisContextLocal> ilpAn =
+					new RecursiveAnalysis<AnalysisContextLocal>(project, new LocalAnalysis());
+				WcetCost wcet = ilpAn.computeWCET(n.getImplementedMethod(),
+						new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_HIT));
 				tBuilder.waitAtLocation(endInvokeNode, wcet.getCost());
 				tBuilder.createTransition(startInvokeNode, endInvokeNode);
 			} else {
@@ -99,7 +102,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 				Transition r = tBuilder.createTransition(javaTranslator.getMethodAutomaton(invoked).getExit(),endInvokeNode);
 				i.getAttrs().appendUpdate("pushCallStack("+invokedID+")");
 				r.getAttrs().appendGuard("matchCallStack("+invokedID+")");
-				r.getAttrs().appendUpdate("popCallStack()");				
+				r.getAttrs().appendUpdate("popCallStack()");
 			}
 		}
 	}
@@ -134,10 +137,10 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 		int i = 0;
 		for(MethodInfo mi : methodInfos) {
 			if(project.getCallGraph().isLeafNode(mi) && config.collapseLeaves) continue;
-			translateMethod(tBuilder, 
+			translateMethod(tBuilder,
 					        getMethodAutomaton(mi),
-					        i++, 
-					        mi, 
+					        i++,
+					        mi,
 					        new InvokeViaCallStackBuilder(this,tBuilder));
 		}
 		tBuilder.getInitial().setCommited();
@@ -159,7 +162,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 		for(int i = lvbs.size() - 1; i >= 0; i--) {
 			progressSummands.add(""+multiplicator+" * M0."+TemplateBuilder.loopVarName(i));
 			multiplicator *= lvbs.get(i);
-		}	
+		}
 		// progress measure are not as safe as I hoped them to be :(
 		// systemBuilder.addProgressMeasure(MiscUtils.joinStrings(progressSummands, " + "));
 	}
@@ -167,7 +170,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 	// Global maximal nesting depth is given by the equation
 	//   node.gmnd = node.method.gmnd + (node.loop ? node.loop.nestingDepth : 0)
 	//   method.gmnd = max { cs.method.gmnd + cs.gmnd | cs <- method.callsites }
-	// Example: 
+	// Example:
 	//  main() { for() for() X: f(); }
 	//  f() { for() for(HOL) }
 	//  nesting depth of HOL is 2

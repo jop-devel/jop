@@ -115,8 +115,10 @@ public class Model {
     /* end shared code */
     /* Model_Discard's input variable declarations. */
     static int Model_Discard_input[] = new int[1];
+    /* Director has a period attribute, so we track current time. */
+    double _currentTime = 0;
     /* Provide the period attribute as constant. */
-    public final static double PERIOD = 0.0;
+    public final static double PERIOD = 0.5;
     /* end preinitialize code */
     public void initialize() {
         /* The initialization of the director. */
@@ -141,8 +143,7 @@ public class Model {
         /* The firing of the StaticSchedulingDirector */
         /* Fire Model_Const */
         Model_Discard_input[0] = 1;
-        /*
-        ....Begin updateOffset....Model_Const_trigger */
+        /* ....Begin updateOffset....Model_Const_trigger */
         /*
         ....Begin updateConnectedPortsOffset....Model_Const_output */
         /*
@@ -151,11 +152,11 @@ public class Model {
         // consume the input token.
         ;
         //Model_Discard_input[0];
-        /*
-        ....Begin updateOffset....Model_Discard_input */
+        /* ....Begin updateOffset....Model_Discard_input */
         /*
         ....End updateOffset....Model_Discard_input */
         /* The postfire of the director. */
+        _currentTime += 0.5;
     }
     public void doWrapup() throws Exception {
     }

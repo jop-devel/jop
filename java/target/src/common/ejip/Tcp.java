@@ -38,6 +38,9 @@ package ejip;
  * TCP functions.
  * 
  * @author martin
+ * 
+ * TODO: timer shall be an int with the correct subtraction calculation
+ * 		see Timer.java
  *
  */
 
@@ -107,7 +110,7 @@ public class Tcp implements Runnable {
 	public static final int DATA = 10;
 	
 	/**
-	 * 500 ms timer tick for the timout handlers
+	 * 500 ms timer tick for the timeout handlers
 	 */
 	public static final int TIMER_TICK = 500;
 
@@ -126,6 +129,12 @@ public class Tcp implements Runnable {
 	 * Timout for retransmit in timer ticks.
 	 */
 	public static final int TIMEOUT = 2000/TIMER_TICK;
+	
+	/**
+	 * Maximum retransmissions.
+	 */
+	public static final int MAX_RETRANSMIT = 10;
+	
 	/**
 	 * The timer.
 	 */
@@ -137,6 +146,7 @@ public class Tcp implements Runnable {
 	private TcpHandler[] list;
 	private int[] ports;
 	private int loopCnt;
+	private int conLoopCnt;
 	
 	private Ejip ejip;
 
@@ -146,6 +156,8 @@ public class Tcp implements Runnable {
 		list = new TcpHandler[MAX_HANDLER];
 		ports = new int[MAX_HANDLER];
 		loopCnt = 0;
+		conLoopCnt = 0;
+		// TODO: why is this a (char)?
 		timer = (char)System.currentTimeMillis() + TIMER_TICK;
 	}
 	/**
@@ -186,7 +198,7 @@ public class Tcp implements Runnable {
 		return false;
 	}
 	/**
-	*	Called periodic from Net for timeout processing.
+	*	Called periodically from Net for timeout processing.
 	*/
 	public void run() {
 
@@ -194,56 +206,50 @@ public class Tcp implements Runnable {
 
 		if ((short)(timer - System.currentTimeMillis()) < 0) {
 
-// 			System.out.print("timer: ");
-// 			System.out.print(timer);
-// 			System.out.print(" sys: ");
-// 			System.out.println(System.currentTimeMillis());
+			// this is probably a quite big synchronized block
+			// for a SLIP connection
+			synchronized (mutex) {
+				TcpConnection tc = TcpConnection.connections[conLoopCnt];
 
-			// do the TCP timeout
-			timer = (short)(System.currentTimeMillis() + TIMER_TICK);
-			for (i=0; i<TcpConnection.CNT; ++i) {
-
-				synchronized (mutex) {
-					TcpConnection tc = TcpConnection.connections[i];
-
+//				if (Logging.LOG) {
+//					Logging.intVal(tc.idleTime);
+//					Logging.wr("; ");
+//				}
+				
+				tc.idleTime--;
+				if (tc.state != FREE && tc.idleTime < 0) {
 					if (Logging.LOG) {
-						Logging.intVal(tc.idleTime);
-						Logging.wr("; ");
+						Logging.wr("Forced shutdown");
+						Logging.lf();
 					}
-					
-					tc.idleTime--;
-					if (tc.state != FREE && tc.idleTime < 0) {
-						if (Logging.LOG) {
-							Logging.wr("Forced shutdown");
-							Logging.lf();
-						}
-						if (tc.outStanding!=null) {
-							Packet os = tc.outStanding;
-							// recycle the outstanding packet and reset isTcpOnFly
-							tc.outStanding = null;
-							os.isTcpOnFly = false;
-							ejip.returnPacket(os);
-						}
-						tc.close();
-						return;
-					}
+					tc.close(ejip);
+					return;
+				}
 
-					if (tc.outStanding!=null) {
-						tc.timeout--;
-						if (tc.timeout==0) {
-							// TODO: exponential backoff and cancel connection
-							// after some time (2-7 minutes)
+				if (tc.outStanding!=null) {
+					tc.timeout--;
+					if (tc.timeout==0) {
+						// TODO: exponential backoff 
+						tc.retryCnt++;
+						if (tc.retryCnt==MAX_RETRANSMIT) {
+							Logging.wr("maximum retransmit - close");
+							tc.close(ejip);
+							tc.retryCnt=0;
+						} else {
 							tc.timeout = TIMEOUT;
 							// let it retransmit
 							Logging.wr("retransmit");
-							tc.outStanding.interf.txQueue.enq(tc.outStanding);
+							tc.outStanding.interf.txQueue.enq(tc.outStanding);								
 						}
 					}
 				}
 			}
-
-			if (Logging.LOG) {
-				Logging.lf();
+			
+			++conLoopCnt;
+			// All connection done, restart timer
+			if (conLoopCnt==TcpConnection.CNT) {
+				conLoopCnt = 0;				
+				timer = (short)(System.currentTimeMillis() + TIMER_TICK);
 			}
 
 		} else {
@@ -297,7 +303,7 @@ public class Tcp implements Runnable {
 		// no handler found
 		if (th==null) {
 			ejip.returnPacket(p);
-			tc.close();
+			tc.close(ejip);
 			if (Logging.LOG) Logging.lf();
 			if (Logging.LOG) Logging.wr('T');
 			if (Logging.LOG) Logging.intVal(buf[HEAD] & 0xffff);
@@ -310,7 +316,7 @@ public class Tcp implements Runnable {
 	
 	/**
 	 * Handle the TCP state machine
-	 * @param p incomming packet
+	 * @param p incoming packet
 	 * @param tc connection
 	 * @return false means nothing more to do
 	 */
@@ -338,8 +344,8 @@ public class Tcp implements Runnable {
 		if (Logging.LOG) {
 			Logging.wr("TCP state: ");
 			Logging.intVal(state);
-			Logging.wr(" len ");
-			Logging.intVal(datlen);
+//			Logging.wr(" len ");
+//			Logging.intVal(datlen);
 			Logging.lf();
 		}
 
@@ -363,11 +369,10 @@ public class Tcp implements Runnable {
 			// shall we send a RST?
 			// we don't ever get here!
 			if (Logging.LOG) {
-				Logging.wr("shutdown from CLOSED");
-				Logging.lf();
+				Logging.wr("shutdown from CLOSED ");
 			}
 			ejip.returnPacket(p);
-			tc.close();
+			tc.close(ejip);
 			return;
 		case Tcp.LISTEN:
 			// set the connection for the handler
@@ -384,8 +389,7 @@ public class Tcp implements Runnable {
 		case Tcp.SYN_RCVD:
 			if ((flags&FL_ACK) != 0 && buf[ACKNR]==tc.sndNxt) {
 				if (Logging.LOG) {
-					Logging.wr("SYN acked");
-					Logging.lf();
+					Logging.wr("SYN acked ");
 				}
 				tc.state = ESTABLISHED;
 				h = th.established(p);
@@ -404,8 +408,7 @@ public class Tcp implements Runnable {
 			if ((flags&FL_SYN) == 0) {
 				ejip.returnPacket(p);
 				if (Logging.LOG) {
-					Logging.wr("dropped non SYN packet in SYN_SENT");
-					Logging.lf();
+					Logging.wr("dropped non SYN packet in SYN_SENT ");
 				}
 				return;
 			}
@@ -427,8 +430,7 @@ public class Tcp implements Runnable {
 		case Tcp.ESTABLISHED:
 			if ((flags&FL_FIN)!=0) {
 				if (Logging.LOG) {
-					Logging.wr("FIN received");
-					Logging.lf();
+					Logging.wr("FIN received ");
 				}
 				// TODO check SEQNR
 				tc.rcvNxt = buf[SEQNR]+1;
@@ -444,8 +446,7 @@ public class Tcp implements Runnable {
 			if (buf[SEQNR]==tc.rcvNxt) {
 
 				if (Logging.LOG) {
-					Logging.wr("do request");
-					Logging.lf();
+					Logging.wr("do request ");
 				}
 				h = th.request(p);
 				tc.rcvNxt += len;
@@ -468,8 +469,7 @@ public class Tcp implements Runnable {
 
 				if (th.finished()) {
 					if (Logging.LOG) {
-						Logging.wr("send FIN");
-						Logging.lf();
+						Logging.wr("send FIN ");
 					}
 					tc.sndNxt++;
 					tc.state = FIN_WAIT_1;
@@ -479,28 +479,26 @@ public class Tcp implements Runnable {
 				ejip.returnPacket(p);
 				// TODO ack last segment
 				if (Logging.LOG) {
-					Logging.wr("dropped wrong SEQNR");
-					Logging.lf();
+					Logging.wr("dropped wrong SEQNR ");
 				}
 			}
 			break;
 		case Tcp.CLOSE_WAIT:
 			// we do not need this state as we are not interested
-			// in half open connetions
+			// in half open connections
 			if (Logging.LOG) {
-				Logging.wr("spurious state CLOSE_WAIT");
-				Logging.lf();
+				Logging.wr("spurious state CLOSE_WAIT ");
 			}			
+			ejip.returnPacket(p);
 			break;
 		case Tcp.LAST_ACK:
 			if (Logging.LOG) {
-				Logging.wr("shutdown from LAST_ACK");
-				Logging.lf();
+				Logging.wr("shutdown from LAST_ACK ");
 			}
 			// reset the connection for the handler
 			th.connection = null;			
 			ejip.returnPacket(p);
-			tc.close();
+			tc.close(ejip);
 			break;
 		case Tcp.FIN_WAIT_1:
 			// reset the connection for the handler
@@ -512,8 +510,7 @@ public class Tcp implements Runnable {
 				tc.sndNxt++;		// FIN send counts for one
 				if ((flags&FL_ACK) != 0) {
 					if (Logging.LOG) {
-						Logging.wr("wait from FIN_WAIT_1");
-						Logging.lf();
+						Logging.wr("wait from FIN_WAIT_1 ");
 					}
 					tc.state = TIME_WAIT;
 					tc.idleTime = TIME_WAIT_TIMEOUT;
@@ -521,6 +518,7 @@ public class Tcp implements Runnable {
 					tc.state = CLOSING;
 				}
 			} else {
+				ejip.returnPacket(p);
 				tc.state = FIN_WAIT_2;
 			}
 			break;
@@ -530,17 +528,17 @@ public class Tcp implements Runnable {
 				fillHeader(p, tc, FL_ACK);
 				tc.sndNxt++;		// FIN send counts for one
 				if (Logging.LOG) {
-					Logging.wr("wait from FIN_WAIT_2");
-					Logging.lf();
+					Logging.wr("wait from FIN_WAIT_2 ");
 				}
 				tc.state = TIME_WAIT;
 				tc.idleTime = TIME_WAIT_TIMEOUT;
+			} else {
+				ejip.returnPacket(p);
 			}
 			break;
 		case Tcp.CLOSING:
 			if (Logging.LOG) {
-				Logging.wr("shutdown from CLOSING");
-				Logging.lf();
+				Logging.wr("shutdown from CLOSING ");
 			}
 			// drop packet, but keep connection alive
 			ejip.returnPacket(p);
@@ -549,8 +547,7 @@ public class Tcp implements Runnable {
 			break;
 		case Tcp.TIME_WAIT:
 			if (Logging.LOG) {
-				Logging.wr("dropped packet in TIME_WAIT");
-				Logging.lf();
+				Logging.wr("dropped packet in TIME_WAIT ");
 			}
 			// just discard packet
 			ejip.returnPacket(p);
@@ -558,6 +555,18 @@ public class Tcp implements Runnable {
 		}
 	}
 
+	/**
+	 * TODO: explain ... at least packet handling...
+	 * 
+	 * Consumed the packet (either returned or sent) when returning false.
+	 * On true return the packet still needs to be handeled.
+	 * @param p
+	 * @param th
+	 * @param tc
+	 * @param flags
+	 * @param state
+	 * @return
+	 */
 	private boolean checkConnection(Packet p, TcpHandler th, TcpConnection tc, int flags, int state) {
 
 		int buf[] = p.buf;
@@ -572,21 +581,14 @@ public class Tcp implements Runnable {
 				// reset the connection for the handler
 				th.connection = null;
 
-				if (tc.outStanding != null) {
-					Packet os = tc.outStanding;
-					// recycle the outstanding packet and reset isTcpOnFly
-					tc.outStanding = null;
-					os.isTcpOnFly = false;
-					ejip.returnPacket(os);
-				}
 				ejip.returnPacket(p);
-				tc.close();
+				tc.close(ejip);
 				return false;
 			}
 		}
 		// reset if what we received does not match our state
 		synchronized (mutex) {
-			if (state == LISTEN && (flags&FL_SYN) == 0) {
+			if (state == LISTEN && (flags & FL_SYN) == 0) {
 				//ejip.returnPacket(p);
 				// reset the connection
 				tc.rcvNxt = buf[SEQNR]+p.len-(DATA<<2);
@@ -621,6 +623,17 @@ public class Tcp implements Runnable {
 	}
 
 
+	/**
+	 * TODO: explain...
+	 * 
+	 * Packet consumed on false return.
+	 * 
+	 * @param p
+	 * @param th
+	 * @param tc
+	 * @param flags
+	 * @return
+	 */
 	private boolean checkAck(Packet p, TcpHandler th, TcpConnection tc, int flags) {
 
 		int buf[] = p.buf;
@@ -674,6 +687,13 @@ public class Tcp implements Runnable {
 		tc.state = SYN_SENT;
 	}
 
+	/**
+	 * Fill in the header and enqueue the packet into the send queue.
+	 * 
+	 * @param p
+	 * @param tc
+	 * @param fl
+	 */
 	void fillHeader(Packet p, TcpConnection tc, int fl) {
 
 		// Do we really free it here?

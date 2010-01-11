@@ -49,6 +49,7 @@ public class BgInit {
 		//	start TCP/IP
 		//
 		net = new Net(ejip);
+		net.getUdp().addHandler(Tftp.PORT, new Tftp(ejip));
 		
 		//
 		//	use second serial line for simulation

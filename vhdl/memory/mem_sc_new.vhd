@@ -159,6 +159,9 @@ architecture rtl of mem_sc is
 	-- used to 'store' the size of arrays
 	signal size_reg, size_next		: unsigned(SC_ADDR_SIZE-1 downto 0);
 
+	-- registering exception signals
+	signal np_exc_next, ab_exc_next : std_logic;
+
 --
 --	values for bytecode read/cache
 --
@@ -194,7 +197,7 @@ begin
 				  sc_mem_in.rd_data(31 downto 24);
 
 
-	cmp_cache: cache generic map (jpc_width, block_bits) port map(
+	cache: cache generic map (jpc_width, block_bits) port map(
 		clk, reset,
 		std_logic_vector(bc_len),
 		std_logic_vector(addr_reg(17 downto 0)),
@@ -205,7 +208,7 @@ begin
 		);
 
 
-	cmp_jbc: jbc generic map (jpc_width)
+	jbc: jbc generic map (jpc_width)
 		port map(
 			clk => clk,
 			data => bc_wr_data,
@@ -231,6 +234,8 @@ begin
 			offset_reg <= (others => '0');
 			bc_len <= (others => '0');
 			bc_wr_addr <= (others => '0');
+			ab_exc <= '0';
+			np_exc <= '0';
 			state <= idl;
 			
 		elsif rising_edge(clk) then
@@ -244,6 +249,8 @@ begin
 			offset_reg <= offset_next;
 			bc_len <= bc_len_next;
 			bc_wr_addr <= bc_wr_addr_next;
+			ab_exc <= ab_exc_next;
+			np_exc <= np_exc_next;
 			state <= state_next;
 			
 		end if;
@@ -269,7 +276,8 @@ begin
 		sc_mem_out.rd <= '0';
 		sc_mem_out.wr <= '0';
 		sc_mem_out.atomic <= '0';
-		sc_mem_out.nc <= '1';
+		sc_mem_out.cache <= bypass;
+		sc_mem_out.tm_cache <= '1'; -- TMTODO reduce
 
 		-- default values to CPU
 		mem_out.dout <= sc_mem_in.rd_data;
@@ -280,8 +288,8 @@ begin
 		end if;
 
 		-- no exceptions as default
-		np_exc <= '0';
-		ab_exc <= '0';
+		np_exc_next <= '0';
+		ab_exc_next <= '0';
 
 		-- address registering
 		addr_next <= addr_reg;	
@@ -304,9 +312,9 @@ begin
 
 		-- compute field addresses
 		field_addr := unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0)) + index_reg;
-		if field_addr >= base_reg and field_addr < pos_reg then
-			field_addr := field_addr + offset_reg;
-		end if;
+--		if field_addr >= base_reg and field_addr < pos_reg then
+--			field_addr := field_addr + offset_reg;
+--		end if;
 		
 		case state is
 
@@ -317,13 +325,13 @@ begin
 				end if;
 				if mem_in.rd='1' then
 					sc_mem_out.address <= ain(SC_ADDR_SIZE-1 downto 0);
-					sc_mem_out.nc <= '0';
+					sc_mem_out.cache <= direct_mapped;
 					sc_mem_out.rd <= '1';
 					state_next <= last;
 				end if;
 				if mem_in.wr='1' then	
 					sc_mem_out.wr_data <= ain;
-					sc_mem_out.nc <= '0';
+					sc_mem_out.cache <= direct_mapped;
 					sc_mem_out.wr <= '1';
 					state_next <= last;
 				end if;
@@ -342,7 +350,7 @@ begin
 					sc_mem_out.address <= bin(SC_ADDR_SIZE-1 downto 0);
 					sc_mem_out.rd <= '1';					
 					sc_mem_out.atomic <= '1';
-					sc_mem_out.nc <= '0';
+					sc_mem_out.cache <= full_assoc;
 					state_next <= iald0;
 				end if;
 				if mem_in.getfield='1' then
@@ -351,7 +359,7 @@ begin
 					sc_mem_out.address <= bin(SC_ADDR_SIZE-1 downto 0);
 					sc_mem_out.rd <= '1';					
 					sc_mem_out.atomic <= '1';
-					sc_mem_out.nc <= '0';
+					sc_mem_out.cache <= full_assoc;
 					state_next <= gf0;
 				end if;
 				if mem_in.putfield='1' then					
@@ -362,17 +370,17 @@ begin
 					value_next <= unsigned(ain);					
 					state_next <= iast0;
 				end if;
-				if mem_in.copy='1' then
-					base_next <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
-					addr_next <= unsigned(ain(SC_ADDR_SIZE-1 downto 0)) + unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+--				if mem_in.copy='1' then
+--					base_next <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+--					addr_next <= unsigned(ain(SC_ADDR_SIZE-1 downto 0)) + unsigned(bin(SC_ADDR_SIZE-1 downto 0));
 
-					if ain(31) = '1' then
-						pos_next <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
-						state_next <= idl;
-					else
-						state_next <= cp0;
-					end if;
-				end if;
+--					if ain(31) = '1' then
+--						pos_next <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+--						state_next <= idl;
+--					else
+--						state_next <= cp0;
+--					end if;
+--				end if;
 
 --
 --	bytecode read
@@ -454,13 +462,13 @@ begin
 
 				-- NP check
 				if addr_reg = 0 then
-					np_exc <= '1';
+					np_exc_next <= '1';
 					state_next <= last;
 				end if;
 
 			when gf1 =>
 				sc_mem_out.atomic <= '1';
-				sc_mem_out.nc <= '0';
+				sc_mem_out.cache <= full_assoc;
 				mem_out.bsy <= '1';
 
 				sc_mem_out.rd <= '1';
@@ -470,7 +478,7 @@ begin
 				-- putfield
 			when pf0 =>
 				sc_mem_out.atomic <= '1';				
-				sc_mem_out.nc <= '0';
+				sc_mem_out.cache <= full_assoc;
 				mem_out.bsy <= '1';
 
 				index_next <= unsigned(ain(SC_ADDR_SIZE-1 downto 0));
@@ -492,13 +500,13 @@ begin
 
 				-- NP check
 				if addr_reg = 0 then
-					np_exc <= '1';
+					np_exc_next <= '1';
 					state_next <= last;
 				end if;
 					
 			when pf2 =>
 				sc_mem_out.atomic <= '1';
-				sc_mem_out.nc <= '0';
+				sc_mem_out.cache <= full_assoc;
 				mem_out.bsy <= '1';
 
 				sc_mem_out.wr <= '1';
@@ -508,7 +516,7 @@ begin
 				-- iaload
 			when iald0 =>
 				sc_mem_out.atomic <= '1';
-				sc_mem_out.nc <= '0';
+				sc_mem_out.cache <= full_assoc;
 				mem_out.bsy <= '1';					
 
 				-- either 1 or 0
@@ -529,11 +537,11 @@ begin
 
 				-- NP and AB checks
 				if addr_reg = 1 then  	-- already added 1
-					np_exc <= '1';
+					np_exc_next <= '1';
 					state_next <= last;
 				end if;
 				if index_reg(SC_ADDR_SIZE-1) = '1' then
-					ab_exc <= '1';
+					ab_exc_next <= '1';
 					state_next <= last;
 				end if;
 
@@ -546,7 +554,7 @@ begin
 
 			when iald2 =>
 				sc_mem_out.atomic <= '1';
-				sc_mem_out.nc <= '0'; -- TODO why commented out?
+				sc_mem_out.cache <= bypass;
 				mem_out.bsy <= '1';
 
 				-- either 1 or 0
@@ -581,14 +589,14 @@ begin
 				end if;
 				-- AB check
 				if index_reg >= size_reg then
-					ab_exc <= '1';
+					ab_exc_next <= '1';
 					state_next <= last;
 				end if;
 				
 				-- iastore
 			when iast0 =>
 				sc_mem_out.atomic <= '1';				
-				sc_mem_out.nc <= '0';
+				sc_mem_out.cache <= full_assoc;
 				mem_out.bsy <= '1';
 
 				index_next <= unsigned(ain(SC_ADDR_SIZE-1 downto 0));
@@ -601,7 +609,7 @@ begin
 
 			when iast1 =>
 				sc_mem_out.atomic <= '1';
-				sc_mem_out.nc <= '0';
+				sc_mem_out.cache <= full_assoc;
 				mem_out.bsy <= '1';					
 				
 				-- either 1 or 0
@@ -622,11 +630,11 @@ begin
 
 				-- NP and AB checks
 				if addr_reg = 1 then  	-- already added 1
-					np_exc <= '1';
+					np_exc_next <= '1';
 					state_next <= last;
 				end if;
 				if index_reg(SC_ADDR_SIZE-1) = '1' then
-					ab_exc <= '1';
+					ab_exc_next <= '1';
 					state_next <= last;
 				end if;
 
@@ -650,12 +658,12 @@ begin
 				
 			when iast4 =>
 				sc_mem_out.atomic <= '1';
-				sc_mem_out.nc <= '0'; -- TODO why commented out?
+				sc_mem_out.cache <= bypass;
 				mem_out.bsy <= '1';
 
 				-- check bounds and trigger write only if it's ok
 				if index_reg >= size_reg then
-					ab_exc <= '1';
+					ab_exc_next <= '1';
 					state_next <= last;
 				else
 					sc_mem_out.wr <= '1';
@@ -664,7 +672,7 @@ begin
 
 			when cp0 =>
 				sc_mem_out.atomic <= '1';
-				sc_mem_out.nc <= '0';
+				sc_mem_out.cache <= bypass;
 				mem_out.bsy <= '1';
 
 				sc_mem_out.rd <= '1';
@@ -686,7 +694,7 @@ begin
 
 			when cp2 =>
 				sc_mem_out.atomic <= '1';
-				sc_mem_out.nc <= '0';
+				sc_mem_out.cache <= bypass;
 				mem_out.bsy <= '1';
 
 				sc_mem_out.wr <= '1';

@@ -63,7 +63,8 @@ port (
 
 	ain		: in std_logic_vector(31 downto 0);		-- TOS
 	bin		: in std_logic_vector(31 downto 0);		-- NOS
-	ext_addr	: in std_logic_vector(exta_width-1 downto 0);
+	ext_addr	: in std_logic_vector(EXTA_WIDTH-1 downto 0);
+	mem_type	: in std_logic_vector(1 downto 0);
 	rd, wr		: in std_logic;
 	bsy		: out std_logic;
 	dout		: out std_logic_vector(31 downto 0);	-- to stack
@@ -175,6 +176,7 @@ begin
 		mem_in.iastore <= '0';
 		mem_in.getfield <= '0';
 		mem_in.putfield <= '0';
+		mem_in.mtype <= "00";
 		mul_wr <= '0';
 		wr_dly <= '0';
 
@@ -189,8 +191,8 @@ begin
 		mem_in.getfield <= '0';
 		mem_in.putfield <= '0';
 		mem_in.copy <= '0';
+		mem_in.mtype <= "00";
 		mul_wr <= '0';
-
 		wr_dly <= wr;
 
 --
@@ -221,6 +223,8 @@ begin
 			else
 				mem_in.bc_rd <= '1';	-- start bc read
 			end if;
+
+			mem_in.mtype <= mem_type;
 		end if;
 
 	end if;

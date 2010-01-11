@@ -35,6 +35,7 @@ package ejip;
 /*
 *   Changelog:
 *		2002-10-24	creation.
+*		2010-01-06	No Tftp handler as default.
 *
 *	TODO: in Udp, TcpIp.... when to use the packet with automatic reply?
 */
@@ -69,9 +70,6 @@ public class Udp implements Runnable {
 		list = new UdpHandler[MAX_HANDLER];
 		ports = new int[MAX_HANDLER];
 		loopCnt = 0;
-
-// disable for WCET analysis as it is hard for the analysis
-		addHandler(Tftp.PORT, new Tftp(ejip));
 	}
 	/**
 	*	add a handler for UDP requests.

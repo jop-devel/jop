@@ -85,13 +85,16 @@ port (
 
 	bsy			: in std_logic;
 	din			: in std_logic_vector(width-1 downto 0);
-	ext_addr	: out std_logic_vector(EXTA_WIDTH-1 downto 0);
-	rd, wr		: out std_logic;
+	mem_in		: out mem_in_type;
+	mmu_instr	: out std_logic_vector(MMU_WIDTH-1 downto 0);
+	mul_wr		: out std_logic;
+	wr_dly		: out std_logic;
 
--- jbc connections
+--	connection to mmu
 
-	jbc_addr	: out std_logic_vector(jpc_width-1 downto 0);
-	jbc_data	: in std_logic_vector(7 downto 0);
+	bc_wr_addr	: in std_logic_vector(jpc_width-3 downto 0);	-- address for jbc (in words!)
+	bc_wr_data	: in std_logic_vector(31 downto 0);	-- write data for jbc
+	bc_wr_ena	: in std_logic;
 
 -- interrupt from io
 
@@ -119,10 +122,12 @@ port (
 	din			: in std_logic_vector(31 downto 0);				-- A from stack
 	jpc_wr		: in std_logic;
 
---	connection to bytecode cache
+--	connection to mmu
 
-	jbc_addr	: out std_logic_vector(jpc_width-1 downto 0);
-	jbc_data	: in std_logic_vector(7 downto 0);
+	bc_wr_addr	: in std_logic_vector(jpc_width-3 downto 0);	-- address for jbc (in words!)
+	bc_wr_data	: in std_logic_vector(31 downto 0);	-- write data for jbc
+	bc_wr_ena	: in std_logic;
+
 
 	jfetch		: in std_logic;
 	jopdfetch	: in std_logic;
@@ -207,12 +212,16 @@ port (
 	zf, nf		: in std_logic;
 	eq, lt		: in std_logic;
 
+	bcopd		: in std_logic_vector(15 downto 0);	-- index for mmu
+
 	br			: out std_logic;
 	jmp			: out std_logic;
 	jbr			: out std_logic;
 
-	ext_addr	: out std_logic_vector(EXTA_WIDTH-1 downto 0);
-	rd, wr		: out std_logic;
+	mem_in		: out mem_in_type;
+	mmu_instr	: out std_logic_vector(MMU_WIDTH-1 downto 0);
+	mul_wr		: out std_logic;
+	wr_dly		: out std_logic;
 
 	dir			: out std_logic_vector(ram_width-1 downto 0);
 
@@ -296,19 +305,31 @@ end component;
 
 begin
 
-	cmp_bcf: bcfetch generic map(jpc_width, pc_width)
+	bcf: bcfetch generic map(jpc_width, pc_width)
 			port map (clk, reset, jpc_out, stk_aout, ena_jpc,
-			jbc_addr, jbc_data,
+			bc_wr_addr, bc_wr_data, bc_wr_ena,
 			jfetch, jopdfetch,
 			stk_zf, stk_nf, stk_eq, stk_lt, jbr,
 			irq_in, irq_out,
 			jpaddr, opd);
 
-	cmp_fch: fetch generic map (pc_width, i_width)
+	fch: fetch generic map (pc_width, i_width)
 		port map (clk, reset, jfetch, jopdfetch,
 			br, jmp, bsy, jpaddr, instr);
 
-	cmp_stk: stack generic map (width, jpc_width, stov_using_geq)
+	dec: decode generic map (i_width)
+		port map (clk, reset, instr, stk_zf, stk_nf, stk_eq, stk_lt,
+			opd,
+			br, jmp, jbr,
+			mem_in,
+			mmu_instr, mul_wr, wr_dly,
+			dir,
+			sel_sub, sel_amux, ena_a,
+			sel_bmux, sel_log, sel_shf, sel_lmux, sel_imux, sel_rmux, sel_smux,
+			sel_mmux, sel_rda, sel_wra,
+			wr_ena, ena_b, ena_vp, ena_jpc, ena_ar);
+
+	stk: stack generic map (width, jpc_width, stov_using_geq)
 		port map (clk, reset, din, dir, opd, jpc_out,
 			sel_sub, sel_amux, ena_a,
 			sel_bmux, sel_log, sel_shf, sel_lmux, sel_imux, sel_rmux, sel_smux,
@@ -316,16 +337,6 @@ begin
 			wr_ena, ena_b, ena_vp, ena_ar,
 			sp_ov,
 			stk_zf, stk_nf, stk_eq, stk_lt, stk_aout, stk_bout);
-
-	cmp_dec: decode generic map (i_width)
-		port map (clk, reset, instr, stk_zf, stk_nf, stk_eq, stk_lt,
-			br, jmp, jbr,
-			ext_addr, rd, wr,
-			dir,
-			sel_sub, sel_amux, ena_a,
-			sel_bmux, sel_log, sel_shf, sel_lmux, sel_imux, sel_rmux, sel_smux,
-			sel_mmux, sel_rda, sel_wra,
-			wr_ena, ena_b, ena_vp, ena_jpc, ena_ar);
 
 	aout <= stk_aout;
 	bout <= stk_bout;

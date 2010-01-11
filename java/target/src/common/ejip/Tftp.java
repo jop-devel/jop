@@ -389,7 +389,7 @@ public class Tftp implements UdpHandler {
 		i = fn >> 8;
 		if (i == 'i') { // read internal memory
 			base = block << 7;
-			for (i = 0; i < 128; ++i) {
+			for (i = 0; i < 128; ++i) { // @WCA loop<=128
 				buf[Udp.DATA + 1 + i] = com.jopdesign.sys.Native.rdIntMem(base
 						+ i);
 			}
@@ -399,9 +399,9 @@ public class Tftp implements UdpHandler {
 			base += ((fn & 0xff) - '0') << 16; // 64 KB sector
 
 			k = 0;
-			for (i = 0; i < 128; ++i) {
+			for (i = 0; i < 128; ++i) { // @WCA loop<=128
 				synchronized (this) {
-					for (j = 0; j < 4; ++j) {
+					for (j = 0; j < 4; ++j) { // @WCA loop<=4
 						k <<= 8;
 						k += com.jopdesign.sys.Native
 								.rdMem(base + (i << 2) + j);
@@ -410,7 +410,7 @@ public class Tftp implements UdpHandler {
 				buf[Udp.DATA + 1 + i] = k;
 			}
 		} else { // read nothing
-			for (i = 0; i < 128; ++i) {
+			for (i = 0; i < 128; ++i) { // @WCA loop<=128
 				buf[Udp.DATA + 1 + i] = 0;
 			}
 		}

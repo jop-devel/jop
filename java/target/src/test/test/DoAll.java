@@ -30,6 +30,7 @@ public class DoAll {
 		
 		jvm.DoAll.main(args);
 		jdk.DoAll.main(args);
+		jvmtest.JopTestSuite.main(args);
 // 		Flash.main(args);
 		jbe.DoAll.main(args);
 		

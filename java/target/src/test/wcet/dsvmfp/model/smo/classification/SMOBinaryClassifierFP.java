@@ -127,35 +127,7 @@ public class SMOBinaryClassifierFP{
   static public boolean examineAll;
 
   static public int loop;
-  // LOCAL METHOD VARIABLES
-  // takeStep start
-  // alpha1 and alpha2
-  // int eta_fp;
 
-  // The box clippings
-  // int l_fp, h_fp;
-
-  // The new alphas.and old clipped and non-clipped Lagrange multipliers
-  // int a1_fp, a2_fp;
-
-  // The cached old alphas.
-  // int alph1_fp, alph2_fp;
-
-  // The target variables for the two points
-  // int y1_fp, y2_fp;
-
-  // The modified functional output (without bias_fp (Keerthi99).
-  // int f1_fp, f2_fp;
-  // Sign
-  // int s_fp;
-
-  // takestep end
-  // examineexample start
-  // int i1, i2;
-
-  // int metai = 0;
-
-  // int metaj = 0;
 
   /**
    * Method mainRoutine, which estimates the SVM parameters. The parameters are
@@ -249,12 +221,7 @@ public class SMOBinaryClassifierFP{
    * @return true if it was possible to take a step
    */
   static boolean examineExample() {
-//    System.out.print("EXAMINEEXAMPLE, i2:");
-
-//    System.out.println(i2);
-
-    // for(int i=0;i<200000;i++);
-    i1 = -1;
+     i1 = -1;
 
     // Target
     // double y2_fp;
@@ -266,13 +233,7 @@ public class SMOBinaryClassifierFP{
     // Assignment to local variables
 
     int f2_fp;
-    // int y2_fp = y_fp[i2];
-    // int alph2_fp = alpha_fp[i2];
-    // Todo: Enable cache
-    /***************************************************************************
-     * if (findexset[i2] == 0) { f2_fp = fcache_fp[i2]; } else
-     **************************************************************************/
-    // System.out.println("ea");
+
     {
       // System.out.println("eaa");
       f2_fp = getfFP(i2);
@@ -318,33 +279,11 @@ public class SMOBinaryClassifierFP{
         i1 = i_up;
       }
     }
-    // System.out.println("ec");
-    // System.out.println("ed");
-    // printBoolean("takeStepResult",takeStepResult);
-    // if (takeStep()) {
-    // return true;
-    // } else {
-    // return false;
-    // }
 
-//    takeStepFlag = true;
-//    // Wait until takeStep() is done
-//    if (runasthread) {
-//      while (takeStepFlag) {
-//        smo.waitForNextPeriod();
-//      }
-//    }
-//
-//    return takeStepResult;
     takeStep();
     return takeStepResult;
   }
 
-  // static void rec() {
-  // // Dbg.wr((char) (Native.rd(Const.IO_WD)+'0'+1));
-  // Dbg.wr(Native.rd(Const.IO_WD));
-  // rec();
-  // }
 
   /**
    * Method takeStep, which optimizes two lagrange multipliers at a time. The
@@ -359,57 +298,15 @@ public class SMOBinaryClassifierFP{
    */
   public static boolean takeStep() {
 
-//    System.out.print("TAKESTEP START: i1=");
-//    System.out.print(i1);
-//    System.out.print(", i2=");
-//    System.out.println(i2);
-    // if(i1 == 15 && i2 ==74){
-    // printSMOInfo = true;
-    // while(printSMOInfo)
-    // smo.waitForNextPeriod();
-    // }
-    // rec();
-
-    // Native.wr(1, com.jopdesign.sys.Const.IO_WD);
-
-    // rec();
-    // this.i1 = i1;
-    // this.i2 = i2;
-//    int objStart = 0;
-//    if (info)
-//      objStart = getObjectiveFunctionFP();
-//    int alphaCheck = 0;
-
-    // if (info)
-    // for (int i = 0; i < m; i++)
-    // alphaCheck = FP.add(alphaCheck, FP.mul(y_fp[i], alpha_fp[i]));
-    // if (FP.abs(alphaCheck) > alphaTol_fp && info)
-    // System.out.println("Entry: Alphas*y does not add up to 0="
-    // + FP.fpToStr(alphaCheck));
-    // System.out.println("ts here 1");
-    // if (takeStepCount % 1000 == 0 && info) {
-    // System.out.println("takeStep(): count=" + takeStepCount
-    // + ", Entering method, i1=" + i1 + ", i2=" + i2);
-    // }
-    // System.out.println("ts here 1a");
-    // double qp = printQP("takeStep start", i1, getAlpha(i1), i2,
-    // getAlpha(i2), true);
-    // dLog.log("qp=" + qp, Log.NORMAL);
-    // showQPGraph("MyQpGraph: loop " + loop, i1, getAlpha(i1), i2);
-    // Second derivative along the diagonal line in the box constraints for
-    // If the first and second point is the same then return false
     if (i1 == i2) {
       takeStepResult = false;
       takeStepFlag = false;
       return false;
     }
-    // TODO: remove repeated assignments
-    // System.out.println("ts here2");
+
     int alph1_fp = alpha_fp[i1];
     int alph2_fp = alpha_fp[i2];
-    // int y1_fp = y_fp[i1];
-    // int y2_fp = y_fp[i2];
-    // System.out.println("ts here3");
+
     int f1_fp = getfFP(i1);
 
     // System.out.println("ts here3a");
@@ -485,11 +382,7 @@ public class SMOBinaryClassifierFP{
     int fcache_fp_tmpi2 = 0;
     int fcache_fp_tmp_sum = 0;
     for (int i = 0; i < findexset0Size; i++) { // @WCA loop=2
-      // fcache_fp[findexset0[i]] = FP.add(fcache_fp[findexset0[i]], FP.add(
-      // FP.mul(y_fp[i1], FP.mul(FP.sub(a1_fp, alph1_fp),
-      // getKernelOutputFP(i1, findexset0[i], true))),
-      // FP.mul(y_fp[i2], FP.mul(FP.sub(a2_fp, alph2_fp),
-      // getKernelOutputFP(i2, findexset0[i], true)))));
+
       fcache_fp_tmpi1 = FP.mul(y_fp[i1], FP.mul(FP.sub(a1_fp, alph1_fp),
           getKernelOutputFP(i1, findexset0[i], true)));
       fcache_fp_tmpi2 = FP.mul(y_fp[i2], FP.mul(FP.sub(a2_fp, alph2_fp),
@@ -504,10 +397,7 @@ public class SMOBinaryClassifierFP{
     // and F1 if not covered by I_0 //TODO:Check this for first run
 
     if (findexset[i1] != 0) {
-      // fcache_fp[i1] = FP.add(f1_fp, FP.add((FP.mul(FP.mul(y_fp[i1], FP.sub(
-      // a1_fp, alph1_fp)), getKernelOutputFP(i1, i1, true))), (FP
-      // .mul(FP.mul(y_fp[i2], FP.sub(a2_fp, alph2_fp)),
-      // getKernelOutputFP(i1, i2, true)))));
+
       fcache_fp_tmpi1 = FP.mul(FP.mul(y_fp[i1], FP.sub(a1_fp, alph1_fp)),
           getKernelOutputFP(i1, i1, true));
       fcache_fp_tmpi2 = FP.mul(FP.mul(y_fp[i2], FP.sub(a2_fp, alph2_fp)),
@@ -518,10 +408,7 @@ public class SMOBinaryClassifierFP{
 
     // and F2 if not covered by I_0
     if (findexset[i2] != 0) {
-      // fcache_fp[i2] = FP.add(f2_fp, FP.add((FP.mul(FP.mul(y_fp[i1], FP.sub(
-      // a1_fp, alph1_fp)), getKernelOutputFP(i1, i2, true))), (FP
-      // .mul(FP.mul(y_fp[i2], FP.sub(a2_fp, alph2_fp)),
-      // getKernelOutputFP(i2, i2, true)))));
+
       fcache_fp_tmpi1 = FP.mul(FP.mul(y_fp[i1], FP.sub(a1_fp, alph1_fp)),
           getKernelOutputFP(i1, i2, true));
       fcache_fp_tmpi2 = FP.mul(FP.mul(y_fp[i2], FP.sub(a2_fp, alph2_fp)),
@@ -533,57 +420,12 @@ public class SMOBinaryClassifierFP{
     // System.out.println("tsII start");
     updatefindex(i1);
 
-    // System.out.println("tsII: calling smo 10, a");
-    // smoInfo10();
-
-    // System.out.println("tsII:updateindex i2");
-
     updatefindex(i2);
 
-    // System.out.println("tsII: calling smo 10, b");
-    // smoInfo10();
-
-    // This will update i_low, i_up, b_low_fp, b_up_fp
-    // System.out.println("tsII bef updateiandbfully");
-
-    // smoInfo();
-
     updateiandbpartially();
-    // updateiandbfully();
-    // System.out.println("tsII aft updateiandbfully");
-
-    // System.out.println("tsII: calling smo 10, c");
-    // smoInfo10();
-
-    // printQP("takeStep before leaving takestep", i1, getAlpha(i1), i2,
-    // getAlpha(i2), true);
 
     bias_fp = FP.div(FP.add(b_low_fp, b_up_fp), FP.TWO);
-    // System.out.println("tsII: calling smo 10, d");
-    // smoInfo10();
 
-    // last ok
-
-    // if (info) {
-    // int objEnd = getObjectiveFunctionFP();
-    // if (objEnd < objStart)
-    // System.out.println("Objectivefunction not descreasing. Diff="
-    // + FP.fpToStr(objStart - objEnd));
-    // int alphaCheck = 0;
-    // for (int i = 0; i < m; i++)
-    // alphaCheck = FP.add(alphaCheck, FP.mul(y_fp[i], alpha_fp[i]));
-    // if (FP.abs(alphaCheck) > alphaTol_fp)
-    // System.out.println("Exit(+" + takeStepCount
-    // + "): Alphas*y does not add up to 0="
-    // + FP.fpToStr(alphaCheck));
-    // }
-    // System.out.println("ts II ok");
-    // smoInfo();
-    // if(gohome) // and do nothing (will exit the smo after a copuple of
-    // iterations if it worked)
-    // return false;
-    // System.out.print("TAKESTEP END:");
-    // System.out.println(takeStepCount);
     takeStepCount++;
     takeStepResult = true;
     takeStepFlag = false;
@@ -605,22 +447,11 @@ public class SMOBinaryClassifierFP{
     do {
       i1 = i_up;
       i2 = i_low;
-//      System.out.print("INNERLOOP, i1=");
-//      System.out.print(i1);
-//      System.out.print(", i2=");
-//      System.out.println(i2);
-      // Async
-      //Dbg.wr("SP SM:",Native.getSP());
+
       takeStep();
       takeStepFlag = true;
-      // Wait until takeStep() is done
 
-//      while (takeStepFlag) { // TODO:reenable
-//        smo.waitForNextPeriod();
-//      }
       inner_loop_success = takeStepResult;
-
-      // inner_loop_success = takeStep();
 
       if (inner_loop_success) {
         changed++;
@@ -668,8 +499,6 @@ public class SMOBinaryClassifierFP{
     KFP.setSigma2(FP.mul(FP.ONE, FP.ONE));
     KFP.setKernelType(KFP.DOTKERNEL);// GAUSSIANKERNEL or DOTKERNEL
 
-    //KFP.setSigma2(FP.ONE);
-
     // Kernel type must be set first
     KFP.setData(data_fp);
 
@@ -682,15 +511,11 @@ public class SMOBinaryClassifierFP{
     fcache_fp = new int[m];
     // Kernel cache init
     kernelCache_fp = new int[m];
-    //Dbg.wr("SP: ",Native.getSP());
+
     for (int i = 0; i < m; i++) {
-      //Dbg.wr("SP1: ",Native.getSP());
       kernelCache_fp[i] = getKernelOutputFP(i, i, false);
     }
-    //Dbg.wr("SP: ",Native.getSP());
-    // System.out.println("C initParams()");
-    // _low initialization, class 2 = -1 (keerthi99)
-    // _up initialization, class 1 = +1
+
     b_up_fp = FP.intToFp(-1);
     b_low_fp = FP.intToFp(1);
     for (int i = 0; i < m; i++) {
@@ -712,19 +537,7 @@ public class SMOBinaryClassifierFP{
     // logFile = null;
   }
 
-  /**
-   * Method fcacheDeltaFP, which returns the delta update for the fcache for a
-   * given point.
-   *
-   * @param i -
-   *          the point
-   * @return fcache delta
-   */
-  // int fcacheDeltaFP(int i) {
-  // return FP.add((FP.mul(FP.mul(y_fp[i1], FP.sub(a1_fp, alph1_fp)),
-  // getKernelOutputFP(i1, i, true))), (FP.mul(FP.mul(y_fp[i2], FP.sub(
-  // a2_fp, alph2_fp)), getKernelOutputFP(i, i2, true))));
-  // }
+
   /**
    * Method calculatefindex, which return which set the point belongs to based
    * on the alpha_fp value and the target.
@@ -734,8 +547,7 @@ public class SMOBinaryClassifierFP{
    * @return target - the target value
    */
   static int calculatefindex(int i) {
-  //System.out.print("SP:");
-  //System.out.println(Native.getSP());
+
 
     int retVal = -1;
     if (alpha_fp[i] > alphaTol_fp) {
@@ -751,7 +563,7 @@ public class SMOBinaryClassifierFP{
     } else {
       retVal = 4;
     }
-    // TODO: remove when checked it works
+
     if (retVal == -1) {
       System.out.println("calculatefindex not working!");
       System.exit(1);
@@ -796,18 +608,7 @@ public class SMOBinaryClassifierFP{
         }
         findexset0Size--;
 
-        /*
-         * // The new reduced array int[] newfindexset0 = new
-         * int[findexset0.length - 1]; // First part copy
-         * System.arraycopy(findexset0, 0, newfindexset0, 0, findexset0pos[i]); //
-         * Second part copy if (findexset0pos[i] < (findexset0.length - 1)) {
-         * System.arraycopy(findexset0, findexset0pos[i] + 1, newfindexset0,
-         * findexset0pos[i], findexset0.length - findexset0pos[i] - 1); } //
-         * Update the position array by decrementing the // indices that are in
-         * the "upper" part of the findex= array for (int j = findexset0pos[i] +
-         * 1; j < findexset0.length; j++) { findexset0pos[findexset0[j]]--; }
-         * findexset0 = null; findexset0 = newfindexset0;
-         */
+
       }
       // Update findexset
       findexset[i] = index;
@@ -822,7 +623,7 @@ public class SMOBinaryClassifierFP{
    *          index
    * @return the non-biased functional output.
    */
-  //TODO: fix fcache. Test set kernel resolution 12:12 problem
+
   static int getfFP(int i) {
     // First check if i is in I_0 or i_low or i_up
     // System.out.println("g:"); // +(cnt++));
@@ -887,11 +688,7 @@ public class SMOBinaryClassifierFP{
     b_up_fp = FP.intToFp(10000);// FP.MAX;
     i_low = -1;
     i_up = -1;
-    // System.out.println("updatefully B");
-    // printScalar("b_low_fp",b_low_fp);
-    // printSMOInfo = true;
-    // while(printSMOInfo)
-    // smo.waitForNextPeriod();
+
 
     for (int i = 0; i < m; i++) {
       // I0
@@ -920,10 +717,6 @@ public class SMOBinaryClassifierFP{
       }
     }
 
-    // printSMOInfo = true;
-    // while(printSMOInfo)
-    // smo.waitForNextPeriod();
-
     if (i_low == -1 || i_up == -1) {
       System.out
           .println("updateiandbfully() problem: i_low or i_up is not set");
@@ -945,46 +738,19 @@ public class SMOBinaryClassifierFP{
    * b_max is min(I0,I1,I2)
    */
   static void updateiandbpartially() {
-    // System.out.println("UPDATEIANDBPARTIALLY");
-    // System.out.println("upd -1");
-    // printSMOInfo = true;
-    // while(printSMOInfo)
-    // smo.waitForNextPeriod();
+
 
     // Compute i_low, b_low_fp and i_up, b_up_fp
     b_low_fp = FP.intToFp(-10000);// FP.MIN;
-    // System.out.println("upd -1 A");
-    // printSMOInfo = true;
-    // while(printSMOInfo)
-    // smo.waitForNextPeriod();
-    b_up_fp = FP.intToFp(10000);// FP.MAX;
-    // System.out.println("upd -1 B");
-    // printSMOInfo = true;
-    // while(printSMOInfo)
-    // smo.waitForNextPeriod();
-    i_low = -1;
-    // System.out.println("upd -1 C");
-    // printSMOInfo = true;
-    // while(printSMOInfo)
-    // smo.waitForNextPeriod();
-    i_up = -1;// TODO: check below
-    // System.out.println("upd -1 D");
-    // printSMOInfo = true;
-    // while(printSMOInfo)
-    // smo.waitForNextPeriod();
-    // TODO: Error when findexset0size == 0
-    // System.out.println("upd 0");
-    // printSMOInfo = true;
-    // while(printSMOInfo)
-    // smo.waitForNextPeriod();
-    // System.out.println("start loop");
-    for (int i = 0; i < findexset0Size; i++) {
-      // System.out.print("upd pre loop:");
-      // System.out.println(i);
 
-      // printSMOInfo = true;
-      // while(printSMOInfo)
-      // smo.waitForNextPeriod();
+    b_up_fp = FP.intToFp(10000);// FP.MAX;
+
+    i_low = -1;
+
+    i_up = -1;// TODO: check below
+
+    for (int i = 0; i < findexset0Size; i++) {
+
       if (fcache_fp[findexset0[i]] >= b_low_fp) {
         b_low_fp = fcache_fp[findexset0[i]];
         i_low = findexset0[i];
@@ -994,25 +760,13 @@ public class SMOBinaryClassifierFP{
         i_up = findexset0[i];
       }
 
-      // System.out.print("upd post loop:");
-      // System.out.println(i);
-
     }
-    // System.out.println("upd 1");
-    // printSMOInfo = true;
-    // while(printSMOInfo)
-    // smo.waitForNextPeriod();
 
     // Now check i1 if not in I_0
     if (findexset[i1] != 0) {
       if (findexset[i1] == 1 || findexset[i1] == 2) { // I_1 or I_2
         if (b_up_fp > fcache_fp[i1] || findexset0Size == 1) { // TODO:
-          // Check
-          // the
-          // ">"
-          // if
-          // should
-          // be >=
+
           b_up_fp = fcache_fp[i1];
           i_up = i1;
         }
@@ -1023,10 +777,7 @@ public class SMOBinaryClassifierFP{
         }
       }
     }
-    // System.out.println("upd 2");
-    // printSMOInfo = true;
-    // while(printSMOInfo)
-    // smo.waitForNextPeriod();
+
 
     // Now check i2 if not in I_0
     if (findexset[i2] != 0) {
@@ -1042,10 +793,7 @@ public class SMOBinaryClassifierFP{
         }
       }
     }
-    // System.out.println("upd 3");
-    // printSMOInfo = true;
-    // while(printSMOInfo)
-    // smo.waitForNextPeriod();
+
 
     if (i_low == -1 || i_up == -1) {
       System.out
@@ -1265,18 +1013,13 @@ public class SMOBinaryClassifierFP{
     int errorCount = 0;
     for (int i = 0; i < m; i++) {
       int fout_fp = getFunctionOutputFP(i);
-//      System.out.print("Tr ");
-//      System.out.print(i);
-//      System.out.print(" fn ");
-//      System.out.print(fout_fp);
-//      System.out.print(" y_fp ");
-//      System.out.println(y_fp[i]);
+
       if (fout_fp > 0 && y_fp[i] < 0) {
         errorCount++;
-//        System.out.println(" e 1 ");
+
       } else if (fout_fp < 0 && y_fp[i] > 0) {
         errorCount++;
-//        System.out.println(" e 0 ");
+
       }
     }
     return errorCount;
@@ -1328,20 +1071,14 @@ public class SMOBinaryClassifierFP{
     //System.out.println("---ALIVE1m---" + m);
     int n = xtest.length;
     int n2 = data_fp_local[0].length;
-    //System.out.println("---ALIVE1n2---" + n2);
-    //System.out.println("---ALIVE1n---" + n);
-    //System.out.println("---ALIVE11---");
-    // RT bound it to ALPHA_RT
+
     for (int i = 0; i < ALPHA_RT; i++) { // @WCA loop=5
-      //System.out.println("---ALIVE1111---" + i);
 
       n = xtest.length;
-      // MS: is the following bound correct?
+
       while (n != 0) { // @WCA loop=2
         n = n - 1;
-        //System.out.println("---ALIVEnin---" + n);
-        //System.out.println("---ALIVEnim---" + m);
-        //functionalOutput_fp += KFP.kernelX(i);
+
         func_out += (data_fp_local[alpha_index_sorted[i]][n] >> 8) * (xtest[n] >> 8);
       }
       if (alpha_fp[alpha_index_sorted[i]] > 0) {
@@ -1441,10 +1178,7 @@ public class SMOBinaryClassifierFP{
     printScalar("#sv", svs);
     printScalar("training err cnt",getTrainingErrorCountFP());
 
-    // printScalar("GC free words",GC.free());
-    // printScalar("FP.MAX",FP.MAX);
-    // printScalar("FP.MIN",FP.MIN);
-    // printScalar("sp",Native.rd(com.jopdesign.sys.Const.IO_WD));
+
     for (int i = 0; i < 100000; i++)
       ;
     System.out.println("======SMO INFO END======");

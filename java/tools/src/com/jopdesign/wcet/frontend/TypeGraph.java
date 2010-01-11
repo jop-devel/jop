@@ -341,7 +341,6 @@ public class TypeGraph extends DefaultDirectedGraph<ClassInfo,DefaultEdge> {
         public ReverseSubtypeCountComparator(Map<ClassInfo, Set<ClassInfo>> subtypeSets) {
             this.subTypes = subtypeSets;
         }
-        @Override
         public int compare(ClassInfo o1, ClassInfo o2) {
             return new Integer(subTypes.get(o2).size()).compareTo(subTypes.get(o1).size());
         }

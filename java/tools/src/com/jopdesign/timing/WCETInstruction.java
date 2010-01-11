@@ -1120,25 +1120,25 @@ public class WCETInstruction {
 			break;
 		// GETSTATIC = 178
 		case org.apache.bcel.Constants.GETSTATIC:
-			wcet = 7 + r;
+			wcet = 5 + r;
 			if (CMP_WCET==true)
 				wcet = getstaticx.wcet; 
 			break;
 		// PUTSTATIC = 179
 		case org.apache.bcel.Constants.PUTSTATIC:
-			wcet = 8 + w;
+			wcet = 5 + w;
 			if (CMP_WCET==true)
 				wcet = putstatic.wcet;
 			break;
 		// GETFIELD = 180
 		case org.apache.bcel.Constants.GETFIELD:
-			wcet = 11 + 2 * r;
+			wcet = 8 + 2 * r;
 			if (CMP_WCET==true)
 				wcet = getfield.wcet;
 			break;
 		// PUTFIELD = 181
 		case org.apache.bcel.Constants.PUTFIELD:
-			wcet = 13 + r + w;
+			wcet = 9 + r + w;
 			if (CMP_WCET==true)
 				wcet = putfield.wcet;
 			break;
@@ -1364,7 +1364,7 @@ public class WCETInstruction {
 			
 		// GETFIELD_REF = 226
 		case GETFIELD_REF:
-			wcet = 11 + 2 * r;
+			wcet = 8 + 2 * r;
 			if (CMP_WCET==true){
 				WCETMemInstruction getfield_ref = new WCETMemInstruction();
 				getfield_ref.microcode = new int [wcet];
@@ -1514,22 +1514,22 @@ public class WCETInstruction {
 		generateInstruction(xastore, false, 0, 0);
 		xastore.wcet = wcetOfInstruction(xastore.microcode);
 		
-		getstaticx.microcode = new int [7+r];
+		getstaticx.microcode = new int [5+r];
 		getstaticx.opcode = 178;
 		generateInstruction(getstaticx, false, 0, 0);
 		getstaticx.wcet = wcetOfInstruction(getstaticx.microcode);
 		
-		putstatic.microcode = new int [8+w];
+		putstatic.microcode = new int [5+w];
 		putstatic.opcode = 179;
 		generateInstruction(putstatic, false, 0, 0);
 		putstatic.wcet = wcetOfInstruction(putstatic.microcode);
 		
-		getfield.microcode = new int [11+2*r];
+		getfield.microcode = new int [8+2*r];
 		getfield.opcode = 180;
 		generateInstruction(getfield, false, 0, 0);
 		getfield.wcet = wcetOfInstruction(getfield.microcode);
 		
-		putfield.microcode = new int [13+r+w];
+		putfield.microcode = new int [9+r+w];
 		putfield.opcode = 181;
 		generateInstruction(putfield, false, 0, 0);
 		putfield.wcet = wcetOfInstruction(putfield.microcode);
@@ -1635,17 +1635,19 @@ public class WCETInstruction {
 		case 178:
 		case 224:
 			for(int i=0;i<instruction.microcode.length;i++){
-				if(i<=4) instruction.microcode[i]=NOP;
-				else if(i==5) instruction.microcode[i]=RD;
+				if(i<=2) instruction.microcode[i]=NOP;
+				else if(i==3) instruction.microcode[i]=RD;
 				else instruction.microcode[i]=NOP;
 			}
 			break;
 			
 		// putstatic
 		case 179:
+			// TODO: is this pattern correct, but it does not really matter
+			// for single bytecode WCET values
 			for(int i=0;i<instruction.microcode.length;i++){
-				if(i<=4) instruction.microcode[i]=NOP;
-				else if(i==5) instruction.microcode[i]=WR;
+				if(i<=2) instruction.microcode[i]=NOP;
+				else if(i==3) instruction.microcode[i]=WR;
 				else instruction.microcode[i]=NOP;
 			}
 			break;
@@ -1653,10 +1655,10 @@ public class WCETInstruction {
 		// getfield
 		case 180:
 			for(int i=0;i<instruction.microcode.length;i++){
-				if(i<=5) instruction.microcode[i]=NOP;
-				else if(i==6) instruction.microcode[i]=RD;
-				else if(i>6 && i<=8+r) instruction.microcode[i]=NOP;
-				else if(i==9+r) instruction.microcode[i]=RD;
+				if(i<=2) instruction.microcode[i]=NOP;
+				else if(i==3) instruction.microcode[i]=RD;
+				else if(i>3 && i<=5+r) instruction.microcode[i]=NOP;
+				else if(i==6+r) instruction.microcode[i]=RD;
 				else instruction.microcode[i]=NOP;
 			}
 			break;
@@ -1664,10 +1666,10 @@ public class WCETInstruction {
 		// putfield	
 		case 181:
 			for(int i=0;i<instruction.microcode.length;i++){
-				if(i<=7) instruction.microcode[i]=NOP;
-				else if(i==8) instruction.microcode[i]=RD;
-				else if(i>8 && i<=10+r) instruction.microcode[i]=NOP;
-				else if(i==11+r) instruction.microcode[i]=WR;
+				if(i<=3) instruction.microcode[i]=NOP;
+				else if(i==4) instruction.microcode[i]=RD;
+				else if(i>4 && i<=6+r) instruction.microcode[i]=NOP;
+				else if(i==7+r) instruction.microcode[i]=WR;
 				else instruction.microcode[i]=NOP;
 			}
 			break;

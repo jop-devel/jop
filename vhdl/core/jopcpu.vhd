@@ -29,9 +29,24 @@
 --	2008-02-20	memory - I/O muxing after the memory controller (mem_sc)
 --	2008-03-03	added scratchpad RAM
 --	2008-03-04	correct MUX selection
+--	2009-11-15	include extension code
 --
 --	todo: clean up: substitute all signals by records
 
+-- comments from former extension.vhd
+--
+--	2004-09-11	first version
+--	2005-04-05	Reserve negative addresses for wishbone interface
+--	2005-04-07	generate bsy from delayed wr or'ed with mem_out.bsy
+--	2005-05-30	added wishbone interface
+--	2005-11-28	Substitute WB interface by the SimpCon IO interface ;-)
+--				All IO devices are now memory mapped
+--	2007-04-13	Changed memory connection to records
+--				New array instructions
+--	2007-12-22	Correction of data MUX bug for array read access
+--	2008-02-20	Removed memory - I/O muxing
+--	2009-11-22	move MMU decode from jopcpu/extension to decode
+--
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -90,7 +105,7 @@ architecture rtl of jopcpu is
 	signal stack_tos		: std_logic_vector(31 downto 0);
 	signal stack_nos		: std_logic_vector(31 downto 0);
 	signal rd, wr			: std_logic;
-	signal ext_addr			: std_logic_vector(EXTA_WIDTH-1 downto 0);
+	signal mmu_instr			: std_logic_vector(MMU_WIDTH-1 downto 0);
 	signal stack_din		: std_logic_vector(31 downto 0);
 
 -- extension/mem interface
@@ -115,12 +130,27 @@ architecture rtl of jopcpu is
 
 	signal bsy				: std_logic;
 
-	signal jbc_addr			: std_logic_vector(jpc_width-1 downto 0);
-	signal jbc_data			: std_logic_vector(7 downto 0);
+	signal bc_wr_addr		: std_logic_vector(jpc_width-3 downto 0);	-- address for jbc (in words!)
+	signal bc_wr_data		: std_logic_vector(31 downto 0);	-- write data for jbc
+	signal bc_wr_ena		: std_logic;
 
 -- SimpCon io interface
 
 	signal sp_ov			: std_logic;
+
+-- *************** signals from extension ****************
+
+--
+--	signals for mulitiplier
+--
+	signal mul_dout				: std_logic_vector(31 downto 0);
+	signal mul_wr				: std_logic;
+
+
+	signal wr_dly				: std_logic;	-- generate a bsy with delayed wr
+
+	signal exr					: std_logic_vector(31 downto 0); 	-- extension data register
+
 
 begin
 
@@ -130,37 +160,30 @@ begin
 --	components of jop
 --
 
-	cmp_core: entity work.core
+	core: entity work.core
 		generic map(jpc_width, stov_using_geq => stov_using_geq)
-		port map (clk, reset,
-			bsy,
-			stack_din, ext_addr,
-			rd, wr,
-			jbc_addr, jbc_data,
-			irq_in, irq_out, sp_ov,
-			stack_tos, stack_nos
+		port map (
+			clk => clk,
+			reset => reset,
+			bsy => bsy,
+			din => stack_din,
+			mem_in => mem_in,
+			mmu_instr => mmu_instr,
+			mul_wr => mul_wr,
+			wr_dly => wr_dly,
+			bc_wr_addr => bc_wr_addr,
+			bc_wr_data => bc_wr_data,
+			bc_wr_ena => bc_wr_ena,
+			irq_in => irq_in,
+			irq_out => irq_out,
+			sp_ov => sp_ov,
+			aout => stack_tos,
+			bout => stack_nos
 		);
 
 	exc_req.spov <= sp_ov;
 
-	cmp_ext: entity work.extension 
-		port map (
-			clk => clk,
-			reset => reset,
-			ain => stack_tos,
-			bin => stack_nos,
-
-			ext_addr => ext_addr,
-			rd => rd,
-			wr => wr,
-			bsy => bsy,
-			dout => stack_din,
-
-			mem_in => mem_in,
-			mem_out => mem_out
-		);
-
-	cmp_mem: entity work.mem_sc
+	mem: entity work.mem_sc
 		generic map (
 			jpc_width => jpc_width,
 			block_bits => block_bits
@@ -177,8 +200,9 @@ begin
 			mem_in => mem_in,
 			mem_out => mem_out,
 	
-			jbc_addr => jbc_addr,
-			jbc_data => jbc_data,
+			bc_wr_addr => bc_wr_addr,
+			bc_wr_data => bc_wr_data,
+			bc_wr_ena => bc_wr_ena,
 
 			sc_mem_out => sc_ctrl_mem_out,
 			sc_mem_in => sc_ctrl_mem_in
@@ -190,7 +214,7 @@ begin
 	-- Results in warnings when the size is 0.
 	--
 	sc1: if spm_width /= 0 generate
-		cmp_scm: entity work.sdpram
+		scm: entity work.sdpram
 			generic map (
 				width => 32,
 				addr_width => spm_width
@@ -284,16 +308,86 @@ end process;
 	sc_mem_out.wr_data <= sc_ctrl_mem_out.wr_data;
 	sc_mem_out.wr <= sc_ctrl_mem_out.wr and mem_access;
 	sc_mem_out.rd <= sc_ctrl_mem_out.rd and mem_access;
-	sc_mem_out.nc <= sc_ctrl_mem_out.nc;
+	sc_mem_out.atomic <= sc_ctrl_mem_out.atomic;
+	sc_mem_out.cache <= sc_ctrl_mem_out.cache;
+	sc_mem_out.tm_cache <= sc_ctrl_mem_out.tm_cache;
 
 	sc_scratch_out.address <= sc_ctrl_mem_out.address;
 	sc_scratch_out.wr_data <= sc_ctrl_mem_out.wr_data;
 	sc_scratch_out.wr <= sc_ctrl_mem_out.wr and scratch_access;
 	sc_scratch_out.rd <= sc_ctrl_mem_out.rd and scratch_access;
+	sc_scratch_out.atomic <= sc_ctrl_mem_out.atomic;
+	sc_scratch_out.cache <= sc_ctrl_mem_out.cache;
 
 	sc_io_out.address <= sc_ctrl_mem_out.address;
 	sc_io_out.wr_data <= sc_ctrl_mem_out.wr_data;
 	sc_io_out.wr <= sc_ctrl_mem_out.wr and io_access;
 	sc_io_out.rd <= sc_ctrl_mem_out.rd and io_access;
+	sc_io_out.atomic <= sc_ctrl_mem_out.atomic;
+	sc_io_out.cache <= sc_ctrl_mem_out.cache;
+
+-- *************** code from extension ****************
+
+	ml : entity work.mul
+			port map (
+				clk => clk,
+				ain => stack_tos,
+				bin => stack_nos,
+				wr => mul_wr,
+				dout => mul_dout
+		);
+
+	stack_din <= exr;
+
+--
+--	TODO: the following code is degenerated to decode functions
+--	should probably go to decode.vhd
+--
+
+--
+--	read
+--
+--	TODO: the read MUX could be set by using the
+--	according wr/mmu_instr from JOP and not the
+--	following rd/mmu_instr
+--	Than no intermixing of mul/mem and io operations
+--	is allowed. But we are not using interleaved mul/mem/io
+--	operations in jvm.asm anyway.
+--
+--	TAKE CARE when mem_out.bcstart is read!
+--
+--   ** bcstart is also read without a mem_bc_rd JOP wr !!! ***
+--		=> a combinatorial mux select on rd and ext_adr==7!
+--
+--		The rest could be set with JOP wr start transaction 
+--		Is this also true for io_data?
+--
+--	29.11.2005 evening: I think this solution driving the exr
+--	mux from mmu_instr is quite ok. The pipelining from rd/ext_adr
+--	to A is fixed.
+--
+process(clk, reset)
+begin
+	if (reset='1') then
+		exr <= (others => '0');
+	elsif rising_edge(clk) then
+
+		if (mmu_instr=LDMRD) then
+			exr <= mem_out.dout;
+		elsif (mmu_instr=LDMUL) then
+			exr <= mul_dout;
+		-- elsif (mmu_instr=LDBCSTART) then
+		else
+			exr <= mem_out.bcstart;
+		end if;
+
+	end if;
+end process;
+
+
+	-- a JOP wr generates the first bsy cycle
+	-- the following are generated by the memory
+	-- system or the SimpCon device
+	bsy <= wr_dly or mem_out.bsy;
 
 end rtl;

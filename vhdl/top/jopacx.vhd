@@ -288,7 +288,7 @@ end process;
 --
 --	components of jop
 --
-	cmp_core: core generic map(jpc_width)
+	core: core generic map(jpc_width)
 		port map (clk, int_res,
 			mem_bsy,
 			stack_din, ext_addr,
@@ -298,7 +298,7 @@ end process;
 			stack_tos
 		);
 
-	cmp_ext: extension
+	ext: extension
 		port map (clk, int_res, stack_tos,
 			ext_addr, rd, wr, stack_din,
 			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
@@ -306,7 +306,7 @@ end process;
 			io_rd, io_wr, io_addr_wr, io_dout
 		);
 
-	cmp_mem: mem generic map (jpc_width, ram_cnt, rom_cnt)
+	mem: mem generic map (jpc_width, ram_cnt, rom_cnt)
 		port map (clk, int_res, stack_tos,
 			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
 			mem_dout, mem_bcstart,
@@ -315,7 +315,7 @@ end process;
 			aint, d, nram_cs, nrom_cs, nmem_rd, nmem_wr
 		);
 
-	cmp_io: io generic map (clk_freq)
+	io: io generic map (clk_freq)
 		port map (clk, int_res, stack_tos,
 			io_rd, io_wr, io_addr_wr, io_dout,
 			io_irq, io_irq_ena,

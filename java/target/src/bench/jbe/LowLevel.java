@@ -58,31 +58,6 @@ public class LowLevel {
 	}
 
 	/**
-	 * Get the current time in micro seconds.
-	 * 
-	 * @return
-	 */
-	public static int timeMicros() {
-
-		// PC version
-		// long l = p.highResCounter();
-		// l = l*1000000/freq; // in us
-		// return (int) l;
-		
-		// JOP version
-		// return Native.rd(Const.IO_US_CNT);
-
-
-		// aJile version
-		// return (int) com.ajile.jem.rawJEM.getTime();
-
-		// clock ticks for gcj (Linux)
-		// return (int) (jbe.gcj.TSC.read()/267); // 267 is 266.6 MHz clock
-		
-		return 0;
-	}
-
-	/**
 	 * Print a String message and append a ' '
 	 * @param msg output message
 	 */

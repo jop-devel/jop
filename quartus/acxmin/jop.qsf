@@ -41,7 +41,6 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/aram.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/arom.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/bcfetch.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/core.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/extension.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/decode.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/fetch.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/mem.vhd

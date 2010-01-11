@@ -544,7 +544,7 @@ begin
 		end if;
 	end process;
 			
-	cmp_sys: entity work.sc_sys generic map (
+	sys: entity work.sc_sys generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 			cpu_id => cpu_id,
@@ -572,7 +572,7 @@ begin
 		);
 
 	-- service uart, but PC can send up to 16 character after cts deassert!
-	cmp_ua: entity work.sc_uart generic map (
+	ua: entity work.sc_uart generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 			baud_rate => 115200,
@@ -600,7 +600,7 @@ begin
 
 	-- Siemens TC35 sends up to 32!!! characters after cts deasert
 	-- WW does not like the 115200 baud :-(
-	cmp_ua2: entity work.sc_uart generic map (
+	ua2: entity work.sc_uart generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 --			baud_rate => 38400,
@@ -628,7 +628,7 @@ begin
 	);
 
 	-- a little bit more fifo on receive buffer would really help (missing GPS data)
-	cmp_ua3: entity work.sc_uart generic map (
+	ua3: entity work.sc_uart generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 			baud_rate => 4800,
@@ -657,7 +657,7 @@ begin
 	--
 	-- BG stuff: keyboard, IO pins
 	--
-	cmp_bgio: entity work.sc_bgio generic map (
+	bgio: entity work.sc_bgio generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq
 		)
@@ -684,7 +684,7 @@ begin
 	--
 	-- BG display
 	--
-	cmp_disp: entity work.sc_disp generic map (
+	disp: entity work.sc_disp generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 			baud_rate => 38400

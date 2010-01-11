@@ -30,50 +30,47 @@ use ieee.std_logic_1164.all;
 
 package jop_types is
 
-	constant EXTA_WIDTH : integer := 4;
+	constant MMU_WIDTH : integer := 4;
   
 --
---	extension address constants (used in extension.vhd and Instruction.java)
+--	MMU instruction constants (used in jopcpu.vhd and Instruction.java)
 --
---		  7	st	wraddr		        store write address        
+	-- POP type
+	constant STMUL	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0000";
+	constant STMWA	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0001"; 
+	constant STMRA	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0010"; 
+	constant STMWD	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0011"; 
+	constant STALD	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0100"; 
+	constant STAST	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0101"; 
+	constant STGF	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0110"; 
+	constant STPF	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0111"; 
+	constant STCP	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1000"; 
+	constant STBCR	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1001"; 
+	constant STIDX	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1010"; 
+	constant STPS	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1011"; 
 
---	        8+0	st	mem_rd_addr		start read
---	          0	ld	mem_rd_data		read data
---	        8+1	st	mem_wr_data		start write
---              8+2     st      start array load
---              8+3     st      start array store
---	        8+4	st      start getfield
---	        8+5	st      start putfield
---	        8+6	st	mul operand a, b and start mul
---	          6	ld	mul result        
---	        8+7	st	start bytecode load (or cache)
---	          7	ld	read new pc base (for cache version)
---
-	constant STMUL	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0000";
-	constant STMWA	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0001"; 
-	constant STMRA	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0010"; 
-	constant STMWD	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0011"; 
-	constant STALD	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0100"; 
-	constant STAST	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0101"; 
-	constant STGF	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0110"; 
-	constant STPF	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0111"; 
-	constant STCP	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1000"; 
-	constant STBCR	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1001"; 
+	-- PUSH type
+	constant LDMRD	   : std_logic_vector(MMU_WIDTH-1 downto 0) := "0000"; 
+	constant LDMUL	   : std_logic_vector(MMU_WIDTH-1 downto 0) := "0001"; 
+	constant LDBCSTART : std_logic_vector(MMU_WIDTH-1 downto 0) := "0010"; 
 
-	constant LDMRD	   : std_logic_vector(EXTA_WIDTH-1 downto 0) := "0000"; 
-	constant LDMUL	   : std_logic_vector(EXTA_WIDTH-1 downto 0) := "0001"; 
-	constant LDBCSTART : std_logic_vector(EXTA_WIDTH-1 downto 0) := "0010"; 
+	-- no stack change
+	constant STGS	   : std_logic_vector(MMU_WIDTH-1 downto 0) := "0000"; 
 
 	type mem_in_type is record
-		rd		: std_logic;
-		wr		: std_logic;
-		addr_wr	        : std_logic;
-		bc_rd           : std_logic;
-		iaload          : std_logic;
-		iastore	        : std_logic;
-		getfield        : std_logic;
-		putfield        : std_logic;
-		copy            : std_logic;
+		bcopd		: std_logic_vector(15 downto 0);
+		rd			: std_logic;
+		wr			: std_logic;
+		addr_wr	    : std_logic;
+		bc_rd       : std_logic;
+		iaload      : std_logic;
+		iastore     : std_logic;
+		stidx       : std_logic;
+		getfield    : std_logic;
+		putfield    : std_logic;
+		getstatic   : std_logic;
+		putstatic   : std_logic;
+		copy        : std_logic;
 	end record;
 
 	type mem_out_type is record
@@ -147,5 +144,31 @@ package jop_types is
 	-- constant for method length bits
 	-- changes here require also the object layout to be changed
 	constant METHOD_SIZE_BITS : integer := 10;
-	
+
+	-- object cache constants and types
+	-- depends on main memry size (sc_pack)
+
+	-- tag width, in words
+	constant CACHE_ADDR_SIZE : integer := 23;
+	-- maximum number of cached fields
+	constant MAX_OBJECT_SIZE : integer := 16;
+
+	type ocache_in_type is record
+		handle	: std_logic_vector(CACHE_ADDR_SIZE-1 downto 0);
+		index	: std_logic_vector(MAX_OBJECT_SIZE-1 downto 0);
+		gf_val	: std_logic_vector(31 downto 0);
+		pf_val	: std_logic_vector(31 downto 0);
+		chk_gf	: std_logic;
+		chk_pf	: std_logic;
+		wr_gf	: std_logic;
+		wr_pf	: std_logic;
+		inval	: std_logic;
+	end record;
+
+	type ocache_out_type is record
+		hit		: std_logic;
+		-- just handle hit
+		dout	: std_logic_vector(31 downto 0);
+	end record;
+
 end jop_types;

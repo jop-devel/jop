@@ -27,6 +27,7 @@ public class Location {
 	private final int hash;
 	
 	public Location(int loc) {
+		if(loc < 0) throw new AssertionError("Invalid stack ptr: "+loc);
 		stackLoc = loc;
 		heapLoc = "";
 		hash = stackLoc+31*heapLoc.hashCode();
@@ -45,7 +46,7 @@ public class Location {
 	}
 	
 	public boolean equals(Object o) {
-		Location loc = (Location)o;
+		Location loc = (Location) o;
 		return (stackLoc == loc.stackLoc)
 			&& heapLoc.equals(loc.heapLoc);
 	}
@@ -55,11 +56,15 @@ public class Location {
 	}
 	
 	public String toString() {
-		if (stackLoc >= 0) {
+		if (! isHeapLoc()) {
 			return "stack["+stackLoc+"]";
 		} else {
 			return heapLoc;				
 		}
+	}
+
+	public boolean isHeapLoc() {
+		return stackLoc < 0;
 	}
 
 }

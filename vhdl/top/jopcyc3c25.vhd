@@ -177,7 +177,7 @@ end process;
 		c0	 => clk_int
 	);
 
-	cmp_test: entity work.test 
+	test: entity work.test 
 		port map (
 			clk_int,
 			int_res,

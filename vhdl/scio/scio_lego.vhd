@@ -188,7 +188,7 @@ begin
 		end if;
 	end process;
     
-    cmp_sys: entity work.sc_sys generic map (
+    sys: entity work.sc_sys generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 			cpu_id => cpu_id,
@@ -215,7 +215,7 @@ begin
 			wd => wd
             );
 
-    cmp_ua: entity work.sc_uart generic map (
+    ua: entity work.sc_uart generic map (
         addr_bits => SLAVE_ADDR_BITS,
         clk_freq => clk_freq,
         baud_rate => 115200,
@@ -243,7 +243,7 @@ begin
 
     -- slave 2 is reserved for USB and System.out writes to it!!!
 
-    cmp_usb: entity work.sc_usb generic map (
+    usb: entity work.sc_usb generic map (
         addr_bits => SLAVE_ADDR_BITS,
         clk_freq => clk_freq
         )
@@ -266,7 +266,7 @@ begin
             nsi => r(13)
             );	
 
-    cmp_lego: entity work.sc_lego generic map (
+    lego: entity work.sc_lego generic map (
         addr_bits => SLAVE_ADDR_BITS,
         clk_freq => clk_freq
         )

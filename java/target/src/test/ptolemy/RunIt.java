@@ -39,6 +39,8 @@ public class RunIt {
 	// static ReadInput model = new ReadInput();
 	// static SerialWrite model = new SerialWrite();
 	// static SerialRead model = new SerialRead();
+	// static FsmTest model = new FsmTest();
+	// static FsmDemo model = new FsmDemo();
 
 	/**
 	 * Create and run a Ptolemy model.
@@ -48,6 +50,11 @@ public class RunIt {
 	public static void main(String[] args) {
 
 		model.initialize();
+		try {
+			measure();
+		} catch (Exception e1) {
+			e1.printStackTrace();
+		}
 
 		int us = (int) (model.PERIOD * 1000000);
 		// If there is a useful period run it in a periodic
@@ -80,6 +87,22 @@ public class RunIt {
 		// never invoked as we run forever
 		// model.doWrapup();
 		// System.exit(0);
+	}
+	
+	/**
+	 * Measure execution time.
+	 */
+	public static void measure() throws Exception {
+		com.jopdesign.io.SysDevice sys = com.jopdesign.io.IOFactory.getFactory().getSysDevice();
+		int t1, t2, diff;
+		t1 = sys.cntInt;
+		t2 = sys.cntInt;
+		diff = t2-t1;
+		t1 = sys.cntInt;
+		model.run();
+		t2 = sys.cntInt;
+		System.out.println("Execution time: "+(t2-t1-diff)+" cycles");
+		
 	}
 
 	/**

@@ -25,7 +25,7 @@ package wcet.dsvmfp;
  overcast,81,75,FALSE,yes
  rainy,71,91,TRUE,no
  */
-
+//14 data points
 public class WeatherData extends Data {
 	private static float data[][] = {
 			// nominals are binarized, reals are normalized,

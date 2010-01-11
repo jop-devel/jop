@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ACONST_NULL;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.ICONST;
@@ -69,7 +70,6 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 	}
 
 	public void load() throws IOException, ClassNotFoundException {
-		
 		// do the usual stuff
 		super.load();
 		
@@ -84,7 +84,10 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 			JavaClass jc = ((DFAClassInfo)i.next()).clazz;
 			clinits.add(jc.getClassName()+"."+clinitName+clinitSig);
 		}
-
+		// check main class exits
+		if(! cliMap.containsKey(mainClass)) {
+			throw new ClassNotFoundException("class '"+mainClass+ "' not found");
+		}
 		// create prologue
 		buildPrologue(mainClass, statements, flow, clinits);	
 	}
@@ -159,8 +162,9 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 			context.syncLevel = 0;
 			context.constPool = new ConstantPoolGen(prologue.getMethod().getConstantPool());
 			context.method = prologue.methodId;
-
-			analysis.initialize(mainClass+"."+mainName+mainSig, context);
+			
+			MethodInfo main = getMethod(mainClass+"."+mainName+mainSig);
+			analysis.initialize(main, context);
 
 			InstructionHandle entry = prologue.getMethodGen().getInstructionList().getStart();
 			interpreter.interpret(context, entry, new HashMap(), true);
@@ -170,6 +174,30 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 		
 		return analysis.getResult();
 	}
+	
+	public <K,V> 
+	Map runLocalAnalysis(Analysis<K,V> analysis, String methodName) {
+
+		Interpreter<K,V> interpreter = new Interpreter<K,V>(analysis, this);
+
+		try {
+			MethodInfo start = getMethod(methodName);
+			if(start == null) throw new AssertionError("No such method: "+methodName);
+			Context context = new Context();
+			context.stackPtr = start.getMethodGen().getMaxLocals();
+			context.constPool = new ConstantPoolGen(start.getMethod().getConstantPool());
+			context.method = start.getFQMethodName();
+
+			analysis.initialize(start, context);
+			InstructionHandle entry = start.getMethodGen().getInstructionList().getStart();
+			interpreter.interpret(context, entry, new HashMap<InstructionHandle, ContextMap<K, V>>(), true);
+		} catch (Throwable thr) {
+			thr.printStackTrace();
+		}
+		
+		return analysis.getResult();
+	}
+	
 	
 	public List<InstructionHandle> getStatements() {
 		return statements;
@@ -183,16 +211,14 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 		return receivers;
 	}
 
-	public void setReceivers(Map receivers) {
+	public void setReceivers(Map<InstructionHandle, ContextMap<String, String>> receivers) {
 		this.receivers = receivers;
 	}
 	
 	public MethodInfo getMethod(String methodName) {
-		String className = methodName.substring(0, methodName.lastIndexOf("."));
+		String className = methodName.contains(".") ? methodName.substring(0, methodName.lastIndexOf(".")) : mainClass;
 		String signature = methodName.substring(methodName.lastIndexOf(".")+1, methodName.length());
 		DFAClassInfo cli = (DFAClassInfo)cliMap.get(className);
-		//System.out.println(cli.toString()+": "+cli.getMethods().keySet());
-		//System.out.println(signature+": "+cli.getMethods().get(signature)+" "+cli.getMethods().containsKey(signature));
 		return cli.getMethodInfo(signature);
 	}
 	

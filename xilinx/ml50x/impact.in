@@ -1,0 +1,6 @@
+setMode -bscan
+setCable -p auto
+identify
+assignfile -p 5 -file ml50x.bit
+program -p 5
+quit

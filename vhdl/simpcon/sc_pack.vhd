@@ -47,13 +47,16 @@ package sc_pack is
 	constant SC_ADDR_SIZE : integer := 23;
 	constant RDY_CNT_SIZE : integer := 2;
 
+	type sc_cache_type is (bypass, direct_mapped, full_assoc);
+	
 	type sc_out_type is record
 		address		: std_logic_vector(SC_ADDR_SIZE-1 downto 0);
 		wr_data		: std_logic_vector(31 downto 0);
 		rd			: std_logic;
 		wr			: std_logic;
 		atomic		: std_logic;
-		nc			: std_logic;
+		cache		: sc_cache_type;
+		tm_cache	: std_logic;
 		tm_broadcast: std_logic;
 	end record;
 

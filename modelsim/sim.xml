@@ -52,7 +52,11 @@
 		</vcom>
 
 		<vcom>
-			<arg line="${jopdir}/simulation/bytecode.vhd"/>
+			<arg line="+acc ${jopdir}/simulation/bytecode.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="+acc ${jopdir}/simulation/microcode.vhd"/>
 		</vcom>
 
 		<!-- <vcom> -->
@@ -64,12 +68,12 @@
 		<!-- </vcom> -->
 
 		<vcom>
-			<arg line="${jopdir}/simulation/sim_sc_uart.vhd"/>
+			<arg line="+acc ${jopdir}/simulation/sim_sc_uart.vhd"/>
 		</vcom>
 
-		<vcom>
-			<arg line="${jopdir}/wishbone/wb_pack.vhd"/>
-		</vcom>
+		<!-- <vcom> -->
+		<!--	<arg line="${jopdir}/wishbone/wb_pack.vhd"/> -->
+		<!-- </vcom> -->
 
 		<!-- <vcom> -->
 		<!-- 	<arg line="${jopdir}/wishbone/wb_test_slave.vhd"/> -->
@@ -84,11 +88,31 @@
 		</vcom>
 
 		<vcom>
-			<arg line="${jopdir}/offtbl.vhd"/>
+			<arg line="${jopdir}/memory/sdpram.vhd"/>
 		</vcom>
 
 		<vcom>
 			<arg line="${jopdir}/core/cache.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/cache/ocache.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/cache/lru.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/cache/fifo.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/cache/directmapped.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/cache/datacache.vhd"/>
 		</vcom>
 
 		<vcom>
@@ -105,10 +129,6 @@
 
 		<vcom>
 			<arg line="${jopdir}/core/mul.vhd"/>
-		</vcom>
-
-		<vcom>
-			<arg line="${jopdir}/core/extension.vhd"/>
 		</vcom>
 
 		<vcom>
@@ -140,7 +160,7 @@
 		</vcom>
 
 		<vcom>
-			<arg line="${jopdir}/scio/scio_min.vhd"/>
+			<arg line="${jopdir}/scio/scio_min_cache.vhd"/>
 		</vcom>
 
 		<vcom>
@@ -148,7 +168,7 @@
 		</vcom>
 
 		<vcom>
-			<arg line="${jopdir}/top/jopcyc.vhd"/>
+			<arg line="${jopdir}/top/jopcyc_cache.vhd"/>
 		</vcom>
 
 		<vcom>
@@ -173,7 +193,7 @@
 		<input>Press Enter to start the simulation.</input>
 -->
 		<exec executable="vsim" failonerror="true">
-			<arg line="-do sim.do tb_jop"/>
+			<arg line="-i -do sim.do tb_jop"/>
 		</exec>
 
 	</target>

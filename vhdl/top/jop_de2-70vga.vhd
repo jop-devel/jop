@@ -297,7 +297,7 @@ my_crt_pll : crt_pll
 
 	wd <= wd_out;
 
-	cpm_cpu: entity work.jopcpu
+	cpu: entity work.jopcpu
 		generic map(
 			jpc_width => jpc_width,
 			block_bits => block_bits,
@@ -308,7 +308,7 @@ my_crt_pll : crt_pll
 			sc_io_out, sc_io_in,
 			irq_in, irq_out, exc_req);
 			
-	cmp_arbiter : entity work.arbiter
+	arbiter : entity work.arbiter
 		generic map(
 			addr_bits => SC_ADDR_SIZE,
 			cpu_cnt	=> 2)		-- number of masters for the arbiter
@@ -321,7 +321,7 @@ my_crt_pll : crt_pll
 			mem_in => sc_mem_in
 		);
 
-	cmp_vga :entity work.vga_fb
+	vga :entity work.vga_fb
 		generic map (sh_mem_start_address => 16#78500#,
 			sh_mem_end_address => 16#7d000#) 
 		port map( 
@@ -347,7 +347,7 @@ my_crt_pll : crt_pll
     );
     
     
-	cmp_io: entity work.scio 
+	io: entity work.scio 
 		port map (clk_int, int_res,
 			sc_io_out, sc_io_in,
 			irq_in, irq_out, exc_req,
@@ -378,7 +378,7 @@ my_crt_pll : crt_pll
 			-- ram_cnt => ram_count
 		);
 		
-	cmp_scm: entity work.sc_mem_if
+	scm: entity work.sc_mem_if
 		generic map (
 			ram_ws => ram_cnt-1,
 			addr_bits => 19			-- edit

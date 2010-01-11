@@ -53,6 +53,7 @@
 --	2007-08-31	use addr_width for signal dir
 --	2007-09-01	use ram_width from jop_config instead of parameter
 --	2005-09-05	use new branch and jmp instructions (offset part of instruction)
+--	2009-11-22	move MMU decode from jopcpu (extension) to here
 --
 
 
@@ -75,12 +76,16 @@ port (
 	zf, nf		: in std_logic;		-- nf, eq and lt not used (only brz, brnz)
 	eq, lt		: in std_logic;
 
+	bcopd		: in std_logic_vector(15 downto 0);	-- index for mmu
+
 	br			: out std_logic;
 	jmp			: out std_logic;
 	jbr			: out std_logic;
 
-	ext_addr	: out std_logic_vector(EXTA_WIDTH-1 downto 0);
-	rd, wr		: out std_logic;
+	mem_in		: out mem_in_type;
+	mmu_instr	: out std_logic_vector(MMU_WIDTH-1 downto 0);
+	mul_wr		: out std_logic;
+	wr_dly		: out std_logic;
 
 	dir			: out std_logic_vector(ram_width-1 downto 0);
 
@@ -126,7 +131,7 @@ begin
 
 	ir <= instr;		-- registered in fetch
 
-	ext_addr <= ir(EXTA_WIDTH-1 downto 0);	-- address for extension select
+	mmu_instr <= ir(MMU_WIDTH-1 downto 0);	-- address for extension select
 
 --
 --	branch, jbranch
@@ -158,7 +163,7 @@ process(ir)
 begin
 
 	jbr <= '0';
-	if (ir="0100000010") then		-- jbr: goto and if_xxx
+	if ir="0100000010" then		-- jbr: goto and if_xxx
 		jbr <= '1';
 	end if;
 
@@ -175,7 +180,6 @@ begin
 	is_push <= '0';
 
 	case ir(9 downto 6) is
-
 
 		when "0000" =>			-- POP
 				is_pop <= '1';
@@ -200,6 +204,7 @@ begin
 		when "1110" =>			-- null
 		when "1111" =>			-- null
 
+
 		when others =>
 			null;
 	end case;
@@ -214,16 +219,6 @@ begin
 		ir(9 downto 3)="0000010") then		-- st, stn, stmi
 
 		wr_ena <= '1';
-	end if;
-
-	rd <= '0';
-	if ir(9 downto 3)="0011100" then		-- ld memio
-		rd <= '1';
-	end if;
-	wr <= '0';
-	-- we use 16 mmu instructions, could be more
-	if ir(9 downto 4)="000100" then			-- stmul/mem unit
-		wr <= '1';
 	end if;
 
 	sel_imux <= ir(1 downto 0);			-- ld opd_x
@@ -269,7 +264,7 @@ begin
 end process;
 
 --
---	ex stage
+--	ex stage (ALU, stack)
 --
 
 process(clk, reset)
@@ -344,6 +339,8 @@ begin
 			when "0001000111" =>			-- stpf
 			when "0001001000" =>			-- stcp
 			when "0001001001" =>			-- stbcrd
+			when "0001001010" =>			-- stidx
+			when "0001001011" =>			-- stps
 --			when "00101-----" =>			-- ldm
 --			when "00110-----" =>			-- ldi
 			when "0011100000" =>			-- ldmrd
@@ -370,80 +367,12 @@ begin
 					ena_a <= '0';
 			when "0100000010" =>			-- jbr
 					ena_a <= '0';
+			when "0100010000" =>			-- stgs
+					ena_a <= '0';
 --			when "0110------" =>			-- bz
 --			when "0111------" =>			-- bnz
 --			when "1---------" =>			-- jmp
 --					ena_a <= '0';
-
-
-
---			when "0000000000" =>				-- pop
---			when "0000000001" =>				-- and
---			when "0000000010" =>				-- or
---			when "0000000011" =>				-- xor
---			when "0000000100" =>				-- add
---					sel_sub <= '0';
---					sel_amux <= '0';
---			when "0000000101" =>				-- sub
---					sel_amux <= '0';
---			when "0000000110" =>				-- stmul
---			when "0000000111" =>				-- stmwa
---			when "0000001000" =>				-- stmra
---			when "0000001001" =>				-- stmwd
---			when "0000001010" =>				-- stald
---			when "0000001011" =>				-- stast
---			when "0000001100" =>				-- stgf
---			when "0000001101" =>				-- stpf
---			when "0000001110" =>				-- stcp
---			when "0000001111" =>				-- stbcrd
---			when "0000010000" =>				-- st0
---			when "0000010001" =>				-- st1
---			when "0000010010" =>				-- st2
---			when "0000010011" =>				-- st3
---			when "0000010100" =>				-- st
---			when "0000010101" =>				-- stmi
---			when "0000011000" =>				-- stvp
---					ena_vp <= '1';
---			when "0000011001" =>				-- stjpc
---					ena_jpc <= '1';
---			when "0000011010" =>				-- star
---					ena_ar <= '1';
---			when "0000011011" =>				-- stsp
---			when "0000011100" =>				-- ushr
---			when "0000011101" =>				-- shl
---			when "0000011110" =>				-- shr
-----			when "00001-----" =>				-- stm
---			when "0100000000" =>				-- nop
---					ena_a <= '0';
---			when "0100000001" =>				-- wait
---					ena_a <= '0';
---			when "0100000010" =>				-- jbr
---					ena_a <= '0';
-----			when "00101-----" =>				-- ldm
-----			when "00110-----" =>				-- ldi
---			when "0011100000" =>				-- ldmrd
---			when "0011100110" =>				-- ldmul
---			when "0011100111" =>				-- ldbcstart
---			when "0011101000" =>				-- ld0
---			when "0011101001" =>				-- ld1
---			when "0011101010" =>				-- ld2
---			when "0011101011" =>				-- ld3
---			when "0011101100" =>				-- ld
---			when "0011101101" =>				-- ldmi
---			when "0011110000" =>				-- ldsp
---			when "0011110001" =>				-- ldvp
---			when "0011110010" =>				-- ldjpc
---			when "0011110100" =>				-- ld_opd_8u
---			when "0011110101" =>				-- ld_opd_8s
---			when "0011110110" =>				-- ld_opd_16u
---			when "0011110111" =>				-- ld_opd_16s
---			when "0011111000" =>				-- dup
---					ena_a <= '0';
---
-----			when "01100-----" =>			-- bz
-----			when "01110-----" =>			-- bnz
-----			when "1---------" =>				-- br
-----					ena_a <= '0';
 
 			when others =>
 				null;
@@ -474,7 +403,7 @@ begin
 			sel_lmux <= "011";
 		end if;
 
-		if ir(9 downto 3)="0011100" then				-- ld from extenstion/mem
+		if ir(9 downto 3)="0011100" then				-- ld from mmu/mul
 			sel_lmux <= "100";
 		end if;
 
@@ -499,5 +428,90 @@ begin
 
 	end if;
 end process;
+
+--
+--	ex stage (MMU, mul)
+--		was in former extension.vhd
+--
+process(clk, reset)
+begin
+	if (reset='1') then
+		mem_in.rd <= '0';
+		mem_in.wr <= '0';
+		mem_in.addr_wr <= '0';
+		mem_in.bc_rd <= '0';
+		mem_in.stidx <= '0';
+		mem_in.iaload <= '0';
+		mem_in.iastore <= '0';
+		mem_in.getfield <= '0';
+		mem_in.putfield <= '0';
+		mem_in.getstatic <= '0';
+		mem_in.putstatic <= '0';
+		mem_in.copy <= '0';
+		mul_wr <= '0';
+		wr_dly <= '0';
+
+
+	elsif rising_edge(clk) then
+		mem_in.rd <= '0';
+		mem_in.wr <= '0';
+		mem_in.addr_wr <= '0';
+		mem_in.bc_rd <= '0';
+		mem_in.stidx <= '0';
+		mem_in.iaload <= '0';
+		mem_in.iastore <= '0';
+		mem_in.getfield <= '0';
+		mem_in.putfield <= '0';
+		mem_in.getstatic <= '0';
+		mem_in.putstatic <= '0';
+		mem_in.copy <= '0';
+		mul_wr <= '0';
+		wr_dly <= '0';
+
+		if ir(9 downto 4)="000100" then		-- a MMU or mul instruction
+			wr_dly <= '1';
+			case ir(MMU_WIDTH-1 downto 0) is
+				when STMUL =>
+					mul_wr <= '1';			-- start multiplier
+				when STMWA =>
+					mem_in.addr_wr <= '1';	-- store write address
+				when STMRA =>
+					mem_in.rd <= '1';		-- start memory or io read
+				when STMWD =>
+					mem_in.wr <= '1';		-- start memory or io write
+				when STALD =>
+					mem_in.iaload <= '1';	-- start array load
+				when STAST =>
+					mem_in.iastore <= '1';	-- start array store
+				when STGF =>
+					mem_in.getfield <= '1';	-- start getfield
+				when STPF =>
+					mem_in.putfield <= '1';	-- start putfield
+				when STCP =>
+					mem_in.copy <= '1';		-- start copy
+				when STBCR =>
+					mem_in.bc_rd <= '1';	-- start bytecode read
+				when STIDX =>
+					mem_in.stidx <= '1';	-- store index
+				-- when STPS =>
+				when others =>
+					mem_in.putstatic <= '1';	-- start putstatic
+			end case;
+		end if;
+
+		if ir(9 downto 4)="010001" then		-- a MMU instruction, no SP change
+			wr_dly <= '1';
+			case ir(MMU_WIDTH-1 downto 0) is
+				-- when STGS =>
+				when others =>
+					mem_in.getstatic <= '1';	-- start getstatic
+			end case;
+		end if;
+
+	end if;
+end process;
+
+	-- route bytcode operand from bcfetch to MMU
+	mem_in.bcopd <= bcopd;
 
 end rtl;

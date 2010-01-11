@@ -18,7 +18,6 @@ vcom %options% %jopdir%/core/cache.vhd
 vcom %options% %jopdir%/memory/wb_mem_sram32.vhd
 vcom %options% %jopdir%/memory/mem_wb.vhd
 vcom %options% %jopdir%/core/mul.vhd
-vcom %options% %jopdir%/core/extension.vhd
 vcom %options% %jopdir%/core/bcfetch.vhd
 vcom %options% %jopdir%/core/fetch.vhd
 vcom %options% %jopdir%/core/decode.vhd

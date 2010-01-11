@@ -231,7 +231,7 @@ end process;
 	wd <= wd_out(0);
 	
 	gen_cpu: for i in 0 to cpu_cnt-1 generate
-		cmp_cpu: entity work.jopcpu
+		cpu: entity work.jopcpu
 			generic map(
 				jpc_width => jpc_width,
 				block_bits => block_bits,
@@ -243,7 +243,7 @@ end process;
 				irq_out(i), exc_req(i));
 	end generate;
 			
-	cmp_arbiter: entity work.arbiter
+	arbiter: entity work.arbiter
 		generic map(
 			addr_bits => SC_ADDR_SIZE,
 			cpu_cnt => cpu_cnt
@@ -255,7 +255,7 @@ end process;
 			-- sync_out_array(1)
 			);
 
-	cmp_scm: entity work.sc_mem_if
+	scm: entity work.sc_mem_if
 		generic map (
 			ram_ws => ram_cnt-1,
 			rom_ws => rom_cnt-1
@@ -282,7 +282,7 @@ end process;
 		);
 		
 	-- syncronization of processors
-	cmp_sync: entity work.cmpsync generic map (
+	sync: entity work.cmpsync generic map (
 		cpu_cnt => cpu_cnt)
 		port map
 		(
@@ -293,7 +293,7 @@ end process;
 		);
 	
 	-- io for processor 0
-	cmp_io: entity work.scio generic map (
+	io: entity work.scio generic map (
 			cpu_id => 0,
 			cpu_cnt => cpu_cnt
 		)
@@ -319,7 +319,7 @@ end process;
 	
 	-- io for processors with only sc_sys
 	gen_io: for i in 1 to cpu_cnt-1 generate
-		cmp_io2: entity work.sc_sys generic map (
+		io2: entity work.sc_sys generic map (
 			addr_bits => 4,
 			clk_freq => clk_freq,
 			cpu_id => i,
