@@ -52,6 +52,7 @@ import com.jopdesign.wcet.ipet.MaxCostFlow.DecisionVariable;
  */
 public class ObjectRefAnalysis {
 	public static final boolean FIELD_ACCESS_ONLY = true;
+	public static final boolean GETFIELD_ONLY = true;
 	private static final int DEFAULT_SET_SIZE = 32;
 	private int maxSetSize;
 	private Map<CallGraphNode, Long> usedReferences;
@@ -60,7 +61,6 @@ public class ObjectRefAnalysis {
 	private Map<DecisionVariable, SymbolicAddress> decisionVariables =
 		new HashMap<DecisionVariable, SymbolicAddress>();
 	private boolean countAllAccesses;
-	private ExecuteOnceAnalysis executeOnce;
 	public ObjectRefAnalysis(Project p) {
 		this(p, false, DEFAULT_SET_SIZE);
 	}
@@ -263,6 +263,9 @@ public class ObjectRefAnalysis {
 	public static boolean hasHandleAccess(InstructionHandle ih) {
 		Instruction instr = ih.getInstruction();
 		if(instr instanceof GETFIELD) return true;
+		if(GETFIELD_ONLY) {
+			return false;
+		}
 		else if(instr instanceof PUTFIELD) return true;
 		if(FIELD_ACCESS_ONLY) return false;
 		if(instr instanceof ArrayInstruction
