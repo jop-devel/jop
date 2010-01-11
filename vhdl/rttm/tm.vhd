@@ -283,10 +283,10 @@ begin
 					next_stage1.addr <= from_cpu.address;
 
 					if from_cpu.wr = '1' then
-						-- TODO .nc not supported
+						-- TODO always cached
 						next_stage1.state <= write;
 					elsif from_cpu.rd = '1' then
-						if from_cpu.nc = '0' then
+						if from_cpu.tm_cache = '1' then
 							next_stage1.state <= read1;
 						else
 							next_stage1.state <= read_direct;

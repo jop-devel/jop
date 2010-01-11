@@ -195,7 +195,7 @@ begin
 		alias ram is << signal .memory.main_mem.ram: ram_type >>;	
 	
 	begin
-		sc_cpu_out.nc <= '0';
+		sc_cpu_out.tm_cache <= '1';
 		
 		wait until falling_edge(reset);		
 		wait until rising_edge(clk);

@@ -210,7 +210,7 @@ begin
 		variable lines_used: integer;
 		variable addr_used: integer;
 	begin
-		sc_cpu_out.nc <= '0';
+		sc_cpu_out.tm_cache <= '1';
 		
 	
 		wait until falling_edge(reset);		
@@ -303,11 +303,11 @@ begin
 --  		assert to_integer(nesting_cnt) = 1;
 
 
-		-- read .nc word
+		-- read uncached word
 
-		sc_cpu_out.nc <= '1';
+		sc_cpu_out.tm_cache <= '0';
 		sc_read(clk, addr(6), result, sc_cpu_out, sc_cpu_in);
-		sc_cpu_out.nc <= '0';
+		sc_cpu_out.tm_cache <= '1';
 		
 		assert result = data(6);
 -- 		assert read_tags_v(2**way_bits-1 downto 2) = 

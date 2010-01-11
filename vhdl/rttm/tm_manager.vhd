@@ -536,7 +536,8 @@ begin
 			state <= NO_TRANSACTION;
 			
 			is_tm_magic_addr_sync <= '0';
-			sc_cpu_out_dly <= sc_out_idle;
+			sc_cpu_out_dly.wr <= '0';
+			sc_cpu_out_dly.wr_data <= (others => 'X');
 			
 			commit_finished_dly_internal_1 <= '0';
 			commit_finished_dly <= '0';

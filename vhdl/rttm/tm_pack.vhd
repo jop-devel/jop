@@ -55,13 +55,5 @@ package tm_pack is
 		early_commit,
 		none
 	);
-	
-	-- TODO width too pessimistic
-	subtype nesting_cnt_type is unsigned((ram_width-2)-1 downto 0);
-	
-	constant sc_out_idle		: sc_out_type := (
-								(others => '0'),
-								(others => '0'),
-								'0', '0', '0', '0', '0'); 
-	
+		
 end package tm_pack;
