@@ -28,11 +28,15 @@ import com.jopdesign.sys.Native;
 
 
 public class StartLift {
+    /* Debugging signals to manipulate the cache */
+    final static int CACHE_FLUSH = -51;
+    final static int CACHE_DUMP = -53;
 
 	/**
 	 * Set to false for the WCET analysis, true for measurement
 	 */
 	final static boolean MEASURE = false;
+	final static boolean MEASURE_CACHE = false;
 	private static LiftControl ctrl;
 	private static TalIo io;
 
@@ -53,6 +57,7 @@ public class StartLift {
 		int max = 0;
 		int val = 0;
 		for (int i=0; i<100; ++i) { // @WCA loop=100
+		    if (MEASURE_CACHE) Native.wrMem(1,CACHE_FLUSH);
 			invoke();
 			val = te-ts-to;
 			if (val<min) min = val;
@@ -65,6 +70,7 @@ public class StartLift {
 	static void invoke() {
 		measure();
 		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if (MEASURE_CACHE) Native.rdMem(CACHE_DUMP);
 	}
 
 	static void measure() {
