@@ -72,7 +72,7 @@ signal fl_d	: std_logic_vector(7 downto 0);
 
 begin
 
-	cmp_mem_if: entity work.sc_mem_if(rtl)
+	mem_if: entity work.sc_mem_if(rtl)
 	generic map (
 		ram_ws => ram_cnt-1,
 		rom_ws => rom_cnt-1

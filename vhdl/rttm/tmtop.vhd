@@ -63,7 +63,7 @@ begin
 		c0	 => clk_int
 	);
 
-	cmp_tm: entity work.tm
+	tm: entity work.tm
 		generic map(
 			addr_width => SC_ADDR_SIZE,
 			way_bits => 8

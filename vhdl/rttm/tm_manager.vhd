@@ -190,7 +190,7 @@ begin
 	--
 	--	Transactional memory core functionality
 	--
-	cmp_tm: entity work.tm(rtl)
+	tm: entity work.tm(rtl)
 	generic map (
 		addr_width => addr_width,
 		way_bits => way_bits,

@@ -259,7 +259,7 @@ end process;
 	end generate;
 	
 	gen_tm: for i in 0 to cpu_cnt-1 generate
-		cmp_tm: entity work.tm_manager
+		tm: entity work.tm_manager
 			generic map (
 				addr_width => tm_addr_width,
 				tm_magic_detect => tm_magic_detect,
@@ -286,7 +286,7 @@ end process;
 				);
 	end generate;
 
-	cmp_coordinator: entity work.tm_coordinator(rtl)
+	coordinator: entity work.tm_coordinator(rtl)
 	generic map (
 		cpu_cnt => cpu_cnt
 		)

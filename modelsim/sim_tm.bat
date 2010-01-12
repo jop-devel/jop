@@ -24,8 +24,9 @@ vcom %options% ^
 %jopdir%/simulation/microcode.vhd ^
 %jopdir%/jtbl.vhd ^
 %jopdir%/core/cache.vhd ^
+%jopdir%/cache/ocache.vhd ^
 %jopdir%/memory/sc_sram32_flash.vhd ^
-%jopdir%/memory/mem_sc_new.vhd ^
+%jopdir%/memory/mem_sc.vhd ^
 %jopdir%/memory/sdpram.vhd ^
 %jopdir%/core/mul.vhd ^
 %jopdir%/core/bcfetch.vhd ^

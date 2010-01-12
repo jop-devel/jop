@@ -151,7 +151,7 @@ begin
 
 	signal_spy: process is
 	begin
-		init_signal_spy("/tb_tm/dut/cmp_tm/data","/tb_tm/write_buffer");
+		init_signal_spy("/tb_tm/dut/tm/data","/tb_tm/write_buffer");
 		wait;
 	end process signal_spy;
 
@@ -173,23 +173,23 @@ begin
 
 --  		alias nesting_cnt is << signal .dut.nesting_cnt: nesting_cnt_type >>;
 		
-		alias valid is << signal .dut.cmp_tm.tag.valid: 
+		alias valid is << signal .dut.tm.tag.valid: 
 			std_logic_vector(2**way_bits-1 downto 0) >>;
 		
 		
-		alias write_tags_v is << signal .dut.cmp_tm.dirty: 
+		alias write_tags_v is << signal .dut.tm.dirty: 
 			std_logic_vector(2**way_bits-1 downto 0) >>;		
 			
--- 		alias read_tags_v is << signal .dut.cmp_tm.read: 
+-- 		alias read_tags_v is << signal .dut.tm.read: 
 -- 			std_logic_vector(2**way_bits-1 downto 0) >>;		
 		
 		
-		--alias buf is << signal .dut.cmp_tm.data: 
-		--	data_array(0 to << constant .dut.cmp_tm.lines: integer >> - 1) >>;
+		--alias buf is << signal .dut.tm.data: 
+		--	data_array(0 to << constant .dut.tm.lines: integer >> - 1) >>;
 		
 -- 		type tag_array is array (0 to 2**way_bits-1) of 
 -- 			std_logic_vector(addr_width-1 downto 0);
--- 		alias read_tags is << signal .dut.cmp_tm.tag.tag: tag_array >>;
+-- 		alias read_tags is << signal .dut.tm.tag.tag: tag_array >>;
 		
 		-- test data
 	
@@ -262,11 +262,11 @@ begin
 		
 		assert << signal .dut.conflict: std_logic >> /= '1';
 		assert valid = (2**way_bits-1 downto 0 => '0');
-		assert << signal .dut.cmp_tm.tag.shift: 
+		assert << signal .dut.tm.tag.shift: 
 			std_logic >> = '0';
 		
 -- 		assert read_tags_v = (2**way_bits-1 downto 0 => '0');		
-		assert << signal .dut.cmp_tm.tag.shift: 
+		assert << signal .dut.tm.tag.shift: 
 			std_logic >> = '0';
 		
 		-- writes and reads in transactional mode
@@ -329,7 +329,7 @@ begin
 		assert valid(2**way_bits-1 downto lines_used) = (2**way_bits-1 downto lines_used => '0');  
 		assert write_buffer(0) = data(1);
 
-		assert to_integer(<< signal .dut.cmp_tm.tag.nxt: -- newline
+		assert to_integer(<< signal .dut.tm.tag.nxt: -- newline
 			unsigned(way_bits downto 0) >>) = lines_used;
 		
 		sc_read(clk, addr(0), result, sc_cpu_out, sc_cpu_in);
@@ -354,7 +354,7 @@ begin
 			lines_used := 1;
 		end if;
 
-		assert to_integer(<< signal .dut.cmp_tm.tag.nxt: -- newline
+		assert to_integer(<< signal .dut.tm.tag.nxt: -- newline
 				unsigned(way_bits downto 0) >>) = lines_used;
 						
 		
