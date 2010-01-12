@@ -151,6 +151,7 @@ public class Project {
 	private SourceAnnotations sourceAnnotations;
 	private File resultRecord;
 	private LinkerInfo linkerInfo;
+	private boolean hasDfaResults;
 
 	public Project(ProjectConfig config) throws IOException {
 		this.projectConfig =  config;
@@ -372,14 +373,14 @@ public class Project {
 		LoopBounds dfaLoopBounds = new LoopBounds();
 		program.runAnalysis(dfaLoopBounds);
 		program.setLoopBounds(dfaLoopBounds);
+		this.hasDfaResults = true;
 	}
 	/**
 	 * Get the loop bounds found by dataflow analysis
 	 */
 	public LoopBounds getDfaLoopBounds() {
-		DFAAppInfo p = getDfaProgram();
-		if(p == null) return null;
-		return p.getLoopBounds();
+		if(! hasDfaResults) return null;
+		return getDfaProgram().getLoopBounds();
 	}
 	/**
 	 * Convenience delegator to get the flowgraph of the given method

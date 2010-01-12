@@ -73,7 +73,7 @@ import static com.jopdesign.wcet.ExecHelper.timeDiff;
 public class WCETAnalysis {
     private static final String CONFIG_FILE_PROP = "config";
     public static final String VERSION = "1.0.1";
-	private static final boolean TESTING_BUILD = true;
+	private static final boolean TESTING_BUILD = System.getenv("WCET_TESTING_MODE") != null;
 
     public static Option<?>[][] options = {
         ProjectConfig.projectOptions,
