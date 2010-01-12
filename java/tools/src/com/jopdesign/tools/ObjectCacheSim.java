@@ -1,6 +1,7 @@
 package com.jopdesign.tools;
 
 public class ObjectCacheSim {
+	private static final boolean CACHE_SINGLE_FIELDS = false;
 	private int assoc;
 	private ObjectCacheStat stats;
 	private int osize;
@@ -21,15 +22,18 @@ public class ObjectCacheSim {
 	}
 
 	public void accessField(int ref, int off) {
+		int addr;
+		if(CACHE_SINGLE_FIELDS) addr = ref+off;
+		else                    addr = ref;
 		this.stats.accessCount++;
-		if(off > osize) {
+		if(! CACHE_SINGLE_FIELDS && off > osize) {
 			stats.missCount++;
 			return;
 		}
-		if(! isCached(ref)) {
+		if(! isCached(addr)) {
 			stats.missCount++;
 		}
-		loadObject(ref);
+		loadObject(addr);
 	}
 	// 0 is first entry
 	private void loadObject(int ref) {
