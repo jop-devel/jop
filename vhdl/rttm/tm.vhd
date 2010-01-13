@@ -60,8 +60,10 @@ port (
  	to_mem			: out sc_out_type;
  	from_mem		: in sc_in_type;
  	
+ 	-- tm_manager state
  	state			: in state_type;
  	broadcast		: in tm_broadcast_type;
+ 	-- tm_manager busy
  	rdy_cnt_busy	: in std_logic;	
 	
 	
@@ -148,15 +150,11 @@ architecture rtl of tm is
 	
 	-- Misc.
 	
-	signal to_mem_buf: sc_out_type;
-
 	signal read_data, next_read_data: std_logic_vector(31 downto 0);
 
-	signal doing_mem_read, next_doing_mem_read: std_logic;
-	
-	signal to_cpu_rdy_cnt: unsigned(RDY_CNT_SIZE-1 downto 0);
 	signal from_mem_rdy_cnt_dly: unsigned(RDY_CNT_SIZE-1 downto 0);
 	
+	-- remember to forward rd_data from from_mem when tm module is ready
 	signal read_miss_publish, next_read_miss_publish: std_logic;
 
 
@@ -431,7 +429,7 @@ begin
 		end if;
 	end process memory_block_access;
 	
-	proc_stage23: process(commit_addr, commit_line, doing_mem_read, from_mem, 
+	proc_stage23: process(commit_addr, commit_line, from_mem, 
 		read_data, save_data, stage1, stage1_async, stage2, stage23, stage3, 
 		transaction_start, from_mem_rdy_cnt_dly,
 		rdy_cnt_busy, read_miss_publish) is
@@ -445,11 +443,11 @@ begin
 		next_stage23.state <= idle;
 		
 		next_stage23.wr_data <= (others => 'X');
-		to_mem_buf.address <= (others => 'X');
-		to_mem_buf.wr_data <= (others => 'X');
+		to_mem.address <= (others => 'X');
+		to_mem.wr_data <= (others => 'X');
 		
-		to_mem_buf.wr <= '0';
-		to_mem_buf.rd <= '0';
+		to_mem.wr <= '0';
+		to_mem.rd <= '0';
 		
 		commit_word_finishing <= '0';
 		
@@ -457,7 +455,6 @@ begin
 		
 		next_save_data <= save_data;
 		
-		next_doing_mem_read <= doing_mem_read;
 		next_read_miss_publish <= read_miss_publish;
 
 		
@@ -490,8 +487,8 @@ begin
 				
 			when read_miss2 =>
 				next_stage23.state <= read_miss3;
-				to_mem_buf.rd <= '1';
-				to_mem_buf.address <= 
+				to_mem.rd <= '1';
+				to_mem.address <= 
 					(SC_ADDR_SIZE-1 downto addr_width => 
 					'0') & stage2.addr; -- TODO
 			
@@ -503,7 +500,8 @@ begin
 				end if;
 				
 			when read_miss4 =>
-				-- rdy_cnt = 0 in next cycle (TODO due to data hazard)				
+				-- read finishes only in next cycle 
+				-- (TODO due to control hazard when updating cache)				
 				next_stage23.update_data <= '1';
 				next_stage23.wr_data <= from_mem.rd_data;
 				next_read_miss_publish <= '1'; 
@@ -515,10 +513,10 @@ begin
 			when commit_3 =>
 				-- write if dirty
 				if stage3.was_dirty = '1' then
-					to_mem_buf.wr <= '1';
-					to_mem_buf.address <= (SC_ADDR_SIZE-1 downto addr_width => 
+					to_mem.wr <= '1';
+					to_mem.address <= (SC_ADDR_SIZE-1 downto addr_width => 
 						'0') & commit_addr;
-					to_mem_buf.wr_data <= read_data;
+					to_mem.wr_data <= read_data;
 					next_stage23.state <= commit_4;
 				else
 					-- not a cycle earlier to generate shift event
@@ -555,15 +553,15 @@ begin
 				next_stage23.state <= commit_2;
 			when read_direct =>
 				next_stage23.state <= read_direct;
-				to_mem_buf.rd <= '1';
+				to_mem.rd <= '1';
 
-				to_mem_buf.address <= stage1.addr;
-				to_mem_buf.wr_data <= (others => 'X');
+				to_mem.address <= stage1.addr;
+				to_mem.wr_data <= (others => 'X');
 			when write_direct =>
-				to_mem_buf.wr <= '1';
+				to_mem.wr <= '1';
 
-				to_mem_buf.address <= stage1.addr;
-				to_mem_buf.wr_data <= stage1.cpu_data;
+				to_mem.address <= stage1.addr;
+				to_mem.wr_data <= stage1.cpu_data;
 		end case;
 		
 		-- if this read miss triggered an early commit,
@@ -588,8 +586,6 @@ begin
 	read_set <= r_w_set_instrum_max.read_set;
 	write_set <= r_w_set_instrum_max.write_set;
 	read_or_write_set <= r_w_set_instrum_max.read_or_write_set;
-	
-	to_mem <= to_mem_buf;
 	
 	
 	--
@@ -639,10 +635,8 @@ begin
 			var_rdy_cnt := from_mem.rdy_cnt;
 		end if;
 		
-		to_cpu_rdy_cnt <= var_rdy_cnt;
+		to_cpu.rdy_cnt <= var_rdy_cnt;
 	end process gen_rdy_cnt;
-	
-	to_cpu.rdy_cnt <= to_cpu_rdy_cnt;
 	
 
 	--
@@ -694,7 +688,6 @@ begin
 			
 			commit_started <= '0';
 			
-			doing_mem_read <= '0';
 			from_mem_rdy_cnt_dly <= (others => '0');
 			read_miss_publish <= '0';				 
 	    elsif rising_edge(clk) then
@@ -711,7 +704,6 @@ begin
 			
 			commit_started <= next_commit_started;
 			
-			doing_mem_read <= next_doing_mem_read;
 			from_mem_rdy_cnt_dly <= from_mem.rdy_cnt;
 			read_miss_publish <= next_read_miss_publish;
 	    end if;

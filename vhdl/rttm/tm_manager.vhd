@@ -146,10 +146,11 @@ architecture rtl of tm_manager is
 	
 	-- commit_finished signal is delayed long enough so that other processors
 	-- detect conflict before they can obtain commit token
-	-- (after commit_finished_dly has caused reset of commit_out_try)		
+	-- (after commit_finished_dly has caused reset of commit_token_request)		
 	signal commit_finished_dly: std_logic;
 	signal commit_finished_dly_internal_1: std_logic;
 	
+	-- tm_manager is busy
 	signal rdy_cnt_busy: std_logic;
 	
 		
