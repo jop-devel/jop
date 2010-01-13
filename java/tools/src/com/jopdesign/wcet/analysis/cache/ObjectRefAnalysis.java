@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 
 import org.apache.bcel.generic.ARRAYLENGTH;
 import org.apache.bcel.generic.ArrayInstruction;
+import org.apache.bcel.generic.FieldInstruction;
 import org.apache.bcel.generic.GETFIELD;
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKEVIRTUAL;
@@ -51,8 +52,11 @@ import com.jopdesign.wcet.ipet.MaxCostFlow.DecisionVariable;
  *
  */
 public class ObjectRefAnalysis {
+	public static final boolean CACHE_FIELDS_ONLY =
+		System.getenv("WCET_CACHE_FIELDS_ONLY") != null;
 	public static final boolean FIELD_ACCESS_ONLY = true;
 	public static final boolean GETFIELD_ONLY = true;
+
 	private static final int DEFAULT_SET_SIZE = 32;
 	private int maxSetSize;
 	private Map<CallGraphNode, Long> usedReferences;
@@ -160,8 +164,18 @@ public class ObjectRefAnalysis {
 						if(refs.isSaturated() || countAllAccesses) {
 							topCost += 1000;
 						} else {
-							for(SymbolicAddress ref : refs.getSet()) {
-								addAccessSite(accessSets, ref, n);
+							if(! CACHE_FIELDS_ONLY) {
+								for(SymbolicAddress ref : refs.getSet()) {
+									addAccessSite(accessSets, ref, n);
+								}
+							} else {
+								// Hack to look at field access
+								String fieldName =
+									((FieldInstruction)ih.getInstruction()).getFieldName(
+											bb.cpg());
+								for(SymbolicAddress ref : refs.getSet()) {
+									addAccessSite(accessSets, ref.access(fieldName), n);
+								}
 							}
 						}
 					}

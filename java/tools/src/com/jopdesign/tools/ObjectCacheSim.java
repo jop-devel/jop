@@ -1,7 +1,8 @@
 package com.jopdesign.tools;
 
 public class ObjectCacheSim {
-	private static final boolean CACHE_SINGLE_FIELDS = false;
+	private static final boolean CACHE_SINGLE_FIELDS = 
+		System.getenv("WCET_CACHE_FIELDS_ONLY") != null;
 	private int assoc;
 	private ObjectCacheStat stats;
 	private int osize;
