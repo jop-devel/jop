@@ -214,6 +214,7 @@ begin
 		
 		state => state,
 		transaction_start => transaction_start,
+		rdy_cnt_busy => rdy_cnt_busy,
 		
 		read_set => next_instrumentation.read_set,
 		write_set => next_instrumentation.write_set,

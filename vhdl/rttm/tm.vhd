@@ -60,8 +60,9 @@ port (
  	to_mem			: out sc_out_type;
  	from_mem		: in sc_in_type;
  	
- 	state: in state_type;
- 	broadcast		: in tm_broadcast_type;	
+ 	state			: in state_type;
+ 	broadcast		: in tm_broadcast_type;
+ 	rdy_cnt_busy	: in std_logic;	
 	
 	
 	-- Events
@@ -94,7 +95,7 @@ architecture rtl of tm is
 	
 	type stage23_state_type is
 	( idle, read_hit2, write2, read_hit3, read_miss2, read_miss3,
-		read_miss4, commit_2, commit_3, commit_4 );
+		read_miss4, commit_2, commit_3, commit_4, read_direct );
 
 
 	-- Registers for pipeline stages
@@ -152,6 +153,11 @@ architecture rtl of tm is
 	signal read_data, next_read_data: std_logic_vector(31 downto 0);
 
 	signal doing_mem_read, next_doing_mem_read: std_logic;
+	
+	signal to_cpu_rdy_cnt: unsigned(RDY_CNT_SIZE-1 downto 0);
+	signal from_mem_rdy_cnt_dly: unsigned(RDY_CNT_SIZE-1 downto 0);
+	
+	signal read_miss_publish, next_read_miss_publish: std_logic;
 
 
 	-- Data and state flags
@@ -427,7 +433,8 @@ begin
 	
 	proc_stage23: process(commit_addr, commit_line, doing_mem_read, from_mem, 
 		read_data, save_data, stage1, stage1_async, stage2, stage23, stage3, 
-		to_mem_buf, transaction_start) is
+		transaction_start, from_mem_rdy_cnt_dly,
+		rdy_cnt_busy, read_miss_publish) is
 	begin
 		commit_shift <= '0';
 	
@@ -451,23 +458,24 @@ begin
 		next_save_data <= save_data;
 		
 		next_doing_mem_read <= doing_mem_read;
+		next_read_miss_publish <= read_miss_publish;
 
-		-- track memory reads and forward them to the CPU
-		
-		if doing_mem_read = '1' and from_mem.rdy_cnt = 0 then
-			next_doing_mem_read <= '0';
-			next_save_data <= from_mem.rd_data;
-			to_cpu.rd_data <= from_mem.rd_data;
-		end if;
-				
-		if to_mem_buf.rd = '1' then
-			next_doing_mem_read <= '1';
-		end if;
 		
 				
 		case stage23.state is
 			when idle =>
 				null;
+			
+			when read_direct =>
+				-- forward non-transactional reads w/ pipeline level 2
+				if ((from_mem.rdy_cnt = 0 and not (from_mem_rdy_cnt_dly = 0)) or 
+					from_mem_rdy_cnt_dly = 1)  
+				then
+					next_save_data <= from_mem.rd_data;
+					to_cpu.rd_data <= from_mem.rd_data;
+				else
+					next_stage23.state <= read_direct;
+				end if;
 							
 			when read_hit2 =>
 				next_stage23.state <= read_hit3;
@@ -495,11 +503,10 @@ begin
 				end if;
 				
 			when read_miss4 =>
-				-- forwarding to cpu is done based on rdy_cnt 
--- 				next_save_data <= from_mem.rd_data;
--- 				to_cpu.rd_data <= from_mem.rd_data;
+				-- rdy_cnt = 0 in next cycle (TODO due to data hazard)				
 				next_stage23.update_data <= '1';
-				next_stage23.wr_data <= from_mem.rd_data; 
+				next_stage23.wr_data <= from_mem.rd_data;
+				next_read_miss_publish <= '1'; 
 			
 			when commit_2 =>
 				next_commit_line <= commit_line + 1;
@@ -547,6 +554,7 @@ begin
 			when commit =>
 				next_stage23.state <= commit_2;
 			when read_direct =>
+				next_stage23.state <= read_direct;
 				to_mem_buf.rd <= '1';
 
 				to_mem_buf.address <= stage1.addr;
@@ -558,10 +566,19 @@ begin
 				to_mem_buf.wr_data <= stage1.cpu_data;
 		end case;
 		
+		-- if this read miss triggered an early commit,
+		-- wait until the EARLY_COMMIT finished before updating rd_data
+		if read_miss_publish = '1' and rdy_cnt_busy = '0' then
+			to_cpu.rd_data <= from_mem.rd_data;			
+			next_save_data <= from_mem.rd_data;
+			next_read_miss_publish <= '0';
+		end if;		
+		
 		if transaction_start = '1' then
 			next_commit_line <= (others => '0');
 		end if;		
 	end process proc_stage23;
+	
 	
 	
 	--
@@ -604,7 +621,7 @@ begin
 						var_rdy_cnt := "11"; -- TODO issue to_mem.rd earlier?
 						
 					when read_miss3 =>
-						-- hazard fix - or add reg. and disable cycle 2 write
+						-- hazard fix - or TODO add reg. and disable cycle 2 write
 						-- TODO refer to documentation
 						-- TODO actually min(3, from_mem.rdy_cnt + 1)	
 						var_rdy_cnt := "11";
@@ -612,7 +629,7 @@ begin
 						var_rdy_cnt := "01";					
 					 
 					when idle | read_hit3 | commit_2 | commit_3 |
-						commit_4 =>
+						commit_4 | read_direct =>
 						null; 
 						-- rdy_cnt 0 or set by arbiter or tm_manager
 				end case;
@@ -622,8 +639,10 @@ begin
 			var_rdy_cnt := from_mem.rdy_cnt;
 		end if;
 		
-		to_cpu.rdy_cnt <= var_rdy_cnt;
+		to_cpu_rdy_cnt <= var_rdy_cnt;
 	end process gen_rdy_cnt;
+	
+	to_cpu.rdy_cnt <= to_cpu_rdy_cnt;
 	
 
 	--
@@ -675,7 +694,9 @@ begin
 			
 			commit_started <= '0';
 			
-			doing_mem_read <= '0';				 
+			doing_mem_read <= '0';
+			from_mem_rdy_cnt_dly <= (others => '0');
+			read_miss_publish <= '0';				 
 	    elsif rising_edge(clk) then
 			stage1 <= next_stage1;
 			stage2 <= next_stage2;
@@ -691,6 +712,8 @@ begin
 			commit_started <= next_commit_started;
 			
 			doing_mem_read <= next_doing_mem_read;
+			from_mem_rdy_cnt_dly <= from_mem.rdy_cnt;
+			read_miss_publish <= next_read_miss_publish;
 	    end if;
 	end process sync;
 

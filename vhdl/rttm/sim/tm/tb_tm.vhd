@@ -225,7 +225,8 @@ begin
 		assert ram(to_integer(unsigned(addr(2)))) = data(3);
 		
 		sc_read(clk, addr(2), result, sc_cpu_out, sc_cpu_in);
-		assert now = 120 ns and result = data(3);
+-- 		assert now = 120 ns and result = data(3);
+		assert result = data(3);
 		
 		sc_write(clk, addr(4), data(0), sc_cpu_out, sc_cpu_in);
 		

@@ -584,14 +584,16 @@ begin
 			next_state <= ialrb;
 
 		when ialrb =>
-			-- can we optimize this when we increment index at some state?
-			if unsigned(index) >= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0)) then
-				next_state <= abexc;
+			-- HACK: swapped priority of ifs to avoid wrong exceptions when
+			-- skipping rdy_cnt = 1 
+			
 			-- either 1 or 0
-			elsif sc_mem_in.rdy_cnt(1)='0' then
+			if sc_mem_in.rdy_cnt(1)='0' then
 				next_state <= idl;
+			-- can we optimize this when we increment index at some state?
+			elsif unsigned(index) >= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0)) then
+				next_state <= abexc;
 			end if;
-
 		when iaswb =>
 			if sc_mem_in.rdy_cnt(1)='0' then
 				next_state <= iasrb;
