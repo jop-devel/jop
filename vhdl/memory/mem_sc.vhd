@@ -882,6 +882,7 @@ begin
 				read_ocache<='0';
 				state_bsy <= '1';
 				-- cache check
+				sc_mem_out.tm_cache <= '0';				
 
 			when bc_r1 =>
 				-- setup data
@@ -890,10 +891,12 @@ begin
 				inc_addr_reg <= '1';
 				state_rd <= '1';
 				sc_mem_out.atomic	<= '1';
+				sc_mem_out.tm_cache <= '0';
 
 			when bc_w =>
 				-- wait
 				sc_mem_out.atomic	<= '1';
+				sc_mem_out.tm_cache <= '0';
 
 			when bc_rn =>
 				-- following memory reads
@@ -901,6 +904,7 @@ begin
 				dec_len <= '1';
 				state_rd <= '1';
 				sc_mem_out.atomic	<= '1';
+				sc_mem_out.tm_cache <= '0';
 
 			when bc_wr =>
 				-- BC write
@@ -910,9 +914,11 @@ begin
 				if bc_len=to_unsigned(1, jpc_width-3) then
 					sc_mem_out.atomic	<= '0';				
 				end if;
+				sc_mem_out.tm_cache <= '0';
 
 			when bc_wl =>
 				-- wait for last (unnecessary read)
+				sc_mem_out.tm_cache <= '0';
 
 			when iast0 =>
 				read_ocache<='0';
