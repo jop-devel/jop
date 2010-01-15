@@ -1356,7 +1356,11 @@ arraylength:
 			ldmrd		 nxt	// read ext. mem
 
 
+#ifndef RTTM
 //aastore: is now in JVM.java for the write barrier
+#else
+aastore:
+#endif
 bastore:
 castore:
 fastore:
