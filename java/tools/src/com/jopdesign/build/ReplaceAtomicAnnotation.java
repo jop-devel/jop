@@ -151,6 +151,7 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 			
 			// transaction loop
 			// TMTODO optimize jumps
+			// TMTODO get tm constants using reflection
 			
 			InstructionHandle ih_43 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex-2+2));
 			    BranchInstruction ifeq_44 = _factory.createBranchInstruction(Constants.IFEQ, null);
