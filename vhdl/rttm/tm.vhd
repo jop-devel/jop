@@ -2,7 +2,7 @@
 --
 --  This file is a part of JOP, the Java Optimized Processor
 --
---  Copyright (C) 2009, Peter Hilber (peter@hilber.name)
+--  Copyright (C) 2009-2010, Peter Hilber (peter@hilber.name)
 --  Copyright (C) 2009, Martin Schoeberl (martin@jopdesign.com)
 --
 --  This program is free software: you can redistribute it and/or modify
@@ -116,6 +116,7 @@ architecture rtl of tm is
 		update_dirty: std_logic;
 		read: std_logic;
 		dirty: std_logic;
+		read_flag_line_addr: unsigned(way_bits-1 downto 0);
 	end record;
 	
 	type stage3_type is record
@@ -314,7 +315,7 @@ begin
 					if commit_line = stage1_async.newline then
 						commit_finished <= '1';
 					else 
-						next_stage1.state <= COMMIT;
+						next_stage1.state <= commit;
 						
 						next_stage1.addr <= (others => '0');
 						next_stage1.addr(commit_addr'range) <= commit_addr;
@@ -342,10 +343,9 @@ begin
 		tag_full <= '0';
 		
 		-- set line_addr and tag_full
-		if stage1.state = COMMIT then
+		if stage1.state = commit then
 			next_stage23.line_addr <= commit_line(way_bits-1 downto 0);
-		elsif stage1.state = read1 or stage1.state = write or
-			stage1.state = broadcast1 then -- TODO
+		elsif stage1.state = read1 or stage1.state = write then
 			if stage1_async.hit = '1' then
 				next_stage23.line_addr <= stage1_async.line_addr;
 			else
@@ -362,6 +362,10 @@ begin
 				end if;
 			end if;
 		end if;
+		--elsif stage1.state = broadcast1 then
+		-- always executed for instrumentation purposes 
+		next_stage2.read_flag_line_addr <= stage1_async.line_addr;
+		--end if;
 		
 		-- set tag update enables and next_bcstage2 
 		case stage1.state is
@@ -406,7 +410,8 @@ begin
 		-- TODO RAM access is apparently synthesized in stage 3
 		next_stage3.was_dirty <= dirty(to_integer(stage23.line_addr));
 		-- TODO naming ^v
-		next_stage3.was_read <= read(to_integer(stage23.line_addr)) and
+		-- .was_read is only set if it was a hit
+		next_stage3.was_read <= read(to_integer(stage2.read_flag_line_addr)) and
 			stage2.hit;
 	end process proc_stage2;
 	
@@ -655,7 +660,7 @@ begin
 	proc_bcstage3: process(bcstage3, stage3) is
 	begin
 		conflict <= '0';
-		-- TODO only if it was a hit
+		-- .was_read is only set if it was a hit
 		if bcstage3 = '1' and stage3.was_read = '1' then
 			conflict <= '1';
 		end if;
@@ -673,7 +678,8 @@ begin
 				cpu_data => (others => '0'));
 			stage2 <= (hit => '0', addr => (others => '0'),
 				update_tags => '0', update_read => '0',
-				update_dirty => '0', read => '0', dirty => '0');
+				update_dirty => '0', read => '0', dirty => '0',
+				read_line_addr => (others => '0'));
 			stage3 <= (was_read => '0', was_dirty => '0');
 			stage23 <= (state => idle,
 				wr_data => (others => '0'), update_data => '0',
