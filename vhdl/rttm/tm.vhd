@@ -679,7 +679,7 @@ begin
 			stage2 <= (hit => '0', addr => (others => '0'),
 				update_tags => '0', update_read => '0',
 				update_dirty => '0', read => '0', dirty => '0',
-				read_line_addr => (others => '0'));
+				read_flag_line_addr => (others => '0'));
 			stage3 <= (was_read => '0', was_dirty => '0');
 			stage23 <= (state => idle,
 				wr_data => (others => '0'), update_data => '0',
