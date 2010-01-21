@@ -609,7 +609,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/scio/cmpsync.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram32.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc2_pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd
