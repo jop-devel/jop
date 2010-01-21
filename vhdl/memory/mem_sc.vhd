@@ -241,16 +241,18 @@ end process;
 --	Object cache connections
 --
 
-	oc: entity work.ocache
-		generic map (
-			size_bits => 2
-		)
-		port map (
-			clk => clk,
-			reset => reset,
-			ocin => ocin,
-			ocout => ocout
-		);
+-- 	oc: entity work.ocache
+-- 		generic map (
+-- 			size_bits => 2
+-- 		)
+-- 		port map (
+-- 			clk => clk,
+-- 			reset => reset,
+-- 			ocin => ocin,
+-- 			ocout => ocout
+-- 		);
+
+	ocout.hit <= '0';
 
 	-- TODO: what about larger field indexes?
 	-- at least we need to signal a miss....
