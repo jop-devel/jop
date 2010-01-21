@@ -204,11 +204,16 @@ architecture rtl of sc_sys is
 	-- delay instruction
 	signal dly_timeout	: std_logic_vector(31 downto 0);
 	signal dly_block	: std_logic;
+	
+	signal lock_reqest_dly: std_logic;
 
 begin
 
 	cpu_identity <= std_logic_vector(to_unsigned(cpu_id,32));
-	rdy_cnt <= "11" when (sync_out.halted='1' and lock_reqest='1') or dly_block='1' else "00";
+	rdy_cnt <= "11" when 
+		(sync_out.halted='1' and lock_reqest='1') or
+		(lock_reqest='1' and lock_reqest_dly='0') or 
+		dly_block='1' else "00";
 	
 --
 --	read cnt values
@@ -269,8 +274,10 @@ end process;
 process(clk, reset) begin
 	if reset='1' then
 		timer_dly <= '0';
+		lock_reqest_dly <= '0'; -- TODO
 	elsif rising_edge(clk) then
 		timer_dly <= timer_equ;
+		lock_reqest_dly <= lock_reqest;
 	end if;
 end process;
 
