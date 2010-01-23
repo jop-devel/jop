@@ -97,7 +97,8 @@ architecture rtl of tm is
 	
 	type stage23_state_type is
 	( idle, read_hit2, write2, read_hit3, read_miss2, read_miss3,
-		read_miss4, commit_2, commit_3, commit_4, read_direct );
+		read_miss4, commit_2, commit_3, commit_4, read_direct2, read_direct3,
+		write_direct2 );
 
 
 	-- Registers for pipeline stages
@@ -246,8 +247,8 @@ begin
 	--
 
 	proc_stage0: process (broadcast, broadcast_valid_dly, commit_addr, 
-		commit_line, commit_started, from_cpu, from_mem, stage1, stage1_async, 
-		state, commit_word_finishing) is
+		commit_line, commit_started, from_cpu, from_mem_rdy_cnt_dly, stage1, 
+		stage1_async, state, commit_word_finishing) is
 	begin
 		next_stage1.addr <= (others => 'X');
 		next_stage1.cpu_data <= from_cpu.wr_data;
@@ -310,7 +311,7 @@ begin
 
 				-- TODO rdy_cnt condition
 				if commit_word_finishing = '1' or 
-					((commit_started = '0') and (from_mem.rdy_cnt = 0)) then
+					((commit_started = '0') and (from_mem_rdy_cnt_dly(1) = '0')) then
 					next_commit_started <= '1';
 					if commit_line = stage1_async.newline then
 						commit_finished <= '1';
@@ -465,18 +466,18 @@ begin
 		
 				
 		case stage23.state is
-			when idle =>
+			when idle | write_direct2 =>
 				null;
 			
-			when read_direct =>
+			when read_direct2 | read_direct3 =>
 				-- forward non-transactional reads w/ pipeline level 2
 				if ((from_mem.rdy_cnt = 0 and not (from_mem_rdy_cnt_dly = 0)) or 
 					from_mem_rdy_cnt_dly = 1)  
 				then
 					next_save_data <= from_mem.rd_data;
-					to_cpu.rd_data <= from_mem.rd_data;
+-- 					to_cpu.rd_data <= from_mem.rd_data;
 				else
-					next_stage23.state <= read_direct;
+					next_stage23.state <= read_direct3;
 				end if;
 							
 			when read_hit2 =>
@@ -492,7 +493,7 @@ begin
 				
 			when read_miss2 =>
 				next_stage23.state <= read_miss3;
-				to_mem.rd <= '1';
+				to_mem.rd <= '1'; -- TODO register since it's in critical path
 				to_mem.address <= 
 					(SC_ADDR_SIZE-1 downto addr_width => 
 					'0') & stage2.addr; -- TODO
@@ -557,12 +558,13 @@ begin
 			when commit =>
 				next_stage23.state <= commit_2;
 			when read_direct =>
-				next_stage23.state <= read_direct;
+				next_stage23.state <= read_direct2;
 				to_mem.rd <= '1';
 
 				to_mem.address <= stage1.addr;
 				to_mem.wr_data <= (others => 'X');
 			when write_direct =>
+				next_stage23.state <= write_direct2;
 				to_mem.wr <= '1';
 
 				to_mem.address <= stage1.addr;
@@ -572,7 +574,7 @@ begin
 		-- if this read miss triggered an early commit,
 		-- wait until the EARLY_COMMIT finished before updating rd_data
 		if read_miss_publish = '1' and rdy_cnt_busy = '0' then
-			to_cpu.rd_data <= from_mem.rd_data;			
+-- 			to_cpu.rd_data <= from_mem.rd_data;			
 			next_save_data <= from_mem.rd_data;
 			next_read_miss_publish <= '0';
 		end if;		
@@ -597,50 +599,65 @@ begin
 	--	Part of rdy_cnt generation
 	--
 	
-	gen_rdy_cnt: process (from_mem, stage1, stage23) is
-		variable var_rdy_cnt: unsigned(RDY_CNT_SIZE-1 downto 0);
+	gen_rdy_cnt: process (from_mem_rdy_cnt_dly, rdy_cnt_busy, 
+		read_miss_publish, stage1, stage23) is
 	begin
-		var_rdy_cnt := "00";
-		
 		case stage1.state is
 			when write =>
-				var_rdy_cnt := "10";
+				to_cpu.rdy_cnt <= "10";
 			when read1 =>
-				var_rdy_cnt := "11"; -- TODO not waiting for hit res. is faster
+				to_cpu.rdy_cnt <= "11"; -- TODO not waiting for hit res. is faster
 -- 				if stage1_async.hit = '1' then
--- 					var_rdy_cnt := "10";
+-- 					to_cpu.rdy_cnt <= "10";
 -- 				else
--- 					var_rdy_cnt := "11";
+-- 					to_cpu.rdy_cnt <= "11";
 -- 				end if;
 			when read_direct | write_direct =>
-				var_rdy_cnt := "11";
+				to_cpu.rdy_cnt <= "11";
 			when idle | commit | broadcast1 =>
 				case stage23.state is
 					when write2 | read_hit2 =>
-						var_rdy_cnt := "01";
+						to_cpu.rdy_cnt <= "01";
 					when read_miss2 =>
-						var_rdy_cnt := "11"; -- TODO issue to_mem.rd earlier?
+						to_cpu.rdy_cnt <= "11"; -- TODO issue to_mem.rd earlier?
 						
 					when read_miss3 =>
 						-- hazard fix - or TODO add reg. and disable cycle 2 write
 						-- TODO refer to documentation
 						-- TODO actually min(3, from_mem.rdy_cnt + 1)	
-						var_rdy_cnt := "11";
+						to_cpu.rdy_cnt <= "11";
 					when read_miss4 =>
-						var_rdy_cnt := "01";					
-					 
+						to_cpu.rdy_cnt <= "01";
+						
+					-- direct read from memory
+					when read_direct2 =>
+						to_cpu.rdy_cnt <= "11";
+					when read_direct3 =>
+						to_cpu.rdy_cnt <= from_mem_rdy_cnt_dly;
+					
+					when write_direct2 =>
+						to_cpu.rdy_cnt <= "11";
+					
+					-- on direct write to memory, we're in state idle
 					when idle | read_hit3 | commit_2 | commit_3 |
-						commit_4 | read_direct =>
-						null; 
+						commit_4 =>
 						-- rdy_cnt 0 or set by arbiter or tm_manager
+						
+						-- rdy_cnt is delayed and a new memory transaction will
+						-- be delayed by an additional cycle
+						case from_mem_rdy_cnt_dly is
+							when "11" =>
+								to_cpu.rdy_cnt <= "11";
+							when others =>
+								to_cpu.rdy_cnt <= "00";
+						end case;
 				end case;
 		end case;
 		
-		if from_mem.rdy_cnt > var_rdy_cnt then
-			var_rdy_cnt := from_mem.rdy_cnt;
+		-- need another cycle to publish read data 		
+		if read_miss_publish = '1' and rdy_cnt_busy = '0' then
+			to_cpu.rdy_cnt <= "01";
 		end if;
-		
-		to_cpu.rdy_cnt <= var_rdy_cnt;
 	end process gen_rdy_cnt;
 	
 
