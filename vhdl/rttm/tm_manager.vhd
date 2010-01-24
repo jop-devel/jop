@@ -151,7 +151,7 @@ architecture rtl of tm_manager is
 	signal commit_finished_dly_internal_1: std_logic;
 	
 	-- tm_manager is busy
-	signal rdy_cnt_busy: std_logic;
+	signal rdy_cnt_busy, next_rdy_cnt_busy: std_logic;
 	
 		
 	-- Instrumentation
@@ -236,7 +236,20 @@ begin
 		state = EARLY_COMMITTED_TRANSACTION
 		else '0';
 	
-	commit_token_request <= commit_token_request_buf;			
+	commit_token_request <= commit_token_request_buf;
+	
+	-- moved out of state machine and in previous cycle
+	next_rdy_cnt_busy <= '1' when 
+	(next_state = COMMIT_WAIT_TOKEN) or
+	(next_state = COMMIT) or
+	(next_state = EARLY_COMMIT_WAIT_TOKEN) or
+	(next_state = EARLY_COMMIT) or
+	((next_state = CONTAINMENT) and
+		(next_containment_state /= cbi0) and 
+		(next_containment_state /= cbi))
+	else '0';
+	
+				
 	
 	--
 	--	TM STATE MACHINE
@@ -246,7 +259,7 @@ begin
 	begin
 		next_state <= state;
 		exc_tm_rollback <= '0';
-		rdy_cnt_busy <= '0';
+-- 		rdy_cnt_busy <= '0';
 		
 		transaction_start <= '0';
 		
@@ -310,7 +323,7 @@ begin
 				end if;
 								
 			when COMMIT_WAIT_TOKEN =>
-				rdy_cnt_busy <= '1';
+-- 				rdy_cnt_busy <= '1';
 			
 				if conflict = '1' then
 					next_state <= CONTAINMENT;
@@ -330,7 +343,7 @@ begin
 				end if;
 			
 			when COMMIT =>
-				rdy_cnt_busy <= '1';
+-- 				rdy_cnt_busy <= '1';
 				
 				-- TODO check condition
 				if commit_finished_dly = '1' then
@@ -338,7 +351,7 @@ begin
 				end if;
 				
 			when EARLY_COMMIT_WAIT_TOKEN =>
-				rdy_cnt_busy <= '1';
+-- 				rdy_cnt_busy <= '1';
 			
 				if conflict = '1' then
 					next_state <= CONTAINMENT;
@@ -357,7 +370,7 @@ begin
 				end if;
 				
 			when EARLY_COMMIT =>
-				rdy_cnt_busy <= '1';
+-- 				rdy_cnt_busy <= '1';
 			
 				-- TODO check condition
 				if commit_finished_dly = '1' then
@@ -407,26 +420,26 @@ begin
 						exc_tm_rollback <= '1';
 					
 						next_containment_state <= cbb1;
-						rdy_cnt_busy <= '1';
+-- 						rdy_cnt_busy <= '1';
 					
 					when cbb1 =>
 						next_containment_state <= cbb2;
-						rdy_cnt_busy <= '1';
+-- 						rdy_cnt_busy <= '1';
 					
 					when cbb2 =>
 						next_containment_state <= cbi;
-						rdy_cnt_busy <= '1';
+-- 						rdy_cnt_busy <= '1';
 					
 					when cbi =>
 						null;
 												
 					when cba1 =>
 						next_containment_state <= cba2;
-						rdy_cnt_busy <= '1';
+-- 						rdy_cnt_busy <= '1';
 					
 					when cba2 =>
 						next_state <= NO_TRANSACTION;
-						rdy_cnt_busy <= '1';
+-- 						rdy_cnt_busy <= '1';
 						
 				end case;
 				
@@ -439,8 +452,9 @@ begin
 						next_containment_state <= cbb1;
 				end case;
 		end case;
-	end process state_machine;	
-
+	end process state_machine;
+	
+	
 	--
 	--	 Adjustments to signals to/from CPU/arbiter.
 	--
@@ -543,8 +557,9 @@ begin
 			
 			commit_finished_dly_internal_1 <= '0';
 			commit_finished_dly <= '0';
-			
+								
 			-- containment_state <= -- don't care
+			rdy_cnt_busy <= '0';
 			
 			if rttm_instrum then
 				instrumentation <= ((others => '0'), (others => '0'), 
@@ -562,6 +577,8 @@ begin
 			commit_finished_dly <= commit_finished_dly_internal_1;
 			
 			containment_state <= next_containment_state;
+			
+			rdy_cnt_busy <= next_rdy_cnt_busy;
 			
 			if rttm_instrum then
 				instrumentation <= next_instrumentation;
