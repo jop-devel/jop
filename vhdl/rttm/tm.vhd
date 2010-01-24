@@ -535,6 +535,7 @@ begin
 				
 				if from_mem.rdy_cnt(1) = '0' then
 					next_stage23.state <= read_miss4;
+					next_read_miss_publish <= '1';
 				end if;
 				
 			when read_miss4 =>
@@ -542,7 +543,6 @@ begin
 				-- (TODO due to control hazard when updating cache)				
 				next_stage23.update_data <= '1';
 				next_stage23.wr_data <= from_mem.rd_data;
-				next_read_miss_publish <= '1'; 
 			
 			when commit_2 =>
 				next_commit_line <= commit_line + 1;
@@ -606,6 +606,7 @@ begin
 		-- if this read miss triggered an early commit,
 		-- wait until the EARLY_COMMIT finished before updating rd_data
 		if read_miss_publish = '1' and rdy_cnt_busy = '0' then
+		-- TODO should do that on next_read_miss_publish rising edge
 -- 			to_cpu.rd_data <= from_mem.rd_data;			
 			next_save_data <= from_mem.rd_data;
 			next_read_miss_publish <= '0';
