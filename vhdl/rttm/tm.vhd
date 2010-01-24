@@ -503,6 +503,7 @@ begin
 				
 				if from_mem.rdy_cnt(1) = '0' then
 					next_stage23.state <= read_miss4;
+					next_read_miss_publish <= '1';
 				end if;
 				
 			when read_miss4 =>
@@ -510,7 +511,6 @@ begin
 				-- (TODO due to control hazard when updating cache)				
 				next_stage23.update_data <= '1';
 				next_stage23.wr_data <= from_mem.rd_data;
-				next_read_miss_publish <= '1'; 
 			
 			when commit_2 =>
 				next_commit_line <= commit_line + 1;
@@ -628,7 +628,7 @@ begin
 						-- TODO actually min(3, from_mem.rdy_cnt + 1)	
 						to_cpu.rdy_cnt <= "11";
 					when read_miss4 =>
-						to_cpu.rdy_cnt <= "10";
+						to_cpu.rdy_cnt <= "01";
 						
 					-- direct read from memory
 					when read_direct2 =>
