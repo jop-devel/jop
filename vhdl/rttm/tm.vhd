@@ -116,13 +116,13 @@ architecture rtl of tm is
 		update_read: std_logic;
 		update_dirty: std_logic;
 		read: std_logic;
-		dirty: std_logic;
+		dirty: std_logic_vector(0 downto 0);
 		read_flag_line_addr: unsigned(way_bits-1 downto 0);
 	end record;
 	
 	type stage3_type is record
 		was_read: std_logic;
-		was_dirty: std_logic;
+-- 		was_dirty: std_logic;
 	end record;	
 	
 	type stage23_type is record
@@ -137,6 +137,8 @@ architecture rtl of tm is
 	signal stage2, next_stage2: stage2_type;
 	signal stage3, next_stage3: stage3_type;
 	signal stage23, next_stage23: stage23_type;
+	
+	signal stage3_was_dirty: std_logic_vector(0 downto 0);
 	
 	
 	-- Unregistered data
@@ -158,6 +160,8 @@ architecture rtl of tm is
 	
 	-- remember to forward rd_data from from_mem when tm module is ready
 	signal read_miss_publish, next_read_miss_publish: std_logic;
+	
+	signal next_stage23_line_addr_helper: std_logic_vector(4 downto 0); 
 
 
 	-- Data and state flags
@@ -166,7 +170,7 @@ architecture rtl of tm is
 
 	signal data: data_array(0 to lines-1);
 	
-	signal dirty		: std_logic_vector(lines-1 downto 0);
+-- 	signal dirty		: std_logic_vector(lines-1 downto 0);
 	signal read			: std_logic_vector(lines-1 downto 0);
 
 	signal save_data, next_save_data: std_logic_vector(31 downto 0);
@@ -213,6 +217,19 @@ architecture rtl of tm is
 	end record;
 	
 	signal instrum_stage3: instrum_stage3_type;
+	
+	component dirty_flags_ram
+	PORT
+	(
+		clock		: IN STD_LOGIC  := '1';
+		data		: IN STD_LOGIC_VECTOR (0 DOWNTO 0);
+		rdaddress		: IN STD_LOGIC_VECTOR (4 DOWNTO 0);
+		wraddress		: IN STD_LOGIC_VECTOR (4 DOWNTO 0);
+		wren		: IN STD_LOGIC  := '0';
+		q		: OUT STD_LOGIC_VECTOR (0 DOWNTO 0)
+	);
+	end component;
+	
 
 begin
 
@@ -240,6 +257,21 @@ begin
 			shift => commit_shift,
 			lowest_addr => commit_addr
 		);
+		
+				
+		
+		dirty_flags_ram_inst : dirty_flags_ram PORT MAP (
+				clock	 => clk,
+				data	 => next_stage2.dirty,
+				rdaddress	 => next_stage23_line_addr_helper,
+				wraddress	 => next_stage23_line_addr_helper,
+				wren	 => next_stage2.update_dirty,
+				q	 => stage3_was_dirty
+			);
+			
+		next_stage23_line_addr_helper <= 
+			(4 downto next_stage23.line_addr'high+1 => '0') & 
+			std_logic_vector(next_stage23.line_addr); 
 
 
 	--
@@ -333,7 +365,7 @@ begin
 		next_stage2.update_read <= '0';
 		next_stage2.update_dirty <= '0';
 		next_stage2.read <= 'X';
-		next_stage2.dirty <= 'X'; 
+		next_stage2.dirty(0) <= 'X'; 
 		
 		next_stage2.addr <= stage1.addr(next_stage2.addr'range);
 		
@@ -388,13 +420,13 @@ begin
 				
 				if stage1_async.hit = '0' then					
 					next_stage2.update_dirty <= '1';
-					next_stage2.dirty <= '0';
+					next_stage2.dirty(0) <= '0';
 				end if;				
 			when write =>
 				next_stage2.update_tags <= '1';
 				
 				next_stage2.update_dirty <= '1';
-				next_stage2.dirty <= '1';
+				next_stage2.dirty(0) <= '1';
 				
 				if stage1_async.hit = '0' then					
 					next_stage2.update_read <= '1';
@@ -403,13 +435,13 @@ begin
 		end case;				
 	end process proc_stage1;
 	
-	proc_stage2: process(data, dirty, read, stage23, stage2) is
+	proc_stage2: process(data, read, stage23, stage2) is
 	begin		
 		-- TODO only valid in next cycle
 		next_read_data <= data(to_integer(stage23.line_addr));
 		
 		-- TODO RAM access is apparently synthesized in stage 3
-		next_stage3.was_dirty <= dirty(to_integer(stage23.line_addr));
+-- 		next_stage3.was_dirty <= dirty(to_integer(stage23.line_addr));
 		-- TODO naming ^v
 		-- .was_read is only set if it was a hit
 		next_stage3.was_read <= read(to_integer(stage2.read_flag_line_addr)) and
@@ -425,9 +457,9 @@ begin
 				data(to_integer(stage23.line_addr)) <= stage23.wr_data;
 			end if;
 			
-			if stage2.update_dirty = '1' then
-				dirty(to_integer(stage23.line_addr)) <= stage2.dirty;
-			end if;
+-- 			if stage2.update_dirty = '1' then
+-- 				dirty(to_integer(stage23.line_addr)) <= stage2.dirty;
+-- 			end if;
 			
 			if stage2.update_read = '1' then
 				read(to_integer(stage23.line_addr)) <= stage2.read;
@@ -436,8 +468,8 @@ begin
 	end process memory_block_access;
 	
 	proc_stage23: process(commit_addr, commit_line, from_mem, 
-		read_data, save_data, stage1, stage1_async, stage2, stage23, stage3, 
-		transaction_start, from_mem_rdy_cnt_dly,
+		read_data, save_data, stage1, stage1_async, stage2, stage23, 
+		stage3_was_dirty, transaction_start, from_mem_rdy_cnt_dly,
 		rdy_cnt_busy, read_miss_publish) is
 	begin
 		commit_shift <= '0';
@@ -518,7 +550,7 @@ begin
 			
 			when commit_3 =>
 				-- write if dirty
-				if stage3.was_dirty = '1' then
+				if stage3_was_dirty(0) = '1' then
 					to_mem.wr <= '1';
 					to_mem.address <= (SC_ADDR_SIZE-1 downto addr_width => 
 						'0') & commit_addr;
@@ -695,9 +727,9 @@ begin
 				cpu_data => (others => '0'));
 			stage2 <= (hit => '0', addr => (others => '0'),
 				update_tags => '0', update_read => '0',
-				update_dirty => '0', read => '0', dirty => '0',
+				update_dirty => '0', read => '0', dirty => "0",
 				read_flag_line_addr => (others => '0'));
-			stage3 <= (was_read => '0', was_dirty => '0');
+			stage3 <= (was_read => '0');
 			stage23 <= (state => idle,
 				wr_data => (others => '0'), update_data => '0',
 				line_addr => (others => '0'));
@@ -750,7 +782,7 @@ begin
 				-- save for stage 3
 				instrum_stage3.hit <= stage2.hit;
 				instrum_stage3.set_read <= stage2.update_read and stage2.read;
-				instrum_stage3.set_dirty <= stage2.update_dirty and stage2.dirty;
+				instrum_stage3.set_dirty <= stage2.update_dirty and stage2.dirty(0);
 			
 				-- update counters in stage 3
 				if (stage3.was_read = '0' or instrum_stage3.hit = '0') and
@@ -759,7 +791,7 @@ begin
 						r_w_set_instrum_current.read_set + 1;
 				end if;
 								
-				if (stage3.was_dirty = '0' or instrum_stage3.hit = '0') and
+				if (stage3_was_dirty(0) = '0' or instrum_stage3.hit = '0') and
 					instrum_stage3.set_dirty = '1' then
 					r_w_set_instrum_current.write_set <=
 						r_w_set_instrum_current.write_set + 1;

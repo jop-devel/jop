@@ -13,4 +13,5 @@ SRC= \
 	../../tm.vhd \
 	../../tm_manager.vhd \
 	../mem_no_arbiter.vhd \
+	../../dirty_flags_ram.vhd \
 	$(TARGET).vhd

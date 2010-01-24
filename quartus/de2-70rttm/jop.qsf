@@ -635,3 +635,4 @@ set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm_manager.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm_coordinator.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
+set_global_assignment -name QIP_FILE ../../vhdl/rttm/dirty_flags_ram.qip
