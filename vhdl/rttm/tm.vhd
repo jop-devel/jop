@@ -161,7 +161,8 @@ architecture rtl of tm is
 	-- remember to forward rd_data from from_mem when tm module is ready
 	signal read_miss_publish, next_read_miss_publish: std_logic;
 	
-	signal next_stage23_line_addr_helper: std_logic_vector(4 downto 0); 
+	signal next_stage23_line_addr_helper: 
+		std_logic_vector(way_bits-1 downto 0); 
 
 
 	-- Data and state flags
@@ -221,12 +222,11 @@ architecture rtl of tm is
 	component dirty_flags_ram
 	PORT
 	(
+		address		: IN STD_LOGIC_VECTOR (way_bits-1 DOWNTO 0);
 		clock		: IN STD_LOGIC  := '1';
 		data		: IN STD_LOGIC_VECTOR (0 DOWNTO 0);
-		rdaddress		: IN STD_LOGIC_VECTOR (4 DOWNTO 0);
-		wraddress		: IN STD_LOGIC_VECTOR (4 DOWNTO 0);
 		wren		: IN STD_LOGIC  := '0';
-		q		: OUT STD_LOGIC_VECTOR (0 DOWNTO 0)
+		q			: OUT STD_LOGIC_VECTOR (0 DOWNTO 0)
 	);
 	end component;
 	
@@ -261,16 +261,15 @@ begin
 				
 		
 		dirty_flags_ram_inst : dirty_flags_ram PORT MAP (
+				address	 => next_stage23_line_addr_helper,
 				clock	 => clk,
 				data	 => next_stage2.dirty,
-				rdaddress	 => next_stage23_line_addr_helper,
-				wraddress	 => next_stage23_line_addr_helper,
 				wren	 => next_stage2.update_dirty,
 				q	 => stage3_was_dirty
 			);
 			
 		next_stage23_line_addr_helper <= 
-			(4 downto next_stage23.line_addr'high+1 => '0') & 
+--			(X downto next_stage23.line_addr'high+1 => '0') & 
 			std_logic_vector(next_stage23.line_addr); 
 
 

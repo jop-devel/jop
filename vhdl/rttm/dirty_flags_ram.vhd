@@ -1,4 +1,4 @@
--- megafunction wizard: %RAM: 2-PORT%
+-- megafunction wizard: %RAM: 1-PORT%
 -- GENERATION: STANDARD
 -- VERSION: WM1.0
 -- MODULE: altsyncram 
@@ -42,11 +42,10 @@ USE altera_mf.all;
 ENTITY dirty_flags_ram IS
 	PORT
 	(
+		address		: IN STD_LOGIC_VECTOR (5 DOWNTO 0);
 		clock		: IN STD_LOGIC  := '1';
 		data		: IN STD_LOGIC_VECTOR (0 DOWNTO 0);
-		rdaddress		: IN STD_LOGIC_VECTOR (4 DOWNTO 0);
-		wraddress		: IN STD_LOGIC_VECTOR (4 DOWNTO 0);
-		wren		: IN STD_LOGIC  := '0';
+		wren		: IN STD_LOGIC ;
 		q		: OUT STD_LOGIC_VECTOR (0 DOWNTO 0)
 	);
 END dirty_flags_ram;
@@ -60,32 +59,25 @@ ARCHITECTURE SYN OF dirty_flags_ram IS
 
 	COMPONENT altsyncram
 	GENERIC (
-		address_reg_b		: STRING;
 		clock_enable_input_a		: STRING;
-		clock_enable_input_b		: STRING;
 		clock_enable_output_a		: STRING;
-		clock_enable_output_b		: STRING;
 		intended_device_family		: STRING;
+		lpm_hint		: STRING;
 		lpm_type		: STRING;
 		numwords_a		: NATURAL;
-		numwords_b		: NATURAL;
 		operation_mode		: STRING;
-		outdata_aclr_b		: STRING;
-		outdata_reg_b		: STRING;
+		outdata_aclr_a		: STRING;
+		outdata_reg_a		: STRING;
 		power_up_uninitialized		: STRING;
-		read_during_write_mode_mixed_ports		: STRING;
 		widthad_a		: NATURAL;
-		widthad_b		: NATURAL;
 		width_a		: NATURAL;
-		width_b		: NATURAL;
 		width_byteena_a		: NATURAL
 	);
 	PORT (
 			wren_a	: IN STD_LOGIC ;
 			clock0	: IN STD_LOGIC ;
-			address_a	: IN STD_LOGIC_VECTOR (4 DOWNTO 0);
-			address_b	: IN STD_LOGIC_VECTOR (4 DOWNTO 0);
-			q_b	: OUT STD_LOGIC_VECTOR (0 DOWNTO 0);
+			address_a	: IN STD_LOGIC_VECTOR (5 DOWNTO 0);
+			q_a	: OUT STD_LOGIC_VECTOR (0 DOWNTO 0);
 			data_a	: IN STD_LOGIC_VECTOR (0 DOWNTO 0)
 	);
 	END COMPONENT;
@@ -95,33 +87,26 @@ BEGIN
 
 	altsyncram_component : altsyncram
 	GENERIC MAP (
-		address_reg_b => "CLOCK0",
 		clock_enable_input_a => "BYPASS",
-		clock_enable_input_b => "BYPASS",
 		clock_enable_output_a => "BYPASS",
-		clock_enable_output_b => "BYPASS",
 		intended_device_family => "Cyclone II",
+		lpm_hint => "ENABLE_RUNTIME_MOD=NO",
 		lpm_type => "altsyncram",
-		numwords_a => 32,
-		numwords_b => 32,
-		operation_mode => "DUAL_PORT",
-		outdata_aclr_b => "NONE",
-		outdata_reg_b => "CLOCK0",
+		numwords_a => 64,
+		operation_mode => "SINGLE_PORT",
+		outdata_aclr_a => "NONE",
+		outdata_reg_a => "CLOCK0",
 		power_up_uninitialized => "FALSE",
-		read_during_write_mode_mixed_ports => "DONT_CARE",
-		widthad_a => 5,
-		widthad_b => 5,
+		widthad_a => 6,
 		width_a => 1,
-		width_b => 1,
 		width_byteena_a => 1
 	)
 	PORT MAP (
 		wren_a => wren,
 		clock0 => clock,
-		address_a => wraddress,
-		address_b => rdaddress,
+		address_a => address,
 		data_a => data,
-		q_b => sub_wire0
+		q_a => sub_wire0
 	);
 
 
@@ -132,102 +117,67 @@ END SYN;
 -- CNX file retrieval info
 -- ============================================================
 -- Retrieval info: PRIVATE: ADDRESSSTALL_A NUMERIC "0"
--- Retrieval info: PRIVATE: ADDRESSSTALL_B NUMERIC "0"
--- Retrieval info: PRIVATE: BYTEENA_ACLR_A NUMERIC "0"
--- Retrieval info: PRIVATE: BYTEENA_ACLR_B NUMERIC "0"
--- Retrieval info: PRIVATE: BYTE_ENABLE_A NUMERIC "0"
--- Retrieval info: PRIVATE: BYTE_ENABLE_B NUMERIC "0"
+-- Retrieval info: PRIVATE: AclrAddr NUMERIC "0"
+-- Retrieval info: PRIVATE: AclrByte NUMERIC "0"
+-- Retrieval info: PRIVATE: AclrData NUMERIC "0"
+-- Retrieval info: PRIVATE: AclrOutput NUMERIC "0"
+-- Retrieval info: PRIVATE: BYTE_ENABLE NUMERIC "0"
 -- Retrieval info: PRIVATE: BYTE_SIZE NUMERIC "8"
 -- Retrieval info: PRIVATE: BlankMemory NUMERIC "1"
 -- Retrieval info: PRIVATE: CLOCK_ENABLE_INPUT_A NUMERIC "0"
--- Retrieval info: PRIVATE: CLOCK_ENABLE_INPUT_B NUMERIC "0"
 -- Retrieval info: PRIVATE: CLOCK_ENABLE_OUTPUT_A NUMERIC "0"
--- Retrieval info: PRIVATE: CLOCK_ENABLE_OUTPUT_B NUMERIC "0"
--- Retrieval info: PRIVATE: CLRdata NUMERIC "0"
--- Retrieval info: PRIVATE: CLRq NUMERIC "0"
--- Retrieval info: PRIVATE: CLRrdaddress NUMERIC "0"
--- Retrieval info: PRIVATE: CLRrren NUMERIC "0"
--- Retrieval info: PRIVATE: CLRwraddress NUMERIC "0"
--- Retrieval info: PRIVATE: CLRwren NUMERIC "0"
--- Retrieval info: PRIVATE: Clock NUMERIC "0"
--- Retrieval info: PRIVATE: Clock_A NUMERIC "0"
--- Retrieval info: PRIVATE: Clock_B NUMERIC "0"
--- Retrieval info: PRIVATE: ECC NUMERIC "0"
+-- Retrieval info: PRIVATE: Clken NUMERIC "0"
+-- Retrieval info: PRIVATE: DataBusSeparated NUMERIC "1"
 -- Retrieval info: PRIVATE: IMPLEMENT_IN_LES NUMERIC "0"
--- Retrieval info: PRIVATE: INDATA_ACLR_B NUMERIC "0"
--- Retrieval info: PRIVATE: INDATA_REG_B NUMERIC "0"
--- Retrieval info: PRIVATE: INIT_FILE_LAYOUT STRING "PORT_B"
+-- Retrieval info: PRIVATE: INIT_FILE_LAYOUT STRING "PORT_A"
 -- Retrieval info: PRIVATE: INIT_TO_SIM_X NUMERIC "0"
 -- Retrieval info: PRIVATE: INTENDED_DEVICE_FAMILY STRING "Cyclone II"
 -- Retrieval info: PRIVATE: JTAG_ENABLED NUMERIC "0"
 -- Retrieval info: PRIVATE: JTAG_ID STRING "NONE"
 -- Retrieval info: PRIVATE: MAXIMUM_DEPTH NUMERIC "0"
--- Retrieval info: PRIVATE: MEMSIZE NUMERIC "32"
--- Retrieval info: PRIVATE: MEM_IN_BITS NUMERIC "0"
 -- Retrieval info: PRIVATE: MIFfilename STRING ""
--- Retrieval info: PRIVATE: OPERATION_MODE NUMERIC "2"
--- Retrieval info: PRIVATE: OUTDATA_ACLR_B NUMERIC "0"
--- Retrieval info: PRIVATE: OUTDATA_REG_B NUMERIC "1"
+-- Retrieval info: PRIVATE: NUMWORDS_A NUMERIC "64"
 -- Retrieval info: PRIVATE: RAM_BLOCK_TYPE NUMERIC "0"
--- Retrieval info: PRIVATE: READ_DURING_WRITE_MODE_MIXED_PORTS NUMERIC "2"
 -- Retrieval info: PRIVATE: READ_DURING_WRITE_MODE_PORT_A NUMERIC "3"
--- Retrieval info: PRIVATE: READ_DURING_WRITE_MODE_PORT_B NUMERIC "3"
--- Retrieval info: PRIVATE: REGdata NUMERIC "1"
--- Retrieval info: PRIVATE: REGq NUMERIC "1"
--- Retrieval info: PRIVATE: REGrdaddress NUMERIC "1"
--- Retrieval info: PRIVATE: REGrren NUMERIC "1"
--- Retrieval info: PRIVATE: REGwraddress NUMERIC "1"
--- Retrieval info: PRIVATE: REGwren NUMERIC "1"
+-- Retrieval info: PRIVATE: RegAddr NUMERIC "1"
+-- Retrieval info: PRIVATE: RegData NUMERIC "1"
+-- Retrieval info: PRIVATE: RegOutput NUMERIC "1"
 -- Retrieval info: PRIVATE: SYNTH_WRAPPER_GEN_POSTFIX STRING "0"
--- Retrieval info: PRIVATE: USE_DIFF_CLKEN NUMERIC "0"
--- Retrieval info: PRIVATE: UseDPRAM NUMERIC "1"
--- Retrieval info: PRIVATE: VarWidth NUMERIC "0"
--- Retrieval info: PRIVATE: WIDTH_READ_A NUMERIC "1"
--- Retrieval info: PRIVATE: WIDTH_READ_B NUMERIC "1"
--- Retrieval info: PRIVATE: WIDTH_WRITE_A NUMERIC "1"
--- Retrieval info: PRIVATE: WIDTH_WRITE_B NUMERIC "1"
--- Retrieval info: PRIVATE: WRADDR_ACLR_B NUMERIC "0"
--- Retrieval info: PRIVATE: WRADDR_REG_B NUMERIC "0"
--- Retrieval info: PRIVATE: WRCTRL_ACLR_B NUMERIC "0"
--- Retrieval info: PRIVATE: enable NUMERIC "0"
+-- Retrieval info: PRIVATE: SingleClock NUMERIC "1"
+-- Retrieval info: PRIVATE: UseDQRAM NUMERIC "1"
+-- Retrieval info: PRIVATE: WRCONTROL_ACLR_A NUMERIC "0"
+-- Retrieval info: PRIVATE: WidthAddr NUMERIC "6"
+-- Retrieval info: PRIVATE: WidthData NUMERIC "1"
 -- Retrieval info: PRIVATE: rden NUMERIC "0"
--- Retrieval info: CONSTANT: ADDRESS_REG_B STRING "CLOCK0"
 -- Retrieval info: CONSTANT: CLOCK_ENABLE_INPUT_A STRING "BYPASS"
--- Retrieval info: CONSTANT: CLOCK_ENABLE_INPUT_B STRING "BYPASS"
 -- Retrieval info: CONSTANT: CLOCK_ENABLE_OUTPUT_A STRING "BYPASS"
--- Retrieval info: CONSTANT: CLOCK_ENABLE_OUTPUT_B STRING "BYPASS"
 -- Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Cyclone II"
+-- Retrieval info: CONSTANT: LPM_HINT STRING "ENABLE_RUNTIME_MOD=NO"
 -- Retrieval info: CONSTANT: LPM_TYPE STRING "altsyncram"
--- Retrieval info: CONSTANT: NUMWORDS_A NUMERIC "32"
--- Retrieval info: CONSTANT: NUMWORDS_B NUMERIC "32"
--- Retrieval info: CONSTANT: OPERATION_MODE STRING "DUAL_PORT"
--- Retrieval info: CONSTANT: OUTDATA_ACLR_B STRING "NONE"
--- Retrieval info: CONSTANT: OUTDATA_REG_B STRING "CLOCK0"
+-- Retrieval info: CONSTANT: NUMWORDS_A NUMERIC "64"
+-- Retrieval info: CONSTANT: OPERATION_MODE STRING "SINGLE_PORT"
+-- Retrieval info: CONSTANT: OUTDATA_ACLR_A STRING "NONE"
+-- Retrieval info: CONSTANT: OUTDATA_REG_A STRING "CLOCK0"
 -- Retrieval info: CONSTANT: POWER_UP_UNINITIALIZED STRING "FALSE"
--- Retrieval info: CONSTANT: READ_DURING_WRITE_MODE_MIXED_PORTS STRING "DONT_CARE"
--- Retrieval info: CONSTANT: WIDTHAD_A NUMERIC "5"
--- Retrieval info: CONSTANT: WIDTHAD_B NUMERIC "5"
+-- Retrieval info: CONSTANT: WIDTHAD_A NUMERIC "6"
 -- Retrieval info: CONSTANT: WIDTH_A NUMERIC "1"
--- Retrieval info: CONSTANT: WIDTH_B NUMERIC "1"
 -- Retrieval info: CONSTANT: WIDTH_BYTEENA_A NUMERIC "1"
+-- Retrieval info: USED_PORT: address 0 0 6 0 INPUT NODEFVAL address[5..0]
 -- Retrieval info: USED_PORT: clock 0 0 0 0 INPUT VCC clock
 -- Retrieval info: USED_PORT: data 0 0 1 0 INPUT NODEFVAL data[0..0]
 -- Retrieval info: USED_PORT: q 0 0 1 0 OUTPUT NODEFVAL q[0..0]
--- Retrieval info: USED_PORT: rdaddress 0 0 5 0 INPUT NODEFVAL rdaddress[4..0]
--- Retrieval info: USED_PORT: wraddress 0 0 5 0 INPUT NODEFVAL wraddress[4..0]
--- Retrieval info: USED_PORT: wren 0 0 0 0 INPUT GND wren
+-- Retrieval info: USED_PORT: wren 0 0 0 0 INPUT NODEFVAL wren
+-- Retrieval info: CONNECT: @address_a 0 0 6 0 address 0 0 6 0
+-- Retrieval info: CONNECT: q 0 0 1 0 @q_a 0 0 1 0
+-- Retrieval info: CONNECT: @clock0 0 0 0 0 clock 0 0 0 0
 -- Retrieval info: CONNECT: @data_a 0 0 1 0 data 0 0 1 0
 -- Retrieval info: CONNECT: @wren_a 0 0 0 0 wren 0 0 0 0
--- Retrieval info: CONNECT: q 0 0 1 0 @q_b 0 0 1 0
--- Retrieval info: CONNECT: @address_a 0 0 5 0 wraddress 0 0 5 0
--- Retrieval info: CONNECT: @address_b 0 0 5 0 rdaddress 0 0 5 0
--- Retrieval info: CONNECT: @clock0 0 0 0 0 clock 0 0 0 0
 -- Retrieval info: LIBRARY: altera_mf altera_mf.altera_mf_components.all
 -- Retrieval info: GEN_FILE: TYPE_NORMAL dirty_flags_ram.vhd TRUE
 -- Retrieval info: GEN_FILE: TYPE_NORMAL dirty_flags_ram.inc FALSE
 -- Retrieval info: GEN_FILE: TYPE_NORMAL dirty_flags_ram.cmp TRUE
 -- Retrieval info: GEN_FILE: TYPE_NORMAL dirty_flags_ram.bsf FALSE
 -- Retrieval info: GEN_FILE: TYPE_NORMAL dirty_flags_ram_inst.vhd TRUE
--- Retrieval info: GEN_FILE: TYPE_NORMAL dirty_flags_ram_waveforms.html TRUE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL dirty_flags_ram_waveforms.html FALSE
 -- Retrieval info: GEN_FILE: TYPE_NORMAL dirty_flags_ram_wave*.jpg FALSE
 -- Retrieval info: LIB_FILE: altera_mf
