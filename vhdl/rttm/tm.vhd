@@ -574,6 +574,7 @@ begin
 		-- if this read miss triggered an early commit,
 		-- wait until the EARLY_COMMIT finished before updating rd_data
 		if read_miss_publish = '1' and rdy_cnt_busy = '0' then
+		-- TODO should do that on next_read_miss_publish rising edge
 -- 			to_cpu.rd_data <= from_mem.rd_data;			
 			next_save_data <= from_mem.rd_data;
 			next_read_miss_publish <= '0';
@@ -627,7 +628,7 @@ begin
 						-- TODO actually min(3, from_mem.rdy_cnt + 1)	
 						to_cpu.rdy_cnt <= "11";
 					when read_miss4 =>
-						to_cpu.rdy_cnt <= "01";
+						to_cpu.rdy_cnt <= "10";
 						
 					-- direct read from memory
 					when read_direct2 =>
