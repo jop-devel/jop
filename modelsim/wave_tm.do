@@ -25,8 +25,13 @@ add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_cpu__1/
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_cpu__1/cpu/core/bcf/bc/val
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_cpu__1/cpu/core/fch/pc
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_cpu__1/cpu/core/fch/uc/val
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/io/sys/timer_int
+add wave -noupdate -divider core2
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_cpu__2/cpu/core/bcf/jpc
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_cpu__2/cpu/core/bcf/bc/val
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_cpu__2/cpu/core/fch/pc
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_cpu__2/cpu/core/fch/uc/val
 add wave -noupdate -divider sc_sys0
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/io/sys/timer_int
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/io/sys/address
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/io/sys/wr_data
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/io/sys/wr
@@ -51,6 +56,18 @@ add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__1/io2
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__1/io2/timer_int
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__1/io2/int_pend
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__1/io2/int_ena
+add wave -noupdate -divider sc_sys2
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/address
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/wr_data
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/rd
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/wr
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/rdy_cnt
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/sync_out
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/sync_in
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/lock_reqest
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/timer_int
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/int_pend
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/int_ena
 add wave -noupdate -divider Sync
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/sync/sync_in_array
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/sync/sync_out_array
@@ -76,18 +93,24 @@ add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/fl_nwe
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/fl_rdy
 add wave -noupdate -divider mem_sc
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/data
-add wave -noupdate -divider tmif0
+add wave -noupdate -divider tm_manager0
 add wave -noupdate -radix hexadecimal /tb_jop/joptop/gen_tm__0/tm/*
 add wave -noupdate -divider tm0
 add wave -noupdate -radix hexadecimal /tb_jop/joptop/gen_tm__0/tm/tm/*
 add wave -noupdate -divider tag0
 add wave -noupdate -radix hexadecimal /tb_jop/joptop/gen_tm__0/tm/tm/tag/*
-add wave -noupdate -divider tmif1
+add wave -noupdate -divider tm_manager1
 add wave -noupdate -radix hexadecimal /tb_jop/joptop/gen_tm__1/tm/*
 add wave -noupdate -divider tm1
 add wave -noupdate -radix hexadecimal /tb_jop/joptop/gen_tm__1/tm/tm/*
 add wave -noupdate -divider tag1
 add wave -noupdate -radix hexadecimal /tb_jop/joptop/gen_tm__1/tm/tm/tag/*
+add wave -noupdate -divider tm_manager2
+add wave -noupdate -radix hexadecimal /tb_jop/joptop/gen_tm__2/tm/*
+add wave -noupdate -divider tm2
+add wave -noupdate -radix hexadecimal /tb_jop/joptop/gen_tm__2/tm/tm/*
+add wave -noupdate -divider tag2
+add wave -noupdate -radix hexadecimal /tb_jop/joptop/gen_tm__2/tm/tm/tag/*
 TreeUpdate [SetDefaultTree]
 WaveRestoreCursors {{Cursor 1} {117 ns} 0}
 configure wave -namecolwidth 432

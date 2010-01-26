@@ -177,7 +177,7 @@ begin
 			std_logic_vector(2**way_bits-1 downto 0) >>;
 		
 		
-		alias write_tags_v is << signal .dut.tm.dirty: 
+		alias write_tags_v is << signal .dut.tm.dirty_flags_ram_inst.flags: 
 			std_logic_vector(2**way_bits-1 downto 0) >>;		
 			
 -- 		alias read_tags_v is << signal .dut.tm.read: 
@@ -221,7 +221,7 @@ begin
  		assert << signal .dut.state: state_type>> = NO_TRANSACTION;
 		
 		sc_write(clk, addr(2), data(3), sc_cpu_out, sc_cpu_in);
- 		assert now = 70 ns;
+ 		assert (now = 60 ns) or (now = 70 ns);
 		assert ram(to_integer(unsigned(addr(2)))) = data(3);
 		
 		sc_read(clk, addr(2), result, sc_cpu_out, sc_cpu_in);

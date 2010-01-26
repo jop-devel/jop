@@ -5,4 +5,4 @@ view wave
 do wave_tm.do
 #nolog -all
 #when -label start_logging {$now == @6.0 ms} {echo "Start logging " ; log -r *;}
-run 7.5 ms
+run 25 ms
