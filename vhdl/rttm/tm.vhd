@@ -219,7 +219,10 @@ architecture rtl of tm is
 	
 	signal instrum_stage3: instrum_stage3_type;
 	
-	component dirty_flags_ram
+	component flags_ram
+	GENERIC (
+		way_bits: integer
+	);
 	PORT
 	(
 		address		: IN STD_LOGIC_VECTOR (way_bits-1 DOWNTO 0);
@@ -260,7 +263,11 @@ begin
 		
 				
 		
-		dirty_flags_ram_inst : dirty_flags_ram PORT MAP (
+		dirty_flags_ram_inst : flags_ram 
+		GENERIC MAP (
+				way_bits => way_bits
+			)
+		PORT MAP (
 				address	 => next_stage23_line_addr_helper,
 				clock	 => clk,
 				data	 => next_stage2.dirty,
