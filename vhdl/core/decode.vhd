@@ -487,9 +487,8 @@ begin
 					mem_in.getfield <= '1';	-- start getfield
 				when STPF =>
 					mem_in.putfield <= '1';	-- start putfield
--- not used in RTTM and limits F_max
--- 				when STCP =>
--- 					mem_in.copy <= '1';		-- start copy
+				when STCP =>
+					mem_in.copy <= '1';		-- start copy
 				when STBCR =>
 					mem_in.bc_rd <= '1';	-- start bytecode read
 				when STIDX =>
