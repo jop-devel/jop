@@ -312,8 +312,8 @@ public class Const {
 
 	// RTTM
 	
-	// Adapt magic address to available SRAM: 2 MiB (TMTODO) or 1 MiB
-	public static final boolean USE_RTTM_BIGMEM = false;
+	// Adapt magic address to available SRAM: 2 MiB or 1 MiB
+	public static final boolean USE_RTTM_BIGMEM = true;
 	
 	// Keep in synch with VHDL tm_manager.tm_magic_detect generic.
 	public static final int MEM_TM_MAGIC = USE_RTTM_BIGMEM ? 

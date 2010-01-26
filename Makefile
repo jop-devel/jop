@@ -24,7 +24,7 @@
 #
 #	Set USB to true for an USB based board (dspio, usbmin, lego)
 #
-USB=true
+USB=false
 
 
 #
@@ -41,8 +41,8 @@ else
 	COM_FLAG=-e
 endif
 
-BLASTER_TYPE=ByteBlasterMV
-#BLASTER_TYPE=USB-Blaster
+#BLASTER_TYPE=ByteBlasterMV
+BLASTER_TYPE=USB-Blaster
 
 ifeq ($(WINDIR),)
 	USBRUNNER=./USBRunner
@@ -58,7 +58,7 @@ QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp d
 ifeq ($(USB),true)
 	QPROJ=cycrttm
 else
-	QPROJ=cycmin
+	QPROJ=de2-70rttm
 endif
 
 # Number of cores for JopSim and RTTM simulation
