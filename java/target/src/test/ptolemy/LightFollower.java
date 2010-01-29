@@ -426,8 +426,6 @@ public class LightFollower {
     static int LightFollower_Expression_input;
     /* LightFollower_LightSensor's referenced parameter declarations. */
     static int LightFollower_LightSensor_portAddress_;
-    /* LightFollower_Display's input variable declarations. */
-    static int LightFollower_Display_input[] = new int[1];
     /* LightFollower_Expression2's input variable declarations. */
     static int LightFollower_Expression2_input;
     /* LightFollower_Sequence's referenced parameter declarations. */
@@ -446,6 +444,8 @@ public class LightFollower {
     static int LightFollower_AddSubtract2_plus[] = new int[2];
     /* LightFollower_FSMActor's input variable declarations. */
     static int LightFollower_FSMActor_input;
+    /* LightFollower_Discard's input variable declarations. */
+    static int LightFollower_Discard_input[] = new int[1];
     /* Provide the period attribute as constant. */
     public final static double PERIOD = 0.25;
     /* Provide the iteration count. */
@@ -498,11 +498,8 @@ public class LightFollower {
             LightFollower_LightSensor___firstFire = false;
         }
     }
-    void LightFollower_Display() {
-        System.out.println("Display: " + LightFollower_Display_input[0]);
-    }
     void LightFollower_Expression2() {
-        LightFollower_Display_input[0] = (LightFollower_Expression2_input%512);
+        LightFollower_Discard_input[0] = (LightFollower_Expression2_input%512);
     }
     void LightFollower_Sequence() {
         if (LightFollower_Sequence__currentIndex < 18) {
@@ -600,6 +597,11 @@ public class LightFollower {
     }
     void LightFollower_Const() {
         LightFollower_FSMActor_input = -1;
+    }
+    void LightFollower_Discard() {
+        // consume the input token.
+        ;
+        //LightFollower_Discard_input[0];
     }
     /* Skipping creating top level here, thus avoiding duplicated code. */
     /* after appending fireFunctionCode */
@@ -726,10 +728,10 @@ public class LightFollower {
         ....Begin updateConnectedPortsOffset....LightFollower_Expression2_output */
         /*
         ....End updateConnectedPortsOffset....LightFollower_Expression2_output */
-        LightFollower_Display();
-        /* ....Begin updateOffset....LightFollower_Display_input */
+        LightFollower_Discard();
+        /* ....Begin updateOffset....LightFollower_Discard_input */
         /*
-        ....End updateOffset....LightFollower_Display_input */
+        ....End updateOffset....LightFollower_Discard_input */
         /* The postfire of the director. */
         LightFollower_RightWheel___val = LightFollower_RightWheel___last_val;
         com.jopdesign.sys.Native.wrMem(LightFollower_RightWheel___val, LightFollower_RightWheel_portAddress_);
