@@ -41,6 +41,8 @@ public class RunIt {
 	// static SerialRead model = new SerialRead();
 	// static FsmTest model = new FsmTest();
 	// static FsmDemo model = new FsmDemo();
+	// static Simple model = new Simple();
+	// static LightFollower model = new LightFollower();
 
 	/**
 	 * Create and run a Ptolemy model.
