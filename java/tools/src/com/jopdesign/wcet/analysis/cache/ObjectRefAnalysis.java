@@ -132,7 +132,7 @@ public class ObjectRefAnalysis {
 			CallGraphNode scope = iter.next();
 			/* Perform a local symbolic points to analysis */
 			DFAAppInfo dfa = project.getDfaProgram();
-			SymbolicPointsTo spt = new SymbolicPointsTo(maxSetSize, new ExecOnceQuery(eoAna,scope));
+			SymbolicPointsTo spt = new SymbolicPointsTo(maxSetSize, (int)project.getProjectConfig().callstringLength(), new ExecOnceQuery(eoAna,scope));
 			dfa.runLocalAnalysis(spt, scope.getMethodImpl().getFQMethodName());
 			HashMap<InstructionHandle, ContextMap<CallString, BoundedSet<SymbolicAddress>>> usedRefs =
 				spt.getResult();

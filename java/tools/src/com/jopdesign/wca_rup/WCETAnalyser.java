@@ -273,7 +273,7 @@ public class WCETAnalyser extends com.jopdesign.dfa.framework.DFAAppInfo {
 			wca.setReceivers(wca.runAnalysis(rt));
 //			rt.printResult(wca);
 			// run loop bounds analysis
-			wca.lb = new LoopBounds();
+			wca.lb = new LoopBounds(0);
 			wca.runAnalysis(wca.lb);
 //			wca.lb.printResult(wca);
 			time = System.currentTimeMillis()-time;

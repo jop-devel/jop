@@ -176,6 +176,28 @@ public class Interval {
 		}
 	}
 	
+	public void mul(Interval val) {
+		if (lv && val.lv) {
+			long resL = lb*val.lb;
+			long resU = ub*val.ub;
+			if (resL == (long)(int)resL
+					&& resU == (long)(int)resU) {
+				lb = (int)resL;
+				ub = (int)resU;
+			} else {
+				lb = BOT;
+				lv = false;
+				ub = TOP;
+				uv = false;				
+			}
+		} else {
+			lb = BOT;
+			lv = false;
+			ub = TOP;
+			uv = false;
+		}
+	}
+
 	public void neg() {
 		boolean newLv;
 		int newLb;

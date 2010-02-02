@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2008, Wolfgang Puffitsch
+  Copyright (C) 2010, Wolfgang Puffitsch
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -61,41 +61,62 @@ import com.jopdesign.dfa.framework.Interpreter;
 import com.jopdesign.dfa.framework.MethodHelper;
 import com.jopdesign.dfa.framework.DFAAppInfo;
 
-public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
+public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMapping>> {
 
-	private Map<String, ContextMap<TypeMapping, TypeMapping>> threads = new LinkedHashMap<String, ContextMap<TypeMapping, TypeMapping>>();
+	private final int callStringLength;
+	
+	public CallStringReceiverTypes(int callStringLength) {
+		this.callStringLength = callStringLength;
+	}
+
+	private Map<String, ContextMap<CallString, Set<TypeMapping>>> threads = new LinkedHashMap<String, ContextMap<CallString, Set<TypeMapping>>>();
 	private Map<InstructionHandle, ContextMap<CallString, Set<String>>> targets = new LinkedHashMap<InstructionHandle, ContextMap<CallString, Set<String>>>();
 	
-	public ContextMap<TypeMapping, TypeMapping> bottom() {		
+	public ContextMap<CallString, Set<TypeMapping>> bottom() {		
 		return null;
 	}
 
-	public ContextMap<TypeMapping, TypeMapping> initial(InstructionHandle stmt) {
-		ContextMap<TypeMapping, TypeMapping> init = new ContextMap<TypeMapping, TypeMapping>(new Context(), new HashMap<TypeMapping, TypeMapping>());
+	public ContextMap<CallString, Set<TypeMapping>> initial(InstructionHandle stmt) {
+		ContextMap<CallString, Set<TypeMapping>> init =
+			new ContextMap<CallString, Set<TypeMapping>>(new Context(), new HashMap<CallString, Set<TypeMapping>>());
 		
-		init.add(new TypeMapping("com.jopdesign.io.IOFactory.sp", "com.jopdesign.io.SerialPort"));
-		init.add(new TypeMapping("com.jopdesign.io.IOFactory.sys", "com.jopdesign.io.SysDevice"));
+		Set<TypeMapping> s = new HashSet<TypeMapping>();
+		s.add(new TypeMapping("com.jopdesign.io.IOFactory.sp", "com.jopdesign.io.SerialPort"));
+		s.add(new TypeMapping("com.jopdesign.io.IOFactory.sys", "com.jopdesign.io.SysDevice"));
 
+		init.put(new CallString(), s);
+		
 		return init;
 	}
 
 	public void initialize(MethodInfo mi, Context context) {
 		String sig = mi.getFQMethodName();
-		threads.put(sig, new ContextMap<TypeMapping, TypeMapping>(context, new HashMap<TypeMapping, TypeMapping>()));
+		threads.put(sig, new ContextMap<CallString, Set<TypeMapping>>(context, new HashMap<CallString, Set<TypeMapping>>()));
 	}
 
-	public ContextMap<TypeMapping, TypeMapping> join(ContextMap<TypeMapping, TypeMapping> s1, ContextMap<TypeMapping, TypeMapping> s2) {
+	public ContextMap<CallString, Set<TypeMapping>> join(ContextMap<CallString, Set<TypeMapping>> s1, ContextMap<CallString, Set<TypeMapping>> s2) {
 						
 		if (s1 == null) {
-			return new ContextMap<TypeMapping, TypeMapping>(s2);
+			return new ContextMap<CallString, Set<TypeMapping>>(s2);
 		}
 		
 		if (s2 == null) {
-			return new ContextMap<TypeMapping, TypeMapping>(s1);
-		}
-
-		ContextMap<TypeMapping, TypeMapping> result = new ContextMap<TypeMapping, TypeMapping>(new Context(s1.getContext()), new HashMap<TypeMapping, TypeMapping>(s1));
+			return new ContextMap<CallString, Set<TypeMapping>>(s1);
+		}		
+		
+		ContextMap<CallString, Set<TypeMapping>> result = new ContextMap<CallString, Set<TypeMapping>>(new Context(s2.getContext()), new HashMap<CallString, Set<TypeMapping>>());
+		result.putAll(s1);
 		result.putAll(s2);
+				
+		Set<TypeMapping> a = s1.get(s2.getContext().callString);
+		Set<TypeMapping> b = s2.get(s2.getContext().callString);
+
+		Set<TypeMapping> merged = new HashSet<TypeMapping>();
+		if (a != null) {
+			merged.addAll(a);
+		}
+		merged.addAll(b);
+		result.put(s2.getContext().callString, merged);
 
 		if (result.getContext().stackPtr < 0) {
 			result.getContext().stackPtr = s2.getContext().stackPtr;
@@ -108,7 +129,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		return result;
 	}
 
-	public boolean compare(ContextMap<TypeMapping, TypeMapping> s1, ContextMap<TypeMapping, TypeMapping> s2) {
+	public boolean compare(ContextMap<CallString, Set<TypeMapping>> s1, ContextMap<CallString, Set<TypeMapping>> s2) {
 
 		if (s1 == null || s2 == null) {
 			return false;
@@ -117,30 +138,47 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		if (!s1.getContext().equals(s2.getContext())) {
 			return false;
 		} else {
-			return s2.keySet().containsAll(s1.keySet());
+			
+			Set<TypeMapping> a = s1.get(s1.getContext().callString);
+			Set<TypeMapping> b = s2.get(s1.getContext().callString);
+			
+			if (a == null || b == null) {
+				return false;
+			}
+
+			if (!b.containsAll(a)) {
+				return false;
+			}			
 		}
+		
+		return true;
 	}
 
-	public ContextMap<TypeMapping, TypeMapping> transfer(
+	public ContextMap<CallString, Set<TypeMapping>> transfer(
 			InstructionHandle stmt, FlowEdge edge,
-			ContextMap<TypeMapping, TypeMapping> input,
-			Interpreter<TypeMapping, TypeMapping> interpreter,
-			Map<InstructionHandle, ContextMap<TypeMapping, TypeMapping>> state) {
+			ContextMap<CallString, Set<TypeMapping>> input,
+			Interpreter<CallString, Set<TypeMapping>> interpreter,
+			Map<InstructionHandle, ContextMap<CallString, Set<TypeMapping>>> state) {
 
 		Context context = new Context(input.getContext());
-		ContextMap<TypeMapping, TypeMapping> result = new ContextMap<TypeMapping, TypeMapping>(context, new HashMap<TypeMapping, TypeMapping>());
+		Set<TypeMapping> in = (Set<TypeMapping>)input.get(context.callString);
+		ContextMap<CallString, Set<TypeMapping>> retval = new ContextMap<CallString, Set<TypeMapping>>(context, new HashMap<CallString, Set<TypeMapping>>());
+
+		Set<TypeMapping> result = new HashSet<TypeMapping>();
+		retval.put(context.callString, result);		
 		
 		Instruction instruction = stmt.getInstruction();
 		
-// 		System.out.println(context.method+": "+stmt);
-// 		System.out.print(stmt.getInstruction()+":\t{ ");
-//		System.out.print(input.keySet());
-// 		System.out.println("}");
+//		System.out.println(context.method+": "+stmt+" / "+context.callString.asList());
+//		System.out.print(stmt.getInstruction()+":\t{ ");
+//		System.out.print(context.callString.asList()+": "+input.get(context.callString));
+//		System.out.println(" }");
 		
 		switch (instruction.getOpcode()) {
 		
 		case Constants.NOP:
-			result = input;
+			result = in;
+			retval.put(context.callString, result);
 			break;
 
 		case Constants.ACONST_NULL:
@@ -161,13 +199,15 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		case Constants.DCONST_0:
 		case Constants.DCONST_1:
 		case Constants.LDC2_W:			
-			result = input;
+			result = in;
+			retval.put(context.callString, result);
 			break;
 
 		case Constants.LDC: 
 		case Constants.LDC_W: {
 			LDC instr = (LDC)instruction;
-			result = new ContextMap<TypeMapping, TypeMapping>(input);
+			result = new HashSet<TypeMapping>(in);
+			retval.put(context.callString, result);
 			Type type = instr.getType(context.constPool);
 			if (type.equals(Type.STRING)) {
 				result.add(new TypeMapping(context.stackPtr, type.toString()));
@@ -180,7 +220,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		break;
 			
 		case Constants.DUP: {
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				result.add(m);
 				if (m.stackLoc == context.stackPtr-1) {
@@ -190,7 +230,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		}
 		break;
 		case Constants.DUP_X1: {
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc < context.stackPtr-2) {
 					result.add(m);
@@ -206,7 +246,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		}
 		break;
 		case Constants.DUP_X2: {
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc < context.stackPtr-3) {
 					result.add(m);
@@ -225,7 +265,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		}
 		break;
 		case Constants.DUP2: {
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				result.add(m);
 				if (m.stackLoc == context.stackPtr-2) {
@@ -239,7 +279,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		break;
 
 		case Constants.DUP2_X1: {
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc < context.stackPtr-3) {
 					result.add(m);
@@ -260,7 +300,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		break;
 
 		case Constants.DUP2_X2: {
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc < context.stackPtr-3) {
 					result.add(m);
@@ -284,7 +324,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		break;
 		
 		case Constants.SWAP: {
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc < context.stackPtr-2) {
 					result.add(m);
@@ -300,10 +340,10 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		break;
 
 		case Constants.POP:
-			filterSet(input, result, context.stackPtr-1);
+			filterSet(in, result, context.stackPtr-1);
 			break;
 		case Constants.POP2:
-			filterSet(input, result, context.stackPtr-2);
+			filterSet(in, result, context.stackPtr-2);
 			break;
 
 		case Constants.GETFIELD: {
@@ -311,7 +351,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			GETFIELD instr = (GETFIELD)instruction;
 			List<String> receivers = new LinkedList<String>();
 			
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc < context.stackPtr-1) {
 					result.add(m);
@@ -332,10 +372,9 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 				String receiver = i.next();
 				String heapLoc = receiver+"."+instr.getFieldName(context.constPool);
 				String namedLoc = receiver.split("@")[0]+"."+instr.getFieldName(context.constPool);
-				if (p.containsField(namedLoc)) {
-					
+				if (p.containsField(namedLoc)) {					
 					recordReceiver(stmt, context, heapLoc);
-					for (Iterator<TypeMapping> k = input.keySet().iterator(); k.hasNext(); ) {
+					for (Iterator<TypeMapping> k = in.iterator(); k.hasNext(); ) {
 						TypeMapping m = k.next();
 						if (heapLoc.equals(m.heapLoc)) {
 							result.add(new TypeMapping(context.stackPtr-1, m.type));
@@ -353,7 +392,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			
 			int fieldSize = instr.getFieldType(context.constPool).getSize();
 			
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc < context.stackPtr-1-fieldSize) {
 					result.add(m);
@@ -366,16 +405,17 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 //				System.out.println("PUTFIELD not found: "+context.method+"@"+stmt+": "+instr.getFieldName(context.constPool));
 ////				System.exit(-1);
 //			}
-
+			
 			DFAAppInfo p = interpreter.getProgram();
 
 			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 				String receiver = i.next();
 				String heapLoc = receiver+"."+instr.getFieldName(context.constPool);
 				String namedLoc = receiver.split("@")[0]+"."+instr.getFieldName(context.constPool);
+
 				if (p.containsField(namedLoc)) { 
 					recordReceiver(stmt, context, heapLoc);
-					for (Iterator<TypeMapping> k = input.keySet().iterator(); k.hasNext(); ) {
+					for (Iterator<TypeMapping> k = in.iterator(); k.hasNext(); ) {
 						TypeMapping m = k.next();
 						if (!heapLoc.equals(m.heapLoc) || context.threaded) {
 							result.add(m);
@@ -388,7 +428,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			}
 			
 			if (instr.getFieldType(context.constPool) instanceof ReferenceType) {
-				doInvokeStatic("com.jopdesign.sys.JVM.f_putfield_ref(III)V", stmt, context, input, interpreter, state, result);
+				doInvokeStatic("com.jopdesign.sys.JVM.f_putfield_ref(III)V", stmt, context, input, interpreter, state, retval);
 			}
 		}
 		break;
@@ -402,7 +442,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 
 			if (p.containsField(heapLoc)) {
 				recordReceiver(stmt, context, heapLoc);
-				for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+				for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 					TypeMapping m = i.next();
 					if (m.stackLoc < context.stackPtr) {
 						result.add(m);
@@ -428,7 +468,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			
 			if (p.containsField(heapLoc)) {			
 				recordReceiver(stmt, context, heapLoc);
-				for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+				for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 					TypeMapping m = i.next();
 					if (m.stackLoc >= 0 && m.stackLoc < context.stackPtr-1) {
 						result.add(m);
@@ -445,13 +485,13 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			}
 			
 			if (instr.getFieldType(context.constPool) instanceof ReferenceType) {
-				doInvokeStatic("com.jopdesign.sys.JVM.f_putstatic_ref(II)V", stmt, context, input, interpreter, state, result);
+				doInvokeStatic("com.jopdesign.sys.JVM.f_putstatic_ref(II)V", stmt, context, input, interpreter, state, retval);
 			}
 		}
 		break;
 		
 		case Constants.ARRAYLENGTH:
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc < context.stackPtr-1) {
 					result.add(m);
@@ -467,7 +507,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		case Constants.CASTORE:
 		case Constants.SASTORE:
 		case Constants.FASTORE: {
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc < context.stackPtr-3) {
 					result.add(m);
@@ -481,7 +521,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 						
 		case Constants.LASTORE:
 		case Constants.DASTORE: {
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc < context.stackPtr-4) {
 					result.add(m);
@@ -497,7 +537,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			
 			List<String> receivers = new LinkedList<String>();
 			
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc < context.stackPtr-3) {
 					result.add(m);
@@ -515,7 +555,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 				String receiver = i.next();
 				String heapLoc = receiver;
-				for (Iterator<TypeMapping> k = input.keySet().iterator(); k.hasNext(); ) {
+				for (Iterator<TypeMapping> k = in.iterator(); k.hasNext(); ) {
 					TypeMapping m = k.next();
 					if (m.stackLoc == context.stackPtr-1) {
 						result.add(new TypeMapping(heapLoc, m.type));
@@ -523,7 +563,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 				}
 			}
 			
-			doInvokeStatic("com.jopdesign.sys.JVM.f_aastore(III)V", stmt, context, input, interpreter, state, result);
+			doInvokeStatic("com.jopdesign.sys.JVM.f_aastore(III)V", stmt, context, input, interpreter, state, retval);
 		}
 		break;
 				
@@ -532,7 +572,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		case Constants.CALOAD:
 		case Constants.SALOAD:
 		case Constants.FALOAD: {
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc < context.stackPtr-2) {
 					result.add(m);
@@ -546,7 +586,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			
 		case Constants.LALOAD:
 		case Constants.DALOAD: {
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc < context.stackPtr-2) {
 					result.add(m);
@@ -562,7 +602,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			
 			List<String> receivers = new LinkedList<String>();
 			
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc < context.stackPtr-2) {
 					result.add(m);
@@ -580,7 +620,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 				String receiver = i.next();
 				String heapLoc = receiver;
-				for (Iterator<TypeMapping> k = input.keySet().iterator(); k.hasNext(); ) {
+				for (Iterator<TypeMapping> k = in.iterator(); k.hasNext(); ) {
 					TypeMapping m = k.next();
 					if (heapLoc.equals(m.heapLoc)) {
 						result.add(new TypeMapping(context.stackPtr-2, m.type));
@@ -592,31 +632,31 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 
 		case Constants.NEW: {
 			NEW instr = (NEW)instruction;			
-			filterSet(input, result, context.stackPtr);
+			filterSet(in, result, context.stackPtr);
 			String name = instr.getType(context.constPool).toString();
 			// name += "@"+context.method+":"+stmt.getPosition();
 			result.add(new TypeMapping(context.stackPtr, name));
-			doInvokeStatic("com.jopdesign.sys.JVM.f_"+stmt.getInstruction().getName()+"(I)I", stmt, context, input, interpreter, state, result);
+			doInvokeStatic("com.jopdesign.sys.JVM.f_"+stmt.getInstruction().getName()+"(I)I", stmt, context, input, interpreter, state, retval);
 		}
 		break;
 		
 		case Constants.ANEWARRAY: {
 			ANEWARRAY instr = (ANEWARRAY)instruction;
-			filterSet(input, result, context.stackPtr-1);
+			filterSet(in, result, context.stackPtr-1);
 			String name = instr.getType(context.constPool).toString()+"[]";
 			name += "@"+context.method+":"+stmt.getPosition();
 			result.add(new TypeMapping(context.stackPtr-1, name));
-			doInvokeStatic("com.jopdesign.sys.JVM.f_"+stmt.getInstruction().getName()+"(II)I", stmt, context, input, interpreter, state, result);
+			doInvokeStatic("com.jopdesign.sys.JVM.f_"+stmt.getInstruction().getName()+"(II)I", stmt, context, input, interpreter, state, retval);
 		}
 		break;
 
 		case Constants.NEWARRAY: {
 			NEWARRAY instr = (NEWARRAY)instruction;
-			filterSet(input, result, context.stackPtr-1);
+			filterSet(in, result, context.stackPtr-1);
 			String name = instr.getType().toString();
 			name += "@"+context.method+":"+stmt.getPosition();
 			result.add(new TypeMapping(context.stackPtr-1, name));
-			doInvokeStatic("com.jopdesign.sys.JVM.f_"+stmt.getInstruction().getName()+"(II)I", stmt, context, input, interpreter, state, result);
+			doInvokeStatic("com.jopdesign.sys.JVM.f_"+stmt.getInstruction().getName()+"(II)I", stmt, context, input, interpreter, state, retval);
 		}
 		break;
 		
@@ -624,7 +664,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			MULTIANEWARRAY instr = (MULTIANEWARRAY)instruction;
 			int dim = instr.getDimensions();
 			
-			filterSet(input, result, context.stackPtr-dim);
+			filterSet(in, result, context.stackPtr-dim);
 
 			String type = instr.getType(context.constPool).toString();
 			type = type.substring(0, type.indexOf("["));
@@ -647,7 +687,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			name += "@"+context.method+":"+stmt.getPosition();
 			result.add(new TypeMapping(context.stackPtr-dim, name));
 		
-			doInvokeStatic("com.jopdesign.sys.JVM.f_"+stmt.getInstruction().getName()+"()I", stmt, context, input, interpreter, state, result);
+			doInvokeStatic("com.jopdesign.sys.JVM.f_"+stmt.getInstruction().getName()+"()I", stmt, context, input, interpreter, state, retval);
 		}
 		break;
 
@@ -671,7 +711,8 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		case Constants.DLOAD_2:
 		case Constants.DLOAD_3:
 		case Constants.DLOAD: 
-			result = input;
+			result = in;
+			retval.put(context.callString, result);
 			break;
 			
 		case Constants.ALOAD_0:
@@ -684,7 +725,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			
 			int index = instr.getIndex();
 			
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc < context.stackPtr) {
 					result.add(m);
@@ -716,7 +757,8 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		case Constants.DSTORE_2:
 		case Constants.DSTORE_3:
 		case Constants.DSTORE:
-			result = input;
+			result = in;
+			retval.put(context.callString, result);
 			break;
 		
 		case Constants.ASTORE_0:
@@ -729,7 +771,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 
 			int index = instr.getIndex();
 
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc < context.stackPtr-1
 						&& m.stackLoc != index) {
@@ -747,7 +789,8 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		case Constants.LCMP:
 		case Constants.DCMPL:
 		case Constants.DCMPG:
-			result = input;
+			result = in;
+			retval.put(context.callString, result);
 			break;						
 		
 		case Constants.IFEQ:
@@ -758,7 +801,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		case Constants.IFLE:
 		case Constants.IFNULL:
 		case Constants.IFNONNULL:
-			filterSet(input, result, context.stackPtr-1);
+			filterSet(in, result, context.stackPtr-1);
 			break;
 
 		case Constants.IF_ICMPEQ:
@@ -769,16 +812,17 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		case Constants.IF_ICMPLE:
 		case Constants.IF_ACMPEQ:
 		case Constants.IF_ACMPNE:
-			filterSet(input, result, context.stackPtr-2);
+			filterSet(in, result, context.stackPtr-2);
 			break;
 			
 		case Constants.TABLESWITCH:
 		case Constants.LOOKUPSWITCH:
-			filterSet(input, result, context.stackPtr-1);
+			filterSet(in, result, context.stackPtr-1);
 			break;
 
 		case Constants.GOTO:
-			result = input;
+			result = in;
+			retval.put(context.callString, result);
 			break;			
 			
 		case Constants.IADD:
@@ -815,14 +859,16 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		case Constants.LSHL:
 		case Constants.LSHR:
 		case Constants.LUSHR:
-			result = input;
+			result = in;
+			retval.put(context.callString, result);
 			break;
 
 		case Constants.LMUL:
 		case Constants.LDIV:
 		case Constants.LREM:
-			result = new ContextMap<TypeMapping, TypeMapping>(input);
-			doInvokeStatic("com.jopdesign.sys.JVM.f_"+stmt.getInstruction().getName()+"(JJ)J", stmt, context, input, interpreter, state, result);
+			result = new HashSet<TypeMapping>(in);
+			retval.put(context.callString, result);
+			doInvokeStatic("com.jopdesign.sys.JVM.f_"+stmt.getInstruction().getName()+"(JJ)J", stmt, context, input, interpreter, state, retval);
 			break;			
 			
 		case Constants.I2B:
@@ -840,24 +886,26 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		case Constants.D2F:
 		case Constants.L2D:
 		case Constants.D2L:
-			result = input;
+			result = in;
+			retval.put(context.callString, result);
 			break;
 			
 		case Constants.INSTANCEOF:
-			filterSet(input, result, context.stackPtr-1);
+			filterSet(in, result, context.stackPtr-1);
 			break;			
 
 		case Constants.CHECKCAST:
-			result = input;
+			result = in;
+			retval.put(context.callString, result);
 			break;			
 			
 		case Constants.MONITORENTER:
-			filterSet(input, result, context.stackPtr-1);
+			filterSet(in, result, context.stackPtr-1);
 			context.syncLevel++;
 			break;
 
 		case Constants.MONITOREXIT:
-			filterSet(input, result, context.stackPtr-1);
+			filterSet(in, result, context.stackPtr-1);
 			context.syncLevel--;
 			if (context.syncLevel < 0) {
 				System.err.println("Synchronization level mismatch.");
@@ -877,7 +925,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			
 			// find possible revceiver types
 			List<String> receivers = new LinkedList<String>();
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc == context.stackPtr-argSize) {
 					String clName = m.type.split("@")[0];
@@ -907,11 +955,11 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 				String signature = instr.getMethodName(context.constPool)+instr.getSignature(context.constPool);
 				String methodName = receiver+"."+signature;
 				
-				doInvokeVirtual(methodName, receiver, stmt, context, input, interpreter, state, result);
+				doInvokeVirtual(methodName, receiver, stmt, context, input, interpreter, state, retval);
 			}
 			
 			// add relevant information to result
-			filterSet(input, result, context.stackPtr-argSize);
+			filterSet(in, result, context.stackPtr-argSize);
 		}
 		break;
 
@@ -927,13 +975,13 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			
 			if (interpreter.getProgram().getMethod(methodName).getMethodGen().isPrivate()
 					&& !interpreter.getProgram().getMethod(methodName).getMethodGen().isStatic()) {
-				doInvokeVirtual(methodName, receiver, stmt, context, input, interpreter, state, result);
+				doInvokeVirtual(methodName, receiver, stmt, context, input, interpreter, state, retval);
 			} else {
-				doInvokeStatic(methodName, stmt, context, input, interpreter, state, result);
+				doInvokeStatic(methodName, stmt, context, input, interpreter, state, retval);
 			}
 			
 			// add relevant information to result
-			filterSet(input, result, context.stackPtr-argSize);
+			filterSet(in, result, context.stackPtr-argSize);
 		}
 		break;
 		
@@ -942,11 +990,11 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		case Constants.FRETURN:
 		case Constants.LRETURN:
 		case Constants.DRETURN:
-			filterSet(input, result, 0);
+			filterSet(in, result, 0);
 			break;						
 
 		case Constants.ARETURN: {
-			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc < 0) {
 					result.add(m);
@@ -974,39 +1022,46 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 //		}
 //		System.out.println("}");				
 
+//		System.out.println("AFTER "+context.method+": "+stmt+" / "+context.callString.asList());
+//		System.out.print(stmt.getInstruction()+":\t{ ");
+//		System.out.print(context.callString.asList()+": "+retval.get(context.callString));
+//		System.out.println(" }");
+
 		context.stackPtr += instruction.produceStack(context.constPool) - instruction.consumeStack(context.constPool);
 		
-		return new ContextMap<TypeMapping, TypeMapping>(context, result);
+		return retval;
 	}
 
-	private void filterSet(Map<TypeMapping, TypeMapping> input, Map<TypeMapping, TypeMapping> result, int bound) {
-		for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
+	private void filterSet(Set<TypeMapping> input, Set<TypeMapping> result, int bound) {
+		for (Iterator<TypeMapping> i = input.iterator(); i.hasNext(); ) {
 			TypeMapping m = i.next();
 			if (m.stackLoc < bound) {
-				result.put(m, m);
+				result.add(m);
 			}
 		}		
 	}
 	
-	private void filterReturnSet(Map<TypeMapping, TypeMapping> input, Map<TypeMapping, TypeMapping> result, int varPtr) {
-		for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
-			TypeMapping m = i.next();
-			if (m.stackLoc < 0) {
-				result.put(m, m);
+	private void filterReturnSet(Set<TypeMapping> input, Set<TypeMapping> result, int varPtr) {
+		if (input != null) {
+			for (Iterator<TypeMapping> i = input.iterator(); i.hasNext(); ) {
+				TypeMapping m = i.next();
+				if (m.stackLoc < 0) {
+					result.add(m);
+				}
+				if (m.stackLoc >= 0) {
+					TypeMapping t = new TypeMapping(m.stackLoc+varPtr, m.type);
+					result.add(t);
+				}
 			}
-			if (m.stackLoc >= 0) {
-				TypeMapping t = new TypeMapping(m.stackLoc+varPtr, m.type);
-				result.put(t, t);
-			}
-		}		
+		}
 	}
 	
 	private void doInvokeVirtual(String methodName, String receiver,
 			InstructionHandle stmt, Context context,
-			ContextMap<TypeMapping, TypeMapping> input,
-			Interpreter<TypeMapping, TypeMapping> interpreter,
-			Map<InstructionHandle, ContextMap<TypeMapping, TypeMapping>> state,
-			ContextMap<TypeMapping, TypeMapping> result) {
+			ContextMap<CallString, Set<TypeMapping>> input,
+			Interpreter<CallString, Set<TypeMapping>> interpreter,
+			Map<InstructionHandle, ContextMap<CallString, Set<TypeMapping>>> state,
+			ContextMap<CallString, Set<TypeMapping>> result) {
 		
 		DFAAppInfo p = interpreter.getProgram();
 		if (p.getMethod(methodName) == null) {
@@ -1032,7 +1087,8 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			c.syncLevel = context.syncLevel+1;
 		}
 		c.method = methodName;
-
+		c.callString = c.callString.push(p.getMethod(context.method), stmt.getPosition(), callStringLength);
+		
 		boolean threaded = false;	
 		
 		try {
@@ -1046,14 +1102,19 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		}
 
 		// carry only minimal information with call
-		ContextMap<TypeMapping, TypeMapping> tmpresult = new ContextMap<TypeMapping, TypeMapping>(c, new HashMap<TypeMapping, TypeMapping>());
-		for (Iterator<TypeMapping> k = input.keySet().iterator(); k.hasNext(); ) {
+		Set<TypeMapping> in = input.get(context.callString);
+		Set<TypeMapping> out = new HashSet<TypeMapping>();
+
+		ContextMap<CallString, Set<TypeMapping>> tmpresult = new ContextMap<CallString, Set<TypeMapping>>(c, new HashMap<CallString, Set<TypeMapping>>());
+		tmpresult.put(c.callString, out);
+		
+		for (Iterator<TypeMapping> k = in.iterator(); k.hasNext(); ) {
 			TypeMapping m = k.next();
 			if (m.stackLoc < 0) {
-				tmpresult.add(m);
+				out.add(m);
 			}
 			if (m.stackLoc > varPtr) {
-				tmpresult.add(new TypeMapping(m.stackLoc-varPtr, m.type));
+				out.add(new TypeMapping(m.stackLoc-varPtr, m.type));
 			}
 			if (m.stackLoc == varPtr) {
 				// add "this"
@@ -1061,34 +1122,33 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 				ClassInfo dynamicClass = (ClassInfo)p.cliMap.get(m.type.split("@")[0]);
 				try {
 					if (dynamicClass.clazz.instanceOf(staticClass.clazz)) {
-						tmpresult.add(new TypeMapping(0, m.type));					
+						out.add(new TypeMapping(0, m.type));					
 					}
 				} catch (ClassNotFoundException exc) {
 					// just do it
-					tmpresult.add(new TypeMapping(0, m.type));
+					out.add(new TypeMapping(0, m.type));
 				}
-				
-//				if (receiver.equals(m.type.split("@")[0])) {
-//					tmpresult.add(new TypeMapping(0, m.type));					
-//				}
 			}
 		}
 
 		InstructionHandle entry = method.getInstructionList().getStart();
-		state.put(entry, join(tmpresult, state.get(entry)));
+		state.put(entry, join(state.get(entry), tmpresult));
 		
 		// interpret method
-		Map<InstructionHandle, ContextMap<TypeMapping, TypeMapping>> r = interpreter.interpret(c, entry, state, false);
+		Map<InstructionHandle, ContextMap<CallString, Set<TypeMapping>>> r = interpreter.interpret(c, entry, state, false);
 							
 		// pull out relevant information from call
 		InstructionHandle exit = method.getInstructionList().getEnd();
 		if (r.get(exit) != null) { 
-			filterReturnSet(r.get(exit), result, varPtr);
+			Set<TypeMapping> returned = r.get(exit).get(c.callString);
+			if (returned != null) {
+				filterReturnSet(returned, result.get(context.callString), varPtr);
+			}
 		}
 
 		// update all threads
 		if (threaded) {
-			threads.put(methodName, new ContextMap<TypeMapping, TypeMapping>(c, result));
+			threads.put(methodName, new ContextMap<CallString, Set<TypeMapping>>(c, result));
 			updateThreads(result, interpreter, state); 
 		}
 	}
@@ -1096,10 +1156,10 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 	private void doInvokeStatic(String methodName,
 			InstructionHandle stmt,
 			Context context,
-			Map<TypeMapping, TypeMapping> input,
-			Interpreter<TypeMapping, TypeMapping> interpreter,
-			Map<InstructionHandle, ContextMap<TypeMapping, TypeMapping>> state,
-			Map<TypeMapping, TypeMapping> result) {
+			ContextMap<CallString, Set<TypeMapping>> input,
+			Interpreter<CallString, Set<TypeMapping>> interpreter,
+			Map<InstructionHandle, ContextMap<CallString, Set<TypeMapping>>> state,
+			ContextMap<CallString, Set<TypeMapping>> result) {
 
 		DFAAppInfo p = interpreter.getProgram();
 		MethodGen method = p.getMethod(methodName).getMethodGen();
@@ -1122,36 +1182,46 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 				c.syncLevel = context.syncLevel+1;
 			}
 			c.method = methodName;
+			c.callString = c.callString.push(p.getMethod(context.method), stmt.getPosition(), callStringLength);
 
 			// carry only minimal information with call
-			ContextMap<TypeMapping, TypeMapping> tmpresult = new ContextMap<TypeMapping, TypeMapping>(c, new HashMap<TypeMapping, TypeMapping>());
-			for (Iterator<TypeMapping> k = input.keySet().iterator(); k.hasNext(); ) {
+			Set<TypeMapping> in = input.get(context.callString);
+			Set<TypeMapping> out = new HashSet<TypeMapping>();
+			
+			ContextMap<CallString, Set<TypeMapping>> tmpresult = new ContextMap<CallString, Set<TypeMapping>>(c, new HashMap<CallString, Set<TypeMapping>>());
+			tmpresult.put(c.callString, out);
+			
+			for (Iterator<TypeMapping> k = in.iterator(); k.hasNext(); ) {
 				TypeMapping m = k.next();
 				if (m.stackLoc < 0) {
-					tmpresult.add(m);
+					out.add(m);
 				}
 				if (m.stackLoc >= varPtr) {
-					tmpresult.add(new TypeMapping(m.stackLoc-varPtr, m.type));
+					out.add(new TypeMapping(m.stackLoc-varPtr, m.type));
 				}
 			}
 
 			InstructionHandle entry = method.getInstructionList().getStart();
-			state.put(entry, join(tmpresult, state.get(entry)));
+			state.put(entry, join(state.get(entry), tmpresult));
 
 			// interpret method
-			Map<InstructionHandle, ContextMap<TypeMapping, TypeMapping>> r = interpreter.interpret(c, entry, state, false);
+			Map<InstructionHandle, ContextMap<CallString, Set<TypeMapping>>> r = interpreter.interpret(c, entry, state, false);
 
 			// pull out relevant information from call
-			InstructionHandle exit = method.getInstructionList().getEnd();				
-			if (r.get(exit) != null) {
-				filterReturnSet(r.get(exit), result, varPtr);
+			InstructionHandle exit = method.getInstructionList().getEnd();
+			if (r.get(exit) != null) { 
+				Set<TypeMapping> returned = r.get(exit).get(c.callString);
+				if (returned != null) {
+					filterReturnSet(returned, result.get(context.callString), varPtr);
+				}
 			}
+
 		}
 	}
 	
-	private void updateThreads(Map<TypeMapping, TypeMapping> input,
-			Interpreter<TypeMapping, TypeMapping> interpreter,
-			Map<InstructionHandle, ContextMap<TypeMapping, TypeMapping>> state) {
+	private void updateThreads(Map<CallString, Set<TypeMapping>> input,
+			Interpreter<CallString, Set<TypeMapping>> interpreter,
+			Map<InstructionHandle, ContextMap<CallString, Set<TypeMapping>>> state) {
 		
 		DFAAppInfo p = interpreter.getProgram();
 		
@@ -1159,7 +1229,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		while (modified) {
 			modified = false;
 			
-			Map<String, ContextMap<TypeMapping, TypeMapping>> tmpThreads = new LinkedHashMap<String, ContextMap<TypeMapping, TypeMapping>>();
+			Map<String, ContextMap<CallString, Set<TypeMapping>>> tmpThreads = new LinkedHashMap<String, ContextMap<CallString, Set<TypeMapping>>>();
 			
 			for (Iterator<String> k = threads.keySet().iterator(); k.hasNext(); ) {
 
@@ -1172,24 +1242,32 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 				int varPtr = c.stackPtr - MethodHelper.getArgSize(method);
 
 				// prepare input information
-				ContextMap<TypeMapping, TypeMapping> threadInput = new ContextMap<TypeMapping, TypeMapping>(c, new HashMap<TypeMapping, TypeMapping>());
-				filterSet(input, threadInput, 0);
+				ContextMap<CallString, Set<TypeMapping>> threadInput = new ContextMap<CallString, Set<TypeMapping>>(c, new HashMap<CallString, Set<TypeMapping>>());
+				for (Iterator<CallString> m = input.keySet().iterator(); m.hasNext(); ) {
+					CallString cs = m.next();
+					Set<TypeMapping> s = input.get(cs);
+					Set<TypeMapping> o = new HashSet<TypeMapping>();
+					filterSet(s, o, 0);
+					threadInput.put(cs, o);
+				}
 				state.put(entry, join(state.get(entry), threadInput));
-
 				// save information
-				ContextMap<TypeMapping, TypeMapping> savedResult = threads.get(methodName);
+				ContextMap<CallString, Set<TypeMapping>> savedResult = threads.get(methodName);
 
 				// interpret thread
-				Map<InstructionHandle, ContextMap<TypeMapping, TypeMapping>> r = interpreter.interpret(c, entry, state, false);
+				Map<InstructionHandle, ContextMap<CallString, Set<TypeMapping>>> r = interpreter.interpret(c, entry, state, false);
 
 				// pull out relevant information from thread
 				InstructionHandle exit = method.getInstructionList().getEnd();
-				ContextMap<TypeMapping, TypeMapping> threadResult;
+				ContextMap<CallString, Set<TypeMapping>> threadResult;
 				if (r.get(exit) != null) {
-					threadResult = new ContextMap<TypeMapping, TypeMapping>(c, new HashMap<TypeMapping, TypeMapping>());
-					filterReturnSet(r.get(exit), threadResult, varPtr);
+					threadResult = new ContextMap<CallString, Set<TypeMapping>>(c, new HashMap<CallString, Set<TypeMapping>>());
+					Set<TypeMapping> returned = r.get(exit).get(c.callString);
+					if (returned != null) {
+						filterReturnSet(returned, threadResult.get(c.callString), varPtr);
+					}
 				} else {
-					threadResult = new ContextMap<TypeMapping, TypeMapping>(c, new HashMap<TypeMapping, TypeMapping>());
+					threadResult = new ContextMap<CallString, Set<TypeMapping>>(c, new HashMap<CallString, Set<TypeMapping>>());
 				}
 
 				if (!threadResult.equals(savedResult)) {
@@ -1203,59 +1281,65 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		}
 	}
 	
-	private Map<TypeMapping, TypeMapping> handleNative(MethodGen method, Context context,
-			Map<TypeMapping, TypeMapping> input, Map<TypeMapping, TypeMapping> result) {
+	private Map<CallString, Set<TypeMapping>> handleNative(MethodGen method, Context context,
+			Map<CallString, Set<TypeMapping>> input, Map<CallString, Set<TypeMapping>> result) {
 		
 		String methodId = method.getClassName()+"."+method.getName()+method.getSignature();
+		
+		Set<TypeMapping> in = input.get(context.callString);
+		Set<TypeMapping> out = new HashSet<TypeMapping>();
 		
 		if (methodId.equals("com.jopdesign.sys.Native.rd(I)I")
 				|| methodId.equals("com.jopdesign.sys.Native.rdMem(I)I")
 				|| methodId.equals("com.jopdesign.sys.Native.rdIntMem(I)I")
 				|| methodId.equals("com.jopdesign.sys.Native.getStatic(I)I")) {
-			filterSet(input, result, context.stackPtr-1);
+			filterSet(in, out, context.stackPtr-1);
 		} else if (methodId.equals("com.jopdesign.sys.Native.wr(II)V")
 				|| methodId.equals("com.jopdesign.sys.Native.wrMem(II)V")
 				|| methodId.equals("com.jopdesign.sys.Native.wrIntMem(II)V")
 				|| methodId.equals("com.jopdesign.sys.Native.putStatic(II)V")) {
-			filterSet(input, result, context.stackPtr-2);
+			filterSet(in, out, context.stackPtr-2);
 		} else if (methodId.equals("com.jopdesign.sys.Native.getSP()I")) {
-			filterSet(input, result, context.stackPtr);
+			filterSet(in, out, context.stackPtr);
 		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")
 				|| methodId.equals("com.jopdesign.sys.Native.toObject(I)Ljava/lang/Object;")) {
-			filterSet(input, result, context.stackPtr-1);
+			filterSet(in, out, context.stackPtr-1);
 		} else if (methodId.equals("com.jopdesign.sys.Native.toIntArray(I)[I")) {
-			filterSet(input, result, context.stackPtr-1);
+			filterSet(in, out, context.stackPtr-1);
 			String name = "int[]@"+context.method+":0";
 			TypeMapping map = new TypeMapping(context.stackPtr-1, name);
-			result.put(map, map);
+			out.add(map);
 		} else if (methodId.equals("com.jopdesign.sys.Native.makeLong(II)J")) {
-			filterSet(input, result, context.stackPtr-2);
+			filterSet(in, out, context.stackPtr-2);
 		} else if (methodId.equals("com.jopdesign.sys.Native.memCopy(III)V")) {
-			filterSet(input, result, context.stackPtr-3);
+			filterSet(in, out, context.stackPtr-3);
 		} else if (methodId.equals("com.jopdesign.sys.Native.getField(II)I")
 				|| methodId.equals("com.jopdesign.sys.Native.arrayLoad(II)I")) {
-			filterSet(input, result, context.stackPtr-2);
+			filterSet(in, out, context.stackPtr-2);
 		} else if (methodId.equals("com.jopdesign.sys.Native.putField(III)V")
 				|| methodId.equals("com.jopdesign.sys.Native.arrayStore(III)V")) {
-			filterSet(input, result, context.stackPtr-3);
+			filterSet(in, out, context.stackPtr-3);
 		} else if (methodId.equals("com.jopdesign.sys.Native.condMove(IIZ)I")
 				|| methodId.equals("com.jopdesign.sys.Native.condMoveRef(Ljava/lang/Object;Ljava/lang/Object;Z)Ljava/lang/Object;")) {
-			filterSet(input, result, context.stackPtr-3);
+			filterSet(in, out, context.stackPtr-3);
 		} else {
 			System.err.println("Unknown native method: "+methodId);
 			System.exit(-1);
 		}
 		
+		result.put(context.callString, out);
+		
 		return result;
 	}
 	
 	private void recordReceiver(InstructionHandle stmt, Context context, String target) {
-		CallString cs = new CallString();
 		if (targets.get(stmt) == null) {
 			targets.put(stmt, new ContextMap<CallString, Set<String>>(context, new HashMap<CallString, Set<String>>()));
-			targets.get(stmt).put(cs, new HashSet<String>());
-		}		
-		targets.get(stmt).get(cs).add(target);
+		}
+		if (targets.get(stmt).get(context.callString) == null) {
+			targets.get(stmt).put(context.callString, new HashSet<String>());
+		}
+		targets.get(stmt).get(context.callString).add(target);	
 	}
 	
 	public Map<InstructionHandle, ContextMap<CallString, Set<String>>> getResult() {
@@ -1271,9 +1355,9 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			Context c = r.getContext();
 
 			System.out.println(c.method+":"+instr.getPosition());
-			for (Iterator<Set<String>> k = r.values().iterator(); k.hasNext(); ) {
-				Set<String> target = k.next();
-				System.out.println("\t"+target);
+			for (Iterator<CallString> k = r.keySet().iterator(); k.hasNext(); ) {
+				CallString target = k.next();
+				System.out.println("\t"+target.asList()+" -> "+r.get(target));
 			}
 		}			
 	}

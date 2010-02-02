@@ -44,7 +44,7 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.Pair;
-import com.jopdesign.dfa.analyses.LoopBounds.ValueMapping;
+import com.jopdesign.dfa.analyses.ValueMapping;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.HashedString;
 import com.jopdesign.wcet.Project;

@@ -21,19 +21,19 @@
 package com.jopdesign.dfa.framework;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.JavaClass;
-import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ACONST_NULL;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.ICONST;
-import org.apache.bcel.generic.INVOKESPECIAL;
 import org.apache.bcel.generic.INVOKESTATIC;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
@@ -61,7 +61,7 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 
 	private List<InstructionHandle> statements;
 	private Flow flow;
-	private Map<InstructionHandle, ContextMap<String, String>> receivers;
+	private Map<InstructionHandle, ContextMap<CallString, Set<String>>> receivers;
 
 	private LoopBounds loopBounds;
 	
@@ -152,7 +152,8 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 		mi.setMethodGen(mg);
 		cliMap.get(mainClass).getMethodInfoMap().put(prologueName+prologueSig, mi);
 	}
-		
+
+	@SuppressWarnings("unchecked")
 	public Map runAnalysis(Analysis analysis) {
 
 		Interpreter interpreter = new Interpreter(analysis, this);
@@ -210,11 +211,26 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 		return flow;
 	}
 
-	public Map<InstructionHandle, ContextMap<String, String>> getReceivers() {
-		return receivers;
-	}
+//	public Map<InstructionHandle, ContextMap<CallString, Set<String>>> getReceivers() {
+//		return receivers;
+//	}
 
-	public void setReceivers(Map<InstructionHandle, ContextMap<String, String>> receivers) {
+	public Set<String> getReceivers(InstructionHandle stmt, CallString cs) {
+		ContextMap<CallString, Set<String>> map = receivers.get(stmt);
+		Set<String> retval = new HashSet<String>();
+		for (Iterator<CallString> i = map.keySet().iterator(); i.hasNext(); ) {
+			CallString c = i.next();
+			if (c.hasSuffix(cs)) {
+				retval.addAll(map.get(c));
+			}
+		}
+		if (retval.isEmpty()) {
+			return null;
+		}
+		return retval;
+	}
+	
+	public void setReceivers(Map<InstructionHandle, ContextMap<CallString, Set<String>>> receivers) {
 		this.receivers = receivers;
 	}
 	

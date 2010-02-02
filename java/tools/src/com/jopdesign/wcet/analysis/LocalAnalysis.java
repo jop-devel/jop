@@ -19,7 +19,7 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 
 	public LocalAnalysis(Project p, IpetConfig ipetConfig) {
 		this.assumeMissOnceOnInvoke = ipetConfig.assumeMissOnceOnInvoke;
-		this.maxCallstringLength = p.getProjectConfig().callstringLength();
+		this.maxCallstringLength = (int)p.getProjectConfig().callstringLength();
 	}
 	public LocalAnalysis() {
 		this.assumeMissOnceOnInvoke = false;

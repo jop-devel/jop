@@ -20,6 +20,7 @@
 
 package com.jopdesign.dfa;
 
+import com.jopdesign.dfa.analyses.CallStringReceiverTypes;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.ReceiverTypes;
 import com.jopdesign.dfa.analyses.SymbolicPointsTo;
@@ -37,9 +38,12 @@ public class Main {
 //	private static final String POINTS_TO_TARGET = 
 //		"wcet.devel.ObjectCache$Obj1.test2(Lwcet/devel/ObjectCache$Obj1;Lwcet/devel/ObjectCache$Obj2;)I";
 //  wcet.StartEjipCmp
-	private static final String POINTS_TO_TARGET = "jbe.BenchUdpIp2.request()V";
-//	private static final String POINTS_TO_TARGET = "cmp.EjipBenchCMP.macServer()V";
+//	private static final String POINTS_TO_TARGET = "jbe.BenchUdpIp.request()V";
+	private static final String POINTS_TO_TARGET = "cmp.EjipBenchCMP.macServer()V";
 //	private static final String POINTS_TO_TARGET = "ejip.Ejip.returnPacket(Lejip/Packet;)V";
+
+	private static final int CALLSTRING_LENGTH = 3;
+	
 	public static void main(String[] args) {
 		
 		DFAAppInfo program = new DFAAppInfo(new DFAClassInfo());
@@ -58,9 +62,9 @@ public class Main {
 		long startRtTime = System.currentTimeMillis();
 		
 		// get receivers for this program
-		ReceiverTypes rt = new ReceiverTypes();
+		CallStringReceiverTypes rt = new CallStringReceiverTypes(CALLSTRING_LENGTH);
 		program.setReceivers(program.runAnalysis(rt));
-
+		
 		long rtTime = System.currentTimeMillis();
 		
 		rt.printResult(program);
@@ -70,7 +74,7 @@ public class Main {
 		long startLbTime = System.currentTimeMillis();
 		
 		// run loop bounds analysis
-		LoopBounds lb = new LoopBounds();
+		LoopBounds lb = new LoopBounds(CALLSTRING_LENGTH);
 		program.runAnalysis(lb);
 		program.setLoopBounds(lb);
 		long lbTime = System.currentTimeMillis();
@@ -81,7 +85,7 @@ public class Main {
 		System.out.println("Time for LoopBounds: "+(lbTime - startLbTime));
 
 		// run SymbolicPointsTo Analysis (local)
-		SymbolicPointsTo pointsTo = new SymbolicPointsTo(1024);
+		SymbolicPointsTo pointsTo = new SymbolicPointsTo(1024, CALLSTRING_LENGTH);
 		program.runLocalAnalysis(pointsTo, POINTS_TO_TARGET);
 		pointsTo.printResult(program);
 	}

@@ -3,6 +3,7 @@ package com.jopdesign.dfa.analyses;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
@@ -14,7 +15,6 @@ import org.apache.bcel.generic.ArrayInstruction;
 import org.apache.bcel.generic.FieldInstruction;
 import org.apache.bcel.generic.GETFIELD;
 import org.apache.bcel.generic.GETSTATIC;
-import org.apache.bcel.generic.IASTORE;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.LoadInstruction;
@@ -40,8 +40,6 @@ import com.jopdesign.wcet.graphutils.MiscUtils.Query;
 
 public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap> {
 
-	private static final int CALLSTRING_LENGTH = 0;
-
 	private static final boolean DEBUG_PRINT = false;
 	
 	// Set this to true to see how good one could get
@@ -50,6 +48,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 	private static final boolean ASSUME_NO_CONC = true;
 	
 	private BoundedSetFactory<SymbolicAddress> bsFactory;
+	private final int callStringLength;
 	private MethodInfo entryMethod;
 	
 	private HashMap<InstructionHandle, ContextMap<CallString, BoundedSet<SymbolicAddress>>> usedRefs =
@@ -58,15 +57,17 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 
 	// optional extra info: Max flow for each instruction handle
 	
-	public SymbolicPointsTo(int maxSetSize) {
+	public SymbolicPointsTo(int maxSetSize, int callStringLength) {		
 		bsFactory = new BoundedSetFactory<SymbolicAddress>(maxSetSize);
+		this.callStringLength = callStringLength;
 		executedOnce = new Query<InstructionHandle>() {
 			public boolean query(InstructionHandle a) { return false; }			
 		};
 	}
 
-	public SymbolicPointsTo(int maxSetSize, Query<InstructionHandle> eoAna) {
+	public SymbolicPointsTo(int maxSetSize, int callStringLength, Query<InstructionHandle> eoAna) {
 		bsFactory = new BoundedSetFactory<SymbolicAddress>(maxSetSize);
+		this.callStringLength = callStringLength;
 		executedOnce = eoAna;
 	}
 
@@ -172,7 +173,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		Context context = new Context(input.getContext());
 		
 		if(DEBUG_PRINT) {
-			System.out.println("[S] "+context.method+" / "+stmt);
+			System.out.println("[S] "+context.callString.asList()+": "+context.method+" / "+stmt);
 		}
 		
 		SymbolicAddressMap in = input.get(context.callString);
@@ -334,7 +335,6 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.CASTORE:
 		case Constants.SASTORE:
 		case Constants.BASTORE: {
-			IASTORE ias;
 			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-3));
 			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
 		}
@@ -377,7 +377,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 				newMapping = bsFactory.top();
 			} else {
 				
-				Interval interval = bounds.getArrayIndices().get(stmt).get(context.callString);
+				Interval interval = bounds.getArrayIndices(stmt, context.callString);
 				if(interval.hasLb() && interval.hasUb()) {
 					newMapping = bsFactory.empty();
 					for(SymbolicAddress addr: objectMapping.getSet()) {
@@ -561,7 +561,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.INVOKESPECIAL: {
 			
 			DFAAppInfo p = interpreter.getProgram();
-			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
+			Set<String> receivers = p.getReceivers(stmt, context.callString);
 			retval.put(context.callString, new SymbolicAddressMap(bsFactory));
 
 			if (receivers == null || receivers.size() == 0) {
@@ -573,14 +573,14 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 
 			if( instruction.getOpcode() == Constants.INVOKEVIRTUAL
 			 || instruction.getOpcode() == Constants.INVOKEINTERFACE) {
-				MethodInfo mi = p.getMethod(receivers.keySet().iterator().next());
+				MethodInfo mi = p.getMethod(receivers.iterator().next());
 				int refPos = MethodHelper.getArgSize(mi.getMethodGen());
 //				System.out.println(String.format("%s: args+1: %d; stack[%d] %s",
 //						mi.methodId,refPos,context.stackPtr,input.get(context.callString)));
 				putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-refPos));
 			}
 
-			for (String methodName : receivers.keySet()) {
+			for (String methodName : receivers) {
 				doInvoke(methodName, stmt, context, input, interpreter, state, retval);
 			}
 		}
@@ -672,7 +672,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 				c.syncLevel = context.syncLevel+1;
 			}
 			c.method = methodName;
-			c.callString = c.callString.push(p.getMethod(context.method), stmt.getPosition(), CALLSTRING_LENGTH);
+			c.callString = c.callString.push(p.getMethod(context.method), stmt.getPosition(), callStringLength);
 			
 			// carry only minimal information with call
 			SymbolicAddressMap in = input.get(context.callString);

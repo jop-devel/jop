@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
 import com.jopdesign.dfa.framework.BoundedSetFactory;

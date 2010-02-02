@@ -23,7 +23,9 @@ package com.jopdesign.dfa.analyses;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.LineNumberTable;
@@ -55,224 +57,15 @@ import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.dfa.framework.Interpreter;
 import com.jopdesign.dfa.framework.MethodHelper;
 import com.jopdesign.dfa.framework.DFAAppInfo;
-import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 
-public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds.ValueMapping>> {
+public class LoopBounds implements Analysis<CallString, Map<Location, ValueMapping>> {
 
-	public static final int CALLSTRING_LENGTH = 0;
-
-	private static final int WIDEN_LIMIT = 2;
-	private static final int ASSIGN_LIMIT = 4;
-	private static final int CONSTRAINT_LIMIT = 64;
-
-	public static class ValueMapping {
-
-		public Interval assigned;
-		public Interval constrained;
-		public Interval increment;
-		public Location source;
-		public int cnt;
-		public int defscope;
-		public boolean softinc;
-		
-		public static int scope = 0;
-		public static int scopeCnt = 0;
-		
-		public ValueMapping() {
-			assigned = new Interval();
-			constrained = new Interval();
-			increment = null;
-			source = null;
-			cnt = 0;
-			defscope = scope;
-			softinc = false;
-		}
-
-		public ValueMapping(int val) {
-			assigned = new Interval(val, val);
-			constrained = new Interval(val, val);
-			increment = null;
-			source = null;
-			cnt = 0;
-			defscope = scope;
-			softinc = false;
-		}
-		
-		public ValueMapping(ValueMapping val, boolean full) {
-			assigned = new Interval(val.assigned);
-			constrained = new Interval(val.constrained);
-			
-			if (full) {
-				if (val.increment != null) {
-					increment = new Interval(val.increment);
-				} else {
-					increment = null;
-				}
-				source = val.source;
-				cnt = val.cnt;
-				defscope = val.defscope;
-				softinc = val.softinc;
-			} else {
-				increment = null;
-				source = null;
-				cnt = 0;
-				defscope = scope;
-				softinc = false;
-			}
-		}		
-
-		public void join(ValueMapping val) {
-
-			//System.out.print("join: "+this+", "+val+" = ");
-			if (val != null) {
-				final Interval old = new Interval(assigned);
-
-				// merge assigned values
-				if (cnt > ASSIGN_LIMIT) {
-					assigned = new Interval();
-				} else {
-					assigned.join(val.assigned);
-				}
-				// merge constraints
-				if (cnt > CONSTRAINT_LIMIT) {
-					constrained = new Interval();
-				} else {
-					constrained.join(val.constrained);
-				}
-				// apply new constraints
-				assigned.constrain(constrained);
-				if (cnt > WIDEN_LIMIT) {
-					// widen if possible
-					assigned.widen(constrained);
-				}
-
-				// merge increments
-				if (increment == null) {
-					increment = val.increment;
-					softinc = val.softinc;
-				} else if (val.increment != null) {
-					increment.join(val.increment);
-					if (softinc || val.softinc) {
-						increment.join(new Interval(0, 0));
-						softinc = true;
-					}
-				}
-
-				if (!old.equals(assigned)) {
-					cnt++;
-				}
-				
-				defscope = Math.max(defscope, val.defscope);
-			}
-			
-			//System.out.println(this);
-		}
-		
-		public boolean equals(Object o) {
-			if (this == o) {
-				return true;
-			}
-			
-			ValueMapping m = (ValueMapping)o;
-
-			boolean inceq = false;
-			if (increment == null && m.increment == null) {
-				inceq = true;
-			} else if (increment == null || m.increment == null) {
-				inceq = false;
-			} else {
-				inceq = increment.equals(m.increment);
-			}
-			
-			boolean retval = inceq 
-				&& assigned.equals(m.assigned)
-				&& constrained.equals(m.constrained)
-				//&& defscope == m.defscope
-				&& softinc == m.softinc;
-			
-			//System.out.println("equ: "+this+" vs "+m+" -> "+retval+ " / "+(this == m));
-						
-			return retval;
-		}
-
-		public boolean compare(Object o) {
-			if (this == o) {
-				return true;
-			}
-			
-			ValueMapping m = (ValueMapping)o;
-
-			boolean inceq = false;
-			if (increment == null) {
-				inceq = true;
-			} else if (m.increment == null) {
-				inceq = false;
-			} else {
-				inceq = increment.compare(m.increment);
-			}
-			boolean retval = inceq
-				&& assigned.compare(m.assigned)
-				&& constrained.compare(m.constrained)
-				//&& defscope == m.defscope
-				&& softinc == m.softinc;
-
-			//System.out.println("cmp: "+this+" vs "+m+" -> "+retval+ " / "+(this == m));
-			
-			return retval;
-		}
-
-		public int hashCode() {
-			return assigned.hashCode()+31*constrained.hashCode()+31*31*increment.hashCode();
-		}
-		
-		public String toString() {
-			return "<"+assigned+", "+constrained+", ="+source+", #"+cnt+", +"+increment+", $"+defscope+", !"+softinc+">";				
-		}
-		
-		public static int computeBound(ValueMapping first, ValueMapping second) {
-			// basic checks
-			if (//first == null ||
-					first.increment == null
-					// || second == null
-					|| second.increment == null) {
-				// System.out.println("no valid increment");
- 				return -1;
-			}
-			// check for boundedness
-			if (!first.assigned.hasLb()
-					|| !first.assigned.hasUb()
-					|| !second.assigned.hasLb()
-					|| !second.assigned.hasUb()) {
-				// System.out.println("unbounded");
-				return -1;
-			}
-			// monotone increments?
-			if (first.increment.getLb()*first.increment.getUb() <= 0
-					|| second.increment.getLb()*second.increment.getUb() <= 0) {
-				// System.out.println("invalid increments");
-				return -1;
-			}
-
-			int firstRange = first.assigned.getUb() - first.assigned.getLb() + 1;
-			int secondRange = second.assigned.getUb() - second.assigned.getLb() + 1;
-
-			int firstBound;
-			if (first.assigned.getUb() < first.assigned.getLb()) {
-				firstBound = 0; //return -1;
-			} else {
-				firstBound = (int)Math.ceil((double)firstRange / Math.min(Math.abs(first.increment.getUb()), Math.abs(first.increment.getLb())));
-			}
-			int secondBound;
-			if (second.assigned.getUb() < second.assigned.getLb()) {
-				secondBound = 0; //return -1;
-			} else {
-				secondBound = (int)Math.ceil((double)secondRange / Math.min(Math.abs(second.increment.getUb()), Math.abs(second.increment.getLb())));
-			}
-
-			return Math.max(firstBound, secondBound);
-		}
-	}
+	private final int callStringLength;
 	
+	public LoopBounds(int callStringLength) {
+		this.callStringLength = callStringLength;
+	}
+
 	public ContextMap<CallString, Map<Location, ValueMapping>> bottom() {
 		return null;
 	}
@@ -294,9 +87,9 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 		return retval;
 	}
 
-	private Map<InstructionHandle, ContextMap<CallString, Pair<ValueMapping>>> bounds = new HashMap<InstructionHandle, ContextMap<CallString, Pair<ValueMapping>>>();
+	private Map<InstructionHandle, ContextMap<CallString, Pair<ValueMapping>>> bounds = new LinkedHashMap<InstructionHandle, ContextMap<CallString, Pair<ValueMapping>>>();
 	private Map<InstructionHandle, ContextMap<CallString, Integer>> scopes = new HashMap<InstructionHandle, ContextMap<CallString, Integer>>();
-	private Map<InstructionHandle, ContextMap<CallString, Interval[]>> sizes = new HashMap<InstructionHandle, ContextMap<CallString, Interval[]>>();
+	private Map<InstructionHandle, ContextMap<CallString, Interval[]>> sizes = new LinkedHashMap<InstructionHandle, ContextMap<CallString, Interval[]>>();
 
 	private Map<InstructionHandle, ContextMap<CallString, Interval>> arrayIndices =
 		new HashMap<InstructionHandle, ContextMap<CallString, Interval>>();
@@ -320,12 +113,13 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 		result.putAll(s1);
 		result.putAll(s2);
 		
-		Map<Location, ValueMapping> a = s1.get(s1.getContext().callString);
+		Map<Location, ValueMapping> a = s1.get(s2.getContext().callString);
 		Map<Location, ValueMapping> b = s2.get(s2.getContext().callString);
 
-//		System.out.println("A: "+s1);
-//		System.out.println("B: "+s2);
-		
+		if (a == null) {
+			a = new HashMap<Location, ValueMapping>();
+		}
+
 		Map<Location, ValueMapping> merged = new HashMap<Location, ValueMapping>(a);
 		
 		for (Iterator<Location> i = b.keySet().iterator(); i.hasNext(); ) {
@@ -354,8 +148,6 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 			result.getContext().syncLevel = s2.getContext().syncLevel;
 		}
 		result.getContext().threaded = Context.isThreaded();
-		
-//		System.out.println("R: "+result);
 		
 		return result;
 	}
@@ -397,10 +189,10 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 			Map<InstructionHandle, ContextMap<CallString, Map<Location, ValueMapping>>> state) {
 
 		Context context = new Context(input.getContext());
-		HashMap<Location, ValueMapping> in = (HashMap<Location, ValueMapping>)input.get(context.callString);
-		ContextMap<CallString, Map<Location, ValueMapping>> retval = new ContextMap<CallString, Map<Location, ValueMapping>>(context, input);
+		Map<Location, ValueMapping> in = (Map<Location, ValueMapping>)input.get(context.callString);
+		ContextMap<CallString, Map<Location, ValueMapping>> retval = new ContextMap<CallString, Map<Location, ValueMapping>>(context, new HashMap<CallString, Map<Location, ValueMapping>>());
 
-		HashMap<Location, ValueMapping> result = new HashMap<Location, ValueMapping>();
+		Map<Location, ValueMapping> result = new HashMap<Location, ValueMapping>();
 		retval.put(context.callString, result);		
 
 		Instruction instruction = stmt.getInstruction();
@@ -534,19 +326,17 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 			filterSet(in, result, context.stackPtr-1);
 
 			DFAAppInfo p = interpreter.getProgram();
-			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
+			Set<String> receivers = p.getReceivers(stmt, context.callString);
 			Location location = new Location(context.stackPtr-1); 
 			boolean valid = false;
-			if (receivers != null) {
-				for (Iterator<String> i = receivers.keySet().iterator(); i.hasNext(); ) {
-					String arrayName = i.next();
-					ValueMapping m = in.get(new Location(arrayName+".length"));
-					if (m != null) {
-						ValueMapping value = new ValueMapping(m, false);
-						value.join(result.get(location));
-						result.put(location, value);
-						valid = true;
-					}
+			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
+				String arrayName = i.next();
+				ValueMapping m = in.get(new Location(arrayName+".length"));
+				if (m != null) {
+					ValueMapping value = new ValueMapping(m, false);
+					value.join(result.get(location));
+					result.put(location, value);
+					valid = true;
 				}
 			}
 			if (!valid) {	
@@ -569,8 +359,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 //			System.out.println(context.stackPtr+","+fieldSize+": "+result);
 
 			DFAAppInfo p = interpreter.getProgram();
-			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
-			for (Iterator<String> i = receivers.keySet().iterator(); i.hasNext(); ) {
+			Set<String> receivers = p.getReceivers(stmt, context.callString);
+			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 				
 				String fieldName = i.next();
 				
@@ -587,7 +377,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 				if (p.containsField(strippedName)) {
 					for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
 						Location l = k.next();
-						if (!receivers.containsKey(l.heapLoc)) {
+						if (!receivers.contains(l.heapLoc)) {
 							result.put(l, in.get(l));
 						}
 						if (l.stackLoc == context.stackPtr-1) {
@@ -605,33 +395,31 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 			filterSet(in, result, context.stackPtr-1);
 
 			DFAAppInfo p = interpreter.getProgram();
-			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
+			Set<String> receivers = p.getReceivers(stmt, context.callString);
 
 			Location location = new Location(context.stackPtr-1);
 			boolean valid = false;
-			if (receivers != null) {
-				for (Iterator<String> i = receivers.keySet().iterator(); i.hasNext(); ) {
-					String fieldName = i.next();
+			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
+				String fieldName = i.next();
 
-					String f = fieldName.substring(fieldName.lastIndexOf("."), fieldName.length());
-					String strippedName;
-					if (fieldName.indexOf("@") >= 0) {
-						strippedName = fieldName.split("@")[0] + f;
-					} else {
-						strippedName = fieldName;
-					}
+				String f = fieldName.substring(fieldName.lastIndexOf("."), fieldName.length());
+				String strippedName;
+				if (fieldName.indexOf("@") >= 0) {
+					strippedName = fieldName.split("@")[0] + f;
+				} else {
+					strippedName = fieldName;
+				}
 
 //					System.out.println(fieldName+" vs "+strippedName);
 
-					if (p.containsField(strippedName)) {
-						for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
-							Location l = k.next();
-							if (l.heapLoc.equals(fieldName)) {
-								ValueMapping value = new ValueMapping(in.get(l), false);
-								value.join(result.get(location));
-								result.put(location, value);
-								valid = true;
-							}
+				if (p.containsField(strippedName)) {
+					for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
+						Location l = k.next();
+						if (l.heapLoc.equals(fieldName)) {
+							ValueMapping value = new ValueMapping(in.get(l), false);
+							value.join(result.get(location));
+							result.put(location, value);
+							valid = true;
 						}
 					}
 				}
@@ -654,13 +442,13 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 			}
 
 			DFAAppInfo p = interpreter.getProgram();
-			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
-			for (Iterator<String> i = receivers.keySet().iterator(); i.hasNext(); ) {
+			Set<String> receivers = p.getReceivers(stmt, context.callString);
+			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 				String fieldName = i.next();
 				if (p.containsField(fieldName)) {
 					for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
 						Location l = k.next();
-						if (l.stackLoc < 0 && !receivers.containsKey(l.heapLoc)) {
+						if (l.stackLoc < 0 && !receivers.contains(l.heapLoc)) {
 							result.put(l, in.get(l));
 						}
 						if (l.stackLoc == context.stackPtr-1) {
@@ -679,10 +467,10 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 			retval.put(context.callString, result);
 
 			DFAAppInfo p = interpreter.getProgram();
-			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
+			Set<String> receivers = p.getReceivers(stmt, context.callString);
 			Location location = new Location(context.stackPtr);
 			boolean valid = false;
-			for (Iterator<String> i = receivers.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 				String fieldName = i.next();
 				if (p.containsField(fieldName)) {
 					for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
@@ -709,23 +497,22 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 			
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
-				if (l.stackLoc >= 0 && l.stackLoc < context.stackPtr-3) {
+				if (l.stackLoc < context.stackPtr-3) {
 					result.put(l, in.get(l));
 				}
 			}
 
 			DFAAppInfo p = interpreter.getProgram();
-			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
-			for (Iterator<String> i = receivers.keySet().iterator(); i.hasNext(); ) {
+			Set<String> receivers = p.getReceivers(stmt, context.callString);
+			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 				String name = i.next();
 				for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
 					Location l = k.next();
-					if (!receivers.containsKey(l.heapLoc)) {
-						result.put(l, in.get(l));
-					}
 					if (l.stackLoc == context.stackPtr-1) {
-						// TODO: join intervals!
-						result.put(new Location(name), new ValueMapping(in.get(l), false));
+						Location loc = new Location(name);
+						ValueMapping val = new ValueMapping(in.get(l), false);
+						val.join(in.get(loc));						
+						result.put(loc, val);
 					}
 				}
 			}
@@ -745,21 +532,19 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 			filterSet(in, result, context.stackPtr-2);
 
 			DFAAppInfo p = interpreter.getProgram();
-			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
 			Location location = new Location(context.stackPtr-2);
 			boolean valid = false;
-			if (receivers != null) {
-				for (Iterator<String> i = receivers.keySet().iterator(); i.hasNext(); ) {
-					String name = i.next();
+			Set<String> receivers = p.getReceivers(stmt, context.callString);
+			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
+				String name = i.next();
 
-					for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
-						Location l = k.next();
-						if (l.heapLoc.equals(name)) {
-							ValueMapping value = new ValueMapping(in.get(l), false);
-							value.join(result.get(location));
-							result.put(location, value);
-							valid = true;
-						}
+				for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
+					Location l = k.next();
+					if (l.heapLoc.equals(name)) {
+						ValueMapping value = new ValueMapping(in.get(l), false);
+						value.join(result.get(location));
+						result.put(location, value);
+						valid = true;
 					}
 				}
 			}
@@ -984,11 +769,33 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 			}			
 		}
 		break;
+		
+		case Constants.IMUL: {
+			Interval operand = new Interval();
+			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
+				Location l = i.next();
+				if (l.stackLoc == context.stackPtr-1) {
+					operand = in.get(l).assigned;
+				}
+			}			
+			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
+				Location l = i.next();
+				if (l.stackLoc < context.stackPtr-2) {
+					result.put(l, in.get(l));	
+				} else if (l.stackLoc == context.stackPtr-2) {
+					ValueMapping m = new ValueMapping(in.get(l), true);
+					m.assigned.mul(operand);
+					m.constrained.mul(operand);
+					m.increment = new Interval();
+					result.put(l, m);
+				}
+			}			
+		}
+		break;
 
 		case Constants.IAND:
 		case Constants.IOR:
 		case Constants.IXOR:
-		case Constants.IMUL: 
 		case Constants.IDIV: 
 		case Constants.IREM:
 		case Constants.ISHL: {
@@ -1191,13 +998,13 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 		case Constants.INVOKESTATIC:
 		case Constants.INVOKESPECIAL: {
 			DFAAppInfo p = interpreter.getProgram();
-			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
+			Set<String> receivers = p.getReceivers(stmt, context.callString);
 			if (receivers == null) {
 				System.out.println(context.method + ": invoke "	+ instruction.toString(context.constPool.getConstantPool()) + " unknown receivers");
 				result = in;
 				break;
 			}
-			for (Iterator<String> i = receivers.keySet().iterator(); i.hasNext(); ) {
+			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 				String methodName = i.next();
 				doInvoke(methodName, stmt, context, input, interpreter, state, retval);
 			}
@@ -1251,7 +1058,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 		indexMap.put(context.callString, assigned);
 	}
 
-	private void filterSet(HashMap<Location, ValueMapping> in, HashMap<Location, ValueMapping> result, int bound) {
+	private void filterSet(Map<Location, ValueMapping> in, Map<Location, ValueMapping> result, int bound) {
 		for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 			Location l = i.next();
 			if (l.stackLoc < bound) {
@@ -1501,7 +1308,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 				c.syncLevel = context.syncLevel+1;
 			}
 			c.method = methodName;
-			c.callString = c.callString.push(p.getMethod(context.method), stmt.getPosition(), CALLSTRING_LENGTH);
+			c.callString = c.callString.push(p.getMethod(context.method), stmt.getPosition(), callStringLength);
 			
 			// carry only minimal information with call
 			Map<Location, ValueMapping> in = input.get(context.callString);
@@ -1677,8 +1484,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 			CallString callString = k.next();
 			Pair<ValueMapping> bounds = r.get(callString);
 
-			LoopBounds.ValueMapping first = bounds.getFirst();
-			LoopBounds.ValueMapping second = bounds.getSecond();
+			ValueMapping first = bounds.getFirst();
+			ValueMapping second = bounds.getSecond();
 
 			InstructionHandle target = ((BranchInstruction)instr.getInstruction()).getTarget();
 			
@@ -1726,10 +1533,10 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 				CallString callString = k.next();
 				Pair<ValueMapping> bounds = r.get(callString);
 
-				LoopBounds.ValueMapping first = bounds.getFirst();
-				LoopBounds.ValueMapping second = bounds.getSecond();
+				ValueMapping first = bounds.getFirst();
+				ValueMapping second = bounds.getSecond();
 
-				System.out.println(c.method+":"+sourceLine+":\t"+callString+"\t$"+scopes.get(instr)+": ");
+				System.out.println(c.method+":"+sourceLine+":\t"+callString.asList()+"\t$"+scopes.get(instr)+": ");
 
 				System.out.print("\t\ttrue:\t");
 				System.out.println(first);
@@ -1784,18 +1591,46 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 				CallString callString = k.next();
 				Interval[] bounds = r.get(callString);
 
-				System.out.println(c.method+":"+sourceLine+":\t"+callString+": ");
+				System.out.println(c.method+":"+sourceLine+":\t"+callString.asList()+": ");
 				System.out.println(Arrays.asList(bounds));
 			}			
 		}
 	}
 
-	public Map<InstructionHandle, ContextMap<CallString, Interval[]>> getArraySizes() {
-		return sizes;
+	public Interval[] getArraySizes(InstructionHandle stmt, CallString cs) {
+		ContextMap<CallString, Interval[]> map = sizes.get(stmt);
+		Interval [] retval = null;
+		for (Iterator<CallString> i = map.keySet().iterator(); i.hasNext(); ) {
+			CallString c = i.next();
+			if (c.hasSuffix(cs)) {
+				if (retval == null) {
+					Interval [] v = map.get(c);
+					retval = Arrays.copyOf(v, v.length);
+				} else {
+					Interval [] v = map.get(c);
+					for (int k = 0; k < v.length; k++) {
+						retval[k].join(v[k]);
+					}
+				}
+			}
+		}
+		return retval;
 	}
 
-	public Map<InstructionHandle, ContextMap<CallString, Interval>> getArrayIndices() {
-		return arrayIndices;
+	public Interval getArrayIndices(InstructionHandle stmt, CallString cs) {
+		ContextMap<CallString, Interval> map = arrayIndices.get(stmt);
+		Interval retval = null;
+		for (Iterator<CallString> i = map.keySet().iterator(); i.hasNext(); ) {
+			CallString c = i.next();
+			if (c.hasSuffix(cs)) {
+				if (retval == null) {
+					retval = new Interval(map.get(c));
+				} else {
+					retval.join(map.get(c));
+				}
+			}
+		}
+		return retval;
 	}
 
 }

@@ -27,6 +27,7 @@ import java.util.Date;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.StringTokenizer;
 import java.util.Vector;
@@ -36,7 +37,6 @@ import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.MethodGen;
-import org.apache.bcel.util.BCELComparator;
 import org.apache.log4j.Logger;
 import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.AppVisitor;
@@ -44,9 +44,9 @@ import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.build.WcetPreprocess;
 import com.jopdesign.dfa.analyses.LoopBounds;
-import com.jopdesign.dfa.analyses.ReceiverTypes;
+import com.jopdesign.dfa.analyses.CallStringReceiverTypes;
+import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.dfa.framework.ContextMap;
-import com.jopdesign.dfa.framework.DFAAppInfo;
 import com.jopdesign.wcet.allocation.HandleAllocationModel;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.config.Config;
@@ -362,15 +362,15 @@ public class Project {
 	public void dataflowAnalysis() {
 		com.jopdesign.dfa.framework.DFAAppInfo program = getDfaProgram();
 		topLevelLogger.info("Receiver analysis");
-		ReceiverTypes recTys = new ReceiverTypes();
-		Map<InstructionHandle, ContextMap<String, String>> receiverResults =
+		CallStringReceiverTypes recTys = new CallStringReceiverTypes((int)projectConfig.callstringLength());
+		Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults =
 			program.runAnalysis(recTys);
 		
 		program.setReceivers(receiverResults);
 		wcetAppInfo.setReceivers(receiverResults);
 		
 		topLevelLogger.info("Loop bound analysis");
-		LoopBounds dfaLoopBounds = new LoopBounds();
+		LoopBounds dfaLoopBounds = new LoopBounds((int)projectConfig.callstringLength());
 		program.runAnalysis(dfaLoopBounds);
 		program.setLoopBounds(dfaLoopBounds);
 		this.hasDfaResults = true;

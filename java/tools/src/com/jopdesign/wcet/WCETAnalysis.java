@@ -41,7 +41,6 @@ import com.jopdesign.wcet.analysis.AnalysisContextIpet;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
-import com.jopdesign.wcet.analysis.RecursiveAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.TreeAnalysis;
 import com.jopdesign.wcet.analysis.UppaalAnalysis;
