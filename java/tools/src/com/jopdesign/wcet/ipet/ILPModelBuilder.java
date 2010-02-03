@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Vector;
 import java.util.Map.Entry;
 
+import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
@@ -71,14 +72,15 @@ public class ILPModelBuilder {
 	 * Create a max-cost maxflow problem for the given flow graph graph, based on a 
 	 * given node to cost mapping.
 	 * @param key a unique identifier for the problem (for reporting)
+	 * @param callString context of the method invocation
 	 * @param g the graph
 	 * @param nodeWCET cost of nodes
 	 * @return The max-cost maxflow problem
 	 */
 	public MaxCostFlow<CFGNode,CFGEdge> 
-		buildLocalILPModel(String key, ControlFlowGraph g, CostProvider<CFGNode> nodeWCET) {
+		buildLocalILPModel(String key, CallString callString, ControlFlowGraph g, CostProvider<CFGNode> nodeWCET) {
 		Vector<FlowConstraint> flowCs = topLevelEntryExitConstraints(g);
-		flowCs.addAll(loopBoundConstraints(g));
+		flowCs.addAll(loopBoundConstraints(g,callString));
 		MaxCostFlow<CFGNode,CFGEdge> maxflow = 
 			new MaxCostFlow<CFGNode,CFGEdge>(key,g.getGraph(),g.getEntry(),g.getExit());
 		for(CFGNode n : g.getGraph().vertexSet()) {
@@ -161,6 +163,15 @@ public class ILPModelBuilder {
 	 * @return A list of flow constraints
 	 */
 	private Vector<FlowConstraint> loopBoundConstraints(ControlFlowGraph g) {
+		return loopBoundConstraints(g,CallString.EMPTY);
+	}
+	/*
+	 * Compute flow constraints: Loop Bound constraints
+	 * @param g the flow graph
+	 * @param cs the invocation context
+	 * @return A list of flow constraints
+	 */
+	private Vector<FlowConstraint> loopBoundConstraints(ControlFlowGraph g, CallString cs) {
 		Vector<FlowConstraint> constraints = new Vector<FlowConstraint>();
 		// - for each loop with bound B
 		// -- sum(exit_loop_edges) * B <= sum(continue_loop_edges)
@@ -171,7 +182,7 @@ public class ILPModelBuilder {
 				throw new Error("No loop bound record for head of loop: "+hol+
 								" : "+g.getLoopBounds());
 			}
-			int lhsMultiplicity = g.getLoopBounds().get(hol).getUpperBound();
+			int lhsMultiplicity = g.getLoopBound(hol,cs).getUpperBound();
 			for(CFGEdge exitEdge : loops.getExitEdgesOf(hol)) {
 				loopConstraint.addLHS(exitEdge,lhsMultiplicity);
 			}

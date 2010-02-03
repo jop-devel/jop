@@ -1471,6 +1471,10 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 	}
 
 	public int getBound(DFAAppInfo program, InstructionHandle instr) {
+		return getBound(program, instr, CallString.EMPTY);
+	}
+	
+	public int getBound(DFAAppInfo program, InstructionHandle instr, CallString csSuffix) {
 				
 		ContextMap<CallString, Pair<ValueMapping>> r = bounds.get(instr);
 		if (r == null) {
@@ -1482,6 +1486,9 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 		int maxValue = -1;
 		for (Iterator<CallString> k = r.keySet().iterator(); k.hasNext(); ) {
 			CallString callString = k.next();
+			// TODO: Wolfgang should review this
+			if(! callString.hasSuffix(csSuffix)) continue;
+
 			Pair<ValueMapping> bounds = r.get(callString);
 
 			ValueMapping first = bounds.getFirst();

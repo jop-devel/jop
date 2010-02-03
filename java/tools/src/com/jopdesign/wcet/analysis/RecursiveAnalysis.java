@@ -128,7 +128,7 @@ public abstract class RecursiveAnalysis<Context extends AnalysisContext, Rval> {
 			CostProvider<CFGNode> costProvider,
 			Map<CFGEdge, Long> edgeFlowOut) {
 		MaxCostFlow<CFGNode,CFGEdge> problem =
-			modelBuilder.buildLocalILPModel(name,cfg, costProvider);
+			modelBuilder.buildLocalILPModel(name, ctx.getCallString(), cfg, costProvider);
 		/* solve ILP */
 		/* extract node flow, local cost, cache cost, cummulative cost */
 		long maxCost = 0;
