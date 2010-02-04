@@ -85,9 +85,9 @@ public class Main {
 		System.out.println("Time for LoopBounds: "+(lbTime - startLbTime));
 
 		// run SymbolicPointsTo Analysis (local)
-		SymbolicPointsTo pointsTo = new SymbolicPointsTo(1024, CALLSTRING_LENGTH);
-		program.runLocalAnalysis(pointsTo, POINTS_TO_TARGET);
-		pointsTo.printResult(program);
+// 		SymbolicPointsTo pointsTo = new SymbolicPointsTo(1024, CALLSTRING_LENGTH);
+// 		program.runLocalAnalysis(pointsTo, POINTS_TO_TARGET);
+// 		pointsTo.printResult(program);
 	}
 
 }
