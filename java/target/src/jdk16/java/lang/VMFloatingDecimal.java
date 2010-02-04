@@ -37,7 +37,7 @@ public class VMFloatingDecimal{
     boolean     fromHex = false;
     int         roundDir = 0; // set by doubleValue
 
-    private     FloatingDecimal( boolean negSign, int decExponent, char []digits, int n,  boolean e )
+    private     VMFloatingDecimal( boolean negSign, int decExponent, char []digits, int n,  boolean e )
     {
         isNegative = negSign;
         isExceptional = e;
@@ -260,7 +260,7 @@ public class VMFloatingDecimal{
         return ulpval;
     }
 
-    public static FloatingDecimal
+    public static VMFloatingDecimal
 		readJavaFormatString( String in ) throws NumberFormatException {
         boolean isNegative = false;
         boolean signSeen   = false;
@@ -312,8 +312,8 @@ public class VMFloatingDecimal{
                 // and i must equal l
                 if( (j == targetChars.length) && (i == l) ) { // return NaN or infinity
                     return (potentialNaN ?
-							new FloatingDecimal(false, 0, notANumber, notANumber.length, true) // NaN has no sign
-                            : new FloatingDecimal(isNegative, 0, infinity, notANumber.length, true));
+							new VMFloatingDecimal(false, 0, notANumber, notANumber.length, true) // NaN has no sign
+                            : new VMFloatingDecimal(isNegative, 0, infinity, notANumber.length, true));
                 }
                 else { // something went wrong, throw exception
                     break parseNumber;
@@ -500,7 +500,7 @@ public class VMFloatingDecimal{
                 break parseNumber; // go throw exception
             }
 
-            return new FloatingDecimal( isNegative, decExp, digits, nDigits,  false );
+            return new VMFloatingDecimal( isNegative, decExp, digits, nDigits,  false );
 
         }
 		catch ( StringIndexOutOfBoundsException e ) {
@@ -510,7 +510,7 @@ public class VMFloatingDecimal{
     }
 
     /*
-     * Take a FloatingDecimal, which we presumably just scanned in,
+     * Take a VMFloatingDecimal, which we presumably just scanned in,
      * and find out what its value is, as a float.
      * This is distinct from doubleValue() to avoid the extremely
      * unlikely case of a double rounding error, wherein the conversion
@@ -731,143 +731,148 @@ public class VMFloatingDecimal{
                 }
             }
 
-            /*
-             * dValue is now approximately the result.
-             * The hard part is adjusting it, by comparison
-             * with FDBigInt arithmetic.
-             * Formulate the EXACT big-number result as
-             * bigD0 * 10^exp
-             */
-            FDBigInt bigD0 = new FDBigInt( lValue, digits, kDigits, nDigits );
-            exp   = decExponent - nDigits;
-
-            correctionLoop:
-            while(true){
-                /* AS A SIDE EFFECT, THIS METHOD WILL SET THE INSTANCE VARIABLES
-                 * bigIntExp and bigIntNBits
-                 */
-                FDBigInt bigB = doubleToBigInt( dValue );
-
-                /*
-                 * Scale bigD, bigB appropriately for
-                 * big-integer operations.
-                 * Naively, we multiply by powers of ten
-                 * and powers of two. What we actually do
-                 * is keep track of the powers of 5 and
-                 * powers of 2 we would use, then factor out
-                 * common divisors before doing the work.
-                 */
-                int B2, B5; // powers of 2, 5 in bigB
-                int     D2, D5; // powers of 2, 5 in bigD
-                int Ulp2;   // powers of 2 in halfUlp.
-                if ( exp >= 0 ){
-                    B2 = B5 = 0;
-                    D2 = D5 = exp;
-                } else {
-                    B2 = B5 = -exp;
-                    D2 = D5 = 0;
-                }
-                if ( bigIntExp >= 0 ){
-                    B2 += bigIntExp;
-                } else {
-                    D2 -= bigIntExp;
-                }
-                Ulp2 = B2;
-                // shift bigB and bigD left by a number s. t.
-                // halfUlp is still an integer.
-                int hulpbias;
-                if ( bigIntExp+bigIntNBits <= -expBias+1 ){
-                    // This is going to be a denormalized number
-                    // (if not actually zero).
-                    // half an ULP is at 2^-(expBias+expShift+1)
-                    hulpbias = bigIntExp+ expBias + expShift;
-                } else {
-                    hulpbias = expShift + 2 - bigIntNBits;
-                }
-                B2 += hulpbias;
-                D2 += hulpbias;
-                // if there are common factors of 2, we might just as well
-                // factor them out, as they add nothing useful.
-                int common2 = Math.min( B2, Math.min( D2, Ulp2 ) );
-                B2 -= common2;
-                D2 -= common2;
-                Ulp2 -= common2;
-                // do multiplications by powers of 5 and 2
-                bigB = multPow52( bigB, B5, B2 );
-                FDBigInt bigD = multPow52( new FDBigInt( bigD0 ), D5, D2 );
-                //
-                // to recap:
-                // bigB is the scaled-big-int version of our floating-point
-                // candidate.
-                // bigD is the scaled-big-int version of the exact value
-                // as we understand it.
-                // halfUlp is 1/2 an ulp of bigB, except for special cases
-                // of exact powers of 2
-                //
-                // the plan is to compare bigB with bigD, and if the difference
-                // is less than halfUlp, then we're satisfied. Otherwise,
-                // use the ratio of difference to halfUlp to calculate a fudge
-                // factor to add to the floating value, then go 'round again.
-                //
-                FDBigInt diff;
-                int cmpResult;
-                boolean overvalue;
-                if ( (cmpResult = bigB.cmp( bigD ) ) > 0 ){
-                    overvalue = true; // our candidate is too big.
-                    diff = bigB.sub( bigD );
-                    if ( (bigIntNBits == 1) && (bigIntExp > -expBias) ){
-                        // candidate is a normalized exact power of 2 and
-                        // is too big. We will be subtracting.
-                        // For our purposes, ulp is the ulp of the
-                        // next smaller range.
-                        Ulp2 -= 1;
-                        if ( Ulp2 < 0 ){
-                            // rats. Cannot de-scale ulp this far.
-                            // must scale diff in other direction.
-                            Ulp2 = 0;
-                            diff.lshiftMe( 1 );
-                        }
-                    }
-                } else if ( cmpResult < 0 ){
-                    overvalue = false; // our candidate is too small.
-                    diff = bigD.sub( bigB );
-                } else {
-                    // the candidate is exactly right!
-                    // this happens with surprising frequency
-                    break correctionLoop;
-                }
-                FDBigInt halfUlp = constructPow52( B5, Ulp2 );
-                if ( (cmpResult = diff.cmp( halfUlp ) ) < 0 ){
-                    // difference is small.
-                    // this is close enough
-                    if (mustSetRoundDir) {
-                        roundDir = overvalue ? -1 : 1;
-                    }
-                    break correctionLoop;
-                } else if ( cmpResult == 0 ){
-                    // difference is exactly half an ULP
-                    // round to some other value maybe, then finish
-                    dValue += 0.5*ulp( dValue, overvalue );
-                    // should check for bigIntNBits == 1 here??
-                    if (mustSetRoundDir) {
-                        roundDir = overvalue ? -1 : 1;
-                    }
-                    break correctionLoop;
-                } else {
-                    // difference is non-trivial.
-                    // could scale addend by ratio of difference to
-                    // halfUlp here, if we bothered to compute that difference.
-                    // Most of the time ( I hope ) it is about 1 anyway.
-                    dValue += ulp( dValue, overvalue );
-                    if ( dValue == 0.0 || dValue == Double.POSITIVE_INFINITY )
-                        break correctionLoop; // oops. Fell off end of range.
-                    continue; // try again.
-                }
-
-            }
+            dValue = correctionLoop(kDigits, lValue, dValue);
             return (isNegative)? -dValue : dValue;
         }
     }
+
+	private double correctionLoop(int kDigits, long lValue, double dValue) {
+		int exp;
+		/*
+		 * dValue is now approximately the result.
+		 * The hard part is adjusting it, by comparison
+		 * with FDBigInt arithmetic.
+		 * Formulate the EXACT big-number result as
+		 * bigD0 * 10^exp
+		 */
+		FDBigInt bigD0 = new FDBigInt( lValue, digits, kDigits, nDigits );
+		exp   = decExponent - nDigits;
+
+		correctionLoop:
+		while(true){
+			/* AS A SIDE EFFECT, THIS METHOD WILL SET THE INSTANCE VARIABLES
+			 * bigIntExp and bigIntNBits
+			 */
+			FDBigInt bigB = doubleToBigInt( dValue );
+
+			/*
+			 * Scale bigD, bigB appropriately for
+			 * big-integer operations.
+			 * Naively, we multiply by powers of ten
+			 * and powers of two. What we actually do
+			 * is keep track of the powers of 5 and
+			 * powers of 2 we would use, then factor out
+			 * common divisors before doing the work.
+			 */
+			int B2, B5; // powers of 2, 5 in bigB
+			int     D2, D5; // powers of 2, 5 in bigD
+			int Ulp2;   // powers of 2 in halfUlp.
+			if ( exp >= 0 ){
+				B2 = B5 = 0;
+				D2 = D5 = exp;
+			} else {
+				B2 = B5 = -exp;
+				D2 = D5 = 0;
+			}
+			if ( bigIntExp >= 0 ){
+				B2 += bigIntExp;
+			} else {
+				D2 -= bigIntExp;
+			}
+			Ulp2 = B2;
+			// shift bigB and bigD left by a number s. t.
+			// halfUlp is still an integer.
+			int hulpbias;
+			if ( bigIntExp+bigIntNBits <= -expBias+1 ){
+				// This is going to be a denormalized number
+				// (if not actually zero).
+				// half an ULP is at 2^-(expBias+expShift+1)
+				hulpbias = bigIntExp+ expBias + expShift;
+			} else {
+				hulpbias = expShift + 2 - bigIntNBits;
+			}
+			B2 += hulpbias;
+			D2 += hulpbias;
+			// if there are common factors of 2, we might just as well
+			// factor them out, as they add nothing useful.
+			int common2 = Math.min( B2, Math.min( D2, Ulp2 ) );
+			B2 -= common2;
+			D2 -= common2;
+			Ulp2 -= common2;
+			// do multiplications by powers of 5 and 2
+			bigB = multPow52( bigB, B5, B2 );
+			FDBigInt bigD = multPow52( new FDBigInt( bigD0 ), D5, D2 );
+			//
+			// to recap:
+			// bigB is the scaled-big-int version of our floating-point
+			// candidate.
+			// bigD is the scaled-big-int version of the exact value
+			// as we understand it.
+			// halfUlp is 1/2 an ulp of bigB, except for special cases
+			// of exact powers of 2
+			//
+			// the plan is to compare bigB with bigD, and if the difference
+			// is less than halfUlp, then we're satisfied. Otherwise,
+			// use the ratio of difference to halfUlp to calculate a fudge
+			// factor to add to the floating value, then go 'round again.
+			//
+			FDBigInt diff;
+			int cmpResult;
+			boolean overvalue;
+			if ( (cmpResult = bigB.cmp( bigD ) ) > 0 ){
+				overvalue = true; // our candidate is too big.
+				diff = bigB.sub( bigD );
+				if ( (bigIntNBits == 1) && (bigIntExp > -expBias) ){
+					// candidate is a normalized exact power of 2 and
+					// is too big. We will be subtracting.
+					// For our purposes, ulp is the ulp of the
+					// next smaller range.
+					Ulp2 -= 1;
+					if ( Ulp2 < 0 ){
+						// rats. Cannot de-scale ulp this far.
+						// must scale diff in other direction.
+						Ulp2 = 0;
+						diff.lshiftMe( 1 );
+					}
+				}
+			} else if ( cmpResult < 0 ){
+				overvalue = false; // our candidate is too small.
+				diff = bigD.sub( bigB );
+			} else {
+				// the candidate is exactly right!
+				// this happens with surprising frequency
+				break correctionLoop;
+			}
+			FDBigInt halfUlp = constructPow52( B5, Ulp2 );
+			if ( (cmpResult = diff.cmp( halfUlp ) ) < 0 ){
+				// difference is small.
+				// this is close enough
+				if (mustSetRoundDir) {
+					roundDir = overvalue ? -1 : 1;
+				}
+				break correctionLoop;
+			} else if ( cmpResult == 0 ){
+				// difference is exactly half an ULP
+				// round to some other value maybe, then finish
+				dValue += 0.5*ulp( dValue, overvalue );
+				// should check for bigIntNBits == 1 here??
+				if (mustSetRoundDir) {
+					roundDir = overvalue ? -1 : 1;
+				}
+				break correctionLoop;
+			} else {
+				// difference is non-trivial.
+				// could scale addend by ratio of difference to
+				// halfUlp here, if we bothered to compute that difference.
+				// Most of the time ( I hope ) it is about 1 anyway.
+				dValue += ulp( dValue, overvalue );
+				if ( dValue == 0.0 || dValue == Double.POSITIVE_INFINITY )
+					break correctionLoop; // oops. Fell off end of range.
+				continue; // try again.
+			}
+		}
+		return dValue;
+	}
 
     /*
      * All the positive powers of 10 that can be
