@@ -134,6 +134,21 @@ public class CallString {
 		return cs;
 	}
 
+	public boolean hasSuffix(CallString cs) {
+		if (this.equals(cs) || cs.isEmpty()) {
+			return true;
+		}
+		if (callString.size() < cs.callString.size()) {
+			return false;
+		}
+		int suffixStart = callString.size() - cs.callString.size();
+		List sub = callString.subList(suffixStart, callString.size());
+		if (sub.equals(cs.callString)) {
+			return true;
+		}
+		return false;
+	}
+	
 	public boolean isEmpty() {
 		return callString.isEmpty();
 	}

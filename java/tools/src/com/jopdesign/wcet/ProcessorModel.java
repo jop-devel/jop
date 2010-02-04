@@ -32,6 +32,8 @@ import com.jopdesign.wcet.frontend.WcetAppInfo;
 import com.jopdesign.wcet.jop.MethodCache;
 
 public interface ProcessorModel {
+	/** A human readable name of the Processor Model */
+	public String getName();
 
 	/**
 	 * Check whether we need to deal with the given statement in a special way,
@@ -100,4 +102,5 @@ public interface ProcessorModel {
 	 * @return
 	 */
 	public long getInvokeReturnMissCost(ControlFlowGraph invokerFlowGraph,ControlFlowGraph receiverFlowGraph);
+
 }

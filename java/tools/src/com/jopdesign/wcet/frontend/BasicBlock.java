@@ -31,6 +31,7 @@ import org.apache.bcel.generic.*;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.wcet.frontend.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.ControlFlowError;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.EdgeKind;
 
@@ -47,7 +48,7 @@ public class BasicBlock  {
 	private static final long serialVersionUID = 1L;
 	/**
 	 * Flow annotations for instructions.
-	 * Should only be used by {@link FlowGraph}
+	 * Should only be used by {@link ControlFlowGraph}
 	 */
 	static class FlowInfo {
 		boolean alwaysTaken = false;
@@ -76,7 +77,7 @@ public class BasicBlock  {
 
 
 	/** Keys for the custom {@link InstructionHandle} attributes */
-	private enum InstrField { FLOW_INFO, LINE_NUMBER };
+	private enum InstrField { FLOW_INFO, LINE_NUMBER, CFGNODE };
 
 	/** Get FlowInfo associated with an {@link InstructionHandle} */
 	static FlowInfo getFlowInfo(InstructionHandle ih) {
@@ -86,6 +87,16 @@ public class BasicBlock  {
 	/** Get Line number associated with an {@link InstructionHandle} */
 	static Integer getLineNumber(InstructionHandle ih) {
 		return (Integer)ih.getAttribute(InstrField.LINE_NUMBER);
+	}
+	// FIXME: [wcet-frontend] Remove the ugly ih.getAttribute() hack for CFG Nodes
+	/** Get the basic block node associated with an instruction handle  */
+	public static BasicBlockNode getHandleNode(InstructionHandle ih) {
+		return (BasicBlockNode)ih.getAttribute(InstrField.CFGNODE);		
+	}
+	
+	/** Set a parent link to the basic block node for the given instruction handle */
+	public static void setHandleNode(InstructionHandle ih, BasicBlockNode basicBlockNode) {
+		ih.addAttribute(InstrField.CFGNODE, basicBlockNode);
 	}
 
 	private LinkedList<InstructionHandle> instructions = new LinkedList<InstructionHandle>();
@@ -434,4 +445,5 @@ public class BasicBlock  {
 		}
 
 	}
+
 }

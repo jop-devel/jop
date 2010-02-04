@@ -57,7 +57,7 @@ public class CallGraph {
 	/**
 	 * Call graph nodes referencing methods. <br/>
 	 */
-	public class CallGraphNode {
+	public static class CallGraphNode {
 		private MethodInfo method;
 		public CallGraphNode(MethodInfo m) {
 			this.method = m;
@@ -185,9 +185,12 @@ public class CallGraph {
 			}
 		}
 	}
-	private CallGraphNode getNode(MethodInfo m) {
+	
+	/** Get node for a method info */
+	public CallGraphNode getNode(MethodInfo m) {
 		return nodeMap.get(m);
 	}
+	
 	/* calculate the depth of each node, the height of the subgraph
 	 * rooted at that node, and a maximum call-stack tree.
 	 */
@@ -257,20 +260,27 @@ public class CallGraph {
 	}
 
 	/**
-	 * get non-abstract methods, in topological order
-	 * requires an acyclic callgraph.
+	 * Get non-abstract methods, in topological order.
+	 * 
+	 * Requires an acyclic callgraph.
 	 * @return
 	 */
 	public List<MethodInfo> getImplementedMethods(MethodInfo rootMethod) {
 		List<MethodInfo> implemented = new Vector<MethodInfo>();
 		HashSet<MethodInfo> reachable = new HashSet<MethodInfo>(getReachableImplementations(rootMethod));
-		TopologicalOrderIterator<CallGraphNode, DefaultEdge> ti =
-			new TopologicalOrderIterator<CallGraphNode, DefaultEdge>(callGraph);
+		TopologicalOrderIterator<CallGraphNode, DefaultEdge> ti = topDownIterator();
 		while(ti.hasNext()) {
 			MethodInfo m = ti.next().getMethodImpl();
 			if(m != null && reachable.contains(m)) implemented.add(m);
 		}
 		return implemented;
+	}
+
+	/** Return a top-down (topological) iterator for the callgraph 
+	 * @return A topological order iterator
+	 */
+	public TopologicalOrderIterator<CallGraphNode, DefaultEdge> topDownIterator() {
+		return new TopologicalOrderIterator<CallGraphNode, DefaultEdge>(callGraph);
 	}
 
 	/**

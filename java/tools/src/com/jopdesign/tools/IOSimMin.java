@@ -220,7 +220,8 @@ public class IOSimMin {
 				// trigger cache debug output
 				// cache.rawData();
 				// cache.resetCnt();
-				val = 0;
+				js.objectCacheSim.dumpStats();
+				val = js.objectCacheSim.getStats().accessCount;
 				break;
 			default:
 				val = 0;
@@ -320,6 +321,7 @@ public class IOSimMin {
 			break;
 		case SIM_CACHE_FLUSH:
 			js.cache.flushCache();
+			js.objectCacheSim.flushCache();
 			break;
 		case Const.IO_DEADLINE:
 			js.localCnt += (val-((int) js.clkCnt));

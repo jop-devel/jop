@@ -27,7 +27,8 @@
 
 package com.jopdesign.wcet;
 
-import java.util.Map.Entry;
+import java.util.Map;
+import java.util.Set;
 
 import lpsolve.LpSolve;
 import lpsolve.VersionInfo;
@@ -35,24 +36,29 @@ import lpsolve.VersionInfo;
 import org.apache.log4j.Logger;
 
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.dfa.analyses.SymbolicAddress;
 import com.jopdesign.wcet.analysis.AnalysisContextIpet;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
-import com.jopdesign.wcet.analysis.RecursiveAnalysis;
+import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.TreeAnalysis;
 import com.jopdesign.wcet.analysis.UppaalAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
-import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveWCETStrategy;
+import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
+import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
+import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo;
+import com.jopdesign.wcet.analysis.cache.ObjectRefAnalysis;
 import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.config.Option;
+import com.jopdesign.wcet.frontend.CallGraph.CallGraphNode;
 import com.jopdesign.wcet.graphutils.MiscUtils;
+import com.jopdesign.wcet.graphutils.MiscUtils.Function2;
 import com.jopdesign.wcet.ipet.IpetConfig;
 import com.jopdesign.wcet.ipet.LpSolveWrapper;
 import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
-import com.jopdesign.wcet.jop.ConstantCache;
 import com.jopdesign.wcet.jop.JOPConfig;
-import com.jopdesign.wcet.jop.LinkerInfo.LinkInfo;
+import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.report.ReportConfig;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
@@ -66,6 +72,7 @@ import static com.jopdesign.wcet.ExecHelper.timeDiff;
 public class WCETAnalysis {
     private static final String CONFIG_FILE_PROP = "config";
     public static final String VERSION = "1.0.1";
+	private static final boolean TESTING_BUILD = System.getenv("WCET_TESTING_MODE") != null;
 
     public static Option<?>[][] options = {
         ProjectConfig.projectOptions,
@@ -149,7 +156,11 @@ public class WCETAnalysis {
 //		System.exit(1);
 
         //new ETMCExport(project).export(project.getOutFile("Spec_"+project.getProjectName()+".txt"));
-
+        
+        if(TESTING_BUILD) {
+            testCacheAnalysis();        	
+        }
+        
         /* Run */
         boolean succeed = false;
         // FIXME: Report generation is a BIG MESS
@@ -176,8 +187,8 @@ public class WCETAnalysis {
                     reportSpecial("wcet.tree",WcetCost.totalCost(treeWCET),start,stop,0.0);
                 }
 
-                RecursiveAnalysis<AnalysisContextLocal> an =
-                    new RecursiveAnalysis<AnalysisContextLocal>(
+                RecursiveWcetAnalysis<AnalysisContextLocal> an =
+                    new RecursiveWcetAnalysis<AnalysisContextLocal>(
                             project, ipetConfig,
                             new LocalAnalysis(project,ipetConfig));
 
@@ -188,7 +199,7 @@ public class WCETAnalysis {
                 }
                 /* always miss */
                 start = System.nanoTime();
-                am = an.computeWCET(project.getTargetMethod(),new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_MISS));
+                am = an.computeCost(project.getTargetMethod(),new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_MISS));
                 stop  = System.nanoTime();
                 reportSpecial("always-miss",am,start,stop,LpSolveWrapper.getSolverTime());
                 project.setGenerateWCETReport(false);
@@ -196,7 +207,7 @@ public class WCETAnalysis {
                 /* always hit */
                 LpSolveWrapper.resetSolverTime();
                 start = System.nanoTime();
-                ah = an.computeWCET(project.getTargetMethod(), new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_HIT));
+                ah = an.computeCost(project.getTargetMethod(), new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_HIT));
                 stop  = System.nanoTime();
                 reportSpecial("always-hit",ah,start,stop,LpSolveWrapper.getSolverTime());
 
@@ -222,10 +233,10 @@ public class WCETAnalysis {
                 long stop  = System.nanoTime();
                 reportUppaal(wcet,start,stop,an.getSearchtime(),an.getSolvertimemax());
             } else if(preciseApprox == StaticCacheApproximation.ALL_FIT_REGIONS) {
-                RecursiveWCETStrategy<AnalysisContextIpet> recStrategy =
+                RecursiveStrategy<AnalysisContextIpet, WcetCost> recStrategy =
                     new GlobalAnalysis.GlobalIPETStrategy(ipetConfig);
-                RecursiveAnalysis<AnalysisContextIpet> an =
-                    new RecursiveAnalysis<AnalysisContextIpet>(
+                RecursiveWcetAnalysis<AnalysisContextIpet> an =
+                    new RecursiveWcetAnalysis<AnalysisContextIpet>(
                             project,
                             ipetConfig,
                             recStrategy);
@@ -233,21 +244,22 @@ public class WCETAnalysis {
                 /* Run global analysis */
                 LpSolveWrapper.resetSolverTime();
                 long start = System.nanoTime();
-                wcet = an.computeWCET(project.getTargetMethod(),
+                wcet = an.computeCost(project.getTargetMethod(),
                                       new AnalysisContextIpet(preciseApprox));
                 long stop  = System.nanoTime();
                 report(wcet,start,stop,LpSolveWrapper.getSolverTime());
             } else {
                 AnalysisContextLocal initialContext = new AnalysisContextLocal(preciseApprox);
-                RecursiveWCETStrategy<AnalysisContextLocal> recStrategy = new LocalAnalysis(project, ipetConfig);
-                RecursiveAnalysis<AnalysisContextLocal> an =
-                    new RecursiveAnalysis<AnalysisContextLocal>(project,ipetConfig,recStrategy);
+                RecursiveStrategy<AnalysisContextLocal, WcetCost> recStrategy =
+                	new LocalAnalysis(project, ipetConfig);
+                RecursiveWcetAnalysis<AnalysisContextLocal> an =
+                    new RecursiveWcetAnalysis<AnalysisContextLocal>(project,ipetConfig,recStrategy);
 
                 /* Run local analysis */
                 project.setGenerateWCETReport(true);
                 LpSolveWrapper.resetSolverTime();
                 long start = System.nanoTime();
-                wcet = an.computeWCET(project.getTargetMethod(),initialContext);
+                wcet = an.computeCost(project.getTargetMethod(),initialContext);
                 long stop  = System.nanoTime();
                 report(wcet,start,stop,LpSolveWrapper.getSolverTime());
             }
@@ -276,6 +288,74 @@ public class WCETAnalysis {
         return succeed;
     }
 
+	private void testCacheAnalysis() {
+		long start,stop;
+		// Method Cache
+		//testExactAllFit();
+		// Object Cache (total, allfit)
+		ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project);
+		LpSolveWrapper.resetSolverTime();
+        start = System.nanoTime();
+		orefAnalysis.analyzeRefUsage();
+        stop = System.nanoTime();
+		System.err.println(
+				String.format("[Object Reference Analysis]: Total time: %.2f s / Total solver time: %.2f s",
+						timeDiff(start,stop),
+						LpSolveWrapper.getSolverTime()));        
+
+		refUsageTotal_ = new ObjectRefAnalysis(project,true).getRefUsage();
+		refUsageNames_ = orefAnalysis.getUsedSymbolicNames();
+		Map<CallGraphNode, Long> refUsageDistinct = orefAnalysis.getRefUsage();
+		MiscUtils.printMap(System.out, refUsageDistinct, new Function2<CallGraphNode, Long,String>() {
+			public String apply(CallGraphNode v1, Long usedRefs) {
+				return String.format("%-50s ==> %3d <= %3d (%s)",
+						v1.getMethodImpl().getFQMethodName(),
+						usedRefs,
+						refUsageTotal_.get(v1),
+						refUsageNames_.get(v1)
+						);
+			}        	
+		});		
+		// Object cache, evaluation
+		ObjectCacheAnalysisDemo oca;
+		int[] cacheSizes = { 0,1,2,4,8,16,32,64, 128 };
+		long accesses = 0;
+		for(int cacheSize : cacheSizes) {
+			oca = new ObjectCacheAnalysisDemo(project, cacheSize);
+			long cost = oca.computeCost();
+			double ratio;
+			if(cacheSize == 0) { accesses = cost; ratio = 1.0; }
+			else               { ratio = (double)(accesses-cost)/(double)accesses; }
+			System.out.println(
+				String.format("Cache Misses [N=%3d]: %d  (%.2f %%)", cacheSize, cost, ratio*100));				
+		}
+	}
+	private Map<CallGraphNode, Long> refUsageTotal_;
+	private Map<CallGraphNode, Set<SymbolicAddress>> refUsageNames_;
+
+	private void testExactAllFit() {
+		long start,stop;
+        start = System.nanoTime();
+		LpSolveWrapper.resetSolverTime();
+		MethodCacheAnalysis mcAnalysis = new MethodCacheAnalysis(project);
+		mcAnalysis.analyzeBlockUsage();
+        stop  = System.nanoTime();
+		System.err.println(
+				String.format("[Method Cache Analysis]: Total time: %.2f s / Total solver time: %.2f s",
+						timeDiff(start,stop),
+						LpSolveWrapper.getSolverTime()));        
+		Map<CallGraphNode, Long> blockUsage = mcAnalysis.getBlockUsage();
+		MiscUtils.printMap(System.out, blockUsage, new Function2<CallGraphNode, Long,String>() {
+			public String apply(CallGraphNode v1, Long maxBlocks) {
+		        MethodCache mc = project.getProcessorModel().getMethodCache();
+				return String.format("%-50s ==> %2d <= %2d",
+						v1.getMethodImpl().getFQMethodName(),
+						maxBlocks,
+						mc.getAllFitCacheBlocks(v1.getMethodImpl()));
+			}        	
+		});		
+	}
+		
     private void reportMetric(String metric, Object... args) {
         project.recordMetric(metric, args);
         System.out.print(metric+":");

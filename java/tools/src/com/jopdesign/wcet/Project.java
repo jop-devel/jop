@@ -27,6 +27,7 @@ import java.util.Date;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.StringTokenizer;
 import java.util.Vector;
@@ -36,7 +37,6 @@ import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.MethodGen;
-import org.apache.bcel.util.BCELComparator;
 import org.apache.log4j.Logger;
 import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.AppVisitor;
@@ -44,7 +44,8 @@ import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.build.WcetPreprocess;
 import com.jopdesign.dfa.analyses.LoopBounds;
-import com.jopdesign.dfa.analyses.ReceiverTypes;
+import com.jopdesign.dfa.analyses.CallStringReceiverTypes;
+import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.wcet.allocation.HandleAllocationModel;
 import com.jopdesign.wcet.analysis.WcetCost;
@@ -144,14 +145,13 @@ public class Project {
 
 	private Map<ClassInfo, SortedMap<Integer, LoopBound>> annotationMap;
 
-	private LoopBounds dfaLoopBounds;
-
 	private boolean genWCETReport;
 	private Report results;
 	private ProcessorModel processor;
 	private SourceAnnotations sourceAnnotations;
 	private File resultRecord;
 	private LinkerInfo linkerInfo;
+	private boolean hasDfaResults;
 
 	public Project(ProjectConfig config) throws IOException {
 		this.projectConfig =  config;
@@ -352,6 +352,9 @@ public class Project {
 	}
 
 	public com.jopdesign.dfa.framework.DFAAppInfo getDfaProgram() {
+		if(! (this.wcetAppInfo.getAppInfo() instanceof com.jopdesign.dfa.framework.DFAAppInfo)) {
+			throw new AssertionError("getDfaProgram(): DFA not enabled");
+		}
 		return (com.jopdesign.dfa.framework.DFAAppInfo) this.wcetAppInfo.getAppInfo();
 	}
 
@@ -359,20 +362,25 @@ public class Project {
 	public void dataflowAnalysis() {
 		com.jopdesign.dfa.framework.DFAAppInfo program = getDfaProgram();
 		topLevelLogger.info("Receiver analysis");
-		ReceiverTypes recTys = new ReceiverTypes();
-		Map<InstructionHandle, ContextMap<String, String>> receiverResults =
+		CallStringReceiverTypes recTys = new CallStringReceiverTypes((int)projectConfig.callstringLength());
+		Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults =
 			program.runAnalysis(recTys);
+		
 		program.setReceivers(receiverResults);
 		wcetAppInfo.setReceivers(receiverResults);
+		
 		topLevelLogger.info("Loop bound analysis");
-		dfaLoopBounds = new LoopBounds();
+		LoopBounds dfaLoopBounds = new LoopBounds((int)projectConfig.callstringLength());
 		program.runAnalysis(dfaLoopBounds);
+		program.setLoopBounds(dfaLoopBounds);
+		this.hasDfaResults = true;
 	}
 	/**
 	 * Get the loop bounds found by dataflow analysis
 	 */
 	public LoopBounds getDfaLoopBounds() {
-		return this.dfaLoopBounds;
+		if(! hasDfaResults) return null;
+		return getDfaProgram().getLoopBounds();
 	}
 	/**
 	 * Convenience delegator to get the flowgraph of the given method

@@ -31,12 +31,15 @@ import com.jopdesign.wcet.frontend.WcetAppInfo.MethodNotFoundException;
 public class JOPModel implements ProcessorModel {
 	public static final String JVM_CLASS = "com.jopdesign.sys.JVM";
 	public static final String JOP_NATIVE = "com.jopdesign.sys.Native";
+	
+	private String identifier;
 	private MethodCache cache;
 	private JOPTimingTable timing;
 	private JOPConfig config;
 
 	/* TODO: add configuration stuff */
 	public JOPModel(Project p) throws IOException {
+		StringBuffer key = new StringBuffer();
 		this.config = new JOPConfig(p);
 		this.cache = MethodCache.getCacheModel(p);
 		if(config.cmp) {
@@ -46,6 +49,14 @@ public class JOPModel implements ProcessorModel {
 			this.timing = SingleCoreTiming.getTimingTable(config.asmFile);
 			timing.configureWaitStates(config.rws, config.wws);
 		}
+		key.append("jop");
+		if(config.cmp) key.append("-cmp");
+		key.append("-"+cache);
+		identifier = key.toString();
+	}
+	
+	public String getName() {
+		return identifier;
 	}
 
 	public boolean isSpecialInvoke(MethodInfo context, Instruction i) {

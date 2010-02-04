@@ -232,6 +232,13 @@ public class JopSim {
 		
 		cache = new Cache(mem, this);
 
+		int ocAssoc;
+		if(System.getenv("OC_ASSOC") != null) {
+			ocAssoc = Integer.parseInt(System.getenv("OC_ASSOC"));
+		} else {
+			ocAssoc = OBJECT_CACHE_ASSOC;
+		}
+		objectCacheSim = new ObjectCacheSim(ocAssoc, OBJECT_CACHE_FIELDS);
 		io = ioSim;
 		
 	}
@@ -330,6 +337,10 @@ System.out.println(mp+" "+pc);
 	int copy_src = 0;
 	int copy_dest = 0;
 	int copy_pos = 0;
+	
+	public static final int OBJECT_CACHE_ASSOC = 16;
+	public static final int OBJECT_CACHE_FIELDS = 32;
+	ObjectCacheSim objectCacheSim;
 
 	/**
 	 * a plain memory read
@@ -620,9 +631,10 @@ System.out.println(mp+" "+pc);
 		int off = readOpd16u();
 		int ref = stack[sp];
 		checkNullPointer(ref);		
-		// handle needs indirection
+		// handle needs indirection		
 		ref = readMem(ref, Access.HANDLE);
-		stack[sp] = readMem(ref+off, Access.FIELD);
+		objectCacheSim.accessField(ref,off);
+		stack[sp] = readMem(ref+off, Access.FIELD);		
 	}
 	
 	void jopsys_putfield() {

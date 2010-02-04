@@ -32,6 +32,7 @@ import lpsolve.LpSolveException;
 import org.jgrapht.DirectedGraph;
 
 import com.jopdesign.wcet.ProjectConfig;
+import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet.graphutils.IDProvider;
 import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
 
@@ -279,6 +280,7 @@ public class MaxCostFlow<V,E> {
 		}
 		return s.toString();
 	}
+	
 	/**
 	 * Create a decision variable which is true if lv > 0.
 	 * Realized by introducing a decision variable b, and
@@ -289,21 +291,43 @@ public class MaxCostFlow<V,E> {
 	 */
 	public DecisionVariable addFlowDecision(LinearVector<E> lv) {
 		DecisionVariable dv = createDecisionVariable();
-		LinearConstraint<Object> lc = new LinearConstraint<Object>(ConstraintType.GreaterEqual);
-		lc.addLHS(dv, BIGM);
-		for(Entry<E, Long> coeff : lv.getCoeffs().entrySet()) {
-			lc.addRHS(coeff.getKey(), coeff.getValue());
-		}
-		this.extraConstraints.add(lc);
-		lc = new LinearConstraint<Object>(ConstraintType.LessEqual);
-		lc.addLHS(dv,1);
-		for(Entry<E, Long> coeff : lv.getCoeffs().entrySet()) {
-			lc.addRHS(coeff.getKey(), coeff.getValue());
-		}
-		this.extraConstraints.add(lc);
+		addDecisionLowerBound(dv, lv);
+		addDecisionUpperBound(dv, lv);
 		return dv;
 	}
 	
+	/**
+	 * Add an lower bound {@code lb <= b * M } for a decision variable {@code b}.
+	 * As a consequence, {@code lb > 0} implies {@ b == true } in each valid solution.
+	 * This is a risky operation, as the Big M method used may cause numerical instabilities.
+	 * @param dvar the decision variable
+	 * @param lb the right hand side of {@code b * M >= lb }
+	 */
+	public void addDecisionLowerBound(DecisionVariable dvar, LinearVector<E> lb) {
+		LinearConstraint<Object> lc = new LinearConstraint<Object>(ConstraintType.GreaterEqual);
+		lc.addLHS(dvar, BIGM);
+		for(Entry<E, Long> coeff : lb.getCoeffs().entrySet()) {
+			lc.addRHS(coeff.getKey(), coeff.getValue());
+		}
+		this.extraConstraints.add(lc);		
+	}
+	
+	/**
+	 * Add an upper bound {@code b <= ub} for a decision variable {@code b}.
+	 * As a consequence, {@code ub == 0} implies {@ b == false } in each valid solution.
+     *
+	 * @param dvar the decision variable
+	 * @param ub the right hand side of {@code b <= ub}
+	 */
+	public void addDecisionUpperBound(DecisionVariable dvar, LinearVector<E> ub) {
+		LinearConstraint<Object> lc = new LinearConstraint<Object>(ConstraintType.LessEqual);
+		lc.addLHS(dvar,1);
+		for(Entry<E, Long> coeff : ub.getCoeffs().entrySet()) {
+			lc.addRHS(coeff.getKey(), coeff.getValue());
+		}
+		this.extraConstraints.add(lc);		
+	}
+
 	/**
 	 * Add cost when the decision variable {@code dv} is true.
 	 * @param dv the decision variable the cost depends on
@@ -313,10 +337,11 @@ public class MaxCostFlow<V,E> {
 		this.extraCost.add(dv,cost);
 	}
 
-	private DecisionVariable createDecisionVariable() {
+	public DecisionVariable createDecisionVariable() {
 		DecisionVariable dv = new DecisionVariable(dGen++);
 		this.dMap.put(dv, dv.id);
 		this.dRevMap.put(dv.id, dv);
 		return dv;
 	}
+
 }

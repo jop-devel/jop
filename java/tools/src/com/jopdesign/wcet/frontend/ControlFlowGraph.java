@@ -44,7 +44,7 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.Pair;
-import com.jopdesign.dfa.analyses.LoopBounds.ValueMapping;
+import com.jopdesign.dfa.analyses.ValueMapping;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.HashedString;
 import com.jopdesign.wcet.Project;
@@ -116,7 +116,7 @@ public class ControlFlowGraph {
 	 * Abstract base class for flow graph nodes
 	 *
 	 */
-	public abstract static class CFGNode implements Comparable<CFGNode>{
+	public abstract class CFGNode implements Comparable<CFGNode>{
 		private int id;
 		protected String name;
 		protected CFGNode(int id, String name) {
@@ -131,6 +131,9 @@ public class ControlFlowGraph {
 		public int getId() { return id; }
 		void setId(int newId) { this.id = newId; }
 		public abstract void accept(CfgVisitor v);
+		public ControlFlowGraph getControlFlowGraph() {
+			return ControlFlowGraph.this;
+		}
 	}
 
 	/**
@@ -165,6 +168,9 @@ public class ControlFlowGraph {
 		public BasicBlockNode(int blockIndex) {
 			super(idGen++, "basic("+blockIndex+")");
 			this.blockIndex = blockIndex;
+			for(InstructionHandle ih : blocks.get(blockIndex).getInstructions()) {
+				BasicBlock.setHandleNode(ih, this);
+			}
 		}
 		public BasicBlock getBasicBlock() { return blocks.get(blockIndex); }
 		@Override
@@ -444,7 +450,7 @@ public class ControlFlowGraph {
 		/* flow edges */
 		for(BasicBlockNode bbNode : nodeTable.values()) {
 			BasicBlock bb = bbNode.getBasicBlock();
-			FlowInfo bbf = bb.getFlowInfo(bb.getLastInstruction());
+			FlowInfo bbf = BasicBlock.getFlowInfo(bb.getLastInstruction());
 			if(bbf.exit) { // exit edge
 				// do not connect exception edges
 				if(bbNode.getBasicBlock().getLastInstruction().getInstruction().getOpcode()
