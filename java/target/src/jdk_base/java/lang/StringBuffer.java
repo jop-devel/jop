@@ -70,6 +70,14 @@ public final class StringBuffer implements CharSequence {
 		// str.getChars(0, count, value, 0);
 	}
 
+	// since 1.5
+	public StringBuffer(CharSequence seq) {
+		count = seq.length();
+		value = new char[count];
+		for (int i = 0; i < count; ++i)
+			value[i] = seq.charAt(i);		
+	}
+
 	public String toString() {
 		return new String(this);
 	}
@@ -133,9 +141,8 @@ public final class StringBuffer implements CharSequence {
 		return append(Long.toString(lnum, 10));
 	}
 
-	// for collection needed - dummy version
 	public StringBuffer append(double d) {
-		return append("NYI");
+		return append(Double.toString(d));
 	}
 
 	public StringBuffer append(Object obj) {
