@@ -1221,7 +1221,9 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		} else if (methodId.equals("com.jopdesign.sys.Native.getSP()I")) {
 			filterSet(input, result, context.stackPtr);
 		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")
-				|| methodId.equals("com.jopdesign.sys.Native.toObject(I)Ljava/lang/Object;")) {
+				|| methodId.equals("com.jopdesign.sys.Native.toObject(I)Ljava/lang/Object;")
+				|| methodId.equals("com.jopdesign.sys.Native.toInt(F)I")
+				|| methodId.equals("com.jopdesign.sys.Native.toFloat(I)F")) {
 			filterSet(input, result, context.stackPtr-1);
 		} else if (methodId.equals("com.jopdesign.sys.Native.toIntArray(I)[I")) {
 			filterSet(input, result, context.stackPtr-1);

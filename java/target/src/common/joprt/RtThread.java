@@ -26,10 +26,10 @@ package joprt;
 
 import com.jopdesign.sys.RtThreadImpl;
 
-public class RtThread {
+public class RtThread implements Runnable {
 
 	RtThreadImpl thr;
-	
+	private Runnable runner = null;
 
 	public static void initClass() {
 		RtThreadImpl.init();
@@ -37,19 +37,27 @@ public class RtThread {
 	// not necessary
 	// private RtThread() {};
 
-	public RtThread(int prio, int us) {
-	
+	public RtThread(int prio, int us) {	
 		this(prio, us, 0);
 	}
 
-	public RtThread(int prio, int us, int off) {
+	public RtThread(Runnable runner, int prio, int us) {
+		this(runner, prio, us, 0);
+	}
 
+	public RtThread(int prio, int us, int off) {
+		this(null, prio, us, off);
+	}
+
+	public RtThread(Runnable runner, int prio, int us, int off) {
+		this.runner = runner;
 		thr = new RtThreadImpl(this, prio, us, off);
 	}
 
-
 	public void run() {
-		;							// nothing to do
+		if (runner != null)
+			runner.run();
+		// nothing else to do
 	}
 
 

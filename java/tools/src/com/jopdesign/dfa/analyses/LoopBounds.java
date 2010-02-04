@@ -329,14 +329,16 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			Set<String> receivers = p.getReceivers(stmt, context.callString);
 			Location location = new Location(context.stackPtr-1); 
 			boolean valid = false;
-			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
-				String arrayName = i.next();
-				ValueMapping m = in.get(new Location(arrayName+".length"));
-				if (m != null) {
-					ValueMapping value = new ValueMapping(m, false);
-					value.join(result.get(location));
-					result.put(location, value);
-					valid = true;
+			if (receivers != null) {
+				for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
+					String arrayName = i.next();
+					ValueMapping m = in.get(new Location(arrayName+".length"));
+					if (m != null) {
+						ValueMapping value = new ValueMapping(m, false);
+						value.join(result.get(location));
+						result.put(location, value);
+						valid = true;
+					}
 				}
 			}
 			if (!valid) {	
@@ -1396,7 +1398,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 					out.put(l, in.get(l));
 				}
 			}
-		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")) {
+		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")
+				|| methodId.equals("com.jopdesign.sys.Native.toInt(F)I")) {
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
 				if (l.stackLoc < context.stackPtr-1) {
@@ -1405,7 +1408,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			}
 			out.put(new Location(context.stackPtr-1), new ValueMapping());
 		} else if (methodId.equals("com.jopdesign.sys.Native.toObject(I)Ljava/lang/Object;")
-				|| methodId.equals("com.jopdesign.sys.Native.toIntArray(I)[I")) {
+				|| methodId.equals("com.jopdesign.sys.Native.toIntArray(I)[I")
+				|| methodId.equals("com.jopdesign.sys.Native.toFloat(I)F")) {
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
 				if (l.stackLoc < context.stackPtr-1) {
@@ -1429,7 +1433,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			}
 			out.put(new Location(context.stackPtr-1), new ValueMapping());
 		} else if (methodId.equals("com.jopdesign.sys.Native.condMove(IIZ)I")
-				|| methodId.equals("com.jopdesign.sys.Native.condMoveRef(Ljava/lang/Object;Ljava/lang/Object;Z)Ljava/lang/Object;")) {
+				|| methodId.equals("com.jopdesign.sys.Native.condMoveRef(Ljava/lang/Object;Ljava/lang/Object;Z)Ljava/lang/Object;")
+				|| methodId.equals("com.jopdesign.sys.Native.memCopy(III)V")) {
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
 				if (l.stackLoc < context.stackPtr-3) {

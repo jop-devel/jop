@@ -115,6 +115,11 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 		if (a != null) {
 			merged.addAll(a);
 		}
+
+		if (b == null) {
+			System.err.println(s2.getContext().callString.asList());
+		}
+
 		merged.addAll(b);
 		result.put(s2.getContext().callString, merged);
 
@@ -1250,7 +1255,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 					filterSet(s, o, 0);
 					threadInput.put(cs, o);
 				}
-				state.put(entry, join(state.get(entry), threadInput));
+				state.put(entry, join(threadInput, state.get(entry)));
 				// save information
 				ContextMap<CallString, Set<TypeMapping>> savedResult = threads.get(methodName);
 
@@ -1262,12 +1267,12 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 				ContextMap<CallString, Set<TypeMapping>> threadResult;
 				if (r.get(exit) != null) {
 					threadResult = new ContextMap<CallString, Set<TypeMapping>>(c, new HashMap<CallString, Set<TypeMapping>>());
+					threadResult.put(c.callString, new HashSet<TypeMapping>());
 					Set<TypeMapping> returned = r.get(exit).get(c.callString);
-					if (returned != null) {
-						filterReturnSet(returned, threadResult.get(c.callString), varPtr);
-					}
+					filterReturnSet(returned, threadResult.get(c.callString), varPtr);
 				} else {
 					threadResult = new ContextMap<CallString, Set<TypeMapping>>(c, new HashMap<CallString, Set<TypeMapping>>());
+					threadResult.put(c.callString, new HashSet<TypeMapping>());
 				}
 
 				if (!threadResult.equals(savedResult)) {
@@ -1292,7 +1297,8 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 		if (methodId.equals("com.jopdesign.sys.Native.rd(I)I")
 				|| methodId.equals("com.jopdesign.sys.Native.rdMem(I)I")
 				|| methodId.equals("com.jopdesign.sys.Native.rdIntMem(I)I")
-				|| methodId.equals("com.jopdesign.sys.Native.getStatic(I)I")) {
+				|| methodId.equals("com.jopdesign.sys.Native.getStatic(I)I")
+				|| methodId.equals("com.jopdesign.sys.Native.toInt(F)I")) {
 			filterSet(in, out, context.stackPtr-1);
 		} else if (methodId.equals("com.jopdesign.sys.Native.wr(II)V")
 				|| methodId.equals("com.jopdesign.sys.Native.wrMem(II)V")
