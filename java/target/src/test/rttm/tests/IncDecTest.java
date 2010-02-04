@@ -27,6 +27,8 @@ public class IncDecTest implements Runnable {
 		System.out.println(cnt);
 		
 		Diagnostics.stat();
+		
+		System.out.println(cnt);
 	}
 	
 	protected IncDecTest() {
@@ -35,7 +37,7 @@ public class IncDecTest implements Runnable {
 	
 	static volatile int cnt = 0;
 	static final int ITERATIONS = 100000;
-	static final int INCREMENTS = 4;
+	static final int INCREMENTS = 10;
 	
 	public void run() {
 		if ((sys.cpuId % 2) == 0) {
