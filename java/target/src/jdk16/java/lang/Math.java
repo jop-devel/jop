@@ -52,6 +52,8 @@ import com.jopdesign.sys.SoftFloat64;
  *
  * Note that angles are specified in radians.  Conversion functions are
  * provided for your convenience.
+ * 
+ * Sinus/Cosinus/Tangens inspired by http://www.cs.princeton.edu/introcs/13flow/Sin.java.html, wikipedia
  *
  * @author Paul Fisher
  * @author John Keiser
@@ -60,8 +62,7 @@ import com.jopdesign.sys.SoftFloat64;
  * @since 1.0
  */
 public final class Math
-{
-
+{  
   // FIXME - This is here because we need to load the "javalang" system
   // library somewhere late in the bootstrap cycle. We cannot do this
   // from VMSystem or VMRuntime since those are used to actually load
@@ -97,6 +98,7 @@ public final class Math
    */
   public static final double PI = 3.141592653589793;
 
+  
   /**
    * Take the absolute value of the argument.
    * (Absolute value means make it positive.)
@@ -337,5 +339,84 @@ public final class Math
 		  throw new RuntimeException("Not implemented");
 	  }	  
   }
+  
+  private static final int TAYLOR_TERMS_SINUS = 5;
+  private static final int TAYLOR_TERMS_COSINUS = 5;
+  private static final int TAYLOR_TERMS_TANGENS = 5;
+  
+  public static float atan(float f) {
+	  throw new RuntimeException("Not implemented");	  
+  }
+  public static float sqrt(float f) {
+	  throw new RuntimeException("Not implemented");
+  }
+
+  public static float sin(float f) {
+	  if (!Const.SUPPORT_FLOAT) throw new RuntimeException("Math: floats not supported");
+      f = f % (2 * (float)Math.PI);
+
+      // compute the Taylor series approximation
+      float term = 1.0f;      // ith term = x^i / i!
+      float sum  = 0.0f;      // sum of first i terms in taylor series
+
+      for (int i = 1; i < TAYLOR_TERMS_SINUS<<1; i++) {
+          term *= (f / i);
+          if (i % 4 == 1) sum += term;
+          if (i % 4 == 3) sum -= term;
+      }
+      return f;
+  }
+  
+
+  public static double sin(double f) {
+	  if (!Const.SUPPORT_FLOAT) throw new RuntimeException("Math: floats not supported");
+      f = f % (2 * Math.PI);
+
+      // compute the Taylor series approximation
+      double term = 1.0f;      // ith term = x^i / i!
+      double sum  = 0.0f;      // sum of first i terms in taylor series
+
+      for (int i = 1; i < TAYLOR_TERMS_SINUS<<1; i++) {
+          term *= (f / i);
+          if (i % 4 == 1) sum += term;
+          if (i % 4 == 3) sum -= term;
+      }
+      return f;
+  }
+  
+  public static float cos(float f) {
+	  if (!Const.SUPPORT_FLOAT) throw new RuntimeException("Math: floats not supported");
+      f = f % (2 * (float)Math.PI);
+
+      // compute the Taylor series approximation
+      float term = 1.0f;      // ith term = x^i / i!
+      float sum  = 1.0f;      // sum of first i terms in taylor series
+
+      for (int i = 1; i < TAYLOR_TERMS_COSINUS<<1; i++) {
+          term *= (f / i);
+          if (i % 4 == 0) sum += term;
+          if (i % 4 == 2) sum -= term;
+      }
+      return f;	  
+  }
+  
+  public static double cos(double f) {
+	  if (!Const.SUPPORT_FLOAT) throw new RuntimeException("Math: floats not supported");
+      f = f % (2 * Math.PI);
+
+      // compute the Taylor series approximation
+      double term = 1.0f;      // ith term = x^i / i!
+      double sum  = 1.0f;      // sum of first i terms in taylor series
+
+      for (int i = 1; i < (TAYLOR_TERMS_COSINUS<<1) - 1; i++) {
+          term *= (f / i);
+          if (i % 4 == 0) sum += term;
+          if (i % 4 == 2) sum -= term;
+      }
+      return f;	  
+  }
+  
+
+
 
 }
