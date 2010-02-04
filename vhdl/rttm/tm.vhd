@@ -120,14 +120,13 @@ architecture rtl of tm is
 		read_flag_line_addr: unsigned(way_bits-1 downto 0);
 	end record;
 	
-	type stage3_type is record
-		was_read: std_logic;
+	type stage3_type is record		
+		was_read: std_logic; -- was_read is only set if it was a hit
 -- 		was_dirty: std_logic;
 	end record;	
 	
 	type stage23_type is record
 		state: stage23_state_type;
-		--data: std_logic_vector(31 downto 0); -- TODO
 		wr_data: std_logic_vector(31 downto 0);
 		update_data: std_logic;
 		line_addr: unsigned(way_bits-1 downto 0);
@@ -253,7 +252,7 @@ begin
 			
 			addr => stage1.addr(addr_width-1 downto 0),
 			wr => stage2.update_tags,
-			hit => stage1_async.hit, -- TODO delay if fed in stage 0
+			hit => stage1_async.hit,
 			line => stage1_async.line_addr,
 			newline => stage1_async.newline,
 			
@@ -293,7 +292,7 @@ begin
 		
 		commit_finished <= '0';
 		
-		next_commit_started <= commit_started; -- TODO
+		next_commit_started <= commit_started;
 	
 		case state is 
 			when NO_TRANSACTION | CONTAINMENT |
@@ -345,9 +344,9 @@ begin
 
 			when COMMIT | EARLY_COMMIT =>
 				next_stage1.state <= idle;
-				-- TODO use FIFO
 
-				-- TODO rdy_cnt condition
+				-- a memory read transaction was started in the previous cycle 
+				-- at the latest
 				if commit_word_finishing = '1' or 
 					((commit_started = '0') and (from_mem_rdy_cnt_dly(1) = '0')) then
 					next_commit_started <= '1';
@@ -393,8 +392,6 @@ begin
 			end if;
 			
 			if stage1_async.hit = '0' then
-				-- TODO this is in the critical path
-				-- TODO make sure operation finishes first
 				if stage1_async.newline(way_bits-1 downto 0) = 
 					(way_bits-1 downto 0 => '1') then
 					tag_full <= '1';
@@ -443,12 +440,12 @@ begin
 	
 	proc_stage2: process(data, read, stage23, stage2) is
 	begin		
-		-- TODO only valid in next cycle
 		next_read_data <= data(to_integer(stage23.line_addr));
 		
-		-- TODO RAM access is apparently synthesized in stage 3
+		-- Since RAM access is synthesized in stage 3 instead of stage 2,
+		-- we set was_dirty using a dedicated component
 -- 		next_stage3.was_dirty <= dirty(to_integer(stage23.line_addr));
-		-- TODO naming ^v
+		-- naming ^v
 		-- .was_read is only set if it was a hit
 		next_stage3.was_read <= read(to_integer(stage2.read_flag_line_addr)) and
 			stage2.hit;
@@ -457,12 +454,11 @@ begin
 	memory_block_access: process (clk) is
 	begin
 	    if rising_edge(clk) then
-			-- TODO stage 2 or 3?
 			if stage23.update_data = '1' then
-				-- TODO which reg?
 				data(to_integer(stage23.line_addr)) <= stage23.wr_data;
 			end if;
 			
+			-- moved to dedicated component
 -- 			if stage2.update_dirty = '1' then
 -- 				dirty(to_integer(stage23.line_addr)) <= stage2.dirty;
 -- 			end if;
@@ -525,16 +521,15 @@ begin
 				null;
 			
 			when read_hit3 =>
-				-- TODO read_data is already a reg.
 				next_save_data <= read_data;
 				to_cpu.rd_data <= read_data;
 				
 			when read_miss2 =>
 				next_stage23.state <= read_miss3;
-				to_mem.rd <= '1'; -- TODO register since it's in critical path
+				to_mem.rd <= '1';
 				to_mem.address <= 
 					(SC_ADDR_SIZE-1 downto addr_width => 
-					'0') & stage2.addr; -- TODO
+					'0') & stage2.addr;
 			
 			when read_miss3 =>
 				next_stage23.state <= read_miss3;
@@ -568,7 +563,7 @@ begin
 					next_stage23.state <= idle;
 				end if;					
 				
-				commit_shift <= '1'; -- TODO
+				commit_shift <= '1';
 				
 			when commit_4 =>
 				next_stage23.state <= commit_4;
@@ -612,7 +607,7 @@ begin
 		-- if this read miss triggered an early commit,
 		-- wait until the EARLY_COMMIT finished before updating rd_data
 		if read_miss_publish = '1' and rdy_cnt_busy = '0' then
-		-- TODO should do that on next_read_miss_publish rising edge
+			-- could do that on next_read_miss_publish rising edge
 -- 			to_cpu.rd_data <= from_mem.rd_data;			
 			next_save_data <= from_mem.rd_data;
 			next_read_miss_publish <= '0';
@@ -645,7 +640,7 @@ begin
 			when write =>
 				to_cpu.rdy_cnt <= "10";
 			when read1 =>
-				to_cpu.rdy_cnt <= "11"; -- TODO not waiting for hit res. is faster
+				to_cpu.rdy_cnt <= "11"; -- not waiting for hit res. is faster
 -- 				if stage1_async.hit = '1' then
 -- 					to_cpu.rdy_cnt <= "10";
 -- 				else
@@ -658,12 +653,11 @@ begin
 					when write2 | read_hit2 =>
 						to_cpu.rdy_cnt <= "01";
 					when read_miss2 =>
-						to_cpu.rdy_cnt <= "11"; -- TODO issue to_mem.rd earlier?
+						to_cpu.rdy_cnt <= "11";
 						
 					when read_miss3 =>
 						-- hazard fix - or TODO add reg. and disable cycle 2 write
 						-- TODO refer to documentation
-						-- TODO actually min(3, from_mem.rdy_cnt + 1)	
 						to_cpu.rdy_cnt <= "11";
 					when read_miss4 =>
 						to_cpu.rdy_cnt <= "01";

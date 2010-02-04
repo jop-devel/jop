@@ -408,7 +408,6 @@ begin
 				-- 2 cycles delay ensure that the exception will be handled 
 				-- when the next bytecode is issued.
 				-- TODO refer to documentation
-				-- TODO too many wait cycles?
 			
 				case containment_state is
 					when cbi0 =>
@@ -462,7 +461,6 @@ begin
 		sc_cpu_in_filtered, sc_arb_out_filtered, sc_cpu_out, state, 
 		rdy_cnt_busy, tm_cmd) is
 	begin
-		-- TODO writes/reads outside of RAM	
 		sc_cpu_out_filtered <= sc_cpu_out;
 		sc_cpu_in <= sc_cpu_in_filtered;
 		sc_arb_out <= sc_arb_out_filtered;
@@ -478,7 +476,7 @@ begin
 				sc_arb_out.tm_broadcast <= '1';
 			when NORMAL_TRANSACTION | COMMIT_WAIT_TOKEN | 
 			EARLY_COMMIT_WAIT_TOKEN | CONTAINMENT =>
-				-- TODO no writes to mem should happen 
+				-- no writes to mem. should happen 
 				sc_arb_out.tm_broadcast <= '0';
 			when NO_TRANSACTION =>
 				sc_arb_out.tm_broadcast <= '0';
@@ -594,7 +592,7 @@ begin
 	begin
 		tm_cmd <= none;			
 		
-		-- TODO could be moved to previous cycle
+		-- could be moved to previous cycle
 		if sc_cpu_out_dly.wr = '1' and is_tm_magic_addr_sync = '1' then
 			tm_cmd <= tm_cmd_type'val(to_integer(unsigned(
 				sc_cpu_out_dly.wr_data(tm_cmd_raw'range))));

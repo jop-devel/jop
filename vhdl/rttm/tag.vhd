@@ -145,7 +145,6 @@ begin
 		for i in 0 to lines-1 loop
 			tag(i) <= (others => '0');
 		end loop;
--- 		full <= '0';
 
 	elsif rising_edge(clk) then
 		hit_reg <= h_res;
@@ -159,11 +158,6 @@ begin
 				tag(to_integer(nxt(way_bits-1 downto 0))) <= addr_dly;
 				valid(to_integer(nxt(way_bits-1 downto 0))) <= '1';
 				nxt <= nxt + 1;
-				
-				-- now calculated in tm module
--- 				if nxt = (way_bits-1 downto 0 => '1') then
--- 					full <= '1';
--- 				end if;  
 			end if;
 		end if;
 		
