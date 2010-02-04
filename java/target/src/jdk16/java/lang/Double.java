@@ -39,7 +39,6 @@ exception statement from your version. */
 package java.lang;
 
 import com.jopdesign.sys.Native;
-import com.jopdesign.sys.FloatingDecimal;
 
 /**
  * Instances of class <code>Double</code> represent primitive
@@ -337,7 +336,7 @@ public final class Double extends Number implements Comparable
 //    return VMDouble.parseDouble(str);
 // 	  System.out.println("NYI");
 // 	  throw new RuntimeException();
-	  return FloatingDecimal.readJavaFormatString(str).doubleValue();
+	  return VMFloatingDecimal.readJavaFormatString(str).doubleValue();
   }
 
   /**
