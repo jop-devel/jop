@@ -33,10 +33,6 @@ import com.jopdesign.sys.RetryException;
  * @author Peter Hilber (peter@hilber.name)
  */
 public class Utils {
-
-	/**
-	 * TMTODO
-	 */
 	public static final RetryException retryException = new RetryException();
 	public static final AbortException abortException = new AbortException();
 	

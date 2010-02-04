@@ -37,6 +37,8 @@ import boxpeeking.instrument.bcel.AnnotationsAttribute;
  * Known limitations: can't load string constants because they are already 
  * indexed in jz.load().
  * 
+ * TODO: optimize jumps  
+ * 
  * @author Peter Hilber (peter@hilber.name)
  *
  */
@@ -66,8 +68,6 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 						methods[i] = nm;
 						
 						clazz.setConstantPool(cpoolgen.getFinalConstantPool());
-						
-						// TMTODO remove annotation
 					}
 				}
 			}
@@ -98,7 +98,7 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
             argsCount = max;
 		}
 		
-		final int transactionLocals = 4; // TMTODO 
+		final int transactionLocals = 4; // TODO 
 		
 		final int maxLocals = method.getMaxLocals();
 		
@@ -133,7 +133,7 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 //			il.append(_factory.createStore(Type.INT, transactionLocalsBaseIndex-2+1));
 			
 		    {
-		    	// TMTODO only for (possibly two-word) variables which are written to
+		    	// TODO only for (possibly two-word) variables which are written to
 		    	for (int i = 0; i < argsCount; i++) {
 		    		il.append(_factory.createLoad(Type.INT, i));
 		    		il.append(_factory.createStore(Type.INT, copyBaseIndex+i));
@@ -150,8 +150,6 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 			il.append(InstructionConstants.BASTORE);
 			
 			// transaction loop
-			// TMTODO optimize jumps
-			// TMTODO get tm constants using reflection
 			
 			InstructionHandle ih_43 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex-2+2));
 			    BranchInstruction ifeq_44 = _factory.createBranchInstruction(Constants.IFEQ, null);
@@ -256,7 +254,7 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 			
 			InstructionHandle ih_108 = null;
 		    {
-		    	// TMTODO only for (possibly two-word) variables which are written to
+		    	// TODO only for (possibly two-word) variables which are written to
 		    	for (int i = 0; i < argsCount; i++) {
 		    		InstructionHandle ih = il.append(_factory.createLoad(Type.INT, copyBaseIndex+i));
 		    		if (i == 0) {
@@ -271,7 +269,7 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 			
 			{
 				if (ih_108 == null) {
-					ih_108 = ih_110; // TMTODO
+					ih_108 = ih_110;
 				}
 			}
 			
@@ -307,7 +305,7 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 			
 			// set exception handlers 
 			
-			// TMTODO restrict exception handler?
+			// TODO restrict exception handler
 			method.addExceptionHandler(ih_53, ih_84, ih_86, new ObjectType("java.lang.Throwable"));
 			method.setMaxStack();
 			method.setMaxLocals();

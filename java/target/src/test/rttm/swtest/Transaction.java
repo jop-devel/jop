@@ -65,7 +65,7 @@ public class Transaction {
 		if (isOutermostTransaction) {
 			arg0Copy = arg0; // save method arguments
 
-			// TMTODO disable interrupts?
+			// disable interrupts
 			Native.wrMem(0, Const.IO_INT_ENA);
 
 			Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = true;
@@ -91,7 +91,7 @@ public class Transaction {
 
 					Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = false;
 
-					// TMTODO (unconditionally) re-enable interrupts here?
+					// re-enable interrupts
 					Native.wrMem(1, Const.IO_INT_ENA);
 				}
 				return result;

@@ -21,8 +21,6 @@
 package com.jopdesign.sys;
 
 public class RetryException extends RuntimeException {
-	// TMTODO
-	
 	public RetryException() {
 		super("RetryException");
 	}
