@@ -16,6 +16,6 @@ public class AbortTest {
 	}
 	
 	@Atomic private static void transaction() {
-		rttm.Operations.abort();
+		rttm.Commands.abort();
 	}
 }

@@ -30,7 +30,7 @@ import com.jopdesign.sys.Native;
  * annotation).
  * @author Peter Hilber (peter@hilber.name)
  */
-public class Operations {
+public class Commands {
 	/**
 	 * TMTODO
 	 * It is the user's responsibility to ensure that no early commit has
