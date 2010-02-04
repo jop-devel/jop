@@ -27,9 +27,6 @@ use std.textio.all;
 
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
--- TODO
-use ieee.math_real.log2;
-use ieee.math_real.ceil;
 
 use work.tm_pack.all;
 
@@ -79,11 +76,9 @@ begin
 		clk => clk,
 		reset => reset,
 		commit_token_request => commit_try,
-		-- test internal next_token_grant signal
+		-- test internal next_token_grant signal instead
 		commit_token_grant => open 
 		);
-
-	-- TODO use postponed process in parallel or ugly manual delay? 
 
 	gen: process is
 		alias next_commit_allow is 

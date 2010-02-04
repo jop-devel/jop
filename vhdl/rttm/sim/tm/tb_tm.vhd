@@ -61,7 +61,7 @@ constant addr_width		: integer := 18;	-- address bits of cachable memory
 constant way_bits		: integer := 3;		-- 2**way_bits is number of entries
 
 
-constant conflict_detection_cycles		: integer := 6; -- TODO
+constant conflict_detection_cycles		: integer := 6;
 
 --
 --	Generic

@@ -249,7 +249,6 @@ begin
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_ABORTED,
 			sc_cpu_out, sc_cpu_in);
 		
-		-- TODO remove
 		for i in 1 to 2 loop
 			wait until rising_edge(clk);
 		end loop;
