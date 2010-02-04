@@ -536,8 +536,10 @@ public class ControlFlowGraph {
 			// if we have loop bounds from DFA analysis, use them
 			loopAnnot = dfaLoopBound(block, CallString.EMPTY, loopAnnot);
 			if(loopAnnot == null) {
-				throw new BadAnnotationException("Could not detect loop bound: ",
-												 block,sourceRangeStart,sourceRangeStop);
+// 				throw new BadAnnotationException("No loop bound annotation",
+// 												 block,sourceRangeStart,sourceRangeStop);
+				WcetAppInfo.logger.error("No loop bound annotation"+methodInfo+":"+n);
+				loopAnnot = new LoopBound(0, 1000);
 			}
 			this.annotations.put(headOfLoop,loopAnnot);
 		}
