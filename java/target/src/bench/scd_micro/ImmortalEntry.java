@@ -1,0 +1,102 @@
+package scd_micro;
+
+
+/** This thread runs only during start-up to run other threads. It runs in immortal memory, 
+ *  is allocated in immortal memory,
+ * and it's constructor runs in immortal memory. It is a singleton, allocation from the Main class 
+ * 
+ * Ales:
+ *     this thread allocates 
+ *     -  the scopes - the PersistentDetectorScope and TransientDetectorScope
+ *     -  
+ * 
+ * 
+ * */
+public class ImmortalEntry /* extends RealtimeThread */ {
+
+	static public Object initMonitor = new Object();
+	static public boolean detectorReady = false;
+	static public boolean simulatorReady = false;
+
+	static public int maxDetectorRuns;
+
+	static public long detectorFirstRelease = -1;
+	
+	static public long[] timesBefore; 
+	static public long[] timesAfter;
+	static public long[] heapFreeBefore;
+	static public long[] heapFreeAfter;
+	static public int[] detectedCollisions;
+	static public int[] suspectedCollisions;
+
+	static public long detectorThreadStart;    
+	static public long[] detectorReleaseTimes;
+	static public boolean[] detectorReportedMiss;
+
+	static public int reportedMissedPeriods = 0;
+	static public int frameNotReadyCount = 0;
+	static public int droppedFrames = 0;    
+	static public int framesProcessed = 0;
+	static public int recordedRuns = 0;
+
+	static public int recordedDetectorReleaseTimes = 0;
+
+	static public FrameBuffer frameBuffer = null;
+//	static public PersistentDetectorScopeEntry persistentDetectorScopeEntry = null;
+//
+//	static public DataOutputStream binaryDumpStream = null;
+	
+	public ImmortalEntry() {
+		// super(new PriorityParameters(Constants.DETECTOR_STARTUP_PRIORITY));
+
+		maxDetectorRuns = Constants.MAX_FRAMES;
+
+		timesBefore = new long[ maxDetectorRuns ]; 
+		timesAfter = new long[ maxDetectorRuns ];
+		heapFreeBefore = new long[ maxDetectorRuns ];
+		heapFreeAfter = new long[ maxDetectorRuns ];
+		detectedCollisions = new int[ maxDetectorRuns ];
+		suspectedCollisions = new int[ maxDetectorRuns ];        
+
+		detectorReleaseTimes = new long[ maxDetectorRuns + 10]; // the 10 is for missed deadlines
+		detectorReportedMiss = new boolean[ maxDetectorRuns + 10];        
+	}
+
+	/** Called only once during initialization. Runs in immortal memory */
+//	public void run() {
+//
+//		System.out.println("Detector: detector priority is "+Constants.DETECTOR_PRIORITY);
+//		System.out.println("Detector: detector period is "+Constants.DETECTOR_PERIOD);
+//
+//		frameBuffer = new FrameBuffer();
+//		
+//		LTMemory persistentDetectorScope = new LTMemory(Constants.PERSISTENT_DETECTOR_SCOPE_SIZE, Constants.PERSISTENT_DETECTOR_SCOPE_SIZE);
+//
+//
+//		synchronized( initMonitor ) {
+//
+//			detectorReady = true;
+//			initMonitor.notifyAll();        
+//
+//			while (!simulatorReady) {
+//				try { initMonitor.wait(); } catch (InterruptedException e) {};
+//			} 
+//		}
+//
+//		/* start the detector at rounded-up time, so that the measurements are not subject
+//		 * to phase shift
+//		 */
+//		AbsoluteTime releaseAt = NanoClock.roundUp(Clock.getRealtimeClock().getTime().add(Constants.DETECTOR_STARTUP_OFFSET_MILLIS, 0));
+//		detectorFirstRelease = NanoClock.convert(releaseAt);
+//
+//		persistentDetectorScopeEntry = new PersistentDetectorScopeEntry(
+//				new PriorityParameters(Constants.DETECTOR_PRIORITY), 
+//				new PeriodicParameters( releaseAt, // start
+//				new RelativeTime(Constants.DETECTOR_PERIOD, 0), // period
+//				null, //cost
+//				null, // deadline
+//				null, null), persistentDetectorScope);
+//
+//		persistentDetectorScopeEntry.start();
+//	}
+}
