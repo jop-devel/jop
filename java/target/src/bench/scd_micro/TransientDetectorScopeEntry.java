@@ -1,5 +1,6 @@
 package scd_micro;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -64,8 +65,8 @@ public class TransientDetectorScopeEntry implements Runnable {
 		*/
 	}
 
-	public List lookForCollisions(final Reducer reducer, final List motions) {
-		final List check = reduceCollisionSet(reducer, motions);
+	public List lookForCollisions(final Reducer reducer, final List<Motion> motions) {
+		final LinkedList<ArrayList<Motion>> check = reduceCollisionSet(reducer, motions);
 		final CollisionCollector c = new CollisionCollector();
 
 		int suspectedSize = check.size();
@@ -75,8 +76,8 @@ public class TransientDetectorScopeEntry implements Runnable {
 		if ((Constants.SYNCHRONOUS_DETECTOR || Constants.DEBUG_DETECTOR) && !check.isEmpty()) {
 			System.out.println("CD found "+suspectedSize+" potential collisions");
 			int i=0;
-			for(final Iterator iter = check.iterator(); iter.hasNext();) {
-				final List col = (List)iter.next();
+			for(final Iterator<ArrayList<Motion>> iter = check.iterator(); iter.hasNext();) {
+				final List col = iter.next();
 
 				for(final Iterator aiter = col.iterator(); aiter.hasNext();) {
 					final Motion m = (Motion)aiter.next();
@@ -87,8 +88,8 @@ public class TransientDetectorScopeEntry implements Runnable {
 			}
 		}
 
-		for (final Iterator iter = check.iterator(); iter.hasNext();)
-			c.addCollisions(determineCollisions((List) iter.next()));
+		for (final Iterator<ArrayList<Motion>> iter = check.iterator(); iter.hasNext();)
+			c.addCollisions(determineCollisions(iter.next()));
 		return c.getCollisions();
 	}
 
@@ -96,28 +97,28 @@ public class TransientDetectorScopeEntry implements Runnable {
 	 * Takes a List of Motions and returns an List of Lists of Motions, where the inner lists implement RandomAccess.
 	 * Each Vector of Motions that is returned represents a set of Motions that might have collisions.
 	 */
-	public List reduceCollisionSet(final Reducer it, final List motions) {
+	public LinkedList<ArrayList<Motion>> reduceCollisionSet(final Reducer it, final List<Motion> motions) {
 
-		final HashMap voxel_map = new HashMap();
-		final HashMap graph_colors = new HashMap();
+		final HashMap<Vector2d, ArrayList<Motion>> voxel_map = new HashMap<Vector2d, ArrayList<Motion>>();
+		final HashMap<Vector2d, String> graph_colors = new HashMap<Vector2d, String>();
 
-		for (final Iterator iter = motions.iterator(); iter.hasNext();)
-			it.performVoxelHashing((Motion) iter.next(), voxel_map, graph_colors);
+		for (final Iterator<Motion> iter = motions.iterator(); iter.hasNext();)
+			it.performVoxelHashing(iter.next(), voxel_map, graph_colors);
 
-		final List ret = new LinkedList();
-		for (final Iterator iter = voxel_map.values().iterator(); iter.hasNext();) {
-			final List cur_set = (List) iter.next();
+		final LinkedList<ArrayList<Motion>> ret = new LinkedList<ArrayList<Motion>>();
+		for (final Iterator<ArrayList<Motion>> iter = voxel_map.values().iterator(); iter.hasNext();) {
+			final ArrayList<Motion> cur_set = iter.next();
 			if (cur_set.size() > 1) ret.add(cur_set);
 		}
 		return ret;
 	}
 
-	public List determineCollisions(final List motions) {
-		final List ret = new LinkedList();
+	public List<Collision> determineCollisions(final List<Motion> motions) {
+		final List<Collision> ret = new LinkedList<Collision>();
 		for (int i = 0; i < motions.size() - 1; i++) {
-			final Motion one = (Motion) motions.get(i);
+			final Motion one = motions.get(i);
 			for (int j = i + 1; j < motions.size(); j++) {
-				final Motion two = (Motion) motions.get(j);
+				final Motion two = motions.get(j);
 				final Vector3d vec = one.findIntersection(two);
 				if (vec != null) ret.add(new Collision(one.getAircraft(), two.getAircraft(), vec));
 			}
@@ -165,10 +166,10 @@ public class TransientDetectorScopeEntry implements Runnable {
 	 * 
 	 * @return
 	 */
-	public List createMotions() {
+	public List<Motion> createMotions() {
 
-		final List ret = new LinkedList();
-		final HashSet poked = new HashSet();
+		final List<Motion> ret = new LinkedList<Motion>();
+		final HashSet<Aircraft> poked = new HashSet<Aircraft>();
 
 		Aircraft craft;
 		Vector3d new_pos;

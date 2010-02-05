@@ -12,11 +12,23 @@ import java.util.List;
  */
 class CollisionCollector {
 	/** A hash set of collisions.  */
-	private HashSet collisions = new HashSet();
+	private HashSet<Collision> collisions = new HashSet<Collision>();
 
 	/** Add some collisions.  */
-	public void addCollisions(List collisions) { this.collisions.addAll(collisions); }
+	public void addCollisions(List<Collision> collisions) {
+		// Modified for JOP
+		for(Collision c : collisions) {
+			this.collisions.add(c);
+		}
+	}
 
 	/** Get the list of collisions.   */
-	public ArrayList getCollisions() { return new ArrayList(collisions);  }
+	public ArrayList<Collision> getCollisions() { 
+		// Modified for JOP
+		ArrayList<Collision> copy = new ArrayList<Collision>(collisions.size());
+		for(Collision c : collisions) {
+			copy.add(c);
+		}
+		return copy;
+	}
 }

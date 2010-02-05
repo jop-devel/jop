@@ -23,7 +23,7 @@ public final class Constants {
 	public static long DETECTOR_PERIOD = 500;
 	public static long TRANSIENT_DETECTOR_SCOPE_SIZE = 10 * 10 * 1048576;
 
-	public static int MAX_FRAMES = 100;
+	public static int MAX_FRAMES = 20; // 100;
 
 	public static int TIME_SCALE = 1;
 	public static int FPS = 50;
@@ -62,10 +62,10 @@ public final class Constants {
 	// the detector ; this also turns on some debugging features
 	//
 	// the results thus should be deterministic
-	public static boolean SYNCHRONOUS_DETECTOR = false;    
+	public static final boolean SYNCHRONOUS_DETECTOR = false;    
 
 	public static boolean DUMP_RECEIVED_FRAMES = false;
 	public static boolean DUMP_SENT_FRAMES = false;
-	public static boolean DEBUG_DETECTOR = false;
+	public static final boolean DEBUG_DETECTOR = false;
 
 }
