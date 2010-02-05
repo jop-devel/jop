@@ -35,11 +35,12 @@ package java.lang;
  */
 public
 class OutOfMemoryError extends VirtualMachineError {
+    public static final String DEFAULT_MESSAGE = "OutOfMemoryError";
     /**
      * Constructs an <code>OutOfMemoryError</code> with no detail message.
      */
     public OutOfMemoryError() {
-        super();
+        super(DEFAULT_MESSAGE);
     }
 
     /**
