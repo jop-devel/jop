@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Stack;
 
 
 /**
@@ -25,11 +27,11 @@ class Reducer {
 	}
 
 	/** * Puts a Motion object into the voxel map at a voxel. */
-	protected void putIntoMap(HashMap voxel_map, Vector2d voxel, Motion motion) {
+	protected void putIntoMap(HashMap<Vector2d, ArrayList<Motion>> voxel_map, Vector2d voxel, Motion motion) {
 		if (!voxel_map.containsKey(voxel)) {
-			voxel_map.put(new Vector2d(voxel), new ArrayList());
+			voxel_map.put(new Vector2d(voxel), new ArrayList<Motion>());
 		}
-		((ArrayList) voxel_map.get(voxel)).add(motion);
+		voxel_map.get(voxel).add(motion);
 	}
 
 	/**
@@ -101,10 +103,65 @@ class Reducer {
 		);
 		return result;
 	}
+	
+	// Iterative version of dfsVoxelHashRecurse
+	// Easier to understand AND more efficient, I claim
+	protected void dfsVoxelHashIter(Motion motion,
+			Vector2d start_voxel, 
+			HashMap<Vector2d, ArrayList<Motion>> voxel_map,
+			HashMap<Vector2d, String> graph_colors) {
+		Stack<Vector2d> pendingVoxels = new Stack<Vector2d>();
+		pendingVoxels.add(start_voxel);
+		while(! pendingVoxels.isEmpty()) {
+			Vector2d next_voxel = pendingVoxels.pop();
+			if(graph_colors.containsKey(next_voxel)) continue; // memo map
+			if(!isInVoxel(next_voxel, motion)) continue;
+			Vector2d tmp = new Vector2d();
+			
+			// left boundary
+			VectorMath.subtract(next_voxel, horizontal, tmp);
 
-	protected void dfsVoxelHashRecurse(Motion motion, Vector2d next_voxel, HashMap voxel_map, HashMap graph_colors) {
+			// right boundary
+			VectorMath.add(next_voxel, horizontal, tmp);
+			pendingVoxels.add(tmp);
+
+			// upper boundary
+			VectorMath.add(next_voxel, vertical, tmp);
+			pendingVoxels.add(tmp);
+
+			// lower boundary
+			VectorMath.subtract(next_voxel, vertical, tmp);
+			pendingVoxels.add(tmp);
+
+			// upper-left
+			VectorMath.subtract(next_voxel, horizontal, tmp);
+			VectorMath.add(tmp, vertical, tmp);
+			pendingVoxels.add(tmp);
+
+			// upper-right
+			VectorMath.add(next_voxel, horizontal, tmp);
+			VectorMath.add(tmp, vertical, tmp);
+			pendingVoxels.add(tmp);
+
+			// lower-left
+			VectorMath.subtract(next_voxel, horizontal, tmp);
+			VectorMath.subtract(tmp, vertical, tmp);
+			pendingVoxels.add(tmp);
+
+			// lower-right
+			VectorMath.add(next_voxel, horizontal, tmp);
+			VectorMath.subtract(tmp, vertical, tmp);
+			pendingVoxels.add(tmp);
+		}
+	}
+
+	protected void dfsVoxelHashRecurse(Motion motion,
+			Vector2d next_voxel, 
+			HashMap<Vector2d, ArrayList<Motion>> voxel_map,
+			HashMap<Vector2d, String> graph_colors) {
+
 		Vector2d tmp = new Vector2d();
-
+		// This is a dynamic programming algorithm
 		if (isInVoxel(next_voxel, motion) && !graph_colors.containsKey(next_voxel)) {
 			graph_colors.put(new Vector2d(next_voxel), "");
 			putIntoMap(voxel_map, next_voxel, motion);
@@ -150,11 +207,11 @@ class Reducer {
 	/**
 	 * Colors all of the voxels that overla the Motion.
 	 */
-	protected void performVoxelHashing(Motion motion, HashMap voxel_map, HashMap graph_colors) {
+	protected void performVoxelHashing(Motion motion, HashMap<Vector2d, ArrayList<Motion>> voxel_map, HashMap<Vector2d, String> graph_colors) {
 		graph_colors.clear();
 		Vector2d voxel = new Vector2d();
 		voxelHash(motion.getFirstPosition(), voxel);
-		dfsVoxelHashRecurse(motion, voxel, voxel_map, graph_colors);
+		dfsVoxelHashIter(motion, voxel, voxel_map, graph_colors);
 	}
 
 	/**
@@ -162,17 +219,17 @@ class Reducer {
 	 * implement RandomAccess. Each Vector of Motions that is returned represents a set of Motions
 	 * that might have collisions.
 	 */
-	public LinkedList reduceCollisionSet(LinkedList motions) {
+	public LinkedList<ArrayList<Motion>> reduceCollisionSet(List<Motion> motions) {
 
-		HashMap voxel_map = new HashMap();
-		HashMap graph_colors = new HashMap();
+		HashMap<Vector2d, ArrayList<Motion>> voxel_map = new HashMap<Vector2d, ArrayList<Motion>>();
+		HashMap<Vector2d, String> graph_colors = new HashMap<Vector2d, String>();
 
-		for (Iterator iter = motions.iterator(); iter.hasNext();)
-			performVoxelHashing((Motion) iter.next(), voxel_map, graph_colors);
+		for (Iterator<Motion> iter = motions.iterator(); iter.hasNext();)
+			performVoxelHashing(iter.next(), voxel_map, graph_colors);
 
-		LinkedList ret = new LinkedList();
-		for (Iterator iter = voxel_map.values().iterator(); iter.hasNext();) {
-			LinkedList cur_set = (LinkedList) iter.next();
+		LinkedList<ArrayList<Motion>> ret = new LinkedList<ArrayList<Motion>>();
+		for (Iterator<ArrayList<Motion>> iter = voxel_map.values().iterator(); iter.hasNext();) {
+			ArrayList<Motion> cur_set = iter.next();
 			if (cur_set.size() > 1) ret.add(cur_set);
 		}
 		return ret;
