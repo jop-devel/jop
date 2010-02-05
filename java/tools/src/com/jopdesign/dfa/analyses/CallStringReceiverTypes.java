@@ -31,6 +31,7 @@ import java.util.Set;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.ANEWARRAY;
+import org.apache.bcel.generic.CHECKCAST;
 import org.apache.bcel.generic.GETFIELD;
 import org.apache.bcel.generic.GETSTATIC;
 import org.apache.bcel.generic.INVOKEINTERFACE;
@@ -899,10 +900,33 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 			filterSet(in, result, context.stackPtr-1);
 			break;			
 
-		case Constants.CHECKCAST:
-			result = in;
-			retval.put(context.callString, result);
-			break;			
+		case Constants.CHECKCAST: {
+
+			DFAAppInfo p = interpreter.getProgram();
+			CHECKCAST instr = (CHECKCAST)instruction;
+
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
+				TypeMapping m = i.next();
+				if (m.stackLoc < context.stackPtr-1) {
+					result.add(m);
+				}
+				if (m.stackLoc == context.stackPtr-1) {
+					// check whether this class can possibly be cast
+					String constClassName = instr.getType(context.constPool).toString();
+					ClassInfo staticClass = (ClassInfo)p.cliMap.get(constClassName);
+					ClassInfo dynamicClass = (ClassInfo)p.cliMap.get(m.type.split("@")[0]);
+					try {
+						if (dynamicClass.clazz.instanceOf(staticClass.clazz)) {
+							result.add(m);
+						}
+					} catch (ClassNotFoundException exc) {
+						// just do it
+						result.add(m);
+					}
+				}
+			}
+		}
+		break;			
 			
 		case Constants.MONITORENTER:
 			filterSet(in, result, context.stackPtr-1);

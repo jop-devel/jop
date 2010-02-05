@@ -504,6 +504,10 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
 			DFAAppInfo p = interpreter.getProgram();
 			Set<String> receivers = p.getReceivers(stmt, context.callString);
+			if (receivers == null) {
+				System.out.println("no receivers at: "+context.callString.asList()+context.method+stmt);
+				break;
+			}
 			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 				String name = i.next();
 				for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
