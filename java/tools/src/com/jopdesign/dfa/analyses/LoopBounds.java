@@ -329,16 +329,14 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			Set<String> receivers = p.getReceivers(stmt, context.callString);
 			Location location = new Location(context.stackPtr-1); 
 			boolean valid = false;
-			if (receivers != null) {
-				for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
-					String arrayName = i.next();
-					ValueMapping m = in.get(new Location(arrayName+".length"));
-					if (m != null) {
-						ValueMapping value = new ValueMapping(m, false);
-						value.join(result.get(location));
-						result.put(location, value);
-						valid = true;
-					}
+			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
+				String arrayName = i.next();
+				ValueMapping m = in.get(new Location(arrayName+".length"));
+				if (m != null) {
+					ValueMapping value = new ValueMapping(m, false);
+					value.join(result.get(location));
+					result.put(location, value);
+					valid = true;
 				}
 			}
 			if (!valid) {	
