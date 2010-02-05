@@ -937,6 +937,9 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 					
 					// check whether this class can possibly be a receiver
 					ClassInfo dynamicClass = (ClassInfo)p.cliMap.get(clName);
+					if (dynamicClass == null) { // no such class
+						continue;
+					}
 
 					try {
 						if ((instr instanceof INVOKEVIRTUAL
