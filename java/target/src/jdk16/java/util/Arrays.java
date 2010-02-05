@@ -1088,8 +1088,14 @@ public class Arrays {
      *          <i>mutually comparable</i> (for example, strings and integers).
      */
     public static void sort(Object[] a) {
-        Object[] aux = (Object[])a.clone();
-        mergeSort(aux, a, 0, a.length, 0);
+        //Object[] aux = (Object[])a.clone();
+	/* Changed for JOP */
+	int l = a.length;
+	Object[] aux = new Object[l];
+	for(int i = 0; i < l; i++) {
+	    aux[i] = a[i];
+	}
+        mergeSort(aux, a, 0, l, 0);
     }
 
     /**
@@ -1220,11 +1226,17 @@ public class Arrays {
      *          not <i>mutually comparable</i> using the specified comparator.
      */
     public static <T> void sort(T[] a, Comparator<? super T> c) {
-        T[] aux = (T[])a.clone();
+        //T[] aux = (T[])a.clone();
+	/* Changed for JOP */
+	int l = a.length;
+	T[] aux = (T[]) new Object[l];
+	for(int i = 0; i < l; i++) {
+	    aux[i] = a[i];
+	}
         if (c==null)
-            mergeSort(aux, a, 0, a.length, 0);
+            mergeSort(aux, a, 0, l, 0);
         else
-            mergeSort(aux, a, 0, a.length, 0, c);
+            mergeSort(aux, a, 0, l, 0, c);
     }
 
     /**
@@ -3379,7 +3391,14 @@ public class Arrays {
         }
 
         public Object[] toArray() {
-            return a.clone();
+            //return a.clone();
+	    /* Changed for JOP */
+	    int l = a.length;
+	    Object[] aux = new Object[l];
+	    for(int i = 0; i < l; i++) {
+		aux[i] = a[i];
+	    }
+	    return aux;
         }
 
 //         public <T> T[] toArray(T[] a) {
