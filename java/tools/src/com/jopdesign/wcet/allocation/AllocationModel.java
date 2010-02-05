@@ -190,8 +190,8 @@ public class AllocationModel implements ProcessorModel {
 				return annotated.getUpperBound();
 			} else {
 				Project.logger.error("Cannot determine cost of unbounded array " + context + ":" + srcLine +
-									 ".\nApproximating with 4096 words, but result is not safe anymore.");
-				return 4096;
+									 ".\nApproximating with 1024 words, but result is not safe anymore.");
+				return 1024;
 			}
 		}
 	}

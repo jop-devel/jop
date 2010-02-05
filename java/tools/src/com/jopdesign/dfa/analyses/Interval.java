@@ -20,6 +20,8 @@
 
 package com.jopdesign.dfa.analyses;
 
+import java.util.Arrays;
+
 public class Interval {
 
 	public static final int TOP = Integer.MAX_VALUE;
@@ -178,8 +180,14 @@ public class Interval {
 	
 	public void mul(Interval val) {
 		if (lv && val.lv) {
-			long resL = lb*val.lb;
-			long resU = ub*val.ub;
+			long[] bounds = new long[4];
+			bounds[0] = lb*val.lb;
+			bounds[1] = lb*val.ub;
+			bounds[2] = ub*val.lb;
+			bounds[3] = ub*val.ub;
+			Arrays.sort(bounds);
+			long resL = bounds[0];
+			long resU = bounds[3];
 			if (resL == (long)(int)resL
 					&& resU == (long)(int)resU) {
 				lb = (int)resL;
