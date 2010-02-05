@@ -22,6 +22,10 @@ public final class System {
 		return (long) (Native.rd(Const.IO_US_CNT)/1000);
 	}
 
+	public static long nanoTime() {
+		return (long)Native.rd(Const.IO_US_CNT)*1000;
+	}
+
 
 	// should only be accessed by startup code!
 	// but there are no friends in Java :-(

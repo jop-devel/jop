@@ -31,6 +31,7 @@ import java.util.Set;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.ANEWARRAY;
+import org.apache.bcel.generic.CHECKCAST;
 import org.apache.bcel.generic.GETFIELD;
 import org.apache.bcel.generic.GETSTATIC;
 import org.apache.bcel.generic.INVOKEINTERFACE;
@@ -115,6 +116,11 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 		if (a != null) {
 			merged.addAll(a);
 		}
+
+		if (b == null) {
+			System.err.println(s2.getContext().callString.asList());
+		}
+
 		merged.addAll(b);
 		result.put(s2.getContext().callString, merged);
 
@@ -894,10 +900,33 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 			filterSet(in, result, context.stackPtr-1);
 			break;			
 
-		case Constants.CHECKCAST:
-			result = in;
-			retval.put(context.callString, result);
-			break;			
+		case Constants.CHECKCAST: {
+
+			DFAAppInfo p = interpreter.getProgram();
+			CHECKCAST instr = (CHECKCAST)instruction;
+
+			for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
+				TypeMapping m = i.next();
+				if (m.stackLoc < context.stackPtr-1) {
+					result.add(m);
+				}
+				if (m.stackLoc == context.stackPtr-1) {
+					// check whether this class can possibly be cast
+					String constClassName = instr.getType(context.constPool).toString();
+					ClassInfo staticClass = (ClassInfo)p.cliMap.get(constClassName);
+					ClassInfo dynamicClass = (ClassInfo)p.cliMap.get(m.type.split("@")[0]);
+					try {
+						if (dynamicClass.clazz.instanceOf(staticClass.clazz)) {
+							result.add(m);
+						}
+					} catch (ClassNotFoundException exc) {
+						// just do it
+						result.add(m);
+					}
+				}
+			}
+		}
+		break;			
 			
 		case Constants.MONITORENTER:
 			filterSet(in, result, context.stackPtr-1);
@@ -932,6 +961,9 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 					
 					// check whether this class can possibly be a receiver
 					ClassInfo dynamicClass = (ClassInfo)p.cliMap.get(clName);
+					if (dynamicClass == null) { // no such class
+						continue;
+					}
 
 					try {
 						if ((instr instanceof INVOKEVIRTUAL
@@ -1250,7 +1282,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 					filterSet(s, o, 0);
 					threadInput.put(cs, o);
 				}
-				state.put(entry, join(state.get(entry), threadInput));
+				state.put(entry, join(threadInput, state.get(entry)));
 				// save information
 				ContextMap<CallString, Set<TypeMapping>> savedResult = threads.get(methodName);
 
@@ -1262,12 +1294,12 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 				ContextMap<CallString, Set<TypeMapping>> threadResult;
 				if (r.get(exit) != null) {
 					threadResult = new ContextMap<CallString, Set<TypeMapping>>(c, new HashMap<CallString, Set<TypeMapping>>());
+					threadResult.put(c.callString, new HashSet<TypeMapping>());
 					Set<TypeMapping> returned = r.get(exit).get(c.callString);
-					if (returned != null) {
-						filterReturnSet(returned, threadResult.get(c.callString), varPtr);
-					}
+					filterReturnSet(returned, threadResult.get(c.callString), varPtr);
 				} else {
 					threadResult = new ContextMap<CallString, Set<TypeMapping>>(c, new HashMap<CallString, Set<TypeMapping>>());
+					threadResult.put(c.callString, new HashSet<TypeMapping>());
 				}
 
 				if (!threadResult.equals(savedResult)) {
@@ -1292,7 +1324,8 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 		if (methodId.equals("com.jopdesign.sys.Native.rd(I)I")
 				|| methodId.equals("com.jopdesign.sys.Native.rdMem(I)I")
 				|| methodId.equals("com.jopdesign.sys.Native.rdIntMem(I)I")
-				|| methodId.equals("com.jopdesign.sys.Native.getStatic(I)I")) {
+				|| methodId.equals("com.jopdesign.sys.Native.getStatic(I)I")
+				|| methodId.equals("com.jopdesign.sys.Native.toInt(F)I")) {
 			filterSet(in, out, context.stackPtr-1);
 		} else if (methodId.equals("com.jopdesign.sys.Native.wr(II)V")
 				|| methodId.equals("com.jopdesign.sys.Native.wrMem(II)V")

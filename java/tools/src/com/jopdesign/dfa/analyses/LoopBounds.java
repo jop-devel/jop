@@ -504,6 +504,10 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
 			DFAAppInfo p = interpreter.getProgram();
 			Set<String> receivers = p.getReceivers(stmt, context.callString);
+			if (receivers == null) {
+				System.out.println("no receivers at: "+context.callString.asList()+context.method+stmt);
+				break;
+			}
 			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 				String name = i.next();
 				for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
@@ -1396,7 +1400,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 					out.put(l, in.get(l));
 				}
 			}
-		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")) {
+		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")
+				|| methodId.equals("com.jopdesign.sys.Native.toInt(F)I")) {
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
 				if (l.stackLoc < context.stackPtr-1) {
@@ -1405,7 +1410,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			}
 			out.put(new Location(context.stackPtr-1), new ValueMapping());
 		} else if (methodId.equals("com.jopdesign.sys.Native.toObject(I)Ljava/lang/Object;")
-				|| methodId.equals("com.jopdesign.sys.Native.toIntArray(I)[I")) {
+				|| methodId.equals("com.jopdesign.sys.Native.toIntArray(I)[I")
+				|| methodId.equals("com.jopdesign.sys.Native.toFloat(I)F")) {
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
 				if (l.stackLoc < context.stackPtr-1) {
@@ -1429,7 +1435,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			}
 			out.put(new Location(context.stackPtr-1), new ValueMapping());
 		} else if (methodId.equals("com.jopdesign.sys.Native.condMove(IIZ)I")
-				|| methodId.equals("com.jopdesign.sys.Native.condMoveRef(Ljava/lang/Object;Ljava/lang/Object;Z)Ljava/lang/Object;")) {
+				|| methodId.equals("com.jopdesign.sys.Native.condMoveRef(Ljava/lang/Object;Ljava/lang/Object;Z)Ljava/lang/Object;")
+				|| methodId.equals("com.jopdesign.sys.Native.memCopy(III)V")) {
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
 				if (l.stackLoc < context.stackPtr-3) {
@@ -1471,6 +1478,10 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 	}
 
 	public int getBound(DFAAppInfo program, InstructionHandle instr) {
+		return getBound(program, instr, CallString.EMPTY);
+	}
+	
+	public int getBound(DFAAppInfo program, InstructionHandle instr, CallString csSuffix) {
 				
 		ContextMap<CallString, Pair<ValueMapping>> r = bounds.get(instr);
 		if (r == null) {
@@ -1482,6 +1493,9 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 		int maxValue = -1;
 		for (Iterator<CallString> k = r.keySet().iterator(); k.hasNext(); ) {
 			CallString callString = k.next();
+			// TODO: Wolfgang should review this
+			if(! callString.hasSuffix(csSuffix)) continue;
+
 			Pair<ValueMapping> bounds = r.get(callString);
 
 			ValueMapping first = bounds.getFirst();

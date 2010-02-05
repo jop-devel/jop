@@ -74,8 +74,7 @@ public final class String implements CharSequence {
 	 * @see #String(byte[], int, int, String)
 	 * @since 1.1
 	 */
-	public String(byte[] data) throws NullPointerException,
-			UnsupportedEncodingException {
+	public String(byte[] data) throws NullPointerException {
 		this(data, 0, data.length);
 	}
 
@@ -94,7 +93,6 @@ public final class String implements CharSequence {
 	 *            the offset to start at
 	 * @param count
 	 *            the number of bytes in the array to use
-	 * @throws UnsupportedEncodingException
 	 * @throws
 	 * @throws NullPointerException
 	 *             if data is null
@@ -106,10 +104,17 @@ public final class String implements CharSequence {
 	 * @since 1.1
 	 */
 
-	public String(byte[] data, int offset, int count)
-			throws UnsupportedEncodingException {
+	public String(byte[] data, int offset, int count) {
+		
+		if (data.length - offset < count)
+			throw new StringIndexOutOfBoundsException();
 
-		this(data, offset, count, "ASCII");
+		char[] cbuf = new char[count];
+		for (int i = 0; i < count; i++) {
+			cbuf[i] = (char) data[i + offset];
+		}
+
+		this.value = cbuf;
 
 	}
 
@@ -672,10 +677,15 @@ public final class String implements CharSequence {
 	//
 	// return value;
 	// }
+
 	// this is needed for the collection classes
 	public boolean equalsIgnoreCase(String b) {
-		// TODO Auto-generated method stub
-		throw new Error("NYI");
+
+		// avoid NullPointerExceptions
+		if (b == null)
+			return false;
+
+		return toUpperCase().equals(b.toUpperCase());
 	}
 	
 	  /** @since 1.5 */

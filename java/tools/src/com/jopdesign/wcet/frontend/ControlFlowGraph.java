@@ -45,6 +45,7 @@ import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.Pair;
 import com.jopdesign.dfa.analyses.ValueMapping;
+import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.HashedString;
 import com.jopdesign.wcet.Project;
@@ -533,36 +534,49 @@ public class ControlFlowGraph {
 				loopAnnot = annots.get(annots.firstKey());
 			}
 			// if we have loop bounds from DFA analysis, use them
-			if(p.getDfaLoopBounds() != null) {
-				LoopBounds lbs = p.getDfaLoopBounds();
-				int bound = lbs.getBound(p.getDfaProgram(), block.getLastInstruction());
-				if(bound < 0) {
-					WcetAppInfo.logger.info("No DFA bound for " + methodInfo+":"+n);
-				} else if(loopAnnot == null) {
-					WcetAppInfo.logger.info("Only DFA bound for "+methodInfo+":"+n);
-					loopAnnot = LoopBound.boundedAbove(bound);
-				} else {
-					int loopUb = loopAnnot.getUpperBound();
-					if(bound < loopUb) {
-						WcetAppInfo.logger.info("DFA analysis reports a smaller upper bound :"+bound+ " < "+loopUb+
-								"for "+methodInfo+":"+n);
-						//loopAnnot = LoopBound.boundedAbove(bound); [currently unsafe]
-					} else if (bound > loopUb) {
-						WcetAppInfo.logger.info("DFA analysis reports a larger upper bound: "+bound+ " > "+loopUb+
-								"for "+methodInfo+":"+n);
-					} else {
-						WcetAppInfo.logger.info("DFA and annotated loop bounds match: "+methodInfo+":"+n);
-					}
-				}
-			}
+			loopAnnot = dfaLoopBound(block, CallString.EMPTY, loopAnnot);
 			if(loopAnnot == null) {
-				throw new BadAnnotationException("No loop bound annotation",
-												 block,sourceRangeStart,sourceRangeStop);
+// 				throw new BadAnnotationException("No loop bound annotation",
+// 												 block,sourceRangeStart,sourceRangeStop);
+				WcetAppInfo.logger.error("No loop bound annotation: "+methodInfo+":"+n+
+										 ".\nApproximating with 1024 words, but result is not safe anymore.");
+				loopAnnot = new LoopBound(0, 1024);
 			}
 			this.annotations.put(headOfLoop,loopAnnot);
 		}
 	}
 
+	private LoopBound dfaLoopBound(BasicBlock headOfLoopBlock, CallString cs, LoopBound annotatedValue) {
+		Project p = this.project;
+		LoopBound dfaBound;
+		if(p.getDfaLoopBounds() != null) {
+			LoopBounds lbs = p.getDfaLoopBounds();
+			int bound = lbs.getBound(p.getDfaProgram(), headOfLoopBlock.getLastInstruction(),cs);
+			if(bound < 0) {
+				WcetAppInfo.logger.info("No DFA bound for " + methodInfo+":"+this.getMethodInfo());
+				dfaBound = annotatedValue;
+			} else if(annotatedValue == null) {
+				WcetAppInfo.logger.info("Only DFA bound for "+methodInfo+":"+this.getMethodInfo());
+				dfaBound = LoopBound.boundedAbove(bound);
+			} else {
+				dfaBound = annotatedValue.improveUpperBound(bound); // More testing would be nice
+				int loopUb = annotatedValue.getUpperBound();
+				if(bound < loopUb) {
+					WcetAppInfo.logger.info("DFA analysis reports a smaller upper bound :"+bound+ " < "+loopUb+
+							" for "+methodInfo+":"+this.getMethodInfo());
+				} else if (bound > loopUb) {
+					WcetAppInfo.logger.info("DFA analysis reports a larger upper bound: "+bound+ " > "+loopUb+
+							" for "+methodInfo+":"+this.getMethodInfo());
+				} else {
+					WcetAppInfo.logger.info("DFA and annotated loop bounds match for "+methodInfo+":"+this.getMethodInfo());
+				}
+			}
+		} else {
+			dfaBound = annotatedValue;
+		}
+		return dfaBound;
+	}
+	
 	/**
 	 * resolve all virtual invoke nodes, and replace them by actual implementations
 	 * @throws BadGraphException If the flow graph analysis (post replacement) fails
@@ -876,7 +890,12 @@ public class ControlFlowGraph {
 	public Map<CFGNode, LoopBound> getLoopBounds() {
 		return this.annotations;
 	}
-
+	
+	/** Get improved loopbound considering the callcontext */	
+	public LoopBound getLoopBound(CFGNode hol, CallString cs) {
+		LoopBound globalBound = this.annotations.get(hol);
+		return this.dfaLoopBound(hol.getBasicBlock(), cs, globalBound);
+	}
 	/**
 	 * Calculate (cached) the "loop coloring" of the flow graph.
 	 *

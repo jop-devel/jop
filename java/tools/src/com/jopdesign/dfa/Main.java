@@ -42,7 +42,7 @@ public class Main {
 	private static final String POINTS_TO_TARGET = "cmp.EjipBenchCMP.macServer()V";
 //	private static final String POINTS_TO_TARGET = "ejip.Ejip.returnPacket(Lejip/Packet;)V";
 
-	private static final int CALLSTRING_LENGTH = 3;
+	private static final int CALLSTRING_LENGTH = 2;
 	
 	public static void main(String[] args) {
 		
@@ -85,9 +85,9 @@ public class Main {
 		System.out.println("Time for LoopBounds: "+(lbTime - startLbTime));
 
 		// run SymbolicPointsTo Analysis (local)
-		SymbolicPointsTo pointsTo = new SymbolicPointsTo(1024, CALLSTRING_LENGTH);
-		program.runLocalAnalysis(pointsTo, POINTS_TO_TARGET);
-		pointsTo.printResult(program);
+// 		SymbolicPointsTo pointsTo = new SymbolicPointsTo(1024, CALLSTRING_LENGTH);
+// 		program.runLocalAnalysis(pointsTo, POINTS_TO_TARGET);
+// 		pointsTo.printResult(program);
 	}
 
 }

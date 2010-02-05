@@ -217,15 +217,15 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 
 	public Set<String> getReceivers(InstructionHandle stmt, CallString cs) {
 		ContextMap<CallString, Set<String>> map = receivers.get(stmt);
+		if (map == null) {
+			return null;
+		}
 		Set<String> retval = new HashSet<String>();
 		for (Iterator<CallString> i = map.keySet().iterator(); i.hasNext(); ) {
 			CallString c = i.next();
 			if (c.hasSuffix(cs)) {
 				retval.addAll(map.get(c));
 			}
-		}
-		if (retval.isEmpty()) {
-			return null;
 		}
 		return retval;
 	}

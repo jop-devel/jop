@@ -24,5 +24,10 @@ public class JOPInputStream extends InputStream {
 		}
 		return Native.rd(Const.IO_UART);
 	}
+
+	protected int read_unchecked() {
+
+		return Native.rd(Const.IO_UART);
+	}
 	
 }
