@@ -42,7 +42,7 @@ public class Main {
 	private static final String POINTS_TO_TARGET = "cmp.EjipBenchCMP.macServer()V";
 //	private static final String POINTS_TO_TARGET = "ejip.Ejip.returnPacket(Lejip/Packet;)V";
 
-	private static final int CALLSTRING_LENGTH = 3;
+	private static final int CALLSTRING_LENGTH = 2;
 	
 	public static void main(String[] args) {
 		
