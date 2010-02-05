@@ -20,6 +20,8 @@
 
 package com.jopdesign.dfa.analyses;
 
+import java.util.Arrays;
+
 public class Interval {
 
 	public static final int TOP = Integer.MAX_VALUE;
