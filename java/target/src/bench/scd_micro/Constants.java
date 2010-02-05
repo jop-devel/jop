@@ -27,7 +27,9 @@ public final class Constants {
 
 	public static int TIME_SCALE = 1;
 	public static int FPS = 50;
-	public static int BUFFER_FRAMES = 1000;
+//	public static int BUFFER_FRAMES = 1000;
+	public static int BUFFER_FRAMES = 5;	
+
 	public static boolean PRESIMULATE = false;
 	public static boolean SIMULATE_ONLY = false;
 

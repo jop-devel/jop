@@ -13,7 +13,8 @@ import java.util.HashMap;
  */
 public class StateTable {
 
-    final private static int MAX_AIRPLANES = 10000;
+//    final private static int MAX_AIRPLANES = 10000;
+    final private static int MAX_AIRPLANES = 50;
     
     private Vector3d[] allocatedVectors;
     private int usedVectors;
