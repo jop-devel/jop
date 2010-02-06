@@ -44,7 +44,7 @@ public class CallSign {
 	public String toString() {
 		StringBuffer sb = new StringBuffer("CallSign{");
 		for(byte b : val) {
-			sb.append(String.format("%02x",b));
+			sb.append(b); //String.format("%02x",b));
 		}
 		sb.append("}");
 		return sb.toString();

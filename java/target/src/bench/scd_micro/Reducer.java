@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
+import java.util.Vector;
 
 
 /**
@@ -119,6 +120,7 @@ class Reducer {
 			HashMap<Vector2d, String> graph_colors) {
 		Stack<Vector2d> pendingVoxels =
 			new Stack<Vector2d>();
+		pendingVoxels.ensureCapacity(RawFrame.MAX_PLANES);
 		pendingVoxels.push(start_voxel);
 		while(! pendingVoxels.isEmpty()) {
 			Vector2d next_voxel = pendingVoxels.pop();
@@ -240,8 +242,8 @@ class Reducer {
 	 * implement RandomAccess. Each Vector of Motions that is returned represents a set of Motions
 	 * that might have collisions.
 	 */
+	// Note: this method is never called
 	public LinkedList<ArrayList<Motion>> reduceCollisionSet(List<Motion> motions) {
-		if(true) throw new AssertionError("not used");
 		HashMap<Vector2d, ArrayList<Motion>> voxel_map =
 			new HashMap<Vector2d, ArrayList<Motion>>();
 		HashMap<Vector2d, String> graph_colors = 
@@ -257,6 +259,7 @@ class Reducer {
 		}
 		return ret;
 	}
+
 	/** The voxel size. Each voxel is a square, so the size is the length of a side. */
 	public float voxel_size;
 
