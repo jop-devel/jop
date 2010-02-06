@@ -120,7 +120,7 @@ class Reducer {
 			HashMap<Vector2d, String> graph_colors) {
 		Stack<Vector2d> pendingVoxels =
 			new Stack<Vector2d>();
-		pendingVoxels.ensureCapacity(RawFrame.MAX_PLANES);
+		pendingVoxels.ensureCapacity(1000);
 		pendingVoxels.push(start_voxel);
 		while(! pendingVoxels.isEmpty()) {
 			Vector2d next_voxel = pendingVoxels.pop();

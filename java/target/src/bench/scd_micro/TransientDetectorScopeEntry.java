@@ -100,9 +100,9 @@ public class TransientDetectorScopeEntry implements Runnable {
 	public LinkedList<ArrayList<Motion>> reduceCollisionSet(final Reducer it, final List<Motion> motions) {
 
 		final HashMap<Vector2d, ArrayList<Motion>> voxel_map =
-			new HashMap<Vector2d, ArrayList<Motion>>(Constants.MAX_VOXELS_PER_LINE_SEGMENT);
+			new HashMap<Vector2d, ArrayList<Motion>>(Constants.MAX_VOXELS_PER_LINE_SEGMENT_POW2);
 		final HashMap<Vector2d, String> graph_colors =
-			new HashMap<Vector2d, String>(Constants.MAX_VOXELS_PER_LINE_SEGMENT);
+			new HashMap<Vector2d, String>(Constants.MAX_VOXELS_PER_LINE_SEGMENT_POW2);
 
 		for (final Iterator<Motion> iter = motions.iterator(); iter.hasNext();)
 			it.performVoxelHashing(iter.next(), voxel_map, graph_colors);
@@ -171,7 +171,7 @@ public class TransientDetectorScopeEntry implements Runnable {
 	public List<Motion> createMotions() {
 
 		final List<Motion> ret = new LinkedList<Motion>();
-		final HashSet<Aircraft> poked = new HashSet<Aircraft>(RawFrame.MAX_PLANES);
+		final HashSet<Aircraft> poked = new HashSet<Aircraft>(RawFrame.MAX_PLANES_POW2);
 
 		Aircraft craft;
 		Vector3d new_pos;

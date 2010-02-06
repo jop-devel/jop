@@ -21,7 +21,7 @@ public class StateTable {
 
     /** Mapping Aircraft -> Vector3d. */
     final private HashMap<CallSign,Vector3d> motionVectors =
-    	new HashMap<CallSign,Vector3d>(RawFrame.MAX_PLANES);
+    	new HashMap<CallSign,Vector3d>(RawFrame.MAX_PLANES_POW2);
 
 
     StateTable() {

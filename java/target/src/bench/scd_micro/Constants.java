@@ -20,6 +20,8 @@ public final class Constants {
 	public static final float PROXIMITY_RADIUS = 1.0f;
 	public static final float GOOD_VOXEL_SIZE = PROXIMITY_RADIUS * 2.0f;
 	public static final int MAX_VOXELS_PER_LINE_SEGMENT = 100;
+	public static final int MAX_VOXELS_PER_LINE_SEGMENT_POW2 = 128;
+	public static final int MAX_VOXELS_PENDING_POW2 = MAX_VOXELS_PER_LINE_SEGMENT_POW2*8;
 
 	public static int SIMULATOR_PRIORITY = 5;
 	public static int DETECTOR_STARTUP_PRIORITY = 20;

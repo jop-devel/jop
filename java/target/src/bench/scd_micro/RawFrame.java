@@ -1,7 +1,11 @@
 package scd_micro;
 
+import java.util.Collection;
+
 public class RawFrame {
-    static int MAX_PLANES = 10; //1000;
+	static int MAX_PLANES = 10; //1000;
+    static int MAX_PLANES_POW2 = 1<<4;
+    static int MAX_COLLISIONS_POW2 = 64;
     static int MAX_SIGNS = 10 * MAX_PLANES;
 
     public final int[] lengths = new int[MAX_PLANES];
