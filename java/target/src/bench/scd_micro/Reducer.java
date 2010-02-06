@@ -111,47 +111,60 @@ class Reducer {
 			HashMap<Vector2d, ArrayList<Motion>> voxel_map,
 			HashMap<Vector2d, String> graph_colors) {
 		Stack<Vector2d> pendingVoxels = new Stack<Vector2d>();
-		pendingVoxels.add(start_voxel);
+		pendingVoxels.push(start_voxel);
 		while(! pendingVoxels.isEmpty()) {
 			Vector2d next_voxel = pendingVoxels.pop();
 			if(graph_colors.containsKey(next_voxel)) continue; // memo map
 			if(!isInVoxel(next_voxel, motion)) continue;
-			Vector2d tmp = new Vector2d();
+
+			graph_colors.put(new Vector2d(next_voxel), "");
+			putIntoMap(voxel_map, next_voxel, motion);
+
+			Vector2d tmp;
 			
 			// left boundary
+			tmp = new Vector2d();
 			VectorMath.subtract(next_voxel, horizontal, tmp);
+			pendingVoxels.push(tmp);
 
 			// right boundary
+			tmp = new Vector2d();
 			VectorMath.add(next_voxel, horizontal, tmp);
-			pendingVoxels.add(tmp);
+			pendingVoxels.push(tmp);
 
 			// upper boundary
+			tmp = new Vector2d();
 			VectorMath.add(next_voxel, vertical, tmp);
-			pendingVoxels.add(tmp);
+			pendingVoxels.push(tmp);
 
 			// lower boundary
+			tmp = new Vector2d();
 			VectorMath.subtract(next_voxel, vertical, tmp);
-			pendingVoxels.add(tmp);
+			pendingVoxels.push(tmp);
 
 			// upper-left
+			tmp = new Vector2d();
 			VectorMath.subtract(next_voxel, horizontal, tmp);
 			VectorMath.add(tmp, vertical, tmp);
-			pendingVoxels.add(tmp);
+			pendingVoxels.push(tmp);
 
 			// upper-right
+			tmp = new Vector2d();
 			VectorMath.add(next_voxel, horizontal, tmp);
 			VectorMath.add(tmp, vertical, tmp);
-			pendingVoxels.add(tmp);
+			pendingVoxels.push(tmp);
 
 			// lower-left
+			tmp = new Vector2d();
 			VectorMath.subtract(next_voxel, horizontal, tmp);
 			VectorMath.subtract(tmp, vertical, tmp);
-			pendingVoxels.add(tmp);
+			pendingVoxels.push(tmp);
 
 			// lower-right
+			tmp = new Vector2d();
 			VectorMath.add(next_voxel, horizontal, tmp);
 			VectorMath.subtract(tmp, vertical, tmp);
-			pendingVoxels.add(tmp);
+			pendingVoxels.push(tmp);
 		}
 	}
 
@@ -234,7 +247,7 @@ class Reducer {
 		}
 		return ret;
 	}
-	/** The voxel size. Each voxel is a square, so the is the length of a side. */
+	/** The voxel size. Each voxel is a square, so the size is the length of a side. */
 	public float voxel_size;
 
 	/** The horizontal side of a voxel. */
