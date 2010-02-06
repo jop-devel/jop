@@ -1,5 +1,7 @@
 package scd_micro;
 
+import java.util.Map;
+
 
 /**
  * All of our globally relevant constants.
@@ -9,12 +11,15 @@ public final class Constants {
 	public static int NOISE_RATE = 0;
 	public static final float MIN_X = 0.0f;
 	public static final float MIN_Y = 0.0f;
-	public static final float MAX_X = 1000.0f;
-	public static final float MAX_Y = 1000.0f;
+//	public static final float MAX_X = 1000.0f;
+	public static final float MAX_X = 50.0f;
+//	public static final float MAX_Y = 1000.0f;
+	public static final float MAX_Y = 50.0f;
 	public static final float MIN_Z = 0.0f;
 	public static final float MAX_Z = 10.0f;
 	public static final float PROXIMITY_RADIUS = 1.0f;
 	public static final float GOOD_VOXEL_SIZE = PROXIMITY_RADIUS * 2.0f;
+	public static final int MAX_VOXELS_PER_LINE_SEGMENT = 100;
 
 	public static int SIMULATOR_PRIORITY = 5;
 	public static int DETECTOR_STARTUP_PRIORITY = 20;

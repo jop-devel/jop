@@ -65,7 +65,7 @@ public class TransientDetectorScopeEntry implements Runnable {
 		*/
 	}
 
-	public List lookForCollisions(final Reducer reducer, final List<Motion> motions) {
+	public List<Collision> lookForCollisions(final Reducer reducer, final List<Motion> motions) {
 		final LinkedList<ArrayList<Motion>> check = reduceCollisionSet(reducer, motions);
 		final CollisionCollector c = new CollisionCollector();
 
@@ -77,10 +77,10 @@ public class TransientDetectorScopeEntry implements Runnable {
 			System.out.println("CD found "+suspectedSize+" potential collisions");
 			int i=0;
 			for(final Iterator<ArrayList<Motion>> iter = check.iterator(); iter.hasNext();) {
-				final List col = iter.next();
+				final ArrayList<Motion> col = iter.next();
 
-				for(final Iterator aiter = col.iterator(); aiter.hasNext();) {
-					final Motion m = (Motion)aiter.next();
+				for(final Iterator<Motion> aiter = col.iterator(); aiter.hasNext();) {
+					final Motion m = aiter.next();
 
 					System.out.println("CD: potential collision "+i+" (of "+col.size()+" aircraft) includes motion "+m);
 				}
@@ -99,8 +99,10 @@ public class TransientDetectorScopeEntry implements Runnable {
 	 */
 	public LinkedList<ArrayList<Motion>> reduceCollisionSet(final Reducer it, final List<Motion> motions) {
 
-		final HashMap<Vector2d, ArrayList<Motion>> voxel_map = new HashMap<Vector2d, ArrayList<Motion>>();
-		final HashMap<Vector2d, String> graph_colors = new HashMap<Vector2d, String>();
+		final HashMap<Vector2d, ArrayList<Motion>> voxel_map =
+			new HashMap<Vector2d, ArrayList<Motion>>(Constants.MAX_VOXELS_PER_LINE_SEGMENT);
+		final HashMap<Vector2d, String> graph_colors =
+			new HashMap<Vector2d, String>(Constants.MAX_VOXELS_PER_LINE_SEGMENT);
 
 		for (final Iterator<Motion> iter = motions.iterator(); iter.hasNext();)
 			it.performVoxelHashing(iter.next(), voxel_map, graph_colors);
@@ -169,7 +171,7 @@ public class TransientDetectorScopeEntry implements Runnable {
 	public List<Motion> createMotions() {
 
 		final List<Motion> ret = new LinkedList<Motion>();
-		final HashSet<Aircraft> poked = new HashSet<Aircraft>();
+		final HashSet<Aircraft> poked = new HashSet<Aircraft>(RawFrame.MAX_PLANES);
 
 		Aircraft craft;
 		Vector3d new_pos;

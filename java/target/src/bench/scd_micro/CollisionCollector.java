@@ -12,7 +12,8 @@ import java.util.List;
  */
 class CollisionCollector {
 	/** A hash set of collisions.  */
-	private HashSet<Collision> collisions = new HashSet<Collision>();
+	private HashSet<Collision> collisions =
+		new HashSet<Collision>(RawFrame.MAX_PLANES*(RawFrame.MAX_PLANES-1)/2);
 
 	/** Add some collisions.  */
 	public void addCollisions(List<Collision> collisions) {

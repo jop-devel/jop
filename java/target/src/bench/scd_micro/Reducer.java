@@ -29,9 +29,16 @@ class Reducer {
 	/** * Puts a Motion object into the voxel map at a voxel. */
 	protected void putIntoMap(HashMap<Vector2d, ArrayList<Motion>> voxel_map, Vector2d voxel, Motion motion) {
 		if (!voxel_map.containsKey(voxel)) {
-			voxel_map.put(new Vector2d(voxel), new ArrayList<Motion>());
+			voxel_map.put(new Vector2d(voxel), new ArrayList<Motion>(RawFrame.MAX_PLANES));
 		}
 		voxel_map.get(voxel).add(motion);
+		
+		// In our experiments, we had for (50*50*5, voxel size 2, 10 airplanes) at most
+		// 79*10 motions in the voxel_map in total.
+		
+		//int totalSize = 0;for(ArrayList<Motion> al : voxel_map.values()) { totalSize += al.size(); }
+		//System.out.println("Size of voxel_map: "+voxel_map.size());
+		//System.out.println("Total #motion of voxel_map: "+totalSize);
 	}
 
 	/**
@@ -110,7 +117,8 @@ class Reducer {
 			Vector2d start_voxel, 
 			HashMap<Vector2d, ArrayList<Motion>> voxel_map,
 			HashMap<Vector2d, String> graph_colors) {
-		Stack<Vector2d> pendingVoxels = new Stack<Vector2d>();
+		Stack<Vector2d> pendingVoxels =
+			new Stack<Vector2d>();
 		pendingVoxels.push(start_voxel);
 		while(! pendingVoxels.isEmpty()) {
 			Vector2d next_voxel = pendingVoxels.pop();
@@ -233,9 +241,11 @@ class Reducer {
 	 * that might have collisions.
 	 */
 	public LinkedList<ArrayList<Motion>> reduceCollisionSet(List<Motion> motions) {
-
-		HashMap<Vector2d, ArrayList<Motion>> voxel_map = new HashMap<Vector2d, ArrayList<Motion>>();
-		HashMap<Vector2d, String> graph_colors = new HashMap<Vector2d, String>();
+		if(true) throw new AssertionError("not used");
+		HashMap<Vector2d, ArrayList<Motion>> voxel_map =
+			new HashMap<Vector2d, ArrayList<Motion>>();
+		HashMap<Vector2d, String> graph_colors = 
+			new HashMap<Vector2d, String>();
 
 		for (Iterator<Motion> iter = motions.iterator(); iter.hasNext();)
 			performVoxelHashing(iter.next(), voxel_map, graph_colors);

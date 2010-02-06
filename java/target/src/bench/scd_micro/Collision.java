@@ -1,7 +1,6 @@
 package scd_micro;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -21,16 +20,16 @@ class Collision {
 	/** Construct a Collision with a given set of aircraft and a location.  */
 	public Collision(List<Aircraft> aircraft, Vector3d location) {
 		this.aircraft = new ArrayList<Aircraft>(aircraft);
-		Collections.sort(this.aircraft);
+		MergeSort.sort(this.aircraft);
 		this.location = location;
 	}
 
 	/** Construct a Coollision with two aircraft an a location. */
 	public Collision(Aircraft one, Aircraft two, Vector3d location) {
-		aircraft = new ArrayList<Aircraft>();
+		aircraft = new ArrayList<Aircraft>(2);
 		aircraft.add(one);
 		aircraft.add(two);
-		Collections.sort(aircraft);
+		MergeSort.sort(aircraft);
 		this.location = location;
 	}
 

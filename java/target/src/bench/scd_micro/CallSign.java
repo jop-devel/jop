@@ -10,7 +10,6 @@ public class CallSign {
 	public CallSign(final byte[] v) {
 		val = v;
 	}
-
 	/** Returns a valid hash code for this object. */
 	public int hashCode() {
 		int h = 0;
@@ -41,5 +40,13 @@ public class CallSign {
 			if (cs[i] < val[i]) return -1;
 			else if (cs[i] > val[i]) return +1;
 		return 0;
+	}
+	public String toString() {
+		StringBuffer sb = new StringBuffer("CallSign{");
+		for(byte b : val) {
+			sb.append(String.format("%02x",b));
+		}
+		sb.append("}");
+		return sb.toString();
 	}
 }

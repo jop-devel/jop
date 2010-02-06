@@ -1,8 +1,8 @@
 package scd_micro;
 
 public class RawFrame {
-    static private int MAX_PLANES = 10; //1000;
-    static private int MAX_SIGNS = 10 * MAX_PLANES;
+    static int MAX_PLANES = 10; //1000;
+    static int MAX_SIGNS = 10 * MAX_PLANES;
 
     public final int[] lengths = new int[MAX_PLANES];
     public final byte[] callsigns = new byte[MAX_SIGNS];
