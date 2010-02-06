@@ -13,7 +13,7 @@ public class MergeSort {
 	
 	//  For the benchmark, we know that data.size <= 2, and added according annotations.
 	public static<T extends Comparable<T>> void sort(ArrayList<T> data) {
-		Object[] tmp = new Object[data.size()];
+		Object[] tmp = new Object[data.size()];     //@WCA loop=2
 		for(int m = 1; m <= data.size(); m <<= 1) { //@WCA loop=2
 			// merge sort with bucket size m
 			for(int i = 0; i < data.size() - m; i += m*2 ) { //@WCA loop=1
