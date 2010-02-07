@@ -43,6 +43,7 @@ import org.apache.bcel.generic.NOP;
 import org.apache.bcel.generic.Type;
 
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.ClinitOrder;
 import com.jopdesign.dfa.analyses.LoopBounds;
 
@@ -240,13 +241,27 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 		DFAClassInfo cli = (DFAClassInfo)cliMap.get(className);
 		return cli.getMethodInfo(signature);
 	}
-	
+
 	public boolean containsField(String fieldName) {
+		return classForField(fieldName) != null;
+	}
+
+	public String classForField(String fieldName) {
 		String className = fieldName.substring(0, fieldName.lastIndexOf("."));
 		String signature = fieldName.substring(fieldName.lastIndexOf(".")+1, fieldName.length());
 		DFAClassInfo cli = (DFAClassInfo)cliMap.get(className);
-		//System.out.println("contains: "+cli+" vs "+fieldName);
-		return cli.getFields().contains(signature);
+		
+		while (cli != null) {
+// 			System.out.println("contains: "+cli+" vs "+fieldName);
+			DFAClassInfo sup = (DFAClassInfo)cli.superClass;
+			if (cli.getFields().contains(signature)
+				&& !sup.getFields().contains(signature)) {
+				return cli.clazz.getClassName();
+			}
+			cli = sup;
+		}
+
+		return null;
 	}
 
 	public LoopBounds getLoopBounds() {

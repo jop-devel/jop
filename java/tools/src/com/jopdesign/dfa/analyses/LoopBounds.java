@@ -329,14 +329,18 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			Set<String> receivers = p.getReceivers(stmt, context.callString);
 			Location location = new Location(context.stackPtr-1); 
 			boolean valid = false;
-			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
-				String arrayName = i.next();
-				ValueMapping m = in.get(new Location(arrayName+".length"));
-				if (m != null) {
-					ValueMapping value = new ValueMapping(m, false);
-					value.join(result.get(location));
-					result.put(location, value);
-					valid = true;
+			if (receivers == null) {
+				System.out.println("no receivers at: "+context.callString.asList()+context.method+stmt);
+			} else {
+				for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
+					String arrayName = i.next();
+					ValueMapping m = in.get(new Location(arrayName+".length"));
+					if (m != null) {
+						ValueMapping value = new ValueMapping(m, false);
+						value.join(result.get(location));
+						result.put(location, value);
+						valid = true;
+					}
 				}
 			}
 			if (!valid) {	
@@ -399,27 +403,31 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
 			Location location = new Location(context.stackPtr-1);
 			boolean valid = false;
-			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
-				String fieldName = i.next();
+			if (receivers == null) {
+				System.out.println("no receivers at: "+context.callString.asList()+context.method+stmt);
+			} else {
+				for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
+					String fieldName = i.next();
 
-				String f = fieldName.substring(fieldName.lastIndexOf("."), fieldName.length());
-				String strippedName;
-				if (fieldName.indexOf("@") >= 0) {
-					strippedName = fieldName.split("@")[0] + f;
-				} else {
-					strippedName = fieldName;
-				}
+					String f = fieldName.substring(fieldName.lastIndexOf("."), fieldName.length());
+					String strippedName;
+					if (fieldName.indexOf("@") >= 0) {
+						strippedName = fieldName.split("@")[0] + f;
+					} else {
+						strippedName = fieldName;
+					}
 
-//					System.out.println(fieldName+" vs "+strippedName);
+					//					System.out.println(fieldName+" vs "+strippedName);
 
-				if (p.containsField(strippedName)) {
-					for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
-						Location l = k.next();
-						if (l.heapLoc.equals(fieldName)) {
-							ValueMapping value = new ValueMapping(in.get(l), false);
-							value.join(result.get(location));
-							result.put(location, value);
-							valid = true;
+					if (p.containsField(strippedName)) {
+						for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
+							Location l = k.next();
+							if (l.heapLoc.equals(fieldName)) {
+								ValueMapping value = new ValueMapping(in.get(l), false);
+								value.join(result.get(location));
+								result.put(location, value);
+								valid = true;
+							}
 						}
 					}
 				}
@@ -560,7 +568,11 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 		
 		case Constants.AALOAD: {
 			ValueMapping v = in.get(new Location(context.stackPtr-1));
-			recordArrayIndex(stmt, context, v.assigned);
+			if (v == null) {
+				System.out.println("no value at: "+context.callString.asList()+context.method+stmt);
+			} else {
+				recordArrayIndex(stmt, context, v.assigned);
+			}
 			filterSet(in, result, context.stackPtr-2);
 		}
 		break;
@@ -1190,77 +1202,79 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			
 				ValueMapping m = new ValueMapping(in.get(l), true);
 				
-				switch(stmt.getInstruction().getOpcode()) {
-				case Constants.IF_ICMPEQ:				
-					if (edge.getType() == FlowEdge.FALSE_EDGE) {
-						// != Interval not expressable as Interval
-						// TODO: mark paths infeasible if appropriate
-					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
-						if (constraint.hasLb()) {
-							m.constrained.setLb(constraint.getLb());
+				if (constraint != null) {
+					switch(stmt.getInstruction().getOpcode()) {
+					case Constants.IF_ICMPEQ:				
+						if (edge.getType() == FlowEdge.FALSE_EDGE) {
+							// != Interval not expressable as Interval
+							// TODO: mark paths infeasible if appropriate
+						} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
+							if (constraint.hasLb()) {
+								m.constrained.setLb(constraint.getLb());
+							}
+							if (constraint.hasUb()) {
+								m.constrained.setUb(constraint.getUb());
+							}
 						}
-						if (constraint.hasUb()) {
-							m.constrained.setUb(constraint.getUb());
+						break;
+					case Constants.IF_ICMPNE:				
+						if (edge.getType() == FlowEdge.FALSE_EDGE) {
+							if (constraint.hasLb()) {
+								m.constrained.setLb(constraint.getLb());
+							}
+							if (constraint.hasUb()) {
+								m.constrained.setUb(constraint.getUb());
+							}
+						} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
+							// != Interval not expressable as Interval
+							// TODO: mark paths infeasible if appropriate
 						}
+						break;
+					case Constants.IF_ICMPLT:
+						if (edge.getType() == FlowEdge.FALSE_EDGE) {
+							if (constraint.hasLb()) {
+								m.constrained.setLb(constraint.getLb());
+							}
+						} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
+							if (constraint.hasUb()) {
+								m.constrained.setUb(constraint.getUb()-1);
+							}
+						}
+						break;
+					case Constants.IF_ICMPGE:
+						if (edge.getType() == FlowEdge.FALSE_EDGE) {
+							if (constraint.hasUb()) {
+								m.constrained.setUb(constraint.getUb()-1);
+							}
+						} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
+							if (constraint.hasLb()) {
+								m.constrained.setLb(constraint.getLb());
+							}
+						}
+						break;
+					case Constants.IF_ICMPGT:
+						if (edge.getType() == FlowEdge.FALSE_EDGE) {
+							if (constraint.hasUb()) {
+								m.constrained.setUb(constraint.getUb());
+							}
+						} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
+							if (constraint.hasLb()) {
+								m.constrained.setLb(constraint.getLb()+1);
+							}
+						}
+						break;
+					case Constants.IF_ICMPLE:
+						if (edge.getType() == FlowEdge.FALSE_EDGE) {
+							if (constraint.hasLb()) {
+								m.constrained.setLb(constraint.getLb()-1);
+							}
+						} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
+							if (constraint.hasUb()) {
+								m.constrained.setUb(constraint.getUb());
+							}
+						}
+						break;
 					}
-					break;
-				case Constants.IF_ICMPNE:				
-					if (edge.getType() == FlowEdge.FALSE_EDGE) {
-						if (constraint.hasLb()) {
-							m.constrained.setLb(constraint.getLb());
-						}
-						if (constraint.hasUb()) {
-							m.constrained.setUb(constraint.getUb());
-						}
-					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
-						// != Interval not expressable as Interval
-						// TODO: mark paths infeasible if appropriate
-					}
-					break;
-				case Constants.IF_ICMPLT:
-					if (edge.getType() == FlowEdge.FALSE_EDGE) {
-						if (constraint.hasLb()) {
-							m.constrained.setLb(constraint.getLb());
-						}
-					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
-						if (constraint.hasUb()) {
-							m.constrained.setUb(constraint.getUb()-1);
-						}
-					}
-					break;
-				case Constants.IF_ICMPGE:
-					if (edge.getType() == FlowEdge.FALSE_EDGE) {
-						if (constraint.hasUb()) {
-							m.constrained.setUb(constraint.getUb()-1);
-						}
-					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
-						if (constraint.hasLb()) {
-							m.constrained.setLb(constraint.getLb());
-						}
-					}
-					break;
-				case Constants.IF_ICMPGT:
-					if (edge.getType() == FlowEdge.FALSE_EDGE) {
-						if (constraint.hasUb()) {
-							m.constrained.setUb(constraint.getUb());
-						}
-					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
-						if (constraint.hasLb()) {
-							m.constrained.setLb(constraint.getLb()+1);
-						}
-					}
-					break;
-				case Constants.IF_ICMPLE:
-					if (edge.getType() == FlowEdge.FALSE_EDGE) {
-						if (constraint.hasLb()) {
-							m.constrained.setLb(constraint.getLb()-1);
-						}
-					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
-						if (constraint.hasUb()) {
-							m.constrained.setUb(constraint.getUb());
-						}
-					}
-					break;
 				}
 
 				if (m.assigned.getLb() > m.constrained.getUb()
@@ -1393,7 +1407,9 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 		} else if (methodId.equals("com.jopdesign.sys.Native.wr(II)V")
 				|| methodId.equals("com.jopdesign.sys.Native.wrMem(II)V")
 				|| methodId.equals("com.jopdesign.sys.Native.wrIntMem(II)V")
-				|| methodId.equals("com.jopdesign.sys.Native.putStatic(II)V")) {
+				|| methodId.equals("com.jopdesign.sys.Native.putStatic(II)V")
+				|| methodId.equals("com.jopdesign.sys.Native.toLong(D)J")
+				|| methodId.equals("com.jopdesign.sys.Native.toDouble(J)D")) {
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
 				if (l.stackLoc < context.stackPtr-2) {
