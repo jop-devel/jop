@@ -1,7 +1,6 @@
 package scd_micro;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -20,17 +19,20 @@ class Collision {
 
 	/** Construct a Collision with a given set of aircraft and a location.  */
 	public Collision(List<Aircraft> aircraft, Vector3d location) {
+		if(aircraft.size() > RawFrame.MAX_PLANES) {
+			throw new Error("Collision(): airplane count exceeds MAX_PLANES");
+		}
 		this.aircraft = new ArrayList<Aircraft>(aircraft);
-		Collections.sort(this.aircraft);
+		MergeSort.sort(this.aircraft);
 		this.location = location;
 	}
 
 	/** Construct a Coollision with two aircraft an a location. */
 	public Collision(Aircraft one, Aircraft two, Vector3d location) {
-		aircraft = new ArrayList<Aircraft>();
+		aircraft = new ArrayList<Aircraft>(2);
 		aircraft.add(one);
 		aircraft.add(two);
-		Collections.sort(aircraft);
+		MergeSort.sort(aircraft);
 		this.location = location;
 	}
 
@@ -44,7 +46,7 @@ class Collision {
 
 	public int hashCode() {
 		int ret = 0;
-		for (Iterator<Aircraft> iter = aircraft.iterator(); iter.hasNext();) 
+		for (Iterator<Aircraft> iter = aircraft.iterator(); iter.hasNext();) //@WCA loop<=10 
 			ret += ((Aircraft) iter.next()).hashCode();	
 		return ret;
 	}
@@ -60,7 +62,7 @@ class Collision {
 		if (a.size() != b.size()) return false;
 		Iterator<Aircraft> ai = a.iterator();
 		Iterator<Aircraft> bi = b.iterator();
-		while (ai.hasNext()) 
+		while (ai.hasNext()) //@WCA loop<=10
 			if (!ai.next().equals(bi.next())) return false;		
 		return true;
 	}
@@ -70,7 +72,7 @@ class Collision {
 	public String toString() {
 		StringBuffer buf = new StringBuffer("Collision between ");
 		boolean first = true;
-		for (Iterator<Aircraft> iter = getAircraftInvolved().iterator(); iter.hasNext();) {
+		for (Iterator<Aircraft> iter = getAircraftInvolved().iterator(); iter.hasNext();) { //@WCA loop<=10
 			if (first) first = false;
 			else buf.append(", ");	    
 			buf.append(iter.next().toString());

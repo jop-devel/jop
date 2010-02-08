@@ -14,13 +14,14 @@ import java.util.HashMap;
 public class StateTable {
 
 //    final private static int MAX_AIRPLANES = 10000;
-    final private static int MAX_AIRPLANES = 50;
+    final private static int MAX_AIRPLANES = 10;
     
     private Vector3d[] allocatedVectors;
     private int usedVectors;
 
     /** Mapping Aircraft -> Vector3d. */
-    final private HashMap motionVectors = new HashMap();
+    final private HashMap<CallSign,Vector3d> motionVectors =
+    	new HashMap<CallSign,Vector3d>(RawFrame.MAX_PLANES_POW2);
 
 
     StateTable() {

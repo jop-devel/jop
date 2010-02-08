@@ -49,7 +49,7 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
                 project.getFlowGraph(invoked));
 		if(! proc.hasMethodCache() || cacheMode == StaticCacheApproximation.ALWAYS_HIT) {
 			cacheCost = 0;
-		} else if(project.getCallGraph().isLeafNode(invoked)) {
+		} else if(project.getCallGraph().isLeafMethod(invoked)) {
 			cacheCost = invokeReturnCost + nonLocalCacheCost;
 		} else if(cacheMode == StaticCacheApproximation.ALL_FIT_SIMPLE && cache.allFit(invoked)) {
 			long returnCost = cache.getMissOnReturnCost(proc, project.getFlowGraph(invoker));

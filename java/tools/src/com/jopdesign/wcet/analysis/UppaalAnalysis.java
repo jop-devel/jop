@@ -27,6 +27,9 @@ public class UppaalAnalysis {
 	private double solvertimemax = 0.0;
 	private UppAalConfig uppaalConfig;
 	public UppaalAnalysis(Logger logger, Project project, File outDir) {
+		if(project.getProjectConfig().callstringLength() > 0) {
+			throw new AssertionError("Callstrings for UPPAAL analysis are not supported");
+		}
 		this.uppaalConfig = new UppAalConfig(project.getConfig(), outDir);
 		this.logger = logger;
 		this.project = project;
@@ -104,7 +107,7 @@ public class UppaalAnalysis {
 			long cacheCost, nonLocalExecCost;
 			if(   cc <= treshold
 			   && ctx.getCacheApprox() != UppaalCacheApproximation.ALWAYS_MISS
-			   && ! project.getCallGraph().isLeafNode(invoked)
+			   && ! project.getCallGraph().isLeafMethod(invoked)
 			   && ! stagedAnalysis.isCached(invoked, ctx)
 			   ) {
 				WcetCost uppaalCost;

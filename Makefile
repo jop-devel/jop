@@ -133,8 +133,8 @@ TARGET=java/target
 # changed to add another class to the tool chain
 #TOOLS_CP=-classpath $(EXT_CP)$(S)$(TOOLS)/dist/lib/jop-tools.jar
 TOOLS_CP=-classpath $(TOOLS)/dist/lib/jop-tools.jar$(S)$(TOOLS)/dist/lib/JopDebugger.jar$(S)$(EXT_CP)
-
-TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/jdk_base$(S)$(TARGET)/src/jdk11$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
+TARGET_JDK?=jdk11
+TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/jdk_base$(S)$(TARGET)/src/$(TARGET_JDK)$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
 TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5
 GCC_PARAMS=
 

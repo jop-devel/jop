@@ -12,12 +12,13 @@ import java.util.List;
  */
 class CollisionCollector {
 	/** A hash set of collisions.  */
-	private HashSet<Collision> collisions = new HashSet<Collision>();
+	private HashSet<Collision> collisions =
+		new HashSet<Collision>(RawFrame.MAX_COLLISIONS_POW2);
 
 	/** Add some collisions.  */
 	public void addCollisions(List<Collision> collisions) {
-		// Modified for JOP
-		for(Collision c : collisions) {
+		// Modified for JOP               MAX_COLLIONS=45
+		for(Collision c : collisions) { //@WCA loop<=45
 			this.collisions.add(c);
 		}
 	}
@@ -26,7 +27,7 @@ class CollisionCollector {
 	public ArrayList<Collision> getCollisions() { 
 		// Modified for JOP
 		ArrayList<Collision> copy = new ArrayList<Collision>(collisions.size());
-		for(Collision c : collisions) {
+		for(Collision c : collisions) { //@WCA loop<=45
 			copy.add(c);
 		}
 		return copy;
