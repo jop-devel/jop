@@ -1,7 +1,7 @@
 package scd_micro;
 
-import com.jopdesign.sys.Const;
-import com.jopdesign.sys.Native;
+//import com.jopdesign.sys.Const;
+//import com.jopdesign.sys.Native;
 
 public class Main {
 	static int ts, te, to;
@@ -9,16 +9,16 @@ public class Main {
 
 	public static void main(String[] argv)
 	{
-		ts = Native.rdMem(Const.IO_CNT);
-		te = Native.rdMem(Const.IO_CNT);
+//		ts = Native.rdMem(Const.IO_CNT);
+//		te = Native.rdMem(Const.IO_CNT);
 		to = te-ts;
 
 		Main m = new Main();
 		m.init();		
 		for(int i = 0; i < 100; i++) {
-			ts = Native.rdMem(Const.IO_CNT); 
+//			ts = Native.rdMem(Const.IO_CNT); 
 			m.run();
-			te = Native.rdMem(Const.IO_CNT);
+//			te = Native.rdMem(Const.IO_CNT);
 			System.out.print("Iteration finished. Time: ");
 			System.out.println(te-ts-to);
 		}

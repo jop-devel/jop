@@ -13,6 +13,9 @@ public class MergeSort {
 	
 	//  For the benchmark, we know that data.size <= 2, and added according annotations.
 	public static<T extends Comparable<T>> void sort(ArrayList<T> data) {
+		if(data.size() > 2) {
+			throw new Error("Merge sort was configured to handle at most 2 elements");
+		}
 		Object[] tmp = new Object[data.size()];     //@WCA loop=2
 		for(int m = 1; m <= data.size(); m <<= 1) { //@WCA loop=2
 			// merge sort with bucket size m

@@ -120,7 +120,7 @@ class Reducer {
 			HashMap<Vector2d, String> graph_colors) {
 		Stack<Vector2d> pendingVoxels =
 			new Stack<Vector2d>();
-		pendingVoxels.ensureCapacity(1000);
+		pendingVoxels.ensureCapacity(Constants.MAX_VOXELS_PENDING_POW2);
 		pendingVoxels.push(start_voxel);
 		while(! pendingVoxels.isEmpty()) {
 			Vector2d next_voxel = pendingVoxels.pop();
@@ -248,12 +248,12 @@ class Reducer {
 			new HashMap<Vector2d, ArrayList<Motion>>();
 		HashMap<Vector2d, String> graph_colors = 
 			new HashMap<Vector2d, String>();
-
-		for (Iterator<Motion> iter = motions.iterator(); iter.hasNext();)
+                                                                          //     MAX_AIRPLANES
+		for (Iterator<Motion> iter = motions.iterator(); iter.hasNext();) //@WCA loop<=10
 			performVoxelHashing(iter.next(), voxel_map, graph_colors);
 
-		LinkedList<ArrayList<Motion>> ret = new LinkedList<ArrayList<Motion>>();
-		for (Iterator<ArrayList<Motion>> iter = voxel_map.values().iterator(); iter.hasNext();) {
+		LinkedList<ArrayList<Motion>> ret = new LinkedList<ArrayList<Motion>>();                  // MAX_VOXELS_PER_LINE_SEGMENT
+		for (Iterator<ArrayList<Motion>> iter = voxel_map.values().iterator(); iter.hasNext();) { //@WCA loop<=100
 			ArrayList<Motion> cur_set = iter.next();
 			if (cur_set.size() > 1) ret.add(cur_set);
 		}

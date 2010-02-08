@@ -10,6 +10,9 @@ class Aircraft implements Comparable {
 
 	/** Construct with a callsign. */
 	public Aircraft(final byte[] _callsign) {
+		if(_callsign.length > RawFrame.MAX_CALLSIGN_LENGTH) {
+			throw new Error("Aircraft(): MAX_CALLSIGN_LENGTH exceeded");
+		}
 		callsign = _callsign;
 	}
 
@@ -27,7 +30,7 @@ class Aircraft implements Comparable {
 	public int hashCode() {
 		int h = 0;
 
-		for(int i=0; i<callsign.length; i++) {
+		for(int i=0; i<callsign.length; i++) { //@WCA loop<=10
 			h += callsign[i];
 		}
 
@@ -40,8 +43,9 @@ class Aircraft implements Comparable {
 		else if (other instanceof Aircraft) {
 			final byte[] cs = ((Aircraft) other).callsign;
 			if (cs.length != callsign.length) return false;
-			for (int i = 0; i < cs.length; i++)
+			for (int i = 0; i < cs.length; i++) { //@WCA loop<=10
 				if (cs[i] != callsign[i]) return false;
+			}
 			return true;
 		} else return false;
 	}
@@ -51,9 +55,10 @@ class Aircraft implements Comparable {
 		final byte[] cs = ((Aircraft) _other).callsign;
 		if (cs.length < callsign.length) return -1;
 		if (cs.length > callsign.length) return +1;
-		for (int i = 0; i < cs.length; i++)
+		for (int i = 0; i < cs.length; i++) { //@WCA loop<=10
 			if (cs[i] < callsign[i]) return -1;
 			else if (cs[i] > callsign[i]) return +1;
+		}
 		return 0;
 	}
 
