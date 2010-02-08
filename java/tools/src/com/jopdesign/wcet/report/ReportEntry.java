@@ -122,7 +122,7 @@ public class ReportEntry {
 			if(p.getLink() == null) {
 				p.link = link;
 			} else {
-				Report.logger.error("Page "+leaf+" already linked. Won't overwrite.");				
+				// Report.logger.error("Page "+leaf+" already linked. Won't overwrite.");				
 			}
 		} else {
 			p.add(leaf,link,atStart);

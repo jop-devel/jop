@@ -3,12 +3,12 @@ package scd_micro;
 import java.util.Collection;
 
 public class RawFrame {
-	static int MAX_PLANES = 10; //1000;
-    static int MAX_PLANES_POW2 = 1<<4;
-    static int MAX_COLLISIONS = (MAX_PLANES*(MAX_PLANES-1)/2);
-    static int MAX_COLLISIONS_POW2 = 64;
-    static int MAX_SIGNS = 10 * MAX_PLANES;
-	static int MAX_CALLSIGN_LENGTH = 10; 
+	public static final int MAX_PLANES = 10; //1000;
+	public static final  int MAX_PLANES_POW2 = 1<<4;
+	public static final  int MAX_COLLISIONS = (MAX_PLANES*(MAX_PLANES-1)/2);
+	public static final  int MAX_COLLISIONS_POW2 = 64;
+	public static final  int MAX_SIGNS = 10 * MAX_PLANES;
+	public static final  int MAX_CALLSIGN_LENGTH = 10; 
 
     public final int[] lengths = new int[MAX_PLANES];
     public final byte[] callsigns = new byte[MAX_SIGNS];

@@ -25,7 +25,8 @@ class CollisionCollector {
 
 	/** Get the list of collisions.   */
 	public ArrayList<Collision> getCollisions() { 
-		// Modified for JOP
+		// Modified for JOP (context dependent bounds ?)
+		// new ArrayList<Collisions>(new Collisions[collisions.size()]); //@WCA loop<=45
 		ArrayList<Collision> copy = new ArrayList<Collision>(collisions.size());
 		for(Collision c : collisions) { //@WCA loop<=45
 			copy.add(c);

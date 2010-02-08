@@ -179,7 +179,7 @@ public class TransientDetectorScopeEntry implements Runnable {
 		Aircraft craft;
 		Vector3d new_pos;
 
-		for (int i = 0, pos = 0; i < currentFrame.planeCnt; i++) {
+		for (int i = 0, pos = 0; i < currentFrame.planeCnt; i++) { //@WCA loop<=10
 
 			final float x = currentFrame.positions[3*i], y = currentFrame.positions[3*i + 1], z = currentFrame.positions[3*i + 2];
 			final byte[] cs = new byte[currentFrame.lengths[i]];
