@@ -126,9 +126,9 @@ public class ArrayList<E> extends AbstractList<E>
      */
     public ArrayList(int initialCapacity) {
         super();
-        if (initialCapacity < 0)
+	if (initialCapacity < 0)
             throw new IllegalArgumentException("Illegal Capacity: "+
-                                               initialCapacity);
+					       initialCapacity); 
         this.elementData = new Object[initialCapacity];
     }
 

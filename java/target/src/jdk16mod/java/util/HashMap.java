@@ -188,8 +188,10 @@ public class HashMap<K,V>
         if (initialCapacity < 0)
             throw new IllegalArgumentException("Illegal initial capacity: " +
                                                initialCapacity);
-        if (initialCapacity > MAXIMUM_CAPACITY)
-            initialCapacity = MAXIMUM_CAPACITY;
+        if (initialCapacity > MAXIMUM_CAPACITY) {
+	    throw new IllegalArgumentException("Initial capacity too high: "+
+					       initialCapacity);
+	}
         if (loadFactor <= 0 || Float.isNaN(loadFactor))
             throw new IllegalArgumentException("Illegal load factor: " +
                                                loadFactor);

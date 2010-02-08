@@ -37,7 +37,10 @@ Changes:
    voxels per line segment.
    This shows that a) considering vertices is neccessary, and b) the bound is not too bad.
 -- bench: The size of the temporary array in merge sort is annotated (this is unfortunate)
+-- JDK: if(initialCapacity>maxCapacity) initialCapacity=maxCapacity;
+   is bad, because DFA is stupid and the join results in (initialCapacity,maxCapacity)
 
+   
 == Additional changes for the WCET analysis
 -- The loops in merge sort were annotated using the fact, that the size of
    the collection is always 2.
