@@ -1635,7 +1635,11 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			if (c.hasSuffix(cs)) {
 				if (retval == null) {
 					Interval [] v = map.get(c);
-					retval = Arrays.copyOf(v, v.length);
+					// JDK1.5 compat
+					retval = new Interval[v.length];
+			        System.arraycopy(v, 0, retval, 0,v.length);
+					// JDK1.6 only
+					//retval = Arrays.copyOf(v, v.length);					
 				} else {
 					Interval [] v = map.get(c);
 					for (int k = 0; k < v.length; k++) {

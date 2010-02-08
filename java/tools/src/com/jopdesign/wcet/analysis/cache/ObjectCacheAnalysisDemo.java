@@ -5,6 +5,7 @@ import java.util.Map;
 import org.apache.bcel.generic.InstructionHandle;
 
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.AnalysisContext;
 import com.jopdesign.wcet.analysis.AnalysisContextIpet;
@@ -97,7 +98,7 @@ public class ObjectCacheAnalysisDemo {
 
 		public void visitInvokeNode(InvokeNode n) {
 			visitBasicBlockNode(n);
-			if(n.isInterface()) {
+			if(n.isVirtual()) {
 				throw new AssertionError("Invoke node "+n.getReferenced()+" without implementation in WCET analysis - did you preprocess virtual methods ?");
 			}
 			cost += recursiveStrategy.recursiveCost(recursiveAnalysis, n, context);
@@ -128,8 +129,8 @@ public class ObjectCacheAnalysisDemo {
 				AnalysisContext ctx) {
 			MethodInfo invoked = invocation.getImplementedMethod();
 			Long cost;
-			if(allPersistent(invoked)) {				
-				cost = getMaxAccessed(invoked);
+			if(allPersistent(invoked, ctx.getCallString())) {				
+				cost = getMaxAccessed(invoked, ctx.getCallString());
 				//System.out.println("Cost for: "+invocation.getImplementedMethod()+" [all fit]: "+cost);
 			} else {
 				cost = stagedAnalysis.computeCost(invoked, ctx);
@@ -164,13 +165,13 @@ public class ObjectCacheAnalysisDemo {
 		return recAna.computeCost(project.getTargetMethod(), new AnalysisContext());
 	}
 
-	private long getMaxAccessed(MethodInfo invoked) {
-		return objRefAnalysis.getRefUsage().get(callGraph.getNode(invoked));
+	private long getMaxAccessed(MethodInfo invoked, CallString context) {
+		return objRefAnalysis.getRefUsage().get(new CallGraph.CallGraphNode(invoked, context));
 	}
 
-	private boolean allPersistent(MethodInfo invoked) {
+	private boolean allPersistent(MethodInfo invoked, CallString context) {
 		if(! doPersistenceAnalysis) return false;
-		long maxAccessed = getMaxAccessed(invoked);
+		long maxAccessed = getMaxAccessed(invoked, context);
 		return maxAccessed <= this.cacheSize;
 	}		
 	

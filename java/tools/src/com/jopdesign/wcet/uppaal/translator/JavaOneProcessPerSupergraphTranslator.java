@@ -129,14 +129,14 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 		/* Create start and end nodes for other methods */
 		for(int i = 1; i < this.methodInfos.size(); i++) {
 			MethodInfo mi = methodInfos.get(i);
-			if(project.getCallGraph().isLeafNode(mi) && config.collapseLeaves) continue;
+			if(project.getCallGraph().isLeafMethod(mi) && config.collapseLeaves) continue;
 
 			SubAutomaton mAuto = tBuilder.createSubAutomaton(MiscUtils.qEncode(mi.getFQMethodName()));
 			addMethodAutomaton(mi,mAuto);
 		}
 		int i = 0;
 		for(MethodInfo mi : methodInfos) {
-			if(project.getCallGraph().isLeafNode(mi) && config.collapseLeaves) continue;
+			if(project.getCallGraph().isLeafMethod(mi) && config.collapseLeaves) continue;
 			translateMethod(tBuilder,
 					        getMethodAutomaton(mi),
 					        i++,

@@ -114,7 +114,7 @@ public class JavaOneProcessPerMethodTranslator extends JavaTranslator {
 		String bbClock = systemBuilder.addProcessClock(0);
 		/* For each method, create a process */
 		for(MethodInfo mi : this.methodInfos) {
-			if(project.getCallGraph().isLeafNode(mi) && config.collapseLeaves) continue;
+			if(project.getCallGraph().isLeafMethod(mi) && config.collapseLeaves) continue;
 			int pid = getMethodID(mi);
 			TemplateBuilder tBuilder =
 				new TemplateBuilder(config,
