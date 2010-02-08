@@ -37,11 +37,12 @@ public class TreeAnalysis {
 
 		@Override
 		public void visitInvokeNode(InvokeNode n) {
+			MethodInfo method = n.getImplementedMethod();			
 			visitBasicBlockNode(n);
 			cost.addCacheCost(project.getProcessorModel().getInvokeReturnMissCost(
 					n.invokerFlowGraph(),
 					n.receiverFlowGraph()));
-			cost.addNonLocalCost(methodWCET.get(n.getImplementedMethod()));
+			cost.addNonLocalCost(methodWCET.get(method));
 		}
 
 		@Override
@@ -62,7 +63,8 @@ public class TreeAnalysis {
 		}
 
 		public void visitInvokeNode(InvokeNode n) {
-			progress = 1 + subProgress.get(n.getImplementedMethod());
+			long invokedProgress = subProgress.get(n.getImplementedMethod());
+			progress = 1 + invokedProgress;
 		}
 
 		public void visitSpecialNode(DedicatedNode n) {

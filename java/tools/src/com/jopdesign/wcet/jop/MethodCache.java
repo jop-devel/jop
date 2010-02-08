@@ -72,7 +72,7 @@ public abstract class MethodCache {
 
 	public long missOnceCost(MethodInfo mi, boolean assumeOnInvoke) {
 		int words = project.getFlowGraph(mi).getNumberOfWords();
-		boolean loadOnInvoke =    project.getCallGraph().isLeafNode(mi) 
+		boolean loadOnInvoke =    project.getCallGraph().isLeafMethod(mi) 
 		                       || this.isLRU() 
 		                       || assumeOnInvoke;
 		long thisMiss = project.getProcessorModel().getMethodCacheMissPenalty(words,loadOnInvoke);

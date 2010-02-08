@@ -45,6 +45,16 @@ public class MiscUtils {
 		set.add(val);
 	}
 
+	public static<K,V> void addToList(Map<K,List<V>> map,K key, V val) {
+
+		List<V> set = map.get(key);
+		if(set == null) {
+			set = new ArrayList<V>();
+			map.put(key,set);
+		}
+		set.add(val);
+	}
+
 	/** partially sort the given collection by inserting the elements into buckets,
 	 *  indexed by the given priority function.
 	 * @param <K>

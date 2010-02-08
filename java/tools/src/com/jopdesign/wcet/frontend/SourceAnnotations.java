@@ -92,7 +92,7 @@ public class SourceAnnotations {
 	 * @throws BadAnnotationException 
 	 * 
 	 */
-	public  SortedMap<Integer,LoopBound> calculateWCA(ClassInfo ci) 
+	public  SortedMap<Integer,LoopBound> readAnnotations(ClassInfo ci) 
 		throws IOException, BadAnnotationException {
 		
 		SortedMap<Integer, LoopBound> wcaMap = new TreeMap<Integer, LoopBound>();
@@ -102,13 +102,13 @@ public class SourceAnnotations {
 		int lineNr = 1;
 
 		while ((line = reader.readLine()) != null) {
-			LoopBound wca = SourceAnnotations.calculateWCA(line);	
+			LoopBound wca = SourceAnnotations.extractAnnotation(line);	
 			if (wca != null) {
 				wcaMap.put(lineNr,wca);
 			}
 			lineNr++;
 		}
-		logger.debug("Computed wca annotations for "+fileName);
+		logger.debug("Read WCA annotations for "+fileName);
 		return wcaMap;
 	}
 
@@ -139,7 +139,7 @@ public class SourceAnnotations {
 	 * @throws BadAnnotationException if the loop bound annotation has syntax errors or is
 	 * invalid
 	 */
-	public static LoopBound calculateWCA(String wcaA)
+	public static LoopBound extractAnnotation(String wcaA)
 		throws BadAnnotationException {
 
 		int ai = wcaA.indexOf("@WCA");

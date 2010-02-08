@@ -324,7 +324,7 @@ public class Project {
 	public SortedMap<Integer, LoopBound> getAnnotations(ClassInfo cli) throws IOException, BadAnnotationException {
 		SortedMap<Integer, LoopBound> annots = this.annotationMap.get(cli);
 		if(annots == null) {
-			annots = sourceAnnotations.calculateWCA(cli);
+			annots = sourceAnnotations.readAnnotations(cli);
 			annotationMap.put(cli, annots);
 		}
 		return annots;
@@ -361,16 +361,17 @@ public class Project {
 	@SuppressWarnings("unchecked")
 	public void dataflowAnalysis() {
 		com.jopdesign.dfa.framework.DFAAppInfo program = getDfaProgram();
+		int callstringLength = (int)projectConfig.callstringLength();
 		topLevelLogger.info("Receiver analysis");
-		CallStringReceiverTypes recTys = new CallStringReceiverTypes((int)projectConfig.callstringLength());
+		CallStringReceiverTypes recTys = new CallStringReceiverTypes(callstringLength);
 		Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults =
 			program.runAnalysis(recTys);
 		
 		program.setReceivers(receiverResults);
-		wcetAppInfo.setReceivers(receiverResults);
+		wcetAppInfo.setReceivers(receiverResults, callstringLength);
 		
 		topLevelLogger.info("Loop bound analysis");
-		LoopBounds dfaLoopBounds = new LoopBounds((int)projectConfig.callstringLength());
+		LoopBounds dfaLoopBounds = new LoopBounds(callstringLength);
 		program.runAnalysis(dfaLoopBounds);
 		program.setLoopBounds(dfaLoopBounds);
 		this.hasDfaResults = true;
@@ -412,6 +413,7 @@ public class Project {
 	public File getOutFile(String file) {
 		return new File(projectConfig.getOutDir(),file);
 	}
+	
 	/** FIXME: Slow, caching is missing */
 	public int computeCyclomaticComplexity(MethodInfo m) {
 		ControlFlowGraph g = getFlowGraph(m);

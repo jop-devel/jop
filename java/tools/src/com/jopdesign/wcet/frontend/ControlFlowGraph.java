@@ -191,6 +191,8 @@ public class ControlFlowGraph {
 		private MethodRef referenced;
 		private MethodInfo receiverImpl;
 		private ControlFlowGraph receiverFlowGraph;
+		private InvokeNode instantiatedFrom;
+
 		private InvokeNode(int blockIndex) {
 			super(blockIndex);
 		}
@@ -219,19 +221,26 @@ public class ControlFlowGraph {
 		}
 		/** Get all possible implementations of the invoked method */
 		public List<MethodInfo> getImplementedMethods() {
-			if(! isInterface()) {
+			return getImplementedMethods(CallString.EMPTY);
+		}
+
+		/** Get all possible implementations of the invoked method in
+		 *  the given context */
+		public List<MethodInfo> getImplementedMethods(CallString ctx) {
+			if(! isVirtual()) {
 				List<MethodInfo> impls = new Vector<MethodInfo>();
 				impls.add(getImplementedMethod());
 				return impls;
-			} else {
+			} else {				
 				return appInfo.findImplementations(this.invokerFlowGraph().getMethodInfo(),
-                        						   getInstructionHandle());
+                        						   getInstructionHandle(),
+                        						   ctx);
 			}
 		}
-
+		
 		/** For non-virtual methods, get the implementation of the method */
 		public ControlFlowGraph receiverFlowGraph() {
-			if(isInterface()) return null;
+			if(isVirtual()) return null;
 			if(this.receiverFlowGraph == null) {
 				this.receiverFlowGraph = appInfo.getFlowGraph(receiverImpl);
 			}
@@ -241,26 +250,42 @@ public class ControlFlowGraph {
 		public ControlFlowGraph invokerFlowGraph() {
 			return ControlFlowGraph.this;
 		}
+		
 		public MethodRef getReferenced() {
 			return referenced;
 		}
+		
 		/**
 		 * @return true if the invokation denotes an interface, not an implementation
 		 */
-		public boolean isInterface() {
+		public boolean isVirtual() {
 			return receiverImpl == null;
 		}
+		
+		/**
+		 * If this is the implementation of a virtual/interface invoke instruction,
+		 * return the InvokeNode for the virtual invoke instruction.
+		 * TODO: This can be removed, if we ever remove 
+		 * {@link ControlFlowGraph#resolveVirtualInvokes()}
+		 */
+		public InvokeNode getVirtualNode() {
+			if(this.instantiatedFrom != null) return this.instantiatedFrom;
+			else return this;
+		}
+		
 		/**
 		 * Create an implementation node from this node
 		 * @param impl the implementing method
+		 * @param virtual invoke node for the virtual method
 		 * @return
 		 */
-		public InvokeNode createImplNode(MethodInfo impl) {
+		public InvokeNode createImplNode(MethodInfo impl, InvokeNode virtual) {
 			InvokeNode n = new InvokeNode(this.getBlockIndex());
-			n.name = "invoke("+this.referenced+")";
+			n.name = "invoke("+impl.getFQMethodName()+")";
 			n.instr=this.instr;
 			n.referenced=this.referenced;
 			n.receiverImpl = impl;
+			n.instantiatedFrom = virtual;
 			return n;
 		}
 	}
@@ -306,11 +331,12 @@ public class ControlFlowGraph {
 		/**
 		 * @return true if the invokation denotes an interface, not an implementation
 		 */
-		public boolean isInterface() {
+		public boolean isVirtual() {
 			return receiverImpl == null;
 		}
+		
 		@Override
-		public InvokeNode createImplNode(MethodInfo impl) {
+		public InvokeNode createImplNode(MethodInfo impl, InvokeNode _) {
 			return this; /* no dynamic dispatch */
 		}
 	}
@@ -539,8 +565,8 @@ public class ControlFlowGraph {
 // 				throw new BadAnnotationException("No loop bound annotation",
 // 												 block,sourceRangeStart,sourceRangeStop);
 				WcetAppInfo.logger.error("No loop bound annotation: "+methodInfo+":"+n+
-										 ".\nApproximating with 1024 words, but result is not safe anymore.");
-				loopAnnot = new LoopBound(0, 1024);
+										 ".\nApproximating with 4 words, but result is not safe anymore.");
+				loopAnnot = new LoopBound(0, 4);
 			}
 			this.annotations.put(headOfLoop,loopAnnot);
 		}
@@ -551,7 +577,14 @@ public class ControlFlowGraph {
 		LoopBound dfaBound;
 		if(p.getDfaLoopBounds() != null) {
 			LoopBounds lbs = p.getDfaLoopBounds();
-			int bound = lbs.getBound(p.getDfaProgram(), headOfLoopBlock.getLastInstruction(),cs);
+			// Insert a try-catch to deal with failures of the DFA analysis
+			int bound;
+			try {
+				bound = lbs.getBound(p.getDfaProgram(), headOfLoopBlock.getLastInstruction(),cs);
+			} catch(NullPointerException ex) {
+				ex.printStackTrace();
+				bound = -1;
+			}
 			if(bound < 0) {
 				WcetAppInfo.logger.info("No DFA bound for " + methodInfo+":"+this.getMethodInfo());
 				dfaBound = annotatedValue;
@@ -587,7 +620,7 @@ public class ControlFlowGraph {
 		for(CFGNode n : this.graph.vertexSet()) {
 			if(n instanceof InvokeNode) {
 				InvokeNode in = (InvokeNode) n;
-				if(in.isInterface()) {
+				if(in.isVirtual()) {
 					virtualInvokes.add(in);
 				}
 			}
@@ -598,7 +631,7 @@ public class ControlFlowGraph {
 				appInfo.findImplementations(this.methodInfo,inv.getInstructionHandle());
 			if(impls.size() == 0) internalError("No implementations for "+inv.referenced);
 			if(impls.size() == 1) {
-				InvokeNode implNode = inv.createImplNode(impls.get(0));
+				InvokeNode implNode = inv.createImplNode(impls.get(0), inv);
 				graph.addVertex(implNode);
 				for(CFGEdge inEdge : graph.incomingEdgesOf(inv)) {
 					graph.addEdge(graph.getEdgeSource(inEdge), implNode, new CFGEdge(inEdge.kind));
@@ -618,7 +651,7 @@ public class ControlFlowGraph {
 					graph.addEdge(join, graph.getEdgeTarget(outEdge), new CFGEdge(outEdge.kind));
 				}
 				for(MethodInfo impl : impls) {
-					InvokeNode implNode = inv.createImplNode(impl);
+					InvokeNode implNode = inv.createImplNode(impl, inv);
 					graph.addVertex(implNode);
 					graph.addEdge(split,implNode, new CFGEdge(EdgeKind.DISPATCH_EDGE));
 					graph.addEdge(implNode,join, new CFGEdge(EdgeKind.RETURN_EDGE));

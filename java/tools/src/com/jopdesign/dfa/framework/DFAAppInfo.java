@@ -212,10 +212,6 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 		return flow;
 	}
 
-//	public Map<InstructionHandle, ContextMap<CallString, Set<String>>> getReceivers() {
-//		return receivers;
-//	}
-
 	public Set<String> getReceivers(InstructionHandle stmt, CallString cs) {
 		ContextMap<CallString, Set<String>> map = receivers.get(stmt);
 		if (map == null) {
@@ -230,7 +226,7 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 		}
 		return retval;
 	}
-	
+		
 	public void setReceivers(Map<InstructionHandle, ContextMap<CallString, Set<String>>> receivers) {
 		this.receivers = receivers;
 	}
