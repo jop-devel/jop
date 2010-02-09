@@ -164,7 +164,7 @@ public class VMFloat {
         return "NaN";
       }
       boolean n = unpackSign(f);
-      StringBuffer sb = new StringBuffer(15);
+      BoundedStringBuffer sb = new BoundedStringBuffer(15);
       if (n) {
         sb.append('-');
       }

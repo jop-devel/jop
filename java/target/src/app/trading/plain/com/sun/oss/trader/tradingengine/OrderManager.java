@@ -63,8 +63,10 @@ public class OrderManager implements Runnable
     private static final String BUY = "Buy";
     private static final String SELL = "Sell";
 
+	private static final boolean ENABLE_DEBUG = false;
+
     private static final int MAX_TRADE_XML_SIZE = 512;
-    private StringBuffer tradeXML = new StringBuffer(MAX_TRADE_XML_SIZE); 
+    private BoundedStringBuffer tradeXML = new BoundedStringBuffer(MAX_TRADE_XML_SIZE); 
     //private String cannedTrade = "<trades><trade><type>Sell</type><symbol>GM</symbol><datetime>2007-02-06T14:49:03.800-05:00</datetime><tradeprice>30.47</tradeprice><limitprice>30.47</limitprice><volume>29500</volume></trade></trades>";
 
     private MarketManager marketMgr = null;    
@@ -76,7 +78,7 @@ public class OrderManager implements Runnable
     // particular stock, in value, low to high for buy orders, and
     // high to low for sell orders
     //
-    public static final int INITIAL_CAPACITY = 111;
+    public static final int INITIAL_CAPACITY = 128;
     class SubBook {
         LinkedList<OrderEntry> buy = new LinkedList<OrderEntry>();
         LinkedList<OrderEntry> sell = new LinkedList<OrderEntry>();
@@ -332,11 +334,13 @@ public class OrderManager implements Runnable
             }
             else if ( marketPrice < entry.getPrice() )
             {
-                System.out.println(
+				if (ENABLE_DEBUG) {
+					System.out.println(
                         "*** MISSED LIMIT SELL: Order price: " +
                         entry.getPrice() +
                         ", Market price=" + marketPrice +
                         ", Stock: " + entry.getSymbol() );
+				}
 //                 entry.setActive(false);
             }
             break;
@@ -375,11 +379,13 @@ public class OrderManager implements Runnable
             }
             else if ( marketPrice > entry.getPrice() )
             {
-                System.out.println(
+				if (ENABLE_DEBUG) {
+					System.out.println(
                         "*** MISSED LIMIT BUY: Order price: " +
                         entry.getPrice() +
                         ", Market price=" + marketPrice +
                         ", Stock: " + entry.getSymbol() );
+				}
 //                 entry.setActive(false);
             }
             break;
@@ -390,7 +396,7 @@ public class OrderManager implements Runnable
     
     // Private methods
     //
-    private StringBuffer generateTradeXML(OrderEntry entry, double tradePrice)
+    private BoundedStringBuffer generateTradeXML(OrderEntry entry, double tradePrice)
     {
         /*
          * SAMPLE:

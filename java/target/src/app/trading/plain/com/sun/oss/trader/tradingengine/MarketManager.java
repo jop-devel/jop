@@ -50,7 +50,7 @@ public class MarketManager implements Runnable
     
     // The Market Book is a hashmap of prices (stored as StringBuffer objects)
     // that are looked up by stock symbol (StringBuffer) as the key
-    public static final int INITIAL_CAPACITY = 111;
+    public static final int INITIAL_CAPACITY = 128;
     HashMap<String,StringBuffer> marketBook = 
         new HashMap<String,StringBuffer>(INITIAL_CAPACITY); 
 

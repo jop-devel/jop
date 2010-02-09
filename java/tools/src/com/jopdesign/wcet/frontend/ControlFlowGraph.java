@@ -565,8 +565,8 @@ public class ControlFlowGraph {
 // 				throw new BadAnnotationException("No loop bound annotation",
 // 												 block,sourceRangeStart,sourceRangeStop);
 				WcetAppInfo.logger.error("No loop bound annotation: "+methodInfo+":"+n+
-										 ".\nApproximating with 4 words, but result is not safe anymore.");
-				loopAnnot = new LoopBound(0, 4);
+										 ".\nApproximating with 1024, but result is not safe anymore.");
+				loopAnnot = new LoopBound(0, 1024);
 			}
 			this.annotations.put(headOfLoop,loopAnnot);
 		}

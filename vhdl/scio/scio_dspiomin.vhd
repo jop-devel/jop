@@ -226,9 +226,9 @@ begin
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 			baud_rate => 115200,
-			txf_depth => 2,
+			txf_depth => 32,
 			txf_thres => 1,
-			rxf_depth => 2,
+			rxf_depth => 32,
 			rxf_thres => 1
 		)
 		port map(

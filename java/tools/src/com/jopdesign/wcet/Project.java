@@ -47,7 +47,10 @@ import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.CallStringReceiverTypes;
 import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.dfa.framework.ContextMap;
+import com.jopdesign.wcet.allocation.ObjectAllocationModel;
 import com.jopdesign.wcet.allocation.HandleAllocationModel;
+import com.jopdesign.wcet.allocation.HeaderAllocationModel;
+import com.jopdesign.wcet.allocation.BlockAllocationModel;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.frontend.CallGraph;
@@ -177,8 +180,14 @@ public class Project {
 				recordMetric("date",new Date());
 			}
 		}
-		if (projectConfig.getProcessorName().equals("alloc")) {
+		if (projectConfig.getProcessorName().equals("allocObjs")) {
+			this.processor = new ObjectAllocationModel(this);
+		} else if (projectConfig.getProcessorName().equals("allocHandles")) {
 			this.processor = new HandleAllocationModel(this);
+		} else if (projectConfig.getProcessorName().equals("allocHeaders")) {
+			this.processor = new HeaderAllocationModel(this);
+		} else if (projectConfig.getProcessorName().equals("allocBlocks")) {
+			this.processor = new BlockAllocationModel(this);
 		} else if(projectConfig.getProcessorName().equals("jamuth")) {
 		    this.processor = new JamuthModel(this);
 		} else {
