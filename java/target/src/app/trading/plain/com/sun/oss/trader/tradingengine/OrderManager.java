@@ -293,7 +293,7 @@ public class OrderManager implements Runnable
         }
     }
         
-    private boolean checkForTrade(OrderEntry entry, double marketPrice)
+    public boolean checkForTrade(OrderEntry entry, double marketPrice)
     {
         if ( ! entry.isActive() )
             return false;

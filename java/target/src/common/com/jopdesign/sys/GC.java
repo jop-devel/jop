@@ -21,6 +21,7 @@
 
 package com.jopdesign.sys;
 
+import joprt.RtThread;
 
 /**
  *     Real-time garbage collection for JOP
@@ -568,6 +569,10 @@ public class GC {
 			}			
 		}
 		
+		JVMHelp.wr('O');
+		JVMHelp.wrByte(size);
+		JVMHelp.wr('\n');
+
 		int ref;
 		
 		synchronized (mutex) {
@@ -659,6 +664,10 @@ public class GC {
 				}
 			}			
 		}
+
+		JVMHelp.wr('A');
+		JVMHelp.wrSmall(size);
+		JVMHelp.wr('\n');
 
 		int ref;
 		synchronized (mutex) {

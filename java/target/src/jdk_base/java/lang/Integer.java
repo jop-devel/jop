@@ -233,7 +233,7 @@ public final class Integer
         buffer[--i] = digits[num % radix];
         num /= radix;
       }
-    while (num > 0);
+    while (num > 0 && i > 0);
 
     if (isNeg)
       buffer[--i] = '-';

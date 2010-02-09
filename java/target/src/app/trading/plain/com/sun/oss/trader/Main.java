@@ -65,7 +65,7 @@ public class Main
         try {
             // Create the Runnable worker classes
             //
-			JOPReader reader = new JOPReader(512);
+			JOPReader reader = new JOPReader(1024);
             MarketManager marketMgr = new MarketManager();
             OrderManager orderMgr = new OrderManager(marketMgr);
 			orderMgr.displayOrderBook();

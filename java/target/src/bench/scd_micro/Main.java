@@ -18,7 +18,7 @@ public class Main {
 //			ts = Native.rdMem(Const.IO_CNT); 
 			m.run();
 //			te = Native.rdMem(Const.IO_CNT);
-			//System.out.print("Iteration finished. Time: ");
+			System.out.print("Iteration finished.");
 			//System.out.println(te-ts-to);
 		}
 		System.out.println("Benchmark finished");
