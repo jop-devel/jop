@@ -19,6 +19,7 @@ class CollisionCollector {
 	public void addCollisions(List<Collision> collisions) {
 		// Modified for JOP               MAX_COLLIONS=45
 		for(Collision c : collisions) { //@WCA loop<=45
+			// We get her 3555 times
 			this.collisions.add(c);
 		}
 	}
@@ -26,8 +27,11 @@ class CollisionCollector {
 	/** Get the list of collisions.   */
 	public ArrayList<Collision> getCollisions() { 
 		// Modified for JOP (context dependent bounds ?)
+		// Poor man's call context dependent annotation
+		int sz = collisions.size();
+		if(sz > RawFrame.MAX_COLLISIONS) throw new Error("Loop bound violation in getCollisions()");
 		// new ArrayList<Collisions>(new Collisions[collisions.size()]); //@WCA loop<=45
-		ArrayList<Collision> copy = new ArrayList<Collision>(collisions.size());
+		ArrayList<Collision> copy = new ArrayList<Collision>(sz);
 		for(Collision c : collisions) { //@WCA loop<=45
 			copy.add(c);
 		}

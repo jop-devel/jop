@@ -123,6 +123,7 @@ public class TransientDetectorScopeEntry implements Runnable {
 		for (int i = 0; i < motions.size() - 1; i++) { //@WCA loop<=10
 			final Motion one = motions.get(i);
 			for (int j = i + 1; j < motions.size(); j++) { //@WCA loop<=10
+				// We get her 3555 times
 				final Motion two = motions.get(j);
 				final Vector3d vec = one.findIntersection(two);
 				if (vec != null) ret.add(new Collision(one.getAircraft(), two.getAircraft(), vec));

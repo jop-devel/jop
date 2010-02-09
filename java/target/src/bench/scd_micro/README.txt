@@ -39,7 +39,7 @@ Changes:
 -- bench: The size of the temporary array in merge sort is annotated (this is unfortunate)
 -- JDK: if(initialCapacity>maxCapacity) initialCapacity=maxCapacity;
    is bad, because DFA is stupid and the join results in (initialCapacity,maxCapacity)
-
+-- bench: One 'if(x>C) throw Error' hint for the DFA (poor man's context dependent annotations)
    
 == Additional changes for the WCET analysis
 -- The loops in merge sort were annotated using the fact, that the size of

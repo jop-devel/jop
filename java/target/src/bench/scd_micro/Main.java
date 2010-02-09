@@ -6,7 +6,6 @@ package scd_micro;
 public class Main {
 	static int ts, te, to;
 
-
 	public static void main(String[] argv)
 	{
 //		ts = Native.rdMem(Const.IO_CNT);
@@ -19,8 +18,8 @@ public class Main {
 //			ts = Native.rdMem(Const.IO_CNT); 
 			m.run();
 //			te = Native.rdMem(Const.IO_CNT);
-			System.out.print("Iteration finished. Time: ");
-			System.out.println(te-ts-to);
+			//System.out.print("Iteration finished. Time: ");
+			//System.out.println(te-ts-to);
 		}
 		System.out.println("Benchmark finished");
 	}
