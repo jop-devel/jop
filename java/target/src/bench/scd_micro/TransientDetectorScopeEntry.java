@@ -106,8 +106,8 @@ public class TransientDetectorScopeEntry implements Runnable {
 			new HashMap<Vector2d, ArrayList<Motion>>(Constants.MAX_VOXELS_PER_LINE_SEGMENT_POW2);
 		final HashMap<Vector2d, String> graph_colors =
 			new HashMap<Vector2d, String>(Constants.MAX_VOXELS_PER_LINE_SEGMENT_POW2);
-
-		for (final Iterator<Motion> iter = motions.iterator(); iter.hasNext();)
+                                                                                //           MAX_PLANES
+		for (final Iterator<Motion> iter = motions.iterator(); iter.hasNext();) //@WCA loop<=10
 			it.performVoxelHashing(iter.next(), voxel_map, graph_colors);
 
 		final LinkedList<ArrayList<Motion>> ret = new LinkedList<ArrayList<Motion>>();                  //           MAX_VOXELS_PER_LINE_SEGMENT

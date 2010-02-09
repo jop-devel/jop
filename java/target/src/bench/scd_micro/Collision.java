@@ -52,18 +52,19 @@ class Collision {
 	}
 
 	/** Determines collision equality. Two collisions are equal if they have the same aircraft.*/
-
 	public boolean equals(Object _other) {
 		if (_other == this)  return true;
 		if (!(_other instanceof Collision)) return false;
 		Collision other = (Collision) _other;
+		
+		// The analysis cannot not yet cope with allocations in equals(), as it is used everywhere		
+		// Therefore, using iterators here is discouraged
 		ArrayList<Aircraft> a = getAircraftInvolved();
 		ArrayList<Aircraft> b = other.getAircraftInvolved();
 		if (a.size() != b.size()) return false;
-		Iterator<Aircraft> ai = a.iterator();
-		Iterator<Aircraft> bi = b.iterator();
-		while (ai.hasNext()) //@WCA loop<=10
-			if (!ai.next().equals(bi.next())) return false;		
+		for(int i = 0; i < a.size(); i++) { //@WCA loop<=2
+			if(! a.get(i).equals(b.get(i))) return false;
+		}
 		return true;
 	}
 

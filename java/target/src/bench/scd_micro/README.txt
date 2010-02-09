@@ -40,6 +40,13 @@ Changes:
 -- JDK: if(initialCapacity>maxCapacity) initialCapacity=maxCapacity;
    is bad, because DFA is stupid and the join results in (initialCapacity,maxCapacity)
 -- bench: One 'if(x>C) throw Error' hint for the DFA (poor man's context dependent annotations)
+-- JDK: Removed use of iterators in Collision.equals(). Why ?
+   A big problem: When saving an object into the hashtable, the JDK invokes equals().
+   And equals() allocating objects is NOOO good. But when you use an iterator for comparing
+   to lists, eg., you create an object. Hard to track, but our analysis also told us about
+   this problem (which is great, too). On the other hand, with enough type information we should
+   have known that it is not a collision which is in the hashmap (and we will needs this for
+   WCET analysis anyway).
    
 == Additional changes for the WCET analysis
 -- The loops in merge sort were annotated using the fact, that the size of
