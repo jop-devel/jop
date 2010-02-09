@@ -48,20 +48,20 @@ public final class Constants {
 	public static String SPEC_NOISE_ARGS = "-a -b -g -s100 -m10 -M10 -t _213_javac";
 	public static boolean USE_SPEC_NOISE = false;
 
-	public static int DETECTOR_NOISE_REACHABLE_POINTERS = 128;
-	public static int DETECTOR_NOISE_ALLOCATE_POINTERS = 10;
-	public static int DETECTOR_NOISE_ALLOCATION_SIZE = 64;
-	public static int DETECTOR_NOISE_ALLOCATION_SIZE_INCREMENT = 13;
-	public static int DETECTOR_NOISE_MIN_ALLOCATION_SIZE = 32;
-	public static int DETECTOR_NOISE_MAX_ALLOCATION_SIZE = 64;
-	public static int DETECTOR_STARTUP_OFFSET_MILLIS = 3000;
+	public static final int DETECTOR_NOISE_REACHABLE_POINTERS = 128;
+	public static final int DETECTOR_NOISE_ALLOCATE_POINTERS = 10;
+	public static final int DETECTOR_NOISE_ALLOCATION_SIZE = 64;
+	public static final int DETECTOR_NOISE_ALLOCATION_SIZE_INCREMENT = 13;
+	public static final int DETECTOR_NOISE_MIN_ALLOCATION_SIZE = 32;
+	public static final int DETECTOR_NOISE_MAX_ALLOCATION_SIZE = 64;
+	public static final int DETECTOR_STARTUP_OFFSET_MILLIS = 3000;
 
 	public static final boolean DETECTOR_NOISE_VARIABLE_ALLOCATION_SIZE = false;
 	// Switch this to true to stress the garbage collector
 	public static final boolean DETECTOR_NOISE = false;
 
 	// write down the FRAMES into the frame.bin file
-	public static boolean FRAMES_BINARY_DUMP = false; 
+	public static final boolean FRAMES_BINARY_DUMP = false; 
 
 	
 	
@@ -73,8 +73,8 @@ public final class Constants {
 	// the results thus should be deterministic
 	public static final boolean SYNCHRONOUS_DETECTOR = false;    
 
-	public static boolean DUMP_RECEIVED_FRAMES = false;
-	public static boolean DUMP_SENT_FRAMES = false;
+	public static final boolean DUMP_RECEIVED_FRAMES = false;
+	public static final boolean DUMP_SENT_FRAMES = false;
 	public static final boolean DEBUG_DETECTOR = false;
 
 }

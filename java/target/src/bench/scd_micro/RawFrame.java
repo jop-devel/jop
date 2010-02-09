@@ -21,7 +21,7 @@ public class RawFrame {
             positions[pos2++] = positions_[3 * i];
             positions[pos2++] = positions_[3 * i + 1];
             positions[pos2++] = positions_[3 * i + 2]; //        MAX_CALLSIGN_LENGTH
-            for (int j = 0; j < lengths_[i]; j++) { //@WCA loop< 10
+            for (int j = 0; j < lengths_[i]; j++) { //@WCA loop<=10
                 callsigns[pos3++] = signs_[pos4 + j];
             }
             pos4 += lengths_[i];
