@@ -8,14 +8,12 @@ import java.util.regex.Pattern;
 public class MatchPattern {
 	
 	protected static final String headerPattern =
-//		TMTODO doesn't work w/ COM download due to |/-\...
-//		"^[0-9]{1,6} words of Java bytecode \\([0-9]{1,4} KB\\)\\s+" +
-//		"[0-9]{1,6} words external RAM \\([0-9]{1,4} KB\\)\\s+" +
-//		"download complete\\s+" +
-		"^.*" +
+		// TODO fix pattern
+		/* "^.*" +
 		"JOP start V [0-9]{8} \\s+" +
 		"[0-9]{1,4} MHz, [0-9]{3,6} KB RAM, [0-9]{3,6} Byte on-chip RAM, [0-9]{1,2} CPUs\\s+" +
-		"multianewarray \\- GC issue\\?\\s+";
+		"multianewarray \\- GC issue\\?\\s+"; */
+		"^.*";
 
 	protected static final String trailerPattern = "\\s*JVM exit!$";  
 
