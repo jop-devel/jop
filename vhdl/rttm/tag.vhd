@@ -34,8 +34,8 @@ use ieee.numeric_std.all;
 
 entity tag is 
 generic (
-	addr_width	: integer;		-- address bits of cachable memory
-	way_bits	: integer		-- 2**way_bits is number of entries
+	addr_width	: integer := 19;	-- address bits of cachable memory
+	way_bits	: integer := 5		-- 2**way_bits is number of entries
 );
 port (
 	clk, reset	: in std_logic;
