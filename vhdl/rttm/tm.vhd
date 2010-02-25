@@ -281,7 +281,11 @@ begin
 			std_logic_vector(next_stage23.line_addr); 
 			
 			
-		write_fifo_buffer_inst : entity work.write_fifo_buffer 
+		write_fifo_buffer_inst : entity work.write_fifo_buffer
+		generic map (
+			addr_width => addr_width,
+			way_bits => way_bits
+		)
 		port map (
 			clock	 => clk,
 			data	 => stage3.addr,
@@ -572,18 +576,13 @@ begin
 				assert stage2.hit = '1';
 			
 			when commit_3 =>
-				-- write if dirty
-				if stage3_was_dirty(0) = '1' then
-					to_mem.wr <= '1';
-					to_mem.address <= (SC_ADDR_SIZE-1 downto addr_width => 
-						'0') & commit_addr;
-					to_mem.wr_data <= read_data;
-					next_stage23.state <= commit_4;
-				else
-					-- not a cycle earlier to generate shift event
-					commit_word_finishing <= '1';
-					next_stage23.state <= idle;
-				end if;					
+				to_mem.wr <= '1';
+				to_mem.address <= (SC_ADDR_SIZE-1 downto addr_width => 
+					'0') & commit_addr;
+				to_mem.wr_data <= read_data;
+				next_stage23.state <= commit_4;
+
+				assert stage3_was_dirty(0) = '1';
 				
 				commit_shift <= '1';
 				

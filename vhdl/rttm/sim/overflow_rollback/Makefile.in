@@ -11,6 +11,7 @@ SRC= \
 	../../tm_internal_pack.vhd \
 	../../tag.vhd \
 	../../flags_ram.vhd \
+	../../write_fifo_buffer.vhd \
 	../../tm.vhd \
 	../../tm_manager.vhd \
 	../mem_no_arbiter.vhd \
