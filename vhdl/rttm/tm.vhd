@@ -123,6 +123,7 @@ architecture rtl of tm is
 	type stage3_type is record		
 		was_read: std_logic; -- was_read is only set if it was a hit
 -- 		was_dirty: std_logic;
+		addr: std_logic_vector(addr_width-1 downto 0);
 	end record;	
 	
 	type stage23_type is record
@@ -161,7 +162,9 @@ architecture rtl of tm is
 	signal read_miss_publish, next_read_miss_publish: std_logic;
 	
 	signal next_stage23_line_addr_helper: 
-		std_logic_vector(way_bits-1 downto 0); 
+		std_logic_vector(way_bits-1 downto 0);
+		
+	signal write_fifo_buffer_wrreq: std_logic;
 
 
 	-- Data and state flags
@@ -178,17 +181,16 @@ architecture rtl of tm is
 
 	-- Commit logic
 	
-	signal commit_line			: unsigned(way_bits downto 0);
 	signal commit_shift				: std_logic;
 	
 	signal commit_addr			: std_logic_vector(addr_width-1 downto 0);
-	
-	signal next_commit_line: unsigned (way_bits downto 0);
 	
 	signal next_commit_started: std_logic;
 	signal commit_started: std_logic;
 	
 	signal commit_word_finishing: std_logic;
+	
+	signal write_buffer_empty: std_logic;
 	
 	
 	-- Conflict detection logic
@@ -256,8 +258,8 @@ begin
 			line => stage1_async.line_addr,
 			newline => stage1_async.newline,
 			
-			shift => commit_shift,
-			lowest_addr => commit_addr
+			shift => '0',
+			lowest_addr => open
 		);
 		
 				
@@ -277,6 +279,24 @@ begin
 		next_stage23_line_addr_helper <= 
 --			(X downto next_stage23.line_addr'high+1 => '0') & 
 			std_logic_vector(next_stage23.line_addr); 
+			
+			
+		write_fifo_buffer_inst : entity work.write_fifo_buffer 
+		port map (
+			clock	 => clk,
+			data	 => stage3.addr,
+			rdreq	 => commit_shift,
+			sclr	 => transaction_start, -- TODO check timing
+			wrreq	 => write_fifo_buffer_wrreq,
+			empty	 => write_buffer_empty,
+			q	 => commit_addr
+		);
+		
+		-- TODO relies on rttm_instrum generic enabled
+		write_fifo_buffer_wrreq <= '1' when
+			(stage3_was_dirty(0) = '0' or instrum_stage3.hit = '0') and
+				instrum_stage3.set_dirty = '1' else '0';
+			-- TODO previous cycle?
 
 
 	--
@@ -284,8 +304,8 @@ begin
 	--
 
 	proc_stage0: process (broadcast, broadcast_valid_dly, commit_addr, 
-		commit_line, commit_started, from_cpu, from_mem_rdy_cnt_dly, stage1, 
-		stage1_async, state, commit_word_finishing) is
+		commit_started, from_cpu, from_mem_rdy_cnt_dly, stage1, 
+		state, commit_word_finishing, write_buffer_empty) is
 	begin
 		next_stage1.addr <= (others => 'X');
 		next_stage1.cpu_data <= from_cpu.wr_data;
@@ -350,7 +370,7 @@ begin
 				if commit_word_finishing = '1' or 
 					((commit_started = '0') and (from_mem_rdy_cnt_dly(1) = '0')) then
 					next_commit_started <= '1';
-					if commit_line = stage1_async.newline then
+					if write_buffer_empty = '1' then
 						commit_finished <= '1';
 					else 
 						next_stage1.state <= commit;
@@ -362,7 +382,7 @@ begin
 		end case;		
 	end process proc_stage0;
 
-	proc_stage1: process(commit_line, stage1, stage1_async, stage23) is
+	proc_stage1: process(stage1, stage1_async, stage23) is
 	begin
 		next_stage2.update_tags <= '0';
 		next_stage2.hit <= stage1_async.hit;
@@ -381,9 +401,10 @@ begin
 		tag_full <= '0';
 		
 		-- set line_addr and tag_full
-		if stage1.state = commit then
-			next_stage23.line_addr <= commit_line(way_bits-1 downto 0);
-		elsif stage1.state = read1 or stage1.state = write then
+		--if stage1.state = commit then
+		--	next_stage23.line_addr <= commit_line(way_bits-1 downto 0);
+		if stage1.state = read1 or stage1.state = write or 
+			stage1.state = commit then
 			if stage1_async.hit = '1' then
 				next_stage23.line_addr <= stage1_async.line_addr;
 			else
@@ -449,6 +470,8 @@ begin
 		-- .was_read is only set if it was a hit
 		next_stage3.was_read <= read(to_integer(stage2.read_flag_line_addr)) and
 			stage2.hit;
+			
+		next_stage3.addr <= stage2.addr;
 	end process proc_stage2;
 	
 	memory_block_access: process (clk) is
@@ -469,9 +492,9 @@ begin
 		end if;
 	end process memory_block_access;
 	
-	proc_stage23: process(commit_addr, commit_line, from_mem, 
+	proc_stage23: process(commit_addr, from_mem, 
 		read_data, save_data, stage1, stage1_async, stage2, stage23, 
-		stage3_was_dirty, transaction_start, from_mem_rdy_cnt_dly,
+		stage3_was_dirty, from_mem_rdy_cnt_dly,
 		rdy_cnt_busy, read_miss_publish) is
 	begin
 		commit_shift <= '0';
@@ -490,8 +513,6 @@ begin
 		to_mem.rd <= '0';
 		
 		commit_word_finishing <= '0';
-		
-		next_commit_line <= commit_line;
 		
 		next_save_data <= save_data;
 		
@@ -545,9 +566,10 @@ begin
 				next_stage23.update_data <= '1';
 				next_stage23.wr_data <= from_mem.rd_data;
 			
-			when commit_2 =>
-				next_commit_line <= commit_line + 1;
+			when commit_2 =>				
 				next_stage23.state <= commit_3;
+				
+				assert stage2.hit = '1';
 			
 			when commit_3 =>
 				-- write if dirty
@@ -611,10 +633,6 @@ begin
 -- 			to_cpu.rd_data <= from_mem.rd_data;			
 			next_save_data <= from_mem.rd_data;
 			next_read_miss_publish <= '0';
-		end if;		
-		
-		if transaction_start = '1' then
-			next_commit_line <= (others => '0');
 		end if;		
 	end process proc_stage23;
 	
@@ -730,7 +748,7 @@ begin
 				update_tags => '0', update_read => '0',
 				update_dirty => '0', read => '0', dirty => "0",
 				read_flag_line_addr => (others => '0'));
-			stage3 <= (was_read => '0');
+			stage3 <= (was_read => '0', addr => (others => '0'));
 			stage23 <= (state => idle,
 				wr_data => (others => '0'), update_data => '0',
 				line_addr => (others => '0'));
@@ -738,7 +756,6 @@ begin
 			bcstage2 <= '0';
 			broadcast_valid_dly <= '0';
 			save_data <= (others => '0');
-			commit_line <= (others => '0');
 			
 			read_data <= (others => '0');
 			
@@ -754,7 +771,6 @@ begin
 			bcstage2 <= next_bcstage2;
 			broadcast_valid_dly <= broadcast.valid;
 			save_data <= next_save_data;
-			commit_line <= next_commit_line;
 			
 			read_data <= next_read_data;
 			

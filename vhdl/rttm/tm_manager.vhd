@@ -49,7 +49,7 @@ generic (
 	
 	-- enable instrumentation (without probe effects)
 	-- turn off to lower hardware consumption
-	rttm_instrum	: boolean := false;
+	rttm_instrum	: boolean := true;
 	
 	-- enable to only detect truly conflicting reads,
 	-- i.e. reads of an address not yet written during the transaction
