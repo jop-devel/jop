@@ -124,6 +124,9 @@ architecture rtl of tm is
 		was_read: std_logic; -- was_read is only set if it was a hit
 -- 		was_dirty: std_logic;
 		addr: std_logic_vector(addr_width-1 downto 0);
+		
+		hit: std_logic;
+		set_dirty: std_logic;		
 	end record;	
 	
 	type stage23_type is record
@@ -213,9 +216,7 @@ architecture rtl of tm is
 	signal r_w_set_instrum_max: r_w_set_instrum_type;
 	
 	type instrum_stage3_type is record
-		hit: std_logic;
 		set_read: std_logic;
-		set_dirty: std_logic;
 	end record;
 	
 	signal instrum_stage3: instrum_stage3_type;
@@ -298,8 +299,8 @@ begin
 		
 		-- TODO relies on rttm_instrum generic enabled
 		write_fifo_buffer_wrreq <= '1' when
-			(stage3_was_dirty(0) = '0' or instrum_stage3.hit = '0') and
-				instrum_stage3.set_dirty = '1' else '0';
+			(stage3_was_dirty(0) = '0' or stage3.hit = '0') and
+				stage3.set_dirty = '1' else '0';
 			-- TODO previous cycle?
 
 
@@ -476,6 +477,9 @@ begin
 			stage2.hit;
 			
 		next_stage3.addr <= stage2.addr;
+		
+		next_stage3.set_dirty <= stage2.update_dirty and stage2.dirty(0);
+		next_stage3.hit <= stage2.hit;
 	end process proc_stage2;
 	
 	memory_block_access: process (clk) is
@@ -747,7 +751,8 @@ begin
 				update_tags => '0', update_read => '0',
 				update_dirty => '0', read => '0', dirty => "0",
 				read_flag_line_addr => (others => '0'));
-			stage3 <= (was_read => '0', addr => (others => '0'));
+			stage3 <= (was_read => '0', addr => (others => '0'),
+				hit => '0', set_dirty => '0');
 			stage23 <= (state => idle,
 				wr_data => (others => '0'), update_data => '0',
 				line_addr => (others => '0'));
@@ -796,26 +801,24 @@ begin
 		elsif rising_edge(clk) then
 			if rttm_instrum then
 				-- save for stage 3
-				instrum_stage3.hit <= stage2.hit;
 				instrum_stage3.set_read <= stage2.update_read and stage2.read;
-				instrum_stage3.set_dirty <= stage2.update_dirty and stage2.dirty(0);
 			
 				-- update counters in stage 3
-				if (stage3.was_read = '0' or instrum_stage3.hit = '0') and
+				if (stage3.was_read = '0' or stage3.hit = '0') and
 					instrum_stage3.set_read = '1' then
 					r_w_set_instrum_current.read_set <=
 						r_w_set_instrum_current.read_set + 1;
 				end if;
 								
-				if (stage3_was_dirty(0) = '0' or instrum_stage3.hit = '0') and
-					instrum_stage3.set_dirty = '1' then
+				if (stage3_was_dirty(0) = '0' or stage3.hit = '0') and
+					stage3.set_dirty = '1' then
 					r_w_set_instrum_current.write_set <=
 						r_w_set_instrum_current.write_set + 1;
 				end if;
 				
-				if instrum_stage3.hit = '0' and
+				if stage3.hit = '0' and
 					(instrum_stage3.set_read = '1' or
-					instrum_stage3.set_dirty = '1') 
+					stage3.set_dirty = '1') 
 					then
 					r_w_set_instrum_current.read_or_write_set <=
 						r_w_set_instrum_current.read_or_write_set + 1; 
