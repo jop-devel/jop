@@ -697,7 +697,7 @@ begin
 						commit_4 =>
 						-- rdy_cnt 0 or set by arbiter or tm_manager
 						
-						-- rdy_cnt is delayed and a new memory transaction will
+						-- rdy_cnt is delayed and a new SHM transaction will
 						-- be delayed by an additional cycle
 						case from_mem_rdy_cnt_dly is
 							when "11" =>

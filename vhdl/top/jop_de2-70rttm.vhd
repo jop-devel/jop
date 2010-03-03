@@ -281,7 +281,7 @@ cmp_arbiter : entity work.arbiter
 			cpu_cnt	=> cpu_cnt)
 		port map(
 			clk => clk_int,
-			reset => int_res, -- TODO			
+			reset => int_res,			
 			arb_out => sc_arb_out,
 			arb_in => sc_arb_in,
 			mem_out => sc_mem_out,

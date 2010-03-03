@@ -47,6 +47,7 @@ generic (
 	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
 	cpu_cnt		: integer := 2;		-- number of cpus
+	tm_way_bits	: integer := 5;		-- 2**way_bits is number of entries
 	rttm_instrum: boolean := true;	-- rttm instrumentation
 	confl_rds_only	: boolean := false
 );
@@ -114,7 +115,6 @@ architecture rtl of jop is
 --
 
 	constant tm_addr_width		: integer := 18;	-- address bits of cachable memory
-	constant tm_way_bits		: integer := 5;		-- 2**way_bits is number of entries
 	constant tm_magic_detect	: std_logic_vector(18 downto 17) := (others => '1');
 
 

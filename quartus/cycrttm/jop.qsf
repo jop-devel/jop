@@ -511,6 +511,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_tdma.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm_internal_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tag.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/rttm/write_fifo_buffer.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rttm/flags_ram.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm_manager.vhd

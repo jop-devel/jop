@@ -599,7 +599,7 @@ set_location_assignment PIN_AJ6 -to wd
 set_location_assignment PIN_D21 -to ser_rxd
 set_location_assignment PIN_E21 -to ser_txd
 
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_50.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_de2.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_tdma.vhd
 set_global_assignment -name VHDL_FILE "../../vhdl/top/jop_de2-70rttm.vhd"
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_pack.vhd
