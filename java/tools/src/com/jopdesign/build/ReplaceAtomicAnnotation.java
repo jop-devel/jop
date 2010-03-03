@@ -23,6 +23,10 @@ package com.jopdesign.build;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.apache.bcel.generic.*;
 import org.apache.bcel.util.InstructionFinder;
@@ -68,10 +72,56 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 						methods[i] = nm;
 						
 						clazz.setConstantPool(cpoolgen.getFinalConstantPool());
+						
+						System.out.println(
+								"RTTM: transformed atomic method " + 
+								clazz.getClassName() + "." + nm.getName() + 
+								nm.getSignature());
 					}
 				}
 			}
 		}
+	}
+	
+	protected static int getArgsCount(MethodGen method) {
+        int max = method.isStatic() ? 0 : 1;
+        Type[] arg_types = method.getArgumentTypes();
+        if (arg_types != null) {
+            for (int i = 0; i < arg_types.length; i++) {
+                max += arg_types[i].getSize();
+            }
+        }
+        
+        return max;
+	}
+	
+	protected static SortedSet<Integer> getModifiedArguments(MethodGen method) {
+		SortedSet<Integer> result = new TreeSet<Integer>();
+		
+		int arguments = getArgsCount(method);
+		
+		/*
+		 * local variables are modified only by the bytecodes
+		 * astore, astore_<n>, dstore, dstore_<n>, fstore, fstore_<n>, iinc, 
+		 * istore, istore_<n>, lstore, lstore_<n>
+		 */
+
+		for (Instruction in: method.getInstructionList().getInstructions()) {
+			if (in instanceof IndexedInstruction) {
+				IndexedInstruction i = (IndexedInstruction)in;
+				
+				if (i.getIndex() < arguments) {
+					if (i instanceof DSTORE || i instanceof LSTORE) {
+						result.add(i.getIndex());
+						result.add(i.getIndex()+1);
+					} else if (i instanceof StoreInstruction || i instanceof IINC) {
+						result.add(i.getIndex());
+					}
+				}
+			}
+		}
+		
+		return result;
 	}
 	
 	public static Method transform(Method m, JavaClass clazz, 
@@ -85,19 +135,6 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 			throw new UnsupportedOperationException();
 		}
 		
-		int argsCount;
-		{
-            int max = method.isStatic() ? 0 : 1;
-            Type[] arg_types = method.getArgumentTypes();
-            if (arg_types != null) {
-                for (int i = 0; i < arg_types.length; i++) {
-                    max += arg_types[i].getSize();
-                }
-            }
-            
-            argsCount = max;
-		}
-		
 		final int transactionLocals = 4; // TODO 
 		
 		final int maxLocals = method.getMaxLocals();
@@ -105,11 +142,27 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 		final int transactionLocalsBaseIndex = maxLocals; 
 		final int copyBaseIndex = transactionLocalsBaseIndex + transactionLocals;
 		
+		SortedSet<Integer> modifiedArguments = getModifiedArguments(method);
+		
+		// maps modified arguments indices to copies
+		Map<Integer, Integer> modifiedArgumentsCopies = 
+			new TreeMap<Integer, Integer>();
+		
+		{
+			int copyIndex = copyBaseIndex;
+			for (Integer i: modifiedArguments) {
+				System.out.println("RTTM: method " + 
+						method.getClassName() + "." + method.getName() + 
+						method.getSignature() + 
+						": saving argument " + i + " to variable " + 
+						copyIndex);							
+				
+				modifiedArgumentsCopies.put(i, copyIndex++);
+			}
+		}
 		
 		InstructionList il = new InstructionList();
-		
 		InstructionFactory _factory = new InstructionFactory(_cp);
-		
 		method.setInstructionList(il);
 		
 		{
@@ -133,10 +186,11 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 //			il.append(_factory.createStore(Type.INT, transactionLocalsBaseIndex-2+1));
 			
 		    {
-		    	// TODO only for (possibly two-word) variables which are written to
-		    	for (int i = 0; i < argsCount; i++) {
+		    	// only save arguments which might be modified
+		    	for (int i: modifiedArguments) {
 		    		il.append(_factory.createLoad(Type.INT, i));
-		    		il.append(_factory.createStore(Type.INT, copyBaseIndex+i));
+		    		il.append(_factory.createStore(Type.INT, 
+		    				modifiedArgumentsCopies.get(i)));
 		    	}
 		    }		    			
 			
@@ -254,10 +308,10 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 			
 			InstructionHandle ih_108 = null;
 		    {
-		    	// TODO only for (possibly two-word) variables which are written to
-		    	for (int i = 0; i < argsCount; i++) {
-		    		InstructionHandle ih = il.append(_factory.createLoad(Type.INT, copyBaseIndex+i));
-		    		if (i == 0) {
+		    	for (int i: modifiedArguments) {
+		    		InstructionHandle ih = il.append(_factory.createLoad(
+		    				Type.INT, modifiedArgumentsCopies.get(i)));
+		    		if (ih_108 == null) {
 		    			ih_108 = ih;
 		    		}
 		    		il.append(_factory.createStore(Type.INT, i));
