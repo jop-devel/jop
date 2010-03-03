@@ -355,6 +355,7 @@ begin
 			
 				if conflict = '1' then
 					next_state <= CONTAINMENT;
+					next_containment_state <= cbb0;
 					
 					if rttm_instrum then
 						next_instrumentation.retries <= 
