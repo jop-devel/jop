@@ -45,6 +45,8 @@ vcom %options% ^
 %jopdir%/rttm/tm_internal_pack.vhd ^
 %jopdir%/rttm/tm_coordinator.vhd ^
 %jopdir%/rttm/tag.vhd ^
+%jopdir%/rttm/write_fifo_buffer.vhd ^
+%jopdir%/rttm/flags_ram.vhd ^
 %jopdir%/rttm/tm.vhd ^
 %jopdir%/rttm/tm_manager.vhd ^
 %jopdir%/top/joprttm.vhd ^

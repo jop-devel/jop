@@ -16,7 +16,7 @@ public class ModifiedArgumentsEarlyCommit implements Runnable {
 	
 	protected static void main(String[] args) {
 		for (int i = 1; i < sys.nrCpu; i++) {
-			Runnable r = new ModifiedArguments();
+			Runnable r = new ModifiedArgumentsEarlyCommit();
 			Startup.setRunnable(r, i-1);
 		}
 		
