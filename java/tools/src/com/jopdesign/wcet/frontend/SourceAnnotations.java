@@ -72,6 +72,9 @@ public class SourceAnnotations {
 		public static LoopBound boundedAbove(int ub) {
 			return new LoopBound(0,ub);
 		}
+		public LoopBound improveUpperBound(int bound) {
+			return new LoopBound(fst(), Math.min(snd(),bound));
+		}
 	}
 
 	private Project project;

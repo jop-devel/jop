@@ -32,11 +32,15 @@ import com.jopdesign.sys.Native;
  *
  */
 public class StartEjipCmp {
+    /* Debugging signals to manipulate the cache */
+    final static int CACHE_FLUSH = -51;
+    final static int CACHE_DUMP = -53;
 
 	/**
 	 * Set to false for the WCET analysis, true for measurement
 	 */
 	final static boolean MEASURE = false;
+	final static boolean MEASURE_CACHE = false;
 	static int ts, te, to;
 
 
@@ -52,6 +56,7 @@ public class StartEjipCmp {
 		int max = 0;
 		int val = 0;
 		for (int i=0; i<1000; ++i) {
+		    if (MEASURE_CACHE) Native.wrMem(1,CACHE_FLUSH);
 			invoke();
 			val = te-ts-to;
 			if (val<min) min = val;
@@ -64,6 +69,7 @@ public class StartEjipCmp {
 	static void invoke() {
 		measure();
 		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if (MEASURE_CACHE) Native.rdMem(CACHE_DUMP);
 	}
 
 	static void measure() {

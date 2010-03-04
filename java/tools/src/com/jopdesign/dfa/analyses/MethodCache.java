@@ -402,44 +402,45 @@ public class MethodCache implements	Analysis<List<HashedString>, MethodCache.Cac
 		Context c = new Context(context);
 		c.constPool = method.getConstantPool();
 		c.method = methodName;
-		c.callString = new LinkedList<HashedString>(context.callString);
-		c.callString.add(new HashedString(context.method + ":" + stmt.getPosition()));
-
-		// System.out.println("input callString: "+context.callString);
-
-		// update cache entries
-		ContextMap<List<HashedString>, CacheMapping> tmpresult = new ContextMap<List<HashedString>, CacheMapping>(c, new HashMap<List<HashedString>, CacheMapping>());
-		CacheMapping mapping = new CacheMapping(input.get(context.callString));
-		InstructionHandle last = method.getInstructionList().getEnd();
-		mapping.fetch(methodName, last.getPosition());
-		tmpresult.put(c.callString, mapping);
-
-		while (c.callString.size() > CALLSTRING_LENGTH) {
-			c.callString.removeFirst();
-		}
-
-		System.out.println("### " + stmt + ": " + context.callString + "/" + context.method + "->" + methodName);
-		// System.out.println("calstr "+c.callString);
-
-		InstructionHandle entry = method.getInstructionList().getStart();
-		state.put(entry, join(tmpresult, state.get(entry)));
-
-		// interpret method
-		Map<InstructionHandle, ContextMap<List<HashedString>, CacheMapping>> r = interpreter.interpret(c, entry, state, false);
-
-		// pull out relevant information from call
-		InstructionHandle exit = method.getInstructionList().getEnd();
-		if (r.get(exit) != null) {
-			MethodGen returnMethod = p.getMethod(context.method).getMethodGen();			
-			mapping = new CacheMapping(r.get(exit).get(c.callString));
-			last = returnMethod.getInstructionList().getEnd();
-			mapping.fetch(context.method, last.getPosition());
-			result.put(context.callString, mapping);
-		}
-
-		if (result.isEmpty()) {
-			System.out.println("empty result set!");
-		}
+		throw new AssertionError("<defunct>");
+//		c.callString = new LinkedList<HashedString>(context.callString);
+//		c.callString.add(new HashedString(context.method + ":" + stmt.getPosition()));
+//
+//		// System.out.println("input callString: "+context.callString);
+//
+//		// update cache entries
+//		ContextMap<List<HashedString>, CacheMapping> tmpresult = new ContextMap<List<HashedString>, CacheMapping>(c, new HashMap<List<HashedString>, CacheMapping>());
+//		CacheMapping mapping = new CacheMapping(input.get(context.callString));
+//		InstructionHandle last = method.getInstructionList().getEnd();
+//		mapping.fetch(methodName, last.getPosition());
+//		tmpresult.put(c.callString, mapping);
+//
+//		while (c.callString.size() > CALLSTRING_LENGTH) {
+//			c.callString.removeFirst();
+//		}
+//
+//		System.out.println("### " + stmt + ": " + context.callString + "/" + context.method + "->" + methodName);
+//		// System.out.println("calstr "+c.callString);
+//
+//		InstructionHandle entry = method.getInstructionList().getStart();
+//		state.put(entry, join(tmpresult, state.get(entry)));
+//
+//		// interpret method
+//		Map<InstructionHandle, ContextMap<List<HashedString>, CacheMapping>> r = interpreter.interpret(c, entry, state, false);
+//
+//		// pull out relevant information from call
+//		InstructionHandle exit = method.getInstructionList().getEnd();
+//		if (r.get(exit) != null) {
+//			MethodGen returnMethod = p.getMethod(context.method).getMethodGen();			
+//			mapping = new CacheMapping(r.get(exit).get(c.callString));
+//			last = returnMethod.getInstructionList().getEnd();
+//			mapping.fetch(context.method, last.getPosition());
+//			result.put(context.callString, mapping);
+//		}
+//
+//		if (result.isEmpty()) {
+//			System.out.println("empty result set!");
+//		}
 	}
 
 	public Map getResult() {

@@ -61,7 +61,6 @@ import org.apache.bcel.verifier.structurals.InstConstraintVisitor;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.analyses.Pair;
-import com.jopdesign.dfa.analyses.LoopBounds.ValueMapping;
 import com.jopdesign.dfa.framework.Context;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.HashedString;

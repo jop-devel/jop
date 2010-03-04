@@ -47,6 +47,7 @@ public class ContextMap<K, V> extends HashMap<K, V> {
 		this.context = context;
 	}
 
+	@SuppressWarnings("unchecked")
 	public void add(Object elem) {
 		put((K)elem, (V)elem);
 	}

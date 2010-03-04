@@ -21,11 +21,13 @@
 package com.jopdesign.dfa.analyses;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.ANEWARRAY;
@@ -51,6 +53,7 @@ import org.apache.bcel.generic.Type;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.framework.Analysis;
+import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.dfa.framework.Context;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.FlowEdge;
@@ -58,50 +61,10 @@ import com.jopdesign.dfa.framework.Interpreter;
 import com.jopdesign.dfa.framework.MethodHelper;
 import com.jopdesign.dfa.framework.DFAAppInfo;
 
-public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, ReceiverTypes.TypeMapping> {
+public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 
-	public static class TypeMapping {
-		public final int stackLoc;
-		public final String heapLoc;
-		public final String type;
-		public final int hash;
-		
-		public TypeMapping(int l, String t) {
-			stackLoc = l;
-			heapLoc = "";
-			type = t;
-			hash = stackLoc+heapLoc.hashCode()+type.hashCode();
-		}
-
-		public TypeMapping(String l, String t) {
-			stackLoc = -1;
-			heapLoc = l;
-			type = t;
-			hash = stackLoc+heapLoc.hashCode()+type.hashCode();
-		}
-
-		public boolean equals(Object o) {
-			TypeMapping m = (TypeMapping)o;
-			return (stackLoc == m.stackLoc)
-				&& heapLoc.equals(m.heapLoc)
-				&& type.equals(m.type);
-		}
-				
-		public int hashCode() {
-			return hash;
-		}
-		
-		public String toString() {
-			if (stackLoc >= 0) {
-				return "<stack["+stackLoc+"], "+type+">";
-			} else {
-				return "<"+heapLoc+", "+type+">";				
-			}
-		}
-	}
-	
 	private Map<String, ContextMap<TypeMapping, TypeMapping>> threads = new LinkedHashMap<String, ContextMap<TypeMapping, TypeMapping>>();
-	private Map<InstructionHandle, ContextMap<String, String>> targets = new LinkedHashMap<InstructionHandle, ContextMap<String, String>>();
+	private Map<InstructionHandle, ContextMap<CallString, Set<String>>> targets = new LinkedHashMap<InstructionHandle, ContextMap<CallString, Set<String>>>();
 	
 	public ContextMap<TypeMapping, TypeMapping> bottom() {		
 		return null;
@@ -171,14 +134,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		
 // 		System.out.println(context.method+": "+stmt);
 // 		System.out.print(stmt.getInstruction()+":\t{ ");
-// 		for (Iterator k = input.keySet().iterator(); k.hasNext(); ) {
-// 			ReceiverTypes.TypeMapping m = (ReceiverTypes.TypeMapping) k.next();
-// 			if (m.stackLoc >= 0) {
-// 				System.out.print("<stack[" + m.stackLoc + "], " + m.type +">, ");
-// 			} else {
-// 				System.out.print("<" + m.heapLoc + ", " + m.type +">, ");						
-// 			}
-// 		}
+//		System.out.print(input.keySet());
 // 		System.out.println("}");
 		
 		switch (instruction.getOpcode()) {
@@ -1265,7 +1221,9 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		} else if (methodId.equals("com.jopdesign.sys.Native.getSP()I")) {
 			filterSet(input, result, context.stackPtr);
 		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")
-				|| methodId.equals("com.jopdesign.sys.Native.toObject(I)Ljava/lang/Object;")) {
+				|| methodId.equals("com.jopdesign.sys.Native.toObject(I)Ljava/lang/Object;")
+				|| methodId.equals("com.jopdesign.sys.Native.toInt(F)I")
+				|| methodId.equals("com.jopdesign.sys.Native.toFloat(I)F")) {
 			filterSet(input, result, context.stackPtr-1);
 		} else if (methodId.equals("com.jopdesign.sys.Native.toIntArray(I)[I")) {
 			filterSet(input, result, context.stackPtr-1);
@@ -1294,13 +1252,15 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 	}
 	
 	private void recordReceiver(InstructionHandle stmt, Context context, String target) {
+		CallString cs = new CallString();
 		if (targets.get(stmt) == null) {
-			targets.put(stmt, new ContextMap<String, String>(context, new HashMap<String, String>()));
-		}
-		targets.get(stmt).add(target);	
+			targets.put(stmt, new ContextMap<CallString, Set<String>>(context, new HashMap<CallString, Set<String>>()));
+			targets.get(stmt).put(cs, new HashSet<String>());
+		}		
+		targets.get(stmt).get(cs).add(target);
 	}
 	
-	public Map<InstructionHandle, ContextMap<String, String>> getResult() {
+	public Map<InstructionHandle, ContextMap<CallString, Set<String>>> getResult() {
 		return targets;
 	}
 	
@@ -1309,12 +1269,12 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		for (Iterator<InstructionHandle> i = targets.keySet().iterator(); i.hasNext(); ) {
 			InstructionHandle instr = i.next();
 
-			ContextMap<String, String> r = targets.get(instr);
+			ContextMap<CallString, Set<String>> r = targets.get(instr);
 			Context c = r.getContext();
 
 			System.out.println(c.method+":"+instr.getPosition());
-			for (Iterator<String> k = r.keySet().iterator(); k.hasNext(); ) {
-				String target = k.next();
+			for (Iterator<Set<String>> k = r.values().iterator(); k.hasNext(); ) {
+				Set<String> target = k.next();
 				System.out.println("\t"+target);
 			}
 		}			

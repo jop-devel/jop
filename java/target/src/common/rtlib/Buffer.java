@@ -57,6 +57,14 @@ public class Buffer {
 	}
 	
 	/**
+	 * Return capacity of the buffer
+	 * @return the value
+	 */
+	public int capacity() {
+		return data.length;
+	}
+
+	/**
 	 * Is the buffer empty?
 	 * @return true if empty
 	 */

@@ -1,3 +1,32 @@
+/*
+ * Copyright (c) Daniel Reichhard, daniel.reichhard@gmail.com
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. All advertising materials mentioning features or use of this software
+ *    must display the following acknowledgement:
+ *	This product includes software developed by Daniel Reichhard
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ */
 package ejip.nfs.datastructs;
 
 import ejip.nfs.NfsConst;
@@ -77,22 +106,22 @@ public class Sattr3 {
 	 */
 	public void setMode(int mode) {
 		this.mode = mode;
-		this.modeset = 1;
+		this.modeset = NfsConst.TRUE;
 	}
 	
 	public void setUid(int uid) {
 		this.uid = uid;
-		this.uidset = 1;
+		this.uidset = NfsConst.TRUE;
 	}
 	
 	public void setGid(int gid) {
 		this.gid = gid;
-		this.gidset = 1;
+		this.gidset = NfsConst.TRUE;
 	}
 	
 	public void setSize(long size) {
 		this.size = size;
-		this.sizeset = 1;
+		this.sizeset = NfsConst.TRUE;
 	}
 	
 	public void setAtime(Nfstime3 atime, int time_how) {
@@ -120,7 +149,7 @@ public class Sattr3 {
 	public void appendToStringBuffer(StringBuffer sb) {
 		Xdr.append(sb, modeset);
 		if (modeset == NfsConst.TRUE) {
-			Xdr.append(sb,mode);
+			Xdr.append(sb, mode);
 		}
 		Xdr.append(sb, uidset);
 		if (uidset == NfsConst.TRUE) {
@@ -148,19 +177,19 @@ public class Sattr3 {
 	
 	public void resetFields() {
 		mode = 0; 
-		modeset = 0;
+		modeset = NfsConst.FALSE;
 		uid = 0; 
-		uidset = 0;
+		uidset = NfsConst.FALSE;
 		gid = 0;
-		gidset = 0;
+		gidset = NfsConst.FALSE;
 		size = 0;
-		sizeset = 0;
+		sizeset = NfsConst.FALSE;
 		atime.setSeconds(0);
 		atime.setNseconds(0); 
-		atimeset = 0;
+		atimeset = NfsConst.FALSE;
 		mtime.setSeconds(0);
 		mtime.setNseconds(0);
-		mtimeset = 0;
+		mtimeset = NfsConst.FALSE;
 	}
     
    /* public void loadFromStringBuffer(StringBuffer sb) {

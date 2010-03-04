@@ -16,15 +16,25 @@ import java.util.Map.Entry;
 
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
-
+/**
+ * Misc. Stuff I found useful.
+ * 
+ * FIXME: [refactor] MiscUtils should not live in WCET - maybe start a 
+ *                   package com.jopdesign.util, and split functionalities ?
+ * @author Benedikt Huber <benedikt.huber@gmail.com>
+ *
+ */
 public class MiscUtils {
+	public interface Query<Arg> {
+		public boolean query(Arg a);
+	}
 	public interface Function1<Arg,Ret> {
 		public Ret apply(Arg v);
 	}
 	public interface Function2<Arg1,Arg2,Ret> {
 		public Ret apply(Arg1 v1, Arg2 v2);
 	}
-
+	
 	public static<K,V> void addToSet(Map<K,Set<V>> map,K key, V val) {
 
 		Set<V> set = map.get(key);
@@ -137,19 +147,32 @@ public class MiscUtils {
 		}
 		return sb.toString();
 	}
-
-	public static void printMap(PrintStream out,Map<?,?> map, int fill) {
-		for(Entry<?, ?> entry : map.entrySet()) {
-			StringBuilder sb = new StringBuilder();
-			String s1 = entry.getKey().toString();
-			sb.append(s1);
-			for(int i = s1.length(); i < fill; i++) sb.append(' ');
-			sb.append(" ==> ");
-			sb.append(entry.getValue().toString());
-			out.println(sb.toString());
-		}
+	/**
+	 * Pretty print the given map
+	 * @param out out stream
+	 * @param map the map to print
+	 * @param fill minimal length of the key, filled with whitespace
+	 */
+	public static <K,V>
+	void printMap(PrintStream out, Map<K,V> map, int fill) {
+		_fill = fill; // not thread safe
+		printMap(out,map,new Function2<K,V,String>() {
+			public String apply(K v1,V v2) {
+				return String.format("%"+_fill+"s ==> %s",v1,v2);
+			}			
+		});
 	}
-
+	private static int _fill;
+	
+	public static <K,V> 
+	void printMap(PrintStream out,
+			Map<? extends K, ? extends V> map,
+			Function2<K,V, String> printer) {
+		for(Entry<? extends K, ? extends V> entry : map.entrySet()) {
+			out.println(printer.apply(entry.getKey(), entry.getValue()));
+		}		
+	}
+	
 	public static <V,E>
 	List<V> topologicalOrder(DirectedGraph<V,E> acyclicGraph)
 	{
@@ -170,6 +193,7 @@ public class MiscUtils {
 		return revTopo;
 	}
 	public static final int BYTES_PER_WORD = 4;
+
 
 
 }

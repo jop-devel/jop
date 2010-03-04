@@ -104,6 +104,7 @@ public class ObjectCache {
     static Obj2 obj2a, obj2b;
     static Obj3 obj3a, obj3b;
     /* static arrays */
+    static int ptr = 0;
     static Obj2[] obj2s;
     static Obj3[] obj3s;
     public static void init()
@@ -112,7 +113,9 @@ public class ObjectCache {
         obj2a = new Obj2(); obj2b = new Obj2();
         obj3a = new Obj3(); obj3b = new Obj3();
         obj1a.sub1 = obj2a; obj1b.sub1 = obj2a;
-        obj1a.sub2 = obj3a; obj1b.sub2 = obj3b;     
+        obj1a.sub2 = obj3a; obj1b.sub2 = obj3b;
+        obj2s = new Obj2[5];
+        obj3s = new Obj3[7];
     }
 	public static void main(String[] args) {
 
@@ -138,6 +141,9 @@ public class ObjectCache {
 		val += test1();
 		val += test2();
 		val += test3();
+		val += test5();
+		val += test5();
+		val += test5();
 		return val;
 	}
 	/* test1: access field of one out of two static objects */
@@ -178,6 +184,15 @@ public class ObjectCache {
 	    int v = obj1a.next.val;         // GF: obj1a, obj1a.next
 		if(v == to) obj1a.next = obj1b; // heap modification -> TOP		
 		return v+obj1a.next.val;        // GF: top, top
+	}
+	
+	static int test5() {
+	    Obj2 x = obj2s[ptr++];
+	    if(ptr == 5) ptr = 0;
+	    Obj2 y = obj2s[ptr++];
+	    if(ptr == 5) ptr = 0;
+	    return x.val
+	          +y.val;
 	}
 	
 }

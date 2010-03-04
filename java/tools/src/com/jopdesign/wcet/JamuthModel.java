@@ -27,6 +27,11 @@ public class JamuthModel implements ProcessorModel {
 		tt = new JamuthTimingTable();
 		NO_METHOD_CACHE = new NoMethodCache(p);
 	}
+	
+	public String getName() {
+		return "jamuth";
+	}
+
 	public long basicBlockWCET(ExecutionContext ctx, BasicBlock codeBlock) {
 		ArrayList<JamuthInstructionInfo> instructions =
 			new ArrayList<JamuthInstructionInfo>();

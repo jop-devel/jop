@@ -3,8 +3,6 @@ package com.jopdesign.dfa.framework;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.jopdesign.dfa.analyses.SymbolicAddress;
-
 /** 
  * Factory for sets with a maximum size N.
  * For every bound N, there is one factory, and one top element.

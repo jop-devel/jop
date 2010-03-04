@@ -20,6 +20,8 @@
 package com.jopdesign.wcet.frontend;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +38,7 @@ import org.apache.log4j.Logger;
 import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
@@ -67,7 +70,7 @@ public class WcetAppInfo  {
 	private AppInfo ai;
 	private Map<MethodInfo, ControlFlowGraph> cfgs;
 	private List<ControlFlowGraph> cfgsByIndex;
-	private Map<InstructionHandle, ContextMap<String, String>> receiverAnalysis = null;
+	private Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverAnalysis = null;
 	private ProcessorModel processor;
 	private Project project;
 
@@ -223,12 +226,17 @@ public class WcetAppInfo  {
 		staticImpls = dfaReceivers(ih, staticImpls);
 		return staticImpls;
 	}
-	// TODO: rather slow, for debugging purposes
+
+	// TODO: [wcet-app-info] dfaReceivers() is rather slow, for debugging purposes
 	private List<MethodInfo> dfaReceivers(InstructionHandle ih, List<MethodInfo> staticImpls) {
 		if(this.receiverAnalysis != null && receiverAnalysis.containsKey(ih)) {
-			ContextMap<String, String> receivers = receiverAnalysis.get(ih);
+			ContextMap<CallString, Set<String>> receivers = receiverAnalysis.get(ih);
+			Collection<Set<String>> receiverValues = receivers.values();
 			List<MethodInfo> dynImpls = new Vector<MethodInfo>();
-			Set<String> dynReceivers = receivers.keySet();
+			Set<String> dynReceivers = new HashSet<String>();
+			for (Set<String> val : receiverValues) {
+				dynReceivers.addAll(val);
+			}
 			for(MethodInfo impl : staticImpls) {
 				if(dynReceivers.contains(impl.getFQMethodName())) {
 					dynReceivers.remove(impl.getFQMethodName());
@@ -298,7 +306,7 @@ public class WcetAppInfo  {
 		}
 	}
 	public void setReceivers(
-			Map<InstructionHandle, ContextMap<String, String>> receiverResults) {
+			Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults) {
 		this.receiverAnalysis = receiverResults;
 	}
 

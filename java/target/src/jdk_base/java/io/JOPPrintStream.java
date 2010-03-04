@@ -93,7 +93,8 @@ public class JOPPrintStream extends PrintStream {
 		print(obj == null ? "null" : obj.toString());
 	}
 
-	private synchronized void print(String str) {
+	private // synchronized
+		void print(String str) {
 		wr(str);
 		// there is no flush on the serial line
 		// flush();

@@ -33,7 +33,7 @@ import joprt.RtThread;
  */
 public class RunIt {
 
-	static Model model = new Model();
+	// static Model model = new Model();
 	// static WatchDog model = new WatchDog();
 	// static WriteOutput model = new WriteOutput();
 	// static ReadInput model = new ReadInput();
@@ -41,6 +41,9 @@ public class RunIt {
 	// static SerialRead model = new SerialRead();
 	// static FsmTest model = new FsmTest();
 	// static FsmDemo model = new FsmDemo();
+	// static Simple model = new Simple();
+	// static LightFollower model = new LightFollower();
+	static LineFollower model = new LineFollower();
 
 	/**
 	 * Create and run a Ptolemy model.

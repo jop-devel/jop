@@ -28,7 +28,7 @@ import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.analysis.ExecutionContext;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
-import com.jopdesign.wcet.analysis.RecursiveAnalysis;
+import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.BasicBlockNode;
@@ -124,8 +124,8 @@ public class MethodBuilder implements CfgVisitor {
 	}
 
 	public void visitSummaryNode(SummaryNode n) {
-		RecursiveAnalysis<AnalysisContextLocal> an =
-			new RecursiveAnalysis<AnalysisContextLocal>(
+		RecursiveWcetAnalysis<AnalysisContextLocal> an =
+			new RecursiveWcetAnalysis<AnalysisContextLocal>(
 					jTrans.getProject(),
 					new LocalAnalysis());
 		WcetCost cost = an.runWCETComputation("SUBGRAPH"+n.getId(),

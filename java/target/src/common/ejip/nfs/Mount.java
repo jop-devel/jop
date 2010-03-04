@@ -1,23 +1,48 @@
+/*
+ * Copyright (c) Daniel Reichhard, daniel.reichhard@gmail.com
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. All advertising materials mentioning features or use of this software
+ *    must display the following acknowledgement:
+ *	This product includes software developed by Daniel Reichhard
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ */
 package ejip.nfs;
 
+import ejip.nfs.datastructs.MountRes3;
+import ejip.nfs.datastructs.MountList;
+import ejip.nfs.datastructs.Exports;
+import ejip.nfs.datastructs.ServicePort;
+
 public class Mount {
-	public int mountPort;
-	public int prog;
-	public int vers;
-	private int xid;
+	private int mountPort;
+	private int prog;
+	private int vers;
 	private StringBuffer messageBuffer = new StringBuffer();
 	private NfsClient nc;
+	private int uid = 0;
+	private int gid = 0;
 	
-	StringBuffer exportsList[];
-	StringBuffer groups[][];
-	/**
-	 * List of Mounts
-	 * index 0: hostname
-	 * index 1: directory
-	 */
-	StringBuffer mountList[][];
-	StringBuffer fHandle;
-	int flavors[];
 	
 	public Mount(int prog, int vers, NfsClient nc) {
 		this.prog = prog;
@@ -25,86 +50,64 @@ public class Mount {
 		this.nc = nc;
 	}
 	
-	public void getMountPort() {
-		Rpc.queryPortmapper(messageBuffer, NfsConst.MOUNT_PROGRAM, NfsConst.MOUNT_VERSION, nc.newHandle(NfsConst.MOUNT_PROGRAM, RpcConst.PMAP_PROG, null), nc.hostname);
-		nc.sendBuffer(messageBuffer, nc.destPort);
+	public void setMountPort(int port) {
+		mountPort = port;
+	}
+	
+	public void setUID(int uid) {
+		this.uid = uid;
+	}
+	
+	public void setGID(int gid) {
+		this.gid = gid;
+	}
+
+	public int getMountPort() {
+		return mountPort;
+	}
+	
+	public void requestMountPort(ServicePort port) {
+		Rpc.setupHeader(messageBuffer, nc.newHandle(NfsConst.PMAPPROC_GETPORT, port, NfsConst.MOUNT_PROGRAM), RpcConst.AUTH_SYS, uid, gid, RpcConst.PMAP_PROG, RpcConst.PMAP_VERS, NfsConst.PMAPPROC_GETPORT, nc.hostname);
+		//append program (portmap) specific part:
+		Xdr.append(messageBuffer, NfsConst.MOUNT_PROGRAM);
+		Xdr.append(messageBuffer, NfsConst.MOUNT_VERSION);
+		Xdr.append(messageBuffer,RpcConst.IPPROTO_UDP);
+		Xdr.append(messageBuffer,0); //port is ignored
+
+		nc.sendBuffer(messageBuffer, nc.portmapperPort);
 	}
 	
 	public void nullCall() {
-		Rpc.setupHeader(messageBuffer, nc.newHandle(NfsConst.MOUNTPROC3_NULL, NfsConst.MOUNT_PROGRAM, null), RpcConst.AUTH_NULL, 0, 0, prog, vers, NfsConst.MOUNTPROC3_NULL, nc.hostname); // no data to append
+		Rpc.setupHeader(messageBuffer, nc.newHandle(NfsConst.MOUNTPROC3_NULL, null), RpcConst.AUTH_NULL, uid, gid, prog, vers, NfsConst.MOUNTPROC3_NULL, nc.hostname); // no data to append
 		nc.sendBuffer(messageBuffer, mountPort);
 	}
 	
-	public void getExports(StringBuffer[] eList, StringBuffer[][] grps) {
-		exportsList = eList;
-		groups = grps;
-		Rpc.setupHeader(messageBuffer, nc.newHandle(NfsConst.MOUNTPROC3_EXPORT, NfsConst.MOUNT_PROGRAM, null), RpcConst.AUTH_NULL, 0, 0, prog, vers, NfsConst.MOUNTPROC3_EXPORT, nc.hostname); // no data to append
+	public void getExports(Exports exports) {
+		Rpc.setupHeader(messageBuffer, nc.newHandle(NfsConst.MOUNTPROC3_EXPORT, exports), RpcConst.AUTH_NULL, uid, gid, prog, vers, NfsConst.MOUNTPROC3_EXPORT, nc.hostname); // no data to append
 		nc.sendBuffer(messageBuffer, mountPort);
 	}
 	
-	public void dump(StringBuffer[][] mntList) {
-		mountList = mntList;
-		xid = nc.newHandle(NfsConst.MOUNTPROC3_DUMP, NfsConst.MOUNT_PROGRAM, null);
-		Rpc.setupHeader(messageBuffer, xid, RpcConst.AUTH_NULL, 0, 0, prog, vers, NfsConst.MOUNTPROC3_DUMP, nc.hostname); 
+	public void dump(MountList mountList) {
+		Rpc.setupHeader(messageBuffer, nc.newHandle(NfsConst.MOUNTPROC3_DUMP, mountList), RpcConst.AUTH_NULL, uid, gid, prog, vers, NfsConst.MOUNTPROC3_DUMP, nc.hostname); 
 //		Nfs.Mount.dump(messageBuffer, RpcConst.AUTH_SYS, xid);
 		nc.sendBuffer(messageBuffer, mountPort);
 	}
 	
-	public void mount(StringBuffer directory, StringBuffer fileHandle, int[] flavs) {
-		fHandle = fileHandle;
-		flavors = flavs;
-		xid = nc.newHandle(NfsConst.MOUNTPROC3_MNT, NfsConst.MOUNT_PROGRAM, null);
-		Rpc.setupHeader(messageBuffer, xid, RpcConst.AUTH_NULL, 0, 0, prog, vers, NfsConst.MOUNTPROC3_MNT, nc.hostname);
+	public void mount(StringBuffer directory, MountRes3 mountres) {
+		Rpc.setupHeader(messageBuffer, nc.newHandle(NfsConst.MOUNTPROC3_MNT, mountres), RpcConst.AUTH_NULL, uid, gid, prog, vers, NfsConst.MOUNTPROC3_MNT, nc.hostname);
 		Xdr.append(messageBuffer, directory);
 		nc.sendBuffer(messageBuffer, mountPort);
-		System.out.println("mount");
 	}
 	
 	public void unmountAll() {
-		xid = nc.newHandle(NfsConst.MOUNTPROC3_UMNTALL, NfsConst.MOUNT_PROGRAM, null);
-		Rpc.setupHeader(messageBuffer, xid, RpcConst.AUTH_NULL, 0, 0, prog, vers, NfsConst.MOUNTPROC3_UMNTALL, nc.hostname);
+		Rpc.setupHeader(messageBuffer, nc.newHandle(NfsConst.MOUNTPROC3_UMNTALL, null), RpcConst.AUTH_NULL, uid, gid, prog, vers, NfsConst.MOUNTPROC3_UMNTALL, nc.hostname);
 		nc.sendBuffer(messageBuffer, mountPort);
 	}
 	
 	public void unmount(StringBuffer path) {
-		xid = nc.newHandle(NfsConst.MOUNTPROC3_UMNT, NfsConst.MOUNT_PROGRAM, null);
-		Rpc.setupHeader(messageBuffer, xid, RpcConst.AUTH_NULL, 0, 0, prog, vers, NfsConst.MOUNTPROC3_UMNT, nc.hostname);
+		Rpc.setupHeader(messageBuffer, nc.newHandle(NfsConst.MOUNTPROC3_UMNT, null), RpcConst.AUTH_NULL, uid, gid, prog, vers, NfsConst.MOUNTPROC3_UMNT, nc.hostname);
 		Xdr.append(messageBuffer, path);
 		nc.sendBuffer(messageBuffer, mountPort);
 	}
 	
-	void handleStates(StringBuffer msgBuffer, int action) {
-		
-		switch (action) {
-	
-		case NfsConst.MOUNTPROC3_NULL:
-			System.out.println("mount null call is back");
-			//nothing to be done
-			break;
-		
-		case NfsConst.MOUNTPROC3_EXPORT:
-			Nfs.decodeExports(msgBuffer, exportsList, groups);
-			break;
-		
-		case NfsConst.MOUNTPROC3_DUMP:
-			Nfs.decodeMountlist(msgBuffer, mountList);
-			break;
-			
-		case NfsConst.MOUNTPROC3_MNT:
-			System.out.println("received mount response");
-			Nfs.decodeMountCallOK(msgBuffer, fHandle, flavors);
-			break;
-			
-		case NfsConst.MOUNTPROC3_UMNTALL:
-			//nothing to decode
-			break;
-		
-		case NfsConst.MOUNTPROC3_UMNT:
-			//nothing to decode
-			break;
-			
-		default:
-			System.out.println("FUNCTION NOT IMPLEMENTED: " + action);
-		}
-	}
 }

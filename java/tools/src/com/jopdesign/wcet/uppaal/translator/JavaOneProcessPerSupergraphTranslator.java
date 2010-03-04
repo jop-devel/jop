@@ -8,7 +8,7 @@ import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
-import com.jopdesign.wcet.analysis.RecursiveAnalysis;
+import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.SuperGraph;
@@ -90,9 +90,9 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 				InvokeNode n) {
 			MethodInfo invoked = n.getImplementedMethod();
 			if(n.receiverFlowGraph().isLeafMethod() && config.collapseLeaves) {
-				RecursiveAnalysis<AnalysisContextLocal> ilpAn =
-					new RecursiveAnalysis<AnalysisContextLocal>(project, new LocalAnalysis());
-				WcetCost wcet = ilpAn.computeWCET(n.getImplementedMethod(),
+				RecursiveWcetAnalysis<AnalysisContextLocal> ilpAn =
+					new RecursiveWcetAnalysis<AnalysisContextLocal>(project, new LocalAnalysis());
+				WcetCost wcet = ilpAn.computeCost(n.getImplementedMethod(),
 						new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_HIT));
 				tBuilder.waitAtLocation(endInvokeNode, wcet.getCost());
 				tBuilder.createTransition(startInvokeNode, endInvokeNode);

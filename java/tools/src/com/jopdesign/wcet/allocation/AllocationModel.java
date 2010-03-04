@@ -2,10 +2,8 @@ package com.jopdesign.wcet.allocation;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Vector;
-import java.util.Map.Entry;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Field;
@@ -21,9 +19,6 @@ import org.apache.bcel.generic.Type;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.analyses.Interval;
-import com.jopdesign.dfa.framework.CallString;
-import com.jopdesign.dfa.framework.ContextMap;
-import com.jopdesign.dfa.framework.HashedString;
 import com.jopdesign.tools.JopInstr;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
@@ -39,12 +34,15 @@ public class AllocationModel implements ProcessorModel {
 
 	public static final String JOP_NATIVE = "com.jopdesign.sys.Native";
 	private final MethodCache NO_METHOD_CACHE;
-	private Map<InstructionHandle, ContextMap<CallString, Interval[]>> sizes;
 	protected Project project;
 
 	public AllocationModel(Project p) {
 		project = p;
 		NO_METHOD_CACHE = new NoMethodCache(p);
+	}
+	
+	public String getName() {
+		return "allocation";
 	}
 
 	public long basicBlockWCET(ExecutionContext ctx, BasicBlock bb) {
@@ -158,26 +156,16 @@ public class AllocationModel implements ProcessorModel {
 
 		// get analyzed size
 		Interval analyzed = null;
-		if (sizes == null && project.getDfaLoopBounds() != null) {
-			sizes = project.getDfaLoopBounds().getArraySizes();
+		Interval [] sizes = null;
+		if (project.getDfaLoopBounds() != null) {
+			sizes = project.getDfaLoopBounds().getArraySizes(ih, context.getCallString());
 		}
 		if (sizes == null) {
 			Project.logger.info("No DFA available for array at " + context + ":" + srcLine);
 		} else {
-			ContextMap<CallString, Interval[]> t = sizes.get(ih);
-			CallString callString = context.getCallString();
-			if (t == null) {
+			analyzed = sizes[index];
+			if (analyzed == null) {
 				Project.logger.info("No DFA bound for array at " + context + ":" + srcLine);
-			} else {
-				Interval[] analysisResults = getEntryBySuffix(t, callString);
-				if(analysisResults == null) {
-					Project.logger.error("No DFA results matching callstring " + context.getCallString());
-				} else {
-					analyzed = analysisResults[index];
-					if (analyzed == null) {
-						Project.logger.info("No DFA bound for array at " + context + ":" + srcLine);
-					}
-				}
 			}
 		}
 
@@ -202,50 +190,10 @@ public class AllocationModel implements ProcessorModel {
 				return annotated.getUpperBound();
 			} else {
 				Project.logger.error("Cannot determine cost of unbounded array " + context + ":" + srcLine +
-									 ".\nApproximating with 4096 words, but result is not safe anymore.");
-				return 4096;
+									 ".\nApproximating with 1024 words, but result is not safe anymore.");
+				return 1024;
 			}
 		}
-	}
-
-	/** TODO: This operation suggests a tree like structure of the ContextMap.
-	 * Maybe this would be an interesting implementation option ?
-	 *  FIXME: This has a horrible complexity ( O(n*|callstring|) ) at the moment.
-	 * @param t
-	 * @param callStringSuffix a suffix of the call string
-	 * @return the join of all intervals matching the suffix
-	 */
-	private Interval[] getEntryBySuffix(ContextMap<CallString, Interval[]> t, CallString cs) {
-		Vector<Interval[]> intervals = new Vector<Interval[]>();
-		for(Entry<CallString, Interval[]> e : t.entrySet()) {
-			CallString callstring = e.getKey();
-			if(isSuffix(callstring.asList(),cs.asList())) {
-				//System.out.println("Matches "+cs+": "+callstring);
-				intervals.add(e.getValue());
-			}
-		}
-		if(intervals.size() == 0) return null;
-		Interval[] head = intervals.get(0);
-		if(intervals.size() == 1) return head;
-
-		Interval[] merged = new Interval[head.length];
-		for(int i = 0; i < head.length; i++) {
-			merged[i] = new Interval(head[i]);
-			for(int j = 1; j < intervals.size(); j++)
-			{
-				merged[i].constrain(intervals.get(j)[i]);
-			}
-		}
-		return merged;
-	}
-
-	private<T> boolean isSuffix(List<T> list,
-							    List<T> cSuffix) {
-		int lN = list.size();
-		int sN = cSuffix.size();
-		if(lN < sN) return false;
-		List<T> listSuffix = list.subList(lN - sN, lN);
-		return cSuffix.equals(listSuffix);
 	}
 
 	public int computeObjectSize(int raw) {

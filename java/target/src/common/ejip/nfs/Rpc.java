@@ -1,24 +1,36 @@
 /*
-  This file is part of JOP, the Java Optimized Processor
-    see <http://www.jopdesign.com/>
-
-  Copyright (C) 2009, Daniel Reichhard (daniel.reichhard@gmail.com)
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Copyright (c) Daniel Reichhard, daniel.reichhard@gmail.com
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. All advertising materials mentioning features or use of this software
+ *    must display the following acknowledgement:
+ *	This product includes software developed by Daniel Reichhard
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
  */
 
 package ejip.nfs;
+
+import ejip.nfs.datastructs.RpcDecodeMessageResult;
 
 /**
  * @author bayer
@@ -67,9 +79,11 @@ public class Rpc {
 	 * 
 	 * @return the xid of the message received on success, 0 otherwise
 	 */
-	public static int decodeMessage(StringBuffer decodeMessageBuffer) {
+	public static RpcDecodeMessageResult decodeMessage(StringBuffer decodeMessageBuffer) {
 		int  xid;
-		xid = Xdr.getNextInt(decodeMessageBuffer);
+		RpcDecodeMessageResult result = new RpcDecodeMessageResult();
+		
+		result.xid = Xdr.getNextInt(decodeMessageBuffer);
 		//location = findXid(xid);
 		if ((Xdr.getNextInt(decodeMessageBuffer) == RpcConst.TYPE_REPLY) ) { //message type = reply (message word  1)
 			
@@ -80,61 +94,50 @@ public class Rpc {
 				case RpcConst.AUTH_NULL: //the only auth flavor accepted so far	
 					break;
 				default:
-					System.out.println("RPC: Unsupported Authentication Flavour!");
-					return 0;
+					//System.out.println("RPC: Unsupported Authentication Flavour!");
+					result.error = RpcDecodeMessageResult.RPC_DECODE_MSG_RESULT_UNSUPPORTED_AUTH_FLAVOR;
+					return result;
 				}
 		
 				if (Xdr.getNextInt(decodeMessageBuffer) != 0) {//auth body (index 4)
-					System.out.println("RPC: Authentication body not 0!");
-					return 0;
+					//System.out.println("RPC: Authentication body not 0!");
+					result.error = RpcDecodeMessageResult.RPC_DECODE_MSG_RESULT_AUTH_BODY_NOT_0;
+					return result;
 				}
 
 				switch (Xdr.getNextInt(decodeMessageBuffer)) { //accept state (index 5)
 				case RpcConst.RPC_MSG_ACCEPT_STAT_SUCCESS: 
-					return xid;
-//					return pos;
+					result.error = RpcDecodeMessageResult.RPC_DECODE_MSG_RESULT_OK;
+					break;
 				case RpcConst.RPC_MSG_ACCEPT_STAT_PROG_UNAVAIL:
-					System.out.println("RPC: program not available");
+					result.error = RpcDecodeMessageResult.RPC_DECODE_MSG_RESULT_PROG_UNAVAIL;
+					//System.out.println("RPC: program not available");
 					break;
 				case RpcConst.RPC_MSG_ACCEPT_STAT_PROG_MISMATCH:
-					System.out.println("RPC: program version mismatch");
+					//System.out.println("RPC: program version mismatch");
+					result.error = RpcDecodeMessageResult.RPC_DECODE_MSG_RESULT_PROG_VERSION_MISMATCH;
 					break;
 				case RpcConst.RPC_MSG_ACCEPT_STAT_PROC_UNAVAIL:
-					System.out.println("RPC: procedure unavailable");
+					//System.out.println("RPC: procedure unavailable");
+					result.error = RpcDecodeMessageResult.RPC_DECODE_MSG_RESULT_PROC_UNAVAIL;
 					break;
 				case RpcConst.RPC_MSG_ACCEPT_STAT_GARBAGE_ARGS:
-					System.out.println("RPC: garbage arguments");
+					//System.out.println("RPC: garbage arguments");
+					result.error = RpcDecodeMessageResult.RPC_DECODE_MSG_RESULT_GARBAGE_ARGS;
 					break;
 				}
 				break;
 			case RpcConst.RPC_MSG_RPLY_STAT_DENIED:
-				System.out.println("RPC: Reply status: denied");
+				//System.out.println("RPC: Reply status: denied");
+				result.error = RpcDecodeMessageResult.RPC_DECODE_MSG_RESULT_STATUS_DENIED;
 				break;
 			}
 			
 		} else {
-			System.out.println("RPC: Either xid doesnt match, or msg type is not reply");
+			result.error = RpcDecodeMessageResult.RPC_DECODE_MSG_RESULT_MSG_TYPE_NOT_REPLY;
+			//System.out.println("RPC: Either xid doesnt match, or msg type is not reply");
 		}
-		return 0;
+		return result;
 	}
 
-	/**
-	 * ask portmapper for port of a program
-	 * 
-	 * @param rpcMessageBuffer	a StringBuffer to write the data to 
-	 * @param program	the remote program number (according to the RPC program number assignment)
-	 * @param version	the version of the remote program
-	 * @param xid	an arbitrary xid
-	 * @return	the xid just sent on success, 0 otherwise
-	 */
-	public static void queryPortmapper(StringBuffer rpcMessageBuffer, int program, int version, int xid, StringBuffer hostname) {
-			setupHeader(rpcMessageBuffer, xid, RpcConst.AUTH_SYS, 0, 0, RpcConst.PMAP_PROG, RpcConst.PMAP_VERS, NfsConst.PMAPPROC_GETPORT, hostname);
-			//append program (portmap) specific part:
-			Xdr.append(rpcMessageBuffer,program);
-			Xdr.append(rpcMessageBuffer,version);
-			Xdr.append(rpcMessageBuffer,RpcConst.IPPROTO_UDP);
-			Xdr.append(rpcMessageBuffer,0); //port is ignored
-
-	}
-	
 }
