@@ -99,8 +99,6 @@ public class Transaction {
 				// RollbackException, AbortException or any other exception
 
 				if (isOutermostTransaction) {
-					Native.wrMem(0, Const.IO_ENA_HW_EXC);
-
 					// reference comparison is enough
 					if (e == Utils.abortException) {
 						throw Utils.abortException;

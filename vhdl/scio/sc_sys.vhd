@@ -47,8 +47,6 @@
 --	2007-12-03	prioritized interrupt processing
 --  2007-12-07  global lock redesign
 --	2009-06-18	add port for deadline instruction
---	2009-11-11	if auto_disable_hw_exceptions is set, only generate one
---	          	hw exception until hw exceptions are re-enabled
 
 
 --
@@ -113,9 +111,7 @@ generic (addr_bits : integer;
 	clk_freq : integer;
 	cpu_id	 : integer;
 	cpu_cnt  : integer;
-	num_io_int : integer := 2;	-- a default value to play with SW interrupts
-	auto_disable_hw_exceptions : boolean := false	-- used by RTTM
-);
+	num_io_int : integer := 2);		-- a default value to play with SW interrupts
 port (
 	clk		: in std_logic;
 	reset	: in std_logic;
@@ -184,9 +180,6 @@ architecture rtl of sc_sys is
 	signal irq_gate		: std_logic;
 	signal irq_dly		: std_logic;
 	signal exc_dly		: std_logic;
-	
-	-- whether to disable hw generated exceptions (only set while using RTTM)
-	signal exc_hw_dis	: std_logic;
 
 --
 --	signals for interrupt source state machines
@@ -395,10 +388,6 @@ begin
 
 		exc_type <= (others => '0');
 		exc_pend <= '0';
-		
-		if auto_disable_hw_exceptions then
-			exc_hw_dis <= '0';
-		end if;
 
 		swreq <= (others => '0');
 		mask <= (others => '0');
@@ -420,37 +409,22 @@ begin
 		end if;
 
 		-- exceptions from core, memory or RTTM
-		if not auto_disable_hw_exceptions or 
-			exc_hw_dis = '0' then -- decision may only be false if using RTTM
-			if exc_req.spov='1' then
-				exc_type(2 downto 0) <= EXC_SPOV;
-				exc_pend <= '1';
-				if auto_disable_hw_exceptions then
-					exc_hw_dis <= '1';
-				end if;
-			end if;
-			if exc_req.np='1' then
-				exc_type(2 downto 0) <= EXC_NP;
-				exc_pend <= '1';
-				if auto_disable_hw_exceptions then
-					exc_hw_dis <= '1';
-				end if;
-			end if;
-			if exc_req.ab='1' then
-				exc_type(2 downto 0) <= EXC_AB;
-				exc_pend <= '1';
-				if auto_disable_hw_exceptions then
-					exc_hw_dis <= '1';
-				end if;				
-			end if;
-			-- gets priority over all other exceptions
-			if exc_req.rollback='1' then
-				exc_type(2 downto 0) <= EXC_ROLLBACK;
-				exc_pend <= '1';
-				if auto_disable_hw_exceptions then
-					exc_hw_dis <= '1';
-				end if;				
-			end if;
+		if exc_req.spov='1' then
+			exc_type(2 downto 0) <= EXC_SPOV;
+			exc_pend <= '1';
+		end if;
+		if exc_req.np='1' then
+			exc_type(2 downto 0) <= EXC_NP;
+			exc_pend <= '1';
+		end if;
+		if exc_req.ab='1' then
+			exc_type(2 downto 0) <= EXC_AB;
+			exc_pend <= '1';
+		end if;
+		-- gets priority over all other exceptions
+		if exc_req.rollback='1' then
+			exc_type(2 downto 0) <= EXC_ROLLBACK;
+			exc_pend <= '1';
 		end if;
 
 		if wr='1' then
@@ -482,20 +456,13 @@ begin
 				when "1010" =>		-- dely 'instruction'
 					dly_timeout <= wr_data;
 					dly_block <= '1';
-				
-				when "1100" =>
-					-- RTTM: re-enable hw exceptions 
-					if auto_disable_hw_exceptions then
-						exc_hw_dis <= '0';
-					end if;
-				
 				when "1111" =>
 					-- explicit cache invalidation
 					inval <= '1';
 				when others =>
 			end case;
 		end if;
-				
+		
 		-- Simple equal test, so be exact and don't miss it!
 		if dly_timeout=clock_cnt then
 			dly_block <= '0';

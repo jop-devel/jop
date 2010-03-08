@@ -134,6 +134,10 @@ synchronized (o) {
 
 	static void handleException() {
 		
+		if (Const.USE_RTTM) {
+			Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
+		}
+		
 		int i;
 		i = Native.rdMem(Const.IO_EXCPT);
 		if (i==Const.EXC_SPOV) {

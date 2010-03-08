@@ -61,8 +61,7 @@ use work.sc_pack.all;
 use work.jop_config.all;
 
 entity scio is
-generic (cpu_id : integer := 0; cpu_cnt : integer := 1; 
-	auto_disable_hw_exceptions : boolean := false	-- used by RTTM
+generic (cpu_id : integer := 0; cpu_cnt : integer := 1
 );
 port (
 	clk		: in std_logic;
@@ -196,8 +195,7 @@ begin
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 			cpu_id => cpu_id,
-			cpu_cnt => cpu_cnt,
-			auto_disable_hw_exceptions => auto_disable_hw_exceptions
+			cpu_cnt => cpu_cnt
 		)
 		port map(
 			clk => clk,
