@@ -138,19 +138,24 @@ public class OverlapSort {
 		while( sorted < 1 ) {
 			//RtThread.busyWait(1000);
 			
-			do {
-				Native.wrMem(Const.TM_START_TRANSACTION, Const.MEM_TM_MAGIC);
-				try {
-					if(sortstate == sys.nrCpu-1) {	// -1 -> we use sys.nrcpus for sorting
-						sortstate = 0;
-						sorted ++;
+			{
+				int sorted_save = sorted;
+				
+				do {
+					Native.wrMem(Const.TM_START_TRANSACTION, Const.MEM_TM_MAGIC);
+					try {
+						if(sortstate == sys.nrCpu-1) {	// -1 -> we use sys.nrcpus for sorting
+							sortstate = 0;
+							sorted ++;
+						}
+						
+						Native.wrMem(Const.TM_END_TRANSACTION, Const.MEM_TM_MAGIC);
+					} catch (Throwable e) {
+						sorted = sorted_save;
+						continue;
 					}
-					
-					Native.wrMem(Const.TM_END_TRANSACTION, Const.MEM_TM_MAGIC);
-				} catch (Throwable e) {
-					continue;
-				}
-			} while (false);
+				} while (false);
+			}
 		}
 		
 		do {
