@@ -28,7 +28,7 @@
 set_global_assignment -name SMART_RECOMPILE OFF
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 4.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:05:59  APRIL 04, 2004"
-set_global_assignment -name LAST_QUARTUS_VERSION 7.2
+set_global_assignment -name LAST_QUARTUS_VERSION 9.1
 
 # Pin & Location Assignments
 # ==========================
@@ -207,7 +207,7 @@ set_global_assignment -name MUX_RESTRUCTURE AUTO
 set_global_assignment -name SAVE_DISK_SPACE OFF
 set_global_assignment -name DEVICE_FILTER_SPEED_GRADE 8
 set_global_assignment -name FAMILY Cyclone
-set_global_assignment -name CYCLONE_OPTIMIZATION_TECHNIQUE SPEED
+set_global_assignment -name CYCLONE_OPTIMIZATION_TECHNIQUE AREA
 set_global_assignment -name TOP_LEVEL_ENTITY jop
 
 # Fitter Assignments
@@ -440,7 +440,6 @@ set_global_assignment -name FMAX_REQUIREMENT "20 MHz" -section_id clk_input
 set_instance_assignment -name CLOCK_SETTINGS clk_input -to clk
 
 set_global_assignment -name ENABLE_CLOCK_LATENCY ON
-set_instance_assignment -name PARTITION_HIERARCHY no_file_for_top_partition -to | -section_id Top
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name ON_CHIP_BITSTREAM_DECOMPRESSION ON
 set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-STATED"
@@ -483,7 +482,9 @@ set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_usb.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_dspiomin.vhd
+set_global_assignment -name VERILOG_FILE ../../ext/bsvnoc/FIFO2.v
+set_global_assignment -name VERILOG_FILE ../../ext/bsvnoc/mkNoC3bs2.v
+set_global_assignment -name VHDL_FILE ../../vhdl/paper/csp/scio_csp.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/cmpsync.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/arom.vhd
@@ -504,4 +505,9 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_tdma.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jopmul.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/paper/csp/jopmulcsp.vhd
+
+set_global_assignment -name OPTIMIZE_HOLD_TIMING "IO PATHS AND MINIMUM TPD PATHS"
+set_global_assignment -name FITTER_EFFORT "STANDARD FIT"
+set_global_assignment -name SYNTH_TIMING_DRIVEN_SYNTHESIS OFF
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
