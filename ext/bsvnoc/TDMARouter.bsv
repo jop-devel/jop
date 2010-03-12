@@ -41,11 +41,13 @@ interface SndRcvIF#(numeric type n);
 	  method Bit#(n) rcvSource();
 	  method Byte	 rcvCount();
 	  method ActionValue#(Word) rcvData();
+	  method Action  rcvReset(); // resets EoD
 
 	  // some status info
 	  method Bool isSending();
 	  method Bool isReceiving();
 	  method Bool isBusy();
+	  method Bool isEoD();
 	  method Bool rcvBufferFull();
 	  method Bool rcvBufferEmpty();
 	  method Bool sndBufferFull();
@@ -73,6 +75,7 @@ Reg#(Byte) rcvCnt <- mkRegA(0);
 Reg#(Bool) firstWord <- mkReg(False);
 Reg#(Bool) sending <- mkReg(False);
 Reg#(Bool) rcvMore <- mkReg(False);
+Reg#(Bool) flagEoD <- mkReg(False);
 
 
 (* preempts = "(detectSndStart,waitLastAck, defaultNil,detectRcvStart,continueRcv), justForward" *)
@@ -122,7 +125,8 @@ endrule
 rule detectRcvStart(
 	slot != id	    // do not receive from my own slot
      	&& inR.dst == id    // the packet destination is this node
-	&& rcvCnt == 0      // the receive buffer is empty
+	&& rcvCnt == 0      // buffer is empty
+	&& !flagEoD  	    // also is allowed to receive the next message
 	&& (inR.ctrl == Data || inR.ctrl == EoD) // is a data package
 	&& !rcvMore);	    // is not already receiving
      $display("Receive Starts. Source is %h",slot);
@@ -133,6 +137,7 @@ rule detectRcvStart(
      rcvCnt <= 1;
      if(inR.ctrl == Data)
      		 rcvMore <= True;
+     else	 flagEoD <= True;
      // send Ack as well
      outR <= WordPacket {dst:inR.dst, load:inR.load, ctrl:Ack};
 endrule
@@ -145,6 +150,7 @@ rule continueRcv(
      $display("receiving %h (word %h) from %h", inR.load, rcvCnt + 1, slot);
      if(inR.ctrl == EoD) action
      		 rcvMore <= False;
+		 flagEoD <= True;
 		 $display("EoD received.");
 		 endaction
      rcvFIFO.enq(inR.load);
@@ -195,15 +201,29 @@ method Byte rcvCount();
 endmethod
 
 method ActionValue#(Word) rcvData();
+// Not anymore! EoD is software cleared, to allow receiving new
+// messages at will instead of automatically 
+//       if(rcvCnt == 1) flagEoD <= False;
        rcvCnt <= rcvCnt - 1;
        rcvFIFO.deq;
        return rcvFIFO.first;
+endmethod
+
+// use to signal that the message was received
+// and allow new messages to come in
+method Action rcvReset();
+       flagEoD <= False;
+// let's clear all
+       rcvCnt <= 0;
+       rcvFIFO.clear;
+       rcvMore <= False;
 endmethod
 
 // --------- status info -------------------------------
 method Bool isSending(); return sending; endmethod
 method Bool isReceiving(); return rcvMore; endmethod
 method Bool isBusy(); return sending || rcvMore ; endmethod
+method Bool isEoD(); return flagEoD; endmethod
 
 method Bool rcvBufferFull(); return !rcvFIFO.notFull; endmethod
 method Bool rcvBufferEmpty(); return !rcvFIFO.notEmpty; endmethod
@@ -312,7 +332,7 @@ rule do_readStatus(cnt>0 && rnw && rdreq == StatusReg);
        	      pack(node.rcvBufferEmpty),
        	      pack(node.sndBufferFull),
        	      pack(node.sndBufferEmpty),
-       	      1'b0,
+       	      pack(node.isEoD),
        	      pack(node.isReceiving),
        	      pack(node.isSending),
        	      pack(node.isBusy)};
@@ -336,8 +356,9 @@ rule do_readRcvCount(cnt>0 && rnw && rdreq == RcvCntReg);
 endrule
 
 rule do_writeReset(cnt>0 && !rnw && wrreq == ResetReg);
-     // nothing her for now
+     node.rcvReset();
      cnt <= 0;
+     $display("EoD reset.");
 endrule
 
 rule do_writeSndCount(cnt>0 && !rnw && wrreq == SndCntReg);
@@ -434,13 +455,13 @@ Stmt s = (seq
        noAction;
        noAction;
 //       await(!node.isBusy);
-       iFIFO <=  WordPacket {dst:1, load: 13, ctrl:Data};
-       noAction;
+       iFIFO <=  WordPacket {dst:1, load: 13, ctrl:EoD};
+	$display("sent EoD");       
        noAction;
        noAction;
        iFIFO <= WordPacket {dst:_, load: _, ctrl:Nil};
-       noAction;
-       noAction;
+       node.rdwr_req(2'b00, False, _, True); // reset EoD
+       await(node.rdy_cnt == 0);
        noAction;
        action
 	iFIFO <=  WordPacket {dst:1, load: 15, ctrl:EoD};
