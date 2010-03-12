@@ -366,6 +366,9 @@ end process;
 
 			sync_out => sync_out_array(0),
 			sync_in => sync_in_array(0),
+			
+			noc_in => noc_in(0),
+			noc_out => noc_out(0),
 
 			txd => ser_txd,
 			rxd => ser_rxd,
@@ -423,6 +426,9 @@ end process;
 
 			sync_out => sync_out_array(i),
 			sync_in => sync_in_array(i),
+
+			noc_in => noc_in(i),
+			noc_out => noc_out(i),
 
 			txd => open,
 			rxd => '0',

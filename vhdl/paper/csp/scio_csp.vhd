@@ -84,6 +84,9 @@ port (
 	sync_out : in sync_out_type := NO_SYNC;
 	sync_in	 : out sync_in_type;
 
+	noc_in		: out sc_out_type;
+	noc_out		: in sc_in_type;
+
 -- serial interface
 
 	txd			: out std_logic;
@@ -150,8 +153,6 @@ begin
 	-- default for other unused devices
 	sc_dout(3) <= (others => '0');
 	sc_rdy_cnt(3) <= (others => '0');
-	sc_dout(4) <= (others => '0');
-	sc_rdy_cnt(4) <= (others => '0');
 
 	--
 	-- Connect SLAVE_CNT simple slaves
@@ -270,4 +271,13 @@ begin
 			ft_wr => r(12),
 			nsi => r(13)
 	);
+	
+	-- NoC connection
+	noc_in.address <= sc_io_out.address;
+	noc_in.rd <= sc_rd(4);
+	noc_in.wr <= sc_wr(4);
+	noc_in.wr_data <= sc_io_out.wr_data;
+	sc_dout(4) <= noc_out.rd_data;
+	sc_rdy_cnt(4) <= noc_out.rdy_cnt;
+	
 end rtl;
