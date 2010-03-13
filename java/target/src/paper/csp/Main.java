@@ -17,7 +17,7 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-package noc;
+package csp;
 
 import java.util.Vector;
 
@@ -71,7 +71,8 @@ public class Main implements Runnable {
 					System.out.println(sb);
 				}
 				
-//				if (NoC.nb_receive1(1, buffer)) {
+//				if (NoC.isReceiving()) {
+//					buffer[0] = NoC.b_receive1();
 //					System.out.print("Received ");
 //					System.out.print((char) buffer[0]);
 //					System.out.println();
