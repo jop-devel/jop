@@ -1,5 +1,30 @@
 package SimpConIF;
 
+// define some types
+typedef Bit#(32) Word;
+typedef Bit#(8) Byte;
+
+
+// Could do this: 
+// 	 1. say that an Ack frame is when dst == slot == id
+//	 2. send CNT as the first word
+// BUT: explicit control is easier to debug.
+// plus EoD can be send for one word
+
+// OBS: some timeout or reset process would be nice to have
+//      but this is something for future versions
+
+typedef enum {Nil, Data, Ack, EoD} PacketType deriving(Bits, Eq);
+
+typedef struct {
+	Bit#(addrbits) dst;	// destination address
+	Bit#(addrbits) slot;
+	PacketType ctrl;
+	lType load;
+} Packet#(type lType, type addrbits) deriving(Bits);
+
+typedef Packet#(Word, n) WordPacket#(numeric type n);
+
 
 interface SimpConIF#(numeric type addrbits);
 	  (* prefix = "", always_enabled, always_ready *)
@@ -13,6 +38,10 @@ interface SimpConIF#(numeric type addrbits);
 	  // not sure how to deal with rdy_cnt
 	  (* always_enabled, always_ready *)
 	  method Bit#(2) rdy_cnt();
+
+	  // debug outputs
+//	  (* always_enabled, always_ready *)
+//	  method WordPacket#(addrbits) in_frame();
 endinterface
 
 

@@ -16,13 +16,13 @@ public class NoC {
 	static final int NOC_MASK_RCVFULL = 0x8000;
 	// registers read
 	static final int NOC_REG_STATUS = Const.NOC_ADDR;
-	static final int NOC_REG_RCVSRC = Const.NOC_ADDR | 0x01;
-	static final int NOC_REG_RCVCNT = Const.NOC_ADDR | 0x02;
+	static final int NOC_REG_RCVCNT = Const.NOC_ADDR | 0x01;
+	static final int NOC_REG_RCVSRC = Const.NOC_ADDR | 0x02;
 	static final int NOC_REG_RCVDATA = Const.NOC_ADDR | 0x03;
 	// registers write
 	static final int NOC_REG_RCVRESET = Const.NOC_ADDR;
-	static final int NOC_REG_SNDDST = Const.NOC_ADDR | 0x01;
-	static final int NOC_REG_SNDCNT = Const.NOC_ADDR | 0x02;
+	static final int NOC_REG_SNDCNT = Const.NOC_ADDR | 0x01;
+	static final int NOC_REG_SNDDST = Const.NOC_ADDR | 0x02;
 	static final int NOC_REG_SNDDATA = Const.NOC_ADDR | 0x03;
 	
 	// this node's address, must be initialized
@@ -71,7 +71,6 @@ public class NoC {
 		return Native.rd(NOC_REG_RCVSRC);
 	}
 		
-	// static synchronized is not supported on JOP
 	public static boolean sendIfFree(
 				int dstAddr, int header, int cnt, int buf[]) {
 		if(isSending()) return false;

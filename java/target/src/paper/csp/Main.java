@@ -71,12 +71,12 @@ public class Main implements Runnable {
 					System.out.println(sb);
 				}
 				
-//				if (NoC.isReceiving()) {
-//					buffer[0] = NoC.b_receive1();
-//					System.out.print("Received ");
-//					System.out.print((char) buffer[0]);
-//					System.out.println();
-//				}
+				if (NoC.isReceiving()) {
+					buffer[0] = NoC.b_receive1();
+					System.out.print("Received ");
+					System.out.print((char) buffer[0]);
+					System.out.println();
+				}
 				RtThread.sleepMs(100);
 				System.out.print("Status: ");
 				System.out.println(NoC.NOC_REG_STATUS);
@@ -93,7 +93,7 @@ public class Main implements Runnable {
 			for (int i=0; i<10; ++i) {
 				msg.addElement(sb);		
 				RtThread.sleepMs(300*id);
-				NoC.nb_send1(i, 'a'+i);
+				NoC.nb_send1(0, 'a'+i);
 			}
 		}
 

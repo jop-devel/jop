@@ -6,30 +6,6 @@ import SimpConIF::*;
 import Vector::*;
 import ConfigReg::*;
 
-// define some types
-typedef Bit#(32) Word;
-typedef Bit#(8) Byte;
-
-
-// Could do this: 
-// 	 1. say that an Ack frame is when dst == slot == id
-//	 2. send CNT as the first word
-// BUT: explicit control is easier to debug.
-// plus EoD can be send for one word
-
-// OBS: some timeout or reset process would be nice to have
-//      but this is something for future versions
-
-typedef enum {Nil, Data, Ack, EoD} PacketType deriving(Bits, Eq);
-
-typedef struct {
-	Bit#(addrbits) dst;	// destination address
-	PacketType ctrl;
-	lType load;
-} Packet#(type lType, type addrbits) deriving(Bits);
-
-typedef Packet#(Word, n) WordPacket#(numeric type n);
-
 interface SndRcvIF#(numeric type n);
 	  // send
 	  method Action sndDestination(Bit#(n) dst);
@@ -65,24 +41,24 @@ module mkTDMANode#(Bit#(n) id,
 FIFOF#(Word) sndFIFO <- mkSizedFIFOF(bufferSize);
 FIFOF#(Word) rcvFIFO <- mkSizedFIFOF(bufferSize);
 
-Reg#(Bit#(n)) slot <- mkRegU();
-Reg#(Bit#(n)) src <- mkRegA(id);
-Reg#(Bit#(n)) dst <- mkRegU();
-Reg#(Byte) sndCnt <- mkRegA(0);
-Reg#(Byte) rcvCnt <- mkRegA(0);
+// Reg#(Bit#(n)) slot <- mkConfigRegA(id);
+Reg#(Bit#(n)) src <- mkConfigRegA(id);
+Reg#(Bit#(n)) dst <- mkConfigRegU();
+Reg#(Byte) sndCnt <- mkConfigRegA(0);
+Reg#(Byte) rcvCnt <- mkConfigRegA(0);
  
 
-Reg#(Bool) firstWord <- mkReg(False);
-Reg#(Bool) sending <- mkReg(False);
-Reg#(Bool) rcvMore <- mkReg(False);
-Reg#(Bool) flagEoD <- mkReg(False);
+Reg#(Bool) firstWord <- mkConfigReg(False);
+Reg#(Bool) sending <- mkConfigReg(False);
+Reg#(Bool) rcvMore <- mkConfigReg(False);
+Reg#(Bool) flagEoD <- mkConfigReg(False);
 
 
 (* preempts = "(detectSndStart,waitLastAck, defaultNil,detectRcvStart,continueRcv), justForward" *)
 
 // ---------- sending rules ------------------------------
 rule detectSndStart(
-     slot == id	    // this is my slot
+     inR.slot == id	    // this is my slot
      && sending
      && (firstWord || (!firstWord && inR.ctrl == Ack)) 
      && sndCnt > 0);
@@ -91,7 +67,7 @@ rule detectSndStart(
      let cntrl = (sndCnt == 1)? EoD:Data;
 
      // put a word from send fifo to output
-     outR <= WordPacket {dst:dst,load:sndFIFO.first,ctrl:cntrl};
+     outR <= WordPacket {dst:dst, slot:inR.slot, load:sndFIFO.first,ctrl:cntrl};
      sndFIFO.deq;
      
      // send the first word
@@ -105,7 +81,7 @@ rule detectSndStart(
 endrule
 
 rule waitLastAck(
-		slot == id
+		inR.slot == id
 		&& sndCnt == 0
 		&& sending
 		&& !firstWord
@@ -113,41 +89,41 @@ rule waitLastAck(
         $display("Last Ack received.");
 	sending <= False;
 	// fills the slot with Nil, once the last ack is found
-	outR <= WordPacket {dst:0,load:0,ctrl:Nil};	
+	outR <= WordPacket {dst:0, slot:inR.slot, load:0, ctrl:Nil};	
 endrule
 
 // default slot rule when not sending
-rule defaultNil(slot == id && !sending);
-       outR <= WordPacket {dst:0,load:0,ctrl:Nil};
+rule defaultNil(inR.slot == id && !sending);
+       outR <= WordPacket {dst:0, slot:inR.slot, load:0, ctrl:Nil};
 endrule
 
 // -------- receiving rules -------------------------
 rule detectRcvStart(
-	slot != id	    // do not receive from my own slot
+	inR.slot != id	    // do not receive from my own slot
      	&& inR.dst == id    // the packet destination is this node
 	&& rcvCnt == 0      // buffer is empty
 	&& !flagEoD  	    // also is allowed to receive the next message
 	&& (inR.ctrl == Data || inR.ctrl == EoD) // is a data package
 	&& !rcvMore);	    // is not already receiving
-     $display("Receive Starts. Source is %h",slot);
-     $display("receiving %h (word %h) from %h", inR.load, 1, slot);
+     $display("Receive Starts. Source is %h",inR.slot);
+     $display("receiving %h (word %h) from %h", inR.load, 1, inR.slot);
      // follow these slots now
-     src <= slot;
+     src <= inR.slot;
      rcvFIFO.enq(inR.load);
      rcvCnt <= 1;
      if(inR.ctrl == Data)
      		 rcvMore <= True;
      else	 flagEoD <= True;
      // send Ack as well
-     outR <= WordPacket {dst:inR.dst, load:inR.load, ctrl:Ack};
+     outR <= WordPacket {dst:inR.dst, slot:inR.slot, load:inR.load, ctrl:Ack};
 endrule
 
 rule continueRcv(
-        slot != id	  // do not receive from my own slot
-	&& slot == src    // we are following this source
+        inR.slot != id	  // do not receive from my own slot
+	&& inR.slot == src    // we are following this source
 	&& (inR.ctrl == Data || inR.ctrl == EoD) // must be a data packet 
 	&& rcvMore);      // we need to receive more 
-     $display("receiving %h (word %h) from %h", inR.load, rcvCnt + 1, slot);
+     $display("receiving %h (word %h) from %h", inR.load, rcvCnt + 1, inR.slot);
      if(inR.ctrl == EoD) action
      		 rcvMore <= False;
 		 flagEoD <= True;
@@ -156,7 +132,7 @@ rule continueRcv(
      rcvFIFO.enq(inR.load);
      rcvCnt <= rcvCnt + 1;
      // send Ack as well
-     outR <= WordPacket {dst:inR.dst, load:inR.load, ctrl:Ack};
+     outR <= WordPacket {dst:inR.dst, slot:inR.slot, load:inR.load, ctrl:Ack};
 endrule
 // --------------------------------------------------
 
@@ -168,8 +144,9 @@ endrule
 
 
 rule advanceSlot;
-   slot <= slot + 1;
-   $display("Current slot is %h", slot);
+//  The slot is now spinning around with the messages!
+//   slot <= slot - 1;
+   $display("Current slot is %h", inR.slot);
 endrule
 
 // ----------- access points for Send ----------------------
@@ -239,7 +216,7 @@ module mkTestNode(Empty);
 
 Bit#(2) nid = 1;
 
-Reg#(WordPacket#(2)) iFIFO <- mkRegA(WordPacket {dst:_, load: _, ctrl:Ack});
+Reg#(WordPacket#(2)) iFIFO <- mkRegA(WordPacket {dst:_, slot:_, load: _, ctrl:Ack});
 Reg#(WordPacket#(2)) oFIFO <- mkRegU;
 
 SndRcvIF#(2) node <- mkTDMANode(nid, 4, iFIFO, oFIFO);
@@ -406,19 +383,32 @@ method Bit#(2) rdy_cnt();
        return cnt;
 endmethod
 
+/*
+method WordPacket#(n) in_frame(); 
+       return inR; 
+endmethod
+*/
+
 endmodule
 
 module mkTestNodeSCIF(Empty);
 
-Bit#(2) nid = 1;
+Bit#(2) nid1 = 1;
+Bit#(2) nid2 = 2;
 
-Reg#(WordPacket#(2)) iFIFO <- mkConfigRegA(WordPacket {dst:_, load: _, ctrl:Ack});
+Reg#(Bit#(2)) slotgen <- mkRegA(0);
+Reg#(WordPacket#(2)) iFIFO <- mkConfigRegA(WordPacket {dst:_, slot:0, load:_, ctrl:Ack});
+Reg#(WordPacket#(2)) iFIFO2 <- mkConfigRegU;
 Reg#(WordPacket#(2)) oFIFO <- mkConfigRegU;
 
-SimpConIF#(2) node <- mkTDMANodeSCIF(nid, 4, iFIFO, oFIFO);
-
+SimpConIF#(2) node <- mkTDMANodeSCIF(nid1, 2, iFIFO, iFIFO2);
+SimpConIF#(2) node2 <- mkTDMANodeSCIF(nid2, 2, iFIFO2, oFIFO);
 
 Stmt s = (seq
+       $display("Read reg encoding StatusReg=%d, RcvCntReg=%d, RcvSourceReg=%d, RcvDataReg=%d",
+	   StatusReg, RcvCntReg, RcvSourceReg, RcvDataReg);
+       $display("Write reg encoding ResetReg=%d, SndCntReg=%d, SndDestReg=%d, SndDataReg=%d",
+	   ResetReg, SndCntReg, SndDestReg, SndDataReg);
        node.rdwr_req(2'b00, True, _, False);
        await(node.rdy_cnt == 0);
        $display("Status bits %b",node.rd_data[15:0]);
@@ -455,22 +445,22 @@ Stmt s = (seq
        noAction;
        noAction;
 //       await(!node.isBusy);
-       iFIFO <=  WordPacket {dst:1, load: 13, ctrl:EoD};
+       iFIFO <=  WordPacket {dst:1, slot:0, load: 13, ctrl:EoD};
 	$display("sent EoD");       
        noAction;
        noAction;
-       iFIFO <= WordPacket {dst:_, load: _, ctrl:Nil};
+       iFIFO <= WordPacket {dst:_, slot:0, load: _, ctrl:Nil};
        node.rdwr_req(2'b00, False, _, True); // reset EoD
        await(node.rdy_cnt == 0);
        noAction;
        action
-	iFIFO <=  WordPacket {dst:1, load: 15, ctrl:EoD};
+	iFIFO <=  WordPacket {dst:1, slot:0, load: 15, ctrl:EoD};
 	$display("sent EoD");
        endaction
        noAction;
        noAction;
        noAction;
-       iFIFO <= WordPacket {dst:_, load: _, ctrl:Nil};
+       iFIFO <= WordPacket {dst:_, slot:0, load: _, ctrl:Nil};
        node.rdwr_req(2'b00, True, _, False);
        await(node.rdy_cnt == 0);
        $display("Status bits %b",node.rd_data[15:0]);
@@ -493,7 +483,9 @@ mkAutoFSM(s);
 
 
 rule rcvInstantly;
-     $display("outFIFO has %h, rdy_cnt = %d, rd_data = %h",oFIFO,node.rdy_cnt,node.rd_data);
+     iFIFO <= WordPacket {dst:_, slot:iFIFO.slot+1, load:_, ctrl:Nil};
+     $display("rdy_cnt = %d, rd_data = %h",node.rdy_cnt,node.rd_data);
+     $display("iFIFO has %h, iFIFO2 has %h, oFIFO has %h",iFIFO, iFIFO2, oFIFO);
 endrule
 
 
@@ -511,8 +503,17 @@ module mkRingNoC_SCIF#(Integer n, Integer buffsize)
 
 //let ln = 2; fromInteger(log2(n));
 
-Vector#(n,Reg#(WordPacket#(ln))) coms <- replicateM(mkConfigRegU());
+Vector#(n,Reg#(WordPacket#(ln))) coms; 
 Vector#(n,SimpConIF#(2)) routers;
+
+// create shift registers
+for(Integer i=0;i<n;i=i+1)
+begin
+ // very important that the slots are different!
+ coms[i]<- mkConfigRegA(WordPacket {dst:_, 
+ 	   			    slot:fromInteger(i),  
+				    load:_, ctrl:Nil});
+end
 
 // now create therouters
 // and associated nodes
