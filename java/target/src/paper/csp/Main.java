@@ -50,6 +50,11 @@ public class Main implements Runnable {
 			msg = new Vector();
 			
 			System.out.println("Hello World from CPU 0");
+			System.out.print("Status: ");
+			System.out.println(NoC.NOC_REG_STATUS);
+			System.out.println(Native.rd(NoC.NOC_REG_STATUS));
+
+
 			
 			SysDevice sys = IOFactory.getFactory().getSysDevice();
 //			for (int i=0; i<sys.nrCpu-1; ++i) {
@@ -90,6 +95,8 @@ public class Main implements Runnable {
 			StringBuffer sb = new StringBuffer();
 			sb.append("Hello World from CPU ");
 			sb.append(id);
+			sb.append(" NoC status ");
+			sb.append(Native.rd(NoC.NOC_REG_STATUS));
 			for (int i=0; i<10; ++i) {
 				msg.addElement(sb);		
 				RtThread.sleepMs(300*id);
