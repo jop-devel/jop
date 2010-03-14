@@ -3,10 +3,6 @@ package rttm.swtest;
 
 public class LinkedList {
 	
-	public static void main(String[] args) {
-		
-	}
-	
 	LinkedObject head = null;
 	LinkedObject tail = null;
 	
