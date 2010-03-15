@@ -38,7 +38,7 @@ vcom %options% ^
 %jopdir%/scio/sc_sys.vhd ^
 %jopdir%/scio/scio_min.vhd ^
 %jopdir%/simpcon/sc_arbiter_pack.vhd ^
-%jopdir%/simpcon/sc_arbiter_tdma.vhd ^
+%jopdir%/simpcon/sc_arbiter_rttm_tdma.vhd ^
 %jopdir%/scio/cmpsync.vhd ^
 %jopdir%/core/jopcpu.vhd ^
 %jopdir%/rttm/tm_pack.vhd ^

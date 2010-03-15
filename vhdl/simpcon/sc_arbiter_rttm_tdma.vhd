@@ -1,6 +1,7 @@
 -- 
 --  This file is part of JOP, the Java Optimized Processor
 --
+--  Copyright (C) 2009, 2010 Peter Hilber
 --  Copyright (C) 2007,2008, Christof Pitter
 --
 --  This program is free software: you can redistribute it and/or modify
@@ -40,8 +41,11 @@
 -- 070808: removed combinatorial loop (pipelined bug)
 -- 210808: - reg_in_rd_data(i) also gets loaded when rdy_cnt = 3 using pipelined access
 --				 - arb_in(i).rd_data gets mem_in.rd_data when rdy_cnt 3 using pipelined access
+-- 310809: Added transactional memory broadcast support
+-- 111109: Integrated RTTM tm_broadcast signal
+-- 150310: Use slots of CPUs executing transaction for commit
 
--- TODO:  - Add atomic for Wolfgang
+-- TODO:
 --				- full pipelined version
 --				- add period and time slots from software using RAM
 
@@ -64,7 +68,10 @@ port (
 			arb_out			: in arb_out_type(0 to cpu_cnt-1);
 			arb_in			: out arb_in_type(0 to cpu_cnt-1);
 			mem_out			: out sc_out_type;
-			mem_in			: in sc_in_type
+			mem_in			: in sc_in_type;
+			committing : in std_logic_vector(0 to cpu_cnt-1); -- TODO EC: not good
+			tm_in_transaction : in std_logic_vector(0 to cpu_cnt-1);
+			tm_broadcast	: out tm_broadcast_type
 );
 end arbiter;
 
@@ -76,6 +83,7 @@ architecture rtl of arbiter is
 	type reg_type is record
 		rd : std_logic;
 		wr : std_logic;
+		tm_broadcast : std_logic;
 		wr_data : std_logic_vector(31 downto 0);
 		address : std_logic_vector(addr_bits-1 downto 0);
 	end record; 
@@ -133,6 +141,17 @@ architecture rtl of arbiter is
 	signal cpu_time : time_type; -- how much clock cycles each CPU
 	type slot_type is array (0 to cpu_cnt-1) of std_logic;
 	signal slot : slot_type; -- defines which CPU is on turn
+	signal conventional_slot : slot_type;
+
+
+-- for RTTM	
+	signal committing_reg : std_logic_vector(0 to cpu_cnt-1);
+	signal tm_in_transaction_reg : std_logic_vector(0 to cpu_cnt-1);
+	signal any_committing_reg : std_logic;	
+	
+	type slot_state_type_enum is (no, read_only, write_or_read);
+	type slot_state_type is array (0 to cpu_cnt-1) of slot_state_type_enum;
+	signal slot_state, next_slot_state : slot_state_type;
 	
 begin
 
@@ -153,12 +172,14 @@ gen_register: for i in 0 to cpu_cnt-1 generate
 		if reset = '1' then
 			reg_out(i).rd <= '0';
 			reg_out(i).wr <= '0';
+			reg_out(i).tm_broadcast <= '0';
 			reg_out(i).wr_data <= (others => '0'); 
 			reg_out(i).address <= (others => '0');
 		elsif rising_edge(clk) then
 			if arb_out(i).rd = '1' or arb_out(i).wr = '1' then
 				reg_out(i).rd <= arb_out(i).rd;
 				reg_out(i).wr <= arb_out(i).wr;
+				reg_out(i).tm_broadcast <= arb_out(i).tm_broadcast;
 				reg_out(i).address <= arb_out(i).address;
 				reg_out(i).wr_data <= arb_out(i).wr_data;
 			end if;
@@ -180,30 +201,90 @@ process(clk, reset)
 end process;
 				
 -- A time slot is assigned to each CPU 
-process(counter, cpu_time, arb_out)
+prepare_slots: process(counter, cpu_time)
   variable lower_limit : integer;
-	begin
-		for j in 0 to cpu_cnt-1 loop
-			slot(j) <= '0';
-		end loop;
+begin
+	for j in 0 to cpu_cnt-1 loop
+		next_slot_state(j) <= no;
+	end loop;
 
     lower_limit := 0;
     for j in 0 to cpu_cnt-1 loop
       if (counter >= lower_limit) and (counter < cpu_time(j)-write_gap) then
-        slot(j) <= '1';
+        next_slot_state(j) <= write_or_read;
         exit;
-      elsif (counter >= lower_limit) and (counter < cpu_time(j)-read_gap) and (arb_out(j).rd = '1') then -- rd is 2 cycles longer allowed
-        slot(j) <= '1';
+      elsif (counter >= lower_limit) and (counter < cpu_time(j)-read_gap) then -- rd is 2 cycles longer allowed
+        next_slot_state(j) <= read_only;
         exit;
       end if;
       lower_limit := cpu_time(j);
     end loop;
 end process;	
+
+gen_conventional_slots: process(slot_state, arb_out)
+begin
+	for j in 0 to cpu_cnt-1 loop
+		conventional_slot(j) <= '0';
+	end loop;
+
+    for j in 0 to cpu_cnt-1 loop
+	  if slot_state(j) = write_or_read then
+        conventional_slot(j) <= '1';
+        exit;
+      elsif (slot_state(j) = read_only) and (arb_out(j).rd = '1') then -- rd is 2 cycles longer allowed
+        conventional_slot(j) <= '1';
+        exit;
+      end if;
+    end loop;
+end process;
+
+override_slots: process(conventional_slot, tm_in_transaction_reg, any_committing_reg) is
+	variable slot_for_transaction: std_logic;
+begin
+	slot <= conventional_slot;
 	
+	slot_for_transaction := '0';
+	for j in 0 to cpu_cnt-1 loop
+		if tm_in_transaction_reg(j) = '1' and conventional_slot(j) = '1' then
+			slot_for_transaction := '1';
+		end if;
+	end loop;		
+	
+	if any_committing_reg = '1' and slot_for_transaction = '1' then
+		for j in 0 to cpu_cnt-1 loop
+			if tm_in_transaction_reg(j) = '1' then
+				slot(j) <= committing_reg(j);
+			end if;
+		end loop;
+	end if;
+end process;
+
+
+sync: process(clk, reset) is
+begin
+	if reset = '1' then
+		any_committing_reg <= '0';
+		committing_reg <= (others => '0');
+		slot_state <= (others => no);
+	elsif rising_edge(clk) then
+		any_committing_reg <= '0';
+		
+		for j in 0 to cpu_cnt-1 loop
+			if committing(j) = '1' then
+				any_committing_reg <= '1';
+			end if;
+		end loop;
+		
+		committing_reg <= committing;
+		tm_in_transaction_reg <= tm_in_transaction;
+		slot_state <= next_slot_state;
+	end if;
+end process;
+
 	
 -- Generates next state of the FSM for each master
 gen_next_state: for i in 0 to cpu_cnt-1 generate
-	process(state, mode, slot, counter, mem_in, arb_out, pipelined)	 
+	process(state, mode, slot, mem_in, arb_out, pipelined)	 
 	begin
 
 		next_state(i) <= state(i);
@@ -324,6 +405,7 @@ begin
 	mem_out.address <= (others => '0');
 	mem_out.wr_data <= (others => '0');
 	mem_out.atomic <= '0';
+	tm_broadcast <= (valid => '0', address => (others => '0'));
 	
 	for i in 0 to cpu_cnt-1 loop
 		set(i) <= "00";
@@ -341,6 +423,10 @@ begin
 				mem_out.wr <= arb_out(i).wr;
 				mem_out.address <= arb_out(i).address;
 				mem_out.wr_data <= arb_out(i).wr_data;			
+				tm_broadcast <= (
+						valid => arb_out(i).wr and arb_out(i).tm_broadcast,
+						address => arb_out(i).address);
+				
 			
 			when waitingR =>
 				
@@ -356,6 +442,10 @@ begin
 				mem_out.wr <= reg_out(i).wr;
 				mem_out.address <= reg_out(i).address;
 				mem_out.wr_data <= reg_out(i).wr_data;
+				tm_broadcast <= (
+						valid => reg_out(i).wr and arb_out(i).tm_broadcast,
+						address => reg_out(i).address);
+				
 				
 		end case;
 	end loop;
