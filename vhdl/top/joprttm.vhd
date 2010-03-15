@@ -199,6 +199,7 @@ end component;
 	signal commit_token_request		: std_logic_vector(0 to cpu_cnt-1);
 	signal commit_token_grant		: std_logic_vector(0 to cpu_cnt-1);
 	
+	signal tm_in_transaction                : std_logic_vector(0 to cpu_cnt-1);	
 	
 	
 begin
@@ -282,7 +283,8 @@ end process;
 				sc_arb_out => sc_arb_out(i),
 				sc_arb_in => sc_arb_in(i),
 			
-				exc_tm_rollback => exc_tm_rollback(i)
+				exc_tm_rollback => exc_tm_rollback(i),
+				tm_in_transaction => tm_in_transaction(i)
 				);
 	end generate;
 
@@ -305,7 +307,9 @@ end process;
 		port map(clk_int, int_res,
 			sc_arb_out, sc_arb_in,
 			sc_mem_out, sc_mem_in,
-			tm_broadcast
+			committing => commit_token_grant, 
+			tm_in_transaction => tm_in_transaction,
+			tm_broadcast => tm_broadcast
 			-- Enable for use with Round Robin Arbiter
 			-- sync_out_array(1)
 			);

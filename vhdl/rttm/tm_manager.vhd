@@ -91,8 +91,9 @@ port (
 	--
 	--	rollback exception
 	--
-	exc_tm_rollback	: out std_logic
-		
+	exc_tm_rollback	: out std_logic;
+	
+	tm_in_transaction	: out std_logic
 );
 
 end tm_manager;
@@ -248,6 +249,9 @@ begin
 		(next_containment_state /= cbi0) and 
 		(next_containment_state /= cbi))
 	else '0';
+	
+	
+	tm_in_transaction <= '1' when state /= NO_TRANSACTION else '0';
 	
 				
 	

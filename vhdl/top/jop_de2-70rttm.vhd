@@ -49,7 +49,7 @@ generic (
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 8;		-- number of cpus
+	cpu_cnt		: integer := 4;		-- number of cpus
 	tm_way_bits	: integer := 5;		-- 2**way_bits is number of entries
 	rttm_instrum	: boolean := true;	-- rttm instrumentation
 	confl_rds_only	: boolean := false
@@ -184,6 +184,8 @@ end component;
 	
 	signal commit_token_request		: std_logic_vector(0 to cpu_cnt-1);
 	signal commit_token_grant		: std_logic_vector(0 to cpu_cnt-1);
+	
+	signal tm_in_transaction		: std_logic_vector(0 to cpu_cnt-1);
 
 begin
 
@@ -260,7 +262,8 @@ end process;
 				sc_arb_out => sc_arb_out(i),
 				sc_arb_in => sc_arb_in(i),
 			
-				exc_tm_rollback => exc_tm_rollback(i)
+				exc_tm_rollback => exc_tm_rollback(i),
+				tm_in_transaction => tm_in_transaction(i)
 				);
 	end generate;
 
@@ -286,6 +289,8 @@ cmp_arbiter : entity work.arbiter
 			arb_in => sc_arb_in,
 			mem_out => sc_mem_out,
 			mem_in => sc_mem_in,
+			committing => commit_token_grant,
+			tm_in_transaction => tm_in_transaction,
 			tm_broadcast => tm_broadcast
 		);
 	
