@@ -101,6 +101,8 @@ public class Main implements Runnable {
 				msg.addElement(sb);		
 				RtThread.sleepMs(300*id);
 				NoC.nb_send1(0, 'a'+i);
+			sb.append(" NoC status ");
+			sb.append(Native.rd(NoC.NOC_REG_STATUS));	
 			}
 		}
 

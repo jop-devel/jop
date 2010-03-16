@@ -31,7 +31,7 @@ interface SndRcvIF#(numeric type n);
 	  method Bit#(n) thisAddress();  	  
 endinterface
 
-
+// (* synthesize *)
 module mkTDMANode#(Bit#(n) id,
        	           Integer bufferSize,
        	           Reg#(WordPacket#(n)) inR,
@@ -41,17 +41,16 @@ module mkTDMANode#(Bit#(n) id,
 FIFOF#(Word) sndFIFO <- mkSizedFIFOF(bufferSize);
 FIFOF#(Word) rcvFIFO <- mkSizedFIFOF(bufferSize);
 
-// Reg#(Bit#(n)) slot <- mkConfigRegA(id);
-Reg#(Bit#(n)) src <- mkConfigRegA(id);
-Reg#(Bit#(n)) dst <- mkConfigRegU();
-Reg#(Byte) sndCnt <- mkConfigRegA(0);
-Reg#(Byte) rcvCnt <- mkConfigRegA(0);
+Reg#(Bit#(n)) src <- mkRegA(id);
+Reg#(Bit#(n)) dst <- mkRegA(0);
+Reg#(Byte) sndCnt <- mkRegA(0);
+Reg#(Byte) rcvCnt <- mkRegA(0);
  
 
-Reg#(Bool) firstWord <- mkConfigReg(False);
-Reg#(Bool) sending <- mkConfigReg(False);
-Reg#(Bool) rcvMore <- mkConfigReg(False);
-Reg#(Bool) flagEoD <- mkConfigReg(False);
+Reg#(Bool) firstWord <- mkReg(False);
+Reg#(Bool) sending <- mkReg(False);
+Reg#(Bool) rcvMore <- mkReg(False);
+Reg#(Bool) flagEoD <- mkReg(False);
 
 
 (* preempts = "(detectSndStart,waitLastAck, defaultNil,detectRcvStart,continueRcv), justForward" *)
@@ -97,6 +96,7 @@ rule defaultNil(inR.slot == id && !sending);
        outR <= WordPacket {dst:0, slot:inR.slot, load:0, ctrl:Nil};
 endrule
 
+(* fire_when_enabled *)
 // -------- receiving rules -------------------------
 rule detectRcvStart(
 	inR.slot != id	    // do not receive from my own slot
@@ -118,6 +118,7 @@ rule detectRcvStart(
      outR <= WordPacket {dst:inR.dst, slot:inR.slot, load:inR.load, ctrl:Ack};
 endrule
 
+(* fire_when_enabled *)
 rule continueRcv(
         inR.slot != id	  // do not receive from my own slot
 	&& inR.slot == src    // we are following this source
@@ -212,64 +213,6 @@ method Bit#(n) thisAddress(); return id; endmethod
 endmodule
 
 
-module mkTestNode(Empty);
-
-Bit#(2) nid = 1;
-
-Reg#(WordPacket#(2)) iFIFO <- mkRegA(WordPacket {dst:_, slot:_, load: _, ctrl:Ack});
-Reg#(WordPacket#(2)) oFIFO <- mkRegU;
-
-SndRcvIF#(2) node <- mkTDMANode(nid, 4, iFIFO, oFIFO);
-
-Stmt s = (seq
-       noAction;
-       noAction;
-       noAction;
-       noAction;
-       noAction;
-       noAction;
-       node.sndDestination(2);
-       node.sndCount(1);
-       node.sndData(5);
-       noAction;
-       noAction;
-       await(!node.isBusy);
-       node.sndDestination(3);
-       node.sndCount(3);
-       node.sndData(4);
-       node.sndData(3);
-       node.sndData(2);
-       noAction;
-       noAction;
-       noAction;
-       noAction;
-       noAction;
-       await(!node.isBusy);
-       iFIFO <=  WordPacket {dst:1, load: 13, ctrl:Data};
-       noAction;
-       noAction;
-       noAction;
-       iFIFO <= WordPacket {dst:_, load: _, ctrl:Nil};
-       noAction;
-       noAction;
-       noAction;
-       iFIFO <=  WordPacket {dst:1, load: 15, ctrl:EoD};
-       iFIFO <= WordPacket {dst:_, load: _, ctrl:Nil};
-       await(!node.isBusy);
-       $display("rcv count %h",node.rcvCount());
-       while(True) noAction;     
-       endseq);
-
-mkAutoFSM(s);
-
-
-rule rcvInstantly;
-     $display("outFIFO has %h",oFIFO);
-endrule
-
-endmodule
-
-
 // ---------------- TDMA Router with SimpCon interface
 typedef enum {StatusReg, RcvCntReg, RcvSourceReg, RcvDataReg} 
 	TDMA_RdReg deriving (Bits,Eq);
@@ -290,20 +233,23 @@ module mkTDMANodeSCIF#(Bit#(n) id,
  	provisos(Add#(a,n,8), Add#(b,n,32));
 
 SndRcvIF#(n) node <- mkTDMANode(id,bufferSize,inR,outR);
-Reg#(Bit#(2)) cnt <- mkRegA(0);
-Reg#(Word) res <- mkRegU(); 
+// Reg#(Bit#(2)) cnt <- mkRegA(0);
+Reg#(Word) res <- mkRegU();
+Reg#(Word) ind <- mkRegU();
 
-Reg#(Bool) rnw <- mkRegA(False);
+Reg#(Bool) rnw <- mkRegA(True);
+Reg#(Bool) req <- mkRegA(False);
 Reg#(TDMA_RdReg) rdreq <- mkRegU();
 Reg#(TDMA_WrReg) wrreq <- mkRegU();
 
-rule waitRcvData(cnt>0 && rnw && rdreq == RcvDataReg);
+rule waitRcvData(req && rnw && rdreq == RcvDataReg);
      let aux <- node.rcvData();
      res <= aux;
-     cnt <= 0;
+//     cnt <= 0;
+     req <= False;
 endrule
 
-rule do_readStatus(cnt>0 && rnw && rdreq == StatusReg);
+rule do_readStatus(req && rnw && rdreq == StatusReg);
      Bit#(8) statusByte = {
               pack(node.rcvBufferFull),
        	      pack(node.rcvBufferEmpty),
@@ -319,59 +265,67 @@ rule do_readStatus(cnt>0 && rnw && rdreq == StatusReg);
       Bit#(32) statusWord = zeroExtend({statusByte, myAddress});
 
       res <= statusWord;
-      cnt <= 0;
+//      cnt <= 0;
+      req <= False;
 endrule
 
-rule do_readRcvSource(cnt>0 && rnw && rdreq == RcvSourceReg);
+rule do_readRcvSource(req && rnw && rdreq == RcvSourceReg);
      res <= zeroExtend(node.rcvSource());
-     cnt <= 0;
+ //    cnt <= 0;
+     req <= False;
 endrule
 
-rule do_readRcvCount(cnt>0 && rnw && rdreq == RcvCntReg);
+rule do_readRcvCount(req && rnw && rdreq == RcvCntReg);
      res <= zeroExtend(node.rcvCount());
-     cnt <= 0;
+//     cnt <= 0;
+     req <= False;
 endrule
 
-rule do_writeReset(cnt>0 && !rnw && wrreq == ResetReg);
+rule do_writeReset(req && !rnw && wrreq == ResetReg);
      node.rcvReset();
-     cnt <= 0;
+ //    cnt <= 0;
+     req <= False;
      $display("EoD reset.");
 endrule
 
-rule do_writeSndCount(cnt>0 && !rnw && wrreq == SndCntReg);
-     node.sndCount(truncate(res));    
-     cnt <= 0;
+rule do_writeSndCount(req && !rnw && wrreq == SndCntReg);
+     node.sndCount(truncate(ind));    
+//     cnt <= 0;
+     req <= False;
 endrule
 
-rule do_writeSndDest(cnt>0 && !rnw && wrreq == SndDestReg);
-     node.sndDestination(truncate(res));    
-     cnt <= 0;
+rule do_writeSndDest(req && !rnw && wrreq == SndDestReg);
+     node.sndDestination(truncate(ind));    
+//     cnt <= 0;
+     req <= False;
 endrule
 
-rule do_writeSndData(cnt>0 && !rnw && wrreq == SndDataReg);
-     node.sndData(res);    
-     cnt <= 0;
+rule do_writeSndData(req && !rnw && wrreq == SndDataReg);
+     node.sndData(ind);    
+//     cnt <= 0;
+     req <= False;
 endrule
 
 method Action rdwr_req(Bit#(2) address, Bool rd, 
        Bit#(32) wr_data, Bool wr);
- 
+
        // a read request
-       if(rd && !wr) begin
+       if(rd) begin
         TDMA_RdReg adr = unpack(address);
 	rdreq <= adr;
 	rnw <= True;
-       end
-
+	req <= True;
+       end 
+       else
        // now the write part
-       if(wr && !rd) begin
+       if(wr) begin
 	TDMA_WrReg adr = unpack(address);
 	wrreq <= adr;
+	ind <= wr_data;
 	rnw <= False;
-	res <= wr_data;
+	req <= True;
        end
     
-       if (rd || wr) cnt <= 3;
 endmethod
 
 
@@ -380,17 +334,14 @@ method Bit#(32) rd_data();
 endmethod
 
 method Bit#(2) rdy_cnt();
-       return cnt;
+       return req?3:0;
 endmethod
 
-/*
-method WordPacket#(n) in_frame(); 
-       return inR; 
-endmethod
-*/
+
 
 endmodule
 
+/*
 module mkTestNodeSCIF(Empty);
 
 Bit#(2) nid1 = 1;
@@ -490,6 +441,7 @@ endrule
 
 
 endmodule
+*/
 
 interface NoC#(numeric type n);
 	  interface Vector#(n,SimpConIF#(2)) routers;
