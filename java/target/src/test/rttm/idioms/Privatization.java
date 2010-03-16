@@ -13,7 +13,7 @@ public class Privatization {
 		lo.setData(data);
 	}
 	
-	public void removeAndPrintString() {
+	public void removeAndPrintString() { // privatization
 		LinkedObject<String> lo = atomicList.remove(); // remove atomically 
 		// do I/O outside of transaction
 		if (lo != null) {

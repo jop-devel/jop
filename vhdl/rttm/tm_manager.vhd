@@ -19,6 +19,12 @@
 --
 
 
+--
+--	TODO:
+--	- read out statistics from all cores on core 0
+--	- change state machine state names as in thesis
+--
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -92,7 +98,10 @@ port (
 	--	rollback exception
 	--
 	exc_tm_rollback	: out std_logic;
-	
+
+	--
+	--	HW transaction in progress
+	--
 	tm_in_transaction	: out std_logic
 );
 
@@ -392,7 +401,9 @@ begin
 								instrumentation.commits + 1;
 						end if;
 					when aborted =>
-						 -- TODO not consistent with exception handling
+						-- indicates a program bug
+						-- violates transaction isolation, since SHM was 
+						-- already touched
 						assert false;
 						
 						if rttm_instrum then
