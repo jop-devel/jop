@@ -238,7 +238,8 @@ begin
     end loop;
 end process;
 
-override_slots: process(conventional_slot, tm_in_transaction_reg, any_committing_reg) is
+override_slots: process(conventional_slot, tm_in_transaction_reg, 
+	committing_reg, any_committing_reg) is
 	variable slot_for_transaction: std_logic;
 begin
 	slot <= conventional_slot;

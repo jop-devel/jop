@@ -42,7 +42,7 @@ import boxpeeking.instrument.bcel.AnnotationsAttribute;
  * - can't load string constants because they are already indexed in jz.load()
  * - return type double and long not supported
  * 
- * TODO: optimize jumps  
+ * TODO: check method signature, optimize jumps  
  * 
  * @author Peter Hilber (peter@hilber.name)
  *

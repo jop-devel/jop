@@ -22,7 +22,7 @@ public class Main implements Runnable {
 		sys.signal = 1;
 		
 		while (true) {
-			int result = Transaction.run(1);
+			int result = Transaction.atomicMethod(1);
 			
 			System.out.println(result);
 		}

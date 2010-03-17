@@ -58,16 +58,14 @@ public class Transaction {
 	 * using {@link Commands#abort()}. 
 	 * Is user-visible, i.e. propagated outside of outermost transaction.
 	 */
-	public static int run(int arg0) throws RetryException, AbortException {
+	public static int atomicMethod(int arg0) throws RetryException, AbortException {
 		int arg0Copy = 0xdeadbeef; // make compiler happy
-		boolean isOutermostTransaction = !Utils.inTransaction[Native.rdMem(Const.IO_CPU_ID)];
+		boolean isOutermostTransaction = 
+			!Utils.inTransaction[Native.rdMem(Const.IO_CPU_ID)];
 
 		if (isOutermostTransaction) {
-			arg0Copy = arg0; // save method arguments
-
-			// disable interrupts
-			Native.wrMem(0, Const.IO_INT_ENA);
-
+			arg0Copy = arg0; // save method arguments		
+			Native.wrMem(0, Const.IO_INT_ENA); // disable interrupts
 			Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = true;
 		}
 
@@ -90,9 +88,8 @@ public class Transaction {
 					// no exceptions happen after here
 
 					Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = false;
-
-					// re-enable interrupts
-					Native.wrMem(1, Const.IO_INT_ENA);
+					
+					Native.wrMem(1, Const.IO_INT_ENA); // re-enable interrupts
 				}
 				return result;
 			} catch (Throwable e) { 
