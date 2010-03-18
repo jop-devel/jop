@@ -184,7 +184,7 @@ begin
 				end if;
 			end if;
 			if wr = '1' and address(0) = '0' then
-				parity_mode(1 downto 0) <= wr_data(3 downto 2);
+				parity_mode(1 downto 0) <= wr_data(1 downto 0);
 			end if;
 		end if;
 
