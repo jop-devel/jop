@@ -26,6 +26,8 @@ package cmp;
 
 import java.util.Vector;
 
+import joprt.RtThread;
+
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 import com.jopdesign.sys.Startup;
@@ -79,7 +81,10 @@ public class HelloCMP implements Runnable {
 		StringBuffer sb = new StringBuffer();
 		sb.append("Hello World from CPU ");
 		sb.append(id);
-		msg.addElement(sb);		
+		for (int i=0; i<10; ++i) {
+			msg.addElement(sb);		
+			RtThread.sleepMs(300*id);
+		}
 	}
 
 }
