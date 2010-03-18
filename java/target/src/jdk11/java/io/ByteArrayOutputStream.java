@@ -153,12 +153,12 @@ public class ByteArrayOutputStream extends OutputStream
   public String toString ()
   {
 	  String tmp = "";
-    try {
+//     try {
 		tmp = new String (buf, 0, count);
-	} catch (UnsupportedEncodingException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	}
+// 	} catch (UnsupportedEncodingException e) {
+// 		// TODO Auto-generated catch block
+// 		e.printStackTrace();
+// 	}
 	return tmp;
   }
 
