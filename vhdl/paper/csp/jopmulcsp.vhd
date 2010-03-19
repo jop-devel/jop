@@ -49,6 +49,7 @@ use work.jop_types.all;
 use work.sc_pack.all;
 use work.sc_arbiter_pack.all;
 use work.jop_config.all;
+use work.NoCTypes.ALL;
 
 entity jop is
 
@@ -132,34 +133,19 @@ port (
 );
 end component;
 
-component mkNoC3bs2 is
-port (
-                 CLK : in std_logic;
-                 RST_N : in std_logic;
+    COMPONENT TDMANoC
+    PORT(
+         Clk : IN  std_logic;
+         Rst : IN  std_logic;
+         Addr : IN  sc_addr_type;
+         wr : IN  sc_bit_type;
+         wr_data : IN  sc_word_type;
+         rd : IN  sc_bit_type;
+         rd_data : OUT  sc_word_type;
+         rdy_cnt : OUT  sc_rdy_cnt_type
+        );
+    END COMPONENT;
 
-                 routers_0_address : in std_logic_vector(1 downto 0);
-                 routers_0_rd : in std_logic;
-                 routers_0_wr_data : in std_logic_vector(31 downto 0);
-                 routers_0_wr : in std_logic;
-                 routers_0_rd_data : out std_logic_vector(31 downto 0);
-                 routers_0_rdy_cnt : out unsigned(1 downto 0);
-
-                 routers_1_address : in std_logic_vector(1 downto 0);
-                 routers_1_rd : in std_logic;
-                 routers_1_wr_data : in std_logic_vector(31 downto 0);
-                 routers_1_wr : in std_logic;
-                 routers_1_rd_data : out std_logic_vector(31 downto 0);
-                 routers_1_rdy_cnt : out unsigned(1 downto 0);
-
-                 routers_2_address : in std_logic_vector(1 downto 0);
-                 routers_2_rd : in std_logic;
-                 routers_2_wr_data : in std_logic_vector(31 downto 0);
-                 routers_2_wr : in std_logic;
-                 routers_2_rd_data : out std_logic_vector(31 downto 0);
-                 routers_2_rdy_cnt : out unsigned(1 downto 0)
-
-);
-end component;
 
 --
 --	Signals
@@ -190,7 +176,15 @@ end component;
 	-- NoC connection
 	signal noc_in		: sc_out_array_type(0 to cpu_cnt-1);
 	signal noc_out			: sc_in_array_type(0 to cpu_cnt-1);
-	signal n_res			: std_logic;
+	
+	signal noc_addr : sc_addr_type;
+	signal noc_wr : sc_bit_type;
+	signal noc_wr_data : sc_word_type;
+	signal noc_rd : sc_bit_type;
+
+ 	--Outputs
+   signal noc_rd_data : sc_word_type;
+   signal noc_rdy_cnt : sc_rdy_cnt_type;
 
 --
 --	IO interface
@@ -225,7 +219,7 @@ begin
 
 --
 --	intern reset
---	no extern reset, epm7064 has too less pins
+--	no extern reset, epm7064 has too few pins
 --
 
 process(clk_int)
@@ -314,35 +308,27 @@ end process;
 			fl_rdy => fl_rdy
 
 		);
-
-	n_res <= not int_res;
 		
-	noc: mkNoC3bs2 port map (
-				 CLK => clk,
-                 RST_N => n_res,
-
-                 routers_0_address => noc_in(0).address(1 downto 0),
-                 routers_0_rd => noc_in(0).rd,
-                 routers_0_wr_data => noc_in(0).wr_data,
-                 routers_0_wr => noc_in(0).wr,
-                 routers_0_rd_data => noc_out(0).rd_data,
-                 routers_0_rdy_cnt => noc_out(0).rdy_cnt,
-
-                 routers_1_address => noc_in(1).address(1 downto 0),
-                 routers_1_rd => noc_in(1).rd,
-                 routers_1_wr_data => noc_in(1).wr_data,
-                 routers_1_wr => noc_in(1).wr,
-                 routers_1_rd_data => noc_out(1).rd_data,
-                 routers_1_rdy_cnt => noc_out(1).rdy_cnt,
-
-                 routers_2_address => noc_in(2).address(1 downto 0),
-                 routers_2_rd => noc_in(2).rd,
-                 routers_2_wr_data => noc_in(2).wr_data,
-                 routers_2_wr => noc_in(2).wr,
-                 routers_2_rd_data => noc_out(2).rd_data,
-                 routers_2_rdy_cnt => noc_out(2).rdy_cnt
-    );
-	
+	   noc: TDMANoC PORT MAP (
+          Clk => clk,
+          Rst => int_res,
+          Addr => noc_addr,
+          wr => noc_wr,
+          wr_data => noc_wr_data,
+          rd => noc_rd,
+          rd_data => noc_rd_data,
+          rdy_cnt => noc_rdy_cnt
+        );
+        
+        
+	gen_noc_con: for i in 0 to cpu_cnt-1 generate
+		noc_addr(i) <= noc_in(i).address(1 downto 0);
+		noc_wr(i) <= noc_in(i).wr;
+		noc_wr_data(i) <= noc_in(i).wr_data;
+		noc_rd(i) <= noc_in(i).rd;
+		noc_out(i).rd_data <= noc_rd_data(i);
+		noc_out(i).rdy_cnt <= unsigned(noc_rdy_cnt(i));
+	end generate;	
 		
 	-- syncronization of processors
 	sync: entity work.cmpsync generic map (
@@ -383,36 +369,6 @@ end process;
 			-- ram_cnt => ram_count			
 		);
 		
-	-- io for processors with only sc_sys
---	gen_io: for i in 1 to cpu_cnt-1 generate
---		io2: entity work.sc_sys generic map (
---			addr_bits => 4,
---			clk_freq => clk_freq,
---			cpu_id => i,
---			cpu_cnt => cpu_cnt
---		)
---		port map(
---			clk => clk_int,
---			reset => int_res,
---			address => sc_io_out(i).address(3 downto 0),
---			wr_data => sc_io_out(i).wr_data,
---			rd => sc_io_out(i).rd,
---			wr => sc_io_out(i).wr,
---			rd_data => sc_io_in(i).rd_data,
---			rdy_cnt => sc_io_in(i).rdy_cnt,
---			
---			irq_in => irq_in(i),
---			irq_out => irq_out(i),
---			exc_req => exc_req(i),
---			
---			sync_out => sync_out_array(i),
---			sync_in => sync_in_array(i),
---			wd => wd_out(i)
---			-- remove the comment for RAM access counting
---			-- ram_count => ram_count
---		);
---
---	end generate;
 	
 	-- io for processors with only sc_sys
 	gen_io: for i in 1 to cpu_cnt-1 generate

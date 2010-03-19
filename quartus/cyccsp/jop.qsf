@@ -482,8 +482,13 @@ set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_usb.vhd
-set_global_assignment -name VERILOG_FILE ../../ext/bsvnoc/FIFO2.v
-set_global_assignment -name VERILOG_FILE ../../ext/bsvnoc/mkNoC3bs2.v
+set_global_assignment -name VHDL_FILE ../../vhdl/noc/NoCTypes.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/noc/SimpConSlaveIF.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/noc/SizedFIFOF.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/noc/Receiver.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/noc/Sender.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/noc/TDMANode.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/noc/TDMANoC.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/paper/csp/scio_csp.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/cmpsync.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
