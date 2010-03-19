@@ -171,6 +171,7 @@ begin
 
 		if (reset='1') then
 			rd_data(7 downto 0) <= (others => '0');
+			parity_mode <= PARITY_NONE;
 		elsif rising_edge(clk) then
 
 			ua_rd <= '0';

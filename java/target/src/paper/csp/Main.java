@@ -51,7 +51,6 @@ public class Main implements Runnable {
 			
 			System.out.println("Hello World from CPU 0");
 			System.out.print("Status: ");
-			System.out.println(NoC.NOC_REG_STATUS);
 			System.out.println(Native.rd(NoC.NOC_REG_STATUS));
 
 
@@ -63,11 +62,13 @@ public class Main implements Runnable {
 //			}
 			Runnable r = new Main(1);
 			Startup.setRunnable(r, 0);
+			Startup.setRunnable(new Main(2), 1);
 			
 			// start the other CPUs
 			sys.signal = 1;
 			
 			int[] buffer = new int[10];
+			int i=0;
 			// print their messages
 			for (;;) {
 				int size = msg.size();
@@ -84,8 +85,12 @@ public class Main implements Runnable {
 				}
 				RtThread.sleepMs(100);
 				System.out.print("Status: ");
-				System.out.println(NoC.NOC_REG_STATUS);
 				System.out.println(Native.rd(NoC.NOC_REG_STATUS));
+				++i;
+				if (i==10) {
+					System.out.println("Send something to core 2");
+					NoC.nb_send1(2, 'x');
+				}
 
 			}
 		}
@@ -101,8 +106,8 @@ public class Main implements Runnable {
 				msg.addElement(sb);		
 				RtThread.sleepMs(300*id);
 				NoC.nb_send1(0, 'a'+i);
-			sb.append(" NoC status ");
-			sb.append(Native.rd(NoC.NOC_REG_STATUS));	
+				sb.append(" NoC status ");
+				sb.append(Native.rd(NoC.NOC_REG_STATUS));	
 			}
 		}
 
