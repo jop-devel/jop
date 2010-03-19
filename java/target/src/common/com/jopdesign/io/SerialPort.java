@@ -25,7 +25,11 @@ public final class SerialPort extends HardwareObject {
 	// Some constants for the status port
 	public static final int MASK_TDRE = 1;
 	public static final int MASK_RDRF = 2;
+	public static final int MASK_PARITY_ERR = 4;
 
+	public static final int PARITY_ODD = 1;
+	public static final int PARITY_EVEN = 3;
+	
 	public volatile int status;
 	public volatile int data;
 	
@@ -47,6 +51,11 @@ public final class SerialPort extends HardwareObject {
 	final public void write(int ch) {
 		data = ch;
 	}
+	
+	final public void setParityMode(int parity_mode) {
+		status = parity_mode;
+	}
+	
 	/**
 	 * A character is available in the input buffer.
 	 * @return
@@ -62,6 +71,9 @@ public final class SerialPort extends HardwareObject {
 	final public boolean txEmpty() {
 		return (status & MASK_TDRE) != 0;
 	}
-	
+
+	public boolean parityError() {
+		return (status & MASK_PARITY_ERR) != 0;
+	}
 	
 }
