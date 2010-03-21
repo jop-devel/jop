@@ -34,7 +34,8 @@ public class NoC {
 	}
 	
 	public static int thisAddress() {
-		return myAddress;
+		throw new Error("Static fields are shared for all cores!");
+//		return myAddress;
 	}
 	
 	// some flag accesses
@@ -75,13 +76,13 @@ public class NoC {
 				int dstAddr, int header, int cnt, int buf[]) {
 		if(isSending()) return false;
 		// can send data here
-		Native.wr(NOC_REG_SNDDST, dstAddr);
-		Native.wr(NOC_REG_SNDCNT, cnt+1); // account for the header
-		Native.wr(NOC_REG_SNDDATA, header);
+		Native.wr(dstAddr, NOC_REG_SNDDST);
+		Native.wr(cnt+1, NOC_REG_SNDCNT); // account for the header
+		Native.wr(header, NOC_REG_SNDDATA);
 		int i=0;
 		while(i<cnt) {
 			while(!isSendBufferFull());
-			Native.wr(NOC_REG_SNDDATA, buf[i]);
+			Native.wr(buf[i], NOC_REG_SNDDATA);
 			i++;
 		}
 		return true;
@@ -93,7 +94,7 @@ public class NoC {
 	
 	// call this to reset EoD flag and allow more receive!
 	public static void writeReset() {
-		Native.wr(NOC_REG_RCVRESET,0);
+		Native.wr(0, NOC_REG_RCVRESET);
 	}
 
 	
@@ -105,9 +106,9 @@ public class NoC {
 	//              It will only have values from 0 to N-1
 	//  - d : any data
 	public static void nb_send1(int dstAddr, int d) {
-		Native.wr(NOC_REG_SNDDST, dstAddr);
-		Native.wr(NOC_REG_SNDCNT, 1);
-		Native.wr(NOC_REG_SNDDATA, d);
+		Native.wr(dstAddr, NOC_REG_SNDDST);
+		Native.wr(1, NOC_REG_SNDCNT);
+		Native.wr(d, NOC_REG_SNDDATA);
 	}
 	
 	// receives from any source
@@ -120,7 +121,7 @@ public class NoC {
 		//
 		// does reset for more receive. after this,
 		// the source, count and everything else may be faulty
-		Native.wr(NOC_REG_RCVRESET,0); // aka writeReset();		
+		Native.wr(0, NOC_REG_RCVRESET); // aka writeReset();		
 		return d;
 	}
 		

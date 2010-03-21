@@ -88,13 +88,13 @@ public class Main implements Runnable {
 					System.out.println();
 				}
 				RtThread.sleepMs(10);
-				System.out.print("Status: ");
-				System.out.println(Native.rd(NoC.NOC_REG_STATUS));
+//				System.out.print("Status: ");
+//				System.out.println(Native.rd(NoC.NOC_REG_STATUS));
 				++i;
-				if (i==10) {
-					System.out.println("Send something to core 2");
-					NoC.nb_send1(2, 'x');
-				}
+//				if (i==10) {
+//					System.out.println("Send something to core 2");
+//					NoC.nb_send1(2, 'x');
+//				}
 
 			}
 		}
@@ -104,14 +104,16 @@ public class Main implements Runnable {
 			StringBuffer sb = new StringBuffer();
 			sb.append("Hello World from CPU ");
 			sb.append(id);
-			sb.append(" NoC status ");
-			sb.append(Native.rd(NoC.NOC_REG_STATUS));
 			for (int i=0; i<10; ++i) {
-				NoC.nb_send1(0, 'a'+i);
+				if (id==1) {
+					NoC.nb_send1(0, 'a'+i);					
+				} else {
+					NoC.nb_send1(0, 'A'+i);										
+				}
+				RtThread.sleepMs(id*100);
 				msg.addElement(sb);		
-				RtThread.sleepMs(1*id);
-				sb.append(" NoC status ");
-				sb.append(Native.rd(NoC.NOC_REG_STATUS));	
+//				sb.append(" NoC status ");
+//				sb.append(Native.rd(NoC.NOC_REG_STATUS));	
 			}
 		}
 

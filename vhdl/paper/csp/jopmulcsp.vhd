@@ -310,7 +310,7 @@ end process;
 		);
 		
 	   noc: TDMANoC PORT MAP (
-          Clk => clk,
+          Clk => clk_int,
           Rst => int_res,
           Addr => noc_addr,
           wr => noc_wr,

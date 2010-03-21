@@ -37,6 +37,10 @@ add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/io/sys/timer_
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/io/sys/int_pend
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/io/sys/int_ena
 add wave -noupdate -divider noc
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/io/sc_io_out
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/io/sc_io_in
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/io/sel
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/io/noc_in
 add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/noc/addr
 add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/noc/nreg
 add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/noc/rd
@@ -113,4 +117,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {7267701300 ps} {7267861377 ps}
+WaveRestoreZoom {17972927 ps} {18044853 ps}
