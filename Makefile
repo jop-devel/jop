@@ -441,9 +441,21 @@ qsyn:
 #
 sim: java_app
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SIMULATION
-	cd modelsim && ./sim.bat
-	# for simulation of CMP 
-	# cd modelsim && ./sim_cmp.bat
+	cd modelsim && make
+
+
+#
+#	Modelsim target for CMP version of JOP
+#		without the tools
+#
+sim_cmp: java_app
+	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SIMULATION
+	cd modelsim && make cmp
+
+sim_csp: java_app
+	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SIMULATION
+	cd modelsim && make csp
+
 
 #
 #	JopSim target

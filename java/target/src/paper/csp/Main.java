@@ -21,6 +21,8 @@ package csp;
 
 import java.util.Vector;
 
+import util.Timer;
+
 import joprt.RtThread;
 
 import com.jopdesign.io.IOFactory;
@@ -66,6 +68,8 @@ public class Main implements Runnable {
 			
 			// start the other CPUs
 			sys.signal = 1;
+			// set the WD LED for the simulation
+			sys.wd = 1;
 			
 			int[] buffer = new int[10];
 			int i=0;
@@ -83,7 +87,7 @@ public class Main implements Runnable {
 					System.out.print((char) buffer[0]);
 					System.out.println();
 				}
-				RtThread.sleepMs(100);
+				RtThread.sleepMs(10);
 				System.out.print("Status: ");
 				System.out.println(Native.rd(NoC.NOC_REG_STATUS));
 				++i;
@@ -103,9 +107,9 @@ public class Main implements Runnable {
 			sb.append(" NoC status ");
 			sb.append(Native.rd(NoC.NOC_REG_STATUS));
 			for (int i=0; i<10; ++i) {
-				msg.addElement(sb);		
-				RtThread.sleepMs(300*id);
 				NoC.nb_send1(0, 'a'+i);
+				msg.addElement(sb);		
+				RtThread.sleepMs(1*id);
 				sb.append(" NoC status ");
 				sb.append(Native.rd(NoC.NOC_REG_STATUS));	
 			}
