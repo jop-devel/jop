@@ -12,7 +12,7 @@ import org.apache.bcel.*;
  */
 public class AnnotationReader implements AttributeReader
 {
-	protected static final String ATOMIC_TAG_NAME = "Lrttm/Atomic;";
+	protected static final String ATOMIC_TAG_NAME = "Lrttm/atomic;";
 	
 	public Attribute createAttribute (int name_index, int length, DataInputStream in, ConstantPool cp)
 	{

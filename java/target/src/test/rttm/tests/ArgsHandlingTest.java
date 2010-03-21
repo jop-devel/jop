@@ -1,6 +1,6 @@
 package rttm.tests;
 
-import rttm.Atomic;
+import rttm.atomic;
 
 public class ArgsHandlingTest {
 
@@ -8,7 +8,7 @@ public class ArgsHandlingTest {
 		System.out.println(transaction(1, 10, 100));
 	}
 	
-	@Atomic private static int transaction(int arg0, int arg1, int arg2) {
+	@atomic private static int transaction(int arg0, int arg1, int arg2) {
 		return arg0+arg1+arg2;
 	}
 }

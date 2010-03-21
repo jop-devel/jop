@@ -1,6 +1,6 @@
 package rttm.tests;
 
-import rttm.Atomic;
+import rttm.atomic;
 import rttm.Diagnostics;
 
 public class MethodcacheLoadsFilterTest {
@@ -12,7 +12,7 @@ public class MethodcacheLoadsFilterTest {
 		Diagnostics.stat(0);
 	}
 	
-	@Atomic private static int atomicSection() {
+	@atomic private static int atomicSection() {
 		return factorial(5);
 	}
 	

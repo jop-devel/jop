@@ -3,7 +3,7 @@ package rttm.tests.errors;
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 
-import rttm.Atomic;
+import rttm.atomic;
 
 public class ArrayOutOfBoundsException {
 	
@@ -15,7 +15,7 @@ public class ArrayOutOfBoundsException {
 	
 	private static int[] foo = new int[1];
 	
-	@Atomic static int atomicMethod() {
+	@atomic static int atomicMethod() {
 		return foo[1];
 	}
 }

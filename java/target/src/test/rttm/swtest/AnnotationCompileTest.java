@@ -1,6 +1,6 @@
 package rttm.swtest;
 
-import rttm.Atomic;
+import rttm.atomic;
 
 public class AnnotationCompileTest {
 	static volatile boolean foo = false;
@@ -14,7 +14,7 @@ public class AnnotationCompileTest {
 		System.out.println(foo);
 	}
 	
-	@Atomic static void atomicMethod() {
+	@atomic static void atomicMethod() {
 		foo = true;
 	}
 

@@ -2,7 +2,7 @@ package rttm.tests;
 
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
-import rttm.Atomic;
+import rttm.atomic;
 import rttm.Diagnostics;
 
 public class EarlyCommitTest {
@@ -26,7 +26,7 @@ public class EarlyCommitTest {
 	private static final int ADDRS = 1<<6;
 	private static volatile int[] data = new int[ADDRS];
 	
-	@Atomic private static void increment() {
+	@atomic private static void increment() {
 		for (int i = 0; i < data.length; i++) {
 			data[i]++;
 		}

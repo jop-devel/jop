@@ -3,7 +3,7 @@ package rttm.tests.errors;
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 
-import rttm.Atomic;
+import rttm.atomic;
 
 public class NullPointerException {
 	
@@ -15,7 +15,7 @@ public class NullPointerException {
 	
 	private int foo;
 	
-	@Atomic static int atomicMethod() {
+	@atomic static int atomicMethod() {
 		NullPointerException o = null;
 		
 		return o.foo;

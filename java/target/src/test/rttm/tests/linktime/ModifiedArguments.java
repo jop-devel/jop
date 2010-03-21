@@ -1,6 +1,6 @@
 package rttm.tests.linktime;
 
-import rttm.Atomic;
+import rttm.atomic;
 
 public class ModifiedArguments {
 
@@ -11,7 +11,7 @@ public class ModifiedArguments {
 		new ModifiedArguments().foo(null, 0, 0, 0);
 	}
 
-	@Atomic void foo(Object modified, int notModified, long modifiedLong, 
+	@atomic void foo(Object modified, int notModified, long modifiedLong, 
 			int modifiedByIncrement) {
 		int notAnArgument = 0xf00;		
 		

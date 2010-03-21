@@ -5,7 +5,7 @@ import joprt.RtThread;
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 import com.jopdesign.sys.Startup;
-import rttm.Atomic;
+import rttm.atomic;
 
 public class SimpleSnapshot implements Runnable {
 
@@ -45,7 +45,7 @@ public class SimpleSnapshot implements Runnable {
 		}
 	}
 	
-	@Atomic 
+	@atomic 
 	protected static void snapshot() {
 		// grab commit token to avoid being aborted
 		rttm.Commands.earlyCommit();
@@ -75,7 +75,7 @@ public class SimpleSnapshot implements Runnable {
 //		rttm.Diagnostics.saveStatistics();
 	}
 	
-	@Atomic
+	@atomic
 	void snatch(int from) {
 		LinkedList.LinkedObject l = ((LinkedList)lists[from]).removeFromHead();
 		if (l != null) {

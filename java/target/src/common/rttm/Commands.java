@@ -26,7 +26,7 @@ import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
 /**
- * User-visible transactional memory interface (apart from {@link Atomic}
+ * User-visible transactional memory interface (apart from {@link atomic}
  * annotation).
  * @author Peter Hilber (peter@hilber.name)
  */

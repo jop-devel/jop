@@ -26,6 +26,6 @@ package rttm;
  * The {@code Atomic} annotation marks methods to be executed in a transaction.
  */
 //@Target(ElementType.METHOD)
-public @interface Atomic {
+public @interface atomic {
 
 }

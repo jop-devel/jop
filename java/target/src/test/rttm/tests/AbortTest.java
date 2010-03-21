@@ -1,7 +1,7 @@
 package rttm.tests;
 
 import rttm.AbortException;
-import rttm.Atomic;
+import rttm.atomic;
 
 public class AbortTest {
 
@@ -15,7 +15,7 @@ public class AbortTest {
 		
 	}
 	
-	@Atomic private static void transaction() {
+	@atomic private static void transaction() {
 		rttm.Commands.abort();
 	}
 }

@@ -1,6 +1,6 @@
 package rttm.tests;
 
-import rttm.Atomic;
+import rttm.atomic;
 import rttm.Diagnostics;
 
 import com.jopdesign.io.IOFactory;
@@ -58,7 +58,7 @@ public class IncDecTest implements Runnable {
 		Diagnostics.saveStatistics();
 	}
 	
-	@Atomic protected int increment() {
+	@atomic protected int increment() {
 		int result = cnt;
 		for (int i = 0; i < INCREMENTS; i++) {
 			cnt++;
@@ -66,7 +66,7 @@ public class IncDecTest implements Runnable {
 		return result;
 	}
 	
-	@Atomic protected int decrement() {
+	@atomic protected int decrement() {
 		int result = cnt;
 		for (int i = 0; i < INCREMENTS; i++) {
 			cnt--;

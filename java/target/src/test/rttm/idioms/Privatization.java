@@ -1,6 +1,6 @@
 package rttm.idioms;
 
-import rttm.Atomic;
+import rttm.atomic;
 import rttm.swtest.AtomicLinkedList;
 import rttm.swtest.AtomicLinkedList.LinkedObject;
 
@@ -8,7 +8,7 @@ public class Privatization {
 
 	AtomicLinkedList<String> atomicList;
 	
-	@Atomic public void insertString(String data, LinkedObject<String> lo) {
+	@atomic public void insertString(String data, LinkedObject<String> lo) {
 		atomicList.insert(lo);
 		lo.setData(data);
 	}

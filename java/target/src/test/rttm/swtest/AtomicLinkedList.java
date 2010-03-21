@@ -1,13 +1,13 @@
 package rttm.swtest;
 
-import rttm.Atomic; 
+import rttm.atomic; 
 
 public class AtomicLinkedList<T> {
 	
 	LinkedObject<T> head = null;
 	LinkedObject<T> tail = null;
 	
-	@Atomic public void insert(LinkedObject<T> entry) {
+	@atomic public void insert(LinkedObject<T> entry) {
 		entry.next = null;
 		if (tail == null) {
 			head = entry;
@@ -20,7 +20,7 @@ public class AtomicLinkedList<T> {
 	/**
 	 * @return null if list is empty.
 	 */
-	@Atomic public LinkedObject<T> remove() {		
+	@atomic public LinkedObject<T> remove() {		
 		LinkedObject<T> result = head;
 		if (head != null) {
 			head = head.next;
@@ -31,7 +31,7 @@ public class AtomicLinkedList<T> {
 		return result;
 	}
 	
-	@Atomic public int size() {
+	@atomic public int size() {
 		int size = 0;
 		for (LinkedObject<T> o = head; o != null; o = o.next) {
 			size++;

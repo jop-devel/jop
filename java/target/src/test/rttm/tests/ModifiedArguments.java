@@ -1,6 +1,6 @@
 package rttm.tests;
 
-import rttm.Atomic;
+import rttm.atomic;
 import rttm.Diagnostics;
 
 import com.jopdesign.io.IOFactory;
@@ -40,11 +40,11 @@ public class ModifiedArguments implements Runnable {
 		Diagnostics.saveStatistics();
 	}
 	
-	@Atomic protected static void disquieter() {
+	@atomic protected static void disquieter() {
 		artificialConflict = 0;
 	}
 	
-	@Atomic protected int atomicMethod(int arg) {
+	@atomic protected int atomicMethod(int arg) {
 		int ignored = artificialConflict;
 		
 		for (int i = 0; i < 10000; i++) {
