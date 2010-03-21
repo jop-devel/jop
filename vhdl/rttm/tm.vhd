@@ -320,11 +320,11 @@ begin
 		next_commit_started <= commit_started;
 	
 		case state is 
-			when NO_TRANSACTION | CONTAINMENT |
-				EARLY_COMMITTED_TRANSACTION =>
+			when BYPASS | ABORT |
+				EARLY_COMMIT =>
 				if from_cpu.rd = '1' then
 					next_stage1.state <= read_direct;
-				elsif from_cpu.wr = '1' and state /= CONTAINMENT then
+				elsif from_cpu.wr = '1' and state /= ABORT then
 					next_stage1.state <= write_direct;
 				else
 					next_stage1.state <= idle;
@@ -332,7 +332,7 @@ begin
 				
 				next_stage1.addr <= from_cpu.address;
 				
-			when COMMIT_WAIT_TOKEN | EARLY_COMMIT_WAIT_TOKEN =>
+			when WAIT_TOKEN | EARLY_WAIT_TOKEN =>
 				next_stage1.state <= idle;
 				
 				if broadcast.valid = '1' or 
@@ -344,7 +344,7 @@ begin
 				
 				next_commit_started <= '0';				
 			
-			when NORMAL_TRANSACTION =>
+			when TRANSACTION =>
 				next_stage1.state <= idle;
 
 				if from_cpu.wr = '1' or from_cpu.rd = '1' then
@@ -367,7 +367,7 @@ begin
 					next_stage1.state <= broadcast1; 
 				end if;
 
-			when COMMIT | EARLY_COMMIT =>
+			when COMMIT | EARLY_FLUSH =>
 				next_stage1.state <= idle;
 
 				-- a memory read transaction was started in the previous cycle 
@@ -630,7 +630,7 @@ begin
 		end case;
 		
 		-- if this read miss triggered an early commit,
-		-- wait until the EARLY_COMMIT finished before updating rd_data
+		-- wait until the EARLY_FLUSH finished before updating rd_data
 		if read_miss_publish = '1' and rdy_cnt_busy = '0' then
 			-- could do that on next_read_miss_publish rising edge
 -- 			to_cpu.rd_data <= from_mem.rd_data;			
@@ -825,13 +825,13 @@ begin
 				end if;
 				
 				-- reset counters
-				if state = NO_TRANSACTION then
+				if state = BYPASS then
 					r_w_set_instrum_current <=
 						((others => '0'), (others => '0'), (others => '0'));  
 				end if;
 				
 				-- update maxima
-				if state = COMMIT or state = EARLY_COMMIT then
+				if state = COMMIT or state = EARLY_FLUSH then
 					if r_w_set_instrum_current.write_set > 
 						r_w_set_instrum_max.write_set then
 						r_w_set_instrum_max.write_set <= 

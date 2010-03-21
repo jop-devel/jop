@@ -30,17 +30,17 @@ package tm_internal_pack is
 	--
 
 	type state_type is (
-		NO_TRANSACTION,
+		BYPASS,
 
-		NORMAL_TRANSACTION,
-		COMMIT_WAIT_TOKEN,
+		TRANSACTION,
+		WAIT_TOKEN,
 		COMMIT,
 
-		EARLY_COMMIT_WAIT_TOKEN,
-		EARLY_COMMIT,
-		EARLY_COMMITTED_TRANSACTION, -- same for all kinds of early commits
+		EARLY_WAIT_TOKEN,
+		EARLY_FLUSH,
+		EARLY_COMMIT, -- same for all kinds of early commits
 
-		CONTAINMENT
+		ABORT
 		);
 
 end package tm_internal_pack;
