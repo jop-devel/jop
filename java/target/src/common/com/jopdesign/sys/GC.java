@@ -144,11 +144,8 @@ public class GC {
 		addrStaticRefs = addr;
 		mem_start = Native.rdMem(0);
 		// align mem_start to 8 word boundary for the
-		// conservative handle check
-		
-//mem_start = 261300;
+		// conservative handle check		
 		mem_start = (mem_start+7)&0xfffffff8;
-//mem_size = mem_start + 2000;
 		full_heap_size = mem_size-mem_start;
 		handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
 		semi_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
@@ -217,7 +214,6 @@ public class GC {
 		// does the reference point to a handle start?
 		// TODO: happens in concurrent
 		if ((ref&0x7)!=0) {
-//				log("a not aligned handle");
 			return;
 		}
 
@@ -226,7 +222,6 @@ public class GC {
 			// Is possible when using conservative stack scanning
 			if (Native.rdMem(ref+OFF_PTR)==0) {
 				// TODO: that happens in concurrent!
-//				log("push of a handle with 0 at OFF_PRT!", ref);
 				return;
 			}
 						
@@ -235,7 +230,6 @@ public class GC {
 			// -- it's checked in the write barrier
 			// -- but not in mark....
 			if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
-//				log("push: already in toSpace");
 				return;
 			}
 			
@@ -278,13 +272,9 @@ public class GC {
 		// only pushing stack roots need to be atomic
 		synchronized (mutex) {
 			// add complete stack of the current thread to the root list
-//			roots = GCStkWalk.swk(RtThreadImpl.getActive(),true,false);
 			i = Native.getSP();			
 			for (j = Const.STACK_OFF; j <= i; ++j) {
-				// disable the if when not using gc stack info
-//				if (roots[j - Const.STACK_OFF] == 1) {
-					push(Native.rdIntMem(j));
-//				}
+				push(Native.rdIntMem(j));
 			}
 			// Stacks from the other threads
 			cnt = RtThreadImpl.getCnt();
@@ -295,13 +285,8 @@ public class GC {
 					 // sp starts at Const.STACK_OFF
 					int sp = RtThreadImpl.getSP(i) - Const.STACK_OFF;
 
-//					roots = GCStkWalk.swk(i, false, false);
-
 					for (j = 0; j <= sp; ++j) {
-						// disable the if when not using gc stack info
-//						if (roots[j] == 1) {
-							push(mem[j]);
-//						}
+						push(mem[j]);
 					}
 				}
 			}
@@ -350,17 +335,9 @@ public class GC {
 			// again pushed on the gray stack by the mutator?
 			if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
 				// it happens 
-//				log("mark/copy allready in toSpace");
 				continue;
 			}
 			
-			// there should be no null pointers on the mark stack
-//			if (Native.rdMem(ref+OFF_PTR)==0) {
-//				log("mark/copy OFF_PTR=0!!!");
-//				continue; 
-//			}
-			
-				
 			// push all childs
 				
 			// get pointer to object
@@ -465,12 +442,6 @@ public class GC {
 		for (int i=fromSpace; i<end; ++i) {
 			Native.wrMem(0, i);
 		}
-		// for tests clean also the remainig memory in the to-space
-//		synchronized (mutex) {
-//			for (int i=copyPtr; i<allocPtr; ++i) {
-//				Native.wrMem(0, i);
-//			}			
-//		}
 	}
 
 	public static void setConcurrent() {
@@ -575,12 +546,6 @@ public class GC {
 			allocPtr -= size;
 			// get one from free list
 			ref = freeList;
-	//		if ((ref&0x07)!=0) {
-	//			log("getHandle problem");
-	//		}
-	//		if (Native.rdMem(ref+OFF_PTR)!=0) {
-	//			log("getHandle not free");
-	//		}
 			freeList = Native.rdMem(ref+OFF_NEXT);
 			// and add it to use list
 			Native.wrMem(useList, ref+OFF_NEXT);
@@ -666,12 +631,6 @@ public class GC {
 			allocPtr -= size;
 			// get one from free list
 			ref = freeList;
-	//		if ((ref&0x07)!=0) {
-	//			log("getHandle problem");
-	//		}
-	//		if (Native.rdMem(ref+OFF_PTR)!=0) {
-	//			log("getHandle not free");
-	//		}
 			freeList = Native.rdMem(ref+OFF_NEXT);
 			// and add it to use list
 			Native.wrMem(useList, ref+OFF_NEXT);
@@ -707,144 +666,7 @@ public class GC {
 	public static int totalMemory() {
 		return semi_size*4;
 	}
-	
-	/**
-	 * Check if a given value is a valid handle.
-	 * 
-	 * This method traverse the list of handles (in use) to check
-	 * if the handle provided belong to the list.
-	 * 
-	 * It does *not* check the free handle list.
-	 * 
-	 * One detail: the result may state that a handle to a 
-	 * (still unknown garbage) object is valid, in case 
-	 * the object is not reachable but still present 
-	 * on the use list.
-	 * This happens in case the object becomes unreachable
-	 * during execution, but GC has not reclaimed it yet.
-	 * Anyway, it's still a valid object handle.
-	 * 
-	 * @param handle the value to be checked.
-	 * @return
-	 */
-	public static final boolean isValidObjectHandle(int handle)
-	{
-	  boolean isValid;
-	  int handlePointer;
 	  
-	  // assume it's not valid and try to show otherwise 
-	  isValid = false;
-	  
-	  // synchronize on the GC lock
-	  synchronized (mutex) {
-		// start on the first element of the list
-	    handlePointer = useList;
-	    
-	    // traverse the list until the element is found or the list is over
-	    while(handlePointer != 0)
-	    {
-	      if(handle == handlePointer)
-	      {
-	    	// found it! hence, it's a valid handle. Stop the search.
-	    	isValid = true;
-	    	break;
-	      }
-	      
-	      // not found yet. Let's go to the next element and try again. 
-	      handlePointer = Native.rdMem(handlePointer+OFF_NEXT);
-	    }
-	  }
-	  
-	  return isValid;
-	}
-  
-  /**
-   * Write barrier for an object field. May be used with regular objects
-   * and reference arrays.
-   * 
-   * @param handle the object handle
-   * @param index the field index
-   */
-  public static final void writeBarrier(int handle, int index)
-  {
-    boolean shouldExecuteBarrier = false;
-    int gcInfo;
-    
-//    log("WriteBarrier: snapshot-at-beginning.");
-    
-    if (handle == 0)
-    {
-      throw new NullPointerException();
-    }
-    
-    synchronized (GC.mutex)
-    {
-      // ignore objects with size zero (is this correct?)
-      if(Native.rdMem(handle) == 0)
-      {
-//        log("ignore objects with size zero");
-        return;
-      }
-      
-      // get information on the object type.
-      int type = Native.rdMem(handle + GC.OFF_TYPE);
-      
-      // if it's an object or reference array, execute the barrier
-      if(type == GC.IS_REFARR)
-      {
-//        log("Reference array.");
-        shouldExecuteBarrier = true;
-      }
-      
-      if(type == GC.IS_OBJ)
-      {
-//        log("Regular object.");
-        // get the object GC info from the class structure. 
-        gcInfo = Native.rdMem(handle + GC.OFF_MTAB_ALEN) + Const.MTAB2GC_INFO;
-        gcInfo = Native.rdMem(gcInfo);
-        
-//        log("GCInfo field: ", gcInfo);
-        
-        // if the correct bit is set for the field, it may hold a reference.
-        // then, execute the write barrier.
-        if((gcInfo & (0x01 << index)) != 0)
-        {
-//          log("Field can hold a reference. Execute barrier!");
-          shouldExecuteBarrier = true;
-        }
-      }
-      
-      // execute the write barrier, if necessary.
-      if(shouldExecuteBarrier)
-      {
-        // handle indirection
-        handle = Native.rdMem(handle);
-        // snapshot-at-beginning barrier
-        int oldVal = Native.rdMem(handle+index);
-        
-//        log("Old val:       ", oldVal);
-//        if(oldVal != 0)
-//        {
-//          log("Current space: ", Native.rdMem(oldVal+GC.OFF_SPACE));
-//        }
-//        else
-//        {
-//          log("Current space: NULL object.");
-//        }
-//        log("toSpace:       ", GC.toSpace);
-        
-        if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
-//          log("Executing write barrier for old handle: ", handle);
-          GC.push(oldVal);
-        }
-      }
-//      else
-//      {
-//        log("Should not execute the barrier.");
-//      }
-    }
-  }
-  
 /************************************************************************************************/
 	
 
