@@ -94,7 +94,7 @@ public class RtThreadImpl {
 
 
 	RtThread rtt;		// reference to RtThread's run method
-	private int priority;
+	int priority;
 	private int period;			// period in us
 	private int offset;			// offset in us
 	private boolean isEvent;	// it's a software event
@@ -107,16 +107,17 @@ public class RtThreadImpl {
 	final static int DEAD = 3;
 	int state;
 
-	int cpuId;			// core that the thread is running on
-	// index in next, ref and event
-	int nr;
-	int[] stack;
-	int sp;
+	int     cpuId; // core that the thread is running on				   
+	int     nr;    // index in next, ref and event
+	int []  stack;
+	int     sp;
+
+	volatile boolean scan = false;
 	
 	/**
 	 * The scope that the thread is in. null when in heap context.
 	 */
-	Scope currentArrea;
+	Scope currentArea;
 
 	// linked list of threads in priority order
 	// used only at initialization time to collect the threads
@@ -165,9 +166,9 @@ public class RtThreadImpl {
 		stack = new int[Const.STACK_SIZE-Const.STACK_OFF];
 		sp = Const.STACK_OFF;	// default empty stack for GC before startMission()
 		
-for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
-	stack[i] = 1234567;
-}
+		for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
+			stack[i] = 1234567;
+		}
 
 		this.rtt = rtt;
 		
@@ -273,7 +274,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		stack[j-Const.STACK_OFF-2] -= k;
 		stack[j-Const.STACK_OFF-4] -= k;
 		
-/*	this is the save version
+/*	this is the safe version
 		i = Native.getSP();
 		sp = i;
 		for (j=Const.STACK_OFF; j<=i; ++j) {
@@ -281,10 +282,6 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		}
 */
 	}
-
-//	public void run() {
-//		;							// nothing to do
-//	}
 
 	/**
 	 * Static start time of scheduling used by all cores
@@ -406,6 +403,10 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		int nxt, now;
 		Scheduler s = Scheduler.sched[sys.cpuId];
 
+		if (priority >= s.scanThres) {
+			GC.ScanThread.getOwnStackRoots();
+		}
+
 		Native.wr(0, Const.IO_INT_ENA);
 
 		nxt = s.next[nr] + period;
@@ -413,7 +414,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		now = Native.rd(Const.IO_US_CNT);
 		if (nxt-now < 0) {					// missed time!
 			s.next[nr] = now;				// correct next
-//			next[nr] = nxt;					// without correction!
+//			s.next[nr] = nxt;				// without correction!
 			Native.wr(1, Const.IO_INT_ENA);
 			return false;
 		} else {
@@ -443,7 +444,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 	public void fire() {
 		Scheduler.sched[this.cpuId].event[this.nr] = Scheduler.EV_FIRED;
 		// if prio higher...
-// should not be allowed befor startMission
+		// should not be allowed before startMission
 		// TODO: for cross CPU event fire we need to generate the interrupt
 		// for the other core!
 		genInt();
@@ -457,16 +458,10 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		genInt();
 
 	}
-	/**
-	*	dummy yield() for compatibility reason.
-	*/
-//	public static void yield() {}
-
 
 	/**
 	*	for 'soft' rt threads.
 	*/
-
 	public static void sleepMs(int millis) {
 	
 		int next = Native.rd(Const.IO_US_CNT)+millis*1000;
@@ -491,7 +486,6 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		for (;;) {
 			t2 = Native.rd(Const.IO_US_CNT);
 			t3 = t2-t1;
-//			System.out.println(cnt+" "+t3);
 			t1 = t2;
 			if (t3<MIN_US) {
 				cnt += t3;
@@ -537,7 +531,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 //		JVMHelp.wr("getCurrent");
 		// we call it only when the mission is already started
 		Scheduler s = Scheduler.sched[sys.cpuId];
-		return s.ref[s.active].currentArrea;
+		return s.ref[s.active].currentArea;
 
 //		RtThreadImpl rtt = null;
 //		if (Scheduler.sched==null) {
@@ -552,7 +546,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 //			// we don't have started the mission
 //			return null;
 //		} else {
-//			return rtt.currentArrea;			
+//			return rtt.currentArea;			
 //		}
 	}
 	
@@ -563,34 +557,31 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 			int nr = s.active;
 			rtt = s.ref[nr];
 		}
-		rtt.currentArrea = sc;
+		rtt.currentArea = sc;
 	}
 
 	
 
-static void trace(int[] stack, int sp) {
+	static void trace(int[] stack, int sp) {
 
-	int fp, mp, vp, addr, loc, args;
-	int val;
+		int fp, mp, vp, addr, loc, args;
+		int val;
 
-	fp = sp-4;		// first frame point is easy, since last sp points to the end of the frame
+		fp = sp-4;		// first frame point is easy, since last sp points to the end of the frame
 
-	while (fp>Const.STACK_OFF+5) {	// stop befor 'fist' method
-		mp = stack[fp+4-Const.STACK_OFF];
-		vp = stack[fp+2-Const.STACK_OFF];
-		val = Native.rdMem(mp);
-		addr = val>>>10;			// address of callee
-		util.Dbg.intVal(addr);
+		while (fp>Const.STACK_OFF+5) {	// stop befor 'fist' method
+			mp = stack[fp+4-Const.STACK_OFF];
+			vp = stack[fp+2-Const.STACK_OFF];
+			val = Native.rdMem(mp);
+			addr = val>>>10;			// address of callee
+			util.Dbg.intVal(addr);
 
-		val = Native.rdMem(mp+1);	// cp, locals, args
-		args = val & 0x1f;
-		loc = (val>>>5) & 0x1f;
-		fp = vp+args+loc;			// new fp can be calc. with vp and count of local vars
+			val = Native.rdMem(mp+1);	// cp, locals, args
+			args = val & 0x1f;
+			loc = (val>>>5) & 0x1f;
+			fp = vp+args+loc;			// new fp can be calc. with vp and count of local vars
+		}
 	}
-}
-
-
-
 
 
 }

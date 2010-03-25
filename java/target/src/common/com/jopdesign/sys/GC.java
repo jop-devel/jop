@@ -21,6 +21,9 @@
 
 package com.jopdesign.sys;
 
+import com.jopdesign.io.IOFactory;
+import com.jopdesign.io.SysDevice;
+import joprt.RtThread;
 
 /**
  *     Real-time garbage collection for JOP
@@ -133,10 +136,6 @@ public class GC {
 	
 	static Object mutex;
 	
-	static boolean concurrentGc;
-		
-	static int roots[];
-
 	static OutOfMemoryError OOMError;
 
 	static void init(int mem_size, int addr) {
@@ -147,7 +146,7 @@ public class GC {
 		// conservative handle check		
 		mem_start = (mem_start+7)&0xfffffff8;
 		full_heap_size = mem_size-mem_start;
-		handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
+		handle_cnt = full_heap_size/(2*TYPICAL_OBJ_SIZE+HANDLE_SIZE);
 		semi_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
 		
 		heapStartA = mem_start+handle_cnt*HANDLE_SIZE;
@@ -268,30 +267,46 @@ public class GC {
 	 *
 	 */
 	static void getStackRoots() {
-		int i, j, cnt;
-		// only pushing stack roots need to be atomic
-		synchronized (mutex) {
-			// add complete stack of the current thread to the root list
-			i = Native.getSP();			
-			for (j = Const.STACK_OFF; j <= i; ++j) {
-				push(Native.rdIntMem(j));
+		int i, j, k, cnt, cpus;
+		
+		if (concurrentGc) {
+			cpus = Scheduler.sched.length;
+			for (i = 0; i < cpus; i++) {
+				cnt = Scheduler.sched[i].ref.length;
+				for (j = 0; j < cnt; j++) {
+					Scheduler.sched[i].ref[j].scan = true;
+				}
 			}
-			// Stacks from the other threads
-			cnt = RtThreadImpl.getCnt();
-			
-			for (i = 0; i < cnt; ++i) {
-				if (i != RtThreadImpl.getActive()) {
-					int[] mem = RtThreadImpl.getStack(i);
-					 // sp starts at Const.STACK_OFF
-					int sp = RtThreadImpl.getSP(i) - Const.STACK_OFF;
-
-					for (j = 0; j <= sp; ++j) {
-						push(mem[j]);
+			for (i = 0; i < cpus; i++) {
+				cnt = Scheduler.sched[i].ref.length;
+				for (j = 0; j < cnt; j++) {
+					while (Scheduler.sched[i].ref[j].scan) {
+						/* wait for root scanning threads to do the work */
 					}
 				}
 			}
+		} else {
+			// add stack of the current thread to the root list
+			ScanThread.getOwnStackRoots();
 
+ 			cpus = Scheduler.sched.length;
+ 			for (i = 0; i < cpus; i++) {
+				if (Scheduler.sched[i].ref != null) {
+					cnt = Scheduler.sched[i].ref.length;
+					for (j = 0; j < cnt; j++) {
+						synchronized(mutex) {						
+							int[] mem = Scheduler.sched[i].ref[j].stack;
+							// sp starts at Const.STACK_OFF
+							int sp = Scheduler.sched[i].ref[j].sp - Const.STACK_OFF;
+							for (k = 0; k <= sp; ++k) {
+								push(mem[k]);
+							}
+						}
+ 					}
+ 				}
+ 			}
 		}
+
 	}
 
 	/**
@@ -312,9 +327,7 @@ public class GC {
 		
 		int i, ref;
 		
-		if (!concurrentGc) {
-			getStackRoots();			
-		}
+		getStackRoots();			
 		getStaticRoots();
 		for (;;) {
 			
@@ -444,9 +457,6 @@ public class GC {
 		}
 	}
 
-	public static void setConcurrent() {
-		concurrentGc = true;
-	}
 	static void gc_alloc() {
 		log("GC allocation triggered");
 		if (USE_SCOPES) {
@@ -462,14 +472,18 @@ public class GC {
 	}
 
 	public static void gc() {
-//		log("GC called - free memory:", freeMemory());
+ 		log("GC called - free memory:", freeMemory());
 
+// 		log("flip");
 		flip();
+// 		log("m&c");
 		markAndCopy();
+// 		log("sweep");
 		sweepHandles();
+// 		log("zap");
 		zapSemi();	
 
-//		log("GC end - free memory:",freeMemory());
+ 		log("GC end - free memory:",freeMemory());
 		
 	}
 	
@@ -667,8 +681,7 @@ public class GC {
 		return semi_size*4;
 	}
 	  
-/************************************************************************************************/
-	
+/************************************************************************************************/	
 
 	static void log(String s, int i) {
 		JVMHelp.wr(s);
@@ -679,6 +692,86 @@ public class GC {
 	static void log(String s) {
 		JVMHelp.wr(s);
 		JVMHelp.wr("\n");
+	}
+
+/************************************************************************************************/	
+
+	static boolean concurrentGc;
+
+	public static void setConcurrent() {
+		concurrentGc = true;
+	}
+	
+	public static final class GCThread extends RtThread {
+		
+		public GCThread(int prio, int period) {
+			super(prio, period);
+		}
+		public void run() {
+			for (;;) {
+				GC.gc();
+				waitForNextPeriod();
+			}
+		}
+	}
+
+	public static final class ScanThread extends RtThread {
+
+		static SysDevice sys = IOFactory.getFactory().getSysDevice();
+
+		public static void getOwnStackRoots() {
+			int	i, j;
+			i = Native.getSP();			
+			for (j = Const.STACK_OFF; j <= i; ++j) {
+				push(Native.rdIntMem(j));
+			}
+			Scheduler sched = Scheduler.sched[sys.cpuId];
+			sched.ref[sched.active].scan = false;
+		}
+
+		public ScanThread(int prio, int period) {
+			super(prio, period);
+			Scheduler.sched[sys.cpuId].scanThres = prio+RtThreadImpl.MAX_PRIORITY+RtThreadImpl.RT_BASE;
+		}
+
+		public void run() {
+		
+			int i, j, cnt;
+
+			Scheduler sched = Scheduler.sched[sys.cpuId];
+
+			for (;;) {
+				cnt = sched.ref.length;
+
+				for (i = 0; i < cnt; i++) {
+
+					RtThreadImpl ref = sched.ref[i];
+
+					if (ref.scan && ref.priority < sched.scanThres) {
+						
+						// threads cannot execute while we scan their
+						// stacks, because we run at a higher priority
+
+//  						System.out.print('#');
+//  						System.out.print(ref.priority);
+
+						int[] mem = ref.stack;
+						// sp starts at Const.STACK_OFF
+						int sp = ref.sp - Const.STACK_OFF;
+						for (j = 0; j <= sp; ++j) {
+							push(mem[j]);
+						}
+						
+						ref.scan = false;
+					}
+
+					ref = null; // avoid clobbering the stack
+				}
+				
+				waitForNextPeriod();
+			}
+		}
+
 	}
 
 }
