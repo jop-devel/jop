@@ -51,26 +51,26 @@ public class Transaction {
 	/**
 	 * @exception RetryException Thrown by hardware if a conflict is 
 	 * detected or by user program using {@link Commands#retry()} .
-	 * Is not user-visible, i.e. not propagated outside of outermost 
+	 * Is not user-visible, i.e. not propagated outside of not nested 
 	 * transaction.
 	 * 
 	 * @exception AbortExcepton Thrown by user program to abort transaction, 
 	 * using {@link Commands#abort()}. 
-	 * Is user-visible, i.e. propagated outside of outermost transaction.
+	 * Is user-visible, i.e. propagated outside of not nested transaction.
 	 */
 	public static int atomicMethod(int arg0) throws RetryException, AbortException {
 		int arg0Copy = 0xdeadbeef; // make compiler happy
-		boolean isOutermostTransaction = 
+		boolean isNotNestedTransaction = 
 			!Utils.inTransaction[Native.rdMem(Const.IO_CPU_ID)];
 
-		if (isOutermostTransaction) {
+		if (isNotNestedTransaction) {
 			arg0Copy = arg0; // save method arguments		
 			Native.wrMem(0, Const.IO_INT_ENA); // disable interrupts
 			Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = true;
 		}
 
 		while (true) {
-			if (isOutermostTransaction) {
+			if (isNotNestedTransaction) {
 				Native.wrMem(Const.TM_START_TRANSACTION, Const.MEM_TM_MAGIC);
 			}
 
@@ -80,7 +80,7 @@ public class Transaction {
 				// statements in it are redirected to the next statement
 				int result = originalMethodBody(arg0);
 
-				if (isOutermostTransaction) {
+				if (isNotNestedTransaction) {
 
 					// flush write set					
 					Native.wrMem(Const.TM_END_TRANSACTION, Const.MEM_TM_MAGIC);
@@ -88,16 +88,18 @@ public class Transaction {
 					// no exceptions happen after here
 
 					Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = false;
-					
 					Native.wrMem(1, Const.IO_INT_ENA); // re-enable interrupts
 				}
 				return result;
 			} catch (Throwable e) { 
 				// RollbackException, AbortException or any other exception
 
-				if (isOutermostTransaction) {
+				if (isNotNestedTransaction) {
 					// reference comparison is enough
 					if (e == Utils.abortException) {
+						Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = false;
+						Native.wrMem(1, Const.IO_INT_ENA); // re-enable interrupts
+						
 						throw Utils.abortException;
 					} else {
 						// restore method arguments
