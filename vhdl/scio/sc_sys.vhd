@@ -180,6 +180,8 @@ architecture rtl of sc_sys is
 	signal irq_gate		: std_logic;
 	signal irq_dly		: std_logic;
 	signal exc_dly		: std_logic;
+	
+	signal ignore_zombie_exc	: std_logic;
 
 --
 --	signals for interrupt source state machines
@@ -395,6 +397,7 @@ begin
 
 		dly_block <= '0';
 		dly_timeout <= (others => '0');
+		ignore_zombie_exc <= '0';
 
 	elsif rising_edge(clk) then
 
@@ -407,22 +410,31 @@ begin
 		if irq_out.ack_irq='1' or irq_out.ack_exc='1' then
 			int_ena <= '0';
 		end if;
+		
+		if rd='1' and address(3 downto 0) = "0100" then
+			-- exception handling code is running => zombie bytecode ended
+			ignore_zombie_exc <= '0';
+		end if;
 
 		-- exceptions from core, memory or RTTM
 		if exc_req.spov='1' then
 			exc_type(2 downto 0) <= EXC_SPOV;
 			exc_pend <= '1';
 		end if;
-		if exc_req.np='1' then
-			exc_type(2 downto 0) <= EXC_NP;
-			exc_pend <= '1';
+		if ignore_zombie_exc = '0' then 
+			if exc_req.np='1' then
+				exc_type(2 downto 0) <= EXC_NP;
+				exc_pend <= '1';
+			end if;
+			if exc_req.ab='1' then
+				exc_type(2 downto 0) <= EXC_AB;
+				exc_pend <= '1';
+			end if;
 		end if;
-		if exc_req.ab='1' then
-			exc_type(2 downto 0) <= EXC_AB;
-			exc_pend <= '1';
-		end if;
-		-- gets priority over all other exceptions
 		if exc_req.rollback='1' then
+			-- prevent zombie bytecode from masking detected conflict
+			ignore_zombie_exc <= '1';
+			
 			exc_type(2 downto 0) <= EXC_ROLLBACK;
 			exc_pend <= '1';
 		end if;
