@@ -69,7 +69,8 @@ port (
 			arb_in			: out arb_in_type(0 to cpu_cnt-1);
 			mem_out			: out sc_out_type;
 			mem_in			: in sc_in_type;
-			committing : in std_logic_vector(0 to cpu_cnt-1); -- TODO EC: not good
+			next_is_a_read	: in std_logic_vector(0 to cpu_cnt-1);
+			committing 		: in std_logic_vector(0 to cpu_cnt-1);
 			tm_in_transaction : in std_logic_vector(0 to cpu_cnt-1);
 			tm_broadcast	: out tm_broadcast_type
 );
@@ -141,17 +142,12 @@ architecture rtl of arbiter is
 	signal cpu_time : time_type; -- how much clock cycles each CPU
 	type slot_type is array (0 to cpu_cnt-1) of std_logic;
 	signal slot : slot_type; -- defines which CPU is on turn
-	signal conventional_slot : slot_type;
-
 
 -- for RTTM	
+	signal conventional_slot, next_conventional_slot : slot_type;		
 	signal committing_reg : std_logic_vector(0 to cpu_cnt-1);
 	signal tm_in_transaction_reg : std_logic_vector(0 to cpu_cnt-1);
-	signal any_committing_reg : std_logic;	
-	
-	type slot_state_type_enum is (no, read_only, write_or_read);
-	type slot_state_type is array (0 to cpu_cnt-1) of slot_state_type_enum;
-	signal slot_state, next_slot_state : slot_state_type;
+	signal any_committing_reg : std_logic;
 	
 begin
 
@@ -201,42 +197,26 @@ process(clk, reset)
 end process;
 				
 -- A time slot is assigned to each CPU 
-prepare_slots: process(counter, cpu_time)
+conventional_slots: process(counter, cpu_time, next_is_a_read)
   variable lower_limit : integer;
 begin
 	for j in 0 to cpu_cnt-1 loop
-		next_slot_state(j) <= no;
+		next_conventional_slot(j) <= '0';
 	end loop;
 
     lower_limit := 0;
     for j in 0 to cpu_cnt-1 loop
       if (counter >= lower_limit) and (counter < cpu_time(j)-write_gap) then
-        next_slot_state(j) <= write_or_read;
+        next_conventional_slot(j) <= '1';
         exit;
-      elsif (counter >= lower_limit) and (counter < cpu_time(j)-read_gap) then -- rd is 2 cycles longer allowed
-        next_slot_state(j) <= read_only;
+      elsif (counter >= lower_limit) and (counter < cpu_time(j)-read_gap) and
+      	next_is_a_read(j) = '1' then -- rd is 2 cycles longer allowed
+        next_conventional_slot(j) <= '1';
         exit;
       end if;
       lower_limit := cpu_time(j);
     end loop;
 end process;	
-
-gen_conventional_slots: process(slot_state, arb_out)
-begin
-	for j in 0 to cpu_cnt-1 loop
-		conventional_slot(j) <= '0';
-	end loop;
-
-    for j in 0 to cpu_cnt-1 loop
-	  if slot_state(j) = write_or_read then
-        conventional_slot(j) <= '1';
-        exit;
-      elsif (slot_state(j) = read_only) and (arb_out(j).rd = '1') then -- rd is 2 cycles longer allowed
-        conventional_slot(j) <= '1';
-        exit;
-      end if;
-    end loop;
-end process;
 
 override_slots: process(conventional_slot, tm_in_transaction_reg, 
 	committing_reg, any_committing_reg) is
@@ -266,7 +246,7 @@ begin
 	if reset = '1' then
 		any_committing_reg <= '0';
 		committing_reg <= (others => '0');
-		slot_state <= (others => no);
+		conventional_slot <= (others => '0'); 
 	elsif rising_edge(clk) then
 		any_committing_reg <= '0';
 		
@@ -278,7 +258,7 @@ begin
 		
 		committing_reg <= committing;
 		tm_in_transaction_reg <= tm_in_transaction;
-		slot_state <= next_slot_state;
+		conventional_slot <= next_conventional_slot;
 	end if;
 end process;
 

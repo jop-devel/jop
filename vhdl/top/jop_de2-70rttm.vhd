@@ -186,6 +186,9 @@ end component;
 	signal commit_token_grant		: std_logic_vector(0 to cpu_cnt-1);
 	
 	signal tm_in_transaction		: std_logic_vector(0 to cpu_cnt-1);
+	signal early_commit_starting	: std_logic_vector(0 to cpu_cnt-1);
+	signal next_is_a_read			: std_logic_vector(0 to cpu_cnt-1);
+	signal next_is_a_read_save		: std_logic_vector(0 to cpu_cnt-1);
 
 begin
 
@@ -263,7 +266,8 @@ end process;
 				sc_arb_in => sc_arb_in(i),
 			
 				exc_tm_rollback => exc_tm_rollback(i),
-				tm_in_transaction => tm_in_transaction(i)
+				tm_in_transaction => tm_in_transaction(i),
+				early_commit_starting => early_commit_starting(i)
 				);
 	end generate;
 
@@ -291,8 +295,33 @@ end process;
 			mem_in => sc_mem_in,
 			committing => commit_token_grant,
 			tm_in_transaction => tm_in_transaction,
-			tm_broadcast => tm_broadcast
+			tm_broadcast => tm_broadcast,
+			next_is_a_read => next_is_a_read 
 		);
+		
+	gen_next_is_a_read: process (sc_tm_out, early_commit_starting, 
+		next_is_a_read_save) is
+	begin
+		for i in 0 to cpu_cnt-1 loop
+			next_is_a_read(i) <= next_is_a_read_save(i);
+			
+			if sc_tm_out(i).rd = '1' then
+				next_is_a_read(i) <= '1';
+			elsif sc_tm_out(i).wr = '1' or early_commit_starting(i) = '1' then
+				next_is_a_read(i) <= '0'; 
+			end if;
+		end loop;
+	end process gen_next_is_a_read;
+	
+	process (clk_int, int_res) is
+	begin
+	    if int_res = '1' then
+	    	next_is_a_read_save <= (others => '0');
+	    elsif rising_edge(clk_int) then
+			next_is_a_read_save <= next_is_a_read;
+	    end if;
+	end process;
+
 	
 	-- Hold valid TM broadcast addresses and delay broadcast for 1 cycle. 
 	hold_tm_broadcast: process (clk_int, int_res) is

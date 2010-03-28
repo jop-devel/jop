@@ -102,7 +102,12 @@ port (
 	--
 	--	HW transaction in progress
 	--
-	tm_in_transaction	: out std_logic
+	tm_in_transaction	: out std_logic;
+	
+	--
+	--	HACK to speed up memory arbiter
+	--
+	early_commit_starting	: out std_logic
 );
 
 end tm_manager;
@@ -581,6 +586,8 @@ begin
 					(others => '0'));
 				instrum_helpers <= ((others => '0'), '0');
 			end if;
+			
+			early_commit_starting <= '0';
 		elsif rising_edge(clk) then
 			state <= next_state;
 			
@@ -597,6 +604,11 @@ begin
 			if rttm_instrum then
 				instrumentation <= next_instrumentation;
 				instrum_helpers <= next_instr_helpers;
+			end if;
+			
+			early_commit_starting <= '0';
+			if state = EARLY_WAIT_TOKEN then
+				early_commit_starting <= '1';
 			end if;
 		end if;
 	end process sync;
