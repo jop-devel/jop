@@ -44,6 +44,7 @@
 -- 310809: Added transactional memory broadcast support
 -- 111109: Integrated RTTM tm_broadcast signal
 -- 150310: Use slots of CPUs executing transaction for commit
+-- 280310: Hack to speed up arbiter
 
 -- TODO:
 --				- full pipelined version
@@ -141,10 +142,10 @@ architecture rtl of arbiter is
 	type time_type is array (0 to cpu_cnt-1) of counter_type;
 	signal cpu_time : time_type; -- how much clock cycles each CPU
 	type slot_type is array (0 to cpu_cnt-1) of std_logic;
-	signal slot : slot_type; -- defines which CPU is on turn
+	signal slot, next_slot : slot_type; -- defines which CPU is on turn
 
 -- for RTTM	
-	signal conventional_slot, next_conventional_slot : slot_type;		
+	signal conventional_slot : slot_type;		
 	signal committing_reg : std_logic_vector(0 to cpu_cnt-1);
 	signal tm_in_transaction_reg : std_logic_vector(0 to cpu_cnt-1);
 	signal any_committing_reg : std_logic;
@@ -201,17 +202,17 @@ conventional_slots: process(counter, cpu_time, next_is_a_read)
   variable lower_limit : integer;
 begin
 	for j in 0 to cpu_cnt-1 loop
-		next_conventional_slot(j) <= '0';
+		conventional_slot(j) <= '0';
 	end loop;
 
     lower_limit := 0;
     for j in 0 to cpu_cnt-1 loop
       if (counter >= lower_limit) and (counter < cpu_time(j)-write_gap) then
-        next_conventional_slot(j) <= '1';
+        conventional_slot(j) <= '1';
         exit;
       elsif (counter >= lower_limit) and (counter < cpu_time(j)-read_gap) and
       	next_is_a_read(j) = '1' then -- rd is 2 cycles longer allowed
-        next_conventional_slot(j) <= '1';
+        conventional_slot(j) <= '1';
         exit;
       end if;
       lower_limit := cpu_time(j);
@@ -222,7 +223,8 @@ override_slots: process(conventional_slot, tm_in_transaction_reg,
 	committing_reg, any_committing_reg) is
 	variable slot_for_transaction: std_logic;
 begin
-	slot <= conventional_slot;
+	-- TODO check register delay
+	next_slot <= conventional_slot;
 	
 	slot_for_transaction := '0';
 	for j in 0 to cpu_cnt-1 loop
@@ -234,7 +236,7 @@ begin
 	if any_committing_reg = '1' and slot_for_transaction = '1' then
 		for j in 0 to cpu_cnt-1 loop
 			if tm_in_transaction_reg(j) = '1' then
-				slot(j) <= committing_reg(j);
+				next_slot(j) <= committing_reg(j);
 			end if;
 		end loop;
 	end if;
@@ -246,7 +248,7 @@ begin
 	if reset = '1' then
 		any_committing_reg <= '0';
 		committing_reg <= (others => '0');
-		conventional_slot <= (others => '0'); 
+		slot <= (others => '0'); 
 	elsif rising_edge(clk) then
 		any_committing_reg <= '0';
 		
@@ -258,7 +260,7 @@ begin
 		
 		committing_reg <= committing;
 		tm_in_transaction_reg <= tm_in_transaction;
-		conventional_slot <= next_conventional_slot;
+		slot <= next_slot;
 	end if;
 end process;
 
