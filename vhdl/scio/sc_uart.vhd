@@ -292,7 +292,7 @@ begin
 				when s0 =>
 
 					-- even parity
-					parity_tx := ( (tf_dout(7) xor tf_dout(6)) xor (tf_dout(5) xOR tf_dout(4)) ) xor ( (tf_dout(3) xor tf_dout(2)) xor (tf_dout(1) xor tf_dout(0)) );
+					parity_tx := ( (tf_dout(7) xor tf_dout(6)) xor (tf_dout(5) xor tf_dout(4)) ) xor ( (tf_dout(3) xor tf_dout(2)) xor (tf_dout(1) xor tf_dout(0)) );
 
 					if (parity_mode = PARITY_ODD) then   -- odd parity
 						parity_tx := not parity_tx;
@@ -389,10 +389,16 @@ begin
 						rsr(9 downto 0) <= rsr(10 downto 1);
 						i := i+1;
 
-						if (i=11) or (i=10 and parity_mode=PARITY_NONE) then
+						if i=11 then
 							uart_rx_state <= s2;
 						end if;
-						
+
+						if i=10 and parity_mode=PARITY_NONE then
+							rsr(10) <= rx_d;
+							rsr(9) <= rx_d;
+							rsr(8 downto 0) <= rsr(10 downto 2);
+							uart_rx_state <= s2;
+						end if;
 					end if;
 					
 				when s2 =>
