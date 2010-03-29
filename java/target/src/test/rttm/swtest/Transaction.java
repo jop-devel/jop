@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2009, Peter Hilber (peter@hilber.name)
+  Copyright (C) 2009, 2010 Peter Hilber (peter@hilber.name)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -92,25 +92,21 @@ public class Transaction {
 				}
 				return result;
 			} catch (Throwable e) { 
-				// RollbackException, AbortException or any other exception
+				// RetryException, AbortException or other exception
 
 				if (isNotNestedTransaction) {
 					// reference comparison is enough
-					if (e == Utils.abortException) {
+					if (e == Utils.retryException) {
+						// restore method arguments
+						arg0 = arg0Copy;						
+					} else {
+						// exception was manually aborted or a bug triggered
 						Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = false;
 						Native.wrMem(1, Const.IO_INT_ENA); // re-enable interrupts
-						
-						throw Utils.abortException;
-					} else {
-						// restore method arguments
-						arg0 = arg0Copy;
+						throw (RuntimeException)e;
 					}
-				} else { // inner transaction
-					if (e == Utils.abortException) {
-						throw Utils.abortException;
-					} else {
-						throw Utils.retryException;
-					}
+				} else { // nested transaction
+					throw (RuntimeException)e;
 				}
 			}
 		}
