@@ -659,7 +659,7 @@ begin
 	begin
 		case stage1.state is
 			when write =>
-				to_cpu.rdy_cnt <= "10";
+				to_cpu.rdy_cnt <= "11"; -- don't know about buffer overflow yet
 			when read1 =>
 				to_cpu.rdy_cnt <= "11"; -- not waiting for hit res. is faster
 -- 				if stage1_async.hit = '1' then
