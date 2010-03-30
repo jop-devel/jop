@@ -287,11 +287,15 @@ public class GC {
 			}
 		} else {
 			// add stack of the current thread to the root list
+			log("own");
 			ScanThread.getOwnStackRoots();
 
+			log("others");
  			cpus = Scheduler.sched.length;
  			for (i = 0; i < cpus; i++) {
+				log("C");
 				if (Scheduler.sched[i].ref != null) {
+					log("T");
 					cnt = Scheduler.sched[i].ref.length;
 					for (j = 0; j < cnt; j++) {
 						synchronized(mutex) {						
@@ -326,11 +330,13 @@ public class GC {
 	static void markAndCopy() {
 		
 		int i, ref;
-		
+
+		log("stack");
 		getStackRoots();			
+		log("static");
 		getStaticRoots();
+		log("trace");
 		for (;;) {
-			
 			// pop one object from the gray list
 			synchronized (mutex) {
 				ref = grayList;
@@ -474,13 +480,13 @@ public class GC {
 	public static void gc() {
  		log("GC called - free memory:", freeMemory());
 
-// 		log("flip");
+ 		log("flip");
 		flip();
-// 		log("m&c");
+ 		log("m&c");
 		markAndCopy();
-// 		log("sweep");
+ 		log("sweep");
 		sweepHandles();
-// 		log("zap");
+ 		log("zap");
 		zapSemi();	
 
  		log("GC end - free memory:",freeMemory());
@@ -726,7 +732,9 @@ public class GC {
 				push(Native.rdIntMem(j));
 			}
 			Scheduler sched = Scheduler.sched[sys.cpuId];
-			sched.ref[sched.active].scan = false;
+			if (sched != null && sched.ref != null) {
+				sched.ref[sched.active].scan = false;
+			}
 		}
 
 		public ScanThread(int prio, int period) {
