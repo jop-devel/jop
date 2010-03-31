@@ -48,7 +48,7 @@ vcom %options% ^
 %jopdir%/rttm/write_fifo_buffer.vhd ^
 %jopdir%/rttm/flags_ram.vhd ^
 %jopdir%/rttm/tm.vhd ^
-%jopdir%/rttm/tm_manager.vhd ^
+%jopdir%/rttm/tm_state_machine.vhd ^
 %jopdir%/top/joprttm.vhd ^
 %jopdir%/simulation/tb_jop.vhd
 

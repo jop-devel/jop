@@ -260,7 +260,7 @@ end process;
 	end generate;
 	
 	gen_tm: for i in 0 to cpu_cnt-1 generate
-		tm: entity work.tm_manager
+		tm: entity work.tm_state_machine
 			generic map (
 				addr_width => tm_addr_width,
 				tm_magic_detect => tm_magic_detect,

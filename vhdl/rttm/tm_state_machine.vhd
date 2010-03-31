@@ -36,7 +36,7 @@ use work.tm_internal_pack.all;
 
 
 
-entity tm_manager is
+entity tm_state_machine is
 
 generic (
 	-- width of memory addresses cached during transaction
@@ -110,9 +110,9 @@ port (
 	early_commit_starting	: out std_logic
 );
 
-end tm_manager;
+end tm_state_machine;
 
-architecture rtl of tm_manager is
+architecture rtl of tm_state_machine is
 
 	-- State machines
 		
@@ -165,7 +165,7 @@ architecture rtl of tm_manager is
 	signal commit_finished_dly: std_logic;
 	signal commit_finished_dly_internal_1: std_logic;
 	
-	-- tm_manager is busy
+	-- tm_state_machine is busy
 	signal rdy_cnt_busy, next_rdy_cnt_busy: std_logic;
 	
 		

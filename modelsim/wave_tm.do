@@ -93,19 +93,19 @@ add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/fl_nwe
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/fl_rdy
 add wave -noupdate -divider mem_sc
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/data
-add wave -noupdate -divider tm_manager0
+add wave -noupdate -divider tm_state_machine0
 add wave -noupdate -radix hexadecimal /tb_jop/joptop/gen_tm__0/tm/*
 add wave -noupdate -divider tm0
 add wave -noupdate -radix hexadecimal /tb_jop/joptop/gen_tm__0/tm/tm/*
 add wave -noupdate -divider tag0
 add wave -noupdate -radix hexadecimal /tb_jop/joptop/gen_tm__0/tm/tm/tag/*
-add wave -noupdate -divider tm_manager1
+add wave -noupdate -divider tm_state_machine1
 add wave -noupdate -radix hexadecimal /tb_jop/joptop/gen_tm__1/tm/*
 add wave -noupdate -divider tm1
 add wave -noupdate -radix hexadecimal /tb_jop/joptop/gen_tm__1/tm/tm/*
 add wave -noupdate -divider tag1
 add wave -noupdate -radix hexadecimal /tb_jop/joptop/gen_tm__1/tm/tm/tag/*
-add wave -noupdate -divider tm_manager2
+add wave -noupdate -divider tm_state_machine2
 add wave -noupdate -radix hexadecimal /tb_jop/joptop/gen_tm__2/tm/*
 add wave -noupdate -divider tm2
 add wave -noupdate -radix hexadecimal /tb_jop/joptop/gen_tm__2/tm/tm/*

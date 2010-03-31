@@ -128,7 +128,7 @@ begin
 --	Testbench
 --
 
-	dut: entity work.tm_manager(rtl)
+	dut: entity work.tm_state_machine(rtl)
 	generic map (
 		addr_width => addr_width,
 		tm_magic_detect => TM_MAGIC_DETECT_SIMULATION,		

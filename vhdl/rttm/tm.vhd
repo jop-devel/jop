@@ -60,10 +60,10 @@ port (
  	to_mem			: out sc_out_type;
  	from_mem		: in sc_in_type;
  	
- 	-- tm_manager state
+ 	-- tm_state_machine state
  	state			: in state_type;
  	broadcast		: in tm_broadcast_type;
- 	-- tm_manager busy
+ 	-- tm_state_machine busy
  	rdy_cnt_busy	: in std_logic;	
 	
 	
@@ -95,7 +95,7 @@ architecture rtl of tm is
 	type stage1_state_type is
 	( idle, write, read1, read_direct, write_direct, commit, broadcast1);
 	
-	type stage23_state_type is
+	type stage2ff_state_type is
 	( idle, read_hit2, write2, read_hit3, read_miss2, read_miss3,
 		read_miss4, commit_2, commit_3, commit_4, read_direct2, read_direct3,
 		write_direct2 );
@@ -129,8 +129,8 @@ architecture rtl of tm is
 		set_dirty: std_logic;		
 	end record;	
 	
-	type stage23_type is record
-		state: stage23_state_type;
+	type stage2ff_type is record
+		state: stage2ff_state_type;
 		wr_data: std_logic_vector(31 downto 0);
 		update_data: std_logic;
 		line_addr: unsigned(way_bits-1 downto 0);
@@ -139,7 +139,7 @@ architecture rtl of tm is
 	signal stage1, next_stage1: stage1_type;
 	signal stage2, next_stage2: stage2_type;
 	signal stage3, next_stage3: stage3_type;
-	signal stage23, next_stage23: stage23_type;
+	signal stage2ff, next_stage2ff: stage2ff_type;
 	
 	signal stage3_was_dirty: std_logic_vector(0 downto 0);
 	
@@ -279,7 +279,7 @@ begin
 			
 		next_stage23_line_addr_helper <= 
 --			(X downto next_stage23.line_addr'high+1 => '0') & 
-			std_logic_vector(next_stage23.line_addr); 
+			std_logic_vector(next_stage2ff.line_addr); 
 			
 			
 		write_fifo_buffer_inst : entity work.write_fifo_buffer
@@ -387,7 +387,7 @@ begin
 		end case;		
 	end process proc_stage0;
 
-	proc_stage1: process(stage1, stage1_async, stage23) is
+	proc_stage1: process(stage1, stage1_async, stage2ff) is
 	begin
 		next_stage2.update_tags <= '0';
 		next_stage2.hit <= stage1_async.hit;
@@ -401,7 +401,7 @@ begin
 		
 		next_bcstage2 <= '0';
 		
-		next_stage23.line_addr <= stage23.line_addr;
+		next_stage2ff.line_addr <= stage2ff.line_addr;
 		
 		tag_full <= '0';
 		
@@ -411,9 +411,9 @@ begin
 		if stage1.state = read1 or stage1.state = write or 
 			stage1.state = commit then
 			if stage1_async.hit = '1' then
-				next_stage23.line_addr <= stage1_async.line_addr;
+				next_stage2ff.line_addr <= stage1_async.line_addr;
 			else
-				next_stage23.line_addr <= stage1_async.newline(
+				next_stage2ff.line_addr <= stage1_async.newline(
 					way_bits-1 downto 0);
 			end if;
 			
@@ -464,9 +464,9 @@ begin
 		end case;				
 	end process proc_stage1;
 	
-	proc_stage2: process(data, read, stage23, stage2) is
+	proc_stage2: process(data, read, stage2ff, stage2) is
 	begin		
-		next_read_data <= data(to_integer(stage23.line_addr));
+		next_read_data <= data(to_integer(stage2ff.line_addr));
 		
 		-- Since RAM access is synthesized in stage 3 instead of stage 2,
 		-- we set was_dirty using a dedicated component
@@ -485,8 +485,8 @@ begin
 	memory_block_access: process (clk) is
 	begin
 	    if rising_edge(clk) then
-			if stage23.update_data = '1' then
-				data(to_integer(stage23.line_addr)) <= stage23.wr_data;
+			if stage2ff.update_data = '1' then
+				data(to_integer(stage2ff.line_addr)) <= stage2ff.wr_data;
 			end if;
 			
 			-- moved to dedicated component
@@ -495,13 +495,13 @@ begin
 -- 			end if;
 			
 			if stage2.update_read = '1' then
-				read(to_integer(stage23.line_addr)) <= stage2.read;
+				read(to_integer(stage2ff.line_addr)) <= stage2.read;
 			end if;
 		end if;
 	end process memory_block_access;
 	
 	proc_stage23: process(commit_addr, from_mem, 
-		read_data, save_data, stage1, stage1_async, stage2, stage23, 
+		read_data, save_data, stage1, stage1_async, stage2, stage2ff, 
 		stage3_was_dirty, from_mem_rdy_cnt_dly,
 		rdy_cnt_busy, read_miss_publish) is
 	begin
@@ -510,10 +510,10 @@ begin
 		-- stage 3 signals
 		to_cpu.rd_data <= save_data;
 		
-		next_stage23.update_data <= '0';		
-		next_stage23.state <= idle;
+		next_stage2ff.update_data <= '0';		
+		next_stage2ff.state <= idle;
 		
-		next_stage23.wr_data <= (others => 'X');
+		next_stage2ff.wr_data <= (others => 'X');
 		to_mem.address <= (others => 'X');
 		to_mem.wr_data <= (others => 'X');
 		
@@ -528,7 +528,7 @@ begin
 
 		
 				
-		case stage23.state is
+		case stage2ff.state is
 			when idle | write_direct2 =>
 				null;
 			
@@ -540,11 +540,11 @@ begin
 					next_save_data <= from_mem.rd_data;
 -- 					to_cpu.rd_data <= from_mem.rd_data;
 				else
-					next_stage23.state <= read_direct3;
+					next_stage2ff.state <= read_direct3;
 				end if;
 							
 			when read_hit2 =>
-				next_stage23.state <= read_hit3;
+				next_stage2ff.state <= read_hit3;
 			
 			when write2 =>
 				null;
@@ -554,28 +554,28 @@ begin
 				to_cpu.rd_data <= read_data;
 				
 			when read_miss2 =>
-				next_stage23.state <= read_miss3;
+				next_stage2ff.state <= read_miss3;
 				to_mem.rd <= '1';
 				to_mem.address <= 
 					(SC_ADDR_SIZE-1 downto addr_width => 
 					'0') & stage2.addr;
 			
 			when read_miss3 =>
-				next_stage23.state <= read_miss3;
+				next_stage2ff.state <= read_miss3;
 				
 				if from_mem.rdy_cnt(1) = '0' then
-					next_stage23.state <= read_miss4;
+					next_stage2ff.state <= read_miss4;
 					next_read_miss_publish <= '1';
 				end if;
 				
 			when read_miss4 =>
 				-- read finishes only in next cycle 
 				-- (TODO due to control hazard when updating cache)				
-				next_stage23.update_data <= '1';
-				next_stage23.wr_data <= from_mem.rd_data;
+				next_stage2ff.update_data <= '1';
+				next_stage2ff.wr_data <= from_mem.rd_data;
 			
 			when commit_2 =>				
-				next_stage23.state <= commit_3;
+				next_stage2ff.state <= commit_3;
 				
 				assert stage2.hit = '1';
 			
@@ -584,19 +584,19 @@ begin
 				to_mem.address <= (SC_ADDR_SIZE-1 downto addr_width => 
 					'0') & commit_addr;
 				to_mem.wr_data <= read_data;
-				next_stage23.state <= commit_4;
+				next_stage2ff.state <= commit_4;
 
 				assert stage3_was_dirty(0) = '1';
 				
 				commit_shift <= '1';
 				
 			when commit_4 =>
-				next_stage23.state <= commit_4;
+				next_stage2ff.state <= commit_4;
 				
 				-- save one cycle
 				if from_mem.rdy_cnt < 3 then
 					commit_word_finishing <= '1';
-					next_stage23.state <= idle;
+					next_stage2ff.state <= idle;
 				end if;
 		end case;
 		
@@ -605,24 +605,24 @@ begin
 				null;
 			when read1 =>
 				if stage1_async.hit = '1' then
-					next_stage23.state <= read_hit2;
+					next_stage2ff.state <= read_hit2;
 				else
-					next_stage23.state <= read_miss2;
+					next_stage2ff.state <= read_miss2;
 				end if;
 			when write =>
-				next_stage23.state <= write2;
-				next_stage23.wr_data <= stage1.cpu_data;
-				next_stage23.update_data <= '1';										
+				next_stage2ff.state <= write2;
+				next_stage2ff.wr_data <= stage1.cpu_data;
+				next_stage2ff.update_data <= '1';										
 			when commit =>
-				next_stage23.state <= commit_2;
+				next_stage2ff.state <= commit_2;
 			when read_direct =>
-				next_stage23.state <= read_direct2;
+				next_stage2ff.state <= read_direct2;
 				to_mem.rd <= '1';
 
 				to_mem.address <= stage1.addr;
 				to_mem.wr_data <= (others => 'X');
 			when write_direct =>
-				next_stage23.state <= write_direct2;
+				next_stage2ff.state <= write_direct2;
 				to_mem.wr <= '1';
 
 				to_mem.address <= stage1.addr;
@@ -655,7 +655,7 @@ begin
 	--
 	
 	gen_rdy_cnt: process (from_mem_rdy_cnt_dly, rdy_cnt_busy, 
-		read_miss_publish, stage1, stage23) is
+		read_miss_publish, stage1, stage2ff) is
 	begin
 		case stage1.state is
 			when write =>
@@ -670,7 +670,7 @@ begin
 			when read_direct | write_direct =>
 				to_cpu.rdy_cnt <= "11";
 			when idle | commit | broadcast1 =>
-				case stage23.state is
+				case stage2ff.state is
 					when write2 | read_hit2 =>
 						to_cpu.rdy_cnt <= "01";
 					when read_miss2 =>
@@ -695,7 +695,7 @@ begin
 					-- on direct write to memory, we're in state idle
 					when idle | read_hit3 | commit_2 | commit_3 |
 						commit_4 =>
-						-- rdy_cnt 0 or set by arbiter or tm_manager
+						-- rdy_cnt 0 or set by arbiter or tm_state_machine
 						
 						-- rdy_cnt is delayed and a new SHM transaction will
 						-- be delayed by an additional cycle
@@ -753,7 +753,7 @@ begin
 				read_flag_line_addr => (others => '0'));
 			stage3 <= (was_read => '0', addr => (others => '0'),
 				hit => '0', set_dirty => '0');
-			stage23 <= (state => idle,
+			stage2ff <= (state => idle,
 				wr_data => (others => '0'), update_data => '0',
 				line_addr => (others => '0'));
 				 
@@ -771,7 +771,7 @@ begin
 			stage1 <= next_stage1;
 			stage2 <= next_stage2;
 			stage3 <= next_stage3;
-			stage23 <= next_stage23;
+			stage2ff <= next_stage2ff;
 			bcstage2 <= next_bcstage2;
 			broadcast_valid_dly <= broadcast.valid;
 			save_data <= next_save_data;

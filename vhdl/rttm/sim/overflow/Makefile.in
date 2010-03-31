@@ -13,6 +13,6 @@ SRC= \
 	../../flags_ram.vhd \
 	../../write_fifo_buffer.vhd \
 	../../tm.vhd \
-	../../tm_manager.vhd \
+	../../tm_state_machine.vhd \
 	../mem_no_arbiter.vhd \
 	$(TARGET).vhd
