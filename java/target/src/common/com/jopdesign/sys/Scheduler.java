@@ -3,6 +3,8 @@ package com.jopdesign.sys;
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 
+import joprt.SwEvent;
+
 /**
  * Represent the scheduler and thread queue for one CPU.
  * Created and set in startMisison()
@@ -25,6 +27,7 @@ class Scheduler implements Runnable {
 	int active;					// active thread number
 
 	int scanThres = -1;			// whether threads scan their own stack
+	SwEvent scanner;
 	
 	int tmp;					// counter to build the thread list
 	
@@ -34,7 +37,6 @@ class Scheduler implements Runnable {
 		// create scheduler objects for all cores
 		for (int i=0; i<sys.nrCpu; ++i) {
 			new Scheduler(i);
-
 		}
 	}
 	

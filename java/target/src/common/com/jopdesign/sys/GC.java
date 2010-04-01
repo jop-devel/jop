@@ -24,6 +24,7 @@ package com.jopdesign.sys;
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 import joprt.RtThread;
+import joprt.SwEvent;
 
 /**
  *     Real-time garbage collection for JOP
@@ -271,10 +272,17 @@ public class GC {
 		
 		if (concurrentGc) {
 			cpus = Scheduler.sched.length;
-			for (i = 0; i < cpus; i++) {
-				cnt = Scheduler.sched[i].ref.length;
-				for (j = 0; j < cnt; j++) {
-					Scheduler.sched[i].ref[j].scan = true;
+			// assuming we run on CPU 0 we fire the scanner event for
+			// CPU 0 last, so we do not delay the start on other CPUs
+			for (i = cpus-1; i >= 0; --i) {
+				if (Scheduler.sched[i].scanner != null) {
+					cnt = Scheduler.sched[i].ref.length;
+					for (j = 0; j < cnt; j++) {
+						Scheduler.sched[i].ref[j].scan = true;
+					}
+					Scheduler.sched[i].scanner.fire();
+				} else {
+					// TODO: no scanner for this CPU, what should we do?
 				}
 			}
 			for (i = 0; i < cpus; i++) {
@@ -288,13 +296,13 @@ public class GC {
 		} else {
 			// add stack of the current thread to the root list
 			log("own");
-			ScanThread.getOwnStackRoots();
+			ScanEvent.getOwnStackRoots();
 
 			log("others");
  			cpus = Scheduler.sched.length;
  			for (i = 0; i < cpus; i++) {
 				log("C");
-				if (Scheduler.sched[i].ref != null) {
+ 				if (Scheduler.sched[i].ref != null) {
 					log("T");
 					cnt = Scheduler.sched[i].ref.length;
 					for (j = 0; j < cnt; j++) {
@@ -307,7 +315,7 @@ public class GC {
 							}
 						}
  					}
- 				}
+  				}
  			}
 		}
 
@@ -331,11 +339,11 @@ public class GC {
 		
 		int i, ref;
 
-		log("stack");
+// 		log("stack");
 		getStackRoots();			
-		log("static");
+// 		log("static");
 		getStaticRoots();
-		log("trace");
+// 		log("trace");
 		for (;;) {
 			// pop one object from the gray list
 			synchronized (mutex) {
@@ -478,18 +486,20 @@ public class GC {
 	}
 
 	public static void gc() {
- 		log("GC called - free memory:", freeMemory());
+//  		log("GC called - free memory:", freeMemory());
+		System.out.print("[");
 
- 		log("flip");
+//  		log("flip");
 		flip();
- 		log("m&c");
+//  		log("m&c");
 		markAndCopy();
- 		log("sweep");
+//  		log("sweep");
 		sweepHandles();
- 		log("zap");
+//  		log("zap");
 		zapSemi();	
 
- 		log("GC end - free memory:",freeMemory());
+//  		log("GC end - free memory:",freeMemory());
+		System.out.println("]");
 		
 	}
 	
@@ -721,7 +731,7 @@ public class GC {
 		}
 	}
 
-	public static final class ScanThread extends RtThread {
+	public static final class ScanEvent extends SwEvent {
 
 		static SysDevice sys = IOFactory.getFactory().getSysDevice();
 
@@ -732,52 +742,54 @@ public class GC {
 				push(Native.rdIntMem(j));
 			}
 			Scheduler sched = Scheduler.sched[sys.cpuId];
-			if (sched != null && sched.ref != null) {
+			if (sched.ref != null) {
 				sched.ref[sched.active].scan = false;
 			}
 		}
 
-		public ScanThread(int prio, int period) {
-			super(prio, period);
+		public ScanEvent(int prio, int minTime) {
+			super(prio, minTime);
+			Scheduler.sched[sys.cpuId].scanner = this;
 			Scheduler.sched[sys.cpuId].scanThres = prio+RtThreadImpl.MAX_PRIORITY+RtThreadImpl.RT_BASE;
 		}
 
-		public void run() {
+		public void handle() {
 		
-			int i, j, cnt;
+			int i, j;
+
+			System.out.print('<');
 
 			Scheduler sched = Scheduler.sched[sys.cpuId];
+			int cnt = sched.ref.length;
 
-			for (;;) {
-				cnt = sched.ref.length;
+			for (i = 0; i < cnt; i++) {
 
-				for (i = 0; i < cnt; i++) {
+				RtThreadImpl ref = sched.ref[i];
 
-					RtThreadImpl ref = sched.ref[i];
-
-					if (ref.scan && ref.priority < sched.scanThres) {
+				if (ref.scan && ref.priority < sched.scanThres) {
 						
-						// threads cannot execute while we scan their
-						// stacks, because we run at a higher priority
+					// threads cannot execute while we scan their
+					// stacks, because we run at a higher priority
 
-//  						System.out.print('#');
-//  						System.out.print(ref.priority);
-
-						int[] mem = ref.stack;
-						// sp starts at Const.STACK_OFF
-						int sp = ref.sp - Const.STACK_OFF;
-						for (j = 0; j <= sp; ++j) {
-							push(mem[j]);
-						}
+					int[] mem = ref.stack;
+					// sp starts at Const.STACK_OFF
+					int sp = ref.sp - Const.STACK_OFF;
+					for (j = 0; j <= sp; ++j) {
+						push(mem[j]);
+					}
 						
-						ref.scan = false;
+					for (int k = 0; k < 25000; k++) {
+						// wait
 					}
 
-					ref = null; // avoid clobbering the stack
+					ref.scan = false;
 				}
-				
-				waitForNextPeriod();
 			}
+
+			// our own stack is empty
+			sched.ref[sched.active].scan = false;
+
+			System.out.print('>');
 		}
 
 	}

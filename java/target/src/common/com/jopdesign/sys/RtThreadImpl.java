@@ -404,7 +404,7 @@ public class RtThreadImpl {
 		Scheduler s = Scheduler.sched[sys.cpuId];
 
 		if (priority >= s.scanThres) {
-			GC.ScanThread.getOwnStackRoots();
+			GC.ScanEvent.getOwnStackRoots();
 		}
 
 		Native.wr(0, Const.IO_INT_ENA);

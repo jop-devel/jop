@@ -17,8 +17,11 @@ public class ForceStackRefs {
 			}
 		}
 
-		public StackUser(int prio, int us) {
+		char id;
+
+		public StackUser(int prio, int us, char id) {
 			super(prio, us);
+			this.id = id;
 		}
 
 		public void run() {
@@ -30,9 +33,9 @@ public class ForceStackRefs {
 				cnt.val = c;
 				waitForNextPeriod();
 				if (c != cnt.val) {
-					System.out.print("!");
+					System.out.print('!');
 				} else {
-					System.out.print(".");
+					System.out.print(id);
 				}
 				waitForNextPeriod();
 			}
@@ -41,19 +44,20 @@ public class ForceStackRefs {
 
 	public static void main(String [] args) {
 
- 		new StackUser(13,  90000);
- 		new GC.ScanThread(12, 50000);
-		new StackUser(11, 100000);
-		new StackUser(10,  101000);
-		new StackUser(9,  102000);
-		new StackUser(8,  103000);
-		new StackUser(7,  104000);
-		new StackUser(6,  105000);
-		new StackUser(5,  106000);
-		new StackUser(4,  107000);
-		new StackUser(3,  108000);
- 		new GC.GCThread(2,   660000);
-		new StackUser(1,  661000);
+ 		new StackUser(14,  90000, 'A');
+		new StackUser(13, 100000, 'B');
+		new StackUser(12, 101000, 'C');
+ 		new GC.ScanEvent(11, 330000);
+		new StackUser(10,  102000, 'D');
+		new StackUser(9,  103000, 'E');
+		new StackUser(8,  104000, 'F');
+		new StackUser(7,  105000, 'G');
+		new StackUser(6,  106000, 'H');
+		new StackUser(5,  107000, 'I');
+ 		new GC.GCThread(4, 330000);
+		new StackUser(3,  350000, 'K');
+		new StackUser(2,  360000, 'L');
+		new StackUser(1,  370000, 'M');
 
  		GC.setConcurrent();
 
