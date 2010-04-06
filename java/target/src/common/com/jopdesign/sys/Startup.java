@@ -274,7 +274,7 @@ public class Startup {
 
 		pc = 0;
 		sp = 0;
-		int instr, val, val2, ref, idx;
+		int instr, val, idx;
 
 		for (;;) {
 
@@ -359,23 +359,11 @@ public class Startup {
 				case 81 :		// fastore
 				case 79 :		// iastore
 				case 86 :		// sastore
-					val = stack[sp--];	// value
-					idx = stack[sp--];	// index
-					ref = stack[sp--];	// ref
-					// handle:
-					ref = Native.rdMem(ref);
-					Native.wrMem(val, ref+idx);
+					xastore();
 					break;
 				case 80 :		// lastore
 				case 82 :		// dastore
-					val = stack[sp--];	// value
-					val2 = stack[sp--];	// value2
-					idx = stack[sp--] << 1;	// index
-					ref = stack[sp--];	// ref
-					// handle:
-					ref = Native.rdMem(ref);
-					Native.wrMem(val2, ref+idx);
-					Native.wrMem(val, ref+idx+1);
+					x2astore();
 					break;
 				case 89 :		// dup
 					val = stack[sp];
@@ -386,16 +374,29 @@ public class Startup {
 				case 178 :		// getstatic
 					getstatic();
 					break;
-				case 221 :		// jopsys_nop
-					break;
 				case 179 :		// putstatic
+				case 225 :		// putstatic_ref, no concurrent GC during <clinit>!
 					putstatic();
 					break;
+// GETFIELD/PUTFIELD does not make sense without NEW
+// 				case 180 :		// getfield
+// 					getfield();
+// 					break;
+// 				case 181 :		// putfield
+// 				case 227 :		// putfield_ref, no concurrent GC during <clinit>!
+// 					putfield();
+// 					break;
+// NEW does not make sense without INVOKESPECIAL
+// 				case 187 :		// new
+// 					newobj();
+// 					break;
 				case 188 :		// newarray
 					newarray();
 					break;
 				case 189 :		// anewarray
 					anewarray();
+					break;
+				case 221 :		// jopsys_nop
 					break;
 				default:
 					System.out.print("JVM interpreter: bytecode ");
@@ -439,6 +440,26 @@ public class Startup {
 		return idx & 0xffff;
 	}
 
+	static void xastore() {
+		int val = stack[sp--];	// value
+		int idx = stack[sp--];	// index
+		int ref = stack[sp--];	// ref
+		// handle:
+		ref = Native.rdMem(ref);
+		Native.wrMem(val, ref+idx);
+	}
+
+	static void x2astore() {
+		int val = stack[sp--];	// value
+		int val2 = stack[sp--];	// value2
+		int idx = stack[sp--] << 1;	// index
+		int ref = stack[sp--];	// ref
+		// handle:
+		ref = Native.rdMem(ref);
+		Native.wrMem(val2, ref+idx);
+		Native.wrMem(val, ref+idx+1);
+	}
+
 	static void putstatic() {
 
 		int addr = readBC16u();
@@ -466,6 +487,12 @@ public class Startup {
 		int ref = stack[sp];
 
 		stack[sp] = Native.getField(ref, off);
+	}
+
+	static void newobj() {
+
+		int type = readBC16u();			// use typ
+		stack[++sp] = JVM.f_new(type);
 	}
 
 	static void newarray() {

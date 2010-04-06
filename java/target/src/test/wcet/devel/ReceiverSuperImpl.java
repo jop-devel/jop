@@ -55,6 +55,7 @@ public class ReceiverSuperImpl {
         public abstract void pub(int[] inp);
         public abstract void impl(int v);
     }
+
     // T1: pub calls gen 10 times, impl is cheap
     public static class T1 extends S {
         int r;
@@ -67,6 +68,7 @@ public class ReceiverSuperImpl {
             r+=v;
         }        
     }
+
     // T2: pub calls gen 1 time, impl is expensive
     public static class T2 extends S {
         int r;
@@ -80,6 +82,7 @@ public class ReceiverSuperImpl {
         }        
     }
     public static S obj1, obj2;
+
     public static int[] dat;
     public static void main(String[] args) {
 	

@@ -103,7 +103,7 @@ architecture rtl of lego_motor is
 begin
   
 
-  1_sigma_delta: sigma_delta
+  sd1: sigma_delta
     port map (
       clk    => clk,
       reset  => reset,
@@ -113,7 +113,7 @@ begin
       sdi    => mdia,
       sdo    => mdoa);
 
-  2_sigma_delta: sigma_delta
+  sd2: sigma_delta
     port map (
       clk    => clk,
       reset  => reset,
