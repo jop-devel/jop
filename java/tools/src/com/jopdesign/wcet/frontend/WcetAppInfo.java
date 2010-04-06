@@ -46,6 +46,7 @@ import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.Project.AnalysisError;
 import com.jopdesign.wcet.annotations.BadAnnotationException;
 import com.jopdesign.wcet.annotations.LoopBound;
+import com.jopdesign.wcet.annotations.SourceAnnotations;
 import com.jopdesign.wcet.graphutils.TopOrder.BadGraphException;
 
 /**
@@ -312,7 +313,7 @@ public class WcetAppInfo  {
 	}
 
 	private ControlFlowGraph loadFlowGraph(MethodInfo method) throws BadAnnotationException, IOException, BadGraphException {
-		SortedMap<Integer,LoopBound> wcaMap = project.getAnnotations(method.getCli());
+		SourceAnnotations wcaMap = project.getAnnotations(method.getCli());
 		assert(wcaMap != null);
 		if(method.getCode() == null) {
 			throw new BadGraphException("No implementation of "+method.getFQMethodName()+" available for the target processor");

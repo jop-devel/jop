@@ -24,6 +24,7 @@ import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.ExecutionContext;
 import com.jopdesign.wcet.annotations.LoopBound;
+import com.jopdesign.wcet.annotations.SourceAnnotations;
 import com.jopdesign.wcet.frontend.BasicBlock;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.WcetAppInfo;
@@ -144,8 +145,8 @@ public class AllocationModel implements ProcessorModel {
 		// get annotated size
 		LoopBound annotated = null;
 		try {
-			Map<Integer, LoopBound> annots = project.getAnnotations(context.getMethodInfo().getCli());
-			annotated = annots.get(new Integer(srcLine));
+			SourceAnnotations annots = project.getAnnotations(context.getMethodInfo().getCli());
+			annotated = annots.annotationsForLine(srcLine);
 			if (annotated == null) {
 				Project.logger.info("No annotated bound for array at " + context + ":" + srcLine);
 			}

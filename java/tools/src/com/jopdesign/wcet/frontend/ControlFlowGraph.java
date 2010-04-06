@@ -51,6 +51,7 @@ import com.jopdesign.dfa.framework.HashedString;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.annotations.BadAnnotationException;
 import com.jopdesign.wcet.annotations.LoopBound;
+import com.jopdesign.wcet.annotations.SourceAnnotations;
 import com.jopdesign.wcet.frontend.BasicBlock.FlowInfo;
 import com.jopdesign.wcet.frontend.BasicBlock.FlowTarget;
 import com.jopdesign.wcet.graphutils.AdvancedDOTExporter;
@@ -537,7 +538,7 @@ public class ControlFlowGraph {
 	 * @throws BadAnnotationException if an annotations is missing
 	 */
 	public void loadAnnotations(Project p) throws BadAnnotationException {
-		SortedMap<Integer, LoopBound> wcaMap;
+		SourceAnnotations wcaMap;
 		try {
 			wcaMap = p.getAnnotations(this.methodInfo.getCli());
 		} catch (IOException e) {
@@ -550,14 +551,14 @@ public class ControlFlowGraph {
 			// search for loop annotation in range
 			int sourceRangeStart = BasicBlock.getLineNumber(block.getFirstInstruction());
 			int sourceRangeStop = BasicBlock.getLineNumber(block.getLastInstruction());
-			SortedMap<Integer,LoopBound> annots = wcaMap.subMap(sourceRangeStart, sourceRangeStop+1);
+			Collection<LoopBound> annots = wcaMap.annotationsForLineRange(sourceRangeStart, sourceRangeStop+1);
 			if(annots.size() > 1) {
 				String reason = "Ambigous Annotation [" + annots + "]";
 				throw new BadAnnotationException(reason,block,sourceRangeStart,sourceRangeStop);
 			}
 			LoopBound loopAnnot = null;
 			if(annots.size() == 1) {
-				loopAnnot = annots.get(annots.firstKey());
+				loopAnnot = annots.iterator().next();
 			}
 			// if we have loop bounds from DFA analysis, use them
 			loopAnnot = dfaLoopBound(block, CallString.EMPTY, loopAnnot);

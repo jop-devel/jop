@@ -55,6 +55,7 @@ import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.annotations.BadAnnotationException;
 import com.jopdesign.wcet.annotations.LoopBound;
 import com.jopdesign.wcet.annotations.SourceAnnotations;
+import com.jopdesign.wcet.annotations.SourceAnnotationReader;
 import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.frontend.CallGraph;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
@@ -146,12 +147,12 @@ public class Project {
 	private WcetAppInfo wcetAppInfo;
 	private CallGraph callGraph;
 
-	private Map<ClassInfo, SortedMap<Integer, LoopBound>> annotationMap;
+	private Map<ClassInfo, SourceAnnotations> annotationMap;
 
 	private boolean genWCETReport;
 	private Report results;
 	private ProcessorModel processor;
-	private SourceAnnotations sourceAnnotations;
+	private SourceAnnotationReader sourceAnnotations;
 	private File resultRecord;
 	private LinkerInfo linkerInfo;
 	private boolean hasDfaResults;
@@ -301,8 +302,8 @@ public class Project {
 		AppInfo appInfo = loadApp();
 		wcetAppInfo = new WcetAppInfo(this,appInfo,processor);
 		/* Initialize annotation map */
-		annotationMap = new Hashtable<ClassInfo, SortedMap<Integer,LoopBound>>();
-		sourceAnnotations = new SourceAnnotations(this);
+		annotationMap = new Hashtable<ClassInfo, SourceAnnotations>();
+		sourceAnnotations = new SourceAnnotationReader(this);
 		linkerInfo = new LinkerInfo(this);
 		linkerInfo.loadLinkInfo();
 
@@ -330,8 +331,8 @@ public class Project {
 	 * @throws IOException
 	 * @throws BadAnnotationException
 	 */
-	public SortedMap<Integer, LoopBound> getAnnotations(ClassInfo cli) throws IOException, BadAnnotationException {
-		SortedMap<Integer, LoopBound> annots = this.annotationMap.get(cli);
+	public SourceAnnotations getAnnotations(ClassInfo cli) throws IOException, BadAnnotationException {
+		SourceAnnotations annots = this.annotationMap.get(cli);
 		if(annots == null) {
 			annots = sourceAnnotations.readAnnotations(cli);
 			annotationMap.put(cli, annots);
