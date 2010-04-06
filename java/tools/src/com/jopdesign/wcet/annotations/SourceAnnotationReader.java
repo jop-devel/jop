@@ -93,11 +93,9 @@ public class SourceAnnotationReader {
 		int lineNr = 1;
 
 		while ((line = reader.readLine()) != null) {
-			RelativeLoopBound<SymbolicMarker> loopBound = SourceAnnotationReader.extractAnnotation(line);	
+			LoopBound loopBound = SourceAnnotationReader.extractAnnotation(line);	
 			if (loopBound != null) {
-				// FIXME
-				if(loopBound.hasMarker()) throw new AssertionError("Relative loop bounds are not supported yet");
-				flowFacts.addLoopBound(lineNr,loopBound.getBounds());
+				flowFacts.addLoopBound(lineNr,loopBound);
 			}
 			lineNr++;
 		}
@@ -143,7 +141,7 @@ public class SourceAnnotationReader {
 	 * @return the loop bound or null if no annotation was found
 	 * @throws BadAnnotationException if the loop bound annotation has syntax errors or is invalid
 	 */
-	public static RelativeLoopBound<SymbolicMarker> extractAnnotation(String sourceLine)
+	public static LoopBound extractAnnotation(String sourceLine)
 		throws BadAnnotationException {
 
 		int ai = sourceLine.indexOf("@WCA");
@@ -158,7 +156,7 @@ public class SourceAnnotationReader {
 				logger.warn("Deprecated loop bound notation: X <= loop <= Y");
 				int lb = Integer.parseInt(matcher2.group(1));
 				int ub = Integer.parseInt(matcher2.group(2));
-				return new RelativeLoopBound<SymbolicMarker>(lb,ub);	
+				return new LoopBound(lb,ub);	
 			}
 			// New loop bound 
 			Pattern pattern1 = Pattern.compile(" *loop *(<?=) *([0-9]+) *");
@@ -166,7 +164,7 @@ public class SourceAnnotationReader {
 			if(matcher1.matches()) {				
 				int ub = Integer.parseInt(matcher1.group(2));
 				int lb = (matcher1.group(1).equals("=")) ? ub : 0;
-				return new RelativeLoopBound<SymbolicMarker>(lb,ub);		
+				return new LoopBound(lb,ub);		
 			}
 			
 			throw new BadAnnotationException("Syntax error in loop bound annotation: "+annotString);

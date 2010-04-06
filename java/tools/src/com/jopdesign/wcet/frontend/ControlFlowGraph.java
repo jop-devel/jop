@@ -593,7 +593,8 @@ public class ControlFlowGraph {
 				WcetAppInfo.logger.info("Only DFA bound for "+methodInfo+":"+this.getMethodInfo());
 				dfaBound = LoopBound.boundedAbove(bound);
 			} else {
-				dfaBound = annotatedValue.improveUpperBound(bound); // More testing would be nice
+				dfaBound = annotatedValue.clone();
+				dfaBound.improveUpperBound(bound); // More testing would be nice
 				int loopUb = annotatedValue.getUpperBound();
 				if(bound < loopUb) {
 					WcetAppInfo.logger.info("DFA analysis reports a smaller upper bound :"+bound+ " < "+loopUb+
