@@ -21,26 +21,37 @@
 package com.jopdesign.wcet.annotations;
 
 /**
- * Purpose: Instances represent non-symbolic, loop bounds relative to the
- *          execution frequency of the edges entering the loop.
- *
+ * Purpose: Instances represent loop bounds relative to
+ *          the execution frequency of another basic block.
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  *
  */
-public class LoopBound {
-	private static final long serialVersionUID = 1L;
-	private int lowerBound;
-	private int upperBound;
-	public LoopBound(Integer lb, Integer ub) {
-		lowerBound = lb;
-		upperBound = ub;
+public class RelativeLoopBound<Marker> {
+	private LoopBound bounds;
+	private Marker    marker;
+	/**
+	 * @param lb
+	 * @param ub
+	 */
+	public RelativeLoopBound(int lb, int ub) {
+		bounds = new LoopBound(lb,ub);
+		marker = null;
 	}
-	public int getLowerBound()  { return lowerBound; }
-	public int getUpperBound() { return upperBound; }
-	public static LoopBound boundedAbove(int ub) {
-		return new LoopBound(0,ub);
+	public RelativeLoopBound(LoopBound b, Marker m)
+	{
+		bounds = b;
+		marker = m;
 	}
-	public LoopBound improveUpperBound(int bound) {
-		return new LoopBound(lowerBound, Math.min(upperBound,bound));
+	public LoopBound getBounds()
+	{
+		return bounds;
+	}
+	public boolean hasMarker()
+	{
+		return marker != null;
+	}
+	public Marker getMarker()
+	{
+		return marker;
 	}
 }
