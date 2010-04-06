@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.annotations.LoopBound;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
@@ -16,7 +17,6 @@ import com.jopdesign.wcet.frontend.ControlFlowGraph.CfgVisitor;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.DedicatedNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.SummaryNode;
-import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet.graphutils.ProgressMeasure;
 import com.jopdesign.wcet.graphutils.ProgressMeasure.RelativeProgress;
 

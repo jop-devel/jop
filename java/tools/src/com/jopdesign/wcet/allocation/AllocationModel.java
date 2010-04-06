@@ -23,10 +23,10 @@ import com.jopdesign.tools.JopInstr;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.ExecutionContext;
+import com.jopdesign.wcet.annotations.LoopBound;
 import com.jopdesign.wcet.frontend.BasicBlock;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.WcetAppInfo;
-import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.jop.NoMethodCache;
 

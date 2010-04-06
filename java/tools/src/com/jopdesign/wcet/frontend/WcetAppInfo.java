@@ -44,8 +44,8 @@ import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.Project.AnalysisError;
-import com.jopdesign.wcet.frontend.SourceAnnotations.BadAnnotationException;
-import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
+import com.jopdesign.wcet.annotations.BadAnnotationException;
+import com.jopdesign.wcet.annotations.LoopBound;
 import com.jopdesign.wcet.graphutils.TopOrder.BadGraphException;
 
 /**

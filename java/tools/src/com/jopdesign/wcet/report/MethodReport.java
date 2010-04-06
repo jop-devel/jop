@@ -26,9 +26,9 @@ import java.util.TreeSet;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.annotations.LoopBound;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.CallGraph.CallGraphNode;
-import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet.graphutils.Pair;
 
 public class MethodReport {

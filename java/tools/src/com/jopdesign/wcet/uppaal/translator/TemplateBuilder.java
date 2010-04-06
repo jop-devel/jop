@@ -25,8 +25,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
 
+import com.jopdesign.wcet.annotations.LoopBound;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
-import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.model.LayoutCFG;
 import com.jopdesign.wcet.uppaal.model.Location;

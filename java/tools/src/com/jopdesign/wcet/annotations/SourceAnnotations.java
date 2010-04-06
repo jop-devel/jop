@@ -19,7 +19,7 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-package com.jopdesign.wcet.frontend;
+package com.jopdesign.wcet.annotations;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -35,7 +35,6 @@ import org.apache.log4j.Logger;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.graphutils.Pair;
 
 /**
  * Parsing source annotations for WCET analysis.
@@ -46,37 +45,7 @@ import com.jopdesign.wcet.graphutils.Pair;
  */
 public class SourceAnnotations {
 	private static final Logger logger = Logger.getLogger(SourceAnnotations.class);
-	public static class BadAnnotationException extends Exception {
-		private static final long serialVersionUID = 1L;
-		private BasicBlock block;
-		public BasicBlock getBlock() {
-			return this.block;
-		}
-		public BadAnnotationException(String reason, BasicBlock block, int codeLineStart, int codeLineEnd) {
-			super(reason+" for " + block.getLastInstruction()+ 
-			      " in class " + block.getClassInfo().clazz.getClassName()  + ":" + 
-				  codeLineStart + "-" + codeLineEnd);
-			this.block = block;
-		}
-		public BadAnnotationException(String msg) {
-			super(msg);
-		}
-	}
-	public static class LoopBound extends Pair<Integer,Integer> {
-		private static final long serialVersionUID = 1L;
-		public LoopBound(Integer lb, Integer ub) {
-			super(lb, ub);
-		}
-		public int getLowerBound()  { return fst(); }
-		public int getUpperBound() { return snd(); }
-		public static LoopBound boundedAbove(int ub) {
-			return new LoopBound(0,ub);
-		}
-		public LoopBound improveUpperBound(int bound) {
-			return new LoopBound(fst(), Math.min(snd(),bound));
-		}
-	}
-
+	
 	private Project project;
 
 	public SourceAnnotations(Project p) {
