@@ -182,7 +182,7 @@ public class ILPModelBuilder {
 				throw new Error("No loop bound record for head of loop: "+hol+
 								" : "+g.getLoopBounds());
 			}
-			int lhsMultiplicity = g.getLoopBound(hol,cs).getUpperBound();
+			long lhsMultiplicity = g.getLoopBound(hol,cs).getUpperBound();
 			for(CFGEdge exitEdge : loops.getExitEdgesOf(hol)) {
 				loopConstraint.addLHS(exitEdge,lhsMultiplicity);
 			}

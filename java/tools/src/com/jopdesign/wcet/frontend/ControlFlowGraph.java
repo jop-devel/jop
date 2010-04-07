@@ -567,7 +567,7 @@ public class ControlFlowGraph {
 // 												 block,sourceRangeStart,sourceRangeStop);
 				WcetAppInfo.logger.error("No loop bound annotation: "+methodInfo+":"+n+
 										 ".\nApproximating with 1024, but result is not safe anymore.");
-				loopAnnot = new LoopBound(0, 1024);
+				loopAnnot = new LoopBound(0L, 1024L);
 			}
 			this.annotations.put(headOfLoop,loopAnnot);
 		}
@@ -595,7 +595,7 @@ public class ControlFlowGraph {
 			} else {
 				dfaBound = annotatedValue.clone();
 				dfaBound.improveUpperBound(bound); // More testing would be nice
-				int loopUb = annotatedValue.getUpperBound();
+				long loopUb = annotatedValue.getUpperBound();
 				if(bound < loopUb) {
 					WcetAppInfo.logger.info("DFA analysis reports a smaller upper bound :"+bound+ " < "+loopUb+
 							" for "+methodInfo+":"+this.getMethodInfo());

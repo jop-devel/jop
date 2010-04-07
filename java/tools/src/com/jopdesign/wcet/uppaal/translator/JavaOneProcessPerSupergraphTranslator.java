@@ -157,7 +157,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 	private void addProgessMeasure(TemplateBuilder tBuilder) {
 		if(tBuilder.getLoopVarBounds().isEmpty()) return;
 		Vector<String> progressSummands = new Vector<String>();
-		Vector<Integer> lvbs = tBuilder.getLoopVarBounds();
+		Vector<Long> lvbs = tBuilder.getLoopVarBounds();
 		long multiplicator = 1;
 		for(int i = lvbs.size() - 1; i >= 0; i--) {
 			progressSummands.add(""+multiplicator+" * M0."+TemplateBuilder.loopVarName(i));

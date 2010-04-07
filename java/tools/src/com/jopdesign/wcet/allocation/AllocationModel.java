@@ -113,7 +113,7 @@ public class AllocationModel implements ProcessorModel {
 		}
 	}
 
-	public int getExecutionTime(ExecutionContext context, InstructionHandle ih) {
+	public long getExecutionTime(ExecutionContext context, InstructionHandle ih) {
 
 		int opcode = ih.getInstruction().getOpcode();
 		MethodInfo mCtx = context.getMethodInfo();
@@ -126,10 +126,10 @@ public class AllocationModel implements ProcessorModel {
 		} else if (opcode == Constants.MULTIANEWARRAY) {
 			MULTIANEWARRAY insn = (MULTIANEWARRAY)ih.getInstruction();
 			int dim = insn.getDimensions();
-			int count = 1;
-			int size = 0;
+			long count = 1;
+			long size = 0;
 			for (int i = dim-1; i >= 0; i--) {
-				int bound = getArrayBound(context, ih, i);
+				long bound = getArrayBound(context, ih, i);
 				size += count * computeArraySize(bound);
 				count *= bound;
 			}
@@ -139,7 +139,7 @@ public class AllocationModel implements ProcessorModel {
 		}
 	}
 
-	private int getArrayBound(ExecutionContext context, InstructionHandle ih, int index) {
+	private long getArrayBound(ExecutionContext context, InstructionHandle ih, int index) {
 		int srcLine = context.getMethodInfo().getMethod().getLineNumberTable().getSourceLine(ih.getPosition());
 
 		// get annotated size
@@ -199,11 +199,11 @@ public class AllocationModel implements ProcessorModel {
 		}
 	}
 
-	public int computeObjectSize(int raw) {
+	public int computeObjectSize(long raw) {
 		return 1;
 	}
 
-	public int computeArraySize(int raw) {
+	public int computeArraySize(long raw) {
 		return 1;
 	}
 

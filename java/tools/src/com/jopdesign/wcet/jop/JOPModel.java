@@ -112,7 +112,7 @@ public class JOPModel implements ProcessorModel {
 		return jvmClasses;
 	}
 	/* get plain execution time, without global effects */
-	public int getExecutionTime(ExecutionContext context, InstructionHandle ih) {
+	public long getExecutionTime(ExecutionContext context, InstructionHandle ih) {
 
 		Instruction i = ih.getInstruction();
 		MethodInfo mctx = context.getMethodInfo();
@@ -123,7 +123,7 @@ public class JOPModel implements ProcessorModel {
 				Project.logger.error("[HACK] Unsupported (unbounded) bytecode: "+i.getName()+
 									" in " + mctx.getFQMethodName()+
 									".\nApproximating with 2000 cycles, but result is not safe anymore.");
-				return 2000;
+				return 2000L;
 			} else {
 				throw new AssertionError("Requesting #cycles of non-implemented opcode: "+
 						i+"(opcode "+jopcode+") used in context: "+context);

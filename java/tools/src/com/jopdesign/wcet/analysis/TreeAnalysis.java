@@ -126,8 +126,8 @@ public class TreeAnalysis {
 		return this.maxProgress.get(mi);
 	}
 
-	private Map<CFGNode, Integer> extractUBs(Map<CFGNode, LoopBound> loopBounds) {
-		Map<CFGNode, Integer> ubMap = new HashMap<CFGNode, Integer>();
+	private Map<CFGNode, Long> extractUBs(Map<CFGNode, LoopBound> loopBounds) {
+		Map<CFGNode, Long> ubMap = new HashMap<CFGNode, Long>();
 		for(Entry<CFGNode, LoopBound> entry : loopBounds.entrySet()) {
 			ubMap.put(entry.getKey(),entry.getValue().getUpperBound());
 		}
