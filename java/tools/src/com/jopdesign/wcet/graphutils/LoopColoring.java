@@ -41,6 +41,8 @@ import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.traverse.AbstractGraphIterator;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
+import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
+
 
 /**
  * Compute the loop coloring of a graph, i.e. for each node
@@ -163,6 +165,19 @@ public class LoopColoring<V,E> {
 		}
 		return loopNestForest;
 	}
+	public V getLoopAncestor(V hol, int dist) {
+		SimpleDirectedGraph<V, DefaultEdge> loopNestForest = getLoopNestDAG();
+		V ancestor = hol;
+		for(int i = 0; i < dist; i++) {
+			Set<DefaultEdge> incomingEdges = loopNestForest.incomingEdgesOf(ancestor);
+			if(incomingEdges.size() == 0) return null;
+			else if(incomingEdges.size() > 1) throw new AssertionError("getLoopAncestor: A loop has two ancestors");
+			DefaultEdge incomingEdge = incomingEdges.iterator().next();
+			ancestor = loopNestForest.getEdgeSource(incomingEdge);
+		}
+		return ancestor;
+	}
+
 	/**
 	 * <p>Return a traversal of the graph in 'flow' order, a topological order
 	 * where back edges and the loop header are treated in a special way.</p>
@@ -453,6 +468,7 @@ public class LoopColoring<V,E> {
 			}
 		}
 	}
+
 
 }
 

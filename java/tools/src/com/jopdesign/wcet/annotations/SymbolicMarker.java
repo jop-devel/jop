@@ -26,7 +26,9 @@ package com.jopdesign.wcet.annotations;
  *
  */
 public class SymbolicMarker {
-	public static enum SymbolicMarkerType { METHOD_MARKER, OUTER_LOOP_MARKER };
+	public static enum SymbolicMarkerType { METHOD_MARKER, OUTER_LOOP_MARKER }
+	public static final SymbolicMarker LOOP_ENTRY = SymbolicMarker.outerLoopMarker(0);
+
 	private int outerLoopIndex;
 	private String methodName;
 	private SymbolicMarkerType markerType;
@@ -58,4 +60,40 @@ public class SymbolicMarker {
 		if(markerType == SymbolicMarkerType.METHOD_MARKER) return methodName;
 		throw new AssertionError("getMethodName: Not a method marker");		
 	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#hashCode()
+	 */
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * markerType.hashCode();
+		switch(markerType) {
+		case METHOD_MARKER: result = prime*result + methodName.hashCode();break;
+		case OUTER_LOOP_MARKER: result = prime*result + outerLoopIndex;break;
+		}
+		return result;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		SymbolicMarker other = (SymbolicMarker) obj;
+		if(! this.markerType.equals(other.markerType)) return false;
+		switch(markerType) {
+		case METHOD_MARKER: return this.methodName.equals(other.methodName);
+		case OUTER_LOOP_MARKER: return this.outerLoopIndex==other.outerLoopIndex;
+		}
+		throw new AssertionError("equals: Inconsistent representation of SymbolicMarker");
+	}
+	
 }
