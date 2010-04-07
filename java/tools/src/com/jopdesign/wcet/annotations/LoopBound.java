@@ -22,57 +22,112 @@ package com.jopdesign.wcet.annotations;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
+import com.jopdesign.wcet.annotations.SymbolicMarker.SymbolicMarkerType;
 import com.jopdesign.wcet.graphutils.Pair;
 
 /**
- * Purpose: Instances represent non-symbolic, loop bounds relative to the
- *          execution frequency of the edges entering the loop.
+ * Purpose: Instances represent execution frequency bounds for loops.
+ *          Simple loop bounds are relative to the execution frequency
+ *          of the entry edges of the loop, relative bounds are relative
+ *          to some marker (outer loop or method).
  *
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  *
  */
 public class LoopBound {
 	private static final long serialVersionUID = 1L;
-	private Pair<Integer,Integer> absoluteBound;
-	private Map<SymbolicMarker, Pair<Integer,Integer>> relativeBounds =
-		new HashMap<SymbolicMarker, Pair<Integer,Integer>>();
+	private Pair<Long,Long> simpleBound;
+	private Map<SymbolicMarker, Pair<Long,Long>> markerBounds =
+		new HashMap<SymbolicMarker, Pair<Long,Long>>();
 	
 	public LoopBound clone()
 	{
-		LoopBound lb = new LoopBound(absoluteBound);
-		lb.relativeBounds = new HashMap<SymbolicMarker,Pair<Integer,Integer>>(relativeBounds);
+		LoopBound lb = new LoopBound(simpleBound);
+		lb.markerBounds = new HashMap<SymbolicMarker,Pair<Long,Long>>(markerBounds);
 		return lb;
 	}
+	public void merge(LoopBound other)
+	{
+		this.simpleBound = mergeBounds(simpleBound, other.simpleBound);
+		for(SymbolicMarker marker : other.markerBounds.keySet()) {
+			markerBounds.put(marker, mergeBounds(this.markerBounds.get(marker),other.markerBounds.get(marker)));
+		}
+	}
 
-	private LoopBound(Pair<Integer,Integer> absBound) {
-		this.absoluteBound = absBound;
+	private LoopBound(Pair<Long,Long> simpleBound) {
+		this.simpleBound = simpleBound;
 	}
 	
-	public LoopBound(Integer lb, Integer ub) {
-		this.absoluteBound = new Pair<Integer,Integer>(lb,ub);
+	public LoopBound(Long lb, Long ub) {
+		this.simpleBound = new Pair<Long,Long>(lb,ub);
 	}
 
-	public int getLowerBound()  { return absoluteBound.fst(); }
-	public int getUpperBound() { return absoluteBound.snd(); }
+	public long getLowerBound()  { return simpleBound.fst(); }
+	public long getUpperBound()  { return simpleBound.snd(); }
 	
-	public static LoopBound boundedAbove(int ub) {
-		return new LoopBound(0,ub);
+	public static LoopBound boundedAbove(long ub) {
+		return new LoopBound(0L,ub);
 	}
-	public void improveUpperBound(int newUb) {
-		absoluteBound = LoopBound.mergeBounds(absoluteBound,0, newUb);
-	}
-
-	public void setRelativeUpperBound(int ub, SymbolicMarker marker) {
-		relativeBounds.put(marker, mergeBounds(relativeBounds.get(marker),0,ub));
-	}
-	public void setRelativeBound(int lb, int ub, SymbolicMarker marker) {
-		relativeBounds.put(marker, mergeBounds(relativeBounds.get(marker),lb,ub));
-	}
-
-	private static Pair<Integer, Integer> mergeBounds(Pair<Integer, Integer> oldBound, int newLb, int newUb) {
-		if(oldBound == null) return new Pair<Integer,Integer>(newLb,newUb);
-		return new Pair<Integer,Integer>(Math.max(oldBound.fst(), newLb), Math.min(oldBound.snd(), newUb));
+	public static LoopBound markerBound(long lb, long ub, SymbolicMarker marker)
+	{
+		LoopBound loopBound = new LoopBound(0L, ub);
+		loopBound.setBoundMarker(lb,ub,marker);
+		return loopBound;
 	}
 	
+	public void improveUpperBound(long newUb) {
+		simpleBound = LoopBound.mergeBounds(simpleBound,0, newUb);
+	}
+
+	public void setUpperBoundMarker(long ub, SymbolicMarker marker) {
+		markerBounds.put(marker, mergeBounds(markerBounds.get(marker),0,ub));
+	}
+	public void setBoundMarker(long lb, long ub, SymbolicMarker marker) {
+		markerBounds.put(marker, mergeBounds(markerBounds.get(marker),lb,ub));
+	}
+
+	private static Pair<Long, Long> 
+	mergeBounds(Pair<Long, Long> oldBound, long newLb, long newUb) {
+		if(oldBound == null) return new Pair<Long,Long>(newLb,newUb);
+		return new Pair<Long,Long>(Math.max(oldBound.fst(), newLb), 
+								   Math.min(oldBound.snd(), newUb));
+	}
+	private Pair<Long, Long> mergeBounds(
+			Pair<Long, Long> oldBound,
+			Pair<Long, Long> newBound) {
+		mergeBounds(oldBound, newBound.fst(), newBound.snd());
+		return null;
+	}
+	public String toString() {
+		StringBuffer sb = new StringBuffer();
+		boundToString(sb, simpleBound,null);
+		for(Entry<SymbolicMarker, Pair<Long, Long>> lbEntry : markerBounds.entrySet()) {
+			sb.append("; ");
+			boundToString(sb, lbEntry.getValue(), lbEntry.getKey());
+		}
+		return sb.toString();
+	}
+	private static void boundToString(StringBuffer sb, Pair<Long, Long> bound,
+			SymbolicMarker marker) {
+		sb.append("[");
+		sb.append(bound.fst());
+		sb.append(",");
+		sb.append(bound.snd());
+		sb.append("] ");
+		if(marker!=null){
+			if(marker.getMarkerType() == SymbolicMarkerType.OUTER_LOOP_MARKER) {
+				sb.append("outer(");
+				sb.append(marker.getOuterLoopDistance());
+				sb.append(")");
+			} else if(marker.getMarkerType() == SymbolicMarkerType.METHOD_MARKER) {
+				sb.append("method(");
+				sb.append(marker.getMethodName());
+				sb.append(")");				
+			}
+		}
+		// TODO Auto-generated method stub
+		
+	}
 }

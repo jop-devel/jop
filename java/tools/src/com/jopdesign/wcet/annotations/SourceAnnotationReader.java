@@ -22,10 +22,13 @@
 package com.jopdesign.wcet.annotations;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringBufferInputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -78,6 +81,9 @@ public class SourceAnnotationReader {
 	/**
 	 * Extract loop bound annotations for one class
 	 * 
+	 * All annotations start with {@code // @WCA }, and belong to the last source code line encountered.
+	 * A source code line is a line which has at least one token in it.
+	 * 
 	 * @return a FlowFacts object encapsulating the annotations found in the source file of the given class
 	 * @throws IOException 
 	 * @throws BadAnnotationException 
@@ -91,16 +97,26 @@ public class SourceAnnotationReader {
 		BufferedReader reader = new BufferedReader(new FileReader(fileName));
 		String line = null;
 		int lineNr = 1;
-
+		int sourceLineNr = 1;
 		while ((line = reader.readLine()) != null) {
+			if(! SourceAnnotationReader.isCommentLine(line)) {
+				sourceLineNr = lineNr;
+			}
 			LoopBound loopBound = SourceAnnotationReader.extractAnnotation(line);	
 			if (loopBound != null) {
-				flowFacts.addLoopBound(lineNr,loopBound);
+				System.out.println("Adding loop bound @ "+sourceLineNr+": "+loopBound);
+				flowFacts.addLoopBound(sourceLineNr,loopBound);
 			}
 			lineNr++;
 		}
 		logger.debug("Read WCA annotations for "+fileName);
 		return flowFacts;
+	}
+
+	private static boolean isCommentLine(String line) {
+		Pattern pattern = Pattern.compile("^\\s*(//.*)?$");
+		Matcher matcher = pattern.matcher(line);
+		return matcher.matches();
 	}
 
 	private File getSourceFile(ClassInfo ci) throws FileNotFoundException, BadAnnotationException {
@@ -154,20 +170,18 @@ public class SourceAnnotationReader {
 			Matcher matcher2 = pattern2.matcher(annotString);
 			if(matcher2.matches()) {
 				logger.warn("Deprecated loop bound notation: X <= loop <= Y");
-				int lb = Integer.parseInt(matcher2.group(1));
-				int ub = Integer.parseInt(matcher2.group(2));
+				long lb = Long.parseLong(matcher2.group(1));
+				long ub = Long.parseLong(matcher2.group(2));
 				return new LoopBound(lb,ub);	
 			}
 			// New loop bound 
-			Pattern pattern1 = Pattern.compile(" *loop *(<?=) *([0-9]+) *");
-			Matcher matcher1 = pattern1.matcher(annotString);
-			if(matcher1.matches()) {				
-				int ub = Integer.parseInt(matcher1.group(2));
-				int lb = (matcher1.group(1).equals("=")) ? ub : 0;
-				return new LoopBound(lb,ub);		
+			InputStream is = new ByteArrayInputStream(annotString.getBytes());
+			Parser parser = new Parser(new Scanner(is));
+			parser.Parse();
+			if(parser.errors.count > 0) {
+				throw new BadAnnotationException("Parse Error in Annotation: "+annotString);
 			}
-			
-			throw new BadAnnotationException("Syntax error in loop bound annotation: "+annotString);
+			return parser.getResult();
 		}
 		return null;
 	}

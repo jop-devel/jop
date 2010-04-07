@@ -26,5 +26,36 @@ package com.jopdesign.wcet.annotations;
  *
  */
 public class SymbolicMarker {
+	public static enum SymbolicMarkerType { METHOD_MARKER, OUTER_LOOP_MARKER };
+	private int outerLoopIndex;
+	private String methodName;
+	private SymbolicMarkerType markerType;
 
+	public static SymbolicMarker outerLoopMarker(int distance) {
+	
+		SymbolicMarker sm = new SymbolicMarker();
+		sm.markerType = SymbolicMarkerType.OUTER_LOOP_MARKER;
+		sm.outerLoopIndex = distance;
+		return sm;
+	}
+	
+	public static SymbolicMarker methodMarker(String methodName) {
+		
+		SymbolicMarker sm = new SymbolicMarker();
+		sm.markerType = SymbolicMarkerType.METHOD_MARKER;
+		sm.methodName = methodName;
+		return sm;
+	}
+	
+	public SymbolicMarkerType getMarkerType() {
+		return markerType;
+	}
+	public int getOuterLoopDistance() {
+		if(markerType == SymbolicMarkerType.OUTER_LOOP_MARKER) return outerLoopIndex;
+		throw new AssertionError("getOuterLoopDistance: Not an outer loop marker");
+	}
+	public String getMethodName() {
+		if(markerType == SymbolicMarkerType.METHOD_MARKER) return methodName;
+		throw new AssertionError("getMethodName: Not a method marker");		
+	}
 }
