@@ -923,16 +923,16 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 					String constClassName = instr.getType(context.constPool).toString();
 					ClassInfo staticClass = (ClassInfo)p.cliMap.get(constClassName);
 					ClassInfo dynamicClass = (ClassInfo)p.cliMap.get(m.type.split("@")[0]);
-					System.out.println("CHECKCAST: "+context.callString.asList()+"/"+context.method+": "+stmt+": "+constClassName+" vs "+m.type);
+//					System.out.println("CHECKCAST: "+context.callString.asList()+"/"+context.method+": "+stmt+": "+constClassName+" vs "+m.type);
 					try {
 						if (dynamicClass.clazz.instanceOf(staticClass.clazz)) {
 							result.add(m);
-							System.out.println("yay!");
+//							System.out.println("yay!");
 						}
 					} catch (ClassNotFoundException exc) {
 						// just do it
 						result.add(m);
-						System.out.println("hm..");
+//						System.out.println("hm..");
 					}
 				}
 			}

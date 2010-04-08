@@ -29,7 +29,6 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.Vector;
 
 import org.apache.bcel.generic.INVOKEINTERFACE;
@@ -47,6 +46,7 @@ import com.jopdesign.dfa.analyses.Pair;
 import com.jopdesign.dfa.analyses.ValueMapping;
 import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.dfa.framework.ContextMap;
+import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.dfa.framework.HashedString;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.annotations.BadAnnotationException;
@@ -413,7 +413,7 @@ public class ControlFlowGraph {
 
 	/* annotations */
 	private Map<CFGNode, LoopBound> annotations;
-
+	
 	/* analysis stuff, needs to be reevaluated when graph changes */
 	private TopOrder<CFGNode, CFGEdge> topOrder = null;
 	private LoopColoring<CFGNode, CFGEdge> loopColoring = null;
@@ -573,6 +573,11 @@ public class ControlFlowGraph {
 		}
 	}
 
+	/**
+	 * Get a loop bound from the DFA for a certain loop and call string and
+	 * merge it with the annotated value.
+	 * @return The loop bound to be used for further computations
+	 */
 	private LoopBound dfaLoopBound(BasicBlock headOfLoopBlock, CallString cs, LoopBound annotatedValue) {
 		Project p = this.project;
 		LoopBound dfaBound;
@@ -609,6 +614,42 @@ public class ControlFlowGraph {
 			dfaBound = annotatedValue;
 		}
 		return dfaBound;
+	}
+	
+	/**
+	 * Get infeasible edges for certain call string
+	 * @return The infeasible edges
+	 */
+	public Vector<CFGEdge> getInfeasibleEdges(CallString cs) {
+		Vector<CFGEdge> edges = new Vector<CFGEdge>();
+		for (BasicBlock b : blocks) {
+			Vector<CFGEdge> edge = dfaInfeasibleEdge(b, cs);
+			edges.addAll(edge);
+		}
+		return edges;
+	}
+	
+	/**
+	 * Get infeasible edges for certain basic block call string
+	 * @return The infeasible edges for this basic block
+	 */
+	private Vector<CFGEdge> dfaInfeasibleEdge(BasicBlock block, CallString cs) {
+		Project p = this.project;
+		Vector<CFGEdge> retval = new Vector<CFGEdge>();
+		if (p.getDfaLoopBounds() != null) {
+			LoopBounds lbs = p.getDfaLoopBounds();
+			Set<FlowEdge> edges = lbs.getInfeasibleEdges(block.getLastInstruction(), cs);
+			for (FlowEdge e : edges) {
+				BasicBlockNode head = BasicBlock.getHandleNode(e.getHead());
+				BasicBlockNode tail = BasicBlock.getHandleNode(e.getTail());
+				CFGEdge edge = this.graph.getEdge(tail, head);
+				System.out.println(this.methodInfo.getFQMethodName()+": "+e.getTail()+"@"+tail+"->"+e.getHead()+"@"+head+" / "+edge);
+				if (edge != null) { // edge does not seem to exist any longer
+					retval.add(edge);
+				}
+			}
+		};
+		return retval;
 	}
 	
 	/**

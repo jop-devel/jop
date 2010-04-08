@@ -81,6 +81,7 @@ public class ILPModelBuilder {
 		buildLocalILPModel(String key, CallString callString, ControlFlowGraph g, CostProvider<CFGNode> nodeWCET) {
 		Vector<FlowConstraint> flowCs = topLevelEntryExitConstraints(g);
 		flowCs.addAll(loopBoundConstraints(g,callString));
+		flowCs.addAll(infeasibleEdgeConstraints(g,callString));
 		MaxCostFlow<CFGNode,CFGEdge> maxflow = 
 			new MaxCostFlow<CFGNode,CFGEdge>(key,g.getGraph(),g.getEntry(),g.getExit());
 		for(CFGNode n : g.getGraph().vertexSet()) {
@@ -105,6 +106,7 @@ public class ILPModelBuilder {
 		Vector<FlowConstraint> flowCs = topLevelEntryExitConstraints(top);
 		for(ControlFlowGraph cfg : sg.getControlFlowGraphs()) {
 			flowCs.addAll(loopBoundConstraints(cfg));
+			flowCs.addAll(infeasibleEdgeConstraints(cfg));
 		}
 		for(Entry<SuperInvokeEdge,SuperReturnEdge> superEdgePair : sg.getSuperEdgePairs().entrySet()) {
 			flowCs.add(superEdgeConstraint(superEdgePair.getKey(), superEdgePair.getValue()));
@@ -190,6 +192,33 @@ public class ILPModelBuilder {
 				loopConstraint.addRHS(continueEdge);
 			}
 			constraints.add(loopConstraint);
+		}
+		return constraints;
+	}
+	
+	/*
+	 * Compute flow constraints: Infeasible edge constraints
+	 * @param g the flow graph
+	 * @return A list of flow constraints
+	 */
+	private Vector<FlowConstraint> infeasibleEdgeConstraints(ControlFlowGraph g) {
+		return infeasibleEdgeConstraints(g,CallString.EMPTY);
+	}
+	/*
+	 * Compute flow constraints: Infeasible edge constraints
+	 * @param g the flow graph
+	 * @param cs the invocation context
+	 * @return A list of flow constraints
+	 */
+	private Vector<FlowConstraint> infeasibleEdgeConstraints(ControlFlowGraph g, CallString cs) {
+		Vector<FlowConstraint> constraints = new Vector<FlowConstraint>();
+		// - for each infeasible edge
+		// -- edge = 0
+		for(CFGEdge edge : g.getInfeasibleEdges(cs)) {
+			FlowConstraint infeasibleConstraint = new FlowConstraint(ConstraintType.Equal);
+			infeasibleConstraint.addLHS(edge);
+			infeasibleConstraint.addRHS(0);
+			constraints.add(infeasibleConstraint);
 		}
 		return constraints;
 	}

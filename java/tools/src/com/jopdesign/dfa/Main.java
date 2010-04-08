@@ -79,6 +79,7 @@ public class Main {
 		program.setLoopBounds(lb);
 		long lbTime = System.currentTimeMillis();
 		
+		lb.printInfeasibles(program);
 		lb.printResult(program);				
 		lb.printSizeResult(program);
 		
