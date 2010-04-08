@@ -36,7 +36,12 @@ public class SourceAnnotations {
 	 * @param lb     the annotations at this line number
 	 */
 	public void addLoopBound(int lineNr, LoopBound lb) {
-		this.loopBounds.put(lineNr, lb);
+		LoopBound oldLb = this.loopBounds.get(lineNr);
+		if(oldLb == null) {
+			this.loopBounds.put(lineNr, lb);
+		} else {
+			oldLb.merge(lb);
+		}
 	}
 
 	/**

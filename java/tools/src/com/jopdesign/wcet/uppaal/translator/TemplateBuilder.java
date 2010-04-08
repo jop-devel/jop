@@ -69,7 +69,7 @@ public class TemplateBuilder {
 	/* which variable to use for the given HOL */
 	private HashMap<CFGNode, Integer> loopVars;
 	/* upper bound for loop variables */
-	private Vector<Integer> loopVarBounds = new Vector<Integer>();
+	private Vector<Long> loopVarBounds = new Vector<Long>();
 	/* which bound constants to use for the given HOL */
 	private HashMap<CFGNode,Integer> loopBounds;
 	private String clockBB;
@@ -77,7 +77,7 @@ public class TemplateBuilder {
 	private Location postEnd;
 
 	private int pid;
-	public Vector<Integer> getLoopVarBounds() {
+	public Vector<Long> getLoopVarBounds() {
 		return this.loopVarBounds;
 	}
 
@@ -122,7 +122,7 @@ public class TemplateBuilder {
 				String.format("const int %s = %d;", 
 							  loopLowerBoundConst(varKey), lb.getLowerBound()));
 		while(loopVarBounds.size() < nestingDepth) {
-			loopVarBounds.add(0);
+			loopVarBounds.add(0L);
 		}
 		if(loopVarBounds.size() <= nestingDepth) {
 			loopVarBounds.add(lb.getUpperBound());

@@ -59,7 +59,7 @@ public class JamuthModel implements ProcessorModel {
 		}
 	}
 
-	public int getExecutionTime(ExecutionContext ctx, InstructionHandle instr) {
+	public long getExecutionTime(ExecutionContext ctx, InstructionHandle instr) {
 		return (int) tt.getCycles(getInstructionInfo(instr));
 	}
 
