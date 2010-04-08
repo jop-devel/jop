@@ -644,7 +644,6 @@ public class ControlFlowGraph {
 				BasicBlockNode head = BasicBlock.getHandleNode(e.getHead());
 				BasicBlockNode tail = BasicBlock.getHandleNode(e.getTail());
 				CFGEdge edge = this.graph.getEdge(tail, head);
-				System.out.println(this.methodInfo.getFQMethodName()+": "+e.getTail()+"@"+tail+"->"+e.getHead()+"@"+head+" / "+edge);
 				if (edge != null) { // edge does not seem to exist any longer
 					retval.add(edge);
 				}
