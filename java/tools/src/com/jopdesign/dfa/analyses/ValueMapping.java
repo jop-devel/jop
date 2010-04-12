@@ -180,7 +180,7 @@ public class ValueMapping {
 	}
 
 	public int hashCode() {
-		return assigned.hashCode()+31*constrained.hashCode()+31*31*increment.hashCode();
+		return 1+assigned.hashCode()+31*constrained.hashCode()+31*31*increment.hashCode();
 	}
 	
 	public String toString() {

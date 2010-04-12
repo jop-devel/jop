@@ -174,12 +174,17 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 		retval.put(context.callString, result);		
 		
 		Instruction instruction = stmt.getInstruction();
-		
-//		System.out.println(context.method+": "+stmt+" / "+context.callString.asList());
-//		System.out.print(stmt.getInstruction()+":\t{ ");
-//		System.out.print(context.callString.asList()+": "+input.get(context.callString));
-//		System.out.println(" }");
-		
+
+// 		if (context.method.startsWith("scd_micro.Reducer")
+// 			|| context.method.startsWith("java.util.HashMap.put")
+// 			// || context.method.startsWith("java.util.Stack")
+// 			) {
+// 			System.out.println(context.method+": "+stmt+" / "+context.callString.asList());
+// 			System.out.print(stmt.getInstruction()+":\t{ ");
+// 			System.out.print(context.callString.asList()+": "+input.get(context.callString));
+// 			System.out.println(" }");
+// 		}
+
 		switch (instruction.getOpcode()) {
 		
 		case Constants.NOP:
@@ -378,7 +383,8 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 				String receiver = i.next();
 				String heapLoc = receiver+"."+instr.getFieldName(context.constPool);
 				String namedLoc = receiver.split("@")[0]+"."+instr.getFieldName(context.constPool);
-				if (p.containsField(namedLoc)) {					
+				if (p.containsField(namedLoc)) {
+					heapLoc = p.classForField(namedLoc)+"."+instr.getFieldName(context.constPool);
 					recordReceiver(stmt, context, heapLoc);
 					for (Iterator<TypeMapping> k = in.iterator(); k.hasNext(); ) {
 						TypeMapping m = k.next();
@@ -418,8 +424,8 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 				String receiver = i.next();
 				String heapLoc = receiver+"."+instr.getFieldName(context.constPool);
 				String namedLoc = receiver.split("@")[0]+"."+instr.getFieldName(context.constPool);
-
 				if (p.containsField(namedLoc)) { 
+					heapLoc = p.classForField(namedLoc)+"."+instr.getFieldName(context.constPool);
 					recordReceiver(stmt, context, heapLoc);
 					for (Iterator<TypeMapping> k = in.iterator(); k.hasNext(); ) {
 						TypeMapping m = k.next();
@@ -447,6 +453,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 			String heapLoc = instr.getClassName(context.constPool)+"."+instr.getFieldName(context.constPool);
 
 			if (p.containsField(heapLoc)) {
+				heapLoc = p.classForField(heapLoc)+"."+instr.getFieldName(context.constPool);
 				recordReceiver(stmt, context, heapLoc);
 				for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 					TypeMapping m = i.next();
@@ -473,6 +480,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 			String heapLoc = instr.getClassName(context.constPool)+"."+instr.getFieldName(context.constPool);			
 			
 			if (p.containsField(heapLoc)) {			
+				heapLoc = p.classForField(heapLoc)+"."+instr.getFieldName(context.constPool);
 				recordReceiver(stmt, context, heapLoc);
 				for (Iterator<TypeMapping> i = in.iterator(); i.hasNext(); ) {
 					TypeMapping m = i.next();
@@ -640,7 +648,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 			NEW instr = (NEW)instruction;			
 			filterSet(in, result, context.stackPtr);
 			String name = instr.getType(context.constPool).toString();
-			// name += "@"+context.method+":"+stmt.getPosition();
+			name += "@"+context.method+":"+stmt.getPosition();
 			result.add(new TypeMapping(context.stackPtr, name));
 			doInvokeStatic("com.jopdesign.sys.JVM.f_"+stmt.getInstruction().getName()+"(I)I", stmt, context, input, interpreter, state, retval);
 		}
@@ -915,13 +923,16 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 					String constClassName = instr.getType(context.constPool).toString();
 					ClassInfo staticClass = (ClassInfo)p.cliMap.get(constClassName);
 					ClassInfo dynamicClass = (ClassInfo)p.cliMap.get(m.type.split("@")[0]);
+//					System.out.println("CHECKCAST: "+context.callString.asList()+"/"+context.method+": "+stmt+": "+constClassName+" vs "+m.type);
 					try {
 						if (dynamicClass.clazz.instanceOf(staticClass.clazz)) {
 							result.add(m);
+//							System.out.println("yay!");
 						}
 					} catch (ClassNotFoundException exc) {
 						// just do it
 						result.add(m);
+//						System.out.println("hm..");
 					}
 				}
 			}
@@ -962,6 +973,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 					// check whether this class can possibly be a receiver
 					ClassInfo dynamicClass = (ClassInfo)p.cliMap.get(clName);
 					if (dynamicClass == null) { // no such class
+						System.out.println("no such class: "+clName);
 						continue;
 					}
 
@@ -1347,7 +1359,9 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 		} else if (methodId.equals("com.jopdesign.sys.Native.memCopy(III)V")) {
 			filterSet(in, out, context.stackPtr-3);
 		} else if (methodId.equals("com.jopdesign.sys.Native.getField(II)I")
-				|| methodId.equals("com.jopdesign.sys.Native.arrayLoad(II)I")) {
+				|| methodId.equals("com.jopdesign.sys.Native.arrayLoad(II)I")
+				|| methodId.equals("com.jopdesign.sys.Native.toLong(D)J")
+				|| methodId.equals("com.jopdesign.sys.Native.toDouble(J)D")) {
 			filterSet(in, out, context.stackPtr-2);
 		} else if (methodId.equals("com.jopdesign.sys.Native.putField(III)V")
 				|| methodId.equals("com.jopdesign.sys.Native.arrayStore(III)V")) {

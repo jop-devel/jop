@@ -97,7 +97,7 @@ public class CFGExport {
 			String infoHeader;
 			if(n instanceof InvokeNode) {
 				InvokeNode in = (InvokeNode) n;
-				infoHeader = "{invoke "+ (in.isInterface()
+				infoHeader = "{invoke "+ (in.isVirtual()
 						                  ? ("virtual "+in.getReferenced())
 						                  : in.getImplementedMethod().getFQMethodName()) +"}";
 			} else if(isReturn) {

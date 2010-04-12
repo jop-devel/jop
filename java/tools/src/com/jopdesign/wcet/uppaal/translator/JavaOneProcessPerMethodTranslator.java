@@ -9,10 +9,10 @@ import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
+import com.jopdesign.wcet.annotations.LoopBound;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
-import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet.graphutils.MiscUtils;
 import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
@@ -114,7 +114,7 @@ public class JavaOneProcessPerMethodTranslator extends JavaTranslator {
 		String bbClock = systemBuilder.addProcessClock(0);
 		/* For each method, create a process */
 		for(MethodInfo mi : this.methodInfos) {
-			if(project.getCallGraph().isLeafNode(mi) && config.collapseLeaves) continue;
+			if(project.getCallGraph().isLeafMethod(mi) && config.collapseLeaves) continue;
 			int pid = getMethodID(mi);
 			TemplateBuilder tBuilder =
 				new TemplateBuilder(config,

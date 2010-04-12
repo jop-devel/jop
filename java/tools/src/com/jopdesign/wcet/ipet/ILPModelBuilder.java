@@ -19,6 +19,7 @@
 */
 package com.jopdesign.wcet.ipet;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 import java.util.Map.Entry;
@@ -26,6 +27,9 @@ import java.util.Map.Entry;
 import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.WcetCost;
+import com.jopdesign.wcet.annotations.LoopBound;
+import com.jopdesign.wcet.annotations.SymbolicMarker;
+import com.jopdesign.wcet.annotations.SymbolicMarker.SymbolicMarkerType;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.SuperGraph;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
@@ -33,6 +37,7 @@ import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.frontend.SuperGraph.SuperInvokeEdge;
 import com.jopdesign.wcet.frontend.SuperGraph.SuperReturnEdge;
 import com.jopdesign.wcet.graphutils.LoopColoring;
+import com.jopdesign.wcet.graphutils.Pair;
 import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
 
 /**
@@ -81,6 +86,7 @@ public class ILPModelBuilder {
 		buildLocalILPModel(String key, CallString callString, ControlFlowGraph g, CostProvider<CFGNode> nodeWCET) {
 		Vector<FlowConstraint> flowCs = topLevelEntryExitConstraints(g);
 		flowCs.addAll(loopBoundConstraints(g,callString));
+		flowCs.addAll(infeasibleEdgeConstraints(g,callString));
 		MaxCostFlow<CFGNode,CFGEdge> maxflow = 
 			new MaxCostFlow<CFGNode,CFGEdge>(key,g.getGraph(),g.getEntry(),g.getExit());
 		for(CFGNode n : g.getGraph().vertexSet()) {
@@ -105,6 +111,7 @@ public class ILPModelBuilder {
 		Vector<FlowConstraint> flowCs = topLevelEntryExitConstraints(top);
 		for(ControlFlowGraph cfg : sg.getControlFlowGraphs()) {
 			flowCs.addAll(loopBoundConstraints(cfg));
+			flowCs.addAll(infeasibleEdgeConstraints(cfg));
 		}
 		for(Entry<SuperInvokeEdge,SuperReturnEdge> superEdgePair : sg.getSuperEdgePairs().entrySet()) {
 			flowCs.add(superEdgeConstraint(superEdgePair.getKey(), superEdgePair.getValue()));
@@ -177,19 +184,76 @@ public class ILPModelBuilder {
 		// -- sum(exit_loop_edges) * B <= sum(continue_loop_edges)
 		LoopColoring<CFGNode, CFGEdge> loops = g.getLoopColoring();
 		for(CFGNode hol : loops.getHeadOfLoops()) {
-			FlowConstraint loopConstraint = new FlowConstraint(ConstraintType.Equal);
-			if(g.getLoopBounds().get(hol) == null) {
+			LoopBound loopBound = g.getLoopBound(hol,cs);
+			if(loopBound == null) {
 				throw new Error("No loop bound record for head of loop: "+hol+
 								" : "+g.getLoopBounds());
 			}
-			int lhsMultiplicity = g.getLoopBound(hol,cs).getUpperBound();
-			for(CFGEdge exitEdge : loops.getExitEdgesOf(hol)) {
-				loopConstraint.addLHS(exitEdge,lhsMultiplicity);
+			for(FlowConstraint loopConstraint : getLoopConstraints(loops, hol,loopBound))
+			{
+				constraints.add(loopConstraint);
 			}
+		}
+		return constraints;
+	}
+
+	private List<FlowConstraint> getLoopConstraints(
+			LoopColoring<CFGNode, CFGEdge> loops, 
+			CFGNode hol,
+			LoopBound loopBound) {
+		Vector<FlowConstraint> loopConstraints = new Vector<FlowConstraint>();
+		/* marker loop constraints */
+		for(Entry<SymbolicMarker, Pair<Long, Long>> markerBound: loopBound.getLoopBounds()) {
+			/* loop constraint */
+			FlowConstraint loopConstraint = new FlowConstraint(ConstraintType.GreaterEqual);
 			for(CFGEdge continueEdge : loops.getBackEdgesTo(hol)) {
 				loopConstraint.addRHS(continueEdge);
 			}
-			constraints.add(loopConstraint);
+			long lhsMultiplicity = markerBound.getValue().snd();
+			SymbolicMarker marker = markerBound.getKey();
+			if(marker.getMarkerType() == SymbolicMarkerType.OUTER_LOOP_MARKER) {
+
+				CFGNode outerLoopHol;
+				outerLoopHol = loops.getLoopAncestor(hol, marker.getOuterLoopDistance());
+				if(outerLoopHol == null) {
+					//FIXME: This is a user error, not an assertion error
+					throw new AssertionError("Invalid Loop Nest Level");
+				}
+				for(CFGEdge exitEdge : loops.getExitEdgesOf(outerLoopHol)) {
+					loopConstraint.addLHS(exitEdge,lhsMultiplicity);
+				}				
+			} else {
+				assert(marker.getMarkerType() == SymbolicMarkerType.METHOD_MARKER);
+				throw new AssertionError("ILPModelBuilder: method markers not yet supported, sorry");
+			}
+			loopConstraints.add(loopConstraint);
+		}
+		return loopConstraints;
+	}
+	
+	/*
+	 * Compute flow constraints: Infeasible edge constraints
+	 * @param g the flow graph
+	 * @return A list of flow constraints
+	 */
+	private Vector<FlowConstraint> infeasibleEdgeConstraints(ControlFlowGraph g) {
+		return infeasibleEdgeConstraints(g,CallString.EMPTY);
+	}
+	/*
+	 * Compute flow constraints: Infeasible edge constraints
+	 * @param g the flow graph
+	 * @param cs the invocation context
+	 * @return A list of flow constraints
+	 */
+	private Vector<FlowConstraint> infeasibleEdgeConstraints(ControlFlowGraph g, CallString cs) {
+		Vector<FlowConstraint> constraints = new Vector<FlowConstraint>();
+		// - for each infeasible edge
+		// -- edge = 0
+		for(CFGEdge edge : g.getInfeasibleEdges(cs)) {
+			FlowConstraint infeasibleConstraint = new FlowConstraint(ConstraintType.Equal);
+			infeasibleConstraint.addLHS(edge);
+			infeasibleConstraint.addRHS(0);
+			constraints.add(infeasibleConstraint);
 		}
 		return constraints;
 	}

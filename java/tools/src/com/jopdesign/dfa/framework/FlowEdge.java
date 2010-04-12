@@ -28,10 +28,10 @@ public class FlowEdge {
 	public static final int TRUE_EDGE = 1;
 	public static final int FALSE_EDGE = 2;	
 	
-	private InstructionHandle tail;
-	private InstructionHandle head;
-	private Context context;
-	private int type;
+	private final InstructionHandle tail;
+	private final InstructionHandle head;
+	private final Context context;
+	private final int type;
 	
 	public FlowEdge(InstructionHandle tail, InstructionHandle head, int type) {
 		this.tail = tail;
@@ -66,12 +66,47 @@ public class FlowEdge {
 	public String toString() {
 		return tail.toString(false)+" -> "+head.toString(false);
 	}
-	
-	public boolean equals(Object o) {
-		FlowEdge f = (FlowEdge)o;
-		return tail.equals(f.tail)
-				&& head.equals(f.head)
-				&& context.equals(f.context)
-				&& type == f.type;
+
+	@Override
+	public int hashCode() {
+		final int PRIME = 31;
+		int result = 1;
+		result = PRIME * result + ((context == null) ? 0 : context.hashCode());
+		result = PRIME * result + ((head == null) ? 0 : head.getInstruction().hashCode());
+		result = PRIME * result + ((head == null) ? 0 : head.getPosition());
+		result = PRIME * result + ((tail == null) ? 0 : tail.getInstruction().hashCode());
+		result = PRIME * result + ((tail == null) ? 0 : tail.getPosition());
+		result = PRIME * result + type;
+		return result;
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		final FlowEdge other = (FlowEdge) obj;
+		if (context == null) {
+			if (other.context != null)
+				return false;
+		} else if (!context.equals(other.context))
+			return false;
+		if (head == null) {
+			if (other.head != null)
+				return false;
+		} else if (!head.equals(other.head))
+			return false;
+		if (tail == null) {
+			if (other.tail != null)
+				return false;
+		} else if (!tail.equals(other.tail))
+			return false;
+		if (type != other.type)
+			return false;
+		return true;
+	}
+
 }

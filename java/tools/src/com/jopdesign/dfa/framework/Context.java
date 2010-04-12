@@ -59,10 +59,13 @@ public class Context {
 		return _threaded;
 	}
 
-	public boolean equals(Context c) {
-		if ((stackPtr == c.stackPtr || stackPtr < 0 || c.stackPtr < 0)
-				//&& callString.equals(c.callString)
-				) {
+	public int hashCode() {
+		return 1+31*stackPtr;
+	}
+	
+	public boolean equals(Object o) {
+		final Context c = (Context)o;
+		if ((stackPtr == c.stackPtr || stackPtr < 0 || c.stackPtr < 0)) {
 			return true;
 		}		
 		return false;

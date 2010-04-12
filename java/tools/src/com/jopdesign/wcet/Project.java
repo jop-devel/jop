@@ -47,16 +47,20 @@ import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.CallStringReceiverTypes;
 import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.dfa.framework.ContextMap;
+import com.jopdesign.wcet.allocation.ObjectAllocationModel;
 import com.jopdesign.wcet.allocation.HandleAllocationModel;
+import com.jopdesign.wcet.allocation.HeaderAllocationModel;
+import com.jopdesign.wcet.allocation.BlockAllocationModel;
 import com.jopdesign.wcet.analysis.WcetCost;
+import com.jopdesign.wcet.annotations.BadAnnotationException;
+import com.jopdesign.wcet.annotations.LoopBound;
+import com.jopdesign.wcet.annotations.SourceAnnotations;
+import com.jopdesign.wcet.annotations.SourceAnnotationReader;
 import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.frontend.CallGraph;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
-import com.jopdesign.wcet.frontend.SourceAnnotations;
 import com.jopdesign.wcet.frontend.WcetAppInfo;
 import com.jopdesign.wcet.frontend.CallGraph.CallGraphNode;
-import com.jopdesign.wcet.frontend.SourceAnnotations.BadAnnotationException;
-import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet.frontend.WcetAppInfo.MethodNotFoundException;
 import com.jopdesign.wcet.graphutils.MiscUtils;
 import com.jopdesign.wcet.ipet.IpetConfig;
@@ -143,12 +147,12 @@ public class Project {
 	private WcetAppInfo wcetAppInfo;
 	private CallGraph callGraph;
 
-	private Map<ClassInfo, SortedMap<Integer, LoopBound>> annotationMap;
+	private Map<ClassInfo, SourceAnnotations> annotationMap;
 
 	private boolean genWCETReport;
 	private Report results;
 	private ProcessorModel processor;
-	private SourceAnnotations sourceAnnotations;
+	private SourceAnnotationReader sourceAnnotations;
 	private File resultRecord;
 	private LinkerInfo linkerInfo;
 	private boolean hasDfaResults;
@@ -177,8 +181,14 @@ public class Project {
 				recordMetric("date",new Date());
 			}
 		}
-		if (projectConfig.getProcessorName().equals("alloc")) {
+		if (projectConfig.getProcessorName().equals("allocObjs")) {
+			this.processor = new ObjectAllocationModel(this);
+		} else if (projectConfig.getProcessorName().equals("allocHandles")) {
 			this.processor = new HandleAllocationModel(this);
+		} else if (projectConfig.getProcessorName().equals("allocHeaders")) {
+			this.processor = new HeaderAllocationModel(this);
+		} else if (projectConfig.getProcessorName().equals("allocBlocks")) {
+			this.processor = new BlockAllocationModel(this);
 		} else if(projectConfig.getProcessorName().equals("jamuth")) {
 		    this.processor = new JamuthModel(this);
 		} else {
@@ -292,8 +302,8 @@ public class Project {
 		AppInfo appInfo = loadApp();
 		wcetAppInfo = new WcetAppInfo(this,appInfo,processor);
 		/* Initialize annotation map */
-		annotationMap = new Hashtable<ClassInfo, SortedMap<Integer,LoopBound>>();
-		sourceAnnotations = new SourceAnnotations(this);
+		annotationMap = new Hashtable<ClassInfo, SourceAnnotations>();
+		sourceAnnotations = new SourceAnnotationReader(this);
 		linkerInfo = new LinkerInfo(this);
 		linkerInfo.loadLinkInfo();
 
@@ -321,10 +331,10 @@ public class Project {
 	 * @throws IOException
 	 * @throws BadAnnotationException
 	 */
-	public SortedMap<Integer, LoopBound> getAnnotations(ClassInfo cli) throws IOException, BadAnnotationException {
-		SortedMap<Integer, LoopBound> annots = this.annotationMap.get(cli);
+	public SourceAnnotations getAnnotations(ClassInfo cli) throws IOException, BadAnnotationException {
+		SourceAnnotations annots = this.annotationMap.get(cli);
 		if(annots == null) {
-			annots = sourceAnnotations.calculateWCA(cli);
+			annots = sourceAnnotations.readAnnotations(cli);
 			annotationMap.put(cli, annots);
 		}
 		return annots;
@@ -361,16 +371,17 @@ public class Project {
 	@SuppressWarnings("unchecked")
 	public void dataflowAnalysis() {
 		com.jopdesign.dfa.framework.DFAAppInfo program = getDfaProgram();
+		int callstringLength = (int)projectConfig.callstringLength();
 		topLevelLogger.info("Receiver analysis");
-		CallStringReceiverTypes recTys = new CallStringReceiverTypes((int)projectConfig.callstringLength());
+		CallStringReceiverTypes recTys = new CallStringReceiverTypes(callstringLength);
 		Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults =
 			program.runAnalysis(recTys);
 		
 		program.setReceivers(receiverResults);
-		wcetAppInfo.setReceivers(receiverResults);
+		wcetAppInfo.setReceivers(receiverResults, callstringLength);
 		
 		topLevelLogger.info("Loop bound analysis");
-		LoopBounds dfaLoopBounds = new LoopBounds((int)projectConfig.callstringLength());
+		LoopBounds dfaLoopBounds = new LoopBounds(callstringLength);
 		program.runAnalysis(dfaLoopBounds);
 		program.setLoopBounds(dfaLoopBounds);
 		this.hasDfaResults = true;
@@ -412,6 +423,7 @@ public class Project {
 	public File getOutFile(String file) {
 		return new File(projectConfig.getOutDir(),file);
 	}
+	
 	/** FIXME: Slow, caching is missing */
 	public int computeCyclomaticComplexity(MethodInfo m) {
 		ControlFlowGraph g = getFlowGraph(m);

@@ -31,12 +31,12 @@
 	<property name="usb" value="true"/>
 
 	<!-- com1 is the usual serial port -->
-	<condition property="com-port" value="COM1">
+	<condition property="com-port" value="/dev/ttyS0">
 	  <not> <istrue value="${usb}"/> </not>
 	</condition>
 
 	<!-- com6 is the FTDI VCOM for the USB download -->
-	<condition property="com-port" value="COM6">
+	<condition property="com-port" value="/dev/ttyUSB1">
 	  <istrue value="${usb}"/>
 	</condition>
 
@@ -86,7 +86,7 @@
 	<!-- <property name="qproj" value="cycfpu"/> -->
 	<!-- <property name="qproj" value="cyc256x16"/> -->
 	<!-- <property name="qproj" value="sopcmin"/> -->
-	<property name="qproj" value="usbmin"/> 
+	<property name="qproj" value="usb100"/> 
 	
 	<!-- Nelson uncomment this -->
 	<!-- <property name="qproj" value="cyc12baseio"/> -->
@@ -219,7 +219,7 @@
 		<dirset dir="${target}">
         	<include name="src/common"/>
         	<include name="src/jdk_base"/>
-        	<include name="src/jdk11"/>
+        	<include name="src/jdk16mod"/>
         	<include name="src/rtapi"/>
 		</dirset>
 		<path refid="target-app-source-path"/>
@@ -334,7 +334,8 @@
 	</target>
 
 	<target name="dfa" description="Run DFA on the target application">
-		<java classpathref="tools-cp" classname="com.jopdesign.dfa.Main">
+		<java classpathref="tools-cp" classname="com.jopdesign.dfa.Main" fork="true">
+			<jvmarg line="-Xms1650M -Xmx1650M -Xss16M" />
 			<arg line="-cp ${target}/dist/lib/classes.zip ${main-class}"/>
 		</java>
 	</target>
@@ -776,7 +777,7 @@
 		</java>
 	</target>
 
-    <property name="dataflow-analysis" value="false"/>
+    <property name="dataflow-analysis" value="true"/>
 	<target name="wcet" description="Benedikt's WCET analyser" depends="java-app">
 		<delete dir="${target}/wcet"/>
 		<mkdir dir="${target}/wcet"/>
@@ -790,7 +791,8 @@
 			<sysproperty key="reportdir" value="${target}/wcet"/>
 			<sysproperty key="dataflow-analysis" value="${dataflow-analysis}"/>
 			<sysproperty key="java.library.path" value=".:${java.library.path}"/>
-			<arg line="-app-class ${main-class} -target-method ${wcet-method}"/>
+			<jvmarg line="-Xms1550M -Xmx1550M -Xss8M" />
+			<arg line="-java-processor ${wcet-processor} -callstring-length 2 -jop-asm-file asm/generated/jvmusb.asm -program-dot /usr/bin/dot -app-class ${main-class} -target-method ${wcet-method}"/>
 		</java>
 	</target>
 

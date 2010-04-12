@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.Vector;
+import java.util.Map.Entry;
 
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.Instruction;
@@ -43,8 +44,9 @@ import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.Project.AnalysisError;
-import com.jopdesign.wcet.frontend.SourceAnnotations.BadAnnotationException;
-import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
+import com.jopdesign.wcet.annotations.BadAnnotationException;
+import com.jopdesign.wcet.annotations.LoopBound;
+import com.jopdesign.wcet.annotations.SourceAnnotations;
 import com.jopdesign.wcet.graphutils.TopOrder.BadGraphException;
 
 /**
@@ -70,9 +72,12 @@ public class WcetAppInfo  {
 	private AppInfo ai;
 	private Map<MethodInfo, ControlFlowGraph> cfgs;
 	private List<ControlFlowGraph> cfgsByIndex;
-	private Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverAnalysis = null;
+	
 	private ProcessorModel processor;
 	private Project project;
+
+	private Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverAnalysis = null;
+	private int dfaCallstringLength = 0;
 
 	public WcetAppInfo(Project p, com.jopdesign.build.AppInfo ai, ProcessorModel processor) {
 		this.project = p;
@@ -169,6 +174,7 @@ public class WcetAppInfo  {
 		if(refCi == null) throw new AssertionError("Failed class lookup (invoke target): "+classname);
 		return new MethodRef(refCi,methodname);
 	}
+
 	public MethodRef getReferenced(MethodInfo method, InvokeInstruction instr) {
 		return getReferenced(method.getCli(),instr);
 	}
@@ -215,27 +221,42 @@ public class WcetAppInfo  {
 	}
 
 	/**
-	 * Variant operating on an instruction handle and therefore capable of
-	 * using DFA analysis results.
-	 * @param invInstr
-	 * @return
+	 * Find Implementations of the method called with the given instruction handle
+	 * Uses receiver type analysis to refine the results
+	 * @param invokerM invoking method
+	 * @param ih the invoke instruction
+	 * @return list of possibly invoked methods
 	 */
 	public List<MethodInfo> findImplementations(MethodInfo invokerM, InstructionHandle ih) {
+		return findImplementations(invokerM, ih, CallString.EMPTY);
+	}
+	
+	/**
+	 * Find Implementations of the method called with the given instruction handle
+	 * Uses receiver type analysis to refine the results
+	 * @param invokerM invoking method
+	 * @param ih the invoke instruction
+	 * @param cs the call context
+	 * @return list of possibly invoked methods
+	 */
+	public List<MethodInfo> findImplementations(MethodInfo invokerM, InstructionHandle ih, CallString ctx) {
 		MethodRef ref = this.getReferenced(invokerM, (InvokeInstruction) ih.getInstruction());
 		List<MethodInfo> staticImpls = findImplementations(ref);
-		staticImpls = dfaReceivers(ih, staticImpls);
+		staticImpls = dfaReceivers(ih, staticImpls, ctx);
 		return staticImpls;
 	}
 
 	// TODO: [wcet-app-info] dfaReceivers() is rather slow, for debugging purposes
-	private List<MethodInfo> dfaReceivers(InstructionHandle ih, List<MethodInfo> staticImpls) {
+	private List<MethodInfo> dfaReceivers(InstructionHandle ih, List<MethodInfo> staticImpls, CallString ctx) {
 		if(this.receiverAnalysis != null && receiverAnalysis.containsKey(ih)) {
-			ContextMap<CallString, Set<String>> receivers = receiverAnalysis.get(ih);
-			Collection<Set<String>> receiverValues = receivers.values();
 			List<MethodInfo> dynImpls = new Vector<MethodInfo>();
 			Set<String> dynReceivers = new HashSet<String>();
-			for (Set<String> val : receiverValues) {
-				dynReceivers.addAll(val);
+
+			ContextMap<CallString, Set<String>> allReceivers = receiverAnalysis.get(ih);
+			for (Entry<CallString, Set<String>> e : allReceivers.entrySet()) {
+				if(e.getKey().hasSuffix(ctx)) {
+					dynReceivers.addAll(e.getValue());
+				}
 			}
 			for(MethodInfo impl : staticImpls) {
 				if(dynReceivers.contains(impl.getFQMethodName())) {
@@ -253,6 +274,7 @@ public class WcetAppInfo  {
 			return staticImpls;
 		}
 	}
+	
 	/* helper to avoid code dupl */
 	private void tryAddImpl(List<MethodInfo> ms, MethodInfo m) {
 		if(m != null) {
@@ -261,13 +283,20 @@ public class WcetAppInfo  {
 			}
 		}
 	}
+	
+	/** Return the maximal length of a sensible callstring */ 
+	public int getCallstringLength() {
+		return dfaCallstringLength;
+	}
 
 	public AppInfo getAppInfo() {
 		return this.ai;
 	}
+	
 	public ControlFlowGraph getFlowGraph(int id) {
 		return cfgsByIndex.get(id);
 	}
+	
 	public ControlFlowGraph getFlowGraph(MethodInfo m) {
 		if(cfgs.get(m) == null) {
 			try {
@@ -282,8 +311,9 @@ public class WcetAppInfo  {
 		}
 		return cfgs.get(m);
 	}
+
 	private ControlFlowGraph loadFlowGraph(MethodInfo method) throws BadAnnotationException, IOException, BadGraphException {
-		SortedMap<Integer,LoopBound> wcaMap = project.getAnnotations(method.getCli());
+		SourceAnnotations wcaMap = project.getAnnotations(method.getCli());
 		assert(wcaMap != null);
 		if(method.getCode() == null) {
 			throw new BadGraphException("No implementation of "+method.getFQMethodName()+" available for the target processor");
@@ -292,6 +322,10 @@ public class WcetAppInfo  {
 		try {
 			fg = new ControlFlowGraph(cfgsByIndex.size(),project,method);
 			fg.loadAnnotations(project);
+			/* Eliminate virtual invoke nodes.
+			 * FIXME: We should not depend on this one, as it does not work
+			 *        well with context-dependent receiver types
+			 */
 			fg.resolveVirtualInvokes();
 //			fg.insertSplitNodes();
 //			fg.insertSummaryNodes();
@@ -306,8 +340,10 @@ public class WcetAppInfo  {
 		}
 	}
 	public void setReceivers(
-			Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults) {
+			Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults,
+			int callstringLength) {
 		this.receiverAnalysis = receiverResults;
+		this.dfaCallstringLength  = callstringLength; 
 	}
 
 	public ProcessorModel getProcessorModel() {
@@ -317,6 +353,7 @@ public class WcetAppInfo  {
 	public MethodInfo getJavaImplementation(MethodInfo ctx, Instruction lastInstr) {
 		return this.processor.getJavaImplementation(this, ctx, lastInstr);
 	}
+
 
 }
 

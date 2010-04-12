@@ -29,7 +29,6 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.Vector;
 
 import org.apache.bcel.generic.INVOKEINTERFACE;
@@ -47,12 +46,14 @@ import com.jopdesign.dfa.analyses.Pair;
 import com.jopdesign.dfa.analyses.ValueMapping;
 import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.dfa.framework.ContextMap;
+import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.dfa.framework.HashedString;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.annotations.BadAnnotationException;
+import com.jopdesign.wcet.annotations.LoopBound;
+import com.jopdesign.wcet.annotations.SourceAnnotations;
 import com.jopdesign.wcet.frontend.BasicBlock.FlowInfo;
 import com.jopdesign.wcet.frontend.BasicBlock.FlowTarget;
-import com.jopdesign.wcet.frontend.SourceAnnotations.BadAnnotationException;
-import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet.graphutils.AdvancedDOTExporter;
 import com.jopdesign.wcet.graphutils.DefaultFlowGraph;
 import com.jopdesign.wcet.graphutils.FlowGraph;
@@ -191,6 +192,8 @@ public class ControlFlowGraph {
 		private MethodRef referenced;
 		private MethodInfo receiverImpl;
 		private ControlFlowGraph receiverFlowGraph;
+		private InvokeNode instantiatedFrom;
+
 		private InvokeNode(int blockIndex) {
 			super(blockIndex);
 		}
@@ -219,19 +222,26 @@ public class ControlFlowGraph {
 		}
 		/** Get all possible implementations of the invoked method */
 		public List<MethodInfo> getImplementedMethods() {
-			if(! isInterface()) {
+			return getImplementedMethods(CallString.EMPTY);
+		}
+
+		/** Get all possible implementations of the invoked method in
+		 *  the given context */
+		public List<MethodInfo> getImplementedMethods(CallString ctx) {
+			if(! isVirtual()) {
 				List<MethodInfo> impls = new Vector<MethodInfo>();
 				impls.add(getImplementedMethod());
 				return impls;
-			} else {
+			} else {				
 				return appInfo.findImplementations(this.invokerFlowGraph().getMethodInfo(),
-                        						   getInstructionHandle());
+                        						   getInstructionHandle(),
+                        						   ctx);
 			}
 		}
-
+		
 		/** For non-virtual methods, get the implementation of the method */
 		public ControlFlowGraph receiverFlowGraph() {
-			if(isInterface()) return null;
+			if(isVirtual()) return null;
 			if(this.receiverFlowGraph == null) {
 				this.receiverFlowGraph = appInfo.getFlowGraph(receiverImpl);
 			}
@@ -241,26 +251,42 @@ public class ControlFlowGraph {
 		public ControlFlowGraph invokerFlowGraph() {
 			return ControlFlowGraph.this;
 		}
+		
 		public MethodRef getReferenced() {
 			return referenced;
 		}
+		
 		/**
 		 * @return true if the invokation denotes an interface, not an implementation
 		 */
-		public boolean isInterface() {
+		public boolean isVirtual() {
 			return receiverImpl == null;
 		}
+		
+		/**
+		 * If this is the implementation of a virtual/interface invoke instruction,
+		 * return the InvokeNode for the virtual invoke instruction.
+		 * TODO: This can be removed, if we ever remove 
+		 * {@link ControlFlowGraph#resolveVirtualInvokes()}
+		 */
+		public InvokeNode getVirtualNode() {
+			if(this.instantiatedFrom != null) return this.instantiatedFrom;
+			else return this;
+		}
+		
 		/**
 		 * Create an implementation node from this node
 		 * @param impl the implementing method
+		 * @param virtual invoke node for the virtual method
 		 * @return
 		 */
-		public InvokeNode createImplNode(MethodInfo impl) {
+		public InvokeNode createImplNode(MethodInfo impl, InvokeNode virtual) {
 			InvokeNode n = new InvokeNode(this.getBlockIndex());
-			n.name = "invoke("+this.referenced+")";
+			n.name = "invoke("+impl.getFQMethodName()+")";
 			n.instr=this.instr;
 			n.referenced=this.referenced;
 			n.receiverImpl = impl;
+			n.instantiatedFrom = virtual;
 			return n;
 		}
 	}
@@ -306,11 +332,12 @@ public class ControlFlowGraph {
 		/**
 		 * @return true if the invokation denotes an interface, not an implementation
 		 */
-		public boolean isInterface() {
+		public boolean isVirtual() {
 			return receiverImpl == null;
 		}
+		
 		@Override
-		public InvokeNode createImplNode(MethodInfo impl) {
+		public InvokeNode createImplNode(MethodInfo impl, InvokeNode _) {
 			return this; /* no dynamic dispatch */
 		}
 	}
@@ -386,7 +413,7 @@ public class ControlFlowGraph {
 
 	/* annotations */
 	private Map<CFGNode, LoopBound> annotations;
-
+	
 	/* analysis stuff, needs to be reevaluated when graph changes */
 	private TopOrder<CFGNode, CFGEdge> topOrder = null;
 	private LoopColoring<CFGNode, CFGEdge> loopColoring = null;
@@ -511,7 +538,7 @@ public class ControlFlowGraph {
 	 * @throws BadAnnotationException if an annotations is missing
 	 */
 	public void loadAnnotations(Project p) throws BadAnnotationException {
-		SortedMap<Integer, LoopBound> wcaMap;
+		SourceAnnotations wcaMap;
 		try {
 			wcaMap = p.getAnnotations(this.methodInfo.getCli());
 		} catch (IOException e) {
@@ -524,14 +551,14 @@ public class ControlFlowGraph {
 			// search for loop annotation in range
 			int sourceRangeStart = BasicBlock.getLineNumber(block.getFirstInstruction());
 			int sourceRangeStop = BasicBlock.getLineNumber(block.getLastInstruction());
-			SortedMap<Integer,LoopBound> annots = wcaMap.subMap(sourceRangeStart, sourceRangeStop+1);
+			Collection<LoopBound> annots = wcaMap.annotationsForLineRange(sourceRangeStart, sourceRangeStop+1);
 			if(annots.size() > 1) {
 				String reason = "Ambigous Annotation [" + annots + "]";
 				throw new BadAnnotationException(reason,block,sourceRangeStart,sourceRangeStop);
 			}
 			LoopBound loopAnnot = null;
 			if(annots.size() == 1) {
-				loopAnnot = annots.get(annots.firstKey());
+				loopAnnot = annots.iterator().next();
 			}
 			// if we have loop bounds from DFA analysis, use them
 			loopAnnot = dfaLoopBound(block, CallString.EMPTY, loopAnnot);
@@ -539,19 +566,31 @@ public class ControlFlowGraph {
 // 				throw new BadAnnotationException("No loop bound annotation",
 // 												 block,sourceRangeStart,sourceRangeStop);
 				WcetAppInfo.logger.error("No loop bound annotation: "+methodInfo+":"+n+
-										 ".\nApproximating with 1024 words, but result is not safe anymore.");
-				loopAnnot = new LoopBound(0, 1024);
+										 ".\nApproximating with 1024, but result is not safe anymore.");
+				loopAnnot = new LoopBound(0L, 1024L);
 			}
 			this.annotations.put(headOfLoop,loopAnnot);
 		}
 	}
 
+	/**
+	 * Get a loop bound from the DFA for a certain loop and call string and
+	 * merge it with the annotated value.
+	 * @return The loop bound to be used for further computations
+	 */
 	private LoopBound dfaLoopBound(BasicBlock headOfLoopBlock, CallString cs, LoopBound annotatedValue) {
 		Project p = this.project;
 		LoopBound dfaBound;
 		if(p.getDfaLoopBounds() != null) {
 			LoopBounds lbs = p.getDfaLoopBounds();
-			int bound = lbs.getBound(p.getDfaProgram(), headOfLoopBlock.getLastInstruction(),cs);
+			// Insert a try-catch to deal with failures of the DFA analysis
+			int bound;
+			try {
+				bound = lbs.getBound(p.getDfaProgram(), headOfLoopBlock.getLastInstruction(),cs);
+			} catch(NullPointerException ex) {
+				ex.printStackTrace();
+				bound = -1;
+			}
 			if(bound < 0) {
 				WcetAppInfo.logger.info("No DFA bound for " + methodInfo+":"+this.getMethodInfo());
 				dfaBound = annotatedValue;
@@ -559,8 +598,9 @@ public class ControlFlowGraph {
 				WcetAppInfo.logger.info("Only DFA bound for "+methodInfo+":"+this.getMethodInfo());
 				dfaBound = LoopBound.boundedAbove(bound);
 			} else {
-				dfaBound = annotatedValue.improveUpperBound(bound); // More testing would be nice
-				int loopUb = annotatedValue.getUpperBound();
+				dfaBound = annotatedValue.clone();
+				dfaBound.improveUpperBound(bound); // More testing would be nice
+				long loopUb = annotatedValue.getUpperBound();
 				if(bound < loopUb) {
 					WcetAppInfo.logger.info("DFA analysis reports a smaller upper bound :"+bound+ " < "+loopUb+
 							" for "+methodInfo+":"+this.getMethodInfo());
@@ -578,6 +618,41 @@ public class ControlFlowGraph {
 	}
 	
 	/**
+	 * Get infeasible edges for certain call string
+	 * @return The infeasible edges
+	 */
+	public Vector<CFGEdge> getInfeasibleEdges(CallString cs) {
+		Vector<CFGEdge> edges = new Vector<CFGEdge>();
+		for (BasicBlock b : blocks) {
+			Vector<CFGEdge> edge = dfaInfeasibleEdge(b, cs);
+			edges.addAll(edge);
+		}
+		return edges;
+	}
+	
+	/**
+	 * Get infeasible edges for certain basic block call string
+	 * @return The infeasible edges for this basic block
+	 */
+	private Vector<CFGEdge> dfaInfeasibleEdge(BasicBlock block, CallString cs) {
+		Project p = this.project;
+		Vector<CFGEdge> retval = new Vector<CFGEdge>();
+		if (p.getDfaLoopBounds() != null) {
+			LoopBounds lbs = p.getDfaLoopBounds();
+			Set<FlowEdge> edges = lbs.getInfeasibleEdges(block.getLastInstruction(), cs);
+			for (FlowEdge e : edges) {
+				BasicBlockNode head = BasicBlock.getHandleNode(e.getHead());
+				BasicBlockNode tail = BasicBlock.getHandleNode(e.getTail());
+				CFGEdge edge = this.graph.getEdge(tail, head);
+				if (edge != null) { // edge does not seem to exist any longer
+					retval.add(edge);
+				}
+			}
+		};
+		return retval;
+	}
+	
+	/**
 	 * resolve all virtual invoke nodes, and replace them by actual implementations
 	 * @throws BadGraphException If the flow graph analysis (post replacement) fails
 	 */
@@ -587,7 +662,7 @@ public class ControlFlowGraph {
 		for(CFGNode n : this.graph.vertexSet()) {
 			if(n instanceof InvokeNode) {
 				InvokeNode in = (InvokeNode) n;
-				if(in.isInterface()) {
+				if(in.isVirtual()) {
 					virtualInvokes.add(in);
 				}
 			}
@@ -598,7 +673,7 @@ public class ControlFlowGraph {
 				appInfo.findImplementations(this.methodInfo,inv.getInstructionHandle());
 			if(impls.size() == 0) internalError("No implementations for "+inv.referenced);
 			if(impls.size() == 1) {
-				InvokeNode implNode = inv.createImplNode(impls.get(0));
+				InvokeNode implNode = inv.createImplNode(impls.get(0), inv);
 				graph.addVertex(implNode);
 				for(CFGEdge inEdge : graph.incomingEdgesOf(inv)) {
 					graph.addEdge(graph.getEdgeSource(inEdge), implNode, new CFGEdge(inEdge.kind));
@@ -618,7 +693,7 @@ public class ControlFlowGraph {
 					graph.addEdge(join, graph.getEdgeTarget(outEdge), new CFGEdge(outEdge.kind));
 				}
 				for(MethodInfo impl : impls) {
-					InvokeNode implNode = inv.createImplNode(impl);
+					InvokeNode implNode = inv.createImplNode(impl, inv);
 					graph.addVertex(implNode);
 					graph.addEdge(split,implNode, new CFGEdge(EdgeKind.DISPATCH_EDGE));
 					graph.addEdge(implNode,join, new CFGEdge(EdgeKind.RETURN_EDGE));

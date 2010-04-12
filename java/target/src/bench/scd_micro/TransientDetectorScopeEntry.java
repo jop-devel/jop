@@ -1,5 +1,6 @@
 package scd_micro;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -26,9 +27,10 @@ public class TransientDetectorScopeEntry implements Runnable {
 
 	public void run() {
 
-		if (Constants.SYNCHRONOUS_DETECTOR || Constants.DEBUG_DETECTOR) {
-			dumpFrame("CD-PROCESSING-FRAME (indexed as received): ");
-		}
+		// not executed
+//		if (Constants.SYNCHRONOUS_DETECTOR || Constants.DEBUG_DETECTOR) {
+//			dumpFrame("CD-PROCESSING-FRAME (indexed as received): ");
+//		}
 
 		final Reducer reducer = new Reducer(voxelSize);
 		final List collisions = lookForCollisions(reducer, createMotions());
@@ -37,26 +39,26 @@ public class TransientDetectorScopeEntry implements Runnable {
 		if (ImmortalEntry.recordedRuns < ImmortalEntry.maxDetectorRuns) {
 			ImmortalEntry.detectedCollisions[ ImmortalEntry.recordedRuns  ] = numberOfCollisions;
 		}
-
-		if (Constants.SYNCHRONOUS_DETECTOR || Constants.DEBUG_DETECTOR) {
-			System.out.println("CD detected  "+numberOfCollisions+" collisions.");
-			int colIndex = 0;
-
-			for(final Iterator iter = collisions.iterator(); iter.hasNext();) {
-				Collision col = (Collision) iter.next();
-				List aircraft = col.getAircraftInvolved();
-				System.out.println("CD collision "+colIndex+" occured at location "+col.getLocation() + " with "+aircraft.size()+" involved aircraft.");
-
-				for(final Iterator aiter = aircraft.iterator(); aiter.hasNext();) {
-					Aircraft a = (Aircraft) aiter.next();
-
-					System.out.println("CD collision "+colIndex+" includes aircraft "+a);
-				}
-				colIndex++;
-			}
-
-			System.out.println("");
-		}
+		// not executed
+//		if (Constants.SYNCHRONOUS_DETECTOR || Constants.DEBUG_DETECTOR) {
+//			System.out.println("CD detected  "+numberOfCollisions+" collisions.");
+//			int colIndex = 0;
+//
+//			for(final Iterator iter = collisions.iterator(); iter.hasNext();) {
+//				Collision col = (Collision) iter.next();
+//				List aircraft = col.getAircraftInvolved();
+//				System.out.println("CD collision "+colIndex+" occured at location "+col.getLocation() + " with "+aircraft.size()+" involved aircraft.");
+//
+//				for(final Iterator aiter = aircraft.iterator(); aiter.hasNext();) {
+//					Aircraft a = (Aircraft) aiter.next();
+//
+//					System.out.println("CD collision "+colIndex+" includes aircraft "+a);
+//				}
+//				colIndex++;
+//			}
+//
+//			System.out.println("");
+//		}
 		/*
 		if (Constants.SYNCHRONOUS_DETECTOR) {
 			FrameSynchronizer.consumeFrame();        
@@ -64,31 +66,33 @@ public class TransientDetectorScopeEntry implements Runnable {
 		*/
 	}
 
-	public List lookForCollisions(final Reducer reducer, final List motions) {
-		final List check = reduceCollisionSet(reducer, motions);
+	public List<Collision> lookForCollisions(final Reducer reducer, final List<Motion> motions) {
+		final LinkedList<ArrayList<Motion>> check = reduceCollisionSet(reducer, motions);
 		final CollisionCollector c = new CollisionCollector();
 
 		int suspectedSize = check.size();
 		if (ImmortalEntry.recordedRuns < ImmortalEntry.maxDetectorRuns) {
 			ImmortalEntry.suspectedCollisions[ ImmortalEntry.recordedRuns  ] = suspectedSize;
 		}
-		if ((Constants.SYNCHRONOUS_DETECTOR || Constants.DEBUG_DETECTOR) && !check.isEmpty()) {
-			System.out.println("CD found "+suspectedSize+" potential collisions");
-			int i=0;
-			for(final Iterator iter = check.iterator(); iter.hasNext();) {
-				final List col = (List)iter.next();
+		// not executed
+//		if ((Constants.SYNCHRONOUS_DETECTOR || Constants.DEBUG_DETECTOR) && !check.isEmpty()) {
+//			System.out.println("CD found "+suspectedSize+" potential collisions");
+//			int i=0;
+//			for(final Iterator<ArrayList<Motion>> iter = check.iterator(); iter.hasNext();) {
+//				final ArrayList<Motion> col = iter.next();
+//
+//				for(final Iterator<Motion> aiter = col.iterator(); aiter.hasNext();) {
+//					final Motion m = aiter.next();
+//
+//					System.out.println("CD: potential collision "+i+" (of "+col.size()+" aircraft) includes motion "+m);
+//				}
+//				i++;            
+//			}
+//		}
 
-				for(final Iterator aiter = col.iterator(); aiter.hasNext();) {
-					final Motion m = (Motion)aiter.next();
-
-					System.out.println("CD: potential collision "+i+" (of "+col.size()+" aircraft) includes motion "+m);
-				}
-				i++;            
-			}
+		for (final Iterator<ArrayList<Motion>> iter = check.iterator(); iter.hasNext();) { //@WCA loop<=100
+			c.addCollisions(determineCollisions(iter.next()));
 		}
-
-		for (final Iterator iter = check.iterator(); iter.hasNext();)
-			c.addCollisions(determineCollisions((List) iter.next()));
 		return c.getCollisions();
 	}
 
@@ -96,28 +100,31 @@ public class TransientDetectorScopeEntry implements Runnable {
 	 * Takes a List of Motions and returns an List of Lists of Motions, where the inner lists implement RandomAccess.
 	 * Each Vector of Motions that is returned represents a set of Motions that might have collisions.
 	 */
-	public List reduceCollisionSet(final Reducer it, final List motions) {
+	public LinkedList<ArrayList<Motion>> reduceCollisionSet(final Reducer it, final List<Motion> motions) {
 
-		final HashMap voxel_map = new HashMap();
-		final HashMap graph_colors = new HashMap();
+		final HashMap<Vector2d, ArrayList<Motion>> voxel_map =
+			new HashMap<Vector2d, ArrayList<Motion>>(Constants.MAX_VOXELS_PER_LINE_SEGMENT_POW2);
+		final HashMap<Vector2d, String> graph_colors =
+			new HashMap<Vector2d, String>(Constants.MAX_VOXELS_PER_LINE_SEGMENT_POW2);
+                                                                                //           MAX_PLANES
+		for (final Iterator<Motion> iter = motions.iterator(); iter.hasNext();) //@WCA loop<=10
+			it.performVoxelHashing(iter.next(), voxel_map, graph_colors);
 
-		for (final Iterator iter = motions.iterator(); iter.hasNext();)
-			it.performVoxelHashing((Motion) iter.next(), voxel_map, graph_colors);
-
-		final List ret = new LinkedList();
-		for (final Iterator iter = voxel_map.values().iterator(); iter.hasNext();) {
-			final List cur_set = (List) iter.next();
+		final LinkedList<ArrayList<Motion>> ret = new LinkedList<ArrayList<Motion>>();                  //           MAX_VOXELS_PER_LINE_SEGMENT
+		for (final Iterator<ArrayList<Motion>> iter = voxel_map.values().iterator(); iter.hasNext();) { //@WCA loop<=100
+			final ArrayList<Motion> cur_set = iter.next();
 			if (cur_set.size() > 1) ret.add(cur_set);
 		}
 		return ret;
 	}
 
-	public List determineCollisions(final List motions) {
-		final List ret = new LinkedList();
-		for (int i = 0; i < motions.size() - 1; i++) {
-			final Motion one = (Motion) motions.get(i);
-			for (int j = i + 1; j < motions.size(); j++) {
-				final Motion two = (Motion) motions.get(j);
+	public List<Collision> determineCollisions(final List<Motion> motions) {
+		final List<Collision> ret = new LinkedList<Collision>();
+		for (int i = 0; i < motions.size() - 1; i++) { //@WCA loop<=10
+			final Motion one = motions.get(i);
+			for (int j = i + 1; j < motions.size(); j++) { //@WCA loop<=10
+				// We get her 3555 times
+				final Motion two = motions.get(j);
 				final Vector3d vec = one.findIntersection(two);
 				if (vec != null) ret.add(new Collision(one.getAircraft(), two.getAircraft(), vec));
 			}
@@ -129,7 +136,7 @@ public class TransientDetectorScopeEntry implements Runnable {
 
 		String prefix = debugPrefix + frameno + " ";
 		int offset = 0;
-		for (int i=0;i<currentFrame.planeCnt;i++) {
+		for (int i=0;i<currentFrame.planeCnt;i++) { //@WCA loop<=10
 
 			int cslen = currentFrame.lengths[i];
 			System.out.println(prefix+new String( currentFrame.callsigns, offset, cslen )+" "+
@@ -165,15 +172,15 @@ public class TransientDetectorScopeEntry implements Runnable {
 	 * 
 	 * @return
 	 */
-	public List createMotions() {
+	public List<Motion> createMotions() {
 
-		final List ret = new LinkedList();
-		final HashSet poked = new HashSet();
+		final List<Motion> ret = new LinkedList<Motion>();
+		final HashSet<Aircraft> poked = new HashSet<Aircraft>(RawFrame.MAX_PLANES_POW2);
 
 		Aircraft craft;
 		Vector3d new_pos;
 
-		for (int i = 0, pos = 0; i < currentFrame.planeCnt; i++) {
+		for (int i = 0, pos = 0; i < currentFrame.planeCnt; i++) { //@WCA loop<=10
 
 			final float x = currentFrame.positions[3*i], y = currentFrame.positions[3*i + 1], z = currentFrame.positions[3*i + 2];
 			final byte[] cs = new byte[currentFrame.lengths[i]];

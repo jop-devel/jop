@@ -42,7 +42,7 @@ public class Main {
 	private static final String POINTS_TO_TARGET = "cmp.EjipBenchCMP.macServer()V";
 //	private static final String POINTS_TO_TARGET = "ejip.Ejip.returnPacket(Lejip/Packet;)V";
 
-	private static final int CALLSTRING_LENGTH = 2;
+	private static final int CALLSTRING_LENGTH = 1;
 	
 	public static void main(String[] args) {
 		
@@ -79,6 +79,7 @@ public class Main {
 		program.setLoopBounds(lb);
 		long lbTime = System.currentTimeMillis();
 		
+		lb.printInfeasibles(program);
 		lb.printResult(program);				
 		lb.printSizeResult(program);
 		

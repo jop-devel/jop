@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.annotations.LoopBound;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
@@ -16,7 +17,6 @@ import com.jopdesign.wcet.frontend.ControlFlowGraph.CfgVisitor;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.DedicatedNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.SummaryNode;
-import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet.graphutils.ProgressMeasure;
 import com.jopdesign.wcet.graphutils.ProgressMeasure.RelativeProgress;
 
@@ -37,11 +37,12 @@ public class TreeAnalysis {
 
 		@Override
 		public void visitInvokeNode(InvokeNode n) {
+			MethodInfo method = n.getImplementedMethod();			
 			visitBasicBlockNode(n);
 			cost.addCacheCost(project.getProcessorModel().getInvokeReturnMissCost(
 					n.invokerFlowGraph(),
 					n.receiverFlowGraph()));
-			cost.addNonLocalCost(methodWCET.get(n.getImplementedMethod()));
+			cost.addNonLocalCost(methodWCET.get(method));
 		}
 
 		@Override
@@ -62,7 +63,8 @@ public class TreeAnalysis {
 		}
 
 		public void visitInvokeNode(InvokeNode n) {
-			progress = 1 + subProgress.get(n.getImplementedMethod());
+			long invokedProgress = subProgress.get(n.getImplementedMethod());
+			progress = 1 + invokedProgress;
 		}
 
 		public void visitSpecialNode(DedicatedNode n) {
@@ -124,8 +126,8 @@ public class TreeAnalysis {
 		return this.maxProgress.get(mi);
 	}
 
-	private Map<CFGNode, Integer> extractUBs(Map<CFGNode, LoopBound> loopBounds) {
-		Map<CFGNode, Integer> ubMap = new HashMap<CFGNode, Integer>();
+	private Map<CFGNode, Long> extractUBs(Map<CFGNode, LoopBound> loopBounds) {
+		Map<CFGNode, Long> ubMap = new HashMap<CFGNode, Long>();
 		for(Entry<CFGNode, LoopBound> entry : loopBounds.entrySet()) {
 			ubMap.put(entry.getKey(),entry.getValue().getUpperBound());
 		}

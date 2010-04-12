@@ -22,6 +22,7 @@ package com.jopdesign.dfa.analyses;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -90,6 +91,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 	private Map<InstructionHandle, ContextMap<CallString, Pair<ValueMapping>>> bounds = new LinkedHashMap<InstructionHandle, ContextMap<CallString, Pair<ValueMapping>>>();
 	private Map<InstructionHandle, ContextMap<CallString, Integer>> scopes = new HashMap<InstructionHandle, ContextMap<CallString, Integer>>();
 	private Map<InstructionHandle, ContextMap<CallString, Interval[]>> sizes = new LinkedHashMap<InstructionHandle, ContextMap<CallString, Interval[]>>();
+	private Map<InstructionHandle, ContextMap<CallString, Set<FlowEdge>>> infeasibles = new HashMap<InstructionHandle, ContextMap<CallString, Set<FlowEdge>>>();
+	
 
 	private Map<InstructionHandle, ContextMap<CallString, Interval>> arrayIndices =
 		new HashMap<InstructionHandle, ContextMap<CallString, Interval>>();
@@ -116,30 +119,35 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 		Map<Location, ValueMapping> a = s1.get(s2.getContext().callString);
 		Map<Location, ValueMapping> b = s2.get(s2.getContext().callString);
 
-		if (a == null) {
-			a = new HashMap<Location, ValueMapping>();
-		}
-
-		Map<Location, ValueMapping> merged = new HashMap<Location, ValueMapping>(a);
-		
-		for (Iterator<Location> i = b.keySet().iterator(); i.hasNext(); ) {
-			Location l = i.next();
-			ValueMapping x = a.get(l);
-			ValueMapping y = b.get(l);
-			if (x != null) {
-				if (!x.equals(y)) {
-					ValueMapping r = new ValueMapping(x, true);
-					r.join(y);
-					merged.put(l, r);
-				} else {
-					merged.put(l, x);
-				}
-			} else {
-				merged.put(l, y);
+		if (a != null || b != null) {
+			if (a == null) {
+				a = new HashMap<Location, ValueMapping>();
 			}
-		}
+			if (b == null) {
+				b = new HashMap<Location, ValueMapping>();
+			}
+
+			Map<Location, ValueMapping> merged = new HashMap<Location, ValueMapping>(a);
 		
-		result.put(s2.getContext().callString, merged);		
+			for (Iterator<Location> i = b.keySet().iterator(); i.hasNext(); ) {
+				Location l = i.next();
+				ValueMapping x = a.get(l);
+				ValueMapping y = b.get(l);
+				if (x != null) {
+					if (!x.equals(y)) {
+						ValueMapping r = new ValueMapping(x, true);
+						r.join(y);
+						merged.put(l, r);
+					} else {
+						merged.put(l, x);
+					}
+				} else {
+					merged.put(l, y);
+				}
+			}
+		
+			result.put(s2.getContext().callString, merged);
+		}
 		
 		if (result.getContext().stackPtr < 0) {
 			result.getContext().stackPtr = s2.getContext().stackPtr;
@@ -158,15 +166,16 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			return false;
 		}
 
-		if (!s1.getContext().equals(s2.getContext())) {
-			
+		if (!s1.getContext().equals(s2.getContext())) {			
 			return false;
-			
 		} else {
 			
 			Map<Location, ValueMapping> a = s1.get(s1.getContext().callString);
 			Map<Location, ValueMapping> b = s2.get(s1.getContext().callString);
 			
+			if (a == null && b == null) {
+				return true;
+			}
 			if (a == null || b == null) {
 				return false;
 			}
@@ -190,12 +199,19 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
 		Context context = new Context(input.getContext());
 		Map<Location, ValueMapping> in = (Map<Location, ValueMapping>)input.get(context.callString);
+				
 		ContextMap<CallString, Map<Location, ValueMapping>> retval = new ContextMap<CallString, Map<Location, ValueMapping>>(context, new HashMap<CallString, Map<Location, ValueMapping>>());
+
+		Instruction instruction = stmt.getInstruction();
+
+ 		// shortcut for infeasible paths
+		if (in == null) {
+			context.stackPtr += instruction.produceStack(context.constPool) - instruction.consumeStack(context.constPool);			
+			return retval;
+		}
 
 		Map<Location, ValueMapping> result = new HashMap<Location, ValueMapping>();
 		retval.put(context.callString, result);		
-
-		Instruction instruction = stmt.getInstruction();
 
 // 		System.out.println(context.method+": "+stmt);
 // 		System.out.println("###"+context.stackPtr+" + "+instruction.produceStack(context.constPool)+" - "+instruction.consumeStack(context.constPool));		
@@ -294,6 +310,15 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			retval.put(context.callString, result);
 			break;	
 
+		case Constants.LSTORE_0:
+		case Constants.LSTORE_1:
+		case Constants.LSTORE_2:
+		case Constants.LSTORE_3:
+		case Constants.LSTORE:
+			// drop top entries to avoid clobbering
+			filterSet(in, result, context.stackPtr-2);
+			break;
+			
 		case Constants.ILOAD_0:
 		case Constants.ILOAD_1:
 		case Constants.ILOAD_2:
@@ -329,14 +354,18 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			Set<String> receivers = p.getReceivers(stmt, context.callString);
 			Location location = new Location(context.stackPtr-1); 
 			boolean valid = false;
-			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
-				String arrayName = i.next();
-				ValueMapping m = in.get(new Location(arrayName+".length"));
-				if (m != null) {
-					ValueMapping value = new ValueMapping(m, false);
-					value.join(result.get(location));
-					result.put(location, value);
-					valid = true;
+			if (receivers == null) {
+				System.out.println("no receivers at: "+context.callString.asList()+context.method+stmt);
+			} else {
+				for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
+					String arrayName = i.next();
+					ValueMapping m = in.get(new Location(arrayName+".length"));
+					if (m != null) {
+						ValueMapping value = new ValueMapping(m, false);
+						value.join(result.get(location));
+						result.put(location, value);
+						valid = true;
+					}
 				}
 			}
 			if (!valid) {	
@@ -377,7 +406,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 				if (p.containsField(strippedName)) {
 					for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
 						Location l = k.next();
-						if (!receivers.contains(l.heapLoc)) {
+						if (l.stackLoc < 0 && !receivers.contains(l.heapLoc)) {
 							result.put(l, in.get(l));
 						}
 						if (l.stackLoc == context.stackPtr-1) {
@@ -399,27 +428,31 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
 			Location location = new Location(context.stackPtr-1);
 			boolean valid = false;
-			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
-				String fieldName = i.next();
+			if (receivers == null) {
+				System.out.println("no receivers at: "+context.callString.asList()+context.method+stmt);
+			} else {
+				for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
+					String fieldName = i.next();
 
-				String f = fieldName.substring(fieldName.lastIndexOf("."), fieldName.length());
-				String strippedName;
-				if (fieldName.indexOf("@") >= 0) {
-					strippedName = fieldName.split("@")[0] + f;
-				} else {
-					strippedName = fieldName;
-				}
+					String f = fieldName.substring(fieldName.lastIndexOf("."), fieldName.length());
+					String strippedName;
+					if (fieldName.indexOf("@") >= 0) {
+						strippedName = fieldName.split("@")[0] + f;
+					} else {
+						strippedName = fieldName;
+					}
 
-//					System.out.println(fieldName+" vs "+strippedName);
+					//					System.out.println(fieldName+" vs "+strippedName);
 
-				if (p.containsField(strippedName)) {
-					for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
-						Location l = k.next();
-						if (l.heapLoc.equals(fieldName)) {
-							ValueMapping value = new ValueMapping(in.get(l), false);
-							value.join(result.get(location));
-							result.put(location, value);
-							valid = true;
+					if (p.containsField(strippedName)) {
+						for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
+							Location l = k.next();
+							if (l.heapLoc.equals(fieldName)) {
+								ValueMapping value = new ValueMapping(in.get(l), false);
+								value.join(result.get(location));
+								result.put(location, value);
+								valid = true;
+							}
 						}
 					}
 				}
@@ -560,7 +593,11 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 		
 		case Constants.AALOAD: {
 			ValueMapping v = in.get(new Location(context.stackPtr-1));
-			recordArrayIndex(stmt, context, v.assigned);
+			if (v == null) {
+				System.out.println("no value at: "+context.callString.asList()+context.method+stmt);
+			} else {
+				recordArrayIndex(stmt, context, v.assigned);
+			}
 			filterSet(in, result, context.stackPtr-2);
 		}
 		break;
@@ -704,7 +741,21 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 					ValueMapping m = new ValueMapping(in.get(l), true);
 					m.assigned.sub(operand);
 					m.constrained.sub(operand);
-					m.increment = new Interval();
+					operand.neg(); // decrement rather than increment
+					if (m.increment != null && !m.softinc) {
+						m.increment.join(operand);
+					} else if (m.increment != null && m.softinc) {
+						if ((m.increment.getLb() < 0 && operand.getUb() > 0)
+								|| (m.increment.getUb() > 0 && operand.getLb() < 0)) {
+							m.increment.join(operand);
+						} else {
+							m.increment = operand;
+						}
+						m.softinc = false;
+					} else {						
+						m.increment = operand;
+						m.softinc = false;
+					}
 					result.put(l, m);
 				}
 			}			
@@ -797,10 +848,32 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 		}
 		break;
 
+		case Constants.IDIV: {
+			Interval operand = new Interval();
+			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
+				Location l = i.next();
+				if (l.stackLoc == context.stackPtr-1) {
+					operand = in.get(l).assigned;
+				}
+			}			
+			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
+				Location l = i.next();
+				if (l.stackLoc < context.stackPtr-2) {
+					result.put(l, in.get(l));	
+				} else if (l.stackLoc == context.stackPtr-2) {
+					ValueMapping m = new ValueMapping(in.get(l), true);
+					m.assigned.div(operand);
+					m.constrained.div(operand);
+					m.increment = new Interval();
+					result.put(l, m);
+				}
+			}			
+		}
+		break;
+
 		case Constants.IAND:
 		case Constants.IOR:
 		case Constants.IXOR:
-		case Constants.IDIV: 
 		case Constants.IREM:
 		case Constants.ISHL: {
 			// TODO: we could be more clever for some operations 
@@ -978,7 +1051,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 		case Constants.IFLE:
 		case Constants.IFGT:
 			checkScope(context, stmt);
-			doIf(stmt, edge, context, in, result);
+			result = doIf(stmt, edge, context, in, result);
+			retval.put(context.callString, result);
 			break;
 
 		case Constants.IF_ICMPEQ:
@@ -988,7 +1062,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 		case Constants.IF_ICMPGT:
 		case Constants.IF_ICMPLE:
 			checkScope(context, stmt);
-			doIfIcmp(stmt, edge, context, in, result);
+			result = doIfIcmp(stmt, edge, context, in, result);
+			retval.put(context.callString, result);
 			break;
 
 		case Constants.LOOKUPSWITCH:
@@ -1048,7 +1123,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 //			}
 //		}
 //		System.out.println("}");
-		
+				
 		context.stackPtr += instruction.produceStack(context.constPool) - instruction.consumeStack(context.constPool);
 		return retval;
 	}
@@ -1081,7 +1156,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 		}
 	}
 
-	private void doIf(InstructionHandle stmt, FlowEdge edge, Context context,
+	private Map<Location, ValueMapping> doIf(InstructionHandle stmt, FlowEdge edge, Context context,
 			Map<Location, ValueMapping> in,	Map<Location, ValueMapping> result) {
 		
 		// copy input values
@@ -1092,17 +1167,22 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			}
 		}
 		// apply constraint
-		for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
+		loop: for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 			Location l = i.next(); 
-			if (l.stackLoc == context.stackPtr-1 && in.get(l).source != null) {
+			if (l.stackLoc == context.stackPtr-1) {
 			
 				ValueMapping m = new ValueMapping(in.get(l), true);
 				
 				switch(stmt.getInstruction().getOpcode()) {
 				case Constants.IFEQ:				
-					if (edge.getType() == FlowEdge.FALSE_EDGE) {
+					if (edge.getType() == FlowEdge.FALSE_EDGE) {						
 						// != 0 cannot be expressed as interval
-						// TODO: mark paths infeasible if appropriate
+						// but we can check infeasibility
+						if (m.assigned.getUb() == 0 && m.assigned.getLb() == 0) {
+							recordInfeasible(stmt, context, edge);
+							result = null;
+							break loop;
+						}
 					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
 						m.constrained.setLb(0);
 						m.constrained.setUb(0);
@@ -1114,7 +1194,12 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 						m.constrained.setUb(0);
 					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {						
 						// != 0 cannot be expressed as interval
-						// TODO: mark paths infeasible if appropriate
+						// but we can check infeasibility
+						if (m.assigned.getUb() == 0 && m.assigned.getLb() == 0) {
+							recordInfeasible(stmt, context, edge);
+							result = null;
+							break loop;
+						}
 					}
 					break;
 				case Constants.IFLT:
@@ -1150,10 +1235,12 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
 				if (m.assigned.getLb() > m.constrained.getUb()
 						|| m.assigned.getUb() < m.constrained.getLb()) {
-					//System.out.println("infeasible condition: "+m);
-					//retval.clear();
-					//break;
+					recordInfeasible(stmt, context, edge);
+					result = null;
+					break;
 				}
+				
+				removeInfeasible(stmt, context, edge);
 				
 				m.assigned.constrain(m.constrained);
 
@@ -1162,12 +1249,17 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 				m.softinc = true;
 									
 				// TODO: is this really correct for all cases?
-				result.put(in.get(l).source, m);
+				if (in.get(l).source != null) {
+					result.put(in.get(l).source, m);
+				}
 			}
 		}
+		
+		return result;
 	}
 	
-	private void doIfIcmp(InstructionHandle stmt, FlowEdge edge, Context context, Map<Location, ValueMapping> in, Map<Location, ValueMapping> result) {
+	private Map<Location, ValueMapping> doIfIcmp(InstructionHandle stmt, FlowEdge edge, Context context,
+			Map<Location, ValueMapping> in, Map<Location, ValueMapping> result) {
 		// search for constraining value
 		Interval constraint = null;
 		for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
@@ -1190,85 +1282,89 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			
 				ValueMapping m = new ValueMapping(in.get(l), true);
 				
-				switch(stmt.getInstruction().getOpcode()) {
-				case Constants.IF_ICMPEQ:				
-					if (edge.getType() == FlowEdge.FALSE_EDGE) {
-						// != Interval not expressable as Interval
-						// TODO: mark paths infeasible if appropriate
-					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
-						if (constraint.hasLb()) {
-							m.constrained.setLb(constraint.getLb());
+				if (constraint != null) {
+					switch(stmt.getInstruction().getOpcode()) {
+					case Constants.IF_ICMPEQ:				
+						if (edge.getType() == FlowEdge.FALSE_EDGE) {
+							// != Interval not expressable as Interval
+							// TODO: mark paths infeasible if appropriate
+						} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
+							if (constraint.hasLb()) {
+								m.constrained.setLb(constraint.getLb());
+							}
+							if (constraint.hasUb()) {
+								m.constrained.setUb(constraint.getUb());
+							}
 						}
-						if (constraint.hasUb()) {
-							m.constrained.setUb(constraint.getUb());
+						break;
+					case Constants.IF_ICMPNE:				
+						if (edge.getType() == FlowEdge.FALSE_EDGE) {
+							if (constraint.hasLb()) {
+								m.constrained.setLb(constraint.getLb());
+							}
+							if (constraint.hasUb()) {
+								m.constrained.setUb(constraint.getUb());
+							}
+						} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
+							// != Interval not expressable as Interval
+							// TODO: mark paths infeasible if appropriate
 						}
+						break;
+					case Constants.IF_ICMPLT:
+						if (edge.getType() == FlowEdge.FALSE_EDGE) {
+							if (constraint.hasLb()) {
+								m.constrained.setLb(constraint.getLb());
+							}
+						} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
+							if (constraint.hasUb()) {
+								m.constrained.setUb(constraint.getUb()-1);
+							}
+						}
+						break;
+					case Constants.IF_ICMPGE:
+						if (edge.getType() == FlowEdge.FALSE_EDGE) {
+							if (constraint.hasUb()) {
+								m.constrained.setUb(constraint.getUb()-1);
+							}
+						} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
+							if (constraint.hasLb()) {
+								m.constrained.setLb(constraint.getLb());
+							}
+						}
+						break;
+					case Constants.IF_ICMPGT:
+						if (edge.getType() == FlowEdge.FALSE_EDGE) {
+							if (constraint.hasUb()) {
+								m.constrained.setUb(constraint.getUb());
+							}
+						} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
+							if (constraint.hasLb()) {
+								m.constrained.setLb(constraint.getLb()+1);
+							}
+						}
+						break;
+					case Constants.IF_ICMPLE:
+						if (edge.getType() == FlowEdge.FALSE_EDGE) {
+							if (constraint.hasLb()) {
+								m.constrained.setLb(constraint.getLb()-1);
+							}
+						} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
+							if (constraint.hasUb()) {
+								m.constrained.setUb(constraint.getUb());
+							}
+						}
+						break;
 					}
-					break;
-				case Constants.IF_ICMPNE:				
-					if (edge.getType() == FlowEdge.FALSE_EDGE) {
-						if (constraint.hasLb()) {
-							m.constrained.setLb(constraint.getLb());
-						}
-						if (constraint.hasUb()) {
-							m.constrained.setUb(constraint.getUb());
-						}
-					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
-						// != Interval not expressable as Interval
-						// TODO: mark paths infeasible if appropriate
-					}
-					break;
-				case Constants.IF_ICMPLT:
-					if (edge.getType() == FlowEdge.FALSE_EDGE) {
-						if (constraint.hasLb()) {
-							m.constrained.setLb(constraint.getLb());
-						}
-					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
-						if (constraint.hasUb()) {
-							m.constrained.setUb(constraint.getUb()-1);
-						}
-					}
-					break;
-				case Constants.IF_ICMPGE:
-					if (edge.getType() == FlowEdge.FALSE_EDGE) {
-						if (constraint.hasUb()) {
-							m.constrained.setUb(constraint.getUb()-1);
-						}
-					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
-						if (constraint.hasLb()) {
-							m.constrained.setLb(constraint.getLb());
-						}
-					}
-					break;
-				case Constants.IF_ICMPGT:
-					if (edge.getType() == FlowEdge.FALSE_EDGE) {
-						if (constraint.hasUb()) {
-							m.constrained.setUb(constraint.getUb());
-						}
-					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
-						if (constraint.hasLb()) {
-							m.constrained.setLb(constraint.getLb()+1);
-						}
-					}
-					break;
-				case Constants.IF_ICMPLE:
-					if (edge.getType() == FlowEdge.FALSE_EDGE) {
-						if (constraint.hasLb()) {
-							m.constrained.setLb(constraint.getLb()-1);
-						}
-					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
-						if (constraint.hasUb()) {
-							m.constrained.setUb(constraint.getUb());
-						}
-					}
-					break;
 				}
 
 				if (m.assigned.getLb() > m.constrained.getUb()
 						|| m.assigned.getUb() < m.constrained.getLb()) {
-					//System.out.println("infeasible condition: "+m);
-					//retval.clear();
-					//break;
+					recordInfeasible(stmt, context, edge);
+					result = null;
+					break;
 				}
+
+				removeInfeasible(stmt, context, edge);
 				
 				m.assigned.constrain(m.constrained);
 
@@ -1280,6 +1376,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 				result.put(in.get(l).source, m);
 			}
 		}
+		
+		return result;
 	}
 
 	private void doInvoke(String methodName,
@@ -1393,7 +1491,9 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 		} else if (methodId.equals("com.jopdesign.sys.Native.wr(II)V")
 				|| methodId.equals("com.jopdesign.sys.Native.wrMem(II)V")
 				|| methodId.equals("com.jopdesign.sys.Native.wrIntMem(II)V")
-				|| methodId.equals("com.jopdesign.sys.Native.putStatic(II)V")) {
+				|| methodId.equals("com.jopdesign.sys.Native.putStatic(II)V")
+				|| methodId.equals("com.jopdesign.sys.Native.toLong(D)J")
+				|| methodId.equals("com.jopdesign.sys.Native.toDouble(J)D")) {
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
 				if (l.stackLoc < context.stackPtr-2) {
@@ -1493,7 +1593,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 		int maxValue = -1;
 		for (Iterator<CallString> k = r.keySet().iterator(); k.hasNext(); ) {
 			CallString callString = k.next();
-			// TODO: Wolfgang should review this
+
 			if(! callString.hasSuffix(csSuffix)) continue;
 
 			Pair<ValueMapping> bounds = r.get(callString);
@@ -1501,6 +1601,10 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			ValueMapping first = bounds.getFirst();
 			ValueMapping second = bounds.getSecond();
 
+			if (first == null || second == null) {
+				return -1;
+			}
+			
 			InstructionHandle target = ((BranchInstruction)instr.getInstruction()).getTarget();
 			
 			if (scopes.get(target) != null) {
@@ -1611,15 +1715,70 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 		}
 	}
 
+	private void recordInfeasible(InstructionHandle stmt, Context context, FlowEdge edge) {
+		ContextMap<CallString, Set<FlowEdge>> infMap;
+		infMap = infeasibles.get(stmt);
+		if (infMap == null) {
+			infMap = new ContextMap<CallString, Set<FlowEdge>>(context, new HashMap<CallString, Set<FlowEdge>>());
+			infeasibles.put(stmt, infMap);
+		}
+		Set<FlowEdge> flowSet = infMap.get(context.callString);
+		if (flowSet == null) {
+			flowSet = new HashSet<FlowEdge>();
+			infMap.put(context.callString, flowSet);
+		}
+		flowSet.add(edge);
+	}
+	
+	private void removeInfeasible(InstructionHandle stmt, Context context, FlowEdge edge) {
+		ContextMap<CallString, Set<FlowEdge>> infMap;
+		infMap = infeasibles.get(stmt);
+		if (infMap == null) {
+			return;
+		}
+		Set<FlowEdge> flowSet = infMap.get(context.callString);
+		if (flowSet == null) {
+			return;
+		}
+		flowSet.remove(edge);
+	}
+
+	public void printInfeasibles(DFAAppInfo program) {		
+		System.out.println(infeasibles);
+	}
+
+	public Set<FlowEdge> getInfeasibleEdges(InstructionHandle stmt, CallString cs) {
+		ContextMap<CallString, Set<FlowEdge>> map = infeasibles.get(stmt);
+		Set<FlowEdge> retval = new HashSet<FlowEdge>();
+		if (map == null) { // no infeasibility information here
+			return retval;
+		}
+		for (Iterator<CallString> i = map.keySet().iterator(); i.hasNext(); ) {
+			CallString c = i.next();
+			if (c.hasSuffix(cs)) {
+				Set<FlowEdge> f = map.get(c);
+				retval.addAll(f);
+			}
+		}
+		return retval;
+	}
+	
 	public Interval[] getArraySizes(InstructionHandle stmt, CallString cs) {
 		ContextMap<CallString, Interval[]> map = sizes.get(stmt);
 		Interval [] retval = null;
+		if (map == null) {
+			return retval;
+		}
 		for (Iterator<CallString> i = map.keySet().iterator(); i.hasNext(); ) {
 			CallString c = i.next();
 			if (c.hasSuffix(cs)) {
 				if (retval == null) {
 					Interval [] v = map.get(c);
-					retval = Arrays.copyOf(v, v.length);
+					// JDK1.5 compat
+					retval = new Interval[v.length];
+					System.arraycopy(v, 0, retval, 0,v.length);
+					// JDK1.6 only
+					//retval = Arrays.copyOf(v, v.length);					
 				} else {
 					Interval [] v = map.get(c);
 					for (int k = 0; k < v.length; k++) {
@@ -1634,6 +1793,9 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 	public Interval getArrayIndices(InstructionHandle stmt, CallString cs) {
 		ContextMap<CallString, Interval> map = arrayIndices.get(stmt);
 		Interval retval = null;
+		if (map == null) {
+			return retval;
+		}
 		for (Iterator<CallString> i = map.keySet().iterator(); i.hasNext(); ) {
 			CallString c = i.next();
 			if (c.hasSuffix(cs)) {

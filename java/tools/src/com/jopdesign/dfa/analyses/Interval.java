@@ -178,6 +178,38 @@ public class Interval {
 		}
 	}
 	
+	public void div(Interval val) {
+		if (lv && val.lv) {
+			if ((val.lb > 0 && val.ub > 0)  // val does not contain zero
+				 || (val.lb < 0 && val.ub < 0)) { 
+
+				long[] bounds = new long[4];
+				bounds[0] = lb/val.lb;
+				bounds[1] = lb/val.ub;
+				bounds[2] = ub/val.lb;
+				bounds[3] = ub/val.ub;
+				Arrays.sort(bounds);
+				long resL = bounds[0];
+				long resU = bounds[3];
+				if (resL == (long)(int)resL
+						&& resU == (long)(int)resU) {
+					lb = (int)resL;
+					ub = (int)resU;
+				}				
+			} else {
+				lb = BOT;
+				lv = false;
+				ub = TOP;
+				uv = false;				
+			}
+		} else {
+			lb = BOT;
+			lv = false;
+			ub = TOP;
+			uv = false;
+		}
+	}
+	
 	public void mul(Interval val) {
 		if (lv && val.lv) {
 			long[] bounds = new long[4];

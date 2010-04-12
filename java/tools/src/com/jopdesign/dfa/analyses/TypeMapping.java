@@ -40,7 +40,12 @@ public class TypeMapping {
 	}
 
 	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		
 		TypeMapping m = (TypeMapping)o;
+		
 		return (stackLoc == m.stackLoc)
 			&& heapLoc.equals(m.heapLoc)
 			&& type.equals(m.type);

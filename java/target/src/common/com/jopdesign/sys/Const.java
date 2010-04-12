@@ -75,7 +75,7 @@ public class Const {
 	 * Used in @link RtThreadImpl
 	 * 
 	 */
-	public static final int STACK_SIZE = 256;
+	public static final int STACK_SIZE = 512;
 	
 	/**
 	 * Set to true if support for double bytecodes should be

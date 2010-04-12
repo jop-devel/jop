@@ -779,7 +779,7 @@ class JVM {
 	private static void f_invokeinterface() { JVMHelp.noim();}
 	private static void f_unused_ba() { JVMHelp.noim();}
 
-	private static int f_new(int cons) {
+	static int f_new(int cons) {
 
 		return GC.newObject(cons);
 

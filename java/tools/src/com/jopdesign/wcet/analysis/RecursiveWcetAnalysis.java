@@ -21,6 +21,7 @@ package com.jopdesign.wcet.analysis;
 
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.Map.Entry;
@@ -68,8 +69,16 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		}
 		@Override
 		public void visitInvokeNode(InvokeNode n) {
+
+			// FIXME: [Bug #3] Hackish implementation of callgraph pruning
+			if(n.getVirtualNode() != null) {
+				List<MethodInfo> actuallyReachable =
+					n.getVirtualNode().getImplementedMethods(ctx.getCallString());
+				if(! actuallyReachable.contains(n.getImplementedMethod())) return;
+			}
+			
 			cost.addLocalCost(processor.getExecutionTime(ctx.getExecutionContext(n),n.getInstructionHandle()));
-			if(n.isInterface()) {
+			if(n.isVirtual()) {
 				throw new AssertionError("Invoke node "+n.getReferenced()+" without implementation in WCET analysis - did you preprocess virtual methods ?");
 			}
 			cost.addCost(RecursiveWcetAnalysis.this.recursiveWCET.recursiveCost(RecursiveWcetAnalysis.this, n, ctx));

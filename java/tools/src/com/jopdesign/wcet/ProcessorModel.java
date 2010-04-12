@@ -73,7 +73,7 @@ public interface ProcessorModel {
 	 */
 	public List<String> getJVMClasses();
 
-	public int getExecutionTime(ExecutionContext context, InstructionHandle i);
+	public long getExecutionTime(ExecutionContext context, InstructionHandle i);
 
 	public long basicBlockWCET(ExecutionContext context, BasicBlock codeBlock);
 

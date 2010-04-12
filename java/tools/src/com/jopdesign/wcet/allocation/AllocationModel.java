@@ -23,10 +23,11 @@ import com.jopdesign.tools.JopInstr;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.ExecutionContext;
+import com.jopdesign.wcet.annotations.LoopBound;
+import com.jopdesign.wcet.annotations.SourceAnnotations;
 import com.jopdesign.wcet.frontend.BasicBlock;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.WcetAppInfo;
-import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.jop.NoMethodCache;
 
@@ -112,7 +113,7 @@ public class AllocationModel implements ProcessorModel {
 		}
 	}
 
-	public int getExecutionTime(ExecutionContext context, InstructionHandle ih) {
+	public long getExecutionTime(ExecutionContext context, InstructionHandle ih) {
 
 		int opcode = ih.getInstruction().getOpcode();
 		MethodInfo mCtx = context.getMethodInfo();
@@ -125,10 +126,10 @@ public class AllocationModel implements ProcessorModel {
 		} else if (opcode == Constants.MULTIANEWARRAY) {
 			MULTIANEWARRAY insn = (MULTIANEWARRAY)ih.getInstruction();
 			int dim = insn.getDimensions();
-			int count = 1;
-			int size = 0;
+			long count = 1;
+			long size = 0;
 			for (int i = dim-1; i >= 0; i--) {
-				int bound = getArrayBound(context, ih, i);
+				long bound = getArrayBound(context, ih, i);
 				size += count * computeArraySize(bound);
 				count *= bound;
 			}
@@ -138,14 +139,14 @@ public class AllocationModel implements ProcessorModel {
 		}
 	}
 
-	private int getArrayBound(ExecutionContext context, InstructionHandle ih, int index) {
+	private long getArrayBound(ExecutionContext context, InstructionHandle ih, int index) {
 		int srcLine = context.getMethodInfo().getMethod().getLineNumberTable().getSourceLine(ih.getPosition());
 
 		// get annotated size
 		LoopBound annotated = null;
 		try {
-			Map<Integer, LoopBound> annots = project.getAnnotations(context.getMethodInfo().getCli());
-			annotated = annots.get(new Integer(srcLine));
+			SourceAnnotations annots = project.getAnnotations(context.getMethodInfo().getCli());
+			annotated = annots.annotationsForLine(srcLine);
 			if (annotated == null) {
 				Project.logger.info("No annotated bound for array at " + context + ":" + srcLine);
 			}
@@ -189,18 +190,20 @@ public class AllocationModel implements ProcessorModel {
 			if (annotated != null) {
 				return annotated.getUpperBound();
 			} else {
-				Project.logger.error("Cannot determine cost of unbounded array " + context + ":" + srcLine +
+				Project.logger.error("Cannot determine cost of unbounded array " +
+						             context.getMethodInfo().getFQMethodName() +
+									 ":" + srcLine +
 									 ".\nApproximating with 1024 words, but result is not safe anymore.");
 				return 1024;
 			}
 		}
 	}
 
-	public int computeObjectSize(int raw) {
+	public int computeObjectSize(long raw) {
 		return 1;
 	}
 
-	public int computeArraySize(int raw) {
+	public int computeArraySize(long raw) {
 		return 1;
 	}
 

@@ -87,14 +87,25 @@ public class CallString {
 	}
 
 	/**
-	 * Extend the callstring by the given method
+	 * Return a new callstring, extended by the given invoke site.
+	 * <p>Let {@code n(1)} be the id of the given invoke site, and
+	 *    {@code n(2),...,n(k)} be the callstring represented by {@code this}
+	 * <ol><li/>If k &lt;= maxDepth, the resulting callstring is {@code n(1),n(2),...,n(k)}
+	 *     <li/>If k <=   maxDepth, the resulting callstring is {@code n(1),n(2),...,n(maxDepth)}
+	 *  </ol>
 	 */
 	public CallString push(InvokeNode n , int maxDepth) {
 		return push(n.getBasicBlock().getMethodInfo(),n.getInstructionHandle().getPosition(),maxDepth);
 	}
 
 	/**
-	 * Extend the callstring by the given method
+	 * Return a new callstring, extended by the given invoke site.
+	 * <p>Let {@code n(1)} be the id of the given invoke site, and
+	 *    {@code n(2),...,n(k)} be the callstring represented by {@code this}
+	 * <ol><li/>If k &lt;= maxDepth, the resulting callstring is {@code n(1),n(2),...,n(k)}
+	 *     <li/>If k <=   maxDepth, the resulting callstring is {@code n(1),n(2),...,n(maxDepth)}
+	 *  </ol>
+     *
 	 * FIXME: Code duplication with DFA/LoopBounds.java
 	 */
 	@SuppressWarnings("unchecked")
@@ -134,6 +145,13 @@ public class CallString {
 		return cs;
 	}
 
+	/**
+	 * Return true if {@code cs} is a suffix of callstring, that is,
+	 * {@code this = prefix + cs} for some {@code prefix}.
+	 * <p>
+	 * @param cs the suffix to check
+	 * @return
+	 */
 	public boolean hasSuffix(CallString cs) {
 		if (this.equals(cs) || cs.isEmpty()) {
 			return true;
@@ -142,7 +160,7 @@ public class CallString {
 			return false;
 		}
 		int suffixStart = callString.size() - cs.callString.size();
-		List sub = callString.subList(suffixStart, callString.size());
+		List<CallStringEntry> sub = callString.subList(suffixStart, callString.size());
 		if (sub.equals(cs.callString)) {
 			return true;
 		}
@@ -154,6 +172,20 @@ public class CallString {
 	}
 
 	public String toString() {
-		return "callctx["+hashCode()+"]";
+		if(this.isEmpty()) return "CallString.EMPTY";
+		long hash = hashCode();
+		if(hash < 0) hash += Integer.MAX_VALUE;
+		return String.format("CallString[|%d|%x]",callString.size(), hash);		
+	}
+
+	public String toStringVerbose() {
+		if(this.isEmpty()) return "CallString.EMPTY";
+		StringBuffer sb = new StringBuffer("CallString{");
+		for(CallStringEntry ce : callString) {
+			sb.append(ce.getStringId().toString());
+			sb.append(";");
+		}
+		sb.append("}");
+		return sb.toString();
 	}
 }

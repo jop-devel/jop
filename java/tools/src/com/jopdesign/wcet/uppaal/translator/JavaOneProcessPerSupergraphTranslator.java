@@ -10,11 +10,11 @@ import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
+import com.jopdesign.wcet.annotations.LoopBound;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.SuperGraph;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
-import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet.frontend.SuperGraph.SuperInvokeEdge;
 import com.jopdesign.wcet.frontend.SuperGraph.SuperReturnEdge;
 import com.jopdesign.wcet.graphutils.MiscUtils;
@@ -129,14 +129,14 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 		/* Create start and end nodes for other methods */
 		for(int i = 1; i < this.methodInfos.size(); i++) {
 			MethodInfo mi = methodInfos.get(i);
-			if(project.getCallGraph().isLeafNode(mi) && config.collapseLeaves) continue;
+			if(project.getCallGraph().isLeafMethod(mi) && config.collapseLeaves) continue;
 
 			SubAutomaton mAuto = tBuilder.createSubAutomaton(MiscUtils.qEncode(mi.getFQMethodName()));
 			addMethodAutomaton(mi,mAuto);
 		}
 		int i = 0;
 		for(MethodInfo mi : methodInfos) {
-			if(project.getCallGraph().isLeafNode(mi) && config.collapseLeaves) continue;
+			if(project.getCallGraph().isLeafMethod(mi) && config.collapseLeaves) continue;
 			translateMethod(tBuilder,
 					        getMethodAutomaton(mi),
 					        i++,
@@ -157,7 +157,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 	private void addProgessMeasure(TemplateBuilder tBuilder) {
 		if(tBuilder.getLoopVarBounds().isEmpty()) return;
 		Vector<String> progressSummands = new Vector<String>();
-		Vector<Integer> lvbs = tBuilder.getLoopVarBounds();
+		Vector<Long> lvbs = tBuilder.getLoopVarBounds();
 		long multiplicator = 1;
 		for(int i = lvbs.size() - 1; i >= 0; i--) {
 			progressSummands.add(""+multiplicator+" * M0."+TemplateBuilder.loopVarName(i));

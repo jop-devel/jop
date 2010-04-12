@@ -19,6 +19,7 @@
 */
 package com.jopdesign.wcet.frontend;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Collections;
@@ -37,12 +38,15 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet.frontend.WcetAppInfo.MethodNotFoundException;
 import com.jopdesign.wcet.graphutils.AdvancedDOTExporter;
 import com.jopdesign.wcet.graphutils.DirectedCycleDetector;
 import com.jopdesign.wcet.graphutils.Pair;
+
+import static com.jopdesign.wcet.graphutils.MiscUtils.addToList;
 
 /**
  * <p>Java call graph, whose nodes represent control flow graphs and
@@ -56,26 +60,60 @@ import com.jopdesign.wcet.graphutils.Pair;
 public class CallGraph {
 	/**
 	 * Call graph nodes referencing methods. <br/>
+	 * An optional callstring is used to provide context sensitivity
 	 */
 	public static class CallGraphNode {
 		private MethodInfo method;
-		public CallGraphNode(MethodInfo m) {
+		private CallString context;
+		public CallGraphNode(MethodInfo m, CallString context) {
 			this.method = m;
+			this.context = context;
 		}
-		public MethodInfo getMethodImpl() { return this.method; }
+		public MethodInfo getMethodImpl() { 
+			return this.method; 
+		}
 		public MethodRef getReferencedMethod() {
 			return new MethodRef(method.getCli(),method.methodId);
 		}
+		public CallString getCallString() {
+			return this.context;
+		}
+		/* (non-Javadoc)
+		 * @see java.lang.Object#hashCode()
+		 */
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			return prime * context.hashCode() + method.hashCode();
+		}
+		/* (non-Javadoc)
+		 * @see java.lang.Object#equals(java.lang.Object)
+		 */
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)  return true;
+			if (obj == null)  return false;
+			if (getClass() != obj.getClass()) return false;
 
-		public int hashCode() { return method.hashCode(); }
-		public boolean equals(Object that) {
-			return (that instanceof CallGraphNode) ?
-				   (method.equals(((CallGraphNode) that).method)) :
-				   false;
+			CallGraphNode other = (CallGraphNode) obj;
+			if(! method.equals(other.method)) return false;
+			return context.equals(other.context);
 		}
+		/* (non-Javadoc)
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
 		public String toString() {
-			return method.getFQMethodName();
+			StringBuffer sb = new StringBuffer("CallGraphNode(");
+			sb.append(method.getFQMethodName());
+			if(! context.isEmpty()) {
+				sb.append(",");
+				sb.append(context.toString());
+			}
+			sb.append(")");
+			return sb.toString();
 		}
+
 	}
 	// Fields
 	// ~~~~~~
@@ -84,7 +122,12 @@ public class CallGraph {
 	private DirectedGraph<CallGraphNode, DefaultEdge> callGraph;
 
 	private HashSet<ClassInfo> classInfos;
-	private HashMap<MethodInfo,CallGraphNode> nodeMap;
+
+	/** The first callgraph node acts as key, the second one is
+	 *   the actual object in the callgraph
+	 */
+	private HashMap<CallGraphNode, CallGraphNode> nodeMap;
+	private HashMap<MethodInfo, List<CallGraphNode>> methodMap;
 
 	// Caching Fields
 	// ~~~~~~~~~~~~~~
@@ -92,11 +135,13 @@ public class CallGraph {
 	private HashMap<CallGraphNode, CallGraphNode> maxCallstackDAG = null;
 	private HashMap<CallGraphNode, Integer> subgraphHeight = null;
 	private CallGraphNode maxCallStackLeaf = null;
+	private HashMap<MethodInfo,Boolean> leafNodeCache;
 	private void invalidate() {
 		maxCallStackLeaf = null;
 		maxDistanceToRoot = null;
 		maxCallstackDAG = null;
 		subgraphHeight = null;
+		leafNodeCache = new HashMap<MethodInfo, Boolean>();
 	}
 
 	/**
@@ -107,7 +152,7 @@ public class CallGraph {
 	protected CallGraph(WcetAppInfo appInfo, MethodInfo rootMethod) {
 		this.appInfo = appInfo;
 		this.callGraph = new DefaultDirectedGraph<CallGraphNode,DefaultEdge>(DefaultEdge.class);
-		this.rootNode = new CallGraphNode(rootMethod);
+		this.rootNode = new CallGraphNode(rootMethod,CallString.EMPTY);
 		this.callGraph.addVertex(rootNode);
 	}
 
@@ -119,7 +164,9 @@ public class CallGraph {
 	 *                   (e.g. "measure"), if unique, or a method with signature (e.g. "measure()Z")
 	 * @throws MethodNotFoundException
 	 */
-	public static CallGraph buildCallGraph(WcetAppInfo appInfo, String className, String methodSig)
+	public static CallGraph buildCallGraph(WcetAppInfo appInfo,
+										   String className,
+										   String methodSig)
 							throws MethodNotFoundException {
 		MethodInfo rootMethod = appInfo.searchMethod(className,methodSig);
 		CallGraph cg = new CallGraph(appInfo,rootMethod);
@@ -129,11 +176,22 @@ public class CallGraph {
 	/* building */
 	private void build() throws MethodNotFoundException {
 		this.buildGraph();
-		/* Compute set of classes and methods */
-		classInfos = new HashSet<ClassInfo>();
-		for(CallGraphNode cgn : callGraph.vertexSet()) {
-			classInfos.add(cgn.getReferencedMethod().getReceiver());
+		
+		/** Debug export */
+		try {
+			FileWriter fw = new FileWriter("/tmp/callgraph.dot");
+			this.exportDOT(fw);
+			fw.close();
+		} catch (IOException e1) {
+			e1.printStackTrace();
 		}
+		
+		/* Compute set of classes */
+		classInfos = new HashSet<ClassInfo>();
+		for(MethodInfo mi : methodMap.keySet()) {
+			classInfos.add(mi.getCli());
+		}
+		/* Check the callgraph is cycle free */
 		Pair<List<CallGraphNode>,List<CallGraphNode>> cycle =
 			DirectedCycleDetector.findCycle(callGraph,rootNode);
 		if(cycle != null) {
@@ -146,6 +204,7 @@ public class CallGraph {
 		}
 		invalidate();
 	}
+	
 	private static String cyclicCallGraphMsg(Pair<List<CallGraphNode>, List<CallGraphNode>> cycleWithPrefix) {
 		List<CallGraphNode> cycle = cycleWithPrefix.snd();
 		List<CallGraphNode> prefix = cycleWithPrefix.fst();
@@ -157,27 +216,40 @@ public class CallGraph {
 		for(CallGraphNode cn : prefix) sb.append("  "+cn+"\n");
 		return sb.toString();
 	}
+	
+	/* Build the callgraph.
+	 * NEW: now we also use callstrings to get a more precise call graph model
+	 */
 	private void buildGraph() {
-		nodeMap = new HashMap<MethodInfo, CallGraphNode>();
-		Stack<CallGraphNode> todo =
-			new Stack<CallGraphNode>();
-		nodeMap.put(this.rootNode.getMethodImpl(), rootNode);
+		/* Get callstring length */
+		int ctxDepth = appInfo.getCallstringLength();
+		/* Initialize DFS data structures and lookup maps */
+		nodeMap = new HashMap<CallGraphNode, CallGraphNode>();		
+		nodeMap.put(rootNode, rootNode);
+		Stack<CallGraphNode> todo = new Stack<CallGraphNode>();
 		todo.push(rootNode);
+		methodMap = new HashMap<MethodInfo, List<CallGraphNode>>();
+		addToList(methodMap,rootNode.method,rootNode);
+
 		while(! todo.empty()) {
 			CallGraphNode current = todo.pop();
+			CallString callstring = current.getCallString();
 			ControlFlowGraph currentCFG = appInfo.getFlowGraph(current.getMethodImpl());
+
 			for(CFGNode node : currentCFG.getGraph().vertexSet()) {
 				if(node instanceof InvokeNode) {
 					InvokeNode iNode = (InvokeNode) node;
-					for(MethodInfo impl : iNode.getImplementedMethods()) {
-						CallGraphNode cgn;
-						if(! nodeMap.containsKey(impl)) {
-							cgn = new CallGraphNode(impl);
-							nodeMap.put(impl,cgn);
+					for(MethodInfo impl : iNode.getVirtualNode().getImplementedMethods(callstring)) {
+						//System.out.println("Implemented Methods: "+impl+" from "+iNode.getBasicBlock().getMethodInfo().methodId+" in context "+callstring.toStringVerbose());
+						CallString newCallString = current.getCallString().push(iNode, ctxDepth);
+						CallGraphNode cgnLookup = new CallGraphNode(impl, newCallString);
+						CallGraphNode cgn = nodeMap.get(cgnLookup);
+						if(cgn == null) {
+							cgn = cgnLookup;
+							nodeMap.put(cgn,cgn);
+							addToList(methodMap,impl,cgn);
 							callGraph.addVertex(cgn);
 							todo.push(cgn);
-						} else {
-							cgn = nodeMap.get(impl);
 						}
 						callGraph.addEdge(current, cgn);
 					}
@@ -186,9 +258,17 @@ public class CallGraph {
 		}
 	}
 	
-	/** Get node for a method info */
-	public CallGraphNode getNode(MethodInfo m) {
-		return nodeMap.get(m);
+	/** Get node for a method info and call context */
+	public CallGraphNode getNode(MethodInfo m, CallString cs) {
+		return nodeMap.get(new CallGraphNode(m,cs));
+	}
+	
+	/** Get all nodes matching the given method info */
+	public List<CallGraphNode> getNodes(MethodInfo m) {
+		if(this.methodMap.get(m) == null) {
+			throw new AssertionError("No callgraph nodes for "+ m);
+		}
+		return this.methodMap.get(m);
 	}
 	
 	/* calculate the depth of each node, the height of the subgraph
@@ -289,7 +369,7 @@ public class CallGraph {
 	 */
 	public List<MethodInfo> getReachableImplementations(MethodInfo rootMethod) {
 		List<MethodInfo> implemented = new Vector<MethodInfo>();
-		CallGraphNode root = this.getNode(rootMethod);
+		CallGraphNode root = this.getNode(rootMethod, CallString.EMPTY);
 		DepthFirstIterator<CallGraphNode, DefaultEdge> ti =
 			new DepthFirstIterator<CallGraphNode, DefaultEdge>(callGraph,root);
 		ti.setCrossComponentTraversal(false);
@@ -303,13 +383,16 @@ public class CallGraph {
 
 	/** Get methods possibly directly invoked from the given method */
 	public List<CallGraphNode> getReferencedMethods(MethodInfo m) {
-		CallGraphNode node = getNode(m);
+		List<CallGraphNode> nodes = getNodes(m);
 		Vector<CallGraphNode> succs = new Vector<CallGraphNode>();
-		for(DefaultEdge e : callGraph.outgoingEdgesOf(node)) {
-			succs.add(callGraph.getEdgeTarget(e));
+		for(CallGraphNode node : nodes) {
+			for(DefaultEdge e : callGraph.outgoingEdgesOf(node)) {
+				succs.add(callGraph.getEdgeTarget(e));
+			}
 		}
 		return succs;
 	}
+	
 	/**
 	 * Return true when the given method does not invoke any other methods
 	 * @param node
@@ -319,13 +402,19 @@ public class CallGraph {
 		return callGraph.outDegreeOf(node) == 0;
 	}
 
-	public boolean isLeafNode(MethodInfo mi) {
-		return isLeafNode(getNode(mi));
-	}
-
-	public int getMaxNodeDepth(MethodInfo mi) {
-		calculateDepthAndHeight();
-		return this.maxDistanceToRoot.get(getNode(mi));
+	public boolean isLeafMethod(MethodInfo mi) {
+		/* Using caching, as this method is used quite often */
+		Boolean isLeafNode = leafNodeCache.get(mi);
+		if(isLeafNode != null) return isLeafNode;
+		isLeafNode = true;
+		for(CallGraphNode node : getNodes(mi)) {
+			if(! isLeafNode(node)) {
+				isLeafNode = false;
+				break;
+			}			
+		}
+		leafNodeCache.put(mi,isLeafNode);
+		return isLeafNode;
 	}
 
 	/**

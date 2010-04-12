@@ -144,7 +144,7 @@ public class GlobalAnalysis {
 					project.getFlowGraph(invoker),
 	                project.getFlowGraph(invoked));
 			WcetCost cost = new WcetCost();
-			if(cache.allFit(invoked) && ! project.getCallGraph().isLeafNode(invoked)) {
+			if(cache.allFit(invoked) && ! project.getCallGraph().isLeafMethod(invoked)) {
 				GlobalAnalysis ga = new GlobalAnalysis(project, ipetConfig);
 				WcetCost allFitCost = null;
 				try { allFitCost= ga.computeWCET(invoked, StaticCacheApproximation.GLOBAL_ALL_FIT); }
