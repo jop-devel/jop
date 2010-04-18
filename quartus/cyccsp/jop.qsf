@@ -512,7 +512,6 @@ set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_tdma.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/paper/csp/jopmulcsp.vhd
 
-set_global_assignment -name OPTIMIZE_HOLD_TIMING "IO PATHS AND MINIMUM TPD PATHS"
 set_global_assignment -name FITTER_EFFORT "STANDARD FIT"
 set_global_assignment -name SYNTH_TIMING_DRIVEN_SYNTHESIS OFF
 
