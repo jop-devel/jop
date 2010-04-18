@@ -257,10 +257,7 @@ begin
 			wr => stage2.update_tags,
 			hit => stage1_async.hit,
 			line => stage1_async.line_addr,
-			newline => stage1_async.newline,
-			
-			shift => '0',
-			lowest_addr => open
+			newline => stage1_async.newline
 		);
 		
 				

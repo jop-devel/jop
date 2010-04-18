@@ -35,7 +35,7 @@ use ieee.numeric_std.all;
 entity tag is 
 generic (
 	addr_width	: integer := 19;	-- address bits of cachable memory
-	way_bits	: integer := 5		-- 2**way_bits is number of entries
+	way_bits	: integer := 6		-- 2**way_bits is number of entries
 );
 port (
 	clk, reset	: in std_logic;
@@ -47,10 +47,7 @@ port (
 	
 	hit: out std_logic;
 	line: out unsigned(way_bits-1 downto 0);
-	newline: out unsigned(way_bits downto 0);
-			
-	shift 			: in std_logic;
-	lowest_addr		: out std_logic_vector(addr_width-1 downto 0)
+	newline: out unsigned(way_bits downto 0)			
 );
 end tag;
 
@@ -142,9 +139,6 @@ begin
 		nxt <= (others => '0');
 		valid <= (others => '0');
 		hit_reg <= '0';
-		for i in 0 to lines-1 loop
-			tag(i) <= (others => '0');
-		end loop;
 
 	elsif rising_edge(clk) then
 		hit_reg <= h_res;
@@ -161,19 +155,11 @@ begin
 			end if;
 		end if;
 		
-		if shift = '1' then
-			for i in 0 to lines-2 loop
-				tag(i) <= tag(i+1);
-			end loop;
-		end if;
-		
 		if transaction_start = '1' then
 			nxt <= (others => '0');
 			valid <= (others => '0');			
 		end if;
 	end if;
 end process;
-
-lowest_addr <= tag(0);
 
 end;

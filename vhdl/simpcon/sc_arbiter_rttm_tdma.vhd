@@ -43,12 +43,11 @@
 --				 - arb_in(i).rd_data gets mem_in.rd_data when rdy_cnt 3 using pipelined access
 -- 310809: Added transactional memory broadcast support
 -- 111109: Integrated RTTM tm_broadcast signal
--- 150310: Use slots of CPUs executing transaction for commit
+-- 150310: Use slots of CPUs executing hardware layer transaction for commit
 -- 280310: Hack to speed up arbiter
 
 -- TODO:
---				- full pipelined version
---				- add period and time slots from software using RAM
+--				- reallocate slots of CPUs executing software layer transactions
 
 
 
