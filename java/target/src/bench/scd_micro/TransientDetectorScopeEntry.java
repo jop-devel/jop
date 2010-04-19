@@ -109,7 +109,7 @@ public class TransientDetectorScopeEntry implements Runnable {
                                                                                 //           MAX_PLANES
 		for (final Iterator<Motion> iter = motions.iterator(); iter.hasNext();) //@WCA loop<=10
 			it.performVoxelHashing(iter.next(), voxel_map, graph_colors);
-
+		// System.out.println("Number of voxels: "+voxel_map.values().size());
 		final LinkedList<ArrayList<Motion>> ret = new LinkedList<ArrayList<Motion>>();                  //           MAX_VOXELS_PER_LINE_SEGMENT
 		for (final Iterator<ArrayList<Motion>> iter = voxel_map.values().iterator(); iter.hasNext();) { //@WCA loop<=100
 			final ArrayList<Motion> cur_set = iter.next();
@@ -122,7 +122,9 @@ public class TransientDetectorScopeEntry implements Runnable {
 		final List<Collision> ret = new LinkedList<Collision>();
 		for (int i = 0; i < motions.size() - 1; i++) { //@WCA loop<=10
 			final Motion one = motions.get(i);
-			for (int j = i + 1; j < motions.size(); j++) { //@WCA loop<=10
+			for (int j = i + 1; j < motions.size(); j++) {
+				//@WCA loop<=9
+				//@WCA loop<=45 outer
 				// We get her 3555 times
 				final Motion two = motions.get(j);
 				final Vector3d vec = one.findIntersection(two);
