@@ -20,7 +20,8 @@
 
 package rttm;
 
-import rttm.internal.Utils;
+import com.jopdesign.sys.RetryException;
+import rttm.AbortException;
 
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
@@ -39,7 +40,7 @@ public class Commands {
 	public static void abort() {
 		// immediately abort transaction to avoid early commit 
 		Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
-		throw Utils.abortException;
+		throw AbortException.instance;
 	}
 
 	/**
@@ -50,7 +51,7 @@ public class Commands {
 	public static void retry() {
 		// immediately abort transaction to avoid early commit
 		Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
-		throw Utils.retryException;
+		throw RetryException.instance;
 	}
 	
 	/**

@@ -42,7 +42,7 @@ import boxpeeking.instrument.bcel.AnnotationsAttribute;
  * - can't load string constants because they are already indexed in jz.load()
  * - return type double and long not supported
  * 
- * TODO: check method signature, optimize jumps  
+ * TODO: check method signature
  * 
  * @author Peter Hilber (peter@hilber.name)
  *
@@ -136,7 +136,14 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 			throw new UnsupportedOperationException();
 		}
 		
-		final int transactionLocals = 4; // TODO 
+		final int transactionLocals = 2;
+		
+		/*
+		 * local variable indices:
+		 * isNotNestedTransaction is -2+2
+		 * result is -2+3
+		 * Throwable e is -2+3 
+		 */
 		
 		final int maxLocals = method.getMaxLocals();
 		
@@ -290,55 +297,62 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 		    }
 		    
 		    // catch block
-			
-			InstructionHandle ih_86 = il.append(InstructionFactory.createStore(Type.OBJECT, transactionLocalsBaseIndex-2+3));
-			InstructionHandle ih_87 = il.append(InstructionFactory.createLoad(Type.INT, transactionLocalsBaseIndex-2+2));
-			    BranchInstruction ifeq_88 = InstructionFactory.createBranchInstruction(Constants.IFEQ, null);
+			// variable e has index 3
+			// } catch (Throwable e) {
+			InstructionHandle nih_86 = il.append(InstructionFactory
+					.createStore(Type.OBJECT, transactionLocalsBaseIndex-2+3));
+			// if (isNotNestedTransaction) {
+			InstructionHandle nih_87 = il.append(InstructionFactory.createLoad(Type.INT, transactionLocalsBaseIndex-2+2));
+			BranchInstruction ifeq_88 = InstructionFactory.createBranchInstruction(
+					Constants.IFEQ, null);
 			il.append(ifeq_88);
-//			InstructionHandle ih_91 = il.append(new PUSH(_cp, 0));
-//			il.append(new PUSH(_cp, Const.IO_ENA_HW_EXC));
-//			il.append(_factory.createInvoke("com.jopdesign.sys.Native", "wr", Type.VOID, new Type[] { Type.INT, Type.INT }, Constants.INVOKESTATIC));
-			InstructionHandle ih_97 = il.append(InstructionFactory.createLoad(Type.OBJECT, transactionLocalsBaseIndex-2+3));
-			il.append(_factory.createFieldAccess("rttm.internal.Utils", "abortException", new ObjectType("rttm.AbortException"), Constants.GETSTATIC));
-			    BranchInstruction if_acmpne_101 = InstructionFactory.createBranchInstruction(Constants.IF_ACMPNE, null);
-			il.append(if_acmpne_101);
-			InstructionHandle ih_104 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "abortException", new ObjectType("rttm.AbortException"), Constants.GETSTATIC));
-			il.append(InstructionConstants.ATHROW);
-//			InstructionHandle ih_108 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex-2+1));
-//			il.append(_factory.createStore(Type.INT, transactionLocalsBaseIndex-2+0));
+
+			InstructionHandle nih_91 = il
+					.append(InstructionFactory.createLoad(Type.OBJECT, transactionLocalsBaseIndex-2+3));
+		    il.append(_factory.createFieldAccess("com.jopdesign.sys.RetryException", 
+		    		"instance", new ObjectType(
+		    				"com.jopdesign.sys.RetryException"), 
+		    		Constants.GETSTATIC));
+			BranchInstruction if_acmpne_95 = InstructionFactory.createBranchInstruction(
+					Constants.IF_ACMPNE, null);
+			il.append(if_acmpne_95);
+			// InstructionHandle nih_98 = il.append(_factory.createLoad(Type.INT,
+			// 1));
+			// il.append(_factory.createStore(Type.INT, 0));
+
 			
-			InstructionHandle ih_108 = null;
 		    {
 		    	for (int i: modifiedArguments) {
-		    		InstructionHandle ih = il.append(InstructionFactory.createLoad(
+		    		il.append(InstructionFactory.createLoad(
 		    				Type.INT, modifiedArgumentsCopies.get(i)));
-		    		if (ih_108 == null) {
-		    			ih_108 = ih;
-		    		}
 		    		il.append(InstructionFactory.createStore(Type.INT, i));
 		    	}
 		    }
 			
-			    BranchInstruction goto_110 = InstructionFactory.createBranchInstruction(Constants.GOTO, null);
+			    BranchInstruction goto_110 = InstructionFactory.createBranchInstruction(Constants.GOTO, ih_43);
 		    InstructionHandle ih_110 = il.append(goto_110);
 			
-			{
-				if (ih_108 == null) {
-					ih_108 = ih_110;
-				}
-			}
+			// exception was manually aborted or a bug triggered
+			InstructionHandle nih_103 = il.append(_factory.createFieldAccess(
+					"rttm.internal.Utils", "inTransaction", new ArrayType(
+							Type.BOOLEAN, 1), Constants.GETSTATIC));
+			il.append(new PUSH(_cp, -122));
+			il.append(_factory.createInvoke("com.jopdesign.sys.Native", "rd",
+					Type.INT, new Type[] { Type.INT }, Constants.INVOKESTATIC));
+			il.append(new PUSH(_cp, 0));
+			il.append(InstructionConstants.BASTORE);
+			InstructionHandle nih_113 = il.append(new PUSH(_cp, 1));
+			il.append(new PUSH(_cp, -128));
+			il.append(_factory.createInvoke("com.jopdesign.sys.Native", "wrMem",
+					Type.VOID, new Type[] { Type.INT, Type.INT },
+					Constants.INVOKESTATIC));
+			InstructionHandle nih_119 = il.append(InstructionFactory
+					.createLoad(Type.OBJECT, transactionLocalsBaseIndex-2+3));
+			// il.append(_factory.createCheckCast(new
+			// ObjectType("java.lang.RuntimeException")));
+			il.append(InstructionConstants.ATHROW);
 			
-			InstructionHandle ih_113 = il.append(InstructionFactory.createLoad(Type.OBJECT, transactionLocalsBaseIndex-2+3));
-			il.append(_factory.createFieldAccess("rttm.internal.Utils", "abortException", new ObjectType("rttm.AbortException"), Constants.GETSTATIC));
-			    BranchInstruction if_acmpne_117 = InstructionFactory.createBranchInstruction(Constants.IF_ACMPNE, null);
-			il.append(if_acmpne_117);
-			InstructionHandle ih_120 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "abortException", new ObjectType("rttm.AbortException"), Constants.GETSTATIC));
-			il.append(InstructionConstants.ATHROW);
-			InstructionHandle ih_124 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "retryException", new ObjectType("com.jopdesign.sys.RetryException"), Constants.GETSTATIC));
-			il.append(InstructionConstants.ATHROW);
-			InstructionHandle ih_128;
-			BranchInstruction goto_128 = InstructionFactory.createBranchInstruction(Constants.GOTO, ih_43);
-			ih_128 = il.append(goto_128);
+
 			
 			// set branch targets			
 			
@@ -347,10 +361,9 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 			ifeq_22.setTarget(ih_43);
 			ifeq_44.setTarget(ih_53);
 			ifeq_59.setTarget(ih_84);
-			ifeq_88.setTarget(ih_113);
-			if_acmpne_101.setTarget(ih_108);
-			goto_110.setTarget(ih_128);
-			if_acmpne_117.setTarget(ih_124);
+			
+			ifeq_88.setTarget(nih_119);
+			if_acmpne_95.setTarget(nih_103);
 			
 			{
 			    for (BranchInstruction b: gotos_transactionCommit) {
@@ -361,7 +374,7 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 			// set exception handlers 
 			
 			// TODO restrict exception handler
-			method.addExceptionHandler(ih_53, ih_84, ih_86, new ObjectType("java.lang.Throwable"));
+			method.addExceptionHandler(ih_53, ih_84, nih_86, new ObjectType("java.lang.Throwable"));
 			method.setMaxStack();
 			method.setMaxLocals();
 		}

@@ -180,7 +180,7 @@ synchronized (o) {
 		ArithExc = new ArithmeticException();
 		CCExc = new ClassCastException();
 		
-		REExc = new RetryException();
+		REExc = RetryException.instance;
 
 	}
 

@@ -96,7 +96,7 @@ public class Transaction {
 
 				if (isNotNestedTransaction) {
 					// reference comparison is enough
-					if (e == Utils.retryException) {
+					if (e == RetryException.instance) {
 						// restore method arguments
 						arg0 = arg0Copy;						
 					} else {

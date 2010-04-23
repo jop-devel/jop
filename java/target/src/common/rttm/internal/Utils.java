@@ -20,11 +20,8 @@
 
 package rttm.internal;
 
-import rttm.AbortException;
-
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
-import com.jopdesign.sys.RetryException;
 
 /**
  * Internal use by RTTM.
@@ -33,8 +30,5 @@ import com.jopdesign.sys.RetryException;
  * @author Peter Hilber (peter@hilber.name)
  */
 public class Utils {
-	public static final RetryException retryException = new RetryException();
-	public static final AbortException abortException = new AbortException();
-	
 	public static boolean[] inTransaction = new boolean[Native.rd(Const.IO_CPUCNT)];
 }

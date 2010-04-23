@@ -21,8 +21,10 @@
 package com.jopdesign.sys;
 
 public class RetryException extends RuntimeException {
-	public RetryException() {
+	protected RetryException() {
 		super("RetryException");
 	}
+	
+	public static RetryException instance = new RetryException();
 }
 

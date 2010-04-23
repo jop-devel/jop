@@ -27,7 +27,9 @@ package rttm;
  */
 public class AbortException extends RuntimeException {
 
-	public AbortException() {
+	protected AbortException() {
 		super("AbortException");
 	}
+	
+	public static AbortException instance = new AbortException(); 
 }
