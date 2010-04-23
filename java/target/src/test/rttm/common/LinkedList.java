@@ -1,4 +1,4 @@
-package rttm.swtest;
+package rttm.common;
 
 
 public class LinkedList {

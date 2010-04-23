@@ -1,4 +1,4 @@
-package rttm.swtest;
+package rttm.tests;
 
 import joprt.RtThread;
 
@@ -9,11 +9,11 @@ import rttm.atomic;
 import rttm.common.ExitingRunnable;
 import rttm.common.LinkedList;
 
-public class SimpleSnapshot implements Runnable {
+public class LinkedListContention implements Runnable {
 
 	protected static SysDevice sys = IOFactory.getFactory().getSysDevice();
 	
-	protected static final int MOVERS = sys.nrCpu;
+	protected static final int MOVERS = 4;
 	protected static final int INITIAL_SIZE = 100;
 	
 	protected static Object[] lists = new Object[MOVERS]; 
@@ -30,7 +30,7 @@ public class SimpleSnapshot implements Runnable {
 		}
 		{
 			for (int i = 1; i < MOVERS; i++) {
-				Runnable r = new SimpleSnapshot();
+				Runnable r = new LinkedListContention();
 				Startup.setRunnable(r, i-1);
 			}
 			for (int i = MOVERS; i < sys.nrCpu; i++) {
@@ -41,7 +41,7 @@ public class SimpleSnapshot implements Runnable {
 			
 		}
 				
-		while (true) {
+		for (int i = 0; i < 5; i++) {
 			RtThread.busyWait(1000*1000);
 			snapshot();
 		}
@@ -56,11 +56,6 @@ public class SimpleSnapshot implements Runnable {
 		for (int i = 0; i < lists.length; i++) {
 			int size = ((LinkedList)lists[i]).size();
 			sum += size;
-			rttm.Commands.earlyCommit();
-			System.out.print("List ");
-			System.out.print(i);
-			System.out.print(": ");
-			System.out.println(size);
 		}
 		
 		rttm.Commands.earlyCommit();

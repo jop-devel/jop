@@ -1,4 +1,4 @@
-package rttm.tests.errors;
+package rttm.tests;
 
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;

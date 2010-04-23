@@ -1,8 +1,8 @@
 package rttm.idioms;
 
 import rttm.atomic;
-import rttm.swtest.AtomicLinkedList;
-import rttm.swtest.AtomicLinkedList.LinkedObject;
+import rttm.common.AtomicLinkedList;
+import rttm.common.AtomicLinkedList.LinkedObject;
 
 public class Privatization {
 
