@@ -164,7 +164,7 @@ architecture rtl of tm_state_machine is
 	signal commit_finished_dly_internal_1: std_logic;
 	
 	-- tm_state_machine is busy
-	signal rdy_cnt_busy, next_rdy_cnt_busy: std_logic;
+	signal rdy_cnt_busy: std_logic;
 	
 		
 	-- Instrumentation
@@ -179,8 +179,8 @@ architecture rtl of tm_state_machine is
 		read_or_write_set: unsigned(way_bits downto 0);
 	end record;
 	
-	signal instrumentation: instrumentation_type;
-	signal next_instrumentation: instrumentation_type;
+	signal instrumentation_data: instrumentation_type;
+	signal next_instrumentation_data: instrumentation_type;
 	
 	type instr_helpers_type is record
 		last_value: unsigned(31 downto 0);
@@ -230,9 +230,9 @@ begin
 		transaction_start => transaction_start,
 		rdy_cnt_busy => rdy_cnt_busy,
 		
-		read_set => next_instrumentation.read_set,
-		write_set => next_instrumentation.write_set,
-		read_or_write_set => next_instrumentation.read_or_write_set
+		read_set => next_instrumentation_data.read_set,
+		write_set => next_instrumentation_data.write_set,
+		read_or_write_set => next_instrumentation_data.read_or_write_set
 	);
 	
 	--
@@ -249,16 +249,16 @@ begin
 		state = EARLY_COMMIT
 		else '0';
 	
-	-- moved out of state machine and in previous cycle
-	next_rdy_cnt_busy <= '1' when 
-	(next_state = WAIT_TOKEN) or
-	(next_state = COMMIT) or
-	(next_state = EARLY_WAIT_TOKEN) or
-	(next_state = EARLY_FLUSH) or
-	((next_state = ABORT) and
-		(next_containment_state /= cbi0) and 
-		(next_containment_state /= cbi))
-	else '0';
+-- 	-- moved out of state machine and in previous cycle
+-- 	next_rdy_cnt_busy <= '1' when 
+-- 	(next_state = WAIT_TOKEN) or
+-- 	(next_state = COMMIT) or
+-- 	(next_state = EARLY_WAIT_TOKEN) or
+-- 	(next_state = EARLY_FLUSH) or
+-- 	((next_state = ABORT) and
+-- 		(next_containment_state /= cbi0) and 
+-- 		(next_containment_state /= cbi))
+-- 	else '0';
 	
 	
 	tm_in_transaction <= '1' when state /= BYPASS else '0';
@@ -269,21 +269,21 @@ begin
 	--	TM STATE MACHINE
 	--
 	state_machine: process(commit_finished_dly, commit_token_grant, conflict, 
-		containment_state, state, tag_full, tm_cmd, instrumentation) is		
+		containment_state, state, tag_full, tm_cmd, instrumentation_data) is		
 	begin
 		next_state <= state;
 		exc_tm_rollback <= '0';
--- 		rdy_cnt_busy <= '0';
+		rdy_cnt_busy <= '0';
 		
 		transaction_start <= '0';
 		
 		next_containment_state <= containment_state;
 		
 		if instrumentation then
-			next_instrumentation.retries <= instrumentation.retries;
-			next_instrumentation.commits <= instrumentation.commits;
-			next_instrumentation.early_commits <= 
-				instrumentation.early_commits;
+			next_instrumentation_data.retries <= instrumentation_data.retries;
+			next_instrumentation_data.commits <= instrumentation_data.commits;
+			next_instrumentation_data.early_commits <= 
+				instrumentation_data.early_commits;
 		end if;
 		
 		case state is
@@ -310,8 +310,8 @@ begin
 						next_state <= BYPASS;
 						
 						if instrumentation then
-							next_instrumentation.retries <= 
-								instrumentation.retries + 1;
+							next_instrumentation_data.retries <= 
+								instrumentation_data.retries + 1;
 						end if;
 					when start_transaction | none => 
 						null;
@@ -321,8 +321,8 @@ begin
 					next_state <= ABORT;
 					
 					if instrumentation then
-						next_instrumentation.retries <= 
-							instrumentation.retries + 1;
+						next_instrumentation_data.retries <= 
+							instrumentation_data.retries + 1;
 					end if;
 					
 					case tm_cmd is
@@ -337,54 +337,54 @@ begin
 				end if;
 								
 			when WAIT_TOKEN =>
--- 				rdy_cnt_busy <= '1';
+				rdy_cnt_busy <= '1';
 			
 				if conflict = '1' then
 					next_state <= ABORT;
 					next_containment_state <= cbb0;
 					
 					if instrumentation then
-						next_instrumentation.retries <= 
-							instrumentation.retries + 1;
+						next_instrumentation_data.retries <= 
+							instrumentation_data.retries + 1;
 					end if;
 				elsif commit_token_grant = '1' then
 					next_state <= COMMIT;
 					
 					if instrumentation then
-						next_instrumentation.commits <= 
-							instrumentation.commits + 1;
+						next_instrumentation_data.commits <= 
+							instrumentation_data.commits + 1;
 					end if;
 				end if;
 			
 			when COMMIT =>
--- 				rdy_cnt_busy <= '1';
+				rdy_cnt_busy <= '1';
 				
 				if commit_finished_dly = '1' then
 					next_state <= BYPASS;
 				end if;
 				
 			when EARLY_WAIT_TOKEN =>
--- 				rdy_cnt_busy <= '1';
+				rdy_cnt_busy <= '1';
 			
 				if conflict = '1' then
 					next_state <= ABORT;
 					next_containment_state <= cbb0;
 					
 					if instrumentation then
-						next_instrumentation.retries <= 
-							instrumentation.retries + 1;
+						next_instrumentation_data.retries <= 
+							instrumentation_data.retries + 1;
 					end if;
 				elsif commit_token_grant = '1' then
 					next_state <= EARLY_FLUSH;
 					
 					if instrumentation then
-						next_instrumentation.early_commits <= 
-							instrumentation.early_commits + 1;
+						next_instrumentation_data.early_commits <= 
+							instrumentation_data.early_commits + 1;
 					end if;
 				end if;
 				
 			when EARLY_FLUSH =>
--- 				rdy_cnt_busy <= '1';
+				rdy_cnt_busy <= '1';
 			
 				if commit_finished_dly = '1' then
 					next_state <= EARLY_COMMIT;
@@ -396,8 +396,8 @@ begin
 						next_state <= BYPASS;
 
 						if instrumentation then
-							next_instrumentation.commits <= 
-								instrumentation.commits + 1;
+							next_instrumentation_data.commits <= 
+								instrumentation_data.commits + 1;
 						end if;
 					when aborted =>
 						-- indicates a program bug
@@ -406,8 +406,8 @@ begin
 						assert false;
 						
 						if instrumentation then
-							next_instrumentation.retries <= 
-								instrumentation.retries + 1;
+							next_instrumentation_data.retries <= 
+								instrumentation_data.retries + 1;
 						end if;
 						next_state <= BYPASS;						
 					when others =>
@@ -437,26 +437,26 @@ begin
 						exc_tm_rollback <= '1';
 					
 						next_containment_state <= cbb1;
--- 						rdy_cnt_busy <= '1';
+						rdy_cnt_busy <= '1';
 					
 					when cbb1 =>
 						next_containment_state <= cbb2;
--- 						rdy_cnt_busy <= '1';
+						rdy_cnt_busy <= '1';
 					
 					when cbb2 =>
 						next_containment_state <= cbi;
--- 						rdy_cnt_busy <= '1';
+						rdy_cnt_busy <= '1';
 					
 					when cbi =>
 						null;
 												
 					when cba1 =>
 						next_containment_state <= cba2;
--- 						rdy_cnt_busy <= '1';
+						rdy_cnt_busy <= '1';
 					
 					when cba2 =>
 						next_state <= BYPASS;
--- 						rdy_cnt_busy <= '1';
+						rdy_cnt_busy <= '1';
 						
 				end case;
 				
@@ -475,9 +475,9 @@ begin
 	--
 	--	 Adjustments to signals to/from CPU/arbiter.
 	--
-	filter: process(instrum_helpers, instrumentation, is_tm_magic_addr_async, 
-		sc_cpu_in_filtered, sc_arb_out_filtered, sc_cpu_out, state, 
-		rdy_cnt_busy, tm_cmd) is
+	filter: process(instrum_helpers, instrumentation_data, 
+		is_tm_magic_addr_async, sc_cpu_in_filtered, sc_arb_out_filtered, 
+		sc_cpu_out, state, rdy_cnt_busy, tm_cmd) is
 	begin
 		sc_cpu_out_filtered <= sc_cpu_out;
 		sc_cpu_in <= sc_cpu_in_filtered;
@@ -519,25 +519,25 @@ begin
 					case sc_cpu_out.address(2 downto 0) is
 						when RETRIES_ADDR =>
 							next_instr_helpers.last_value <=
-								instrumentation.retries;
+								instrumentation_data.retries;
 						when COMMITS_ADDR =>
 							next_instr_helpers.last_value <=
-								instrumentation.commits;
+								instrumentation_data.commits;
 						when EARLY_COMMITS_ADDR =>
 							next_instr_helpers.last_value <=
-								instrumentation.early_commits;
+								instrumentation_data.early_commits;
 						when READ_SET_ADDR =>
 							next_instr_helpers.last_value <=
 								(31 downto way_bits+1 => '0') & 
-									instrumentation.read_set;
+									instrumentation_data.read_set;
 						when WRITE_SET_ADDR =>
 							next_instr_helpers.last_value <=
 								(31 downto way_bits+1 => '0') &
-								instrumentation.write_set;
+								instrumentation_data.write_set;
 						when READ_OR_WRITE_SET_ADDR =>
 							next_instr_helpers.last_value <=
 								(31 downto way_bits+1 => '0') &
-								instrumentation.read_or_write_set;
+								instrumentation_data.read_or_write_set;
 						when others =>
 							next_instr_helpers.last_value <=
 								(others => 'X');
@@ -575,10 +575,10 @@ begin
 			commit_finished_dly <= '0';
 								
 			-- containment_state <= -- don't care
-			rdy_cnt_busy <= '0';
+-- 			rdy_cnt_busy <= '0';
 			
 			if instrumentation then
-				instrumentation <= ((others => '0'), (others => '0'), 
+				instrumentation_data <= ((others => '0'), (others => '0'), 
 					(others => '0'), (others => '0'), (others => '0'),
 					(others => '0'));
 				instrum_helpers <= ((others => '0'), '0');
@@ -596,10 +596,10 @@ begin
 			
 			containment_state <= next_containment_state;
 			
-			rdy_cnt_busy <= next_rdy_cnt_busy;
+-- 			rdy_cnt_busy <= next_rdy_cnt_busy;
 			
 			if instrumentation then
-				instrumentation <= next_instrumentation;
+				instrumentation_data <= next_instrumentation_data;
 				instrum_helpers <= next_instr_helpers;
 			end if;
 			

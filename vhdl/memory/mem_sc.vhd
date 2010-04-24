@@ -41,7 +41,6 @@
 --	2009-11-17	use bc operand for putfield index
 --	2009-11-23	support for get/putstatic (stgs, stps)
 --	2009-11-28	use the object cache, invalidate on native access
---	2010-02-23	deactivate object cache, since it seems to conflict with RTTM
 --
 --	TODO: invalidate on monitorenter, volatile
 --
@@ -242,18 +241,16 @@ end process;
 --	Object cache connections
 --
 
--- 	oc: entity work.ocache
--- 		generic map (
--- 			size_bits => 2
--- 		)
--- 		port map (
--- 			clk => clk,
--- 			reset => reset,
--- 			ocin => ocin,
--- 			ocout => ocout
--- 		);
-
-	ocout.hit <= '0';
+	oc: entity work.ocache
+		generic map (
+			size_bits => 2
+		)
+		port map (
+			clk => clk,
+			reset => reset,
+			ocin => ocin,
+			ocout => ocout
+		);
 
 	-- TODO: what about larger field indexes?
 	-- at least we need to signal a miss....
