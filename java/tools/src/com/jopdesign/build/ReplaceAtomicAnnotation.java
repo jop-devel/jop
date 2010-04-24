@@ -374,7 +374,7 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 			// set exception handlers 
 			
 			// TODO restrict exception handler
-			method.addExceptionHandler(ih_53, ih_84, nih_86, new ObjectType("java.lang.Throwable"));
+			method.addExceptionHandler(ih_53, ih_84, nih_86, null);
 			method.setMaxStack();
 			method.setMaxLocals();
 		}

@@ -1,9 +1,22 @@
-COMPATIBILITY
+REAL-TIME TRANSACTIONAL MEMORY IMPLEMENTATION README 
+
+
+
+*** INDEX
+
+Compatibility
+How to use RTTM
+Files of interest
+Known issues
+Change history
+
+
+*** COMPATIBILITY
 
 RTTM currently supports the DE2 and the dspio board (Quartus projects de2-70rttm and cycrttm).
 
 
-HOW TO USE RTTM
+*** HOW TO USE RTTM
 
 - Understand conventional JOP design flow.
 
@@ -19,14 +32,16 @@ USE_RTTM=yes
 - To compile processor and program and download program to target, run 'make all'.
 - If you already compiled the processor and only want to compile and download the program, run 'make tools japp'.
 - To simulate using Modelsim, run 'make tools tmsim'.
+- The programming interface is described in the thesis "Hardware Transactional Memory for a Real-Time Chip Multiprocessor", section "Programming interface". 
+- Example programs may be found in TODO. 
 
 
-FILES OF INTEREST
+*** FILES OF INTEREST
 
 TODO
 
 
-KNOWN ISSUES
+*** KNOWN ISSUES
 
 - The maximum size of the read or write set in a transaction not performing an early commit is one less than the capacity of the transaction cache.
 - TDMA slots are only reallocated while a processor is executing a hardware transaction, not during the entire software transaction.
@@ -35,11 +50,12 @@ KNOWN ISSUES
 - The FIFO in vhdl/rttm/write_fifo_buffer.vhd is a direct instantation of Altera-specific IP.
 - The generic intended_device_family in vhdl/rttm/write_fifo_buffer.vhd might need to be adjusted for other targets.
 - 'make tools' must be run whenever com.jopdesign.sys.Const.USE_RTTM_BIGMEM is changed.
+- Instrumentation data for each CPU may only be accessed using the respective CPU.  
 
 
-CHANGE HISTORY
+*** CHANGE HISTORY
 
+2010-04-24 (Peter Hilber): Amendments
 2010-04-18 (Peter Hilber): Amendments
 2010-03-16 (Peter Hilber): Known issues
 2010-01-14 (Peter Hilber): Instructions to build and run RTTM
-

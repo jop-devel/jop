@@ -22,7 +22,6 @@
 --
 --	TODO:
 --	- read out statistics from all cores on core 0
---	- change state machine state names as in thesis
 --
 
 library ieee;

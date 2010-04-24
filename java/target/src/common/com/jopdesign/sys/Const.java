@@ -91,7 +91,7 @@ public class Const {
 	/**
 	 * Set to true if RTTM is used. 
 	 */
-	public static final boolean USE_RTTM = true;
+	public static final boolean USE_RTTM = false;
 
 	/**
 	 * Offset of the real stack in the on-chip RAM. Is set in

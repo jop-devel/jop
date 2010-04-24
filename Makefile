@@ -34,15 +34,15 @@ USB=false
 #		without the echo 'protocol' on USB
 #
 ifeq ($(USB),true)
-	COM_PORT=COM4
+	COM_PORT=COM5
 	COM_FLAG=-e -usb
 else
 	COM_PORT=COM1
 	COM_FLAG=-e
 endif
 
-#BLASTER_TYPE=ByteBlasterMV
-BLASTER_TYPE=USB-Blaster
+BLASTER_TYPE=ByteBlasterMV
+#BLASTER_TYPE=USB-Blaster
 
 ifeq ($(WINDIR),)
 	USBRUNNER=./USBRunner
@@ -56,13 +56,13 @@ endif
 QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp de2-70vga cycrttm de2-70rttm
 # if you want to build only one Quartus project use e.q.:
 ifeq ($(USB),true)
-	QPROJ=cycrttm
+	QPROJ=usbmin
 else
-	QPROJ=de2-70rttm
+	QPROJ=cycmin
 endif
 
 # Number of cores for JopSim and RTTM simulation
-CORE_CNT=2
+CORE_CNT=1
 
 # Which project do you want to be downloaded?
 DLPROJ=$(QPROJ)
@@ -139,7 +139,7 @@ TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclassp
 GCC_PARAMS=
 
 # uncomment this to use RTTM
-USE_RTTM=yes
+#USE_RTTM=yes
 
 ifeq ($(USE_RTTM),yes)
 GCC_PARAMS=-DRTTM
@@ -237,12 +237,6 @@ ifeq ($(USB),true)
 else
 	make config_byteblaster
 endif
-ifeq ($(USB),true)
-TEST_JAPP_CONFIG=config_usb
-else
-TEST_JAPP_CONFIG=config_byteblaster
-endif
-test_japp: java_app $(TEST_JAPP_CONFIG) test_download
 
 install:
 	@echo nothing to install
@@ -488,7 +482,7 @@ jsim: java_app
 jtmsim: java_app
 	java $(DEBUG_JOPSIM) -cp java/tools/dist/lib/jop-tools.jar -Dcpucnt=$(CORE_CNT) \
 	com.jopdesign.tools.TMSim java/target/dist/bin/$(JOPBIN)
-	
+
 #
 #   Simulate RTTM (Modelsim target)
 #
@@ -504,13 +498,20 @@ tmsimcon: java_app
 #	RTTM tests on hardware
 #
 
-rttm_tests:	
+ifeq ($(USB),true)
+TEST_JAPP_CONFIG=config_usb
+else
+TEST_JAPP_CONFIG=config_byteblaster
+endif
+test_japp: java_app $(TEST_JAPP_CONFIG) test_download
+
+rttm_tests:
 	for t in `find java/target/src/test/rttm/tests/*.java -printf %f\\\\n|sed 's/\.java//'`; do \
 		make test_japp -e P1=test P2=rttm/tests P3=$$t REFERENCE_PATTERN=java/target/src/test/rttm/tests/$$t.pattern || exit; \
 	done
 
-
-
+test_download:
+	./down $(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)|java $(TOOLS_CP) com.jopdesign.tools.MatchPattern $(REFERENCE_PATTERN)
 
 #
 #	Simulate data cache
@@ -541,9 +542,6 @@ download:
 #
 #	this is the download version with down.exe
 	down $(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
-
-test_download:
-	./down $(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)|java $(TOOLS_CP) com.jopdesign.tools.MatchPattern $(REFERENCE_PATTERN)
 
 #
 #	flash programming

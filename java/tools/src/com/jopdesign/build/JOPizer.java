@@ -59,7 +59,7 @@ public class JOPizer extends AppInfo implements Serializable {
 	public static final int CLINITS_OFFSET = 11;
 
 	public static final boolean CACHE_INVAL = false;
-	public static final boolean USE_RTTM = true;
+	public static final boolean USE_RTTM = false;
 
 	// TODO add all changes???
 	/**
