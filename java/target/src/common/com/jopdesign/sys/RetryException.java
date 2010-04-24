@@ -20,11 +20,21 @@
 
 package com.jopdesign.sys;
 
+/**
+ * This exception is used internally by the RTTM implementation.
+ * 
+ * The class is in the com.jopdesign.sys package because it is 
+ * referenced in {@link JVMHelp}. 
+ * The class implements the singleton pattern.
+
+ * 
+ * @author Peter Hilber (peter@hilber.name)
+ *
+ */
 public class RetryException extends RuntimeException {
 	protected RetryException() {
 		super("RetryException");
 	}
 	
-	public static RetryException instance = new RetryException();
+	public static final RetryException instance = new RetryException();
 }
-

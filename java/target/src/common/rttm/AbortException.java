@@ -21,7 +21,8 @@
 package rttm;
 
 /**
- * TMTODO
+ * This exception is thrown if the user explicitly aborts a transaction. 
+ * The class implements the singleton pattern.
  * 
  * @author Peter Hilber (peter@hilber.name)
  */
@@ -31,5 +32,5 @@ public class AbortException extends RuntimeException {
 		super("AbortException");
 	}
 	
-	public static AbortException instance = new AbortException(); 
+	public static final AbortException instance = new AbortException(); 
 }

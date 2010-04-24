@@ -263,12 +263,12 @@ begin
 		
 		assert << signal .dut.conflict: std_logic >> /= '1';
 		assert valid = (2**way_bits-1 downto 0 => '0');
-		assert << signal .dut.tm.tag.shift: 
-			std_logic >> = '0';
+-- 		assert << signal .dut.tm.tag.shift: 
+-- 			std_logic >> = '0';
 		
 -- 		assert read_tags_v = (2**way_bits-1 downto 0 => '0');		
-		assert << signal .dut.tm.tag.shift: 
-			std_logic >> = '0';
+-- 		assert << signal .dut.tm.tag.shift: 
+-- 			std_logic >> = '0';
 		
 		-- writes and reads in transactional mode
 		
@@ -418,7 +418,6 @@ begin
 		
 		broadcast.valid <= '0';
 		
-		-- TODO
 		for i in 2 to conflict_detection_cycles+1 loop
 			assert i <= conflict_detection_cycles;
 			exit when exc_tm_rollback = '1';
@@ -435,9 +434,6 @@ begin
 
 		sc_write(clk, addr(5), data(5), sc_cpu_out, sc_cpu_in);
 
-		-- TODO zombie mode results are not defined yet
-		--assert result = (31 downto 0 => '0');
-		
  		assert << signal .dut.state: state_type>> = ABORT;
 		
 		-- ack containment

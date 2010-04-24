@@ -27,13 +27,13 @@ import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
 /**
- * User-visible transactional memory interface (apart from {@link atomic}
- * annotation).
+ * Transactional memory interface (apart from {@link atomic} annotation).
  * @author Peter Hilber (peter@hilber.name)
  */
 public class Commands {
 	/**
-	 * TMTODO
+	 * Abort current transaction and throw {@link AbortException}.
+	 * 
 	 * It is the user's responsibility to ensure that no early commit has
 	 * happened before calling this method.
 	 */
@@ -44,7 +44,8 @@ public class Commands {
 	}
 
 	/**
-	 * TMTODO
+	 * Explicitly restart the current transaction. 
+	 * 
 	 * It is the user's responsibility to ensure that no early commit has
 	 * happened before calling this method.
 	 */
@@ -55,7 +56,10 @@ public class Commands {
 	}
 	
 	/**
-	 * TMTODO
+	 * Explicitly perform early commit.
+	 * 
+	 * An early commit assures that the transaction will not abort due to a 
+	 * conflict and must be performed before doing I/O in a transaction.  
 	 */
 	public static void earlyCommit() {
 		Native.wr(Const.TM_EARLY_COMMIT, Const.MEM_TM_MAGIC);

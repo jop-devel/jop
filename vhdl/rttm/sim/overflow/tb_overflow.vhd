@@ -220,7 +220,7 @@ begin
 			assert to_integer(unsigned(ram(i))) = i;
 		end loop;
 		
-		-- TODO explicit early commit, first line as read/dirty, ..., etc.
+		-- could also test explicit early commit, first line as read/dirty, ...
 		
 		sc_write(clk, 2**way_bits+1, 2**way_bits+1, sc_cpu_out, sc_cpu_in);
 

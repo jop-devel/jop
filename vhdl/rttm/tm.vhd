@@ -33,6 +33,12 @@
 -- need to interleave regular memory accesses transparently with conflict
 -- checks.
 --
+--
+--
+-- TODO
+-- - SimpCon tm_cache flag is ignored on write
+--
+
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -164,7 +170,7 @@ architecture rtl of tm is
 	-- remember to forward rd_data from from_mem when tm module is ready
 	signal read_miss_publish, next_read_miss_publish: std_logic;
 	
-	signal next_stage23_line_addr_helper: 
+	signal next_stage2ff_line_addr_helper: 
 		std_logic_vector(way_bits-1 downto 0);
 		
 	signal write_fifo_buffer_wrreq: std_logic;
@@ -267,15 +273,15 @@ begin
 				way_bits => way_bits
 			)
 		PORT MAP (
-				address	 => next_stage23_line_addr_helper,
+				address	 => next_stage2ff_line_addr_helper,
 				clock	 => clk,
 				data	 => next_stage2.dirty,
 				wren	 => next_stage2.update_dirty,
 				q	 => stage3_was_dirty
 			);
 			
-		next_stage23_line_addr_helper <= 
---			(X downto next_stage23.line_addr'high+1 => '0') & 
+		next_stage2ff_line_addr_helper <= 
+--			(X downto next_stage2ff.line_addr'high+1 => '0') & 
 			std_logic_vector(next_stage2ff.line_addr); 
 			
 			
@@ -288,17 +294,15 @@ begin
 			clock	 => clk,
 			data	 => stage3.addr,
 			rdreq	 => commit_shift,
-			sclr	 => transaction_start, -- TODO check timing
+			sclr	 => transaction_start,
 			wrreq	 => write_fifo_buffer_wrreq,
 			empty	 => write_buffer_empty,
 			q	 => commit_addr
 		);
 		
-		-- TODO relies on rttm_instrum generic enabled
 		write_fifo_buffer_wrreq <= '1' when
 			(stage3_was_dirty(0) = '0' or stage3.hit = '0') and
 				stage3.set_dirty = '1' else '0';
-			-- TODO previous cycle?
 
 
 	--
@@ -348,7 +352,7 @@ begin
 					next_stage1.addr <= from_cpu.address;
 
 					if from_cpu.wr = '1' then
-						-- TODO always cached
+						-- TODO tm_cache flag is ignored on write
 						next_stage1.state <= write;
 					elsif from_cpu.rd = '1' then
 						if from_cpu.tm_cache = '1' then
@@ -404,7 +408,7 @@ begin
 		
 		-- set line_addr and tag_full
 		--if stage1.state = commit then
-		--	next_stage23.line_addr <= commit_line(way_bits-1 downto 0);
+		--	next_stage2ff.line_addr <= commit_line(way_bits-1 downto 0);
 		if stage1.state = read1 or stage1.state = write or 
 			stage1.state = commit then
 			if stage1_async.hit = '1' then
@@ -467,7 +471,7 @@ begin
 		
 		-- Since RAM access is synthesized in stage 3 instead of stage 2,
 		-- we set was_dirty using a dedicated component
--- 		next_stage3.was_dirty <= dirty(to_integer(stage23.line_addr));
+-- 		next_stage3.was_dirty <= dirty(to_integer(stage2ff.line_addr));
 		-- naming ^v
 		-- .was_read is only set if it was a hit
 		next_stage3.was_read <= read(to_integer(stage2.read_flag_line_addr)) and
@@ -488,7 +492,7 @@ begin
 			
 			-- moved to dedicated component
 -- 			if stage2.update_dirty = '1' then
--- 				dirty(to_integer(stage23.line_addr)) <= stage2.dirty;
+-- 				dirty(to_integer(stage2ff.line_addr)) <= stage2.dirty;
 -- 			end if;
 			
 			if stage2.update_read = '1' then
@@ -497,7 +501,7 @@ begin
 		end if;
 	end process memory_block_access;
 	
-	proc_stage23: process(commit_addr, from_mem, 
+	proc_stage2ff: process(commit_addr, from_mem, 
 		read_data, save_data, stage1, stage1_async, stage2, stage2ff, 
 		stage3_was_dirty, from_mem_rdy_cnt_dly,
 		rdy_cnt_busy, read_miss_publish) is
@@ -567,7 +571,8 @@ begin
 				
 			when read_miss4 =>
 				-- read finishes only in next cycle 
-				-- (TODO due to control hazard when updating cache)				
+				-- (due to control hazard when updating cache for next memory 
+				-- access)
 				next_stage2ff.update_data <= '1';
 				next_stage2ff.wr_data <= from_mem.rd_data;
 			
@@ -634,7 +639,7 @@ begin
 			next_save_data <= from_mem.rd_data;
 			next_read_miss_publish <= '0';
 		end if;		
-	end process proc_stage23;
+	end process proc_stage2ff;
 	
 	
 	
@@ -674,8 +679,7 @@ begin
 						to_cpu.rdy_cnt <= "11";
 						
 					when read_miss3 =>
-						-- hazard fix - or TODO add reg. and disable cycle 2 write
-						-- TODO refer to documentation
+						-- avoid cache control hazard if next access is a write	
 						to_cpu.rdy_cnt <= "11";
 					when read_miss4 =>
 						to_cpu.rdy_cnt <= "01";

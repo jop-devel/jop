@@ -154,7 +154,6 @@ architecture rtl of tm_state_machine is
 	
 	-- Misc.
 	
-	signal commit_token_request_buf	: std_logic;
 	signal sc_cpu_out_dly: sc_out_type;
 	
 	
@@ -245,13 +244,11 @@ begin
 		sc_cpu_out.address(tm_magic_detect'range) = tm_magic_detect else '0';
 	
 	-- request or hold commit token during these states  
-	commit_token_request_buf <= '1' 
+	commit_token_request <= '1' 
 		when state = WAIT_TOKEN or state = EARLY_WAIT_TOKEN or
 		state = COMMIT or state = EARLY_FLUSH or
 		state = EARLY_COMMIT
 		else '0';
-	
-	commit_token_request <= commit_token_request_buf;
 	
 	-- moved out of state machine and in previous cycle
 	next_rdy_cnt_busy <= '1' when 
@@ -363,7 +360,6 @@ begin
 			when COMMIT =>
 -- 				rdy_cnt_busy <= '1';
 				
-				-- TODO check condition
 				if commit_finished_dly = '1' then
 					next_state <= BYPASS;
 				end if;
@@ -391,7 +387,6 @@ begin
 			when EARLY_FLUSH =>
 -- 				rdy_cnt_busy <= '1';
 			
-				-- TODO check condition
 				if commit_finished_dly = '1' then
 					next_state <= EARLY_COMMIT;
 				end if;
@@ -422,13 +417,16 @@ begin
 				
 			when ABORT =>
 
-				-- If we are about to end a transaction (by executing a end 
-				-- transaction command), we need to assure that the try block 
-				-- is not exited (the transaction command write not finished)
-				-- before the exception is raised (a special bytecode issued)   
+				-- If a transaction is being aborted, we need to assure that 
+				-- the next bytecode issued will handle the exception.
+				--
+				-- This is necessary to restrict zombie transactions to a 
+				-- single zombie bytecode and to assure that the try block 
+				-- containing the transaction is not exited (when already 
+				-- executing the end_transaction hardware command).
+				--
 				-- 2 cycles delay ensure that the exception will be handled 
 				-- when the next bytecode is issued.
-				-- TODO refer to documentation
 			
 				case containment_state is
 					when cbi0 =>

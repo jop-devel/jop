@@ -840,7 +840,7 @@ begin
 		state_wr <= '0';
 		sc_mem_out.atomic <= '0';
 		sc_mem_out.cache <= bypass;
-		sc_mem_out.tm_cache <= '1'; -- TMTODO reduce
+		sc_mem_out.tm_cache <= '1';
 		ocin.wr_gf <= '0';
 		ocin.chk_pf <= '0';
 		ocin.wr_pf <= '0';

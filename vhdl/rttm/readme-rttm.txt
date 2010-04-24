@@ -29,6 +29,7 @@ TODO
 KNOWN ISSUES
 
 - The maximum size of the read or write set in a transaction not performing an early commit is one less than the capacity of the transaction cache.
+- TDMA slots are only reallocated while a processor is executing a hardware transaction, not during the entire software transaction.
 - Garbage collection will not work if USE_RTTM is set.
 - The constants in vhdl/simpcon/sc_arbiter_rttm_tdma.vhd are set for the DE2 board and could be lowered for the cyc12 board.
 - The FIFO in vhdl/rttm/write_fifo_buffer.vhd is a direct instantation of Altera-specific IP.
@@ -38,6 +39,7 @@ KNOWN ISSUES
 
 CHANGE HISTORY
 
+2010-04-18 (Peter Hilber): Amendments
 2010-03-16 (Peter Hilber): Known issues
 2010-01-14 (Peter Hilber): Instructions to build and run RTTM
 

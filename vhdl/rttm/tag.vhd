@@ -146,7 +146,6 @@ begin
 		addr_dly <= addr;
 
 		-- update tag memory in the next cycle
-		-- TODO hazard on 2 consecutive pipelined writes 
 		if wr='1' then
 			if hit_reg='0' then
 				tag(to_integer(nxt(way_bits-1 downto 0))) <= addr_dly;

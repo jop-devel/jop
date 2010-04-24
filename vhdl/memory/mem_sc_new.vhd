@@ -277,7 +277,6 @@ begin
 		sc_mem_out.wr <= '0';
 		sc_mem_out.atomic <= '0';
 		sc_mem_out.cache <= bypass;
-		sc_mem_out.tm_cache <= '1'; -- TMTODO reduce
 
 		-- default values to CPU
 		mem_out.dout <= sc_mem_in.rd_data;
