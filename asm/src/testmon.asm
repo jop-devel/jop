@@ -22,6 +22,7 @@
 //
 //	Test monitor.
 //
+version		= 20100311
 
 //
 //	io address
@@ -255,9 +256,13 @@ key_loop:
 			ldi	13		// CR key
 			sub
 			nop
-			bz	new_line
+			bnz	no_new_line
 			nop
 			nop
+			jmp	new_line
+			nop
+			nop
+no_new_line:
 			
 			ldm	kchar
 			ldi	95
@@ -274,9 +279,7 @@ key_loop:
 			xor
 			stm	jbc_flag	
 			
-			ldi	1
-			nop
-			bnz	new_line
+			jmp	new_line
 			nop
 			nop
 
@@ -295,9 +298,7 @@ chk_addr_key:
 			ldi	0
 			stm	wval
 			
-			ldi	1
-			nop
-			bnz	key_loop
+			jmp	key_loop
 			nop
 			nop
 			
@@ -327,9 +328,7 @@ chk_write_key:
 			ldi	0
 			stm	wval
 			
-			ldi	1
-			nop
-			bnz	key_loop
+			jmp	key_loop
 			nop
 			nop
 			
@@ -346,9 +345,7 @@ do_jbc_write:
 			ldi	0
 			stm	wval
 			
-			ldi	1
-			nop
-			bnz	key_loop
+			jmp	key_loop
 			nop
 			nop
 			
@@ -376,8 +373,6 @@ st_nibble:
 			or
 			stm	wval
 			
-			ldi	1
-			nop
-			bnz	key_loop
+			jmp	key_loop
 			nop
 			nop

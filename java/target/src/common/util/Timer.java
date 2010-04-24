@@ -55,6 +55,10 @@ public class Timer {
 
 		return val-sys.uscntTimer < 0;
 	}
+	public static int getTimeoutUs(int usOff) {
+
+		return sys.uscntTimer + usOff;
+	}
 	public static int getTimeoutMs(int msOff) {
 
 		return sys.uscntTimer + 1000*msOff;

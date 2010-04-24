@@ -299,6 +299,9 @@ public class Const {
 	public static final int IO_DISP = IO_BASE+0x50;
 	public static final int IO_BG = IO_BASE+0x60;
 	
+	public static final int NOC_ADDR = IO_BASE+0x40;
+
+	
 	// OSSI
 	public static final int IO_PWM = IO_BASE+0x30+6;
 	
