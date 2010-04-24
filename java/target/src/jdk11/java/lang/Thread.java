@@ -31,4 +31,8 @@ public class Thread implements Runnable {
 		int tim = (int) l;
 		joprt.RtThread.sleepMs(tim);
 	}
+	
+	public void join() {
+		; // fake for Thomas' benchmarks
+	}
 }
