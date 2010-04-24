@@ -54,8 +54,7 @@ entity stack is
 
 generic (
 	width		: integer := 32;	-- one data word
-	jpc_width	: integer := 10;	-- address bits of java byte code pc
-	stov_using_geq	: boolean
+	jpc_width	: integer := 10		-- address bits of java byte code pc
 );
 port (
 	clk, reset	: in std_logic;
@@ -137,7 +136,6 @@ end component;
 	signal ram_dout		: std_logic_vector(width-1 downto 0);
 
 	signal sp, spp, spm	: std_logic_vector(ram_width-1 downto 0);
-	signal sp_ov_mem	: std_logic;
 	signal vp0, vp1, vp2, vp3
 						: std_logic_vector(ram_width-1 downto 0);
 	signal ar			: std_logic_vector(ram_width-1 downto 0);
@@ -410,9 +408,6 @@ begin
 		spp <= std_logic_vector(to_unsigned(129, ram_width));
 		spm <= std_logic_vector(to_unsigned(127, ram_width));
 		sp_ov <= '0';
-		if stov_using_geq then
-			sp_ov_mem <= '0';
-		end if;
 		vp0 <= std_logic_vector(to_unsigned(0, ram_width));
 		vp1 <= std_logic_vector(to_unsigned(0, ram_width));
 		vp2 <= std_logic_vector(to_unsigned(0, ram_width));
@@ -429,18 +424,8 @@ begin
 		-- usefull information can be printed out
 		-- -8 was ok with just a plain print...
 		-- -10 (or -12) should be ok for a stack trace?
-		if (not stov_using_geq) then
-			if sp=std_logic_vector(to_unsigned(2**ram_width-1-16, ram_width)) then
-				sp_ov <= '1';
-			end if;
-		else
-			if sp>=std_logic_vector(to_unsigned(2**ram_width-1-80, ram_width)) and
-				sp_ov_mem = '0' then
-				sp_ov <= '1';
-				sp_ov_mem <= '1';
-			else
-				sp_ov_mem <= '0';
-			end if;
+		if sp=std_logic_vector(to_unsigned(2**ram_width-1-16, ram_width)) then
+			sp_ov <= '1';
 		end if;
 		if (ena_vp = '1') then
 			vp0 <= a(ram_width-1 downto 0);

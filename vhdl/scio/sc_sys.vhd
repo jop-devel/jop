@@ -47,6 +47,8 @@
 --	2007-12-03	prioritized interrupt processing
 --  2007-12-07  global lock redesign
 --	2009-06-18	add port for deadline instruction
+--	2010-04-24	add support for RTTM
+--	          	handle 1 cycle delay of sync_out.halted signal
 
 
 --
@@ -412,6 +414,7 @@ begin
 		end if;
 		
 		if rd='1' and address(3 downto 0) = "0100" then
+			-- HACK:
 			-- exception handling code is running => zombie bytecode ended
 			ignore_zombie_exc <= '0';
 		end if;

@@ -28,6 +28,7 @@
 --  2007-12-19  included new lock arbitration in state "locked".
 --							Otherwise wrong output if two CPUs are waiting for lock!
 --  2008-02-20	Removed exit from the loop logic by inverting the range of the loop
+--  2010-04-24	Register sync_out_array to speed up CMPs with many cores
 
 
 library ieee;

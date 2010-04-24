@@ -46,7 +46,7 @@ public class JVMHelp {
 	static ArithmeticException ArithExc;
 	static ClassCastException CCExc;
 	
-	static RetryException REExc;
+	static RetryException RetryExc;
 
 	//
 	// DON'T change order of first functions!!!
@@ -135,6 +135,7 @@ synchronized (o) {
 	static void handleException() {
 		
 		if (Const.USE_RTTM) {
+			// abort transaction to avoid invoking f_athrow() twice
 			Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
 		}
 		
@@ -149,7 +150,7 @@ synchronized (o) {
 		} else if (i==Const.EXC_DIVZ) {
 			throw ArithExc;
 		} else if (i==Const.EXC_ROLLBACK) {
-			throw REExc;
+			throw RetryExc;
 		}
 
 		for (;;);
@@ -180,7 +181,7 @@ synchronized (o) {
 		ArithExc = new ArithmeticException();
 		CCExc = new ClassCastException();
 		
-		REExc = RetryException.instance;
+		RetryExc = RetryException.instance;
 
 	}
 

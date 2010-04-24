@@ -232,8 +232,7 @@ end process;
 		generic map(
 			jpc_width => jpc_width,
 			block_bits => block_bits,
-			spm_width => spm_width,
-			stov_using_geq => true
+			spm_width => spm_width
 		)
 		port map(clk_int, int_res,
 				sc_tm_out(i), sc_tm_in(i),

@@ -61,8 +61,7 @@ entity jopcpu is
 generic (
 	jpc_width	: integer;			-- address bits of java bytecode pc = cache size
 	block_bits	: integer;			-- 2*block_bits is number of cache blocks
-	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits)
-	stov_using_geq	: boolean := false
+	spm_width	: integer := 0		-- size of scratchpad RAM (in number of address bits)
 );
 
 port (
@@ -161,7 +160,7 @@ begin
 --
 
 	core: entity work.core
-		generic map(jpc_width, stov_using_geq => stov_using_geq)
+		generic map(jpc_width)
 		port map (
 			clk => clk,
 			reset => reset,
