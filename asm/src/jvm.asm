@@ -141,6 +141,7 @@
 //	2009-11-23	MS: put/getstatic support in mmu (bc operand as address)
 //	2009-11-28	MS: pufield one cycle longer for object cache hit detection, first
 //				working object cache with a single entry
+//	2010-04-24	Peter Hilber: use microcode version of aastore for RTTM
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -150,7 +151,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhd files
 //
-version		= 20100111
+version		= 20100424
 
 //
 //	start of stack area in the on-chip RAM
@@ -719,12 +720,7 @@ sys_exc:
 			stjpc
 			ldm	jjhp			// interrupt() is at offset 0
 								// jjhp points in method table to first
-#ifndef RTTM 
 			ldi	6				// forth method (index 3 * 2 word);
-#else
-			ldi 10				// call handleException() directly, don't 
-								// reset stack pointer
-#endif
 			add
 
 
