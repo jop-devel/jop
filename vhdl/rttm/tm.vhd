@@ -55,8 +55,8 @@ entity tm is
 generic (
 	addr_width		: integer;		-- address bits of cachable memory
 	way_bits		: integer;		-- 2**way_bits is number of entries
-	rttm_instrum	: boolean;
-	confl_rds_only	: boolean
+	instrumentation	: boolean;
+	ignore_masked_conflicts	: boolean
 );
 port (
 	clk, reset		: in std_logic;
@@ -441,9 +441,9 @@ begin
 			when read1 =>
 				next_stage2.update_tags <= '1';
 				
-				-- if confl_rds_only enabled, 
+				-- if ignore_masked_conflicts enabled, 
 				-- set read flag only if first access in transaction is a read 
-				if (not confl_rds_only) or (stage1_async.hit = '0') then					
+				if (not ignore_masked_conflicts) or (stage1_async.hit = '0') then					
 					next_stage2.update_read <= '1';
 					next_stage2.read <= '1';
 				end if;
@@ -794,13 +794,13 @@ begin
 	gen_instr: process(reset, clk) is
 	begin
 		if reset = '1' then
-			if rttm_instrum then
+			if instrumentation then
 				-- reset maxima
 				r_w_set_instrum_max <=
 					((others => '0'), (others => '0'), (others => '0'));
 			end if;  
 		elsif rising_edge(clk) then
-			if rttm_instrum then
+			if instrumentation then
 				-- save for stage 3
 				instrum_stage3.set_read <= stage2.update_read and stage2.read;
 			

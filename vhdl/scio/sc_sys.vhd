@@ -48,6 +48,8 @@
 --  2007-12-07  global lock redesign
 --	2009-06-18	add port for deadline instruction
 --	2010-04-24	add support for RTTM
+--	          	(no need to make RTTM-specific functionality conditional,
+--				since exc_req.rollback='0' if RTTM unused) 
 --	          	handle 1 cycle delay of sync_out.halted signal
 
 
@@ -183,7 +185,8 @@ architecture rtl of sc_sys is
 	signal irq_dly		: std_logic;
 	signal exc_dly		: std_logic;
 	
-	signal ignore_zombie_exc	: std_logic;
+	-- '0' unless RTTM is used
+	signal tm_ignore_zombie_exc	: std_logic;
 
 --
 --	signals for interrupt source state machines
@@ -399,7 +402,7 @@ begin
 
 		dly_block <= '0';
 		dly_timeout <= (others => '0');
-		ignore_zombie_exc <= '0';
+		tm_ignore_zombie_exc <= '0';
 
 	elsif rising_edge(clk) then
 
@@ -413,10 +416,11 @@ begin
 			int_ena <= '0';
 		end if;
 		
+		-- RTTM specific
 		if rd='1' and address(3 downto 0) = "0100" then
 			-- HACK:
 			-- exception handling code is running => zombie bytecode ended
-			ignore_zombie_exc <= '0';
+			tm_ignore_zombie_exc <= '0';
 		end if;
 
 		-- exceptions from core, memory or RTTM
@@ -424,7 +428,8 @@ begin
 			exc_type(2 downto 0) <= EXC_SPOV;
 			exc_pend <= '1';
 		end if;
-		if ignore_zombie_exc = '0' then 
+		-- always true unless RTTM is used
+		if tm_ignore_zombie_exc = '0' then 
 			if exc_req.np='1' then
 				exc_type(2 downto 0) <= EXC_NP;
 				exc_pend <= '1';
@@ -434,9 +439,10 @@ begin
 				exc_pend <= '1';
 			end if;
 		end if;
-		if exc_req.rollback='1' then
+		-- exc_req.rollback='0' if RTTM unused
+		if exc_req.rollback='1' then			
 			-- prevent zombie bytecode from masking detected conflict
-			ignore_zombie_exc <= '1';
+			tm_ignore_zombie_exc <= '1';
 			
 			exc_type(2 downto 0) <= EXC_ROLLBACK;
 			exc_pend <= '1';

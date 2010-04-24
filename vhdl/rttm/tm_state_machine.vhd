@@ -55,11 +55,11 @@ generic (
 	
 	-- enable instrumentation (without probe effects)
 	-- turn off to lower hardware consumption
-	rttm_instrum	: boolean := true;
+	instrumentation	: boolean := true;
 	
 	-- enable to only detect truly conflicting reads,
 	-- i.e. reads of an address not yet written during the transaction
-	confl_rds_only	: boolean := false
+	ignore_masked_conflicts	: boolean := false
 	);
 
 port (
@@ -209,8 +209,8 @@ begin
 	generic map (
 		addr_width => addr_width,
 		way_bits => way_bits,
-		rttm_instrum => rttm_instrum,
-		confl_rds_only => confl_rds_only
+		instrumentation => instrumentation,
+		ignore_masked_conflicts => ignore_masked_conflicts
 	)	
 	port map (
 		clk => clk,
@@ -280,7 +280,7 @@ begin
 		
 		next_containment_state <= containment_state;
 		
-		if rttm_instrum then
+		if instrumentation then
 			next_instrumentation.retries <= instrumentation.retries;
 			next_instrumentation.commits <= instrumentation.commits;
 			next_instrumentation.early_commits <= 
@@ -310,7 +310,7 @@ begin
 						-- handled
 						next_state <= BYPASS;
 						
-						if rttm_instrum then
+						if instrumentation then
 							next_instrumentation.retries <= 
 								instrumentation.retries + 1;
 						end if;
@@ -321,7 +321,7 @@ begin
 				if conflict = '1' then
 					next_state <= ABORT;
 					
-					if rttm_instrum then
+					if instrumentation then
 						next_instrumentation.retries <= 
 							instrumentation.retries + 1;
 					end if;
@@ -344,14 +344,14 @@ begin
 					next_state <= ABORT;
 					next_containment_state <= cbb0;
 					
-					if rttm_instrum then
+					if instrumentation then
 						next_instrumentation.retries <= 
 							instrumentation.retries + 1;
 					end if;
 				elsif commit_token_grant = '1' then
 					next_state <= COMMIT;
 					
-					if rttm_instrum then
+					if instrumentation then
 						next_instrumentation.commits <= 
 							instrumentation.commits + 1;
 					end if;
@@ -371,14 +371,14 @@ begin
 					next_state <= ABORT;
 					next_containment_state <= cbb0;
 					
-					if rttm_instrum then
+					if instrumentation then
 						next_instrumentation.retries <= 
 							instrumentation.retries + 1;
 					end if;
 				elsif commit_token_grant = '1' then
 					next_state <= EARLY_FLUSH;
 					
-					if rttm_instrum then
+					if instrumentation then
 						next_instrumentation.early_commits <= 
 							instrumentation.early_commits + 1;
 					end if;
@@ -396,7 +396,7 @@ begin
 					when end_transaction =>
 						next_state <= BYPASS;
 
-						if rttm_instrum then
+						if instrumentation then
 							next_instrumentation.commits <= 
 								instrumentation.commits + 1;
 						end if;
@@ -406,7 +406,7 @@ begin
 						-- already touched
 						assert false;
 						
-						if rttm_instrum then
+						if instrumentation then
 							next_instrumentation.retries <= 
 								instrumentation.retries + 1;
 						end if;
@@ -508,7 +508,7 @@ begin
 			sc_cpu_out_filtered.rd <= '0';
 		end if;
 				 
-		if rttm_instrum then
+		if instrumentation then
 			-- override rd_data, where appropriate
 			next_instr_helpers <= instrum_helpers;
 		
@@ -578,7 +578,7 @@ begin
 			-- containment_state <= -- don't care
 			rdy_cnt_busy <= '0';
 			
-			if rttm_instrum then
+			if instrumentation then
 				instrumentation <= ((others => '0'), (others => '0'), 
 					(others => '0'), (others => '0'), (others => '0'),
 					(others => '0'));
@@ -599,7 +599,7 @@ begin
 			
 			rdy_cnt_busy <= next_rdy_cnt_busy;
 			
-			if rttm_instrum then
+			if instrumentation then
 				instrumentation <= next_instrumentation;
 				instrum_helpers <= next_instr_helpers;
 			end if;

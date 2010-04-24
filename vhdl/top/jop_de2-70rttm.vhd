@@ -51,8 +51,8 @@ generic (
 	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
 	cpu_cnt		: integer := 4;		-- number of cpus
 	tm_way_bits	: integer := 5;		-- 2**way_bits is number of entries
-	rttm_instrum	: boolean := true;	-- rttm instrumentation
-	confl_rds_only	: boolean := false
+	tm_instrum	: boolean := true;	-- rttm instrumentation
+	tm_ignore_masked_conflicts	: boolean := false -- ignore conflicts masked by output dependences	
 );
 
 port (
@@ -147,8 +147,8 @@ end component;
 --
 --	IO interface
 --
-	signal ser_in			: ser_in_type;
-	signal ser_out			: ser_out_type;
+-- 	signal ser_in			: ser_in_type;
+-- 	signal ser_out			: ser_out_type;
 	signal wd_out			: std_logic;
 
 	-- for generation of internal reset
@@ -163,8 +163,8 @@ end component;
 	signal ram_nwe			: std_logic;
 
 -- not available at this board:
-	signal ser_ncts			: std_logic;
-	signal ser_nrts			: std_logic;
+-- 	signal ser_ncts			: std_logic;
+-- 	signal ser_nrts			: std_logic;
 
 -- cmpsync
 
@@ -246,8 +246,8 @@ end process;
 				addr_width => tm_addr_width,
 				tm_magic_detect => tm_magic_detect,
 				way_bits => tm_way_bits,
-				rttm_instrum => rttm_instrum,
-				confl_rds_only => confl_rds_only				
+				instrumentation => tm_instrum,
+				ignore_masked_conflicts => tm_ignore_masked_conflicts				
 			)	
 			port map (
 				clk	=> clk_int,

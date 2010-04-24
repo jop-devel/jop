@@ -222,7 +222,6 @@ override_slots: process(conventional_slot, tm_in_transaction_reg,
 	committing_reg, any_committing_reg) is
 	variable slot_for_transaction: std_logic;
 begin
-	-- TODO check register delay
 	next_slot <= conventional_slot;
 	
 	slot_for_transaction := '0';

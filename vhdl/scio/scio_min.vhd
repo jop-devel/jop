@@ -58,8 +58,7 @@ use work.sc_pack.all;
 use work.jop_config.all;
 
 entity scio is
-generic (cpu_id : integer := 0; cpu_cnt : integer := 1
-);
+generic (cpu_id : integer := 0; cpu_cnt : integer := 1);
 port (
 	clk		: in std_logic;
 	reset	: in std_logic;
