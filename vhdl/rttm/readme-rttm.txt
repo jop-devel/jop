@@ -13,7 +13,7 @@ Change history
 
 *** COMPATIBILITY
 
-RTTM currently supports the DE2 and the dspio board (Quartus projects de2-70rttm and cycrttm).
+RTTM currently supports the DE2 and the dspio board (Quartus projects de2-70rttm and cycrttm). Support for the dspio board is very limited, since only 2 cores+RTTM modules fit on the EP1C12. 
 
 
 *** HOW TO USE RTTM
@@ -43,13 +43,14 @@ USE_RTTM=yes
 
 java/target/src/common/rttm/* implements the programming interface
 java/target/src/test/rttm/jsim/* contains benchmark programs used for a RTTM behavioral level simulation (see target jtmsim in the Makefile), which are not directly compatible to the RTTM implementation
-java/target/src/test/rttm/tests contains test and example programs
+java/target/src/test/rttm/tests/* contains test and example programs; run 'make tools rttm_tests' to run the tests contained in the top folder
 java/target/src/test/rttm/tests/manual/Transaction.java is the conceptual reference of an atomic method and the base for the generation of an atomic method
 java/tools/src/com/jopdesign/build/ReplaceAtomicAnnotation.java creates the transaction wrapper at link time
 quartus/cycrttm/jop.qpf is the Quartus project for the dspio board
 quartus/de2-70rttm/jop.qpf is the Quartus project for the DE2 board
 vhdl/rttm/* contains the RTTM module
 vhdl/rttm/sim/* tests some RTTM module functionality (invoked using make -C vhdl/rttm/sim/)
+vhdl/rttm/performance-measurements.patch for maximum performance, but without instrumentation; RTTM-only; apply using git apply ...
 vhdl/rttm/tm_state_machine.vhd implements the state machine
 vhdl/rttm/tm.vhd implements most of the transaction cache
 vhdl/rttm/tag.vhd implements the tag memory
