@@ -1,5 +1,5 @@
 diff --git a/vhdl/core/decode.vhd b/vhdl/core/decode.vhd
-index dc81c3f..b182920 100644
+index dc81c3f..7a1ab02 100644
 --- a/vhdl/core/decode.vhd
 +++ b/vhdl/core/decode.vhd
 @@ -487,8 +487,8 @@ begin
@@ -8,21 +8,21 @@ index dc81c3f..b182920 100644
  					mem_in.putfield <= '1';	-- start putfield
 -				when STCP =>
 -					mem_in.copy <= '1';		-- start copy
-+-- 				when STCP =>
-+-- 					mem_in.copy <= '1';		-- start copy
++--				when STCP =>
++--					mem_in.copy <= '1';		-- start copy
  				when STBCR =>
  					mem_in.bc_rd <= '1';	-- start bytecode read
  				when STIDX =>
 diff --git a/vhdl/top/jop_de2-70rttm.vhd b/vhdl/top/jop_de2-70rttm.vhd
-index 4fb1d2d..0dedab4 100644
+index b49bc01..01fc057 100644
 --- a/vhdl/top/jop_de2-70rttm.vhd
 +++ b/vhdl/top/jop_de2-70rttm.vhd
 @@ -51,7 +51,7 @@ generic (
  	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
  	cpu_cnt		: integer := 4;		-- number of cpus
  	tm_way_bits	: integer := 5;		-- 2**way_bits is number of entries
--	rttm_instrum	: boolean := true;	-- rttm instrumentation
-+	rttm_instrum	: boolean := false;	-- rttm instrumentation
- 	confl_rds_only	: boolean := false
+-	tm_instrum	: boolean := true;	-- rttm instrumentation
++	tm_instrum	: boolean := false;	-- rttm instrumentation
+ 	tm_ignore_masked_conflicts	: boolean := false -- ignore conflicts masked by output dependences	
  );
  
