@@ -45,6 +45,18 @@ java/target/src/common/rttm/* implements the programming interface
 java/target/src/test/rttm/jsim/* contains benchmark programs used for a RTTM behavioral level simulation (see target jtmsim in the Makefile), which are not directly compatible to the RTTM implementation
 java/target/src/test/rttm/tests contains test and example programs
 java/target/src/test/rttm/tests/manual/Transaction.java is the conceptual reference of an atomic method and the base for the generation of an atomic method
+java/tools/src/com/jopdesign/build/ReplaceAtomicAnnotation.java creates the transaction wrapper at link time
+quartus/cycrttm/jop.qpf is the Quartus project for the dspio board
+quartus/de2-70rttm/jop.qpf is the Quartus project for the DE2 board
+vhdl/rttm/* contains the RTTM module
+vhdl/rttm/sim/* tests some RTTM module functionality (invoked using make -C vhdl/rttm/sim/)
+vhdl/rttm/tm_state_machine.vhd implements the state machine
+vhdl/rttm/tm.vhd implements most of the transaction cache
+vhdl/rttm/tag.vhd implements the tag memory
+vhdl/rttm/tm_coordinator.vhd implements the transaction coordinator
+vhdl/simpcon/sc_arbiter_rttm_tdma.vhd implements the modified TDMA arbiter
+vhdl/top/jop_de2-70rttm.vhd is the top level entity for the DE2 board
+vhdl/top/joprttm.vhd is the top level entity for the dspio board
 
 
 *** KNOWN ISSUES
