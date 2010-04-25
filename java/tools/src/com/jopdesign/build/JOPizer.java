@@ -65,7 +65,7 @@ public class JOPizer extends AppInfo implements Serializable {
 	/**
 	 * maximum method size (for minimum cache) in bytes
 	 */
-	public static final int METHOD_MAX_SIZE = 1024;
+	public static final int METHOD_MAX_SIZE = 2048; // 1024;
 
 	public static boolean dumpMgci = false;
 

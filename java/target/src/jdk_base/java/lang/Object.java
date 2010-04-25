@@ -387,12 +387,12 @@ public class Object
    * @see #wait(long, int)
    * @see Thread
    */
-/*
+
   public final void notify() throws IllegalMonitorStateException
   {
-    VMObject.notify(this);
+    ; // fake
   }
-*/
+
 
   /**
    * Wakes up all of the {@link Thread}s that have called
@@ -418,12 +418,12 @@ public class Object
    * @see #wait(long, int)
    * @see Thread
    */
-/*
+
   public final void notifyAll() throws IllegalMonitorStateException
   {
-    VMObject.notifyAll(this);
+    ; // fake
   }
-*/
+
 
   /**
    * Waits indefinitely for notify() or notifyAll() to be
@@ -463,13 +463,13 @@ public class Object
    * @see #wait(long, int)
    * @see Thread
    */
-/*
+
   public final void wait()
     throws IllegalMonitorStateException, InterruptedException
   {
-    VMObject.wait(this, 0, 0);
+    ; // fake
   }
-*/
+
 
   /**
    * Waits a specified amount of time (or indefinitely if
