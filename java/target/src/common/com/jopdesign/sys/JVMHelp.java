@@ -45,6 +45,8 @@ public class JVMHelp {
 	static ArrayIndexOutOfBoundsException ABExc;
 	static ArithmeticException ArithExc;
 	static ClassCastException CCExc;
+	
+	static RetryException RetryExc;
 
 	//
 	// DON'T change order of first functions!!!
@@ -132,6 +134,11 @@ synchronized (o) {
 
 	static void handleException() {
 		
+		if (Const.USE_RTTM) {
+			// abort transaction to avoid invoking f_athrow() twice
+			Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
+		}
+		
 		int i;
 		i = Native.rdMem(Const.IO_EXCPT);
 		if (i==Const.EXC_SPOV) {
@@ -142,6 +149,8 @@ synchronized (o) {
 			throw ABExc;
 		} else if (i==Const.EXC_DIVZ) {
 			throw ArithExc;
+		} else if (i==Const.EXC_ROLLBACK) {
+			throw RetryExc;
 		}
 
 		for (;;);
@@ -171,6 +180,8 @@ synchronized (o) {
 		ABExc = new ArrayIndexOutOfBoundsException();
 		ArithExc = new ArithmeticException();
 		CCExc = new ClassCastException();
+		
+		RetryExc = RetryException.instance;
 
 	}
 

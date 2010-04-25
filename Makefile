@@ -53,7 +53,7 @@ else
 endif
 
 # 'some' different Quartus projects
-QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp de2-70vga
+QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp de2-70vga cycrttm de2-70rttm
 # if you want to build only one Quartus project use e.q.:
 ifeq ($(USB),true)
 	QPROJ=usbmin
@@ -137,6 +137,13 @@ TOOLS_CP=-classpath $(TOOLS)/dist/lib/jop-tools.jar$(S)$(TOOLS)/dist/lib/JopDebu
 TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/jdk_base$(S)$(TARGET)/src/jdk11$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
 TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5
 GCC_PARAMS=
+
+# uncomment this to use RTTM
+#USE_RTTM=yes
+
+ifeq ($(USE_RTTM),yes)
+GCC_PARAMS=-DRTTM
+endif
 
 # uncomment this if you want floating point operations in hardware
 # ATTN: be sure to choose 'cycfpu' as QPROJ else no FPU will be available
@@ -351,6 +358,9 @@ java_app:
 	-mkdir $(TARGET)/dist/bin
 	javac $(TARGET_JFLAGS) $(TARGET)/src/common/com/jopdesign/sys/*.java
 	javac $(TARGET_JFLAGS) $(TARGET)/src/jdk_base/java/lang/annotation/*.java	# oh new Java 1.5 world!
+ifeq ($(USE_RTTM),yes)	
+	javac $(TARGET_JFLAGS) $(TARGET)/src/common/rttm/internal/Utils.java
+endif
 	javac $(TARGET_JFLAGS) $(TARGET_APP)
 	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
 #	$(OPTIMIZE)
@@ -371,7 +381,7 @@ jopser:
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SERIAL
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
-		make qsyn -e QBT=$$target; \
+		make qsyn -e QBT=$$target || exit; \
 	done
 
 
@@ -382,7 +392,7 @@ jopusb:
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=USB
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
-		make qsyn -e QBT=$$target; \
+		make qsyn -e QBT=$$target || exit; \
 		cd quartus/$$target && quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
 	done
 
@@ -393,7 +403,7 @@ jopflash:
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=FLASH
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
-		make qsyn -e QBT=$$target; \
+		make qsyn -e QBT=$$target || exit; \
 		quartus_cpf -c quartus/$$target/jop.sof ttf/$$target.ttf; \
 	done
 
@@ -467,11 +477,41 @@ jsim: java_app
 	com.jopdesign.tools.JopSim java/target/dist/bin/$(JOPBIN)
 
 #
-#	Simulate RTTM
+#	Simulate RTTM (Jopsim target)
 #
-tmsim: java_app
+jtmsim: java_app
 	java $(DEBUG_JOPSIM) -cp java/tools/dist/lib/jop-tools.jar -Dcpucnt=$(CORE_CNT) \
 	com.jopdesign.tools.TMSim java/target/dist/bin/$(JOPBIN)
+
+#
+#   Simulate RTTM (Modelsim target)
+#
+tmsim: java_app
+	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SIMULATION
+	cd modelsim && ./sim_tm.bat -i -do sim_tm.do
+
+tmsimcon: java_app
+	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SIMULATION
+	cd modelsim && ./sim_tm.bat -c -do sim_tm_con.do
+
+#
+#	RTTM tests on hardware
+#
+
+ifeq ($(USB),true)
+TEST_JAPP_CONFIG=config_usb
+else
+TEST_JAPP_CONFIG=config_byteblaster
+endif
+test_japp: java_app $(TEST_JAPP_CONFIG) test_download
+
+rttm_tests:
+	for t in `find java/target/src/test/rttm/tests/*.java -printf %f\\\\n|sed 's/\.java//'`; do \
+		make test_japp -e P1=test P2=rttm/tests P3=$$t REFERENCE_PATTERN=java/target/src/test/rttm/tests/$$t.pattern || exit; \
+	done
+
+test_download:
+	./down $(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)|java $(TOOLS_CP) com.jopdesign.tools.MatchPattern $(REFERENCE_PATTERN)
 
 #
 #	Simulate data cache

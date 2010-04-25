@@ -85,7 +85,13 @@ port (
 --
 	irq_in			: in irq_bcf_type;
 	irq_out			: out irq_ack_type;
-	exc_req			: out exception_type
+	exc_req			: out exception_type;
+	
+--
+--	TM exception
+--
+
+	exc_tm_rollback	: in std_logic := '0'
 );
 end jopcpu;
 
@@ -146,6 +152,8 @@ architecture rtl of jopcpu is
 
 
 begin
+
+	exc_req.rollback <= exc_tm_rollback;
 
 --
 --	components of jop
@@ -301,6 +309,7 @@ end process;
 	sc_mem_out.rd <= sc_ctrl_mem_out.rd and mem_access;
 	sc_mem_out.atomic <= sc_ctrl_mem_out.atomic;
 	sc_mem_out.cache <= sc_ctrl_mem_out.cache;
+	sc_mem_out.tm_cache <= sc_ctrl_mem_out.tm_cache;
 
 	sc_scratch_out.address <= sc_ctrl_mem_out.address;
 	sc_scratch_out.wr_data <= sc_ctrl_mem_out.wr_data;

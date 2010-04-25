@@ -2,6 +2,7 @@
 --
 --  This file is a part of JOP, the Java Optimized Processor
 --
+--  Copyright (C) 2009, Peter Hilber (peter@hilber.name)
 --  Copyright (C) 2009, Martin Schoeberl (martin@jopdesign.com)
 --
 --  This program is free software: you can redistribute it and/or modify
@@ -26,22 +27,27 @@
 --
 --	Tag memory
 --
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity tag is 
 generic (
-	addr_width	: integer;		-- address bits of cachable memory
-	way_bits	: integer		-- 2**way_bits is number of entries
+	addr_width	: integer := 19;	-- address bits of cachable memory
+	way_bits	: integer := 6		-- 2**way_bits is number of entries
 );
 port (
 	clk, reset	: in std_logic;
+	
+	transaction_start: in std_logic;
+	
 	addr: in std_logic_vector(addr_width-1 downto 0);
 	wr: in std_logic;
+	
 	hit: out std_logic;
 	line: out unsigned(way_bits-1 downto 0);
-	newline: out unsigned(way_bits-1 downto 0)
+	newline: out unsigned(way_bits downto 0)			
 );
 end tag;
 
@@ -49,29 +55,29 @@ architecture rtl of tag is
 
 	constant lines		: integer := 2**way_bits;
 
-	signal l, line_addr: unsigned(way_bits-1 downto 0);
+	signal l: unsigned(way_bits-1 downto 0);
 
 	-- tag_width can be used to reduce cachable area - saves a lot in the comperators
 	type tag_array is array (0 to lines-1) of std_logic_vector(addr_width-1 downto 0);
 	signal tag			: tag_array;
 	signal h: std_logic_vector(lines-1 downto 0); -- hit
-	signal v: std_logic_vector(lines-1 downto 0); -- valid
+	signal valid: std_logic_vector(lines-1 downto 0); -- valid
 
 	-- pointer to next block to be used on a miss
-	signal nxt			: unsigned(way_bits-1 downto 0);
+	signal nxt			: unsigned(way_bits downto 0);
 
-	signal h_res, hit_reg, wr_dly: std_logic;
+	signal h_res, hit_reg: std_logic;
 	signal addr_dly: std_logic_vector(addr_width-1 downto 0);
 
 begin
 
 
-	hit <= hit_reg;
-	line <= line_addr;
+	hit <= h_res;
+	line <= l;
 	newline <= nxt;
 
 -- asynchronous
-hit_detection: process(tag, addr, h, v)
+hit_detection: process(tag, addr, h, valid)
 	variable h_or: std_logic;
 	variable n: unsigned(way_bits-1 downto 0);
 begin
@@ -79,7 +85,7 @@ begin
 	-- hit detection
 	h <= (others => '0');
 	for i in 0 to lines-1 loop
-		if tag(i)=addr and v(i)='1' then
+		if tag(i)=addr and valid(i)='1' then
 			h(i) <= '1';
 		end if;
 	end loop;
@@ -131,32 +137,27 @@ begin
 	if reset='1' then
 
 		nxt <= (others => '0');
-		v <= (others => '0');
+		valid <= (others => '0');
 		hit_reg <= '0';
-		for i in 0 to lines-1 loop
-			tag(i) <= (others => '0');
-		end loop;
 
 	elsif rising_edge(clk) then
-		-- TODO v has to be reset on transaction begin
-
 		hit_reg <= h_res;
 
-		wr_dly <= wr;
 		addr_dly <= addr;
 
-		line_addr <= l;
-
 		-- update tag memory in the next cycle
-		-- TODO overflow
-		if wr_dly='1' then
+		if wr='1' then
 			if hit_reg='0' then
-				tag(to_integer(nxt)) <= addr_dly;
-				v(to_integer(nxt)) <= '1';
+				tag(to_integer(nxt(way_bits-1 downto 0))) <= addr_dly;
+				valid(to_integer(nxt(way_bits-1 downto 0))) <= '1';
 				nxt <= nxt + 1;
 			end if;
 		end if;
-
+		
+		if transaction_start = '1' then
+			nxt <= (others => '0');
+			valid <= (others => '0');			
+		end if;
 	end if;
 end process;
 

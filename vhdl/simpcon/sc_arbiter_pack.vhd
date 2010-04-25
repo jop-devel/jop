@@ -28,5 +28,12 @@ package sc_arbiter_pack is
 	
 	type arb_out_type is array (integer range <>) of sc_out_type;
 	type arb_in_type is array (integer range <>) of sc_in_type;
+	
+	-- TM
+	
+	type tm_broadcast_type is record
+		valid : std_logic;
+		address : std_logic_vector(SC_ADDR_SIZE-1 downto 0);
+	end record; 
 
 end sc_arbiter_pack;

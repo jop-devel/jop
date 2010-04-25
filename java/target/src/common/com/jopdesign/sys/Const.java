@@ -87,6 +87,11 @@ public class Const {
 	 * provided.
 	 */
 	public static final boolean SUPPORT_FLOAT = true;
+	
+	/**
+	 * Set to true if RTTM is used. 
+	 */
+	public static final boolean USE_RTTM = false;
 
 	/**
 	 * Offset of the real stack in the on-chip RAM. Is set in
@@ -122,6 +127,11 @@ public class Const {
 	 * out of bounds exception.
 	 */
 	public static final int EXC_AB = 3;
+	/**
+	 * Hardware generated exception number for
+	 * RTTM rollback exception.
+	 */
+	public static final int EXC_ROLLBACK = 4;
 	
 	/**
 	 * Software generated divide by zero exception.
@@ -300,6 +310,29 @@ public class Const {
 	public static final int WB_TS1 = WB_BASE+0x72;
 	public static final int WB_TS2 = WB_BASE+0x74;
 	public static final int WB_TS3 = WB_BASE+0x76;
+
+	// RTTM
+	
+	// Adapt magic address to available SRAM: 2 MiB or 1 MiB
+	public static final boolean USE_RTTM_BIGMEM = true;
+	
+	// Keep in synch with VHDL tm_state_machine.tm_magic_detect generic.
+	public static final int MEM_TM_MAGIC = USE_RTTM_BIGMEM ? 
+			0x0C0000 : 0x060000;
+
+	public static final int TM_END_TRANSACTION = 0;
+	public static final int TM_START_TRANSACTION = 1;
+	public static final int TM_ABORTED = 2;
+	public static final int TM_EARLY_COMMIT = 3;
+
+	// RTTM instrumentation
+	// Keep in synch with VHDL tm_state_machine constants.
+	public static final int MEM_TM_RETRIES = MEM_TM_MAGIC+0;
+	public static final int MEM_TM_COMMITS = MEM_TM_MAGIC+1;
+	public static final int MEM_TM_EARLY_COMMITS = MEM_TM_MAGIC+2;
+	public static final int MEM_TM_READ_SET = MEM_TM_MAGIC+3;
+	public static final int MEM_TM_WRITE_SET = MEM_TM_MAGIC+4;
+	public static final int MEM_TM_READ_OR_WRITE_SET = MEM_TM_MAGIC+5;
 
 	
 }

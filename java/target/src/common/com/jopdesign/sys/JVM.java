@@ -804,6 +804,11 @@ class JVM {
 
 	private static Throwable f_athrow(Throwable t) {
 		
+		if (Const.USE_RTTM) {
+			// abort transaction on any exception 
+			Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
+		}
+		
 		int i, j;
 
 		// get frame pointer

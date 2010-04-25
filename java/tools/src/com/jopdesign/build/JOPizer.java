@@ -25,6 +25,10 @@ import java.io.FileOutputStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
 
+import org.apache.bcel.classfile.Attribute;
+
+import boxpeeking.instrument.bcel.AnnotationReader;
+
 /**
  * @author flavius, martin
  *
@@ -40,6 +44,7 @@ public class JOPizer extends AppInfo implements Serializable {
 	public final static String helpClass = "com.jopdesign.sys.JVMHelp";
 	public final static String bootMethod = "boot()V";
 	public final static String mainMethod = "main([Ljava/lang/String;)V";
+	public final static String rttmClass = "rttm.internal.Utils";
 
 	public final static String stringClass = "java.lang.String";
 	public final static String objectClass = "java.lang.Object";
@@ -54,6 +59,7 @@ public class JOPizer extends AppInfo implements Serializable {
 	public static final int CLINITS_OFFSET = 11;
 
 	public static final boolean CACHE_INVAL = false;
+	public static final boolean USE_RTTM = false;
 
 	// TODO add all changes???
 	/**
@@ -96,10 +102,14 @@ public class JOPizer extends AppInfo implements Serializable {
 		super(template);
 	}
 
-
 	public static void main(String[] args) {
 
 		dumpMgci = System.getProperty("mgci", "false").equals("true");
+
+		if (USE_RTTM) {
+			Attribute.addAttributeReader("RuntimeInvisibleAnnotations", new AnnotationReader());
+		}
+
 
     // TODO: small change to implement quickly the symbol manager
 //		JOPizer jz = new JOPizer();
@@ -117,6 +127,9 @@ public class JOPizer extends AppInfo implements Serializable {
 		jz.addClass(startupClass);
 		jz.addClass(jvmClass);
 		jz.addClass(helpClass);
+		if (USE_RTTM) {
+			jz.addClass(rttmClass);
+		}		
 		jz.excludeClass(nativeClass);
 
 		try {
@@ -124,7 +137,12 @@ public class JOPizer extends AppInfo implements Serializable {
 			jz.outTxt = new PrintWriter(new FileOutputStream(jz.outFile+".txt"));
 			jz.outLinkInfo = new PrintWriter(new FileOutputStream(jz.outFile+".link.txt"));
 
-			jz.load();
+			jz.load(); 
+			
+			if (USE_RTTM) {
+				jz.iterate(new ReplaceAtomicAnnotation(jz));
+			}
+			
 			// Reduce constant pool
 			// TODO: remove unused field and static field entries
 			// and remove the code from resolveCPool(cp).

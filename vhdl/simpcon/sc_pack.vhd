@@ -56,6 +56,8 @@ package sc_pack is
 		wr			: std_logic;
 		atomic		: std_logic;
 		cache		: sc_cache_type;
+		tm_cache	: std_logic;
+		tm_broadcast: std_logic;
 	end record;
 
 	type sc_in_type is record
@@ -66,21 +68,41 @@ package sc_pack is
 	type sc_out_array_type is array (integer range <>) of sc_out_type;
 	type sc_in_array_type is array (integer range <>) of sc_in_type;
 
-	constant TIMEOUT : integer := 50;
+	constant DEFAULT_TIMEOUT_CYCLES : integer := 50; 
 
 	procedure sc_write(
 		signal clk : in std_logic;
 		constant addr : in natural;
 		constant data : in natural;
 		signal sc_out : out sc_out_type;
-		signal sc_in  : in sc_in_type);
+		signal sc_in  : in sc_in_type;
+		constant timeout_cycles : integer := DEFAULT_TIMEOUT_CYCLES);
+
+	procedure sc_write(
+		signal clk : in std_logic;
+		constant addr : in std_logic_vector(SC_ADDR_SIZE-1 downto 0);
+		constant data : in std_logic_vector(31 downto 0);
+		signal sc_out : out sc_out_type;
+		signal sc_in  : in sc_in_type;
+		constant timeout_cycles : integer := DEFAULT_TIMEOUT_CYCLES);
 
 	procedure sc_read(
 		signal clk : in std_logic;
 		constant addr : in natural;
 		variable data : out natural;
 		signal sc_out : out sc_out_type;
-		signal sc_in  : in sc_in_type);
+		signal sc_in  : in sc_in_type;
+		constant timeout_cycles : integer := DEFAULT_TIMEOUT_CYCLES);
+		
+	procedure sc_read(
+		signal clk : in std_logic;
+		constant addr : in std_logic_vector(SC_ADDR_SIZE-1 downto 0);
+		variable data : out std_logic_vector(31 downto 0);
+		signal sc_out : out sc_out_type;
+		signal sc_in  : in sc_in_type;
+		constant timeout_cycles : integer := DEFAULT_TIMEOUT_CYCLES);
+	
+
 
 end sc_pack;
 
@@ -91,10 +113,11 @@ package body sc_pack is
 		constant addr : in natural;
 		constant data : in natural;
 		signal sc_out : out sc_out_type;
-		signal sc_in  : in sc_in_type) is
+		signal sc_in  : in sc_in_type;
+		constant timeout_cycles : integer := DEFAULT_TIMEOUT_CYCLES) is
 
 		variable txt : line;
-
+		variable timedout : boolean := false;
 	begin
 
 		write(txt, now, right, 8);
@@ -114,28 +137,77 @@ package body sc_pack is
 		sc_out.address <= (others => 'X');
 		sc_out.wr <= '0';
 
-		for i in 1 to TIMEOUT loop
+		for i in 1 to timeout_cycles loop
 			wait until rising_edge(clk);
 			exit when sc_in.rdy_cnt = "00";
-			if (i = TIMEOUT) then
-				write (txt, string'("No acknowledge recevied!"));
+			if (i = timeout_cycles) then
+				timedout := true;
+				write (txt, LF & string'("No acknowledge recevied!"));
 			end if;		
 		end loop;
 
 		writeline(output, txt);
-
+		assert not timedout;
+		
+		wait for 0 ns;
 	end;
+	
+	procedure sc_write(
+		signal clk : in std_logic;
+		constant addr : in std_logic_vector(SC_ADDR_SIZE-1 downto 0);
+		constant data : in std_logic_vector(31 downto 0);
+		signal sc_out : out sc_out_type;
+		signal sc_in  : in sc_in_type;
+		constant timeout_cycles : integer := DEFAULT_TIMEOUT_CYCLES) is
+
+		variable txt : line;
+		variable timedout : boolean := false;
+	begin
+
+		write(txt, now, right, 8);
+		write(txt, string'(" wrote "));
+		write(txt, to_integer(unsigned(data)));
+		write(txt, string'(" to addr. "));
+		write(txt, to_integer(unsigned(addr)));
+
+		sc_out.wr_data <= data;
+		sc_out.address <= addr;
+		sc_out.wr <= '1';
+		sc_out.rd <= '0';
+
+		-- one cycle valid
+		wait until rising_edge(clk);
+		sc_out.wr_data <= (others => 'X');
+		sc_out.address <= (others => 'X');
+		sc_out.wr <= '0';
+
+		for i in 1 to timeout_cycles loop
+			wait until rising_edge(clk);
+			exit when sc_in.rdy_cnt = "00";
+			if (i = timeout_cycles) then
+				timedout := true;
+				write (txt, LF & string'("No acknowledge recevied!"));
+			end if;		
+		end loop;
+
+		writeline(output, txt);
+		assert not timedout;
+		
+		wait for 0 ns;
+	end;
+	
 
 	procedure sc_read(
 		signal clk : in std_logic;
 		constant addr : in natural;
 		variable data : out natural;
 		signal sc_out : out sc_out_type;
-		signal sc_in  : in sc_in_type) is
+		signal sc_in  : in sc_in_type;
+		constant timeout_cycles : integer := DEFAULT_TIMEOUT_CYCLES) is
 
 		variable txt : line;
 		variable in_data : natural;
-
+		variable timedout : boolean := false;
 	begin
 
 		write(txt, now, right, 8);
@@ -154,11 +226,12 @@ package body sc_pack is
 		sc_out.rd <= '0';
 
 		-- wait for acknowledge
-		for i in 1 to TIMEOUT loop
+		for i in 1 to timeout_cycles loop
 			wait until rising_edge(clk);
 			exit when sc_in.rdy_cnt = "00";
-			if (i = TIMEOUT) then
-				write (txt, string'("No acknowledge recevied!"));
+			if (i = timeout_cycles) then
+				timedout := true;
+				write (txt, LF & string'("No acknowledge recevied!"));
 			end if;		
 		end loop;
 
@@ -170,7 +243,61 @@ package body sc_pack is
 		write(txt, in_data);
 
 		writeline(output, txt);
-
+		assert not timedout;
+		
+		wait for 0 ns;
 	end;
+
+	procedure sc_read(
+		signal clk : in std_logic;
+		constant addr : in std_logic_vector(SC_ADDR_SIZE-1 downto 0);
+		variable data : out std_logic_vector(31 downto 0);
+		signal sc_out : out sc_out_type;
+		signal sc_in  : in sc_in_type;
+		constant timeout_cycles : integer := DEFAULT_TIMEOUT_CYCLES) is
+
+		variable txt : line;
+		variable in_data : natural;
+		variable timedout : boolean := false;
+	begin
+
+		write(txt, now, right, 8);
+		write(txt, string'(" read from addr. "));
+		write(txt, to_integer(unsigned(addr)));
+		writeline(output, txt);
+
+		sc_out.address <= addr;
+		sc_out.wr_data <= (others => 'X');
+		sc_out.wr <= '0';
+		sc_out.rd <= '1';
+
+		-- one cycle valid
+		wait until rising_edge(clk);
+		sc_out.address <= (others => 'X');
+		sc_out.rd <= '0';
+
+		-- wait for acknowledge
+		for i in 1 to timeout_cycles loop
+			wait until rising_edge(clk);
+			exit when sc_in.rdy_cnt = "00";
+			if (i = timeout_cycles) then
+				timedout := true;
+				write (txt, LF & string'("No acknowledge recevied!"));
+			end if;		
+		end loop;
+
+		in_data := to_integer(unsigned(sc_in.rd_data));
+		data := sc_in.rd_data;
+
+		write(txt, now, right, 8);
+		write(txt, string'(" value: "));
+		write(txt, in_data);
+
+		writeline(output, txt);
+		assert not timedout;
+		
+		wait for 0 ns;
+	end;
+
 
 end sc_pack;

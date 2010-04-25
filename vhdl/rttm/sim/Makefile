@@ -1,31 +1,13 @@
-JOPDIR=../..
-#set options=-93 -quiet -check_synthesis -lint -pedanticerrors
-OPTIONS=-93 -quiet
+BATCH=y
+PATHS=`ls -p|grep /`
 
-all: work compile
-	vsim -do sim.do tb_rttm
-
-compile:
-	vcom $(OPTIONS) $(JOPDIR)/simpcon/sc_pack.vhd
-	vcom $(OPTIONS) ../tag.vhd
-	vcom $(OPTIONS) ../tm.vhd
-	vcom $(OPTIONS) tb_rttm.vhd
-
-work:
-	vlib work
-
-ED=c:/programs/lemmy/lemmy
-
-edit:
-	$(ED) ../tm.vhd &
-	$(ED) ../tmtop.vhd &
-	$(ED) tb_rttm.vhd &
-	$(ED) ../../simpcon/sc_pack.vhd &
+all:
+	for p in ${PATHS}; do \
+		make -C $$p -e BATCH=${BATCH} || exit; \
+	done
+ 
 
 clean:
-	-rm -rf work
-	-rm transcript
-	-rm *.wlf
-
-
-
+	for p in ${PATHS}; do \
+		make clean -C $$p || exit; \
+	done

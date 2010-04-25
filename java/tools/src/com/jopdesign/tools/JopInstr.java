@@ -193,7 +193,9 @@ public class JopInstr{
 		new JopInstr("lastore", 1, IMP_ASM, 1),		// 0x50
 		new JopInstr("fastore", 1, IMP_ASM, 18),		// 0x51
 		new JopInstr("dastore", 1, IMP_NO, 1),		// 0x52
-		new JopInstr("aastore", 1, IMP_JAVA, 18),		// 0x53
+		new JopInstr("aastore", 1, 
+				!com.jopdesign.build.JOPizer.USE_RTTM ? 
+				IMP_JAVA : IMP_ASM, 18),				// 0x53
 		new JopInstr("bastore", 1, IMP_ASM, 18),		// 0x54
 		new JopInstr("castore", 1, IMP_ASM, 18),		// 0x55
 		new JopInstr("sastore", 1, IMP_ASM, 18),		// 0x56
