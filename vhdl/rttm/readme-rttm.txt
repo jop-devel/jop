@@ -6,7 +6,7 @@ REAL-TIME TRANSACTIONAL MEMORY IMPLEMENTATION README
 
 Compatibility
 How to use RTTM
-Files of interest
+Files/folders of interest
 Known issues
 Change history
 
@@ -23,8 +23,8 @@ RTTM currently supports the DE2 and the dspio board (Quartus projects de2-70rttm
 
 - Adjust top level vhdl/top/jop_de2-70rttm.vhd (DE2 board) or vhdl/top/joprttm.vhd (dspio board) generics.
 - Set com.jopdesign.sys.Const.USE_RTTM in java/target/src/common/com/jopdesign/sys/Const.java to true. 
+- Set com.jopdesign.sys.Const.USE_RTTM_BIGMEM in java/target/src/common/com/jopdesign/sys/Const.java according to available SRAM (true if using DE2 board, false if using dspio board).
 - Set com.jopdesign.build.JOPizer.USE_RTTM in java/tools/src/com/jopdesign/build/JOPizer.java to true.
-- Set com.jopdesign.sys.Const.USE_RTTM_BIGMEM in java/target/src/common/com/jopdesign/sys/Const.java according to available SRAM (true iff using DE2 board).
 
 - Set Makefile parameters as needed. RTTM-specific Makefile parameters:
 QPROJ=de2-70rttm or QPROJ=cycrttm
@@ -39,9 +39,12 @@ USE_RTTM=yes
 - Hope you will have some fun, and no inexplicable crashes ;)
 
 
-*** FILES OF INTEREST
+*** FILES/FOLDERS OF INTEREST
 
-TODO
+java/target/src/common/rttm/* implements the programming interface
+java/target/src/test/rttm/jsim/* contains benchmark programs used for a RTTM behavioral level simulation (see target jtmsim in the Makefile), which are not directly compatible to the RTTM implementation
+java/target/src/test/rttm/tests contains test and example programs
+java/target/src/test/rttm/tests/manual/Transaction.java is the conceptual reference of an atomic method and the base for the generation of an atomic method
 
 
 *** KNOWN ISSUES

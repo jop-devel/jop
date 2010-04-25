@@ -26,6 +26,7 @@
 --	top level for transactional memory multiprocessor, cycore board with EP1C12
 --
 --	2009-07-19	copied from jopmul.vhd
+--	2010-04-25	replicate changes from jop_de2-70rttm.vhd
 
 
 library ieee;
@@ -48,8 +49,8 @@ generic (
 	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
 	cpu_cnt		: integer := 2;		-- number of cpus
 	tm_way_bits	: integer := 5;		-- 2**way_bits is number of entries
-	rttm_instrum: boolean := true;	-- rttm instrumentation
-	confl_rds_only	: boolean := false
+	tm_instrum: boolean := true;	-- rttm instrumentation
+	tm_ignore_masked_conflicts	: boolean := false -- ignore conflicts masked by output dependences
 );
 
 port (
@@ -199,7 +200,10 @@ end component;
 	signal commit_token_request		: std_logic_vector(0 to cpu_cnt-1);
 	signal commit_token_grant		: std_logic_vector(0 to cpu_cnt-1);
 	
-	signal tm_in_transaction                : std_logic_vector(0 to cpu_cnt-1);	
+	signal tm_in_transaction		: std_logic_vector(0 to cpu_cnt-1);	
+	signal early_commit_starting	: std_logic_vector(0 to cpu_cnt-1);
+	signal next_is_a_read			: std_logic_vector(0 to cpu_cnt-1);
+	signal next_is_a_read_save		: std_logic_vector(0 to cpu_cnt-1);
 	
 	
 begin
@@ -250,8 +254,7 @@ end process;
 			generic map(
 				jpc_width => jpc_width,
 				block_bits => block_bits,
-				spm_width => spm_width,
-				stov_using_geq => true
+				spm_width => spm_width
 			)
 			port map(clk_int, int_res,
 				sc_tm_out(i), sc_tm_in(i),
@@ -265,8 +268,8 @@ end process;
 				addr_width => tm_addr_width,
 				tm_magic_detect => tm_magic_detect,
 				way_bits => tm_way_bits,
-				rttm_instrum => rttm_instrum,
-				confl_rds_only => confl_rds_only
+				instrumentation => tm_instrum,
+				ignore_masked_conflicts => tm_ignore_masked_conflicts
 			)	
 			port map (
 				clk	=> clk_int,
@@ -284,7 +287,8 @@ end process;
 				sc_arb_in => sc_arb_in(i),
 			
 				exc_tm_rollback => exc_tm_rollback(i),
-				tm_in_transaction => tm_in_transaction(i)
+				tm_in_transaction => tm_in_transaction(i),
+				early_commit_starting => early_commit_starting(i)
 				);
 	end generate;
 
@@ -307,13 +311,36 @@ end process;
 		port map(clk_int, int_res,
 			sc_arb_out, sc_arb_in,
 			sc_mem_out, sc_mem_in,
-			committing => commit_token_grant, 
+			committing => commit_token_grant,
 			tm_in_transaction => tm_in_transaction,
-			tm_broadcast => tm_broadcast
-			-- Enable for use with Round Robin Arbiter
-			-- sync_out_array(1)
+			tm_broadcast => tm_broadcast,
+			next_is_a_read => next_is_a_read 
 			);
+		
+	gen_next_is_a_read: process (sc_tm_out, early_commit_starting, 
+		next_is_a_read_save) is
+	begin
+		for i in 0 to cpu_cnt-1 loop
+			next_is_a_read(i) <= next_is_a_read_save(i);
+			
+			if sc_tm_out(i).rd = '1' then
+				next_is_a_read(i) <= '1';
+			elsif sc_tm_out(i).wr = '1' or early_commit_starting(i) = '1' then
+				next_is_a_read(i) <= '0'; 
+			end if;
+		end loop;
+	end process gen_next_is_a_read;
 	
+	process (clk_int, int_res) is
+	begin
+	    if int_res = '1' then
+	    	next_is_a_read_save <= (others => '0');
+	    elsif rising_edge(clk_int) then
+			next_is_a_read_save <= next_is_a_read;
+	    end if;
+	end process;
+
+		
 	-- Hold valid TM broadcast addresses and delay broadcast for 1 cycle. 
 	hold_tm_broadcast: process (clk_int, int_res) is
 	begin
