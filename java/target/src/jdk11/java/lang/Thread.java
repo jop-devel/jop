@@ -98,6 +98,10 @@ public class Thread implements Runnable {
 		}
 	}
 	
+	public Thread() {
+		this(null);
+	}
+	
 	public Thread(Runnable r) {
 		run = r;
 		runningOn = -1;
