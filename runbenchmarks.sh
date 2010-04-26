@@ -1,5 +1,8 @@
 #! /bin/sh
 
+# that's for Mac users, hope it does not hurt Wolfgang
+export DYLD_FALLBACK_LIBRARY_PATH=.
+
 for b in allocObjs allocHandles allocHeaders allocBlocks; do
 	mkdir $b
  	ant -Dp1=app/trading/plain -Dp2=com/sun/oss/trader -Dp3=Main -Dwcet-method="com.sun.oss.trader.tradingengine.OrderManager.checkForTrade(Lcom/sun/oss/trader/data/OrderEntry;D)Z" -Dwcet-processor=$b tools java-app wcet
