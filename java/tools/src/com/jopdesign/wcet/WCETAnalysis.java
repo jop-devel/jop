@@ -72,7 +72,6 @@ import static com.jopdesign.wcet.ExecHelper.timeDiff;
 public class WCETAnalysis {
     private static final String CONFIG_FILE_PROP = "config";
     public static final String VERSION = "1.0.1";
-	private static final boolean TESTING_BUILD = System.getenv("WCET_TESTING_MODE") != null;
 
     public static Option<?>[][] options = {
         ProjectConfig.projectOptions,
@@ -155,9 +154,8 @@ public class WCETAnalysis {
 //		System.err.println("Total solver time (50): "+LpSolveWrapper.getSolverTime());
 //		System.exit(1);
 
-        //new ETMCExport(project).export(project.getOutFile("Spec_"+project.getProjectName()+".txt"));
         
-        if(TESTING_BUILD) {
+        if(project.getProjectConfig().doObjectCacheAnalysis()) {
             testCacheAnalysis();        	
         }
         
@@ -293,6 +291,7 @@ public class WCETAnalysis {
 		// Method Cache
 		//testExactAllFit();
 		// Object Cache (total, allfit)
+		
 		ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project);
 		LpSolveWrapper.resetSolverTime();
         start = System.nanoTime();
@@ -302,8 +301,9 @@ public class WCETAnalysis {
 				String.format("[Object Reference Analysis]: Total time: %.2f s / Total solver time: %.2f s",
 						timeDiff(start,stop),
 						LpSolveWrapper.getSolverTime()));        
-
-		refUsageTotal_ = new ObjectRefAnalysis(project,true).getRefUsage();
+		boolean fieldCache = project.getProjectConfig().objectCacheFields();
+		boolean writeUpdate = project.getProjectConfig().objectCacheUpdateOnWrite();
+		refUsageTotal_ = new ObjectRefAnalysis(project, fieldCache, writeUpdate, true, 512).getRefUsage();
 		refUsageNames_ = orefAnalysis.getUsedSymbolicNames();
 		Map<CallGraphNode, Long> refUsageDistinct = orefAnalysis.getRefUsage();
 		MiscUtils.printMap(System.out, refUsageDistinct, new Function2<CallGraphNode, Long,String>() {
@@ -324,7 +324,7 @@ public class WCETAnalysis {
 			oca = new ObjectCacheAnalysisDemo(project, cacheSize);
 			long cost = oca.computeCost();
 			double ratio;
-			if(cacheSize == 0) { accesses = cost; ratio = 1.0; }
+			if(cacheSize == 0) { accesses = cost; ratio = 0.0; }
 			else               { ratio = (double)(accesses-cost)/(double)accesses; }
 			System.out.println(
 				String.format("Cache Misses [N=%3d]: %d  (%.2f %%)", cacheSize, cost, ratio*100));				

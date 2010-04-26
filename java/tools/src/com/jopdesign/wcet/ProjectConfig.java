@@ -63,6 +63,15 @@ public class ProjectConfig {
 	public static final BooleanOption DO_DFA =
 		new BooleanOption("dataflow-analysis","whether dataflow analysis should be performed",false);
 
+	public static final BooleanOption OBJECT_CACHE_ANALYSIS =
+		new BooleanOption("object-cache-analysis","perform experimental object cache analysis",false);
+
+	public static final BooleanOption OBJECT_CACHE_FIELDS =
+		new BooleanOption("object-cache-fields","object cache: cache fields, not objects",false);
+
+	public static final BooleanOption OBJECT_CACHE_UPDATE_ON_WRITE =
+		new BooleanOption("object-cache-write-update","object cache: update on write",false);
+
 	/* Here, because it both affects the DFA and the IPET */
 	public static final IntegerOption CALLSTRING_LENGTH =
 		new IntegerOption("callstring-length", "Length of the callstring for DFA and IPET", 0);
@@ -83,6 +92,7 @@ public class ProjectConfig {
 		TARGET_CLASSPATH, TARGET_SOURCEPATH, TARGET_BINPATH,
 		JAVA_PROCESSOR, 
 		DO_DFA, CALLSTRING_LENGTH,
+		OBJECT_CACHE_ANALYSIS, OBJECT_CACHE_FIELDS, OBJECT_CACHE_UPDATE_ON_WRITE, 
 		USE_UPPAAL,
 		RESULT_FILE, RESULTS_APPEND
 	};
@@ -206,6 +216,18 @@ public class ProjectConfig {
 
 	public long callstringLength() {
 		return config.getOption(CALLSTRING_LENGTH);
+	}
+
+	public boolean doObjectCacheAnalysis() {
+		return this.config.getOption(OBJECT_CACHE_ANALYSIS);
+	}
+
+	public boolean objectCacheFields() {
+		return config.getOption(OBJECT_CACHE_FIELDS);
+	}
+	
+	public boolean objectCacheUpdateOnWrite() {
+		return config.getOption(OBJECT_CACHE_UPDATE_ON_WRITE);
 	}
 
 	public boolean useUppaal() {
