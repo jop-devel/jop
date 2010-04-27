@@ -52,32 +52,32 @@ import com.jopdesign.wcet.ipet.MaxCostFlow.DecisionVariable;
  *
  */
 public class ObjectRefAnalysis {
-	public static final boolean CACHE_FIELDS_ONLY =
-		System.getenv("WCET_CACHE_FIELDS_ONLY") != null;
-	public static final boolean FIELD_ACCESS_ONLY = true;
-	public static final boolean GETFIELD_ONLY = true;
+	
+	private boolean cacheObjectFields;
+	private boolean updateOnWrite;
+	private boolean countDistinct;
 
-	private static final int DEFAULT_SET_SIZE = 32;
+	private static final int DEFAULT_SET_SIZE = 512;
+	/* Only consider getfield and putfield (if updateOnWrite) */
+	private static final boolean FIELD_ACCESS_ONLY = true;
 	private int maxSetSize;
 	private Map<CallGraphNode, Long> usedReferences;
 	private Map<CallGraphNode, Set<SymbolicAddress>> usedSymbolicNames;
 	private Project project;
 	private Map<DecisionVariable, SymbolicAddress> decisionVariables =
 		new HashMap<DecisionVariable, SymbolicAddress>();
-	private boolean countAllAccesses;
 	public ObjectRefAnalysis(Project p) {
-		this(p, false, DEFAULT_SET_SIZE);
+		this(p, p.getProjectConfig().objectCacheFields(), p.getProjectConfig().objectCacheUpdateOnWrite(), false, DEFAULT_SET_SIZE);
 	}
-	public ObjectRefAnalysis(Project p, int maxSetSize) {
-		this(p, false, maxSetSize);
-	}
-	public ObjectRefAnalysis(Project p, boolean countNonDistinct) {
-		this(p, countNonDistinct, DEFAULT_SET_SIZE);
-	}
-	public ObjectRefAnalysis(Project p, boolean countNonDistinct, int setSize) {
+	public ObjectRefAnalysis(Project p, boolean cacheObjectFields, boolean updateOnWrite, boolean countNonDistinct, int setSize) {
 		this.project = p;
-		this.countAllAccesses = countNonDistinct;
+		this.countDistinct = ! countNonDistinct;
 		this.maxSetSize = setSize;
+		this.cacheObjectFields = cacheObjectFields;
+		this.updateOnWrite = updateOnWrite;
+		if(updateOnWrite) {
+			throw new AssertionError("Cache Analysis with update-on-write is not supported yet (Model?)");
+		}
 	}
 	
 	private class ExecOnceQuery implements Query<InstructionHandle> {
@@ -160,11 +160,11 @@ public class ObjectRefAnalysis {
 					BoundedSet<SymbolicAddress> refs;
 					if(usedRefs.containsKey(ih)) {
 						refs = usedRefs.get(ih).get(emptyCallString);
-						if(! hasHandleAccess(ih)) continue;
-						if(refs.isSaturated() || countAllAccesses) {
+						if(! hasHandleAccess(project,ih)) continue;
+						if(refs.isSaturated() || ! countDistinct) {
 							topCost += 1000;
 						} else {
-							if(! CACHE_FIELDS_ONLY) {
+							if(! this.cacheObjectFields) {
 								for(SymbolicAddress ref : refs.getSet()) {
 									addAccessSite(accessSets, ref, n);
 								}
@@ -187,7 +187,7 @@ public class ObjectRefAnalysis {
 					new MapCostProvider<CFGNode>(costMap,0));
 
 			/* Add decision variables for all references */
-			if(! countAllAccesses) {
+			if(countDistinct) {
 				for(Entry<SymbolicAddress, Map<CFGNode, Integer>> accessEntry : accessSets.entrySet()) {
 					SymbolicAddress ref = accessEntry.getKey();
 					Map<CFGNode, Integer> accessSet = accessEntry.getValue();
@@ -274,10 +274,10 @@ public class ObjectRefAnalysis {
 		return usedSymbolicNames;		
 	}
 
-	public static boolean hasHandleAccess(InstructionHandle ih) {
+	public static boolean hasHandleAccess(Project project, InstructionHandle ih) {
 		Instruction instr = ih.getInstruction();
 		if(instr instanceof GETFIELD) return true;
-		if(GETFIELD_ONLY) {
+		if(! project.getProjectConfig().objectCacheUpdateOnWrite()) {
 			return false;
 		}
 		else if(instr instanceof PUTFIELD) return true;

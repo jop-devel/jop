@@ -1,0 +1,13 @@
+Object Cache Evaluation
+-----------------------
+To run the object cache evaluation, you need to do the following:
+
+> Cache Objects, update on getfield only
+make java_app wcet P1=test P2=wcet P3=StartLift WCET_METHOD=measure \
+  WCET_OPTIONS="-dataflow-analysis -object-cache-analysis"
+
+> Cache Fields, update on getfield only
+make java_app wcet P1=test P2=wcet P3=StartLift WCET_METHOD=measure \
+  WCET_OPTIONS="-dataflow-analysis -object-cache-analysis -object-cache-fields"
+
+Update on Write is currently disabled, as the model is unclear: Should we assume a cache miss (a)always or (b)not for write-after-read? The second option is more difficult to implement.

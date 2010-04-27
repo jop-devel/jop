@@ -52,7 +52,7 @@ public class ObjectCacheAnalysisDemo {
 		}
 		@Override
 		protected Long computeCostOfNode(CFGNode n, AnalysisContext ctx) {
-			return new OCacheVisitor(this, recursiveStrategy, ctx).computeCost(n);
+			return new OCacheVisitor(this.getProject(), this, recursiveStrategy, ctx).computeCost(n);
 		}
 
 		@Override
@@ -77,12 +77,15 @@ public class ObjectCacheAnalysisDemo {
 		private RecursiveAnalysis<AnalysisContext, Long> recursiveAnalysis;
 		private RecursiveStrategy<AnalysisContext, Long> recursiveStrategy;
 		private AnalysisContext context;
+		private Project project;
 
 		public OCacheVisitor(
+				Project p,
 				RecursiveAnalysis<AnalysisContext, Long> recursiveAnalysis,
 				RecursiveStrategy<AnalysisContext, Long> recursiveStrategy, 
 				AnalysisContext ctx
 				) {
+			this.project = p;
 			this.recursiveAnalysis = recursiveAnalysis;
 			this.recursiveStrategy = recursiveStrategy;
 			this.context = ctx;
@@ -91,7 +94,7 @@ public class ObjectCacheAnalysisDemo {
 		// Simply the number of object accesses in this node
 		public void visitBasicBlockNode(BasicBlockNode n) {
 			for(InstructionHandle ih : n.getBasicBlock().getInstructions()) {
-				if(! ObjectRefAnalysis.hasHandleAccess(ih)) continue;
+				if(! ObjectRefAnalysis.hasHandleAccess(project, ih)) continue;
 				cost += 1;
 			}
 		}
@@ -145,17 +148,21 @@ public class ObjectCacheAnalysisDemo {
 	private int cacheSize;
 	private ObjectRefAnalysis objRefAnalysis;
 	private CallGraph callGraph;
+	private boolean fieldCache;
+	private boolean writeUpdate;
 
 	public ObjectCacheAnalysisDemo(Project p, int cacheSize) {
 		this.project = p;
 		this.doPersistenceAnalysis = cacheSize > 0;
 		this.cacheSize = cacheSize;
 		this.callGraph = project.getCallGraph();
+		this.fieldCache = p.getProjectConfig().objectCacheFields();
+		this.writeUpdate = p.getProjectConfig().objectCacheUpdateOnWrite();
 	}
 	
 	public long computeCost() {
 		/* Cache Analysis */
-		objRefAnalysis = new ObjectRefAnalysis(project, 1024);
+		objRefAnalysis = new ObjectRefAnalysis(project, fieldCache, writeUpdate, false, 1024);
 		objRefAnalysis.analyzeRefUsage();
 		
 		RecursiveAnalysis<AnalysisContext, Long> recAna =
