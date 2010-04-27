@@ -48,4 +48,8 @@ public class Flow {
 		return flow.get(h);
 	}
 	
+	public String toString() {
+		return flow.toString();
+	}
+	
 }

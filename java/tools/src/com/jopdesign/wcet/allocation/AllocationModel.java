@@ -2,7 +2,6 @@ package com.jopdesign.wcet.allocation;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Vector;
 
 import org.apache.bcel.Constants;
@@ -12,6 +11,7 @@ import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.MULTIANEWARRAY;
 import org.apache.bcel.generic.NEW;
+import org.apache.bcel.generic.NEWARRAY;
 import org.apache.bcel.generic.ObjectType;
 import org.apache.bcel.generic.ReferenceType;
 import org.apache.bcel.generic.Type;
@@ -31,7 +31,7 @@ import com.jopdesign.wcet.frontend.WcetAppInfo;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.jop.NoMethodCache;
 
-public class AllocationModel implements ProcessorModel {
+public abstract class AllocationModel implements ProcessorModel {
 
 	public static final String JOP_NATIVE = "com.jopdesign.sys.Native";
 	private final MethodCache NO_METHOD_CACHE;
@@ -122,7 +122,15 @@ public class AllocationModel implements ProcessorModel {
 			ObjectType type = insn.getLoadClassType(mCtx.getConstantPoolGen());
 			return computeObjectSize(getFieldSize(getObjectFields(type.getClassName())));
 		} else if (opcode == Constants.NEWARRAY || opcode == Constants.ANEWARRAY) {
-			return computeArraySize(getArrayBound(context, ih, 0));
+			int typeSize = 1;
+			if (ih.getInstruction() instanceof NEWARRAY) {
+				NEWARRAY insn = (NEWARRAY)ih.getInstruction();
+				if (insn.getTypecode() == Constants.T_DOUBLE
+						|| insn.getTypecode() == Constants.T_LONG) {
+						typeSize = 2;
+				}
+			}
+			return computeArraySize(getArrayBound(context, ih, 0)*typeSize);
 		} else if (opcode == Constants.MULTIANEWARRAY) {
 			MULTIANEWARRAY insn = (MULTIANEWARRAY)ih.getInstruction();
 			int dim = insn.getDimensions();
@@ -199,13 +207,9 @@ public class AllocationModel implements ProcessorModel {
 		}
 	}
 
-	public int computeObjectSize(long raw) {
-		return 1;
-	}
+	public abstract long computeObjectSize(long raw);
 
-	public int computeArraySize(long raw) {
-		return 1;
-	}
+	public abstract long computeArraySize(long raw);
 
 	public List<Type> getObjectFields(String className) {
 		List<Type> l = new LinkedList<Type>();

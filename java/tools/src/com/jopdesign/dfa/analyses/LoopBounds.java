@@ -204,7 +204,17 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
 		Instruction instruction = stmt.getInstruction();
 
- 		// shortcut for infeasible paths
+//		if (in == null) {
+//			System.out.print(";; ");
+//		} else if (in.isEmpty()) {
+//			System.out.print("// ");
+//		}
+//		System.out.println(context.callString.asList()+"/"+context.method+": "+stmt);
+//		if (in != null) {
+//			System.out.println(in.get(new Location("java.io.JOPReader.lines")));
+//		}
+		
+		// shortcut for infeasible paths
 		if (in == null) {
 			context.stackPtr += instruction.produceStack(context.constPool) - instruction.consumeStack(context.constPool);			
 			return retval;
@@ -213,13 +223,13 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 		Map<Location, ValueMapping> result = new HashMap<Location, ValueMapping>();
 		retval.put(context.callString, result);		
 
-// 		System.out.println(context.method+": "+stmt);
-// 		System.out.println("###"+context.stackPtr+" + "+instruction.produceStack(context.constPool)+" - "+instruction.consumeStack(context.constPool));		
-// 		System.out.println(stmt+" "+(edge.getType() == FlowEdge.TRUE_EDGE ? "TRUE" : (edge.getType() == FlowEdge.FALSE_EDGE) ? "FALSE" : "NORMAL")+" "+edge);
-// 		System.out.println(context.callString+"/"+context.method);
-// 		System.out.print(stmt.getInstruction()+":\t{ ");
-// 		System.out.print(input.get(context.callString));
-// 		System.out.println("}");
+//		System.out.println(context.method+": "+stmt);
+//		System.out.println("###"+context.stackPtr+" + "+instruction.produceStack(context.constPool)+" - "+instruction.consumeStack(context.constPool));		
+//		System.out.println(stmt+" "+(edge.getType() == FlowEdge.TRUE_EDGE ? "TRUE" : (edge.getType() == FlowEdge.FALSE_EDGE) ? "FALSE" : "NORMAL")+" "+edge);
+//		System.out.println(context.callString+"/"+context.method);
+//		System.out.print(stmt.getInstruction()+":\t{ ");
+//		System.out.print(input.get(context.callString));
+//		System.out.println("}");
 		
 // 		for (int i = 0; i < stmt.getTargeters().length; i++) {
 // 			InstructionTargeter targeter = stmt.getTargeters()[i];
@@ -389,28 +399,32 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
 			DFAAppInfo p = interpreter.getProgram();
 			Set<String> receivers = p.getReceivers(stmt, context.callString);
-			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
-				
-				String fieldName = i.next();
-				
-				String f = fieldName.substring(fieldName.lastIndexOf("."), fieldName.length());
-				String strippedName;
-				if (fieldName.indexOf("@") >= 0) {
-					strippedName = fieldName.split("@")[0] + f;
-				} else {
-					strippedName = fieldName;
-				}
-				
-//				System.out.println(fieldName+" vs "+strippedName);
-				
-				if (p.containsField(strippedName)) {
-					for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
-						Location l = k.next();
-						if (l.stackLoc < 0 && !receivers.contains(l.heapLoc)) {
-							result.put(l, in.get(l));
-						}
-						if (l.stackLoc == context.stackPtr-1) {
-							result.put(new Location(fieldName), new ValueMapping(in.get(l), false));
+			if (receivers == null) {
+				System.out.println("no receivers at: "+context.callString.asList()+context.method+stmt);
+			} else {
+				for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
+
+					String fieldName = i.next();
+
+					String f = fieldName.substring(fieldName.lastIndexOf("."), fieldName.length());
+					String strippedName;
+					if (fieldName.indexOf("@") >= 0) {
+						strippedName = fieldName.split("@")[0] + f;
+					} else {
+						strippedName = fieldName;
+					}
+
+//					System.out.println(fieldName+" vs "+strippedName);
+
+					if (p.containsField(strippedName)) {
+						for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
+							Location l = k.next();
+							if (l.stackLoc < 0 && !receivers.contains(l.heapLoc)) {
+								result.put(l, in.get(l));
+							}
+							if (l.stackLoc == context.stackPtr-1) {
+								result.put(new Location(fieldName), new ValueMapping(in.get(l), false));
+							}
 						}
 					}
 				}
@@ -1393,7 +1407,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 		MethodGen method = mi.getMethodGen();
 		methodName = method.getClassName()+"."+method.getName()+method.getSignature();
 
-//		System.out.println(stmt+" invokes method: "+methodName);				
+//		System.out.println(context.callString.asList()+"/"+context.method+": "+stmt+" invokes method: "+methodName);				
 
 		if (method.isNative()) {
 

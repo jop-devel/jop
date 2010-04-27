@@ -8,11 +8,11 @@ public class HandleAllocationModel extends AllocationModel {
 		super(p);
 	}
 	
-	public int computeObjectSize(int raw) {
+	public long computeObjectSize(long raw) {
 		return raw;
 	}
 
-	public int computeArraySize(int raw) {
+	public long computeArraySize(long raw) {
 		return raw;
 	}
 	

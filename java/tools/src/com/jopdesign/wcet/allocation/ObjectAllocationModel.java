@@ -8,11 +8,11 @@ public class ObjectAllocationModel extends AllocationModel {
 		super(p);
 	}
 	
-	public int computeObjectSize(int raw) {
+	public long computeObjectSize(long raw) {
 		return 1;
 	}
 
-	public int computeArraySize(int raw) {
+	public long computeArraySize(long raw) {
 		return 1;
 	}
 	
