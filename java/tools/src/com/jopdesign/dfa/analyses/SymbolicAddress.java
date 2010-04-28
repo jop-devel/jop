@@ -1,5 +1,7 @@
 package com.jopdesign.dfa.analyses;
 
+import org.apache.log4j.Logger;
+
 import com.jopdesign.dfa.framework.BoundedSetFactory;
 import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 
@@ -55,6 +57,10 @@ public class SymbolicAddress {
 			BoundedSet<SymbolicAddress> objectMapping,
 			String fieldName) {
 		BoundedSet<SymbolicAddress> newMapping;
+		if(objectMapping == null) {
+			Logger.getLogger("Object Cache Analysis").error("Undefined mapping for "+fieldName);
+			return bsFactory.top();
+		}
 		if(objectMapping.isSaturated()) {
 			newMapping = bsFactory.top();
 		} else {

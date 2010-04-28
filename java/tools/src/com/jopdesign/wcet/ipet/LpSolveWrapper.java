@@ -188,6 +188,25 @@ public class LpSolveWrapper<T> {
 		this.lpsolve.setAddRowmode(false);
 	}
 
+	private class SolverThread extends Thread {
+		int result = -1;
+		long solverTime = 0;
+		LpSolveException exception = null;
+
+		public SolverThread() {}
+		@Override
+		public void run() {
+			long start = System.nanoTime();
+			try {
+				result = lpsolve.solve();
+			} catch (LpSolveException e) {
+				exception = e;
+			}
+			long stop = System.nanoTime();			
+			solverTime = stop-start;
+		}		
+	}
+	
 	/**
 	 * Solve the I(LP)
 	 * @param objVec if non-null, write the solution into this array
@@ -196,11 +215,21 @@ public class LpSolveWrapper<T> {
 	 */
 	public double solve(double[] objVec) throws LpSolveException {
 		freeze();
-		long start = System.nanoTime();
-		int r = this.lpsolve.solve();
-		long stop = System.nanoTime();
-		LpSolveWrapper.solverTime +=(stop-start);
-		SolverStatus st = getSolverStatus(r);
+		
+		SolverThread thr = new SolverThread();
+		thr.start();
+	    while(true) {
+	    	boolean interrupted = false;
+		    try {
+				thr.join(1000);
+			} catch (InterruptedException e) {
+				interrupted = true;
+			}
+		    if(! thr.isAlive()) break;
+		    if(!interrupted) System.err.println("LP Solve: Hard Problem, calculating (5s)");
+	    }
+		LpSolveWrapper.solverTime += (thr.solverTime);
+		SolverStatus st = getSolverStatus(thr.result);
 		if(objVec != null) this.lpsolve.getVariables(objVec);
 		if(st != SolverStatus.OPTIMAL) {
 			if(objVec != null) {

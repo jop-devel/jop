@@ -197,7 +197,10 @@ public class SymbolicAddressMap {
 		BoundedSet<SymbolicAddress> val = mapP.get(loc);
 		if(val == null) {
 			Logger.getLogger(this.getClass()).error("Undefined stack location: "+loc);
-			throw new AssertionError("Undefined stack Location");
+			for(Entry<Location, BoundedSet<SymbolicAddress>> entry : this.mapP.entrySet()) {
+				System.err.println("  "+entry.getKey()+ " --> "+entry.getValue());
+			}
+//			throw new AssertionError("Undefined stack Location");
 		}
 		return val;
 	}
@@ -229,6 +232,11 @@ public class SymbolicAddressMap {
 		if(this.isTop()) return;
 		BoundedSet<SymbolicAddress> oldAlias = this.mapA.get(ty);
 		if(oldAlias == null) oldAlias = bsFactory.empty();
+		// FIXME: Debugging
+		if(newAliases == null) {
+			Logger.getLogger("Object Cache Analysis").error("Undefined alias set for "+ty);
+			return;
+		}
 		oldAlias.addAll(newAliases);
 		mapA.put(ty, newAliases);
 	}

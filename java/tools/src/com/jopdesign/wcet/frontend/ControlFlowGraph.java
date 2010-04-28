@@ -302,7 +302,7 @@ public class ControlFlowGraph {
 			super(blockIndex);
 		}
 		public SpecialInvokeNode(int blockIndex, MethodInfo javaImpl) {
-			this(blockIndex);
+			super(blockIndex);
 			this.instr = ControlFlowGraph.this.blocks.get(blockIndex).getLastInstruction();
 			this.name = "jimplBC("+javaImpl+")";
 			this.receiverImpl = javaImpl;
@@ -410,6 +410,7 @@ public class ControlFlowGraph {
 
 	/* graph */
 	private FlowGraph<CFGNode, CFGEdge> graph;
+	private Set<CFGNode> deadNodes;
 
 	/* annotations */
 	private Map<CFGNode, LoopBound> annotations;
@@ -418,6 +419,7 @@ public class ControlFlowGraph {
 	private TopOrder<CFGNode, CFGEdge> topOrder = null;
 	private LoopColoring<CFGNode, CFGEdge> loopColoring = null;
 	private Boolean isLeafMethod = null;
+
 	public boolean isLeafMethod() {
 		return isLeafMethod;
 	}
@@ -443,6 +445,7 @@ public class ControlFlowGraph {
 		CFGNode subExit = new DedicatedNode(DedicatedNodeName.EXIT);
 		this.graph =
 			new DefaultFlowGraph<CFGNode, CFGEdge>(CFGEdge.class, subEntry, subExit);
+		this.deadNodes = new HashSet<CFGNode>();
 	}
 	/* worker: create the flow graph */
 	private void createFlowGraph(MethodInfo method) {
@@ -825,6 +828,7 @@ public class ControlFlowGraph {
 		this.check();
 		this.analyseFlowGraph();
 	}
+	
 	private void insertSummaryNode(CFGNode hol, Collection<CFGEdge> exitEdges,
 			Set<CFGNode> loopNodes) {
 		/* summary subgraph */
@@ -875,16 +879,17 @@ public class ControlFlowGraph {
 		this.graph.removeAllVertices(loopNodes);
 
 	}
+	
 	/* Check that the graph is connectet, with entry and exit dominating resp. postdominating all nodes */
 	private void check() throws BadGraphException {
 		/* Remove unreachable and stuck code */
-		Set<CFGNode> deads = TopOrder.findDeadNodes(graph, getEntry());
-		if(! deads.isEmpty()) WcetAppInfo.logger.error("Found dead code (Exceptions ?): "+deads);
+		deadNodes = TopOrder.findDeadNodes(graph, getEntry());
+		if(! deadNodes.isEmpty()) WcetAppInfo.logger.error("Found dead code (Exceptions ?): "+deadNodes);
 		Set<CFGNode> stucks = TopOrder.findStuckNodes(graph, getExit());
 		if(! stucks.isEmpty()) WcetAppInfo.logger.error("Found stuck code (Exceptions ?): "+stucks);
-		deads.addAll(stucks);
-		if(! deads.isEmpty()) {
-			graph.removeAllVertices(deads);
+		deadNodes.addAll(stucks);
+		if(! deadNodes.isEmpty()) {
+			graph.removeAllVertices(deadNodes);
 			this.invalidate();
 		}
 		/* now checks should succeed */

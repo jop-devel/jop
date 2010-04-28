@@ -17,6 +17,7 @@ import org.apache.bcel.generic.INVOKEVIRTUAL;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.PUTFIELD;
+import org.apache.log4j.Logger;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
@@ -89,7 +90,12 @@ public class ObjectRefAnalysis {
 		}
 		public boolean query(InstructionHandle a) {
 			CFGNode n = BasicBlock.getHandleNode(a);
-			return eoAna.isExecutedOnce(scope, n);
+			if(n == null) {
+				Logger.getLogger("Object Cache Analysis").error("No node for instruction "+a);
+				return false;
+			} else {
+				return eoAna.isExecutedOnce(scope, n);
+			}
 		}
 		
 	}
@@ -161,7 +167,12 @@ public class ObjectRefAnalysis {
 					if(usedRefs.containsKey(ih)) {
 						refs = usedRefs.get(ih).get(emptyCallString);
 						if(! hasHandleAccess(project,ih)) continue;
-						if(refs.isSaturated() || ! countDistinct) {
+						if(refs == null) {
+							String errMsg = "In Basic Block "+bb.getMethodInfo().methodId+"/"+bb+
+							                ": "+"No information on handle "+ih;
+							Logger.getLogger("Object Cache Analysis").error(errMsg);
+							topCost += 1000;
+						} else if(refs.isSaturated() || ! countDistinct) {
 							topCost += 1000;
 						} else {
 							if(! this.cacheObjectFields) {
