@@ -58,7 +58,7 @@ public class ObjectRefAnalysis {
 	private boolean updateOnWrite;
 	private boolean countDistinct;
 
-	private static final int DEFAULT_SET_SIZE = 512;
+	private static final int DEFAULT_SET_SIZE = 64;
 	/* Only consider getfield and putfield (if updateOnWrite) */
 	private static final boolean FIELD_ACCESS_ONLY = true;
 	private int maxSetSize;
@@ -168,7 +168,7 @@ public class ObjectRefAnalysis {
 						refs = usedRefs.get(ih).get(emptyCallString);
 						if(! hasHandleAccess(project,ih)) continue;
 						if(refs.isSaturated() || ! countDistinct) {
-							topCost += 100000L;
+							topCost += 1;
 						} else {
 							if(! this.cacheObjectFields) {
 								for(SymbolicAddress ref : refs.getSet()) {

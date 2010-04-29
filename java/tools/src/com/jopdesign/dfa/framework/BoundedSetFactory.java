@@ -42,6 +42,10 @@ public class BoundedSetFactory<V> {
 		public Set<V> getSet();
 		public int getSize();
 		public boolean isSubset(BoundedSet<V> otherEntry);
+		/**
+		 * @return
+		 */
+		public int getLimit();
 	}
 	
 	/** 
@@ -94,9 +98,16 @@ public class BoundedSetFactory<V> {
 			this.setImpl = null;
 		}
 		public int getSize() {
+			if(setImpl.size() > limit) {
+				throw new AssertionError("Bounded Set exceeded size: "+setImpl.size());
+			}
 			if(isSaturated) return limit+1;
 			else return setImpl.size();
 		}
+		public int getLimit() {
+			return limit;
+		}
+
 		@Override
 		public int hashCode() {
 			if(isSaturated) return 1;

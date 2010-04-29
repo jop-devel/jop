@@ -265,6 +265,7 @@ public class SymbolicAddressMap {
 			out.print(indentstr.toString());
 			out.print(entry.getKey());
 			out.print(": ");
+			out.print(entry.getValue().getSize()+"<="+entry.getValue().getLimit());
 			out.print(entry.getValue());
 			out.print("\n");
 		}
@@ -272,6 +273,7 @@ public class SymbolicAddressMap {
 			out.print(indentstr.toString());
 			out.print(entry.getKey());
 			out.print("~~> ");
+			out.print(entry.getValue().getSize()+"<="+entry.getValue().getLimit());
 			out.print(entry.getValue());
 			out.print("\n");
 		}

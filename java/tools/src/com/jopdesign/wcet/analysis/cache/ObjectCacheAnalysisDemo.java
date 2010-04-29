@@ -162,7 +162,7 @@ public class ObjectCacheAnalysisDemo {
 	
 	public long computeCost() {
 		/* Cache Analysis */
-		objRefAnalysis = new ObjectRefAnalysis(project, fieldCache, writeUpdate, false, 1024);
+		objRefAnalysis = new ObjectRefAnalysis(project, fieldCache, writeUpdate, false, 64);
 		objRefAnalysis.analyzeRefUsage();
 		
 		RecursiveAnalysis<AnalysisContext, Long> recAna =

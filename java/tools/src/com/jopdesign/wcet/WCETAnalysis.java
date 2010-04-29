@@ -303,7 +303,7 @@ public class WCETAnalysis {
 						LpSolveWrapper.getSolverTime()));        
 		boolean fieldCache = project.getProjectConfig().objectCacheFields();
 		boolean writeUpdate = project.getProjectConfig().objectCacheUpdateOnWrite();
-		refUsageTotal_ = new ObjectRefAnalysis(project, fieldCache, writeUpdate, true, 512).getRefUsage();
+		refUsageTotal_ = new ObjectRefAnalysis(project, fieldCache, writeUpdate, true, 64).getRefUsage();
 		refUsageNames_ = orefAnalysis.getUsedSymbolicNames();
 		Map<CallGraphNode, Long> refUsageDistinct = orefAnalysis.getRefUsage();
 		MiscUtils.printMap(System.out, refUsageDistinct, new Function2<CallGraphNode, Long,String>() {
