@@ -61,6 +61,7 @@ public class ObjectRefAnalysis {
 	private static final int DEFAULT_SET_SIZE = 64;
 	/* Only consider getfield and putfield (if updateOnWrite) */
 	private static final boolean FIELD_ACCESS_ONLY = true;
+	private static final long UNKNOWN_OBJECT_PENALTY = 512;
 	private int maxSetSize;
 	private Map<CallGraphNode, Long> usedReferences;
 	private Map<CallGraphNode, Set<SymbolicAddress>> usedSymbolicNames;
@@ -153,7 +154,7 @@ public class ObjectRefAnalysis {
 			
 			/* Traverse vertex set.
 			 * Add vertex to access set of referenced addresses
-			 * For each occurence of TOP, add cost of 1
+			 * For each occurence of TOP, add cost of UNKNOWN_OBJECT_PENALTY
 			 */
 			HashMap<SymbolicAddress, Map<CFGNode, Integer>> accessSets =
 				new HashMap<SymbolicAddress,Map<CFGNode, Integer>>();
@@ -168,7 +169,7 @@ public class ObjectRefAnalysis {
 						refs = usedRefs.get(ih).get(emptyCallString);
 						if(! hasHandleAccess(project,ih)) continue;
 						if(refs.isSaturated() || ! countDistinct) {
-							topCost += 1;
+							topCost += UNKNOWN_OBJECT_PENALTY;
 						} else {
 							if(! this.cacheObjectFields) {
 								for(SymbolicAddress ref : refs.getSet()) {
