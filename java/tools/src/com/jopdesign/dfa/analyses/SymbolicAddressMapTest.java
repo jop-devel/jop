@@ -21,7 +21,7 @@ public class SymbolicAddressMapTest {
 	private BoundedSet<SymbolicAddress> boundedSet(Object... names) {
 		BoundedSet<SymbolicAddress> bs = bsf2.empty();
 		for(Object s : names) {
-			SymbolicAddress addr = new SymbolicAddress(s.toString());
+			SymbolicAddress addr = SymbolicAddress.rootAddress(s.toString());
 			bs.add(addr);
 		}
 		return bs;

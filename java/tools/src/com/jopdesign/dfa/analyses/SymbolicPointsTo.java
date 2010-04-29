@@ -111,7 +111,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		// Add symbolic stack names
 		int stackPtr = 0;
 		if(! entryMethod.getMethod().isStatic()) {
-			init.putStack(stackPtr++, bsFactory.singleton(new SymbolicAddress("$this")));
+			init.putStack(stackPtr++, bsFactory.singleton(SymbolicAddress.rootAddress("$this")));
 		}
 		MethodGen mgen = entryMethod.getMethodGen();
 		String[] args = mgen.getArgumentNames();
@@ -119,7 +119,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		{	
 			Type ty = mgen.getArgumentType(i);
 			if(ty instanceof ReferenceType) {
-				init.putStack(stackPtr, bsFactory.singleton(new SymbolicAddress("$"+args[i])));
+				init.putStack(stackPtr, bsFactory.singleton(SymbolicAddress.rootAddress("$"+args[i])));
 			}
 			stackPtr += ty.getSize();
 		}

@@ -212,7 +212,7 @@ public class SymbolicAddressMap {
 		Location loc = new Location(staticfield);
 		BoundedSet<SymbolicAddress> val = mapP.get(loc);
 		if(val == null) {
-			val = bsFactory.singleton(new SymbolicAddress(staticfield));
+			val = bsFactory.singleton(SymbolicAddress.rootAddress(staticfield));
 		}
 		return val;
 	}
