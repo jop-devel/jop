@@ -118,7 +118,7 @@ public class SymbolicAddressMap {
 	}
 	
 	/** Clone address map, but only those stack variables with index greater than or equal to
-	 *  {@code framePtr}. The stack variables are move down to the beginning of the stack. */
+	 *  {@code framePtr}. The stack variables are moved down to the beginning of the stack. */
 	public SymbolicAddressMap cloneInvoke(int framePtr) {
 		if(this.isTop()) return this;
 		SymbolicAddressMap copy = new SymbolicAddressMap(this.bsFactory);

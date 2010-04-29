@@ -95,7 +95,7 @@ public class BasicBlock  {
 		BasicBlockNode blockNode = (BasicBlockNode)ih.getAttribute(InstrField.CFGNODE);	
 		if(blockNode == null) {
 			String errMsg = "No basic block recorded for instruction "+ih.toString(true);
-			WcetAppInfo.logger.error(errMsg);
+			// WcetAppInfo.logger.error(errMsg);
 			return null;
 		}
 		return blockNode;

@@ -36,6 +36,9 @@ public class SymbolicAddress {
 	public static SymbolicAddress staticField(String fieldName) {
 		return new SymbolicAddress(fieldName);
 	}
+	public static SymbolicAddress stringLiteral(String className, int cpIndex) {
+		return new SymbolicAddress("@lit:"+className+":"+cpIndex);
+	}
 	@Override
 	public int hashCode() {
 		return impl.hashCode();

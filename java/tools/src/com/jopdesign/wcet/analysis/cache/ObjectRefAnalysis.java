@@ -90,8 +90,8 @@ public class ObjectRefAnalysis {
 		}
 		public boolean query(InstructionHandle a) {
 			CFGNode n = BasicBlock.getHandleNode(a);
-			if(n == null) {
-				Logger.getLogger("Object Cache Analysis").error("No node for instruction "+a);
+			if(n == null) {				
+				// Logger.getLogger("Object Cache Analysis").error("No node for instruction "+a);
 				return false;
 			} else {
 				return eoAna.isExecutedOnce(scope, n);
@@ -167,13 +167,8 @@ public class ObjectRefAnalysis {
 					if(usedRefs.containsKey(ih)) {
 						refs = usedRefs.get(ih).get(emptyCallString);
 						if(! hasHandleAccess(project,ih)) continue;
-						if(refs == null) {
-							String errMsg = "In Basic Block "+bb.getMethodInfo().methodId+"/"+bb+
-							                ": "+"No information on handle "+ih;
-							Logger.getLogger("Object Cache Analysis").error(errMsg);
-							topCost += 1000;
-						} else if(refs.isSaturated() || ! countDistinct) {
-							topCost += 1000;
+						if(refs.isSaturated() || ! countDistinct) {
+							topCost += 100000L;
 						} else {
 							if(! this.cacheObjectFields) {
 								for(SymbolicAddress ref : refs.getSet()) {
