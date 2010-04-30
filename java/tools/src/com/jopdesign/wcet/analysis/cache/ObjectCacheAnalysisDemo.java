@@ -94,7 +94,7 @@ public class ObjectCacheAnalysisDemo {
 		// Simply the number of object accesses in this node
 		public void visitBasicBlockNode(BasicBlockNode n) {
 			for(InstructionHandle ih : n.getBasicBlock().getInstructions()) {
-				if(! ObjectRefAnalysis.hasHandleAccess(project, ih)) continue;
+				if(null == ObjectRefAnalysis.getHandleType(project, n, ih)) continue;
 				cost += 1;
 			}
 		}

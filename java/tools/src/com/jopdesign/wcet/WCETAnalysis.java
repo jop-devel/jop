@@ -289,6 +289,9 @@ public class WCETAnalysis {
         return succeed;
     }
 
+	private Map<CallGraphNode, Long> refUsageTotal_;
+	private Map<CallGraphNode, Set<SymbolicAddress>> refUsageNames_;
+	private Map<CallGraphNode, Set<String>> refUsageSaturatedTypes_;
 	private void testCacheAnalysis() {
 		long start,stop;
 		// Method Cache
@@ -308,14 +311,16 @@ public class WCETAnalysis {
 		boolean writeUpdate = project.getProjectConfig().objectCacheUpdateOnWrite();
 		refUsageTotal_ = new ObjectRefAnalysis(project, fieldCache, writeUpdate, true, 64).getRefUsage();
 		refUsageNames_ = orefAnalysis.getUsedSymbolicNames();
+		refUsageSaturatedTypes_ = orefAnalysis.getSaturatedRefSets();
 		Map<CallGraphNode, Long> refUsageDistinct = orefAnalysis.getRefUsage();
 		MiscUtils.printMap(System.out, refUsageDistinct, new Function2<CallGraphNode, Long,String>() {
 			public String apply(CallGraphNode v1, Long usedRefs) {
-				return String.format("%-50s ==> %3d <= %3d (%s)",
+				return String.format("%-50s ==> %3d <= %3d (%s) ; Saturated Types: (%s)",
 						v1.getMethodImpl().getFQMethodName(),
 						usedRefs,
 						refUsageTotal_.get(v1),
-						refUsageNames_.get(v1)
+						refUsageNames_.get(v1),
+						refUsageSaturatedTypes_.get(v1).toString()
 						);
 			}        	
 		});		
@@ -333,8 +338,6 @@ public class WCETAnalysis {
 				String.format("Cache Misses [N=%3d]: %d  (%.2f %%)", cacheSize, cost, ratio*100));				
 		}
 	}
-	private Map<CallGraphNode, Long> refUsageTotal_;
-	private Map<CallGraphNode, Set<SymbolicAddress>> refUsageNames_;
 
 	private void testExactAllFit() {
 		long start,stop;

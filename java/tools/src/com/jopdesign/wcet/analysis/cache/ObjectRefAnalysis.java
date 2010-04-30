@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 
 import org.apache.bcel.generic.ARRAYLENGTH;
 import org.apache.bcel.generic.ArrayInstruction;
+import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.FieldInstruction;
 import org.apache.bcel.generic.GETFIELD;
 import org.apache.bcel.generic.INVOKEINTERFACE;
@@ -17,6 +18,8 @@ import org.apache.bcel.generic.INVOKEVIRTUAL;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.PUTFIELD;
+import org.apache.bcel.generic.ReferenceType;
+import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.TopologicalOrderIterator;
@@ -65,6 +68,7 @@ public class ObjectRefAnalysis {
 	private int maxSetSize;
 	private Map<CallGraphNode, Long> usedReferences;
 	private Map<CallGraphNode, Set<SymbolicAddress>> usedSymbolicNames;
+	private Map<CallGraphNode, Set<String>> saturatedRefSets;
 	private Project project;
 	private Map<DecisionVariable, SymbolicAddress> decisionVariables =
 		new HashMap<DecisionVariable, SymbolicAddress>();
@@ -126,7 +130,8 @@ public class ObjectRefAnalysis {
 		/* Prepare return value */
 		usedReferences = new HashMap<CallGraphNode, Long>();
 		usedSymbolicNames = new HashMap<CallGraphNode, Set<SymbolicAddress>>();
-
+		saturatedRefSets = new HashMap<CallGraphNode, Set<String>>();
+		
 		CallString emptyCallString = new CallString();
 		
 		/* Top Down the Scope Graph */
@@ -151,11 +156,36 @@ public class ObjectRefAnalysis {
 			String key = "object_ref_analysis:"+scope.toString();
 			ILPModelBuilder imb = new ILPModelBuilder(new IpetConfig(project.getConfig()));
 			Map<CFGNode,Long> costMap = new HashMap<CFGNode, Long>();
-			
+
+			/* Traverse vertex set (1). Collect those types where we could not resolve
+			 * the symbolic object names. (Does not work well for the analysis, but useful
+			 * for debugging)
+			 */
+			HashSet<String> topTypes =
+				new HashSet<String>(); // FIXME: We should deal with subtyping!!
+			for(CFGNode n : sg.vertexSet()) {
+				BasicBlock bb = n.getBasicBlock();
+				long topCost = 0;
+				if(bb == null) continue;
+				for(InstructionHandle ih : bb.getInstructions()) {
+					BoundedSet<SymbolicAddress> refs;
+					if(usedRefs.containsKey(ih)) {
+						refs = usedRefs.get(ih).get(emptyCallString);
+						String handleType = getHandleType(project, n, ih);
+						if(handleType == null) continue;
+						if(refs.isSaturated()) {
+							topTypes.add(handleType);
+						}
+					}
+				}
+			}
+
 			/* Traverse vertex set.
 			 * Add vertex to access set of referenced addresses
-			 * For each occurence of TOP, add cost of UNKNOWN_OBJECT_PENALTY
+			 * For references whose type cannot be fully resolved, at a
+			 * cost of 1.
 			 */
+			// FIXME: We should deal with subtyping
 			HashMap<SymbolicAddress, Map<CFGNode, Integer>> accessSets =
 				new HashMap<SymbolicAddress,Map<CFGNode, Integer>>();
 			for(CFGNode n : sg.vertexSet()) {
@@ -166,10 +196,13 @@ public class ObjectRefAnalysis {
 				for(InstructionHandle ih : bb.getInstructions()) {
 					BoundedSet<SymbolicAddress> refs;
 					if(usedRefs.containsKey(ih)) {
-						refs = usedRefs.get(ih).get(emptyCallString);
-						if(! hasHandleAccess(project,ih)) continue;
-						if(refs.isSaturated() || ! countDistinct) {
-							topCost += UNKNOWN_OBJECT_PENALTY;
+						String handleType = getHandleType(project, n, ih);
+						if(handleType == null) continue;
+						refs = usedRefs.get(ih).get(emptyCallString);						
+						if(! countDistinct) {
+							topCost += 1;
+						} else if(refs.isSaturated()) {
+							topCost += 1;
 						} else {
 							if(! this.cacheObjectFields) {
 								for(SymbolicAddress ref : refs.getSet()) {
@@ -234,11 +267,13 @@ public class ObjectRefAnalysis {
 					usedSet.add(addr);
 				}
 			}
+			this.saturatedRefSets.put(scope, topTypes);
 			this.usedSymbolicNames.put(scope, usedSet);
 			this.usedReferences.put(scope, accessedReferences);
 		}
 	}
 	
+
 	private void addAccessSite(
 			HashMap<SymbolicAddress, Map<CFGNode, Integer>> accessSets,
 			SymbolicAddress ref, CFGNode n) {
@@ -281,19 +316,35 @@ public class ObjectRefAnalysis {
 		if(usedSymbolicNames == null) analyzeRefUsage();
 		return usedSymbolicNames;		
 	}
+	public Map<CallGraphNode, Set<String>> getSaturatedRefSets() {
+		return this.saturatedRefSets;
+	}
 
-	public static boolean hasHandleAccess(Project project, InstructionHandle ih) {
+	public static String getHandleType(Project project, CFGNode n, InstructionHandle ih) {
+		ConstantPoolGen constPool = n.getControlFlowGraph().getMethodInfo().getConstantPoolGen();
 		Instruction instr = ih.getInstruction();
-		if(instr instanceof GETFIELD) return true;
-		if(! project.getProjectConfig().objectCacheUpdateOnWrite()) {
-			return false;
+		if(instr instanceof GETFIELD) {
+			GETFIELD gf = (GETFIELD) instr;
+			ReferenceType refty = gf.getReferenceType(constPool);
+			return refty.toString();
 		}
-		else if(instr instanceof PUTFIELD) return true;
-		if(FIELD_ACCESS_ONLY) return false;
-		if(instr instanceof ArrayInstruction
-			 || instr instanceof ARRAYLENGTH) return true;
-		else if(instr instanceof INVOKEINTERFACE ||
-				instr instanceof INVOKEVIRTUAL) return true;
-		else return false;
+		if(! project.getProjectConfig().objectCacheUpdateOnWrite()) {
+			return null;
+		}
+		if(instr instanceof PUTFIELD) {
+			PUTFIELD pf = (PUTFIELD) instr;
+			ReferenceType refty = pf.getReferenceType(constPool);
+			return refty.toString();			
+		}
+		if(FIELD_ACCESS_ONLY) {
+			throw new AssertionError("Array access: unsupported right now");
+		}
+		return null;
+		
+//		if(instr instanceof ArrayInstruction
+//			 || instr instanceof ARRAYLENGTH) return true;
+//		else if(instr instanceof INVOKEINTERFACE ||
+//				instr instanceof INVOKEVIRTUAL) return true;
+//		else return false;
 	}
 }
