@@ -61,7 +61,7 @@ public class ObjectRefAnalysis {
 	private static final int DEFAULT_SET_SIZE = 64;
 	/* Only consider getfield and putfield (if updateOnWrite) */
 	private static final boolean FIELD_ACCESS_ONLY = true;
-	private static final long UNKNOWN_OBJECT_PENALTY = 512;
+	private static final long UNKNOWN_OBJECT_PENALTY = 2;
 	private int maxSetSize;
 	private Map<CallGraphNode, Long> usedReferences;
 	private Map<CallGraphNode, Set<SymbolicAddress>> usedSymbolicNames;

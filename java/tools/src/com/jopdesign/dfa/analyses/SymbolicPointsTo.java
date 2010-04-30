@@ -16,6 +16,7 @@ import org.apache.bcel.generic.ArrayInstruction;
 import org.apache.bcel.generic.FieldInstruction;
 import org.apache.bcel.generic.GETFIELD;
 import org.apache.bcel.generic.GETSTATIC;
+import org.apache.bcel.generic.IALOAD;
 import org.apache.bcel.generic.INVOKESTATIC;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
@@ -246,11 +247,13 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			}
 		}
 		break;
-		 
+		
+		case Constants.FSTORE:
 		case Constants.LSTORE:
 		case Constants.LSTORE_0:
 		case Constants.LSTORE_1:
 		case Constants.LSTORE_2:
+		case Constants.LSTORE_3:
 		case Constants.ISTORE_0:
 		case Constants.ISTORE_1:
 		case Constants.ISTORE_2:
@@ -388,11 +391,15 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		}
 		break;
 
+		case Constants.LASTORE:
+		case Constants.DASTORE:
 		case Constants.IASTORE:
 		case Constants.CASTORE:
 		case Constants.SASTORE:
 		case Constants.BASTORE: {
-			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-3));
+			int offset = 3;
+			if(opcode == Constants.LASTORE || opcode == Constants.DASTORE) offset=4;
+			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-offset));
 			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
 		}
 		break;
@@ -411,9 +418,11 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		}
 		break;
 			
+		case Constants.DALOAD:
+		case Constants.LALOAD: 
 		case Constants.IALOAD:
 		case Constants.CALOAD:
-		case Constants.SALOAD:			
+		case Constants.SALOAD:
 		case Constants.BALOAD: {
 			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-2));
 			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		

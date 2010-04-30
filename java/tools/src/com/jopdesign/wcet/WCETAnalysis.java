@@ -72,6 +72,7 @@ import static com.jopdesign.wcet.ExecHelper.timeDiff;
 public class WCETAnalysis {
     private static final String CONFIG_FILE_PROP = "config";
     public static final String VERSION = "1.0.1";
+	private static final boolean CALCULATE_MINIMUM_CACHE_COST = false;
 
     public static Option<?>[][] options = {
         ProjectConfig.projectOptions,
@@ -209,15 +210,17 @@ public class WCETAnalysis {
                 stop  = System.nanoTime();
                 reportSpecial("always-hit",ah,start,stop,LpSolveWrapper.getSolverTime());
 
-                /* minimal cache cost */
-                IpetConfig mmcConfig = ipetConfig.clone();
-                mmcConfig.assumeMissOnceOnInvoke = true;
-                GlobalAnalysis gb = new GlobalAnalysis(project, mmcConfig);
-                LpSolveWrapper.resetSolverTime();
-                start = System.nanoTime();
-                mincachecost = gb.computeWCET(project.getTargetMethod(), StaticCacheApproximation.GLOBAL_ALL_FIT);
-                stop  = System.nanoTime();
-                reportSpecial("min-cache-cost",mincachecost, start, stop, LpSolveWrapper.getSolverTime());
+                /* minimal cache cost (too expensive for large problems) */
+                if(CALCULATE_MINIMUM_CACHE_COST)  {                
+                	IpetConfig mmcConfig = ipetConfig.clone();
+                	mmcConfig.assumeMissOnceOnInvoke = true;
+                	GlobalAnalysis gb = new GlobalAnalysis(project, mmcConfig);
+                	LpSolveWrapper.resetSolverTime();
+                	start = System.nanoTime();
+                	mincachecost = gb.computeWCET(project.getTargetMethod(), StaticCacheApproximation.GLOBAL_ALL_FIT);
+                	stop  = System.nanoTime();
+                	reportSpecial("min-cache-cost",mincachecost, start, stop, LpSolveWrapper.getSolverTime());
+                }
             }
             exec.info("Starting precise WCET analysis");
             project.setGenerateWCETReport(false);
