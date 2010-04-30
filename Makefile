@@ -669,7 +669,7 @@ wcet:
 	java -Xss16M -Xmx512M $(JAVA_OPT) \
 	  $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis \
 		-cp $(TARGET)/tmp -sp $(TARGET_SOURCE) \
-		-app-class $(MAIN_CLASS) -target-method $(WCET_METHOD) \
+		-app-class $(MAIN_CLASS) -target-method "$(WCET_METHOD)" \
 		-outdir $(TARGET)/wcet \
 		-dataflow-analysis $(WCET_DFA) \
 		-uppaal $(WCET_UPPAAL) -uppaal-verifier $(WCET_VERIFYTA) \
