@@ -54,7 +54,7 @@ public class LpSolveWrapper<T> {
 			this.statusCode = c;
 		}
 	}
-	private static final long LP_SOLVE_SEC_TIMEOUT = 60;
+	private static final long LP_SOLVE_SEC_TIMEOUT = 20;
 	private static long solverTime = 0;
 	/**
 	 * Get time spend in the solver since the last call to {@link resetSolverTime}
@@ -217,9 +217,10 @@ public class LpSolveWrapper<T> {
 	public double solve(double[] objVec) throws LpSolveException {
 		freeze();
 		
+	    lpsolve.setTimeout(LP_SOLVE_SEC_TIMEOUT);
 		SolverThread thr = new SolverThread();
-//	    lpsolve.setTimeout(LP_SOLVE_SEC_TIMEOUT);
 		thr.start();
+    	int cnt=1;
 	    while(true) {
 	    	boolean interrupted = false;
 		    try {
@@ -229,7 +230,7 @@ public class LpSolveWrapper<T> {
 			}
 		    if(! thr.isAlive()) break;
 		    if(!interrupted) {
-		    	System.err.println("LP Solve: Hard Problem, calculating (1s)");
+		    	System.err.println("LP Solve: Hard Problem, calculating ("+(cnt++)+"s)");
 		    }
 	    }
 		LpSolveWrapper.solverTime += (thr.solverTime);

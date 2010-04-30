@@ -61,7 +61,7 @@ public class ObjectRefAnalysis {
 	private static final int DEFAULT_SET_SIZE = 64;
 	/* Only consider getfield and putfield (if updateOnWrite) */
 	private static final boolean FIELD_ACCESS_ONLY = true;
-	private static final long UNKNOWN_OBJECT_PENALTY = 2;
+	private static final long UNKNOWN_OBJECT_PENALTY = 1000;
 	private int maxSetSize;
 	private Map<CallGraphNode, Long> usedReferences;
 	private Map<CallGraphNode, Set<SymbolicAddress>> usedSymbolicNames;
@@ -220,7 +220,8 @@ public class ObjectRefAnalysis {
 			try {
 				lpCost = maxCostFlow.solve(flowMap,refUseMap);
 			} catch (Exception e) {
-				throw new AssertionError("Failed to calculate references for : "+scope);
+				Logger.getLogger(ObjectRefAnalysis.class).error("Failed to calculate references for : "+scope);
+				lpCost = 2000000000L;
 			}
 			long accessedReferences = (long) (lpCost+0.5);
 			

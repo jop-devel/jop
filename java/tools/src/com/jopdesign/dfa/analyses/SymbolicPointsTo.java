@@ -249,6 +249,10 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		break;
 		
 		case Constants.FSTORE:
+		case Constants.FSTORE_0:
+		case Constants.FSTORE_1:
+		case Constants.FSTORE_2:
+		case Constants.FSTORE_3:
 		case Constants.LSTORE:
 		case Constants.LSTORE_0:
 		case Constants.LSTORE_1:
@@ -421,6 +425,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.DALOAD:
 		case Constants.LALOAD: 
 		case Constants.IALOAD:
+		case Constants.FALOAD:
 		case Constants.CALOAD:
 		case Constants.SALOAD:
 		case Constants.BALOAD: {
