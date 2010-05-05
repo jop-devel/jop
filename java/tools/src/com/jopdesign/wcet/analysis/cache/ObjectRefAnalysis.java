@@ -58,13 +58,17 @@ import com.jopdesign.wcet.jop.JOPConfig;
  */
 public class ObjectRefAnalysis {
 	
-	private boolean cacheObjectFields;
-	private boolean countDistinct;
-
 	private static final int DEFAULT_SET_SIZE = 64;
-	private static final boolean GETFIELD_ONLY = true;	
-	private static final boolean FIELD_ACCESS_ONLY = true; /* Only consider getfield (and later putfield) */
+	/* This is the current consensus:
+	 * - One cache line per object
+	 * - Only consider getfield. putfield does not modify cache
+	 * - Handle access should be configurable (HANDLE_ACCESS = false or true)
+	 */
+	private static final boolean ONE_CACHE_LINE_PER_OBJECT = true;
+	private static final boolean ALL_HANDLE_ACCESSES = false; /* Only consider getfield (false) or all handle accesses */
 	private static final long UNKNOWN_OBJECT_PENALTY = 1000;
+
+	private boolean countDistinct;
 
 	private int maxSetSize;
 	private Map<CallGraphNode, Long> usedReferences;
@@ -202,7 +206,7 @@ public class ObjectRefAnalysis {
 						} else if(refs.isSaturated()) {
 							topCost += 1;
 						} else {
-							if(! this.cacheObjectFields) {
+							if(ONE_CACHE_LINE_PER_OBJECT) {
 								for(SymbolicAddress ref : refs.getSet()) {
 									addAccessSite(accessSets, ref, n);
 								}
@@ -326,7 +330,7 @@ public class ObjectRefAnalysis {
 			ReferenceType refty = gf.getReferenceType(constPool);
 			return refty.toString();
 		}
-		if(GETFIELD_ONLY)
+		if(! ALL_HANDLE_ACCESSES)
 			return null;
 		
 		if(instr instanceof PUTFIELD) {
@@ -334,15 +338,19 @@ public class ObjectRefAnalysis {
 			ReferenceType refty = pf.getReferenceType(constPool);
 			return refty.toString();			
 		}
-		if(FIELD_ACCESS_ONLY) {
-			throw new AssertionError("Array access: unsupported right now");
+		if(instr instanceof ArrayInstruction)
+		{
+			ArrayInstruction ainstr = (ArrayInstruction) instr;
+			return "[]";
+		}
+		if(instr instanceof ARRAYLENGTH) {
+			ARRAYLENGTH ainstr = (ARRAYLENGTH) instr;
+			return "[]";
+		}
+		if(instr instanceof INVOKEINTERFACE || instr instanceof INVOKEVIRTUAL)
+		{
+			return "$header";
 		}
 		return null;
-		
-//		if(instr instanceof ArrayInstruction
-//			 || instr instanceof ARRAYLENGTH) return true;
-//		else if(instr instanceof INVOKEINTERFACE ||
-//				instr instanceof INVOKEVIRTUAL) return true;
-//		else return false;
 	}
 }
