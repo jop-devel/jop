@@ -39,6 +39,7 @@ public class JOPConfig {
 	public Long cpus;
 	public Long timeslot;
 	public File asmFile;
+	private int objectCacheAssociativity;
 
 	public JOPConfig(Project p) {
 		configData = p.getConfig();
@@ -110,4 +111,19 @@ public class JOPConfig {
 		OBJECT_CACHE, OBJECT_CACHE_ASSOCIATIVITY, OBJECT_CACHE_LINE_SIZE,
 		OBJECT_CACHE_LINE_FILL, OBJECT_CACHE_LATENCY, OBJECT_CACHE_THROUGHPUT
 	};
+
+	/**
+	 * @return the associativity of the object cache
+	 */
+	public long getObjectCacheAssociativity() {
+		if(this.objectCacheAssociativity == -1) {
+			Long configuredAssoc = this.configData.getOption(OBJECT_CACHE_ASSOCIATIVITY);
+			if(configuredAssoc == null) throw new AssertionError("Object Cache: Associativity not configured");
+			this.objectCacheAssociativity = configuredAssoc.intValue();
+		}
+		return this.objectCacheAssociativity;
+	}
+	public void setObjectCacheAssociativity(int assoc) {
+		this.objectCacheAssociativity = assoc;
+	}
 }

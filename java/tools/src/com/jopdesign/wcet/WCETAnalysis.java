@@ -289,16 +289,19 @@ public class WCETAnalysis {
         return succeed;
     }
 
-	private Map<CallGraphNode, Long> refUsageTotal_;
-	private Map<CallGraphNode, Set<SymbolicAddress>> refUsageNames_;
-	private Map<CallGraphNode, Set<String>> refUsageSaturatedTypes_;
+
 	private void testCacheAnalysis() {
 		long start,stop;
+
+		JOPConfig jopconfig = new JOPConfig(project);
+
 		// Method Cache
 		//testExactAllFit();
 		// Object Cache (total, allfit)
+		ObjectRefAnalysis orefAnalysisCountAll = new ObjectRefAnalysis(project, jopconfig, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE,true);
+		refUsageTotal_ = orefAnalysisCountAll.getRefUsage();
 		
-		ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project);
+		ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project,jopconfig, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE);
 		LpSolveWrapper.resetSolverTime();
         start = System.nanoTime();
 		orefAnalysis.analyzeRefUsage();
@@ -307,9 +310,6 @@ public class WCETAnalysis {
 				String.format("[Object Reference Analysis]: Total time: %.2f s / Total solver time: %.2f s",
 						timeDiff(start,stop),
 						LpSolveWrapper.getSolverTime()));        
-		boolean fieldCache = project.getProjectConfig().objectCacheFields();
-		boolean writeUpdate = project.getProjectConfig().objectCacheUpdateOnWrite();
-		refUsageTotal_ = new ObjectRefAnalysis(project, fieldCache, writeUpdate, true, 64).getRefUsage();
 		refUsageNames_ = orefAnalysis.getUsedSymbolicNames();
 		refUsageSaturatedTypes_ = orefAnalysis.getSaturatedRefSets();
 		Map<CallGraphNode, Long> refUsageDistinct = orefAnalysis.getRefUsage();
@@ -329,7 +329,8 @@ public class WCETAnalysis {
 		int[] cacheSizes = { 0,1,2,4,8,16,32,64, 128 };
 		long accesses = 0;
 		for(int cacheSize : cacheSizes) {
-			oca = new ObjectCacheAnalysisDemo(project, cacheSize);
+			jopconfig.setObjectCacheAssociativity(cacheSize);
+			oca = new ObjectCacheAnalysisDemo(project, jopconfig);
 			long cost = oca.computeCost();
 			double ratio;
 			if(cacheSize == 0) { accesses = cost; ratio = 0.0; }
@@ -337,7 +338,11 @@ public class WCETAnalysis {
 			System.out.println(
 				String.format("Cache Misses [N=%3d]: %d  (%.2f %%)", cacheSize, cost, ratio*100));				
 		}
-	}
+	} 
+	/* Fields for easy debugging */
+	private Map<CallGraphNode, Long> refUsageTotal_; 
+	private Map<CallGraphNode, Set<SymbolicAddress>> refUsageNames_;
+	private Map<CallGraphNode, Set<String>> refUsageSaturatedTypes_;
 
 	private void testExactAllFit() {
 		long start,stop;

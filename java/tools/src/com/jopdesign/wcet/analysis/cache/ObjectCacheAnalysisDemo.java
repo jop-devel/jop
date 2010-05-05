@@ -27,6 +27,7 @@ import com.jopdesign.wcet.frontend.ControlFlowGraph.SummaryNode;
 import com.jopdesign.wcet.ipet.IpetConfig;
 import com.jopdesign.wcet.ipet.ILPModelBuilder.CostProvider;
 import com.jopdesign.wcet.ipet.ILPModelBuilder.MapCostProvider;
+import com.jopdesign.wcet.jop.JOPConfig;
 
 /** A demonstration of the persistence analysis for the object cache
  *  <p>
@@ -40,6 +41,8 @@ import com.jopdesign.wcet.ipet.ILPModelBuilder.MapCostProvider;
  *  
  */
 public class ObjectCacheAnalysisDemo {
+	public static final int DEFAULT_SET_SIZE = 64;
+
 	public class RecursiveOCacheAnalysis extends
 			RecursiveAnalysis<AnalysisContext, Long> {
 
@@ -95,6 +98,7 @@ public class ObjectCacheAnalysisDemo {
 		public void visitBasicBlockNode(BasicBlockNode n) {
 			for(InstructionHandle ih : n.getBasicBlock().getInstructions()) {
 				if(null == ObjectRefAnalysis.getHandleType(project, n, ih)) continue;
+				// TODO: give good costs
 				cost += 1;
 			}
 		}
@@ -144,25 +148,25 @@ public class ObjectCacheAnalysisDemo {
 	}
 
 	private Project project;
-	private boolean doPersistenceAnalysis;
-	private int cacheSize;
+	private JOPConfig jopconfig;
 	private ObjectRefAnalysis objRefAnalysis;
 	private CallGraph callGraph;
-	private boolean fieldCache;
-	private boolean writeUpdate;
+	private boolean assumeAllMiss;
 
-	public ObjectCacheAnalysisDemo(Project p, int cacheSize) {
+	public ObjectCacheAnalysisDemo(Project p, JOPConfig jopconfig) {
+		this(p, jopconfig, jopconfig.getObjectCacheAssociativity() == 0);
+	}
+
+	public ObjectCacheAnalysisDemo(Project p, JOPConfig jopconfig, boolean assumeAllMiss) {
 		this.project = p;
-		this.doPersistenceAnalysis = cacheSize > 0;
-		this.cacheSize = cacheSize;
+		this.jopconfig = jopconfig;
 		this.callGraph = project.getCallGraph();
-		this.fieldCache = p.getProjectConfig().objectCacheFields();
-		this.writeUpdate = p.getProjectConfig().objectCacheUpdateOnWrite();
+		this.assumeAllMiss = assumeAllMiss;
 	}
 	
 	public long computeCost() {
 		/* Cache Analysis */
-		objRefAnalysis = new ObjectRefAnalysis(project, fieldCache, writeUpdate, false, 64);
+		objRefAnalysis = new ObjectRefAnalysis(project, jopconfig, DEFAULT_SET_SIZE);
 		objRefAnalysis.analyzeRefUsage();
 		
 		RecursiveAnalysis<AnalysisContext, Long> recAna =
@@ -177,9 +181,9 @@ public class ObjectCacheAnalysisDemo {
 	}
 
 	private boolean allPersistent(MethodInfo invoked, CallString context) {
-		if(! doPersistenceAnalysis) return false;
+		if(assumeAllMiss) return false;
 		long maxAccessed = getMaxAccessed(invoked, context);
-		return maxAccessed <= this.cacheSize;
+		return maxAccessed <= jopconfig.getObjectCacheAssociativity();
 	}		
 	
 }

@@ -46,6 +46,7 @@ import com.jopdesign.wcet.ipet.LinearVector;
 import com.jopdesign.wcet.ipet.MaxCostFlow;
 import com.jopdesign.wcet.ipet.ILPModelBuilder.MapCostProvider;
 import com.jopdesign.wcet.ipet.MaxCostFlow.DecisionVariable;
+import com.jopdesign.wcet.jop.JOPConfig;
 
 /** Analysis of the used object references.
  *  Goal: Detect persistence scopes.
@@ -58,13 +59,13 @@ import com.jopdesign.wcet.ipet.MaxCostFlow.DecisionVariable;
 public class ObjectRefAnalysis {
 	
 	private boolean cacheObjectFields;
-	private boolean updateOnWrite;
 	private boolean countDistinct;
 
 	private static final int DEFAULT_SET_SIZE = 64;
-	/* Only consider getfield and putfield (if updateOnWrite) */
-	private static final boolean FIELD_ACCESS_ONLY = true;
+	private static final boolean GETFIELD_ONLY = true;	
+	private static final boolean FIELD_ACCESS_ONLY = true; /* Only consider getfield (and later putfield) */
 	private static final long UNKNOWN_OBJECT_PENALTY = 1000;
+
 	private int maxSetSize;
 	private Map<CallGraphNode, Long> usedReferences;
 	private Map<CallGraphNode, Set<SymbolicAddress>> usedSymbolicNames;
@@ -72,18 +73,15 @@ public class ObjectRefAnalysis {
 	private Project project;
 	private Map<DecisionVariable, SymbolicAddress> decisionVariables =
 		new HashMap<DecisionVariable, SymbolicAddress>();
-	public ObjectRefAnalysis(Project p) {
-		this(p, p.getProjectConfig().objectCacheFields(), p.getProjectConfig().objectCacheUpdateOnWrite(), false, DEFAULT_SET_SIZE);
+
+	public ObjectRefAnalysis(Project p, JOPConfig jopconfig, int setSize) {
+		this(p,jopconfig,setSize,false);
 	}
-	public ObjectRefAnalysis(Project p, boolean cacheObjectFields, boolean updateOnWrite, boolean countNonDistinct, int setSize) {
+	
+	public ObjectRefAnalysis(Project p, JOPConfig jopconfig, int setSize, boolean countAll) {
 		this.project = p;
-		this.countDistinct = ! countNonDistinct;
+		this.countDistinct = !  countAll;
 		this.maxSetSize = setSize;
-		this.cacheObjectFields = cacheObjectFields;
-		this.updateOnWrite = updateOnWrite;
-		if(updateOnWrite) {
-			throw new AssertionError("Cache Analysis with update-on-write is not supported yet (Model?)");
-		}
 	}
 	
 	private class ExecOnceQuery implements Query<InstructionHandle> {
@@ -196,7 +194,7 @@ public class ObjectRefAnalysis {
 				for(InstructionHandle ih : bb.getInstructions()) {
 					BoundedSet<SymbolicAddress> refs;
 					if(usedRefs.containsKey(ih)) {
-						String handleType = getHandleType(project, n, ih);
+						String handleType = getHandleType(project, n, ih); 
 						if(handleType == null) continue;
 						refs = usedRefs.get(ih).get(emptyCallString);						
 						if(! countDistinct) {
@@ -328,9 +326,9 @@ public class ObjectRefAnalysis {
 			ReferenceType refty = gf.getReferenceType(constPool);
 			return refty.toString();
 		}
-		if(! project.getProjectConfig().objectCacheUpdateOnWrite()) {
+		if(GETFIELD_ONLY)
 			return null;
-		}
+		
 		if(instr instanceof PUTFIELD) {
 			PUTFIELD pf = (PUTFIELD) instr;
 			ReferenceType refty = pf.getReferenceType(constPool);
