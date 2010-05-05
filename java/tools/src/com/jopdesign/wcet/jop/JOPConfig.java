@@ -64,6 +64,19 @@ public class JOPConfig {
 	public static final IntegerOption CMP_TIMESLOT =
 		new IntegerOption("jop-cmp-timeslot", "JOP arbiter timeslot cycles",WCETInstruction.TIMESLOT);
 
+	public static final BooleanOption OBJECT_CACHE =
+		new BooleanOption("jop-object-cache", "JOP object cache configuration", false);
+	public static final IntegerOption OBJECT_CACHE_ASSOCIATIVITY =
+		new IntegerOption("jop-ocache-associativity", "JOP object associativity", 16);
+	public static final IntegerOption OBJECT_CACHE_LINE_SIZE =
+		new IntegerOption("jop-ocache-associativity", "JOP object cache line size", 16);
+	public static final IntegerOption OBJECT_CACHE_LINE_FILL =
+		new IntegerOption("jop-ocache-fill", "JOP object cache: whether to fill line on miss", true);
+	public static final IntegerOption OBJECT_CACHE_LATENCY =
+		new IntegerOption("jop-ocache-latency", "JOP object cache latency for first word", 0);
+	public static final IntegerOption OBJECT_CACHE_THROUGHPUT =
+		new IntegerOption("jop-ocache-throughput", "JOP object cache cycles per word", 3);
+
 	/**
 	 * Supported method cache implementations:
 	 * <ul>
@@ -93,6 +106,8 @@ public class JOPConfig {
 	public static final Option<?>[] jopOptions = {
 		ASM_FILE, READ_WAIT_STATES, WRITE_WAIT_STATES,
 		MULTIPROCESSOR, CMP_CPUS, CMP_TIMESLOT,
-		CACHE_IMPL, CACHE_BLOCKS, CACHE_SIZE_WORDS
+		CACHE_IMPL, CACHE_BLOCKS, CACHE_SIZE_WORDS,
+		OBJECT_CACHE, OBJECT_CACHE_ASSOCIATIVITY, OBJECT_CACHE_LINE_SIZE,
+		OBJECT_CACHE_LINE_FILL, OBJECT_CACHE_LATENCY, OBJECT_CACHE_THROUGHPUT
 	};
 }
