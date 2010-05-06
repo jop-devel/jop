@@ -33,6 +33,7 @@ public class ObjectCacheDemo1 {
     final static boolean MEASURE = true;
     final static boolean MEASURE_CACHE = true;
 
+    final static int N = 1; // outer iteration count
     static int ts, te, to;
     static int cs, ce;
 
@@ -75,17 +76,17 @@ public class ObjectCacheDemo1 {
     }
 	
     static int invoke() {
-        if (MEASURE_CACHE) Native.rdMem(CACHE_FLUSH);
+        if (MEASURE_CACHE) Native.wrMem(1,CACHE_FLUSH);
         int v = measure();
         if (MEASURE) te = Native.rdMem(Const.IO_CNT);
         if (MEASURE_CACHE) Native.rdMem(CACHE_DUMP);
         return v;
     }
-	
+    // At most 2*N lines replaced
     static int measure() {
         if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
         int v = 0;
-        for(int i = 0; i < 50; i++)
+        for(int i = 0; i < N; i++)
             {
                 x = new X(i,5);
                 y = new Y(8,i);
@@ -103,7 +104,7 @@ public class ObjectCacheDemo1 {
             v ^= x.x2;
         }
         for(int i = 0; i < 50; i++) {
-            if(v % 2 == 0) {
+            if(i % 2 == 0) {
                 v ^= (x.x1 + x.x2);
             } else {
                 v ^= (y.y1 + y.y2);

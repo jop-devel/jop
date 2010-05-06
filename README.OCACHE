@@ -1,13 +1,46 @@
 Object Cache Evaluation
 -----------------------
-TODO:
-  * Unsupported native instructions (done)
-  * Loop Colors for stuck code (done, introducing stuck map)
-  *
-
 
 To run the object cache evaluation, you need to do the following:
 
+
+Tested Benchmarks
+----------------
+standard
+ P1=test P2=wcet P3=Start{Lift|BenchUdpIp}
+
+jolden (needs privately distributed jolden patch)
+ P1=test P2=wcet P3=StartJolden{MST|BH|EM3D}
+
+trading
+ P1=...
+
+<nonfunc>
+  ejipcmp, scd_micro
+
+Sim
+---
+
+1) Enable MEASURE and MEASURE_CACHE in the test driver
+
+2) Influental Environment Variables
+OCACHE_ASSOC (default 16)
+OCACHE_WORDS_PER_LINE (default 16)
+OCACHE_SIM (line: fill line on miss, fieldtag: use fields as tags (default: handles))
+OCACHE_REPLACEMENT (lru, fifo (default))
+
+3) Examples
+> Object Cache, Fill Line
+OCACHE_SIM=line make jsim P1=test P2=wcet P3=StartLift 
+
+> Object Cache, LRU
+OCACHE_REPLACEMENT=lru make jsim P1=test P2=wcet P3=StartLift 
+
+> "Field Cache", Assoc 64
+OCACHE_SIM=fieldtag OCACHE_ASSOC=64 make jsim P1=test P2=wcet P3=StartLift 
+
+Analysis
+--------
 > Cache Objects, update on getfield only
 make java_app wcet P1=test P2=wcet P3=StartLift WCET_METHOD=measure \
   WCET_OPTIONS="-dataflow-analysis -object-cache-analysis"
@@ -16,4 +49,11 @@ make java_app wcet P1=test P2=wcet P3=StartLift WCET_METHOD=measure \
 make java_app wcet P1=test P2=wcet P3=StartLift WCET_METHOD=measure \
   WCET_OPTIONS="-dataflow-analysis -object-cache-analysis -object-cache-fields"
 
+Unsolved and Solved Problems
+----------------------------
+    throw new Exception("A"+b);
+==> do not consider dead code
+
+Notes
+-----
 Support for Write Allocate is currently disabled, as the model is unclear: Should we assume a cache miss (a)always or (b)not for write-after-read? The second option is more difficult to implement.

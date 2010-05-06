@@ -39,7 +39,17 @@ import com.jopdesign.sys.*;
 import com.jopdesign.timing.WCETInstruction;
 
 public class JopSim {
-
+	private static final int OCACHE_ASSOC =
+		System.getenv("OCACHE_ASSOC") == null ? 16 : Integer.parseInt(System.getenv("OCACHE_ASSOC"));
+	private static final int OCACHE_WORDS_PER_LINE =
+		System.getenv("OCACHE_WORDS_PER_LINE") == null ? 16 : Integer.parseInt(System.getenv("OCACHE_WORDS_PER_LINE"));
+	private static final boolean OCACHE_FILL_LINE = 
+		"line".equals(System.getenv("OCACHE_SIM"));
+	private static final boolean OCACHE_FIELD_TAG = 
+		"fieldtag".equals(System.getenv("OCACHE_SIM"));
+	private static final String OCACHE_REPLACEMENT =
+		System.getenv("OCACHE_REPLACEMENT");
+	
 	public class JopSimRtsException extends RuntimeException {
 		
 		private static final long serialVersionUID = 1L;
@@ -233,12 +243,8 @@ public class JopSim {
 		cache = new Cache(mem, this);
 
 		int ocAssoc;
-		if(System.getenv("OC_ASSOC") != null) {
-			ocAssoc = Integer.parseInt(System.getenv("OC_ASSOC"));
-		} else {
-			ocAssoc = OBJECT_CACHE_ASSOC;
-		}
-		objectCacheSim = new ObjectCacheSim(ocAssoc, OBJECT_CACHE_FIELDS);
+		objectCacheSim = new ObjectCacheSim(OCACHE_ASSOC, OCACHE_WORDS_PER_LINE, OCACHE_FILL_LINE, 
+											OCACHE_FIELD_TAG, "lru".equals(OCACHE_REPLACEMENT));
 		io = ioSim;
 		
 	}
@@ -338,8 +344,6 @@ System.out.println(mp+" "+pc);
 	int copy_dest = 0;
 	int copy_pos = 0;
 	
-	public static final int OBJECT_CACHE_ASSOC = 16;
-	public static final int OBJECT_CACHE_FIELDS = 32;
 	ObjectCacheSim objectCacheSim;
 
 	/**
