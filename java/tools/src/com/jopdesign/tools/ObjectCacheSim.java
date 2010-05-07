@@ -79,6 +79,7 @@ public class ObjectCacheSim {
 			int line = lookup.cacheLine;
 			boolean isFieldCached = cacheLines[line].contents[off] >= 0;
 			if(! isFieldCached) {
+				//System.out.println("Field not cached for "+addr+" + "+off+" -- fillLine = "+fillLine);
 				lookup.wasHit = false;
 				if(fillLine) {
 					for(int i = 0; i < lineSize; i++) {
@@ -87,6 +88,8 @@ public class ObjectCacheSim {
 				} else {
 					cacheLines[line].contents[off] = off;
 				}
+			} else if(! lookup.wasHit) {
+				throw new AssertionError("Cache is incoherent: not a hit but field is cached: "+addr+" + "+off);
 			}
 		}
 		if(! lookup.wasHit) {
@@ -154,7 +157,8 @@ public class ObjectCacheSim {
 		int ac = stats.accessCount;
 		int mc = stats.missCount;
 		System.out.println(
-				String.format("Object Cache: Assoc: %d, Access: %d, Miss: %d, Ration: %.2f %%",
-						assoc, ac,mc,(double)(ac-mc)/(double)(ac)*100.0));
+				String.format("Object Cache (%s,%s): Assoc: %d, words per line: %d, Access: %d, Miss: %d, Ration: %.2f %%",
+						useLRU?"LRU":"FIFO", fillLine?"fill line":"fill word",
+						assoc, lineSize,  ac,mc,(double)(ac-mc)/(double)(ac)*100.0));
 	}
 }

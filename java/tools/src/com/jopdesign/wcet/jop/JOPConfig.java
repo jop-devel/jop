@@ -40,6 +40,8 @@ public class JOPConfig {
 	public Long timeslot;
 	public File asmFile;
 	private int objectCacheAssociativity;
+	private boolean objectCacheFillLine;
+	private boolean objectCacheFieldTag;
 
 	public JOPConfig(Project p) {
 		configData = p.getConfig();
@@ -49,6 +51,9 @@ public class JOPConfig {
 		this.cmp = configData.getOption(MULTIPROCESSOR);
 		this.cpus = configData.getOption(CMP_CPUS);
 		this.timeslot = configData.getOption(CMP_TIMESLOT);
+		this.objectCacheAssociativity = configData.getOption(OBJECT_CACHE_ASSOCIATIVITY).intValue();
+		this.objectCacheFillLine = configData.getOption(OBJECT_CACHE_LINE_FILL);
+		this.objectCacheFieldTag = false;
 	}
 	// FIXME: default values are fetched from WCETInstruction until transition to
 	// new timing system is complete
@@ -71,8 +76,8 @@ public class JOPConfig {
 		new IntegerOption("jop-ocache-associativity", "JOP object associativity", 16);
 	public static final IntegerOption OBJECT_CACHE_LINE_SIZE =
 		new IntegerOption("jop-ocache-associativity", "JOP object cache line size", 16);
-	public static final IntegerOption OBJECT_CACHE_LINE_FILL =
-		new IntegerOption("jop-ocache-fill", "JOP object cache: whether to fill line on miss", true);
+	public static final BooleanOption OBJECT_CACHE_LINE_FILL =
+		new BooleanOption("jop-ocache-fill", "JOP object cache: whether to fill line on miss", false);
 	public static final IntegerOption OBJECT_CACHE_LATENCY =
 		new IntegerOption("jop-ocache-latency", "JOP object cache latency for first word", 0);
 	public static final IntegerOption OBJECT_CACHE_THROUGHPUT =
@@ -116,14 +121,27 @@ public class JOPConfig {
 	 * @return the associativity of the object cache
 	 */
 	public long getObjectCacheAssociativity() {
-		if(this.objectCacheAssociativity == -1) {
-			Long configuredAssoc = this.configData.getOption(OBJECT_CACHE_ASSOCIATIVITY);
-			if(configuredAssoc == null) throw new AssertionError("Object Cache: Associativity not configured");
-			this.objectCacheAssociativity = configuredAssoc.intValue();
-		}
 		return this.objectCacheAssociativity;
 	}
 	public void setObjectCacheAssociativity(int assoc) {
 		this.objectCacheAssociativity = assoc;
+	}
+	/**
+	 * @return whether the object cache fills line on miss
+	 */
+	public boolean getObjectCacheFillLine() {
+		return objectCacheFillLine;
+	}
+	public void setObjectCacheFillLine(boolean fill) {
+		this.objectCacheFillLine = fill;
+	}
+	public boolean isFieldCache() {
+		return this.objectCacheFieldTag;
+	}
+	/**
+	 * @param b whether to use fields as tag (only for experiments)
+	 */
+	public void setObjectCacheFieldTag(boolean b) {
+		this.objectCacheFieldTag = b;
 	}
 }

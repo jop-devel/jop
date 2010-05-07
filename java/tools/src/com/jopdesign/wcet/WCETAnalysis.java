@@ -29,6 +29,7 @@ package com.jopdesign.wcet;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import lpsolve.LpSolve;
 import lpsolve.VersionInfo;
@@ -298,10 +299,16 @@ public class WCETAnalysis {
 		// Method Cache
 		//testExactAllFit();
 		// Object Cache (total, allfit)
-		ObjectRefAnalysis orefAnalysisCountAll = new ObjectRefAnalysis(project, jopconfig, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE,true);
-		refUsageTotal_ = orefAnalysisCountAll.getRefUsage();
+		Map<CallGraphNode, Long> refUsageTotal; 
+		Map<CallGraphNode, Set<SymbolicAddress>> refUsageNames;
+		Map<CallGraphNode, Set<String>> refUsageSaturatedTypes;
+		Map<CallGraphNode, Long> refUsageDistinct;
+		Map<CallGraphNode, Long> fieldUsageDistinct;
+
+		ObjectRefAnalysis orefAnalysisCountAll = new ObjectRefAnalysis(project, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE,true);
+		refUsageTotal = orefAnalysisCountAll.getMaxReferencesAccessed();
 		
-		ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project,jopconfig, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE);
+		ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE);
 		LpSolveWrapper.resetSolverTime();
         start = System.nanoTime();
 		orefAnalysis.analyzeRefUsage();
@@ -309,41 +316,53 @@ public class WCETAnalysis {
 		System.err.println(
 				String.format("[Object Reference Analysis]: Total time: %.2f s / Total solver time: %.2f s",
 						timeDiff(start,stop),
-						LpSolveWrapper.getSolverTime()));        
-		refUsageNames_ = orefAnalysis.getUsedSymbolicNames();
-		refUsageSaturatedTypes_ = orefAnalysis.getSaturatedRefSets();
-		Map<CallGraphNode, Long> refUsageDistinct = orefAnalysis.getRefUsage();
-		MiscUtils.printMap(System.out, refUsageDistinct, new Function2<CallGraphNode, Long,String>() {
-			public String apply(CallGraphNode v1, Long usedRefs) {
-				return String.format("%-50s ==> %3d <= %3d (%s) ; Saturated Types: (%s)",
-						v1.getMethodImpl().getFQMethodName(),
+						LpSolveWrapper.getSolverTime()));   
+		refUsageNames = orefAnalysis.getUsedSymbolicNames();
+		refUsageSaturatedTypes = orefAnalysis.getSaturatedRefSets();
+		refUsageDistinct = orefAnalysis.getMaxReferencesAccessed();
+		fieldUsageDistinct = orefAnalysis.getMaxFieldsAccessed();
+		
+		for(Entry<CallGraphNode, Long> entry : refUsageDistinct.entrySet()) {
+			CallGraphNode node = entry.getKey();
+			Long usedRefs = entry.getValue();
+			String entryString = String.format("%-50s ==> %3d (%3d fields) <= %3d (%s) ; Saturated Types: (%s)",
+						node.getMethodImpl().methodId,
 						usedRefs,
-						refUsageTotal_.get(v1),
-						refUsageNames_.get(v1),
-						refUsageSaturatedTypes_.get(v1).toString()
+						fieldUsageDistinct.get(node),
+						refUsageTotal.get(node),
+						refUsageNames.get(node),
+						refUsageSaturatedTypes.get(node).toString()
 						);
-			}        	
-		});		
+			System.out.println("  "+entryString);
+		}
 		// Object cache, evaluation
 		ObjectCacheAnalysisDemo oca;
 		int[] cacheSizes = { 0,1,2,4,8,16,32,64, 128 };
-		long accesses = 0;
-		for(int cacheSize : cacheSizes) {
-			jopconfig.setObjectCacheAssociativity(cacheSize);
-			oca = new ObjectCacheAnalysisDemo(project, jopconfig);
-			long cost = oca.computeCost();
-			double ratio;
-			if(cacheSize == 0) { accesses = cost; ratio = 0.0; }
-			else               { ratio = (double)(accesses-cost)/(double)accesses; }
-			System.out.println(
-				String.format("Cache Misses [N=%3d]: %d  (%.2f %%)", cacheSize, cost, ratio*100));				
+		int[] modes = { 0,1,2 };
+		for(int mode : modes) {
+			long cacheAccesses = 0;
+			long cacheMisses = Long.MAX_VALUE;
+			for(int cacheSize : cacheSizes) {
+				String modeString;
+				if(mode == 0) modeString = "fill-word";
+				else if(mode == 1) modeString = "fill-line";
+				else modeString = "field-as-tag";
+				boolean useFillLine = mode==1 && cacheSize>0; 
+				jopconfig.setObjectCacheAssociativity(cacheSize);
+				jopconfig.setObjectCacheFillLine(useFillLine);				
+				jopconfig.setObjectCacheFieldTag(mode==2);
+				oca = new ObjectCacheAnalysisDemo(project, jopconfig);
+				long cost = oca.computeCost();
+				if(cost < cacheMisses) cacheMisses = cost;
+				double ratio;
+				if(cacheSize == 0) { cacheAccesses = cacheMisses; ratio = 0.0; }
+				else               { ratio = (double)(cacheAccesses-cacheMisses)/(double)cacheAccesses; }
+				System.out.println(
+						String.format("Cache Misses [N=%3d,%s]: %d  (%.2f %%)", cacheSize, modeString, cacheMisses, ratio*100));
+			}
 		}
 	} 
-	/* Fields for easy debugging */
-	private Map<CallGraphNode, Long> refUsageTotal_; 
-	private Map<CallGraphNode, Set<SymbolicAddress>> refUsageNames_;
-	private Map<CallGraphNode, Set<String>> refUsageSaturatedTypes_;
-
+	
 	private void testExactAllFit() {
 		long start,stop;
         start = System.nanoTime();

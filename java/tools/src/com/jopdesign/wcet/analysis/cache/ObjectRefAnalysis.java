@@ -64,27 +64,30 @@ public class ObjectRefAnalysis {
 	 * - Only consider getfield. putfield does not modify cache
 	 * - Handle access should be configurable (HANDLE_ACCESS = false or true)
 	 */
-	private static final boolean ONE_CACHE_LINE_PER_OBJECT = true;
 	private static final boolean ALL_HANDLE_ACCESSES = false; /* Only consider getfield (false) or all handle accesses */
 	private static final long UNKNOWN_OBJECT_PENALTY = 1000;
 
-	private boolean countDistinct;
+	private boolean countTotalAccessCount;
 
 	private int maxSetSize;
-	private Map<CallGraphNode, Long> usedReferences;
-	private Map<CallGraphNode, Set<SymbolicAddress>> usedSymbolicNames;
+
+	private Map<CallGraphNode, Long> maxReferencesAccessed;
+	private Map<CallGraphNode, Set<SymbolicAddress>> refSet;
+	private HashMap<CallGraphNode, Long> maxFieldsAccessed;
+	private HashMap<CallGraphNode, Set<SymbolicAddress>> fieldSet;
 	private Map<CallGraphNode, Set<String>> saturatedRefSets;
+
 	private Project project;
 	private Map<DecisionVariable, SymbolicAddress> decisionVariables =
 		new HashMap<DecisionVariable, SymbolicAddress>();
 
-	public ObjectRefAnalysis(Project p, JOPConfig jopconfig, int setSize) {
-		this(p,jopconfig,setSize,false);
+	public ObjectRefAnalysis(Project p, int setSize) {
+		this(p, setSize, false);
 	}
 	
-	public ObjectRefAnalysis(Project p, JOPConfig jopconfig, int setSize, boolean countAll) {
+	public ObjectRefAnalysis(Project p, int setSize, boolean countAll) {
 		this.project = p;
-		this.countDistinct = !  countAll;
+		this.countTotalAccessCount = countAll;
 		this.maxSetSize = setSize;
 	}
 	
@@ -129,13 +132,15 @@ public class ObjectRefAnalysis {
 	 * </ol>
 	 */
 	public void analyzeRefUsage() {
-		/* Prepare return value */
-		usedReferences = new HashMap<CallGraphNode, Long>();
-		usedSymbolicNames = new HashMap<CallGraphNode, Set<SymbolicAddress>>();
-		saturatedRefSets = new HashMap<CallGraphNode, Set<String>>();
-		
 		CallString emptyCallString = new CallString();
-		
+
+		/* Prepare return value */
+		maxReferencesAccessed = new HashMap<CallGraphNode, Long>();
+		refSet = new HashMap<CallGraphNode, Set<SymbolicAddress>>();
+		maxFieldsAccessed = new HashMap<CallGraphNode, Long>();
+		fieldSet = new HashMap<CallGraphNode, Set<SymbolicAddress>>();
+		saturatedRefSets = new HashMap<CallGraphNode, Set<String>>();
+				
 		/* Top Down the Scope Graph */
 		TopologicalOrderIterator<CallGraphNode, DefaultEdge> iter =
 			project.getCallGraph().topDownIterator();
@@ -154,20 +159,14 @@ public class ObjectRefAnalysis {
 			/* Create a supergraph */
 			SuperGraph sg = getScopeSuperGraph(scope);
 
-			/* create an ILP graph for all reachable methods */
-			String key = "object_ref_analysis:"+scope.toString();
-			ILPModelBuilder imb = new ILPModelBuilder(new IpetConfig(project.getConfig()));
-			Map<CFGNode,Long> costMap = new HashMap<CFGNode, Long>();
-
 			/* Traverse vertex set (1). Collect those types where we could not resolve
-			 * the symbolic object names. (Does not work well for the analysis, but useful
+			 * the symbolic object names. (Not too useful in the analysis, but useful
 			 * for debugging)
 			 */
 			HashSet<String> topTypes =
 				new HashSet<String>(); // FIXME: We should deal with subtyping!!
 			for(CFGNode n : sg.vertexSet()) {
 				BasicBlock bb = n.getBasicBlock();
-				long topCost = 0;
 				if(bb == null) continue;
 				for(InstructionHandle ih : bb.getInstructions()) {
 					BoundedSet<SymbolicAddress> refs;
@@ -181,103 +180,130 @@ public class ObjectRefAnalysis {
 					}
 				}
 			}
+			
+			this.saturatedRefSets.put(scope, topTypes);
 
-			/* Traverse vertex set.
-			 * Add vertex to access set of referenced addresses
-			 * For references whose type cannot be fully resolved, at a
-			 * cost of 1.
-			 */
-			// FIXME: We should deal with subtyping
-			HashMap<SymbolicAddress, Map<CFGNode, Integer>> accessSets =
-				new HashMap<SymbolicAddress,Map<CFGNode, Integer>>();
-			for(CFGNode n : sg.vertexSet()) {
-				BasicBlock bb = n.getBasicBlock();
-				long topCost = 0;
-				if(bb == null) continue;
+			/* Compute worst-case object count */
+			HashSet<SymbolicAddress> usedObjectsSet = new HashSet<SymbolicAddress>();
+			long accessedReferences = computeAccessCount(scope, sg, usedRefs, usedObjectsSet, false);
+			this.maxReferencesAccessed.put(scope, accessedReferences);
+			this.refSet.put(scope, usedObjectsSet);
 
-				for(InstructionHandle ih : bb.getInstructions()) {
-					BoundedSet<SymbolicAddress> refs;
-					if(usedRefs.containsKey(ih)) {
-						String handleType = getHandleType(project, n, ih); 
-						if(handleType == null) continue;
-						refs = usedRefs.get(ih).get(emptyCallString);						
-						if(! countDistinct) {
-							topCost += 1;
-						} else if(refs.isSaturated()) {
-							topCost += 1;
+			/* Compute worst-case field access count (this part will be integrated into
+			 * the WCET computation) */
+			HashSet<SymbolicAddress> usedFieldsSet = new HashSet<SymbolicAddress>();
+			long accessedFields = computeAccessCount(scope, sg, usedRefs, usedFieldsSet, true);
+			this.maxFieldsAccessed.put(scope, accessedFields);
+			this.fieldSet.put(scope, usedFieldsSet);
+			
+
+
+		}
+	}
+	
+	private long computeAccessCount(CallGraphNode scope, 
+									SuperGraph sg, 
+									Map<InstructionHandle,ContextMap<CallString,BoundedSet<SymbolicAddress>>> usedRefs, 
+									HashSet<SymbolicAddress> usedSetOut, 
+									boolean countFields)
+	{
+		CallString emptyCallString = new CallString();
+
+		/* create an ILP graph for all reachable methods */
+		String key = "object_ref_analysis:"+scope.toString();
+		ILPModelBuilder imb = new ILPModelBuilder(new IpetConfig(project.getConfig()));
+		HashMap<SymbolicAddress, Map<CFGNode, Integer>> accessSets =
+			new HashMap<SymbolicAddress,Map<CFGNode, Integer>>();
+		Map<CFGNode,Long> costMap = new HashMap<CFGNode, Long>();
+
+		/* Traverse vertex set.
+		 * Add vertex to access set of referenced addresses
+		 * For references whose type cannot be fully resolved, at a
+		 * cost of 1.
+		 */
+		// FIXME: We should deal with subtyping
+		for(CFGNode n : sg.vertexSet()) {
+			BasicBlock bb = n.getBasicBlock();
+			long topCost = 0;
+			if(bb == null) continue;
+
+			for(InstructionHandle ih : bb.getInstructions()) {
+				BoundedSet<SymbolicAddress> refs;
+				if(usedRefs.containsKey(ih)) {
+					String handleType = getHandleType(project, n, ih); 
+					if(handleType == null) continue;
+					refs = usedRefs.get(ih).get(emptyCallString);						
+					if(countTotalAccessCount) {
+						topCost += 1;
+					} else if(refs.isSaturated()) {
+						topCost += 1;
+					} else {
+						if(! countFields) {
+							for(SymbolicAddress ref : refs.getSet()) {
+								addAccessSite(accessSets, ref, n);
+							}
 						} else {
-							if(ONE_CACHE_LINE_PER_OBJECT) {
-								for(SymbolicAddress ref : refs.getSet()) {
-									addAccessSite(accessSets, ref, n);
-								}
-							} else {
-								// Hack to look at field access
-								String fieldName =
-									((FieldInstruction)ih.getInstruction()).getFieldName(
-											bb.cpg());
-								for(SymbolicAddress ref : refs.getSet()) {
-									addAccessSite(accessSets, ref.access(fieldName), n);
-								}
+							// Hack to look at field access
+							String fieldName =
+								((FieldInstruction)ih.getInstruction()).getFieldName(
+										bb.cpg());
+							for(SymbolicAddress ref : refs.getSet()) {
+								addAccessSite(accessSets, ref.access(fieldName), n);
 							}
 						}
 					}
 				}
-				costMap.put(n,topCost);
 			}
-
-			MaxCostFlow<CFGNode, CFGEdge> maxCostFlow = imb.buildGlobalILPModel(key, sg, 
-					new MapCostProvider<CFGNode>(costMap,0));
-
-			/* Add decision variables for all references */
-			if(countDistinct) {
-				for(Entry<SymbolicAddress, Map<CFGNode, Integer>> accessEntry : accessSets.entrySet()) {
-					SymbolicAddress ref = accessEntry.getKey();
-					Map<CFGNode, Integer> accessSet = accessEntry.getValue();
-					DecisionVariable dvar = maxCostFlow.createDecisionVariable();				
-					decisionVariables .put(dvar,ref);
-					maxCostFlow.addDecisionCost(dvar, 1);
-					/* dvar <= sum(i `in` I) frequency(b_i) */
-					LinearVector<CFGEdge> ub = new LinearVector<CFGEdge>();
-					for(Entry<CFGNode, Integer> entry : accessSet.entrySet()) {
-						CFGNode node = entry.getKey();
-						// we do not really need the count (entry.getValue()) for this constraint
-						for(CFGEdge edge : sg.incomingEdgesOf(node)) {
-							ub.add(edge,1);						
-						}
-					}
-					maxCostFlow.addDecisionUpperBound(dvar, ub);				
-				}
-			}
-			/* solve */
-			Map<CFGEdge, Long> flowMap = new HashMap<CFGEdge, Long>();
-			Map<DecisionVariable, Boolean> refUseMap = new HashMap<DecisionVariable, Boolean>();
-			double lpCost;
-			try {
-				lpCost = maxCostFlow.solve(flowMap,refUseMap);
-			} catch (Exception e) {
-				Logger.getLogger(ObjectRefAnalysis.class).error("Failed to calculate references for : "+scope);
-				lpCost = 2000000000L;
-			}
-			long accessedReferences = (long) (lpCost+0.5);
-			
-			/* extract solution */
-			HashSet<SymbolicAddress> usedSet = new HashSet<SymbolicAddress>();
-			for(Entry<DecisionVariable, SymbolicAddress> entry : this.decisionVariables.entrySet()) {
-				DecisionVariable dvar = entry.getKey();
-				if(refUseMap.containsKey(dvar) && refUseMap.get(dvar)) {
-					SymbolicAddress addr = entry.getValue();
-					usedSet.add(addr);
-				}
-			}
-			this.saturatedRefSets.put(scope, topTypes);
-			this.usedSymbolicNames.put(scope, usedSet);
-			this.usedReferences.put(scope, accessedReferences);
+			costMap.put(n,topCost);
 		}
+
+		MaxCostFlow<CFGNode, CFGEdge> maxCostFlow = imb.buildGlobalILPModel(key, sg, new MapCostProvider<CFGNode>(costMap,0));
+
+		/* Add decision variables for all references */
+		if(! countTotalAccessCount) {
+			for(Entry<SymbolicAddress, Map<CFGNode, Integer>> accessEntry : accessSets.entrySet()) {
+				SymbolicAddress ref = accessEntry.getKey();
+				Map<CFGNode, Integer> accessSet = accessEntry.getValue();
+				DecisionVariable dvar = maxCostFlow.createDecisionVariable();				
+				decisionVariables .put(dvar,ref);
+				maxCostFlow.addDecisionCost(dvar, 1);
+				/* dvar <= sum(i `in` I) frequency(b_i) */
+				LinearVector<CFGEdge> ub = new LinearVector<CFGEdge>();
+				for(Entry<CFGNode, Integer> entry : accessSet.entrySet()) {
+					CFGNode node = entry.getKey();
+					// we do not really need the count (entry.getValue()) for this constraint
+					for(CFGEdge edge : sg.incomingEdgesOf(node)) {
+						ub.add(edge,1);						
+					}
+				}
+				maxCostFlow.addDecisionUpperBound(dvar, ub);				
+			}
+		}
+		/* solve */
+		Map<CFGEdge, Long> flowMap = new HashMap<CFGEdge, Long>();
+		Map<DecisionVariable, Boolean> refUseMap = new HashMap<DecisionVariable, Boolean>();
+		double lpCost;
+		try {
+			lpCost = maxCostFlow.solve(flowMap,refUseMap);
+		} catch (Exception e) {
+			Logger.getLogger(ObjectRefAnalysis.class).error("Failed to calculate references for : "+scope);
+			lpCost = 2000000000.0;
+		}
+		long accessedReferences = (long) (lpCost+0.5);
+		
+		/* extract solution */
+		for(Entry<DecisionVariable, SymbolicAddress> entry : this.decisionVariables.entrySet()) {
+			DecisionVariable dvar = entry.getKey();
+			if(refUseMap.containsKey(dvar) && refUseMap.get(dvar)) {
+				SymbolicAddress addr = entry.getValue();
+				usedSetOut.add(addr);
+			}
+		}
+		return accessedReferences;
 	}
-	
 
 	private void addAccessSite(
-			HashMap<SymbolicAddress, Map<CFGNode, Integer>> accessSets,
+			Map<SymbolicAddress, Map<CFGNode, Integer>> accessSets,
 			SymbolicAddress ref, CFGNode n) {
 		Map<CFGNode, Integer> accessSet = accessSets.get(ref);
 		if(accessSet == null) {
@@ -310,13 +336,21 @@ public class ObjectRefAnalysis {
 		MethodInfo m = scope.getMethodImpl();
 		return new SuperGraph(project.getWcetAppInfo(),project.getFlowGraph(m));
 	}
-	public Map<CallGraphNode, Long> getRefUsage() {
-		if(usedReferences == null) analyzeRefUsage();
-		return usedReferences;
+	
+	public Map<CallGraphNode, Long> getMaxReferencesAccessed() {
+		if(maxReferencesAccessed == null) analyzeRefUsage();
+		return maxReferencesAccessed;
 	}
+
+	public Map<CallGraphNode, Long> getMaxFieldsAccessed() {
+		if(maxFieldsAccessed == null) analyzeRefUsage();
+		return maxFieldsAccessed;
+	}
+
+	
 	public Map<CallGraphNode, Set<SymbolicAddress>> getUsedSymbolicNames() {
-		if(usedSymbolicNames == null) analyzeRefUsage();
-		return usedSymbolicNames;		
+		if(refSet == null) analyzeRefUsage();
+		return refSet;		
 	}
 	public Map<CallGraphNode, Set<String>> getSaturatedRefSets() {
 		return this.saturatedRefSets;

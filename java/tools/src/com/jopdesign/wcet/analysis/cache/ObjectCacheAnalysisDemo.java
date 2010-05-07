@@ -93,8 +93,8 @@ public class ObjectCacheAnalysisDemo {
 			this.recursiveStrategy = recursiveStrategy;
 			this.context = ctx;
 		}
-
-		// Simply the number of object accesses in this node
+		// Cost ~ number of cache misses
+		// FIXME: A basic block is a scope too!
 		public void visitBasicBlockNode(BasicBlockNode n) {
 			for(InstructionHandle ih : n.getBasicBlock().getInstructions()) {
 				if(null == ObjectRefAnalysis.getHandleType(project, n, ih)) continue;
@@ -136,8 +136,12 @@ public class ObjectCacheAnalysisDemo {
 				AnalysisContext ctx) {
 			MethodInfo invoked = invocation.getImplementedMethod();
 			Long cost;
-			if(allPersistent(invoked, ctx.getCallString())) {				
-				cost = getMaxAccessed(invoked, ctx.getCallString());
+			if(allPersistent(invoked, ctx.getCallString())) {
+				if(jopconfig.getObjectCacheFillLine()) {
+					cost = getMaxAccessedObjects(invoked, ctx.getCallString());
+				} else {
+					cost = getMaxAccessedFields(invoked, ctx.getCallString());					
+				}
 				//System.out.println("Cost for: "+invocation.getImplementedMethod()+" [all fit]: "+cost);
 			} else {
 				cost = stagedAnalysis.computeCost(invoked, ctx);
@@ -166,24 +170,31 @@ public class ObjectCacheAnalysisDemo {
 	
 	public long computeCost() {
 		/* Cache Analysis */
-		objRefAnalysis = new ObjectRefAnalysis(project, jopconfig, DEFAULT_SET_SIZE);
+		objRefAnalysis = new ObjectRefAnalysis(project, DEFAULT_SET_SIZE);
 		objRefAnalysis.analyzeRefUsage();
-		
+		// TODO: Distinguish fill line / fill field here
 		RecursiveAnalysis<AnalysisContext, Long> recAna =
-			new RecursiveOCacheAnalysis(project,new IpetConfig(project.getConfig()),
+			new RecursiveOCacheAnalysis(project, new IpetConfig(project.getConfig()),
 					new RecursiveWCETOCache());
 		
 		return recAna.computeCost(project.getTargetMethod(), new AnalysisContext());
 	}
 
-	private long getMaxAccessed(MethodInfo invoked, CallString context) {
-		return objRefAnalysis.getRefUsage().get(new CallGraph.CallGraphNode(invoked, context));
+	private long getMaxAccessedObjects(MethodInfo invoked, CallString context) {
+		return objRefAnalysis.getMaxReferencesAccessed().get(new CallGraph.CallGraphNode(invoked, context));
+	}
+
+	private long getMaxAccessedFields(MethodInfo invoked, CallString context) {
+		return objRefAnalysis.getMaxFieldsAccessed().get(new CallGraph.CallGraphNode(invoked, context));
 	}
 
 	private boolean allPersistent(MethodInfo invoked, CallString context) {
 		if(assumeAllMiss) return false;
-		long maxAccessed = getMaxAccessed(invoked, context);
-		return maxAccessed <= jopconfig.getObjectCacheAssociativity();
+		if(jopconfig.isFieldCache()) {
+			return getMaxAccessedFields(invoked, context) <= jopconfig.getObjectCacheAssociativity();
+		} else {
+			return getMaxAccessedObjects(invoked, context) <= jopconfig.getObjectCacheAssociativity();
+		}
 	}		
 	
 }
