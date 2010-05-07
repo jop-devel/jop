@@ -74,8 +74,8 @@ public class JOPConfig {
 		new BooleanOption("jop-object-cache", "JOP object cache configuration", false);
 	public static final IntegerOption OBJECT_CACHE_ASSOCIATIVITY =
 		new IntegerOption("jop-ocache-associativity", "JOP object associativity", 16);
-	public static final IntegerOption OBJECT_CACHE_LINE_SIZE =
-		new IntegerOption("jop-ocache-associativity", "JOP object cache line size", 16);
+	public static final IntegerOption OBJECT_CACHE_WORDS_PER_LINE =
+		new IntegerOption("jop-ocache-words-per-line", "JOP object cache: words per line", 16);
 	public static final BooleanOption OBJECT_CACHE_LINE_FILL =
 		new BooleanOption("jop-ocache-fill", "JOP object cache: whether to fill line on miss", false);
 	public static final IntegerOption OBJECT_CACHE_LATENCY =
@@ -113,7 +113,7 @@ public class JOPConfig {
 		ASM_FILE, READ_WAIT_STATES, WRITE_WAIT_STATES,
 		MULTIPROCESSOR, CMP_CPUS, CMP_TIMESLOT,
 		CACHE_IMPL, CACHE_BLOCKS, CACHE_SIZE_WORDS,
-		OBJECT_CACHE, OBJECT_CACHE_ASSOCIATIVITY, OBJECT_CACHE_LINE_SIZE,
+		OBJECT_CACHE, OBJECT_CACHE_ASSOCIATIVITY, OBJECT_CACHE_WORDS_PER_LINE,
 		OBJECT_CACHE_LINE_FILL, OBJECT_CACHE_LATENCY, OBJECT_CACHE_THROUGHPUT
 	};
 

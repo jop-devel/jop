@@ -41,13 +41,19 @@ OCACHE_SIM=fieldtag OCACHE_ASSOC=64 make jsim P1=test P2=wcet P3=StartLift
 
 Analysis
 --------
+Type wcet_help to get an overview of object cache options.
+In the evaluation currently implemented, assocativity and line fill
+mode are varied without further options.
+
 > Cache Objects, update on getfield only
 make java_app wcet P1=test P2=wcet P3=StartLift WCET_METHOD=measure \
   WCET_OPTIONS="-dataflow-analysis -object-cache-analysis"
 
-> Cache Fields, update on getfield only
-make java_app wcet P1=test P2=wcet P3=StartLift WCET_METHOD=measure \
-  WCET_OPTIONS="-dataflow-analysis -object-cache-analysis -object-cache-fields"
+> More elaborated example
+make java_app wcet P1=paper/trading/plain P2=com/sun/oss/trader P3=Main \
+  WCET_METHOD=com.sun.oss.trader.tradingengine.OrderManager.checkForTrade \
+  WCET_OPTIONS="-dataflow-analysis -object-cache-analysis -jop-ocache-words-per-line 4" \
+  TARGET_JDK=jdk16mod
 
 Unsolved and Solved Problems
 ----------------------------
