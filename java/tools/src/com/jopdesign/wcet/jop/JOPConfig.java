@@ -75,7 +75,7 @@ public class JOPConfig {
 	public static final IntegerOption OBJECT_CACHE_ASSOCIATIVITY =
 		new IntegerOption("jop-ocache-associativity", "JOP object associativity", 16);
 	public static final IntegerOption OBJECT_CACHE_LINE_SIZE =
-		new IntegerOption("jop-ocache-associativity", "JOP object cache line size", 16);
+		new IntegerOption("jop-ocache-line-size", "JOP object cache line size", 16);
 	public static final BooleanOption OBJECT_CACHE_LINE_FILL =
 		new BooleanOption("jop-ocache-fill", "JOP object cache: whether to fill line on miss", false);
 	public static final IntegerOption OBJECT_CACHE_LATENCY =
