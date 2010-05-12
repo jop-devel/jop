@@ -170,7 +170,8 @@ public class ObjectCacheAnalysisDemo {
 	
 	public long computeCost() {
 		/* Cache Analysis */
-		objRefAnalysis = new ObjectRefAnalysis(project, DEFAULT_SET_SIZE);
+		// objRefAnalysis = new ObjectRefAnalysis(project, DEFAULT_SET_SIZE);
+		objRefAnalysis = new ObjectRefAnalysis(project, jopconfig.getObjectLineSize());
 		objRefAnalysis.analyzeRefUsage();
 		// TODO: Distinguish fill line / fill field here
 		RecursiveAnalysis<AnalysisContext, Long> recAna =
