@@ -175,7 +175,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 		
 		Instruction instruction = stmt.getInstruction();
 
-// 		if (context.method.startsWith("scd_micro.Reducer")
+// 		if (context.method.startsWith("ttpa.protocol.MultiPartner")
 // 			|| context.method.startsWith("java.util.HashMap.put")
 // 			// || context.method.startsWith("java.util.Stack")
 // 			) {

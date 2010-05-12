@@ -1092,8 +1092,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 		case Constants.INVOKESPECIAL: {
 			DFAAppInfo p = interpreter.getProgram();
 			Set<String> receivers = p.getReceivers(stmt, context.callString);
-			if (receivers == null) {
-				System.out.println(context.method + ": invoke "	+ instruction.toString(context.constPool.getConstantPool()) + " unknown receivers");
+			if (receivers == null) {				
+				System.out.println(context.method + ": invoke "	+ instruction.toString(context.constPool.getConstantPool()) + "(" + stmt.toString(true) + ")"+ " unknown receivers");
 				result = in;
 				break;
 			}
