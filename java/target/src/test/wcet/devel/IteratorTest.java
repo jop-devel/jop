@@ -19,9 +19,12 @@ public class IteratorTest {
 		iterate(list);
 	}
 
-	public static void iterate(List<Integer> list) {
+	// For configurations where a full cace line is loaded upon a
+	// miss, we have 50% hit rate, because List.car and List.cdr are
+	// adjacent fields.
+	public static void iterate(List<?> list) {
 		while (list != null) { //@WCA loop <= 8
-			Integer t = list.car;
+			Object o = list.car;
 			// System.out.println(t.intValue());
 			list = list.cdr;
 		}

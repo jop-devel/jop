@@ -12,6 +12,7 @@ public class LoopScopeTest {
 		loopedaccess(big);
 	}
 
+	// analysis detects the hits in access()
 	public static void loop(Big big) {
 		for (int k = 0; k < 8; k++) {
 			if (big != null) {
@@ -28,6 +29,8 @@ public class LoopScopeTest {
 		int w = big.f + big.b + big.e + big.a;	
 	}
 
+	// analysis does not detect any hits, although the code is
+	// functionally equivalent to loop+access
 	public static void loopedaccess(Big big) {
 		for (int k = 0; k < 8; k++) {
 			if (big != null) {
