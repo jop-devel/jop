@@ -138,6 +138,7 @@ public class ObjectCacheAnalysisDemo {
 			Long cost;
 			if(allPersistent(invoked, ctx.getCallString())) {
 				if(jopconfig.getObjectCacheFillLine()) {
+					/* FIXME: This is not correct (fields > cache line size??) */
 					cost = getMaxAccessedObjects(invoked, ctx.getCallString());
 				} else {
 					cost = getMaxAccessedFields(invoked, ctx.getCallString());					
@@ -170,8 +171,7 @@ public class ObjectCacheAnalysisDemo {
 	
 	public long computeCost() {
 		/* Cache Analysis */
-		// objRefAnalysis = new ObjectRefAnalysis(project, DEFAULT_SET_SIZE);
-		objRefAnalysis = new ObjectRefAnalysis(project, jopconfig.getObjectLineSize());
+		objRefAnalysis = new ObjectRefAnalysis(project, jopconfig.getObjectLineSize(), DEFAULT_SET_SIZE);
 		objRefAnalysis.analyzeRefUsage();
 		// TODO: Distinguish fill line / fill field here
 		RecursiveAnalysis<AnalysisContext, Long> recAna =

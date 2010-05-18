@@ -51,44 +51,63 @@ import com.jopdesign.wcet.jop.JOPConfig;
 /** Analysis of the used object references.
  *  Goal: Detect persistence scopes.
  *  
+ *  This is the current consensus:
+ * - One cache line per object
+ * - Only consider getfield. putfield does not modify cache
+ * - Handle access should be configurable (HANDLE_ACCESS = false or true)
+ *  
  *  TODO: [cache-analysis] Use a scopegraph instead of a callgraph
  *  FIXME: [cache-analysis] Extract common code
+ *  FIXME: [cache-analysis] Handle subtyping when dealing with aliases, or use a store-based approach
+ *     
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  *
  */
 public class ObjectRefAnalysis {
 	
 	private static final int DEFAULT_SET_SIZE = 64;
-	/* This is the current consensus:
-	 * - One cache line per object
-	 * - Only consider getfield. putfield does not modify cache
-	 * - Handle access should be configurable (HANDLE_ACCESS = false or true)
-	 */
-	private static final boolean ALL_HANDLE_ACCESSES = false; /* Only consider getfield (false) or all handle accesses */
-	private static final long UNKNOWN_OBJECT_PENALTY = 1000;
+
+	/* Only consider getfield (false) or all handle accesses */
+	private static boolean ALL_HANDLE_ACCESSES = false; 
+	
+	private static long UNKNOWN_OBJECT_PENALTY = 1000;
 
 	private boolean countTotalAccessCount;
 
+	/* The maximum index for cached fields */
+	private int maxCachedFieldIndex;
+	
+	/* Maximum number of objects tracked for one reference */
 	private int maxSetSize;
 
-	private Map<CallGraphNode, Long> maxReferencesAccessed;
+	/* Maximum number of objects which are loaded into the object cache (at least one field has to be accessed) */
+	private Map<CallGraphNode, Long> maxCachedReferencesAccessed;
+	
+	/* The set of symbolic object names loaded into the cache */
 	private Map<CallGraphNode, Set<SymbolicAddress>> refSet;
-	private HashMap<CallGraphNode, Long> maxFieldsAccessed;
+
+	/* Maximum number of cached fields accessed */
+	private HashMap<CallGraphNode, Long> maxCachedFieldsAccessed;
+
+	/* The set of field names loaded into the cache */
 	private HashMap<CallGraphNode, Set<SymbolicAddress>> fieldSet;
+
+	/* Those references which point to an unbounded number of objects */
 	private Map<CallGraphNode, Set<String>> saturatedRefSets;
 
 	private Project project;
 	private Map<DecisionVariable, SymbolicAddress> decisionVariables =
 		new HashMap<DecisionVariable, SymbolicAddress>();
 
-	public ObjectRefAnalysis(Project p, int setSize) {
-		this(p, setSize, false);
+	public ObjectRefAnalysis(Project p, int maxCachedIndex, int setSize) {
+		this(p, maxCachedIndex, setSize, false);
 	}
 	
-	public ObjectRefAnalysis(Project p, int setSize, boolean countAll) {
+	public ObjectRefAnalysis(Project p, int maxCachedIndex, int setSize, boolean countAll) {
 		this.project = p;
 		this.countTotalAccessCount = countAll;
 		this.maxSetSize = setSize;
+		this.maxCachedFieldIndex = maxCachedIndex;
 	}
 	
 	private class ExecOnceQuery implements Query<InstructionHandle> {
@@ -101,7 +120,7 @@ public class ObjectRefAnalysis {
 		public boolean query(InstructionHandle a) {
 			CFGNode n = BasicBlock.getHandleNode(a);
 			if(n == null) {				
-				// Logger.getLogger("Object Cache Analysis").error("No node for instruction "+a);
+				Logger.getLogger("Object Cache Analysis").error("No node for instruction "+a);
 				return false;
 			} else {
 				return eoAna.isExecutedOnce(scope, n);
@@ -109,6 +128,7 @@ public class ObjectRefAnalysis {
 		}
 		
 	}
+	
 	/**
 	 * Analyze the number of references used in each scope.
 	 * For the general technique, see {@link com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis#analyzeBlockUsage()}
@@ -135,9 +155,9 @@ public class ObjectRefAnalysis {
 		CallString emptyCallString = new CallString();
 
 		/* Prepare return value */
-		maxReferencesAccessed = new HashMap<CallGraphNode, Long>();
+		maxCachedReferencesAccessed = new HashMap<CallGraphNode, Long>();
 		refSet = new HashMap<CallGraphNode, Set<SymbolicAddress>>();
-		maxFieldsAccessed = new HashMap<CallGraphNode, Long>();
+		maxCachedFieldsAccessed = new HashMap<CallGraphNode, Long>();
 		fieldSet = new HashMap<CallGraphNode, Set<SymbolicAddress>>();
 		saturatedRefSets = new HashMap<CallGraphNode, Set<String>>();
 				
@@ -164,7 +184,7 @@ public class ObjectRefAnalysis {
 			 * for debugging)
 			 */
 			HashSet<String> topTypes =
-				new HashSet<String>(); // FIXME: We should deal with subtyping!!
+				new HashSet<String>(); 
 			for(CFGNode n : sg.vertexSet()) {
 				BasicBlock bb = n.getBasicBlock();
 				if(bb == null) continue;
@@ -186,14 +206,14 @@ public class ObjectRefAnalysis {
 			/* Compute worst-case object count */
 			HashSet<SymbolicAddress> usedObjectsSet = new HashSet<SymbolicAddress>();
 			long accessedReferences = computeAccessCount(scope, sg, usedRefs, usedObjectsSet, false);
-			this.maxReferencesAccessed.put(scope, accessedReferences);
+			this.maxCachedReferencesAccessed.put(scope, accessedReferences);
 			this.refSet.put(scope, usedObjectsSet);
 
 			/* Compute worst-case field access count (this part will be integrated into
 			 * the WCET computation) */
 			HashSet<SymbolicAddress> usedFieldsSet = new HashSet<SymbolicAddress>();
 			long accessedFields = computeAccessCount(scope, sg, usedRefs, usedFieldsSet, true);
-			this.maxFieldsAccessed.put(scope, accessedFields);
+			this.maxCachedFieldsAccessed.put(scope, accessedFields);
 			this.fieldSet.put(scope, usedFieldsSet);
 			
 
@@ -231,7 +251,19 @@ public class ObjectRefAnalysis {
 				BoundedSet<SymbolicAddress> refs;
 				if(usedRefs.containsKey(ih)) {
 					String handleType = getHandleType(project, n, ih); 
+
+					/* No getfield/handle access */
 					if(handleType == null) continue;
+					
+					int index = ObjectRefAnalysis.getFieldIndex(project,n,ih);
+					
+					/* Uncached fields are treated separately */
+					if(index > maxCachedFieldIndex) {
+						//ConstantPoolGen constPool = n.getControlFlowGraph().getMethodInfo().getConstantPoolGen();
+						//System.out.println("Uncached field: "+((FieldInstruction) ih.getInstruction()).getFieldName(constPool));
+						continue;
+					}
+					
 					refs = usedRefs.get(ih).get(emptyCallString);						
 					if(countTotalAccessCount) {
 						topCost += 1;
@@ -244,9 +276,7 @@ public class ObjectRefAnalysis {
 							}
 						} else {
 							// Hack to look at field access
-							String fieldName =
-								((FieldInstruction)ih.getInstruction()).getFieldName(
-										bb.cpg());
+							String fieldName = ((FieldInstruction)ih.getInstruction()).getFieldName(bb.cpg());
 							for(SymbolicAddress ref : refs.getSet()) {
 								addAccessSite(accessSets, ref.access(fieldName), n);
 							}
@@ -338,13 +368,13 @@ public class ObjectRefAnalysis {
 	}
 	
 	public Map<CallGraphNode, Long> getMaxReferencesAccessed() {
-		if(maxReferencesAccessed == null) analyzeRefUsage();
-		return maxReferencesAccessed;
+		if(maxCachedReferencesAccessed == null) analyzeRefUsage();
+		return maxCachedReferencesAccessed;
 	}
 
 	public Map<CallGraphNode, Long> getMaxFieldsAccessed() {
-		if(maxFieldsAccessed == null) analyzeRefUsage();
-		return maxFieldsAccessed;
+		if(maxCachedFieldsAccessed == null) analyzeRefUsage();
+		return maxCachedFieldsAccessed;
 	}
 
 	
@@ -355,6 +385,24 @@ public class ObjectRefAnalysis {
 	public Map<CallGraphNode, Set<String>> getSaturatedRefSets() {
 		return this.saturatedRefSets;
 	}
+	
+	/**
+	 * @return the index of the field accessed by the instruction, or 0 if the instruction
+	 * does not access a field
+	 */
+	private static int getFieldIndex(Project project, CFGNode n, InstructionHandle ih) {
+		ConstantPoolGen constPool = n.getControlFlowGraph().getMethodInfo().getConstantPoolGen();
+		Instruction instr = ih.getInstruction();
+		if(instr instanceof FieldInstruction) {
+			FieldInstruction fieldInstr = (FieldInstruction) instr;
+			String klassName = fieldInstr.getClassName(constPool);
+			String fieldName = fieldInstr.getFieldName(constPool);
+			return project.getLinkerInfo().getFieldIndex(klassName, fieldName);
+		} else {
+			return 0;			
+		}
+	}
+
 
 	public static String getHandleType(Project project, CFGNode n, InstructionHandle ih) {
 		ConstantPoolGen constPool = n.getControlFlowGraph().getMethodInfo().getConstantPoolGen();
@@ -374,11 +422,11 @@ public class ObjectRefAnalysis {
 		}
 		if(instr instanceof ArrayInstruction)
 		{
-			ArrayInstruction ainstr = (ArrayInstruction) instr;
+			//ArrayInstruction ainstr = (ArrayInstruction) instr;
 			return "[]";
 		}
 		if(instr instanceof ARRAYLENGTH) {
-			ARRAYLENGTH ainstr = (ARRAYLENGTH) instr;
+			//ARRAYLENGTH ainstr = (ARRAYLENGTH) instr;
 			return "[]";
 		}
 		if(instr instanceof INVOKEINTERFACE || instr instanceof INVOKEVIRTUAL)

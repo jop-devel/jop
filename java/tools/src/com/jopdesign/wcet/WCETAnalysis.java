@@ -305,10 +305,10 @@ public class WCETAnalysis {
 		Map<CallGraphNode, Long> refUsageDistinct;
 		Map<CallGraphNode, Long> fieldUsageDistinct;
 
-		ObjectRefAnalysis orefAnalysisCountAll = new ObjectRefAnalysis(project, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE,true);
+		ObjectRefAnalysis orefAnalysisCountAll = new ObjectRefAnalysis(project, 65536, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE,true);
 		refUsageTotal = orefAnalysisCountAll.getMaxReferencesAccessed();
 		
-		ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE);
+		ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project, 65536, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE);
 		LpSolveWrapper.resetSolverTime();
         start = System.nanoTime();
 		orefAnalysis.analyzeRefUsage();
