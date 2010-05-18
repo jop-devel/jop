@@ -19,7 +19,7 @@ RTTM currently supports the DE2 and the dspio board (Quartus projects de2-70rttm
 *** HOW TO USE RTTM
 
 - See http://www.jopwiki.com/Getting_started to learn about the conventional JOP design flow.
-- The RTTM design flow differs as follows:
+- The RTTM design flow differs as follows from the conventional CMP design flow:
 
 - Adjust top level vhdl/top/jop_de2-70rttm.vhd (DE2 board) or vhdl/top/joprttm.vhd (dspio board) generics.
 - Set com.jopdesign.sys.Const.USE_RTTM in java/target/src/common/com/jopdesign/sys/Const.java to true. 
@@ -70,10 +70,12 @@ vhdl/top/joprttm.vhd is the top level entity for the dspio board
 - The generic intended_device_family in vhdl/rttm/write_fifo_buffer.vhd might need to be adjusted for other targets.
 - Instrumentation data for each CPU may only be accessed using the respective CPU.  
 - TDMA slots are only reallocated while a processor is executing a hardware transaction, not during the entire software transaction.
+- On a write during a transaction, the tm_cache flag is assumed to be set (which is always the case in the current implementation). 
 
 
 *** CHANGE HISTORY
 
+2010-05-16 (Peter Hilber): Amendments
 2010-04-25 (Peter Hilber): Amendments
 2010-04-24 (Peter Hilber): Amendments
 2010-04-18 (Peter Hilber): Amendments
