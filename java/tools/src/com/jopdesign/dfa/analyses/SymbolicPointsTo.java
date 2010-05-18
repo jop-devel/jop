@@ -248,16 +248,21 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		}
 		break;
 		
-		case Constants.FSTORE:
-		case Constants.FSTORE_0:
-		case Constants.FSTORE_1:
-		case Constants.FSTORE_2:
-		case Constants.FSTORE_3:
+		case Constants.DSTORE:
+		case Constants.DSTORE_0:
+		case Constants.DSTORE_1:
+		case Constants.DSTORE_2:
+		case Constants.DSTORE_3:
 		case Constants.LSTORE:
 		case Constants.LSTORE_0:
 		case Constants.LSTORE_1:
 		case Constants.LSTORE_2:
 		case Constants.LSTORE_3:
+		case Constants.FSTORE:
+		case Constants.FSTORE_0:
+		case Constants.FSTORE_1:
+		case Constants.FSTORE_2:
+		case Constants.FSTORE_3:
 		case Constants.ISTORE_0:
 		case Constants.ISTORE_1:
 		case Constants.ISTORE_2:
@@ -398,6 +403,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.LASTORE:
 		case Constants.DASTORE:
 		case Constants.IASTORE:
+		case Constants.FASTORE:
 		case Constants.CASTORE:
 		case Constants.SASTORE:
 		case Constants.BASTORE: {
@@ -494,6 +500,16 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			// copy value on stack
 			SymbolicAddressMap result = in.cloneFilterStack(context.stackPtr-2);
 			result.copyStack(in, context.stackPtr-2, context.stackPtr-1);
+			result.copyStack(in, context.stackPtr-1, context.stackPtr-2);
+			result.copyStack(in, context.stackPtr, context.stackPtr-1);
+			retval.put(context.callString, result);		
+		}
+		break;
+		case Constants.DUP_X2: {
+			// copy value on stack
+			SymbolicAddressMap result = in.cloneFilterStack(context.stackPtr-3);
+			result.copyStack(in, context.stackPtr-3, context.stackPtr-1);
+			result.copyStack(in, context.stackPtr-2, context.stackPtr-3);
 			result.copyStack(in, context.stackPtr-1, context.stackPtr-2);
 			result.copyStack(in, context.stackPtr, context.stackPtr-1);
 			retval.put(context.callString, result);		

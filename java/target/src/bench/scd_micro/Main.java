@@ -26,6 +26,12 @@ public class Main {
 	private FrameBuffer frameBuffer;
 	private scd_micro.NoiseGenerator noiseGenerator;
 	private scd_micro.TransientDetectorScopeEntry cd;
+	
+	public static void measure() {
+		Motion one = new Motion(new Aircraft(new byte[3]), new Vector3d());
+		Motion two = new Motion(new Aircraft(new byte[3]), new Vector3d());
+		one.findIntersection(two);
+	}
 
 	public Main() {
 		frameBuffer = new FrameBuffer();
