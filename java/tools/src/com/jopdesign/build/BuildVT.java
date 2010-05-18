@@ -141,6 +141,7 @@ System.err.println("build VT on class: "+cli.clazz);
 //		if (supFt!=null) maxLen += supFt.len;
 		clft.len = 0;
 		clft.key = new String[maxLen];
+		clft.fieldName = new String[maxLen];
 		clft.idx = new int[maxLen];
 		clft.size = new int[maxLen];
 		clft.isStatic = new boolean[maxLen];
@@ -260,6 +261,7 @@ System.err.println("build VT on class: "+cli.clazz);
 			String fieldId = field.getName()+field.getSignature();
 			
 			clft.key[clft.len] = fieldId;
+			clft.fieldName[clft.len] = field.getName();
 			clft.size[clft.len] = size;
 			clft.isReference[clft.len] = field.getType() instanceof ReferenceType; 
 			if (field.isStatic()) {

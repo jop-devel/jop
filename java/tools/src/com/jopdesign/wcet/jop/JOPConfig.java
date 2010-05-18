@@ -55,7 +55,7 @@ public class JOPConfig {
 		this.objectCacheAssociativity = configData.getOption(OBJECT_CACHE_ASSOCIATIVITY).intValue();
 		this.objectCacheFillLine = configData.getOption(OBJECT_CACHE_LINE_FILL);
 		this.objectCacheFieldTag = false;
-		this.objectCacheLineSize = configData.getOption(OBJECT_CACHE_LINE_SIZE).intValue();
+		this.objectCacheLineSize = configData.getOption(OBJECT_CACHE_WORDS_PER_LINE).intValue();
 	}
 	// FIXME: default values are fetched from WCETInstruction until transition to
 	// new timing system is complete
