@@ -20,7 +20,7 @@
 
 package rttm.tests.manual;
 
-import com.jopdesign.sys.Const;
+import static com.jopdesign.sys.Const.*;
 import com.jopdesign.sys.Native;
 
 import com.jopdesign.sys.RetryException;
@@ -42,8 +42,8 @@ public class Transaction {
 
 	public static boolean conflicting = false;
 
-	protected static int originalMethodBody(int arg0) throws Exception, 
-	RetryException, AbortException {
+	protected static int originalMethodBody(int arg0) throws RetryException, 
+		AbortException, Throwable {
 		boolean ignored = conflicting;
 		return arg0;
 	}
@@ -58,20 +58,21 @@ public class Transaction {
 	 * using {@link Commands#abort()}. 
 	 * Is user-visible, i.e. propagated outside of not nested transaction.
 	 */
-	public static int atomicMethod(int arg0) throws RetryException, AbortException {
+	public static int atomicMethod(int arg0) throws RetryException, 
+		AbortException, Throwable {
 		int arg0Copy = 0xdeadbeef; // make compiler happy
 		boolean isNotNestedTransaction = 
-			!Utils.inTransaction[Native.rdMem(Const.IO_CPU_ID)];
+			!Utils.inTransaction[Native.rdMem(IO_CPU_ID)];
 
 		if (isNotNestedTransaction) {
 			arg0Copy = arg0; // save method arguments		
-			Native.wrMem(0, Const.IO_INT_ENA); // disable interrupts
-			Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = true;
+			Native.wrMem(0, IO_INT_ENA); // disable interrupts
+			Utils.inTransaction[Native.rdMem(IO_CPU_ID)] = true;
 		}
 
 		while (true) {
 			if (isNotNestedTransaction) {
-				Native.wrMem(Const.TM_START_TRANSACTION, Const.MEM_TM_MAGIC);
+				Native.wrMem(TM_START_TRANSACTION, MEM_TM_MAGIC);
 			}
 
 			try {
@@ -82,31 +83,31 @@ public class Transaction {
 
 				if (isNotNestedTransaction) {
 
-					// flush write set					
-					Native.wrMem(Const.TM_END_TRANSACTION, Const.MEM_TM_MAGIC);
-
+					// try commit					
+					Native.wrMem(TM_END_TRANSACTION, MEM_TM_MAGIC);
 					// no exceptions happen after here
 
-					Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = false;
-					Native.wrMem(1, Const.IO_INT_ENA); // re-enable interrupts
+					Utils.inTransaction[Native.rdMem(IO_CPU_ID)] = false;
+					Native.wrMem(1, IO_INT_ENA); // re-enable interrupts
 				}
 				return result;
-			} catch (Throwable e) { 
-				// RetryException, AbortException or other exception
+			} catch (Throwable e) {
+				// exception handling issues ABORTED HW command
+				// e is RetryException, AbortException or other exception
 
 				if (isNotNestedTransaction) {
-					// reference comparison is enough
+					// reference comparison is enough for singleton
 					if (e == RetryException.instance) {
 						// restore method arguments
 						arg0 = arg0Copy;						
 					} else {
-						// exception was manually aborted or a bug triggered
-						Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = false;
-						Native.wrMem(1, Const.IO_INT_ENA); // re-enable interrupts
-						throw (RuntimeException)e;
+						// transaction was manually aborted or a bug triggered
+						Utils.inTransaction[Native.rdMem(IO_CPU_ID)] = false;
+						Native.wrMem(1, IO_INT_ENA); // re-enable interrupts
+						throw e;
 					}
-				} else { // nested transaction
-					throw (RuntimeException)e;
+				} else { // nested transaction: propagate exception
+					throw e;
 				}
 			}
 		}

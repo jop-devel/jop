@@ -57,7 +57,7 @@ architecture rtl of tag is
 
 	signal l: unsigned(way_bits-1 downto 0);
 
-	-- tag_width can be used to reduce cachable area - saves a lot in the comperators
+	-- addr_width can be used to reduce cachable area - saves a lot in the comperators
 	type tag_array is array (0 to lines-1) of std_logic_vector(addr_width-1 downto 0);
 	signal tag			: tag_array;
 	signal h: std_logic_vector(lines-1 downto 0); -- hit
