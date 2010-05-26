@@ -38,6 +38,7 @@ import org.apache.log4j.Logger;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.analyses.SymbolicAddress;
+import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.wcet.analysis.AnalysisContextIpet;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
@@ -305,60 +306,77 @@ public class WCETAnalysis {
 		Map<CallGraphNode, Long> refUsageDistinct;
 		Map<CallGraphNode, Long> fieldUsageDistinct;
 
-		ObjectRefAnalysis orefAnalysisCountAll = new ObjectRefAnalysis(project, 65536, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE,true);
-		refUsageTotal = orefAnalysisCountAll.getMaxReferencesAccessed();
+//		ObjectRefAnalysis orefAnalysisCountAll = new ObjectRefAnalysis(project, 65536, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE,true);
+//		refUsageTotal = orefAnalysisCountAll.getMaxReferencesAccessed();
 		
-		ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project, 65536, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE);
-		LpSolveWrapper.resetSolverTime();
-        start = System.nanoTime();
-		orefAnalysis.analyzeRefUsage();
-        stop = System.nanoTime();
-		System.err.println(
-				String.format("[Object Reference Analysis]: Total time: %.2f s / Total solver time: %.2f s",
-						timeDiff(start,stop),
-						LpSolveWrapper.getSolverTime()));   
-		refUsageNames = orefAnalysis.getUsedSymbolicNames();
-		refUsageSaturatedTypes = orefAnalysis.getSaturatedRefSets();
-		refUsageDistinct = orefAnalysis.getMaxReferencesAccessed();
-		fieldUsageDistinct = orefAnalysis.getMaxFieldsAccessed();
+	//	ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project, 65536, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE);
+//		LpSolveWrapper.resetSolverTime();
+//        start = System.nanoTime();
+//		orefAnalysis.analyzeRefUsage();
+//        stop = System.nanoTime();
+//		System.err.println(
+//				String.format("[Object Reference Analysis]: Total time: %.2f s / Total solver time: %.2f s",
+//						timeDiff(start,stop),
+//						LpSolveWrapper.getSolverTime()));   
+//		refUsageNames = orefAnalysis.getUsedSymbolicNames();
+//		refUsageSaturatedTypes = orefAnalysis.getSaturatedRefSets();
+//		refUsageDistinct = orefAnalysis.getMaxReferencesAccessed();
+//		fieldUsageDistinct = orefAnalysis.getMaxFieldsAccessed();
 		
-		for(Entry<CallGraphNode, Long> entry : refUsageDistinct.entrySet()) {
-			CallGraphNode node = entry.getKey();
-			Long usedRefs = entry.getValue();
-			String entryString = String.format("%-50s ==> %3d (%3d fields) <= %3d (%s) ; Saturated Types: (%s)",
-						node.getMethodImpl().methodId,
-						usedRefs,
-						fieldUsageDistinct.get(node),
-						refUsageTotal.get(node),
-						refUsageNames.get(node),
-						refUsageSaturatedTypes.get(node).toString()
-						);
-			System.out.println("  "+entryString);
-		}
+//		for(Entry<CallGraphNode, Long> entry : refUsageDistinct.entrySet()) {
+//			CallGraphNode node = entry.getKey();
+//			Long usedRefs = entry.getValue();
+//			String entryString = String.format("%-50s ==> %3d (%3d fields) <= %3d (%s) ; Saturated Types: (%s)",
+//						node.getMethodImpl().methodId,
+//						usedRefs,
+//						fieldUsageDistinct.get(node),
+//						refUsageTotal.get(node),
+//						refUsageNames.get(node),
+//						refUsageSaturatedTypes.get(node).toString()
+//						);
+//			System.out.println("  "+entryString);
+//		}
 		// Object cache, evaluation
 		ObjectCacheAnalysisDemo oca;
-		int[] cacheSizes = { 0,1,2,4,8,16,32,64, 128 };
+		int[] cacheSizes = { 0,1,2,4,8,16,32 };
+		int[] lineSizesObjCache  = { 1,2,4,8,16,32};
+		int[] lineSizesFieldCache = { 1 };
+		int[] lineSizes;
 		int[] modes = { 0,1,2 };
 		for(int mode : modes) {
 			long cacheAccesses = 0;
 			long cacheMisses = Long.MAX_VALUE;
+			String modeString;
+			lineSizes = lineSizesObjCache;
+			if(mode == 0) modeString = "fill-word";
+			else if(mode == 1) modeString = "fill-line";
+			else {
+				modeString = "field-as-tag";
+				lineSizes = lineSizesFieldCache;
+			}
+			boolean first = true;
 			for(int cacheSize : cacheSizes) {
-				String modeString;
-				if(mode == 0) modeString = "fill-word";
-				else if(mode == 1) modeString = "fill-line";
-				else modeString = "field-as-tag";
-				boolean useFillLine = mode==1 && cacheSize>0; 
-				jopconfig.setObjectCacheAssociativity(cacheSize);
-				jopconfig.setObjectCacheFillLine(useFillLine);				
-				jopconfig.setObjectCacheFieldTag(mode==2);
-				oca = new ObjectCacheAnalysisDemo(project, jopconfig);
-				long cost = oca.computeCost();
-				if(cost < cacheMisses) cacheMisses = cost;
-				double ratio;
-				if(cacheSize == 0) { cacheAccesses = cacheMisses; ratio = 0.0; }
-				else               { ratio = (double)(cacheAccesses-cacheMisses)/(double)cacheAccesses; }
-				System.out.println(
-						String.format("Cache Misses [N=%3d,%s]: %d  (%.2f %%)", cacheSize, modeString, cacheMisses, ratio*100));
+				for(int lineSize : lineSizes) {
+					boolean useFillLine = mode==1 && cacheSize>0; 
+					jopconfig.setObjectCacheAssociativity(cacheSize);
+					jopconfig.setObjectCacheFillLine(useFillLine);				
+					jopconfig.setObjectCacheFieldTag(mode==2);
+					jopconfig.setObjectCacheLineSize(lineSize);
+					oca = new ObjectCacheAnalysisDemo(project, jopconfig);
+					if(first) {
+						System.out.println(String.format("***** ***** MODE = %s ***** *****\n",modeString));
+						System.out.println(String.format(" - max tags accessed (upper bound) = %d",
+								oca.getMaxAccessedTags(project.getTargetMethod(), new CallString())));						
+						first = false;
+					}
+					long cost = oca.computeCost();
+					if(cost < cacheMisses) cacheMisses = cost;
+					double ratio;
+					if(cacheSize == 0) { cacheAccesses = cacheMisses; ratio = 0.0; }
+					else               { ratio = (double)(cacheAccesses-cacheMisses)/(double)cacheAccesses; }
+					System.out.println(
+							String.format(" + Cache Misses [N=%3d,l=%2d]: %d  (%.2f %%)", cacheSize, lineSize, cacheMisses, ratio*100));
+				}
 			}
 		}
 	} 

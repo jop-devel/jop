@@ -8,13 +8,13 @@ import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.AnalysisContext;
-import com.jopdesign.wcet.analysis.AnalysisContextIpet;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.analysis.WcetVisitor;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
+import com.jopdesign.wcet.analysis.cache.ObjectRefAnalysis.ObjectCacheCostModel;
 import com.jopdesign.wcet.frontend.CallGraph;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.BasicBlockNode;
@@ -98,8 +98,8 @@ public class ObjectCacheAnalysisDemo {
 		public void visitBasicBlockNode(BasicBlockNode n) {
 			for(InstructionHandle ih : n.getBasicBlock().getInstructions()) {
 				if(null == ObjectRefAnalysis.getHandleType(project, n, ih)) continue;
-				// TODO: give good costs
-				cost += 1;
+				// TODO: (currently handled externally): give realistic costs
+				cost += 1;					
 			}
 		}
 
@@ -137,12 +137,7 @@ public class ObjectCacheAnalysisDemo {
 			MethodInfo invoked = invocation.getImplementedMethod();
 			Long cost;
 			if(allPersistent(invoked, ctx.getCallString())) {
-				if(jopconfig.getObjectCacheFillLine()) {
-					/* FIXME: This is not correct (fields > cache line size??) */
-					cost = getMaxAccessedObjects(invoked, ctx.getCallString());
-				} else {
-					cost = getMaxAccessedFields(invoked, ctx.getCallString());					
-				}
+				cost  = getAllFitCost(invoked, ctx.getCallString());
 				//System.out.println("Cost for: "+invocation.getImplementedMethod()+" [all fit]: "+cost);
 			} else {
 				cost = stagedAnalysis.computeCost(invoked, ctx);
@@ -150,30 +145,52 @@ public class ObjectCacheAnalysisDemo {
 			}
 			return cost;
 		}
+
 	}
 
 	private Project project;
 	private JOPConfig jopconfig;
 	private ObjectRefAnalysis objRefAnalysis;
-	private CallGraph callGraph;
+	private int maxCachedFieldIndex;
+	private ObjectCacheCostModel costModel;
 	private boolean assumeAllMiss;
 
 	public ObjectCacheAnalysisDemo(Project p, JOPConfig jopconfig) {
-		this(p, jopconfig, jopconfig.getObjectCacheAssociativity() == 0);
-	}
-
-	public ObjectCacheAnalysisDemo(Project p, JOPConfig jopconfig, boolean assumeAllMiss) {
 		this.project = p;
 		this.jopconfig = jopconfig;
-		this.callGraph = project.getCallGraph();
-		this.assumeAllMiss = assumeAllMiss;
+		if(jopconfig.objectCacheSingleField()) {
+			this.maxCachedFieldIndex =  Integer.MAX_VALUE;			
+		} else {
+			this.maxCachedFieldIndex =  jopconfig.getObjectLineSize() - 1;
+		}
+		this.objRefAnalysis = new ObjectRefAnalysis(project, jopconfig.objectCacheSingleField(), maxCachedFieldIndex, DEFAULT_SET_SIZE);
+		this.costModel = getCostModel();		
 	}
 	
+	public void setAssumeAlwaysMiss() {
+		this.assumeAllMiss = true;
+	}
+	
+	private ObjectCacheCostModel getCostModel() {
+		long loadCacheLineCost;
+		long loadFieldCost;
+		long fieldAccessCostBypass = jopconfig.getObjectCacheLatency() + jopconfig.getObjectCacheDelayLoadWord();
+		/* field-as-tag */
+		if(jopconfig.objectCacheSingleField()) {
+			loadCacheLineCost = 0;
+			loadFieldCost = fieldAccessCostBypass;
+		} else if(jopconfig.objectCacheFillLine()) {
+			loadCacheLineCost = jopconfig.getObjectCacheLatency() + jopconfig.getObjectLineSize() * jopconfig.getObjectCacheDelayLoadWord();
+			loadFieldCost = 0;
+		} else {
+			loadCacheLineCost = 0;
+			loadFieldCost = fieldAccessCostBypass;			
+		}
+		return new ObjectCacheCostModel(loadFieldCost, loadCacheLineCost, fieldAccessCostBypass);
+	}
+
 	public long computeCost() {
 		/* Cache Analysis */
-		objRefAnalysis = new ObjectRefAnalysis(project, jopconfig.getObjectLineSize(), DEFAULT_SET_SIZE);
-		objRefAnalysis.analyzeRefUsage();
-		// TODO: Distinguish fill line / fill field here
 		RecursiveAnalysis<AnalysisContext, Long> recAna =
 			new RecursiveOCacheAnalysis(project, new IpetConfig(project.getConfig()),
 					new RecursiveWCETOCache());
@@ -181,21 +198,24 @@ public class ObjectCacheAnalysisDemo {
 		return recAna.computeCost(project.getTargetMethod(), new AnalysisContext());
 	}
 
-	private long getMaxAccessedObjects(MethodInfo invoked, CallString context) {
-		return objRefAnalysis.getMaxReferencesAccessed().get(new CallGraph.CallGraphNode(invoked, context));
+	public long getMaxAccessedTags(MethodInfo invoked, CallString context) {
+		if(! context.isEmpty()) {
+			throw new AssertionError("Callstrings are not yet supported for object cache analysis");
+		}
+		return objRefAnalysis.getMaxCachedTags(new CallGraph.CallGraphNode(invoked, context));
 	}
 
-	private long getMaxAccessedFields(MethodInfo invoked, CallString context) {
-		return objRefAnalysis.getMaxFieldsAccessed().get(new CallGraph.CallGraphNode(invoked, context));
+	private Long getAllFitCost(MethodInfo invoked, CallString context) {
+		if(! context.isEmpty()) {
+			throw new AssertionError("Callstrings are not yet supported for object cache analysis");
+		}
+		return objRefAnalysis.getMaxCacheCost(new CallGraph.CallGraphNode(invoked, context), costModel);
 	}
+
 
 	private boolean allPersistent(MethodInfo invoked, CallString context) {
 		if(assumeAllMiss) return false;
-		if(jopconfig.isFieldCache()) {
-			return getMaxAccessedFields(invoked, context) <= jopconfig.getObjectCacheAssociativity();
-		} else {
-			return getMaxAccessedObjects(invoked, context) <= jopconfig.getObjectCacheAssociativity();
-		}
+		return getMaxAccessedTags(invoked, context) <= jopconfig.getObjectCacheAssociativity();
 	}		
 	
 }

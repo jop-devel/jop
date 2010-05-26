@@ -131,13 +131,13 @@ public class JOPConfig {
 	/**
 	 * @return whether the object cache fills line on miss
 	 */
-	public boolean getObjectCacheFillLine() {
+	public boolean objectCacheFillLine() {
 		return objectCacheFillLine;
 	}
 	public void setObjectCacheFillLine(boolean fill) {
 		this.objectCacheFillLine = fill;
 	}
-	public boolean isFieldCache() {
+	public boolean objectCacheSingleField() {
 		return this.objectCacheFieldTag;
 	}
 	/**
@@ -149,5 +149,22 @@ public class JOPConfig {
 	
 	public int getObjectLineSize() {
 		return objectCacheLineSize;
+	}
+	public void setObjectCacheLineSize(int lineSize) {
+		this.objectCacheLineSize = lineSize;
+	}
+	/**
+	 * @return
+	 */
+	public int getObjectCacheLatency() {		
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	/**
+	 * @return
+	 */
+	public int getObjectCacheDelayLoadWord() {
+		// TODO Auto-generated method stub
+		return 1;
 	}
 }
