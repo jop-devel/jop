@@ -1,4 +1,18 @@
 #! /bin/sh
+mkdir -p ocache_eval
+# The lift benchmark
+
+# Configuration SRAM (2*w)
+make java_app wcet P1=test P2=wcet P3=StartLift WCET_METHOD=measure \
+   WCET_OPTIONS="-dataflow-analysis -object-cache-analysis -jop-ocache-access-cycles 2"
+cp java/target/wcet/wcet.StartLift_measure/ocache_eval.txt ocache_eval/lift_2_0.txt
+
+# Configuration SDRAM (10+2*w) with max_burst = 4 words
+make java_app wcet P1=test P2=wcet P3=StartLift WCET_METHOD=measure \
+   WCET_OPTIONS="-dataflow-analysis -object-cache-analysis -jop-ocache-access-cycles 2 -jop-ocache-access-delay 10 -jop-ocache-max-burst 4"
+cp java/target/wcet/wcet.StartLift_measure/ocache_eval.txt ocache_eval/lift_2_10_4.txt
+
+exit;
 
 #make java_app wcet P1=bench P2=scd_micro P3=Main WCET_METHOD="scd_micro.Motion.findIntersection(Lscd_micro/Motion)" \
 make java_app wcet P1=bench P2=scd_micro P3=Main WCET_METHOD="measure" \

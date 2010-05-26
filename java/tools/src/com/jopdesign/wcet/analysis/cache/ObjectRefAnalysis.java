@@ -155,7 +155,7 @@ public class ObjectRefAnalysis {
 		public boolean query(InstructionHandle a) {
 			CFGNode n = BasicBlock.getHandleNode(a);
 			if(n == null) {				
-				Logger.getLogger("Object Cache Analysis").error("No node for instruction "+a);
+				Logger.getLogger("Object Cache Analysis").info("No node for instruction "+a);
 				return false;
 			} else {
 				return eoAna.isExecutedOnce(scope, n);

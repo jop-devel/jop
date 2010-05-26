@@ -27,6 +27,10 @@
 
 package com.jopdesign.wcet;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -337,15 +341,23 @@ public class WCETAnalysis {
 //			System.out.println("  "+entryString);
 //		}
 		// Object cache, evaluation
+		PrintStream pStream;
+		ExecHelper.TeePrintStream oStream;
+		try {
+			 pStream = new PrintStream(project.getOutFile("ocache_eval.txt"));
+			 oStream = new ExecHelper.TeePrintStream(System.out, pStream);
+		} catch (FileNotFoundException e) {
+			 oStream = new ExecHelper.TeePrintStream(System.out, null);
+		}
 		ObjectCacheAnalysisDemo oca;
-		int[] cacheSizes = { 0,1,2,4,8,16,32 };
+		int[] cacheSizes = { 0,1,2,4,8,16,32, 64 }; // need to be in ascending order
 		int[] lineSizesObjCache  = { 1,2,4,8,16,32};
 		int[] lineSizesFieldCache = { 1 };
 		int[] lineSizes;
 		int[] modes = { 0,1,2 };
 		for(int mode : modes) {
-			long cacheAccesses = 0;
-			long cacheMisses = Long.MAX_VALUE;
+			long maxCost = 0;
+//			long cacheMisses = Long.MAX_VALUE;
 			String modeString;
 			lineSizes = lineSizesObjCache;
 			if(mode == 0) modeString = "fill-word";
@@ -355,27 +367,31 @@ public class WCETAnalysis {
 				lineSizes = lineSizesFieldCache;
 			}
 			boolean first = true;
-			for(int cacheSize : cacheSizes) {
-				for(int lineSize : lineSizes) {
+			for(int lineSize : lineSizes) {
+				// assume cacheSizes are in ascending oreder
+				long bestCostForConfig = Integer.MAX_VALUE;
+				for(int cacheSize : cacheSizes) {
 					boolean useFillLine = mode==1 && cacheSize>0; 
 					jopconfig.setObjectCacheAssociativity(cacheSize);
 					jopconfig.setObjectCacheFillLine(useFillLine);				
 					jopconfig.setObjectCacheFieldTag(mode==2);
 					jopconfig.setObjectCacheLineSize(lineSize);
 					oca = new ObjectCacheAnalysisDemo(project, jopconfig);
-					if(first) {
-						System.out.println(String.format("***** ***** MODE = %s ***** *****\n",modeString));
-						System.out.println(String.format(" - max tags accessed (upper bound) = %d",
-								oca.getMaxAccessedTags(project.getTargetMethod(), new CallString())));						
-						first = false;
-					}
-					long cost = oca.computeCost();
-					if(cost < cacheMisses) cacheMisses = cost;
+					long cost = oca.computeCost(); 
+					if(cost < bestCostForConfig) bestCostForConfig = cost;
 					double ratio;
-					if(cacheSize == 0) { cacheAccesses = cacheMisses; ratio = 0.0; }
-					else               { ratio = (double)(cacheAccesses-cacheMisses)/(double)cacheAccesses; }
-					System.out.println(
-							String.format(" + Cache Misses [N=%3d,l=%2d]: %d  (%.2f %%)", cacheSize, lineSize, cacheMisses, ratio*100));
+					if(cacheSize == 0) { maxCost = cost; ratio = 1.0; }
+					else               { ratio = (double)(cost)/(double)maxCost; }
+
+					if(first) {
+						oStream.println(String.format("***** ***** MODE = %s ***** *****\n",modeString));
+						oStream.println(String.format(" - max tags accessed (upper bound) = %d",
+								oca.getMaxAccessedTags(project.getTargetMethod(), CallString.EMPTY)));						
+						first = false;
+					}					
+					String report = String.format(" + Cache Misses [N=%3d,l=%2d]: %d  (%.2f %%)", cacheSize, lineSize, bestCostForConfig, ratio*100);
+					if(cost > bestCostForConfig) report += " # (analysis results decreased for this associativity)";
+					oStream.println(report);
 				}
 			}
 		}

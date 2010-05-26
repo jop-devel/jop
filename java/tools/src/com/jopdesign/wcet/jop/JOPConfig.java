@@ -80,10 +80,12 @@ public class JOPConfig {
 		new IntegerOption("jop-ocache-words-per-line", "JOP object cache: words per line", 16);
 	public static final BooleanOption OBJECT_CACHE_LINE_FILL =
 		new BooleanOption("jop-ocache-fill", "JOP object cache: whether to fill line on miss", false);
-	public static final IntegerOption OBJECT_CACHE_LATENCY =
-		new IntegerOption("jop-ocache-latency", "JOP object cache latency for first word", 0);
-	public static final IntegerOption OBJECT_CACHE_THROUGHPUT =
-		new IntegerOption("jop-ocache-throughput", "JOP object cache cycles per word", 3);
+	private static final IntegerOption OBJECT_CACHE_MAX_BURST_LENGTH =
+		new IntegerOption("jop-ocache-max-burst", "JOP object cache maximum burst length", 1);		
+	private static final IntegerOption OBJECT_CACHE_ACCESS_DELAY =
+		new IntegerOption("jop-ocache-access-delay", "JOP object cache access delay for one burst", 0);
+	private static final IntegerOption OBJECT_CACHE_CYCLES_PER_WORD =
+		new IntegerOption("jop-ocache-access-cycles", "JOP object cache access cycles for one word", 1);
 
 	/**
 	 * Supported method cache implementations:
@@ -113,11 +115,16 @@ public class JOPConfig {
 
 	public static final Option<?>[] jopOptions = {
 		ASM_FILE, READ_WAIT_STATES, WRITE_WAIT_STATES,
+		
 		MULTIPROCESSOR, CMP_CPUS, CMP_TIMESLOT,
+		
 		CACHE_IMPL, CACHE_BLOCKS, CACHE_SIZE_WORDS,
+
 		OBJECT_CACHE, OBJECT_CACHE_ASSOCIATIVITY, OBJECT_CACHE_WORDS_PER_LINE,
-		OBJECT_CACHE_LINE_FILL, OBJECT_CACHE_LATENCY, OBJECT_CACHE_THROUGHPUT
+		OBJECT_CACHE_LINE_FILL,OBJECT_CACHE_MAX_BURST_LENGTH,
+		OBJECT_CACHE_ACCESS_DELAY,OBJECT_CACHE_CYCLES_PER_WORD
 	};
+
 
 	/**
 	 * @return the associativity of the object cache
@@ -153,18 +160,17 @@ public class JOPConfig {
 	public void setObjectCacheLineSize(int lineSize) {
 		this.objectCacheLineSize = lineSize;
 	}
-	/**
-	 * @return
-	 */
-	public int getObjectCacheLatency() {		
-		// TODO Auto-generated method stub
-		return 0;
+	public long getObjectCacheAccessTime(int words) {
+		int  burstLength = configData.getOption(OBJECT_CACHE_MAX_BURST_LENGTH).intValue();
+		long delay       = configData.getOption(OBJECT_CACHE_ACCESS_DELAY).longValue();
+		long cyclesPerWord = configData.getOption(OBJECT_CACHE_CYCLES_PER_WORD).longValue();
+		int fullBursts = words / burstLength;
+		int lastBurst  = words % burstLength;
+		long accessTime = delay + cyclesPerWord * lastBurst;
+		for(int i = 0; i < fullBursts; i++) {
+			accessTime += delay + cyclesPerWord * burstLength;
+		}
+		return accessTime;
 	}
-	/**
-	 * @return
-	 */
-	public int getObjectCacheDelayLoadWord() {
-		// TODO Auto-generated method stub
-		return 1;
-	}
+
 }

@@ -19,6 +19,11 @@
  */
 package com.jopdesign.wcet;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.text.MessageFormat;
 import java.util.Arrays;
 
@@ -37,6 +42,35 @@ import com.jopdesign.wcet.config.Config.BadConfigurationException;
  *
  */
 public class ExecHelper {
+	/* Idea adopted from the Java Cookbook */
+	public static class TeePrintStream extends OutputStream {
+
+		private PrintStream p1;
+		private PrintStream p2;
+
+		public TeePrintStream(PrintStream p1, PrintStream p2) {
+			this.p1 = p1;
+			this.p2 = p2;
+		}
+
+		@Override
+		public void write(int c) throws IOException {
+			p1.write(c);
+			if(p2 != null) p2.write(c);
+		}
+		public void println(String s) {
+			try {
+				for(int i = 0; i < s.length(); i++) {
+					write(s.charAt(i));				
+				}
+				write('\n');
+			} catch (IOException e) {
+				throw new Error("Fatal Error: println failed");
+			}
+		}
+		
+	}
+	
 	private Class<?> execClass;
 	private String configFileProp;
 	private Logger tlLogger;

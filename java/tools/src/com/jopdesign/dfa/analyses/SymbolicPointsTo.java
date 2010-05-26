@@ -865,7 +865,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 					System.err.println("doInvoke(): No exit information for callstring ?");					
 				}
 			} else {
-				System.err.println("doInvoke(): No exit information ?");				
+				System.err.println("Symbolic Points To[doInvoke()]: No exit information from "+methodName+"?");				
 			}
 			
 			// add relevant information to result
