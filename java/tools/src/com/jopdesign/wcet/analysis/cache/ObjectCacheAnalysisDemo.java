@@ -98,7 +98,11 @@ public class ObjectCacheAnalysisDemo {
 		public void visitBasicBlockNode(BasicBlockNode n) {
 			for(InstructionHandle ih : n.getBasicBlock().getInstructions()) {
 				if(null == ObjectRefAnalysis.getHandleType(project, n, ih)) continue;
-				cost += jopconfig.getObjectCacheAccessTime(1);					
+				if(jopconfig.objectCacheFillLine()) {
+					cost += jopconfig.getObjectCacheAccessTime(jopconfig.getObjectLineSize());
+				} else {
+					cost += jopconfig.getObjectCacheAccessTime(1);
+				}
 			}
 		}
 
@@ -177,13 +181,13 @@ public class ObjectCacheAnalysisDemo {
 		/* field-as-tag */
 		if(jopconfig.objectCacheSingleField()) {
 			loadCacheLineCost = 0;
-			loadFieldCost = fieldAccessCostBypass; 
+			loadFieldCost = jopconfig.getObjectCacheAccessTime(1); 
 		} else if(jopconfig.objectCacheFillLine()) {
 			loadCacheLineCost = jopconfig.getObjectCacheAccessTime(jopconfig.getObjectLineSize());
 			loadFieldCost = 0;
 		} else {
 			loadCacheLineCost = 0;
-			loadFieldCost = fieldAccessCostBypass;			
+			loadFieldCost = jopconfig.getObjectCacheAccessTime(1);			
 		}
 		return new ObjectCacheCostModel(loadFieldCost, loadCacheLineCost, fieldAccessCostBypass);
 	}

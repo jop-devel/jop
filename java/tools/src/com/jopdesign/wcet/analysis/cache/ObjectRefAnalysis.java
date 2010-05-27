@@ -97,7 +97,6 @@ public class ObjectRefAnalysis {
 		public static final ObjectCacheCostModel COUNT_FIELD_TAGS = new ObjectCacheCostModel(1,0,0);
 		private long loadFieldCost;
 		private long loadCacheLineCost;
-		private long fieldAccessCostHit;
 		private long fieldAccessCostBypass;
 
 		public ObjectCacheCostModel(long loadFieldCost, long loadCacheLineCost,long fieldAccessCostBypass)
@@ -118,13 +117,6 @@ public class ObjectRefAnalysis {
 		 */
 		public long getLoadCacheLineCost() {
 			return loadCacheLineCost;
-		}
-
-		/**
-		 * @return the fieldAccessCostHit
-		 */
-		public long getFieldAccessCostHit() {
-			return fieldAccessCostHit;
 		}
 
 		/**
