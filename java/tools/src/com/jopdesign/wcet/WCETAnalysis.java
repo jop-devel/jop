@@ -379,9 +379,12 @@ public class WCETAnalysis {
 					oca = new ObjectCacheAnalysisDemo(project, jopconfig);
 					long cost = oca.computeCost(); 
 					if(cost < bestCostForConfig) bestCostForConfig = cost;
-					double ratio;
-					if(cacheSize == 0) { maxCost = cost; ratio = 1.0; }
-					else               { ratio = (double)(cost)/(double)maxCost; }
+					double bestRatio,ratio;
+					if(cacheSize == 0) { maxCost = cost; bestRatio = 1.0; ratio = 1.0; }
+					else               { 
+						bestRatio = (double)bestCostForConfig/(double)maxCost;
+					    ratio = (double)(cost)/(double)maxCost; 
+					}
 
 					if(first) {
 						oStream.println(String.format("***** ***** MODE = %s ***** *****\n",modeString));
@@ -389,8 +392,11 @@ public class WCETAnalysis {
 								oca.getMaxAccessedTags(project.getTargetMethod(), CallString.EMPTY)));						
 						first = false;
 					}					
-					String report = String.format(" + Cache Misses [N=%3d,l=%2d]: %d  (%.2f %%)", cacheSize, lineSize, bestCostForConfig, ratio*100);
-					if(cost > bestCostForConfig) report += " # (analysis results decreased for this associativity)";
+					String report = String.format(" + Cache Misses [N=%3d,l=%2d]: %d  (%.2f %%)", 
+							cacheSize, lineSize, bestCostForConfig, bestRatio*100);
+					if(cost > bestCostForConfig) {
+						report += String.format(" # (analysis cost increased by %.2f %% for this associativity)",ratio*100);
+					}
 					oStream.println(report);
 				}
 			}
