@@ -32,6 +32,8 @@ import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.DFAAppInfo;
 import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
+import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
 import com.jopdesign.wcet.frontend.BasicBlock;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.SuperGraph;
@@ -247,29 +249,29 @@ public class ObjectRefAnalysis {
 		} else {
 			costModel = ObjectCacheCostModel.COUNT_REF_TAGS;			
 		}
-		maxCachedTags = computeCacheCost(scope, sg, usedRefs, usedObjectsSet, costModel);
+		maxCachedTags = computeCacheCost(scope, sg, usedRefs, usedObjectsSet, costModel).getCost();
 		
 		this.tagSet.put(scope, usedObjectsSet);
 
 		maxCachedTagsAccessed.put(scope,maxCachedTags);
 		return maxCachedTags;
-	}
+	} 
 	
-	public long getMaxCacheCost(CallGraphNode scope, ObjectCacheCostModel costModel)
+	public ObjectCacheCost getMaxCacheCost(CallGraphNode scope, ObjectCacheCostModel costModel)
 	{
 		LocalPointsToResult usedRefs = getUsedRefs(scope);
 		SuperGraph sg = getScopeSuperGraph(scope);
 		/* Compute worst-case cost */
 		HashSet<SymbolicAddress> usedObjectsSet = new HashSet<SymbolicAddress>();
-		long cost = computeCacheCost(scope, sg, usedRefs, usedObjectsSet, costModel);
+		ObjectCacheCost cost = computeCacheCost(scope, sg, usedRefs, usedObjectsSet, costModel);
 		return cost;		
 	}
 
-	private long computeCacheCost(CallGraphNode scope, 
-									SuperGraph sg, 
-									LocalPointsToResult usedRefs, 
-									HashSet<SymbolicAddress> usedSetOut,
-									ObjectCacheCostModel costModel)
+	private ObjectCacheCost computeCacheCost(CallGraphNode scope, 
+							      SuperGraph sg, 
+								  LocalPointsToResult usedRefs, 
+								  HashSet<SymbolicAddress> usedSetOut,
+								  ObjectCacheCostModel costModel)
 	{
 		CallString emptyCallString = new CallString();
 		HashMap<SymbolicAddress, Map<CFGNode, Integer>> refAccessSets =
@@ -340,7 +342,7 @@ public class ObjectRefAnalysis {
 		try {
 			lpCost = maxCostFlow.solve(flowMap,refUseMap);
 		} catch (Exception e) {
-			Logger.getLogger(ObjectRefAnalysis.class).error("Failed to calculate references for : "+scope);
+			Logger.getLogger(ObjectRefAnalysis.class).error("Failed to compute object cache cost for : "+scope);
 			lpCost = 2000000000.0;
 		}
 		long cost = (long) (lpCost+0.5);
@@ -354,7 +356,37 @@ public class ObjectRefAnalysis {
 				//System.out.println("Used dvar: "+addr);
 			}
 		}
-		return cost;
+		return extractCost(sg,costModel, cost,flowMap,refUseMap);
+	}
+
+	private ObjectCacheCost extractCost(SuperGraph sg,
+			ObjectCacheCostModel costModel,
+			long cost,
+			Map<CFGEdge, Long> edgeFlowMap,
+			Map<DecisionVariable, Boolean> refUseMap) {
+		
+		long bypassCost = 0; /* All object accesses * bypass cost */
+		long missCost = 0;   /* cost - bypass cost */
+		long fieldAccesses = 0; /* fields accessed */
+		Map<CFGNode, Long> freqMap = RecursiveWcetAnalysis.edgeToNodeFlow(sg, edgeFlowMap);
+		
+		for(CFGNode node : freqMap.keySet()) {
+			/* Compute cost for basic block */
+			Long nodeFreq = freqMap.get(node);
+			BasicBlock bb = node.getBasicBlock();
+			if(bb == null) continue;
+			for(InstructionHandle ih : bb.getInstructions()) {
+				String handleType = getHandleType(project, node, ih); 				
+				if(handleType == null) continue; /* No getfield/handle access */					
+				if(! isFieldCached(node.getControlFlowGraph(), ih, maxCachedFieldIndex)) {
+					bypassCost += costModel.getFieldAccessCostBypass() * nodeFreq;
+				}
+				fieldAccesses += nodeFreq; 
+			}
+		}
+		missCost = cost - bypassCost;
+		ObjectCacheCost ocCost = new ObjectCacheCost(missCost, bypassCost, fieldAccesses);
+		return ocCost;
 	}
 
 

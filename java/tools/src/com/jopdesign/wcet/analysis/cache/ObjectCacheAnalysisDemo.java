@@ -1,6 +1,8 @@
 package com.jopdesign.wcet.analysis.cache;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.bcel.generic.InstructionHandle;
 
@@ -43,65 +45,147 @@ import com.jopdesign.wcet.jop.JOPConfig;
 public class ObjectCacheAnalysisDemo {
 	public static final int DEFAULT_SET_SIZE = 64;
 
-	public class RecursiveOCacheAnalysis extends
-			RecursiveAnalysis<AnalysisContext, Long> {
+	public static class ObjectCacheCost {
+		private long missCost;
+		private long bypassCost;
+		private long fieldAccesses;
 
-		private RecursiveStrategy<AnalysisContext, Long> recursiveStrategy;
+		/**
+		 * @param missCost2
+		 * @param bypassCost2
+		 * @param fieldAccesses2
+		 */
+		public ObjectCacheCost(long missCost, long bypassCost, long fieldAccesses) {
+			this.missCost = missCost;
+			this.bypassCost = bypassCost;
+			this.fieldAccesses = fieldAccesses;
+		}
+
+		public ObjectCacheCost() {
+			this(0,0,0);
+		}
+
+		public long getCost()
+		{
+			return missCost + bypassCost;
+		}
+
+		public void addFieldAccesses(long additionalFAs) {
+			fieldAccesses += additionalFAs;
+		}
+
+		public long getFieldAccesses()
+		{
+			return fieldAccesses;
+		}
+
+		public void addCost(ObjectCacheCost occ) {
+			this.missCost += occ.missCost;
+			this.bypassCost += occ.bypassCost;
+			addFieldAccesses(occ.fieldAccesses);
+		}
+		
+		/**
+		 * @param worstCaseMissCost
+		 */
+		public ObjectCacheCost addBypassCost(long bypassCost) {
+			this.bypassCost+=bypassCost;
+			return this;
+		}
+		/**
+		 * @param worstCaseMissCost
+		 */
+		public ObjectCacheCost addMissCost(long missCost) {
+			this.missCost += missCost;
+			return this;
+		}
+		public String toString() {
+			return String.format("%d [miss=%d,bypass=%d,accesses=%d]",getCost(),this.missCost,this.bypassCost,this.fieldAccesses);
+		}
+
+		public ObjectCacheCost times(Long value) {
+			return new ObjectCacheCost(missCost * value, bypassCost * value, fieldAccesses * value);
+		}
+	}
+	
+	public class RecursiveOCacheAnalysis extends
+			RecursiveAnalysis<AnalysisContext, ObjectCacheCost> {
+
+		private RecursiveStrategy<AnalysisContext, ObjectCacheCost> recursiveStrategy;
 
 		public RecursiveOCacheAnalysis(Project p, IpetConfig ipetConfig,
-				RecursiveStrategy<AnalysisContext, Long> recursiveStrategy) {
+				RecursiveStrategy<AnalysisContext, ObjectCacheCost> recursiveStrategy) {
 			super(p, ipetConfig);
 			this.recursiveStrategy = recursiveStrategy;
 		}
 		@Override
-		protected Long computeCostOfNode(CFGNode n, AnalysisContext ctx) {
+		protected ObjectCacheCost computeCostOfNode(CFGNode n, AnalysisContext ctx) {
 			return new OCacheVisitor(this.getProject(), this, recursiveStrategy, ctx).computeCost(n);
 		}
 
 		@Override
 		protected CostProvider<CFGNode> getCostProvider(
-				Map<CFGNode, Long> nodeCosts) {
-			return new MapCostProvider<CFGNode>(nodeCosts, 1000);
+				Map<CFGNode, ObjectCacheCost> nodeCosts) {
+			HashMap<CFGNode, Long> costMap = new HashMap<CFGNode, Long>();
+			for(Entry<CFGNode, ObjectCacheCost> entry : nodeCosts.entrySet()) {
+				costMap.put(entry.getKey(),entry.getValue().getCost());
+			}
+			return new MapCostProvider<CFGNode>(costMap, 1000);
 		}
 
 		@Override
-		protected Long extractSolution(ControlFlowGraph cfg,
-				Map<CFGNode, Long> nodeCosts, long maxCost,
-				Map<CFGEdge, Long> edgeFlowOut) {
-			return maxCost;
+		protected ObjectCacheCost extractSolution(ControlFlowGraph cfg,
+				Map<CFGNode, ObjectCacheCost> nodeCosts,
+				long maxCost,
+				Map<CFGEdge, Long> edgeFlow) {
+			Map <CFGNode, Long> nodeFlow = RecursiveWcetAnalysis.edgeToNodeFlow(cfg.getGraph(),edgeFlow);			
+			ObjectCacheCost ocCost = new ObjectCacheCost();
+			for(Entry<CFGNode, Long> entry : nodeFlow.entrySet()) {
+				ocCost.addCost(nodeCosts.get(entry.getKey()).times(entry.getValue()));
+			}
+			if(maxCost != ocCost.getCost()) {
+				throw new AssertionError(
+						String.format("Object Cache Cost: Cost of lp solver (%d) and reconstructed cost (%d) do not coincide",maxCost,ocCost.getCost()));
+			}
+			return new ObjectCacheCost().addMissCost(maxCost);
 		}
 
-
-	}
+	} 
 
 	/** Visitor for computing the WCET of CFG nodes */
 	private class OCacheVisitor implements CfgVisitor {
-		private long cost;
-		private RecursiveAnalysis<AnalysisContext, Long> recursiveAnalysis;
-		private RecursiveStrategy<AnalysisContext, Long> recursiveStrategy;
+		private ObjectCacheCost cost;
+		private RecursiveAnalysis<AnalysisContext, ObjectCacheCost> recursiveAnalysis;
+		private RecursiveStrategy<AnalysisContext, ObjectCacheCost> recursiveStrategy;
 		private AnalysisContext context;
 		private Project project;
 
 		public OCacheVisitor(
 				Project p,
-				RecursiveAnalysis<AnalysisContext, Long> recursiveAnalysis,
-				RecursiveStrategy<AnalysisContext, Long> recursiveStrategy, 
+				RecursiveAnalysis<AnalysisContext, ObjectCacheCost> recursiveAnalysis,
+				RecursiveStrategy<AnalysisContext, ObjectCacheCost> recursiveStrategy, 
 				AnalysisContext ctx
 				) {
-			this.project = p;
+			this.project = p; 
 			this.recursiveAnalysis = recursiveAnalysis;
 			this.recursiveStrategy = recursiveStrategy;
 			this.context = ctx;
 		}
 		// Cost ~ number of cache misses
-		// FIXME: A basic block is a scope too!
+		// TODO: A basic block is a scope too!
 		public void visitBasicBlockNode(BasicBlockNode n) {
+			long worstCaseMissCost;
+			if(jopconfig.objectCacheFillLine()) {
+				worstCaseMissCost = jopconfig.getObjectCacheAccessTime(jopconfig.getObjectLineSize());	
+			} else {
+				worstCaseMissCost = jopconfig.getObjectCacheAccessTime(1);
+			}
 			for(InstructionHandle ih : n.getBasicBlock().getInstructions()) {
 				if(null == ObjectRefAnalysis.getHandleType(project, n, ih)) continue;
-				if(jopconfig.objectCacheFillLine()) {
-					cost += jopconfig.getObjectCacheAccessTime(jopconfig.getObjectLineSize());
+				if(! ObjectRefAnalysis.isFieldCached(n.getControlFlowGraph(), ih, jopconfig.getObjectLineSize()-1)) {
+					cost.addBypassCost(worstCaseMissCost);
 				} else {
-					cost += jopconfig.getObjectCacheAccessTime(1);
+					cost.addMissCost(worstCaseMissCost);
 				}
 			}
 		}
@@ -111,7 +195,7 @@ public class ObjectCacheAnalysisDemo {
 			if(n.isVirtual()) {
 				throw new AssertionError("Invoke node "+n.getReferenced()+" without implementation in WCET analysis - did you preprocess virtual methods ?");
 			}
-			cost += recursiveStrategy.recursiveCost(recursiveAnalysis, n, context);
+			cost.addCost(recursiveStrategy.recursiveCost(recursiveAnalysis, n, context));
 		}
 
 		public void visitSpecialNode(DedicatedNode n) {
@@ -119,10 +203,10 @@ public class ObjectCacheAnalysisDemo {
 
 		public void visitSummaryNode(SummaryNode n) {
 			ControlFlowGraph subCfg = n.getControlFlowGraph();
-			cost += recursiveAnalysis.computeCostUncached(n.toString(), subCfg, new AnalysisContext());
+			cost.addCost(recursiveAnalysis.computeCostUncached(n.toString(), subCfg, new AnalysisContext()));
 		}
-		public long computeCost(CFGNode n) {
-			this.cost = 0;
+		public ObjectCacheCost computeCost(CFGNode n) {
+			this.cost = new ObjectCacheCost();
 			n.accept(this);
 			return cost;
 		}
@@ -132,13 +216,13 @@ public class ObjectCacheAnalysisDemo {
 	//  a) Cannot handle java implemented methods (I think)
 	//  b) invokevirtual also accesses the object, this is not considered
 	private class RecursiveWCETOCache
-	implements RecursiveStrategy<AnalysisContext,Long> {
-		public Long recursiveCost(
-				RecursiveAnalysis<AnalysisContext,Long> stagedAnalysis,
+	implements RecursiveStrategy<AnalysisContext,ObjectCacheCost> {
+		public ObjectCacheCost recursiveCost(
+				RecursiveAnalysis<AnalysisContext,ObjectCacheCost> stagedAnalysis,
 				InvokeNode invocation, 
 				AnalysisContext ctx) {
 			MethodInfo invoked = invocation.getImplementedMethod();
-			Long cost;
+			ObjectCacheCost cost;
 			if(allPersistent(invoked, ctx.getCallString())) {
 				cost  = getAllFitCost(invoked, ctx.getCallString());
 				//System.out.println("Cost for: "+invocation.getImplementedMethod()+" [all fit]: "+cost);
@@ -192,9 +276,9 @@ public class ObjectCacheAnalysisDemo {
 		return new ObjectCacheCostModel(loadFieldCost, loadCacheLineCost, fieldAccessCostBypass);
 	}
 
-	public long computeCost() {
+	public ObjectCacheCost computeCost() {
 		/* Cache Analysis */
-		RecursiveAnalysis<AnalysisContext, Long> recAna =
+		RecursiveAnalysis<AnalysisContext, ObjectCacheCost> recAna =
 			new RecursiveOCacheAnalysis(project, new IpetConfig(project.getConfig()),
 					new RecursiveWCETOCache());
 		
@@ -207,8 +291,8 @@ public class ObjectCacheAnalysisDemo {
 		}
 		return objRefAnalysis.getMaxCachedTags(new CallGraph.CallGraphNode(invoked, context));
 	}
-
-	private Long getAllFitCost(MethodInfo invoked, CallString context) {
+ 
+	private ObjectCacheCost getAllFitCost(MethodInfo invoked, CallString context) {
 		if(! context.isEmpty()) {
 			throw new AssertionError("Callstrings are not yet supported for object cache analysis");
 		}

@@ -55,6 +55,7 @@ import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo;
 import com.jopdesign.wcet.analysis.cache.ObjectRefAnalysis;
+import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
 import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.config.Option;
 import com.jopdesign.wcet.frontend.CallGraph.CallGraphNode;
@@ -377,7 +378,9 @@ public class WCETAnalysis {
 					jopconfig.setObjectCacheFieldTag(mode==2);
 					jopconfig.setObjectCacheLineSize(lineSize);
 					oca = new ObjectCacheAnalysisDemo(project, jopconfig);
-					long cost = oca.computeCost(); 
+					
+					ObjectCacheCost ocCost = oca.computeCost(); 
+					long cost = ocCost.getCost();
 					if(cost < bestCostForConfig) bestCostForConfig = cost;
 					double bestRatio,ratio;
 					if(cacheSize == 0) { maxCost = cost; bestRatio = 1.0; ratio = 1.0; }
@@ -385,15 +388,15 @@ public class WCETAnalysis {
 						bestRatio = (double)bestCostForConfig/(double)maxCost;
 					    ratio = (double)(cost)/(double)maxCost; 
 					}
-
+					
 					if(first) {
 						oStream.println(String.format("***** ***** MODE = %s ***** *****\n",modeString));
 						oStream.println(String.format(" - max tags accessed (upper bound) = %d",
 								oca.getMaxAccessedTags(project.getTargetMethod(), CallString.EMPTY)));						
 						first = false;
 					}					
-					String report = String.format(" + Cache Misses [N=%3d,l=%2d]: %d  (%.2f %%)", 
-							cacheSize, lineSize, bestCostForConfig, bestRatio*100);
+					String report = String.format(" + Cache Misses [N=%3d,l=%2d]: %d  (%.2f %%)", //, %.2f %% 'hitrate')", 
+							cacheSize, lineSize, bestCostForConfig, bestRatio*100, -1.0);
 					if(cost > bestCostForConfig) {
 						report += String.format(" # (analysis cost increased by %.2f %% for this associativity)",ratio*100);
 					}

@@ -29,7 +29,7 @@ import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
  * In the first case, we check whether the containing basic block is part of a loop.
  * </p>
  * TODO: [scope-analysis] More efficient implementation of ExecuteOnceAnalysis. Currently
- *                        we have 4! nested loops.
+ *                        we have 4 nested loops.
  *                        
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  *
