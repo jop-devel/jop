@@ -369,8 +369,13 @@ public class WCETAnalysis {
 			}
 			boolean first = true;
 			for(int lineSize : lineSizes) {
+				/* We have to take field access count of cache size = 0; our analysis otherwise does not assign
+				 * sensible field access counts (thats the fault of the IPET method)
+				 */
+				long fieldAccesses = -1;					
+				double bestCyclesPerAccessForConfig = Double.POSITIVE_INFINITY;
+				long bestCostPerConfig = Long.MAX_VALUE;
 				// assume cacheSizes are in ascending oreder
-				long bestCostForConfig = Integer.MAX_VALUE;
 				for(int cacheSize : cacheSizes) {
 					boolean useFillLine = mode==1 && cacheSize>0; 
 					jopconfig.setObjectCacheAssociativity(cacheSize);
@@ -378,26 +383,37 @@ public class WCETAnalysis {
 					jopconfig.setObjectCacheFieldTag(mode==2);
 					jopconfig.setObjectCacheLineSize(lineSize);
 					oca = new ObjectCacheAnalysisDemo(project, jopconfig);
-					
+															
+					double cyclesPerAccess;
 					ObjectCacheCost ocCost = oca.computeCost(); 
 					long cost = ocCost.getCost();
-					if(cost < bestCostForConfig) bestCostForConfig = cost;
+					if(cost < bestCostPerConfig) bestCostPerConfig = cost;
+					
 					double bestRatio,ratio;
-					if(cacheSize == 0) { maxCost = cost; bestRatio = 1.0; ratio = 1.0; }
-					else               { 
-						bestRatio = (double)bestCostForConfig/(double)maxCost;
-					    ratio = (double)(cost)/(double)maxCost; 
+					if(cacheSize == 0) { 
+						maxCost = cost; 
+						fieldAccesses = ocCost.getFieldAccesses();
+
+						bestRatio = 1.0; 
+						ratio = 1.0;
+					} else  { 
+						bestRatio = (double)bestCostPerConfig/(double)maxCost;
+					    ratio = (double)cost/(double)maxCost; 
 					}
+
+					cyclesPerAccess = (double)cost / (double)fieldAccesses ;						
+					if(cyclesPerAccess < bestCyclesPerAccessForConfig) bestCyclesPerAccessForConfig = cyclesPerAccess;
 					
 					if(first) {
 						oStream.println(String.format("***** ***** MODE = %s ***** *****\n",modeString));
-						oStream.println(String.format(" - max tags accessed (upper bound) = %d",
-								oca.getMaxAccessedTags(project.getTargetMethod(), CallString.EMPTY)));						
+						oStream.println(String.format(" - max tags accessed (upper bound) = %d, max fields accesses = %d",
+								oca.getMaxAccessedTags(project.getTargetMethod(), CallString.EMPTY), fieldAccesses)
+								);						
 						first = false;
 					}					
-					String report = String.format(" + Cache Misses [N=%3d,l=%2d]: %d  (%.2f %%)", //, %.2f %% 'hitrate')", 
-							cacheSize, lineSize, bestCostForConfig, bestRatio*100, -1.0);
-					if(cost > bestCostForConfig) {
+					String report = String.format(" + Cycles Per Access [N=%3d,l=%2d]: %.2f (%d total cost, %.2f %% cost of no cache, %d bypass cost)", //, %.2f %% 'hitrate')", 
+							cacheSize, lineSize, bestCyclesPerAccessForConfig, cost, bestRatio*100, ocCost.getBypassCost());
+					if(bestCostPerConfig > cost) {
 						report += String.format(" # (analysis cost increased by %.2f %% for this associativity)",ratio*100);
 					}
 					oStream.println(report);

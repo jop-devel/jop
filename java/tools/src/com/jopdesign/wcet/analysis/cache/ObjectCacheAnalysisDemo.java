@@ -92,6 +92,7 @@ public class ObjectCacheAnalysisDemo {
 			this.bypassCost+=bypassCost;
 			return this;
 		}
+		public long getBypassCost() { return bypassCost; }
 		/**
 		 * @param worstCaseMissCost
 		 */
@@ -147,7 +148,7 @@ public class ObjectCacheAnalysisDemo {
 				throw new AssertionError(
 						String.format("Object Cache Cost: Cost of lp solver (%d) and reconstructed cost (%d) do not coincide",maxCost,ocCost.getCost()));
 			}
-			return new ObjectCacheCost().addMissCost(maxCost);
+			return ocCost;
 		}
 
 	} 
@@ -184,8 +185,10 @@ public class ObjectCacheAnalysisDemo {
 				if(null == ObjectRefAnalysis.getHandleType(project, n, ih)) continue;
 				if(! ObjectRefAnalysis.isFieldCached(n.getControlFlowGraph(), ih, jopconfig.getObjectLineSize()-1)) {
 					cost.addBypassCost(worstCaseMissCost);
+					cost.addFieldAccesses(1);
 				} else {
 					cost.addMissCost(worstCaseMissCost);
+					cost.addFieldAccesses(1);
 				}
 			}
 		}
