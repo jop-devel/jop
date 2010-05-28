@@ -32,6 +32,15 @@ make java_app wcet P1=paper/trading/plain P2=com/sun/oss/trader P3=Main TARGET_J
 cp ${RESULT_FILE} ${RESULT_DIR}/order_manager.txt
 fi
 
+# The CDx (micro) benchmark
+#make java_app wcet P1=bench P2=scd_micro P3=Main WCET_METHOD="scd_micro.Motion.findIntersection(Lscd_micro/Motion)" \
+if [ $RUNCDX ] ; then
+make java_app wcet P1=bench P2=scd_micro P3=Main WCET_METHOD="measure" \
+  TARGET_JDK=jdk16mod \
+  WCET_OPTIONS="${WCET_OPTIONS}"
+cp java/target/wcet/scd_micro.Main_measure/ocache_eval.txt ocache_eval/scd_micro.txt
+fi
+
 # The TTPA benchmark
 if [ $RUNTTPA ] ; then
 echo "Running TTPA"
@@ -41,16 +50,7 @@ make java_app wcet P1=common P2=ttpa/demo P3=Main \
 # TODO: copy result file
 fi
 
-exit
-
-# The CDx (micro) benchmark
-#make java_app wcet P1=bench P2=scd_micro P3=Main WCET_METHOD="scd_micro.Motion.findIntersection(Lscd_micro/Motion)" \
-make java_app wcet P1=bench P2=scd_micro P3=Main WCET_METHOD="measure" \
-  TARGET_JDK=jdk16mod \
-  WCET_OPTIONS="${WCET_OPTIONS}"
-# TODO: copy result file
 exit;
-
 
 # Synthetic Benchmarks
 
