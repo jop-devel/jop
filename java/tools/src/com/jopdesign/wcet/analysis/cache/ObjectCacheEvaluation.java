@@ -63,7 +63,6 @@ public class ObjectCacheEvaluation {
 		}
 		public static Comparator<OCacheAnalysisResult> wayLineComperator() {
 			return new Comparator<OCacheAnalysisResult>() {				
-				@Override
 				public int compare(OCacheAnalysisResult arg0, OCacheAnalysisResult arg1) {
 					int cmpMode = arg0.mode.compareTo(arg1.mode);
 					int cmpWays = new Integer(arg0.ways).compareTo(arg1.ways);

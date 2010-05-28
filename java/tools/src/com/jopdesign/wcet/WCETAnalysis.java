@@ -57,9 +57,9 @@ import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo;
+import com.jopdesign.wcet.analysis.cache.ObjectCacheCost;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation;
 import com.jopdesign.wcet.analysis.cache.ObjectRefAnalysis;
-import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation.OCacheAnalysisResult;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation.OCacheMode;
 import com.jopdesign.wcet.config.Config;
@@ -406,7 +406,7 @@ public class WCETAnalysis {
 						oca = new ObjectCacheAnalysisDemo(project, jopconfig);
 
 						double cyclesPerAccess;
-						ObjectCacheCost ocCost = oca.computeCost(); 
+						ObjectCacheCost ocCost = oca.computeCost();
 						long cost = ocCost.getCost();
 						if(cost < bestCostPerConfig) bestCostPerConfig = cost;
 
@@ -422,7 +422,7 @@ public class WCETAnalysis {
 							ratio = (double)cost/(double)maxCost; 
 						}
 						cyclesPerAccess = (double)cost / (double)totalFieldAccesses ;						
-						if(cyclesPerAccess < bestCyclesPerAccessForConfig) bestCyclesPerAccessForConfig = cyclesPerAccess;
+						if(ways < 2 || cyclesPerAccess < bestCyclesPerAccessForConfig) bestCyclesPerAccessForConfig = cyclesPerAccess;
 
 						/* hit rate is defined as: 1 - (cache misses / accesses to cached fields (with n=0) */
 						double hitRate = (1 - ((double)ocCost.getCacheMissCount() / (double)cachedFieldAccesses));
