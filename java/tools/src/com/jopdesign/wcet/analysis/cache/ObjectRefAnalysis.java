@@ -283,16 +283,16 @@ public class ObjectRefAnalysis {
 		HashMap<SymbolicAddress, Map<CFGNode, Integer>> fieldAccessSets =
 			new HashMap<SymbolicAddress,Map<CFGNode, Integer>>();
 		Map<CFGNode,Long> costMap = new HashMap<CFGNode, Long>();
-
+		Map<CFGNode,Long> bypassCostMap = new HashMap<CFGNode, Long>();
 		/* Traverse vertex set.
 		 * Add vertex to access set of referenced addresses
 		 * For references whose type cannot be fully resolved, at a
 		 * cost of 1.
 		 */
 		// FIXME: We should deal with subtyping		
-		for(CFGNode n : sg.vertexSet()) {
+		for(CFGNode node : sg.vertexSet()) {
 			/* Compute cost for basic block */
-			BasicBlock bb = n.getBasicBlock();
+			BasicBlock bb = node.getBasicBlock();
 			if(bb == null) continue;
 			long bypassCost = 0;
 			long alwaysMissCost = 0;
@@ -300,13 +300,13 @@ public class ObjectRefAnalysis {
 			for(InstructionHandle ih : bb.getInstructions()) {
 				BoundedSet<SymbolicAddress> refs;
 
-				String handleType = getHandleType(project, n, ih); 				
+				String handleType = getHandleType(project, node, ih); 				
 				if(handleType == null) continue; /* No getfield/handle access */
 				
 				if(usedRefs.pointsTo.containsKey(ih)) {					
 					String fieldName = ((FieldInstruction)ih.getInstruction()).getFieldName(bb.cpg());
 					
-					if(! isFieldCached(n.getControlFlowGraph(), ih, maxCachedFieldIndex)) {
+					if(! isFieldCached(node.getControlFlowGraph(), ih, maxCachedFieldIndex)) {
 						bypassCost += costModel.getFieldAccessCostBypass();
 						continue;
 					}
@@ -316,15 +316,16 @@ public class ObjectRefAnalysis {
 						alwaysMissCost += costModel.getLoadCacheLineCost() + costModel.getLoadFieldCost();
 					} else {
 						for(SymbolicAddress ref : refs.getSet()) {
-							addAccessSite(refAccessSets, ref, n);
-							addAccessSite(fieldAccessSets, ref.access(fieldName), n);
+							addAccessSite(refAccessSets, ref, node);
+							addAccessSite(fieldAccessSets, ref.access(fieldName), node);
 						}
 					}
 				} else {
 					System.err.println("No DFA results for: "+ih.getInstruction() + " with field " + ((FieldInstruction)ih.getInstruction()).getFieldName(bb.cpg()));
 				}
 			}
-			costMap.put(n,bypassCost + alwaysMissCost);
+			bypassCostMap.put(node,bypassCost);
+			costMap.put(node,bypassCost + alwaysMissCost);
 		}
 		/* create an ILP graph for all reachable methods */
 		String key = "object_ref_analysis:"+scope.toString();
@@ -362,12 +363,14 @@ public class ObjectRefAnalysis {
 				//System.out.println("Used dvar: "+addr);
 			}
 		}
-		return extractCost(sg,costModel, cost,flowMap,refUseMap);
+		return extractCost(sg,costModel,cost,costMap,bypassCostMap,flowMap,refUseMap);
 	}
 
 	private ObjectCacheCost extractCost(SuperGraph sg,
 			ObjectCacheCostModel costModel,
 			long cost,
+			Map<CFGNode, Long> costMap, 
+			Map<CFGNode, Long> bypassCostMap, 
 			Map<CFGEdge, Long> edgeFlowMap,
 			Map<DecisionVariable, Boolean> refUseMap) {
 		
@@ -383,11 +386,14 @@ public class ObjectRefAnalysis {
 			Long nodeFreq = freqMap.get(node);
 			BasicBlock bb = node.getBasicBlock();
 			if(bb == null) continue;
+
+			long bbBypassCost = bypassCostMap.get(node);
+			bypassCost += bbBypassCost * nodeFreq;
+			missCost   += (costMap.get(node) - bbBypassCost) * nodeFreq;
 			for(InstructionHandle ih : bb.getInstructions()) {
 				String handleType = getHandleType(project, node, ih); 				
 				if(handleType == null) continue; /* No getfield/handle access */					
 				if(! isFieldCached(node.getControlFlowGraph(), ih, maxCachedFieldIndex)) {
-					bypassCost += costModel.getFieldAccessCostBypass() * nodeFreq;
 					bypassAccesses += nodeFreq;
 				} else {
 					fieldAccesses += nodeFreq; 
@@ -411,7 +417,8 @@ public class ObjectRefAnalysis {
 		}
 		if(missCost != cost - bypassCost) {
 			throw new AssertionError(
-					String.format("Error in calculating missCost: %d but should be %d",missCost,cost-bypassCost));
+					String.format("Error in calculating missCost in all fit-area (misscount = %d): %d but should be %d (%d - %d)",
+							missCount, missCost,cost-bypassCost,cost,bypassCost));
 		}
 
 		ObjectCacheCost ocCost = new ObjectCacheCost(missCount, missCost,bypassAccesses, bypassCost, fieldAccesses);
