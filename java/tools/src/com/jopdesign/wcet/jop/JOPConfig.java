@@ -39,23 +39,32 @@ public class JOPConfig {
 	public Long cpus;
 	public Long timeslot;
 	public File asmFile;
-	private int objectCacheAssociativity;
-	private boolean objectCacheFillLine;
-	private boolean objectCacheFieldTag;
-	private int objectCacheLineSize;
+
+	public int objectCacheAssociativity;	
+	public boolean objectCacheFillLine;
+	public boolean objectCacheFieldTag;
+	public int objectCacheLineSize;
+	public int objectCacheMaxBurst;
+	public long objectCacheAccessDelay;
+	public long objectCacheCyclesPerWord;
 
 	public JOPConfig(Project p) {
 		configData = p.getConfig();
 		this.asmFile = new File(configData.getOption(ASM_FILE));
+		
 		this.rws = configData.getOption(READ_WAIT_STATES).intValue();
 		this.wws = configData.getOption(WRITE_WAIT_STATES).intValue();
 		this.cmp = configData.getOption(MULTIPROCESSOR);
 		this.cpus = configData.getOption(CMP_CPUS);
 		this.timeslot = configData.getOption(CMP_TIMESLOT);
+		
 		this.objectCacheAssociativity = configData.getOption(OBJECT_CACHE_ASSOCIATIVITY).intValue();
 		this.objectCacheFillLine = configData.getOption(OBJECT_CACHE_LINE_FILL);
 		this.objectCacheFieldTag = false;
 		this.objectCacheLineSize = configData.getOption(OBJECT_CACHE_WORDS_PER_LINE).intValue();
+		this.objectCacheMaxBurst = configData.getOption(OBJECT_CACHE_MAX_BURST_LENGTH).intValue();
+		this.objectCacheAccessDelay = configData.getOption(OBJECT_CACHE_ACCESS_DELAY).longValue();
+		this.objectCacheCyclesPerWord = configData.getOption(OBJECT_CACHE_CYCLES_PER_WORD).longValue();
 	}
 	// FIXME: default values are fetched from WCETInstruction until transition to
 	// new timing system is complete
@@ -161,9 +170,9 @@ public class JOPConfig {
 		this.objectCacheLineSize = lineSize;
 	}
 	public long getObjectCacheAccessTime(int words) {
-		int  burstLength = configData.getOption(OBJECT_CACHE_MAX_BURST_LENGTH).intValue();
-		long delay       = configData.getOption(OBJECT_CACHE_ACCESS_DELAY).longValue();
-		long cyclesPerWord = configData.getOption(OBJECT_CACHE_CYCLES_PER_WORD).longValue();
+		int  burstLength = this.objectCacheMaxBurst;
+		long delay       = this.objectCacheAccessDelay;
+		long cyclesPerWord = this.objectCacheCyclesPerWord;
 		int fullBursts = words / burstLength;
 		int lastBurst  = words % burstLength;
 		long accessTime = delay + cyclesPerWord * lastBurst;

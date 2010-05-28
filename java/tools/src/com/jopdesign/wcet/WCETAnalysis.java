@@ -31,6 +31,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -54,8 +57,11 @@ import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo;
+import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation;
 import com.jopdesign.wcet.analysis.cache.ObjectRefAnalysis;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
+import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation.OCacheAnalysisResult;
+import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation.OCacheMode;
 import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.config.Option;
 import com.jopdesign.wcet.frontend.CallGraph.CallGraphNode;
@@ -351,75 +357,95 @@ public class WCETAnalysis {
 			 oStream = new ExecHelper.TeePrintStream(System.out, null);
 		}
 		ObjectCacheAnalysisDemo oca;
-		int[] cacheSizes = { 0,1,2,4,8,16,32, 64 }; // need to be in ascending order
+		int[][] configs = { 
+				{ 2,0,1 },  // sram,uni
+				{ 2,10,4},  // sdram,uni 
+				{ 17,0,1},  // sram, cmp8, s=2, tmax= 9*2-1 = 17
+				{ 2,153,4}  // sdram, cmp8 (4-word burst), s=18, tmax= 8*18 - 1 + 10 * 2*w = 153+2w
+			};
+		OCacheMode[] modes = { OCacheMode.WORD_FILL, OCacheMode.LINE_FILL, OCacheMode.SINGLE_FIELD };
+		List<OCacheAnalysisResult> samples = new ArrayList<OCacheAnalysisResult>();
+		int[] cacheWays = { 0,1,2,4,8,16,32, 64 }; // need to be in ascending order
 		int[] lineSizesObjCache  = { 1,2,4,8,16,32};
 		int[] lineSizesFieldCache = { 1 };
 		int[] lineSizes;
-		int[] modes = { 0,1,2 };
-		for(int mode : modes) {
-			long maxCost = 0;
-//			long cacheMisses = Long.MAX_VALUE;
-			String modeString;
-			lineSizes = lineSizesObjCache;
-			if(mode == 0) modeString = "fill-word";
-			else if(mode == 1) modeString = "fill-line";
-			else {
-				modeString = "field-as-tag";
-				lineSizes = lineSizesFieldCache;
-			}
-			boolean first = true;
-			for(int lineSize : lineSizes) {
-				/* We have to take field access count of cache size = 0; our analysis otherwise does not assign
-				 * sensible field access counts (thats the fault of the IPET method)
-				 */
-				long fieldAccesses = -1;					
-				double bestCyclesPerAccessForConfig = Double.POSITIVE_INFINITY;
-				long bestCostPerConfig = Long.MAX_VALUE;
-				// assume cacheSizes are in ascending oreder
-				for(int cacheSize : cacheSizes) {
-					boolean useFillLine = mode==1 && cacheSize>0; 
-					jopconfig.setObjectCacheAssociativity(cacheSize);
-					jopconfig.setObjectCacheFillLine(useFillLine);				
-					jopconfig.setObjectCacheFieldTag(mode==2);
-					jopconfig.setObjectCacheLineSize(lineSize);
-					oca = new ObjectCacheAnalysisDemo(project, jopconfig);
-															
-					double cyclesPerAccess;
-					ObjectCacheCost ocCost = oca.computeCost(); 
-					long cost = ocCost.getCost();
-					if(cost < bestCostPerConfig) bestCostPerConfig = cost;
-					
-					double bestRatio,ratio;
-					if(cacheSize == 0) { 
-						maxCost = cost; 
-						fieldAccesses = ocCost.getFieldAccesses();
+		for(int configId=0; configId < configs.length; configId++) {
+			int[] ocConfig = configs[configId];
+			jopconfig.objectCacheCyclesPerWord = ocConfig[0];
+			jopconfig.objectCacheAccessDelay = ocConfig[1];
+			jopconfig.objectCacheMaxBurst = ocConfig[2];
+			oStream.println("---------------------------------------------------------");
+			oStream.println("Object Cache Configuration: "+configId);
+			oStream.println("---------------------------------------------------------");
+			for(OCacheMode mode : modes) {
+				long maxCost = 0;
+				//			long cacheMisses = Long.MAX_VALUE;
+				String modeString;
+				lineSizes = lineSizesObjCache;
+				if(mode == OCacheMode.WORD_FILL) modeString = "fill-word";
+				else if(mode == OCacheMode.LINE_FILL) modeString = "fill-line";
+				else {
+					modeString = "field-as-tag";
+					lineSizes = lineSizesFieldCache;
+				}
+				boolean first = true;
+				for(int lineSize : lineSizes) {
+					/* We have to take field access count of cache size = 0; our analysis otherwise does not assign
+					 * sensible field access counts (thats the fault of the IPET method)
+					 */
+					long fieldAccesses = -1;					
+					double bestCyclesPerAccessForConfig = Double.POSITIVE_INFINITY;
+					long bestCostPerConfig = Long.MAX_VALUE;
+					// assume cacheSizes are in ascending order
+					for(int ways : cacheWays) {
+						boolean useFillLine = (mode==OCacheMode.LINE_FILL) && ways>0; 
+						jopconfig.setObjectCacheAssociativity(ways);
+						jopconfig.setObjectCacheFillLine(useFillLine);				
+						jopconfig.setObjectCacheFieldTag(mode == OCacheMode.SINGLE_FIELD);
+						jopconfig.setObjectCacheLineSize(lineSize);
+						oca = new ObjectCacheAnalysisDemo(project, jopconfig);
 
-						bestRatio = 1.0; 
-						ratio = 1.0;
-					} else  { 
-						bestRatio = (double)bestCostPerConfig/(double)maxCost;
-					    ratio = (double)cost/(double)maxCost; 
-					}
+						double cyclesPerAccess;
+						ObjectCacheCost ocCost = oca.computeCost(); 
+						long cost = ocCost.getCost();
+						if(cost < bestCostPerConfig) bestCostPerConfig = cost;
 
-					cyclesPerAccess = (double)cost / (double)fieldAccesses ;						
-					if(cyclesPerAccess < bestCyclesPerAccessForConfig) bestCyclesPerAccessForConfig = cyclesPerAccess;
-					
-					if(first) {
-						oStream.println(String.format("***** ***** MODE = %s ***** *****\n",modeString));
-						oStream.println(String.format(" - max tags accessed (upper bound) = %d, max fields accesses = %d",
-								oca.getMaxAccessedTags(project.getTargetMethod(), CallString.EMPTY), fieldAccesses)
-								);						
-						first = false;
-					}					
-					String report = String.format(" + Cycles Per Access [N=%3d,l=%2d]: %.2f (%d total cost, %.2f %% cost of no cache, %d bypass cost)", //, %.2f %% 'hitrate')", 
-							cacheSize, lineSize, bestCyclesPerAccessForConfig, cost, bestRatio*100, ocCost.getBypassCost());
-					if(bestCostPerConfig > cost) {
-						report += String.format(" # (analysis cost increased by %.2f %% for this associativity)",ratio*100);
+						double bestRatio,ratio;
+						if(ways == 0) { 
+							maxCost = cost; 
+							fieldAccesses = ocCost.getFieldAccesses();
+
+							bestRatio = 1.0; 
+							ratio = 1.0;
+						} else  { 
+							bestRatio = (double)bestCostPerConfig/(double)maxCost;
+							ratio = (double)cost/(double)maxCost; 
+						}
+
+						cyclesPerAccess = (double)cost / (double)fieldAccesses ;						
+						if(cyclesPerAccess < bestCyclesPerAccessForConfig) bestCyclesPerAccessForConfig = cyclesPerAccess;
+						long hitRate = 0;
+						if(first) {
+							oStream.println(String.format("***** ***** MODE = %s ***** *****\n",modeString));
+							oStream.println(String.format(" - max tags accessed (upper bound) = %d, max fields accesses = %d",
+									oca.getMaxAccessedTags(project.getTargetMethod(), CallString.EMPTY), fieldAccesses)
+							);						
+							first = false;
+						}					
+						String report = String.format(" + Cycles Per Access [N=%3d,l=%2d]: %.2f (%d total cost, %.2f %% cost of no cache, %d bypass cost)", //, %.2f %% 'hitrate')", 
+								ways, lineSize, bestCyclesPerAccessForConfig, cost, bestRatio*100, ocCost.getBypassCost());
+						if(bestCostPerConfig > cost) {
+							report += String.format(" # (analysis cost increased by %.2f %% for this associativity)",ratio*100);
+						}
+						oStream.println(report);
+						OCacheAnalysisResult sample =
+							new ObjectCacheEvaluation.OCacheAnalysisResult(mode, ways, lineSize, configId, hitRate, bestCyclesPerAccessForConfig);
+						samples.add(sample);
 					}
-					oStream.println(report);
 				}
 			}
 		}
+		OCacheAnalysisResult.dumpLatex(samples, System.out);
 	} 
 	
 	private void testExactAllFit() {
