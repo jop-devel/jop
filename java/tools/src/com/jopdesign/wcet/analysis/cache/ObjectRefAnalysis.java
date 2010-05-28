@@ -160,6 +160,9 @@ public class ObjectRefAnalysis {
 	/* The maximum index for cached fields */
 	private int maxCachedFieldIndex;
 
+	/* Whether line is filled on cache miss */
+	private boolean fillLine;
+
 	/* Whether to use a 'single field' cache, i.e., use fields as tags */
 	private boolean fieldAsTag;
 
@@ -178,12 +181,13 @@ public class ObjectRefAnalysis {
 
 
 	private Project project;
-	private Map<DecisionVariable, SymbolicAddress> decisionVariables =
-		new HashMap<DecisionVariable, SymbolicAddress>();
+	private Map<DecisionVariable, SymbolicAddress> decisionVariables;
+	private Set<DecisionVariable> refDecisions;
 
 
-	public ObjectRefAnalysis(Project p,  boolean fieldAsTag, int maxCachedIndex, int setSize) {
+	public ObjectRefAnalysis(Project p,  boolean fillLine, boolean fieldAsTag, int maxCachedIndex, int setSize) {
 		this.project = p;
+		this.fillLine = fillLine;
 		this.fieldAsTag = fieldAsTag;
 		this.maxSetSize = setSize;
 		this.maxCachedFieldIndex = maxCachedIndex;
@@ -326,13 +330,15 @@ public class ObjectRefAnalysis {
 		String key = "object_ref_analysis:"+scope.toString();
 		ILPModelBuilder imb = new ILPModelBuilder(new IpetConfig(project.getConfig()));
 		MaxCostFlow<CFGNode, CFGEdge> maxCostFlow = imb.buildGlobalILPModel(key, sg, new MapCostProvider<CFGNode>(costMap,0));
-
+		this.decisionVariables = new HashMap<DecisionVariable, SymbolicAddress>();
+		this.refDecisions = new HashSet<DecisionVariable>();
+		
 		/* Add decision variables for all tags */		
 		for(Entry<SymbolicAddress, Map<CFGNode, Integer>> accessEntry : refAccessSets.entrySet()) {
-			addDecision(sg, maxCostFlow, accessEntry, costModel.getLoadCacheLineCost());
+			addDecision(sg, maxCostFlow, accessEntry, costModel.getLoadCacheLineCost(),true);
 		}
 		for(Entry<SymbolicAddress, Map<CFGNode, Integer>> accessEntry : fieldAccessSets.entrySet()) {
-			addDecision(sg, maxCostFlow, accessEntry, costModel.getLoadFieldCost());
+			addDecision(sg, maxCostFlow, accessEntry, costModel.getLoadFieldCost(), false);
 		}
 
 		/* solve */
@@ -365,9 +371,11 @@ public class ObjectRefAnalysis {
 			Map<CFGEdge, Long> edgeFlowMap,
 			Map<DecisionVariable, Boolean> refUseMap) {
 		
+		long missCount = 0;  /* miss count */
+		long missCost = 0;   /* has to be equal to (cost - bypass cost) */
+		long bypassAccesses = 0; /* bypassed fields accesses */
+		long fieldAccesses = 0; /* cached fields accessed */
 		long bypassCost = 0; /* All object accesses * bypass cost */
-		long missCost = 0;   /* cost - bypass cost */
-		long fieldAccesses = 0; /* fields accessed */
 		Map<CFGNode, Long> freqMap = RecursiveWcetAnalysis.edgeToNodeFlow(sg, edgeFlowMap);
 		
 		for(CFGNode node : freqMap.keySet()) {
@@ -380,12 +388,33 @@ public class ObjectRefAnalysis {
 				if(handleType == null) continue; /* No getfield/handle access */					
 				if(! isFieldCached(node.getControlFlowGraph(), ih, maxCachedFieldIndex)) {
 					bypassCost += costModel.getFieldAccessCostBypass() * nodeFreq;
+					bypassAccesses += nodeFreq;
+				} else {
+					fieldAccesses += nodeFreq; 
 				}
-				fieldAccesses += nodeFreq; 
 			}
 		}
-		missCost = cost - bypassCost;
-		ObjectCacheCost ocCost = new ObjectCacheCost(missCost, bypassCost, fieldAccesses);
+		/* for each decision variable, there is an associated cost; moreover:
+		 * fill-word & single-field: missCount = field decision variables which are true
+		 * fill-line: missCount = ref   decision variables which are true
+		 */
+		for(Entry<DecisionVariable, Boolean> entry : refUseMap.entrySet()) {
+			DecisionVariable dvar = entry.getKey();
+			if(! entry.getValue()) continue;
+			if(refDecisions.contains(dvar)) {
+				missCost += costModel.getLoadCacheLineCost();
+				if(this.fillLine) missCount += 1;
+			} else {
+				missCost += costModel.getLoadFieldCost();
+				if(! this.fillLine) missCount += 1;
+			}
+		}
+		if(missCost != cost - bypassCost) {
+			throw new AssertionError(
+					String.format("Error in calculating missCost: %d but should be %d",missCost,cost-bypassCost));
+		}
+
+		ObjectCacheCost ocCost = new ObjectCacheCost(missCount, missCost,bypassAccesses, bypassCost, fieldAccesses);
 		return ocCost;
 	}
 
@@ -422,11 +451,14 @@ public class ObjectRefAnalysis {
 	/* ------- */
 	private void addDecision(
 			SuperGraph sg, MaxCostFlow<CFGNode,CFGEdge> maxCostFlow, Entry<SymbolicAddress, Map<CFGNode, Integer>> accessEntry,
-			long varCost) {
-		SymbolicAddress ref = accessEntry.getKey();
+			long varCost, boolean isRefDecision) {
+		SymbolicAddress refOrField = accessEntry.getKey();
 		Map<CFGNode, Integer> accessSet = accessEntry.getValue();
-		DecisionVariable dvar = maxCostFlow.createDecisionVariable();				
-		decisionVariables .put(dvar,ref);
+		DecisionVariable dvar = maxCostFlow.createDecisionVariable();
+		
+		if(isRefDecision) this.refDecisions.add(dvar);
+		this.decisionVariables.put(dvar,refOrField);
+		
 		maxCostFlow.addDecisionCost(dvar, varCost);
 		/* dvar <= sum(i `in` I) frequency(b_i) */
 		LinearVector<CFGEdge> ub = new LinearVector<CFGEdge>();
@@ -483,7 +515,7 @@ public class ObjectRefAnalysis {
 		Project p = cfg.getAppInfo().getProject();
 		int index = ObjectRefAnalysis.getFieldIndex(p, cfg,ih);
 		
-		/* Uncached fields are treated separately */
+		/* Uncached fields are treated separately */ 
 		return (index <= maxCachedFieldIndex);
 	}
 

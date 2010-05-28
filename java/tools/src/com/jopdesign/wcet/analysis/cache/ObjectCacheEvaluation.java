@@ -49,7 +49,7 @@ public class ObjectCacheEvaluation {
 		 * @param bestCyclesPerAccessForConfig
 		 */
 		public OCacheAnalysisResult(OCacheMode mode, int ways, int lineSize,
-				                    int configId, long hitRate,
+				                    int configId, double hitRate,
 				                    double cyclesPerAccess) {
 			this.mode = mode;
 			this.ways = ways;

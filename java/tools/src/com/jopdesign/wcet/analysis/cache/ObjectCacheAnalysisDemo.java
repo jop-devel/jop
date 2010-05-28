@@ -49,64 +49,82 @@ public class ObjectCacheAnalysisDemo {
 		private long missCost;
 		private long bypassCost;
 		private long fieldAccesses;
+		private long bypassAccesses;
+		private long missCount;
 
 		/**
 		 * @param missCost2
 		 * @param bypassCost2
 		 * @param fieldAccesses2
 		 */
-		public ObjectCacheCost(long missCost, long bypassCost, long fieldAccesses) {
+		public ObjectCacheCost(long missCount, long missCost, long bypassAccesses, long bypassCost, long fieldAccesses) {
 			this.missCost = missCost;
 			this.bypassCost = bypassCost;
 			this.fieldAccesses = fieldAccesses;
+			this.missCount = missCount;
+			this.bypassAccesses = bypassAccesses;
 		}
 
 		public ObjectCacheCost() {
-			this(0,0,0);
+			this(0,0,0,0,0);
 		}
 
 		public long getCost()
 		{
 			return missCost + bypassCost;
 		}
+		
+		public long getBypassCost() { return bypassCost; }
+		public long getBypassAccesses() { return this.bypassAccesses; }
+		
+		public void addBypassCost(long bypassCost, int accesses) {
+			this.bypassCost += bypassCost;
+			this.bypassAccesses += accesses;			
+		}
 
-		public void addFieldAccesses(long additionalFAs) {
+		public ObjectCacheCost addMissCost(long missCost, int missCount) {
+			this.missCost += missCost;
+			this.missCount += missCount;
+			return this;
+		}
+		
+		/* addition field accesses either hit or miss (but not bypass) */
+		public void addAccessToCachedField(long additionalFAs) {
 			fieldAccesses += additionalFAs;
 		}
 
-		public long getFieldAccesses()
+		public long getTotalFieldAccesses()
+		{
+			return bypassAccesses + fieldAccesses;
+		}
+		
+		public long getFieldAccessesWithoutBypass()
 		{
 			return fieldAccesses;
 		}
+		/* cache miss count */
+		public long getCacheMissCount() {
+			return missCount;
+		}
 
 		public void addCost(ObjectCacheCost occ) {
+			this.missCount += occ.missCount;
 			this.missCost += occ.missCost;
+			this.bypassAccesses += occ.bypassAccesses;
 			this.bypassCost += occ.bypassCost;
-			addFieldAccesses(occ.fieldAccesses);
+			addAccessToCachedField(occ.fieldAccesses);
 		}
 		
-		/**
-		 * @param worstCaseMissCost
-		 */
-		public ObjectCacheCost addBypassCost(long bypassCost) {
-			this.bypassCost+=bypassCost;
-			return this;
-		}
-		public long getBypassCost() { return bypassCost; }
-		/**
-		 * @param worstCaseMissCost
-		 */
-		public ObjectCacheCost addMissCost(long missCost) {
-			this.missCost += missCost;
-			return this;
-		}
 		public String toString() {
 			return String.format("%d [miss=%d,bypass=%d,accesses=%d]",getCost(),this.missCost,this.bypassCost,this.fieldAccesses);
 		}
 
 		public ObjectCacheCost times(Long value) {
-			return new ObjectCacheCost(missCost * value, bypassCost * value, fieldAccesses * value);
+			return new ObjectCacheCost(missCount * value, missCost * value,
+					                   bypassAccesses * value, bypassCost * value,
+					                   fieldAccesses * value);
 		}
+
 	}
 	
 	public class RecursiveOCacheAnalysis extends
@@ -183,15 +201,14 @@ public class ObjectCacheAnalysisDemo {
 			}
 			for(InstructionHandle ih : n.getBasicBlock().getInstructions()) {
 				if(null == ObjectRefAnalysis.getHandleType(project, n, ih)) continue;
-				if(! ObjectRefAnalysis.isFieldCached(n.getControlFlowGraph(), ih, jopconfig.getObjectLineSize()-1)) {
-					cost.addBypassCost(worstCaseMissCost);
-					cost.addFieldAccesses(1);
+				if(! ObjectRefAnalysis.isFieldCached(n.getControlFlowGraph(), ih, jopconfig.getObjectCacheMaxCachedFieldIndex())) {
+					cost.addBypassCost(worstCaseMissCost,1);
 				} else {
-					cost.addMissCost(worstCaseMissCost);
-					cost.addFieldAccesses(1);
+					cost.addMissCost(worstCaseMissCost,1);
+					cost.addAccessToCachedField(1); 
 				}
 			}
-		}
+		} 
 
 		public void visitInvokeNode(InvokeNode n) {
 			visitBasicBlockNode(n);
@@ -248,12 +265,8 @@ public class ObjectCacheAnalysisDemo {
 	public ObjectCacheAnalysisDemo(Project p, JOPConfig jopconfig) {
 		this.project = p;
 		this.jopconfig = jopconfig;
-		if(jopconfig.objectCacheSingleField()) {
-			this.maxCachedFieldIndex =  Integer.MAX_VALUE;			
-		} else {
-			this.maxCachedFieldIndex =  jopconfig.getObjectLineSize() - 1;
-		}
-		this.objRefAnalysis = new ObjectRefAnalysis(project, jopconfig.objectCacheSingleField(), maxCachedFieldIndex, DEFAULT_SET_SIZE);
+		this.maxCachedFieldIndex = jopconfig.getObjectCacheMaxCachedFieldIndex();
+		this.objRefAnalysis = new ObjectRefAnalysis(project, jopconfig.objectCacheFillLine, jopconfig.objectCacheSingleField(), maxCachedFieldIndex, DEFAULT_SET_SIZE);
 		this.costModel = getCostModel();		
 	}
 	

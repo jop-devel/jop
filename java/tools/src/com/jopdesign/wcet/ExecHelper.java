@@ -42,31 +42,26 @@ import com.jopdesign.wcet.config.Config.BadConfigurationException;
  *
  */
 public class ExecHelper {
-	/* Idea adopted from the Java Cookbook */
-	public static class TeePrintStream extends OutputStream {
+	/* Idea adopted from the Java Cookbook; warning: did not override all methods */
+	public static class TeePrintStream extends PrintStream {
 
-		private PrintStream p1;
 		private PrintStream p2;
 
 		public TeePrintStream(PrintStream p1, PrintStream p2) {
-			this.p1 = p1;
+			super(p1);
 			this.p2 = p2;
 		}
 
 		@Override
-		public void write(int c) throws IOException {
-			p1.write(c);
-			if(p2 != null) p2.write(c);
-		}
-		public void println(String s) {
-			try {
-				for(int i = 0; i < s.length(); i++) {
-					write(s.charAt(i));				
-				}
-				write('\n');
-			} catch (IOException e) {
-				throw new Error("Fatal Error: println failed");
+		public void print(String s) {
+			for(int i = 0; i < s.length(); i++) {
+				super.write(s.charAt(i));				
+				p2.write(s.charAt(i));
 			}
+		}
+		@Override
+		public void println(String s) {
+			print(s+"\n");
 		}
 		
 	}

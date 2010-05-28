@@ -393,7 +393,7 @@ public class WCETAnalysis {
 					/* We have to take field access count of cache size = 0; our analysis otherwise does not assign
 					 * sensible field access counts (thats the fault of the IPET method)
 					 */
-					long fieldAccesses = -1;					
+					long totalFieldAccesses = -1, cachedFieldAccesses = -1;
 					double bestCyclesPerAccessForConfig = Double.POSITIVE_INFINITY;
 					long bestCostPerConfig = Long.MAX_VALUE;
 					// assume cacheSizes are in ascending order
@@ -413,25 +413,28 @@ public class WCETAnalysis {
 						double bestRatio,ratio;
 						if(ways == 0) { 
 							maxCost = cost; 
-							fieldAccesses = ocCost.getFieldAccesses();
-
+							totalFieldAccesses = ocCost.getTotalFieldAccesses();
+							cachedFieldAccesses = ocCost.getFieldAccessesWithoutBypass();
 							bestRatio = 1.0; 
 							ratio = 1.0;
 						} else  { 
 							bestRatio = (double)bestCostPerConfig/(double)maxCost;
 							ratio = (double)cost/(double)maxCost; 
 						}
-
-						cyclesPerAccess = (double)cost / (double)fieldAccesses ;						
+						cyclesPerAccess = (double)cost / (double)totalFieldAccesses ;						
 						if(cyclesPerAccess < bestCyclesPerAccessForConfig) bestCyclesPerAccessForConfig = cyclesPerAccess;
-						long hitRate = 0;
+
+						/* hit rate is defined as: 1 - (cache misses / accesses to cached fields (with n=0) */
+						double hitRate = (1 - ((double)ocCost.getCacheMissCount() / (double)cachedFieldAccesses));
+						
 						if(first) {
 							oStream.println(String.format("***** ***** MODE = %s ***** *****\n",modeString));
 							oStream.println(String.format(" - max tags accessed (upper bound) = %d, max fields accesses = %d",
-									oca.getMaxAccessedTags(project.getTargetMethod(), CallString.EMPTY), fieldAccesses)
+									oca.getMaxAccessedTags(project.getTargetMethod(), CallString.EMPTY), totalFieldAccesses)
 							);						
 							first = false;
 						}					
+						
 						String report = String.format(" + Cycles Per Access [N=%3d,l=%2d]: %.2f (%d total cost, %.2f %% cost of no cache, %d bypass cost)", //, %.2f %% 'hitrate')", 
 								ways, lineSize, bestCyclesPerAccessForConfig, cost, bestRatio*100, ocCost.getBypassCost());
 						if(bestCostPerConfig > cost) {
@@ -445,7 +448,7 @@ public class WCETAnalysis {
 				}
 			}
 		}
-		OCacheAnalysisResult.dumpLatex(samples, System.out);
+		OCacheAnalysisResult.dumpLatex(samples, oStream);
 	} 
 	
 	private void testExactAllFit() {

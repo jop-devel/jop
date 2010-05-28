@@ -166,6 +166,12 @@ public class JOPConfig {
 	public int getObjectLineSize() {
 		return objectCacheLineSize;
 	}
+	
+	public int getObjectCacheMaxCachedFieldIndex() {
+		if(this.objectCacheSingleField()) return Integer.MAX_VALUE;
+		else return objectCacheLineSize - 1;
+	}
+	
 	public void setObjectCacheLineSize(int lineSize) {
 		this.objectCacheLineSize = lineSize;
 	}
