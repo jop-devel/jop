@@ -19,7 +19,6 @@ add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_cpu__0/cp
 add wave -noupdate -divider {core0 bcfetch interrupt}
 add wave -noupdate -format Logic /tb_jop/joptop/gen_cpu__0/cpu/core/bcf/exc_pend
 add wave -noupdate -format Logic /tb_jop/joptop/gen_cpu__0/cpu/core/bcf/exc_taken
-add wave -noupdate -format Logic /tb_jop/joptop/io/sys/exc_hw_dis
 add wave -noupdate -divider core1
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_cpu__1/cpu/core/bcf/jpc
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_cpu__1/cpu/core/bcf/bc/val
