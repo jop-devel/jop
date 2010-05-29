@@ -541,7 +541,7 @@ download:
 #		$(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
 #
 #	this is the download version with down.exe
-	down $(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
+	./down $(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
 
 #
 #	flash programming
