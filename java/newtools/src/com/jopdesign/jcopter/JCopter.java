@@ -18,10 +18,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common;
+package com.jopdesign.jcopter;
+
+import com.jopdesign.common.AppSetup;
 
 /**
- * @author Stefan Hepp (stefan@stefant.org)
+ * User: Stefan Hepp (stefan@stefant.org)
+ * Date: 18.05.2010
  */
-public class MethodInfo {
+public class JCopter {
+
+    public static void main(String[] args) {
+
+        AppSetup setup = new AppSetup(args);
+
+        // Setup options, ..
+
+        // parse options and config, load application classes
+
+        // run WCET + DFA
+
+        // run optimizations
+
+        // write results
+        
+    }
 }

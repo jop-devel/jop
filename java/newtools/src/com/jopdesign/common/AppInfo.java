@@ -20,8 +20,24 @@
 
 package com.jopdesign.common;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
+ *
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class MethodInfo {
+public class AppInfo {
+
+    Map<String,ClassInfo> classes;
+
+    public AppInfo() {
+        classes = new HashMap<String, ClassInfo>();
+    }
+
+    public ClassInfo getClassInfo(String fqn) {
+        return classes.get(fqn);
+    }
+    
 }

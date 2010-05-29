@@ -2,6 +2,7 @@
  * This file is part of JOP, the Java Optimized Processor
  *   see <http://www.jopdesign.com/>
  *
+ * Copyright (C) 2008, Benedikt Huber (benedikt.huber@gmail.com)
  * Copyright (C) 2010, Stefan Hepp (stefan@stefant.org).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,11 +18,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-package com.jopdesign.common;
+package com.jopdesign.common.config;
 
 /**
- * @author Stefan Hepp (stefan@stefant.org)
+ * @author Benedikt Huber <benedikt.huber@gmail.com>
+ * @author Stefan Hepp <stefan@stefant.org>
  */
-public class MethodInfo {
+public class StringOption extends Option<String> {
+
+	public StringOption(String key, String descr, boolean optional) {
+		super(key, String.class, descr, optional);
+	}
+
+	public StringOption(String key, String descr, String def) {
+		super(key,descr,def);
+	}
+
+	public String parse(String s) {
+        return s.trim();
+    }
+
+	public StringOption mandatory() {
+		return new StringOption(key, description,false);
+	}
 }

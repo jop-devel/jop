@@ -2,6 +2,7 @@
  * This file is part of JOP, the Java Optimized Processor
  *   see <http://www.jopdesign.com/>
  *
+ * Copyright (C) 2008, Benedikt Huber (benedikt.huber@gmail.com)
  * Copyright (C) 2010, Stefan Hepp (stefan@stefant.org).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,15 +18,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-package com.jopdesign.common;
+package com.jopdesign.common.config;
 
 /**
- * User: Stefan Hepp (stefan@stefant.org)
- * Date: 18.05.2010
+ * @author Benedikt Huber <benedikt.huber@gmail.com>
+ * @author Stefan Hepp <stefan@stefant.org>
  */
-public class AppStruct {
-    public AppStruct() {
-    }
+public class IntOption extends Option<Long> {
+
+	public IntOption(String key, String descr, boolean optional) {
+		super(key, Long.class, descr, optional);
+	}
+
+	public IntOption(String key, String descr, long i) {
+		super(key, descr, i);
+	}
     
+	@Override
+	public Long parse(String s) throws IllegalArgumentException {
+		return Long.parseLong(s);
+	}
 }

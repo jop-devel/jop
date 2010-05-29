@@ -20,9 +20,42 @@
 
 package com.jopdesign.common;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
- * User: Stefan Hepp (stefan@stefant.org)
- * Date: 18.05.2010
+ * 
+ * @author Stefan Hepp (stefan@stefant.org)
  */
 public class ClassInfo {
+
+    private Map<String,CustomClassInfo> customMap;
+    private AppInfo appInfo;
+
+    public ClassInfo(AppInfo appInfo) {
+        this.appInfo = appInfo;
+        // TODO maybe store in a single hashmap in AppInfo, more memory-efficient?
+        customMap = new HashMap<String, CustomClassInfo>();
+    }
+
+    public CustomClassInfo clearCustomInfo(String key) {
+        return customMap.remove(key);
+    }
+
+    public CustomClassInfo setCustomInfo(String key, CustomClassInfo customInfo) {
+        // We could use generics here, and even use customInfo.class as key, but
+        // 1) using class as key makes it impossible to attach the same CustomInfo class
+        //    with different values multiple times,
+        // 2) using generics like 'public <T extends CustomClassInfo> T getCustomInfo() .. ' does
+        //    not work since Java removes the generics type-info at compile-time, its not possible
+        //    to access T.class or do 'instanceof T' or even 'try { return (T) value; } catch (Exception e) ..',
+        //    therefore a possible type conflict must always(!) be handled at the callsite, so we may as well make
+        //    the cast explicit at the callsite.
+
+        return customMap.put(key, customInfo);
+    }
+
+    public CustomClassInfo getCustomInfo(String key) {
+        return customMap.get(key);
+    }
 }

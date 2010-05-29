@@ -23,5 +23,5 @@ package com.jopdesign.common;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class MethodInfo {
+public interface CustomClassInfo {
 }
