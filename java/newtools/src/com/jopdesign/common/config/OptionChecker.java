@@ -21,7 +21,12 @@
 package com.jopdesign.common.config;
 
 /**
+ * This defines an interface for classes used to check the correctness of a set of options.
+ * The default implementation is {@link com.jopdesign.common.config.BasicOptionChecker} which
+ * checks if all required options are given.
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public interface OptionChecker {
+    
 }

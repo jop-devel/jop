@@ -26,6 +26,9 @@ package com.jopdesign.common.config;
  */
 public class IntOption extends Option<Long> {
 
+    private long minValue = Long.MIN_VALUE;
+    private long maxValue = Long.MAX_VALUE;
+
 	public IntOption(String key, String descr, boolean optional) {
 		super(key, Long.class, descr, optional);
 	}
@@ -33,9 +36,24 @@ public class IntOption extends Option<Long> {
 	public IntOption(String key, String descr, long i) {
 		super(key, descr, i);
 	}
-    
+
+    public IntOption setMinMax(long min, long max) {
+        minValue = min;
+        maxValue = max;
+        return this;
+    }
+
 	@Override
 	public Long parse(String s) throws IllegalArgumentException {
-		return Long.parseLong(s);
+        long val;
+        try {
+            val = Long.parseLong(s);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid number format '" + s + '"', e);
+        }
+        if ( val < minValue || val > maxValue ) {
+            throw new IllegalArgumentException("Value out of range (min: "+ minValue+", max: "+maxValue+")");
+        }
+        return val;
 	}
 }

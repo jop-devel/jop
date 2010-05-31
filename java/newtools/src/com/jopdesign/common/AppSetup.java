@@ -32,12 +32,11 @@ public class AppSetup {
 
     private Config config;
     private AppInfo appInfo;
-    private String[] args;
 
 
-    public AppSetup(String[] args) {
-        this.args = args;
+    public AppSetup() {
         config = new Config();
+        config.getOptions().addOptions(Config.standardOptions);
     }
 
     public Config getConfig() {

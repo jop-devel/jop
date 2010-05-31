@@ -21,6 +21,9 @@
 package com.jopdesign.common.config;
 
 /**
+ * Option class for a single boolean option.
+ * This class is handled a bit different by the option-parser.
+ *
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  * @author Stefan Hepp <stefan@stefant.org>
  */
@@ -30,9 +33,15 @@ public class BoolOption extends Option<Boolean> {
 		super(key, Boolean.class, descr, false);
 	}
 
-	public BoolOption(String key, String descr, boolean def) {
+    public BoolOption(String key, String descr, boolean def) {
 		super(key,descr,def);
 	}
+
+    public BoolOption(String key, String descr, char shortKey, boolean skipChecks) {
+        this(key, descr, false);
+        this.shortKey = shortKey;
+        this.skipChecks = skipChecks;
+    }
 
 	public Boolean parse(String s) throws IllegalArgumentException {
 		String sl = s.toLowerCase();

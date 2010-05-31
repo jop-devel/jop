@@ -33,11 +33,11 @@ public abstract class Option<T> {
 
     public static final char SHORT_NONE = ' ';
 
-	protected String key;
-    protected char shortKey = SHORT_NONE;
-    protected String description;
-
+	protected String  key;
+    protected char    shortKey = SHORT_NONE;
+    protected String  description;
     protected boolean optional;
+
     /**
      * If an option with this flag is set, OptionChecker is not executed (for flags like 'help' or 'version').
      */

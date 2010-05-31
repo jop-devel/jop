@@ -30,7 +30,7 @@ public class JCopter {
 
     public static void main(String[] args) {
 
-        AppSetup setup = new AppSetup(args);
+        AppSetup setup = new AppSetup();
 
         // Setup options, ..
 

@@ -2,6 +2,7 @@
  * This file is part of JOP, the Java Optimized Processor
  *   see <http://www.jopdesign.com/>
  *
+ * Copyright (C) 2008, Benedikt Huber (benedikt.huber@gmail.com)
  * Copyright (C) 2010, Stefan Hepp (stefan@stefant.org).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -20,8 +21,206 @@
 
 package com.jopdesign.common.config;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
+import java.util.Properties;
+
 /**
+ * @author Benedikt Huber <benedikt.huber@gmail.com>
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class Config {
+
+    /* Options which are always present */
+    public static final BoolOption SHOW_HELP =
+            new BoolOption("help", "show help", 'h', true);
+
+    public static final BoolOption SHOW_VERSION =
+            new BoolOption("version","get version number", Option.SHORT_NONE, true);
+
+    public static final BoolOption DEBUG =
+            new BoolOption("debug","verbose debugging mode", Option.SHORT_NONE, true);
+
+    public static final Option<?> standardOptions[] = { SHOW_HELP, SHOW_VERSION, DEBUG };
+    
+
+    /*
+	 * Singleton
+	 * ~~~~~~~~~
+	 */
+	private static Config theConfig = null;
+	public static Config instance() {
+		if(theConfig == null) theConfig = new Config();
+		return theConfig;
+	}
+
+	/*
+	 * Exception classes
+	 * ~~~~~~~~~~~~~~~~~
+	 */
+	public static class MissingConfigurationException extends Exception {
+		private static final long serialVersionUID = 1L;
+		public MissingConfigurationException(String msg) { super(msg); }
+	}
+
+    public static class BadConfigurationError extends Error {
+		private static final long serialVersionUID = 1L;
+		public BadConfigurationError(String msg) { super(msg); }
+
+        public BadConfigurationError(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    public static class BadConfigurationException extends Exception {
+		private static final long serialVersionUID = 1L;
+		public BadConfigurationException(String message) {
+			super(message);
+		}
+		public BadConfigurationException(String message, Exception e) {
+			super(message,e);
+		}
+	}
+
+    private Properties defaultProps, props;
+    private OptionGroup options;
+
+    public Config() {
+        this.defaultProps = null;
+        props = new Properties();
+        options = new OptionGroup(this);
+    }
+
+    public Config(Properties defaultProps) {
+        this.defaultProps = defaultProps;
+        props = new Properties(defaultProps);
+        options = new OptionGroup(this);
+    }
+
+    public OptionGroup getOptions() {
+        return options;
+    }
+
+    public Properties getProperties() {
+        return props;
+    }
+
+    /**
+     * Load a configuration.
+     * @param propStream an open InputStream serving the properties
+     * @throws java.io.IOException if loading fails.
+     */
+    public void loadConfig(InputStream propStream) throws IOException {
+        Properties p = new Properties();
+        p.load(propStream);
+        props.putAll(p);
+    }
+
+    /**
+     * Parse configuration options.
+     *
+     * @see com.jopdesign.common.config.OptionGroup#consumeOptions(String[])
+     * @param args arguments to parse
+     * @return string-arguments after the last known argument.
+     * @throws BadConfigurationException if arguments or current properties cannot be parsed.
+     */
+    public String[] parseArguments(String[] args) throws BadConfigurationException {
+        return options.consumeOptions(args);
+    }
+
+    /**
+     * Check all options for correctness (missing required options, if options can be parsed, .. ).
+     *
+     * @throws BadConfigurationException if an option is missing or cannot be parsed.
+     */
+    public void checkOptions() throws BadConfigurationException {
+        options.checkOptions();
+    }
+
+    /**
+     * Set a new set of default values, replaces the old default values.
+     * @param defaultProps the new default values.
+     */
+    public void setDefaults(Properties defaultProps) {
+        this.defaultProps = defaultProps;
+
+        Properties oldProps = props;
+        props = new Properties(defaultProps);
+        props.putAll(oldProps);
+    }
+
+    public void clearValues() {
+        props.clear();
+    }
+
+    /**
+     * Set a new value for a key.
+     *
+     * @param key the key to of the value to set.
+     * @param value the new value to set.
+     * @param setDefault if true, set the default value instead of the value.
+     * @return the old value or old default value.
+     */
+    public String setProperty(String key, String value, boolean setDefault) {
+        Object val;
+        if ( setDefault ) {
+            val = defaultProps.setProperty(key, value);
+        } else {
+            val = props.setProperty(key, value);
+        }
+        return val != null ? val.toString() : null;
+    }
+
+    public String setProperty(String key, String value) {
+        return setProperty(key, value, false);
+    }
+
+    /**
+     * Check if a key is set (ignoring default options).
+     *
+     * @see #isPresent(String)
+     * @param key the key of the property to check.
+     * @return true if set.
+     */
+    public boolean isSet(String key) {
+        return props.containsKey(key);
+    }
+
+    /**
+     * Check if a key is set or has a default value.
+     *
+     * @see #isSet(String)
+     * @param key the key of the property to check.
+     * @return true if it has a value or default not equal to null.
+     */
+    public boolean isPresent(String key) {
+        return props.getProperty(key) != null;
+    }
+
+    public String getValue(String key) {
+        return props.getProperty(key);
+    }
+
+    public String getValue(String key, String defaultVal) {
+        return props.getProperty(key, defaultVal);
+    }
+
+    /**
+     * Dump configuration of all set properties for debugging purposes.
+     * To print a list of all options with their values,
+     * use {@link com.jopdesign.common.config.OptionGroup#dumpConfiguration(int)}.
+     *  
+     * @param indent indent used for keys
+     * @return a dump of all options with their respective values.
+     */
+    public String dumpConfiguration(int indent) {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<Object,Object> e : props.entrySet()) {
+            sb.append(String.format("%"+indent+"s%-20s ==> %s\n", "", e.getKey(),
+                      e.getValue() == null ? "<not set>": e.getValue()));
+        }
+        return sb.toString();
+    }
+
 }
