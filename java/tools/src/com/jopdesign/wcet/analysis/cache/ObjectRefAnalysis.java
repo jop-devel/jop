@@ -33,6 +33,7 @@ import com.jopdesign.dfa.framework.DFAAppInfo;
 import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
+import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
 import com.jopdesign.wcet.frontend.BasicBlock;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.SuperGraph;

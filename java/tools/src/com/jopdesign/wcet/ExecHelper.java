@@ -27,6 +27,9 @@ import java.io.PrintStream;
 import java.text.MessageFormat;
 import java.util.Arrays;
 
+import lpsolve.LpSolve;
+import lpsolve.VersionInfo;
+
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -35,6 +38,8 @@ import org.apache.log4j.PatternLayout;
 import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.config.Option;
 import com.jopdesign.wcet.config.Config.BadConfigurationException;
+import com.jopdesign.wcet.uppaal.UppAalConfig;
+import com.jopdesign.wcet.uppaal.WcetSearch;
 
 /**
  * Helper class for command line executables.
@@ -112,7 +117,27 @@ public class ExecHelper {
 		}
 	}
 
-	public void exitVersion() {
+    public void checkLibs() {
+        try {
+            VersionInfo v = LpSolve.lpSolveVersion();
+            info("Using lp_solve for Java, v"+
+                    v.getMajorversion()+"."+v.getMinorversion()+
+                    " build "+v.getBuild()+" release "+v.getRelease());
+        } catch(UnsatisfiedLinkError ule) {
+            bail("Failed to load the lp_solve Java library: "+ule);
+        }
+        if(config.getOption(ProjectConfig.USE_UPPAAL)) {
+            String vbinary = config.getOption(UppAalConfig.UPPAAL_VERIFYTA_BINARY);
+            try {
+                String version = WcetSearch.getVerifytaVersion(vbinary);
+                info("Using uppaal/verifyta: "+vbinary+" version "+version);
+            } catch(Exception fne) {
+                bail("Failed to run uppaal verifier: "+fne);
+            }
+        }
+    }
+
+    public void exitVersion() {
 		printSep();
 		System.err.println(""+this.execClass);
 		System.err.println("Version: "+version);

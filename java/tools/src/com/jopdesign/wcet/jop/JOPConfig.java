@@ -44,9 +44,9 @@ public class JOPConfig {
 	public boolean objectCacheFillLine;
 	public boolean objectCacheFieldTag;
 	public int objectCacheLineSize;
-	public int objectCacheMaxBurst;
-	public long objectCacheAccessDelay;
-	public long objectCacheCyclesPerWord;
+	public long objectCacheHitCycles;
+	public long objectCacheLoadFieldCycles;
+	public long objectCacheLoadLineCycles;
 
 	public JOPConfig(Project p) {
 		configData = p.getConfig();
@@ -62,9 +62,10 @@ public class JOPConfig {
 		this.objectCacheFillLine = configData.getOption(OBJECT_CACHE_LINE_FILL);
 		this.objectCacheFieldTag = false;
 		this.objectCacheLineSize = configData.getOption(OBJECT_CACHE_WORDS_PER_LINE).intValue();
-		this.objectCacheMaxBurst = configData.getOption(OBJECT_CACHE_MAX_BURST_LENGTH).intValue();
-		this.objectCacheAccessDelay = configData.getOption(OBJECT_CACHE_ACCESS_DELAY).longValue();
-		this.objectCacheCyclesPerWord = configData.getOption(OBJECT_CACHE_CYCLES_PER_WORD).longValue();
+		
+		this.objectCacheHitCycles = configData.getOption(OBJECT_CACHE_HIT_CYCLES).longValue();
+		this.objectCacheLoadFieldCycles = configData.getOption(OBJECT_CACHE_LOAD_FIELD_CYCLES).longValue();
+		this.objectCacheLoadLineCycles = configData.getOption(OBJECT_CACHE_LOAD_LINE_CYCLES).longValue();
 	}
 	// FIXME: default values are fetched from WCETInstruction until transition to
 	// new timing system is complete
@@ -89,12 +90,13 @@ public class JOPConfig {
 		new IntegerOption("jop-ocache-words-per-line", "JOP object cache: words per line", 16);
 	public static final BooleanOption OBJECT_CACHE_LINE_FILL =
 		new BooleanOption("jop-ocache-fill", "JOP object cache: whether to fill line on miss", false);
-	private static final IntegerOption OBJECT_CACHE_MAX_BURST_LENGTH =
-		new IntegerOption("jop-ocache-max-burst", "JOP object cache maximum burst length", 1);		
-	private static final IntegerOption OBJECT_CACHE_ACCESS_DELAY =
-		new IntegerOption("jop-ocache-access-delay", "JOP object cache access delay for one burst", 0);
-	private static final IntegerOption OBJECT_CACHE_CYCLES_PER_WORD =
-		new IntegerOption("jop-ocache-access-cycles", "JOP object cache access cycles for one word", 1);
+	/* removed burst/delay/access model for now, as it does not cover CMP or more complicated SDRAM models */
+	private static final IntegerOption OBJECT_CACHE_HIT_CYCLES =
+		new IntegerOption("jop-ocache-hit-cycles", "JOP object access cycles on cache hit", 1);		
+	private static final IntegerOption OBJECT_CACHE_LOAD_FIELD_CYCLES =
+		new IntegerOption("jop-ocache-load-field-cycles", "JOP object cache load cycles for field (miss/bypass)", 0);
+	private static final IntegerOption OBJECT_CACHE_LOAD_LINE_CYCLES =
+		new IntegerOption("jop-ocache-load-line-cycles", "JOP object cache load cycles for cache line (miss)", 1);
 
 	/**
 	 * Supported method cache implementations:
@@ -130,8 +132,8 @@ public class JOPConfig {
 		CACHE_IMPL, CACHE_BLOCKS, CACHE_SIZE_WORDS,
 
 		OBJECT_CACHE, OBJECT_CACHE_ASSOCIATIVITY, OBJECT_CACHE_WORDS_PER_LINE,
-		OBJECT_CACHE_LINE_FILL,OBJECT_CACHE_MAX_BURST_LENGTH,
-		OBJECT_CACHE_ACCESS_DELAY,OBJECT_CACHE_CYCLES_PER_WORD
+		OBJECT_CACHE_LINE_FILL,OBJECT_CACHE_HIT_CYCLES,
+		OBJECT_CACHE_LOAD_FIELD_CYCLES,OBJECT_CACHE_LOAD_LINE_CYCLES
 	};
 
 
@@ -175,17 +177,30 @@ public class JOPConfig {
 	public void setObjectCacheLineSize(int lineSize) {
 		this.objectCacheLineSize = lineSize;
 	}
-	public long getObjectCacheAccessTime(int words) {
-		int  burstLength = this.objectCacheMaxBurst;
-		long delay       = this.objectCacheAccessDelay;
-		long cyclesPerWord = this.objectCacheCyclesPerWord;
-		int fullBursts = words / burstLength;
-		int lastBurst  = words % burstLength;
-		long accessTime = delay + cyclesPerWord * lastBurst;
-		for(int i = 0; i < fullBursts; i++) {
-			accessTime += delay + cyclesPerWord * burstLength;
+
+	public long getObjectCacheAccessTime(boolean line) {
+		if(line) {
+			return this.objectCacheLoadLineCycles;
+		} else {
+			return this.objectCacheLoadFieldCycles;
 		}
-		return accessTime;
 	}
+	public long getObjectCacheBypassTime() {
+		return getObjectCacheAccessTime(false);
+	}
+	
+/* Removed for now, as is not flexible enough */
+//	public long getObjectCacheAccessTime(int words) {
+//		int  burstLength = this.objectCacheMaxBurst;
+//		long delay       = this.objectCacheAccessDelay;
+//		long cyclesPerWord = this.objectCacheCyclesPerWord;
+//		int fullBursts = words / burstLength;
+//		int lastBurst  = words % burstLength;
+//		long accessTime = delay + cyclesPerWord * lastBurst;
+//		for(int i = 0; i < fullBursts; i++) {
+//			accessTime += delay + cyclesPerWord * burstLength;
+//		}
+//		return accessTime;
+//	}
 
 }
