@@ -21,6 +21,13 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.Option;
+import com.jopdesign.common.logger.LoggerConfig;
+
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 /**
  * This class is a helper used for creating and setting up the AppInfo class as well as for common
@@ -31,41 +38,174 @@ import com.jopdesign.common.config.Config;
 public class AppSetup {
 
     private Config config;
+    private LoggerConfig loggerConfig;
     private AppInfo appInfo;
+    private boolean handleAppInfoInit;
+    private String prgmName;
+    private String usageDescription;
+    private String optionSyntax;
+    private String versionInfo;
 
+    public AppSetup(boolean loadSystemProps) {
+        this(null, loadSystemProps);
+    }
 
-    public AppSetup() {
-        config = new Config();
-        config.getOptions().addOptions(Config.standardOptions);
+    public AppSetup(Properties defaultProps, boolean loadSystemProps) {
+
+        Properties def;
+        if ( loadSystemProps ) {
+            def = new Properties(defaultProps);
+            def.putAll(System.getProperties());
+        } else {
+            def = defaultProps;
+        }
+        config = new Config(def);
+
+        loggerConfig = new LoggerConfig();
+        appInfo = new AppInfo();        
+    }
+
+    public static Properties loadResourceProps(Class rsClass, String filename) throws IOException {
+        return loadResourceProps(rsClass, filename, null);
+    }
+
+    public static Properties loadResourceProps(Class rsClass, String filename, Properties defaultProps)
+            throws IOException
+    {
+        Properties p = new Properties(defaultProps);
+        InputStream is = new BufferedInputStream(rsClass.getResourceAsStream(filename));
+        p.load(is);
+        return p;
     }
 
     public Config getConfig() {
         return config;
     }
 
-    /**
-     * Load the config file, parse and check options, 
-     */
-    public void setupConfig() {
+    public LoggerConfig getLoggerConfig() {
+        return loggerConfig;
+    }
 
+    public AppInfo getAppInfo() {
+        return appInfo;
+    }
+
+
+    /**
+     * Add some standard options to the config.
+     *
+     * @param stdOptions if true, add options defined in {@link Config#standardOptions}.
+     * @param handleAppInfoInit if true, setupConfig will also handle common setup tasks for AppInfo.
+     */
+    public void addStandardOptions(boolean stdOptions, boolean handleAppInfoInit) {
+        this.handleAppInfoInit = handleAppInfoInit;
+
+        if (stdOptions) {
+            config.addOptions(Config.standardOptions);
+        }
+
+        if (handleAppInfoInit) {
+
+        }
+    }
+
+    public void setUsageInfo(String prgmName, String description) {
+        setUsageInfo(prgmName, description, null);
+    }
+
+    public void setUsageInfo(String prgmName, String description, String optionSyntax) {
+        this.prgmName = prgmName;
+        usageDescription = description;
+        this.optionSyntax = optionSyntax;
+    }
+
+    public void setVersionInfo(String version) {
+        versionInfo = version;
     }
 
     /**
-     * Create and initialize a new AppInfo using the current options and return it.
-     * @return a new, initialized AppInfo.
+     * Load the config file, parse and check options, and if handleApInfoInit has been
+     * set, also initialize AppInfo.
+     *
+     * @param args cmdline arguments to parse
+     * @return arguments not consumed.
      */
-    public AppInfo loadAppStruct() {
+    public String[] setupConfig(String args[]) {
 
-        appInfo = new AppInfo();
+        String[] rest = null;
+        try {
+            rest = config.parseArguments(args);
+        } catch (Config.BadConfigurationException e) {
+            System.out.println(e.getMessage());
+            if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
+                System.out.println("Use '--help' to show a usage message.");
+            }
+            System.exit(2);
+        }
+
+        // handle standard options
+        if ( Config.SHOW_HELP.isEnabled(config.getOptions()) && prgmName != null ) {
+            printUsage();
+            System.exit(0);
+        }
+        if ( Config.SHOW_VERSION.isEnabled(config.getOptions()) && versionInfo != null ) {
+            System.out.println(versionInfo);
+            System.exit(0);
+        }
+
+        // setup AppInfo
+        if ( handleAppInfoInit ) {
+
+        }
+
+        return rest;
+    }
+
+    /**
+     * Setup the logger. You may want to call {@link #setupConfig(String[])} first to
+     * load commandline options.
+     *
+     * @see com.jopdesign.common.logger.LoggerConfig#setupLogger(com.jopdesign.common.config.Config)
+     */
+    public void setupLogger() {
+        loggerConfig.setupLogger(config);
+    }
+
+    /**
+     * Initialize AppInfo using the current options and return it.
+     * @return an initialized AppInfo.
+     */
+    public AppInfo loadAppInfo() {
 
         return appInfo;
     }
 
-    /**
-     * Get the last loaded AppInfo.
-     * @return the last loaded AppInfo, or null if not yet loaded.
-     */
-    public AppInfo getAppStruct() {
-        return appInfo;
+    public void printUsage() {
+        String optionDesc;
+        if ( optionSyntax != null ) {
+            optionDesc = optionSyntax;
+        } else {
+            optionDesc = "<options>";
+            if ( config.getOptions().availableCommands().size() > 0 ) {
+                optionDesc += " <cmd> <cmd-options>";
+            }
+            if ( handleAppInfoInit ) {
+                optionDesc += " [--] <main-method> [<additional-roots>]";
+            }
+        }
+
+        System.out.print("Usage: "+prgmName);
+        System.out.println(optionDesc);
+        System.out.println();
+        if ( usageDescription != null && !"".equals(usageDescription) ) {
+            System.out.println(usageDescription);
+            System.out.println();
+        }
+
+        System.out.println("Available options:");
+        for (Option<?> option : config.getOptions().availableOptions() ) {
+            System.out.println(option.toString(10));
+        }
+
     }
 }

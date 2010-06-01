@@ -59,11 +59,6 @@ public class Config {
 	 * Exception classes
 	 * ~~~~~~~~~~~~~~~~~
 	 */
-	public static class MissingConfigurationException extends Exception {
-		private static final long serialVersionUID = 1L;
-		public MissingConfigurationException(String msg) { super(msg); }
-	}
-
     public static class BadConfigurationError extends Error {
 		private static final long serialVersionUID = 1L;
 		public BadConfigurationError(String msg) { super(msg); }
@@ -115,6 +110,15 @@ public class Config {
         Properties p = new Properties();
         p.load(propStream);
         props.putAll(p);
+    }
+
+    public void loadConfig(InputStream propStream, String prefix) throws IOException {
+        Properties p = new Properties();
+        p.load(propStream);
+        String pfx = prefix == null || "".equals(prefix) ? "" : prefix + ".";
+        for (Map.Entry<Object,Object> e : p.entrySet()) {
+            props.put(pfx + e.getKey(), e.getValue() );
+        }
     }
 
     /**
@@ -204,6 +208,26 @@ public class Config {
 
     public String getValue(String key, String defaultVal) {
         return props.getProperty(key, defaultVal);
+    }
+
+    public void addOption(Option<?> option) {
+        options.addOption(option);
+    }
+
+    public void addOptions(Option<?>[] options) {
+        this.options.addOptions(options);
+    }
+
+    public <T> T getOption(Option<T> option) throws BadConfigurationError {
+        return options.getOption(option);
+    }
+
+    public <T> T getOption(Option<T> option, T defaultVal) throws IllegalArgumentException {
+        return options.getOption(option, defaultVal);
+    }
+
+    public <T> T tryGetOption(Option<T> option) throws IllegalArgumentException {
+        return options.tryGetOption(option);
     }
 
     /**

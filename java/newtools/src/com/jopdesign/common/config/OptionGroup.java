@@ -20,6 +20,7 @@
 
 package com.jopdesign.common.config;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -116,6 +117,14 @@ public class OptionGroup {
 
     public Option<?> getOptionSpec(String key) {
         return optionSet.get(key);
+    }
+
+    public boolean containsOption(Option<?> option) {
+        return optionSet.containsKey(option.getKey());
+    }
+
+    public boolean containsOption(String key) {
+        return optionSet.containsKey(key);
     }
 
     public String getConfigKey(Option<?> option) {
@@ -229,7 +238,10 @@ public class OptionGroup {
 	 * "-option" or "--option", it is considered to be an option.
 	 * If an argument is an option, the next argument is considered to be the parameter,
 	 * unless the option is boolean and the next argument is missing or an option as well.
-	 * W add the pair to our properties, consuming both arguments.
+	 * We add the pair to our properties, consuming both arguments.
+     * </p><p>
+     * If an argument starts with @, the rest of it is considered as a property file name,
+     * which is then loaded and added to the configuration. 
 	 * The first non-option or the argument string {@code --} terminates the option list.
      * </p>
      *
@@ -247,6 +259,21 @@ public class OptionGroup {
                 OptionGroup cmdGroup = cmds.get(args[i]);
 
                 return cmdGroup.consumeOptions(Arrays.copyOfRange(args, i+1, args.length));
+            }
+
+            // handle custom config files
+            if ( args[i].startsWith("@") ) {
+                String filename = args[i].substring(1);
+                try {
+                    InputStream is = new BufferedInputStream(new FileInputStream(filename));
+                    config.loadConfig(is, prefix);
+                } catch (FileNotFoundException e) {
+                    throw new Config.BadConfigurationException("Configuration file '"+filename+"' not found!", e);
+                } catch (IOException e) {
+                    throw new Config.BadConfigurationException("Error reading file '"+filename+"': "+e.getMessage(), e);
+                }
+                i++;
+                continue;
             }
 
             // break if this is not an option argument, return rest
