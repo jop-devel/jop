@@ -130,7 +130,9 @@ public class AppSetup {
      * @param args cmdline arguments to parse
      * @return arguments not consumed.
      */
-    public String[] setupConfig(String args[]) {
+    public String[] setupConfig(String[] args) {
+
+        // TODO maybe try to load an additional app configuration file from a standard path (working dir,..)
 
         String[] rest = null;
         try {
@@ -165,7 +167,7 @@ public class AppSetup {
      * Setup the logger. You may want to call {@link #setupConfig(String[])} first to
      * load commandline options.
      *
-     * @see com.jopdesign.common.logger.LoggerConfig#setupLogger(com.jopdesign.common.config.Config)
+     * @see LoggerConfig#setupLogger(Config)
      */
     public void setupLogger() {
         loggerConfig.setupLogger(config);

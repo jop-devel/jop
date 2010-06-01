@@ -42,7 +42,7 @@ public class Config {
     public static final BoolOption DEBUG =
             new BoolOption("debug","verbose debugging mode", Option.SHORT_NONE, true);
 
-    public static final Option<?> standardOptions[] = { SHOW_HELP, SHOW_VERSION, DEBUG };
+    public static final Option<?>[] standardOptions = { SHOW_HELP, SHOW_VERSION, DEBUG };
     
 
     /*
@@ -104,7 +104,7 @@ public class Config {
     /**
      * Load a configuration.
      * @param propStream an open InputStream serving the properties
-     * @throws java.io.IOException if loading fails.
+     * @throws IOException if loading fails.
      */
     public void loadConfig(InputStream propStream) throws IOException {
         Properties p = new Properties();
@@ -124,7 +124,7 @@ public class Config {
     /**
      * Parse configuration options.
      *
-     * @see com.jopdesign.common.config.OptionGroup#consumeOptions(String[])
+     * @see OptionGroup#consumeOptions(String[])
      * @param args arguments to parse
      * @return string-arguments after the last known argument.
      * @throws BadConfigurationException if arguments or current properties cannot be parsed.
@@ -233,7 +233,7 @@ public class Config {
     /**
      * Dump configuration of all set properties for debugging purposes.
      * To print a list of all options with their values,
-     * use {@link com.jopdesign.common.config.OptionGroup#dumpConfiguration(int)}.
+     * use {@link OptionGroup#dumpConfiguration(int)}.
      *  
      * @param indent indent used for keys
      * @return a dump of all options with their respective values.

@@ -57,8 +57,8 @@ public class OptionGroup {
         this.config = config;
         this.prefix = prefix;
         optionList = new LinkedList<Option<?>>();
-        optionSet  = new Hashtable<String, Option<?>>();
-        cmds = new Hashtable<String, OptionGroup>();        
+        optionSet  = new HashMap<String, Option<?>>();
+        cmds = new HashMap<String, OptionGroup>();
     }
 
     public Config getConfig() {
@@ -247,7 +247,7 @@ public class OptionGroup {
      *
 	 * @param args The argument list
 	 * @return An array of unconsumed arguments
-     * @throws com.jopdesign.common.config.Config.BadConfigurationException if an argument is malformed.
+     * @throws Config.BadConfigurationException if an argument is malformed.
 	 */
 	public String[] consumeOptions(String[] args) throws Config.BadConfigurationException {
 		int i = 0;
@@ -278,7 +278,7 @@ public class OptionGroup {
 
             // break if this is not an option argument, return rest
             if ( !args[i].startsWith("-") ) break;
-            if ( args[i].equals("-") || args[i].equals("--") ) {
+            if ("-".equals(args[i]) || "--".equals(args[i])) {
                 i++;
                 break;
             }

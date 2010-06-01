@@ -46,8 +46,8 @@ public class BoolOption extends Option<Boolean> {
     @Override
 	public Boolean parse(String s) throws IllegalArgumentException {
 		String sl = s.toLowerCase();
-		if(sl.equals("true") || sl.equals("yes") || sl.equals("y")) return Boolean.TRUE;
-		else if (sl.equals("false") || sl.equals("no") || sl.equals("n")) return Boolean.FALSE;
+		if("true".equals(sl) || "yes".equals(sl) || "y".equals(sl)) return Boolean.TRUE;
+		else if ("false".equals(sl) || "no".equals(sl) || "n".equals(sl)) return Boolean.FALSE;
 		else throw new IllegalArgumentException("Cannot parse boolean: "+sl);
 	}
 

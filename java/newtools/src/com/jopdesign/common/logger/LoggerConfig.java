@@ -45,7 +45,7 @@ public class LoggerConfig {
 
     /**
      * Setup the logger using configuration options.
-     * You may want to call {@link #setReportLoggers(java.io.File, java.io.File, org.apache.log4j.Level)}
+     * You may want to call {@link #setReportLoggers(File, File, Level)}
      * first to define the report loggers.
      *
      * @param config the config settings to use.

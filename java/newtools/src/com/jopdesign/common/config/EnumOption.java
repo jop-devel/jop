@@ -49,7 +49,7 @@ public class EnumOption<T extends Enum<T>> extends Option<T> {
 		try {
 			return Enum.valueOf(this.valClass,s);
 		} catch(IllegalArgumentException e) {
-			throw new IllegalArgumentException("'"+s+"' failed to parse: not one of "+enumDescr(this.valClass));
+			throw new IllegalArgumentException("'"+s+"' failed to parse: not one of "+enumDescr(this.valClass), e);
 		}
 	}
 }
