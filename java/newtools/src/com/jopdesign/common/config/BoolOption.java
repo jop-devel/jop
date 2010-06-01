@@ -43,6 +43,7 @@ public class BoolOption extends Option<Boolean> {
         this.skipChecks = skipChecks;
     }
 
+    @Override
 	public Boolean parse(String s) throws IllegalArgumentException {
 		String sl = s.toLowerCase();
 		if(sl.equals("true") || sl.equals("yes") || sl.equals("y")) return Boolean.TRUE;
@@ -50,4 +51,8 @@ public class BoolOption extends Option<Boolean> {
 		else throw new IllegalArgumentException("Cannot parse boolean: "+sl);
 	}
 
+    @Override
+    public boolean isEnabled(OptionGroup options) {
+        return options.hasValue(this) && options.tryGetOption(this);
+    }
 }

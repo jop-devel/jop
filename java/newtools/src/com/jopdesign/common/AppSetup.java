@@ -44,6 +44,13 @@ public class AppSetup {
     }
 
     /**
+     * Load the config file, parse and check options, 
+     */
+    public void setupConfig() {
+
+    }
+
+    /**
      * Create and initialize a new AppInfo using the current options and return it.
      * @return a new, initialized AppInfo.
      */

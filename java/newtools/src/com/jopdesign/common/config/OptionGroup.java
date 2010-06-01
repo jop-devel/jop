@@ -27,6 +27,8 @@ import java.util.*;
  */
 public class OptionGroup {
 
+    public static final String CMD_KEY = "cmd";
+
     private OptionChecker checker;
     private Config config;
     private String prefix;
@@ -53,7 +55,6 @@ public class OptionGroup {
     public OptionGroup(Config config, String prefix) {
         this.config = config;
         this.prefix = prefix;
-        this.checker = new BasicOptionChecker();
         optionList = new LinkedList<Option<?>>();
         optionSet  = new Hashtable<String, Option<?>>();
         cmds = new Hashtable<String, OptionGroup>();        
@@ -67,12 +68,6 @@ public class OptionGroup {
         return checker;
     }
 
-    /**
-     * If more than one checker should be used, create an 'OptionCheckerList' class which implements
-     * OptionChecker.
-     *
-     * @param checker the new checker to be used.
-     */
     public void setChecker(OptionChecker checker) {
         this.checker = checker;
     }
@@ -96,6 +91,10 @@ public class OptionGroup {
         return cmds.get(cmd);
     }
 
+    public String selectedCommand() {
+        return config.getValue(getConfigKey(CMD_KEY));
+    }
+        
     /*
      * Setup Options
      * ~~~~~~~~~~~~~
@@ -143,11 +142,14 @@ public class OptionGroup {
 
     /**
      * Check if we have any value for this option (either set explicitly or some default value).
+     * Does not check if the value can be parsed.
+     *
      * @param option the option to check.
-     * @return true if there is some (valid) value available for this option.
+     * @return true if there is some value available for this option.
      */
     public boolean hasValue(Option<?> option) {
-        return tryGetOption(option) != null;
+        String val = config.getValue(getConfigKey(option));
+        return val != null || option.getDefaultValue() != null;
     }
 
     /**
@@ -237,47 +239,97 @@ public class OptionGroup {
 	 */
 	public String[] consumeOptions(String[] args) throws Config.BadConfigurationException {
 		int i = 0;
-		Vector<String> rest = new Vector<String>();
-		while(i < args.length && args[i].startsWith("-") &&
-			  ! (args[i].equals("-") || args[i].equals("--"))) {
+
+		while (i < args.length) {
+
+            if ( cmds.containsKey(args[i]) ) {
+                config.setProperty(getConfigKey(CMD_KEY), args[i]);
+                OptionGroup cmdGroup = cmds.get(args[i]);
+
+                return cmdGroup.consumeOptions(Arrays.copyOfRange(args, i+1, args.length));
+            }
+
+            // break if this is not an option argument, return rest
+            if ( !args[i].startsWith("-") ) break;
+            if ( args[i].equals("-") || args[i].equals("--") ) {
+                i++;
+                break;
+            }
+
 			String key;
 			if(args[i].charAt(1) == '-') key = args[i].substring(2);
 			else key = args[i].substring(1);
-			if(null != getOptionSpec(key)) {
-				Option<?> spec = getOptionSpec(key);
+
+            Option<?> spec = getOptionSpec(key);
+
+            if (spec != null) {
 				String val = null;
-				if(i+1 < args.length) {
+				if (i+1 < args.length) {
 					try {
 						spec.parse(args[i+1]);
 						val = args[i+1];
-					} catch(IllegalArgumentException ex) {
+					} catch(IllegalArgumentException ignored) {
 					}
 				}
-				if(spec instanceof BoolOption && val == null) {
+				if (spec instanceof BoolOption && val == null) {
 					val = "true";
-				} else if(val == null){
+				} else if (val == null){
 					throw new Config.BadConfigurationException("Missing argument for option: "+spec);
 				} else {
 					i++;
 				}
-				config.setProperty(key, val);
-			} else {
+				config.setProperty(getConfigKey(spec), val);
+
+            } else if (spec == null) {
+
+                // maybe a boolean option, check for --no-<key>
+                if ( key.startsWith("no-") ) {
+                    spec = getOptionSpec(key.substring(3));
+                    if ( spec != null && spec instanceof BoolOption ) {
+                        config.setProperty(getConfigKey(spec), "false");
+                    }
+                }
+			}
+            if ( spec == null ) {
 				throw new Config.BadConfigurationException("Not in option set: "+key+" ("+optionSet.keySet().toString()+")");
 			}
 			i++;
 		}
-		for(;i < args.length;i++) rest.add(args[i]);
-		String[] restArray = new String[rest.size()];
-		return rest.toArray(restArray);
+		return Arrays.copyOfRange(args, i, args.length);
 	}
 
     public void checkOptions() throws Config.BadConfigurationException {
 
-        // first, check if we can parse all options and if we need to call the OptionChecker
+        boolean skipCheck = false;
 
+        // first, check if we can parse all options and if we need to call the OptionChecker
+        for (Option<?> option : optionList) {
+
+            // check if we can parse
+            try {
+                tryGetOption(option);
+            } catch (IllegalArgumentException e) {
+                throw new Config.BadConfigurationException("Error parsing option '"+getConfigKey(option)+"': "+e.getMessage(), e);
+            }
+
+            if ( option.doSkipChecks() && option.isEnabled(this) ) {
+                skipCheck = true;
+            }
+        }
 
         // run the OptionChecker if required
+        if (!skipCheck) {
 
+            // check for required options
+            for (Option<?> option : optionList) {
+                if ( !option.isOptional() && !hasValue(option) ) {
+                    throw new Config.BadConfigurationException("Missing required option '"+getConfigKey(option)+'"');
+                }
+            }
+
+            // run OptionChecker
+            if (checker != null) checker.check(this);
+        }
     }
 
     /**

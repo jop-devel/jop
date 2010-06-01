@@ -100,6 +100,17 @@ public abstract class Option<T> {
 
 	public abstract T parse(String s) throws IllegalArgumentException;
 
+    /**
+     * Check if this option is enabled (i.e. has been set to a value not equal to null or 'false',
+     * depending on the type of the option).
+     *
+     * @param options a reference to the OptionGroup containing this option.
+     * @return true if this option has been set with a non-zero value.
+     */
+    public boolean isEnabled(OptionGroup options) {
+        return options.hasValue(this);
+    }
+
 	public String toString() {
 		return toString(0);
 	}
