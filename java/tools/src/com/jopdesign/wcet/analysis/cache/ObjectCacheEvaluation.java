@@ -26,6 +26,8 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
+import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
+
 /**
  * Purpose: helper classes for the evaluation of the object cache
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
@@ -39,24 +41,31 @@ public class ObjectCacheEvaluation {
 		public int ways;
 		public double hitrate;
 		public int configId;
-		public double cyclesPerAccess;		
+		public double cyclesPerAccess;
+		private ObjectCacheCost ocCost;		
 		/**
 		 * @param mode2
 		 * @param ways2
 		 * @param lineSize
+		 * @param ocCost 
 		 * @param ocConfig
 		 * @param hitRate2
 		 * @param bestCyclesPerAccessForConfig
 		 */
-		public OCacheAnalysisResult(OCacheMode mode, int ways, int lineSize,
-				                    int configId, double hitRate,
-				                    double cyclesPerAccess) {
+		public OCacheAnalysisResult(OCacheMode mode, 
+									int ways, 
+									int lineSize,
+				                    int configId, 
+				                    double hitRate,
+				                    double cyclesPerAccess, 
+				                    ObjectCacheCost ocCost) {
 			this.mode = mode;
 			this.ways = ways;
 			this.lineWords = lineSize;
 			this.configId = configId;
 			this.hitrate = hitRate;
 			this.cyclesPerAccess = cyclesPerAccess;
+			this.ocCost = ocCost;
 		}
 		private long cacheSize() {
 			return lineWords * 4 * ways;
@@ -89,6 +98,7 @@ public class ObjectCacheEvaluation {
 				if(oldSample == null || ! oldSample.mode.equals(sample.mode))
 					out.println("\\midrule "+sample.mode);
 				// size, line, assoc, hitrate
+				String comment = sample.ocCost.toString();
 				out.print(String.format(" & %d B",sample.cacheSize()));
 				out.print(String.format(" & %d B",sample.lineWords*4));
 				out.print(String.format(" & %d way",sample.ways));
@@ -100,7 +110,7 @@ public class ObjectCacheEvaluation {
 					if(it.hasNext()) sample = it.next();
 					else             sample = null;
 				} while(sample != null && sample.lineWords == oldSample.lineWords && sample.ways == oldSample.ways);
-				out.println("\\\\");
+				out.println("\\\\ %"+comment);
 			}
 		}
 	}

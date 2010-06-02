@@ -116,7 +116,7 @@ public class ObjectCacheAnalysisDemo {
 		}
 		
 		public String toString() {
-			return String.format("%d [miss=%d,bypass=%d,accesses=%d]",getCost(),this.missCost,this.bypassCost,this.fieldAccesses);
+			return String.format("missCycles = %d [miss-cost=%d, bypass-cost = %d, relevant-accesses=%d]",getCost(),this.missCost,this.bypassCost,this.fieldAccesses);
 		}
 
 		public ObjectCacheCost times(Long value) {

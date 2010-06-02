@@ -260,7 +260,7 @@ public class ObjectCacheAnalysis {
 						}
 						oStream.println(report);
 						OCacheAnalysisResult sample =
-							new ObjectCacheEvaluation.OCacheAnalysisResult(mode, ways, lineSize, configId, hitRate, bestCyclesPerAccessForConfig);
+							new ObjectCacheEvaluation.OCacheAnalysisResult(mode, ways, lineSize, configId, hitRate, bestCyclesPerAccessForConfig, ocCost);
 						samples.add(sample);
 					}
 				}
