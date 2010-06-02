@@ -48,13 +48,13 @@ public class SoftFloat64 {
 	 * A constant holding the same value as <a
 	 * href="http://java.sun.com/j2se/1.4.2/docs/api/java/lang/Double.html#NaN">Double.NaN</a>
 	 */
-	// 	public static final long NaN = 0x7ff8000000000000L;
+	public static final long NaN = 0x7ff8000000000000L;
 
 	/**
 	 * A constant holding the same value as <a
 	 * href="http://java.sun.com/j2se/1.4.2/docs/api/java/lang/Double.html#POSITIVE_INFINITY">Double.POSITIVE_INFINITY</a>
 	 */
-	// 	public static final long POSITIVE_INFINITY = 0x7ff0000000000000L;
+	public static final long POSITIVE_INFINITY = 0x7ff0000000000000L;
 
 	/**
 	 * A constant holding the same value as <a
@@ -92,12 +92,17 @@ public class SoftFloat64 {
 	/////////////////////////////////////////////////////////////////////////////
 	// Packing and unpacking the IEEE-754 double precision format
 	/////////////////////////////////////////////////////////////////////////////
+	
+//	  private static final long ABS_MASK          = 0x7fffffffffffffffL;
+//	  private static final long SIGN_MASK         = 0x8000000000000000L; // 1 bit
+//	  private static final long EXPONENT_MASK     = 0x7ff0000000000000L; // 11 bits
+	  private static final long FRACTION_MASK     = 0x000fffffffffffffL; // 52 bits
+	  private static final long IMPLIED_ONE       = 0x0010000000000000L; // 53rd bit
 
-	// 	private static final long ABS_MASK = 0x7fffffffffffffffL;
-	// 	private static final long SIGN_MASK = 0x8000000000000000L; // 1 bit
-	// 	private static final long EXPONENT_MASK = 0x7ff0000000000000L; // 11 bits
-	// 	private static final long FRACTION_MASK = 0x000fffffffffffffL; // 52 bits
-	// 	private static final long IMPLIED_ONE = 0x0010000000000000L; // 53rd bit
+	  /** @return true iff d is negative */
+	  static boolean unpackSign(long d) {
+	    return (d < 0L);
+	  }
 
 	/** @return an integer in the range [-1075, 972] */
 	static int unpackExponent(long d) {
@@ -664,6 +669,56 @@ public class SoftFloat64 {
 		return longValue(round(double_add(f,  0x3fe0000000000000L), false, false));
 	}
 
+	  /**
+	   * Mimics <a href="http://java.sun.com/j2se/1.4.2/docs/api/java/lang/Math.html#sqrt(double)">Math.sqrt(double)</a>.
+	   */
+	  public static long sqrt(long d) {
+	    if (isZero(d)) {
+	      return d;
+	    } else if (unpackSign(d) || isNaN(d)) {
+	      return NaN;
+	    } else if (d == POSITIVE_INFINITY) {
+	      return d;
+	    }
+	    // f is positive, nonzero, and finite
+
+	    // unpack
+	    int x = unpackExponent(d);
+	    long m = unpackMantissa(d);
+	    // normalize 
+	    while (m < IMPLIED_ONE) {
+	      m <<= 1;
+	      x--;
+	    }
+	    // make exponent even
+	    if ((x & 1) != 0) {
+	      m <<= 1;
+	    }
+	    // compute final exponent
+	    x = (x >> 1) - 26;
+	    
+	    // generate sqrt(x) bit by bit
+	    m <<= 1;
+	    long q = 0L; // q = sqrt(x)
+	    long s = 0L;
+	    long r = 0x0020000000000000L;
+	    while (r != 0) {
+	      long t = s + r;
+	      if (t < m) {
+	        s = t + r;
+	        m -= t;
+	        q |= r;
+	      }
+	      m <<= 1;
+	      r >>= 1;
+	    }
+	    // round half even
+	    if (m != 0) {
+	      q += q & 1L;
+	    }
+	    q >>= 1;
+	    return (((x + 1075L) << 52) | (q & FRACTION_MASK));
+	  }
 	private static long round(long d, boolean round, boolean ceil) {
 		if (isNaN(d)) {
 			return 0x7ff8000000000000L;
