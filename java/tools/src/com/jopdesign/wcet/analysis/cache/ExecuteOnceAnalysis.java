@@ -10,6 +10,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.CallGraph.CallGraphNode;
@@ -50,6 +51,7 @@ public class ExecuteOnceAnalysis {
 
 		while(iter.hasNext()) {
 			CallGraphNode scope = iter.next();
+			scope = new CallGraphNode(scope.getMethodImpl(), CallString.EMPTY); /* Remove call string */
 			ControlFlowGraph cfg = project.getFlowGraph(scope.getMethodImpl());
 			Set<MethodInfo> inLoop = new HashSet<MethodInfo>();
 			for(CFGNode node : cfg.getGraph().vertexSet()) {
@@ -72,7 +74,8 @@ public class ExecuteOnceAnalysis {
 		ControlFlowGraph cfg = node.getControlFlowGraph();
 		Set<MethodInfo> inLoopMethods = inLoopSet.get(scope);
 		if(inLoopMethods == null) {
-			Logger.getLogger("Object Cache Analysis").warning("No loop information for " + scope.getMethodImpl().getFQMethodName());
+			Logger.getLogger("Object Cache Analysis").warning("No loop information for " + scope.getMethodImpl().getFQMethodName() + " @ " +
+					scope.getCallString().toString());
 			return false;
 		}
 		if(! inLoopMethods.contains(cfg.getMethodInfo())) {
