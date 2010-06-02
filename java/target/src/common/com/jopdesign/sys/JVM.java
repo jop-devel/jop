@@ -990,8 +990,8 @@ class JVM {
 	
 	private static int f_multianewarray() {
 
-		JVMHelp.wr("multianewarray - GC issue?");
-		JVMHelp.wr("\r\n");
+//		JVMHelp.wr("multianewarray - GC issue?");
+//		JVMHelp.wr("\r\n");
 		//
 		// be careful! We have to manipulate the stack frame.
 		// If the layout changes we have to change this method.
