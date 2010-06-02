@@ -1004,11 +1004,27 @@ class JVM {
 
 		// pc points to the next byte - the first index byte
 		int pc = Native.rdIntMem(fp+1);
-		pc += 2;	// now to dimensions
+		
+		int cp = Native.rdIntMem(fp+3);
+		
 		int mp = Native.rdIntMem(fp+4);
 		int start = Native.rdMem(mp)>>>10;	// address of method
 
 		// memory is addressed in 32 bit words!
+		// get index into cpool and array type
+		j = Native.rdMem(start+(pc>>2));
+		for (i=(pc&0x03); i<3; ++i) j >>= 8;
+		j &= 0xff;
+		j <<= 8;
+		++pc;
+		int type = Native.rdMem(start+(pc>>2));
+		for (i=(pc&0x03); i<3; ++i) type >>= 8;
+		type &= 0xff;
+		type += j;
+		type += cp;
+		type = Native.rdMem(type);
+		
+		++pc;	// now to dimensions
 		
 		int dim = Native.rdMem(start+(pc>>2));
 		for (i=(pc&0x03); i<3; ++i) dim >>= 8;
@@ -1042,7 +1058,7 @@ class JVM {
 		ret = f_anewarray(cnt, 0);
 		// handle
 		for (i=0; i<cnt; ++i) {
-			int arr = f_newarray(cnt2,10);
+			int arr = f_newarray(cnt2, type);
 			synchronized(GC.mutex) {
 				Native.wrMem(arr, Native.rdMem(ret)+i);
 			}
