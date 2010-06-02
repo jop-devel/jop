@@ -1,7 +1,10 @@
 package com.jopdesign.dfa.framework;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+
+import com.jopdesign.dfa.analyses.SymbolicAddress;
 
 /** 
  * Factory for sets with a maximum size N.
@@ -34,6 +37,8 @@ public class BoundedSetFactory<V> {
 	}
 	
 	public static interface BoundedSet<V>  {
+		public BoundedSet<V> newBoundedSet();
+		
 		public void add(V el);
 		public void addAll(BoundedSet<V> other);
 		public BoundedSet<V> join(BoundedSet<V> other);
@@ -87,6 +92,8 @@ public class BoundedSetFactory<V> {
 			BoundedSetImpl r = new BoundedSetImpl(joinedSet);
 			return r;
 		}
+
+
 		public Set<V> getSet() {
 			return setImpl;
 		}
@@ -133,6 +140,10 @@ public class BoundedSetFactory<V> {
 		public String toString() {
 			if(this.isSaturated) return "BoundedSet.TOP";
 			return this.setImpl.toString();
+		}
+		
+		public BoundedSet<V> newBoundedSet() {
+			return new BoundedSetImpl(new HashSet<V>());
 		}
 	}
 

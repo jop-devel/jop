@@ -132,9 +132,28 @@ public class ObjectRefAnalysis {
 
 	/* transparent class for hiding the type of DFA result */
 	public static class LocalPointsToResult {
-		private HashMap<InstructionHandle, ContextMap<CallString, BoundedSet<SymbolicAddress>>> pointsTo;		
+		private HashMap<InstructionHandle, ContextMap<CallString, BoundedSet<SymbolicAddress>>> pointsTo;
+		private HashMap<InstructionHandle, BoundedSet<SymbolicAddress>> pointsToNoCallString;		
+
 		private LocalPointsToResult(HashMap<InstructionHandle, ContextMap<CallString, BoundedSet<SymbolicAddress>>> pTo) {
 			pointsTo = pTo;
+			pointsToNoCallString = new HashMap<InstructionHandle, BoundedSet<SymbolicAddress>>();
+		}
+		
+		public BoundedSet<SymbolicAddress> get(InstructionHandle ih) {
+			BoundedSet<SymbolicAddress> addrs = pointsToNoCallString.get(ih);
+			if(addrs == null) {
+				for(BoundedSet<SymbolicAddress> addrs2 : pointsTo.get(ih).values()) {
+					if(addrs == null) addrs = addrs2.newBoundedSet();
+					addrs.addAll(addrs2);
+				}
+				pointsToNoCallString.put(ih, addrs);
+			}
+			return addrs;
+		}
+
+		public boolean containsKey(InstructionHandle ih) {
+			return pointsTo.containsKey(ih);
 		}
 	}
 
@@ -220,8 +239,8 @@ public class ObjectRefAnalysis {
 			if(bb == null) continue;
 			for(InstructionHandle ih : bb.getInstructions()) {
 				BoundedSet<SymbolicAddress> refs;
-				if(usedRefs.pointsTo.containsKey(ih)) {
-					refs = usedRefs.pointsTo.get(ih).get(new CallString());
+				if(usedRefs.containsKey(ih)) {
+					refs = usedRefs.get(ih);
 					String handleType = getHandleType(project, n, ih);
 					if(handleType == null) continue;
 					if(refs.isSaturated()) {
@@ -303,7 +322,7 @@ public class ObjectRefAnalysis {
 				String handleType = getHandleType(project, node, ih); 				
 				if(handleType == null) continue; /* No getfield/handle access */
 				
-				if(usedRefs.pointsTo.containsKey(ih)) {					
+				if(usedRefs.containsKey(ih)) {					
 					String fieldName = ((FieldInstruction)ih.getInstruction()).getFieldName(bb.cpg());
 					
 					if(! isFieldCached(node.getControlFlowGraph(), ih, maxCachedFieldIndex)) {
@@ -311,7 +330,7 @@ public class ObjectRefAnalysis {
 						continue;
 					}
 										
-					refs = usedRefs.pointsTo.get(ih).get(emptyCallString);						
+					refs = usedRefs.get(ih);						
 					if(refs.isSaturated()) {
 						alwaysMissCost += costModel.getLoadCacheLineCost() + costModel.getLoadFieldCost();
 					} else {
