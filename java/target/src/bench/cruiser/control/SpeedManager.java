@@ -56,7 +56,7 @@ public class SpeedManager implements Runnable {
 		int sum = 0;
 		int sqsum = 0;
 		int cnt = 0;
-		for (int i = 0; i < speedState.length; i++) {
+		for (int i = 0; i < speedState.length; i++) { //@WCA loop = 4
 			if (speedState[i].valid) {
 				int speed = speedState[i].speed;
 				sum += speed;
@@ -67,7 +67,7 @@ public class SpeedManager implements Runnable {
 
 		// not enough sensor values
 		if (cnt < speedState.length/2) {
-			System.err.println("No reliable speed estimate available, brake, cnt="+cnt);
+			// System.err.println("No reliable speed estimate available, brake, cnt="+cnt);
 			currentSpeed.valid = false;
 		} else {
 			int avg = sum/cnt;
@@ -76,8 +76,8 @@ public class SpeedManager implements Runnable {
 			dev = dev < 0 ? -dev : dev;
 			// sensor values should have a reasonable deviation
 			// System.err.println("$ dev: "+dev+" avg: "+avg+" avg**2: "+avg*avg);
-			if (dev > 2000) {
-			 	System.err.println("Speed estimates too divergent, brake, dev="+dev);
+			if (dev > 4000) {
+			 	// System.err.println("Speed estimates too divergent, brake, dev="+dev);
 			 	currentSpeed.valid = false;
 			} else {
 				currentSpeed.speed = avg;
@@ -85,7 +85,7 @@ public class SpeedManager implements Runnable {
 			}
 		}
 
-		distance += ((long)currentSpeed.speed*1000)/Math.max(1, now-lastNow);
+		distance += ((long)currentSpeed.speed*1000*1000*1000*10)/Math.max(1, now-lastNow);
 		lastNow = now;
 	}
 
@@ -109,14 +109,18 @@ public class SpeedManager implements Runnable {
 			long dist = distance/1000;
 			if (targetDistance - dist > 0) {
 				int retval;
+
+				long delta = targetDistance-lastTargetDistance;
+				delta = delta == 0 ? 1 : delta;
+
 				if (targetSpeed > lastTargetSpeed) { // accelerating
 					// start to accelerate quickly
-					long d = 500*(dist-lastTargetDistance)/(targetDistance-lastTargetDistance);
+					long d = 500*(dist-lastTargetDistance)/delta;
 					d += 500;
 					retval = (int)((lastTargetSpeed*(1000-d)+(targetSpeed*d))/1000);
 				} else { // braking
 					// start to brake without bias
-					long d = 1000*(dist-lastTargetDistance)/(targetDistance-lastTargetDistance);
+					long d = 1000*(dist-lastTargetDistance)/delta;
 					// approach quadratically
 					d *= d;
 					d /= 1000;
@@ -140,10 +144,10 @@ public class SpeedManager implements Runnable {
 
 	public void run() {
 
-		lastNow = System.currentTimeMillis();
+		lastNow = System.nanoTime();
 
 		for (;;) {			
-			long now = System.currentTimeMillis();
+			long now = System.nanoTime();
 			manage(now);
 
 			RtThread.currentRtThread().waitForNextPeriod();

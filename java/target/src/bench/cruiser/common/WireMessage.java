@@ -89,37 +89,44 @@ public class WireMessage {
 	public static boolean checkMessage(String msg) {
 		// check message start
 		if (msg.charAt(0) != ':') {
+			// System.err.print("^");
 			return false;
 		}
 		// check type
 		Type t = parseType(msg);
 		if (t == null) {
+			// System.err.print("T");
 			return false;
 		}
 		// check length of payload
 		int len = parseLength(msg);
 		if (len < 0 || len != t.length) {
+			// System.err.print("L");
 			return false;
 		}
 		// check length of overall message
 		if (msg.length() != len+OVERHEAD_LENGTH) {
-			// return false;
+			// System.err.print("S");
+			return false;
 		}
 		// checking checksum
 		int chk = 0;
 		int chkpos = msg.length()-3;
-		for (int i = 1; i < chkpos; i++) {
-			chk ^= msg.charAt(i);
+		for (int i = 1; i < chkpos; i++) { //@WCA loop <= 18
+			chk ^= hexNum(msg.charAt(i));
 		}
-		if (chk != msg.charAt(chkpos)) {
-			// return false;
+		if (hexDigit(chk) != msg.charAt(chkpos)) {
+			// System.err.print("C");
+			return false;
 		}
 		// check message end
 		if (msg.charAt(msg.length()-2) != '\r') {
-			// return false;
+			// System.err.print("R");
+			return false;
 		}
 		if (msg.charAt(msg.length()-1) != '\n') {
-			// return false;
+			// System.err.print("N");
+			return false;
 		}		
 		return true;
 	}
