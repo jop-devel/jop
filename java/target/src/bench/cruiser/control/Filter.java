@@ -29,7 +29,7 @@ import cruiser.common.*;
 
 public class Filter implements Runnable {
 
-	static final long MAX_AGE = 100;
+	static final long MAX_AGE = 100*1000*1000; // nano seconds
 
 	private final List<StampedMessage> queue = Collections.synchronizedList(new LinkedList<StampedMessage>());
 	private final String name;
@@ -50,7 +50,7 @@ public class Filter implements Runnable {
 		// weed out old messages, message inter-arrival time and
 		// MAX_AGE determine maximum length of queue
 		synchronized (queue) {
-			while (!queue.isEmpty()) {
+			while (!queue.isEmpty()) { //@WCA loop <= 100
 				if (queue.get(queue.size()-1).getStamp() < now-MAX_AGE) {
 					queue.remove(queue.size()-1);
 				} else {
@@ -63,7 +63,7 @@ public class Filter implements Runnable {
 		int sqsum = 0;
 		int cnt = 0;
 		synchronized (queue) {
-			for (StampedMessage msg : queue) {
+			for (StampedMessage msg : queue) { //@WCA loop <= 100
 				WireSpeedMessage m = (WireSpeedMessage)msg.getMessage();
 				int speed = m.getSpeed();
 				sum += speed;
@@ -93,7 +93,7 @@ public class Filter implements Runnable {
 
 	public void run() {
 		for (;;) {
-			long now = System.currentTimeMillis();
+			long now = System.nanoTime();
 			filter(now);
 
 			RtThread.currentRtThread().waitForNextPeriod();

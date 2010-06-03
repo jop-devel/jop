@@ -27,30 +27,39 @@ public class Main {
 	public static void main(String [] args) {
 
 		SpeedManager manager = new SpeedManager();
-		RtThread smThread = new RtThread(manager, 10*1000, 5);
+		RtThread smThread = new RtThread(manager, 4, 25*1000);
+
+		System.out.println("created SpeedManager");
 
 		Controller control = new Controller(manager);
-		RtThread ctrlThread = new RtThread(control, 100*1000, 4);
+		RtThread ctrlThread = new RtThread(control, 5, 10*1000);
+
+		System.out.println("created Controller");
 
 		Filter frontLeftFilter = new Filter("FLF", manager.frontLeftSpeed);
-		RtThread flThread = new RtThread(frontLeftFilter, 5*1000, 6);
+		RtThread flThread = new RtThread(frontLeftFilter, 6, 5*1000);
 
 		Filter frontRightFilter = new Filter("FRF", manager.frontRightSpeed);
-		RtThread frThread = new RtThread(frontRightFilter, 5*1000, 6);
+		RtThread frThread = new RtThread(frontRightFilter, 6, 5*1000);
 
 		Filter rearLeftFilter = new Filter("RLF", manager.rearLeftSpeed);
-		RtThread rlThread = new RtThread(rearLeftFilter, 5*1000, 6);
+		RtThread rlThread = new RtThread(rearLeftFilter, 6, 5*1000);
 
 		Filter rearRightFilter = new Filter("RRF", manager.rearRightSpeed);
-		RtThread rrThread = new RtThread(rearRightFilter, 5*1000, 6);
+		RtThread rrThread = new RtThread(rearRightFilter, 6, 5*1000);
 
+		System.out.println("created Filters");
 
 		Dispatcher dispatch = new Dispatcher(manager,
 											 frontLeftFilter,
 											 frontRightFilter,
 											 rearLeftFilter,
 											 rearRightFilter);
-		RtThread dThread = new RtThread(dispatch, -1, 3);
+		RtThread dThread = new RtThread(dispatch, 7, 1*1000);
+
+		System.out.println("created Dispatcher");
+
+		System.out.println("Cruise control up and running");
 
 		RtThread.startMission();
 

@@ -44,41 +44,68 @@ public class Dispatcher implements Runnable {
 	private void dispatch(String msg) {
 
 		if (!WireMessage.checkMessage(msg)) {
-			System.err.println("Message not correct: "+msg);
+			// System.err.print("?");
+			// System.err.println(msg);
 			return;
 		}
 
 		WireMessage.Type type = WireMessage.parseType(msg);
-		switch (type) {
-		case SPEED_FRONT_LEFT:
-		case SPEED_FRONT_RIGHT:
-		case SPEED_REAR_LEFT:
-		case SPEED_REAR_RIGHT: {
+
+		// work around broken switch/case for Enums
+		if (type == WireMessage.Type.SPEED_FRONT_LEFT
+			|| type == WireMessage.Type.SPEED_FRONT_RIGHT
+			|| type == WireMessage.Type.SPEED_REAR_LEFT
+			|| type == WireMessage.Type.SPEED_REAR_RIGHT) {
 			WireSpeedMessage m = WireSpeedMessage.fromString(msg);
 			StampedMessage s = new StampedMessage(m);
-			switch (type) {
-			case SPEED_FRONT_LEFT:
+			if (type == WireMessage.Type.SPEED_FRONT_LEFT) {
 				frontLeftFilter.enqueue(s);
-				break;
-			case SPEED_FRONT_RIGHT:
+			} else if (type == WireMessage.Type.SPEED_FRONT_RIGHT) {
 				frontRightFilter.enqueue(s);
-				break;
-			case SPEED_REAR_LEFT:
+			} else if (type == WireMessage.Type.SPEED_REAR_LEFT) {
 				rearLeftFilter.enqueue(s);
-				break;
-			case SPEED_REAR_RIGHT:
+			} else if (type == WireMessage.Type.SPEED_REAR_RIGHT) {
 				rearRightFilter.enqueue(s);
-				break;
 			}
-			break;
+		} else {
+			if (type == WireMessage.Type.TARGET_SPEED) {
+				WireTargetSpeedMessage m = WireTargetSpeedMessage.fromString(msg);
+				StampedDistanceMessage s = new StampedDistanceMessage(m, manager);
+				manager.setTargetSpeed(s);
+			}
 		}
-		case TARGET_SPEED: {
-			WireTargetSpeedMessage m = WireTargetSpeedMessage.fromString(msg);
-			StampedDistanceMessage s = new StampedDistanceMessage(m, manager);
-			manager.setTargetSpeed(s);
-			break;
-		}
-		}
+
+		// cannot use switch/case, because Enums are somewhat broken
+		// switch (type) {
+		// case SPEED_FRONT_LEFT:
+		// case SPEED_FRONT_RIGHT:
+		// case SPEED_REAR_LEFT:
+		// case SPEED_REAR_RIGHT: {
+		// 	WireSpeedMessage m = WireSpeedMessage.fromString(msg);
+		// 	StampedMessage s = new StampedMessage(m);
+		// 	switch (type) {
+		// 	case SPEED_FRONT_LEFT:
+		// 		frontLeftFilter.enqueue(s);
+		// 		break;
+		// 	case SPEED_FRONT_RIGHT:
+		// 		frontRightFilter.enqueue(s);
+		// 		break;
+		// 	case SPEED_REAR_LEFT:
+		// 		rearLeftFilter.enqueue(s);
+		// 		break;
+		// 	case SPEED_REAR_RIGHT:
+		// 		rearRightFilter.enqueue(s);
+		// 		break;
+		// 	}
+		// 	break;
+		// }
+		// case TARGET_SPEED: {
+		// 	WireTargetSpeedMessage m = WireTargetSpeedMessage.fromString(msg);
+		// 	StampedDistanceMessage s = new StampedDistanceMessage(m, manager);
+		// 	manager.setTargetSpeed(s);
+		// 	break;
+		// }
+		// }
 	}
 
 	public void run() {
@@ -87,37 +114,48 @@ public class Dispatcher implements Runnable {
 
 		for (;;) {
 			
-			// I/O handling
+			// wait here so we can use continue
+			RtThread.currentRtThread().waitForNextPeriod();
+
 			try {
-				int c = System.in.read();
-				// end of file
-				if (c < 0) {
-					break;
+				int i = 0;
+				while (i++ < 32 && System.in.available() > 0) {
+					
+					// I/O handling
+					try {
+						int c = System.in.read();
+						
+						// end of file
+						if (c < 0) {
+							break;
+						}
+						// append only if the message fits the buffer
+						if (msgBuffer.length() < WireMessage.MAX_LENGTH) {
+							msgBuffer.append((char)c);
+						}
+
+						// okay, we probably have a full message now
+						if (c != '\n') {
+							continue;
+						}
+					} catch (IOException exc) {
+						// System.err.println(exc);
+						msgBuffer.setLength(0);
+						continue;
+					}					
+
+					// convert buffer to immutable string
+					String msg = msgBuffer.toString();
+					// prepare for next message
+					msgBuffer.setLength(0);
+					
+					// actual dispatch
+					dispatch(msg);
 				}
-				// append only if the message fits the buffer
-				if (msgBuffer.length() < WireMessage.MAX_LENGTH) {
-					msgBuffer.append((char)c);
-				}
-				// okay, we probably have a full message now
-				if (c != '\n') {
-					continue;
-				}				
 			} catch (IOException exc) {
-				System.err.println(exc);
-				msgBuffer.setLength(0);
+				// System.err.println(exc);
 				continue;
 			}
-
-			// convert buffer to immutable string
-			String msg = msgBuffer.toString();
-			// prepare for next message
-			msgBuffer.setLength(0);
-
-			// actual dispatch
-			dispatch(msg);
-
-			// we assume System.in.read() blocks and therefore governs the timing
-			// RtThread.currentRtThread().waitForNextPeriod();
 		}
 
 	}
