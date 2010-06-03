@@ -37,6 +37,6 @@ public class StampedMessage {
 
 	public StampedMessage(WireMessage message) {
 		this.message = message;
-		this.stamp = System.currentTimeMillis();
+		this.stamp = System.nanoTime();
 	}
 }
