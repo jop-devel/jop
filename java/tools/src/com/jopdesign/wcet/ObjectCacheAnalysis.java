@@ -240,7 +240,9 @@ public class ObjectCacheAnalysis {
 							ratio = (double)cost/(double)maxCost; 
 						}
 						cyclesPerAccess = (double)cost / (double)totalFieldAccesses ;						
-						if(cyclesPerAccess < bestCyclesPerAccessForConfig) bestCyclesPerAccessForConfig = cyclesPerAccess;
+						if(cyclesPerAccess < bestCyclesPerAccessForConfig || ways <= 1) {
+							bestCyclesPerAccessForConfig = cyclesPerAccess;
+						}
 
 						/* hit rate is defined as: 1 - (cache misses / accesses to cached fields (with n=0) */
 						double hitRate = (1 - ((double)ocCost.getCacheMissCount() / (double)cachedFieldAccesses));
