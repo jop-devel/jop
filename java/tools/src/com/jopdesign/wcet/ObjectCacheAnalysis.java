@@ -17,6 +17,7 @@ import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation.OCacheAnalysisResult;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation.OCacheMode;
+import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.CallGraph.CallGraphNode;
 import com.jopdesign.wcet.graphutils.MiscUtils;
 import com.jopdesign.wcet.graphutils.MiscUtils.Function2;
@@ -118,7 +119,6 @@ public class ObjectCacheAnalysis {
 
 	private void evaluateObjectCache() {
 		long start,stop;
-
 		JOPConfig jopconfig = new JOPConfig(project);
 
 		// Method Cache

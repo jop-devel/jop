@@ -143,7 +143,7 @@ public class WCETAnalysis {
     private boolean runWCETAnalysis() {
         /* Run */
         ipetConfig = new IpetConfig(config);
-        boolean succeed = false;
+        boolean succeed = true;
         // FIXME: Report generation is a BIG MESS
         // bh wants to fix this soon
         try {
@@ -153,6 +153,7 @@ public class WCETAnalysis {
             computeWCET();
         } catch (Exception e) {
             exec.logException("analysis", e);
+            succeed = false;
         }
         if(! project.doWriteReport()) {
             exec.info("Ommiting HTML report");
@@ -167,7 +168,7 @@ public class WCETAnalysis {
             exec.info("Generated files are in " + projectConfig.getOutDir());
         } catch (Exception e) {
             exec.logException("Report generation", e);
-            return false;
+            succeed = false;
         }
         return succeed;
     }
