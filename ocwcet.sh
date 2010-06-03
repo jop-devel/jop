@@ -13,14 +13,26 @@ SDRAM_KEY="_2_10_4"
 # The lift benchmark
 
 if [ $RUNLIFT ] ; then
-echo "Running Lift: '#{RUNLIFT}'"
 make java_app wcet P1=test P2=wcet P3=StartLift WCET_METHOD=measure WCET_OPTIONS="${WCET_OPTIONS}"
 cp java/target/wcet/wcet.StartLift_measure/ocache_eval.txt ${RESULT_DIR}/lift.txt
 fi
 
+# The UdpIp benchmark
+if [ $RUNUDPIP ] ; then
+make java_app wcet P1=test P2=wcet P3=StartBenchUdpIp WCET_METHOD=measure WCET_OPTIONS="${WCET_OPTIONS}"
+cp java/target/wcet/wcet.StartBenchUdpIp_measure/ocache_eval.txt ocache_eval/udpip.txt
+fi
+
+
+# The EjipCmp benchmark
+
+if [ $RUNEJIP ] ; then
+make java_app wcet P1=test P2=wcet P3=StartEjipCmp WCET_METHOD=measure WCET_OPTIONS="${WCET_OPTIONS}"
+cp java/target/wcet/wcet.StartEjipCmp_measure/ocache_eval.txt ocache_eval/ejip.txt
+fi
+
 
 # The trading benchmark
-
 # checkForTrade
 if [ $RUNORDER ] ; then
 
