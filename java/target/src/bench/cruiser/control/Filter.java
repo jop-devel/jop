@@ -50,7 +50,7 @@ public class Filter implements Runnable {
 		// weed out old messages, message inter-arrival time and
 		// MAX_AGE determine maximum length of queue
 		synchronized (queue) {
-			while (!queue.isEmpty()) { //@WCA loop <= 100
+			while (!queue.isEmpty()) { //@WCA loop <= 110
 				if (queue.get(queue.size()-1).getStamp() < now-MAX_AGE) {
 					queue.remove(queue.size()-1);
 				} else {

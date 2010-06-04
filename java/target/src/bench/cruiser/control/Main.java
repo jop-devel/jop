@@ -27,12 +27,12 @@ public class Main {
 	public static void main(String [] args) {
 
 		SpeedManager manager = new SpeedManager();
-		RtThread smThread = new RtThread(manager, 4, 25*1000);
+		RtThread smThread = new RtThread(manager, 5, 10*1000);
 
 		System.out.println("created SpeedManager");
 
 		Controller control = new Controller(manager);
-		RtThread ctrlThread = new RtThread(control, 5, 10*1000);
+		RtThread ctrlThread = new RtThread(control, 4, 10*1000);
 
 		System.out.println("created Controller");
 
@@ -55,7 +55,7 @@ public class Main {
 											 frontRightFilter,
 											 rearLeftFilter,
 											 rearRightFilter);
-		RtThread dThread = new RtThread(dispatch, 7, 1*1000);
+		RtThread dThread = new RtThread(dispatch, 7, 1000);
 
 		System.out.println("created Dispatcher");
 
