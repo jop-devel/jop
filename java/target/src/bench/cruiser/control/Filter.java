@@ -29,7 +29,7 @@ import cruiser.common.*;
 
 public class Filter implements Runnable {
 
-	static final long MAX_AGE = 100*1000*1000; // nano seconds
+	private static final long MAX_AGE = 100*1000*1000; // nano seconds
 
 	private final List<StampedMessage> queue = Collections.synchronizedList(new LinkedList<StampedMessage>());
 	private final String name;

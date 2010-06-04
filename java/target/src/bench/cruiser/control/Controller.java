@@ -25,7 +25,7 @@ import cruiser.common.*;
 
 public class Controller implements Runnable {
 
-	SpeedManager manager;
+	private final SpeedManager manager;
 
 	public Controller(SpeedManager manager) {
 		this.manager = manager;

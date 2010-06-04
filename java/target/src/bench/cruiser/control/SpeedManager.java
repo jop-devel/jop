@@ -21,7 +21,6 @@
 package cruiser.control;
 
 import joprt.RtThread;
-import cruiser.common.*;
 
 public class SpeedManager implements Runnable {
 
@@ -33,11 +32,8 @@ public class SpeedManager implements Runnable {
 	private final SpeedState [] speedState = new SpeedState[4];
 
 	// speed forecast
-	private int lastTargetSpeed = 0;
-	private long lastTargetDistance = 0;
-	private int targetSpeed = 0;
-	private long targetDistance = 0;
-	private SpeedState currentSpeed = new SpeedState();
+	private volatile TargetSpeedState targetSpeed = new TargetSpeedState();
+	private final SpeedState currentSpeed = new SpeedState();
 
 	// distance estimation
 	private long lastNow = 0;
@@ -94,11 +90,7 @@ public class SpeedManager implements Runnable {
 	}
 
 	public void setTargetSpeed(StampedDistanceMessage msg) {
-		WireTargetSpeedMessage m = (WireTargetSpeedMessage)msg.getMessage();
-		lastTargetSpeed = targetSpeed;
-		lastTargetDistance = msg.getDistance()/1000;
-		targetSpeed = m.getSpeed();
-		targetDistance = msg.getDistance()/1000+m.getDistance()*100;
+		targetSpeed = new TargetSpeedState(targetSpeed.targetSpeed, msg);
 	}
 
 	public int getTargetSpeed() {
@@ -106,34 +98,36 @@ public class SpeedManager implements Runnable {
 			// no reliable estimate, so we should better stop
 			return 0;
 		} else {
+			TargetSpeedState t = targetSpeed;
+
 			long dist = distance/1000;
-			if (targetDistance - dist > 0) {
+			if (t.targetDistance - dist > 0) {
 				int retval;
 
-				long delta = targetDistance-lastTargetDistance;
+				long delta = t.targetDistance-t.lastTargetDistance;
 				delta = delta == 0 ? 1 : delta;
 
-				if (targetSpeed > lastTargetSpeed) { // accelerating
+				if (t.targetSpeed > t.lastTargetSpeed) { // accelerating
 					// start to accelerate quickly
-					long d = 500*(dist-lastTargetDistance)/delta;
+					long d = 500*(dist-t.lastTargetDistance)/delta;
 					d += 500;
-					retval = (int)((lastTargetSpeed*(1000-d)+(targetSpeed*d))/1000);
+					retval = (int)((t.lastTargetSpeed*(1000-d)+(t.targetSpeed*d))/1000);
 				} else { // braking
 					// start to brake without bias
-					long d = 1000*(dist-lastTargetDistance)/delta;
+					long d = 1000*(dist-t.lastTargetDistance)/delta;
 					// approach quadratically
 					d *= d;
 					d /= 1000;
-					retval = (int)((lastTargetSpeed*(1000-d)+(targetSpeed*d))/1000);
+					retval = (int)((t.lastTargetSpeed*(1000-d)+(t.targetSpeed*d))/1000);
 					// emergency braking if we run out of room for braking
-					int v = currentSpeed.speed - targetSpeed;
-					if ((targetDistance-dist) < (v*v)/190) {
-						retval = targetSpeed;
+					int v = currentSpeed.speed - t.targetSpeed;
+					if ((t.targetDistance-dist) < (v*v)/190) {
+						retval = t.targetSpeed;
 					}
 				}
 				return retval;
 			} else {
-				return targetSpeed;
+				return t.targetSpeed;
 			}
 		}
 	}
