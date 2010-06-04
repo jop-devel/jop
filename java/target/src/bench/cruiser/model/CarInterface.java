@@ -84,7 +84,7 @@ public class CarInterface {
 					System.out.print(msg.toString());
 				}
 				try {
-					sleep(25);
+					sleep(10);
 				} catch (InterruptedException exc) {
 					// ignore
 				}

@@ -85,7 +85,7 @@ public class SpeedManager implements Runnable {
 			}
 		}
 
-		distance += ((long)currentSpeed.speed*1000*1000*1000*10)/Math.max(1, now-lastNow);
+		distance += ((long)currentSpeed.speed*1000*1000*1000)/Math.max(1, now-lastNow);
 		lastNow = now;
 	}
 
