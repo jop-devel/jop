@@ -27,11 +27,11 @@ import cruiser.common.*;
 
 public class Dispatcher implements Runnable {
 
-	SpeedManager manager;
-	Filter frontLeftFilter;
-	Filter frontRightFilter;
-	Filter rearLeftFilter;
-	Filter rearRightFilter;
+	private final SpeedManager manager;
+	private final Filter frontLeftFilter;
+	private final Filter frontRightFilter;
+	private final Filter rearLeftFilter;
+	private final Filter rearRightFilter;
 
 	public Dispatcher(SpeedManager manager, Filter flf, Filter frf, Filter rlf, Filter rrf) {
 		this.manager = manager;
@@ -44,8 +44,8 @@ public class Dispatcher implements Runnable {
 	private void dispatch(String msg) {
 
 		if (!WireMessage.checkMessage(msg)) {
-			// System.err.print("?");
-			// System.err.println(msg);
+			System.err.print("?");
+			System.err.println(msg);
 			return;
 		}
 
