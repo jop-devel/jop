@@ -266,7 +266,7 @@ public class OptionGroup {
                 String filename = args[i].substring(1);
                 try {
                     InputStream is = new BufferedInputStream(new FileInputStream(filename));
-                    config.loadConfig(is, prefix);
+                    config.addProperties(is, prefix);
                 } catch (FileNotFoundException e) {
                     throw new Config.BadConfigurationException("Configuration file '"+filename+"' not found!", e);
                 } catch (IOException e) {

@@ -23,8 +23,13 @@ package com.jopdesign.common;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.logger.LoggerConfig;
+import com.jopdesign.common.type.Signature;
+import org.apache.bcel.util.ClassPath;
 
 import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -61,8 +66,9 @@ public class AppSetup {
         }
         config = new Config(def);
 
+        // using default configuration here
+        appInfo = new AppInfo(new ClassPath(config.getOption(Config.CLASSPATH)));
         loggerConfig = new LoggerConfig();
-        appInfo = new AppInfo();        
     }
 
     public static Properties loadResourceProps(Class rsClass, String filename) throws IOException {
@@ -105,7 +111,7 @@ public class AppSetup {
         }
 
         if (handleAppInfoInit) {
-
+            config.addOption(Config.CLASSPATH);
         }
     }
 
@@ -123,20 +129,38 @@ public class AppSetup {
         versionInfo = version;
     }
 
+    public String[] setupConfig(String[] args) {
+        return setupConfig(null, args);
+    }
+
     /**
      * Load the config file, parse and check options, and if handleApInfoInit has been
      * set, also initialize AppInfo.
      *
+     * @param configFile filename of an optional user configuration file, will be tried to be loaded before
+     *                   arguments are parsed.
      * @param args cmdline arguments to parse
      * @return arguments not consumed.
      */
-    public String[] setupConfig(String[] args) {
+    public String[] setupConfig(String configFile, String[] args) {
 
-        // TODO maybe try to load an additional app configuration file from a standard path (working dir,..)
+        File file = findConfigFile(configFile);
+        if ( file != null && file.exists() ) {
+            try {
+                InputStream is = new BufferedInputStream(new FileInputStream(file));
+                config.addProperties(is);
+            } catch (FileNotFoundException e) {
+                System.out.println("Configuration file '"+configFile+"' not found: "+e.getMessage());
+            } catch (IOException e) {
+                System.out.println("Could not read config file '"+file+"': "+e.getMessage());
+                System.exit(3);
+            }
+        }
 
         String[] rest = null;
         try {
             rest = config.parseArguments(args);
+            config.checkOptions();
         } catch (Config.BadConfigurationException e) {
             System.out.println(e.getMessage());
             if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
@@ -157,10 +181,29 @@ public class AppSetup {
 
         // setup AppInfo
         if ( handleAppInfoInit ) {
+            appInfo.setClassPath(new ClassPath(config.getOption(Config.CLASSPATH)));
 
+            if (rest.length == 0) {
+                System.out.println("You need to specify a main class or entry method.");
+                if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
+                    System.out.println("Use '--help' to show a usage message.");
+                }
+                System.exit(2);
+            }
+
+            Signature sMain = new Signature(rest[0]);
+            
         }
 
         return rest;
+    }
+
+    private File findConfigFile(String configFile) {
+        if ( configFile == null || "".equals(configFile) ) {
+            return null;
+        }
+        // look in different paths? load multiple files?
+        return new File(configFile);
     }
 
     /**

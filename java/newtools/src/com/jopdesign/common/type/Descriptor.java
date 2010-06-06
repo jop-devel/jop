@@ -18,15 +18,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common;
+package com.jopdesign.common.type;
 
 /**
+ * A helper class for parsing, generating and other descriptor related tasks (type descriptors
+ * without a name or class).
+ *
+ * @see Signature
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class MethodInfo extends MemberInfo {
+public class Descriptor {
 
-    public MethodInfo(AppInfo appInfo) {
-        super(appInfo);
+    private String descriptor;
+
+    public Descriptor(String descriptor) {
+        this.descriptor = descriptor;
+    }
+
+    public boolean isArray() {
+        return descriptor.startsWith("[");
+    }
+
+    public boolean isMethod() {
+        return descriptor.startsWith("(");
+    }
+
+    public String toString() {
+        return descriptor;
     }
 
 }

@@ -27,13 +27,12 @@ import java.util.Map;
  * 
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ClassInfo {
+public class ClassInfo extends BaseInfo {
 
     private Map<String,CustomClassInfo> customMap;
-    private AppInfo appInfo;
 
     public ClassInfo(AppInfo appInfo) {
-        this.appInfo = appInfo;
+        super(appInfo);
         // TODO maybe store in a single hashmap in AppInfo, more memory-efficient?
         customMap = new HashMap<String, CustomClassInfo>();
     }
@@ -57,5 +56,13 @@ public class ClassInfo {
 
     public CustomClassInfo getCustomInfo(String key) {
         return customMap.get(key);
+    }
+
+    public FieldInfo getFieldInfo(String name) {
+        return null;
+    }
+
+    public MethodInfo getMethodInfo(String signature) {
+        return null;
     }
 }

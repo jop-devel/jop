@@ -23,5 +23,10 @@ package com.jopdesign.common;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class FieldInfo {
+public class FieldInfo extends MemberInfo {
+
+    public FieldInfo(AppInfo appInfo) {
+        super(appInfo);
+    }
+
 }

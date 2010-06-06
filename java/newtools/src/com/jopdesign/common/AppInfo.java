@@ -20,7 +20,10 @@
 
 package com.jopdesign.common;
 
+import org.apache.bcel.util.ClassPath;
+
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,14 +33,53 @@ import java.util.Map;
  */
 public class AppInfo {
 
-    Map<String,ClassInfo> classes;
+    private Map<String,ClassInfo> classes;
+    private List<BaseInfo> roots;
+    private MethodInfo entryMethod;
+    private ClassPath classPath;
 
-    public AppInfo() {
+    public AppInfo(ClassPath classPath) {
+        this.classPath = classPath;
         classes = new HashMap<String, ClassInfo>();
     }
 
-    public ClassInfo getClassInfo(String fqn) {
-        return classes.get(fqn);
+    public ClassPath getClassPath() {
+        return classPath;
     }
-    
+
+    public void setClassPath(ClassPath classPath) {
+        this.classPath = classPath;
+    }
+
+    public ClassInfo loadClassInfo(String className) {
+
+        return null;
+    }
+
+    public void removeClassInfo(ClassInfo classInfo) {
+
+    }
+
+    public void addRoot(ClassInfo classInfo) {
+
+    }
+
+    public void addRoot(MethodInfo methodInfo) {
+
+    }
+
+    public void setEntryMethod(MethodInfo entry) {
+        
+    }
+
+    public void clear(boolean clearRoots) {
+
+    }
+
+    public ClassInfo getClassInfo(String className) {
+        return classes.get(className);
+    }
+
+     
+
 }

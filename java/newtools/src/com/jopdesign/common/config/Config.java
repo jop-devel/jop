@@ -42,6 +42,12 @@ public class Config {
     public static final BoolOption DEBUG =
             new BoolOption("debug","verbose debugging mode", Option.SHORT_NONE, true);
 
+    public static final StringOption CLASSPATH =
+            new StringOption("cp", "classpath of target app", ".");
+
+    public static final StringOption WRITEPATH =
+            new StringOption("out", "path to write generated classfiles", "out");
+
     public static final Option<?>[] standardOptions = { SHOW_HELP, SHOW_VERSION, DEBUG };
     
 
@@ -102,17 +108,27 @@ public class Config {
     }
 
     /**
-     * Load a configuration.
+     * Load a properties configuration file and append its content to the current configuration.
+     * Existing keys are replaced.
+     *
      * @param propStream an open InputStream serving the properties
      * @throws IOException if loading fails.
      */
-    public void loadConfig(InputStream propStream) throws IOException {
+    public void addProperties(InputStream propStream) throws IOException {
         Properties p = new Properties();
         p.load(propStream);
         props.putAll(p);
     }
 
-    public void loadConfig(InputStream propStream, String prefix) throws IOException {
+    /**
+     * Load a properties configuration file and append its content to the current configuration.
+     * Existing keys are replaced.
+     *
+     * @param propStream an open InputStream serving the properties
+     * @param prefix a prefix to append to all property keys in the stream before adding them to the configuration.
+     * @throws IOException if loading fails.
+     */
+    public void addProperties(InputStream propStream, String prefix) throws IOException {
         Properties p = new Properties();
         p.load(propStream);
         String pfx = prefix == null || "".equals(prefix) ? "" : prefix + ".";
