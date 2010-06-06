@@ -249,6 +249,7 @@ public class ObjectCacheAnalysis {
 				}
 			}
 		}
+		OCacheAnalysisResult.dumpPlot(samples, oStream);
 		OCacheAnalysisResult.dumpLatex(samples, oStream);
 	} 
 	
