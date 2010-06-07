@@ -49,7 +49,7 @@ public class ObjectCacheAnalysisDemo {
 		private long missCost;
 		private long bypassCost;
 		private long fieldAccesses;
-		private long bypassAccesses;
+		private long bypassCount;
 		private long missCount;
 
 		/**
@@ -62,7 +62,7 @@ public class ObjectCacheAnalysisDemo {
 			this.bypassCost = bypassCost;
 			this.fieldAccesses = fieldAccesses;
 			this.missCount = missCount;
-			this.bypassAccesses = bypassAccesses;
+			this.bypassCount = bypassAccesses;
 		}
 
 		public ObjectCacheCost() {
@@ -75,11 +75,11 @@ public class ObjectCacheAnalysisDemo {
 		}
 		
 		public long getBypassCost() { return bypassCost; }
-		public long getBypassAccesses() { return this.bypassAccesses; }
+		public long getBypassCount() { return this.bypassCount; }
 		
 		public void addBypassCost(long bypassCost, int accesses) {
 			this.bypassCost += bypassCost;
-			this.bypassAccesses += accesses;			
+			this.bypassCount += accesses;			
 		}
 
 		public ObjectCacheCost addMissCost(long missCost, int missCount) {
@@ -95,7 +95,7 @@ public class ObjectCacheAnalysisDemo {
 
 		public long getTotalFieldAccesses()
 		{
-			return bypassAccesses + fieldAccesses;
+			return bypassCount + fieldAccesses;
 		}
 		
 		public long getFieldAccessesWithoutBypass()
@@ -110,7 +110,7 @@ public class ObjectCacheAnalysisDemo {
 		public void addCost(ObjectCacheCost occ) {
 			this.missCount += occ.missCount;
 			this.missCost += occ.missCost;
-			this.bypassAccesses += occ.bypassAccesses;
+			this.bypassCount += occ.bypassCount;
 			this.bypassCost += occ.bypassCost;
 			addAccessToCachedField(occ.fieldAccesses);
 		}
@@ -121,7 +121,7 @@ public class ObjectCacheAnalysisDemo {
 
 		public ObjectCacheCost times(Long value) {
 			return new ObjectCacheCost(missCount * value, missCost * value,
-					                   bypassAccesses * value, bypassCost * value,
+					                   bypassCount * value, bypassCost * value,
 					                   fieldAccesses * value);
 		}
 

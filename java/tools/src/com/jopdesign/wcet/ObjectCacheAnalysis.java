@@ -194,6 +194,7 @@ public class ObjectCacheAnalysis {
 					 */
 					long totalFieldAccesses = -1, cachedFieldAccesses = -1;
 					double bestCyclesPerAccessForConfig = Double.POSITIVE_INFINITY;
+					double bestHitRate = 0.0;
 					long bestCostPerConfig = Long.MAX_VALUE;
 					// assume cacheSizes are in ascending order
 					for(int ways : cacheWays) {
@@ -204,7 +205,7 @@ public class ObjectCacheAnalysis {
 						jopconfig.setObjectCacheLineSize(lineSize);
 						oca = new ObjectCacheAnalysisDemo(project, jopconfig);
 
-						double cyclesPerAccess;
+						double cyclesPerAccess, hitRate;
 						ObjectCacheCost ocCost = oca.computeCost(); 
 						long cost = ocCost.getCost();
 						if(cost < bestCostPerConfig) bestCostPerConfig = cost;
@@ -224,9 +225,12 @@ public class ObjectCacheAnalysis {
 						if(cyclesPerAccess < bestCyclesPerAccessForConfig || ways <= 1) {
 							bestCyclesPerAccessForConfig = cyclesPerAccess;
 						}
-
-						/* hit rate is defined as: 1 - (cache misses / accesses to cached fields (with n=0) */
-						double hitRate = (1 - ((double)ocCost.getCacheMissCount() / (double)cachedFieldAccesses));
+						/* hit rate is defined as: 1 - ((cache misses+accesses to bypassed fields) / total field accesses (with n=0) */
+						long missAccesses = ocCost.getCacheMissCount() + ocCost.getBypassCount();
+						hitRate = (1 - ((double)missAccesses / (double)totalFieldAccesses));						
+						if(hitRate > bestHitRate || ways <= 1) {
+							bestHitRate = hitRate;
+						}
 						
 						if(first) {
 							oStream.println(String.format("***** ***** MODE = %s ***** *****\n",modeString));
@@ -243,7 +247,7 @@ public class ObjectCacheAnalysis {
 						}
 						oStream.println(report);
 						OCacheAnalysisResult sample =
-							new ObjectCacheEvaluation.OCacheAnalysisResult(mode, ways, lineSize, configId, hitRate, bestCyclesPerAccessForConfig, ocCost);
+							new ObjectCacheEvaluation.OCacheAnalysisResult(mode, ways, lineSize, configId, bestHitRate, bestCyclesPerAccessForConfig, ocCost);
 						samples.add(sample);
 					}
 				}

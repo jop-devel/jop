@@ -160,7 +160,7 @@ public class ObjectRefAnalysis {
 			Set<SymbolicAddress> addressSet = new HashSet<SymbolicAddress>();
 			for(ContextMap<CallString, BoundedSet<SymbolicAddress>> entry : pointsTo.values()) {
 				for(BoundedSet<SymbolicAddress> aset : entry.values()) {
-					addressSet.addAll(aset.getSet());
+					if(! aset.isSaturated()) addressSet.addAll(aset.getSet());
 				}
 			}
 			return addressSet;
@@ -425,6 +425,9 @@ public class ObjectRefAnalysis {
 			long bbBypassCost = bypassCostMap.get(node);
 			bypassCost += bbBypassCost * nodeFreq;
 			missCost   += (costMap.get(node) - bbBypassCost) * nodeFreq;
+			/* HACK */
+			long amCost = costModel.getLoadCacheLineCost() + costModel.getLoadFieldCost();
+			missCount  +=  ((costMap.get(node) - bbBypassCost) * nodeFreq) / amCost;
 			for(InstructionHandle ih : bb.getInstructions()) {
 				String handleType = getHandleType(project, node, ih); 				
 				if(handleType == null) continue; /* No getfield/handle access */					
