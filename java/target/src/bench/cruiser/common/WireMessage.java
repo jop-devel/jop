@@ -20,7 +20,7 @@
 
 package cruiser.common;
 
-public class WireMessage {
+public abstract class WireMessage {
 
 	public enum Type {
 		SPEED_FRONT_LEFT(1, 4), SPEED_FRONT_RIGHT(2, 4),
@@ -73,7 +73,7 @@ public class WireMessage {
 
 		int checksum = (type.id >>> 4) ^ type.id ^ type.length;
 
-		for (int i = type.length-1; i >= 0; i--) {
+		for (int i = type.length-1; i >= 0; i--) { //@WCA loop <= 15
 			int d = (int)(data >>> (4*i));
 			buffer[pos++] = hexDigit(d & 0x0f);
 			checksum ^= d;
@@ -148,7 +148,7 @@ public class WireMessage {
 
 	public static long parseData(String msg, int len) {
 		long data = 0;
-		for (int i = 0; i < len; i++) {
+		for (int i = 0; i < len; i++) { //@WCA loop <= 15
 			int a = hexNum(msg.charAt(4+i));
 			if (a < 0) {
 				return -1;
@@ -181,4 +181,5 @@ public class WireMessage {
 		}
 		return -1;
 	}
+
 }

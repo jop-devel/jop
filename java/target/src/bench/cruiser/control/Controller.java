@@ -38,14 +38,14 @@ public class Controller implements Runnable {
 		int delta = target - current;
 
 		int P = delta;
-		int I = (integralError*511)/512 + delta;
+		int I = (integralError*255)/256 + delta;
 		integralError = I;
 		int D = delta - lastDelta;
 		lastDelta = delta;
 
 		// System.err.println("P:\t"+P+"\tI:\t"+I+"\tD:\t"+D);
 	
-		return 128*P+I/32+D/256;
+		return 64*P+I/8+D/256;
 	}
 
 	private void control() {
