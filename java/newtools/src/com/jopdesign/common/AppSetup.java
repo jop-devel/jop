@@ -184,61 +184,58 @@ public class AppSetup {
             System.exit(0);
         }
 
-        // setup AppInfo
-        if ( handleAppInfoInit ) {
+        return rest;
+    }
 
-            // check arguments
-            if (rest.length == 0) {
-                System.out.println("You need to specify a main class or entry method.");
-                if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
-                    System.out.println("Use '--help' to show a usage message.");
-                }
-                System.exit(2);
+    public void setupAppInfo(String[] args) {
+
+        // check arguments
+        if (args.length == 0) {
+            System.out.println("You need to specify a main class or entry method.");
+            if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
+                System.out.println("Use '--help' to show a usage message.");
             }
-
-            appInfo.setClassPath(new ClassPath(config.getOption(Config.CLASSPATH)));
-
-            String[] natives = Config.splitStringList(config.getOption(Config.NATIVE_CLASSES));
-            for (String n : natives) {
-                appInfo.excludeNative(n.replaceAll("/","."));
-            }
-
-            // add system classes as roots
-            String[] roots = Config.splitStringList(config.getOption(Config.ROOTS));
-            for (String root : roots) {
-                ClassInfo rootInfo = appInfo.loadClass(root.replaceAll("/","."));
-                if ( rootInfo == null ) {
-                    System.out.println("Error loading root class '"+root+"'.");
-                    System.exit(4);
-                }
-                appInfo.addRoot(rootInfo);
-            }            
-
-            // try to find main entry method
-            try {
-                MethodInfo main = getMainMethod(rest[0].replaceAll("/","."));
-
-                appInfo.setMainMethod(main);
-
-            } catch (Config.BadConfigurationException e) {
-                System.out.println(e.getMessage());
-                if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
-                    System.out.println("Use '--help' to show a usage message.");
-                }
-                System.exit(2);
-            }
-
-            // load other root classes
-            for (int i = 1; i < rest.length; i++) {
-                ClassInfo clsInfo = appInfo.loadClass(rest[i].replaceAll("/","."));
-
-                appInfo.addRoot(clsInfo);
-            }
-
-            return new String[]{};
+            System.exit(2);
         }
 
-        return rest;
+        appInfo.setClassPath(new ClassPath(config.getOption(Config.CLASSPATH)));
+
+        String[] natives = Config.splitStringList(config.getOption(Config.NATIVE_CLASSES));
+        for (String n : natives) {
+            appInfo.excludeNative(n.replaceAll("/","."));
+        }
+
+        // add system classes as roots
+        String[] roots = Config.splitStringList(config.getOption(Config.ROOTS));
+        for (String root : roots) {
+            ClassInfo rootInfo = appInfo.loadClass(root.replaceAll("/","."));
+            if ( rootInfo == null ) {
+                System.out.println("Error loading root class '"+root+"'.");
+                System.exit(4);
+            }
+            appInfo.addRoot(rootInfo);
+        }
+
+        // try to find main entry method
+        try {
+            MethodInfo main = getMainMethod(args[0].replaceAll("/","."));
+
+            appInfo.setMainMethod(main);
+
+        } catch (Config.BadConfigurationException e) {
+            System.out.println(e.getMessage());
+            if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
+                System.out.println("Use '--help' to show a usage message.");
+            }
+            System.exit(2);
+        }
+
+        // load other root classes
+        for (int i = 1; i < args.length; i++) {
+            ClassInfo clsInfo = appInfo.loadClass(args[i].replaceAll("/","."));
+
+            appInfo.addRoot(clsInfo);
+        }
     }
 
     /**

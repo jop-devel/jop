@@ -25,7 +25,7 @@ import com.jopdesign.common.type.Signature;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class BaseInfo {
+public abstract class BaseInfo {
 
     private AppInfo appInfo;
 
@@ -36,6 +36,8 @@ public class BaseInfo {
     public AppInfo getAppInfo() {
         return appInfo;
     }
+
+    public abstract ClassInfo getClassInfo();
 
     public Signature getSignature() {
         return null;

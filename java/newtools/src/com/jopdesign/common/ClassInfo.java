@@ -20,11 +20,8 @@
 
 package com.jopdesign.common;
 
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * 
@@ -32,20 +29,20 @@ import java.util.Set;
  */
 public class ClassInfo extends BaseInfo {
 
-    private Map<String,CustomClassInfo> customMap;
+    private Map<String,Object> customMap;
     private String className;
 
     public ClassInfo(AppInfo appInfo) {
         super(appInfo);
         // TODO maybe store in a single hashmap in AppInfo, more memory-efficient?
-        customMap = new HashMap<String, CustomClassInfo>();
+        customMap = new HashMap<String, Object>();
     }
 
-    public CustomClassInfo clearCustomInfo(String key) {
+    public Object clearCustomInfo(String key) {
         return customMap.remove(key);
     }
 
-    public CustomClassInfo setCustomInfo(String key, CustomClassInfo customInfo) {
+    public Object setCustomInfo(String key, Object customInfo) {
         // We could use generics here, and even use customInfo.class as key, but
         // 1) using class as key makes it impossible to attach the same CustomInfo class
         //    with different values multiple times,
@@ -58,7 +55,7 @@ public class ClassInfo extends BaseInfo {
         return customMap.put(key, customInfo);
     }
 
-    public CustomClassInfo getCustomInfo(String key) {
+    public Object getCustomInfo(String key) {
         return customMap.get(key);
     }
 

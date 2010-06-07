@@ -59,7 +59,7 @@ public class JCopter {
         // setup some defaults
         AppSetup setup = new AppSetup(defaults, true);
         setup.addStandardOptions(true, true);
-        setup.setUsageInfo("jcopter", "");
+        setup.setUsageInfo("jcopter", "my very first wcet tool.");
         // TODO add version info of WCET and DFA tool to versionInfo text 
         setup.setVersionInfo("jcopter: "+VERSION);
 
@@ -67,11 +67,13 @@ public class JCopter {
         setup.getConfig().addOption( new BoolOption("useDFA", "run and use results of the DFA") );
 
         // parse options and config, load application classes
-        setup.setupConfig(args);
+        String[] rest = setup.setupConfig(args);
         setup.setupLogger();
 
         // setup AppInfo, load app classes
         AppInfo appInfo = setup.getAppInfo();
+
+        setup.setupAppInfo(rest);
 
         // run DFA + WCET
 

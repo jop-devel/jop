@@ -49,6 +49,8 @@ public class AppInfo {
     private Set<String> excludeLibrary;
     private Set<String> excludeIgnored;
 
+    private Set<CustomInfoManager> infoManagers;
+
     public AppInfo(ClassPath classPath) {
         this.classPath = classPath;
 
@@ -57,6 +59,7 @@ public class AppInfo {
         excludeNative = new HashSet<String>(1);
         excludeLibrary = new HashSet<String>(0);
         excludeIgnored = new HashSet<String>(0);
+        infoManagers = new HashSet<CustomInfoManager>(1);
     }
 
     public ClassPath getClassPath() {
@@ -113,14 +116,6 @@ public class AppInfo {
         return cls;
     }
 
-    public boolean isExcluded(String className) {
-        return false;
-    }
-
-    private ClassInfo tryLoadClass(String className) {
-        return null;
-    }
-
     public ClassInfo createClass(String className, ClassRef superClass) {
         return null;
     }
@@ -168,7 +163,16 @@ public class AppInfo {
         return ignoreMissing;
     }
 
+
+
     public void clear(boolean clearRoots) {
+
+    }
+
+    /**
+     * Reload all currently loaded classInfos from disk, using the current classpath.
+     */
+    public void reloadClasses() {
 
     }
 
@@ -202,6 +206,14 @@ public class AppInfo {
 
     public MethodRef getMethodRef(Signature methodSignature) {
 
+        return null;
+    }
+
+    public boolean isExcluded(String className) {
+        return false;
+    }
+
+    private ClassInfo tryLoadClass(String className) {
         return null;
     }
 

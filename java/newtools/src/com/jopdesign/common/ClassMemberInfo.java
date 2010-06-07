@@ -33,4 +33,8 @@ public class ClassMemberInfo extends BaseInfo {
         return null;
     }
 
+    public String getName() {
+        return null;
+    }
+
 }

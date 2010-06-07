@@ -59,12 +59,13 @@ public class ExampleTool {
         setup.getConfig().addOption( new IntOption("new", "create n new classes", 2).setMinMax(0,10) );
 
         // parse options and config, load application classes
-        setup.setupConfig("example.properties", args);
+        String[] rest = setup.setupConfig("example.properties", args);
         setup.setupLogger();
 
         // setup AppInfo, load app classes
         AppInfo appInfo = setup.getAppInfo();
-        
+
+        setup.setupAppInfo(rest);
 
         // access and modify some classes
         
