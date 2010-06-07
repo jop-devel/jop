@@ -155,6 +155,17 @@ public class ObjectRefAnalysis {
 		public boolean containsKey(InstructionHandle ih) {
 			return pointsTo.containsKey(ih);
 		}
+
+		public Set<SymbolicAddress> getAddressSet() {
+			Set<SymbolicAddress> addressSet = new HashSet<SymbolicAddress>();
+			for(ContextMap<CallString, BoundedSet<SymbolicAddress>> entry : pointsTo.values()) {
+				for(BoundedSet<SymbolicAddress> aset : entry.values()) {
+					addressSet.addAll(aset.getSet());
+				}
+			}
+			return addressSet;
+		}
+		
 	}
 
 	/* class for checking whether a basic block is executed as most once in a scope */
@@ -225,6 +236,11 @@ public class ObjectRefAnalysis {
 		dfa.runLocalAnalysis(spt,scope.getMethodImpl().getFQMethodName());
 		LocalPointsToResult lpt = new LocalPointsToResult(spt.getResult());
 		return lpt;
+	}
+	
+	public Set<SymbolicAddress> getAddressSet(CallGraphNode scope) {
+		LocalPointsToResult lpt = getUsedRefs(scope);
+		return lpt.getAddressSet();
 	}
 	
 	/** Traverse vertex set. Collect those types where we could not resolve
@@ -469,8 +485,10 @@ public class ObjectRefAnalysis {
 		return tagSet.get(scope);		
 	}
 	
-	public Map<CallGraphNode, Set<String>> getSaturatedRefSets() {
-		return this.saturatedTypes;
+
+	public Object getSaturatedTypes(CallGraphNode scope) {
+		if(! this.saturatedTypes.containsKey(scope)) getMaxCachedTags(scope);
+		return this.saturatedTypes.get(scope);
 	}
 	
 	/* Helpers */

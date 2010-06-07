@@ -1,8 +1,52 @@
 package com.jopdesign.tools;
 
 public class ObjectCacheSim {
+	private static final String OCACHE_ASSOC = "OCACHE_ASSOC";
+	private static final String OCACHE_WORDS_PER_LINE = "OCACHE_WORDS_PER_LINE";
+	private static final String OCACHE_FILL_LINE = "OCACHE_FILL_LINE";
+	private static final String OCACHE_SINGLE_FIELD = "OCACHE_SINGLE_FIELD";
+	private static final String OCACHE_REPLACEMENT = "OCACHE_REPLACEMENT";
+	private static final String OCACHE_ACCESS_COST = "OCACHE_ACCESS_COST";
+	private static final String OCACHE_LOAD_FIELD_COST = "OCACHE_LOAD_FIELD_COST";
+	private static final String OCACHE_LOAD_LINE_COST = "OCACHE_LOAD_LINE_COST";
 
+	private static String stringFromEnv(String key, String def) {
+		String val = System.getenv(key);
+		if(val == null) return def;
+		return val;		
+	}
+	private static int intFromEnv(String key, int def) {
+		return Integer.parseInt(stringFromEnv(key,""+def));
+	}
+	private static boolean boolFromEnv(String key) {
+		return System.getenv(key) != null;
+	}
 	
+	public static ObjectCacheSim configureFromEnv() {
+		int assoc = intFromEnv(OCACHE_ASSOC, 16);
+		int wordsPerLine = intFromEnv(OCACHE_WORDS_PER_LINE, 16);
+		boolean fillLine = boolFromEnv(OCACHE_FILL_LINE);
+		boolean fieldAsTag = boolFromEnv(OCACHE_SINGLE_FIELD);
+		String replacement = stringFromEnv(OCACHE_REPLACEMENT,"lru");
+		int accessCost = intFromEnv(OCACHE_ACCESS_COST, 0);
+		int loadFieldCost = intFromEnv(OCACHE_LOAD_FIELD_COST, 2);
+		int loadLineCost = intFromEnv(OCACHE_LOAD_LINE_COST, wordsPerLine * 2);
+		ObjectCacheSim ocs = new ObjectCacheSim(assoc,wordsPerLine,fillLine,fieldAsTag,replacement.equals("lru"));
+		ocs.setCost(accessCost, loadFieldCost, loadLineCost);
+		return ocs;
+	}
+
+	private int accessCost;
+	private int loadFieldCost;
+	private int loadLineCost;
+	
+	private void setCost(int accessCost, int loadFieldCost, int loadLineCost) {
+		this.accessCost = accessCost;
+		this.loadFieldCost = loadFieldCost;
+		this.loadLineCost = loadLineCost;
+	}
+
+
 	static class CacheEntry {
 		int tag;
 		int contents[];
@@ -34,8 +78,9 @@ public class ObjectCacheSim {
 	}
 	
 	public static class ObjectCacheStat {
-		public int missCount = 0, accessCount = 0;
+		public int loadCycles = 0, missCount = 0, accessCount = 0;
 		public void reset() {
+			loadCycles = 0;
 			missCount = 0;
 			accessCount = 0;
 		}
@@ -50,7 +95,7 @@ public class ObjectCacheSim {
 	private ObjectCacheStat stats;
 	private CacheEntry cacheLines[];
 	
-	public ObjectCacheSim(int assoc, int lineSize, boolean fillLine, boolean useFieldsAsTag, boolean useLRU) {
+	private ObjectCacheSim(int assoc, int lineSize, boolean fillLine, boolean useFieldsAsTag, boolean useLRU) {
 		this.assoc = assoc;
 		this.lineSize = lineSize;
 		this.fillLine = fillLine;
@@ -64,11 +109,13 @@ public class ObjectCacheSim {
 
 	public void accessField(int ref, int off) {
 		int addr;
+		stats.loadCycles += this.accessCost; 
 		if(useFieldsAsTag) addr = ref+off;
 		else                   addr = ref;
 		this.stats.accessCount++;
 		if(! useFieldsAsTag && off > lineSize) {
 			stats.missCount++;
+			stats.loadCycles += this.loadFieldCost;
 			return;
 		}
 		CacheLookup lookup;
@@ -93,6 +140,8 @@ public class ObjectCacheSim {
 			}
 		}
 		if(! lookup.wasHit) {
+			if(fillLine) stats.loadCycles += this.loadLineCost;
+			else         stats.loadCycles += this.loadFieldCost;
 			stats.missCount++;			
 		}
 	}
@@ -154,11 +203,14 @@ public class ObjectCacheSim {
 	}
 
 	public void dumpStats() {
+		double cpa = (double)stats.loadCycles / (double)stats.accessCount;
 		int ac = stats.accessCount;
 		int mc = stats.missCount;
 		System.out.println(
-				String.format("Object Cache (%s,%s): Assoc: %d, words per line: %d, Access: %d, Miss: %d, Ration: %.2f %%",
+				String.format("Object Cache (%s,%s): Assoc: %d, words per line: %d, Cycles/Access: %.2f, Load Cycles: %d,Access: %d, Miss: %d, Ratio: %.2f %%",
 						useLRU?"LRU":"FIFO", fillLine?"fill line":"fill word",
-						assoc, lineSize,  ac,mc,(double)(ac-mc)/(double)(ac)*100.0));
+						assoc, lineSize, cpa, stats.loadCycles,
+						ac,mc,(double)(ac-mc)/(double)(ac)*100.0));
 	}
+
 }

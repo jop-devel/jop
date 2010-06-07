@@ -9,11 +9,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.traverse.TopologicalOrderIterator;
+
 import com.jopdesign.dfa.analyses.SymbolicAddress;
 import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation;
+import com.jopdesign.wcet.analysis.cache.ObjectRefAnalysis;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation.OCacheAnalysisResult;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation.OCacheMode;
@@ -125,42 +129,19 @@ public class ObjectCacheAnalysis {
 		//testExactAllFit();
 
 		// Object Cache (debugging)
-//		Map<CallGraphNode, Long> refUsageTotal; 
-//		Map<CallGraphNode, Set<SymbolicAddress>> refUsageNames;
-//		Map<CallGraphNode, Set<String>> refUsageSaturatedTypes;
-//		Map<CallGraphNode, Long> refUsageDistinct;
-//		Map<CallGraphNode, Long> fieldUsageDistinct;
-//
-//		ObjectRefAnalysis orefAnalysisCountAll = new ObjectRefAnalysis(project, 65536, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE,true);
-//		refUsageTotal = orefAnalysisCountAll.getMaxReferencesAccessed();
-		
-	//	ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project, 65536, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE);
-//		LpSolveWrapper.resetSolverTime();
-//        start = System.nanoTime();
-//		orefAnalysis.analyzeRefUsage();
-//        stop = System.nanoTime();
-//		System.err.println(
-//				String.format("[Object Reference Analysis]: Total time: %.2f s / Total solver time: %.2f s",
-//						timeDiff(start,stop),
-//						LpSolveWrapper.getSolverTime()));   
-//		refUsageNames = orefAnalysis.getUsedSymbolicNames();
-//		refUsageSaturatedTypes = orefAnalysis.getSaturatedRefSets();
-//		refUsageDistinct = orefAnalysis.getMaxReferencesAccessed();
-//		fieldUsageDistinct = orefAnalysis.getMaxFieldsAccessed();
-		
-//		for(Entry<CallGraphNode, Long> entry : refUsageDistinct.entrySet()) {
-//			CallGraphNode node = entry.getKey();
-//			Long usedRefs = entry.getValue();
-//			String entryString = String.format("%-50s ==> %3d (%3d fields) <= %3d (%s) ; Saturated Types: (%s)",
-//						node.getMethodImpl().methodId,
-//						usedRefs,
-//						fieldUsageDistinct.get(node),
-//						refUsageTotal.get(node),
-//						refUsageNames.get(node),
-//						refUsageSaturatedTypes.get(node).toString()
-//						);
-//			System.out.println("  "+entryString);
-//		}
+
+		ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project, false, false, 65536, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE);
+		TopologicalOrderIterator<CallGraphNode, DefaultEdge> cgIter = this.project.getCallGraph().topDownIterator();
+		while(cgIter.hasNext()) {
+			CallGraphNode scope = cgIter.next();
+			Set<SymbolicAddress> addresses = orefAnalysis.getAddressSet(scope);
+			String entryString = String.format("%-50s ==> |%d|%s ; Saturated Types: (%s)",
+						scope,
+						addresses.size(),
+						orefAnalysis.getAddressSet(scope),
+						orefAnalysis.getSaturatedTypes(scope));
+			System.out.println("  "+entryString);
+		}
 		
 		// Object cache, evaluation
 		PrintStream pStream;
@@ -181,7 +162,7 @@ public class ObjectCacheAnalysis {
 
 		OCacheMode[] modes = { OCacheMode.WORD_FILL, OCacheMode.LINE_FILL, OCacheMode.SINGLE_FIELD };
 		List<OCacheAnalysisResult> samples = new ArrayList<OCacheAnalysisResult>();
-		int[] cacheWays = { 0,1,2,4,8,16,32, 64 }; // need to be in ascending order
+		int[] cacheWays = { 0,1,2,4,8,16,32,64,512 }; // need to be in ascending order
 		int[] lineSizesObjCache  = { 1,2,4,8,16,32};
 		int[] lineSizesFieldCache = { 1 };
 		int[] lineSizes;
@@ -268,6 +249,7 @@ public class ObjectCacheAnalysis {
 				}
 			}
 		}
+		OCacheAnalysisResult.dumpPlot(samples, oStream);
 		OCacheAnalysisResult.dumpLatex(samples, oStream);
 	} 
 	
