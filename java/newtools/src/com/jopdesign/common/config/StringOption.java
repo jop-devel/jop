@@ -34,11 +34,23 @@ public class StringOption extends Option<String> {
 		super(key,descr,def);
 	}
 
+    public StringOption(String key, String descr, char shortKey, boolean optional) {
+        super(key, String.class, descr, optional);
+        this.shortKey = shortKey;
+    }
+
+    public StringOption(String key, String descr, char shortKey, String def) {
+        super(key, descr, def);
+        this.shortKey = shortKey;
+    }
+
 	public String parse(String s) {
         return s.trim();
     }
 
 	public StringOption mandatory() {
-		return new StringOption(key, description,false);
+        StringOption option = new StringOption(key, description, false);
+        option.setShortKey(shortKey);
+        return option;
 	}
 }

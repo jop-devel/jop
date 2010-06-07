@@ -32,6 +32,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Properties;
 
 /**
@@ -112,6 +113,9 @@ public class AppSetup {
 
         if (handleAppInfoInit) {
             config.addOption(Config.CLASSPATH);
+            config.addOption(Config.ROOTS);
+            config.addOption(Config.NATIVE_CLASSES);
+            config.addOption(Config.MAIN_METHOD_NAME);
         }
     }
 
@@ -150,6 +154,7 @@ public class AppSetup {
                 InputStream is = new BufferedInputStream(new FileInputStream(file));
                 config.addProperties(is);
             } catch (FileNotFoundException e) {
+                // should never happen
                 System.out.println("Configuration file '"+configFile+"' not found: "+e.getMessage());
             } catch (IOException e) {
                 System.out.println("Could not read config file '"+file+"': "+e.getMessage());
@@ -181,8 +186,8 @@ public class AppSetup {
 
         // setup AppInfo
         if ( handleAppInfoInit ) {
-            appInfo.setClassPath(new ClassPath(config.getOption(Config.CLASSPATH)));
 
+            // check arguments
             if (rest.length == 0) {
                 System.out.println("You need to specify a main class or entry method.");
                 if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
@@ -191,19 +196,49 @@ public class AppSetup {
                 System.exit(2);
             }
 
-            Signature sMain = new Signature(rest[0]);
-            
+            appInfo.setClassPath(new ClassPath(config.getOption(Config.CLASSPATH)));
+
+            String[] natives = Config.splitStringList(config.getOption(Config.NATIVE_CLASSES));
+            for (String n : natives) {
+                appInfo.excludeNative(n.replaceAll("/","."));
+            }
+
+            // add system classes as roots
+            String[] roots = Config.splitStringList(config.getOption(Config.ROOTS));
+            for (String root : roots) {
+                ClassInfo rootInfo = appInfo.loadClass(root.replaceAll("/","."));
+                if ( rootInfo == null ) {
+                    System.out.println("Error loading root class '"+root+"'.");
+                    System.exit(4);
+                }
+                appInfo.addRoot(rootInfo);
+            }            
+
+            // try to find main entry method
+            try {
+                MethodInfo main = getMainMethod(rest[0].replaceAll("/","."));
+
+                appInfo.setMainMethod(main);
+
+            } catch (Config.BadConfigurationException e) {
+                System.out.println(e.getMessage());
+                if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
+                    System.out.println("Use '--help' to show a usage message.");
+                }
+                System.exit(2);
+            }
+
+            // load other root classes
+            for (int i = 1; i < rest.length; i++) {
+                ClassInfo clsInfo = appInfo.loadClass(rest[i].replaceAll("/","."));
+
+                appInfo.addRoot(clsInfo);
+            }
+
+            return new String[]{};
         }
 
         return rest;
-    }
-
-    private File findConfigFile(String configFile) {
-        if ( configFile == null || "".equals(configFile) ) {
-            return null;
-        }
-        // look in different paths? load multiple files?
-        return new File(configFile);
     }
 
     /**
@@ -214,15 +249,6 @@ public class AppSetup {
      */
     public void setupLogger() {
         loggerConfig.setupLogger(config);
-    }
-
-    /**
-     * Initialize AppInfo using the current options and return it.
-     * @return an initialized AppInfo.
-     */
-    public AppInfo loadAppInfo() {
-
-        return appInfo;
     }
 
     public void printUsage() {
@@ -253,4 +279,62 @@ public class AppSetup {
         }
 
     }
+
+
+
+    private File findConfigFile(String configFile) {
+        if ( configFile == null || "".equals(configFile) ) {
+            return null;
+        }
+        // look in different paths? load multiple files?
+        return new File(configFile);
+    }
+
+    private MethodInfo getMainMethod(String signature) throws Config.BadConfigurationException {
+        Signature sMain = new Signature(signature);
+
+        String clsName = sMain.getClassName();
+        if ( clsName == null ) {
+            throw new Config.BadConfigurationException("You need to specify a classname for the main method.");
+        }
+
+        ClassInfo clsInfo = appInfo.loadClass(clsName);
+        if ( clsInfo == null ) {
+            throw new Config.BadConfigurationException("Class '"+clsName+"' for main method not found.");
+        }
+
+        if ( sMain.isMethodSignature() ) {
+            MethodInfo method = clsInfo.getMethodInfo(sMain.getMemberSignature());
+            if ( method == null ) {
+                throw new Config.BadConfigurationException("Method '"+sMain.getMemberSignature()+"' not found in '"
+                            +clsName+"'.");
+            }
+            return method;
+        }
+
+        // try to find main method
+        String mainName = sMain.getMemberName();
+        if ( mainName == null ) {
+            mainName = config.getOption(Config.MAIN_METHOD_NAME);
+        }
+        MethodInfo[] methods = clsInfo.getMethodByName(mainName);
+
+        if ( methods.length == 0 ) {
+            throw new Config.BadConfigurationException("Method '"+mainName+"' not found in '"
+                        +clsName+"'.");
+        }
+        if ( methods.length > 1 ) {
+            // TODO maybe check if there is a single static method by that name?
+            StringBuffer s = new StringBuffer(String.format(
+                    "Multiple candidates for '%s' in '%s', please specify a signature: ", mainName, clsName) );
+            for (MethodInfo m : methods) {
+                s.append("\n");
+                s.append(m.getSignature());
+            }
+            throw new Config.BadConfigurationException(s.toString());
+        }
+
+        return methods[0];
+    }
+
 }

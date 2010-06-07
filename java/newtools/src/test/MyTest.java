@@ -18,15 +18,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common;
+package test;
+
+import java.util.Properties;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class FieldInfo extends ClassMemberInfo {
+public class MyTest {
 
-    public FieldInfo(AppInfo appInfo) {
-        super(appInfo);
+    public static void main(String[] args) {
+        
+        System.out.println(args.toString());
+
     }
 
 }

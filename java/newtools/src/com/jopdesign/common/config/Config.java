@@ -23,6 +23,10 @@ package com.jopdesign.common.config;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -31,6 +35,13 @@ import java.util.Properties;
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class Config {
+
+    public static final String DEFAULT_NATIVE = "com.jopdesign.sys.Native";
+    public static final String[] JOP_SYSTEM_CLASSES = {
+            "com.jopdesign.sys.JVM",
+            "com.jopdesign.sys.JVMHelp",
+            "com.jopdesign.sys.Startup"
+        };
 
     /* Options which are always present */
     public static final BoolOption SHOW_HELP =
@@ -45,8 +56,17 @@ public class Config {
     public static final StringOption CLASSPATH =
             new StringOption("cp", "classpath of target app", ".");
 
-    public static final StringOption WRITEPATH =
-            new StringOption("out", "path to write generated classfiles", "out");
+    public static final StringOption MAIN_METHOD_NAME =
+            new StringOption("mm", "method name of the entry method", "main");
+
+    public static final StringOption NATIVE_CLASSES =
+            new StringOption("native", "comma-separated list of native classes and packages", DEFAULT_NATIVE);
+
+    public static final StringOption ROOTS =
+            new StringOption("roots", "comma-separated list of additional root classes", "");
+
+    public static final StringOption WRITE_PATH =
+            new StringOption("out", "path to write generated classfiles", 'o', "out");
 
     public static final Option<?>[] standardOptions = { SHOW_HELP, SHOW_VERSION, DEBUG };
     
@@ -61,10 +81,12 @@ public class Config {
 		return theConfig;
 	}
 
+
 	/*
 	 * Exception classes
 	 * ~~~~~~~~~~~~~~~~~
 	 */
+    @SuppressWarnings({"UncheckedExceptionClass"})
     public static class BadConfigurationError extends Error {
 		private static final long serialVersionUID = 1L;
 		public BadConfigurationError(String msg) { super(msg); }
@@ -97,6 +119,26 @@ public class Config {
         this.defaultProps = defaultProps;
         props = new Properties(defaultProps);
         options = new OptionGroup(this);
+    }
+
+    /**
+     * Take a comma-separated list of strings and split them into an array,
+     * avoiding empty strings, and trim all entries.
+     *
+     * @param list a comma-separated list.
+     * @return trimmed entries of list.
+     */
+    public static String[] splitStringList(String list) {
+        String[] parts = list.split(",");
+        List<String> newList = new LinkedList<String>();
+        for (String part : parts) {
+            part = part.trim();
+            if ( "".equals(part) ) {
+                continue;
+            }
+            newList.add(part);
+        }
+        return newList.toArray(new String[newList.size()]);
     }
 
     public OptionGroup getOptions() {

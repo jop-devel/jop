@@ -20,6 +20,8 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.type.Signature;
+
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
@@ -33,6 +35,10 @@ public class BaseInfo {
 
     public AppInfo getAppInfo() {
         return appInfo;
+    }
+
+    public Signature getSignature() {
+        return null;
     }
     
 }

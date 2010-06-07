@@ -18,15 +18,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common;
+package com.jopdesign.common.type;
 
 /**
+ * A container of a class reference.
+ * Holds either a ClassInfo object or a classname with some infos if the
+ * classInfo has not been loaded for some reason.
+ * 
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class FieldInfo extends ClassMemberInfo {
-
-    public FieldInfo(AppInfo appInfo) {
-        super(appInfo);
-    }
-
+public class MethodRef {
 }

@@ -18,15 +18,35 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common;
+package com.jopdesign.common.type;
+
+import com.jopdesign.common.ClassInfo;
 
 /**
+ * A container of a class reference.
+ * Holds either a ClassInfo object or a classname with some infos if the
+ * classInfo has not been loaded for some reason.
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class MemberInfo extends BaseInfo {
+public class ClassRef {
 
-    public MemberInfo(AppInfo appInfo) {
-        super(appInfo);
+    private ClassInfo classInfo;
+    private String className;
+
+    public ClassRef(ClassInfo classInfo) {
+        this.classInfo = classInfo;
     }
 
+    public ClassRef(String className) {
+        this.className = className;
+    }
+
+    public String getClassName() {
+        return classInfo != null ? classInfo.getClassName() : className;
+    }
+
+    public ClassInfo getClassInfo() {
+        return classInfo;
+    }
 }

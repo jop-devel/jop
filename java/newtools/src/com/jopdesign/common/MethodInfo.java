@@ -23,7 +23,7 @@ package com.jopdesign.common;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class MethodInfo extends MemberInfo {
+public class MethodInfo extends ClassMemberInfo {
 
     public MethodInfo(AppInfo appInfo) {
         super(appInfo);

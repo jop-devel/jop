@@ -23,6 +23,7 @@ package com.jopdesign.jcopter;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.config.BoolOption;
+import com.jopdesign.common.config.StringOption;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -35,6 +36,15 @@ public class JCopter {
 
     public static final String VERSION = "0.1";
 
+    public static final StringOption LIBRARY_CLASSES =
+            new StringOption("libraries", "comma-separated list of library classes and packages", "");
+
+    public static final StringOption IGNORE_CLASSES =
+            new StringOption("ignore", "comma-separated list of classes and packages to ignore", "");
+
+    public static final BoolOption ALLOW_INCOMPLETE_APP =
+            new BoolOption("allow-incomplete", "", false);
+    
     public static void main(String[] args) {
 
         // load defaults configuration file
@@ -61,7 +71,7 @@ public class JCopter {
         setup.setupLogger();
 
         // setup AppInfo, load app classes
-        AppInfo appInfo = setup.loadAppInfo();
+        AppInfo appInfo = setup.getAppInfo();
 
         // run DFA + WCET
 

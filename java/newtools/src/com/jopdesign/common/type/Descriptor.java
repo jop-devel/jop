@@ -34,6 +34,8 @@ public class Descriptor {
     public Descriptor(String descriptor) {
         this.descriptor = descriptor;
     }
+    
+    // TODO method to get descriptor as String from list of types (and vice versa)
 
     public boolean isArray() {
         return descriptor.startsWith("[");

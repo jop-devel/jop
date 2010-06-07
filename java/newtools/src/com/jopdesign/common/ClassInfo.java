@@ -20,8 +20,11 @@
 
 package com.jopdesign.common;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 
@@ -30,6 +33,7 @@ import java.util.Map;
 public class ClassInfo extends BaseInfo {
 
     private Map<String,CustomClassInfo> customMap;
+    private String className;
 
     public ClassInfo(AppInfo appInfo) {
         super(appInfo);
@@ -64,5 +68,13 @@ public class ClassInfo extends BaseInfo {
 
     public MethodInfo getMethodInfo(String signature) {
         return null;
+    }
+
+    public MethodInfo[] getMethodByName(String name) {
+        return new MethodInfo[]{};
+    }
+
+    public String getClassName() {
+        return className;
     }
 }

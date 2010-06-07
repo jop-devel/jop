@@ -24,6 +24,7 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.config.BoolOption;
 import com.jopdesign.common.config.IntOption;
+import com.jopdesign.common.config.StringOption;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -35,7 +36,7 @@ import java.util.Properties;
  */
 public class ExampleTool {
     public static final String VERSION = "0.1";
-
+   
     public static void main(String[] args) {
 
         // load defaults configuration file
@@ -62,7 +63,8 @@ public class ExampleTool {
         setup.setupLogger();
 
         // setup AppInfo, load app classes
-        AppInfo appInfo = setup.loadAppInfo();
+        AppInfo appInfo = setup.getAppInfo();
+        
 
         // access and modify some classes
         

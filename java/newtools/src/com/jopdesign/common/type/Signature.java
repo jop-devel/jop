@@ -38,8 +38,26 @@ public class Signature {
     private Descriptor descriptor;
 
     public Signature(String signature) {
-        int pos = signature.indexOf("#");
-        className = pos == -1 ? signature : signature.substring(0, pos);
+        int p1 = signature.indexOf("#");
+        int p2 = signature.indexOf("(");
+
+        if ( p1 == -1 ) {
+            if ( p2 == -1 ) {
+                // assume classname here
+                className = signature;
+            } else {
+                memberName = signature.substring(0,p2);
+                descriptor = new Descriptor(signature.substring(p2));
+            }
+        } else {
+            className = signature.substring(0,p1);
+            if ( p2 == -1 ) {
+                memberName = signature.substring(p1+1);
+            } else {
+                memberName = signature.substring(p1+1, p2);
+                descriptor = new Descriptor(signature.substring(p2));
+            }
+        }
         
     }
 
@@ -53,8 +71,6 @@ public class Signature {
         int pos = signature.indexOf("#");
         return pos == -1 ? signature : signature.substring(0, pos);
     }
-
-    // TODO method to get descriptor as String from list of types (and vice versa)
 
     public boolean hasMemberSignature() {
         return memberName != null && descriptor != null;
@@ -88,7 +104,7 @@ public class Signature {
         if ( className == null ) {
             return null;
         }
-        ClassInfo cls = appInfo.getClassInfo(className);
+        ClassInfo cls = appInfo.getClass(className);
         if ( cls == null || !hasMemberSignature() ) {
             return cls;
         }
