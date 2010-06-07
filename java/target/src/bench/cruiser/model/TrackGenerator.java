@@ -90,8 +90,8 @@ public class TrackGenerator extends Thread {
 		new GeneratorItem(70.0, 150.0, 500.0, 0.0),
 		new GeneratorItem(90.0, 0.0, 85.0, 0.0),
 		new GeneratorItem(100.0, 5.0, 5.0, 0.30),
-		new GeneratorItem(110.0, 5.0, 5.0, -0.30),
-		new GeneratorItem(120.0, 5.0, 5.0, 0.00)
+		new GeneratorItem(130.0, 5.0, 5.0, -0.30),
+		new GeneratorItem(160.0, 5.0, 5.0, 0.00)
 	};
 
 }
