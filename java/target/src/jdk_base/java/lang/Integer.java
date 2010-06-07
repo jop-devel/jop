@@ -340,6 +340,38 @@ public final class Integer
       }
     return isNeg ? -val : val;
   }
+  
+  /**
+   * Return the number of leading zeros in value.
+   * @param value the value to examine
+   * @since 1.5
+   */
+  public static int numberOfLeadingZeros(int value)
+  {
+    value |= value >>> 1;
+    value |= value >>> 2;
+    value |= value >>> 4;
+    value |= value >>> 8;
+    value |= value >>> 16;
+    return bitCount(~value);
+  }
+  
+  /**
+   * Return the number of bits set in x.
+   * @param x value to examine
+   * @since 1.5
+   */
+  public static int bitCount(int x)
+  {
+    // Successively collapse alternating bit groups into a sum.
+    x = ((x >> 1) & 0x55555555) + (x & 0x55555555);
+    x = ((x >> 2) & 0x33333333) + (x & 0x33333333);
+    x = ((x >> 4) & 0x0f0f0f0f) + (x & 0x0f0f0f0f);
+    x = ((x >> 8) & 0x00ff00ff) + (x & 0x00ff00ff);
+    return ((x >> 16) & 0x0000ffff) + (x & 0x0000ffff);
+  }
+
+
 }
 
 

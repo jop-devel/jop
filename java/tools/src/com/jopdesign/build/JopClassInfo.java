@@ -528,6 +528,38 @@ public class JopClassInfo extends ClassInfo implements Serializable {
                             .get(clname);
                     if (clinfo == null) {
                         cpoolComments[pos] = "Problem with class: " + clname;
+                        String type = clname.substring(clname.length()-2);
+                        if (type.charAt(0)=='[') {
+                        	switch (type.charAt(1)) {
+                        	case 'Z':
+                        		cpoolArry[pos] = 4;
+                        		break;
+                        	case 'C':
+                        		cpoolArry[pos] = 5;
+                        		break;
+                        	case 'F':
+                        		cpoolArry[pos] = 6;
+                        		break;
+                        	case 'D':
+                        		cpoolArry[pos] = 7;
+                        		break;
+                        	case 'B':
+                        		cpoolArry[pos] = 8;
+                        		break;
+                        	case 'S':
+                        		cpoolArry[pos] = 9;
+                        		break;
+                        	case 'I':
+                        		cpoolArry[pos] = 10;
+                        		break;
+                        	case 'J':
+                        		cpoolArry[pos] = 11;
+                        		break;
+                        	default:
+                        		; // all other types are missing...
+                        	}
+                        }
+                        // System.out.println(cpoolComments[pos]+" "+type+" "+cpoolArry[pos]);
                         continue;
                     }
                     cpoolArry[pos] = clinfo.classRefAddress;

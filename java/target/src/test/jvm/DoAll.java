@@ -43,6 +43,7 @@ public class DoAll {
 				new Array(),
 				new ArrayTest2(),
 				new ArrayTest3(),
+				new ArrayMulti(),
 				new Clinit(),
 				new Clinit2(),
 				new Iface(),
