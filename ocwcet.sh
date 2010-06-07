@@ -3,24 +3,30 @@
 RESULT_DIR=ocache_eval
 
 mkdir -p ${RESULT_DIR}
-# not used - 4 configurations are encoded in WCETAnalysis.java
 WCET_OPTIONS="-dataflow-analysis -object-cache-analysis"
-SRAM_OPTIONS="-dataflow-analysis -object-cache-analysis -jop-ocache-access-cycles 2"
-SRAM_KEY="_2_0"
-SDRAM_OPTIONS="-dataflow-analysis -object-cache-analysis -jop-ocache-access-cycles 2 -jop-ocache-access-delay 10 -jop-ocache-max-burst 4"
-SDRAM_KEY="_2_10_4"
 
 # The lift benchmark
-
 if [ $RUNLIFT ] ; then
-echo "Running Lift: '#{RUNLIFT}'"
 make java_app wcet P1=test P2=wcet P3=StartLift WCET_METHOD=measure WCET_OPTIONS="${WCET_OPTIONS}"
 cp java/target/wcet/wcet.StartLift_measure/ocache_eval.txt ${RESULT_DIR}/lift.txt
 fi
 
+# The UdpIp benchmark
+if [ $RUNUDPIP ] ; then
+make java_app wcet P1=test P2=wcet P3=StartBenchUdpIp WCET_METHOD=measure WCET_OPTIONS="${WCET_OPTIONS}"
+cp java/target/wcet/wcet.StartBenchUdpIp_measure/ocache_eval.txt ocache_eval/udpip.txt
+fi
+
+
+# The EjipCmp benchmark
+
+if [ $RUNEJIP ] ; then
+make java_app wcet P1=test P2=wcet P3=StartEjipCmp WCET_METHOD=measure WCET_OPTIONS="${WCET_OPTIONS}"
+cp java/target/wcet/wcet.StartEjipCmp_measure/ocache_eval.txt ocache_eval/ejip.txt
+fi
+
 
 # The trading benchmark
-
 # checkForTrade
 if [ $RUNORDER ] ; then
 

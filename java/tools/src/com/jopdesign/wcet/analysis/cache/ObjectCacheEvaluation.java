@@ -21,10 +21,16 @@
 package com.jopdesign.wcet.analysis.cache;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.Map.Entry;
 
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
 
@@ -34,6 +40,26 @@ import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost
  *
  */
 public class ObjectCacheEvaluation {
+	/* small helper for partitioning result data */
+	private interface Selector<S,T> {
+		T getKey(S obj);
+	}
+	// The JDK 1.5 Java compiler is not as smart as eclipse :(
+	// Also, this utility function would be way cooler if we had a reasonable type inference
+	public static<S,T,M extends Map<T,List<S>>> Map<T,List<S>> partitionBy(
+			Collection<S> col, 
+			Selector<S,T> select,
+			M resultMap) {
+		for(S r : col) {
+			T sel = select.getKey(r);
+			List<S> list = resultMap.get(sel);
+			if(list == null) list  = new ArrayList<S>();
+			list.add(r);
+			resultMap.put(sel, list);
+		}
+		return resultMap;		
+	}
+
 	public enum OCacheMode { WORD_FILL, LINE_FILL, SINGLE_FIELD };
 	public static class OCacheAnalysisResult {
 		public OCacheMode mode;
@@ -84,9 +110,40 @@ public class ObjectCacheEvaluation {
 				}
 			};
 		}
-		/**
-		 * @param samples
-		 */
+		public static Map<OCacheMode,List<OCacheAnalysisResult>> partitionByMode(List<OCacheAnalysisResult> results) {
+			return partitionBy(results, new Selector<OCacheAnalysisResult,OCacheMode>() {
+				public OCacheMode getKey(OCacheAnalysisResult r) { return r.mode; }
+			}, new TreeMap<OCacheMode,List<OCacheAnalysisResult>>());
+		}
+		
+		private static Map<Integer, List<OCacheAnalysisResult>> partitionByConfig(List<OCacheAnalysisResult> samples) {
+			return partitionBy(samples, new Selector<OCacheAnalysisResult,Integer>() {
+				public Integer getKey(OCacheAnalysisResult r) { return r.configId; }
+			}, new TreeMap<Integer,List<OCacheAnalysisResult>>());
+		}
+
+		public static void dumpPlot(List<OCacheAnalysisResult> samples, PrintStream out) {
+			for(Entry<Integer, List<OCacheAnalysisResult>> entryConfig : partitionByConfig(samples).entrySet()) {
+				int config = entryConfig.getKey();				
+				for(Entry<OCacheMode, List<OCacheAnalysisResult>> entry : partitionByMode(entryConfig.getValue()).entrySet()) {
+					OCacheMode listMode = entry.getKey();
+					System.out.println("# PLOT DATA for config= "+config+" and mode "+listMode.toString());
+					List<OCacheAnalysisResult> results = entry.getValue();
+					Collections.sort(results, OCacheAnalysisResult.wayLineComperator());
+					Iterator<OCacheAnalysisResult> it = results.iterator();
+					OCacheAnalysisResult oldSample = null;
+					OCacheAnalysisResult sample;
+					while(it.hasNext()) {
+						sample = it.next();
+						if(oldSample == null || oldSample.ways != sample.ways) out.println("\n");
+						out.println(String.format("%-8d\t%.2f",
+								sample.cacheSize(),sample.cyclesPerAccess));
+						oldSample = sample; 
+					}
+				}
+			}
+		}
+		
 		public static void dumpLatex(List<OCacheAnalysisResult> samples, PrintStream out) {
 			Collections.sort(samples, OCacheAnalysisResult.wayLineComperator());
 			Iterator<OCacheAnalysisResult> it = samples.iterator();

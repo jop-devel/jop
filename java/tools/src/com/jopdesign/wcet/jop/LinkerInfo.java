@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
+import org.apache.log4j.Logger;
+
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.wcet.Project;
@@ -42,7 +44,7 @@ import com.jopdesign.wcet.ProjectConfig;
  * FIXME: [processor-model] Abstract LinkerInfo (even if jamuth support will never be accomplished)
  */
 public class LinkerInfo {
-	public static class LinkInfo {
+	public class LinkInfo {
 		private ClassInfo klass;
 		private int clinfoAddress;
 		private int constsAddress;
@@ -54,6 +56,7 @@ public class LinkerInfo {
 		private Map <String,Integer> codeAddresses = new HashMap<String,Integer>();
 		private Map <String,Integer> mtabAddresses = new HashMap<String,Integer>();
 		private Map <Integer,Integer> constMap = new TreeMap<Integer,Integer>();
+		private Map<String, Integer> superClassFields = null; // loaded on demand
 
 		public LinkInfo(ClassInfo ci, int mtabAddress, int constsAddress) {
 			this.klass = ci;
@@ -156,13 +159,33 @@ public class LinkerInfo {
 		}
 		
 		public int getFieldOffset(String fieldName) {
+			loadSuperClassFields();
 			if(! fieldOffsets.containsKey(fieldName)) {
-				System.out.println("No offset field for '"+fieldName+"' in "+klass+" only "+fieldOffsets);
-				return 0;
+				Logger.getLogger(LinkerInfo.class).error("No offset field for '"+fieldName+"' in "+klass+" only "+fieldOffsets);
+				return 0; 
 			}
 			return(fieldOffsets.get(fieldName));
 		}
-		
+
+		private Map<String, Integer> getFieldOffsets() {
+			loadSuperClassFields();
+			return fieldOffsets;
+		}
+
+		private void loadSuperClassFields() {
+			if(this.superClassFields != null) return;
+			if(this.klass.superClass == null) return;
+			LinkInfo superLinkInfo;
+			try {
+				superLinkInfo = getOrCreateLinkInfo(klass.clazz.getSuperclassName());
+			} catch (ClassNotFoundException e) {
+				throw new AssertionError("Superclass not found: "+klass.clazz.getSuperclassName());
+			}
+			superClassFields = superLinkInfo.getFieldOffsets();
+			this.fieldOffsets.putAll(superClassFields);
+		}
+
+
 		public void parseInfo(String[] tks) {
 			String key = tks[0];
 			if(key.equals("-constmap")) {

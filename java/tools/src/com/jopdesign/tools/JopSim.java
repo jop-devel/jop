@@ -39,16 +39,6 @@ import com.jopdesign.sys.*;
 import com.jopdesign.timing.WCETInstruction;
 
 public class JopSim {
-	private static final int OCACHE_ASSOC =
-		System.getenv("OCACHE_ASSOC") == null ? 16 : Integer.parseInt(System.getenv("OCACHE_ASSOC"));
-	private static final int OCACHE_WORDS_PER_LINE =
-		System.getenv("OCACHE_WORDS_PER_LINE") == null ? 16 : Integer.parseInt(System.getenv("OCACHE_WORDS_PER_LINE"));
-	private static final boolean OCACHE_FILL_LINE = 
-		"line".equals(System.getenv("OCACHE_SIM"));
-	private static final boolean OCACHE_FIELD_TAG = 
-		"fieldtag".equals(System.getenv("OCACHE_SIM"));
-	private static final String OCACHE_REPLACEMENT =
-		System.getenv("OCACHE_REPLACEMENT");
 	
 	public class JopSimRtsException extends RuntimeException {
 		
@@ -242,9 +232,7 @@ public class JopSim {
 		
 		cache = new Cache(mem, this);
 
-		int ocAssoc;
-		objectCacheSim = new ObjectCacheSim(OCACHE_ASSOC, OCACHE_WORDS_PER_LINE, OCACHE_FILL_LINE, 
-											OCACHE_FIELD_TAG, "lru".equals(OCACHE_REPLACEMENT));
+		objectCacheSim = ObjectCacheSim.configureFromEnv();
 		io = ioSim;
 		
 	}

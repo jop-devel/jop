@@ -87,6 +87,11 @@ import com.jopdesign.wcet.graphutils.TopOrder.BadGraphException;
  *
  */
 public class ControlFlowGraph {
+	// Using default loop bound will emit critical warning, but useful to
+	// find all unbounded loop bounds
+	public static Long DEFAULT_LOOP_BOUND = 1024L;
+
+	
 	public static class ControlFlowError extends Error{
 		private static final long serialVersionUID = 1L;
 		private ControlFlowGraph cfg;
@@ -569,8 +574,8 @@ public class ControlFlowGraph {
 // 				throw new BadAnnotationException("No loop bound annotation",
 // 												 block,sourceRangeStart,sourceRangeStop);
 				WcetAppInfo.logger.error("No loop bound annotation: "+methodInfo+":"+n+
-										 ".\nApproximating with 1024, but result is not safe anymore.");
-				loopAnnot = new LoopBound(0L, 1024L);
+										 ".\nApproximating with "+DEFAULT_LOOP_BOUND+", but result is not safe anymore.");
+				loopAnnot = new LoopBound(0L, DEFAULT_LOOP_BOUND);
 			}
 			this.annotations.put(headOfLoop,loopAnnot);
 		}
