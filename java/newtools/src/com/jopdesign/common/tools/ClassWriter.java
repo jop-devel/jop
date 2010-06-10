@@ -20,8 +20,31 @@
 
 package com.jopdesign.common.tools;
 
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.ClassInfo;
+
+import java.io.File;
+
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class ClassWriter {
+    private AppInfo appInfo;
+
+    public ClassWriter(AppInfo appInfo) {
+        this.appInfo = appInfo;
+    }
+
+    public void writeToDir(String dir) {
+        File outDir = new File(dir);
+        if ( !outDir.mkdir() ) {
+            // TODO handle
+        }
+
+        for (ClassInfo cls : appInfo.getClassInfos() ) {
+            // TODO write
+        }
+    }
+
+
 }

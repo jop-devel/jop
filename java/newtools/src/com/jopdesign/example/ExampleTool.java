@@ -24,7 +24,10 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.config.BoolOption;
+import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.IntOption;
+import com.jopdesign.common.tools.ClassWriter;
+import com.jopdesign.common.tools.TransitiveHull;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -55,20 +58,24 @@ public class ExampleTool {
         setup.setVersionInfo("example: "+VERSION);
 
         // setup options
+        setup.getConfig().addOption( Config.WRITE_PATH );
         setup.getConfig().addOption( new BoolOption("flag", "switch some stuff on or off") );
         setup.getConfig().addOption( new IntOption("new", "create n new classes", 2).setMinMax(0,10) );
 
-        // parse options and config, load application classes
+        // parse options and to config
         String[] rest = setup.setupConfig("example.properties", args);
         setup.setupLogger();
 
-        // setup AppInfo, load app classes
+        // init AppInfo
         ExampleManager myMgr = new ExampleManager();
 
         AppInfo appInfo = setup.getAppInfo();
         appInfo.registerManager("example", myMgr);
 
+        // setup classpath, roots and main method
         setup.setupAppInfo(rest);
+
+        new TransitiveHull(appInfo).load();
 
         // access and modify some classes
         System.out.println("field of main class: " + myMgr.getMyField(appInfo.getMainMethod().getClassInfo()) );
@@ -76,10 +83,11 @@ public class ExampleTool {
             System.out.println("field of root: " + myMgr.getMyField(root) );
         }
 
+        // create a new class and new methods
         ClassInfo newCls = appInfo.createClass("MyTest", appInfo.getClassRef("java.lang.Object"));
 
         // write results
-
+        new ClassWriter(appInfo).writeToDir(setup.getConfig().getOption(Config.WRITE_PATH));
     }
 
 }

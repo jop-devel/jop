@@ -20,8 +20,25 @@
 
 package com.jopdesign.common.tools;
 
+import com.jopdesign.common.AppInfo;
+
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class TransitiveHull {
+
+    private AppInfo appInfo;
+
+    public TransitiveHull(AppInfo appInfo) {
+        this.appInfo = appInfo;
+    }
+
+    public void load() {
+        load(false);
+    }
+    
+    public void load(boolean startFromRootsOnly) {
+
+    }
+
 }
