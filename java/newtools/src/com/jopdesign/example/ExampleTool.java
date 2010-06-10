@@ -22,9 +22,9 @@ package com.jopdesign.example;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
+import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.config.BoolOption;
 import com.jopdesign.common.config.IntOption;
-import com.jopdesign.common.config.StringOption;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -63,12 +63,20 @@ public class ExampleTool {
         setup.setupLogger();
 
         // setup AppInfo, load app classes
+        ExampleManager myMgr = new ExampleManager();
+
         AppInfo appInfo = setup.getAppInfo();
+        appInfo.registerManager("example", myMgr);
 
         setup.setupAppInfo(rest);
 
         // access and modify some classes
-        
+        System.out.println("field of main class: " + myMgr.getMyField(appInfo.getMainMethod().getClassInfo()) );
+        for (ClassInfo root : appInfo.getRootClasses() ) {
+            System.out.println("field of root: " + myMgr.getMyField(root) );
+        }
+
+        ClassInfo newCls = appInfo.createClass("MyTest", appInfo.getClassRef("java.lang.Object"));
 
         // write results
 

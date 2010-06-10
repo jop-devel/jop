@@ -18,25 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common;
+package com.jopdesign.common.tools;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public interface CustomInfoManager {
-
-    /**
-     * Called if a class is loaded, allows the manager to add custom fields to the class.
-     *
-     * @param classInfo the classInfo which has been loaded.
-     */
-    void onLoadClass(ClassInfo classInfo);
-
-    // TODO methods to update/clear/reset custom fields on class/method/field-modify
-    // TODO add reason/modification-type to onModified
-
-    void onClassModified(ClassInfo classInfo);
-
-    void onMethodModified(MethodInfo methodInfo);
-    
+public class ClassWriter {
 }

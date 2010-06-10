@@ -18,15 +18,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common;
+package com.jopdesign.common.code;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public final class FieldInfo extends ClassMemberInfo {
+public class CFG implements CodeRepresentation {
 
-    public FieldInfo(ClassInfo classInfo) {
-        super(classInfo);
+    public boolean isSameType(CodeRepresentation codeRep) {
+        return false;
     }
 
+    public void load(byte[] code) {
+    }
+
+    public byte[] compile() {
+        return new byte[0];
+    }
+    
 }

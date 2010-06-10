@@ -23,14 +23,17 @@ package com.jopdesign.common;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ClassMemberInfo extends BaseInfo {
+public abstract class ClassMemberInfo extends BaseInfo {
 
-    public ClassMemberInfo(AppInfo appInfo) {
-        super(appInfo);
+    private ClassInfo classInfo;
+
+    public ClassMemberInfo(ClassInfo classInfo) {
+        super(classInfo.getAppInfo());
+        this.classInfo = classInfo;
     }
 
     public ClassInfo getClassInfo() {
-        return null;
+        return classInfo;
     }
 
     public String getName() {

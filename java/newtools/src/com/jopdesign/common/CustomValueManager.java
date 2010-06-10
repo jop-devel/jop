@@ -23,10 +23,22 @@ package com.jopdesign.common;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public final class FieldInfo extends ClassMemberInfo {
+public interface CustomValueManager {
 
-    public FieldInfo(ClassInfo classInfo) {
-        super(classInfo);
-    }
+    void registerManager(AppInfo appInfo);
 
+    /**
+     * Called if a class is loaded, allows the manager to add custom fields to the class.
+     *
+     * @param classInfo the classInfo which has been loaded.
+     */
+    void onLoadClass(ClassInfo classInfo);
+
+    // TODO methods to update/clear/reset custom fields on class/method/field-modify
+    // TODO add reason/modification-type to onModified
+
+    void onClassModified(ClassInfo classInfo);
+
+    void onMethodModified(MethodInfo methodInfo);
+    
 }

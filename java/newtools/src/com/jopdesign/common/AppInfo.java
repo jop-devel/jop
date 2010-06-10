@@ -25,8 +25,11 @@ import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.util.ClassPath;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,7 +52,9 @@ public class AppInfo {
     private Set<String> excludeLibrary;
     private Set<String> excludeIgnored;
 
-    private Set<CustomInfoManager> infoManagers;
+    private Map<String, CustomValueManager> infoManagers;
+    private Map<String, Integer> keyCount;
+    private List<String> registeredKeys;
 
     public AppInfo(ClassPath classPath) {
         this.classPath = classPath;
@@ -59,13 +64,52 @@ public class AppInfo {
         excludeNative = new HashSet<String>(1);
         excludeLibrary = new HashSet<String>(0);
         excludeIgnored = new HashSet<String>(0);
-        infoManagers = new HashSet<CustomInfoManager>(1);
+
+        infoManagers = new HashMap<String, CustomValueManager>(1);
+        keyCount = new HashMap<String, Integer>();
+        registeredKeys = new LinkedList<String>();
     }
+
+    public CustomValueManager registerManager(String key, CustomValueManager valueManager) {
+        valueManager.registerManager(this);
+        return infoManagers.put(key, valueManager);
+    }
+
+    public CustomValueManager getManager(String key) {
+        return infoManagers.get(key);
+    }
+
+    public int getRegisteredKeyCount() {
+        return registeredKeys.size();
+    }
+
+    public int getRegisteredKeyID(String key) {
+        return registeredKeys.indexOf(key);
+    }
+
+    public int registerKey(String key) {
+        // TODO make sure that registeredKeys array in all existing BaseInfos are big enough!
+        registeredKeys.add(key);
+        return registeredKeys.size()-1;
+    }
+
+    public String getKeyByID(int keyID) {
+        return registeredKeys.get(keyID);
+    }
+
+    // TODO methods to remove a key from all BaseInfos, from all ClassInfos only, check if key is set for some/all
+    // classInfos, ..; keep track of keys 
 
     public ClassPath getClassPath() {
         return classPath;
     }
 
+    /**
+     * Set the new classPath, overwriting the old one.
+     * ClassInfos are not reloaded, use {@link #reloadClasses()} for that.
+     *
+     * @param classPath the new classpath.
+     */
     public void setClassPath(ClassPath classPath) {
         this.classPath = classPath;
     }
@@ -132,6 +176,19 @@ public class AppInfo {
         roots.add(methodInfo);
     }
 
+    public Collection<ClassInfo> getRootClasses() {
+        // TODO maintain rootClasses as field?
+        Map<String,ClassInfo> rootClasses = new HashMap<String, ClassInfo>();
+        for (BaseInfo root : roots) {
+            rootClasses.put(root.getClassInfo().getClassName(), root.getClassInfo());
+        }
+        return rootClasses.values();
+    }
+
+    public Set<BaseInfo> getRoots() {
+        return Collections.unmodifiableSet( roots );
+    }
+
     public void setMainMethod(MethodInfo main) {
         if ( main != null ) {
             addRoot(main.getClassInfo());
@@ -164,9 +221,24 @@ public class AppInfo {
     }
 
 
-
+    /**
+     * Remove all classInfos.
+     *
+     * @param clearRoots if true, clear list of roots and main method as well, else keep the root classes in the class list.
+     */
     public void clear(boolean clearRoots) {
 
+        classes.clear();
+        
+        if ( clearRoots ) {
+            roots.clear();
+            mainMethod = null;
+        } else {
+            // re-add all root classes
+            for (BaseInfo root : roots) {
+                classes.put(root.getClassInfo().getClassName(), root.getClassInfo());
+            }
+        }
     }
 
     /**
@@ -197,6 +269,10 @@ public class AppInfo {
     public ClassInfo getClass(String className, boolean required) {
 
         return null;
+    }
+
+    public Collection<ClassInfo> getClassInfos() {
+        return classes.values();
     }
 
     public ClassRef getClassRef(String className) {

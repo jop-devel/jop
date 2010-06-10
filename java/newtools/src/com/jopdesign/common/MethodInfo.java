@@ -20,13 +20,72 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.code.CodeRepresentation;
+
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class MethodInfo extends ClassMemberInfo {
+public final class MethodInfo extends ClassMemberInfo {
 
-    public MethodInfo(AppInfo appInfo) {
-        super(appInfo);
+    // TODO replace with BCEL methodinfo
+    private byte[] code;
+
+    private CodeRepresentation codeRep;
+
+    public MethodInfo(ClassInfo classInfo) {
+        super(classInfo);
     }
 
+    public byte[] getCode() {
+        compileCodeRep();
+        return code;
+    }
+
+    public void setCode(byte[] code) {
+        this.code = code;
+        this.codeRep = null;
+    }
+
+    // TODO access BCEL instruction lists; make sure to compile and remove codeRep first.
+
+    @SuppressWarnings({"unchecked"})
+    public <T extends CodeRepresentation> T getCode(T codeRep) {
+        if ( this.codeRep == null ) {
+            this.codeRep = codeRep;
+            codeRep.load(code);
+            return codeRep;
+        }
+
+        if ( codeRep.getClass().isInstance(this.codeRep) &&
+             codeRep.isSameType(this.codeRep) )
+        {
+            // this.codeRep is same type and already contains the current code.
+            // cast is checked above
+            return (T) this.codeRep;
+        }
+
+        // this.codeRep is set but different
+        compileCodeRep();
+        this.codeRep = codeRep;
+        codeRep.load(code);
+        return codeRep;
+    }
+
+    public boolean hasCodeRep() {
+        return codeRep != null;
+    }
+
+    public void compileCodeRep() {
+        if ( codeRep != null ) {
+            setCode( codeRep.compile() );
+        }
+    }
+
+    public boolean rollbackCodeRep() {
+        if ( codeRep == null ) {
+            return false;
+        }
+        codeRep = null;
+        return true;
+    }
 }

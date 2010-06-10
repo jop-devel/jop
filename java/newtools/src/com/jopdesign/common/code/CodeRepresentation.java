@@ -18,15 +18,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common;
+package com.jopdesign.common.code;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public final class FieldInfo extends ClassMemberInfo {
+public interface CodeRepresentation {
 
-    public FieldInfo(ClassInfo classInfo) {
-        super(classInfo);
-    }
+    /**
+     * Check if this is the same representation type, including representation parameters,
+     * but excluding code, as the given CodeRepresentation.
+     *
+     * @param codeRep the code representation to compare
+     * @return true if it is the same representation type.
+     */
+    boolean isSameType(CodeRepresentation codeRep);
 
+    void load(byte[] code);
+
+    byte[] compile();
 }
