@@ -44,8 +44,8 @@ public class Dispatcher implements Runnable {
 	private void dispatch(String msg) {
 
 		if (!WireMessage.checkMessage(msg)) {
-			// System.err.print("?");
-			// System.err.println(msg);
+			System.err.print("?");
+			System.err.println(msg);
 			return;
 		}
 
