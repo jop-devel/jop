@@ -28,7 +28,7 @@ set_global_assignment -name DEVICE EP2C70F896C6
 set_global_assignment -name TOP_LEVEL_ENTITY jop
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION "6.0 SP1"
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "20:32:02  AUGUST 07, 2006"
-set_global_assignment -name LAST_QUARTUS_VERSION "9.0 SP2"
+set_global_assignment -name LAST_QUARTUS_VERSION 9.1
 set_global_assignment -name DEVICE_FILTER_PIN_COUNT 896
 
 # Pin & Location Assignments
@@ -627,3 +627,5 @@ set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_tdma.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jopmul_512x32.vhd
+
+set_global_assignment -name CDF_FILE jop.cdf
