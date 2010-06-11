@@ -28,6 +28,7 @@ import java.util.Vector;
 
 import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.generic.*;
+import org.apache.log4j.Logger;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
@@ -91,7 +92,13 @@ public class BasicBlock  {
 	// FIXME: [wcet-frontend] Remove the ugly ih.getAttribute() hack for CFG Nodes
 	/** Get the basic block node associated with an instruction handle  */
 	public static BasicBlockNode getHandleNode(InstructionHandle ih) {
-		return (BasicBlockNode)ih.getAttribute(InstrField.CFGNODE);		
+		BasicBlockNode blockNode = (BasicBlockNode)ih.getAttribute(InstrField.CFGNODE);	
+		if(blockNode == null) {
+			String errMsg = "No basic block recorded for instruction "+ih.toString(true);
+			// WcetAppInfo.logger.error(errMsg);
+			return null;
+		}
+		return blockNode;
 	}
 	
 	/** Set a parent link to the basic block node for the given instruction handle */

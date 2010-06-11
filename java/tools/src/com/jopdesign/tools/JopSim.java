@@ -39,7 +39,7 @@ import com.jopdesign.sys.*;
 import com.jopdesign.timing.WCETInstruction;
 
 public class JopSim {
-
+	
 	public class JopSimRtsException extends RuntimeException {
 		
 		private static final long serialVersionUID = 1L;
@@ -232,13 +232,7 @@ public class JopSim {
 		
 		cache = new Cache(mem, this);
 
-		int ocAssoc;
-		if(System.getenv("OC_ASSOC") != null) {
-			ocAssoc = Integer.parseInt(System.getenv("OC_ASSOC"));
-		} else {
-			ocAssoc = OBJECT_CACHE_ASSOC;
-		}
-		objectCacheSim = new ObjectCacheSim(ocAssoc, OBJECT_CACHE_FIELDS);
+		objectCacheSim = ObjectCacheSim.configureFromEnv();
 		io = ioSim;
 		
 	}
@@ -338,8 +332,6 @@ System.out.println(mp+" "+pc);
 	int copy_dest = 0;
 	int copy_pos = 0;
 	
-	public static final int OBJECT_CACHE_ASSOC = 16;
-	public static final int OBJECT_CACHE_FIELDS = 32;
 	ObjectCacheSim objectCacheSim;
 
 	/**

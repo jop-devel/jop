@@ -108,7 +108,7 @@ public abstract class RecursiveAnalysis<Context extends AnalysisContext, Rval> {
 			ControlFlowGraph cfg,
 			Map<CFGNode, Rval> nodeCosts,
 			long maxCost,
-			Map<CFGEdge, Long> edgeFlowOut);
+			Map<CFGEdge, Long> edgeFlow);
 
 	protected abstract CostProvider<CFGNode> getCostProvider(Map<CFGNode, Rval> nodeCosts);
 

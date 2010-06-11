@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.TopologicalOrderIterator;
@@ -28,7 +29,7 @@ import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
  * In the first case, we check whether the containing basic block is part of a loop.
  * </p>
  * TODO: [scope-analysis] More efficient implementation of ExecuteOnceAnalysis. Currently
- *                        we have 4! nested loops.
+ *                        we have 4 nested loops.
  *                        
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  *
@@ -70,6 +71,10 @@ public class ExecuteOnceAnalysis {
 	public boolean isExecutedOnce(CallGraphNode scope, CFGNode node) {
 		ControlFlowGraph cfg = node.getControlFlowGraph();
 		Set<MethodInfo> inLoopMethods = inLoopSet.get(scope);
+		if(inLoopMethods == null) {
+			Logger.getLogger("Object Cache Analysis").warning("No loop information for " + scope.getMethodImpl().getFQMethodName());
+			return false;
+		}
 		if(! inLoopMethods.contains(cfg.getMethodInfo())) {
 			return cfg.getLoopColoring().getLoopColor(node).size() == 0;
 		} else {

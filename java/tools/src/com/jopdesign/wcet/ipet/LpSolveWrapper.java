@@ -54,6 +54,7 @@ public class LpSolveWrapper<T> {
 			this.statusCode = c;
 		}
 	}
+	private static final long LP_SOLVE_SEC_TIMEOUT = 20;
 	private static long solverTime = 0;
 	/**
 	 * Get time spend in the solver since the last call to {@link resetSolverTime}
@@ -188,6 +189,25 @@ public class LpSolveWrapper<T> {
 		this.lpsolve.setAddRowmode(false);
 	}
 
+	private class SolverThread extends Thread {
+		int result = -1;
+		long solverTime = 0;
+		LpSolveException exception = null;
+
+		public SolverThread() {}
+		@Override
+		public void run() {
+			long start = System.nanoTime();
+			try {
+				result = lpsolve.solve();
+			} catch (LpSolveException e) {
+				exception = e;
+			}
+			long stop = System.nanoTime();			
+			solverTime = stop-start;
+		}		
+	}
+	
 	/**
 	 * Solve the I(LP)
 	 * @param objVec if non-null, write the solution into this array
@@ -196,11 +216,25 @@ public class LpSolveWrapper<T> {
 	 */
 	public double solve(double[] objVec) throws LpSolveException {
 		freeze();
-		long start = System.nanoTime();
-		int r = this.lpsolve.solve();
-		long stop = System.nanoTime();
-		LpSolveWrapper.solverTime +=(stop-start);
-		SolverStatus st = getSolverStatus(r);
+		
+	    lpsolve.setTimeout(LP_SOLVE_SEC_TIMEOUT);
+		SolverThread thr = new SolverThread();
+		thr.start();
+    	int cnt=1;
+	    while(true) {
+	    	boolean interrupted = false;
+		    try {
+				thr.join(1000);
+			} catch (InterruptedException e) {
+				interrupted = true;
+			}
+		    if(! thr.isAlive()) break;
+		    if(!interrupted) {
+		    	System.err.println("LP Solve: Hard Problem, calculating ("+(cnt++)+"s)");
+		    }
+	    }
+		LpSolveWrapper.solverTime += (thr.solverTime);
+		SolverStatus st = getSolverStatus(thr.result);
 		if(objVec != null) this.lpsolve.getVariables(objVec);
 		if(st != SolverStatus.OPTIMAL) {
 			if(objVec != null) {

@@ -42,6 +42,7 @@ import java.util.*;
 
 public class OrderManager implements Runnable
 {
+    public  static final boolean NOTIFY_VIA_UART = false;
     private static final String TRADES_TAG = "<trades>";
     private static final String TRADES_CLOSE = "</trades>";
     private static final String TRADE_TAG = "<trade>";
@@ -467,7 +468,9 @@ public class OrderManager implements Runnable
             
             // Send the XML using an MBean
             //
-            tradeMgr.notifyTrade( tradeXML.toString() );
+	    if(NOTIFY_VIA_UART) {
+		tradeMgr.notifyTrade( tradeXML.toString() );
+	    } 
         }
         catch ( Exception e ) {
             e.printStackTrace();

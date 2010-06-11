@@ -11,12 +11,12 @@ public class BlockAllocationModel extends AllocationModel {
 		super(p);
 	}
 	
-	public int computeObjectSize(int raw) {
+	public long computeObjectSize(long raw) {
 		int blocks = (int)Math.ceil((float)(HEADER_SIZE+raw)/BLOCK_SIZE);
 		return BLOCK_SIZE*blocks;
 	}
 
-	public int computeArraySize(int raw) {
+	public long computeArraySize(long raw) {
 		int depth = (int)Math.ceil(Math.log(raw)/Math.log(BLOCK_SIZE));
 		int blocks = (int)Math.ceil((float)HEADER_SIZE/BLOCK_SIZE);
 		int blockPow = BLOCK_SIZE;

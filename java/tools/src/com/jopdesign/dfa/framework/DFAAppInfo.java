@@ -33,6 +33,7 @@ import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.generic.ACONST_NULL;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.GOTO;
 import org.apache.bcel.generic.ICONST;
 import org.apache.bcel.generic.INVOKESTATIC;
 import org.apache.bcel.generic.Instruction;
@@ -132,22 +133,31 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 		idx = prologueCP.addMethodref(mainClass, mainName, mainSig);
 		instr = new INVOKESTATIC(idx);
 		prologue.append(instr);
+		
+//		// invoke startMission() to ensure analysis of threads
+//		idx = prologueCP.addMethodref("joprt.RtThread", "startMission", "()V");
+//		instr = new INVOKESTATIC(idx);
+//		prologue.append(instr);
+
 		instr = new NOP();
 		prologue.append(instr);
 
 		prologue.setPositions(true);
 
-//			System.out.println(prologue);
+// 		System.out.println(prologue);
 
 		// add prologue to program structure
 		for (Iterator l = prologue.iterator(); l.hasNext(); ) {
 			InstructionHandle handle = (InstructionHandle)l.next();
 			statements.add(handle);
-			if (handle.getNext() != null) {
+			if (handle.getInstruction() instanceof GOTO) {
+				GOTO g = (GOTO)handle.getInstruction();
+				flow.addEdge(new FlowEdge(handle, g.getTarget(), FlowEdge.NORMAL_EDGE));
+			} else if (handle.getNext() != null) {
 				flow.addEdge(new FlowEdge(handle, handle.getNext(), FlowEdge.NORMAL_EDGE));
 			}
 		}
-
+		
 		MethodGen mg = new MethodGen(Constants.ACC_PRIVATE, Type.VOID, Type.NO_ARGS, null, mainClass+"."+prologueName+prologueSig, "", prologue, prologueCP);
 		MethodInfo mi = new MethodInfo(cliMap.get(mainClass), prologueName+prologueSig);
 		mi.setMethodGen(mg);

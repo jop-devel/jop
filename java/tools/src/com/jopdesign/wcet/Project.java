@@ -190,7 +190,7 @@ public class Project {
 		} else if (projectConfig.getProcessorName().equals("allocBlocks")) {
 			this.processor = new BlockAllocationModel(this);
 		} else if(projectConfig.getProcessorName().equals("jamuth")) {
-		    this.processor = new JamuthModel(this);
+			this.processor = new JamuthModel(this);
 		} else {
 			this.processor = new JOPModel(this);
 		}

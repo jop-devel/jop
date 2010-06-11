@@ -39,10 +39,11 @@ public class Main {
 //		"wcet.devel.ObjectCache$Obj1.test2(Lwcet/devel/ObjectCache$Obj1;Lwcet/devel/ObjectCache$Obj2;)I";
 //  wcet.StartEjipCmp
 //	private static final String POINTS_TO_TARGET = "jbe.BenchUdpIp.request()V";
-	private static final String POINTS_TO_TARGET = "cmp.EjipBenchCMP.macServer()V";
+//	private static final String POINTS_TO_TARGET = "cmp.EjipBenchCMP.macServer()V";
 //	private static final String POINTS_TO_TARGET = "ejip.Ejip.returnPacket(Lejip/Packet;)V";
+	private static final String POINTS_TO_TARGET = "ttpa.protocol.Node.doMpSlotAction()V";
 
-	private static final int CALLSTRING_LENGTH = 1;
+	private static final int CALLSTRING_LENGTH = 0;
 	
 	public static void main(String[] args) {
 		
@@ -86,9 +87,9 @@ public class Main {
 		System.out.println("Time for LoopBounds: "+(lbTime - startLbTime));
 
 		// run SymbolicPointsTo Analysis (local)
-// 		SymbolicPointsTo pointsTo = new SymbolicPointsTo(1024, CALLSTRING_LENGTH);
-// 		program.runLocalAnalysis(pointsTo, POINTS_TO_TARGET);
-// 		pointsTo.printResult(program);
+ 		SymbolicPointsTo pointsTo = new SymbolicPointsTo(1024, CALLSTRING_LENGTH);
+ 		program.runLocalAnalysis(pointsTo, POINTS_TO_TARGET);
+ 		pointsTo.printResult(program);
 	}
 
 }

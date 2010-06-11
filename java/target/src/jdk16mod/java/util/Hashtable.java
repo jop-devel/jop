@@ -824,61 +824,61 @@ public class Hashtable<K,V>
      *             for each key-value mapping represented by the Hashtable
      *             The key-value mappings are emitted in no particular order.
      */
-    private synchronized void writeObject(java.io.ObjectOutputStream s)
-        throws IOException
-    {
-        // Write out the length, threshold, loadfactor
-        s.defaultWriteObject();
+//     private synchronized void writeObject(java.io.ObjectOutputStream s)
+//         throws IOException
+//     {
+//         // Write out the length, threshold, loadfactor
+//         s.defaultWriteObject();
 
-        // Write out length, count of elements and then the key/value objects
-        s.writeInt(table.length);
-        s.writeInt(count);
-        for (int index = table.length-1; index >= 0; index--) {
-            Entry entry = table[index];
+//         // Write out length, count of elements and then the key/value objects
+//         s.writeInt(table.length);
+//         s.writeInt(count);
+//         for (int index = table.length-1; index >= 0; index--) {
+//             Entry entry = table[index];
 
-            while (entry != null) {
-                s.writeObject(entry.key);
-                s.writeObject(entry.value);
-                entry = entry.next;
-            }
-        }
-    }
+//             while (entry != null) {
+//                 s.writeObject(entry.key);
+//                 s.writeObject(entry.value);
+//                 entry = entry.next;
+//             }
+//         }
+//     }
 
     /**
      * Reconstitute the Hashtable from a stream (i.e., deserialize it).
      */
-    private void readObject(java.io.ObjectInputStream s)
-         throws IOException, ClassNotFoundException
-    {
-        // Read in the length, threshold, and loadfactor
-        s.defaultReadObject();
+//     private void readObject(java.io.ObjectInputStream s)
+//          throws IOException, ClassNotFoundException
+//     {
+//         // Read in the length, threshold, and loadfactor
+//         s.defaultReadObject();
 
-        // Read the original length of the array and number of elements
-        int origlength = s.readInt();
-        int elements = s.readInt();
+//         // Read the original length of the array and number of elements
+//         int origlength = s.readInt();
+//         int elements = s.readInt();
 
-        // Compute new size with a bit of room 5% to grow but
-        // no larger than the original size.  Make the length
-        // odd if it's large enough, this helps distribute the entries.
-        // Guard against the length ending up zero, that's not valid.
-        int length = (int)(elements * loadFactor) + (elements / 20) + 3;
-        if (length > elements && (length & 1) == 0)
-            length--;
-        if (origlength > 0 && length > origlength)
-            length = origlength;
+//         // Compute new size with a bit of room 5% to grow but
+//         // no larger than the original size.  Make the length
+//         // odd if it's large enough, this helps distribute the entries.
+//         // Guard against the length ending up zero, that's not valid.
+//         int length = (int)(elements * loadFactor) + (elements / 20) + 3;
+//         if (length > elements && (length & 1) == 0)
+//             length--;
+//         if (origlength > 0 && length > origlength)
+//             length = origlength;
 
-        Entry[] table = new Entry[length];
-        count = 0;
+//         Entry[] table = new Entry[length];
+//         count = 0;
 
-        // Read the number of elements and then all the key/value objects
-        for (; elements > 0; elements--) {
-            K key = (K)s.readObject();
-            V value = (V)s.readObject();
-            // synch could be eliminated for performance
-            reconstitutionPut(table, key, value);
-        }
-        this.table = table;
-    }
+//         // Read the number of elements and then all the key/value objects
+//         for (; elements > 0; elements--) {
+//             K key = (K)s.readObject();
+//             V value = (V)s.readObject();
+//             // synch could be eliminated for performance
+//             reconstitutionPut(table, key, value);
+//         }
+//         this.table = table;
+//     }
 
     /**
      * The put method used by readObject. This is provided because put
@@ -891,26 +891,26 @@ public class Hashtable<K,V>
      * because we are creating a new instance. Also, no return value
      * is needed.
      */
-    private void reconstitutionPut(Entry[] tab, K key, V value)
-        throws StreamCorruptedException
-    {
-        if (value == null) {
-            throw new java.io.StreamCorruptedException();
-        }
-        // Makes sure the key is not already in the hashtable.
-        // This should not happen in deserialized version.
-        int hash = key.hashCode();
-        int index = (hash & 0x7FFFFFFF) % tab.length;
-        for (Entry<K,V> e = tab[index] ; e != null ; e = e.next) {
-            if ((e.hash == hash) && e.key.equals(key)) {
-                throw new java.io.StreamCorruptedException();
-            }
-        }
-        // Creates the new entry.
-        Entry<K,V> e = tab[index];
-        tab[index] = new Entry<K,V>(hash, key, value, e);
-        count++;
-    }
+//     private void reconstitutionPut(Entry[] tab, K key, V value)
+//         throws StreamCorruptedException
+//     {
+//         if (value == null) {
+//             throw new java.io.StreamCorruptedException();
+//         }
+//         // Makes sure the key is not already in the hashtable.
+//         // This should not happen in deserialized version.
+//         int hash = key.hashCode();
+//         int index = (hash & 0x7FFFFFFF) % tab.length;
+//         for (Entry<K,V> e = tab[index] ; e != null ; e = e.next) {
+//             if ((e.hash == hash) && e.key.equals(key)) {
+//                 throw new java.io.StreamCorruptedException();
+//             }
+//         }
+//         // Creates the new entry.
+//         Entry<K,V> e = tab[index];
+//         tab[index] = new Entry<K,V>(hash, key, value, e);
+//         count++;
+//     }
 
     /**
      * Hashtable collision list.

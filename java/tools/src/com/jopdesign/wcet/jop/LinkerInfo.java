@@ -29,6 +29,9 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
+import org.apache.log4j.Logger;
+
+
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.ProjectConfig;
@@ -38,9 +41,10 @@ import com.jopdesign.wcet.ProjectConfig;
  *
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  *
+ * FIXME: [processor-model] Abstract LinkerInfo (even if jamuth support will never be accomplished)
  */
 public class LinkerInfo {
-	public static class LinkInfo {
+	public class LinkInfo {
 		private ClassInfo klass;
 		private int clinfoAddress;
 		private int constsAddress;
@@ -48,9 +52,11 @@ public class LinkerInfo {
 		private int superAddress;
 
 		private Map <String,Integer> staticAddresses = new HashMap<String,Integer>();;
+		private Map <String,Integer> fieldOffsets = new HashMap<String,Integer>();
 		private Map <String,Integer> codeAddresses = new HashMap<String,Integer>();
 		private Map <String,Integer> mtabAddresses = new HashMap<String,Integer>();
 		private Map <Integer,Integer> constMap = new TreeMap<Integer,Integer>();
+		private Map<String, Integer> superClassFields = null; // loaded on demand
 
 		public LinkInfo(ClassInfo ci, int mtabAddress, int constsAddress) {
 			this.klass = ci;
@@ -59,24 +65,31 @@ public class LinkerInfo {
 			this.superAddress = -1;
 			this.instSize = -1;
 		}
+		
 		public ClassInfo getTargetClass() {
 			return klass;
 		}
+		
 		public int getClassInfoAddress() {
 			return clinfoAddress;
 		}
+		
 		public int getMTabAddress() {
 			return clinfoAddress + 5;
 		}
+		
 		public int getMTabLength() {
 			return constsAddress - getMTabAddress();
 		}
+		
 		public int getConstTableAddress() {
 			return constsAddress;
 		}
+		
 		public int getSuperAddress() {
 			return superAddress;
 		}
+		
 		private <K,V> void addAddress(String ctx, Map<K,V> amap, K key, V value) {
 			if(amap.containsKey(key)) {
 				throw new AssertionError("LinkerInfo.setAddress"+ctx+": Double entry for "+klass+"."+key);
@@ -87,18 +100,23 @@ public class LinkerInfo {
 		private void setStaticFieldAddress(String name, int address) {
 			addAddress("StaticAddresses",staticAddresses,name,address);
 		}
+		
 		private void setCodeAddress(String name, int address) {
 			addAddress("CodeAddresses",codeAddresses,name,address);
 		}
+		
 		public int getInstanceSize() {
 			return this.instSize;
 		}
+		
 		public int getStaticFieldAddress(String name) {
 			return staticAddresses.get(name);
 		}
+		
 		public Integer getCodeAddress(String name) {
 			return codeAddresses.get(name);
 		}
+		
 		public Integer getMTabAddress(String name) {
 			return mtabAddresses.get(name);
 		}
@@ -113,6 +131,7 @@ public class LinkerInfo {
 			dump(sb);
 			out.println(sb);
 		}
+		
 		public void dump(StringBuilder sb) {
 			sb.append("LinkInfo: "+this.klass.clazz.getClassName()+"\n");
 			sb.append("  instSize: "+this.instSize+"\n");
@@ -138,6 +157,35 @@ public class LinkerInfo {
 			if(! constMap.containsKey(constIndex)) return null;
 			return(constsAddress + constMap.get(constIndex) + 1);
 		}
+		
+		public int getFieldOffset(String fieldName) {
+			loadSuperClassFields();
+			if(! fieldOffsets.containsKey(fieldName)) {
+				Logger.getLogger(LinkerInfo.class).error("No offset field for '"+fieldName+"' in "+klass+" only "+fieldOffsets);
+				return 0; 
+			}
+			return(fieldOffsets.get(fieldName));
+		}
+
+		private Map<String, Integer> getFieldOffsets() {
+			loadSuperClassFields();
+			return fieldOffsets;
+		}
+
+		private void loadSuperClassFields() {
+			if(this.superClassFields != null) return;
+			if(this.klass.superClass == null) return;
+			LinkInfo superLinkInfo;
+			try {
+				superLinkInfo = getOrCreateLinkInfo(klass.clazz.getSuperclassName());
+			} catch (ClassNotFoundException e) {
+				throw new AssertionError("Superclass not found: "+klass.clazz.getSuperclassName());
+			}
+			superClassFields = superLinkInfo.getFieldOffsets();
+			this.fieldOffsets.putAll(superClassFields);
+		}
+
+
 		public void parseInfo(String[] tks) {
 			String key = tks[0];
 			if(key.equals("-constmap")) {
@@ -148,15 +196,19 @@ public class LinkerInfo {
 				this.superAddress = Integer.parseInt(tks[1]);
 			} else if(key.equals("-instSize")) {
 				this.instSize = Integer.parseInt(tks[1]);
+			} else if(key.equals("-field")) {
+				addAddress("FieldOffsets", fieldOffsets, tks[1], Integer.parseInt(tks[2]));
 			} else if (key.equals("-mtab")) {
 				String nameParts[] = ProjectConfig.splitClassName(tks[1]);
 				int valIx = Integer.parseInt(tks[2]);
-				addAddress("MTabAddresses",mtabAddresses,nameParts[1],valIx);
+				addAddress("MTabAddresses",mtabAddresses,nameParts[1], valIx);
 			} else {
-				throw new AssertionError("Bad format for class info (Unknown key: '" + key +"')"+Arrays.toString(tks));
+				throw new AssertionError("Bad format for class info (Unknown key: '" + key + "')" + Arrays.toString(tks));
 		    }
 		}
+
 	}
+	
 	private Project project;
 	private Map<String, LinkInfo> classLinkInfo;
 
@@ -167,6 +219,7 @@ public class LinkerInfo {
 	public LinkerInfo(Project p) {
 		this.project = p;
 	}
+	
 	/** Load the linker info.
 	 * Currently, we support the following entries in the Link file:
 	 * <ul><li/>{@code static} fully-qualified-static-field-name address
@@ -176,6 +229,7 @@ public class LinkerInfo {
 	 *     <ul><li/> {@code -super} super-class-address
 	 *         <li/> {@code -mtab} method-name mtab-address
 	 *         <li/> {@code -constmap} constant-classfile-index constant-actual-index
+	 *         <li/> {@code -field} field-name field-offset
 	 *     </ul>
 	 * </ul>
 	 * @throws IOException
@@ -246,6 +300,17 @@ public class LinkerInfo {
 			return null;
 		}
 		return li.getStaticFieldAddress(fieldName);
+	}
+
+	/**
+	 * Compute the (physical) index of a given field (using linker infos)
+	 * @param methodInfo
+	 * @param ih
+	 * @return
+	 */
+	public int getFieldIndex(String klassName, String fieldName)
+	{
+		return classLinkInfo.get(klassName).getFieldOffset(fieldName);
 	}
 
 	public void dump(PrintStream out) {

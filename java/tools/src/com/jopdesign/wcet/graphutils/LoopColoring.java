@@ -299,7 +299,12 @@ public class LoopColoring<V,E> {
 	}
 	public Set<V> getLoopColor(V node) {
 		if(this.getHeadOfLoops().isEmpty()) new HashSet<V>();
-		return getLoopColors().get(node);
+		Set<V> color = getLoopColors().get(node);
+		if(color == null) {
+			/* Unreachable Code */
+			return new HashSet<V>();
+		}
+		return color;
 	}
 
 	public static class IterationBranchLabel<V> extends Pair<Set<V>,Set<V>>{

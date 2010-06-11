@@ -118,7 +118,7 @@ public class SymbolicAddressMap {
 	}
 	
 	/** Clone address map, but only those stack variables with index greater than or equal to
-	 *  {@code framePtr}. The stack variables are move down to the beginning of the stack. */
+	 *  {@code framePtr}. The stack variables are moved down to the beginning of the stack. */
 	public SymbolicAddressMap cloneInvoke(int framePtr) {
 		if(this.isTop()) return this;
 		SymbolicAddressMap copy = new SymbolicAddressMap(this.bsFactory);
@@ -197,7 +197,10 @@ public class SymbolicAddressMap {
 		BoundedSet<SymbolicAddress> val = mapP.get(loc);
 		if(val == null) {
 			Logger.getLogger(this.getClass()).error("Undefined stack location: "+loc);
-			throw new AssertionError("Undefined stack Location");
+			for(Entry<Location, BoundedSet<SymbolicAddress>> entry : this.mapP.entrySet()) {
+				System.err.println("  "+entry.getKey()+ " --> "+entry.getValue());
+			}
+//			throw new AssertionError("Undefined stack Location");
 		}
 		return val;
 	}
@@ -209,7 +212,7 @@ public class SymbolicAddressMap {
 		Location loc = new Location(staticfield);
 		BoundedSet<SymbolicAddress> val = mapP.get(loc);
 		if(val == null) {
-			val = bsFactory.singleton(new SymbolicAddress(staticfield));
+			val = bsFactory.singleton(SymbolicAddress.rootAddress(staticfield));
 		}
 		return val;
 	}
@@ -229,6 +232,11 @@ public class SymbolicAddressMap {
 		if(this.isTop()) return;
 		BoundedSet<SymbolicAddress> oldAlias = this.mapA.get(ty);
 		if(oldAlias == null) oldAlias = bsFactory.empty();
+		// FIXME: Debugging
+		if(newAliases == null) {
+			Logger.getLogger("Object Cache Analysis").error("Undefined alias set for "+ty);
+			return;
+		}
 		oldAlias.addAll(newAliases);
 		mapA.put(ty, newAliases);
 	}
@@ -257,6 +265,7 @@ public class SymbolicAddressMap {
 			out.print(indentstr.toString());
 			out.print(entry.getKey());
 			out.print(": ");
+			out.print(entry.getValue().getSize()+"<="+entry.getValue().getLimit());
 			out.print(entry.getValue());
 			out.print("\n");
 		}
@@ -264,6 +273,7 @@ public class SymbolicAddressMap {
 			out.print(indentstr.toString());
 			out.print(entry.getKey());
 			out.print("~~> ");
+			out.print(entry.getValue().getSize()+"<="+entry.getValue().getLimit());
 			out.print(entry.getValue());
 			out.print("\n");
 		}

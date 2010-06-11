@@ -10,11 +10,11 @@ public class HeaderAllocationModel extends AllocationModel {
 		super(p);
 	}
 	
-	public int computeObjectSize(int raw) {
+	public long computeObjectSize(long raw) {
 		return HEADER_SIZE+raw;
 	}
 
-	public int computeArraySize(int raw) {
+	public long computeArraySize(long raw) {
 		return HEADER_SIZE+raw;
 	}
 	

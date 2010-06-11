@@ -63,6 +63,9 @@ public class ProjectConfig {
 	public static final BooleanOption DO_DFA =
 		new BooleanOption("dataflow-analysis","whether dataflow analysis should be performed",false);
 
+	public static final BooleanOption OBJECT_CACHE_ANALYSIS =
+		new BooleanOption("object-cache-analysis","perform experimental object cache analysis",false);
+
 	/* Here, because it both affects the DFA and the IPET */
 	public static final IntegerOption CALLSTRING_LENGTH =
 		new IntegerOption("callstring-length", "Length of the callstring for DFA and IPET", 0);
@@ -83,6 +86,7 @@ public class ProjectConfig {
 		TARGET_CLASSPATH, TARGET_SOURCEPATH, TARGET_BINPATH,
 		JAVA_PROCESSOR, 
 		DO_DFA, CALLSTRING_LENGTH,
+		OBJECT_CACHE_ANALYSIS,
 		USE_UPPAAL,
 		RESULT_FILE, RESULTS_APPEND
 	};
@@ -206,6 +210,10 @@ public class ProjectConfig {
 
 	public long callstringLength() {
 		return config.getOption(CALLSTRING_LENGTH);
+	}
+
+	public boolean doObjectCacheAnalysis() {
+		return this.config.getOption(OBJECT_CACHE_ANALYSIS);
 	}
 
 	public boolean useUppaal() {

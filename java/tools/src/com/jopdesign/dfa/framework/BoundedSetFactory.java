@@ -1,7 +1,10 @@
 package com.jopdesign.dfa.framework;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+
+import com.jopdesign.dfa.analyses.SymbolicAddress;
 
 /** 
  * Factory for sets with a maximum size N.
@@ -34,6 +37,8 @@ public class BoundedSetFactory<V> {
 	}
 	
 	public static interface BoundedSet<V>  {
+		public BoundedSet<V> newBoundedSet();
+		
 		public void add(V el);
 		public void addAll(BoundedSet<V> other);
 		public BoundedSet<V> join(BoundedSet<V> other);
@@ -42,6 +47,10 @@ public class BoundedSetFactory<V> {
 		public Set<V> getSet();
 		public int getSize();
 		public boolean isSubset(BoundedSet<V> otherEntry);
+		/**
+		 * @return
+		 */
+		public int getLimit();
 	}
 	
 	/** 
@@ -83,6 +92,8 @@ public class BoundedSetFactory<V> {
 			BoundedSetImpl r = new BoundedSetImpl(joinedSet);
 			return r;
 		}
+
+
 		public Set<V> getSet() {
 			return setImpl;
 		}
@@ -94,9 +105,16 @@ public class BoundedSetFactory<V> {
 			this.setImpl = null;
 		}
 		public int getSize() {
+			if(setImpl.size() > limit) {
+				throw new AssertionError("Bounded Set exceeded size: "+setImpl.size());
+			}
 			if(isSaturated) return limit+1;
 			else return setImpl.size();
 		}
+		public int getLimit() {
+			return limit;
+		}
+
 		@Override
 		public int hashCode() {
 			if(isSaturated) return 1;
@@ -122,6 +140,10 @@ public class BoundedSetFactory<V> {
 		public String toString() {
 			if(this.isSaturated) return "BoundedSet.TOP";
 			return this.setImpl.toString();
+		}
+		
+		public BoundedSet<V> newBoundedSet() {
+			return new BoundedSetImpl(new HashSet<V>());
 		}
 	}
 

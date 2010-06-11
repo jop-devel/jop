@@ -346,7 +346,7 @@ public final class Math
   private static final int TAYLOR_TERMS_COSINUS = 5;
   private static final int TAYLOR_TERMS_ATAN = 5;
   private static final int NEWTON_TERMS_SQRT = 20;
-  
+
   // x - 1/3 x^3 + 1/5 x^5 - 1/7 x^7 
   public static float atan(float f) {
 	  if (!Const.SUPPORT_FLOAT) throw new RuntimeException("Math: floats not supported");
@@ -375,6 +375,19 @@ public final class Math
 	  }
 	  return x;
   }
+
+  public static double sqrt(double number) {
+	  
+	  double x = number;
+	  for(int i = 0; i < NEWTON_TERMS_SQRT; i++) {
+		  x = (x + (number/x)) / 2;
+	  }
+	  return x;
+  }
+
+	public static double pow(double d, double exp) {
+		return d;
+	}
 
   public static float sin(float f) {
 	  if (!Const.SUPPORT_FLOAT) throw new RuntimeException("Math: floats not supported");

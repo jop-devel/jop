@@ -107,7 +107,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		public void setSolution(long lpCost, Map<CFGEdge, Long> edgeFlow) {
 			this.lpCost = lpCost;
 			this.edgeFlow = edgeFlow;
-			computeNodeFlow();
+			this.nodeFlow = edgeToNodeFlow(graph, edgeFlow);
 			computeCost();
 		}
 		public long getLpCost() {
@@ -135,19 +135,6 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 			if(cost.getCost() != lpCost) {
 				throw new AssertionError("The solution implies that the flow graph cost is "
 										 + cost.getCost() + ", but the ILP solver reported "+lpCost);
-			}
-		}
-		private void computeNodeFlow() {
-			nodeFlow = new HashMap<CFGNode, Long>();
-			for(CFGNode n : graph.vertexSet()) {
-				if(graph.inDegreeOf(n) == 0) nodeFlow.put(n, 0L); // ENTRY and DEAD CODE (no flow)
-				else {
-					long flow = 0;
-					for(CFGEdge inEdge : graph.incomingEdgesOf(n)) {
-						flow+=edgeFlow.get(inEdge);
-					}
-					nodeFlow.put(n, flow);
-				}
 			}
 		}
 		/* Compute cost, separating local and non-local cost */
@@ -305,6 +292,21 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		LocalWCETSolution sol = new LocalWCETSolution(cfg.getGraph(),nodeCosts);
 		sol.setSolution(maxCost, edgeFlowOut);
 		return sol.getCost();
+	}
+
+	public static Map<CFGNode, Long> edgeToNodeFlow(DirectedGraph<CFGNode,CFGEdge> graph, Map<CFGEdge, Long> edgeFlow) {
+		HashMap<CFGNode, Long> nodeFlow = new HashMap<CFGNode, Long>();
+		for(CFGNode n : graph.vertexSet()) {
+			if(graph.inDegreeOf(n) == 0) nodeFlow.put(n, 0L); // ENTRY and DEAD CODE (no flow)
+			else {
+				long flow = 0;
+				for(CFGEdge inEdge : graph.incomingEdgesOf(n)) {
+					flow+=edgeFlow.get(inEdge);
+				}
+				nodeFlow.put(n, flow);
+			}
+		}
+		return nodeFlow;
 	}
 
 }

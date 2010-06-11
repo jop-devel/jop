@@ -12,7 +12,11 @@ public class AnalysisContextIpet extends AnalysisContext  {
 	public AnalysisContextIpet withCacheApprox(StaticCacheApproximation newMode) {
 		return new AnalysisContextIpet(newMode);
 	}
-
+	
+	public StaticCacheApproximation getCacheApproxContext() {
+		return cacheApprox;
+	}
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -33,4 +37,5 @@ public class AnalysisContextIpet extends AnalysisContext  {
 	public String toString() {
 		return "ctx_"+cacheApprox.toString();
 	}
+
 }
