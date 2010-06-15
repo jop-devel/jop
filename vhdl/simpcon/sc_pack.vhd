@@ -149,7 +149,6 @@ package body sc_pack is
 		writeline(output, txt);
 		assert not timedout;
 		
-		wait for 0 ns;
 	end;
 	
 	procedure sc_write(
@@ -193,7 +192,6 @@ package body sc_pack is
 		writeline(output, txt);
 		assert not timedout;
 		
-		wait for 0 ns;
 	end;
 	
 
@@ -245,7 +243,6 @@ package body sc_pack is
 		writeline(output, txt);
 		assert not timedout;
 		
-		wait for 0 ns;
 	end;
 
 	procedure sc_read(
@@ -296,7 +293,6 @@ package body sc_pack is
 		writeline(output, txt);
 		assert not timedout;
 		
-		wait for 0 ns;
 	end;
 
 

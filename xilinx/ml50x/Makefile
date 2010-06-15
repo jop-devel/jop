@@ -1,5 +1,5 @@
 NAME=ml50x
-PART=xc5vlx110t-3-ff1136
+PART=xc5vlx50t-3-ff1136
 
 all:
 	rm -rf out
@@ -21,4 +21,11 @@ configure:
 	impact -batch impact.in
 
 clean:
-	rm *.ise
+	rm -f *.ise
+	rm -f *.xrpt
+	rm -f *.bit
+	rm -f *.log
+	rm -f *.twr
+	rm -f *.xml
+	rm -rf xlnx_auto*
+	rm -rf out
