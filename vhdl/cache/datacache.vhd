@@ -69,7 +69,8 @@ begin  -- rtl
 	async: process (cpu_out, mem_in,
 					out_mux_reg, in_mux_reg,
 					dm_mem_out, fa_mem_out,
-					dm_cpu_in, fa_cpu_in)
+					dm_cpu_in, fa_cpu_in,
+					bp_rd_data, bp_fetch)
 
 		variable bp_rd, bp_wr : std_logic;
 		
