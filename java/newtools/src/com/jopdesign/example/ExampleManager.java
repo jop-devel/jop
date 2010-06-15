@@ -32,7 +32,7 @@ import com.jopdesign.common.MethodInfo;
  */
 public class ExampleManager implements CustomValueManager {
 
-    private int myFieldID;
+    private AppInfo.CustomKey myFieldID;
 
     public ExampleManager() {
     }
@@ -47,7 +47,7 @@ public class ExampleManager implements CustomValueManager {
     }
 
     public void onLoadClass(ClassInfo classInfo) {
-        classInfo.setCustomValue("iExampleField", myFieldID, classInfo.getAppInfo().getClassInfos().size());
+        classInfo.setCustomValue(myFieldID, classInfo.getAppInfo().getClassInfos().size());
     }
 
     public void onClassModified(ClassInfo classInfo) {
@@ -57,7 +57,7 @@ public class ExampleManager implements CustomValueManager {
     }
 
     public int setMyField(ClassInfo clsInfo, int value) {
-        return (Integer) clsInfo.setCustomValue("iExampleField", myFieldID, value);
+        return (Integer) clsInfo.setCustomValue(myFieldID, value);
     }
 
     public int getMyField(ClassInfo clsInfo) {

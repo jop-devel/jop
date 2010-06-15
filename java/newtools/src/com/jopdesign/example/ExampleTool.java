@@ -27,7 +27,7 @@ import com.jopdesign.common.config.BoolOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.IntOption;
 import com.jopdesign.common.tools.ClassWriter;
-import com.jopdesign.common.tools.TransitiveHull;
+import com.jopdesign.common.tools.TransitiveHullLoader;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -75,7 +75,7 @@ public class ExampleTool {
         // setup classpath, roots and main method
         setup.setupAppInfo(rest);
 
-        new TransitiveHull(appInfo).load();
+        new TransitiveHullLoader(appInfo).load();
 
         // access and modify some classes
         System.out.println("field of main class: " + myMgr.getMyField(appInfo.getMainMethod().getClassInfo()) );

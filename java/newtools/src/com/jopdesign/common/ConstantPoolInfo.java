@@ -23,21 +23,12 @@ package com.jopdesign.common;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public abstract class ClassMemberInfo extends MemberInfo {
+public class ConstantPoolInfo {
 
-    private ClassInfo classInfo;
+    private AppInfo appInfo;
 
-    public ClassMemberInfo(ClassInfo classInfo) {
-        super(classInfo.getAppInfo());
-        this.classInfo = classInfo;
+    public ConstantPoolInfo(AppInfo appInfo) {
+        this.appInfo = appInfo;
     }
-
-    public ClassInfo getClassInfo() {
-        return classInfo;
-    }
-
-    public String getName() {
-        return null;
-    }
-
+    
 }

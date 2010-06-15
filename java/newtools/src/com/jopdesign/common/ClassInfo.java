@@ -24,7 +24,7 @@ package com.jopdesign.common;
  * 
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public final class ClassInfo extends BaseInfo {
+public final class ClassInfo extends MemberInfo {
 
     private String className;
 

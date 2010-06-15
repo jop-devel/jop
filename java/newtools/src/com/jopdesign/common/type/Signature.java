@@ -21,7 +21,7 @@
 package com.jopdesign.common.type;
 
 import com.jopdesign.common.AppInfo;
-import com.jopdesign.common.BaseInfo;
+import com.jopdesign.common.MemberInfo;
 import com.jopdesign.common.ClassInfo;
 
 /**
@@ -100,7 +100,7 @@ public class Signature {
         return descriptor;
     }
 
-    public BaseInfo findInfo(AppInfo appInfo) {
+    public MemberInfo findInfo(AppInfo appInfo) {
         if ( className == null ) {
             return null;
         }

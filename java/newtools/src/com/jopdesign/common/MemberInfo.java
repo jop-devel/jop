@@ -22,23 +22,24 @@ package com.jopdesign.common;
 
 import com.jopdesign.common.type.Signature;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public abstract class BaseInfo {
+public abstract class MemberInfo {
 
     private AppInfo appInfo;
 
-    private Map<String,Object> customValues;
-    private Object[] registeredValues;
+    private Object[] customValues;
 
-    public BaseInfo(AppInfo appInfo) {
+    public MemberInfo(AppInfo appInfo) {
         this.appInfo = appInfo;
-        customValues = new HashMap<String, Object>();
-        registeredValues = new Object[appInfo.getRegisteredKeyCount()];
+        customValues = new Object[appInfo.getRegisteredKeyCount()];
     }
 
     public AppInfo getAppInfo() {
@@ -51,7 +52,7 @@ public abstract class BaseInfo {
         return null;
     }
 
-    public Object removeCustomValue(String key) {
+    public Object removeCustomValue(AppInfo.CustomKey key) {
         return setCustomValue(key, null);
     }
 
@@ -59,11 +60,11 @@ public abstract class BaseInfo {
      * Sets a new custom info value for a key.
      * Setting null as value has the same effect as removing the key.
      *
-     * @param key
-     * @param customValue
-     * @return
+     * @param key The key to set the new value for
+     * @param customValue the new value to set, or null to unset the value.
+     * @return the old value, or null if not set previously.
      */
-    public Object setCustomValue(String key, Object customValue) {
+    public Object setCustomValue(AppInfo.CustomKey key, Object customValue) {
         // We could use generics here, and even use customValue.class as key, but
         // 1) using class as key makes it impossible to attach the same CustomValue class
         //    with different values multiple times,
@@ -73,34 +74,25 @@ public abstract class BaseInfo {
         //    therefore a possible type conflict must always(!) be handled at the callsite, so we may as well make
         //    the cast explicit at the callsite.
 
-        int regID = appInfo.getRegisteredKeyID(key);
-        return setCustomValue(key, regID, customValue);
-    }
-
-    public Object setCustomValue(int keyID, Object customValue) {
-        return setCustomValue(appInfo.getKeyByID(keyID), keyID, customValue);
-    }
-
-    public Object setCustomValue(String key, int keyID, Object customValue) {
-
-        if ( keyID != -1 ) {
-            registeredValues[keyID] = customValue;
+        if ( key == null ) {
+            return null;
         }
 
-        if ( customValue == null ) {
-            return customValues.remove(key);
-        } else {
-            return customValues.put(key, customValue);
+        int id = key.getId();
+
+        if ( id >= customValues.length ) {
+            customValues = Arrays.copyOf(customValues, appInfo.getRegisteredKeyCount());
         }
+
+        Object oldVal = customValues[id];
+        customValues[id] = customValue;
+        
+        return oldVal;
     }
 
-    public Object getCustomValue(String key) {
-        return customValues.get(key);
+    public Object getCustomValue(AppInfo.CustomKey key) {
+        if ( key == null || key.getId() >= customValues.length ) {return null;}
+        return customValues[key.getId()];
     }
-
-    public Object getCustomValue(int keyID) {
-        return registeredValues[keyID];
-    }
-
 
 }

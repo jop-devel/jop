@@ -39,12 +39,12 @@ import java.util.Set;
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class AppInfo {
+public final class AppInfo {
 
     private ClassPath classPath;
     private Map<String,ClassInfo> classes;
 
-    private Set<BaseInfo> roots;
+    private Set<MemberInfo> roots;
     private MethodInfo mainMethod;
 
     private boolean ignoreMissing;
@@ -53,21 +53,37 @@ public class AppInfo {
     private Set<String> excludeIgnored;
 
     private Map<String, CustomValueManager> infoManagers;
-    private Map<String, Integer> keyCount;
-    private List<String> registeredKeys;
+    private Map<String,CustomKey> registeredKeys;
+
+    public static class CustomKey  {
+        private String keyname;
+        private int id;
+
+        private CustomKey(String keyname, int id) {
+            this.keyname = keyname;
+            this.id = id;
+        }
+
+        public String getKeyname() {
+            return keyname;
+        }
+
+        public int getId() {
+            return id;
+        }
+    }
 
     public AppInfo(ClassPath classPath) {
         this.classPath = classPath;
 
         classes = new HashMap<String, ClassInfo>();
-        roots = new HashSet<BaseInfo>();
+        roots = new HashSet<MemberInfo>();
         excludeNative = new HashSet<String>(1);
         excludeLibrary = new HashSet<String>(0);
         excludeIgnored = new HashSet<String>(0);
 
         infoManagers = new HashMap<String, CustomValueManager>(1);
-        keyCount = new HashMap<String, Integer>();
-        registeredKeys = new LinkedList<String>();
+        registeredKeys = new HashMap<String, CustomKey>();
     }
 
     public CustomValueManager registerManager(String key, CustomValueManager valueManager) {
@@ -79,23 +95,23 @@ public class AppInfo {
         return infoManagers.get(key);
     }
 
-    public int getRegisteredKeyCount() {
-        return registeredKeys.size();
+    public CustomKey registerKey(String key) {
+
+        // check if exists
+        CustomKey k = registeredKeys.get(key);
+        if ( k != null ) {
+            return k;
+        }
+
+        k = new CustomKey(key, registeredKeys.size());
+        registeredKeys.put(key, k);
+        return k;
     }
 
-    public int getRegisteredKeyID(String key) {
-        return registeredKeys.indexOf(key);
+    public CustomKey getRegisteredKey(String key) {
+        return registeredKeys.get(key);
     }
 
-    public int registerKey(String key) {
-        // TODO make sure that registeredKeys array in all existing BaseInfos are big enough!
-        registeredKeys.add(key);
-        return registeredKeys.size()-1;
-    }
-
-    public String getKeyByID(int keyID) {
-        return registeredKeys.get(keyID);
-    }
 
     // TODO methods to remove a key from all BaseInfos, from all ClassInfos only, check if key is set for some/all
     // classInfos, ..; keep track of keys 
@@ -179,13 +195,13 @@ public class AppInfo {
     public Collection<ClassInfo> getRootClasses() {
         // TODO maintain rootClasses as field?
         Map<String,ClassInfo> rootClasses = new HashMap<String, ClassInfo>();
-        for (BaseInfo root : roots) {
+        for (MemberInfo root : roots) {
             rootClasses.put(root.getClassInfo().getClassName(), root.getClassInfo());
         }
         return rootClasses.values();
     }
 
-    public Set<BaseInfo> getRoots() {
+    public Set<MemberInfo> getRoots() {
         return Collections.unmodifiableSet( roots );
     }
 
@@ -235,7 +251,7 @@ public class AppInfo {
             mainMethod = null;
         } else {
             // re-add all root classes
-            for (BaseInfo root : roots) {
+            for (MemberInfo root : roots) {
                 classes.put(root.getClassInfo().getClassName(), root.getClassInfo());
             }
         }
@@ -289,6 +305,15 @@ public class AppInfo {
         return false;
     }
 
+    /**
+     * Get number of registered keys. Should be accessed only by MemberInfo.
+     *
+     * @return number of currently registered keys.
+     */
+    int getRegisteredKeyCount() {
+        return registeredKeys.size();
+    }
+    
     private ClassInfo tryLoadClass(String className) {
         return null;
     }
