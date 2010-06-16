@@ -56,7 +56,7 @@ port (
 --	LEDs
 --
 	oLEDR		: out std_logic_vector(17 downto 0);
-	oLEDG		: out std_logic_vector(7 downto 0);
+--	oLEDG		: out std_logic_vector(7 downto 0);
 	
 --
 --	Switches
@@ -221,7 +221,7 @@ end process;
 			-- ram_cnt => ram_count
 			
 			oLEDR => oLEDR,
-			oLEDG => oLEDG,
+--			oLEDG => oLEDG,
 			iSW => iSW
 		);
 
