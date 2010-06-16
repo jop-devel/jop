@@ -33,6 +33,10 @@ public class TransitiveHullLoader {
         this.appInfo = appInfo;
     }
 
+    public AppInfo getAppInfo() {
+        return appInfo;
+    }
+
     public void load() {
         load(false);
     }

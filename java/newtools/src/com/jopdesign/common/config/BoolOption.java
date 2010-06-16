@@ -53,6 +53,6 @@ public class BoolOption extends Option<Boolean> {
 
     @Override
     public boolean isEnabled(OptionGroup options) {
-        return options.hasValue(this) && options.tryGetOption(this);
+        return options.getOption(this);
     }
 }

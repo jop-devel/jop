@@ -25,7 +25,7 @@ package com.jopdesign.common;
  */
 public abstract class ClassMemberInfo extends MemberInfo {
 
-    private ClassInfo classInfo;
+    private final ClassInfo classInfo;
 
     public ClassMemberInfo(ClassInfo classInfo) {
         super(classInfo.getAppInfo());

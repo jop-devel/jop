@@ -63,7 +63,8 @@ public class LoggerConfig {
         PropertyConfigurator.configure(config.getProperties());
 	}
 
-	public void setReportLoggers(File errorLog, File infoLog, Level consoleLevel)
+	@SuppressWarnings({"ResultOfMethodCallIgnored"})
+    public void setReportLoggers(File errorLog, File infoLog, Level consoleLevel)
 		throws IOException
     {
 			errorLog.delete();

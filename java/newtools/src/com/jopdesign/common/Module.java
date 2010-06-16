@@ -20,20 +20,27 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.OptionGroup;
+
+import java.util.Properties;
+
 /**
+ * TODO better name for interface
+ * 
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantPoolInfo {
+public interface Module<T extends CustomValueManager> {
 
-    private AppInfo appInfo;
+    String getModuleVersion();
 
-    public ConstantPoolInfo(AppInfo appInfo) {
-        this.appInfo = appInfo;
-    }
+    T getManager();
 
-    public AppInfo getAppInfo() {
-        return appInfo;
-    }
+    Properties getDefaultProperties();
 
+    void registerOptions(OptionGroup options);
 
+    void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException;
+
+    void run(AppSetup setup);
 }

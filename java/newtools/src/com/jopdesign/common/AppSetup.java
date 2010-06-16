@@ -23,6 +23,8 @@ package com.jopdesign.common;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.logger.LoggerConfig;
+import com.jopdesign.common.tools.ClassWriter;
+import com.jopdesign.common.tools.TransitiveHullLoader;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.util.ClassPath;
 
@@ -32,7 +34,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -43,6 +46,37 @@ import java.util.Properties;
  */
 public class AppSetup {
 
+    /**
+     * Helper to load a property file in the package of a given class.
+     *
+     * @param rsClass the class for which the property file should be loaded.
+     * @param filename the filename of the property file.
+     * @return the loaded property file.
+     * @throws IOException on read errors.
+     */
+    public static Properties loadResourceProps(Class rsClass, String filename) throws IOException {
+        return loadResourceProps(rsClass, filename, null);
+    }
+
+    /**
+     * Helper to load a property file in the package of a given class.
+     *
+     * @param rsClass the class for which the property file should be loaded.
+     * @param filename the filename of the property file.
+     * @param defaultProps default properties to use for the new properties.
+     * @return the loaded property file.
+     * @throws IOException on read errors.
+     */
+    public static Properties loadResourceProps(Class rsClass, String filename, Properties defaultProps)
+            throws IOException
+    {
+        Properties p = new Properties(defaultProps);
+        InputStream is = new BufferedInputStream(rsClass.getResourceAsStream(filename));
+        p.load(is);
+        return p;
+    }
+
+
     private Config config;
     private LoggerConfig loggerConfig;
     private AppInfo appInfo;
@@ -52,8 +86,10 @@ public class AppSetup {
     private String optionSyntax;
     private String versionInfo;
 
+    private Map<String,Module> modules;
+
     public AppSetup(boolean loadSystemProps) {
-        this(null, loadSystemProps);
+        this(new Properties(), loadSystemProps);
     }
 
     public AppSetup(Properties defaultProps, boolean loadSystemProps) {
@@ -70,19 +106,7 @@ public class AppSetup {
         // using default configuration here
         appInfo = new AppInfo(new ClassPath(config.getOption(Config.CLASSPATH)));
         loggerConfig = new LoggerConfig();
-    }
-
-    public static Properties loadResourceProps(Class rsClass, String filename) throws IOException {
-        return loadResourceProps(rsClass, filename, null);
-    }
-
-    public static Properties loadResourceProps(Class rsClass, String filename, Properties defaultProps)
-            throws IOException
-    {
-        Properties p = new Properties(defaultProps);
-        InputStream is = new BufferedInputStream(rsClass.getResourceAsStream(filename));
-        p.load(is);
-        return p;
+        modules = new HashMap<String, Module>();
     }
 
     public Config getConfig() {
@@ -98,25 +122,56 @@ public class AppSetup {
     }
 
 
+    public void registerModule(String name, Module module) {
+        modules.put(name, module);
+
+        // setup defaults and config
+        Properties defaults = module.getDefaultProperties();
+        if ( defaults != null ) {
+            config.addDefaults(defaults);
+        }
+
+        // setup options
+        module.registerOptions(config.getOptions());
+
+        // register manager
+        CustomValueManager manager = module.getManager();
+        if ( manager != null ) {
+            appInfo.registerManager(name, manager);
+        }
+
+        // add version info
+        if ( versionInfo == null || "".equals(versionInfo) ) {
+            versionInfo = "";
+        } else {
+            versionInfo += "\n";
+        }
+        versionInfo += name + ": " + module.getModuleVersion();
+    }
+
     /**
      * Add some standard options to the config.
      *
      * @param stdOptions if true, add options defined in {@link Config#standardOptions}.
-     * @param handleAppInfoInit if true, setupConfig will also handle common setup tasks for AppInfo.
+     * @param setupAppInfo if true, this will also add common setup options for AppInfo used by {@link #setupAppInfo}
      */
-    public void addStandardOptions(boolean stdOptions, boolean handleAppInfoInit) {
-        this.handleAppInfoInit = handleAppInfoInit;
+    public void addStandardOptions(boolean stdOptions, boolean setupAppInfo) {
+        this.handleAppInfoInit = setupAppInfo;
 
         if (stdOptions) {
             config.addOptions(Config.standardOptions);
         }
 
-        if (handleAppInfoInit) {
+        if (setupAppInfo) {
             config.addOption(Config.CLASSPATH);
             config.addOption(Config.ROOTS);
             config.addOption(Config.NATIVE_CLASSES);
             config.addOption(Config.MAIN_METHOD_NAME);
         }
+    }
+
+    public void addWritePathOption() {
+        config.addOption(Config.WRITE_PATH);
     }
 
     public void setUsageInfo(String prgmName, String description) {
@@ -134,19 +189,19 @@ public class AppSetup {
     }
 
     public String[] setupConfig(String[] args) {
-        return setupConfig(null, args);
+        return setupConfig(args, null);
     }
 
     /**
      * Load the config file, parse and check options, and if handleApInfoInit has been
      * set, also initialize AppInfo.
      *
+     * @param args cmdline arguments to parse
      * @param configFile filename of an optional user configuration file, will be tried to be loaded before
      *                   arguments are parsed.
-     * @param args cmdline arguments to parse
      * @return arguments not consumed.
      */
-    public String[] setupConfig(String configFile, String[] args) {
+    public String[] setupConfig(String[] args, String configFile) {
 
         File file = findConfigFile(configFile);
         if ( file != null && file.exists() ) {
@@ -175,19 +230,32 @@ public class AppSetup {
         }
 
         // handle standard options
-        if ( Config.SHOW_HELP.isEnabled(config.getOptions()) && prgmName != null ) {
+        if ( config.getOption(Config.SHOW_HELP) && prgmName != null ) {
             printUsage();
             System.exit(0);
         }
-        if ( Config.SHOW_VERSION.isEnabled(config.getOptions()) && versionInfo != null ) {
+        if ( config.getOption(Config.SHOW_VERSION) && versionInfo != null ) {
             System.out.println(versionInfo);
             System.exit(0);
+        }
+
+        // let modules process their config options
+        try {
+            for (Module module : modules.values()) {
+                module.onSetupConfig(this);
+            }
+        } catch (Config.BadConfigurationException e) {
+            System.out.println(e.getMessage());
+            if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
+                System.out.println("Use '--help' to show a usage message.");
+            }
+            System.exit(2);            
         }
 
         return rest;
     }
 
-    public void setupAppInfo(String[] args) {
+    public void setupAppInfo(String[] args, boolean loadTransitiveHull) {
 
         // check arguments
         if (args.length == 0) {
@@ -236,6 +304,11 @@ public class AppSetup {
 
             appInfo.addRoot(clsInfo);
         }
+
+        if (loadTransitiveHull) {
+            new TransitiveHullLoader(appInfo).load();
+        }
+
     }
 
     /**
@@ -277,6 +350,10 @@ public class AppSetup {
 
     }
 
+    public void writeClasses() {
+        // TODO add+use options to support writing to .jar file?
+        new ClassWriter(appInfo).writeToDir(config.getOption(Config.WRITE_PATH));
+    }
 
 
     private File findConfigFile(String configFile) {

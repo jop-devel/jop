@@ -18,22 +18,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common;
+package com.jopdesign.jcopter;
+
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.CustomValueManager;
+import com.jopdesign.common.MethodInfo;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantPoolInfo {
-
-    private AppInfo appInfo;
-
-    public ConstantPoolInfo(AppInfo appInfo) {
-        this.appInfo = appInfo;
+public class JCopterManager implements CustomValueManager {
+    public void registerManager(AppInfo appInfo) {
+        
     }
 
-    public AppInfo getAppInfo() {
-        return appInfo;
+    public void onLoadClass(ClassInfo classInfo) {
     }
 
+    public void onClassModified(ClassInfo classInfo) {
+    }
 
+    public void onMethodModified(MethodInfo methodInfo) {
+    }
 }

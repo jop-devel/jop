@@ -88,6 +88,12 @@ public abstract class Option<T> {
         return skipChecks;
     }
 
+    /**
+     * Set to true to disable correctness checks of arguments, i.e. for 'help' and 'version' options.
+     *
+     * @param skipChecks set skipCheck flag.
+     * @return a reference to this object for chaining.
+     */
     public Option<T> setSkipChecks(boolean skipChecks) {
         this.skipChecks = skipChecks;
         return this;

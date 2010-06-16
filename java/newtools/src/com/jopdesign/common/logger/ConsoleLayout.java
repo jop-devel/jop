@@ -40,6 +40,7 @@ public class ConsoleLayout extends PatternLayout {
         super(pattern);
     }
 
+    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
     public String format(LoggingEvent event) {
         StringBuffer out = new StringBuffer();
         out.append( super.format(event) );

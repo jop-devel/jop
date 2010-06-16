@@ -18,22 +18,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common;
+package com.jopdesign.common.type;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantPoolInfo {
+public class TypeInfo {
 
-    private AppInfo appInfo;
-
-    public ConstantPoolInfo(AppInfo appInfo) {
-        this.appInfo = appInfo;
+    
+    public String toString() {
+        return "";
     }
-
-    public AppInfo getAppInfo() {
-        return appInfo;
-    }
-
-
 }

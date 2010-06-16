@@ -23,14 +23,15 @@ package com.jopdesign.common.config;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
 /**
+ * Configuration container, based on String-properties.
+ * Option handling and -parsing is done by the {@link OptionGroup} class.
+ *
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  * @author Stefan Hepp (stefan@stefant.org)
  */
@@ -82,10 +83,10 @@ public class Config {
 	}
 
 
-	/*
-	 * Exception classes
-	 * ~~~~~~~~~~~~~~~~~
-	 */
+    /*
+      * Exception classes
+      * ~~~~~~~~~~~~~~~~~
+      */
     @SuppressWarnings({"UncheckedExceptionClass"})
     public static class BadConfigurationError extends Error {
 		private static final long serialVersionUID = 1L;
@@ -110,9 +111,7 @@ public class Config {
     private OptionGroup options;
 
     public Config() {
-        this.defaultProps = null;
-        props = new Properties();
-        options = new OptionGroup(this);
+        this(new Properties());
     }
 
     public Config(Properties defaultProps) {
@@ -212,6 +211,19 @@ public class Config {
         props.putAll(oldProps);
     }
 
+    /**
+     * Add a set of properties to the default properties.
+     *
+     * @param defaults a set of default properties.
+     */
+    public void addDefaults(Properties defaults) {
+        //noinspection unchecked
+        defaultProps.putAll(defaults);
+    }
+
+    /**
+     * Clear all set properties, but not the default values.
+     */
     public void clearValues() {
         props.clear();
     }
@@ -268,22 +280,59 @@ public class Config {
         return props.getProperty(key, defaultVal);
     }
 
+    /**
+     * This is a shortcut to add an option to the main option group.
+     *
+     * @see OptionGroup#addOption(Option)
+     * @param option the option to add.
+     */
     public void addOption(Option<?> option) {
         options.addOption(option);
     }
 
+    /**
+     * This is a shortcut to add a list of options to the main option group.
+     *
+     * @see OptionGroup#addOptions(Option[])
+     * @param options the options to add.
+     */
     public void addOptions(Option<?>[] options) {
         this.options.addOptions(options);
     }
 
+    /**
+     * This is a shortcut to get an option from the main option group.
+     *
+     * @see OptionGroup#getOption(Option)
+     * @param option the option to read.
+     * @return the value of the option
+     * @throws Config.BadConfigurationError if the format of the option is invalid if required and not set.
+     */
     public <T> T getOption(Option<T> option) throws BadConfigurationError {
         return options.getOption(option);
     }
 
+    /**
+     * This is a shortcut to get an option from the main option group.
+     *
+     * @see OptionGroup#getOption(Option, Object)
+     * @param option the option to read.
+     * @param defaultVal the default value to use if no other value is found.
+     * @return the value of the option
+     * @throws IllegalArgumentException if the format of the option is invalid
+     */
     public <T> T getOption(Option<T> option, T defaultVal) throws IllegalArgumentException {
         return options.getOption(option, defaultVal);
     }
 
+    /**
+     * This is a shortcut to get an option from the main option group.
+     *
+     * @see OptionGroup#tryGetOption(Option)
+     * @param option the option to read.
+     * @return the value of the option or null if not set, even if required.
+     * @throws IllegalArgumentException if the format of the option is invalid
+     */
     public <T> T tryGetOption(Option<T> option) throws IllegalArgumentException {
         return options.tryGetOption(option);
     }

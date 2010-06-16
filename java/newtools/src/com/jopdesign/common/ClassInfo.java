@@ -27,6 +27,7 @@ package com.jopdesign.common;
 public final class ClassInfo extends MemberInfo {
 
     private String className;
+    private ConstantPoolInfo constantPool;
 
     public ClassInfo(AppInfo appInfo) {
         super(appInfo);
@@ -35,6 +36,10 @@ public final class ClassInfo extends MemberInfo {
     @Override
     public ClassInfo getClassInfo() {
         return this;
+    }
+
+    public ConstantPoolInfo getConstantPool() {
+        return constantPool;
     }
 
     public FieldInfo getFieldInfo(String name) {

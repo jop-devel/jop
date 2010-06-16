@@ -57,4 +57,8 @@ public class IntOption extends Option<Long> {
         return val;
 	}
 
+    @Override
+    public boolean isEnabled(OptionGroup options) {
+        return options.hasValue(this) && options.getOption(this, 0L) != 0;
+    }
 }

@@ -22,8 +22,13 @@ package com.jopdesign.jcopter;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
+import com.jopdesign.common.Module;
 import com.jopdesign.common.config.BoolOption;
+import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
+import com.jopdesign.common.tools.ClassWriter;
+import com.jopdesign.common.tools.TransitiveHullLoader;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -32,7 +37,7 @@ import java.util.Properties;
  * User: Stefan Hepp (stefan@stefant.org)
  * Date: 18.05.2010
  */
-public class JCopter {
+public class JCopter implements Module<JCopterManager> {
 
     public static final String VERSION = "0.1";
 
@@ -44,9 +49,29 @@ public class JCopter {
 
     public static final BoolOption ALLOW_INCOMPLETE_APP =
             new BoolOption("allow-incomplete", "", false);
-    
-    public static void main(String[] args) {
 
+    public static final BoolOption USE_DFA =
+            new BoolOption("useDFA", "run and use results of the DFA tool", true);
+
+    public static final BoolOption USE_WCET =
+            new BoolOption("useWCET", "run and use results of the WCET analysis tool", true);
+
+
+    private JCopterManager manager;
+
+    public JCopter() {
+        manager = new JCopterManager();
+    }
+
+    public String getModuleVersion() {
+        return VERSION;
+    }
+
+    public JCopterManager getManager() {
+        return manager;
+    }
+
+    public Properties getDefaultProperties() {
         // load defaults configuration file
         Properties defaults = null;
         try {
@@ -56,32 +81,62 @@ public class JCopter {
             System.exit(1);
         }
 
-        // setup some defaults
-        AppSetup setup = new AppSetup(defaults, true);
-        setup.addStandardOptions(true, true);
-        setup.setUsageInfo("jcopter", "my very first wcet tool.");
-        // TODO add version info of WCET and DFA tool to versionInfo text 
-        setup.setVersionInfo("jcopter: "+VERSION);
+        return defaults;
+    }
 
-        // setup options
-        setup.getConfig().addOption( new BoolOption("useDFA", "run and use results of the DFA") );
+    public void registerOptions(OptionGroup options) {
+        options.addOption( LIBRARY_CLASSES );
+        options.addOption( IGNORE_CLASSES );
+        options.addOption( ALLOW_INCOMPLETE_APP );
+        options.addOption( USE_DFA );
+        options.addOption( USE_WCET );
+    }
 
-        // parse options and config, load application classes
-        String[] rest = setup.setupConfig(args);
-        setup.setupLogger();
+    public void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException {
+    }
 
-        // setup AppInfo, load app classes
-        AppInfo appInfo = setup.getAppInfo();
 
-        setup.setupAppInfo(rest);
+    public void run(AppSetup setup) {
 
         // run DFA + WCET
+        if ( setup.getConfig().getOption(USE_DFA) ) {
+
+        }
+
+        if ( setup.getConfig().getOption(USE_WCET) ) {
+
+        }
+
+        
+    }
+
+
+    public static void main(String[] args) {
+
+        // TODO create and register wcet and dfa tools, pass to JCopter
+        JCopter jcopter = new JCopter();
+
+        // setup some defaults
+        AppSetup setup = new AppSetup(true);
+        setup.setUsageInfo("jcopter", "my very first wcet tool.");
+
+        setup.addStandardOptions(true, true);
+        setup.addWritePathOption();
+
+        setup.registerModule("jcopter", jcopter);
+
+        // parse options and config, setup everything, load application classes
+        String[] rest = setup.setupConfig(args);
+
+        setup.setupLogger();
+        setup.setupAppInfo(rest, true);
 
         // run optimizations
-
+        jcopter.run(setup);
 
         // write results
-
+        setup.writeClasses();
 
     }
+
 }

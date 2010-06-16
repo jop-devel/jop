@@ -143,7 +143,7 @@ public final class AppInfo {
      * @param className the fully qualified name of the class.
      * @param required if true, throw an exception even if the class is excluded or ignoreMissing is true.
      * @param reload if true, reload the classInfo if it already exists.
-     * @return
+     * @return the classinfo for the classname, or null if not loaded.
      */
     public ClassInfo loadClass(String className, boolean required, boolean reload) {
 
