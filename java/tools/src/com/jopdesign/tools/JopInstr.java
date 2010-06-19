@@ -121,13 +121,13 @@ public class JopInstr{
 		new JopInstr("bipush", 2, IMP_ASM, 2),		// 0x10
 		new JopInstr("sipush", 3, IMP_ASM, 3),		// 0x11
 		new JopInstr("ldc", 2, IMP_ASM, 2),			// 0x12
-		new JopInstr("ldc_w", 3, IMP_ASM, 1),		// 0x13
+		new JopInstr("ldc_w", 3, IMP_ASM, 9),		// 0x13
 		new JopInstr("ldc2_w", 3, IMP_ASM, 17),		// 0x14
 		new JopInstr("iload", 2, IMP_ASM, 2),		// 0x15
-		new JopInstr("lload", 2, IMP_ASM, 1),		// 0x16
+		new JopInstr("lload", 2, IMP_ASM, 11),		// 0x16
 		new JopInstr("fload", 2, IMP_ASM, 1),		// 0x17
 
-		new JopInstr("dload", 2, IMP_ASM, 1),		// 0x18
+		new JopInstr("dload", 2, IMP_ASM, 11),		// 0x18
 		new JopInstr("aload", 2, IMP_ASM, 2),		// 0x19
 		new JopInstr("iload_0", 1, IMP_ASM, 1),		// 0x1A
 		new JopInstr("iload_1", 1, IMP_ASM, 1),		// 0x1B
@@ -137,16 +137,16 @@ public class JopInstr{
 		new JopInstr("lload_1", 1, IMP_ASM, 2),		// 0x1F
 
 		new JopInstr("lload_2", 1, IMP_ASM, 2),		// 0x20
-		new JopInstr("lload_3", 1, IMP_ASM, 12),		// 0x21
+		new JopInstr("lload_3", 1, IMP_ASM, 11),		// 0x21
 		new JopInstr("fload_0", 1, IMP_ASM, 1),		// 0x22
 		new JopInstr("fload_1", 1, IMP_ASM, 1),		// 0x23
 		new JopInstr("fload_2", 1, IMP_ASM, 1),		// 0x24
 		new JopInstr("fload_3", 1, IMP_ASM, 1),		// 0x25
-		new JopInstr("dload_0", 1, IMP_ASM, 1),		// 0x26
-		new JopInstr("dload_1", 1, IMP_ASM, 1),		// 0x27
+		new JopInstr("dload_0", 1, IMP_ASM, 2),		// 0x26
+		new JopInstr("dload_1", 1, IMP_ASM, 2),		// 0x27
 
-		new JopInstr("dload_2", 1, IMP_ASM, 1),		// 0x28
-		new JopInstr("dload_3", 1, IMP_ASM, 1),		// 0x29
+		new JopInstr("dload_2", 1, IMP_ASM, 2),		// 0x28
+		new JopInstr("dload_3", 1, IMP_ASM, 11),		// 0x29
 		new JopInstr("aload_0", 1, IMP_ASM, 1),		// 0x2A
 		new JopInstr("aload_1", 1, IMP_ASM, 1),		// 0x2B
 		new JopInstr("aload_2", 1, IMP_ASM, 1),		// 0x2C
@@ -161,7 +161,7 @@ public class JopInstr{
 		new JopInstr("caload", 1, IMP_ASM, 17),		// 0x34
 		new JopInstr("saload", 1, IMP_ASM, 17),		// 0x35
 		new JopInstr("istore", 2, IMP_ASM, 2),		// 0x36
-		new JopInstr("lstore", 2, IMP_ASM, 1),		// 0x37
+		new JopInstr("lstore", 2, IMP_ASM, 11),		// 0x37
 
 		new JopInstr("fstore", 2, IMP_ASM, 1),		// 0x38
 		new JopInstr("dstore", 2, IMP_ASM, 1),		// 0x39
@@ -174,16 +174,16 @@ public class JopInstr{
 
 		new JopInstr("lstore_1", 1, IMP_ASM, 2),		// 0x40
 		new JopInstr("lstore_2", 1, IMP_ASM, 2),		// 0x41
-		new JopInstr("lstore_3", 1, IMP_ASM, 12),		// 0x42
+		new JopInstr("lstore_3", 1, IMP_ASM, 11),		// 0x42
 		new JopInstr("fstore_0", 1, IMP_ASM, 1),		// 0x43
 		new JopInstr("fstore_1", 1, IMP_ASM, 1),		// 0x44
 		new JopInstr("fstore_2", 1, IMP_ASM, 1),		// 0x45
 		new JopInstr("fstore_3", 1, IMP_ASM, 1),		// 0x46
-		new JopInstr("dstore_0", 1, IMP_ASM, 1),		// 0x47
+		new JopInstr("dstore_0", 1, IMP_ASM, 2),		// 0x47
 
-		new JopInstr("dstore_1", 1, IMP_ASM, 1),		// 0x48
-		new JopInstr("dstore_2", 1, IMP_ASM, 1),		// 0x49
-		new JopInstr("dstore_3", 1, IMP_ASM, 1),		// 0x4A
+		new JopInstr("dstore_1", 1, IMP_ASM, 2),		// 0x48
+		new JopInstr("dstore_2", 1, IMP_ASM, 2),		// 0x49
+		new JopInstr("dstore_3", 1, IMP_ASM, 11),		// 0x4A
 		new JopInstr("astore_0", 1, IMP_ASM, 1),		// 0x4B
 		new JopInstr("astore_1", 1, IMP_ASM, 1),		// 0x4C
 		new JopInstr("astore_2", 1, IMP_ASM, 1),		// 0x4D
@@ -211,11 +211,11 @@ public class JopInstr{
 		new JopInstr("swap", 1, IMP_ASM, 1),			// 0x5F
 
 		new JopInstr("iadd", 1, IMP_ASM, 1),		// 0x60
-		new JopInstr("ladd", 1, IMP_ASM, 1),		// 0x61
+		new JopInstr("ladd", 1, IMP_ASM, 26),		// 0x61
 		new JopInstr("fadd", 1, IMP_JAVA, 1),		// 0x62
 		new JopInstr("dadd", 1, IMP_JAVA, 1),		// 0x63
 		new JopInstr("isub", 1, IMP_ASM, 1),		// 0x64
-		new JopInstr("lsub", 1, IMP_ASM, 1),		// 0x65
+		new JopInstr("lsub", 1, IMP_ASM, 38),		// 0x65
 		new JopInstr("fsub", 1, IMP_JAVA, 1),		// 0x66
 		new JopInstr("dsub", 1, IMP_JAVA, 1),		// 0x67
 
@@ -233,25 +233,25 @@ public class JopInstr{
 		new JopInstr("frem", 1, IMP_JAVA, 1),		// 0x72
 		new JopInstr("drem", 1, IMP_JAVA, 1),		// 0x73
 		new JopInstr("ineg", 1, IMP_ASM, 4),		// 0x74
-		new JopInstr("lneg", 1, IMP_ASM, 1),		// 0x75
+		new JopInstr("lneg", 1, IMP_ASM, 34),		// 0x75
 		new JopInstr("fneg", 1, IMP_JAVA, 1),		// 0x76
 		new JopInstr("dneg", 1, IMP_JAVA, 1),		// 0x77
 
 		new JopInstr("ishl", 1, IMP_ASM, 1),		// 0x78
-		new JopInstr("lshl", 1, IMP_ASM, 1),		// 0x79
+		new JopInstr("lshl", 1, IMP_ASM, 28),		// 0x79
 		new JopInstr("ishr", 1, IMP_ASM, 1),		// 0x7A
-		new JopInstr("lshr", 1, IMP_ASM, 1),		// 0x7B
+		new JopInstr("lshr", 1, IMP_ASM, 28),		// 0x7B
 		new JopInstr("iushr", 1, IMP_ASM, 1),	// 0x7C
-		new JopInstr("lushr", 1, IMP_ASM, 1),	// 0x7D
+		new JopInstr("lushr", 1, IMP_ASM, 28),	// 0x7D
 		new JopInstr("iand", 1, IMP_ASM, 1),		// 0x7E
-		new JopInstr("land", 1, IMP_ASM, 1),		// 0x7F
+		new JopInstr("land", 1, IMP_ASM, 8),		// 0x7F
 
 		new JopInstr("ior", 1, IMP_ASM, 1),		// 0x80
-		new JopInstr("lor", 1, IMP_ASM, 1),		// 0x81
+		new JopInstr("lor", 1, IMP_ASM, 8),		// 0x81
 		new JopInstr("ixor", 1, IMP_ASM, 1),		// 0x82
-		new JopInstr("lxor", 1, IMP_ASM, 1),		// 0x83
+		new JopInstr("lxor", 1, IMP_ASM, 8),		// 0x83
 		new JopInstr("iinc", 3, IMP_ASM, 11),		// 0x84
-		new JopInstr("i2l", 1, IMP_ASM, 1),		// 0x85
+		new JopInstr("i2l", 1, IMP_ASM, 5),		// 0x85
 		new JopInstr("i2f", 1, IMP_JAVA, 1),		// 0x86
 		new JopInstr("i2d", 1, IMP_JAVA, 1),		// 0x87
 
@@ -268,7 +268,7 @@ public class JopInstr{
 		new JopInstr("i2b", 1, IMP_JAVA, 1),		// 0x91
 		new JopInstr("i2c", 1, IMP_ASM, 2),		// 0x92
 		new JopInstr("i2s", 1, IMP_JAVA, 1),		// 0x93
-		new JopInstr("lcmp", 1, IMP_JAVA, 1),		// 0x94
+		new JopInstr("lcmp", 1, IMP_ASM, 81),		// 0x94
 		new JopInstr("fcmpl", 1, IMP_JAVA, 1),	// 0x95
 		new JopInstr("fcmpg", 1, IMP_JAVA, 1),	// 0x96
 		new JopInstr("dcmpl", 1, IMP_JAVA, 1),	// 0x97

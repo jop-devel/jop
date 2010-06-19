@@ -932,7 +932,7 @@ public class WCETInstruction {
 		// case org.apache.bcel.Constants.INT2SHORT : wcet = -1; break;
 		// LCMP = 148
 		case org.apache.bcel.Constants.LCMP:
-			wcet = -1;
+			wcet = 81;
 			break;
 		// FCMPL = 149
 		case org.apache.bcel.Constants.FCMPL:

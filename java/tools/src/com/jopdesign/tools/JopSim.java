@@ -1259,7 +1259,10 @@ System.out.println(mp+" "+pc);
 					noim(147);
 					break;
 				case 148 :		// lcmp
-					noim(148);
+					la = ((long)stack[sp-1] << 32) | ((long)stack[sp] & 0xffffffffL);
+					lb = ((long)stack[sp-3] << 32) | ((long)stack[sp-2] & 0xffffffffL);
+					stack[sp-3] = la > lb ? -1 : la < lb ? 1 : 0;
+					sp-=3;
 					break;
 				case 149 :		// fcmpl
 					noim(149);

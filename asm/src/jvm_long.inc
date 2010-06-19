@@ -545,6 +545,114 @@ lsub: // WCET=38
 			ldi 1
 			add nxt
 			
+lcmp: // WCET=80 (?)
+			stm a // bl
+			stm b // bh
+			stm c // al
+			stm d // ah
+
+lcmp_chk_overflow1:
+			ldm d // ah < 0
+			ldi 31
+			shr
+			ldm b
+			ldi 31 // bh >= 0
+			shr
+			ldi -1
+			xor
+			or // !(ah < 0 || bh >= 0)
+			nop
+			bnz lcmp_chk_overflow2
+			nop
+			nop
+			ldi 1 nxt
+
+lcmp_chk_overflow2:
+			ldm d // ah >= 0
+			ldi 31
+			shr
+			ldi -1
+			xor
+			ldm b // bh < 0
+			ldi 31
+			shr
+			or // !(ah >= 0 || bh < 0)
+			nop
+			bnz lcmp_sub
+			nop
+			nop
+			ldi -1 nxt
+lcmp_sub:
+			ldm a
+			ldi -1 // bl = ~bl
+			xor
+			stm a // bl
+			ldm b
+			ldi -1 // bh = ~bh
+			xor			
+			stm b // bh
+			
+			ldm c // al>>>1
+			ldi 1
+			ushr
+
+			ldm a // bl>>>1
+			ldi 1
+			ushr
+
+			add // (al>>>1) + (bl>>>1)
+
+			ldm a // (al&1 + bl&1 + 1)>>1
+			ldi 1
+			and
+			ldm c
+			ldi 1
+			and
+			add
+			ldi 1
+			add
+			ldi 1
+			shr
+
+			add // (al>>>1) + (bl>>>1) + (al&1 + bl&1 + 1)>>1
+
+			ldi 31
+			ushr
+
+			ldm b
+			add
+			ldm d
+			add // ah+bh+carry
+			stm d // hi(a-b)
+
+			ldm a
+			ldm c
+			add
+			ldi 1
+			add
+			stm c // lo(a-b)
+
+			ldm c
+			ldm d
+			or
+			nop
+			bnz lcmp_notequal
+			nop
+			nop
+			ldi 0 nxt
+
+lcmp_notequal:
+			ldm d
+			ldi 31
+			shr
+			nop
+			bnz lcmp_less
+			nop
+			nop
+			ldi 1 nxt
+lcmp_less:
+			ldi -1 nxt
+
 
 lushr: // WCET=28
 			ldi 63 // cnt &= 0x3f
