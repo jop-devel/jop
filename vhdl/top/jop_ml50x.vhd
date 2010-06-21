@@ -40,30 +40,30 @@ port (
 --
 	wd		: out std_logic;
 
-	led		: out std_logic
+	led		: out std_logic;
 --
 ---==========================================================--
 ----===========Virtex-5 SRAM Port============================--
---	sram_clk : out std_logic;
---	
---	sram_addr : out std_logic_vector(21 downto 0);
+	sram_clk : out std_logic;
 	
---	sram_we_n : out std_logic;
---	sram_oe_n : out std_logic;
+	sram_addr : out std_logic_vector(21 downto 0);
+	
+	sram_we_n : out std_logic;
+	sram_oe_n : out std_logic;
 
---	sram_data : inout std_logic_vector(31 downto 0);
+	sram_data : inout std_logic_vector(31 downto 0);
 	
---	sram_bw0: out std_logic;
---	sram_bw1 : out std_logic;
+	sram_bw0: out std_logic;
+	sram_bw1 : out std_logic;
 	
---	sram_bw2 : out std_Logic;
---	sram_bw3 : out std_logic;
+	sram_bw2 : out std_Logic;
+	sram_bw3 : out std_logic;
 	
---	sram_adv_ld_n : out std_logic;
---	sram_mode : out std_logic;
---	sram_cen : out std_logic;
---	sram_cen_test : out std_logic;
---	sram_zz : out std_logic
+	sram_adv_ld_n : out std_logic;
+	sram_mode : out std_logic;
+	sram_cen : out std_logic;
+	sram_cen_test : out std_logic;
+	sram_zz : out std_logic
 
 ---=========================================================---
 ---=========================================================---
@@ -80,25 +80,25 @@ end jop;
 
 architecture rtl of jop is
 -- use signals to make compiler happy when I/O ports are missing
-	signal sram_clk : std_logic;
-	signal sram_addr : std_logic_vector(21 downto 0);
-	
-	signal sram_we_n : std_logic;
-	signal sram_oe_n : std_logic;
-
-	signal sram_data : std_logic_vector(31 downto 0);
-	
-	signal sram_bw0: std_logic;
-	signal sram_bw1 : std_logic;
-	
-	signal sram_bw2 : std_Logic;
-	signal sram_bw3 : std_logic;
-	
-	signal sram_adv_ld_n : std_logic;
-	signal sram_mode : std_logic;
-	signal sram_cen : std_logic;
-	signal sram_cen_test : std_logic;
-	signal sram_zz : std_logic;
+--	signal sram_clk : std_logic;
+--	signal sram_addr : std_logic_vector(21 downto 0);
+--	
+--	signal sram_we_n : std_logic;
+--	signal sram_oe_n : std_logic;
+--
+--	signal sram_data : std_logic_vector(31 downto 0);
+--	
+--	signal sram_bw0: std_logic;
+--	signal sram_bw1 : std_logic;
+--	
+--	signal sram_bw2 : std_Logic;
+--	signal sram_bw3 : std_logic;
+--	
+--	signal sram_adv_ld_n : std_logic;
+--	signal sram_mode : std_logic;
+--	signal sram_cen : std_logic;
+--	signal sram_cen_test : std_logic;
+--	signal sram_zz : std_logic;
 
 
 --=======================================================================
