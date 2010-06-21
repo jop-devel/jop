@@ -33,7 +33,7 @@ package cmp;
 class Runner implements Runnable {
 
 	Runnable[] workList;
-	static boolean stop;
+	static volatile boolean stop;
 	
 	public Runner(Runnable[] list) {
 		workList = list;

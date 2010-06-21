@@ -94,7 +94,7 @@ port (
 --	LEDs
 --
 	oLEDR		: out std_logic_vector(17 downto 0);
-	oLEDG		: out std_logic_vector(7 downto 0);
+--	oLEDG		: out std_logic_vector(7 downto 0);
 	
 --
 --	Switches
@@ -315,7 +315,7 @@ begin
 		sc_rdy_cnt => sc_rdy_cnt(4),
 		
 		oLEDR => oLEDR,
-		oLEDG => oLEDG,
+--		oLEDG => oLEDG,
 		iSW => iSW
 	);
 	
