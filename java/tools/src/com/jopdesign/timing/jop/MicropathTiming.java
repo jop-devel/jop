@@ -132,6 +132,7 @@ public class MicropathTiming {
             break;
             case MicrocodeConstants.STMRA:
             case MicrocodeConstants.STMRAC:
+            case MicrocodeConstants.STMRAF:
             accessAddress = l.getTOS();
             /* fallthrough */
             case MicrocodeConstants.STMWD:
@@ -186,6 +187,10 @@ public class MicropathTiming {
                         timing.add(new TimingExpression(2,0,1,passed-1));
                         break;
                     case MicrocodeConstants.STMRAC:
+						/* wait(2+r) */
+                        timing.add(new TimingExpression(2,1,0,passed-1));
+                        break;
+                    case MicrocodeConstants.STMRAF:
 						/* wait(2+r) */
                         timing.add(new TimingExpression(2,1,0,passed-1));
                         break;

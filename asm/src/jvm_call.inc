@@ -111,7 +111,7 @@ invokeinterface:
 interface_pointer_ok:
 			ldi	1				// at address ref+1 (in the handle) is the pointer to method table
 			add
-			stmra				// read pointer to method table
+			stmraf				// read pointer to method table
 			wait
 			wait
 			ldmrd		 		// vt on TOS
@@ -174,7 +174,7 @@ invokesuper:					// this was invokespecial, replaced in JOPizer when calling sup
 			ldi	1				// at address cp-1 is the pointer to class structure
 			sub
 
-			stmra				// read pointer to class of method
+			stmraf				// read pointer to class of method
 			wait
 			wait
 			ldmrd		 		// read ext. mem
@@ -253,7 +253,7 @@ invoke_pointer_ok:
 			ldi	1				// at address ref+1 (in the handle) is the pointer to method table
 			add
 
-			stmra				// read pointer to method table
+			stmraf				// read pointer to method table
 			wait
 			wait
 			ldmrd		 		// read ext. mem
@@ -411,7 +411,7 @@ freturn:
 ireturn:
 			stm	a			// store return value
 			dup				// mp is on tos
-			stmra
+			stmrac
 			stm	mp
 			stm	cp
 			stvp
@@ -443,7 +443,7 @@ lreturn:
 			stm	a			// store return value
 			stm	b
 			dup				// mp is on tos
-			stmra
+			stmrac
 			stm	mp
 			stm	cp
 			stvp
@@ -489,7 +489,7 @@ return:
 
 
 			dup				// mp is on tos
-			stmra
+			stmrac
 			stm	mp
 			stm	cp
 			stvp

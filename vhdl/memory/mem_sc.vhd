@@ -110,8 +110,7 @@ port (
 );
 end component;
 
-
-
+	constant ENABLE_COPY : boolean := false;
 
 --
 --	signals for mem interface
@@ -120,7 +119,6 @@ end component;
 							idl, rd1, wr1,
 							ps1,
 							gs1,
-							rdc1,
 							bc_cc, bc_r1, bc_w, bc_rn, bc_wr, bc_wl,
 							iald0, iald1, iald2, iald23, iald3, iald4,
 							iasrd, ialrb,
@@ -272,7 +270,7 @@ end process;
 
 	sc_mem_out.address <= ram_addr;
 	sc_mem_out.wr_data <= ram_wr_data;
-	sc_mem_out.rd <= mem_in.rd or mem_in.rdc or mem_in.getfield or mem_in.iaload or state_rd;
+	sc_mem_out.rd <= mem_in.rd or mem_in.rdc or mem_in.rdf or mem_in.getfield or mem_in.iaload or state_rd;
 	sc_mem_out.wr <= mem_in.wr or state_wr;
 	sc_mem_out.cache <= ram_dcache;
 
@@ -299,7 +297,7 @@ end process;
 --
 process(ain, bin, addr_reg, offset_reg, mem_in, base_reg, pos_reg, translate_bit)
 begin
-	if mem_in.rd='1' or mem_in.rdc='1' or mem_in.getfield='1' then
+	if mem_in.rd='1' or mem_in.rdc='1' or mem_in.rdf='1' or mem_in.getfield='1' then
 		if unsigned(ain(SC_ADDR_SIZE-1 downto 0)) >= base_reg and unsigned(ain(SC_ADDR_SIZE-1 downto 0)) < pos_reg then
 			ram_addr <= std_logic_vector(unsigned(ain(SC_ADDR_SIZE-1 downto 0)) + offset_reg);
 		else
@@ -332,7 +330,7 @@ begin  -- process
 		ram_dcache <= bypass;
 	elsif mem_in.rdc = '1' then
 		ram_dcache <= direct_mapped_const;
-	elsif mem_in.getfield = '1' or mem_in.iaload = '1' then
+	elsif mem_in.rdf='1' or mem_in.getfield = '1' or mem_in.iaload = '1' then
 		ram_dcache <= full_assoc;		
 	end if;
 end process;
@@ -394,10 +392,6 @@ begin
 		addr_next <= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0))+unsigned(index);
 	end if;
 
-	if mem_in.rdc='1' then
-		addr_next <= unsigned(ain(SC_ADDR_SIZE-1 downto 0));
-	end if;
-
 	if state=cp0 then
 		addr_next <= pos_reg;
 	end if;		
@@ -445,7 +439,9 @@ begin
 			elsif mem_in.getstatic='1' then
 				next_state <= gs1;
 			elsif mem_in.rdc='1' then
-				next_state <= rdc1;
+				next_state <= rd1;
+			elsif mem_in.rdf='1' then
+				next_state <= rd1;
 			elsif mem_in.bc_rd='1' then
 				next_state <= bc_cc;
 			elsif mem_in.iaload='1' then
@@ -458,7 +454,7 @@ begin
 				end if;
 			elsif mem_in.putfield='1' then
 				next_state <= pf0;
-			elsif mem_in.copy='1' then
+			elsif mem_in.copy='1' and ENABLE_COPY then
 				next_state <= cp0;				
 			elsif mem_in.iastore='1' then
 				next_state <= iast0;
@@ -488,12 +484,6 @@ begin
 
 		when gs1 =>
 			next_state <= last;
-
-		when rdc1 =>
-			-- either 1 or 0
-			if sc_mem_in.rdy_cnt(1)='0' then
-				next_state <= idl;
-			end if;
 
 --
 --	bytecode read
@@ -822,11 +812,16 @@ begin
 		end if;
 
 		-- get source and index for copying
-		if mem_in.copy='1' then
+		if not ENABLE_COPY then
+			base_reg <= (others => '0');
+			pos_reg <= (others => '0');
+		end if;
+		if mem_in.copy='1' and ENABLE_COPY then
 			base_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
 			pos_reg <= unsigned(ain(SC_ADDR_SIZE-1 downto 0)) + unsigned(bin(SC_ADDR_SIZE-1 downto 0));
 			cp_stopbit <= ain(31);
 		end if;
+		
 		-- get destination for copying
 		if state=cp0 then
 			offset_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0)) - base_reg;
@@ -916,10 +911,6 @@ begin
 				state_bsy <= '1';
 				state_rd <= '1';
 				state_dcache <= direct_mapped;
-
-			when rdc1 =>
-				read_ocache<='0';
-				state_bsy <= '0';
 
 			when bc_cc =>
 				read_ocache<='0';

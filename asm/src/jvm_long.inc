@@ -209,7 +209,7 @@ getfield_long:
 			nop
 			nop
 
-			stmra				// read handle indirection
+			stmraf				// read handle indirection
 			wait				// for the GC
 			wait
 			ldmrd
@@ -221,7 +221,7 @@ getfield_long:
 
 			dup
 
-			stmra
+			stmraf
 			ldi	1
 			add
 			stm	a
@@ -230,7 +230,7 @@ getfield_long:
 			ldmrd				// read high word
 
 			ldm	a
-			stmra
+			stmraf
 			wait
 			wait
 			ldmrd	nxt			// read low word
@@ -265,7 +265,7 @@ putfield_long:
 			nop
 			nop
 
-			stmra				// read handle indirection
+			stmraf				// read handle indirection
 			wait				// for the GC
 			wait
 			ldmrd
@@ -331,7 +331,7 @@ lastore:
 			// from the former dup on the stack
 			ldi	1
 			add					// arrayref+1
-			stmra				// read ext. mem, mem_bsy comes one cycle later
+			stmraf				// read ext. mem, mem_bsy comes one cycle later
 			wait				// is this ok? - wait in branch slot
 			wait
 			ldmrd		 		// read ext. mem (array length)
@@ -349,7 +349,7 @@ lastore:
 			nop
 			nop
 
-			stmra				// read handle indirection
+			stmraf				// read handle indirection
 			wait				// for the GC
 			wait
 			ldmrd
@@ -411,7 +411,7 @@ laload:
 			ldi	1
 			add					// arrayref+1
 
-			stmra				// read array length
+			stmraf				// read array length
 			wait				// is this ok? - wait in branch slot
 			wait
 			ldmrd		 		// read ext. mem (array length)er	// 
@@ -429,7 +429,7 @@ laload:
 			nop
 			nop
 
-			stmra				// read handle indirection
+			stmraf				// read handle indirection
 			wait				// for the GC
 			wait
 			ldmrd

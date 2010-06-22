@@ -143,7 +143,8 @@
 //				working object cache with a single entry
 //	2010-04-24	Peter Hilber: use microcode version of aastore for RTTM
 //	2010-06-18	WP: lcmp is now in microcode
-//	2010-06-22	WP: added rdc, read constant
+//	2010-06-22	WP: added rdc, read constant, and rdf, read through
+//					fully associative cache
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -153,7 +154,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhd files
 //
-version		= 20100616
+version		= 20100622
 
 //
 //	start of stack area in the on-chip RAM
@@ -1348,7 +1349,7 @@ arraylength:
 
 			ldi	1
 			add					// arrayref+1 (in handle)
-			stmra				// read ext. mem, mem_bsy comes one cycle later
+			stmraf				// read ext. mem, mem_bsy comes one cycle later
 			wait
 			wait
 			ldmrd		 nxt	// read ext. mem

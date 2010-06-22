@@ -448,6 +448,8 @@ begin
 		mem_in.putfield <= '0';
 		mem_in.getstatic <= '0';
 		mem_in.putstatic <= '0';
+		mem_in.rdc <= '0';
+		mem_in.rdf <= '0';
 		mem_in.copy <= '0';
 		mul_wr <= '0';
 		wr_dly <= '0';
@@ -466,6 +468,7 @@ begin
 		mem_in.getstatic <= '0';
 		mem_in.putstatic <= '0';
 		mem_in.rdc <= '0';
+		mem_in.rdf <= '0';
 		mem_in.copy <= '0';
 		mul_wr <= '0';
 		wr_dly <= '0';
@@ -499,6 +502,8 @@ begin
 					mem_in.putstatic <= '1';	-- start putstatic
 				when STMRAC =>
 					mem_in.rdc <= '1';		-- start memory or io read
+				when STMRAF =>
+					mem_in.rdf <= '1';		-- start memory or io read
 				when others =>
 					null;
 			end case;
