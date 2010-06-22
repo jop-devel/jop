@@ -122,7 +122,24 @@ public class Cordic {
     final boolean  neg;
     if(neg = (x < 0))  x = -x;
 
-    final int    shift = Integer.numberOfLeadingZeros(x);
+//  final int    shift = Integer.numberOfLeadingZeros(x);
+    // The CLDC 1.1 compliant Integer does not contain the numberOfLeadingZeros method
+    // It is therefore added here
+    //*****************************
+	int xCopy = x;
+    x |= x >>> 1;
+	x |= x >>> 2;
+	x |= x >>> 4;
+	x |= x >>> 8;
+	x |= x >>> 16;
+	x = ~x;
+    x = ((x >> 1) & 0x55555555) + (x & 0x55555555);
+    x = ((x >> 2) & 0x33333333) + (x & 0x33333333);
+    x = ((x >> 4) & 0x0f0f0f0f) + (x & 0x0f0f0f0f);
+    x = ((x >> 8) & 0x00ff00ff) + (x & 0x00ff00ff);
+    final int shift = ((x >> 16) & 0x0000ffff) + (x & 0x0000ffff);
+    x = xCopy;
+    //*****************************
     final double res   = Double.longBitsToDouble(((((long)x)<<(shift+33))>>>12)|
 						 (((long)(1024-shift))<<52));
     return  neg? -res : res;
