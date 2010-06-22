@@ -34,7 +34,7 @@ ldc2_w:
 			add
 			dup
 
-			stmra				// read ext. mem, mem_bsy comes one cycle later
+			stmrac				// read ext. mem, mem_bsy comes one cycle later
 
 			ldi	1
 			add					// address for next word
@@ -45,7 +45,7 @@ ldc2_w:
 			ldmrd		 		// first word
 			stm	a
 
-			stmra				// read ext. mem, mem_bsy comes one cycle later
+			stmrac				// read ext. mem, mem_bsy comes one cycle later
 			ldm	a				// first word again on stack
 			wait
 			wait

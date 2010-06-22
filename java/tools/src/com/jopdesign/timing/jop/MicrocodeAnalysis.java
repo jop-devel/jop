@@ -366,6 +366,7 @@ public class MicrocodeAnalysis {
 			case MicrocodeConstants.STMWA:
 			case MicrocodeConstants.STMRA:
 			case MicrocodeConstants.STMWD:
+			case MicrocodeConstants.STMRAC:
 				current.st.stackPop();break;
 			// array instructions
 			case MicrocodeConstants.STALD:
@@ -537,7 +538,7 @@ public class MicrocodeAnalysis {
 	private Map<String, Integer> symMap;
 	private Map<Integer,Integer> jInstrs;
 	private List<Line> instrs;
-	public static final File DEFAULT_ASM_FILE = new File("asm", new File("generated","jvmgen.asm").getPath());
+	public static final File DEFAULT_ASM_FILE = new File("asm", new File("generated","jvmser.asm").getPath());
 
 	public MicrocodeAnalysis(String jvmAsm) throws IOException {
 		asmFile = new File(jvmAsm);

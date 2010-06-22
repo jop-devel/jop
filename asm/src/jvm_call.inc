@@ -55,7 +55,7 @@ invokestatic:
 
 invoke_main:					// jmp with pointer to pointer to mp on TOS
 
-			stmra				// read 'real' mp
+			stmrac				// read 'real' mp
 			wait
 			wait
 			ldmrd		 		// read ext. mem
@@ -76,7 +76,7 @@ invokeinterface:
 			ld_opd_16u
 			add	opd
 
-			stmra	opd			// read constant
+			stmrac	opd			// read constant
 			wait
 			wait
 			ldmrd		 		// off on TOS
@@ -118,14 +118,14 @@ interface_pointer_ok:
 
 			ldi	1				// pointer to interface table
 			sub					// befor method table
-			stmra				// read interface table address
+			stmrac				// read interface table address
 			wait
 			wait
 			ldmrd		 		// it on TOS
 
 			ldm	b
 			add					// add offset
-			stmra				// read method pointer
+			stmrac				// read method pointer
 			wait				// from interface table
 			wait
 			ldmrd		 		// mp on TOS
@@ -140,7 +140,7 @@ invokesuper:					// this was invokespecial, replaced in JOPizer when calling sup
 			ld_opd_16u
 			add
 
-			stmra				// read constant
+			stmrac				// read constant
 			wait
 			wait
 			ldmrd		 		// read ext. mem
@@ -182,7 +182,7 @@ invokesuper:					// this was invokespecial, replaced in JOPizer when calling sup
 			ldi	3				// superclass pointer is at offset 3
 			add
 
-			stmra				// read pointer to superclass
+			stmrac				// read pointer to superclass
 			wait
 			wait
 			ldmrd		 		// read ext. mem
@@ -217,7 +217,7 @@ invokevirtual:
 			ld_opd_16u
 			add
 
-			stmra				// read constant
+			stmrac				// read constant
 			wait
 			wait
 			ldmrd		 		// read ext. mem
@@ -273,7 +273,7 @@ invoke_vpsave:					// vp is allready saved in old_vp
 			dup
 			ldi	1
 			add
-			stmra			// read cp+arrg/locals count
+			stmrac			// read cp+arrg/locals count
 			ldm	mp
 			stm	old_mp
 			stm	mp
@@ -298,7 +298,7 @@ invoke_vpsave:					// vp is allready saved in old_vp
 // get method start address and length
 
 			ldm	mp
-			stmra
+			stmrac
 
 			ldm	cp
 			stm	old_cp

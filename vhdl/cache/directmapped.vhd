@@ -4,7 +4,7 @@ use IEEE.numeric_std.all;
 
 use work.sc_pack.all;
 
-entity directmapped is
+entity directmapped_const is
 generic (
 	index_bits : integer := 8);
 port (
@@ -17,9 +17,9 @@ port (
 
 	mem_out:		out sc_out_type;
 	mem_in:			in sc_in_type);
-end directmapped;
+end directmapped_const;
 
-architecture rtl of directmapped is
+architecture rtl of directmapped_const is
 
 	constant mem_bits : integer := SC_ADDR_SIZE-3;
 	constant line_cnt : integer := 2**index_bits;
@@ -194,10 +194,10 @@ begin
 				next_cpu_out <= cpu_out;
 			end if;
 
-			if cpu_out.rd = '1' and cpu_out.cache = direct_mapped then
+			if cpu_out.rd = '1' and cpu_out.cache = direct_mapped_const then
 				next_state <= rd0;
 			end if;
-			if cpu_out.wr = '1' and cpu_out.cache = direct_mapped then
+			if cpu_out.wr = '1' and cpu_out.cache = direct_mapped_const then
 				next_state <= wr0;
 			end if;
 

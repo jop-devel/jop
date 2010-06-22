@@ -35,6 +35,7 @@ public class MicrocodeConstants {
   public static final int STBCRD          = 0x49; /* consumer */ 
   public static final int STIDX           = 0x4a; /* consumer */ 
   public static final int STPS            = 0x4b; /* consumer */ 
+  public static final int STMRAC          = 0x4c; /* consumer */ 
   public static final int LDM             = 0xa0; /* producer opd MS: not to confuse it with opd in mc*/ 
   public static final int LDI             = 0xc0; /* producer opd MS: not to confuse it with opd in mc*/ 
   public static final int LDMRD           = 0xe0; /* producer */ 

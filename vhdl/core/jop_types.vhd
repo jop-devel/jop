@@ -48,6 +48,7 @@ package jop_types is
 	constant STBCR	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1001"; 
 	constant STIDX	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1010"; 
 	constant STPS	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1011"; 
+	constant STMRAC	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1100"; 
 
 	-- PUSH type
 	constant LDMRD	   : std_logic_vector(MMU_WIDTH-1 downto 0) := "0000"; 
@@ -70,6 +71,7 @@ package jop_types is
 		putfield    : std_logic;
 		getstatic   : std_logic;
 		putstatic   : std_logic;
+		rdc         : std_logic;
 		copy        : std_logic;
 	end record;
 

@@ -118,8 +118,9 @@ end component;
 --
 	type state_type		is (
 							idl, rd1, wr1,
-							ps1, 
+							ps1,
 							gs1,
+							rdc1,
 							bc_cc, bc_r1, bc_w, bc_rn, bc_wr, bc_wl,
 							iald0, iald1, iald2, iald23, iald3, iald4,
 							iasrd, ialrb,
@@ -143,6 +144,7 @@ end component;
 	-- MUX for SimpCon address and write data
 	signal ram_addr		: std_logic_vector(SC_ADDR_SIZE-1 downto 0);
 	signal ram_wr_data	: std_logic_vector(31 downto 0);
+	signal ram_dcache	: sc_cache_type;
 
 --
 --      signals for access from the state machine
@@ -150,6 +152,7 @@ end component;
 	signal state_bsy	: std_logic;
 	signal state_rd		: std_logic;
 	signal state_wr		: std_logic;
+	signal state_dcache : sc_cache_type;
 
 --
 --	signals for object and array access
@@ -269,41 +272,45 @@ end process;
 
 	sc_mem_out.address <= ram_addr;
 	sc_mem_out.wr_data <= ram_wr_data;
-	sc_mem_out.rd <= mem_in.rd or state_rd;
+	sc_mem_out.rd <= mem_in.rd or mem_in.rdc or mem_in.getfield or mem_in.iaload or state_rd;
 	sc_mem_out.wr <= mem_in.wr or state_wr;
+	sc_mem_out.cache <= ram_dcache;
 
 --
---	read data MUX on cache hi
+--	read data MUX on cache hit
 --
 process(read_ocache, sc_mem_in, ocout)
 begin
 
-	if read_ocache='1' then
-		mem_out.dout <= ocout.dout;
-	else
+	--if read_ocache='1' then
+	--	mem_out.dout <= ocout.dout;
+	--else
 		mem_out.dout <= sc_mem_in.rd_data;
-	end if;
+	--end if;
 end process;
-
-
-
 
 
 --
 --	RAM address MUX (combinational)
 --
---	TODO: check fmax without GC address translaction - it's 94 MHz instead of 83 MHz
+--	TODO: check fmax without GC address translation - it's 94 MHz instead of 83 MHz
 --	putstatic is more relaxed with one more cycle and registering
 --	the address
 --
-process(ain, addr_reg, offset_reg, mem_in, base_reg, pos_reg, translate_bit)
+process(ain, bin, addr_reg, offset_reg, mem_in, base_reg, pos_reg, translate_bit)
 begin
-	if mem_in.rd='1' then
+	if mem_in.rd='1' or mem_in.rdc='1' or mem_in.getfield='1' then
 		if unsigned(ain(SC_ADDR_SIZE-1 downto 0)) >= base_reg and unsigned(ain(SC_ADDR_SIZE-1 downto 0)) < pos_reg then
 			ram_addr <= std_logic_vector(unsigned(ain(SC_ADDR_SIZE-1 downto 0)) + offset_reg);
 		else
 			ram_addr <= ain(SC_ADDR_SIZE-1 downto 0);
 		end if;
+	elsif mem_in.iaload='1' then
+		if unsigned(bin(SC_ADDR_SIZE-1 downto 0)) >= base_reg and unsigned(bin(SC_ADDR_SIZE-1 downto 0)) < pos_reg then
+			ram_addr <= std_logic_vector(unsigned(bin(SC_ADDR_SIZE-1 downto 0)) + offset_reg);
+		else
+			ram_addr <= bin(SC_ADDR_SIZE-1 downto 0);
+		end if;		
 	else
 		-- default is the registered address for wr, bc load
 		if translate_bit='1' then
@@ -313,6 +320,23 @@ begin
 		end if;
 	end if;
 end process;
+
+
+--
+-- Data cache MUX
+--
+process (mem_in, state_dcache)
+begin  -- process	
+	ram_dcache <= state_dcache;
+	if mem_in.rd = '1' then
+		ram_dcache <= bypass;
+	elsif mem_in.rdc = '1' then
+		ram_dcache <= direct_mapped_const;
+	elsif mem_in.getfield = '1' or mem_in.iaload = '1' then
+		ram_dcache <= full_assoc;		
+	end if;
+end process;
+
 
 --
 -- prepare RAM address registering
@@ -370,6 +394,10 @@ begin
 		addr_next <= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0))+unsigned(index);
 	end if;
 
+	if mem_in.rdc='1' then
+		addr_next <= unsigned(ain(SC_ADDR_SIZE-1 downto 0));
+	end if;
+
 	if state=cp0 then
 		addr_next <= pos_reg;
 	end if;		
@@ -416,6 +444,8 @@ begin
 				next_state <= ps1;
 			elsif mem_in.getstatic='1' then
 				next_state <= gs1;
+			elsif mem_in.rdc='1' then
+				next_state <= rdc1;
 			elsif mem_in.bc_rd='1' then
 				next_state <= bc_cc;
 			elsif mem_in.iaload='1' then
@@ -458,6 +488,12 @@ begin
 
 		when gs1 =>
 			next_state <= last;
+
+		when rdc1 =>
+			-- either 1 or 0
+			if sc_mem_in.rdy_cnt(1)='0' then
+				next_state <= idl;
+			end if;
 
 --
 --	bytecode read
@@ -529,6 +565,10 @@ begin
 				next_state <= abexc;
 			else
 				next_state <= iald1;
+				-- shortcut
+				if sc_mem_in.rdy_cnt/=3 and was_a_store='0' then
+					next_state <= iald2;
+				end if;
 			end if;
 			
 		when iald1 =>
@@ -538,7 +578,7 @@ begin
 --			if sc_mem_in.rdy_cnt<=1 then
 --				next_state <= iald23;
 --			els
-				if sc_mem_in.rdy_cnt/=3 then
+			if sc_mem_in.rdy_cnt/=3 then
 				next_state <= iald2;
 			end if;
 
@@ -736,7 +776,6 @@ begin
 		bounds_error <= '0';
 		state_wr <= '0';
 		sc_mem_out.atomic <= '0';
-		sc_mem_out.cache <= bypass;
 		sc_mem_out.tm_cache <= '1';
 		ocin.wr_gf <= '0';
 		ocin.chk_pf <= '0';
@@ -835,8 +874,8 @@ begin
 		null_pointer <= '0';
 		bounds_error <= '0';
 		state_wr <= '0';
+		state_dcache <= bypass;
 		sc_mem_out.atomic <= '0';
-		sc_mem_out.cache <= bypass;
 		sc_mem_out.tm_cache <= '1';
 		ocin.wr_gf <= '0';
 		ocin.chk_pf <= '0';
@@ -870,13 +909,17 @@ begin
 				read_ocache<='0';
 				state_bsy <= '1';
 				state_wr <= '1';
-				sc_mem_out.cache <= direct_mapped;
+				state_dcache <= direct_mapped;
 
 			when gs1 =>
 				read_ocache<='0';
 				state_bsy <= '1';
 				state_rd <= '1';
-				sc_mem_out.cache <= direct_mapped;
+				state_dcache <= direct_mapped;
+
+			when rdc1 =>
+				read_ocache<='0';
+				state_bsy <= '0';
 
 			when bc_cc =>
 				read_ocache<='0';
@@ -926,11 +969,14 @@ begin
 
 			when iald0 =>
 				read_ocache<='0';
-				state_rd <= '1';
 				state_bsy <= '1';
 				inc_addr_reg <= '1';
 				sc_mem_out.atomic <= '1';
-				sc_mem_out.cache <= full_assoc;
+				-- read for store cannot happen earlier
+				if state=iast0 then
+					state_rd <= '1';
+				end if;
+				state_dcache <= full_assoc;
 
 			when iald1 =>
 				sc_mem_out.atomic <= '1';
@@ -938,12 +984,12 @@ begin
 			when iald2 =>
 				state_rd <= '1';
 				sc_mem_out.atomic <= '1';
-				sc_mem_out.cache <= full_assoc;
+				state_dcache <= full_assoc;
 
 			when iald23 =>
 				state_rd <= '1';
 				sc_mem_out.atomic <= '1';
-				sc_mem_out.cache <= full_assoc;
+				state_dcache <= full_assoc;
 
 			when iald3 =>
 				sc_mem_out.atomic <= '1';
@@ -970,10 +1016,8 @@ begin
 
 			when gf0 =>
 				read_ocache<='0';
-				state_rd <= '1';
 				state_bsy <= '1';
 				sc_mem_out.atomic <= '1';
-				sc_mem_out.cache <= full_assoc;
 
 			when gf1 =>
 				sc_mem_out.atomic <= '1';
@@ -985,7 +1029,7 @@ begin
 				state_rd <= '1';
 				was_a_hwo <= sc_mem_in.rd_data(31);
 				sc_mem_out.atomic <= '1';
-				sc_mem_out.cache <= full_assoc;
+				state_dcache <= full_assoc;
                           
 			when gf4 =>
 				sc_mem_out.atomic <= '1';
@@ -1000,7 +1044,7 @@ begin
 			when pf1 =>
 				state_rd <= '1';
 				sc_mem_out.atomic <= '1';
-				sc_mem_out.cache <= full_assoc;
+				state_dcache <= full_assoc;
 
 			when pf2 =>
 				sc_mem_out.atomic <= '1';
@@ -1016,7 +1060,7 @@ begin
 				end if;
 				state_wr <= '1';
 				sc_mem_out.atomic <= '1';
-				sc_mem_out.cache <= full_assoc;
+				state_dcache <= full_assoc;
                           
 			when cp0 =>
 				read_ocache<='0';

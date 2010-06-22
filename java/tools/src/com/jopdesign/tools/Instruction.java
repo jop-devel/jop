@@ -121,6 +121,8 @@ public class Instruction implements Serializable {
 			new Instruction("stidx", 0x040 + 0xa, 0, JmpType.NOP, StackType.POP),
 			// putstatic
 			new Instruction("stps", 0x040 + 0xb, 0, JmpType.NOP, StackType.POP),
+			// read constants through cache
+			new Instruction("stmrac", 0x040 + 0xc, 0, JmpType.NOP, StackType.POP),
 
 			//
 			// 'push' instructions

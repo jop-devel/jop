@@ -19,17 +19,27 @@ end datacache;
 
 architecture rtl of datacache is
 
-	type mux_type is (bp, dm, fa);
+	type mux_type is (bp, dmc, dm, fa);
 	signal out_mux_reg, next_out_mux : mux_type;	
 	signal in_mux_reg, next_in_mux : mux_type;	
 	
-	signal dm_cpu_in, fa_cpu_in : sc_in_type;
-	signal dm_mem_out, fa_mem_out : sc_out_type;
+	signal dmc_cpu_in, dm_cpu_in, fa_cpu_in : sc_in_type;
+	signal dmc_mem_out, dm_mem_out, fa_mem_out : sc_out_type;
 
 	signal bp_fetch, next_bp_fetch : std_logic;
 	signal bp_rd_data, next_bp_rd_data : std_logic_vector(31 downto 0);
 	
 begin  -- rtl
+
+	cmp_dmc: entity work.directmapped_const
+		port map (
+			clk		=> clk,
+			reset	=> reset,
+			inval	=> inval,
+			cpu_in	=> dmc_cpu_in,
+			cpu_out => cpu_out,
+			mem_in	=> mem_in,
+			mem_out => dmc_mem_out);
 
 	cmp_dm: entity work.directmapped
 		port map (
@@ -68,8 +78,8 @@ begin  -- rtl
 
 	async: process (cpu_out, mem_in,
 					out_mux_reg, in_mux_reg,
-					dm_mem_out, fa_mem_out,
-					dm_cpu_in, fa_cpu_in,
+					dmc_mem_out, dm_mem_out, fa_mem_out,
+					dmc_cpu_in, dm_cpu_in, fa_cpu_in,
 					bp_rd_data, bp_fetch)
 
 		variable bp_rd, bp_wr : std_logic;
@@ -82,6 +92,9 @@ begin  -- rtl
 		next_bp_rd_data <= bp_rd_data;
 
 		case out_mux_reg is
+			when dmc =>
+				mem_out <= dmc_mem_out;
+				cpu_in.rdy_cnt <= dmc_cpu_in.rdy_cnt;
 			when dm =>
 				mem_out <= dm_mem_out;
 				cpu_in.rdy_cnt <= dm_cpu_in.rdy_cnt;
@@ -98,6 +111,8 @@ begin  -- rtl
 
 		if cpu_out.rd = '1' or cpu_out.wr = '1' then
 			case cpu_out.cache is
+				when direct_mapped_const =>
+					next_out_mux <= dmc;									  
 				when direct_mapped =>
 					next_out_mux <= dm;									  
 				when full_assoc =>
@@ -112,10 +127,12 @@ begin  -- rtl
 		end if;
 
 		-- simplify rd/wr path; precondition: caches assert rd/wr only when necessary
-		mem_out.rd <= dm_mem_out.rd or fa_mem_out.rd or bp_rd;
-		mem_out.wr <= dm_mem_out.wr or fa_mem_out.wr or bp_wr;
+		mem_out.rd <= dmc_mem_out.rd or dm_mem_out.rd or fa_mem_out.rd or bp_rd;
+		mem_out.wr <= dmc_mem_out.wr or dm_mem_out.wr or fa_mem_out.wr or bp_wr;
 
 		case in_mux_reg is
+			when dmc =>
+				cpu_in.rd_data <= dmc_cpu_in.rd_data;
 			when dm =>
 				cpu_in.rd_data <= dm_cpu_in.rd_data;
 			when fa =>
@@ -128,6 +145,9 @@ begin  -- rtl
 			next_in_mux <= bp;
 			next_bp_fetch <= '1';
 		end if;
+		if out_mux_reg = dmc and dmc_cpu_in.rdy_cnt(1) = '0' then
+			next_in_mux <= dmc;
+		end if;
 		if out_mux_reg = dm and dm_cpu_in.rdy_cnt(1) = '0' then
 			next_in_mux <= dm;
 		end if;
@@ -138,6 +158,9 @@ begin  -- rtl
 		if (out_mux_reg = bp and mem_in.rdy_cnt = "00") or bp_fetch = '1' then
 			cpu_in.rd_data <= mem_in.rd_data;
 			next_bp_rd_data <= mem_in.rd_data;
+		end if;
+		if out_mux_reg = dmc and dmc_cpu_in.rdy_cnt = "00" then
+			cpu_in.rd_data <= dmc_cpu_in.rd_data;
 		end if;
 		if out_mux_reg = dm and dm_cpu_in.rdy_cnt = "00" then
 			cpu_in.rd_data <= dm_cpu_in.rd_data;
