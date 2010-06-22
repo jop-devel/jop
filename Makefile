@@ -29,7 +29,7 @@ USB=false
 #
 #	Set CLDC11 to true to use the CLDC11 JDK
 #
-CLDC11=true
+CLDC11=false
 
 #
 #	com1 is the usual serial port
