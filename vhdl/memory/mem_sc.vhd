@@ -271,7 +271,7 @@ end process;
 	sc_mem_out.address <= ram_addr;
 	sc_mem_out.wr_data <= ram_wr_data;
 	sc_mem_out.rd <= mem_in.rd or mem_in.rdc or mem_in.rdf or mem_in.getfield or mem_in.iaload or state_rd;
-	sc_mem_out.wr <= mem_in.wr or state_wr;
+	sc_mem_out.wr <= mem_in.wr or mem_in.wrf or state_wr;
 	sc_mem_out.cache <= ram_dcache;
 
 --
@@ -330,7 +330,7 @@ begin  -- process
 		ram_dcache <= bypass;
 	elsif mem_in.rdc = '1' then
 		ram_dcache <= direct_mapped_const;
-	elsif mem_in.rdf='1' or mem_in.getfield = '1' or mem_in.iaload = '1' then
+	elsif mem_in.rdf='1' or mem_in.wrf='1' or mem_in.getfield = '1' or mem_in.iaload = '1' then
 		ram_dcache <= full_assoc;		
 	end if;
 end process;
@@ -408,7 +408,7 @@ end process;
 --
 process(ain, addr_reg, mem_in, value)
 begin
-	if mem_in.wr='1' then
+	if mem_in.wr='1' or mem_in.wrf='1' then
 		ram_wr_data <= ain;
 	else
 		-- default is the registered value
@@ -442,6 +442,8 @@ begin
 				next_state <= rd1;
 			elsif mem_in.rdf='1' then
 				next_state <= rd1;
+			elsif mem_in.wrf='1' then 
+				next_state <= wr1;
 			elsif mem_in.bc_rd='1' then
 				next_state <= bc_cc;
 			elsif mem_in.iaload='1' then
@@ -614,12 +616,8 @@ begin
 			next_state <= ialrb;
 
 		when ialrb =>
-			-- HACK: added sc_mem_in.rdy_cnt/=0 to condition to avoid wrong 
-			-- exceptions when skipping rdy_cnt = 1 
-
 			-- can we optimize this when we increment index at some state?			
-			if sc_mem_in.rdy_cnt/=0 and
-			(unsigned(index) >= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0))) then
+			if (unsigned(index) >= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0))) then
 				next_state <= abexc;				
 			-- either 1 or 0
 			elsif sc_mem_in.rdy_cnt(1)='0' then
