@@ -1,20 +1,20 @@
 # Constraints for JOP
 #
 # Design provided for ML50x Virtex-5 Board.
-
-NET "clk" TNM_NET = "clk";
-TIMESPEC "TS_clk" = PERIOD "clk" 33 ns HIGH 50 %;
-
 #NET  CLK_33MHZ_FPGA       LOC="AH17";  # Bank 4, Vcco=3.3V, No DCI      
 # 33 MHz
 NET "clk" LOC = "AH17";
+NET "clk" TNM_NET = "clk";
+TIMESPEC "TS_clk" = PERIOD "clk" 33 ns HIGH 50 %;
+
+NET "sram_*" OFFSET = IN 3 ns VALID 8 ns BEFORE "clk" RISING;
+NET "sram_*" OFFSET = OUT 11 ns AFTER "clk";
 
 NET "wd" LOC = "H18";
 NET "led" LOC = "L18";
 
 
 # UART connections 
-
 NET "ser_rxd" LOC = "AG15";
 NET "ser_txd" LOC = "AG20";
 
@@ -46,13 +46,10 @@ NET  "sram_addr<21>"    LOC="AE22";  # Bank 2, Vcco=3.3V
 NET  "sram_we_n"   LOC="AF20";  # Bank 2, Vcco=3.3V
 NET  "sram_oe_n"            LOC="B12";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
 NET  "sram_cen"         LOC="J10";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
-
 # Xilix UCF contains two pins for SRAM clk???
 #NET  SRAM_CLK          LOC="AG21";  # Bank 4, Vcco=3.3V, No DCI      
 #NET  SRAM_CLK          LOC="G8";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
-
 NET  "sram_clk"          LOC="AG21";  # Bank 4, Vcco=3.3V, No DCI      
-
 #
 NET  "sram_data<0>"     LOC="AD19";  # Bank 2, Vcco=3.3V
 NET  "sram_data<1>"     LOC="AE19";  # Bank 2, Vcco=3.3V
@@ -87,7 +84,6 @@ NET  "sram_data<29>"          LOC="K9";    # Bank 20, Vcco=3.3V, DCI using 49.9 
 NET  "sram_data<30>"          LOC="K8";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
 NET  "sram_data<31>"          LOC="J9";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
 #
-
 NET  "sram_bw0"          LOC="D10";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
 NET  "sram_bw1"          LOC="D11";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
 NET  "sram_bw2"          LOC="J11";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
@@ -97,13 +93,11 @@ NET  "sram_bw3"          LOC="K11";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm r
 NET  "sram_adv_ld_n"     LOC="H8";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
 NET  "sram_mode"         LOC="A13";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
 
-
 # parity, not used
 #NET  SRAM_DQP0         LOC="D12";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
 #NET  SRAM_DQP1         LOC="C12";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
 #NET  SRAM_DQP2         LOC="H10";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
 #NET  SRAM_DQP3         LOC="H9";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
-
 
 # Don't know what IO standards should be used....
 #NET sram_clk	IOSTANDARD = LVCMOS33;
@@ -400,9 +394,7 @@ NET  "sram_mode"         LOC="A13";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm r
 #NET ser_txd IOSTANDARD = LVCMOS33;
 #NET ser_txd TIG;
 
-
 ### original stuff from Xilinx ###
-
 
 #NET  AUDIO_BIT_CLK        LOC="AF18";  # Bank 4, Vcco=3.3V, No DCI    
 #NET  AUDIO_SDATA_IN       LOC="AE18";  # Bank 4, Vcco=3.3V, No DCI    

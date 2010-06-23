@@ -120,7 +120,7 @@ signal ramb_ncs : std_logic;
 
 ---------original JOP ram address port used to----------------
 ----generate 23 bit address width for Virtex-4 SRAM-----------
-signal ram_addr 		: std_logic_vector(17 downto 0);
+signal ram_addr 		: std_logic_vector(21 downto 0);
 --------------------------------------------------------------
 --------------------------------------------------------------
 
@@ -177,7 +177,7 @@ begin
 sram_adv_ld_n <= '0';
 sram_mode <= '0';
 sram_cen <= '0';
-virtex_ram_addr <= "0000" & ram_addr;
+virtex_ram_addr <= ram_addr;
 sram_zz <= '0';
 sram_clk <= not clk_int;
 --================================================--
@@ -255,7 +255,7 @@ end process;
 	scm: entity work.sc_mem_if
 		generic map (
 			ram_ws => ram_cnt-1,
-			addr_bits => 18
+			addr_bits => 22
 		)
 		port map (clk_int, int_res,
 			sc_mem_out, sc_mem_in,
