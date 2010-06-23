@@ -12,10 +12,11 @@ public final class System {
 
 	// should be final, but we don't call the class initializer
 	// up to now.
+	// but we do it now, right?
 	// public static final PrintStream out;
-	public static PrintStream out;
-	public static InputStream in;
-	public static PrintStream err;
+	public static PrintStream out = new JOPPrintStream();
+	public static InputStream in = new JOPInputStream();
+	public static PrintStream err = out;
 
 	  
 	public static long currentTimeMillis() {
@@ -29,12 +30,12 @@ public final class System {
 
 	// should only be accessed by startup code!
 	// but there are no friends in Java :-(
-	public static void init() {
-
-		out = new JOPPrintStream();
-		in = new JOPInputStream();
-		err = out;
-	}
+//	public static void init() {
+//
+//		out = new JOPPrintStream();
+//		in = new JOPInputStream();
+//		err = out;
+//	}
 	
 	public static void exit(int i) {
 		Startup.exit();

@@ -28,7 +28,7 @@ set_global_assignment -name DEVICE EP2C70F896C6
 set_global_assignment -name TOP_LEVEL_ENTITY jop
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION "6.0 SP1"
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "20:32:02  AUGUST 07, 2006"
-set_global_assignment -name LAST_QUARTUS_VERSION "9.0 SP2"
+set_global_assignment -name LAST_QUARTUS_VERSION 9.1
 set_global_assignment -name DEVICE_FILTER_PIN_COUNT 896
 
 # Pin & Location Assignments
@@ -395,7 +395,7 @@ set_location_assignment PIN_Y27 -to oLEDG[3]
 set_location_assignment PIN_Y24 -to oLEDG[4]
 set_location_assignment PIN_Y23 -to oLEDG[5]
 set_location_assignment PIN_AA27 -to oLEDG[6]
-set_location_assignment PIN_AA24 -to oLEDG[7]
+#set_location_assignment PIN_AA24 -to oLEDG[7]
 set_location_assignment PIN_AJ4 -to oLEDR[3]
 set_location_assignment PIN_AK3 -to oLEDR[4]
 set_location_assignment PIN_AH4 -to oLEDR[5]
@@ -593,9 +593,8 @@ set_location_assignment PIN_B15 -to oVGA_SYNC_N
 set_location_assignment PIN_H19 -to oVGA_VS
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
-set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-STATED"
 set_location_assignment PIN_AD15 -to clk
-set_location_assignment PIN_AJ6 -to wd
+set_location_assignment PIN_AA24 -to wd
 set_location_assignment PIN_D21 -to ser_rxd
 set_location_assignment PIN_E21 -to ser_txd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_de2.vhd
@@ -608,6 +607,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc2_pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/led_switch.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/arom.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/aram.vhd
@@ -624,3 +624,6 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
+
+set_global_assignment -name USE_CONFIGURATION_DEVICE ON
+set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"

@@ -51,6 +51,18 @@ generic (
 
 port (
 	clk				: in std_logic;
+	
+--
+--	LEDs
+--
+	oLEDR		: out std_logic_vector(17 downto 0);
+--	oLEDG		: out std_logic_vector(7 downto 0);
+	
+--
+--	Switches
+--
+	iSW				: in std_logic_vector(17 downto 0);
+	
 --
 --	serial interface
 --
@@ -200,12 +212,17 @@ end process;
 			ncts => oUART_CTS,
 			nrts => iUART_RTS,
 			wd => wd_out,
+			--- IO pins
 			l => open,
 			r => open,
 			t => open,
-			b => open
+			b => open,
 			-- remove the comment for RAM access counting
 			-- ram_cnt => ram_count
+			
+			oLEDR => oLEDR,
+--			oLEDG => oLEDG,
+			iSW => iSW
 		);
 
 	scm: entity work.sc_mem_if

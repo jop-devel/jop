@@ -26,6 +26,10 @@
 #
 USB=false
 
+#
+#	Set CLDC11 to true to use the CLDC11 JDK
+#
+CLDC11=false
 
 #
 #	com1 is the usual serial port
@@ -134,7 +138,11 @@ TARGET=java/target
 #TOOLS_CP=-classpath $(EXT_CP)$(S)$(TOOLS)/dist/lib/jop-tools.jar
 TOOLS_CP=-classpath $(TOOLS)/dist/lib/jop-tools.jar$(S)$(TOOLS)/dist/lib/JopDebugger.jar$(S)$(EXT_CP)
 
-TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/jdk_base$(S)$(TARGET)/src/jdk11$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
+ifeq ($(CLDC11),true)
+	TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/cldc11/cldc_orig$(S)$(TARGET)/src/cldc11/cldc_mod$(S)$(TARGET)/src/cldc11/jdk_base_orig$(S)$(TARGET)/src/cldc11/jdk_base_mod$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
+else
+	TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/jdk_base$(S)$(TARGET)/src/jdk11$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
+endif
 TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5
 GCC_PARAMS=
 
@@ -357,7 +365,9 @@ java_app:
 	-mkdir $(TARGET)/dist/lib
 	-mkdir $(TARGET)/dist/bin
 	javac $(TARGET_JFLAGS) $(TARGET)/src/common/com/jopdesign/sys/*.java
+ifeq ($(CLDC11),false)
 	javac $(TARGET_JFLAGS) $(TARGET)/src/jdk_base/java/lang/annotation/*.java	# oh new Java 1.5 world!
+endif
 ifeq ($(USE_RTTM),yes)	
 	javac $(TARGET_JFLAGS) $(TARGET)/src/common/rttm/internal/Utils.java
 endif

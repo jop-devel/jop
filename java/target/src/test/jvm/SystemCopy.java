@@ -73,6 +73,21 @@ public class SystemCopy extends TestCase
 		if ( !compare (nSrc,nDest) )
 			return false;
 		
+		char[] cDest = new char[10];
+		// that's not the right test case for the issue
+		// with arraycopy type check for the char array
+		// used for String constants. Using arraycopy
+		// in String implementation fails as the char
+		// arrays do not have their type field in String
+		// constants.
+		
+		// This test case should throw an eception
+		System.arraycopy("abcde", 0, cDest, 0, 3);
+		System.out.println(cDest);
+		if (cDest[2]!='c') {
+			return false;
+		}
+		
 		String s = "aa";
 		Object o = null;
 		foo(s, o);
