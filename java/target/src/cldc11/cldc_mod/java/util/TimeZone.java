@@ -179,6 +179,7 @@ public abstract class TimeZone {
 //                defaultZone = (TimeZoneImpl)clazz.newInstance();
 //                defaultZone = (TimeZoneImpl)defaultZone.getInstance(null);
             	defaultZone = new TimeZoneImpl(); // To avoid using reflection
+            	defaultZone = (TimeZoneImpl)defaultZone.getInstance(null);
             }
             catch (Exception x) {}
         }

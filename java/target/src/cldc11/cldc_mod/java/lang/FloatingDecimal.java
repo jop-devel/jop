@@ -974,7 +974,6 @@ class FloatingDecimal {
 				}
 				// JVM.unchecked_char_arraycopy( digits, 0, result, i, nDigits
 				// );
-				System.out.print(digits);
 				System.arraycopy(digits, 0, result, i, nDigits);
 				i += nDigits;
 			} else {

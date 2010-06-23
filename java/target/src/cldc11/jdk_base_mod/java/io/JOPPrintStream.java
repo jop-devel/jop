@@ -279,7 +279,17 @@ public class JOPPrintStream extends PrintStream {
 		wr(String.valueOf(d));
     }
 	
+	public void println(double d) {
+		print(d);
+		println();
+    }
+	
 	public void print(float f) {
 		wr(String.valueOf(f));
+    }
+	
+	public void println(float f) {
+		print(f);
+		println();
     }
 }

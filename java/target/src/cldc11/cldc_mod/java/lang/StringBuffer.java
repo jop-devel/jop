@@ -1006,7 +1006,7 @@ public final class StringBuffer {
      */
     public String toString() {
     	
-        return new String(this.value);
+        return new String(this);
     }
 
     // The following two methods are needed by String to efficiently
