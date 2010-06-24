@@ -111,8 +111,8 @@ end component;
 	signal sc_arb_out		: arb_out_type(0 to cpu_cnt-1);
 	signal sc_arb_in		: arb_in_type(0 to cpu_cnt-1);
 
-	signal sc_lru_out		: arb_out_type(0 to cpu_cnt-1);
-	signal sc_lru_in		: arb_in_type(0 to cpu_cnt-1);
+	signal sc_dcache_out		: arb_out_type(0 to cpu_cnt-1);
+	signal sc_dcache_in		: arb_in_type(0 to cpu_cnt-1);
 	signal sc_mem_out		: sc_out_type;
 	signal sc_mem_in		: sc_in_type;
 	
@@ -207,7 +207,7 @@ end process;
 				spm_width => spm_width
 			)
 			port map(clk_int, int_res,
-				sc_lru_out(i), sc_lru_in(i),
+				sc_dcache_out(i), sc_dcache_in(i),
 				sc_io_out(i), sc_io_in(i),
 				irq_in(i), irq_out(i), exc_req(i));
 
@@ -216,8 +216,8 @@ end process;
 				clk		=> clk_int,
 				reset	=> int_res,
 				inval   => inval(i),
-				cpu_in	=> sc_lru_in(i),
-				cpu_out => sc_lru_out(i),
+				cpu_in	=> sc_dcache_in(i),
+				cpu_out => sc_dcache_out(i),
 				mem_in	=> sc_arb_in(i),
 				mem_out => sc_arb_out(i));
 	end generate;
