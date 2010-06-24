@@ -17,7 +17,7 @@ all:
 	bitgen -intstyle ise -f ${NAME}.ut out/${NAME}.ncd || exit 1
 	cp out/${NAME}.bit . || exit 1
 
-configure:
+config:
 	impact -batch impact.in
 
 clean:

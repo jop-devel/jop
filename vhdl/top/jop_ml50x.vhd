@@ -65,64 +65,11 @@ port (
 	sram_cen_test : out std_logic;
 	sram_zz : out std_logic
 
----=========================================================---
----=========================================================---
-
---
---	I/O pins of board TODO: change this and io for xilinx board!
---
---	io_b	: inout std_logic_vector(10 downto 1);
---	io_l	: inout std_logic_vector(20 downto 1);
---	io_r	: inout std_logic_vector(20 downto 1);
---	io_t	: inout std_logic_vector(6 downto 1)
 );
 end jop;
 
 architecture rtl of jop is
--- use signals to make compiler happy when I/O ports are missing
---	signal sram_clk : std_logic;
---	signal sram_addr : std_logic_vector(21 downto 0);
---	
---	signal sram_we_n : std_logic;
---	signal sram_oe_n : std_logic;
---
---	signal sram_data : std_logic_vector(31 downto 0);
---	
---	signal sram_bw0: std_logic;
---	signal sram_bw1 : std_logic;
---	
---	signal sram_bw2 : std_Logic;
---	signal sram_bw3 : std_logic;
---	
---	signal sram_adv_ld_n : std_logic;
---	signal sram_mode : std_logic;
---	signal sram_cen : std_logic;
---	signal sram_cen_test : std_logic;
---	signal sram_zz : std_logic;
 
-
---=======================================================================
---Create alias for simple naming convention for Virtex-5 SRAM============
---======================================================================
-alias virtex_ram_addr : std_logic_vector(21 downto 0) is sram_addr;
-alias	ram_nwe		: std_logic is sram_we_n;
-alias	ram_noe		: std_logic is sram_oe_n;
-alias	rama_d		: std_logic_vector(15 downto 0) is sram_data(15 downto 0);
-alias	rama_nlb	: std_logic is sram_bw0;
-alias	rama_nub	: std_logic is sram_bw1;
-alias	ramb_d		: std_logic_vector(15 downto 0) is sram_data(31 downto 16);
-alias	ramb_nlb	: std_logic is sram_bw2;
-alias	ramb_nub	: std_logic is sram_bw3;
-signal rama_ncs : std_logic;
-signal ramb_ncs : std_logic;
---=========================================================================
-
-
----------original JOP ram address port used to----------------
-----generate 23 bit address width for Virtex-4 SRAM-----------
-signal ram_addr 		: std_logic_vector(17 downto 0);
---------------------------------------------------------------
---------------------------------------------------------------
 
 --
 --	Signals
@@ -157,10 +104,10 @@ signal ram_addr 		: std_logic_vector(17 downto 0);
 
 -- memory interface
 
+	signal ram_addr 		: std_logic_vector(17 downto 0);
 	signal ram_dout			: std_logic_vector(31 downto 0);
-	signal ram_din			: std_logic_vector(31 downto 0);
+--	signal ram_din			: std_logic_vector(31 downto 0);
 	signal ram_dout_en		: std_logic;
-	signal ram_ncs			: std_logic;
 
 -- not available at this board:
 	signal ser_ncts			: std_logic;
@@ -176,14 +123,16 @@ begin
 -- 	A0 is not connected (only for 16-bit Flash)
 -- 	A19-A21 go to NC pins
 
-sram_adv_ld_n <= '0';
-sram_mode <= '0';
-sram_cen <= '0';
-virtex_ram_addr <= "000" & ram_addr & "0";
-sram_zz <= '0';
-sram_clk <= not clk_int;
---================================================--
---================================================-- 
+	sram_adv_ld_n <= '0';
+	sram_mode <= '0';
+	sram_cen <= '0';
+	sram_addr <= "000" & ram_addr & "0";
+	sram_zz <= '0';
+	sram_clk <= not clk_int;
+	sram_bw0 <= '0';
+	sram_bw1 <= '0';
+	sram_bw2 <= '0';
+	sram_bw3 <= '0';
 
 
 	ser_ncts <= '0';
@@ -264,36 +213,22 @@ end process;
 
 			ram_addr => ram_addr,
 			ram_dout => ram_dout,
-			ram_din => ram_din,
+			ram_din => sram_data,
 			ram_dout_en	=> ram_dout_en,
-			ram_ncs => ram_ncs,
-			ram_noe => ram_noe,
-			ram_nwe => ram_nwe
+			ram_ncs => open,
+			ram_noe => sram_oe_n,
+			ram_nwe => sram_we_n
 		);
 
 	process(ram_dout_en, ram_dout)
 	begin
 		if ram_dout_en='1' then
-			rama_d <= ram_dout(15 downto 0);
-			ramb_d <= ram_dout(31 downto 16);
+			sram_data <= ram_dout;
 		else
-			rama_d <= (others => 'Z');
-			ramb_d <= (others => 'Z');
+			sram_data <= (others => 'Z');
 		end if;
 	end process;
 
-	ram_din <= ramb_d & rama_d;
 
---
---	To put this RAM address in an output register
---	we have to make an assignment (FAST_OUTPUT_REGISTER)
---
-	rama_ncs <= ram_ncs;
-	rama_nlb <= '0';
-	rama_nub <= '0';
-
-	ramb_ncs <= ram_ncs;
-	ramb_nlb <= '0';
-	ramb_nub <= '0';
 
 end rtl;

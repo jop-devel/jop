@@ -7,8 +7,11 @@ NET "clk" LOC = "AH17";
 NET "clk" TNM_NET = "clk";
 TIMESPEC "TS_clk" = PERIOD "clk" 33 ns HIGH 50 %;
 
-NET "sram_*" OFFSET = IN 3 ns VALID 8 ns BEFORE "clk" RISING;
-NET "sram_*" OFFSET = OUT 11 ns AFTER "clk";
+NET "sram_data*" OFFSET = IN 3 ns VALID 8 ns BEFORE "clk" RISING;
+NET "sram_data*" OFFSET = OUT 9 ns AFTER "clk";
+NET "sram_addr*" OFFSET = OUT 9 ns AFTER "clk";
+NET "sram_we_n" OFFSET = OUT 9 ns AFTER "clk";
+NET "sram_oe_n" OFFSET = OUT 9 ns AFTER "clk";
 
 NET "wd" LOC = "H18";
 NET "led" LOC = "L18";

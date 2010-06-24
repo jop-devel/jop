@@ -12,7 +12,6 @@
 #
 #		QPROJ ... your Quartus FPGA project
 #		COM_* ... your communication settings
-#		all:, japp: ... USB or serial download
 #		TARGET_APP_PATH, MAIN_CLASS ... your target application
 #
 #	for a quick change you can also use command line arguments when invoking make:
@@ -22,14 +21,9 @@
 
 
 #
-#	Set USB to true for an USB based board (dspio, usbmin, lego)
+#	Set USB to true for an FTDI chip based board (dspio, usbmin, lego)
 #
 USB=false
-
-#
-#	Set CLDC11 to true to use the CLDC11 JDK
-#
-CLDC11=false
 
 #
 #	com1 is the usual serial port
@@ -45,6 +39,26 @@ else
 	COM_FLAG=-e
 endif
 
+#
+#	Select the Quartus project
+#
+# 'some' different Quartus projects
+QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp de2-70vga cycrttm de2-70rttm
+# if you want to build only one Quartus project use e.q.:
+ifeq ($(USB),true)
+	QPROJ=usbmin
+else
+	QPROJ=cycmin
+endif
+
+#
+#	Select the Xilinx project
+#	Currently only the ml50x is supported
+#	with a full make integration
+XPROJ=ml50x
+XFPGA=true
+
+# Altera FPGA configuration cable
 BLASTER_TYPE=ByteBlasterMV
 #BLASTER_TYPE=USB-Blaster
 
@@ -56,14 +70,11 @@ else
 	S=\;
 endif
 
-# 'some' different Quartus projects
-QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp de2-70vga cycrttm de2-70rttm
-# if you want to build only one Quartus project use e.q.:
-ifeq ($(USB),true)
-	QPROJ=usbmin
-else
-	QPROJ=cycmin
-endif
+#
+#	Set CLDC11 to true to use the CLDC11 JDK
+#
+CLDC11=false
+
 
 # Number of cores for JopSim and RTTM simulation
 CORE_CNT=1
@@ -111,6 +122,8 @@ WCET_METHOD=foo
 #P1=.
 #P2=dsvmmcp
 #P3=TestDSVMMCP
+
+################## end of configuration section ###################
 
 #
 #	some variables
@@ -229,7 +242,6 @@ ifeq ($(USB),true)
 else
 	make jopser
 endif
-	make config
 	make japp
 
 # build the Java application and download it
@@ -242,6 +254,8 @@ japp:
 config:
 ifeq ($(USB),true)
 	make config_usb
+else ($(XFPGA),true)
+	make config_xilinx
 else
 	make config_byteblaster
 endif
@@ -389,10 +403,15 @@ endif
 #
 jopser:
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SERIAL
+ifeq ($(XFPGA),true)
+	@echo $(XPROJ)
+	cd xilinx/$(XPROJ) && make
+else
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		make qsyn -e QBT=$$target || exit; \
 	done
+endif
 
 
 #
@@ -545,6 +564,10 @@ config_byteblaster:
 
 config_usb:
 	cd rbf && ../$(USBRUNNER) $(DLPROJ).rbf
+
+config_xilinx:
+	cd xilinx/$(XPROJ) && make config
+
 
 download:
 #	java -cp java/tools/dist/lib/jop-tools.jar$(S)java/lib/RXTXcomm.jar com.jopdesign.tools.JavaDown \
