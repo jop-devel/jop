@@ -14,6 +14,7 @@ NET "sram_data*" OFFSET = OUT 1 ns AFTER "clk_int";
 NET "sram_addr*" OFFSET = OUT 100 ps AFTER "clk_int";
 NET "sram_we_n" OFFSET = OUT 1 ns AFTER "clk_int";
 NET "sram_oe_n" OFFSET = OUT 1 ns AFTER "clk_int";
+#TIMESPEC "TS_abc" = FROM "clk_int" TO "sram_addr<0>" 1 ns;
 
 NET "wd" LOC = "H18";
 NET "led" LOC = "L18";
