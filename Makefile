@@ -52,11 +52,11 @@ else
 endif
 
 #
-#	Select the Xilinx project
+#	Select the Xilinx project byt setting XFPGA to true
 #	Currently only the ml50x is supported
 #	with a full make integration
 XPROJ=ml50x
-XFPGA=true
+XFPGA=false
 
 # Altera FPGA configuration cable
 BLASTER_TYPE=ByteBlasterMV

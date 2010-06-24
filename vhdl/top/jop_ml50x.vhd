@@ -70,6 +70,13 @@ end jop;
 
 architecture rtl of jop is
 
+component xc5pll is
+port (
+	clkin1_in		: in std_logic;
+	clkout0_out		: out std_logic;
+	locked_out		: out std_logic
+);
+end component;
 
 --
 --	Signals
@@ -136,6 +143,16 @@ begin
 
 
 	ser_ncts <= '0';
+	
+              
+	pll_inst: xc5pll
+	port map (
+		clkin1_in	 => clk,
+		clkout0_out	 => clk_int,
+		locked_out	=> open
+	);
+--	clk_int <= clk;
+
 --
 --	intern reset
 --
@@ -172,7 +189,6 @@ end process;
 --
 --	components of jop
 --
-	clk_int <= clk;
 
 	wd <= wd_out;
 

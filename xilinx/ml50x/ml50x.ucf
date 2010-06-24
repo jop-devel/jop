@@ -5,13 +5,15 @@
 # 33 MHz
 NET "clk" LOC = "AH17";
 NET "clk" TNM_NET = "clk";
-TIMESPEC "TS_clk" = PERIOD "clk" 33 ns HIGH 50 %;
+TIMESPEC "TS_clk" = PERIOD "clk" 30.303 ns HIGH 50 %;
+NET "clk_int" TNM_NET = "clk_int";
+TIMESPEC "TS_clk_int" = PERIOD "clk_int" "TS_clk" / 3;
 
-NET "sram_data*" OFFSET = IN 3 ns VALID 8 ns BEFORE "clk" RISING;
-NET "sram_data*" OFFSET = OUT 9 ns AFTER "clk";
-NET "sram_addr*" OFFSET = OUT 9 ns AFTER "clk";
-NET "sram_we_n" OFFSET = OUT 9 ns AFTER "clk";
-NET "sram_oe_n" OFFSET = OUT 9 ns AFTER "clk";
+NET "sram_data*" OFFSET = IN 3 ns VALID 8 ns BEFORE "clk_int" RISING;
+NET "sram_data*" OFFSET = OUT 1 ns AFTER "clk_int";
+NET "sram_addr*" OFFSET = OUT 100 ps AFTER "clk_int";
+NET "sram_we_n" OFFSET = OUT 1 ns AFTER "clk_int";
+NET "sram_oe_n" OFFSET = OUT 1 ns AFTER "clk_int";
 
 NET "wd" LOC = "H18";
 NET "led" LOC = "L18";
