@@ -604,7 +604,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc2_pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_DE2-70_cache.vhd
+set_global_assignment -name VHDL_FILE "../../vhdl/scio/scio_DE2-70_cache.vhd"
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/arom.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/aram.vhd
@@ -612,11 +612,12 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/bcfetch.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/core.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/decode.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/fetch.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/cache/directmapped.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/cache/directmapped_invalidate.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/cache/lru.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/cache/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/cache/datacache.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram32.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_ssram32.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_jbc.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/memory/mem_sc.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/memory/sdpram.vhd
@@ -627,9 +628,24 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_pack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_fair.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_tdma.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jopmul_512x32_cache.vhd
 
 set_global_assignment -name CDF_FILE jop.cdf
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING OFF
+set_global_assignment -name STATE_MACHINE_PROCESSING "ONE-HOT"
+set_global_assignment -name MUX_RESTRUCTURE AUTO
+set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC OFF
+set_global_assignment -name FITTER_EFFORT "AUTO FIT"
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION OFF
+set_global_assignment -name ROUTER_TIMING_OPTIMIZATION_LEVEL MAXIMUM
+set_global_assignment -name CYCLONEII_OPTIMIZATION_TECHNIQUE SPEED
+set_global_assignment -name PRE_MAPPING_RESYNTHESIS ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT EXTRA
+set_global_assignment -name PLACEMENT_EFFORT_MULTIPLIER 1.0
+set_global_assignment -name REMOVE_DUPLICATE_LOGIC OFF
+set_global_assignment -name AUTO_GLOBAL_MEMORY_CONTROLS ON
+set_global_assignment -name SYNTH_TIMING_DRIVEN_SYNTHESIS ON
+set_global_assignment -name REMOVE_REDUNDANT_LOGIC_CELLS ON
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
