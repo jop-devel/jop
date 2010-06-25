@@ -254,10 +254,12 @@ japp:
 config:
 ifeq ($(USB),true)
 	make config_usb
-else ($(XFPGA),true)
+else
+ifeq ($(XFPGA),true)
 	make config_xilinx
 else
 	make config_byteblaster
+endif
 endif
 
 install:

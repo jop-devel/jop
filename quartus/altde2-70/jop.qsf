@@ -598,7 +598,7 @@ set_location_assignment PIN_AA24 -to wd
 set_location_assignment PIN_D21 -to ser_rxd
 set_location_assignment PIN_E21 -to ser_txd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_de2.vhd
-set_global_assignment -name VHDL_FILE "../../vhdl/scio/scio_min_DE2-70.vhd"
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_min_DE2-70.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram32.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_512x32.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
@@ -608,6 +608,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/led_switch.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/dm9000a.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/arom.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/aram.vhd
