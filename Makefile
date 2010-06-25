@@ -254,7 +254,7 @@ japp:
 config:
 ifeq ($(USB),true)
 	make config_usb
-else 
+else
 ifeq ($(XFPGA),true)
 	make config_xilinx
 else
