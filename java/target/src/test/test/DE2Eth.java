@@ -51,7 +51,7 @@ public class DE2Eth {
 			;
 		}
 
-		for (int i=0; i<10; ++i) {
+		for (int i=123; i<133; ++i) {
 			// write to index port
 			Native.wr(0x00000 + i, Const.DM9000);
 			Native.wr(0x50000 + i, Const.DM9000);
@@ -71,7 +71,7 @@ public class DE2Eth {
 			for (int j=0; j<3; ++j) {
 				int val = Native.rd(Const.DM9000);
 				// mask out the interrupt bit
-				val &= 0xffff;
+				// val &= 0xffff;
 				System.out.println(val);			
 			}
 			Native.wr(0x00000, Const.DM9000);
