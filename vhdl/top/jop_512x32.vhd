@@ -22,9 +22,10 @@
 --
 --	jop_512x32.vhd
 --
---	top level for a 512x32 SRMA board (e.g. Altera DE2 board)
+--	top level for a 512x32 SSRAM board (e.g. Altera DE2-70 board)
 --
 --	2009-03-31	adapted from jop_256x16.vhd
+--  2010-06-25  Working version with SSRAM
 --
 --
 
@@ -41,11 +42,11 @@ use work.jop_config.all;
 entity jop is
 
 generic (				
-	ram_cnt		: integer := 3;		-- clock cycles for external ram
+	ram_cnt		: integer := 2;		-- clock cycles for external ram
     --rom_cnt	: integer := 3;		-- clock cycles for external rom OK for 20 MHz
     rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
-	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
+	block_bits	: integer := 5;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 0		-- size of scratchpad RAM (in number of address bits for 32-bit words)
 );
 
@@ -266,13 +267,13 @@ end process;
 	oSRAM_WE_N <= ram_nwe;
 	oSRAM_BE_N <= (others => '0');
 	oSRAM_GW_N <= '1';
-	oSRAM_CLK <= clk_int;
+	oSRAM_CLK <= not clk_int;
 	
 	oSRAM_ADSC_N <= ram_ncs;
 	oSRAM_ADSP_N <= '1';
 	oSRAM_ADV_N	<= '1';
 	
-	oSRAM_CE2 <= not(ram_ncs);	
+	oSRAM_CE2 <= not ram_ncs;
     oSRAM_CE3_N <= ram_ncs;
 
 end rtl;

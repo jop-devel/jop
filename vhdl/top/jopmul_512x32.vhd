@@ -20,13 +20,13 @@
 
 
 --
---	jop_256x16.vhd
+--	jopmul_512x32.vhd
 --
---	top level for a 256x16 SRMA board (e.g. Altera DE2 board)
+--	top level for a 512x32 SSRAM board (e.g. Altera DE2-70 board)
 --
 --	2006-08-06	adapted from jopcyc.vhd
 --	2007-06-04	Use jopcpu and change component interface to records
---
+--  2010-06-25  Working version with SSRAM
 --
 
 
@@ -43,7 +43,7 @@ use work.jop_config.all;
 entity jop is
 
 generic (
-	ram_cnt		: integer := 3;		-- clock cycles for external ram
+	ram_cnt		: integer := 2;		-- clock cycles for external ram
 --	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
 	rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
 	jpc_width	: integer := 11;	-- address bits of java bytecode pc = cache size
@@ -333,13 +333,13 @@ end process;
 	oSRAM_WE_N <= ram_nwe;
 	oSRAM_BE_N <= (others => '0');
 	oSRAM_GW_N <= '1';
-	oSRAM_CLK <= clk_int;
+	oSRAM_CLK <= not clk_int;
 	
 	oSRAM_ADSC_N <= ram_ncs;
 	oSRAM_ADSP_N <= '1';
 	oSRAM_ADV_N	<= '1';
 	
-	oSRAM_CE2 <= not(ram_ncs);	
+	oSRAM_CE2 <= not ram_ncs;	
     oSRAM_CE3_N <= ram_ncs;
 
 end rtl;
