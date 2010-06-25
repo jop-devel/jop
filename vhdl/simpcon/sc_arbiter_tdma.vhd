@@ -89,16 +89,16 @@ architecture rtl of arbiter is
 -- DE2 board:    6 cycle memory write, 4 cycle memory read
 --               write_gap <= 5; read_gap <= 3;
 --               minimal slot_length <= 6;
--- DE2-70 board: 4 cycle memory write, 3 cycle memory read
---               write_gap <= 3; read_gap <= 2;
---               minimal slot_length <= 4;
+-- DE2-70 board: 3 cycle memory write, 3 cycle memory read
+--               write_gap <= 2; read_gap <= 2;
+--               minimal slot_length <= 3;
 -- cyc12 board:  3 cycle memory write, 2 cycle memory read
 --               write_gap <= 2; read_gap <= 1;
 --               minimal slot_length <= 3;
 
-	constant write_gap : integer := 3;
+	constant write_gap : integer := 2;
 	constant read_gap  : integer := 2;
-	constant slot_length : integer := 4;
+	constant slot_length : integer := 3;
 	constant period : integer := CPU_CNT*slot_length;
 
 -- counter

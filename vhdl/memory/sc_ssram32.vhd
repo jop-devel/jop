@@ -66,6 +66,8 @@ port (
 	ram_dout	: out std_logic_vector(31 downto 0);
 	ram_din		: in std_logic_vector(31 downto 0);
 	ram_dout_en	: out std_logic;
+	ram_clk		: out std_logic;
+	ram_nsc		: out std_logic;
 	ram_ncs		: out std_logic;
 	ram_noe		: out std_logic;
 	ram_nwe		: out std_logic
@@ -93,13 +95,16 @@ architecture rtl of sc_mem_if is
 	
 	signal ram_ws_wr	: integer;
 
+	signal ram_din_reg : std_logic_vector(31 downto 0);
+	
 begin
 	
+	assert SC_ADDR_SIZE>=addr_bits report "Not enough address bits";
+
 	ram_ws_wr <= ram_ws; -- no additional wait state for SSRAM
 
-	assert SC_ADDR_SIZE>=addr_bits report "Not enough address bits";
 	ram_dout_en <= dout_ena;
-
+	
 	sc_mem_in.rdy_cnt <= cnt;
 
 --
@@ -122,9 +127,22 @@ begin
 			ram_dout <= sc_mem_out.wr_data;
 		end if;
 		if rd_data_ena='1' then
-			sc_mem_in.rd_data <= ram_din;
+			sc_mem_in.rd_data <= ram_din_reg;
 		end if;
 
+	end if;
+end process;
+
+-- inverted clock to have some setup time
+ram_clk <= not clk;
+
+process(clk, reset)
+begin
+	-- latch input data on negative edge to help hold time
+	if reset='1' then
+		ram_din_reg <= (others => '0');
+	elsif falling_edge(clk) then
+		ram_din_reg <= ram_din;
 	end if;
 end process;
 
@@ -209,6 +227,7 @@ begin
 	if (reset='1') then
 		state <= idl;
 		dout_ena <= '0';
+		ram_nsc <= '1';
 		ram_ncs <= '1';
 		ram_noe <= '1';
 		rd_data_ena <= '0';
@@ -218,6 +237,7 @@ begin
 
 		state <= next_state;
 		dout_ena <= '0';
+		ram_nsc <= '1';
 		ram_ncs <= '1';
 		ram_noe <= '1';
 		rd_data_ena <= '0';
@@ -229,24 +249,26 @@ begin
 
 			-- the wait state
 			when rd1 =>
+				ram_nsc <= '0';
 				ram_ncs <= '0';
 				ram_noe <= '0';
 
 			-- last read state
 			when rd2 =>
 				ram_noe <= '0';
-				if wait_state<=2 then
+				if wait_state=2 then
 					rd_data_ena <= '1';					
 				end if;
 				
 			-- write address/data state
 			when wr1 =>
+				ram_nsc <= '0';
 				ram_ncs <= '0';
+				ram_nwe <= '0';
 				dout_ena <= '1';
 			
 			-- write enable state	
 			when wr2 =>
-				ram_nwe <= '0';
 				dout_ena <= '1';
 
 		end case;

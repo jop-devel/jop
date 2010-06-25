@@ -42,7 +42,7 @@ use work.jop_config.all;
 entity jop is
 
 generic (				
-	ram_cnt		: integer := 2;		-- clock cycles for external ram
+	ram_cnt		: integer := 3;		-- clock cycles for external ram
     --rom_cnt	: integer := 3;		-- clock cycles for external rom OK for 20 MHz
     rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
@@ -147,6 +147,8 @@ end component;
 	signal ram_dout			: std_logic_vector(31 downto 0);	-- edit
 	signal ram_din			: std_logic_vector(31 downto 0);	-- edit
 	signal ram_dout_en		: std_logic;
+	signal ram_clk			: std_logic;
+	signal ram_nsc			: std_logic;
 	signal ram_ncs			: std_logic;
 	signal ram_noe			: std_logic;
 	signal ram_nwe			: std_logic;
@@ -238,6 +240,8 @@ end process;
 			ram_dout => ram_dout,
 			ram_din => ram_din,
 			ram_dout_en	=> ram_dout_en,
+			ram_clk => ram_clk,
+			ram_nsc => ram_nsc,
 			ram_ncs => ram_ncs,
 			ram_noe => ram_noe,
 			ram_nwe => ram_nwe
@@ -267,7 +271,7 @@ end process;
 	oSRAM_WE_N <= ram_nwe;
 	oSRAM_BE_N <= (others => '0');
 	oSRAM_GW_N <= '1';
-	oSRAM_CLK <= not clk_int;
+	oSRAM_CLK <= ram_clk;
 	
 	oSRAM_ADSC_N <= ram_ncs;
 	oSRAM_ADSP_N <= '1';
