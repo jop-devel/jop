@@ -279,7 +279,7 @@ putfield_long:
 
 			stmwa				// write ext. mem address
 			ldm	a				// restore value
-			stmwd				// write ext. mem data
+			stmwdf				// write ext. mem data
 			ldi	1
 			add
 			wait
@@ -287,7 +287,7 @@ putfield_long:
 
 			stmwa
 			ldm	b
-			stmwd
+			stmwdf
 			wait
 			wait
 			nop	nxt
