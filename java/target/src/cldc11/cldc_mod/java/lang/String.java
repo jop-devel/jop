@@ -27,9 +27,6 @@
 package java.lang;
 
 import java.io.UnsupportedEncodingException;
-
-import com.jopdesign.sys.Const;
-import com.jopdesign.sys.Native;
 import com.sun.cldc.i18n.*;
 
 //import com.sun.cldchi.jvm.JVM;
@@ -157,10 +154,13 @@ public final class String {
 	public String(char value[]) {
 //		this.count = value.length;
 //		this.value = new char[count];
-		this.value = new char[value.length];
 //		JVM.unchecked_char_arraycopy(value, 0, this.value, 0, count);
 //		System.arraycopy(value, 0, this.value, 0, count);
-		System.arraycopy(value, 0, this.value, 0, value.length);
+		char[] tempValue = new char[value.length];
+		for(int i = 0; i < value.length; i++ ) {
+			tempValue[i] = value[i];
+		}
+		this.value = tempValue;
 	}
 
 	/**
@@ -208,10 +208,14 @@ public final class String {
 			);
 		}
 
-		this.value = new char[count];
+//		this.value = new char[count];
 //		this.count = count;
-		// JVM.unchecked_char_arraycopy(value, offset, this.value, 0, count);
-		System.arraycopy(value, offset, this.value, 0, count);
+//		JVM.unchecked_char_arraycopy(value, offset, this.value, 0, count);
+		char[] tempValue = new char[count];
+		for(int i = 0; i < count; i++ ) {
+			tempValue[i] = value[offset+i];
+		}
+		this.value = tempValue;
 	}
 
 	/**
@@ -303,10 +307,12 @@ public final class String {
 	public String(StringBuffer buffer) {
 		synchronized (buffer) {
 //			buffer.setShared();
-			value = new char[buffer.count];
-			for (int i = 0; i < value.length; i++) {
-				value[i] = buffer.value[i];
+			char[] tmpValue = new char[buffer.count];
+			char[] bufValue = buffer.value;
+			for (int i = 0; i < buffer.count; i++) {
+				tmpValue[i] = bufValue[i];
 			}
+			this.value = tmpValue;
 //			this.offset = 0;
 //			this.count = buffer.length();
 		}
@@ -420,10 +426,10 @@ public final class String {
 		}
 		// NOTE: dst not checked, cannot use unchecked arraycopy
 //		System.arraycopy(value, offset + srcBegin, dst, dstBegin, srcEnd
-		System.arraycopy(value, srcBegin, dst, dstBegin, srcEnd);
-//		for(int i = 0; i < srcEnd-srcBegin; i++ ) {
-//			dst[dstBegin+i] = value[srcBegin+i];
-//		}
+		char[] tmpValue = value;
+		for(int i = 0; i < srcEnd-srcBegin; i++ ) {
+			dst[dstBegin+i] = tmpValue[srcBegin+i];
+		}
 	}
 
 	/**
@@ -1306,7 +1312,6 @@ public final class String {
 		String newStr = new String(value.length);
 		char[] newStrVal = newStr.value;
 //		JVM.unchecked_char_arraycopy(value, offset, buf, 0, i);
-		System.arraycopy(value, 0, newStrVal, 0, i);
 
 //		for (; i < count; i++) {
 		for (; i < value.length; i++) {
@@ -1343,7 +1348,6 @@ public final class String {
 		String newStr = new String(value.length);
 		char[] newStrVal = newStr.value;
 //		JVM.unchecked_char_arraycopy(value, offset, buf, 0, i);
-		System.arraycopy(value, 0, newStr.value, 0, i);
 
 //		for (; i < count; i++) {
 		for (; i < value.length; i++) {

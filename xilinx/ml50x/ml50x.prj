@@ -23,6 +23,7 @@ vhdl work  ../../vhdl/core/decode.vhd
 vhdl work  ../../vhdl/jtbl.vhd
 vhdl work  ../../vhdl/rom.vhd
 vhdl work  ../../vhdl/xilinx/xram.vhd
+verilog work  ../../vhdl/xilinx/xc5pll.v
 vhdl work  ../../vhdl/xv4ram_block.vhd
 vhdl work  ../../vhdl/core/jopcpu.vhd
 vhdl work  ../../vhdl/top/jop_ml50x.vhd
