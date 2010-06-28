@@ -28,6 +28,7 @@
 --  2007-12-19  included new lock arbitration in state "locked".
 --							Otherwise wrong output if two CPUs are waiting for lock!
 --  2008-02-20	Removed exit from the loop logic by inverting the range of the loop
+--  2010-04-24	Register sync_out_array to speed up CMPs with many cores
 
 
 library ieee;
@@ -55,6 +56,8 @@ signal next_state : state_type;
 
 signal locked_id	: integer;
 signal next_locked_id : integer;
+
+signal sync_out_array_async : sync_out_array_type(0 to cpu_cnt-1);
 
 
 begin
@@ -101,9 +104,12 @@ begin
   		if (reset = '1') then
   			state <= idle;
   			locked_id <= cpu_cnt; -- initially no id is locked
+  			
+  			sync_out_array <= (others => ('0', '0')); -- TODO
     	elsif (rising_edge(clk)) then
   			state <= next_state;
-  			locked_id <= next_locked_id;	
+  			locked_id <= next_locked_id;
+  			sync_out_array <= sync_out_array_async;
   		end if;
   	end process;
   	
@@ -112,21 +118,21 @@ begin
   begin
 
 	for i in 0 to cpu_cnt-1 loop
-		sync_out_array(i).s_out <= sync_in_array(0).s_in;  -- Bootup
+		sync_out_array_async(i).s_out <= sync_in_array(0).s_in;  -- Bootup
 	end loop;
 	
   	case next_state is
   		when idle =>
   			for i in 0 to cpu_cnt-1 loop
-  				sync_out_array(i).halted <= '0';
+  				sync_out_array_async(i).halted <= '0';
   			end loop;
   			
   		when locked =>
   			for i in 0 to cpu_cnt-1 loop
   				if (i = next_locked_id) then
-  					sync_out_array(i).halted <= '0';
+  					sync_out_array_async(i).halted <= '0';
   				else
-  					sync_out_array(i).halted <= '1';
+  					sync_out_array_async(i).halted <= '1';
   				end if;
   			end loop;	
   	end case;

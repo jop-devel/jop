@@ -20,13 +20,13 @@
 
 
 --
---	jop_256x16.vhd
+--	jopmul_512x32.vhd
 --
---	top level for a 256x16 SRMA board (e.g. Altera DE2 board)
+--	top level for a 512x32 SSRAM board (e.g. Altera DE2-70 board)
 --
 --	2006-08-06	adapted from jopcyc.vhd
 --	2007-06-04	Use jopcpu and change component interface to records
---
+--  2010-06-25  Working version with SSRAM
 --
 
 
@@ -46,10 +46,10 @@ generic (
 	ram_cnt		: integer := 3;		-- clock cycles for external ram
 --	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
 	rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
-	jpc_width	: integer := 11;	-- address bits of java bytecode pc = cache size
-	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
+	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
+	block_bits	: integer := 5;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 4		-- number of cpus
+	cpu_cnt		: integer := 8		-- number of cpus
 );
 
 port (
@@ -142,6 +142,8 @@ end component;
 	signal ram_dout			: std_logic_vector(31 downto 0);
 	signal ram_din			: std_logic_vector(31 downto 0);
 	signal ram_dout_en	: std_logic;
+	signal ram_clk			: std_logic;
+	signal ram_nsc			: std_logic;
 	signal ram_ncs			: std_logic;
 	signal ram_noe			: std_logic;
 	signal ram_nwe			: std_logic;
@@ -291,6 +293,8 @@ end process;
 			ram_dout => ram_dout,
 			ram_din => ram_din,
 			ram_dout_en	=> ram_dout_en,
+			ram_clk => ram_clk,
+			ram_nsc => ram_nsc,
 			ram_ncs => ram_ncs,
 			ram_noe => ram_noe,
 			ram_nwe => ram_nwe
@@ -333,13 +337,13 @@ end process;
 	oSRAM_WE_N <= ram_nwe;
 	oSRAM_BE_N <= (others => '0');
 	oSRAM_GW_N <= '1';
-	oSRAM_CLK <= clk_int;
+	oSRAM_CLK <= ram_clk;
 	
-	oSRAM_ADSC_N <= ram_ncs;
+	oSRAM_ADSC_N <= ram_nsc;
 	oSRAM_ADSP_N <= '1';
 	oSRAM_ADV_N	<= '1';
 	
-	oSRAM_CE2 <= not(ram_ncs);	
+	oSRAM_CE2 <= not ram_ncs;	
     oSRAM_CE3_N <= ram_ncs;
 
 end rtl;

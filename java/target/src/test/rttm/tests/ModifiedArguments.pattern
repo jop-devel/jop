@@ -1,0 +1,1 @@
+(\s+((CPU [0-9]+)|(SUM/MAX))\s+Retries: [0-9]+\s+Commits: [0-9]+\s+Early commits: 0\s+Read set: [0-9]+\s+Write set: [0-9]+\s+Read or write set: [0-9]+)+(\s+10000)+

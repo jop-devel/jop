@@ -48,6 +48,9 @@ package jop_types is
 	constant STBCR	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1001"; 
 	constant STIDX	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1010"; 
 	constant STPS	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1011"; 
+	constant STMRAC	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1100"; 
+	constant STMRAF	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1101"; 
+	constant STMWDF	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1110"; 
 
 	-- PUSH type
 	constant LDMRD	   : std_logic_vector(MMU_WIDTH-1 downto 0) := "0000"; 
@@ -70,6 +73,9 @@ package jop_types is
 		putfield    : std_logic;
 		getstatic   : std_logic;
 		putstatic   : std_logic;
+		rdc         : std_logic;
+		rdf         : std_logic;
+		wrf         : std_logic;
 		copy        : std_logic;
 	end record;
 
@@ -83,11 +89,13 @@ package jop_types is
 		spov	: std_logic;	-- stack overflow
 		np		: std_logic;	-- null pointer
 		ab		: std_logic;	-- array out of bounds
+		rollback: std_logic;	-- rollback RTTM transaction
 	end record;
 
 	constant EXC_SPOV	: std_logic_vector(2 downto 0) := "001";
 	constant EXC_NP		: std_logic_vector(2 downto 0) := "010";
 	constant EXC_AB		: std_logic_vector(2 downto 0) := "011";
+	constant EXC_ROLLBACK: std_logic_vector(2 downto 0) := "100";
 
 	-- interrupt and exception request to bcfetch
 	type irq_bcf_type is record

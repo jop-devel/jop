@@ -22,9 +22,10 @@
 --
 --	jop_512x32.vhd
 --
---	top level for a 512x32 SRMA board (e.g. Altera DE2 board)
+--	top level for a 512x32 SSRAM board (e.g. Altera DE2-70 board)
 --
 --	2009-03-31	adapted from jop_256x16.vhd
+--  2010-06-25  Working version with SSRAM
 --
 --
 
@@ -45,12 +46,24 @@ generic (
     --rom_cnt	: integer := 3;		-- clock cycles for external rom OK for 20 MHz
     rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
-	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
+	block_bits	: integer := 5;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 0		-- size of scratchpad RAM (in number of address bits for 32-bit words)
 );
 
 port (
 	clk				: in std_logic;
+	
+--
+--	LEDs
+--
+	oLEDR		: out std_logic_vector(17 downto 0);
+--	oLEDG		: out std_logic_vector(7 downto 0);
+	
+--
+--	Switches
+--
+	iSW				: in std_logic_vector(17 downto 0);
+	
 --
 --	serial interface
 --
@@ -134,6 +147,8 @@ end component;
 	signal ram_dout			: std_logic_vector(31 downto 0);	-- edit
 	signal ram_din			: std_logic_vector(31 downto 0);	-- edit
 	signal ram_dout_en		: std_logic;
+	signal ram_clk			: std_logic;
+	signal ram_nsc			: std_logic;
 	signal ram_ncs			: std_logic;
 	signal ram_noe			: std_logic;
 	signal ram_nwe			: std_logic;
@@ -200,12 +215,17 @@ end process;
 			ncts => oUART_CTS,
 			nrts => iUART_RTS,
 			wd => wd_out,
+			--- IO pins
 			l => open,
 			r => open,
 			t => open,
-			b => open
+			b => open,
 			-- remove the comment for RAM access counting
 			-- ram_cnt => ram_count
+			
+			oLEDR => oLEDR,
+--			oLEDG => oLEDG,
+			iSW => iSW
 		);
 
 	scm: entity work.sc_mem_if
@@ -220,6 +240,8 @@ end process;
 			ram_dout => ram_dout,
 			ram_din => ram_din,
 			ram_dout_en	=> ram_dout_en,
+			ram_clk => ram_clk,
+			ram_nsc => ram_nsc,
 			ram_ncs => ram_ncs,
 			ram_noe => ram_noe,
 			ram_nwe => ram_nwe
@@ -249,13 +271,13 @@ end process;
 	oSRAM_WE_N <= ram_nwe;
 	oSRAM_BE_N <= (others => '0');
 	oSRAM_GW_N <= '1';
-	oSRAM_CLK <= clk_int;
+	oSRAM_CLK <= ram_clk;
 	
 	oSRAM_ADSC_N <= ram_ncs;
 	oSRAM_ADSP_N <= '1';
 	oSRAM_ADV_N	<= '1';
 	
-	oSRAM_CE2 <= not(ram_ncs);	
+	oSRAM_CE2 <= not ram_ncs;
     oSRAM_CE3_N <= ram_ncs;
 
 end rtl;

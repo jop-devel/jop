@@ -341,6 +341,9 @@ begin
 			when "0001001001" =>			-- stbcrd
 			when "0001001010" =>			-- stidx
 			when "0001001011" =>			-- stps
+			when "0001001100" =>			-- stmrac
+			when "0001001101" =>			-- stmraf
+			when "0001001110" =>			-- stmwdf
 --			when "00101-----" =>			-- ldm
 --			when "00110-----" =>			-- ldi
 			when "0011100000" =>			-- ldmrd
@@ -447,6 +450,8 @@ begin
 		mem_in.putfield <= '0';
 		mem_in.getstatic <= '0';
 		mem_in.putstatic <= '0';
+		mem_in.rdc <= '0';
+		mem_in.rdf <= '0';
 		mem_in.copy <= '0';
 		mul_wr <= '0';
 		wr_dly <= '0';
@@ -464,6 +469,9 @@ begin
 		mem_in.putfield <= '0';
 		mem_in.getstatic <= '0';
 		mem_in.putstatic <= '0';
+		mem_in.rdc <= '0';
+		mem_in.rdf <= '0';
+		mem_in.wrf <= '0';
 		mem_in.copy <= '0';
 		mul_wr <= '0';
 		wr_dly <= '0';
@@ -493,9 +501,16 @@ begin
 					mem_in.bc_rd <= '1';	-- start bytecode read
 				when STIDX =>
 					mem_in.stidx <= '1';	-- store index
-				-- when STPS =>
-				when others =>
+				when STPS =>
 					mem_in.putstatic <= '1';	-- start putstatic
+				when STMRAC =>
+					mem_in.rdc <= '1';		-- start memory or io read
+				when STMRAF =>
+					mem_in.rdf <= '1';		-- start memory or io read
+				when STMWDF =>
+					mem_in.wrf <= '1';		-- start memory or io write
+				when others =>
+					null;
 			end case;
 		end if;
 

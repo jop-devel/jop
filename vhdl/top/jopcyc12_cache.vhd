@@ -146,8 +146,8 @@ end component;
 --
 --	jopcpu connections
 --
-	signal sc_lru_out		: sc_out_type;
-	signal sc_lru_in		: sc_in_type;
+	signal sc_dcache_out		: sc_out_type;
+	signal sc_dcache_in		: sc_in_type;
 	signal sc_mem_out		: sc_out_type;
 	signal sc_mem_in		: sc_in_type;
 	signal sc_io_out		: sc_out_type;
@@ -221,7 +221,7 @@ end process;
 			spm_width => spm_width
 		)
 		port map(clk_int, int_res,
-			sc_lru_out, sc_lru_in,
+			sc_dcache_out, sc_dcache_in,
 			sc_io_out, sc_io_in,
 			irq_in, irq_out, exc_req);
 
@@ -249,8 +249,8 @@ end process;
 			clk		=> clk_int,
 			reset	=> int_res,
 			inval	=> inval,
-			cpu_in	=> sc_lru_in,
-			cpu_out => sc_lru_out,
+			cpu_in	=> sc_dcache_in,
+			cpu_out => sc_dcache_out,
 			mem_in	=> sc_mem_in,
 			mem_out => sc_mem_out
 		);

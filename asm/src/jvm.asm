@@ -141,6 +141,10 @@
 //	2009-11-23	MS: put/getstatic support in mmu (bc operand as address)
 //	2009-11-28	MS: pufield one cycle longer for object cache hit detection, first
 //				working object cache with a single entry
+//	2010-04-24	Peter Hilber: use microcode version of aastore for RTTM
+//	2010-06-18	WP: lcmp is now in microcode
+//	2010-06-22	WP: added rdc, read constant, and rdf, read through
+//					fully associative cache
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -150,7 +154,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhd files
 //
-version		= 20091128
+version		= 20100622
 
 //
 //	start of stack area in the on-chip RAM
@@ -605,7 +609,7 @@ instanceof:
 			ld_opd_16u
 			add
 
-			stmra				// read ext. mem, mem_bsy comes one cycle later
+			stmrac				// read ext. mem, mem_bsy comes one cycle later
 			wait
 			wait
 			ldmrd		 		// read ext. mem
@@ -784,7 +788,7 @@ sipush:		nop opd
 ldc:		ldm	cp opd
 			ld_opd_8u
 			add
-			stmra				// read ext. mem, mem_bsy comes one cycle later
+			stmrac				// read ext. mem, mem_bsy comes one cycle later
 			wait
 			wait
 			ldmrd		 nxt	// read ext. mem
@@ -794,7 +798,7 @@ ldc_w:
 			nop	opd
 			ld_opd_16u
 			add
-			stmra				// read ext. mem, mem_bsy comes one cycle later
+			stmrac				// read ext. mem, mem_bsy comes one cycle later
 			wait
 			wait
 			ldmrd		 nxt	// read ext. mem
@@ -1345,13 +1349,17 @@ arraylength:
 
 			ldi	1
 			add					// arrayref+1 (in handle)
-			stmra				// read ext. mem, mem_bsy comes one cycle later
+			stmraf				// read ext. mem, mem_bsy comes one cycle later
 			wait
 			wait
 			ldmrd		 nxt	// read ext. mem
 
 
+#ifndef RTTM
 //aastore: is now in JVM.java for the write barrier
+#else
+aastore:
+#endif
 bastore:
 castore:
 fastore:

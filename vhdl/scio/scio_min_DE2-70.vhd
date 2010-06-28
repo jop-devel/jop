@@ -89,11 +89,22 @@ port (
 	rxd			: in std_logic;
 	ncts		: in std_logic;
 	nrts		: out std_logic;
+	
+--
+--	LEDs
+--
+	oLEDR		: out std_logic_vector(17 downto 0);
+--	oLEDG		: out std_logic_vector(7 downto 0);
+	
+--
+--	Switches
+--
+	iSW			: in std_logic_vector(17 downto 0);
 
 -- watch dog
 
 	wd			: out std_logic;
-
+-- add led and switch pins
 -- core i/o pins
 	l			: inout std_logic_vector(20 downto 1);
 	r			: inout std_logic_vector(20 downto 1);
@@ -289,6 +300,23 @@ begin
 			rxd	 => rxd,
 			ncts => '0',
 			nrts => nrts
+	);
+	
+	lw : entity work.led_switch
+	port map
+	(
+		clk => clk,
+		reset => reset,
+		
+		sc_rd => sc_rd(4),
+		sc_rd_data => sc_dout(4),
+		sc_wr => sc_wr(4),
+		sc_wr_data => sc_io_out.wr_data,
+		sc_rdy_cnt => sc_rdy_cnt(4),
+		
+		oLEDR => oLEDR,
+--		oLEDG => oLEDG,
+		iSW => iSW
 	);
 	
 --	ps2kbd : kbd_cntrl

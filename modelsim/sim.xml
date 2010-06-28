@@ -112,6 +112,10 @@
 		</vcom>
 
 		<vcom>
+			<arg line="${jopdir}/cache/directmapped_invalidate.vhd"/>
+		</vcom>
+
+		<vcom>
 			<arg line="${jopdir}/cache/datacache.vhd"/>
 		</vcom>
 
@@ -168,7 +172,7 @@
 		</vcom>
 
 		<vcom>
-			<arg line="${jopdir}/top/jopcyc_cache.vhd"/>
+			<arg line="${jopdir}/top/jopcyc12_cache.vhd"/>
 		</vcom>
 
 		<vcom>

@@ -51,7 +51,7 @@ built and downloaded with the following make target:
     make japp
 \end{lstlisting}
 Change \code{HelloWorld.java} and run it on JOP. Now change the class
-name that contains the \code{main()} method from \code{HelloWorld} to
+name in the \code{Makefile} from \code{HelloWorld} to
 \code{Hello} and rerun the Java application build. Now an embedded
 version of ``Hello World" should run on JOP. Besides the usual
 greeting on the standard output, the LED on the FPGA board should
@@ -165,7 +165,7 @@ targets are \code{jsim} and \code{sim}.
 An important step in real-time system development is the analysis of
 the WCET of the individual tasks. Compile and run the WCET example
 \code{Loop.java} in package \code{wcet}. You can analyze the WCET of
-the method \code{measure()} with following make command:
+the method \code{foo()} with following make command:
 \begin{lstlisting}
     make java_app wcet -e P1=test P2=wcet P3=Loop
 \end{lstlisting}
