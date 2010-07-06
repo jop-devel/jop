@@ -20,6 +20,9 @@
 
 package com.jopdesign.common;
 
+import java.util.Collection;
+import java.util.Set;
+
 /**
  * 
  * @author Stefan Hepp (stefan@stefant.org)
@@ -56,5 +59,13 @@ public final class ClassInfo extends MemberInfo {
 
     public String getClassName() {
         return className;
+    }
+
+    public Collection<FieldInfo> getFields() {
+        return null;
+    }
+
+    public Collection<MethodInfo> getMethods() {
+        return null;
     }
 }

@@ -25,8 +25,16 @@ package com.jopdesign.common;
  */
 public interface CustomValueManager {
 
+    /**
+     * Called on registration by AppInfo.
+     * Let the manager perform tasks on registration, like registering keys and updating
+     * flowfacts for all already loaded classes.
+     *
+     * @param appInfo the AppInfo for which the manager is registered.
+     */
     void registerManager(AppInfo appInfo);
 
+    
     /**
      * Called if a class is loaded, allows the manager to add custom fields to the class.
      *
@@ -34,11 +42,15 @@ public interface CustomValueManager {
      */
     void onLoadClass(ClassInfo classInfo);
 
+    void onRemoveClass(ClassInfo classInfo);
+
+    void onClearAppInfo(AppInfo appInfo);
+
     // TODO methods to update/clear/reset custom fields on class/method/field-modify
     // TODO add reason/modification-type to onModified
 
     void onClassModified(ClassInfo classInfo);
 
     void onMethodModified(MethodInfo methodInfo);
-    
+
 }

@@ -63,6 +63,18 @@ public class Config {
     public static final StringOption NATIVE_CLASSES =
             new StringOption("native", "comma-separated list of native classes and packages", DEFAULT_NATIVE);
 
+    public static final StringOption LIBRARY_CLASSES =
+            new StringOption("libraries", "comma-separated list of library classes and packages", "");
+
+    public static final StringOption IGNORE_CLASSES =
+            new StringOption("ignore", "comma-separated list of classes and packages to ignore", "");
+
+    public static final BoolOption EXCLUDE_LIBRARIES =
+            new BoolOption("exclude-libs", "do not load library classes");
+
+    public static final BoolOption LOAD_NATIVES =
+            new BoolOption("load-natives", "load native classes too");
+
     public static final StringOption ROOTS =
             new StringOption("roots", "comma-separated list of additional root classes", "");
 
@@ -298,6 +310,10 @@ public class Config {
      */
     public void addOptions(Option<?>[] options) {
         this.options.addOptions(options);
+    }
+
+    public boolean hasOption(Option<?> option) {
+        return this.options.containsOption(option);
     }
 
     /**

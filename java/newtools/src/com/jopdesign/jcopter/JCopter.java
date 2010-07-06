@@ -20,15 +20,12 @@
 
 package com.jopdesign.jcopter;
 
-import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.Module;
 import com.jopdesign.common.config.BoolOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
-import com.jopdesign.common.tools.ClassWriter;
-import com.jopdesign.common.tools.TransitiveHullLoader;
 
 import java.io.IOException;
 import java.util.Properties;

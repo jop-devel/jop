@@ -25,15 +25,25 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.CustomValueManager;
 import com.jopdesign.common.MethodInfo;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class JCopterManager implements CustomValueManager {
+
     public void registerManager(AppInfo appInfo) {
         
     }
 
     public void onLoadClass(ClassInfo classInfo) {
+    }
+
+    public void onRemoveClass(ClassInfo classInfo) {
+    }
+
+    public void onClearAppInfo(AppInfo appInfo) {
     }
 
     public void onClassModified(ClassInfo classInfo) {

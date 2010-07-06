@@ -96,7 +96,7 @@ public class Signature {
         return memberName;
     }
 
-    public Descriptor getDescriptor() {
+    public Descriptor getMemberDescriptor() {
         return descriptor;
     }
 

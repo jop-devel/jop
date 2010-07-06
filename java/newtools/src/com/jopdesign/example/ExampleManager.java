@@ -50,6 +50,12 @@ public class ExampleManager implements CustomValueManager {
         classInfo.setCustomValue(myFieldID, classInfo.getAppInfo().getClassInfos().size());
     }
 
+    public void onRemoveClass(ClassInfo classInfo) {
+    }
+
+    public void onClearAppInfo(AppInfo appInfo) {
+    }
+
     public void onClassModified(ClassInfo classInfo) {
     }
 

@@ -25,11 +25,11 @@ import com.jopdesign.common.AppInfo;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class TransitiveHullLoader {
+public class AppLoader {
 
     private AppInfo appInfo;
 
-    public TransitiveHullLoader(AppInfo appInfo) {
+    public AppLoader(AppInfo appInfo) {
         this.appInfo = appInfo;
     }
 

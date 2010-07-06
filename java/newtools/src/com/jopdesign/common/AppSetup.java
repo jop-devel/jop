@@ -24,7 +24,7 @@ import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.logger.LoggerConfig;
 import com.jopdesign.common.tools.ClassWriter;
-import com.jopdesign.common.tools.TransitiveHullLoader;
+import com.jopdesign.common.tools.AppLoader;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.util.ClassPath;
 
@@ -170,6 +170,17 @@ public class AppSetup {
         }
     }
 
+    public void addPackageOptions(boolean addExcludeOptions) {
+
+        config.addOption(Config.LIBRARY_CLASSES);
+
+        if ( addExcludeOptions ) {
+            config.addOption(Config.IGNORE_CLASSES);            
+            config.addOption(Config.EXCLUDE_LIBRARIES);
+            config.addOption(Config.LOAD_NATIVES);
+        }
+    }
+
     public void addWritePathOption() {
         config.addOption(Config.WRITE_PATH);
     }
@@ -270,8 +281,29 @@ public class AppSetup {
 
         String[] natives = Config.splitStringList(config.getOption(Config.NATIVE_CLASSES));
         for (String n : natives) {
-            appInfo.excludeNative(n.replaceAll("/","."));
+            appInfo.addNative(n.replaceAll("/","."));
         }
+
+        // handle class loading options if set
+        if ( config.hasOption(Config.LIBRARY_CLASSES) ) {
+            String[] libs = Config.splitStringList(config.getOption(Config.LIBRARY_CLASSES));
+            for (String lib : libs) {
+                appInfo.addLibrary(lib.replaceAll("/", "."));
+            }
+        }
+
+        if ( config.hasOption(Config.IGNORE_CLASSES) ) {
+            String[] ignore = Config.splitStringList(config.getOption(Config.IGNORE_CLASSES));
+            for (String cls : ignore) {
+                appInfo.addLibrary(cls.replaceAll("/", "."));
+            }
+        }
+        if ( config.hasOption(Config.EXCLUDE_LIBRARIES) ) {
+            appInfo.setLoadLibraries(!config.getOption(Config.EXCLUDE_LIBRARIES));
+        }
+        if ( config.hasOption(Config.LOAD_NATIVES) ) {
+            appInfo.setLoadNatives(config.getOption(Config.LOAD_NATIVES));
+        }        
 
         // add system classes as roots
         String[] roots = Config.splitStringList(config.getOption(Config.ROOTS));
@@ -306,7 +338,7 @@ public class AppSetup {
         }
 
         if (loadTransitiveHull) {
-            new TransitiveHullLoader(appInfo).load();
+            new AppLoader(appInfo).load();
         }
 
     }

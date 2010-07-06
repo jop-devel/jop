@@ -48,12 +48,31 @@ public final class AppInfo {
     private MethodInfo mainMethod;
 
     private boolean ignoreMissing;
-    private Set<String> excludeNative;
-    private Set<String> excludeLibrary;
-    private Set<String> excludeIgnored;
+    private boolean loadNatives;
+    private boolean loadLibraries;
+    private Set<String> nativeClasses;
+    private Set<String> libraryClasses;
+    private Set<String> ignoredClasses;
 
     private Map<String, CustomValueManager> infoManagers;
     private Map<String,CustomKey> registeredKeys;
+
+    public static class ClassInfoNotFoundException extends Exception {
+        public ClassInfoNotFoundException() {
+        }
+
+        public ClassInfoNotFoundException(String message) {
+            super(message);
+        }
+
+        public ClassInfoNotFoundException(String message, Throwable cause) {
+            super(message, cause);
+        }
+
+        public ClassInfoNotFoundException(Throwable cause) {
+            super(cause);
+        }
+    }
 
     public static class CustomKey  {
         private String keyname;
@@ -76,11 +95,15 @@ public final class AppInfo {
     public AppInfo(ClassPath classPath) {
         this.classPath = classPath;
 
+        ignoreMissing = false;
+        loadNatives = false;
+        loadLibraries = true;
+
         classes = new HashMap<String, ClassInfo>();
         roots = new HashSet<MemberInfo>();
-        excludeNative = new HashSet<String>(1);
-        excludeLibrary = new HashSet<String>(0);
-        excludeIgnored = new HashSet<String>(0);
+        nativeClasses = new HashSet<String>(1);
+        libraryClasses = new HashSet<String>(1);
+        ignoredClasses = new HashSet<String>(1);
 
         infoManagers = new HashMap<String, CustomValueManager>(1);
         registeredKeys = new HashMap<String, CustomKey>();
@@ -112,9 +135,32 @@ public final class AppInfo {
         return registeredKeys.get(key);
     }
 
+    public void clearKey(CustomKey key) {
+        clearKey(key, true, true, true);
+    }
 
-    // TODO methods to remove a key from all BaseInfos, from all ClassInfos only, check if key is set for some/all
-    // classInfos, ..; keep track of keys 
+    public void clearKey(CustomKey key, boolean fromClassInfos, boolean fromClassMembers, boolean fromCode) {
+        for ( ClassInfo cls : classes.values() ) {
+            if ( fromClassInfos ) {
+                cls.removeCustomValue(key);
+            }
+            if ( fromClassMembers ) {
+                for ( FieldInfo field : cls.getFields() ) {
+                    field.removeCustomValue(key);
+                }
+            }
+            if ( fromClassMembers || fromCode ) {
+                for ( MethodInfo method : cls.getMethods() ) {
+                    if ( fromClassMembers ) {
+                        method.removeCustomValue(key);
+                    }
+                    if ( fromCode ) {
+                        // TODO implement
+                    }
+                }
+            }
+        }
+    }
 
     public ClassPath getClassPath() {
         return classPath;
@@ -122,7 +168,7 @@ public final class AppInfo {
 
     /**
      * Set the new classPath, overwriting the old one.
-     * ClassInfos are not reloaded, use {@link #reloadClasses()} for that.
+     * ClassInfos are not reloaded, use {@link #reloadClasses(boolean)} for that.
      *
      * @param classPath the new classpath.
      */
@@ -130,8 +176,25 @@ public final class AppInfo {
         this.classPath = classPath;
     }
 
+    /**
+     * Try to load a classInfo.
+     * If the class is already loaded, return the existing classInfo.
+     * If the class is excluded, return null.
+     * If the class does not exist but should be loaded, print an error message and exit.
+     *
+     * @see #loadClass(String, boolean, boolean)
+     * @param className the fully qualified name of the class.
+     * @return the classInfo for the classname or null if excluded.
+     */
     public ClassInfo loadClass(String className) {
-        return loadClass(className, false, false);
+        ClassInfo info = null;
+        try {
+            info = loadClass(className, false, false);
+        } catch (ClassInfoNotFoundException e) {
+            System.out.println("Error loading required class '"+className+"': " + e.getMessage());
+            System.exit(4);
+        }
+        return info;
     }
 
     /**
@@ -139,13 +202,15 @@ public final class AppInfo {
      * If a class is excluded (native, library, ignored), return null.
      * If a class is not found or if loading failed and the class is not excluded, or if it is
      * required, an exception is thrown.
+     * If a class is not required and ignoreMissing is true, no exception will be thrown.
      *
      * @param className the fully qualified name of the class.
      * @param required if true, throw an exception even if the class is excluded or ignoreMissing is true.
      * @param reload if true, reload the classInfo if it already exists.
-     * @return the classinfo for the classname, or null if not loaded.
+     * @return the classInfo for the classname, or null if excluded.
+     * @throws ClassInfoNotFoundException if the class could not be loaded and is not excluded.
      */
-    public ClassInfo loadClass(String className, boolean required, boolean reload) {
+    public ClassInfo loadClass(String className, boolean required, boolean reload) throws ClassInfoNotFoundException {
 
         ClassInfo cls = classes.get(className);
         if ( cls != null ) {
@@ -159,21 +224,12 @@ public final class AppInfo {
         // check if it is excluded (and not required)
         if ( isExcluded(className) ) {
             if ( required ) {
-                // throw exception
+                throw new ClassInfoNotFoundException("Class '"+className+"' is excluded but required.");
             }
             return null;
         }
 
-        // try to load the class
-        cls = tryLoadClass(className);
-        if ( cls == null ) {
-            // class is not excluded, but loading failed
-            if ( required || !ignoreMissing ) {
-                // throw exception
-            }
-        }
-
-        return cls;
+        return performLoadClass(className, required);
     }
 
     public ClassInfo createClass(String className, ClassRef superClass) {
@@ -181,7 +237,11 @@ public final class AppInfo {
     }
 
     public void removeClass(ClassInfo classInfo) {
+        classes.remove(classInfo.getClassName());
 
+        for ( CustomValueManager mgr : infoManagers.values() ) {
+            mgr.onRemoveClass(classInfo);
+        }
     }
 
     public void addRoot(ClassInfo classInfo) {
@@ -216,16 +276,16 @@ public final class AppInfo {
         return mainMethod;
     }
 
-    public void excludeNative(String nativeClass) {
-        excludeNative.add(nativeClass);
+    public void addNative(String nativeClass) {
+        nativeClasses.add(nativeClass);
     }
 
-    public void excludeLibrary(String libraryClass) {
-        excludeLibrary.add(libraryClass);
+    public void addLibrary(String libraryClass) {
+        libraryClasses.add(libraryClass);
     }
 
-    public void excludeIgnored(String ignoreClass) {
-        excludeIgnored.add(ignoreClass);
+    public void addIgnored(String ignoredClass) {
+        ignoredClasses.add(ignoredClass);
     }
 
     public void setIgnoreMissing(boolean ignoreMissing) {
@@ -236,6 +296,26 @@ public final class AppInfo {
         return ignoreMissing;
     }
 
+    public boolean doLoadLibraries() {
+        return loadLibraries;
+    }
+
+    public void setLoadLibraries(boolean loadLibraries) {
+        this.loadLibraries = loadLibraries;
+    }
+
+    public boolean doLoadNatives() {
+        return loadNatives;
+    }
+
+    /**
+     * Set to true to load native classes too.
+     *
+     * @param loadNatives if true, load native classes too.
+     */
+    public void setLoadNatives(boolean loadNatives) {
+        this.loadNatives = loadNatives;
+    }
 
     /**
      * Remove all classInfos.
@@ -243,6 +323,10 @@ public final class AppInfo {
      * @param clearRoots if true, clear list of roots and main method as well, else keep the root classes in the class list.
      */
     public void clear(boolean clearRoots) {
+
+        for (CustomValueManager mgr : infoManagers.values()) {
+            mgr.onClearAppInfo(this);
+        }
 
         classes.clear();
         
@@ -259,9 +343,37 @@ public final class AppInfo {
 
     /**
      * Reload all currently loaded classInfos from disk, using the current classpath.
+     * @param checkExcludes if true, reevaluate excludes, else reload all classes even if excluded.
+     * @throws ClassInfoNotFoundException if a class could not be reloaded.
      */
-    public void reloadClasses() {
+    public void reloadClasses(boolean checkExcludes) throws ClassInfoNotFoundException {
 
+        List<String> clsNames = new LinkedList<String>(classes.keySet());
+
+        clear(false);
+
+        for (String clsName : clsNames ) {
+
+            if ( checkExcludes && isExcluded(clsName) ) {
+                continue;
+            }
+
+            ClassInfo cls = performLoadClass(clsName, true);
+        }
+
+        // reload mainMethod
+        if ( mainMethod != null ) {
+            ClassInfo mainClass = classes.get(mainMethod.getClassInfo().getClassName());
+            if ( mainClass == null ) {
+                mainMethod = null;
+                throw new ClassInfoNotFoundException("Could not find main class.");
+            }
+
+            mainMethod = mainClass.getMethodInfo(mainMethod.getSignature().getMemberSignature());
+            if (mainMethod == null) {
+                throw new ClassInfoNotFoundException("Could not find main method in main class");
+            }
+        }
     }
 
     /**
@@ -278,13 +390,19 @@ public final class AppInfo {
      * Get an already loaded class, or null if the class has been excluded, or
      * throw an exception if the class is either required or not excluded.
      *
-     * @param className
-     * @param required
-     * @return
+     * @param className fully qualified name of the class to get.
+     * @param required if true, always throw an exception if not loaded.
+     * @return the classInfo, or null if excluded or ignored and not required.
      */
-    public ClassInfo getClass(String className, boolean required) {
-
-        return null;
+    public ClassInfo getClass(String className, boolean required) throws ClassInfoNotFoundException {
+        ClassInfo cls = classes.get(className);
+        if ( cls == null && required ) {
+            throw new ClassInfoNotFoundException("Required class '"+className+"' not loaded.");
+        }
+        if ( cls == null && !ignoreMissing && !isExcluded(className) ) {
+            throw new ClassInfoNotFoundException("Requested class '"+className+"' is missing and not excluded.");            
+        }
+        return cls;
     }
 
     public Collection<ClassInfo> getClassInfos() {
@@ -301,8 +419,49 @@ public final class AppInfo {
         return null;
     }
 
-    public boolean isExcluded(String className) {
+    public boolean isNative(String className) {
+        for (String s : nativeClasses) {
+            if (className.equals(s) || className.startsWith(s + ".")) {
+                return true;
+            }
+        }
         return false;
+    }
+
+    public boolean isLibrary(String className) {
+        for (String s : libraryClasses) {
+            if (className.equals(s) || className.startsWith(s + ".")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isIgnored(String className) {
+        for (String s : ignoredClasses) {
+            if (className.equals(s) || className.startsWith(s + ".")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * check if the classname is excluded from loading,
+     * either because it is a native or library class (and loading is disabled for them)
+     * or if the class is ignored.
+     *
+     * @param className the fully qualified class name to check.
+     * @return true if it should be excluded from loading.
+     */
+    public boolean isExcluded(String className) {
+        if ( !loadNatives && isNative(className) ) {
+            return true;
+        }
+        if ( !loadLibraries && isLibrary(className) ) {
+            return true;
+        }
+        return isIgnored(className);
     }
 
     /**
@@ -314,7 +473,26 @@ public final class AppInfo {
         return registeredKeys.size();
     }
     
+    private ClassInfo performLoadClass(String className, boolean required) throws ClassInfoNotFoundException {
+
+        // try to load the class
+        ClassInfo cls = tryLoadClass(className);
+        if ( cls == null ) {
+            // class is not excluded, but loading failed
+            if ( required || !ignoreMissing ) {
+                throw new ClassInfoNotFoundException("Class '"+className+"' could not be loaded.");
+            }
+        } else {
+            for (CustomValueManager mgr : infoManagers.values()) {
+                mgr.onLoadClass(cls);
+            }
+        }
+
+        return cls;
+    }
+
     private ClassInfo tryLoadClass(String className) {
+        
         return null;
     }
 
