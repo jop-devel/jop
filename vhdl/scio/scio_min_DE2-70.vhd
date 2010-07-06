@@ -89,11 +89,33 @@ port (
 	rxd			: in std_logic;
 	ncts		: in std_logic;
 	nrts		: out std_logic;
+	
+--
+--	LEDs
+--
+	oLEDR		: out std_logic_vector(17 downto 0);
+--	oLEDG		: out std_logic_vector(7 downto 0);
+	
+--
+--	Switches
+--
+	iSW			: in std_logic_vector(17 downto 0);
 
+--
+--	Ethernet
+--
+	oENET_CMD			: out std_logic;
+	oENET_IOR_N		: out std_logic;
+	oENET_IOW_N		: out std_logic;
+	oENET_RESET_N	: out std_logic;
+	oENET_CS_N		: out std_logic;
+	iENET_INT			: in std_logic;
+	ENET_D				: inout std_logic_vector(15 downto 0);
+	
 -- watch dog
 
 	wd			: out std_logic;
-
+-- add led and switch pins
 -- core i/o pins
 	l			: inout std_logic_vector(20 downto 1);
 	r			: inout std_logic_vector(20 downto 1);
@@ -120,7 +142,7 @@ end scio;
 
 architecture rtl of scio is
 
-	constant SLAVE_CNT : integer := 5;
+	constant SLAVE_CNT : integer := 6;
 	-- SLAVE_CNT <= 2**DECODE_BITS
 	-- take care of USB address 0x20!
 	constant DECODE_BITS : integer := 3;
@@ -289,6 +311,44 @@ begin
 			rxd	 => rxd,
 			ncts => '0',
 			nrts => nrts
+	);
+	
+	lw : entity work.led_switch
+	port map
+	(
+		clk => clk,
+		reset => reset,
+		
+		sc_rd => sc_rd(4),
+		sc_rd_data => sc_dout(4),
+		sc_wr => sc_wr(4),
+		sc_wr_data => sc_io_out.wr_data,
+		sc_rdy_cnt => sc_rdy_cnt(4),
+		
+		oLEDR => oLEDR,
+--		oLEDG => oLEDG,
+		iSW => iSW
+	);
+	
+	eth: entity work.dm9000a
+	port map
+	(
+		clk => clk,
+		reset => reset,
+		
+		sc_rd => sc_rd(5),
+		sc_rd_data => sc_dout(5),
+		sc_wr => sc_wr(5),
+		sc_wr_data => sc_io_out.wr_data,
+		sc_rdy_cnt => sc_rdy_cnt(5),
+
+		oENET_CMD => oENET_CMD,
+		oENET_IOR_N => oENET_IOR_N,
+		oENET_IOW_N => oENET_IOW_N,
+		oENET_RESET_N => oENET_RESET_N,
+		oENET_CS_N => oENET_CS_N,
+		iENET_INT => iENET_INT,
+		ENET_D => ENET_D
 	);
 	
 --	ps2kbd : kbd_cntrl

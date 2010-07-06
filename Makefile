@@ -12,7 +12,6 @@
 #
 #		QPROJ ... your Quartus FPGA project
 #		COM_* ... your communication settings
-#		all:, japp: ... USB or serial download
 #		TARGET_APP_PATH, MAIN_CLASS ... your target application
 #
 #	for a quick change you can also use command line arguments when invoking make:
@@ -22,10 +21,9 @@
 
 
 #
-#	Set USB to true for an USB based board (dspio, usbmin, lego)
+#	Set USB to true for an FTDI chip based board (dspio, usbmin, lego)
 #
 USB=false
-
 
 #
 #	com1 is the usual serial port
@@ -41,6 +39,26 @@ else
 	COM_FLAG=-e
 endif
 
+#
+#	Select the Quartus project
+#
+# 'some' different Quartus projects
+QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp de2-70vga cycrttm de2-70rttm
+# if you want to build only one Quartus project use e.q.:
+ifeq ($(USB),true)
+	QPROJ=usbmin
+else
+	QPROJ=cycmin
+endif
+
+#
+#	Select the Xilinx project byt setting XFPGA to true
+#	Currently only the ml50x is supported
+#	with a full make integration
+XPROJ=ml50x
+XFPGA=false
+
+# Altera FPGA configuration cable
 BLASTER_TYPE=ByteBlasterMV
 #BLASTER_TYPE=USB-Blaster
 
@@ -52,14 +70,11 @@ else
 	S=\;
 endif
 
-# 'some' different Quartus projects
-QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp de2-70vga cycrttm de2-70rttm
-# if you want to build only one Quartus project use e.q.:
-ifeq ($(USB),true)
-	QPROJ=usbmin
-else
-	QPROJ=cycmin
-endif
+#
+#	Set CLDC11 to true to use the CLDC11 JDK
+#
+CLDC11=false
+
 
 # Number of cores for JopSim and RTTM simulation
 CORE_CNT=1
@@ -108,6 +123,8 @@ WCET_METHOD=foo
 #P2=dsvmmcp
 #P3=TestDSVMMCP
 
+################## end of configuration section ###################
+
 #
 #	some variables
 #
@@ -134,7 +151,11 @@ TARGET=java/target
 #TOOLS_CP=-classpath $(EXT_CP)$(S)$(TOOLS)/dist/lib/jop-tools.jar
 TOOLS_CP=-classpath $(TOOLS)/dist/lib/jop-tools.jar$(S)$(TOOLS)/dist/lib/JopDebugger.jar$(S)$(EXT_CP)
 
-TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/jdk_base$(S)$(TARGET)/src/jdk11$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
+ifeq ($(CLDC11),true)
+	TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/cldc11/cldc_orig$(S)$(TARGET)/src/cldc11/cldc_mod$(S)$(TARGET)/src/cldc11/jdk_base_orig$(S)$(TARGET)/src/cldc11/jdk_base_mod$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
+else
+	TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/jdk_base$(S)$(TARGET)/src/jdk11$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
+endif
 TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5
 GCC_PARAMS=
 
@@ -221,7 +242,6 @@ ifeq ($(USB),true)
 else
 	make jopser
 endif
-	make config
 	make japp
 
 # build the Java application and download it
@@ -235,7 +255,11 @@ config:
 ifeq ($(USB),true)
 	make config_usb
 else
+ifeq ($(XFPGA),true)
+	make config_xilinx
+else
 	make config_byteblaster
+endif
 endif
 
 install:
@@ -357,7 +381,9 @@ java_app:
 	-mkdir $(TARGET)/dist/lib
 	-mkdir $(TARGET)/dist/bin
 	javac $(TARGET_JFLAGS) $(TARGET)/src/common/com/jopdesign/sys/*.java
+ifeq ($(CLDC11),false)
 	javac $(TARGET_JFLAGS) $(TARGET)/src/jdk_base/java/lang/annotation/*.java	# oh new Java 1.5 world!
+endif
 ifeq ($(USE_RTTM),yes)	
 	javac $(TARGET_JFLAGS) $(TARGET)/src/common/rttm/internal/Utils.java
 endif
@@ -379,10 +405,15 @@ endif
 #
 jopser:
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SERIAL
+ifeq ($(XFPGA),true)
+	@echo $(XPROJ)
+	cd xilinx/$(XPROJ) && make
+else
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		make qsyn -e QBT=$$target || exit; \
 	done
+endif
 
 
 #
@@ -535,6 +566,10 @@ config_byteblaster:
 
 config_usb:
 	cd rbf && ../$(USBRUNNER) $(DLPROJ).rbf
+
+config_xilinx:
+	cd xilinx/$(XPROJ) && make config
+
 
 download:
 #	java -cp java/tools/dist/lib/jop-tools.jar$(S)java/lib/RXTXcomm.jar com.jopdesign.tools.JavaDown \

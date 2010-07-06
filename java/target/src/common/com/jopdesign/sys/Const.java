@@ -207,6 +207,11 @@ public class Const {
 	public static final int MSK_UA_TDRE = 1;
 	public static final int MSK_UA_RDRF = 2;
 	
+	// LED & SWITCH on DE2
+	public static final int LS_BASE = IO_BASE+0x40;
+	// Ethernet interface on DE2
+	public static final int DM9000 = IO_BASE+0x50;
+	
 	// Keyboard
 	public static final int KB_CTRL = IO_BASE+0x30+0;
 	public static final int KB_DATA = IO_BASE+0x30+1;

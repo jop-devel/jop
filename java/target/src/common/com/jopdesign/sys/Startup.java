@@ -85,7 +85,7 @@ public class Startup {
 			GC.init(mem_size, val+4);
 			// place for some initialization:
 			// could be placed in <clinit> in the future
-			System.init();
+//			System.init();
 			version();
 			started = true;
 			clazzinit();
