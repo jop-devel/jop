@@ -338,7 +338,7 @@ public class AppSetup {
         }
 
         if (loadTransitiveHull) {
-            new AppLoader(appInfo).load();
+            new AppLoader(appInfo).loadApp();
         }
 
     }
@@ -356,9 +356,9 @@ public class AppSetup {
     public void printUsage() {
         String optionDesc;
         if ( optionSyntax != null ) {
-            optionDesc = optionSyntax;
+            optionDesc = " " + optionSyntax;
         } else {
-            optionDesc = "<options>";
+            optionDesc = " <options>";
             if ( config.getOptions().availableCommands().size() > 0 ) {
                 optionDesc += " <cmd> <cmd-options>";
             }
@@ -377,14 +377,19 @@ public class AppSetup {
 
         System.out.println("Available options:");
         for (Option<?> option : config.getOptions().availableOptions() ) {
-            System.out.println(option.toString(10));
+            System.out.println(option.toString(20));
         }
 
     }
 
     public void writeClasses() {
         // TODO add+use options to support writing to .jar file?
-        new ClassWriter(appInfo).writeToDir(config.getOption(Config.WRITE_PATH));
+        try {
+            new ClassWriter(appInfo).writeToDir(config.getOption(Config.WRITE_PATH));
+        } catch (IOException e) {
+            System.out.println("Failed to write classes: "+e.getMessage());
+            System.exit(5);
+        }
     }
 
 

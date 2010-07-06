@@ -53,4 +53,13 @@ public class StringOption extends Option<String> {
         option.setShortKey(shortKey);
         return option;
 	}
+
+    @Override
+    protected String getDefaultsText() {
+        if ("".equals(defaultValue)) {
+            return "[optional]";
+        } else {
+            return super.getDefaultsText();
+        }
+    }
 }

@@ -106,7 +106,19 @@ public class OptionGroup {
 	}
 
     public void addOption(Option<?> option) {
+        if ( optionSet.containsKey(option.getKey()) ) {
+            for (Iterator<Option<?>> it = optionList.iterator(); it.hasNext();) {
+                Option<?> opt = it.next();
+                if ( opt.getKey().equals(option.getKey()) ) {
+                    it.remove();
+                    break;
+                }
+            }
+        }
         optionSet.put(option.getKey(), option);
+
+        // we keep the options in an additional list to have them sorted in the same way they are added.
+        optionList.add(option);
     }
 
     public void addOptions(Option<?>[] options) {

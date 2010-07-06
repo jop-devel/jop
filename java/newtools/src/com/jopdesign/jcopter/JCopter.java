@@ -118,6 +118,7 @@ public class JCopter implements Module<JCopterManager> {
         setup.setUsageInfo("jcopter", "my very first wcet tool.");
 
         setup.addStandardOptions(true, true);
+        setup.addPackageOptions(true);
         setup.addWritePathOption();
 
         setup.registerModule("jcopter", jcopter);

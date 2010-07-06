@@ -21,6 +21,15 @@
 package com.jopdesign.common.tools;
 
 import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.ClassInfo;
+import org.apache.log4j.Logger;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -29,20 +38,98 @@ public class AppLoader {
 
     private AppInfo appInfo;
 
+    private List<ClassInfo> queue;
+    private Set<String> visited;
+    private List<ClassInfo> newClasses;
+
+    private static final Logger logger = Logger.getLogger("common.tools.AppLoader");
+
     public AppLoader(AppInfo appInfo) {
         this.appInfo = appInfo;
+
+        queue = new LinkedList<ClassInfo>();
+        visited = new HashSet<String>();
+        newClasses = new LinkedList<ClassInfo>();
     }
 
     public AppInfo getAppInfo() {
         return appInfo;
     }
 
-    public void load() {
-        load(false);
+    public void loadApp() {
+        loadApp(false);
     }
     
-    public void load(boolean startFromRootsOnly) {
+    public void loadApp(boolean startFromRootsOnly) {
+        if ( startFromRootsOnly ) {
+            enqueue( appInfo.getRootClasses() );
+        } else {
+            enqueue( appInfo.getClassInfos() );
+        }
 
+        processQueue();
+    }
+
+    public void loadTransitiveHull(Collection<ClassInfo> roots) {
+        enqueue(roots);
+        processQueue();
+    }
+
+    public void loadTransitiveHull(ClassInfo root) {
+        enqueue(root);
+        processQueue();
+    }
+
+    public Collection<ClassInfo> getLoadedClasses() {
+        return Collections.unmodifiableCollection(newClasses);
+    }
+
+    private void processQueue() {
+
+        newClasses.clear();
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Starting transitive hull loader");
+        }
+
+        while (!queue.isEmpty()) {
+            ClassInfo next = queue.remove(0);
+
+            if (logger.isTraceEnabled()) {
+                logger.trace("Processing class: "+next.getClassName());
+            }
+
+            int found = processClass(next);
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("Found "+found+" new classes in " +next.getClassName());
+            }
+        }
+
+        if (logger.isInfoEnabled()) {
+            logger.info("AppLoader loaded " + newClasses.size() + " new classes");
+        }
+    }
+
+    private int processClass(ClassInfo classInfo) {
+        int cnt = 0;
+
+        // TODO process constantpool/fields+methods for class references, load and enqueue them 
+
+        return cnt;
+    }
+
+    private void enqueue(Collection<ClassInfo> roots) {
+        for (ClassInfo cls : roots) {
+            enqueue(cls);
+        }
+    }
+
+    private void enqueue(ClassInfo classInfo) {
+        if ( !visited.contains(classInfo.getClassName()) ) {
+            queue.add(classInfo);
+            visited.add(classInfo.getClassName());
+        }
     }
 
 }

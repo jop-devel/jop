@@ -22,8 +22,10 @@ package com.jopdesign.common.tools;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
+import org.apache.log4j.Logger;
 
 import java.io.File;
+import java.io.IOException;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -31,18 +33,28 @@ import java.io.File;
 public class ClassWriter {
     private AppInfo appInfo;
 
+    private static final Logger logger = Logger.getLogger("common.tools.ClassWriter");
+
     public ClassWriter(AppInfo appInfo) {
         this.appInfo = appInfo;
     }
 
-    public void writeToDir(String dir) {
+    public void writeToDir(String dir) throws IOException {
         File outDir = new File(dir);
         if ( !outDir.mkdir() ) {
-            // TODO handle
+            throw new IOException("Could not create output directory "+outDir);
         }
 
         for (ClassInfo cls : appInfo.getClassInfos() ) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Writing class: " + cls.getClassName());
+            }
+            
             // TODO write
+        }
+
+        if (logger.isInfoEnabled()) {
+            logger.info(appInfo.getClassInfos().size() + " classes written to " + outDir);
         }
     }
 

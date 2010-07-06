@@ -55,4 +55,12 @@ public class BoolOption extends Option<Boolean> {
     public boolean isEnabled(OptionGroup options) {
         return options.getOption(this);
     }
+
+    @Override
+    protected String getDefaultsText() {
+        if ( optional && !defaultValue ) {
+            return "";
+        }
+        return super.getDefaultsText();
+    }
 }

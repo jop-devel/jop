@@ -122,11 +122,13 @@ public abstract class Option<T> {
 	}
 
 	public String toString(int lAdjust) {
-		StringBuffer s = new StringBuffer(key);
+		StringBuffer s = new StringBuffer("  --");
+        s.append(key);
+        
 		for(int i = s.length(); i <= lAdjust; i++) {
 			s.append(' ');
 		}
-		s.append(" ... ");
+		s.append(' ');
 		s.append(descrString());
 		return s.toString();
 	}
@@ -134,12 +136,17 @@ public abstract class Option<T> {
 	public String descrString() {
 		StringBuffer s = new StringBuffer(this.description);
 		s.append(" ");
-		if(defaultValue != null) {
-            s.append("[default: ").append(defaultValue).append("]");
-		} else {
-			s.append(this.optional ? "[optional]" : "[mandatory]");
-		}
+        s.append(getDefaultsText());
 		return s.toString();
 	}
 
+    protected String getDefaultsText() {
+        StringBuffer s = new StringBuffer();
+        if(defaultValue != null) {
+            s.append("[default: ").append(defaultValue).append("]");
+        } else {
+            s.append(this.optional ? "[optional]" : "[mandatory]");
+        }
+        return s.toString();
+    }
 }
