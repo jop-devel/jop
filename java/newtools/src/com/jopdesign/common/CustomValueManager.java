@@ -35,6 +35,8 @@ public interface CustomValueManager {
     void registerManager(AppInfo appInfo);
 
     
+    void onCreateClass(ClassInfo classInfo);
+    
     /**
      * Called if a class is loaded, allows the manager to add custom fields to the class.
      *

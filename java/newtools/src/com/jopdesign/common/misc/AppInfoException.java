@@ -18,28 +18,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common;
-
-import org.apache.bcel.classfile.AccessFlags;
+package com.jopdesign.common.misc;
 
 /**
+ * Base class for all exceptions related to the AppInfo framework.
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public abstract class ClassMemberInfo extends MemberInfo {
-
-    private final ClassInfo classInfo;
-
-    public ClassMemberInfo(ClassInfo classInfo, AccessFlags flags) {
-        super(classInfo.getAppInfo(), flags);
-        this.classInfo = classInfo;
+public class AppInfoException extends Exception {    
+    public AppInfoException() {
+        super();
     }
 
-    public ClassInfo getClassInfo() {
-        return classInfo;
+    public AppInfoException(String message) {
+        super(message);
     }
 
-    public String getName() {
-        return null;
+    public AppInfoException(String message, Throwable cause) {
+        super(message, cause);
     }
 
+    public AppInfoException(Throwable cause) {
+        super(cause);
+    }
 }

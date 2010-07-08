@@ -20,11 +20,20 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.misc.ClassInfoNotFoundException;
+import com.jopdesign.common.misc.NamingConflictException;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
+import org.apache.bcel.Constants;
+import org.apache.bcel.classfile.ClassParser;
+import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.generic.ClassGen;
 import org.apache.bcel.util.ClassPath;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,7 +51,7 @@ import java.util.Set;
 public final class AppInfo {
 
     private ClassPath classPath;
-    private Map<String,ClassInfo> classes;
+    private final Map<String,ClassInfo> classes;
 
     private Set<MemberInfo> roots;
     private MethodInfo mainMethod;
@@ -50,31 +59,14 @@ public final class AppInfo {
     private boolean ignoreMissing;
     private boolean loadNatives;
     private boolean loadLibraries;
-    private Set<String> nativeClasses;
-    private Set<String> libraryClasses;
-    private Set<String> ignoredClasses;
+    private final Set<String> nativeClasses;
+    private final Set<String> libraryClasses;
+    private final Set<String> ignoredClasses;
 
-    private Map<String, CustomValueManager> infoManagers;
-    private Map<String,CustomKey> registeredKeys;
+    private final Map<String, CustomValueManager> infoManagers;
+    private final Map<String,CustomKey> registeredKeys;
 
-    public static class ClassInfoNotFoundException extends Exception {
-        public ClassInfoNotFoundException() {
-        }
-
-        public ClassInfoNotFoundException(String message) {
-            super(message);
-        }
-
-        public ClassInfoNotFoundException(String message, Throwable cause) {
-            super(message, cause);
-        }
-
-        public ClassInfoNotFoundException(Throwable cause) {
-            super(cause);
-        }
-    }
-
-    public static class CustomKey  {
+    public static final class CustomKey  {
         private String keyname;
         private int id;
 
@@ -210,8 +202,9 @@ public final class AppInfo {
      * @return the classInfo for the classname, or null if excluded.
      * @throws ClassInfoNotFoundException if the class could not be loaded and is not excluded.
      */
-    public ClassInfo loadClass(String className, boolean required, boolean reload) throws ClassInfoNotFoundException {
-
+    public ClassInfo loadClass(String className, boolean required, boolean reload)
+            throws ClassInfoNotFoundException
+    {
         ClassInfo cls = classes.get(className);
         if ( cls != null ) {
             if ( reload ) {
@@ -232,8 +225,29 @@ public final class AppInfo {
         return performLoadClass(className, required);
     }
 
-    public ClassInfo createClass(String className, ClassRef superClass) {
-        return null;
+    public ClassInfo createClass(String className, ClassRef superClass, boolean isInterface)
+            throws NamingConflictException
+    {
+        ClassInfo cls = classes.get(className);
+        if ( cls != null ) {
+            if ( isInterface != cls.isInterface() ||
+                 !cls.getSuperClassName().equals(superClass.getClassName()) )
+            {
+                throw new NamingConflictException("Class '"+className+
+                        "' already exists but has a different definition.");
+            }
+            return cls;
+        }
+
+        cls = createClassInfo(className, superClass.getClassName(), isInterface);
+
+        classes.put(className, cls);
+
+        for (CustomValueManager mgr : infoManagers.values()) {
+            mgr.onCreateClass(cls);
+        }
+
+        return cls;
     }
 
     public void removeClass(ClassInfo classInfo) {
@@ -320,7 +334,8 @@ public final class AppInfo {
     /**
      * Remove all classInfos.
      *
-     * @param clearRoots if true, clear list of roots and main method as well, else keep the root classes in the class list.
+     * @param clearRoots if true, clear list of roots and main method as well, else
+     *        keep the root classes in the class list.
      */
     public void clear(boolean clearRoots) {
 
@@ -358,7 +373,7 @@ public final class AppInfo {
                 continue;
             }
 
-            ClassInfo cls = performLoadClass(clsName, true);
+            performLoadClass(clsName, true);
         }
 
         // reload mainMethod
@@ -393,6 +408,7 @@ public final class AppInfo {
      * @param className fully qualified name of the class to get.
      * @param required if true, always throw an exception if not loaded.
      * @return the classInfo, or null if excluded or ignored and not required.
+     * @throws ClassInfoNotFoundException if the class is required but not found
      */
     public ClassInfo getClass(String className, boolean required) throws ClassInfoNotFoundException {
         ClassInfo cls = classes.get(className);
@@ -410,12 +426,12 @@ public final class AppInfo {
     }
 
     public ClassRef getClassRef(String className) {
-
+        // TODO implement
         return null;
     }
 
     public MethodRef getMethodRef(Signature methodSignature) {
-
+        // TODO implement
         return null;
     }
 
@@ -476,24 +492,46 @@ public final class AppInfo {
     private ClassInfo performLoadClass(String className, boolean required) throws ClassInfoNotFoundException {
 
         // try to load the class
-        ClassInfo cls = tryLoadClass(className);
-        if ( cls == null ) {
-            // class is not excluded, but loading failed
-            if ( required || !ignoreMissing ) {
-                throw new ClassInfoNotFoundException("Class '"+className+"' could not be loaded.");
-            }
-        } else {
+        ClassInfo cls = null;
+        try {
+            cls = tryLoadClass(className);
+
+            classes.put(className, cls);
+
             for (CustomValueManager mgr : infoManagers.values()) {
                 mgr.onLoadClass(cls);
             }
+        } catch (IOException e) {
+            if ( required || !ignoreMissing ) {
+                throw new ClassInfoNotFoundException("Class '"+className+"' could not be loaded: " +
+                        e.getMessage(), e);
+            }
+            // else cls = null
         }
 
         return cls;
     }
 
-    private ClassInfo tryLoadClass(String className) {
-        
-        return null;
+    private ClassInfo tryLoadClass(String className) throws IOException {
+
+        InputStream is = classPath.getInputStream(className);
+        JavaClass javaClass = new ClassParser(is, className).parse();
+        is.close();
+
+        return new ClassInfo(this, new ClassGen(javaClass));
+    }
+
+    public ClassInfo createClassInfo(String className, String superClassName, boolean isInterface) {
+
+        String filename = className.replace(".", File.separator) + ".class";
+
+        int af = Constants.ACC_PUBLIC;
+        if ( isInterface ) {
+            af |= Constants.ACC_INTERFACE;
+        }
+
+        ClassGen clsGen = new ClassGen(className, superClassName, filename, af, new String[0]);
+        return new ClassInfo(this, clsGen);
     }
 
 }

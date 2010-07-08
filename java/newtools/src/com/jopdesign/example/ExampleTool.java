@@ -28,6 +28,7 @@ import com.jopdesign.common.config.BoolOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.IntOption;
 import com.jopdesign.common.config.OptionGroup;
+import com.jopdesign.common.misc.NamingConflictException;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -78,7 +79,11 @@ public class ExampleTool implements Module<ExampleManager> {
         }
 
         // create a new class and new methods
-        ClassInfo newCls = appInfo.createClass("MyTest", appInfo.getClassRef("java.lang.Object"));
+        try {
+            ClassInfo newCls = appInfo.createClass("MyTest", appInfo.getClassRef("java.lang.Object"), false);
+        } catch (NamingConflictException e) {
+            e.printStackTrace();
+        }
 
 
     }

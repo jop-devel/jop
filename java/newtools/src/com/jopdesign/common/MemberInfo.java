@@ -21,6 +21,8 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.type.Signature;
+import org.apache.bcel.Constants;
+import org.apache.bcel.classfile.AccessFlags;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,12 +35,19 @@ import java.util.Map;
  */
 public abstract class MemberInfo {
 
-    private AppInfo appInfo;
+    public static final int ACC_PUBLIC = 1;
+    public static final int ACC_PACKAGE = 2;
+    public static final int ACC_PRIVATE = 3;
+    public static final int ACC_PROTECTED = 4;
+
+    private final AppInfo appInfo;
+    private final AccessFlags accessFlags;
 
     private Object[] customValues;
 
-    public MemberInfo(AppInfo appInfo) {
+    public MemberInfo(AppInfo appInfo, AccessFlags flags) {
         this.appInfo = appInfo;
+        accessFlags = flags;
         customValues = new Object[appInfo.getRegisteredKeyCount()];
     }
 
@@ -50,6 +59,92 @@ public abstract class MemberInfo {
 
     public Signature getSignature() {
         return null;
+    }
+
+    public boolean isPublic() {
+        return accessFlags.isPublic();
+    }
+
+    public boolean isPrivate() {
+        return accessFlags.isPrivate();
+    }
+
+    public boolean isProtected() {
+        return accessFlags.isProtected();
+    }
+
+    public boolean isFinal() {
+        return accessFlags.isFinal();
+    }
+
+    public boolean isStatic() {
+        return accessFlags.isStatic();
+    }
+
+    public void setStatic(boolean val) {
+        accessFlags.isStatic(val);
+    }
+
+    public void setFinal(boolean val) {
+        accessFlags.isFinal(val);
+    }
+
+    /**
+     * Get the access type of this object.
+     * @return one of {@link #ACC_PRIVATE}, {@link #ACC_PROTECTED}, {@link #ACC_PACKAGE} or {@link #ACC_PUBLIC}.
+     */
+    public int getAccessType() {
+        if ( isPublic() ) {
+            return ACC_PUBLIC;
+        }
+        if ( isPrivate() ) {
+            return ACC_PRIVATE;
+        }
+        if ( isProtected() ) {
+            return ACC_PROTECTED;
+        }
+        return ACC_PACKAGE;
+    }
+
+    /**
+     * Set the access type of this object.
+     * @param type one of {@link #ACC_PRIVATE}, {@link #ACC_PROTECTED}, {@link #ACC_PACKAGE} or {@link #ACC_PUBLIC}.
+     */
+    public void setAccessType(int type) {
+        int af = accessFlags.getAccessFlags() & ~(Constants.ACC_PRIVATE|Constants.ACC_PROTECTED|Constants.ACC_PUBLIC);
+        switch (type) {
+            case ACC_PRIVATE: af |= Constants.ACC_PRIVATE; break;
+            case ACC_PROTECTED: af |= Constants.ACC_PROTECTED; break;
+            case ACC_PUBLIC: af |= Constants.ACC_PUBLIC; break;
+        }
+        accessFlags.setAccessFlags(af);
+    }
+
+    public String getModifierString() {
+        StringBuffer out = new StringBuffer();
+
+        if ( isPrivate() ) {
+            out.append("private ");
+        }
+        if ( isProtected() ) {
+            out.append("protected ");
+        }
+        if ( isPublic() ) {
+            out.append("public ");
+        }
+        if ( accessFlags.isSynchronized() ) {
+            out.append("synchronized ");
+        }
+        if ( isStatic() ) {
+            out.append("static ");
+        }
+        if ( isFinal() ) {
+            out.append("final ");
+        }
+        if ( accessFlags.isAbstract() ) {
+            out.append("abstract ");
+        }
+        return out.toString();
     }
 
     public Object removeCustomValue(AppInfo.CustomKey key) {

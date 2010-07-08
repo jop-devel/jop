@@ -20,6 +20,11 @@
 
 package com.jopdesign.common;
 
+import org.apache.bcel.classfile.Field;
+import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.generic.ClassGen;
+import org.apache.bcel.generic.ConstantPoolGen;
+
 import java.util.Collection;
 import java.util.Set;
 
@@ -29,13 +34,18 @@ import java.util.Set;
  */
 public final class ClassInfo extends MemberInfo {
 
-    private String className;
-    private ConstantPoolInfo constantPool;
+    private final ConstantPoolInfo constantPool;
 
-    public ClassInfo(AppInfo appInfo) {
-        super(appInfo);
+    private final ClassGen classGen;
+    private final ConstantPoolGen cpg;
+
+    public ClassInfo(AppInfo appInfo, ClassGen classGen) {
+        super(appInfo, classGen);
+        this.classGen = classGen;
+        cpg = classGen.getConstantPool();
+        constantPool = new ConstantPoolInfo(appInfo, cpg);
     }
-
+    
     @Override
     public ClassInfo getClassInfo() {
         return this;
@@ -45,6 +55,30 @@ public final class ClassInfo extends MemberInfo {
         return constantPool;
     }
 
+    public boolean isInterface() {
+        return classGen.isInterface();
+    }
+
+    public boolean isAbstract() {
+        return classGen.isAbstract();
+    }
+
+    public void setAbstract(boolean val) {
+        classGen.isAbstract(val);
+    }
+
+    public boolean isStrictFP() {
+        return classGen.isStrictfp();
+    }
+
+    public void setStrictFP(boolean val) {
+        classGen.isStrictfp(val);
+    }
+
+    public String getSuperClassName() {
+        return classGen.getSuperclassName();
+    }
+    
     public FieldInfo getFieldInfo(String name) {
         return null;
     }
@@ -58,7 +92,7 @@ public final class ClassInfo extends MemberInfo {
     }
 
     public String getClassName() {
-        return className;
+        return classGen.getClassName();
     }
 
     public Collection<FieldInfo> getFields() {
@@ -68,4 +102,16 @@ public final class ClassInfo extends MemberInfo {
     public Collection<MethodInfo> getMethods() {
         return null;
     }
+
+    @Override
+    public String getModifierString() {
+        String s = super.getModifierString();
+        if ( isInterface() ) {
+            s += "interface ";
+        } else {
+            s += "class ";
+        }
+        return s;
+    }
+
 }

@@ -37,6 +37,9 @@ public class JCopterManager implements CustomValueManager {
         
     }
 
+    public void onCreateClass(ClassInfo classInfo) {
+    }
+
     public void onLoadClass(ClassInfo classInfo) {
     }
 

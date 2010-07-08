@@ -20,15 +20,19 @@
 
 package com.jopdesign.common;
 
+import org.apache.bcel.generic.ConstantPoolGen;
+
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class ConstantPoolInfo {
 
     private AppInfo appInfo;
+    private ConstantPoolGen cpg;
 
-    public ConstantPoolInfo(AppInfo appInfo) {
+    public ConstantPoolInfo(AppInfo appInfo, ConstantPoolGen cpg) {
         this.appInfo = appInfo;
+        this.cpg = cpg;
     }
 
     public AppInfo getAppInfo() {

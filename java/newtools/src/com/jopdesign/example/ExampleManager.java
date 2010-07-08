@@ -46,6 +46,9 @@ public class ExampleManager implements CustomValueManager {
         }
     }
 
+    public void onCreateClass(ClassInfo classInfo) {
+    }
+
     public void onLoadClass(ClassInfo classInfo) {
         classInfo.setCustomValue(myFieldID, classInfo.getAppInfo().getClassInfos().size());
     }

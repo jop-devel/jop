@@ -18,28 +18,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common;
-
-import org.apache.bcel.classfile.AccessFlags;
+package com.jopdesign.common.misc;
 
 /**
- * @author Stefan Hepp (stefan@stefant.org)
- */
-public abstract class ClassMemberInfo extends MemberInfo {
-
-    private final ClassInfo classInfo;
-
-    public ClassMemberInfo(ClassInfo classInfo, AccessFlags flags) {
-        super(classInfo.getAppInfo(), flags);
-        this.classInfo = classInfo;
+* @author Stefan Hepp (stefan@stefant.org)
+*/
+public class ClassInfoNotFoundException extends AppInfoException {
+    public ClassInfoNotFoundException() {
     }
 
-    public ClassInfo getClassInfo() {
-        return classInfo;
+    public ClassInfoNotFoundException(String message) {
+        super(message);
     }
 
-    public String getName() {
-        return null;
+    public ClassInfoNotFoundException(String message, Throwable cause) {
+        super(message, cause);
     }
 
+    public ClassInfoNotFoundException(Throwable cause) {
+        super(cause);
+    }
 }

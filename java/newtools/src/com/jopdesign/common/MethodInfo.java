@@ -21,6 +21,7 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.code.CodeRepresentation;
+import org.apache.bcel.generic.MethodGen;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -30,10 +31,45 @@ public final class MethodInfo extends ClassMemberInfo {
     // TODO replace with BCEL methodinfo
     private byte[] code;
 
+    private final MethodGen methodGen;
+
     private CodeRepresentation codeRep;
 
-    public MethodInfo(ClassInfo classInfo) {
-        super(classInfo);
+    public MethodInfo(ClassInfo classInfo, MethodGen methodGen) {
+        super(classInfo, methodGen);
+        this.methodGen = methodGen;
+    }
+
+    public boolean isAbstract() {
+        return methodGen.isAbstract();
+    }
+
+    public void setAbstract(boolean val) {
+        methodGen.isAbstract(val);
+    }
+
+    public boolean isSynchronized() {
+        return methodGen.isSynchronized();
+    }
+
+    public void setSynchronized(boolean val) {
+        methodGen.isSynchronized(val);
+    }
+
+    public boolean isNative() {
+        return methodGen.isNative();
+    }
+
+    public void setNative(boolean val) {
+        methodGen.isNative(val);
+    }
+
+    public boolean isStrictFP() {
+        return methodGen.isStrictfp();
+    }
+
+    public void setStrictFP(boolean val) {
+        methodGen.isStrictfp(val);
     }
 
     public byte[] getCode() {

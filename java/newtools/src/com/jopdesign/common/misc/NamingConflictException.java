@@ -18,28 +18,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common;
-
-import org.apache.bcel.classfile.AccessFlags;
+package com.jopdesign.common.misc;
 
 /**
+ * An excetion to indicate a conflict on creation or modification of a member.
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public abstract class ClassMemberInfo extends MemberInfo {
-
-    private final ClassInfo classInfo;
-
-    public ClassMemberInfo(ClassInfo classInfo, AccessFlags flags) {
-        super(classInfo.getAppInfo(), flags);
-        this.classInfo = classInfo;
+public class NamingConflictException extends AppInfoException {
+    public NamingConflictException() {
+        super();
     }
 
-    public ClassInfo getClassInfo() {
-        return classInfo;
+    public NamingConflictException(String message) {
+        super(message);
     }
 
-    public String getName() {
-        return null;
+    public NamingConflictException(String message, Throwable cause) {
+        super(message, cause);
     }
 
+    public NamingConflictException(Throwable cause) {
+        super(cause);
+    }
 }

@@ -20,13 +20,34 @@
 
 package com.jopdesign.common;
 
+import org.apache.bcel.generic.FieldGen;
+
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public final class FieldInfo extends ClassMemberInfo {
 
-    public FieldInfo(ClassInfo classInfo) {
-        super(classInfo);
+    private FieldGen fieldGen;
+
+    public FieldInfo(ClassInfo classInfo, FieldGen fieldGen) {
+        super(classInfo, fieldGen);
+        this.fieldGen = fieldGen;
+    }
+
+    public boolean isTransient() {
+        return fieldGen.isTransient();
+    }
+
+    public void setTransient(boolean val) {
+        fieldGen.isTransient(val);
+    }
+
+    public boolean isVolatile() {
+        return fieldGen.isVolatile();
+    }
+    
+    public void setVolatile(boolean val) {
+        fieldGen.isVolatile(val);
     }
 
 }
