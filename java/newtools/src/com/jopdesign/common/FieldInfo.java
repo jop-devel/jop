@@ -20,6 +20,7 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.type.TypeInfo;
 import org.apache.bcel.generic.FieldGen;
 
 /**
@@ -50,4 +51,7 @@ public final class FieldInfo extends ClassMemberInfo {
         fieldGen.isVolatile(val);
     }
 
+    public TypeInfo getTypeInfo() {
+        return null;
+    }
 }

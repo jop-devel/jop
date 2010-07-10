@@ -20,49 +20,44 @@
 
 package com.jopdesign.common.type;
 
-import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.FieldInfo;
 
 /**
- * A container of a class reference.
- * Holds either a ClassInfo object or a classname with some infos if the
- * classInfo has not been loaded for some reason.
- * 
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class MethodRef {
-
+public class FieldRef {
     private ClassRef classRef;
-    private MethodInfo methodInfo;
+    private String name;
+    private TypeInfo typeInfo;
+    private FieldInfo fieldInfo;
 
-    private String methodName;
-    private Descriptor descriptor;
-
-    public MethodRef(ClassRef classRef, String methodName, Descriptor descriptor) {
+    public FieldRef(ClassRef classRef, String name, TypeInfo typeInfo) {
         this.classRef = classRef;
-
-        this.methodName = methodName;
-        this.descriptor = descriptor;
-        methodInfo = null;
+        this.name = name;
+        this.typeInfo = typeInfo;
     }
 
-    public MethodRef(MethodInfo methodInfo) {
-        this.methodInfo = methodInfo;
+    public FieldRef(FieldInfo fieldInfo) {
+        this.fieldInfo = fieldInfo;
     }
 
     public ClassRef getClassRef() {
+        if ( classRef == null ) {
+            classRef = fieldInfo.getClassInfo().getClassRef();
+        }
         return classRef;
     }
 
-    public MethodInfo getMethodInfo() {
-        return methodInfo;
+    public FieldInfo getFieldInfo() {
+        return fieldInfo;
     }
 
-    public boolean isInterfaceMethod() {
-        return classRef.isInterface();
+    public String getName() {
+        return fieldInfo != null ? fieldInfo.getName() : name;
     }
 
-    public String getMethodName() {
-        return methodInfo != null ? methodInfo.getName() : methodName;
+    public TypeInfo getTypeInfo() {
+        return fieldInfo != null ? fieldInfo.getTypeInfo() : typeInfo;
     }
 
 }

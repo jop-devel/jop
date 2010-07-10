@@ -21,15 +21,14 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.code.CodeRepresentation;
+import com.jopdesign.common.type.Descriptor;
+import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.MethodGen;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public final class MethodInfo extends ClassMemberInfo {
-
-    // TODO replace with BCEL methodinfo
-    private byte[] code;
 
     private final MethodGen methodGen;
 
@@ -72,23 +71,37 @@ public final class MethodInfo extends ClassMemberInfo {
         methodGen.isStrictfp(val);
     }
 
-    public byte[] getCode() {
+    public MethodGen getMethodGen() {
         compileCodeRep();
-        return code;
+        return new MethodGen(methodGen.getMethod(), methodGen.getClassName(), methodGen.getConstantPool());
     }
 
-    public void setCode(byte[] code) {
-        this.code = code;
-        this.codeRep = null;
+    public void setMethodGen(MethodGen method) {
+        codeRep = null;
+
+        // TODO copy all code relevant infos from method, excluding name, params and access flags
+        methodGen.setInstructionList(method.getInstructionList());
     }
 
-    // TODO access BCEL instruction lists; make sure to compile and remove codeRep first.
+    public InstructionList getInstructionList() {
+        compileCodeRep();
+        return methodGen.getInstructionList();
+    }
+
+    public void setInstructionList(InstructionList il) {
+        methodGen.setInstructionList(il);
+        codeRep = null;
+    }
+
+    public void removeNOPs() {
+        methodGen.removeNOPs();
+    }
 
     @SuppressWarnings({"unchecked"})
     public <T extends CodeRepresentation> T getCode(T codeRep) {
         if ( this.codeRep == null ) {
             this.codeRep = codeRep;
-            codeRep.load(code);
+            codeRep.load(this);
             return codeRep;
         }
 
@@ -103,7 +116,7 @@ public final class MethodInfo extends ClassMemberInfo {
         // this.codeRep is set but different
         compileCodeRep();
         this.codeRep = codeRep;
-        codeRep.load(code);
+        codeRep.load(this);
         return codeRep;
     }
 
@@ -113,7 +126,7 @@ public final class MethodInfo extends ClassMemberInfo {
 
     public void compileCodeRep() {
         if ( codeRep != null ) {
-            setCode( codeRep.compile() );
+            codeRep.compile(this);
         }
     }
 
@@ -123,5 +136,9 @@ public final class MethodInfo extends ClassMemberInfo {
         }
         codeRep = null;
         return true;
+    }
+
+    public Descriptor getDescriptor() {
+        return getSignature().getMemberDescriptor();
     }
 }

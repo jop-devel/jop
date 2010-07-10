@@ -20,21 +20,21 @@
 
 package com.jopdesign.common;
 
-import org.apache.bcel.classfile.Field;
-import org.apache.bcel.classfile.JavaClass;
+import com.jopdesign.common.type.ClassRef;
+import com.jopdesign.common.type.ConstantInfo;
+import com.jopdesign.common.type.Descriptor;
+import com.jopdesign.common.type.TypeInfo;
+import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.generic.ClassGen;
 import org.apache.bcel.generic.ConstantPoolGen;
 
 import java.util.Collection;
-import java.util.Set;
 
 /**
  * 
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public final class ClassInfo extends MemberInfo {
-
-    private final ConstantPoolInfo constantPool;
 
     private final ClassGen classGen;
     private final ConstantPoolGen cpg;
@@ -43,7 +43,6 @@ public final class ClassInfo extends MemberInfo {
         super(appInfo, classGen);
         this.classGen = classGen;
         cpg = classGen.getConstantPool();
-        constantPool = new ConstantPoolInfo(appInfo, cpg);
     }
     
     @Override
@@ -51,8 +50,37 @@ public final class ClassInfo extends MemberInfo {
         return this;
     }
 
-    public ConstantPoolInfo getConstantPool() {
-        return constantPool;
+    public ConstantInfo getConstantInfo(int i) {
+        if ( i < 0 || i >= cpg.getSize() ) {
+            return null;
+        }
+        Constant c = cpg.getConstant(i);
+        return ConstantInfo.createFromConstant(getAppInfo(), cpg.getConstantPool(), c);
+    }
+
+    public int setConstantInfo(int i, ConstantInfo constant) {
+
+        return i;
+    }
+
+    public int addConstantInfo(ConstantInfo constant) {
+        return setConstantInfo(cpg.getSize(), constant);
+    }
+
+    public int lookupConstantInfo(ConstantInfo constant) {
+        return -1;
+    }
+
+    public int getConstantPoolSize() {
+        return cpg.getSize();
+    }
+
+    public ConstantInfo removeConstantInfo(int i) {
+        if ( i < 0 || i >= cpg.getSize() ) {
+            return null;
+        }
+        
+        return null;
     }
 
     public boolean isInterface() {
@@ -91,6 +119,22 @@ public final class ClassInfo extends MemberInfo {
         return new MethodInfo[]{};
     }
 
+    public FieldInfo createField(String name, TypeInfo type) {
+        return null;
+    }
+
+    public MethodInfo createMethod(String name, Descriptor descriptor) {
+        return null;
+    }
+
+    public FieldInfo removeField(String name) {
+        return null;
+    }
+
+    public MethodInfo removeMethod(String signature) {
+        return null;
+    }
+
     public String getClassName() {
         return classGen.getClassName();
     }
@@ -114,4 +158,7 @@ public final class ClassInfo extends MemberInfo {
         return s;
     }
 
+    public ClassRef getClassRef() {
+        return new ClassRef(this);
+    }
 }

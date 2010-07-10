@@ -18,25 +18,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common.code;
+package com.jopdesign.common.type;
 
-import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.ClassInfo;
+import org.apache.bcel.Constants;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public interface CodeRepresentation {
+public class ConstantClassInfo extends ConstantInfo<ClassRef> {
+    
+    public ConstantClassInfo(ClassRef value) {
+        super(Constants.CONSTANT_Class, value);
+    }
 
-    /**
-     * Check if this is the same representation type, including representation parameters,
-     * but excluding code, as the given CodeRepresentation.
-     *
-     * @param codeRep the code representation to compare
-     * @return true if it is the same representation type.
-     */
-    boolean isSameType(CodeRepresentation codeRep);
+    public ConstantClassInfo(ClassInfo value) {
+        super(Constants.CONSTANT_Class, value.getClassRef());
+    }
 
-    void load(MethodInfo method);
+    public ClassRef getClassRef() {
+        return getValue();
+    }
 
-    void compile(MethodInfo method);
 }

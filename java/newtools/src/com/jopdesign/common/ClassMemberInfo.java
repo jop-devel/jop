@@ -20,6 +20,7 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.type.Descriptor;
 import org.apache.bcel.classfile.AccessFlags;
 
 /**
@@ -39,7 +40,11 @@ public abstract class ClassMemberInfo extends MemberInfo {
     }
 
     public String getName() {
-        return null;
+        return getSignature().getMemberName();
+    }
+
+    public Descriptor getDescriptor() {
+        return getSignature().getMemberDescriptor();
     }
 
 }

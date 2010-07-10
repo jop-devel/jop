@@ -18,25 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common.code;
-
-import com.jopdesign.common.MethodInfo;
+package com.jopdesign.common.type;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public interface CodeRepresentation {
-
-    /**
-     * Check if this is the same representation type, including representation parameters,
-     * but excluding code, as the given CodeRepresentation.
-     *
-     * @param codeRep the code representation to compare
-     * @return true if it is the same representation type.
-     */
-    boolean isSameType(CodeRepresentation codeRep);
-
-    void load(MethodInfo method);
-
-    void compile(MethodInfo method);
+public class ConstantUtf8Info {
 }

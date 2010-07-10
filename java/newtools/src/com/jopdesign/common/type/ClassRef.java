@@ -32,21 +32,28 @@ import com.jopdesign.common.ClassInfo;
 public class ClassRef {
 
     private ClassInfo classInfo;
+
     private String className;
+    private boolean anInterface;
 
     public ClassRef(ClassInfo classInfo) {
         this.classInfo = classInfo;
     }
 
-    public ClassRef(String className) {
+    public ClassRef(String className, boolean anInterface) {
         this.className = className;
+        this.anInterface = anInterface;
+    }
+
+    public ClassInfo getClassInfo() {
+        return classInfo;
     }
 
     public String getClassName() {
         return classInfo != null ? classInfo.getClassName() : className;
     }
 
-    public ClassInfo getClassInfo() {
-        return classInfo;
+    public boolean isInterface() {
+        return classInfo != null ? classInfo.isInterface() : anInterface;
     }
 }

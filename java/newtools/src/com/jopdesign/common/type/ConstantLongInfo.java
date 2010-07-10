@@ -18,26 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common;
-
-import org.apache.bcel.generic.ConstantPoolGen;
+package com.jopdesign.common.type;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantPoolInfo {
-
-    private AppInfo appInfo;
-    private ConstantPoolGen cpg;
-
-    public ConstantPoolInfo(AppInfo appInfo, ConstantPoolGen cpg) {
-        this.appInfo = appInfo;
-        this.cpg = cpg;
-    }
-
-    public AppInfo getAppInfo() {
-        return appInfo;
-    }
-
-
+public class ConstantLongInfo {
 }

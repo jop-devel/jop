@@ -88,11 +88,13 @@ public class Config {
 	 * Singleton
 	 * ~~~~~~~~~
 	 */
+    /*
 	private static Config theConfig = null;
 	public static Config instance() {
 		if(theConfig == null) theConfig = new Config();
 		return theConfig;
 	}
+	*/
 
 
     /*
