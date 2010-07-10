@@ -24,4 +24,14 @@ package com.jopdesign.common.type;
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class ArrayType extends TypeInfo {
+    
+    @Override
+    public int canAssignFrom(TypeInfo typeInfo) {
+        return -1;
+    }
+
+    @Override
+    public String getTypeDescriptor() {
+        return null;
+    }
 }

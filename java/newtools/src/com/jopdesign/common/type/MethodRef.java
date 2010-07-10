@@ -49,20 +49,27 @@ public class MethodRef {
         this.methodInfo = methodInfo;
     }
 
-    public ClassRef getClassRef() {
-        return classRef;
-    }
-
     public MethodInfo getMethodInfo() {
         return methodInfo;
+    }
+
+    public ClassRef getClassRef() {
+        return methodInfo != null ? methodInfo.getClassInfo().getClassRef() : classRef;
+    }
+
+    public Descriptor getDescriptor() {
+        return methodInfo != null ? methodInfo.getDescriptor() : descriptor;
     }
 
     public boolean isInterfaceMethod() {
         return classRef.isInterface();
     }
 
-    public String getMethodName() {
+    public String getName() {
         return methodInfo != null ? methodInfo.getName() : methodName;
     }
 
+    public String getClassName() {
+        return methodInfo != null ? methodInfo.getClassInfo().getClassName() : classRef.getClassName();
+    }
 }

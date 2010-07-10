@@ -20,8 +20,51 @@
 
 package com.jopdesign.common.type;
 
+import org.apache.bcel.Constants;
+import org.apache.bcel.classfile.Constant;
+import org.apache.bcel.classfile.ConstantFieldref;
+import org.apache.bcel.generic.ConstantPoolGen;
+
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantFieldInfo {
+public class ConstantFieldInfo extends ConstantInfo<FieldRef> {
+
+    public ConstantFieldInfo(FieldRef value) {
+        super(Constants.CONSTANT_Fieldref, value);
+    }
+
+    @Override
+    public ClassRef getClassRef() {
+        return getValue().getClassRef();
+    }
+
+    @Override
+    public TypeInfo getTypeInfo() {
+        // TODO better return type of field?
+        return getClassRef().getTypeInfo();
+    }
+
+    @Override
+    public Constant createConstant(ConstantPoolGen cpg) {
+        FieldRef fieldRef = getValue();
+        int i = cpg.addClass(fieldRef.getClassName());
+        int n = cpg.addNameAndType(fieldRef.getName(), fieldRef.getTypeInfo().getTypeDescriptor());
+        return new ConstantFieldref(i, n);
+    }
+
+    @Override
+    public int addConstant(ConstantPoolGen cpg) {
+        FieldRef fieldRef = getValue();
+        return cpg.addFieldref(fieldRef.getClassName(), fieldRef.getName(),
+                               fieldRef.getTypeInfo().getTypeDescriptor());
+    }
+
+    @Override
+    public int lookupConstant(ConstantPoolGen cpg) {
+        FieldRef fieldRef = getValue();
+        return cpg.lookupFieldref(fieldRef.getClassName(), fieldRef.getName(),
+                               fieldRef.getTypeInfo().getTypeDescriptor());
+    }
+
 }

@@ -48,6 +48,13 @@ public class FieldRef {
         return classRef;
     }
 
+    public String getClassName() {
+        if (classRef == null ) {
+            return fieldInfo.getClassInfo().getClassName();
+        }
+        return classRef.getClassName();
+    }
+
     public FieldInfo getFieldInfo() {
         return fieldInfo;
     }
@@ -60,4 +67,7 @@ public class FieldRef {
         return fieldInfo != null ? fieldInfo.getTypeInfo() : typeInfo;
     }
 
+    public String toString() {
+        return Signature.getSignature(getClassName(),getName());
+    }
 }

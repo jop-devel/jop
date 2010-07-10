@@ -23,6 +23,7 @@ package com.jopdesign.common;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.ConstantInfo;
 import com.jopdesign.common.type.Descriptor;
+import com.jopdesign.common.type.Signature;
 import com.jopdesign.common.type.TypeInfo;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.generic.ClassGen;
@@ -58,17 +59,47 @@ public final class ClassInfo extends MemberInfo {
         return ConstantInfo.createFromConstant(getAppInfo(), cpg.getConstantPool(), c);
     }
 
-    public int setConstantInfo(int i, ConstantInfo constant) {
-
-        return i;
+    public Constant getConstant(int i) {
+        return cpg.getConstant(i);
     }
 
+    public ConstantPoolGen getConstantPoolGen() {
+        return cpg;
+    }
+
+    /**
+     * Replace a constant with a new constant value in the constant pool.
+     * Be aware that this does not check for duplicate entries, and may create additional
+     * new entries in the constant pool.
+     *
+     * @param i the index of the constant to replace.
+     * @param constant the new value.
+     */
+    public void setConstantInfo(int i, ConstantInfo constant) {
+        Constant c = constant.createConstant(cpg);
+        cpg.setConstant(i, c);
+    }
+
+    /**
+     * Add a constant in the constant pool or return the index of an existing entry.
+     * To add individual constants, use the add-methods from {@link #getConstantPoolGen()}.
+     *
+     * @param constant the constant to add
+     * @return the index of the constant entry in the constant pool.
+     */
     public int addConstantInfo(ConstantInfo constant) {
-        return setConstantInfo(cpg.getSize(), constant);
+        return constant.addConstant(cpg);
     }
 
+    /**
+     * Lookup the index of a constant in the constant pool.
+     * To lookup individual constants, use the lookup-methods from {@link #getConstantPoolGen()}.
+     *
+     * @param constant the constant to look up
+     * @return the index in the constant pool, or -1 if not found.
+     */
     public int lookupConstantInfo(ConstantInfo constant) {
-        return -1;
+        return constant.lookupConstant(cpg);
     }
 
     public int getConstantPoolSize() {
@@ -111,7 +142,11 @@ public final class ClassInfo extends MemberInfo {
         return null;
     }
 
-    public MethodInfo getMethodInfo(String signature) {
+    public MethodInfo getMethodInfo(Signature signature) {
+        return getMethodInfo(signature.getMemberSignature());
+    }
+
+    public MethodInfo getMethodInfo(String memberSignature) {
         return null;
     }
 

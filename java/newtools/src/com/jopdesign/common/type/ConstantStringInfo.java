@@ -20,8 +20,62 @@
 
 package com.jopdesign.common.type;
 
+import org.apache.bcel.Constants;
+import org.apache.bcel.classfile.Constant;
+import org.apache.bcel.classfile.ConstantString;
+import org.apache.bcel.classfile.ConstantUtf8;
+import org.apache.bcel.generic.ConstantPoolGen;
+
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantStringInfo {
+public class ConstantStringInfo extends ConstantInfo<String> {
+
+    public ConstantStringInfo(String value) {
+        super(Constants.CONSTANT_String, value);
+    }
+
+    public ConstantStringInfo(String value, boolean isUtf8Entry) {
+        super(isUtf8Entry ? Constants.CONSTANT_Utf8 : Constants.CONSTANT_String, value);
+    }
+
+    public boolean isUtf8Entry() {
+        return getTag() == Constants.CONSTANT_Utf8;
+    }
+
+    @Override
+    public ClassRef getClassRef() {
+        // TODO return reference to class java.lang.String (if !isUtf8Entry) ??
+        return null;
+    }
+
+    @Override
+    public TypeInfo getTypeInfo() {
+        return TypeInfo.TYPE_STRING;
+    }
+
+    @Override
+    public Constant createConstant(ConstantPoolGen cpg) {
+        if ( getTag() == Constants.CONSTANT_Utf8 ) {
+            return new ConstantUtf8(getValue());
+        }
+        int i = cpg.addUtf8(getValue());
+        return new ConstantString(i);
+    }
+
+    @Override
+    public int addConstant(ConstantPoolGen cpg) {
+        if ( getTag() == Constants.CONSTANT_Utf8 ) {
+            return cpg.addUtf8(getValue());
+        }
+        return cpg.addString(getValue());
+    }
+
+    @Override
+    public int lookupConstant(ConstantPoolGen cpg) {
+        if ( getTag() == Constants.CONSTANT_Utf8 ) {
+            return cpg.lookupUtf8(getValue());
+        }
+        return cpg.lookupString(getValue());
+    }
 }

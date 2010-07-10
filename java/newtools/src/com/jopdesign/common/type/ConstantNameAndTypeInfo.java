@@ -20,18 +20,17 @@
 
 package com.jopdesign.common.type;
 
-import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
-import org.apache.bcel.classfile.ConstantInteger;
+import org.apache.bcel.classfile.ConstantNameAndType;
 import org.apache.bcel.generic.ConstantPoolGen;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantIntegerInfo extends ConstantInfo<Integer> {
-
-    public ConstantIntegerInfo(Integer value) {
-        super(Constants.CONSTANT_Integer, value);
+public class ConstantNameAndTypeInfo extends ConstantInfo<Signature> {
+    
+    public ConstantNameAndTypeInfo(byte tag, Signature value) {
+        super(tag, value);
     }
 
     @Override
@@ -41,21 +40,27 @@ public class ConstantIntegerInfo extends ConstantInfo<Integer> {
 
     @Override
     public TypeInfo getTypeInfo() {
-        return TypeInfo.TYPE_INT;
+        // TODO return Type of return-value?
+        return null;
     }
 
     @Override
     public Constant createConstant(ConstantPoolGen cpg) {
-        return new ConstantInteger(getValue());
+        int n = cpg.addUtf8(getValue().getMemberName());
+        int s = cpg.addUtf8(getValue().getMemberDescriptor().toString());
+        return new ConstantNameAndType(n, s);
     }
 
     @Override
     public int addConstant(ConstantPoolGen cpg) {
-        return cpg.addInteger(getValue());
+        Signature sig = getValue();
+        return cpg.addNameAndType(sig.getMemberName(), sig.getMemberDescriptor().toString());
     }
 
     @Override
     public int lookupConstant(ConstantPoolGen cpg) {
-        return cpg.lookupInteger(getValue());
+        Signature sig = getValue();
+        return cpg.lookupNameAndType(sig.getMemberName(), sig.getMemberDescriptor().toString());
     }
+
 }

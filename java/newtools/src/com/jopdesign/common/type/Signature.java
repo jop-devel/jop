@@ -33,12 +33,28 @@ import com.jopdesign.common.ClassInfo;
  */
 public class Signature {
 
+    public static final char MEMBER_SEPARATOR = '#';
+
     private String className;
     private String memberName;
     private Descriptor descriptor;
 
+
+    public static String getClassName(String signature) {
+        int pos = signature.indexOf(MEMBER_SEPARATOR);
+        return pos == -1 ? signature : signature.substring(0, pos);
+    }
+
+    public static String getSignature(String className, String memberName) {
+        return className + MEMBER_SEPARATOR +  memberName;
+    }
+
+    public static String getSignature(String className, String memberName, String descriptor) {
+        return className + MEMBER_SEPARATOR +  memberName + descriptor;
+    }
+
     public Signature(String signature) {
-        int p1 = signature.indexOf("#");
+        int p1 = signature.indexOf(MEMBER_SEPARATOR);
         int p2 = signature.indexOf("(");
 
         if ( p1 == -1 ) {
@@ -65,11 +81,6 @@ public class Signature {
         this.className = className;
         this.memberName = memberName;
         this.descriptor = descriptor;
-    }
-
-    public static String getClassName(String signature) {
-        int pos = signature.indexOf("#");
-        return pos == -1 ? signature : signature.substring(0, pos);
     }
 
     public boolean hasMemberSignature() {
@@ -123,7 +134,7 @@ public class Signature {
         }
         if (memberName != null) {
             if ( className != null ) {
-                s.append('#');
+                s.append(MEMBER_SEPARATOR);
             }
             s.append(memberName);
         }
@@ -132,4 +143,5 @@ public class Signature {
         }
         return s.toString();
     }
+
 }

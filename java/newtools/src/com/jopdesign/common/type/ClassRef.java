@@ -56,4 +56,12 @@ public class ClassRef {
     public boolean isInterface() {
         return classInfo != null ? classInfo.isInterface() : anInterface;
     }
+
+    public TypeInfo getTypeInfo() {
+        return new ObjectType(this);
+    }
+
+    public String toString() {
+        return getClassName();
+    }
 }

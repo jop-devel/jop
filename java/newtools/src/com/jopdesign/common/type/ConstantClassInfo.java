@@ -22,6 +22,9 @@ package com.jopdesign.common.type;
 
 import com.jopdesign.common.ClassInfo;
 import org.apache.bcel.Constants;
+import org.apache.bcel.classfile.Constant;
+import org.apache.bcel.classfile.ConstantClass;
+import org.apache.bcel.generic.ConstantPoolGen;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -36,8 +39,30 @@ public class ConstantClassInfo extends ConstantInfo<ClassRef> {
         super(Constants.CONSTANT_Class, value.getClassRef());
     }
 
+    @Override
     public ClassRef getClassRef() {
         return getValue();
+    }
+
+    @Override
+    public TypeInfo getTypeInfo() {
+        return getValue().getTypeInfo();
+    }
+
+    @Override
+    public Constant createConstant(ConstantPoolGen cpg) {
+        int i = cpg.addUtf8(getValue().getClassName());
+        return new ConstantClass(i);
+    }
+
+    @Override
+    public int addConstant(ConstantPoolGen cpg) {
+        return cpg.addClass(getValue().getClassName());
+    }
+
+    @Override
+    public int lookupConstant(ConstantPoolGen cpg) {
+        return cpg.lookupClass(getValue().getClassName());
     }
 
 }

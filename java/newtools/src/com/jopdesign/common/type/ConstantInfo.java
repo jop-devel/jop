@@ -36,11 +36,12 @@ import org.apache.bcel.classfile.ConstantNameAndType;
 import org.apache.bcel.classfile.ConstantPool;
 import org.apache.bcel.classfile.ConstantString;
 import org.apache.bcel.classfile.ConstantUtf8;
+import org.apache.bcel.generic.ConstantPoolGen;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantInfo<T> {
+public abstract class ConstantInfo<T> {
 
     private final byte tag;
     private final T value;
@@ -66,19 +67,19 @@ public class ConstantInfo<T> {
             case Constants.CONSTANT_InterfaceMethodref:
 
             case Constants.CONSTANT_String:
-
+                return new ConstantStringInfo(((ConstantString)constant).getBytes(cp), false);
             case Constants.CONSTANT_Integer:
-
+                return new ConstantIntegerInfo(((ConstantInteger)constant).getBytes());
             case Constants.CONSTANT_Float:
-
+                return new ConstantFloatInfo(((ConstantFloat)constant).getBytes());
             case Constants.CONSTANT_Long:
-
+                return new ConstantLongInfo(((ConstantLong)constant).getBytes());
             case Constants.CONSTANT_Double:
-
+                return new ConstantDoubleInfo(((ConstantDouble)constant).getBytes());
             case Constants.CONSTANT_NameAndType:
 
             case Constants.CONSTANT_Utf8:
-                
+                return new ConstantStringInfo(((ConstantUtf8)constant).getBytes(), true);
             default:
                 throw new ClassFormatException("Invalid byte tag in constant pool: " + tag);
         }
@@ -91,6 +92,16 @@ public class ConstantInfo<T> {
     public T getValue() {
         return value;
     }
+
+    public abstract ClassRef getClassRef();
+
+    public abstract TypeInfo getTypeInfo();
+
+    public abstract Constant createConstant(ConstantPoolGen cpg);
+
+    public abstract int addConstant(ConstantPoolGen cpg);
+
+    public abstract int lookupConstant(ConstantPoolGen cpg);
 
     @Override
     public String toString() {

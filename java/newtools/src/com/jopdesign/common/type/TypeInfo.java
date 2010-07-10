@@ -23,10 +23,31 @@ package com.jopdesign.common.type;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class TypeInfo {
+public abstract class TypeInfo {
 
+    // TODO implement
+
+    public static final TypeInfo TYPE_FLOAT = null;
+    public static final TypeInfo TYPE_DOUBLE = null;
+    public static final TypeInfo TYPE_INT = null;
+    public static final TypeInfo TYPE_LONG = null;
+    public static final TypeInfo TYPE_STRING = null;
+    public static final TypeInfo TYPE_BYTE = null;
+    public static final TypeInfo Type_UNKNOWN = null;
+
+    /**
+     * Test if this type is compatible to another type without cast.
+     *
+     * @param typeInfo the type to compare to.
+     * @return 1 if a value of typeInfo can be assigned to a variable of this type, 0 if they are
+     *         not compatible, and -1 if it is unknown (e.g. type not known).
+     */
+    public abstract int canAssignFrom(TypeInfo typeInfo);
+
+    public abstract String getTypeDescriptor();
     
     public String toString() {
-        return "";
+        return getTypeDescriptor();
     }
+
 }

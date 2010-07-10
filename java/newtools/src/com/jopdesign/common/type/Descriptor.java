@@ -22,14 +22,14 @@ package com.jopdesign.common.type;
 
 /**
  * A helper class for parsing, generating and other descriptor related tasks (type descriptors
- * without a name or class).
+ * without a name or class text). For signatures containing a member name or class name, see {@link Signature}. 
  *
  * @see Signature
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class Descriptor {
 
-    private String descriptor;
+    private final String descriptor;
 
     public Descriptor(String descriptor) {
         this.descriptor = descriptor;

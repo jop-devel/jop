@@ -20,8 +20,63 @@
 
 package com.jopdesign.common.type;
 
+import org.apache.bcel.Constants;
+import org.apache.bcel.classfile.Constant;
+import org.apache.bcel.classfile.ConstantMethodref;
+import org.apache.bcel.generic.ConstantPoolGen;
+
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantMethodInfo {
+public class ConstantMethodInfo extends ConstantInfo<MethodRef> {
+
+    public ConstantMethodInfo(MethodRef value) {
+        super(value.isInterfaceMethod() ?
+                Constants.CONSTANT_InterfaceMethodref : Constants.CONSTANT_Methodref,
+                value);
+    }
+
+    public boolean isInterfaceMethod() {
+        return getTag() == Constants.CONSTANT_InterfaceMethodref;
+    }
+
+    @Override
+    public ClassRef getClassRef() {
+        return getValue().getClassRef();
+    }
+
+    @Override
+    public TypeInfo getTypeInfo() {
+        return getClassRef().getTypeInfo();
+    }
+
+    @Override
+    public Constant createConstant(ConstantPoolGen cpg) {
+        MethodRef method = getValue();
+        int i = cpg.addClass(method.getClassName());
+        int n = cpg.addNameAndType(method.getName(), method.getDescriptor().toString());
+        return new ConstantMethodref(i, n);
+    }
+
+    @Override
+    public int addConstant(ConstantPoolGen cpg) {
+        MethodRef method = getValue();
+        if (isInterfaceMethod()) {
+            return cpg.addInterfaceMethodref(method.getClassName(), method.getName(),
+                    method.getDescriptor().toString());
+        }
+        return cpg.addMethodref(method.getClassName(), method.getName(),
+                method.getDescriptor().toString());
+    }
+
+    @Override
+    public int lookupConstant(ConstantPoolGen cpg) {
+        MethodRef method = getValue();
+        if (isInterfaceMethod()) {
+            return cpg.lookupInterfaceMethodref(method.getClassName(), method.getName(),
+                    method.getDescriptor().toString());
+        }
+        return cpg.lookupMethodref(method.getClassName(), method.getName(), 
+                method.getDescriptor().toString());
+    }
 }
