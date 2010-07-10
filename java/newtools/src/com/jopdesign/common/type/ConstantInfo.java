@@ -56,16 +56,33 @@ public abstract class ConstantInfo<T> {
     }
 
     public static ConstantInfo<?> createFromConstant(AppInfo appInfo, ConstantPool cp, Constant constant) {
+        Signature sig;
+        MethodRef methodRef;
+        ConstantNameAndType nRef;
+
         byte tag = constant.getTag();
         switch (tag) {
             case Constants.CONSTANT_Class:
-
+                ClassRef classRef = appInfo.getClassRef(((ConstantClass)constant).getBytes(cp));
+                return new ConstantClassInfo(classRef);
             case Constants.CONSTANT_Fieldref:
-
+                ConstantFieldref fRef = (ConstantFieldref) constant;
+                nRef = (ConstantNameAndType) cp.getConstant(fRef.getNameAndTypeIndex());
+                sig = new Signature(fRef.getClass(cp), nRef.getName(cp), new Descriptor(nRef.getSignature(cp)));
+                FieldRef fieldRef = appInfo.getFieldRef(sig);
+                return new ConstantFieldInfo(fieldRef);
             case Constants.CONSTANT_Methodref:
-
+                ConstantInterfaceMethodref mRef = (ConstantInterfaceMethodref) constant;
+                nRef = (ConstantNameAndType) cp.getConstant(mRef.getNameAndTypeIndex());
+                sig = new Signature(mRef.getClass(cp), nRef.getName(cp), new Descriptor(nRef.getSignature(cp)));
+                methodRef = appInfo.getMethodRef(sig, false);
+                return new ConstantMethodInfo(methodRef);
             case Constants.CONSTANT_InterfaceMethodref:
-
+                ConstantInterfaceMethodref imRef = (ConstantInterfaceMethodref) constant;
+                nRef = (ConstantNameAndType) cp.getConstant(imRef.getNameAndTypeIndex());                
+                sig = new Signature(imRef.getClass(cp), nRef.getName(cp), new Descriptor(nRef.getSignature(cp)));
+                methodRef = appInfo.getMethodRef(sig, true);
+                return new ConstantMethodInfo(methodRef);
             case Constants.CONSTANT_String:
                 return new ConstantStringInfo(((ConstantString)constant).getBytes(cp), false);
             case Constants.CONSTANT_Integer:
@@ -77,7 +94,9 @@ public abstract class ConstantInfo<T> {
             case Constants.CONSTANT_Double:
                 return new ConstantDoubleInfo(((ConstantDouble)constant).getBytes());
             case Constants.CONSTANT_NameAndType:
-
+                String name = ((ConstantNameAndType)constant).getName(cp);
+                String signature = ((ConstantNameAndType)constant).getSignature(cp);
+                return new ConstantNameAndTypeInfo(new Signature(name, new Descriptor(signature)));
             case Constants.CONSTANT_Utf8:
                 return new ConstantStringInfo(((ConstantUtf8)constant).getBytes(), true);
             default:

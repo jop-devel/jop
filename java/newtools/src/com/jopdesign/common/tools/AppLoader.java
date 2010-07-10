@@ -22,6 +22,8 @@ package com.jopdesign.common.tools;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.type.ClassRef;
+import com.jopdesign.common.type.ConstantInfo;
 import org.apache.log4j.Logger;
 
 import java.util.Collection;
@@ -38,9 +40,9 @@ public class AppLoader {
 
     private AppInfo appInfo;
 
-    private List<ClassInfo> queue;
-    private Set<String> visited;
-    private List<ClassInfo> newClasses;
+    private final List<ClassInfo> queue;
+    private final Set<String> visited;
+    private final List<ClassInfo> newClasses;
 
     private static final Logger logger = Logger.getLogger("common.tools.AppLoader");
 
@@ -114,7 +116,25 @@ public class AppLoader {
     private int processClass(ClassInfo classInfo) {
         int cnt = 0;
 
-        // TODO process constantpool/fields+methods for class references, load and enqueue them 
+        // process constantpool/fields+methods for class references, load and enqueue them
+        int size = classInfo.getConstantPoolSize();
+        for (int i = 0; i < size; i++) {
+            ClassRef ref = classInfo.getConstantInfo(i).getClassRef();
+            if ( ref == null ) {
+                continue;
+            }
+
+            ClassInfo cls = ref.getClassInfo();
+            if ( cls == null ) {
+                cls = appInfo.loadClass(ref.getClassName());
+                newClasses.add(cls);
+                cnt++;
+            }
+            
+            if ( cls != null ) {
+                enqueue(cls);
+            }
+        }
 
         return cnt;
     }

@@ -20,6 +20,7 @@
 
 package com.jopdesign.common.type;
 
+import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantNameAndType;
 import org.apache.bcel.generic.ConstantPoolGen;
@@ -29,8 +30,8 @@ import org.apache.bcel.generic.ConstantPoolGen;
  */
 public class ConstantNameAndTypeInfo extends ConstantInfo<Signature> {
     
-    public ConstantNameAndTypeInfo(byte tag, Signature value) {
-        super(tag, value);
+    public ConstantNameAndTypeInfo(Signature value) {
+        super(Constants.CONSTANT_NameAndType, value);
     }
 
     @Override

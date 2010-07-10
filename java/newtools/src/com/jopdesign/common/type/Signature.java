@@ -39,7 +39,6 @@ public class Signature {
     private String memberName;
     private Descriptor descriptor;
 
-
     public static String getClassName(String signature) {
         int pos = signature.indexOf(MEMBER_SEPARATOR);
         return pos == -1 ? signature : signature.substring(0, pos);
@@ -79,6 +78,11 @@ public class Signature {
 
     public Signature(String className, String memberName, Descriptor descriptor) {
         this.className = className;
+        this.memberName = memberName;
+        this.descriptor = descriptor;
+    }
+
+    public Signature(String memberName, Descriptor descriptor) {
         this.memberName = memberName;
         this.descriptor = descriptor;
     }

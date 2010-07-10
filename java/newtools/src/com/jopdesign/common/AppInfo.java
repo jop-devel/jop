@@ -23,6 +23,7 @@ package com.jopdesign.common;
 import com.jopdesign.common.misc.ClassInfoNotFoundException;
 import com.jopdesign.common.misc.NamingConflictException;
 import com.jopdesign.common.type.ClassRef;
+import com.jopdesign.common.type.FieldRef;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.Constants;
@@ -430,7 +431,17 @@ public final class AppInfo {
         return null;
     }
 
-    public MethodRef getMethodRef(Signature methodSignature) {
+    public ClassRef getClassRef(String className, boolean isInterface) {
+        // TODO implement
+        return null;
+    }
+
+    public MethodRef getMethodRef(Signature methodSignature, boolean isInterfaceMethod) {
+        // TODO implement
+        return null;
+    }
+
+    public FieldRef getFieldRef(Signature fieldSignature) {
         // TODO implement
         return null;
     }
