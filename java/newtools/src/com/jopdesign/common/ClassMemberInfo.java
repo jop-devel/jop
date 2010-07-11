@@ -39,12 +39,8 @@ public abstract class ClassMemberInfo extends MemberInfo {
         return classInfo;
     }
 
-    public String getName() {
-        return getSignature().getMemberName();
-    }
+    public abstract String getName();
 
-    public Descriptor getDescriptor() {
-        return getSignature().getMemberDescriptor();
-    }
+    public abstract Descriptor getDescriptor();
 
 }

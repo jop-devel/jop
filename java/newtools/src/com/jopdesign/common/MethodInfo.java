@@ -22,6 +22,8 @@ package com.jopdesign.common;
 
 import com.jopdesign.common.code.CodeRepresentation;
 import com.jopdesign.common.type.Descriptor;
+import com.jopdesign.common.type.MethodRef;
+import com.jopdesign.common.type.Signature;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.MethodGen;
 
@@ -138,7 +140,25 @@ public final class MethodInfo extends ClassMemberInfo {
         return true;
     }
 
+    @Override
+    public String getName() {
+        return methodGen.getName();
+    }
+
     public Descriptor getDescriptor() {
-        return getSignature().getMemberDescriptor();
+        return new Descriptor(methodGen.getSignature());
+    }
+
+    public MethodRef getMethodRef() {
+        return new MethodRef(this);
+    }
+
+    public String getMemberSignature() {
+        return methodGen.getName() + methodGen.getSignature();
+    }
+
+    @Override
+    public Signature getSignature() {
+        return new Signature(getClassInfo().getClassName(), getName(), getDescriptor());
     }
 }

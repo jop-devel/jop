@@ -20,6 +20,9 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.type.Descriptor;
+import com.jopdesign.common.type.FieldRef;
+import com.jopdesign.common.type.Signature;
 import com.jopdesign.common.type.TypeInfo;
 import org.apache.bcel.generic.FieldGen;
 
@@ -53,5 +56,24 @@ public final class FieldInfo extends ClassMemberInfo {
 
     public TypeInfo getTypeInfo() {
         return null;
+    }
+
+    @Override
+    public Signature getSignature() {
+        return new Signature(getClassInfo().getClassName(), fieldGen.getName(), getDescriptor());
+    }
+
+    @Override
+    public String getName() {
+        return fieldGen.getName();
+    }
+
+    @Override
+    public Descriptor getDescriptor() {
+        return new Descriptor(getTypeInfo());
+    }
+
+    public FieldRef getFieldRef() {
+        return new FieldRef(this);
     }
 }

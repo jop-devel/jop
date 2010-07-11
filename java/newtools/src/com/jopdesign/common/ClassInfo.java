@@ -51,6 +51,11 @@ public final class ClassInfo extends MemberInfo {
         return this;
     }
 
+    @Override
+    public Signature getSignature() {
+        return new Signature(classGen.getClassName());
+    }
+
     public ConstantInfo getConstantInfo(int i) {
         if ( i < 0 || i >= cpg.getSize() ) {
             return null;

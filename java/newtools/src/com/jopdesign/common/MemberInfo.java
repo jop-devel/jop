@@ -57,9 +57,7 @@ public abstract class MemberInfo {
 
     public abstract ClassInfo getClassInfo();
 
-    public Signature getSignature() {
-        return null;
-    }
+    public abstract Signature getSignature();
 
     public boolean isPublic() {
         return accessFlags.isPublic();

@@ -21,6 +21,7 @@
 package com.jopdesign.common.type;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.misc.Ternary;
 
 /**
  * A container of a class reference.
@@ -61,8 +62,23 @@ public class MethodRef {
         return methodInfo != null ? methodInfo.getDescriptor() : descriptor;
     }
 
-    public boolean isInterfaceMethod() {
+    /**
+     * Check if this method is a method in an interface.
+     *
+     * @see ClassRef#isInterface()
+     * @return 1 if the class is an interface, 0 if it ist not, -1 if it is unknown.
+     */
+    public Ternary isInterfaceMethod() {
         return classRef.isInterface();
+    }
+
+    public Ternary exists() {
+        if ( methodInfo != null ) return Ternary.TRUE;
+        if ( classRef.getClassInfo() != null ) {
+            return classRef.getClassInfo().getMethodInfo(getMemberSignature()) != null ?
+                    Ternary.TRUE : Ternary.FALSE;
+        }
+        return Ternary.UNKNOWN;
     }
 
     public String getName() {
@@ -71,5 +87,12 @@ public class MethodRef {
 
     public String getClassName() {
         return methodInfo != null ? methodInfo.getClassInfo().getClassName() : classRef.getClassName();
+    }
+
+    public String getMemberSignature() {
+        if ( methodInfo != null ) {
+            return methodInfo.getMemberSignature();
+        }
+        return methodName + descriptor;
     }
 }

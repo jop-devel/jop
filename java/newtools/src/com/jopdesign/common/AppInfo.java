@@ -27,6 +27,7 @@ import com.jopdesign.common.type.FieldRef;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.Constants;
+import org.apache.bcel.classfile.ClassFormatException;
 import org.apache.bcel.classfile.ClassParser;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.generic.ClassGen;
@@ -427,23 +428,57 @@ public final class AppInfo {
     }
 
     public ClassRef getClassRef(String className) {
-        // TODO implement
-        return null;
+        ClassInfo cls = getClass(className);
+        if ( cls != null ) {
+            return cls.getClassRef();
+        }
+        return new ClassRef(className);
     }
 
     public ClassRef getClassRef(String className, boolean isInterface) {
-        // TODO implement
-        return null;
+        ClassInfo cls = getClass(className);
+        if ( cls != null ) {
+            if ( cls.isInterface() != isInterface ) {
+                throw new ClassFormatException("Class '"+className+"' interface flag does not match.");
+            }
+            return cls.getClassRef();
+        }
+
+        return new ClassRef(className, isInterface);
     }
 
-    public MethodRef getMethodRef(Signature methodSignature, boolean isInterfaceMethod) {
-        // TODO implement
-        return null;
+    public MethodRef getMethodRef(Signature signature, boolean isInterfaceMethod) {
+        ClassInfo cls = getClass(signature.getClassName());
+        if ( cls != null ) {
+            if ( cls.isInterface() != isInterfaceMethod ) {
+                throw new ClassFormatException("Class '"+cls.getClassName()+"' interface flag does not match.");
+            }
+            MethodInfo method = cls.getMethodInfo(signature);
+            if ( method == null ) {
+                return new MethodRef(cls.getClassRef(), signature.getMemberName(), signature.getMemberDescriptor());
+            } else {
+                return method.getMethodRef();
+            }
+        }
+
+        return new MethodRef(new ClassRef(signature.getClassName(),isInterfaceMethod),
+                             signature.getMemberName(), signature.getMemberDescriptor());
     }
 
-    public FieldRef getFieldRef(Signature fieldSignature) {
-        // TODO implement
-        return null;
+    public FieldRef getFieldRef(Signature signature) {
+        ClassInfo cls = getClass(signature.getClassName());
+        if ( cls != null ) {
+            FieldInfo field = cls.getFieldInfo(signature.getMemberName());
+            if ( field == null ) {
+                return new FieldRef(cls.getClassRef(), signature.getMemberName(),
+                        signature.getMemberDescriptor().getTypeInfo() );
+            } else {
+                return field.getFieldRef();
+            }
+        }
+
+        return new FieldRef(new ClassRef(signature.getClassName()),
+                            signature.getMemberName(), signature.getMemberDescriptor().getTypeInfo());
     }
 
     public boolean isNative(String className) {

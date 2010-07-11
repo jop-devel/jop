@@ -34,7 +34,11 @@ public class Descriptor {
     public Descriptor(String descriptor) {
         this.descriptor = descriptor;
     }
-    
+
+    public Descriptor(TypeInfo typeInfo) {
+        descriptor = typeInfo.toString();
+    }
+
     // TODO method to get descriptor as String from list of types (and vice versa)
 
     public boolean isArray() {
@@ -45,8 +49,15 @@ public class Descriptor {
         return descriptor.startsWith("(");
     }
 
+    public TypeInfo[] getParameters() {
+        return null;
+    }
+
+    public TypeInfo getTypeInfo() {
+        return null;
+    }
+
     public String toString() {
         return descriptor;
     }
-
 }

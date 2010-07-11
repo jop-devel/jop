@@ -21,6 +21,7 @@
 package com.jopdesign.common.type;
 
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.misc.Ternary;
 
 /**
  * A container of a class reference.
@@ -34,15 +35,21 @@ public class ClassRef {
     private ClassInfo classInfo;
 
     private String className;
-    private boolean anInterface;
+    private final Ternary anInterface;
 
     public ClassRef(ClassInfo classInfo) {
         this.classInfo = classInfo;
+        anInterface = classInfo.isInterface() ? Ternary.TRUE : Ternary.FALSE;
+    }
+
+    public ClassRef(String className) {
+        this.className = className;
+        anInterface = Ternary.UNKNOWN;
     }
 
     public ClassRef(String className, boolean anInterface) {
         this.className = className;
-        this.anInterface = anInterface;
+        this.anInterface = anInterface ? Ternary.TRUE : Ternary.FALSE;
     }
 
     public ClassInfo getClassInfo() {
@@ -53,8 +60,13 @@ public class ClassRef {
         return classInfo != null ? classInfo.getClassName() : className;
     }
 
-    public boolean isInterface() {
-        return classInfo != null ? classInfo.isInterface() : anInterface;
+    /**
+     * Check if this class is an interface.
+     *
+     * @return 1 if it is an interface, 0 if not, and -1 if it is unknown.
+     */
+    public Ternary isInterface() {
+        return anInterface;
     }
 
     public TypeInfo getTypeInfo() {
