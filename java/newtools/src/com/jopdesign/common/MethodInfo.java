@@ -21,11 +21,13 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.code.CodeRepresentation;
+import com.jopdesign.common.misc.InvalidSignatureException;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.MethodGen;
+import org.apache.log4j.Logger;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -33,6 +35,7 @@ import org.apache.bcel.generic.MethodGen;
 public final class MethodInfo extends ClassMemberInfo {
 
     private final MethodGen methodGen;
+    private static final Logger logger = Logger.getLogger("common.appinfo.methodinfo");
 
     private CodeRepresentation codeRep;
 
@@ -146,7 +149,12 @@ public final class MethodInfo extends ClassMemberInfo {
     }
 
     public Descriptor getDescriptor() {
-        return new Descriptor(methodGen.getSignature());
+        try {
+            return Descriptor.parse(getAppInfo(), methodGen.getSignature());
+        } catch (InvalidSignatureException e) {
+            logger.error("Invalid signature", e);
+            return null;
+        }
     }
 
     public MethodRef getMethodRef() {

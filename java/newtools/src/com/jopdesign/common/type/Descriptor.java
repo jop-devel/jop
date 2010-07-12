@@ -20,6 +20,12 @@
 
 package com.jopdesign.common.type;
 
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.misc.InvalidSignatureException;
+
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  * A helper class for parsing, generating and other descriptor related tasks (type descriptors
  * without a name or class text). For signatures containing a member name or class name, see {@link Signature}. 
@@ -30,16 +36,64 @@ package com.jopdesign.common.type;
 public class Descriptor {
 
     private final String descriptor;
+    private final TypeInfo typeInfo;
+    private final TypeInfo[] params;
 
-    public Descriptor(String descriptor) {
+    private Descriptor(String descriptor, TypeInfo typeInfo, TypeInfo[] params) {
+        this.typeInfo = typeInfo;
+        this.params = params;
         this.descriptor = descriptor;
     }
 
     public Descriptor(TypeInfo typeInfo) {
         descriptor = typeInfo.toString();
+        this.typeInfo = typeInfo;
+        this.params = null;
     }
 
-    // TODO method to get descriptor as String from list of types (and vice versa)
+    public Descriptor(TypeInfo typeInfo, TypeInfo[] params) {
+        descriptor = compileDescriptor(typeInfo, params);
+        this.typeInfo = typeInfo;
+        this.params = params;
+    }
+
+    public static String compileDescriptor(TypeInfo type, TypeInfo[] params) {
+        StringBuffer s = new StringBuffer();
+        if ( params != null ) {
+            s.append('(');
+            for (TypeInfo param : params) {
+                s.append(param);
+            }
+            s.append(')');
+        }
+        s.append(type.toString());
+
+        return s.toString();
+    }
+
+    public static Descriptor parse(AppInfo appInfo, String descriptor) throws InvalidSignatureException {
+
+        int pos = 0;
+
+        if ( descriptor == null || descriptor.length() == 0 ) {
+            return null;
+        }
+
+        TypeInfo type = null;
+        TypeInfo[] params = null;
+
+        if ( descriptor.charAt(0) == '(' ) {
+            pos++;
+            if ( descriptor.length() == 1 ) {
+                throw new InvalidSignatureException("Descriptor '"+descriptor+"' is malformed");
+            }
+            while (descriptor.charAt(pos) != ')') {
+
+            }
+        }
+
+        return new Descriptor(type, params);
+    }
 
     public boolean isArray() {
         return descriptor.startsWith("[");
@@ -50,14 +104,15 @@ public class Descriptor {
     }
 
     public TypeInfo[] getParameters() {
-        return null;
+        return params;
     }
 
     public TypeInfo getTypeInfo() {
-        return null;
+        return typeInfo;
     }
 
     public String toString() {
         return descriptor;
     }
+
 }

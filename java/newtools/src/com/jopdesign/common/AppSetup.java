@@ -23,6 +23,7 @@ package com.jopdesign.common;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.logger.LoggerConfig;
+import com.jopdesign.common.misc.InvalidSignatureException;
 import com.jopdesign.common.tools.ClassWriter;
 import com.jopdesign.common.tools.AppLoader;
 import com.jopdesign.common.type.Signature;
@@ -402,7 +403,12 @@ public class AppSetup {
     }
 
     private MethodInfo getMainMethod(String signature) throws Config.BadConfigurationException {
-        Signature sMain = new Signature(signature);
+        Signature sMain = null;
+        try {
+            sMain = Signature.parse(appInfo, signature);
+        } catch (InvalidSignatureException e) {
+            throw new Config.BadConfigurationException("Invalid main method signature: " + e.getMessage(), e);
+        }
 
         String clsName = sMain.getClassName();
         if ( clsName == null ) {
