@@ -81,6 +81,9 @@ architecture sim of microcode is
 		stbcrd,
 		stidx,
 		stps,
+		stmrac,
+		stmraf,
+		stmwdf,
 		ldm,
 		ldi,
 		ldmrd,
@@ -189,6 +192,9 @@ begin
 			when "0001001001" => val <= stbcrd;
 			when "0001001010" => val <= stidx;
 			when "0001001011" => val <= stps;
+			when "0001001100" => val <= stmrac;
+			when "0001001101" => val <= stmraf;
+			when "0001001110" => val <= stmwdf;
 			when "0010100000" => val <= ldm;
 			when "0010100001" => val <= ldm;
 			when "0010100010" => val <= ldm;
