@@ -188,12 +188,10 @@ public class MicropathTiming {
                         timing.add(new TimingExpression(2,0,1,passed-1));
                         break;
                     case MicrocodeConstants.STMRAC:
-						/* wait(2+r) */
-                        timing.add(new TimingExpression(2,1,0,passed-1));
+                        timing.add(TimingExpression.read(passed - 2));
                         break;
                     case MicrocodeConstants.STMRAF:
-						/* wait(2+r) */
-                        timing.add(new TimingExpression(2,1,0,passed-1));
+                        timing.add(TimingExpression.read(passed - 2));
                         break;
                     case MicrocodeConstants.STMWDF:
                         /* wait(2+w) */
@@ -201,7 +199,7 @@ public class MicropathTiming {
                         break;
                     case MicrocodeConstants.STGF:
                         /* wait(5+2r) */
-                        timing.add(new TimingExpression(5,2,0,passed-1));
+                        timing.add(new TimingExpression(4,2,0,passed-1));
                         break;
                     case MicrocodeConstants.STPF:
                         /* wait (6+r+w) */
@@ -209,7 +207,7 @@ public class MicropathTiming {
                         break;
                     case MicrocodeConstants.STALD:
                         /* wait (TODO) */
-                        timing.add(new TimingExpression(2,3,0,passed - 3));
+                        timing.add(new TimingExpression(1,3,0,passed - 3));
                         break;
                     case MicrocodeConstants.STAST:
                         /* wait (TODO) */

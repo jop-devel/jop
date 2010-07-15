@@ -120,6 +120,7 @@ public class WCETInstruction {
 	}
 	
 	//Native bytecodes (see jvm.asm)
+	private static final int JOPSYS_INVAL = 204;
 	private static final int JOPSYS_RD = 209;
 	private static final int JOPSYS_WR = 210;
 	private static final int JOPSYS_RDMEM = 211;
@@ -135,7 +136,15 @@ public class WCETInstruction {
 	private static final int JOPSYS_NOP = 221;
 	private static final int GETSTATIC_REF = 224;	
 	private static final int GETFIELD_REF = 226;
+	private static final int GETSTATIC_LONG = 228;	
+	private static final int PUTSTATIC_LONG = 229;
+	private static final int GETFIELD_LONG = 230;	
+	private static final int PUTFIELD_LONG = 231;
 	private static final int JOPSYS_MEMCPY = 232;
+	private static final int JOPSYS_GETFIELD = 233;
+	private static final int JOPSYS_PUTFIELD = 234;
+	private static final int JOPSYS_GETSTATIC = 238;
+	private static final int JOPSYS_PUTSTATIC = 239;
 	private static String ILLEGAL_OPCODE = "ILLEGAL_OPCODE";
 
 	/**
@@ -331,7 +340,7 @@ public class WCETInstruction {
 			break;
 		// FCONST_0 = 11
 		case org.apache.bcel.Constants.FCONST_0:
-			wcet = -1;
+			wcet = 1;
 			break;
 		// FCONST_1 = 12
 		case org.apache.bcel.Constants.FCONST_1:
@@ -343,7 +352,7 @@ public class WCETInstruction {
 			break;
 		// DCONST_0 = 14
 		case org.apache.bcel.Constants.DCONST_0:
-			wcet = -1;
+			wcet = 2;
 			break;
 		// DCONST_1 = 15
 		case org.apache.bcel.Constants.DCONST_1:
@@ -484,7 +493,7 @@ public class WCETInstruction {
 			break;
 		// IALOAD = 46
 		case org.apache.bcel.Constants.IALOAD:
-			wcet = 7 + 3*r;			
+			wcet = 6 + 3*r;			
 			if (CMP_WCET==true)
 				wcet = xaload.wcet;
 			break;
@@ -498,35 +507,38 @@ public class WCETInstruction {
 			break;
 		// FALOAD = 48
 		case org.apache.bcel.Constants.FALOAD:
-			wcet = 7 + 3*r;			
+			wcet = 6 + 3*r;			
 			if (CMP_WCET==true)
 				wcet = xaload.wcet;
 			break;
 		// DALOAD = 49
 		case org.apache.bcel.Constants.DALOAD:
-			wcet = -1;
+			if(CMP_WCET==false){
+				wcet = 43+4*r;}
+			else{
+				wcet = -1;} // not yet implemented
 			break;
 		// AALOAD = 50
 		case org.apache.bcel.Constants.AALOAD:
-			wcet = 7 + 3*r;			
+			wcet = 6 + 3*r;			
 			if (CMP_WCET==true)
 				wcet = xaload.wcet;
 			break;
 		// BALOAD = 51
 		case org.apache.bcel.Constants.BALOAD:
-			wcet = 7 + 3*r;			
+			wcet = 6 + 3*r;			
 			if (CMP_WCET==true)
 				wcet = xaload.wcet;
 			break;
 		// CALOAD = 52
 		case org.apache.bcel.Constants.CALOAD:
-			wcet = 7 + 3*r;			
+			wcet = 6 + 3*r;			
 			if (CMP_WCET==true)
 				wcet = xaload.wcet;
 			break;
 		// SALOAD = 53
 		case org.apache.bcel.Constants.SALOAD:
-			wcet = 7 + 3*r;			
+			wcet = 6 + 3*r;			
 			if (CMP_WCET==true)
 				wcet = xaload.wcet;
 			break;
@@ -654,7 +666,13 @@ public class WCETInstruction {
 			break;
 		// DASTORE = 82
 		case org.apache.bcel.Constants.DASTORE:
-			wcet = -1;
+			if(CMP_WCET==false){
+				wcet = 48+2*r+w;
+				if (w > 3) {
+					wcet += w - 3;}
+			}
+			else{
+				wcet = -1;} // not yet implemented
 			break;
 		// AASTORE = 83
 		case org.apache.bcel.Constants.AASTORE:
@@ -932,7 +950,7 @@ public class WCETInstruction {
 		// case org.apache.bcel.Constants.INT2SHORT : wcet = -1; break;
 		// LCMP = 148
 		case org.apache.bcel.Constants.LCMP:
-			wcet = 81;
+			wcet = 85;
 			break;
 		// FCMPL = 149
 		case org.apache.bcel.Constants.FCMPL:
@@ -1132,7 +1150,7 @@ public class WCETInstruction {
 			break;
 		// GETFIELD = 180
 		case org.apache.bcel.Constants.GETFIELD:
-			wcet = 8 + 2 * r;
+			wcet = 7 + 2 * r;
 			if (CMP_WCET==true)
 				wcet = getfield.wcet;
 			break;
@@ -1165,7 +1183,7 @@ public class WCETInstruction {
 			break;
 		// INVOKESPECIAL = 183
 		case org.apache.bcel.Constants.INVOKESPECIAL:
-			wcet = 72 + r;
+			wcet = 73 + r;
 			if (r > 3) {
 				wcet += r - 3;
 			}
@@ -1186,7 +1204,7 @@ public class WCETInstruction {
 		// case org.apache.bcel.Constants.INVOKENONVIRTUAL : wcet = -1; break;
 		// INVOKESTATIC = 184
 		case org.apache.bcel.Constants.INVOKESTATIC:
-			wcet = 72 + r;
+			wcet = 73 + r;
 			if (r > 3) {
 				wcet += r - 3;
 			}
@@ -1205,7 +1223,7 @@ public class WCETInstruction {
 			break;
 		// INVOKEINTERFACE = 185
 		case org.apache.bcel.Constants.INVOKEINTERFACE:
-			wcet = 110 + 4 * r;
+			wcet = 111 + 4 * r;
 			if (r > 3) {
 				wcet += r - 3;
 			}
@@ -1357,14 +1375,14 @@ public class WCETInstruction {
 
 		// GETSTATIC_REF = 224
 		case GETSTATIC_REF:
-			wcet = 7 + r;
+			wcet = 5 + r;
 			if (CMP_WCET==true)
 				wcet = getstaticx.wcet;
 			break;
 			
 		// GETFIELD_REF = 226
 		case GETFIELD_REF:
-			wcet = 8 + 2 * r;
+			wcet = 7 + 2 * r;
 			if (CMP_WCET==true){
 				WCETMemInstruction getfield_ref = new WCETMemInstruction();
 				getfield_ref.microcode = new int [wcet];
@@ -1374,15 +1392,86 @@ public class WCETInstruction {
 			}
 			break;
 			
+		// GETSTATIC_LONG = 228
+		case GETSTATIC_LONG:
+			wcet = 16 + r;
+			if (r > 3) {
+				wcet += r - 3;
+			}			
+			if (CMP_WCET==true)
+				wcet = -1;
+			break;
+		// PUTSTATIC_LONG = 229
+		case PUTSTATIC_LONG:
+			wcet = 17 + w;
+			if (w > 2) {
+				wcet += w - 1;
+			}			
+			if (CMP_WCET==true)
+				wcet = -1;
+			break;
+
+		// GETFIELD_LONG = 230
+		case GETFIELD_LONG:
+			wcet = 26 + 2*r;
+			if (r > 3) {
+				wcet += r - 3;
+			}			
+			if (CMP_WCET==true)
+				wcet = -1;
+			break;
+		// PUTFIELD_LONG = 231
+		case PUTFIELD_LONG:
+			wcet = 30 + r + w;
+			if (w > 1) {
+				wcet += w - 1;
+			}			
+			if (CMP_WCET==true)
+				wcet = -1;
+			break;
+
+		// JOPSYS_GETFIELD = 233
+		case JOPSYS_GETFIELD:
+			wcet = 8 + 2*r;
+			if (CMP_WCET==true)
+				wcet = -1;
+			break;
+
+		// JOPSYS_PUTFIELD = 234
+		case JOPSYS_PUTFIELD:
+			wcet = 12 + r + w;
+			if (CMP_WCET==true)
+				wcet = -1;
+			break;
+
+		// JOPSYS_GETSTATIC = 238
+		case JOPSYS_GETSTATIC:
+			wcet = 6 + r;
+			if (CMP_WCET==true)
+				wcet = -1;
+			break;
+
+		// JOPSYS_PUTSTATIC = 239
+		case JOPSYS_PUTSTATIC:
+			wcet = 6 + w;
+			if (CMP_WCET==true)
+				wcet = -1;
+			break;
+
 		// JOPSYS_MEMCPY = 232
 		case JOPSYS_MEMCPY:
 			wcet = -1;
 			break;
 		
+		// JOPSYS_INVAL = 204
+		case JOPSYS_INVAL:
+			wcet = 7;
+			break;
+
 		default:
 			wcet = -1;
 		}
-		// TODO: Add the JOP speciffic codes?
+		// TODO: Add the JOP specific codes?
 		if (JopInstr.isInJava(opcode)) {
 			return -1;
 		}

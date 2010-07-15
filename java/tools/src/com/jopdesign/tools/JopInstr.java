@@ -112,7 +112,7 @@ public class JopInstr{
 		new JopInstr("iconst_5", 1, IMP_ASM, 1),		// 0x08
 		new JopInstr("lconst_0", 1, IMP_ASM, 2),		// 0x09
 		new JopInstr("lconst_1", 1, IMP_ASM, 2),		// 0x0A
-		new JopInstr("fconst_0", 1, IMP_JAVA, 1),		// 0x0B
+		new JopInstr("fconst_0", 1, IMP_ASM, 1),		// 0x0B
 		new JopInstr("fconst_1", 1, IMP_JAVA, 1),		// 0x0C
 		new JopInstr("fconst_2", 1, IMP_JAVA, 1),		// 0x0D
 		new JopInstr("dconst_0", 1, IMP_NO, 1),		// 0x0E
