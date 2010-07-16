@@ -71,7 +71,7 @@ public class Descriptor {
         return s.toString();
     }
 
-    public static Descriptor parse(AppInfo appInfo, String descriptor) throws InvalidSignatureException {
+    public static Descriptor parse(String descriptor) throws InvalidSignatureException {
 
         int pos = 0;
 

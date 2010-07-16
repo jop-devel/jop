@@ -40,19 +40,21 @@ public abstract class MemberInfo {
     public static final int ACC_PRIVATE = 3;
     public static final int ACC_PROTECTED = 4;
 
-    private final AppInfo appInfo;
     private final AccessFlags accessFlags;
 
     private Object[] customValues;
 
-    public MemberInfo(AppInfo appInfo, AccessFlags flags) {
-        this.appInfo = appInfo;
+    public MemberInfo(AccessFlags flags) {
         accessFlags = flags;
-        customValues = new Object[appInfo.getRegisteredKeyCount()];
+        customValues = new Object[getAppInfo().getRegisteredKeyCount()];
     }
 
+    /**
+     * Just a convenience method to get the AppInfo instance.
+     * @return the AppInfo singleton.
+     */
     public AppInfo getAppInfo() {
-        return appInfo;
+        return AppInfo.getSingleton();
     }
 
     public abstract ClassInfo getClassInfo();
@@ -174,7 +176,7 @@ public abstract class MemberInfo {
         int id = key.getId();
 
         if ( id >= customValues.length ) {
-            customValues = Arrays.copyOf(customValues, appInfo.getRegisteredKeyCount());
+            customValues = Arrays.copyOf(customValues, getAppInfo().getRegisteredKeyCount());
         }
 
         Object oldVal = customValues[id];

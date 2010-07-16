@@ -86,8 +86,14 @@ public final class AppInfo {
         }
     }
 
-    public AppInfo(ClassPath classPath) {
-        this.classPath = classPath;
+    private static final AppInfo singleton = new AppInfo();
+
+    public static AppInfo getSingleton() {
+        return singleton; 
+    }
+
+    private AppInfo() {
+        this.classPath = new ClassPath(".");
 
         ignoreMissing = false;
         loadNatives = false;
@@ -564,7 +570,7 @@ public final class AppInfo {
         JavaClass javaClass = new ClassParser(is, className).parse();
         is.close();
 
-        return new ClassInfo(this, new ClassGen(javaClass));
+        return new ClassInfo(new ClassGen(javaClass));
     }
 
     public ClassInfo createClassInfo(String className, String superClassName, boolean isInterface) {
@@ -577,7 +583,7 @@ public final class AppInfo {
         }
 
         ClassGen clsGen = new ClassGen(className, superClassName, filename, af, new String[0]);
-        return new ClassInfo(this, clsGen);
+        return new ClassInfo(clsGen);
     }
 
 }

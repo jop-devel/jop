@@ -150,7 +150,7 @@ public final class MethodInfo extends ClassMemberInfo {
 
     public Descriptor getDescriptor() {
         try {
-            return Descriptor.parse(getAppInfo(), methodGen.getSignature());
+            return Descriptor.parse(methodGen.getSignature());
         } catch (InvalidSignatureException e) {
             logger.error("Invalid signature", e);
             return null;

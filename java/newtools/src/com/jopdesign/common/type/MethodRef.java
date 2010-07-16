@@ -51,6 +51,7 @@ public class MethodRef {
     }
 
     public MethodInfo getMethodInfo() {
+        // TODO if null, try getting from AppInfo
         return methodInfo;
     }
 

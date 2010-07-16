@@ -31,15 +31,15 @@ import java.io.IOException;
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class ClassWriter {
-    private AppInfo appInfo;
 
     private static final Logger logger = Logger.getLogger("common.tools.ClassWriter");
 
-    public ClassWriter(AppInfo appInfo) {
-        this.appInfo = appInfo;
+    public ClassWriter() {
     }
 
     public void writeToDir(String dir) throws IOException {
+        AppInfo appInfo = AppInfo.getSingleton();
+
         File outDir = new File(dir);
         if ( !outDir.mkdir() ) {
             throw new IOException("Could not create output directory "+outDir);

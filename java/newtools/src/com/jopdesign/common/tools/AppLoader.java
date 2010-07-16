@@ -38,24 +38,16 @@ import java.util.Set;
  */
 public class AppLoader {
 
-    private AppInfo appInfo;
-
     private final List<ClassInfo> queue;
     private final Set<String> visited;
     private final List<ClassInfo> newClasses;
 
     private static final Logger logger = Logger.getLogger("common.tools.AppLoader");
 
-    public AppLoader(AppInfo appInfo) {
-        this.appInfo = appInfo;
-
+    public AppLoader() {
         queue = new LinkedList<ClassInfo>();
         visited = new HashSet<String>();
         newClasses = new LinkedList<ClassInfo>();
-    }
-
-    public AppInfo getAppInfo() {
-        return appInfo;
     }
 
     public void loadApp() {
@@ -63,6 +55,7 @@ public class AppLoader {
     }
     
     public void loadApp(boolean startFromRootsOnly) {
+        AppInfo appInfo = AppInfo.getSingleton();
         if ( startFromRootsOnly ) {
             enqueue( appInfo.getRootClasses() );
         } else {
@@ -114,8 +107,9 @@ public class AppLoader {
     }
 
     private int processClass(ClassInfo classInfo) {
+        AppInfo appInfo = AppInfo.getSingleton();
         int cnt = 0;
-
+                
         // process constantpool/fields+methods for class references, load and enqueue them
         int size = classInfo.getConstantPoolSize();
         for (int i = 0; i < size; i++) {

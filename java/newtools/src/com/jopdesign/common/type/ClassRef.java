@@ -20,6 +20,7 @@
 
 package com.jopdesign.common.type;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.misc.Ternary;
 
@@ -53,6 +54,9 @@ public class ClassRef {
     }
 
     public ClassInfo getClassInfo() {
+        if ( classInfo == null ) {
+            classInfo = AppInfo.getSingleton().getClass(className);
+        }
         return classInfo;
     }
 

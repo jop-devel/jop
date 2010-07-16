@@ -22,6 +22,7 @@ package com.jopdesign.common.type;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.misc.InvalidSignatureException;
+import com.jopdesign.common.misc.JavaClassFormatError;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.ClassFormatException;
 import org.apache.bcel.classfile.Constant;
@@ -54,10 +55,19 @@ public abstract class ConstantInfo<T> {
         this.value = value;
     }
 
-    public static ConstantInfo<?> createFromConstant(AppInfo appInfo, ConstantPool cp, Constant constant) {
+    /**
+     * Create a new constantInfo from a BCEL constant.
+     * If the constantpool contains invalid data, a {@link JavaClassFormatError} is thrown.
+     *
+     * @param cp the constantpool used to resolve the index references.
+     * @param constant the BCEL constant to convert
+     * @return a new ConstantInfo containing the constant value.
+     */
+    public static ConstantInfo<?> createFromConstant(ConstantPool cp, Constant constant) {
         Signature sig;
         MethodRef methodRef;
         ConstantNameAndType nRef;
+        AppInfo appInfo = AppInfo.getSingleton();
 
         try {
             byte tag = constant.getTag();
@@ -68,19 +78,19 @@ public abstract class ConstantInfo<T> {
                 case Constants.CONSTANT_Fieldref:
                     ConstantFieldref fRef = (ConstantFieldref) constant;
                     nRef = (ConstantNameAndType) cp.getConstant(fRef.getNameAndTypeIndex());
-                    sig = new Signature(fRef.getClass(cp), nRef.getName(cp), Descriptor.parse(appInfo, nRef.getSignature(cp)));
+                    sig = new Signature(fRef.getClass(cp), nRef.getName(cp), Descriptor.parse(nRef.getSignature(cp)));
                     FieldRef fieldRef = appInfo.getFieldRef(sig);
                     return new ConstantFieldInfo(fieldRef);
                 case Constants.CONSTANT_Methodref:
                     ConstantInterfaceMethodref mRef = (ConstantInterfaceMethodref) constant;
                     nRef = (ConstantNameAndType) cp.getConstant(mRef.getNameAndTypeIndex());
-                    sig = new Signature(mRef.getClass(cp), nRef.getName(cp), Descriptor.parse(appInfo, nRef.getSignature(cp)));
+                    sig = new Signature(mRef.getClass(cp), nRef.getName(cp), Descriptor.parse(nRef.getSignature(cp)));
                     methodRef = appInfo.getMethodRef(sig, false);
                     return new ConstantMethodInfo(methodRef);
                 case Constants.CONSTANT_InterfaceMethodref:
                     ConstantInterfaceMethodref imRef = (ConstantInterfaceMethodref) constant;
                     nRef = (ConstantNameAndType) cp.getConstant(imRef.getNameAndTypeIndex());
-                    sig = new Signature(imRef.getClass(cp), nRef.getName(cp), Descriptor.parse(appInfo, nRef.getSignature(cp)));
+                    sig = new Signature(imRef.getClass(cp), nRef.getName(cp), Descriptor.parse(nRef.getSignature(cp)));
                     methodRef = appInfo.getMethodRef(sig, true);
                     return new ConstantMethodInfo(methodRef);
                 case Constants.CONSTANT_String:
@@ -96,17 +106,16 @@ public abstract class ConstantInfo<T> {
                 case Constants.CONSTANT_NameAndType:
                     String name = ((ConstantNameAndType)constant).getName(cp);
                     String signature = ((ConstantNameAndType)constant).getSignature(cp);
-                    return new ConstantNameAndTypeInfo(new Signature(name, Descriptor.parse(appInfo, signature)));
+                    return new ConstantNameAndTypeInfo(new Signature(name, Descriptor.parse(signature)));
                 case Constants.CONSTANT_Utf8:
                     return new ConstantStringInfo(((ConstantUtf8)constant).getBytes(), true);
                 default:
-                    throw new ClassFormatException("Invalid byte tag in constant pool: " + tag);
+                    throw new JavaClassFormatError("Invalid byte tag in constant pool: " + tag);
             }
         } catch (InvalidSignatureException e) {
             logger.error("Invalid signature", e);
             // BCEL class does not have throwable parameter
-            //noinspection ThrowInsideCatchBlockWhichIgnoresCaughtException
-            throw new ClassFormatException("Invalid signature: "+ e.getMessage());
+            throw new JavaClassFormatError("Invalid signature: "+ e.getMessage(), e);
         }
     }
 

@@ -23,20 +23,20 @@ package com.jopdesign.common.misc;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class InvalidSignatureException extends AppInfoException {
-
-    public InvalidSignatureException() {
+@SuppressWarnings({"UncheckedExceptionClass"})
+public class MissingClassError extends AppInfoError {
+    public MissingClassError() {
     }
 
-    public InvalidSignatureException(String message) {
+    public MissingClassError(String message) {
         super(message);
     }
 
-    public InvalidSignatureException(String message, Throwable cause) {
+    public MissingClassError(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public InvalidSignatureException(Throwable cause) {
+    public MissingClassError(Throwable cause) {
         super(cause);
     }
 }

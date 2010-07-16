@@ -53,7 +53,7 @@ public class Signature {
         return className + MEMBER_SEPARATOR +  memberName + descriptor;
     }
 
-    public static Signature parse(AppInfo appInfo, String signature) throws InvalidSignatureException {
+    public static Signature parse(String signature) throws InvalidSignatureException {
         int p1 = signature.indexOf(MEMBER_SEPARATOR);
         int p2 = signature.indexOf("(");
 
@@ -67,7 +67,7 @@ public class Signature {
                 className = signature;
             } else {
                 memberName = signature.substring(0,p2);
-                descriptor = Descriptor.parse(appInfo, signature.substring(p2));
+                descriptor = Descriptor.parse(signature.substring(p2));
             }
         } else {
             className = signature.substring(0,p1);
@@ -75,7 +75,7 @@ public class Signature {
                 memberName = signature.substring(p1+1);
             } else {
                 memberName = signature.substring(p1+1, p2);
-                descriptor = Descriptor.parse(appInfo, signature.substring(p2));
+                descriptor = Descriptor.parse(signature.substring(p2));
             }
         }
 

@@ -20,6 +20,7 @@
 
 package com.jopdesign.common.type;
 
+import com.jopdesign.common.misc.Ternary;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantMethodref;
@@ -31,7 +32,7 @@ import org.apache.bcel.generic.ConstantPoolGen;
 public class ConstantMethodInfo extends ConstantInfo<MethodRef> {
 
     public ConstantMethodInfo(MethodRef value) {
-        super(value.isInterfaceMethod() ?
+        super(value.isInterfaceMethod() == Ternary.TRUE ?
                 Constants.CONSTANT_InterfaceMethodref : Constants.CONSTANT_Methodref,
                 value);
     }

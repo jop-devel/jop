@@ -102,10 +102,12 @@ public class AppSetup {
         } else {
             def = defaultProps;
         }
+
         config = new Config(def);
 
         // using default configuration here
-        appInfo = new AppInfo(new ClassPath(config.getOption(Config.CLASSPATH)));
+        appInfo = AppInfo.getSingleton();
+
         loggerConfig = new LoggerConfig();
         modules = new HashMap<String, Module>();
     }
@@ -339,7 +341,7 @@ public class AppSetup {
         }
 
         if (loadTransitiveHull) {
-            new AppLoader(appInfo).loadApp();
+            new AppLoader().loadApp();
         }
 
     }
@@ -386,7 +388,7 @@ public class AppSetup {
     public void writeClasses() {
         // TODO add+use options to support writing to .jar file?
         try {
-            new ClassWriter(appInfo).writeToDir(config.getOption(Config.WRITE_PATH));
+            new ClassWriter().writeToDir(config.getOption(Config.WRITE_PATH));
         } catch (IOException e) {
             System.out.println("Failed to write classes: "+e.getMessage());
             System.exit(5);
@@ -405,7 +407,7 @@ public class AppSetup {
     private MethodInfo getMainMethod(String signature) throws Config.BadConfigurationException {
         Signature sMain = null;
         try {
-            sMain = Signature.parse(appInfo, signature);
+            sMain = Signature.parse(signature);
         } catch (InvalidSignatureException e) {
             throw new Config.BadConfigurationException("Invalid main method signature: " + e.getMessage(), e);
         }

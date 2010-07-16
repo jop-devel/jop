@@ -56,6 +56,7 @@ public class FieldRef {
     }
 
     public FieldInfo getFieldInfo() {
+        // TODO if null, try loading using AppInfo
         return fieldInfo;
     }
 

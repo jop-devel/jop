@@ -31,7 +31,7 @@ public abstract class ClassMemberInfo extends MemberInfo {
     private final ClassInfo classInfo;
 
     public ClassMemberInfo(ClassInfo classInfo, AccessFlags flags) {
-        super(classInfo.getAppInfo(), flags);
+        super(flags);
         this.classInfo = classInfo;
     }
 

@@ -40,8 +40,8 @@ public final class ClassInfo extends MemberInfo {
     private final ClassGen classGen;
     private final ConstantPoolGen cpg;
 
-    public ClassInfo(AppInfo appInfo, ClassGen classGen) {
-        super(appInfo, classGen);
+    public ClassInfo(ClassGen classGen) {
+        super(classGen);
         this.classGen = classGen;
         cpg = classGen.getConstantPool();
     }
@@ -61,7 +61,7 @@ public final class ClassInfo extends MemberInfo {
             return null;
         }
         Constant c = cpg.getConstant(i);
-        return ConstantInfo.createFromConstant(getAppInfo(), cpg.getConstantPool(), c);
+        return ConstantInfo.createFromConstant(cpg.getConstantPool(), c);
     }
 
     public Constant getConstant(int i) {
