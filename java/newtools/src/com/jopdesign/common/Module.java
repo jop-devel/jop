@@ -30,11 +30,11 @@ import java.util.Properties;
  * 
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public interface Module<T extends CustomValueManager> {
+public interface Module<T extends AttributeManager> {
 
     String getModuleVersion();
 
-    T getManager();
+    T getAttributeManager();
 
     Properties getDefaultProperties();
 

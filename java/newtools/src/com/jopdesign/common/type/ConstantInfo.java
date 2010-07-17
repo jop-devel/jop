@@ -24,7 +24,6 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.misc.InvalidSignatureException;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import org.apache.bcel.Constants;
-import org.apache.bcel.classfile.ClassFormatException;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantClass;
 import org.apache.bcel.classfile.ConstantDouble;

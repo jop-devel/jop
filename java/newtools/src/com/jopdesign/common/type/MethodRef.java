@@ -63,12 +63,6 @@ public class MethodRef {
         return methodInfo != null ? methodInfo.getDescriptor() : descriptor;
     }
 
-    /**
-     * Check if this method is a method in an interface.
-     *
-     * @see ClassRef#isInterface()
-     * @return 1 if the class is an interface, 0 if it ist not, -1 if it is unknown.
-     */
     public Ternary isInterfaceMethod() {
         return classRef.isInterface();
     }

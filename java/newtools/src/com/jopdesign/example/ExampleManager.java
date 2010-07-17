@@ -22,7 +22,7 @@ package com.jopdesign.example;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
-import com.jopdesign.common.CustomValueManager;
+import com.jopdesign.common.AttributeManager;
 import com.jopdesign.common.MethodInfo;
 
 /**
@@ -30,7 +30,7 @@ import com.jopdesign.common.MethodInfo;
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ExampleManager implements CustomValueManager {
+public class ExampleManager implements AttributeManager {
 
     private AppInfo.CustomKey myFieldID;
 

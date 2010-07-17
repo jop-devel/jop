@@ -64,7 +64,7 @@ public class JCopter implements Module<JCopterManager> {
         return VERSION;
     }
 
-    public JCopterManager getManager() {
+    public JCopterManager getAttributeManager() {
         return manager;
     }
 

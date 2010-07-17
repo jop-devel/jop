@@ -22,16 +22,13 @@ package com.jopdesign.jcopter;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
-import com.jopdesign.common.CustomValueManager;
+import com.jopdesign.common.AttributeManager;
 import com.jopdesign.common.MethodInfo;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class JCopterManager implements CustomValueManager {
+public class JCopterManager implements AttributeManager {
 
     public void registerManager(AppInfo appInfo) {
         

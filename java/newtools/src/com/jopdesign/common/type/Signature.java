@@ -125,7 +125,7 @@ public class Signature {
         if ( className == null ) {
             return null;
         }
-        ClassInfo cls = appInfo.getClass(className);
+        ClassInfo cls = appInfo.getClassInfo(className);
         if ( cls == null || !hasMemberSignature() ) {
             return cls;
         }

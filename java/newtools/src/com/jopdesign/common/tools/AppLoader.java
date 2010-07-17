@@ -23,7 +23,6 @@ package com.jopdesign.common.tools;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.type.ClassRef;
-import com.jopdesign.common.type.ConstantInfo;
 import org.apache.log4j.Logger;
 
 import java.util.Collection;
@@ -41,6 +40,7 @@ public class AppLoader {
     private final List<ClassInfo> queue;
     private final Set<String> visited;
     private final List<ClassInfo> newClasses;
+    private boolean followNatives;
 
     private static final Logger logger = Logger.getLogger("common.tools.AppLoader");
 
@@ -48,13 +48,32 @@ public class AppLoader {
         queue = new LinkedList<ClassInfo>();
         visited = new HashSet<String>();
         newClasses = new LinkedList<ClassInfo>();
+        followNatives = true;
     }
 
-    public void loadApp() {
-        loadApp(false);
+    public AppLoader(boolean followNatives) {
+        queue = new LinkedList<ClassInfo>();
+        visited = new HashSet<String>();
+        newClasses = new LinkedList<ClassInfo>();
+        this.followNatives = followNatives;
+    }
+
+    public boolean doProcessNatives() {
+        return followNatives;
+    }
+
+    public void setFollowNatives(boolean followNatives) {
+        this.followNatives = followNatives;
+    }
+
+    /**
+     * Load the complete transitive hull of all classes currently in AppInfo.
+     */
+    public void loadAll() {
+        loadAll(false);
     }
     
-    public void loadApp(boolean startFromRootsOnly) {
+    public void loadAll(boolean startFromRootsOnly) {
         AppInfo appInfo = AppInfo.getSingleton();
         if ( startFromRootsOnly ) {
             enqueue( appInfo.getRootClasses() );
@@ -121,8 +140,10 @@ public class AppLoader {
             ClassInfo cls = ref.getClassInfo();
             if ( cls == null ) {
                 cls = appInfo.loadClass(ref.getClassName());
-                newClasses.add(cls);
-                cnt++;
+                if ( cls != null ) {
+                    newClasses.add(cls);
+                    cnt++;
+                }
             }
             
             if ( cls != null ) {
@@ -140,10 +161,14 @@ public class AppLoader {
     }
 
     private void enqueue(ClassInfo classInfo) {
-        if ( !visited.contains(classInfo.getClassName()) ) {
-            queue.add(classInfo);
-            visited.add(classInfo.getClassName());
+        if ( !followNatives && AppInfo.getSingleton().isNative(classInfo.getClassName()) ) {
+            return;
         }
+        if ( visited.contains(classInfo.getClassName()) ) {
+            return;
+        }
+        queue.add(classInfo);
+        visited.add(classInfo.getClassName());
     }
 
 }

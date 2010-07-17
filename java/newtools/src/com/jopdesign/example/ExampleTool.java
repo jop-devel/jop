@@ -42,17 +42,17 @@ public class ExampleTool implements Module<ExampleManager> {
 
     public static final String VERSION = "0.1";
 
-    private ExampleManager manager;
+    private final ExampleManager manager;
 
     public ExampleTool() {
         manager = new ExampleManager();
     }
 
     public String getModuleVersion() {
-        return null;
+        return VERSION;
     }
 
-    public ExampleManager getManager() {
+    public ExampleManager getAttributeManager() {
         return manager;
     }
 
@@ -104,6 +104,7 @@ public class ExampleTool implements Module<ExampleManager> {
         // setup some defaults
         AppSetup setup = new AppSetup(defaults, true);
         setup.setUsageInfo("example", "An example application");
+        setup.setVersionInfo("This is the version of this application");
 
         setup.addStandardOptions(true, true);
         setup.addWritePathOption();

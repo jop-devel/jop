@@ -23,7 +23,7 @@ package com.jopdesign.common;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public interface CustomValueManager {
+public interface AttributeManager {
 
     /**
      * Called on registration by AppInfo.

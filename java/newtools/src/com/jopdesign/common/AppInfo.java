@@ -21,6 +21,7 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.misc.ClassInfoNotFoundException;
+import com.jopdesign.common.misc.MissingClassError;
 import com.jopdesign.common.misc.NamingConflictException;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.FieldRef;
@@ -55,22 +56,35 @@ public final class AppInfo {
     private ClassPath classPath;
     private final Map<String,ClassInfo> classes;
 
-    private Set<MemberInfo> roots;
+    private final Set<MemberInfo> roots;
     private MethodInfo mainMethod;
 
-    private boolean ignoreMissing;
+    // if true, an invalid or missing (and not excluded) class does not trigger an error
+    private boolean ignoreMissingClasses;
+    // if true, getClassInfo() tries to load and initialize a missing class
+    private boolean loadOnDemand;
+    // if true, native classes are loaded too
     private boolean loadNatives;
+    // if true, library classes are loaded too
     private boolean loadLibraries;
+
+    private boolean exitOnMissingClass;
+
     private final Set<String> nativeClasses;
     private final Set<String> libraryClasses;
     private final Set<String> ignoredClasses;
 
-    private final Map<String, CustomValueManager> infoManagers;
+    private final Map<String, AttributeManager> managers;
     private final Map<String,CustomKey> registeredKeys;
 
+
+    /**
+     * A class for custom attribute key.
+     * To create a new key, use {@link com.jopdesign.common.AppInfo#registerKey(String)}.
+     */
     public static final class CustomKey  {
-        private String keyname;
-        private int id;
+        private final String keyname;
+        private final int id;
 
         private CustomKey(String keyname, int id) {
             this.keyname = keyname;
@@ -86,18 +100,25 @@ public final class AppInfo {
         }
     }
 
+    //////////////////////////////////////////////////////////////////////////////
+    // Singleton
+    //////////////////////////////////////////////////////////////////////////////
+
     private static final AppInfo singleton = new AppInfo();
 
     public static AppInfo getSingleton() {
         return singleton; 
     }
 
+
     private AppInfo() {
         this.classPath = new ClassPath(".");
 
-        ignoreMissing = false;
+        ignoreMissingClasses = false;
+        loadOnDemand = false;
         loadNatives = false;
         loadLibraries = true;
+        exitOnMissingClass = false;
 
         classes = new HashMap<String, ClassInfo>();
         roots = new HashSet<MemberInfo>();
@@ -105,17 +126,22 @@ public final class AppInfo {
         libraryClasses = new HashSet<String>(1);
         ignoredClasses = new HashSet<String>(1);
 
-        infoManagers = new HashMap<String, CustomValueManager>(1);
+        managers = new HashMap<String, AttributeManager>(1);
         registeredKeys = new HashMap<String, CustomKey>();
     }
 
-    public CustomValueManager registerManager(String key, CustomValueManager valueManager) {
-        valueManager.registerManager(this);
-        return infoManagers.put(key, valueManager);
+
+    //////////////////////////////////////////////////////////////////////////////
+    // AttributeManager and CustomKey management, AppInfo setup stuff
+    //////////////////////////////////////////////////////////////////////////////
+
+    public AttributeManager registerManager(String key, AttributeManager manager) {
+        manager.registerManager(this);
+        return managers.put(key, manager);
     }
 
-    public CustomValueManager getManager(String key) {
-        return infoManagers.get(key);
+    public AttributeManager getManager(String key) {
+        return managers.get(key);
     }
 
     public CustomKey registerKey(String key) {
@@ -176,11 +202,41 @@ public final class AppInfo {
         this.classPath = classPath;
     }
 
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Methods to create, load, get and remove ClassInfos
+    //////////////////////////////////////////////////////////////////////////////
+
+    public ClassInfo createClass(String className, ClassRef superClass, boolean isInterface)
+            throws NamingConflictException
+    {
+        ClassInfo cls = classes.get(className);
+        if ( cls != null ) {
+            if ( isInterface != cls.isInterface() ||
+                 !cls.getSuperClassName().equals(superClass.getClassName()) )
+            {
+                throw new NamingConflictException("Class '"+className+
+                        "' already exists but has a different definition.");
+            }
+            return cls;
+        }
+
+        cls = createClassInfo(className, superClass.getClassName(), isInterface);
+
+        classes.put(className, cls);
+
+        for (AttributeManager mgr : managers.values()) {
+            mgr.onCreateClass(cls);
+        }
+
+        return cls;
+    }
+
     /**
      * Try to load a classInfo.
      * If the class is already loaded, return the existing classInfo.
      * If the class is excluded, return null.
-     * If the class does not exist but should be loaded, print an error message and exit.
+     * If the class does not exist but should be loaded, throw an {@link MissingClassError}.
      *
      * @see #loadClass(String, boolean, boolean)
      * @param className the fully qualified name of the class.
@@ -191,8 +247,8 @@ public final class AppInfo {
         try {
             info = loadClass(className, false, false);
         } catch (ClassInfoNotFoundException e) {
-            System.out.println("Error loading required class '"+className+"': " + e.getMessage());
-            System.exit(4);
+            handleClassLoadFailure("Error loading class '"+className+"': " +
+                e.getMessage(), e);
         }
         return info;
     }
@@ -230,41 +286,209 @@ public final class AppInfo {
             return null;
         }
 
-        return performLoadClass(className, required);
-    }
-
-    public ClassInfo createClass(String className, ClassRef superClass, boolean isInterface)
-            throws NamingConflictException
-    {
-        ClassInfo cls = classes.get(className);
-        if ( cls != null ) {
-            if ( isInterface != cls.isInterface() ||
-                 !cls.getSuperClassName().equals(superClass.getClassName()) )
-            {
-                throw new NamingConflictException("Class '"+className+
-                        "' already exists but has a different definition.");
-            }
-            return cls;
-        }
-
-        cls = createClassInfo(className, superClass.getClassName(), isInterface);
-
-        classes.put(className, cls);
-
-        for (CustomValueManager mgr : infoManagers.values()) {
-            mgr.onCreateClass(cls);
-        }
-
-        return cls;
+        return performLoadClass(className, required, false);
     }
 
     public void removeClass(ClassInfo classInfo) {
         classes.remove(classInfo.getClassName());
 
-        for ( CustomValueManager mgr : infoManagers.values() ) {
+        for ( AttributeManager mgr : managers.values() ) {
             mgr.onRemoveClass(classInfo);
         }
     }
+
+    /**
+     * Get an already loaded class.
+     *
+     * If doLoadOnDemand is set, this tries to load a missing class.
+     *  
+     * This method only returns null if classes are excluded from loading or the class is missing
+     * and doIgnoreMissingClasses is set. Else a {@link MissingClassError} is thrown.
+     *
+     * @see #getClassInfo(String, boolean)
+     * @param className the classname of the class.
+     * @return the classInfo of the class or null if the class is excluded.
+     */
+    public ClassInfo getClassInfo(String className) {
+        ClassInfo classInfo = null;
+        try {
+            classInfo = getClassInfo(className, false);
+        } catch (ClassInfoNotFoundException e) {
+            handleClassLoadFailure(e.getMessage(), e);
+        }
+        return classInfo;
+    }
+
+    /**
+     * Get an already loaded class.
+     *
+     * If doLoadOnDemand is set, this tries to load a missing class.
+     *
+     * This method only returns null if classes are excluded from loading or the class is missing
+     * and doIgnoreMissingClasses is set. Else an exception is thrown.
+     * If required is true, this method never returns null but throws an exception if the classInfo is not found. 
+     *
+     * @see #getClassInfo(String)
+     * @param className fully qualified name of the class to get.
+     * @param required if true, always throw an exception if not loaded.
+     * @return the classInfo, or null if excluded or not found and ignored and not required.
+     * @throws ClassInfoNotFoundException if the class is required but not found or excluded.
+     */
+    public ClassInfo getClassInfo(String className, boolean required) throws ClassInfoNotFoundException {
+        ClassInfo cls = classes.get(className);
+        if ( cls != null ) {
+            return cls;
+        }
+
+        if ( isExcluded(className) ) {
+            if ( required ) {
+                throw new ClassInfoNotFoundException("Class '"+className+"' is excluded but required.");
+            }
+            return null;
+        }
+
+        if ( loadOnDemand ) {
+            cls = performLoadClass(className, required, true);
+        } else {
+            // class is null, not excluded, and not loaded on demand, i.e. missing
+            if ( required  ) {
+                throw new ClassInfoNotFoundException("Required class '"+className+"' not loaded.");
+            }
+            if ( !ignoreMissingClasses ) {
+                throw new ClassInfoNotFoundException("Requested class '"+className+"' is missing and not excluded.");
+            }
+        }
+
+        return cls;
+    }
+
+    /**
+     * Remove all classInfos.
+     *
+     * @param clearRoots if true, clear list of roots and main method as well, else
+     *        keep the root classes in the class list.
+     */
+    public void clear(boolean clearRoots) {
+
+        for (AttributeManager mgr : managers.values()) {
+            mgr.onClearAppInfo(this);
+        }
+
+        classes.clear();
+
+        if ( clearRoots ) {
+            roots.clear();
+            mainMethod = null;
+        } else {
+            // re-add all root classes
+            for (MemberInfo root : roots) {
+                classes.put(root.getClassInfo().getClassName(), root.getClassInfo());
+            }
+        }
+    }
+
+    /**
+     * Reload all currently loaded classInfos from disk, using the current classpath.
+     * @param checkExcludes if true, reevaluate excludes, else reload all classes even if excluded.
+     * @throws ClassInfoNotFoundException if a class could not be reloaded.
+     */
+    public void reloadClasses(boolean checkExcludes) throws ClassInfoNotFoundException {
+
+        List<String> clsNames = new LinkedList<String>(classes.keySet());
+
+        clear(false);
+
+        for (String clsName : clsNames ) {
+
+            if ( checkExcludes && isExcluded(clsName) ) {
+                continue;
+            }
+
+            performLoadClass(clsName, false, false);
+        }
+
+        // reload mainMethod
+        if ( mainMethod != null ) {
+            ClassInfo mainClass = classes.get(mainMethod.getClassInfo().getClassName());
+            if ( mainClass == null ) {
+                mainMethod = null;
+                throw new ClassInfoNotFoundException("Could not find main class.");
+            }
+
+            mainMethod = mainClass.getMethodInfo(mainMethod.getSignature().getMemberSignature());
+            if (mainMethod == null) {
+                throw new ClassInfoNotFoundException("Could not find main method in main class");
+            }
+        }
+    }
+
+    public Collection<ClassInfo> getClassInfos() {
+        return classes.values();
+    }
+
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Helper methods to find classes, fields and methods; Convenience methods
+    //////////////////////////////////////////////////////////////////////////////
+
+    public ClassRef getClassRef(String className) {
+        ClassInfo cls = getClassInfo(className);
+        if ( cls != null ) {
+            return cls.getClassRef();
+        }
+        return new ClassRef(className);
+    }
+
+    public ClassRef getClassRef(String className, boolean isInterface) {
+        ClassInfo cls = getClassInfo(className);
+        if ( cls != null ) {
+            if ( cls.isInterface() != isInterface ) {
+                throw new ClassFormatException("Class '"+className+"' interface flag does not match.");
+            }
+            return cls.getClassRef();
+        }
+
+        return new ClassRef(className, isInterface);
+    }
+
+    public MethodRef getMethodRef(Signature signature, boolean isInterfaceMethod) {
+        ClassInfo cls = getClassInfo(signature.getClassName());
+        if ( cls != null ) {
+            if ( cls.isInterface() != isInterfaceMethod ) {
+                throw new ClassFormatException("Class '"+cls.getClassName()+"' interface flag does not match.");
+            }
+            MethodInfo method = cls.getMethodInfo(signature);
+            if ( method == null ) {
+                return new MethodRef(cls.getClassRef(), signature.getMemberName(), signature.getMemberDescriptor());
+            } else {
+                return method.getMethodRef();
+            }
+        }
+
+        return new MethodRef(new ClassRef(signature.getClassName(),isInterfaceMethod),
+                             signature.getMemberName(), signature.getMemberDescriptor());
+    }
+
+    public FieldRef getFieldRef(Signature signature) {
+        ClassInfo cls = getClassInfo(signature.getClassName());
+        if ( cls != null ) {
+            FieldInfo field = cls.getFieldInfo(signature.getMemberName());
+            if ( field == null ) {
+                return new FieldRef(cls.getClassRef(), signature.getMemberName(),
+                        signature.getMemberDescriptor().getTypeInfo() );
+            } else {
+                return field.getFieldRef();
+            }
+        }
+
+        return new FieldRef(new ClassRef(signature.getClassName()),
+                            signature.getMemberName(), signature.getMemberDescriptor().getTypeInfo());
+    }
+
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Roots
+    //////////////////////////////////////////////////////////////////////////////
 
     public void addRoot(ClassInfo classInfo) {
         roots.add(classInfo);
@@ -298,24 +522,66 @@ public final class AppInfo {
         return mainMethod;
     }
 
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Class loading configuration
+    //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Add the name of a native class or a package of native classes.
+     * Native classes will usually be handled in a special way by most tools.
+     *
+     * @see #setLoadNatives(boolean)
+     * @param nativeClass the FQN of a native class or a package of native classes.
+     */
     public void addNative(String nativeClass) {
         nativeClasses.add(nativeClass);
     }
 
+    /**
+     * Add the name of a library class or a library package.
+     * Libraries must not contain references to application code classes.
+     *
+     * @see #setLoadLibraries(boolean)
+     * @param libraryClass the FQN of a library class or a package of a library.
+     */
     public void addLibrary(String libraryClass) {
         libraryClasses.add(libraryClass);
     }
 
+    /**
+     * Add the name of a class or a package which should not be loaded.
+     * If anything is added here, the tools must be able to handle missing classes.
+     *
+     * <p>Note that this is independent of the value of {@link #doIgnoreMissingClasses()}.</p>
+     *
+     * @param ignoredClass the FQN of a class or package to exclude from loading.
+     */
     public void addIgnored(String ignoredClass) {
         ignoredClasses.add(ignoredClass);
     }
 
-    public void setIgnoreMissing(boolean ignoreMissing) {
-        this.ignoreMissing = ignoreMissing;
+    /**
+     * If this is set to true, a missing class or unreadable class file will be ignored
+     * and {@link #getClassInfo(String)} and {@link #loadClass(String)} (and their variants) will
+     * return {@code null} instead. Else, a missing and not excluded class will trigger an {@link MissingClassError}.
+     *
+     * <p>This affects only classes which are not excluded by other means. If this is set to true,
+     * the tools must be able to handle missing classes.</p>
+     *
+     * @param ignoreMissingClasses if true, ignore class load errors.
+     */
+    public void setIgnoreMissingClasses(boolean ignoreMissingClasses) {
+        this.ignoreMissingClasses = ignoreMissingClasses;
     }
 
-    public boolean doIgnoreMissing() {
-        return ignoreMissing;
+    /**
+     * Check if missing and not excluded or invalid class files do not trigger an Error.
+     * @see #setIgnoreMissingClasses(boolean)
+     * @return true if missing or invalid classes do not trigger an error on load.
+     */
+    public boolean doIgnoreMissingClasses() {
+        return ignoreMissingClasses;
     }
 
     public boolean doLoadLibraries() {
@@ -339,152 +605,31 @@ public final class AppInfo {
         this.loadNatives = loadNatives;
     }
 
+    public boolean doLoadOnDemand() {
+        return loadOnDemand;
+    }
+
+    public void setLoadOnDemand(boolean loadOnDemand) {
+        this.loadOnDemand = loadOnDemand;
+    }
+
     /**
-     * Remove all classInfos.
+     * @see #setExitOnMissingClass(boolean)
+     * @return true, if {@link #loadClass(String)} or {@link #getClassInfo(String)} exists instead of throwing an Error.
+     */
+    public boolean doExitOnMissingClass() {
+        return exitOnMissingClass;
+    }
+
+    /**
+     * If set to true, the application will exit with an error message instead of throwing an
+     * unchecked {@link MissingClassError} if a non-excluded class cannot be loaded in
+     * {@link #loadClass(String)} or {@link #getClassInfo(String)}.
      *
-     * @param clearRoots if true, clear list of roots and main method as well, else
-     *        keep the root classes in the class list.
+     * @param exitOnMissingClass if true, exit with an error message instead of throwing an error.
      */
-    public void clear(boolean clearRoots) {
-
-        for (CustomValueManager mgr : infoManagers.values()) {
-            mgr.onClearAppInfo(this);
-        }
-
-        classes.clear();
-        
-        if ( clearRoots ) {
-            roots.clear();
-            mainMethod = null;
-        } else {
-            // re-add all root classes
-            for (MemberInfo root : roots) {
-                classes.put(root.getClassInfo().getClassName(), root.getClassInfo());
-            }
-        }
-    }
-
-    /**
-     * Reload all currently loaded classInfos from disk, using the current classpath.
-     * @param checkExcludes if true, reevaluate excludes, else reload all classes even if excluded.
-     * @throws ClassInfoNotFoundException if a class could not be reloaded.
-     */
-    public void reloadClasses(boolean checkExcludes) throws ClassInfoNotFoundException {
-
-        List<String> clsNames = new LinkedList<String>(classes.keySet());
-
-        clear(false);
-
-        for (String clsName : clsNames ) {
-
-            if ( checkExcludes && isExcluded(clsName) ) {
-                continue;
-            }
-
-            performLoadClass(clsName, true);
-        }
-
-        // reload mainMethod
-        if ( mainMethod != null ) {
-            ClassInfo mainClass = classes.get(mainMethod.getClassInfo().getClassName());
-            if ( mainClass == null ) {
-                mainMethod = null;
-                throw new ClassInfoNotFoundException("Could not find main class.");
-            }
-
-            mainMethod = mainClass.getMethodInfo(mainMethod.getSignature().getMemberSignature());
-            if (mainMethod == null) {
-                throw new ClassInfoNotFoundException("Could not find main method in main class");
-            }
-        }
-    }
-
-    /**
-     * Get an already loaded class, or null if the class has not been loaded.
-     *
-     * @param className the classname of the class.
-     * @return the classInfo of the class or null if it has not been loaded.
-     */
-    public ClassInfo getClass(String className) {
-        return classes.get(className);
-    }
-
-    /**
-     * Get an already loaded class, or null if the class has been excluded, or
-     * throw an exception if the class is either required or not excluded.
-     *
-     * @param className fully qualified name of the class to get.
-     * @param required if true, always throw an exception if not loaded.
-     * @return the classInfo, or null if excluded or ignored and not required.
-     * @throws ClassInfoNotFoundException if the class is required but not found
-     */
-    public ClassInfo getClass(String className, boolean required) throws ClassInfoNotFoundException {
-        ClassInfo cls = classes.get(className);
-        if ( cls == null && required ) {
-            throw new ClassInfoNotFoundException("Required class '"+className+"' not loaded.");
-        }
-        if ( cls == null && !ignoreMissing && !isExcluded(className) ) {
-            throw new ClassInfoNotFoundException("Requested class '"+className+"' is missing and not excluded.");            
-        }
-        return cls;
-    }
-
-    public Collection<ClassInfo> getClassInfos() {
-        return classes.values();
-    }
-
-    public ClassRef getClassRef(String className) {
-        ClassInfo cls = getClass(className);
-        if ( cls != null ) {
-            return cls.getClassRef();
-        }
-        return new ClassRef(className);
-    }
-
-    public ClassRef getClassRef(String className, boolean isInterface) {
-        ClassInfo cls = getClass(className);
-        if ( cls != null ) {
-            if ( cls.isInterface() != isInterface ) {
-                throw new ClassFormatException("Class '"+className+"' interface flag does not match.");
-            }
-            return cls.getClassRef();
-        }
-
-        return new ClassRef(className, isInterface);
-    }
-
-    public MethodRef getMethodRef(Signature signature, boolean isInterfaceMethod) {
-        ClassInfo cls = getClass(signature.getClassName());
-        if ( cls != null ) {
-            if ( cls.isInterface() != isInterfaceMethod ) {
-                throw new ClassFormatException("Class '"+cls.getClassName()+"' interface flag does not match.");
-            }
-            MethodInfo method = cls.getMethodInfo(signature);
-            if ( method == null ) {
-                return new MethodRef(cls.getClassRef(), signature.getMemberName(), signature.getMemberDescriptor());
-            } else {
-                return method.getMethodRef();
-            }
-        }
-
-        return new MethodRef(new ClassRef(signature.getClassName(),isInterfaceMethod),
-                             signature.getMemberName(), signature.getMemberDescriptor());
-    }
-
-    public FieldRef getFieldRef(Signature signature) {
-        ClassInfo cls = getClass(signature.getClassName());
-        if ( cls != null ) {
-            FieldInfo field = cls.getFieldInfo(signature.getMemberName());
-            if ( field == null ) {
-                return new FieldRef(cls.getClassRef(), signature.getMemberName(),
-                        signature.getMemberDescriptor().getTypeInfo() );
-            } else {
-                return field.getFieldRef();
-            }
-        }
-
-        return new FieldRef(new ClassRef(signature.getClassName()),
-                            signature.getMemberName(), signature.getMemberDescriptor().getTypeInfo());
+    public void setExitOnMissingClass(boolean exitOnMissingClass) {
+        this.exitOnMissingClass = exitOnMissingClass;
     }
 
     public boolean isNative(String className) {
@@ -515,7 +660,7 @@ public final class AppInfo {
     }
 
     /**
-     * check if the classname is excluded from loading,
+     * Check if the classname is excluded from loading,
      * either because it is a native or library class (and loading is disabled for them)
      * or if the class is ignored.
      *
@@ -532,6 +677,11 @@ public final class AppInfo {
         return isIgnored(className);
     }
 
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Internal Affairs
+    //////////////////////////////////////////////////////////////////////////////
+
     /**
      * Get number of registered keys. Should be accessed only by MemberInfo.
      *
@@ -541,7 +691,7 @@ public final class AppInfo {
         return registeredKeys.size();
     }
     
-    private ClassInfo performLoadClass(String className, boolean required) throws ClassInfoNotFoundException {
+    private ClassInfo performLoadClass(String className, boolean required, boolean onDemand) throws ClassInfoNotFoundException {
 
         // try to load the class
         ClassInfo cls = null;
@@ -550,11 +700,15 @@ public final class AppInfo {
 
             classes.put(className, cls);
 
-            for (CustomValueManager mgr : infoManagers.values()) {
+            if ( onDemand ) {
+                updateTypeAnalysis(cls);
+            }
+
+            for (AttributeManager mgr : managers.values()) {
                 mgr.onLoadClass(cls);
             }
         } catch (IOException e) {
-            if ( required || !ignoreMissing ) {
+            if ( required || !ignoreMissingClasses) {
                 throw new ClassInfoNotFoundException("Class '"+className+"' could not be loaded: " +
                         e.getMessage(), e);
             }
@@ -562,6 +716,11 @@ public final class AppInfo {
         }
 
         return cls;
+    }
+
+    private void updateTypeAnalysis(ClassInfo classInfo) {
+        // TODO implement.. if class has been loaded on demand, update type analysis infos for new classInfo
+
     }
 
     private ClassInfo tryLoadClass(String className) throws IOException {
@@ -573,7 +732,7 @@ public final class AppInfo {
         return new ClassInfo(new ClassGen(javaClass));
     }
 
-    public ClassInfo createClassInfo(String className, String superClassName, boolean isInterface) {
+    private ClassInfo createClassInfo(String className, String superClassName, boolean isInterface) {
 
         String filename = className.replace(".", File.separator) + ".class";
 
@@ -584,6 +743,16 @@ public final class AppInfo {
 
         ClassGen clsGen = new ClassGen(className, superClassName, filename, af, new String[0]);
         return new ClassInfo(clsGen);
+    }
+
+    private void handleClassLoadFailure(String message, Exception cause) {
+        if ( exitOnMissingClass ) {
+            // TODO logging
+            System.out.println(message);
+            System.exit(4);
+        } else {
+            throw new MissingClassError(message, cause);
+        }
     }
 
 }

@@ -55,7 +55,7 @@ public class ClassRef {
 
     public ClassInfo getClassInfo() {
         if ( classInfo == null ) {
-            classInfo = AppInfo.getSingleton().getClass(className);
+            classInfo = AppInfo.getSingleton().getClassInfo(className);
         }
         return classInfo;
     }
@@ -64,13 +64,12 @@ public class ClassRef {
         return classInfo != null ? classInfo.getClassName() : className;
     }
 
-    /**
-     * Check if this class is an interface.
-     *
-     * @return 1 if it is an interface, 0 if not, and -1 if it is unknown.
-     */
     public Ternary isInterface() {
         return anInterface;
+    }
+
+    public boolean isNative() {
+        return AppInfo.getSingleton().isNative(getClassName());
     }
 
     public TypeInfo getTypeInfo() {

@@ -20,6 +20,8 @@
 
 package com.jopdesign.common.type;
 
+import com.jopdesign.common.misc.Ternary;
+
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
@@ -39,10 +41,10 @@ public abstract class TypeInfo {
      * Test if this type is compatible to another type without cast.
      *
      * @param typeInfo the type to compare to.
-     * @return 1 if a value of typeInfo can be assigned to a variable of this type, 0 if they are
-     *         not compatible, and -1 if it is unknown (e.g. type not known).
+     * @return TRUE if a value of typeInfo can be assigned to a variable of this type, FALSE if they are
+     *         not compatible, and UNKNOWN if it is unknown (e.g. type not known).
      */
-    public abstract int canAssignFrom(TypeInfo typeInfo);
+    public abstract Ternary canAssignFrom(TypeInfo typeInfo);
 
     public abstract String getTypeDescriptor();
     

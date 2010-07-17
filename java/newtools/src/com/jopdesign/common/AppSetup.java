@@ -138,18 +138,10 @@ public class AppSetup {
         module.registerOptions(config.getOptions());
 
         // register manager
-        CustomValueManager manager = module.getManager();
+        AttributeManager manager = module.getAttributeManager();
         if ( manager != null ) {
             appInfo.registerManager(name, manager);
         }
-
-        // add version info
-        if ( versionInfo == null || "".equals(versionInfo) ) {
-            versionInfo = "";
-        } else {
-            versionInfo += "\n";
-        }
-        versionInfo += name + ": " + module.getModuleVersion();
     }
 
     /**
@@ -198,8 +190,8 @@ public class AppSetup {
         this.optionSyntax = optionSyntax;
     }
 
-    public void setVersionInfo(String version) {
-        versionInfo = version;
+    public void setVersionInfo(String versionInfo) {
+        this.versionInfo = versionInfo;
     }
 
     public String[] setupConfig(String[] args) {
@@ -249,7 +241,7 @@ public class AppSetup {
             System.exit(0);
         }
         if ( config.getOption(Config.SHOW_VERSION) && versionInfo != null ) {
-            System.out.println(versionInfo);
+            printVersion();
             System.exit(0);
         }
 
@@ -341,7 +333,7 @@ public class AppSetup {
         }
 
         if (loadTransitiveHull) {
-            new AppLoader().loadApp();
+            new AppLoader().loadAll();
         }
 
     }
@@ -385,6 +377,16 @@ public class AppSetup {
 
     }
 
+    public void printVersion() {
+
+        if (versionInfo != null && !"".equals(versionInfo)) {
+            System.out.println(versionInfo);
+        }
+        for (String name : modules.keySet() ) {
+            versionInfo += name + ": " + modules.get(name).getModuleVersion();
+        }
+    }
+
     public void writeClasses() {
         // TODO add+use options to support writing to .jar file?
         try {
@@ -405,7 +407,7 @@ public class AppSetup {
     }
 
     private MethodInfo getMainMethod(String signature) throws Config.BadConfigurationException {
-        Signature sMain = null;
+        Signature sMain;
         try {
             sMain = Signature.parse(signature);
         } catch (InvalidSignatureException e) {

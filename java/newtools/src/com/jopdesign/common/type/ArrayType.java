@@ -20,14 +20,16 @@
 
 package com.jopdesign.common.type;
 
+import com.jopdesign.common.misc.Ternary;
+
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class ArrayType extends TypeInfo {
     
     @Override
-    public int canAssignFrom(TypeInfo typeInfo) {
-        return -1;
+    public Ternary canAssignFrom(TypeInfo typeInfo) {
+        return Ternary.UNKNOWN;
     }
 
     @Override
