@@ -37,6 +37,7 @@ import org.apache.bcel.classfile.ConstantPool;
 import org.apache.bcel.classfile.ConstantString;
 import org.apache.bcel.classfile.ConstantUtf8;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
 /**
@@ -129,6 +130,10 @@ public abstract class ConstantInfo<T> {
     public abstract ClassRef getClassRef();
 
     public abstract TypeInfo getTypeInfo();
+
+    public Type getType() {
+        return getTypeInfo().getType();
+    }
 
     public abstract Constant createConstant(ConstantPoolGen cpg);
 

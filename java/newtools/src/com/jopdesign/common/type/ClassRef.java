@@ -73,7 +73,7 @@ public class ClassRef {
     }
 
     public TypeInfo getTypeInfo() {
-        return new ObjectType(this);
+        return new ObjectTypeInfo(this);
     }
 
     public String toString() {

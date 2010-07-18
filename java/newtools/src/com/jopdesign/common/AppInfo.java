@@ -20,6 +20,7 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.misc.BcelRepositoryWrapper;
 import com.jopdesign.common.misc.ClassInfoNotFoundException;
 import com.jopdesign.common.misc.MissingClassError;
 import com.jopdesign.common.misc.NamingConflictException;
@@ -28,6 +29,7 @@ import com.jopdesign.common.type.FieldRef;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.Constants;
+import org.apache.bcel.Repository;
 import org.apache.bcel.classfile.ClassFormatException;
 import org.apache.bcel.classfile.ClassParser;
 import org.apache.bcel.classfile.JavaClass;
@@ -104,7 +106,11 @@ public final class AppInfo {
     // Singleton
     //////////////////////////////////////////////////////////////////////////////
 
-    private static final AppInfo singleton = new AppInfo();
+    private static final AppInfo singleton;    
+    static {
+        singleton = new AppInfo();
+        Repository.setRepository(new BcelRepositoryWrapper());
+    }
 
     public static AppInfo getSingleton() {
         return singleton; 

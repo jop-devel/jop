@@ -21,21 +21,30 @@
 package com.jopdesign.common.type;
 
 import com.jopdesign.common.misc.Ternary;
+import org.apache.bcel.generic.Type;
 
 /**
+ * TypeInfo is an (immutable) wrapper of a BCEL type, and extends it with some
+ * custom methods, e.g. to allow further restriction of the value domain.
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public abstract class TypeInfo {
+public abstract class TypeInfo<T extends Type> {
 
-    // TODO implement
+    public static final BasicTypeInfo TYPE_VOID = new BasicTypeInfo(Type.VOID);
+    public static final BasicTypeInfo TYPE_BYTE = new BasicTypeInfo(Type.BYTE);
+    public static final BasicTypeInfo TYPE_CHAR = new BasicTypeInfo(Type.CHAR);
+    public static final BasicTypeInfo TYPE_INT = new BasicTypeInfo(Type.INT);
+    public static final BasicTypeInfo TYPE_LONG = new BasicTypeInfo(Type.LONG);
+    public static final BasicTypeInfo TYPE_FLOAT = new BasicTypeInfo(Type.FLOAT);
+    public static final BasicTypeInfo TYPE_DOUBLE = new BasicTypeInfo(Type.DOUBLE);
+    public static final ObjectTypeInfo TYPE_STRING = new ObjectTypeInfo(Type.STRING);
 
-    public static final TypeInfo TYPE_FLOAT = null;
-    public static final TypeInfo TYPE_DOUBLE = null;
-    public static final TypeInfo TYPE_INT = null;
-    public static final TypeInfo TYPE_LONG = null;
-    public static final TypeInfo TYPE_STRING = null;
-    public static final TypeInfo TYPE_BYTE = null;
-    public static final TypeInfo Type_UNKNOWN = null;
+    private final T type;
+
+    protected TypeInfo(T type) {
+        this.type = type;
+    }
 
     /**
      * Test if this type is compatible to another type without cast.
@@ -46,10 +55,19 @@ public abstract class TypeInfo {
      */
     public abstract Ternary canAssignFrom(TypeInfo typeInfo);
 
-    public abstract String getTypeDescriptor();
+    public String getTypeDescriptor() {
+        return type.getSignature();
+    }
     
     public String toString() {
         return getTypeDescriptor();
     }
 
+    public T getType() {
+        return type;
+    }
+
+    public static TypeInfo getTypeInfo(Type type) {
+        return null;
+    }
 }

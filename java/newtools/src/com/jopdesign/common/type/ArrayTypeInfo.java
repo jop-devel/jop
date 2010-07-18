@@ -21,19 +21,36 @@
 package com.jopdesign.common.type;
 
 import com.jopdesign.common.misc.Ternary;
+import org.apache.bcel.generic.ArrayType;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ArrayType extends TypeInfo {
-    
+public class ArrayTypeInfo extends TypeInfo<ArrayType> {
+
+    private final TypeInfo elementType;
+
+    public ArrayTypeInfo(TypeInfo elementType, int dimensions) {
+        super(new ArrayType(elementType.getType(), dimensions));
+        this.elementType = elementType;
+    }
+
+    public ArrayTypeInfo(ArrayType type) {
+        super(type);
+        elementType = TypeInfo.getTypeInfo(type.getElementType());
+    }
+
+    public TypeInfo getElementType() {
+        return elementType;
+    }
+
+    public int getDimensions() {
+        return getType().getDimensions();
+    }
+
     @Override
     public Ternary canAssignFrom(TypeInfo typeInfo) {
         return Ternary.UNKNOWN;
     }
 
-    @Override
-    public String getTypeDescriptor() {
-        return null;
-    }
 }

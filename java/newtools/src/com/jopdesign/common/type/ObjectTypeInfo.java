@@ -21,16 +21,23 @@
 package com.jopdesign.common.type;
 
 import com.jopdesign.common.misc.Ternary;
+import org.apache.bcel.generic.ObjectType;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ObjectType extends TypeInfo {
+public class ObjectTypeInfo extends TypeInfo<ObjectType> {
 
     private final ClassRef classRef;
 
-    public ObjectType(ClassRef classRef) {
+    public ObjectTypeInfo(ClassRef classRef) {
+        super(new ObjectType(classRef.getClassName()));
         this.classRef = classRef;
+    }
+
+    public ObjectTypeInfo(ObjectType type) {
+        super(type);
+        classRef = new ClassRef(type.getClassName());
     }
 
     public ClassRef getClassRef() {
@@ -42,8 +49,4 @@ public class ObjectType extends TypeInfo {
         return Ternary.UNKNOWN;
     }
 
-    @Override
-    public String getTypeDescriptor() {
-        return null;
-    }
 }

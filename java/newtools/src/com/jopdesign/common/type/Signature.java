@@ -63,7 +63,7 @@ public class Signature {
 
         if ( p1 == -1 ) {
             if ( p2 == -1 ) {
-                // assume classname here
+                // assume signature is classname only
                 className = signature;
             } else {
                 memberName = signature.substring(0,p2);

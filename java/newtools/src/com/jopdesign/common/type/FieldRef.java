@@ -21,6 +21,7 @@
 package com.jopdesign.common.type;
 
 import com.jopdesign.common.FieldInfo;
+import org.apache.bcel.generic.Type;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -66,6 +67,10 @@ public class FieldRef {
 
     public TypeInfo getTypeInfo() {
         return fieldInfo != null ? fieldInfo.getTypeInfo() : typeInfo;
+    }
+
+    public Type getType() {
+        return getTypeInfo().getType();
     }
 
     public String toString() {
