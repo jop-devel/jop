@@ -32,8 +32,8 @@ import com.jopdesign.common.misc.Ternary;
  */
 public class MethodRef {
 
-    private ClassRef classRef;
-    private MethodInfo methodInfo;
+    private final ClassRef classRef;
+    private final MethodInfo methodInfo;
 
     private String methodName;
     private Descriptor descriptor;
@@ -48,6 +48,7 @@ public class MethodRef {
 
     public MethodRef(MethodInfo methodInfo) {
         this.methodInfo = methodInfo;
+        this.classRef = null;
     }
 
     public MethodInfo getMethodInfo() {

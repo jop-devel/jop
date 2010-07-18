@@ -481,14 +481,14 @@ public final class AppInfo {
             FieldInfo field = cls.getFieldInfo(signature.getMemberName());
             if ( field == null ) {
                 return new FieldRef(cls.getClassRef(), signature.getMemberName(),
-                        signature.getMemberDescriptor().getTypeInfo() );
+                        signature.getMemberDescriptor().getType() );
             } else {
                 return field.getFieldRef();
             }
         }
 
         return new FieldRef(new ClassRef(signature.getClassName()),
-                            signature.getMemberName(), signature.getMemberDescriptor().getTypeInfo());
+                            signature.getMemberName(), signature.getMemberDescriptor().getType());
     }
 
 

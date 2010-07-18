@@ -21,7 +21,6 @@
 package com.jopdesign.common.type;
 
 import com.jopdesign.common.AppInfo;
-import com.jopdesign.common.misc.InvalidSignatureException;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
@@ -43,7 +42,7 @@ import org.apache.log4j.Logger;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public abstract class ConstantInfo<T> {
+public abstract class ConstantInfo<T, U extends Type> {
 
     private final byte tag;
     private final T value;
@@ -63,59 +62,53 @@ public abstract class ConstantInfo<T> {
      * @param constant the BCEL constant to convert
      * @return a new ConstantInfo containing the constant value.
      */
-    public static ConstantInfo<?> createFromConstant(ConstantPool cp, Constant constant) {
+    public static ConstantInfo createFromConstant(ConstantPool cp, Constant constant) {
         Signature sig;
         MethodRef methodRef;
         ConstantNameAndType nRef;
         AppInfo appInfo = AppInfo.getSingleton();
 
-        try {
-            byte tag = constant.getTag();
-            switch (tag) {
-                case Constants.CONSTANT_Class:
-                    ClassRef classRef = appInfo.getClassRef(((ConstantClass)constant).getBytes(cp));
-                    return new ConstantClassInfo(classRef);
-                case Constants.CONSTANT_Fieldref:
-                    ConstantFieldref fRef = (ConstantFieldref) constant;
-                    nRef = (ConstantNameAndType) cp.getConstant(fRef.getNameAndTypeIndex());
-                    sig = new Signature(fRef.getClass(cp), nRef.getName(cp), Descriptor.parse(nRef.getSignature(cp)));
-                    FieldRef fieldRef = appInfo.getFieldRef(sig);
-                    return new ConstantFieldInfo(fieldRef);
-                case Constants.CONSTANT_Methodref:
-                    ConstantInterfaceMethodref mRef = (ConstantInterfaceMethodref) constant;
-                    nRef = (ConstantNameAndType) cp.getConstant(mRef.getNameAndTypeIndex());
-                    sig = new Signature(mRef.getClass(cp), nRef.getName(cp), Descriptor.parse(nRef.getSignature(cp)));
-                    methodRef = appInfo.getMethodRef(sig, false);
-                    return new ConstantMethodInfo(methodRef);
-                case Constants.CONSTANT_InterfaceMethodref:
-                    ConstantInterfaceMethodref imRef = (ConstantInterfaceMethodref) constant;
-                    nRef = (ConstantNameAndType) cp.getConstant(imRef.getNameAndTypeIndex());
-                    sig = new Signature(imRef.getClass(cp), nRef.getName(cp), Descriptor.parse(nRef.getSignature(cp)));
-                    methodRef = appInfo.getMethodRef(sig, true);
-                    return new ConstantMethodInfo(methodRef);
-                case Constants.CONSTANT_String:
-                    return new ConstantStringInfo(((ConstantString)constant).getBytes(cp), false);
-                case Constants.CONSTANT_Integer:
-                    return new ConstantIntegerInfo(((ConstantInteger)constant).getBytes());
-                case Constants.CONSTANT_Float:
-                    return new ConstantFloatInfo(((ConstantFloat)constant).getBytes());
-                case Constants.CONSTANT_Long:
-                    return new ConstantLongInfo(((ConstantLong)constant).getBytes());
-                case Constants.CONSTANT_Double:
-                    return new ConstantDoubleInfo(((ConstantDouble)constant).getBytes());
-                case Constants.CONSTANT_NameAndType:
-                    String name = ((ConstantNameAndType)constant).getName(cp);
-                    String signature = ((ConstantNameAndType)constant).getSignature(cp);
-                    return new ConstantNameAndTypeInfo(new Signature(name, Descriptor.parse(signature)));
-                case Constants.CONSTANT_Utf8:
-                    return new ConstantStringInfo(((ConstantUtf8)constant).getBytes(), true);
-                default:
-                    throw new JavaClassFormatError("Invalid byte tag in constant pool: " + tag);
-            }
-        } catch (InvalidSignatureException e) {
-            logger.error("Invalid signature", e);
-            // BCEL class does not have throwable parameter
-            throw new JavaClassFormatError("Invalid signature: "+ e.getMessage(), e);
+        byte tag = constant.getTag();
+        switch (tag) {
+            case Constants.CONSTANT_Class:
+                ClassRef classRef = appInfo.getClassRef(((ConstantClass)constant).getBytes(cp));
+                return new ConstantClassInfo(classRef);
+            case Constants.CONSTANT_Fieldref:
+                ConstantFieldref fRef = (ConstantFieldref) constant;
+                nRef = (ConstantNameAndType) cp.getConstant(fRef.getNameAndTypeIndex());
+                sig = new Signature(fRef.getClass(cp), nRef.getName(cp), Descriptor.parse(nRef.getSignature(cp)));
+                FieldRef fieldRef = appInfo.getFieldRef(sig);
+                return new ConstantFieldInfo(fieldRef);
+            case Constants.CONSTANT_Methodref:
+                ConstantInterfaceMethodref mRef = (ConstantInterfaceMethodref) constant;
+                nRef = (ConstantNameAndType) cp.getConstant(mRef.getNameAndTypeIndex());
+                sig = new Signature(mRef.getClass(cp), nRef.getName(cp), Descriptor.parse(nRef.getSignature(cp)));
+                methodRef = appInfo.getMethodRef(sig, false);
+                return new ConstantMethodInfo(methodRef);
+            case Constants.CONSTANT_InterfaceMethodref:
+                ConstantInterfaceMethodref imRef = (ConstantInterfaceMethodref) constant;
+                nRef = (ConstantNameAndType) cp.getConstant(imRef.getNameAndTypeIndex());
+                sig = new Signature(imRef.getClass(cp), nRef.getName(cp), Descriptor.parse(nRef.getSignature(cp)));
+                methodRef = appInfo.getMethodRef(sig, true);
+                return new ConstantMethodInfo(methodRef);
+            case Constants.CONSTANT_String:
+                return new ConstantStringInfo(((ConstantString)constant).getBytes(cp), false);
+            case Constants.CONSTANT_Integer:
+                return new ConstantIntegerInfo(((ConstantInteger)constant).getBytes());
+            case Constants.CONSTANT_Float:
+                return new ConstantFloatInfo(((ConstantFloat)constant).getBytes());
+            case Constants.CONSTANT_Long:
+                return new ConstantLongInfo(((ConstantLong)constant).getBytes());
+            case Constants.CONSTANT_Double:
+                return new ConstantDoubleInfo(((ConstantDouble)constant).getBytes());
+            case Constants.CONSTANT_NameAndType:
+                String name = ((ConstantNameAndType)constant).getName(cp);
+                String signature = ((ConstantNameAndType)constant).getSignature(cp);
+                return new ConstantNameAndTypeInfo(new Signature(name, Descriptor.parse(signature)));
+            case Constants.CONSTANT_Utf8:
+                return new ConstantStringInfo(((ConstantUtf8)constant).getBytes(), true);
+            default:
+                throw new JavaClassFormatError("Invalid byte tag in constant pool: " + tag);
         }
     }
 
@@ -129,11 +122,7 @@ public abstract class ConstantInfo<T> {
 
     public abstract ClassRef getClassRef();
 
-    public abstract TypeInfo getTypeInfo();
-
-    public Type getType() {
-        return getTypeInfo().getType();
-    }
+    public abstract U getType();
 
     public abstract Constant createConstant(ConstantPoolGen cpg);
 

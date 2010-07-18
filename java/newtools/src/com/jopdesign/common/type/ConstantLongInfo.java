@@ -23,12 +23,14 @@ package com.jopdesign.common.type;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantLong;
+import org.apache.bcel.generic.BasicType;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.Type;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantLongInfo extends ConstantInfo<Long> {
+public class ConstantLongInfo extends ConstantInfo<Long, BasicType> {
 
     public ConstantLongInfo(Long value) {
         super(Constants.CONSTANT_Long, value);
@@ -40,8 +42,8 @@ public class ConstantLongInfo extends ConstantInfo<Long> {
     }
 
     @Override
-    public TypeInfo getTypeInfo() {
-        return TypeInfo.TYPE_LONG;
+    public BasicType getType() {
+        return Type.LONG;
     }
 
     @Override

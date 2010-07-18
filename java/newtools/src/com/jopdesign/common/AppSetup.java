@@ -408,11 +408,7 @@ public class AppSetup {
 
     private MethodInfo getMainMethod(String signature) throws Config.BadConfigurationException {
         Signature sMain;
-        try {
-            sMain = Signature.parse(signature);
-        } catch (InvalidSignatureException e) {
-            throw new Config.BadConfigurationException("Invalid main method signature: " + e.getMessage(), e);
-        }
+        sMain = Signature.parse(signature);
 
         String clsName = sMain.getClassName();
         if ( clsName == null ) {

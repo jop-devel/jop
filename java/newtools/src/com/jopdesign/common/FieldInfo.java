@@ -23,8 +23,8 @@ package com.jopdesign.common;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.FieldRef;
 import com.jopdesign.common.type.Signature;
-import com.jopdesign.common.type.TypeInfo;
 import org.apache.bcel.generic.FieldGen;
+import org.apache.bcel.generic.Type;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -54,8 +54,8 @@ public final class FieldInfo extends ClassMemberInfo {
         fieldGen.isVolatile(val);
     }
 
-    public TypeInfo getTypeInfo() {
-        return null;
+    public Type getType() {
+        return fieldGen.getType();
     }
 
     @Override
@@ -70,7 +70,7 @@ public final class FieldInfo extends ClassMemberInfo {
 
     @Override
     public Descriptor getDescriptor() {
-        return new Descriptor(getTypeInfo());
+        return new Descriptor(getType());
     }
 
     public FieldRef getFieldRef() {

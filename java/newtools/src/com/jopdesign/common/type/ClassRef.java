@@ -23,6 +23,7 @@ package com.jopdesign.common.type;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.misc.Ternary;
+import org.apache.bcel.generic.ObjectType;
 
 /**
  * A container of a class reference.
@@ -72,11 +73,12 @@ public class ClassRef {
         return AppInfo.getSingleton().isNative(getClassName());
     }
 
-    public TypeInfo getTypeInfo() {
-        return new ObjectTypeInfo(this);
+    public ObjectType getType() {
+        return new ObjectType(getClassName());
     }
 
     public String toString() {
         return getClassName();
     }
+
 }

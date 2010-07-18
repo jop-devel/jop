@@ -23,12 +23,14 @@ package com.jopdesign.common.type;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantFloat;
+import org.apache.bcel.generic.BasicType;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.Type;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantFloatInfo extends ConstantInfo<Float> {
+public class ConstantFloatInfo extends ConstantInfo<Float, BasicType> {
 
     public ConstantFloatInfo(Float value) {
         super(Constants.CONSTANT_Float, value);
@@ -40,8 +42,8 @@ public class ConstantFloatInfo extends ConstantInfo<Float> {
     }
 
     @Override
-    public TypeInfo getTypeInfo() {
-        return TypeInfo.TYPE_FLOAT;
+    public BasicType getType() {
+        return Type.FLOAT;
     }
 
     @Override

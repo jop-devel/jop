@@ -24,11 +24,11 @@ import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.ConstantInfo;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.Signature;
-import com.jopdesign.common.type.TypeInfo;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.generic.ClassGen;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.Type;
 
 import java.util.Collection;
 
@@ -160,7 +160,7 @@ public final class ClassInfo extends MemberInfo {
         return new MethodInfo[]{};
     }
 
-    public FieldInfo createField(String name, TypeInfo type) {
+    public FieldInfo createField(String name, Type type) {
         return null;
     }
 

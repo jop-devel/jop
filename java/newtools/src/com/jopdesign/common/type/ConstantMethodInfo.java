@@ -25,11 +25,12 @@ import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantMethodref;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.ObjectType;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantMethodInfo extends ConstantInfo<MethodRef> {
+public class ConstantMethodInfo extends ConstantInfo<MethodRef, ObjectType> {
 
     public ConstantMethodInfo(MethodRef value) {
         super(value.isInterfaceMethod() == Ternary.TRUE ?
@@ -47,8 +48,8 @@ public class ConstantMethodInfo extends ConstantInfo<MethodRef> {
     }
 
     @Override
-    public TypeInfo getTypeInfo() {
-        return getClassRef().getTypeInfo();
+    public ObjectType getType() {
+        return getClassRef().getType();
     }
 
     @Override

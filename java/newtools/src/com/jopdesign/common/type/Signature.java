@@ -21,9 +21,8 @@
 package com.jopdesign.common.type;
 
 import com.jopdesign.common.AppInfo;
-import com.jopdesign.common.MemberInfo;
 import com.jopdesign.common.ClassInfo;
-import com.jopdesign.common.misc.InvalidSignatureException;
+import com.jopdesign.common.MemberInfo;
 
 /**
  * This is a helper class to handle parsing, generating, lookups and other signature related tasks
@@ -36,9 +35,9 @@ public class Signature {
 
     public static final char MEMBER_SEPARATOR = '#';
 
-    private String className;
-    private String memberName;
-    private Descriptor descriptor;
+    private final String className;
+    private final String memberName;
+    private final Descriptor descriptor;
 
     public static String getClassName(String signature) {
         int pos = signature.indexOf(MEMBER_SEPARATOR);
@@ -53,7 +52,7 @@ public class Signature {
         return className + MEMBER_SEPARATOR +  memberName + descriptor;
     }
 
-    public static Signature parse(String signature) throws InvalidSignatureException {
+    public static Signature parse(String signature) {
         int p1 = signature.indexOf(MEMBER_SEPARATOR);
         int p2 = signature.indexOf("(");
 
@@ -89,6 +88,7 @@ public class Signature {
     }
 
     public Signature(String memberName, Descriptor descriptor) {
+        this.className = null;
         this.memberName = memberName;
         this.descriptor = descriptor;
     }

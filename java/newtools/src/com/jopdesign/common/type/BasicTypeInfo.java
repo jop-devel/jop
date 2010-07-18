@@ -33,8 +33,4 @@ public class BasicTypeInfo extends TypeInfo<BasicType> {
         super(type);
     }
 
-    @Override
-    public Ternary canAssignFrom(TypeInfo typeInfo) {
-        return Ternary.UNKNOWN;
-    }
 }

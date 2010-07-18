@@ -20,13 +20,12 @@
 
 package com.jopdesign.common.type;
 
-import com.jopdesign.common.misc.Ternary;
 import org.apache.bcel.generic.ObjectType;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ObjectTypeInfo extends TypeInfo<ObjectType> {
+public class ObjectTypeInfo extends ReferenceTypeInfo<ObjectType> {
 
     private final ClassRef classRef;
 
@@ -42,11 +41,6 @@ public class ObjectTypeInfo extends TypeInfo<ObjectType> {
 
     public ClassRef getClassRef() {
         return classRef;
-    }
-
-    @Override
-    public Ternary canAssignFrom(TypeInfo typeInfo) {
-        return Ternary.UNKNOWN;
     }
 
 }

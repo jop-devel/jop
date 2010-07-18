@@ -24,11 +24,12 @@ import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantFieldref;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.ObjectType;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantFieldInfo extends ConstantInfo<FieldRef> {
+public class ConstantFieldInfo extends ConstantInfo<FieldRef, ObjectType> {
 
     public ConstantFieldInfo(FieldRef value) {
         super(Constants.CONSTANT_Fieldref, value);
@@ -40,16 +41,16 @@ public class ConstantFieldInfo extends ConstantInfo<FieldRef> {
     }
 
     @Override
-    public TypeInfo getTypeInfo() {
-        // TODO better return type of field?
-        return getClassRef().getTypeInfo();
+    public ObjectType getType() {
+        // TODO better return type of field? (but could be unknown!)
+        return getClassRef().getType();
     }
 
     @Override
     public Constant createConstant(ConstantPoolGen cpg) {
         FieldRef fieldRef = getValue();
         int i = cpg.addClass(fieldRef.getClassName());
-        int n = cpg.addNameAndType(fieldRef.getName(), fieldRef.getTypeInfo().getTypeDescriptor());
+        int n = cpg.addNameAndType(fieldRef.getName(), fieldRef.getType().getSignature());
         return new ConstantFieldref(i, n);
     }
 
@@ -57,14 +58,14 @@ public class ConstantFieldInfo extends ConstantInfo<FieldRef> {
     public int addConstant(ConstantPoolGen cpg) {
         FieldRef fieldRef = getValue();
         return cpg.addFieldref(fieldRef.getClassName(), fieldRef.getName(),
-                               fieldRef.getTypeInfo().getTypeDescriptor());
+                               fieldRef.getType().getSignature());
     }
 
     @Override
     public int lookupConstant(ConstantPoolGen cpg) {
         FieldRef fieldRef = getValue();
         return cpg.lookupFieldref(fieldRef.getClassName(), fieldRef.getName(),
-                               fieldRef.getTypeInfo().getTypeDescriptor());
+                               fieldRef.getType().getSignature());
     }
 
 }

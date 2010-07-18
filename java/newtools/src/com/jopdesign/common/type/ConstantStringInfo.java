@@ -20,16 +20,19 @@
 
 package com.jopdesign.common.type;
 
+import com.jopdesign.common.AppInfo;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantString;
 import org.apache.bcel.classfile.ConstantUtf8;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.ObjectType;
+import org.apache.bcel.generic.Type;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantStringInfo extends ConstantInfo<String> {
+public class ConstantStringInfo extends ConstantInfo<String, ObjectType> {
 
     public ConstantStringInfo(String value) {
         super(Constants.CONSTANT_String, value);
@@ -45,13 +48,15 @@ public class ConstantStringInfo extends ConstantInfo<String> {
 
     @Override
     public ClassRef getClassRef() {
-        // TODO return reference to class java.lang.String (if !isUtf8Entry) ??
+        if ( !isUtf8Entry() ) {
+            return AppInfo.getSingleton().getClassRef("java.lang.String");
+        }
         return null;
     }
 
     @Override
-    public TypeInfo getTypeInfo() {
-        return TypeInfo.TYPE_STRING;
+    public ObjectType getType() {
+        return Type.STRING;
     }
 
     @Override

@@ -23,12 +23,14 @@ package com.jopdesign.common.type;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantInteger;
+import org.apache.bcel.generic.BasicType;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.Type;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantIntegerInfo extends ConstantInfo<Integer> {
+public class ConstantIntegerInfo extends ConstantInfo<Integer, BasicType> {
 
     public ConstantIntegerInfo(Integer value) {
         super(Constants.CONSTANT_Integer, value);
@@ -40,8 +42,8 @@ public class ConstantIntegerInfo extends ConstantInfo<Integer> {
     }
 
     @Override
-    public TypeInfo getTypeInfo() {
-        return TypeInfo.TYPE_INT;
+    public BasicType getType() {
+        return Type.INT;
     }
 
     @Override

@@ -23,12 +23,14 @@ package com.jopdesign.common.type;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantDouble;
+import org.apache.bcel.generic.BasicType;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.Type;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantDoubleInfo extends ConstantInfo<Double> {
+public class ConstantDoubleInfo extends ConstantInfo<Double, BasicType> {
 
     public ConstantDoubleInfo(Double value) {
         super(Constants.CONSTANT_Double, value);
@@ -40,8 +42,8 @@ public class ConstantDoubleInfo extends ConstantInfo<Double> {
     }
 
     @Override
-    public TypeInfo getTypeInfo() {
-        return TypeInfo.TYPE_DOUBLE;
+    public BasicType getType() {
+        return Type.DOUBLE;
     }
 
     @Override

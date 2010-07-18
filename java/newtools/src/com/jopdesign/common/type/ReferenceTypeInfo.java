@@ -20,31 +20,17 @@
 
 package com.jopdesign.common.type;
 
-import org.apache.bcel.generic.ArrayType;
+import org.apache.bcel.generic.ReferenceType;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ArrayTypeInfo extends ReferenceTypeInfo<ArrayType> {
+public class ReferenceTypeInfo<T extends ReferenceType> extends TypeInfo<T> {
 
-    private final TypeInfo elementType;
-
-    public ArrayTypeInfo(TypeInfo elementType, int dimensions) {
-        super(new ArrayType(elementType.getType(), dimensions));
-        this.elementType = elementType;
-    }
-
-    public ArrayTypeInfo(ArrayType type) {
+    ReferenceTypeInfo(T type) {
         super(type);
-        elementType = TypeInfo.getTypeInfo(type.getElementType());
     }
 
-    public TypeInfo getElementType() {
-        return elementType;
-    }
-
-    public int getDimensions() {
-        return getType().getDimensions();
-    }
+    // TODO methods to restrict value domain, e.g. refer only to a subset of all possible subclasses
 
 }

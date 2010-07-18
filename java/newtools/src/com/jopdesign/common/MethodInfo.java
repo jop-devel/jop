@@ -35,6 +35,8 @@ import org.apache.log4j.Logger;
 public final class MethodInfo extends ClassMemberInfo {
 
     private final MethodGen methodGen;
+    private Descriptor descriptor;
+
     private static final Logger logger = Logger.getLogger("common.appinfo.methodinfo");
 
     private CodeRepresentation codeRep;
@@ -42,6 +44,7 @@ public final class MethodInfo extends ClassMemberInfo {
     public MethodInfo(ClassInfo classInfo, MethodGen methodGen) {
         super(classInfo, methodGen);
         this.methodGen = methodGen;
+        descriptor = Descriptor.parse(methodGen.getSignature());
     }
 
     public boolean isAbstract() {
@@ -149,12 +152,7 @@ public final class MethodInfo extends ClassMemberInfo {
     }
 
     public Descriptor getDescriptor() {
-        try {
-            return Descriptor.parse(methodGen.getSignature());
-        } catch (InvalidSignatureException e) {
-            logger.error("Invalid signature", e);
-            return null;
-        }
+        return descriptor;
     }
 
     public MethodRef getMethodRef() {

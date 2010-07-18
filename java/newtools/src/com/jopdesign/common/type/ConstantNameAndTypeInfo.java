@@ -24,11 +24,12 @@ import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantNameAndType;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.Type;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantNameAndTypeInfo extends ConstantInfo<Signature> {
+public class ConstantNameAndTypeInfo extends ConstantInfo<Signature, Type> {
     
     public ConstantNameAndTypeInfo(Signature value) {
         super(Constants.CONSTANT_NameAndType, value);
@@ -40,9 +41,8 @@ public class ConstantNameAndTypeInfo extends ConstantInfo<Signature> {
     }
 
     @Override
-    public TypeInfo getTypeInfo() {
-        // TODO return Type of return-value?
-        return null;
+    public Type getType() {
+        return getValue().getMemberDescriptor().getType();
     }
 
     @Override

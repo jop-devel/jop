@@ -20,11 +20,8 @@
 
 package com.jopdesign.common.type;
 
-import com.jopdesign.common.AppInfo;
-import com.jopdesign.common.misc.InvalidSignatureException;
-
-import java.util.LinkedList;
-import java.util.List;
+import org.apache.bcel.Constants;
+import org.apache.bcel.generic.Type;
 
 /**
  * A helper class for parsing, generating and other descriptor related tasks (type descriptors
@@ -35,83 +32,71 @@ import java.util.List;
  */
 public class Descriptor {
 
-    private final String descriptor;
-    private final TypeInfo typeInfo;
-    private final TypeInfo[] params;
+    private final Type type;
+    private final Type[] arguments;
+    private String descriptor;
 
-    private Descriptor(String descriptor, TypeInfo typeInfo, TypeInfo[] params) {
-        this.typeInfo = typeInfo;
-        this.params = params;
+    /**
+     * Constructor used by parse() method.
+     * Using Descriptor.parse() instead of new Descriptor(String) to be similar to Signature,
+     * and to indicate that there is more workload to it than a simple assignments.
+     *
+     * @param descriptor the parsed descriptor
+     * @param type the return type
+     * @param arguments the params or null if not a method descriptor.
+     */
+    private Descriptor(String descriptor, Type type, Type[] arguments) {
+        this.type = type;
+        this.arguments = arguments;
         this.descriptor = descriptor;
     }
 
-    public Descriptor(TypeInfo typeInfo) {
-        descriptor = typeInfo.toString();
-        this.typeInfo = typeInfo;
-        this.params = null;
+    public Descriptor(Type type) {
+        this.type = type;
+        arguments = null;
     }
 
-    public Descriptor(TypeInfo typeInfo, TypeInfo[] params) {
-        descriptor = compileDescriptor(typeInfo, params);
-        this.typeInfo = typeInfo;
-        this.params = params;
+    public Descriptor(Type type, Type[] arguments) {
+        this.type = type;
+        this.arguments = arguments;
     }
 
-    public static String compileDescriptor(TypeInfo type, TypeInfo[] params) {
-        StringBuffer s = new StringBuffer();
+    public static String compileDescriptor(Type type, Type[] params) {
         if ( params != null ) {
-            s.append('(');
-            for (TypeInfo param : params) {
-                s.append(param);
-            }
-            s.append(')');
+            return Type.getMethodSignature(type, params);
+        } else {
+            return type.getSignature();
         }
-        s.append(type.toString());
-
-        return s.toString();
     }
 
-    public static Descriptor parse(String descriptor) throws InvalidSignatureException {
-
-        int pos = 0;
-
-        if ( descriptor == null || descriptor.length() == 0 ) {
-            return null;
-        }
-
-        TypeInfo type = null;
-        TypeInfo[] params = null;
-
+    public static Descriptor parse(String descriptor) {
         if ( descriptor.charAt(0) == '(' ) {
-            pos++;
-            if ( descriptor.length() == 1 ) {
-                throw new InvalidSignatureException("Descriptor '"+descriptor+"' is malformed");
-            }
-            while (descriptor.charAt(pos) != ')') {
-
-            }
+            return new Descriptor(descriptor, Type.getReturnType(descriptor), Type.getArgumentTypes(descriptor) );
+        } else {
+            return new Descriptor(descriptor, Type.getType(descriptor), null);
         }
-
-        return new Descriptor(type, params);
     }
 
     public boolean isArray() {
-        return descriptor.startsWith("[");
+        return getType().getType() == Constants.T_ARRAY;
     }
 
     public boolean isMethod() {
-        return descriptor.startsWith("(");
+        return getArgumentTypes() != null;
     }
 
-    public TypeInfo[] getParameters() {
-        return params;
+    public Type[] getArgumentTypes() {
+        return arguments;
     }
 
-    public TypeInfo getTypeInfo() {
-        return typeInfo;
+    public Type getType() {
+        return type;
     }
 
     public String toString() {
+        if ( descriptor == null ) {
+            descriptor = compileDescriptor(type, arguments);
+        }
         return descriptor;
     }
 

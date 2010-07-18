@@ -29,13 +29,13 @@ import org.apache.bcel.generic.Type;
 public class FieldRef {
     private ClassRef classRef;
     private String name;
-    private TypeInfo typeInfo;
+    private Type type;
     private FieldInfo fieldInfo;
 
-    public FieldRef(ClassRef classRef, String name, TypeInfo typeInfo) {
+    public FieldRef(ClassRef classRef, String name, Type type) {
         this.classRef = classRef;
         this.name = name;
-        this.typeInfo = typeInfo;
+        this.type = type;
     }
 
     public FieldRef(FieldInfo fieldInfo) {
@@ -65,12 +65,8 @@ public class FieldRef {
         return fieldInfo != null ? fieldInfo.getName() : name;
     }
 
-    public TypeInfo getTypeInfo() {
-        return fieldInfo != null ? fieldInfo.getTypeInfo() : typeInfo;
-    }
-
     public Type getType() {
-        return getTypeInfo().getType();
+        return fieldInfo != null ? fieldInfo.getType() : type;
     }
 
     public String toString() {
