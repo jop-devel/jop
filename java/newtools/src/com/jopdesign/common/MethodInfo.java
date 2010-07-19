@@ -21,7 +21,7 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.code.CodeRepresentation;
-import com.jopdesign.common.misc.InvalidSignatureException;
+import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
@@ -35,9 +35,10 @@ import org.apache.log4j.Logger;
 public final class MethodInfo extends ClassMemberInfo {
 
     private final MethodGen methodGen;
-    private Descriptor descriptor;
+    private final Descriptor descriptor;
 
-    private static final Logger logger = Logger.getLogger("common.appinfo.methodinfo");
+    private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT+".methodinfo");
+    private static final Logger codeLogger = Logger.getLogger(LogConfig.LOG_CODE+".methodinfo");
 
     private CodeRepresentation codeRep;
 
@@ -84,7 +85,7 @@ public final class MethodInfo extends ClassMemberInfo {
         return new MethodGen(methodGen.getMethod(), methodGen.getClassName(), methodGen.getConstantPool());
     }
 
-    public void setMethodGen(MethodGen method) {
+    public void setMethodCode(MethodGen method) {
         codeRep = null;
 
         // TODO copy all code relevant infos from method, excluding name, params and access flags

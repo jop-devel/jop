@@ -22,6 +22,7 @@ package com.jopdesign.common.tools;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.type.ClassRef;
 import org.apache.log4j.Logger;
 
@@ -42,7 +43,7 @@ public class AppLoader {
     private final List<ClassInfo> newClasses;
     private boolean followNatives;
 
-    private static final Logger logger = Logger.getLogger("common.tools.AppLoader");
+    private static final Logger logger = Logger.getLogger(LogConfig.LOG_LOADING + ".AppLoader");
 
     public AppLoader() {
         queue = new LinkedList<ClassInfo>();

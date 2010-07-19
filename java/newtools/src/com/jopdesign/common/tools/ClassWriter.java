@@ -22,6 +22,7 @@ package com.jopdesign.common.tools;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.logger.LogConfig;
 import org.apache.log4j.Logger;
 
 import java.io.File;
@@ -32,7 +33,7 @@ import java.io.IOException;
  */
 public class ClassWriter {
 
-    private static final Logger logger = Logger.getLogger("common.tools.ClassWriter");
+    private static final Logger logger = Logger.getLogger(LogConfig.LOG_WRITING+".ClassWriter");
 
     public ClassWriter() {
     }

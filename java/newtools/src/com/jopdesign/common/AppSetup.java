@@ -22,8 +22,7 @@ package com.jopdesign.common;
 
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Option;
-import com.jopdesign.common.logger.LoggerConfig;
-import com.jopdesign.common.misc.InvalidSignatureException;
+import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.tools.ClassWriter;
 import com.jopdesign.common.tools.AppLoader;
 import com.jopdesign.common.type.Signature;
@@ -79,7 +78,7 @@ public class AppSetup {
 
 
     private Config config;
-    private LoggerConfig loggerConfig;
+    private LogConfig logConfig;
     private AppInfo appInfo;
     private boolean handleAppInfoInit;
     private String prgmName;
@@ -108,7 +107,7 @@ public class AppSetup {
         // using default configuration here
         appInfo = AppInfo.getSingleton();
 
-        loggerConfig = new LoggerConfig();
+        logConfig = new LogConfig();
         modules = new HashMap<String, Module>();
     }
 
@@ -116,8 +115,8 @@ public class AppSetup {
         return config;
     }
 
-    public LoggerConfig getLoggerConfig() {
-        return loggerConfig;
+    public LogConfig getLoggerConfig() {
+        return logConfig;
     }
 
     public AppInfo getAppInfo() {
@@ -342,10 +341,10 @@ public class AppSetup {
      * Setup the logger. You may want to call {@link #setupConfig(String[])} first to
      * load commandline options.
      *
-     * @see LoggerConfig#setupLogger(Config)
+     * @see com.jopdesign.common.logger.LogConfig#setupLogger(Config)
      */
     public void setupLogger() {
-        loggerConfig.setupLogger(config);
+        logConfig.setupLogger(config);
     }
 
     public void printUsage() {

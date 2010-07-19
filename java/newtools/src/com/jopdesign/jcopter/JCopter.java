@@ -54,7 +54,7 @@ public class JCopter implements Module<JCopterManager> {
             new BoolOption("useWCET", "run and use results of the WCET analysis tool", true);
 
 
-    private JCopterManager manager;
+    private final JCopterManager manager;
 
     public JCopter() {
         manager = new JCopterManager();
@@ -95,7 +95,6 @@ public class JCopter implements Module<JCopterManager> {
 
     public void run(AppSetup setup) {
 
-        // run DFA + WCET
         if ( setup.getConfig().getOption(USE_DFA) ) {
 
         }

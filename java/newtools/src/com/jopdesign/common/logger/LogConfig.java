@@ -38,33 +38,73 @@ import java.io.IOException;
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  * @author Stefan Hepp <stefan@stefant.org>
  */
-public class LoggerConfig {
+public class LogConfig {
 
-    public LoggerConfig() {
-    }
+    /////////////////////////////////////////////////////////////////////
+    // Various standard logging keys
+    /////////////////////////////////////////////////////////////////////
+
+    /**
+     * Logger for config related tasks
+     */
+    public static final String LOG_CONFIG = "common.config";
+    /**
+     * Logger for everything related to AppInfo
+     */
+    public static final String LOG_APPINFO = "common.appinfo";
+    /**
+     * Logger for class loading tasks
+     */
+    public static final String LOG_LOADING = "common.appinfo.loading";
+    /**
+     * Logger for output writing tasks
+     */
+    public static final String LOG_WRITING = "common.appinfo.writing";
+    /**
+     * Logger for all AppInfo structure classes (Class, Method, Field, ..)
+     */
+    public static final String LOG_STRUCT = "common.appinfo.struct";
+    /**
+     * Logger for code handling related tasks
+     */
+    public static final String LOG_CODE = "common.appinfo.code";
+
 
     /**
      * Setup the logger using configuration options.
-     * You may want to call {@link #setReportLoggers(File, File, Level)}
+     * You may want to call {@link #setReportLoggers(File, File)}
      * first to define the report loggers.
      *
      * @param config the config settings to use.
      */
     public void setupLogger(Config config) {
-        ConsoleAppender defaultAppender = new ConsoleAppender(new PatternLayout("[%c{1}] %m\n"), "System.err");
-		defaultAppender.setName("ACONSOLE");
-		if(config.getOption(Config.DEBUG)) {
-			defaultAppender.setThreshold(Level.INFO);
+
+        boolean verbose = config.getOption(Config.VERBOSE);
+        boolean debug = config.getOption(Config.DEBUG);
+
+        ConsoleAppender defaultAppender;
+
+        if (verbose) {
+            defaultAppender = new ConsoleAppender(new PatternLayout("%r [%c{1}] %m\n"), "System.err");
+        } else {
+            defaultAppender = new ConsoleAppender(new ConsoleLayout("%r [%c{1}] %m\n"), "System.err");
+        }
+        defaultAppender.setName("ACONSOLE");
+
+        if (debug) {
+			defaultAppender.setThreshold(verbose ? Level.DEBUG : Level.INFO);
 		} else {
 			defaultAppender.setThreshold(Level.WARN);
 		}
 		Logger.getRootLogger().addAppender(defaultAppender);
 
+        // TODO if Config option is used, add html-report logger (or add it anyway?)
+
         PropertyConfigurator.configure(config.getProperties());
 	}
 
 	@SuppressWarnings({"ResultOfMethodCallIgnored"})
-    public void setReportLoggers(File errorLog, File infoLog, Level consoleLevel)
+    public void setReportLoggers(File errorLog, File infoLog)
 		throws IOException
     {
 			errorLog.delete();

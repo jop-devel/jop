@@ -21,6 +21,7 @@
 package com.jopdesign.common.type;
 
 import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
@@ -47,7 +48,7 @@ public abstract class ConstantInfo<T, U extends Type> {
     private final byte tag;
     private final T value;
 
-    protected static final Logger logger = Logger.getLogger("common.appinfo.constantinfo");
+    protected static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT + ".ConstantInfo");
 
     protected ConstantInfo(byte tag, T value) {
         this.tag = tag;

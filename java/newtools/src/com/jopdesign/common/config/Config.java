@@ -49,10 +49,13 @@ public class Config {
             new BoolOption("help", "show help", 'h', true);
 
     public static final BoolOption SHOW_VERSION =
-            new BoolOption("version","get version number", Option.SHORT_NONE, true);
+            new BoolOption("version", "show version number", Option.SHORT_NONE, true);
 
     public static final BoolOption DEBUG =
-            new BoolOption("debug","verbose debugging mode", Option.SHORT_NONE, true);
+            new BoolOption("debug", "show debug messages", 'd', false);
+
+    public static final BoolOption VERBOSE =
+            new BoolOption("verbose", "be more verbose, and use a more detailed output format", 'v', false);
 
     public static final StringOption CLASSPATH =
             new StringOption("cp", "classpath of target app", ".");
@@ -81,7 +84,7 @@ public class Config {
     public static final StringOption WRITE_PATH =
             new StringOption("out", "path to write generated classfiles", 'o', "out");
 
-    public static final Option<?>[] standardOptions = { SHOW_HELP, SHOW_VERSION, DEBUG };
+    public static final Option<?>[] standardOptions = { SHOW_HELP, SHOW_VERSION, DEBUG, VERBOSE };
     
 
     /*

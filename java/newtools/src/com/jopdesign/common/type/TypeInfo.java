@@ -29,38 +29,25 @@ import org.apache.bcel.generic.ReferenceType;
 import org.apache.bcel.generic.Type;
 
 /**
- * TypeInfo is an (immutable) wrapper of a BCEL type, and extends it with some
+ * TypeInfo is a (mutable) wrapper of a BCEL type, and extends it with some
  * custom methods, e.g. to allow further restriction of the value domain.
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class TypeInfo<T extends Type> {
 
-    public static final TypeInfo TYPE_UNKNOWN = new TypeInfo<Type>(Type.UNKNOWN);
-    public static final BasicTypeInfo TYPE_VOID = new BasicTypeInfo(Type.VOID);
-    public static final BasicTypeInfo TYPE_BOOLEAN = new BasicTypeInfo(Type.BOOLEAN);
-    public static final BasicTypeInfo TYPE_BYTE = new BasicTypeInfo(Type.BYTE);
-    public static final BasicTypeInfo TYPE_CHAR = new BasicTypeInfo(Type.CHAR);
-    public static final BasicTypeInfo TYPE_SHORT = new BasicTypeInfo(Type.SHORT);
-    public static final BasicTypeInfo TYPE_INT = new BasicTypeInfo(Type.INT);
-    public static final BasicTypeInfo TYPE_LONG = new BasicTypeInfo(Type.LONG);
-    public static final BasicTypeInfo TYPE_FLOAT = new BasicTypeInfo(Type.FLOAT);
-    public static final BasicTypeInfo TYPE_DOUBLE = new BasicTypeInfo(Type.DOUBLE);
-    public static final ObjectTypeInfo TYPE_STRING = new ObjectTypeInfo(Type.STRING);
-    public static final ReferenceTypeInfo TYPE_NULL = new ReferenceTypeInfo<ReferenceType>(Type.NULL);
-
     public static TypeInfo getTypeInfo(Type type) {
         switch (type.getType()) {
-            case Constants.T_UNKNOWN:   return TYPE_UNKNOWN;
-            case Constants.T_VOID:      return TYPE_VOID;
-            case Constants.T_BOOLEAN:   return TYPE_BOOLEAN;
-            case Constants.T_BYTE:      return TYPE_BYTE;
-            case Constants.T_CHAR:      return TYPE_CHAR;
-            case Constants.T_SHORT:     return TYPE_SHORT;
-            case Constants.T_INT:       return TYPE_INT;
-            case Constants.T_LONG:      return TYPE_LONG;
-            case Constants.T_FLOAT:     return TYPE_FLOAT;
-            case Constants.T_DOUBLE:    return TYPE_DOUBLE;
+            case Constants.T_UNKNOWN:   return new TypeInfo<Type>(Type.UNKNOWN);
+            case Constants.T_VOID:      return new BasicTypeInfo(Type.VOID);
+            case Constants.T_BOOLEAN:   return new BasicTypeInfo(Type.BOOLEAN);
+            case Constants.T_BYTE:      return new BasicTypeInfo(Type.BYTE);
+            case Constants.T_CHAR:      return new BasicTypeInfo(Type.CHAR);
+            case Constants.T_SHORT:     return new BasicTypeInfo(Type.SHORT);
+            case Constants.T_INT:       return new BasicTypeInfo(Type.INT);
+            case Constants.T_LONG:      return new BasicTypeInfo(Type.LONG);
+            case Constants.T_FLOAT:     return new BasicTypeInfo(Type.FLOAT);
+            case Constants.T_DOUBLE:    return new BasicTypeInfo(Type.DOUBLE);
             case Constants.T_ARRAY:
                 return new ArrayTypeInfo((ArrayType) type);
             case Constants.T_REFERENCE:
@@ -68,7 +55,7 @@ public class TypeInfo<T extends Type> {
                     return new ObjectTypeInfo((ObjectType) type);
                 }
                 if ( "<null object>".equals(((ReferenceType)type).getSignature()) ) {
-                    return TYPE_NULL;
+                    return new ReferenceTypeInfo<ReferenceType>(Type.NULL);
                 }
                 throw new AppInfoError("Unknown BCEL reference type: " + type);
             default:
@@ -119,12 +106,16 @@ public class TypeInfo<T extends Type> {
                 return Constants.T_INT;
 
             case Constants.T_ARRAY:
-            // case Constants.T_OBJECT: // same as T_REFERENCE
             case Constants.T_REFERENCE:
                 return Constants.T_REFERENCE;
             default:
                 throw new AppInfoError("Unknown BCEL type ID: " + type.getType());
         }
+    }
+
+    public static Ternary canAssign(Type to, Type src) {
+        // TODO implement
+        return Ternary.UNKNOWN;
     }
 
 
@@ -142,8 +133,7 @@ public class TypeInfo<T extends Type> {
      *         not compatible, and UNKNOWN if it is unknown (e.g. type not known).
      */
     public Ternary canAssignFrom(TypeInfo typeInfo) {
-        // TODO implement
-        return Ternary.UNKNOWN;
+        return canAssign(getType(), typeInfo.getType());
     }
 
     public String getTypeDescriptor() {
