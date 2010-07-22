@@ -243,6 +243,10 @@ public class AppSetup {
             printVersion();
             System.exit(0);
         }
+        if ( config.getOption(Config.SHOW_CONFIG) ) {
+            config.printConfiguration(config.getDefaultIndent());
+            System.exit(0);
+        }
 
         // let modules process their config options
         try {
@@ -263,7 +267,7 @@ public class AppSetup {
     public void setupAppInfo(String[] args, boolean loadTransitiveHull) {
 
         // check arguments
-        if (args.length == 0) {
+        if (args.length == 0 || "".equals(args[0])) {
             System.out.println("You need to specify a main class or entry method.");
             if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
                 System.out.println("Use '--help' to show a usage message.");
@@ -341,7 +345,7 @@ public class AppSetup {
      * Setup the logger. You may want to call {@link #setupConfig(String[])} first to
      * load commandline options.
      *
-     * @see com.jopdesign.common.logger.LogConfig#setupLogger(Config)
+     * @see LogConfig#setupLogger(Config)
      */
     public void setupLogger() {
         logConfig.setupLogger(config);
@@ -371,7 +375,7 @@ public class AppSetup {
 
         System.out.println("Available options:");
         for (Option<?> option : config.getOptions().availableOptions() ) {
-            System.out.println(option.toString(20));
+            System.out.println(option.toString(config.getDefaultIndent()));
         }
 
     }

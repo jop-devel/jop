@@ -45,7 +45,7 @@ public class JCopter implements Module<JCopterManager> {
             new StringOption("ignore", "comma-separated list of classes and packages to ignore", "");
 
     public static final BoolOption ALLOW_INCOMPLETE_APP =
-            new BoolOption("allow-incomplete", "", false);
+            new BoolOption("allow-incomplete", "Ignore missing classes", false);
 
     public static final BoolOption USE_DFA =
             new BoolOption("useDFA", "run and use results of the DFA tool", true);
@@ -114,7 +114,7 @@ public class JCopter implements Module<JCopterManager> {
 
         // setup some defaults
         AppSetup setup = new AppSetup(true);
-        setup.setUsageInfo("jcopter", "my very first wcet tool.");
+        setup.setUsageInfo("jcopter", "A WCET driven Java bytecode optimizer.");
 
         setup.addStandardOptions(true, true);
         setup.addPackageOptions(true);

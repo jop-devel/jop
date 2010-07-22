@@ -122,13 +122,20 @@ public abstract class Option<T> {
 	}
 
 	public String toString(int lAdjust) {
-		StringBuffer s = new StringBuffer("  --");
+		StringBuffer s = new StringBuffer("  ");
+        if ( shortKey != SHORT_NONE ) {
+            s.append('-');
+            s.append(shortKey);
+            s.append(",--");
+        } else {
+            s.append("   --");
+        }        
         s.append(key);
         
 		for(int i = s.length(); i <= lAdjust; i++) {
 			s.append(' ');
 		}
-		s.append(' ');
+		s.append("  ");
 		s.append(descrString());
 		return s.toString();
 	}

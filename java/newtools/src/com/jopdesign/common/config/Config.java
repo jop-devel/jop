@@ -21,12 +21,17 @@
 
 package com.jopdesign.common.config;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * Configuration container, based on String-properties.
@@ -51,6 +56,9 @@ public class Config {
     public static final BoolOption SHOW_VERSION =
             new BoolOption("version", "show version number", Option.SHORT_NONE, true);
 
+    public static final BoolOption SHOW_CONFIG =
+            new BoolOption("showconfig", "print current configuration values", Option.SHORT_NONE, true);
+
     public static final BoolOption DEBUG =
             new BoolOption("debug", "show debug messages", 'd', false);
 
@@ -73,10 +81,10 @@ public class Config {
             new StringOption("ignore", "comma-separated list of classes and packages to ignore", "");
 
     public static final BoolOption EXCLUDE_LIBRARIES =
-            new BoolOption("exclude-libs", "do not load library classes");
+            new BoolOption("exclude-libs", "do not load library classes", false);
 
     public static final BoolOption LOAD_NATIVES =
-            new BoolOption("load-natives", "load native classes too");
+            new BoolOption("load-natives", "load native classes too", false);
 
     public static final StringOption ROOTS =
             new StringOption("roots", "comma-separated list of additional root classes", "");
@@ -84,26 +92,13 @@ public class Config {
     public static final StringOption WRITE_PATH =
             new StringOption("out", "path to write generated classfiles", 'o', "out");
 
-    public static final Option<?>[] standardOptions = { SHOW_HELP, SHOW_VERSION, DEBUG, VERBOSE };
-    
-
-    /*
-	 * Singleton
-	 * ~~~~~~~~~
-	 */
-    /*
-	private static Config theConfig = null;
-	public static Config instance() {
-		if(theConfig == null) theConfig = new Config();
-		return theConfig;
-	}
-	*/
+    public static final Option<?>[] standardOptions = { SHOW_HELP, SHOW_VERSION, SHOW_CONFIG, DEBUG, VERBOSE };
 
 
     /*
-      * Exception classes
-      * ~~~~~~~~~~~~~~~~~
-      */
+    * Exception classes
+    * ~~~~~~~~~~~~~~~~~
+    */
     @SuppressWarnings({"UncheckedExceptionClass"})
     public static class BadConfigurationError extends Error {
 		private static final long serialVersionUID = 1L;
@@ -193,6 +188,11 @@ public class Config {
         for (Map.Entry<Object,Object> e : p.entrySet()) {
             props.put(pfx + e.getKey(), e.getValue() );
         }
+    }
+
+    public int getDefaultIndent() {
+        // TODO maybe check props for longest config-key here?
+        return 18;
     }
 
     /**
@@ -361,18 +361,42 @@ public class Config {
     /**
      * Dump configuration of all set properties for debugging purposes.
      * To print a list of all options with their values,
-     * use {@link OptionGroup#dumpConfiguration(int)}.
-     *  
+     * use {@link #printConfiguration(int)}.
+     *
+     * @see #printConfiguration(int)
      * @param indent indent used for keys
      * @return a dump of all options with their respective values.
      */
     public String dumpConfiguration(int indent) {
-        StringBuilder sb = new StringBuilder();
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        printConfig(new PrintStream(os), indent, new HashSet<String>());
+        return os.toString();
+    }
+
+    public void printConfiguration(int indent) {
+        Set<String> keys = new HashSet<String>();
+
+        keys.addAll(options.printOptions(System.out, indent));
+
+        System.out.println();
+        System.out.println("Other configuration values:");
+
+        printConfig(System.out, indent, keys);
+
+        System.out.println();
+    }
+
+
+    private void printConfig(PrintStream p, int indent, Collection<String> skip) {
+
         for (Map.Entry<Object,Object> e : props.entrySet()) {
-            sb.append(String.format("%"+indent+"s%-20s ==> %s\n", "", e.getKey(),
+            if ( skip.contains(e.getKey().toString()) ) {
+                continue;
+            }
+            p.println(String.format("%4s%-"+indent+"s ==> %s", "", e.getKey(),
                       e.getValue() == null ? "<not set>": e.getValue()));
         }
-        return sb.toString();
+
     }
 
 }

@@ -330,7 +330,7 @@ public class OptionGroup {
                 }
 			}
             if ( spec == null ) {
-				throw new Config.BadConfigurationException("Not in option set: "+key+" ("+optionSet.keySet().toString()+")");
+				throw new Config.BadConfigurationException("Unknown option: "+key);
 			}
 			i++;
 		}
@@ -373,15 +373,20 @@ public class OptionGroup {
 
     /**
      * Dump configuration of all options for debugging purposes
+     * @param p a writer to print the options to
      * @param indent indent used for keys
-     * @return a dump of all options with their respective values.
+     * @return a set of all printed keys
      */
-    public String dumpConfiguration(int indent) {
-        StringBuilder sb = new StringBuilder();
+    public Collection<String> printOptions(PrintStream p, int indent) {
+        Set<String> keys = new HashSet<String>();
+
         for(Option<?> o : availableOptions()) {
+            String key = getConfigKey(o);
             Object val = tryGetOption(o);
-            sb.append(String.format("%"+indent+"s%-20s ==> %s\n", "",o.getKey(),val == null ? "<not set>": val));
+            p.println(String.format("%4s%-"+indent+"s ==> %s", "",key,val == null ? "<not set>": val));
+            keys.add(key);
         }
-        return sb.toString();
+
+        return keys;
     }
 }
