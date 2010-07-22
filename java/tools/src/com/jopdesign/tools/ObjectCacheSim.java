@@ -1,14 +1,24 @@
 package com.jopdesign.tools;
 
+/**
+ * Object Cache Simulator
+ * To enable object cache simulation, you should add DUMP_CACHE statements to your test driver.
+ * Additionally, use the environment variables defined below to control the object cache
+ *
+ * 
+ *
+ * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
+ *
+ */
 public class ObjectCacheSim {
 	private static final String OCACHE_ASSOC = "OCACHE_ASSOC";
 	private static final String OCACHE_WORDS_PER_LINE = "OCACHE_WORDS_PER_LINE";
-	private static final String OCACHE_FILL_LINE = "OCACHE_FILL_LINE";
+	private static final String OCACHE_BURST_WORDS = "OCACHE_BURST_WORDS";
 	private static final String OCACHE_SINGLE_FIELD = "OCACHE_SINGLE_FIELD";
 	private static final String OCACHE_REPLACEMENT = "OCACHE_REPLACEMENT";
 	private static final String OCACHE_ACCESS_COST = "OCACHE_ACCESS_COST";
 	private static final String OCACHE_LOAD_FIELD_COST = "OCACHE_LOAD_FIELD_COST";
-	private static final String OCACHE_LOAD_LINE_COST = "OCACHE_LOAD_LINE_COST";
+	private static final String OCACHE_LOAD_BURST_COST = "OCACHE_LOAD_BURST_COST";
 
 	private static String stringFromEnv(String key, String def) {
 		String val = System.getenv(key);
@@ -25,25 +35,27 @@ public class ObjectCacheSim {
 	public static ObjectCacheSim configureFromEnv() {
 		int assoc = intFromEnv(OCACHE_ASSOC, 16);
 		int wordsPerLine = intFromEnv(OCACHE_WORDS_PER_LINE, 16);
-		boolean fillLine = boolFromEnv(OCACHE_FILL_LINE);
+		int wordsPerBurst = intFromEnv(OCACHE_BURST_WORDS,1);
 		boolean fieldAsTag = boolFromEnv(OCACHE_SINGLE_FIELD);
 		String replacement = stringFromEnv(OCACHE_REPLACEMENT,"lru");
+		
 		int accessCost = intFromEnv(OCACHE_ACCESS_COST, 0);
 		int loadFieldCost = intFromEnv(OCACHE_LOAD_FIELD_COST, 2);
-		int loadLineCost = intFromEnv(OCACHE_LOAD_LINE_COST, wordsPerLine * 2);
-		ObjectCacheSim ocs = new ObjectCacheSim(assoc,wordsPerLine,fillLine,fieldAsTag,replacement.equals("lru"));
-		ocs.setCost(accessCost, loadFieldCost, loadLineCost);
+		int loadBurstCost = intFromEnv(OCACHE_LOAD_BURST_COST, 2 * wordsPerBurst);
+		
+		ObjectCacheSim ocs = new ObjectCacheSim(assoc,wordsPerLine,wordsPerBurst,fieldAsTag,replacement.equals("lru"));
+		ocs.setCost(accessCost, loadFieldCost, loadBurstCost);
 		return ocs;
 	}
 
 	private int accessCost;
+	private int loadBurstCost;
 	private int loadFieldCost;
-	private int loadLineCost;
 	
-	private void setCost(int accessCost, int loadFieldCost, int loadLineCost) {
+	private void setCost(int accessCost, int loadFieldCost, int loadBurstCost) {
 		this.accessCost = accessCost;
 		this.loadFieldCost = loadFieldCost;
-		this.loadLineCost = loadLineCost;
+		this.loadBurstCost = loadBurstCost;
 	}
 
 
@@ -88,17 +100,20 @@ public class ObjectCacheSim {
 	
 	private int assoc;
 	private int lineSize;
-	private boolean fillLine;
 	private boolean useFieldsAsTag;
 	private boolean useLRU;
 	
 	private ObjectCacheStat stats;
 	private CacheEntry cacheLines[];
+	private int wordsPerBurst;
+	private int burstMask;
 	
-	private ObjectCacheSim(int assoc, int lineSize, boolean fillLine, boolean useFieldsAsTag, boolean useLRU) {
+	private ObjectCacheSim(int assoc, int lineSize, int wordsPerBurst, boolean useFieldsAsTag, boolean useLRU) {
 		this.assoc = assoc;
 		this.lineSize = lineSize;
-		this.fillLine = fillLine;
+		this.wordsPerBurst = wordsPerBurst;
+		/* e.g. ~11 for 4 word burst */
+		this.burstMask = ~ (wordsPerBurst-1);
 		this.useFieldsAsTag = useFieldsAsTag;
 		this.useLRU = useLRU;
 		
@@ -111,7 +126,7 @@ public class ObjectCacheSim {
 		int addr;
 		stats.loadCycles += this.accessCost; 
 		if(useFieldsAsTag) addr = ref+off;
-		else                   addr = ref;
+		else               addr = ref;
 		this.stats.accessCount++;
 		if(! useFieldsAsTag && off > lineSize) {
 			stats.missCount++;
@@ -128,20 +143,16 @@ public class ObjectCacheSim {
 			if(! isFieldCached) {
 				//System.out.println("Field not cached for "+addr+" + "+off+" -- fillLine = "+fillLine);
 				lookup.wasHit = false;
-				if(fillLine) {
-					for(int i = 0; i < lineSize; i++) {
-						cacheLines[line].contents[i] = i;
-					}
-				} else {
-					cacheLines[line].contents[off] = off;
+				int startOff = off & burstMask;
+				for(int i = startOff; i < startOff + wordsPerBurst; i++) {
+					cacheLines[line].contents[i] = i;
 				}
 			} else if(! lookup.wasHit) {
 				throw new AssertionError("Cache is incoherent: not a hit but field is cached: "+addr+" + "+off);
 			}
 		}
 		if(! lookup.wasHit) {
-			if(fillLine) stats.loadCycles += this.loadLineCost;
-			else         stats.loadCycles += this.loadFieldCost;
+			stats.loadCycles += this.loadBurstCost;
 			stats.missCount++;			
 		}
 	}
@@ -190,9 +201,11 @@ public class ObjectCacheSim {
 		}
 		return -1;
 	}
+	
 	public void resetStats() {
 		stats.reset();
 	}
+	
 	public ObjectCacheStat getStats() {
 		return stats;
 	}
@@ -207,9 +220,8 @@ public class ObjectCacheSim {
 		int ac = stats.accessCount;
 		int mc = stats.missCount;
 		System.out.println(
-				String.format("Object Cache (%s,%s): Assoc: %d, words per line: %d, Cycles/Access: %.2f, Load Cycles: %d,Access: %d, Miss: %d, Ratio: %.2f %%",
-						useLRU?"LRU":"FIFO", fillLine?"fill line":"fill word",
-						assoc, lineSize, cpa, stats.loadCycles,
+				String.format("Object Cache (%s): Assoc: %d, words per line: %d, burst: %d, Cycles/Access: %.2f, Load Cycles: %d,Access: %d, Miss: %d, Ratio: %.2f %%",
+						useLRU?"LRU":"FIFO", assoc, lineSize, wordsPerBurst, cpa, stats.loadCycles,
 						ac,mc,(double)(ac-mc)/(double)(ac)*100.0));
 	}
 
