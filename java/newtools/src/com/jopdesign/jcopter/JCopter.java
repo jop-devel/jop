@@ -20,6 +20,7 @@
 
 package com.jopdesign.jcopter;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.Module;
 import com.jopdesign.common.config.BoolOption;
@@ -82,14 +83,20 @@ public class JCopter implements Module<JCopterManager> {
     }
 
     public void registerOptions(OptionGroup options) {
-        options.addOption( LIBRARY_CLASSES );
-        options.addOption( IGNORE_CLASSES );
         options.addOption( ALLOW_INCOMPLETE_APP );
         options.addOption( USE_DFA );
         options.addOption( USE_WCET );
     }
 
     public void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException {
+        Config config = setup.getConfig();
+        AppInfo appInfo = AppInfo.getSingleton();
+
+        if ( config.getOption(ALLOW_INCOMPLETE_APP) ) {
+            appInfo.setIgnoreMissingClasses(true);
+            appInfo.setLoadOnDemand(true);
+        }
+
     }
 
 

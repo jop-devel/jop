@@ -22,7 +22,6 @@ package com.jopdesign.common;
 
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.ConstantInfo;
-import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.JavaClass;
@@ -31,6 +30,8 @@ import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.Type;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * 
@@ -41,10 +42,18 @@ public final class ClassInfo extends MemberInfo {
     private final ClassGen classGen;
     private final ConstantPoolGen cpg;
 
+    private final Set<ClassInfo> subClasses;
+    private final Set<ClassInfo> interfaces;
+    private ClassInfo superClass;
+
     public ClassInfo(ClassGen classGen) {
         super(classGen);
         this.classGen = classGen;
         cpg = classGen.getConstantPool();
+
+        superClass = null;
+        subClasses = new HashSet<ClassInfo>();
+        interfaces = new HashSet<ClassInfo>();
     }
     
     @Override
@@ -120,6 +129,43 @@ public final class ClassInfo extends MemberInfo {
         return null;
     }
 
+    /**
+     * Get the ClassInfo of the superClass if it is known, else return null.
+     * @return the superclass ClassInfo or null if not loaded.
+     */
+    public ClassInfo getSuperClassInfo() {
+        return superClass;
+    }
+
+    /**
+     * Get a collection of all (loaded) interfaces this class directly implements.
+     *
+     * 
+     * @return a collection of all known directly implemented classInfos.
+     */
+    public Collection<ClassInfo> getInterfaces() {
+        return interfaces;
+    }
+
+    /**
+     * Get a collection of all known direct subclasses of this class if this is a class,
+     * or if this is an interface, get a collection of all known direct implementations
+     * and all known direct extensions.
+     *
+     * @return a collection of all known direct subclasses and implementations of this class or interface.
+     */
+    public Collection<ClassInfo> getKnownSubClasses() {
+        return subClasses;
+    }
+
+    /**
+     * Check if all superclasses and implemented interfaces of this class or interface are known.
+     * @return true if all superclasses and implemented interfaces are loaded.
+     */
+    public boolean isFullyKnown() {
+        return false;
+    }
+
     public boolean isInterface() {
         return classGen.isInterface();
     }
@@ -143,7 +189,11 @@ public final class ClassInfo extends MemberInfo {
     public String getSuperClassName() {
         return classGen.getSuperclassName();
     }
-    
+
+    public String[] getInterfaceNames() {
+        return classGen.getInterfaceNames();
+    }
+
     public FieldInfo getFieldInfo(String name) {
         return null;
     }
@@ -164,7 +214,23 @@ public final class ClassInfo extends MemberInfo {
         return null;
     }
 
-    public MethodInfo createMethod(String name, Descriptor descriptor) {
+    public MethodInfo createMethod(Signature signature) {
+        return null;
+    }
+
+    public MethodInfo copyMethod(Signature signature, String newName) {
+        return null;
+    }
+
+    public FieldInfo copyField(String name, String newName) {
+        return null;
+    }
+
+    public MethodInfo renameMethod(Signature signature, String newName) {
+        return null;
+    }
+
+    public FieldInfo renameField(String name, String newName) {
         return null;
     }
 
@@ -203,7 +269,23 @@ public final class ClassInfo extends MemberInfo {
         return new ClassRef(this);
     }
 
+    /**
+     * Compile and return the BCEL JavaClass for this ClassInfo.
+     *
+     * @return a JavaClass for this ClassInfo.
+     */
     public JavaClass getJavaClass() {
         return classGen.getJavaClass();
+    }
+
+    public int hashCode() {
+        return classGen.getClassName().hashCode();
+    }
+
+    public boolean equals(Object o) {
+        if ( !(o instanceof ClassInfo)) {
+            return false;
+        }
+        return ((ClassInfo)o).getClassName().equals(getClassName());
     }
 }

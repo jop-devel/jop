@@ -105,10 +105,10 @@ public class OptionGroup {
 		return optionList;
 	}
 
-    public void addOption(Option<?> option) {
+    public void addOption(Option option) {
         if ( optionSet.containsKey(option.getKey()) ) {
             for (Iterator<Option<?>> it = optionList.iterator(); it.hasNext();) {
-                Option<?> opt = it.next();
+                Option opt = it.next();
                 if ( opt.getKey().equals(option.getKey()) ) {
                     it.remove();
                     break;
@@ -121,17 +121,29 @@ public class OptionGroup {
         optionList.add(option);
     }
 
-    public void addOptions(Option<?>[] options) {
-        for (Option<?> opt : options) {
+    public void addOptions(Option[] options) {
+        for (Option opt : options) {
             addOption(opt);
         }
     }
 
-    public Option<?> getOptionSpec(String key) {
+    public Option getShortOptionKey(char shortKey) {
+        if ( shortKey == Option.SHORT_NONE ) {
+            return null;
+        }
+        for (Option o : optionList) {
+            if (o.getShortKey() == shortKey) {
+                return o;
+            }
+        }
+        return null;
+    }
+
+    public Option getOptionSpec(String key) {
         return optionSet.get(key);
     }
 
-    public boolean containsOption(Option<?> option) {
+    public boolean containsOption(Option option) {
         return optionSet.containsKey(option.getKey());
     }
 
@@ -295,11 +307,22 @@ public class OptionGroup {
                 break;
             }
 
-			String key;
+			String key = null;
 			if(args[i].charAt(1) == '-') key = args[i].substring(2);
-			else key = args[i].substring(1);
+			else {
+                // for something of form '-<char>', try short option,
+                if ( args[i].length() == 2 ) {
+                    Option shortOption = getShortOptionKey(args[i].charAt(1));
+                    if ( shortOption != null ) {
+                        key = shortOption.getKey();
+                    }
+                // for something of form '-<longtext>' try normal key for compatibility
+                } else {
+                    key = args[i].substring(1);
+                }
+            }
 
-            Option<?> spec = getOptionSpec(key);
+            Option spec = getOptionSpec(key);
 
             if (spec != null) {
 				String val = null;

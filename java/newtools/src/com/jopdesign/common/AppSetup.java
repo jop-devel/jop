@@ -71,8 +71,11 @@ public class AppSetup {
             throws IOException
     {
         Properties p = new Properties(defaultProps);
-        InputStream is = new BufferedInputStream(rsClass.getResourceAsStream(filename));
-        p.load(is);
+        InputStream is = rsClass.getResourceAsStream(filename);
+        if ( is == null ) {
+            throw new IOException("Unable to find resource '"+filename+"' for class '"+rsClass.getCanonicalName()+"'.");
+        }
+        p.load(new BufferedInputStream(is));
         return p;
     }
 
@@ -164,6 +167,12 @@ public class AppSetup {
         }
     }
 
+    /**
+     * Add options to classify classes and packages and optionally exclude
+     * them from the loader.
+     *
+     * @param addExcludeOptions if true, add options to exclude classes from loading.
+     */
     public void addPackageOptions(boolean addExcludeOptions) {
 
         config.addOption(Config.LIBRARY_CLASSES);
