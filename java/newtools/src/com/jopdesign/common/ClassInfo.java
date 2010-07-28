@@ -30,7 +30,9 @@ import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.Type;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -41,19 +43,27 @@ public final class ClassInfo extends MemberInfo {
 
     private final ClassGen classGen;
     private final ConstantPoolGen cpg;
+    private final Set<Integer> removeIndices;
 
     private final Set<ClassInfo> subClasses;
     private final Set<ClassInfo> interfaces;
     private ClassInfo superClass;
 
+    private final Map<String, MethodInfo> methods;
+    private final Map<String, FieldInfo> fields;
+
     public ClassInfo(ClassGen classGen) {
         super(classGen);
         this.classGen = classGen;
         cpg = classGen.getConstantPool();
+        removeIndices = new HashSet<Integer>();
 
         superClass = null;
         subClasses = new HashSet<ClassInfo>();
         interfaces = new HashSet<ClassInfo>();
+
+        methods = new HashMap<String, MethodInfo>();
+        fields = new HashMap<String, FieldInfo>();
     }
     
     @Override
@@ -86,13 +96,17 @@ public final class ClassInfo extends MemberInfo {
      * Replace a constant with a new constant value in the constant pool.
      * Be aware that this does not check for duplicate entries, and may create additional
      * new entries in the constant pool.
+     * The index will not be marked for removal even if the index was previously marked for removal.
      *
+     * @see #addConstantInfo(ConstantInfo)
      * @param i the index of the constant to replace.
      * @param constant the new value.
+     * @return true if this index has been previously marked for removal.
      */
-    public void setConstantInfo(int i, ConstantInfo constant) {
+    public boolean setConstantInfo(int i, ConstantInfo constant) {
         Constant c = constant.createConstant(cpg);
         cpg.setConstant(i, c);
+        return removeIndices.remove(i);
     }
 
     /**
@@ -121,12 +135,50 @@ public final class ClassInfo extends MemberInfo {
         return cpg.getSize();
     }
 
-    public ConstantInfo removeConstantInfo(int i) {
+    /**
+     * Mark a constant to be removed by {@link #cleanupConstantPool()}.
+     * Note that the entry will not be removed immediatly, the index of other constants
+     * will be changed until {@link #cleanupConstantPool()} is called. Lookup and get methods
+     * will still return the constant at this index.
+     *
+     * @see #cleanupConstantPool() 
+     * @param i constant index to be removed.
+     * @return true if the index i is valid and has not yet been marked for removal.
+     */
+    public boolean removeConstant(int i) {
         if ( i < 0 || i >= cpg.getSize() ) {
-            return null;
+            return false;
         }
-        
-        return null;
+        return removeIndices.add(i);
+    }
+
+    /**
+     * Rebuild the constantpool and remove all entries marked for removal by {@link #removeConstant(int)}
+     * as well as all duplicate entries.
+     *
+     * <p>This also updates the indices of all references in the code of all methods of this class,
+     * therefore do not call this method while modifying the code.</p>
+     *
+     * @see #removeConstant(int)
+     * @return true if the constantpool has been changed
+     */
+    public boolean cleanupConstantPool() {
+        ConstantPoolGen newPool = new ConstantPoolGen();
+
+        // map old index -> new index
+        int[] idxMap = new int[cpg.getSize()];
+        boolean changed = false;
+
+
+
+        if ( !changed ) {
+            return false;
+        }
+
+        // TODO update all usages of this constantpool
+
+        classGen.setConstantPool(newPool);
+        return true;
     }
 
     /**
@@ -270,8 +322,34 @@ public final class ClassInfo extends MemberInfo {
     }
 
     /**
-     * Compile and return the BCEL JavaClass for this ClassInfo.
+     * Commit all modifications to this ClassInfo and return a BCEL JavaClass for this ClassInfo.
      *
+     * <p>This cleans up the constant pool and makes sure all known modifications to the ClassInfo,
+     * the constantpool, the fields or the methods are commited to BCEL.</p>
+     *
+     * @see #cleanupConstantPool()
+     * @see MethodInfo#compileCodeRep()
+     * @see #getJavaClass()
+     * @return a JavaClass representing this ClassInfo.
+     */
+    public JavaClass compileJavaClass() {
+
+        for (MethodInfo mi : methods.values()) {
+            mi.compileCodeRep();
+        }
+
+        cleanupConstantPool();
+
+        return classGen.getJavaClass();
+    }
+
+    /**
+     * Compile and return a BCEL JavaClass for this ClassInfo.
+     *
+     * <p>The JavaClass does not contain any modifications not yet commited to the internal BCEL
+     * ClassGen (e.g. it does not cleanup the constantpool, ..).</p>
+     *
+     * @see #compileJavaClass() 
      * @return a JavaClass for this ClassInfo.
      */
     public JavaClass getJavaClass() {

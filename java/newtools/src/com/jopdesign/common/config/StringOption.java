@@ -55,11 +55,11 @@ public class StringOption extends Option<String> {
 	}
 
     @Override
-    protected String getDefaultsText() {
+    protected String getDefaultsText(String defaultValue) {
         if ("".equals(defaultValue)) {
             return "[optional]";
         } else {
-            return super.getDefaultsText();
+            return super.getDefaultsText(defaultValue);
         }
     }
 }

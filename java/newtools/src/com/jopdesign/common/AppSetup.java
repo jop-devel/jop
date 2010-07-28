@@ -184,8 +184,12 @@ public class AppSetup {
         }
     }
 
-    public void addWritePathOption() {
+    /**
+     * Add default write options for output path and the ClassWriter.
+     */
+    public void addWriteOptions() {
         config.addOption(Config.WRITE_PATH);
+        ClassWriter.addOptions(config.getOptions());
     }
 
     public void setUsageInfo(String prgmName, String description) {
@@ -384,7 +388,7 @@ public class AppSetup {
 
         System.out.println("Available options:");
         for (Option<?> option : config.getOptions().availableOptions() ) {
-            System.out.println(option.toString(config.getDefaultIndent()));
+            System.out.println(option.toString(config.getDefaultIndent(), config.getOptions()));
         }
 
     }
@@ -399,10 +403,24 @@ public class AppSetup {
         }
     }
 
+    /**
+     * Write the AppInfo classes to the directory specified by the {@link Config#}WRITE_PATH} option.
+     *
+     * @see #writeClasses(String)
+     */
     public void writeClasses() {
-        // TODO add+use options to support writing to .jar file?
+        writeClasses("");
+    }
+
+    /**
+     * Write the AppInfo classes to a subdirectory of the directory specified by the
+     * {@link Config#}WRITE_PATH} option.
+     *
+     * @param subdir the subdirectory under the output path where the classes should be written to.
+     */
+    public void writeClasses(String subdir) {
         try {
-            new ClassWriter().writeToDir(config.getOption(Config.WRITE_PATH));
+            new ClassWriter(config.getOptions(), Config.WRITE_PATH).writeToDir(subdir);
         } catch (IOException e) {
             System.out.println("Failed to write classes: "+e.getMessage());
             System.exit(5);

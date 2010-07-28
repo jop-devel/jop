@@ -209,6 +209,22 @@ public class OptionGroup {
         }
     }
 
+    /**
+     * Get the default value from the config or from the option if not set.
+     *
+     * @param option the option to get the default value for.
+     * @param <T> the type of the value
+     * @return the default value, or null if no default is set in neither the config nor the option.
+     */
+    public <T> T getDefaultValue(Option<T> option) {
+        String val = config.getDefaultValue(getConfigKey(option));
+        if ( val == null ) {
+            return option.getDefaultValue();
+        } else {
+            return option.parse(val);
+        }
+    }
+
     public <T> T getOption(Option<T> option, T defaultVal) throws IllegalArgumentException {
         T val = tryGetOption(option);
         return val != null ? val : defaultVal;

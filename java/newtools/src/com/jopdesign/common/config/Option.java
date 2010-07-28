@@ -118,10 +118,10 @@ public abstract class Option<T> {
     }
 
 	public String toString() {
-		return toString(0);
+		return toString(0, null);
 	}
 
-	public String toString(int lAdjust) {
+	public String toString(int lAdjust, OptionGroup options) {
 		StringBuffer s = new StringBuffer("  ");
         if ( shortKey != SHORT_NONE ) {
             s.append('-');
@@ -136,18 +136,21 @@ public abstract class Option<T> {
 			s.append(' ');
 		}
 		s.append("  ");
-		s.append(descrString());
+		s.append(descrString(options));
 		return s.toString();
 	}
 
-	public String descrString() {
+	public String descrString(OptionGroup options) {
+
+        T defaultValue = options != null ? options.getDefaultValue(this) : this.defaultValue;
+
 		StringBuffer s = new StringBuffer(this.description);
 		s.append(" ");
-        s.append(getDefaultsText());
+        s.append(getDefaultsText(defaultValue));
 		return s.toString();
 	}
 
-    protected String getDefaultsText() {
+    protected String getDefaultsText(T defaultValue) {
         StringBuffer s = new StringBuffer();
         if(defaultValue != null) {
             s.append("[default: ").append(defaultValue).append("]");

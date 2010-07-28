@@ -125,7 +125,7 @@ public class JCopter implements Module<JCopterManager> {
 
         setup.addStandardOptions(true, true);
         setup.addPackageOptions(true);
-        setup.addWritePathOption();
+        setup.addWriteOptions();
 
         setup.registerModule("jcopter", jcopter);
 

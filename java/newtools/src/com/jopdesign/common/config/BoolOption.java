@@ -57,10 +57,10 @@ public class BoolOption extends Option<Boolean> {
     }
 
     @Override
-    protected String getDefaultsText() {
+    protected String getDefaultsText(Boolean defaultValue) {
         if ( optional && !defaultValue ) {
             return skipChecks ? "" : "[flag]";
         }
-        return super.getDefaultsText();
+        return super.getDefaultsText(defaultValue);
     }
 }

@@ -190,6 +190,10 @@ public class Config {
         }
     }
 
+    /**
+     * Get the default value used to indent the descriptions or values of options.
+     * @return the default indent for help texts.
+     */
     public int getDefaultIndent() {
         // TODO maybe check props for longest config-key here?
         return 18;
@@ -295,6 +299,10 @@ public class Config {
 
     public String getValue(String key, String defaultVal) {
         return props.getProperty(key, defaultVal);
+    }
+
+    public String getDefaultValue(String key) {
+        return defaultProps.getProperty(key);
     }
 
     /**
