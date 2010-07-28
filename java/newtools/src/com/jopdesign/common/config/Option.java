@@ -186,7 +186,7 @@ public abstract class Option<T> {
         }        
         s.append(key);
         
-		for(int i = s.length(); i <= lAdjust; i++) {
+		for(int i = key.length(); i < lAdjust; i++) {
 			s.append(' ');
 		}
 		s.append("  ");

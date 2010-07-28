@@ -25,7 +25,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -200,8 +199,11 @@ public class Config {
      * @return the default indent for help texts.
      */
     public int getDefaultIndent() {
-        // TODO maybe check props for longest config-key here?
-        return 18;
+        int i = 1;
+        for (Option o : options.availableOptions()) {
+            i = Math.max(i, o.getKey().length());
+        }
+        return Math.max(8, Math.min(i, 25));
     }
 
     /**
@@ -376,7 +378,7 @@ public class Config {
     }
 
     /**
-     * Dump configuration of all set properties for debugging purposes.
+     * Dump configuration of all user-set properties for debugging purposes.
      * To print a list of all options with their values,
      * use {@link #printConfiguration(int)}.
      *
@@ -386,7 +388,12 @@ public class Config {
      */
     public String dumpConfiguration(int indent) {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
-        printConfig(new PrintStream(os), indent, new HashSet<String>());
+        PrintStream p = new PrintStream(os);
+
+        for (Map.Entry<Object,Object> e : props.entrySet()) {
+            printOption(p, indent, e.getKey().toString(), e.getValue());
+        }
+
         return os.toString();
     }
 
@@ -398,22 +405,19 @@ public class Config {
         System.out.println();
         System.out.println("Other configuration values:");
 
-        printConfig(System.out, indent, keys);
+        for (Map.Entry<Object,Object> e : props.entrySet()) {
+            if ( keys.contains(e.getKey().toString()) ) {
+                continue;
+            }
+            printOption(System.out, indent, e.getKey().toString(), e.getValue());
+        }
 
         System.out.println();
     }
 
-
-    private void printConfig(PrintStream p, int indent, Collection<String> skip) {
-
-        for (Map.Entry<Object,Object> e : props.entrySet()) {
-            if ( skip.contains(e.getKey().toString()) ) {
-                continue;
-            }
-            p.println(String.format("%4s%-"+indent+"s ==> %s", "", e.getKey(),
-                      e.getValue() == null ? "<not set>": e.getValue()));
-        }
-
+    protected static void printOption(PrintStream p, int indent, String key, Object value) {
+        p.println(String.format("%4s%-"+(indent+1)+"s ==> %s", "", key,
+                  value == null ? "<not set>": value));
     }
 
 }

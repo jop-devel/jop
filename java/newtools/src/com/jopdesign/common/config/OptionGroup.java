@@ -449,8 +449,8 @@ public class OptionGroup {
         for(Option<?> o : availableOptions()) {
             String key = getConfigKey(o);
             Object val = tryGetOption(o);
-            p.println(String.format("%4s%-"+indent+"s ==> %s", "",key,val == null ? "<not set>": val));
             keys.add(key);
+            Config.printOption(p, indent, key, val);
         }
 
         return keys;
