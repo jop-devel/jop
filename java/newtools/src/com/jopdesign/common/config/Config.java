@@ -50,6 +50,8 @@ public class Config {
         };
 
     /* Options which are always present */
+    /* The default values can be changed using the Module.getDefaultProps() method. */
+
     public static final BoolOption SHOW_HELP =
             new BoolOption("help", "show help", 'h', true);
 
@@ -66,7 +68,7 @@ public class Config {
             new BoolOption("verbose", "be more verbose, and use a more detailed output format", 'v', false);
 
     public static final StringOption CLASSPATH =
-            new StringOption("cp", "classpath of target app", ".");
+            new StringOption("cp", "classpath of the classes to load", "java/target/dist/classes");
 
     public static final StringOption MAIN_METHOD_NAME =
             new StringOption("mm", "method name of the entry method", "main");
@@ -90,7 +92,10 @@ public class Config {
             new StringOption("roots", "comma-separated list of additional root classes", "");
 
     public static final StringOption WRITE_PATH =
-            new StringOption("out", "path to write generated classfiles", 'o', "out");
+            new StringOption("out", "base path for writing all generated files", 'o', "out");
+
+    public static final StringOption WRITE_CLASSPATH =
+            new StringOption("classout", "output path for generated class files", "<out>/classes", true);
 
     public static final Option<?>[] standardOptions = { SHOW_HELP, SHOW_VERSION, SHOW_CONFIG, DEBUG, VERBOSE };
 
@@ -352,6 +357,10 @@ public class Config {
      */
     public <T> T getOption(Option<T> option, T defaultVal) throws IllegalArgumentException {
         return options.getOption(option, defaultVal);
+    }
+
+    public <T> T getDefaultValue(Option<T> option) {
+        return options.getDefaultValue(option);
     }
 
     /**

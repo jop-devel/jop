@@ -185,11 +185,17 @@ public class AppSetup {
     }
 
     /**
-     * Add default write options for output path and the ClassWriter.
+     * Add option {@link Config#WRITE_PATH} for the default output path
+     * and options for the ClassWriter used in {@link #writeClasses()}.
+     *
+     * @param writeClasses if true, add options for writing classfiles.
      */
-    public void addWriteOptions() {
+    public void addWriteOptions(boolean writeClasses) {
         config.addOption(Config.WRITE_PATH);
-        ClassWriter.addOptions(config.getOptions());
+        if ( writeClasses ) {
+            config.addOption(Config.WRITE_CLASSPATH);
+            ClassWriter.addOptions(config.getOptions());
+        }
     }
 
     public void setUsageInfo(String prgmName, String description) {
@@ -404,23 +410,22 @@ public class AppSetup {
     }
 
     /**
-     * Write the AppInfo classes to the directory specified by the {@link Config#}WRITE_PATH} option.
-     *
-     * @see #writeClasses(String)
+     * Write the AppInfo classes to the directory specified by the {@link Config#WRITE_CLASSPATH} option.
      */
     public void writeClasses() {
-        writeClasses("");
+        writeClasses(Config.WRITE_CLASSPATH);
     }
 
     /**
-     * Write the AppInfo classes to a subdirectory of the directory specified by the
-     * {@link Config#}WRITE_PATH} option.
+     * Write the AppInfo classes to the directory specified by the outDir option.
      *
-     * @param subdir the subdirectory under the output path where the classes should be written to.
+     * @param outDir the option for the classfiles output directory.
      */
-    public void writeClasses(String subdir) {
+    public void writeClasses(Option<String> outDir) {
         try {
-            new ClassWriter(config.getOptions(), Config.WRITE_PATH).writeToDir(subdir);
+            ClassWriter writer = new ClassWriter();
+            writer.setup(config.getOptions());
+            writer.write(config.getOption(outDir));
         } catch (IOException e) {
             System.out.println("Failed to write classes: "+e.getMessage());
             System.exit(5);

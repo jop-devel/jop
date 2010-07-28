@@ -107,7 +107,7 @@ public class ExampleTool implements Module<ExampleManager> {
         setup.setVersionInfo("This is the version of this application");
 
         setup.addStandardOptions(true, true);
-        setup.addWriteOptions();
+        setup.addWriteOptions(true);
 
         setup.registerModule("example", example);
 

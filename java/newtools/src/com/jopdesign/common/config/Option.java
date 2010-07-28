@@ -20,6 +20,9 @@
  */
 package com.jopdesign.common.config;
 
+import java.util.HashSet;
+import java.util.Set;
+
 
 /**
  * Typed options for improved command line interface
@@ -37,6 +40,8 @@ public abstract class Option<T> {
     protected char    shortKey = SHORT_NONE;
     protected String  description;
     protected boolean optional;
+
+    protected boolean replaceOptions;
 
     /**
      * If an option with this flag is set, OptionChecker is not executed (for flags like 'help' or 'version').
@@ -62,11 +67,21 @@ public abstract class Option<T> {
 
     /**
      * Get the default value of this option, or null if not set.
+     * @param options the optiongroup of this option used to get values for keyword replacements.
      * @return the default value or null if none.
      */
-    public T getDefaultValue() {
+    public T getDefaultValue(OptionGroup options) {
+        // keyword replacement only used for string option, implemented there.
 		return defaultValue;
 	}
+
+    /**
+     * Get the default value without keyword replacements.
+     * @return the original default value, or null if not set.
+     */
+    public T getDefaultValue() {
+        return defaultValue;
+    }
 
 	public String getDescription() {
 		return description;
@@ -104,7 +119,46 @@ public abstract class Option<T> {
         return this;
     }
 
-	public abstract T parse(String s) throws IllegalArgumentException;
+    public boolean doReplaceOptions() {
+        return replaceOptions;
+    }
+
+    /**
+     * If true, references to other options of the form '<option>' are replaced before parsing.
+     *
+     * @param replaceOptions replace placeholder or leave untouched.
+     * @return a reference to this for chaining.
+     */
+    public Option<T> setReplaceOptions(boolean replaceOptions) {
+        this.replaceOptions = replaceOptions;
+        return this;
+    }
+    
+	public T parse(OptionGroup options, String s) throws IllegalArgumentException
+    {
+        if ( replaceOptions ) {
+            HashSet<String> stack = new HashSet<String>();
+            stack.add(options.getConfigKey(this));
+            return parse( replacePlaceholders(options.getConfig(), s, stack) );
+        } else {
+            return parse(s);
+        }
+    }
+
+    protected abstract T parse(String s) throws IllegalArgumentException;
+
+    /**
+     * Check if the given argument is a possible argument value or the next option.
+     *
+     * @param arg the argument to check.
+     * @return true if it should be consumed as value, or false if it should be parsed as the next option.
+     */
+    public boolean isValue(String arg) {
+        // if it starts with '-', assume it is an option, else a value
+        // this prevents options being consumed as values.
+        // specific option types may overwrite this check.
+        return !arg.startsWith("-");
+    }
 
     /**
      * Check if this option is enabled (i.e. has been set to a value not equal to null or 'false',
@@ -142,7 +196,7 @@ public abstract class Option<T> {
 
 	public String descrString(OptionGroup options) {
 
-        T defaultValue = options != null ? options.getDefaultValue(this) : this.defaultValue;
+        String defaultValue = options.getDefaultValueText(this);
 
 		StringBuffer s = new StringBuffer(this.description);
 		s.append(" ");
@@ -150,7 +204,7 @@ public abstract class Option<T> {
 		return s.toString();
 	}
 
-    protected String getDefaultsText(T defaultValue) {
+    protected String getDefaultsText(String defaultValue) {
         StringBuffer s = new StringBuffer();
         if(defaultValue != null) {
             s.append("[default: ").append(defaultValue).append("]");
@@ -158,5 +212,49 @@ public abstract class Option<T> {
             s.append(this.optional ? "[optional]" : "[mandatory]");
         }
         return s.toString();
+    }
+
+    protected String replacePlaceholders(Config config, String s, Set<String> stack) {
+        int p1 = s.indexOf('<');
+        if ( p1 == -1 ) {
+            return s;
+        }
+
+        StringBuffer buf = new StringBuffer();
+        int p2 = -1;
+        while (p1 > -1) {
+            buf.append(s.substring(p2+1, p1));
+
+            p2 = s.indexOf('>',p1);
+            if ( p2 == -1 ) {
+                // if no closing > found, stop and add rest including <
+                p2 = p1-1;
+                break;
+            }
+
+            // replace placeholder with value
+            String key = s.substring(p1+1, p2);
+
+            // try to use the option if available to get default value from option.
+            Option<?> opt = config.getOptions().getOptionSpec(key);
+            String val = config.getValue(key);
+            if ( val == null && opt != null ) {
+                Object o = opt.getDefaultValue();
+                val = o != null ? o.toString() : null;
+            }
+
+            if ( val == null || stack.contains(key) ) {
+                buf.append("");
+            } else {
+                stack.add(key);
+                buf.append(replacePlaceholders(config, val, stack));
+                stack.remove(key);
+            }
+
+            p1 = s.indexOf('<', p2);
+        }
+        buf.append(s.substring(p2+1));
+
+        return buf.toString();
     }
 }

@@ -22,7 +22,6 @@ package com.jopdesign.common.tools;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
-import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.logger.LogConfig;
 import org.apache.bcel.classfile.JavaClass;
@@ -42,7 +41,12 @@ public class ClassWriter {
 
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_WRITING+".ClassWriter");
 
-    private String outDir;
+    public ClassWriter() {
+    }
+
+    public ClassWriter(OptionGroup options) {
+        setup(options);
+    }
 
     /**
      * Add options this Writer supports to the given option-group (excluding an output-path option).
@@ -50,54 +54,26 @@ public class ClassWriter {
      * @param options the OptionGroup to set options to.
      */
     public static void addOptions(OptionGroup options) {
-        // TODO options to write to .jar directly, exclude native/.. classes from writing,.. ?
-    }
-
-    public ClassWriter() {
-        this.outDir = "out";
-    }
-
-    public ClassWriter(OptionGroup options, Option<String> outDir) {
-        this.outDir = "out";
-        setup(options, outDir);
+        // TODO options to write to .jar?, exclude native/.. classes from writing,.. ?
     }
 
     /**
-     * Use options from the given OptionGroup to setup this ClassWriter,
-     * and write to
+     * Use options from the given OptionGroup to setup this ClassWriter.
      *
-     * @param options the options to use to overwrite the config of this ClassWriter.
-     * @param outDir the option used to retrieve the output path, or null to leave the outdir as it is.
+     * @param options the options to use to set the options of this ClassWriter.
      */
-    public void setup(OptionGroup options, Option<String> outDir) {
-        if ( outDir != null ) {
-            this.outDir = options.getOption(outDir);
-        }
-
+    public void setup(OptionGroup options) {
     }
 
-    public String getOutDir() {
-        return outDir;
-    }
-
-    public void setOutDir(String outDir) {
-        this.outDir = outDir;
-    }
-
-    public void writeToDir() throws IOException {
-        writeToDir(null);
-    }
-
-    public void writeToDir(String subdir) throws IOException {
+    
+    public void write(String writeDir) throws IOException {
         AppInfo appInfo = AppInfo.getSingleton();
 
-        String dir = this.outDir + (subdir != null && !"".equals(subdir) ? File.separator + subdir : "");
-
         if (logger.isInfoEnabled()) {
-            logger.info("Start writing classes to '"+dir+"'..");
+            logger.info("Start writing classes to '"+writeDir+"' ..");
         }
 
-        File classDir = new File(dir);
+        File classDir = new File(writeDir);
         if ( !classDir.mkdir() ) {
             throw new IOException("Could not create output directory "+classDir);
         }
@@ -130,6 +106,5 @@ public class ClassWriter {
             logger.info(appInfo.getClassInfos().size() + " classes written.");
         }
     }
-
 
 }

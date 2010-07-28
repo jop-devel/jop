@@ -165,7 +165,10 @@ public class OptionGroup {
      */
 
     /**
-     * Check if option has been set.
+     * Check if option has been assigned a value in the config.
+     *
+     * @see Option#isEnabled(OptionGroup)
+     * @see #hasValue(Option)
      * @param option the option to check.
      * @return true if option has been explicitly set.
      */
@@ -177,12 +180,14 @@ public class OptionGroup {
      * Check if we have any value for this option (either set explicitly or some default value).
      * Does not check if the value can be parsed.
      *
+     * @see Option#isEnabled(OptionGroup)
+     * @see #isSet(Option)
      * @param option the option to check.
      * @return true if there is some value available for this option.
      */
     public boolean hasValue(Option<?> option) {
         String val = config.getValue(getConfigKey(option));
-        return val != null || option.getDefaultValue() != null;
+        return val != null || option.getDefaultValue(this) != null;
     }
 
     /**
@@ -199,18 +204,25 @@ public class OptionGroup {
      * @throws IllegalArgumentException if the config-value cannot be parsed or is not valid.
      */
     public <T> T tryGetOption(Option<T> option) throws IllegalArgumentException {
-        String val = config.getValue(getConfigKey(option));
-        if ( val == null ) {
-            return option.getDefaultValue();
+
+        String val;
+        // if this optiongroup has a prefix and the option is not defined here, try to
+        // look it up in the root group
+        if ( prefix != null && !optionSet.containsKey(option.getKey()) ) {
+            val = config.getValue(option.getKey());
         } else {
-            // TODO we could cache the result of this parse call here in a map
-            //      but then we need a way to clear the cache if some value changes.
-            return option.parse(val);
+            val = config.getValue(getConfigKey(option));
+        }
+
+        if ( val == null ) {
+            return option.getDefaultValue(this);
+        } else {
+            return option.parse(this, val);
         }
     }
 
     /**
-     * Get the default value from the config or from the option if not set.
+     * Get the parsed default value from the config or from the option if not set.
      *
      * @param option the option to get the default value for.
      * @param <T> the type of the value
@@ -219,9 +231,26 @@ public class OptionGroup {
     public <T> T getDefaultValue(Option<T> option) {
         String val = config.getDefaultValue(getConfigKey(option));
         if ( val == null ) {
-            return option.getDefaultValue();
+            return option.getDefaultValue(this);
         } else {
-            return option.parse(val);
+            return option.parse(this, val);
+        }
+    }
+
+    /**
+     * Get the default value from the config or from the option if not set, but do not parse it or
+     * replace any keywords.
+     *
+     * @param option the option to get the default value for.
+     * @return the default value as set in the config file or the option.
+     */
+    public String getDefaultValueText(Option option) {
+        String val = config.getDefaultValue(getConfigKey(option));
+        if ( val == null ) {
+            Object def = option.getDefaultValue();
+            return def != null ? def.toString() : null;
+        } else {
+            return val;
         }
     }
 
@@ -343,11 +372,9 @@ public class OptionGroup {
             if (spec != null) {
 				String val = null;
 				if (i+1 < args.length) {
-					try {
-						spec.parse(args[i+1]);
-						val = args[i+1];
-					} catch(IllegalArgumentException ignored) {
-					}
+                    if ( spec.isValue(args[i+1])) {
+                        val = args[i+1];
+                    }
 				}
 				if (spec instanceof BoolOption && val == null) {
 					val = "true";
