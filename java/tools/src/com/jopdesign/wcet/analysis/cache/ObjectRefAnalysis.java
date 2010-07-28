@@ -97,28 +97,28 @@ public class ObjectRefAnalysis {
 	public static class ObjectCacheCostModel {
 		public static final ObjectCacheCostModel COUNT_REF_TAGS = new ObjectCacheCostModel(0,1,0);;
 		public static final ObjectCacheCostModel COUNT_FIELD_TAGS = new ObjectCacheCostModel(1,0,0);
-		private long loadFieldCost;
-		private long loadCacheLineCost;
+		private long loadCacheBlockCost;
+		private long replaceLineCost;
 		private long fieldAccessCostBypass;
 
-		public ObjectCacheCostModel(long loadFieldCost, long loadCacheLineCost,long fieldAccessCostBypass)
+		public ObjectCacheCostModel(long loadCacheBlockCost, long replaceLineCost, long fieldAccessCostBypass)
 		{
-			this.loadFieldCost = loadFieldCost;
-			this.loadCacheLineCost = loadCacheLineCost;
+			this.loadCacheBlockCost = loadCacheBlockCost;
+			this.replaceLineCost = replaceLineCost;
 			this.fieldAccessCostBypass = fieldAccessCostBypass;
 		}
 		/**
 		 * @return the loadFieldCost
 		 */
-		public long getLoadFieldCost() {
-			return loadFieldCost;
+		public long getCacheBlockCost() {
+			return loadCacheBlockCost;
 		}
 
 		/**
 		 * @return the loadCacheLineCost
 		 */
-		public long getLoadCacheLineCost() {
-			return loadCacheLineCost;
+		public long getReplaceLineCost() {
+			return replaceLineCost;
 		}
 
 		/**
@@ -126,6 +126,12 @@ public class ObjectRefAnalysis {
 		 */
 		public long getFieldAccessCostBypass() {
 			return fieldAccessCostBypass;
+		}
+		/**
+		 * @return
+		 */
+		public long getLoadCacheBlockCost() {
+			return this.loadCacheBlockCost;
 		}
 	}
 
@@ -190,8 +196,11 @@ public class ObjectRefAnalysis {
 	/* The maximum index for cached fields */
 	private int maxCachedFieldIndex;
 
-	/* Whether line is filled on cache miss */
-	private boolean fillLine;
+	/* Size of a cache block */
+	private int blockSize;
+
+	/* ld(blockSize) */
+	private int blockIndexBits;
 
 	/* Whether to use a 'single field' cache, i.e., use fields as tags */
 	private boolean fieldAsTag;
@@ -213,14 +222,18 @@ public class ObjectRefAnalysis {
 	private Project project;
 	private Map<DecisionVariable, SymbolicAddress> decisionVariables;
 	private Set<DecisionVariable> refDecisions;
-
-
-	public ObjectRefAnalysis(Project p,  boolean fillLine, boolean fieldAsTag, int maxCachedIndex, int setSize) {
+	
+	public ObjectRefAnalysis(Project p,  boolean fieldAsTag, int blockSize, int maxCachedIndex, int setSize) {
 		this.project = p;
-		this.fillLine = fillLine;
 		this.fieldAsTag = fieldAsTag;
+		this.blockSize = blockSize;
 		this.maxSetSize = setSize;
 		this.maxCachedFieldIndex = maxCachedIndex;
+
+		this.blockIndexBits = 0; 
+		for(int i = 1; i < blockSize; i>>=1) {
+			blockIndexBits++;
+		}
 
 		saturatedTypes = new HashMap<CallGraphNode, Set<String>>();
 		maxCachedTagsAccessed = new HashMap<CallGraphNode, Long>();
@@ -313,18 +326,22 @@ public class ObjectRefAnalysis {
 								  ObjectCacheCostModel costModel)
 	{
 		CallString emptyCallString = new CallString();
+
 		HashMap<SymbolicAddress, Map<CFGNode, Integer>> refAccessSets =
 			new HashMap<SymbolicAddress,Map<CFGNode, Integer>>();
-		HashMap<SymbolicAddress, Map<CFGNode, Integer>> fieldAccessSets =
+		
+		HashMap<SymbolicAddress, Map<CFGNode, Integer>> blockAccessSets =
 			new HashMap<SymbolicAddress,Map<CFGNode, Integer>>();
+		
 		Map<CFGNode,Long> costMap = new HashMap<CFGNode, Long>();
 		Map<CFGNode,Long> bypassCostMap = new HashMap<CFGNode, Long>();
+
 		/* Traverse vertex set.
 		 * Add vertex to access set of referenced addresses
 		 * For references whose type cannot be fully resolved, at a
 		 * cost of 1.
 		 */
-		// FIXME: We should deal with subtyping		
+		// FIXME: We should deal with subtyping (or better use storage based alias-analysis)
 		for(CFGNode node : sg.vertexSet()) {
 			/* Compute cost for basic block */
 			BasicBlock bb = node.getBasicBlock();
@@ -340,19 +357,21 @@ public class ObjectRefAnalysis {
 				
 				if(usedRefs.containsKey(ih)) {					
 					String fieldName = ((FieldInstruction)ih.getInstruction()).getFieldName(bb.cpg());
+					int fieldIndex = getFieldIndex(project, node.getControlFlowGraph(), ih);
+					int blockIndex = getBlockIndex(fieldIndex);
 					
-					if(! isFieldCached(node.getControlFlowGraph(), ih, maxCachedFieldIndex)) {
+					if(fieldIndex > this.maxCachedFieldIndex) {
 						bypassCost += costModel.getFieldAccessCostBypass();
 						continue;
 					}
 										
 					refs = usedRefs.get(ih);						
 					if(refs.isSaturated()) {
-						alwaysMissCost += costModel.getLoadCacheLineCost() + costModel.getLoadFieldCost();
+						alwaysMissCost += costModel.getReplaceLineCost() + costModel.getLoadCacheBlockCost();
 					} else {
 						for(SymbolicAddress ref : refs.getSet()) {
 							addAccessSite(refAccessSets, ref, node);
-							addAccessSite(fieldAccessSets, ref.access(fieldName), node);
+							addAccessSite(blockAccessSets, ref.accessArray(blockIndex), node);
 						}
 					}
 				} else {
@@ -371,10 +390,10 @@ public class ObjectRefAnalysis {
 		
 		/* Add decision variables for all tags */		
 		for(Entry<SymbolicAddress, Map<CFGNode, Integer>> accessEntry : refAccessSets.entrySet()) {
-			addDecision(sg, maxCostFlow, accessEntry, costModel.getLoadCacheLineCost(),true);
+			addDecision(sg, maxCostFlow, accessEntry, costModel.getReplaceLineCost(),true);
 		}
-		for(Entry<SymbolicAddress, Map<CFGNode, Integer>> accessEntry : fieldAccessSets.entrySet()) {
-			addDecision(sg, maxCostFlow, accessEntry, costModel.getLoadFieldCost(), false);
+		for(Entry<SymbolicAddress, Map<CFGNode, Integer>> accessEntry : blockAccessSets.entrySet()) {
+			addDecision(sg, maxCostFlow, accessEntry, costModel.getLoadCacheBlockCost(), false);
 		}
 
 		/* solve */
@@ -426,7 +445,7 @@ public class ObjectRefAnalysis {
 			bypassCost += bbBypassCost * nodeFreq;
 			missCost   += (costMap.get(node) - bbBypassCost) * nodeFreq;
 			/* HACK */
-			long amCost = costModel.getLoadCacheLineCost() + costModel.getLoadFieldCost();
+			long amCost = costModel.getReplaceLineCost() + costModel.getLoadCacheBlockCost();
 			missCount  +=  ((costMap.get(node) - bbBypassCost) * nodeFreq) / amCost;
 			for(InstructionHandle ih : bb.getInstructions()) {
 				String handleType = getHandleType(project, node, ih); 				
@@ -446,11 +465,10 @@ public class ObjectRefAnalysis {
 			DecisionVariable dvar = entry.getKey();
 			if(! entry.getValue()) continue;
 			if(refDecisions.contains(dvar)) {
-				missCost += costModel.getLoadCacheLineCost();
-				if(this.fillLine) missCount += 1;
+				missCost += costModel.getReplaceLineCost();
 			} else {
-				missCost += costModel.getLoadFieldCost();
-				if(! this.fillLine) missCount += 1;
+				missCost += costModel.getLoadCacheBlockCost();
+				missCount += 1;
 			}
 		}
 		if(missCost != cost - bypassCost) {
@@ -552,6 +570,10 @@ public class ObjectRefAnalysis {
 		} else {
 			return 0;			
 		}
+	}
+	
+	private int getBlockIndex(int fieldIndex) {
+		return fieldIndex >> blockIndexBits;
 	}
 
 	/**

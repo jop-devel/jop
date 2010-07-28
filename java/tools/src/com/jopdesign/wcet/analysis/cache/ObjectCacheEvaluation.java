@@ -60,7 +60,7 @@ public class ObjectCacheEvaluation {
 		return resultMap;		
 	}
 
-	public enum OCacheMode { WORD_FILL, LINE_FILL, SINGLE_FIELD };
+	public enum OCacheMode { WORD_FILL, BLOCK_FILL, SINGLE_FIELD };
 	public static class OCacheAnalysisResult {
 		public OCacheMode mode;
 		public int lineWords;

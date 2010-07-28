@@ -41,12 +41,12 @@ public class JOPConfig {
 	public File asmFile;
 
 	public int objectCacheAssociativity;	
-	public boolean objectCacheFillLine;
+	public int objectCacheBlockSize;
 	public boolean objectCacheFieldTag;
 	public int objectCacheLineSize;
 	public long objectCacheHitCycles;
 	public long objectCacheLoadFieldCycles;
-	public long objectCacheLoadLineCycles;
+	public long objectCacheLoadBlockCycles;
 
 	public JOPConfig(Project p) {
 		configData = p.getConfig();
@@ -59,18 +59,20 @@ public class JOPConfig {
 		this.timeslot = configData.getOption(CMP_TIMESLOT);
 		
 		this.objectCacheAssociativity = configData.getOption(OBJECT_CACHE_ASSOCIATIVITY).intValue();
-		this.objectCacheFillLine = configData.getOption(OBJECT_CACHE_LINE_FILL);
+		this.objectCacheBlockSize = configData.getOption(OBJECT_CACHE_BLOCK_SIZE).intValue();
 		this.objectCacheFieldTag = false;
 		this.objectCacheLineSize = configData.getOption(OBJECT_CACHE_WORDS_PER_LINE).intValue();
 		
 		this.objectCacheHitCycles = configData.getOption(OBJECT_CACHE_HIT_CYCLES).longValue();
 		this.objectCacheLoadFieldCycles = configData.getOption(OBJECT_CACHE_LOAD_FIELD_CYCLES).longValue();
-		this.objectCacheLoadLineCycles = configData.getOption(OBJECT_CACHE_LOAD_LINE_CYCLES).longValue();
+		this.objectCacheLoadBlockCycles = configData.getOption(OBJECT_CACHE_LOAD_BLOCK_CYCLES).longValue();
 	}
-	// FIXME: default values are fetched from WCETInstruction until transition to
-	// new timing system is complete
+	
 	public static final StringOption ASM_FILE =
 		new StringOption("jop-asm-file","JOP assembler file",MicrocodeAnalysis.DEFAULT_ASM_FILE.getAbsolutePath());
+
+	// FIXME: default values are fetched from WCETInstruction until transition to
+	// new timing system is complete
 	public static final IntegerOption READ_WAIT_STATES =
 		new IntegerOption("jop-rws","JOP read wait states",WCETInstruction.r);
 	public static final IntegerOption WRITE_WAIT_STATES =
@@ -88,15 +90,14 @@ public class JOPConfig {
 		new IntegerOption("jop-ocache-associativity", "JOP object associativity", 16);
 	public static final IntegerOption OBJECT_CACHE_WORDS_PER_LINE =
 		new IntegerOption("jop-ocache-words-per-line", "JOP object cache: words per line", 16);
-	public static final BooleanOption OBJECT_CACHE_LINE_FILL =
-		new BooleanOption("jop-ocache-fill", "JOP object cache: whether to fill line on miss", false);
-	/* removed burst/delay/access model for now, as it does not cover CMP or more complicated SDRAM models */
+	public static final IntegerOption OBJECT_CACHE_BLOCK_SIZE =
+		new IntegerOption("jop-ocache-fill", "JOP object cache: size of a cache block in words (burst)", 1);
 	private static final IntegerOption OBJECT_CACHE_HIT_CYCLES =
 		new IntegerOption("jop-ocache-hit-cycles", "JOP object access cycles on cache hit", 1);		
 	private static final IntegerOption OBJECT_CACHE_LOAD_FIELD_CYCLES =
-		new IntegerOption("jop-ocache-load-field-cycles", "JOP object cache load cycles for field (miss/bypass)", 0);
-	private static final IntegerOption OBJECT_CACHE_LOAD_LINE_CYCLES =
-		new IntegerOption("jop-ocache-load-line-cycles", "JOP object cache load cycles for cache line (miss)", 1);
+		new IntegerOption("jop-ocache-load-field-cycles", "JOP object cache load cycles for field (bypass)", 2);
+	private static final IntegerOption OBJECT_CACHE_LOAD_BLOCK_CYCLES =
+		new IntegerOption("jop-ocache-load-line-cycles", "JOP object cache load cycles for cache block (miss)", 2);
 
 	/**
 	 * Supported method cache implementations:
@@ -132,8 +133,8 @@ public class JOPConfig {
 		CACHE_IMPL, CACHE_BLOCKS, CACHE_SIZE_WORDS,
 
 		OBJECT_CACHE, OBJECT_CACHE_ASSOCIATIVITY, OBJECT_CACHE_WORDS_PER_LINE,
-		OBJECT_CACHE_LINE_FILL,OBJECT_CACHE_HIT_CYCLES,
-		OBJECT_CACHE_LOAD_FIELD_CYCLES,OBJECT_CACHE_LOAD_LINE_CYCLES
+		OBJECT_CACHE_BLOCK_SIZE, OBJECT_CACHE_HIT_CYCLES,
+		OBJECT_CACHE_LOAD_FIELD_CYCLES,OBJECT_CACHE_LOAD_BLOCK_CYCLES
 	};
 
 
@@ -146,15 +147,7 @@ public class JOPConfig {
 	public void setObjectCacheAssociativity(int assoc) {
 		this.objectCacheAssociativity = assoc;
 	}
-	/**
-	 * @return whether the object cache fills line on miss
-	 */
-	public boolean objectCacheFillLine() {
-		return objectCacheFillLine;
-	}
-	public void setObjectCacheFillLine(boolean fill) {
-		this.objectCacheFillLine = fill;
-	}
+
 	public boolean objectCacheSingleField() {
 		return this.objectCacheFieldTag;
 	}
@@ -168,6 +161,9 @@ public class JOPConfig {
 	public int getObjectLineSize() {
 		return objectCacheLineSize;
 	}
+	public int objectCacheBlockSize() {
+		return objectCacheBlockSize;
+	}
 	
 	public int getObjectCacheMaxCachedFieldIndex() {
 		if(this.objectCacheSingleField()) return Integer.MAX_VALUE;
@@ -177,18 +173,19 @@ public class JOPConfig {
 	public void setObjectCacheLineSize(int lineSize) {
 		this.objectCacheLineSize = lineSize;
 	}
-
-	public long getObjectCacheAccessTime(boolean line) {
-		if(line) {
-			return this.objectCacheLoadLineCycles;
-		} else {
-			return this.objectCacheLoadFieldCycles;
-		}
-	}
-	public long getObjectCacheBypassTime() {
-		return getObjectCacheAccessTime(false);
-	}
 	
+	public void setObjectCacheBlockSize(int blockSize) {
+		this.objectCacheBlockSize = blockSize;
+	}
+
+	public long getObjectCacheLoadBlockCycles() {
+		return this.objectCacheLoadBlockCycles;
+	}
+
+	public long getObjectCacheBypassTime() {
+		return this.objectCacheLoadFieldCycles;
+	}
+
 /* Removed for now, as is not flexible enough */
 //	public long getObjectCacheAccessTime(int words) {
 //		int  burstLength = this.objectCacheMaxBurst;
