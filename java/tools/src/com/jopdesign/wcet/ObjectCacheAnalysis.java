@@ -58,7 +58,7 @@ public class ObjectCacheAnalysis {
 		}
 		
 		public String toString() {
-			return String.format("S(D)RAM [access=%d, delay=, cycles-per-word=%d]",
+			return String.format("S(D)RAM [access=%d, delay=%d, cycles-per-word=%d]",
 					accessCycles,delay,cyclesPerWord);
 		}
 	}
@@ -160,12 +160,12 @@ public class ObjectCacheAnalysis {
 				new OCTimingCmp(8, 4, 0, 10, 2) // SDRAM, cmp, 18 cycles quadword load cost, s=18
 		};
 
-		OCacheMode[] modes = { OCacheMode.WORD_FILL, OCacheMode.BLOCK_FILL, OCacheMode.SINGLE_FIELD };
+		OCacheMode[] modes = { OCacheMode.BLOCK_FILL, OCacheMode.SINGLE_FIELD };
 		List<OCacheAnalysisResult> samples = new ArrayList<OCacheAnalysisResult>();
-		int[] cacheWays = { 0,1,2,4,8,16,32,64,512 }; // need to be in ascending order
-		int[] lineSizesObjCache  = { 4,8,16,32};
+		int[] cacheWays = { 0, 2, 4, 8, 16, 32, 64, 512 }; // need to be in ascending order
+		int[] lineSizesObjCache   = { 4, 8, 16, 32};
 		int[] lineSizesFieldCache = { 1 };
-		int[] blockSizesObjCache = { 1,2,4,8,16 };
+		int[] blockSizesObjCache  = { 1, 2, 4, 8, 16 };
 		int[] lineSizes;
 		for(int configId=0; configId < configs.length; configId++) {
 			ObjectCacheTiming ocConfig = configs[configId];
@@ -179,8 +179,7 @@ public class ObjectCacheAnalysis {
 				//			long cacheMisses = Long.MAX_VALUE;
 				String modeString;
 				lineSizes = lineSizesObjCache;
-				if(mode == OCacheMode.WORD_FILL) modeString = "fill-word";
-				else if(mode == OCacheMode.BLOCK_FILL) modeString = "fill-block";
+				if(mode == OCacheMode.BLOCK_FILL) modeString = "fill-block";
 				else {
 					modeString = "field-as-tag";
 					lineSizes = lineSizesFieldCache;
@@ -190,7 +189,7 @@ public class ObjectCacheAnalysis {
 					for(int blockSize : blockSizesObjCache) {
 						if(blockSize > lineSize) continue;
 						if(mode == OCacheMode.BLOCK_FILL) {
-							modeString += "-" + blockSize;
+							
 						} else {
 							if(blockSize > 1) continue;
 						}
@@ -248,20 +247,24 @@ public class ObjectCacheAnalysis {
 								first = false;
 							}					
 
-							String report = String.format(" + Cycles Per Access [N=%3d,l=%2d]: %.2f (%d total cost, %.2f %% cost of no cache, %d bypass cost)", //, %.2f %% 'hitrate')", 
-									ways, lineSize, bestCyclesPerAccessForConfig, cost, bestRatio*100, ocCost.getBypassCost());
+							String report = String.format(" + Cycles Per Access [N=%3d,l=%2d,b=%2d]: %.2f (%d total cost, %.2f %% cost of no cache, %d bypass cost)", //, %.2f %% 'hitrate')", 
+									ways, lineSize, blockSize, bestCyclesPerAccessForConfig, cost, bestRatio*100, ocCost.getBypassCost());
 							if(bestCostPerConfig > cost) {
 								report += String.format(" # (analysis cost increased by %.2f %% for this associativity)",ratio*100);
 							}
 							oStream.println(report);
-							OCacheAnalysisResult sample =
-								new ObjectCacheEvaluation.OCacheAnalysisResult(mode, ways, lineSize, configId, bestHitRate, bestCyclesPerAccessForConfig, ocCost);
-							samples.add(sample);
+							if(mode != OCacheMode.SINGLE_FIELD) {
+								OCacheAnalysisResult sample =
+									new ObjectCacheEvaluation.OCacheAnalysisResult(ways, lineSize, blockSize, configId, 
+																				   bestHitRate, bestCyclesPerAccessForConfig, ocCost);
+								samples.add(sample);
+							}
 						}
 					}
 				}
 			}
 		}
+		OCacheAnalysisResult.dumpBarPlot(samples, oStream);		
 		OCacheAnalysisResult.dumpPlot(samples, oStream);
 		OCacheAnalysisResult.dumpLatex(samples, oStream);
 	} 
