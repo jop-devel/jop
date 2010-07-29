@@ -231,7 +231,7 @@ public class ObjectRefAnalysis {
 		this.maxCachedFieldIndex = maxCachedIndex;
 
 		this.blockIndexBits = 0; 
-		for(int i = 1; i < blockSize; i>>=1) {
+		for(int i = 1; i < blockSize; i<<=1) {
 			blockIndexBits++;
 		}
 
