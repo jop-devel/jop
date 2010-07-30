@@ -43,7 +43,7 @@ public class OptionTest {
         config.setProperty("test1", "value1");
         config.setProperty("test2", "value2");
 
-        StringOption option = new StringOption("option", "test option", "<test1>/<test2>");
+        StringOption option = new StringOption("option", "test option", "${test1}/${test2}");
         option.setReplaceOptions(true);
         config.addOption(option);
 
@@ -53,33 +53,33 @@ public class OptionTest {
 
         test(config.getOption(option),"value1/value2");
 
-        config.setProperty("option", ">test1>");
-        test(config.getOption(option),">test1>");
-        config.setProperty("option", "<test1>/test<");
-        test(config.getOption(option),"value1/test<");
+        config.setProperty("option", "}test1}");
+        test(config.getOption(option),"}test1}");
+        config.setProperty("option", "${test1}/test${");
+        test(config.getOption(option),"value1/test${");
 
-        config.setProperty("option", "<test1><test2>/<test<");
-        test(config.getOption(option),"value1value2/<test<");
-        config.setProperty("option", "<test1><test2>/<test>");
+        config.setProperty("option", "${test1}${test2}/${test${");
+        test(config.getOption(option),"value1value2/${test${");
+        config.setProperty("option", "${test1}${test2}/${test}");
         test(config.getOption(option),"value1value2/");
 
-        config.setProperty("option", "<test1>/<int>/<int>");
+        config.setProperty("option", "${test1}/${int}/${int}");
         test(config.getOption(option),"value1/1/1");
 
         config.setProperty("test3", "4");
-        config.setProperty("int", "<test3>");
+        config.setProperty("int", "${test3}");
         test(config.getOption(intopt),"4");
         test(config.getOption(option),"value1/4/4");
 
-        config.setProperty("test3", "<test3>");
-        config.setProperty("test4", "test/<test4>");
-        config.setProperty("option", "<test1>/<test3>/<test4>");
+        config.setProperty("test3", "${test3}");
+        config.setProperty("test4", "test/${test4}");
+        config.setProperty("option", "${test1}/${test3}/${test4}");
         test(config.getOption(option),"value1//test/");
 
-        config.setProperty("test3", "<option>");
-        config.setProperty("option", "<test1>/<test3>");
+        config.setProperty("test3", "${option}");
+        config.setProperty("option", "${test1}/${test3}");
         test(config.getOption(option),"value1/");
-        config.setProperty("option", "<option>/test");
+        config.setProperty("option", "${option}/test");
         test(config.getOption(option),"/test");
 
         test(config.getDefaultValue(intopt),"1");

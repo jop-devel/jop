@@ -94,7 +94,6 @@ public class JCopter implements Module<JCopterManager> {
 
         if ( config.getOption(ALLOW_INCOMPLETE_APP) ) {
             appInfo.setIgnoreMissingClasses(true);
-            appInfo.setLoadOnDemand(true);
         }
 
     }

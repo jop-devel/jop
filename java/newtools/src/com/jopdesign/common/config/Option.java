@@ -56,6 +56,7 @@ public abstract class Option<T> {
         // Class<T> cast is always safe, shortcoming of Java Generics
         this(key, (Class<T>) defaultVal.getClass(), descr, true);
         this.defaultValue = defaultVal;
+        replaceOptions = true;
     }
 
     protected Option(String key, Class<T> optClass, String descr, boolean optional) {
@@ -63,6 +64,7 @@ public abstract class Option<T> {
         this.valClass = optClass;
         this.description = descr;
         this.optional = optional;
+        replaceOptions = true;
     }
 
     /**
@@ -215,7 +217,7 @@ public abstract class Option<T> {
     }
 
     protected String replacePlaceholders(Config config, String s, Set<String> stack) {
-        int p1 = s.indexOf('<');
+        int p1 = s.indexOf("${");
         if ( p1 == -1 ) {
             return s;
         }
@@ -225,15 +227,15 @@ public abstract class Option<T> {
         while (p1 > -1) {
             buf.append(s.substring(p2+1, p1));
 
-            p2 = s.indexOf('>',p1);
+            p2 = s.indexOf('}',p1);
             if ( p2 == -1 ) {
-                // if no closing > found, stop and add rest including <
+                // if no closing } found, stop and add rest including '$['
                 p2 = p1-1;
                 break;
             }
 
             // replace placeholder with value
-            String key = s.substring(p1+1, p2);
+            String key = s.substring(p1+2, p2);
 
             // try to use the option if available to get default value from option.
             Option<?> opt = config.getOptions().getOptionSpec(key);
@@ -251,7 +253,7 @@ public abstract class Option<T> {
                 stack.remove(key);
             }
 
-            p1 = s.indexOf('<', p2);
+            p1 = s.indexOf("${", p2);
         }
         buf.append(s.substring(p2+1));
 

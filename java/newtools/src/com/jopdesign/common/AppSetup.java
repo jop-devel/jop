@@ -350,12 +350,13 @@ public class AppSetup {
         // load other root classes
         for (int i = 1; i < args.length; i++) {
             ClassInfo clsInfo = appInfo.loadClass(args[i].replaceAll("/","."));
-
             appInfo.addRoot(clsInfo);
         }
 
+        // load and initialize all app classes
         if (loadTransitiveHull) {
             new AppLoader().loadAll();
+            appInfo.reloadClassHierarchy();
         }
 
     }
@@ -375,7 +376,7 @@ public class AppSetup {
         if ( optionSyntax != null ) {
             optionDesc = " " + optionSyntax;
         } else {
-            optionDesc = " <options>";
+            optionDesc = " [@<propertyfile>] <options>";
             if ( config.getOptions().availableCommands().size() > 0 ) {
                 optionDesc += " <cmd> <cmd-options>";
             }
@@ -397,6 +398,7 @@ public class AppSetup {
             System.out.println(option.toString(config.getDefaultIndent(), config.getOptions()));
         }
 
+        System.out.println();
     }
 
     public void printVersion() {

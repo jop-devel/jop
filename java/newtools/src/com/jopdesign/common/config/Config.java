@@ -94,7 +94,7 @@ public class Config {
             new StringOption("out", "base path for writing all generated files", 'o', "out");
 
     public static final StringOption WRITE_CLASSPATH =
-            new StringOption("classout", "output path for generated class files", "<out>/classes", true);
+            new StringOption("classout", "output path for generated class files", "${out}/classes");
 
     public static final Option<?>[] standardOptions = { SHOW_HELP, SHOW_VERSION, SHOW_CONFIG, DEBUG, VERBOSE };
 

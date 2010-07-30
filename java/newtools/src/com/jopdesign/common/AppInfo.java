@@ -63,8 +63,6 @@ public final class AppInfo {
 
     // if true, an invalid or missing (and not excluded) class does not trigger an error
     private boolean ignoreMissingClasses;
-    // if true, getClassInfo() tries to load and initialize a missing class
-    private boolean loadOnDemand;
     // if true, native classes are loaded too
     private boolean loadNatives;
     // if true, library classes are loaded too
@@ -100,6 +98,17 @@ public final class AppInfo {
         public int getId() {
             return id;
         }
+
+        public int hashCode() {
+            return id;
+        }
+
+        public boolean equals(Object o) {
+            if ( o instanceof CustomKey ) {
+                return ((CustomKey)o).getId() == id;
+            }
+            return false;
+        }
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -121,7 +130,6 @@ public final class AppInfo {
         this.classPath = new ClassPath(".");
 
         ignoreMissingClasses = false;
-        loadOnDemand = false;
         loadNatives = false;
         loadLibraries = true;
         exitOnMissingClass = false;
@@ -175,6 +183,7 @@ public final class AppInfo {
         for ( ClassInfo cls : classes.values() ) {
             if ( fromClassInfos ) {
                 cls.removeCustomValue(key);
+                cls.removeConstantPoolCustomValue(key);
             }
             if ( fromClassMembers ) {
                 for ( FieldInfo field : cls.getFields() ) {
@@ -231,6 +240,12 @@ public final class AppInfo {
 
         classes.put(className, cls);
 
+        // since any existing class could extend this new class, we call update for all classInfos
+        for (ClassInfo c : classes.values()) {
+            c.updateClassHierarchy();
+        }
+        cls.updateCompleteFlag(true);
+
         for (AttributeManager mgr : managers.values()) {
             mgr.onCreateClass(cls);
         }
@@ -265,6 +280,8 @@ public final class AppInfo {
      * If a class is not found or if loading failed and the class is not excluded, or if it is
      * required, an exception is thrown.
      * If a class is not required and ignoreMissing is true, no exception will be thrown.
+     * To update the class hierarchy relations of the ClassInfos, you need to call
+     * {@link #reloadClassHierarchy()} after all classes have been loaded.
      *
      * @param className the fully qualified name of the class.
      * @param required if true, throw an exception even if the class is excluded or ignoreMissing is true.
@@ -292,7 +309,7 @@ public final class AppInfo {
             return null;
         }
 
-        return performLoadClass(className, required, false);
+        return performLoadClass(className, required);
     }
 
     public void removeClass(ClassInfo classInfo) {
@@ -301,13 +318,13 @@ public final class AppInfo {
         for ( AttributeManager mgr : managers.values() ) {
             mgr.onRemoveClass(classInfo);
         }
+
+        classInfo.removeFromClassHierarchy();
     }
 
     /**
      * Get an already loaded class.
      *
-     * If doLoadOnDemand is set, this tries to load a missing class.
-     *  
      * This method only returns null if classes are excluded from loading or the class is missing
      * and doIgnoreMissingClasses is set. Else a {@link MissingClassError} is thrown.
      *
@@ -327,8 +344,6 @@ public final class AppInfo {
 
     /**
      * Get an already loaded class.
-     *
-     * If doLoadOnDemand is set, this tries to load a missing class.
      *
      * This method only returns null if classes are excluded from loading or the class is missing
      * and doIgnoreMissingClasses is set. Else an exception is thrown.
@@ -353,16 +368,12 @@ public final class AppInfo {
             return null;
         }
 
-        if ( loadOnDemand ) {
-            cls = performLoadClass(className, required, true);
-        } else {
-            // class is null, not excluded, and not loaded on demand, i.e. missing
-            if ( required  ) {
-                throw new ClassInfoNotFoundException("Required class '"+className+"' not loaded.");
-            }
-            if ( !ignoreMissingClasses ) {
-                throw new ClassInfoNotFoundException("Requested class '"+className+"' is missing and not excluded.");
-            }
+        // class is null, not excluded, and not loaded on demand, i.e. missing
+        if ( required  ) {
+            throw new ClassInfoNotFoundException("Required class '"+className+"' not loaded.");
+        }
+        if ( !ignoreMissingClasses ) {
+            throw new ClassInfoNotFoundException("Requested class '"+className+"' is missing and not excluded.");
         }
 
         return cls;
@@ -410,7 +421,7 @@ public final class AppInfo {
                 continue;
             }
 
-            performLoadClass(clsName, false, false);
+            performLoadClass(clsName, false);
         }
 
         // reload mainMethod
@@ -425,6 +436,23 @@ public final class AppInfo {
             if (mainMethod == null) {
                 throw new ClassInfoNotFoundException("Could not find main method in main class");
             }
+        }
+
+        reloadClassHierarchy();
+    }
+
+    /**
+     * Reload all super- and subclass references of all classInfos.
+     */
+    public void reloadClassHierarchy() {
+        for (ClassInfo cls : classes.values()) {
+            cls.resetHierarchyInfos();
+        }
+        for (ClassInfo cls : classes.values()) {
+            cls.updateClassHierarchy();
+        }
+        for (ClassInfo cls : classes.values()) {
+            cls.updateCompleteFlag(false);
         }
     }
 
@@ -611,14 +639,6 @@ public final class AppInfo {
         this.loadNatives = loadNatives;
     }
 
-    public boolean doLoadOnDemand() {
-        return loadOnDemand;
-    }
-
-    public void setLoadOnDemand(boolean loadOnDemand) {
-        this.loadOnDemand = loadOnDemand;
-    }
-
     /**
      * @see #setExitOnMissingClass(boolean)
      * @return true, if {@link #loadClass(String)} or {@link #getClassInfo(String)} exists instead of throwing an Error.
@@ -697,7 +717,7 @@ public final class AppInfo {
         return registeredKeys.size();
     }
     
-    private ClassInfo performLoadClass(String className, boolean required, boolean onDemand) throws ClassInfoNotFoundException {
+    private ClassInfo performLoadClass(String className, boolean required) throws ClassInfoNotFoundException {
 
         // try to load the class
         ClassInfo cls = null;
@@ -705,10 +725,6 @@ public final class AppInfo {
             cls = tryLoadClass(className);
 
             classes.put(className, cls);
-
-            if ( onDemand ) {
-                updateTypeAnalysis(cls);
-            }
 
             for (AttributeManager mgr : managers.values()) {
                 mgr.onLoadClass(cls);
@@ -724,7 +740,7 @@ public final class AppInfo {
         return cls;
     }
 
-    private void updateTypeAnalysis(ClassInfo classInfo) {
+    private void updateClassHierarchy(ClassInfo classInfo) {
         // TODO implement.. if class has been loaded on demand, update type analysis infos for new classInfo
 
     }

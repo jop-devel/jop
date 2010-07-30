@@ -52,6 +52,8 @@ public final class ClassInfo extends MemberInfo {
     private final Map<String, MethodInfo> methods;
     private final Map<String, FieldInfo> fields;
 
+    private final Map<AppInfo.CustomKey,Map<Integer, Object>> cpCustomValues;
+
     public ClassInfo(ClassGen classGen) {
         super(classGen);
         this.classGen = classGen;
@@ -64,6 +66,8 @@ public final class ClassInfo extends MemberInfo {
 
         methods = new HashMap<String, MethodInfo>();
         fields = new HashMap<String, FieldInfo>();
+
+        cpCustomValues = new HashMap<AppInfo.CustomKey, Map<Integer, Object>>();
     }
     
     @Override
@@ -133,6 +137,46 @@ public final class ClassInfo extends MemberInfo {
 
     public int getConstantPoolSize() {
         return cpg.getSize();
+    }
+
+    public Object getConstantPoolCustomValue(AppInfo.CustomKey key, int index) {
+        Map values = cpCustomValues.get(key);
+        if ( values == null ) {
+            return null;
+        }
+        return values.get(index);
+    }
+
+    public Object setConstantPoolCustomValue(AppInfo.CustomKey key, int index, Object value) {
+        if ( value == null ) {
+            return removeConstantPoolCustomValue(key, index);
+        }
+        Map<Integer,Object> values = cpCustomValues.get(key);
+        if ( values == null ) {
+            values = new HashMap<Integer, Object>();
+            cpCustomValues.put(key, values);
+        }
+        return values.put(index, value);
+    }
+
+    public Object removeConstantPoolCustomValue(AppInfo.CustomKey key, int index) {
+        Map<Integer,Object> values = cpCustomValues.get(key);
+        if ( values == null ) {
+            return null;
+        }
+        Object value = values.remove(index);
+        if ( values.size() == 0 ) {
+            cpCustomValues.remove(key);
+        }
+        return value;
+    }
+
+    /**
+     * Clear all constant pool custom values for the given key.
+     * @param key the key of the values to to clear.
+     */
+    public void removeConstantPoolCustomValue(AppInfo.CustomKey key) {
+        cpCustomValues.remove(key);
     }
 
     /**
@@ -365,5 +409,22 @@ public final class ClassInfo extends MemberInfo {
             return false;
         }
         return ((ClassInfo)o).getClassName().equals(getClassName());
+    }
+
+
+    protected void resetHierarchyInfos() {
+
+    }
+
+    protected void updateClassHierarchy() {
+
+    }
+
+    protected void updateCompleteFlag(boolean updateSubclasses) {
+        
+    }
+
+    protected void removeFromClassHierarchy() {
+
     }
 }

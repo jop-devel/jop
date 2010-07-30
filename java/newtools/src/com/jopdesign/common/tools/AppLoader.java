@@ -27,7 +27,6 @@ import com.jopdesign.common.type.ClassRef;
 import org.apache.log4j.Logger;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -67,6 +66,12 @@ public class AppLoader {
         this.followNatives = followNatives;
     }
 
+    public void reset() {
+        queue.clear();
+        visited.clear();
+        newClasses.clear();
+    }
+
     /**
      * Load the complete transitive hull of all classes currently in AppInfo.
      */
@@ -95,13 +100,15 @@ public class AppLoader {
         processQueue();
     }
 
+    public void loadSuperClasses(ClassInfo classInfo) {
+
+    }
+
     public Collection<ClassInfo> getLoadedClasses() {
-        return Collections.unmodifiableCollection(newClasses);
+        return newClasses;
     }
 
     private void processQueue() {
-
-        newClasses.clear();
 
         if (logger.isDebugEnabled()) {
             logger.debug("Starting transitive hull loader");
@@ -170,6 +177,6 @@ public class AppLoader {
         }
         queue.add(classInfo);
         visited.add(classInfo.getClassName());
-    }
+    }    
 
 }
