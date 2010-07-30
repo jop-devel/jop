@@ -12,14 +12,6 @@ Object Cache Configuration: S(D)RAM [access=0, delay=0, cycles-per-word=2]
  + Cycles Per Access [N= 32,l= 4,b= 1]: 1.22 (278 total cost, 60.96 % cost of no cache, 258 bypass cost)
  + Cycles Per Access [N= 64,l= 4,b= 1]: 1.22 (278 total cost, 60.96 % cost of no cache, 258 bypass cost)
  + Cycles Per Access [N=512,l= 4,b= 1]: 1.22 (278 total cost, 60.96 % cost of no cache, 258 bypass cost)
- + Cycles Per Access [N=  0,l= 4,b= 2]: 3.93 (896 total cost, 100.00 % cost of no cache, 500 bypass cost)
- + Cycles Per Access [N=  2,l= 4,b= 2]: 1.29 (294 total cost, 32.81 % cost of no cache, 258 bypass cost)
- + Cycles Per Access [N=  4,l= 4,b= 2]: 1.24 (282 total cost, 31.47 % cost of no cache, 258 bypass cost)
- + Cycles Per Access [N=  8,l= 4,b= 2]: 1.24 (282 total cost, 31.47 % cost of no cache, 258 bypass cost)
- + Cycles Per Access [N= 16,l= 4,b= 2]: 1.24 (282 total cost, 31.47 % cost of no cache, 258 bypass cost)
- + Cycles Per Access [N= 32,l= 4,b= 2]: 1.24 (282 total cost, 31.47 % cost of no cache, 258 bypass cost)
- + Cycles Per Access [N= 64,l= 4,b= 2]: 1.24 (282 total cost, 31.47 % cost of no cache, 258 bypass cost)
- + Cycles Per Access [N=512,l= 4,b= 2]: 1.24 (282 total cost, 31.47 % cost of no cache, 258 bypass cost)
  + Cycles Per Access [N=  0,l= 4,b= 4]: 7.79 (1776 total cost, 100.00 % cost of no cache, 984 bypass cost)
  + Cycles Per Access [N=  2,l= 4,b= 4]: 1.31 (298 total cost, 16.78 % cost of no cache, 258 bypass cost)
  + Cycles Per Access [N=  4,l= 4,b= 4]: 1.24 (282 total cost, 15.88 % cost of no cache, 258 bypass cost)
@@ -36,14 +28,6 @@ Object Cache Configuration: S(D)RAM [access=0, delay=0, cycles-per-word=2]
  + Cycles Per Access [N= 32,l= 8,b= 1]: 0.94 (214 total cost, 46.93 % cost of no cache, 188 bypass cost)
  + Cycles Per Access [N= 64,l= 8,b= 1]: 0.94 (214 total cost, 46.93 % cost of no cache, 188 bypass cost)
  + Cycles Per Access [N=512,l= 8,b= 1]: 0.94 (214 total cost, 46.93 % cost of no cache, 188 bypass cost)
- + Cycles Per Access [N=  0,l= 8,b= 2]: 3.93 (896 total cost, 100.00 % cost of no cache, 360 bypass cost)
- + Cycles Per Access [N=  2,l= 8,b= 2]: 1.02 (232 total cost, 25.89 % cost of no cache, 188 bypass cost)
- + Cycles Per Access [N=  4,l= 8,b= 2]: 0.96 (220 total cost, 24.55 % cost of no cache, 188 bypass cost)
- + Cycles Per Access [N=  8,l= 8,b= 2]: 0.96 (220 total cost, 24.55 % cost of no cache, 188 bypass cost)
- + Cycles Per Access [N= 16,l= 8,b= 2]: 0.96 (220 total cost, 24.55 % cost of no cache, 188 bypass cost)
- + Cycles Per Access [N= 32,l= 8,b= 2]: 0.96 (220 total cost, 24.55 % cost of no cache, 188 bypass cost)
- + Cycles Per Access [N= 64,l= 8,b= 2]: 0.96 (220 total cost, 24.55 % cost of no cache, 188 bypass cost)
- + Cycles Per Access [N=512,l= 8,b= 2]: 0.96 (220 total cost, 24.55 % cost of no cache, 188 bypass cost)
  + Cycles Per Access [N=  0,l= 8,b= 4]: 7.79 (1776 total cost, 100.00 % cost of no cache, 704 bypass cost)
  + Cycles Per Access [N=  2,l= 8,b= 4]: 1.04 (236 total cost, 13.29 % cost of no cache, 188 bypass cost)
  + Cycles Per Access [N=  4,l= 8,b= 4]: 0.96 (220 total cost, 12.39 % cost of no cache, 188 bypass cost)
@@ -68,14 +52,6 @@ Object Cache Configuration: S(D)RAM [access=0, delay=0, cycles-per-word=2]
  + Cycles Per Access [N= 32,l=16,b= 1]: 0.22 (50 total cost, 10.96 % cost of no cache, 10 bypass cost)
  + Cycles Per Access [N= 64,l=16,b= 1]: 0.22 (50 total cost, 10.96 % cost of no cache, 10 bypass cost)
  + Cycles Per Access [N=512,l=16,b= 1]: 0.22 (50 total cost, 10.96 % cost of no cache, 10 bypass cost)
- + Cycles Per Access [N=  0,l=16,b= 2]: 4.00 (912 total cost, 100.00 % cost of no cache, 24 bypass cost)
- + Cycles Per Access [N=  2,l=16,b= 2]: 0.31 (70 total cost, 7.68 % cost of no cache, 10 bypass cost)
- + Cycles Per Access [N=  4,l=16,b= 2]: 0.25 (58 total cost, 6.36 % cost of no cache, 10 bypass cost)
- + Cycles Per Access [N=  8,l=16,b= 2]: 0.25 (58 total cost, 6.36 % cost of no cache, 10 bypass cost)
- + Cycles Per Access [N= 16,l=16,b= 2]: 0.25 (58 total cost, 6.36 % cost of no cache, 10 bypass cost)
- + Cycles Per Access [N= 32,l=16,b= 2]: 0.25 (58 total cost, 6.36 % cost of no cache, 10 bypass cost)
- + Cycles Per Access [N= 64,l=16,b= 2]: 0.25 (58 total cost, 6.36 % cost of no cache, 10 bypass cost)
- + Cycles Per Access [N=512,l=16,b= 2]: 0.25 (58 total cost, 6.36 % cost of no cache, 10 bypass cost)
  + Cycles Per Access [N=  0,l=16,b= 4]: 8.00 (1824 total cost, 100.00 % cost of no cache, 48 bypass cost)
  + Cycles Per Access [N=  2,l=16,b= 4]: 0.33 (76 total cost, 4.17 % cost of no cache, 12 bypass cost)
  + Cycles Per Access [N=  4,l=16,b= 4]: 0.26 (60 total cost, 3.29 % cost of no cache, 12 bypass cost)
@@ -108,14 +84,6 @@ Object Cache Configuration: S(D)RAM [access=0, delay=0, cycles-per-word=2]
  + Cycles Per Access [N= 32,l=32,b= 1]: 0.20 (46 total cost, 10.09 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N= 64,l=32,b= 1]: 0.20 (46 total cost, 10.09 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=512,l=32,b= 1]: 0.20 (46 total cost, 10.09 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=  0,l=32,b= 2]: 4.00 (912 total cost, 100.00 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=  2,l=32,b= 2]: 0.30 (68 total cost, 7.46 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=  4,l=32,b= 2]: 0.25 (56 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=  8,l=32,b= 2]: 0.25 (56 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N= 16,l=32,b= 2]: 0.25 (56 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N= 32,l=32,b= 2]: 0.25 (56 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N= 64,l=32,b= 2]: 0.25 (56 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=512,l=32,b= 2]: 0.25 (56 total cost, 6.14 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=  0,l=32,b= 4]: 8.00 (1824 total cost, 100.00 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=  2,l=32,b= 4]: 0.32 (72 total cost, 3.95 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=  4,l=32,b= 4]: 0.25 (56 total cost, 3.07 % cost of no cache, 0 bypass cost)
@@ -140,6 +108,14 @@ Object Cache Configuration: S(D)RAM [access=0, delay=0, cycles-per-word=2]
  + Cycles Per Access [N= 32,l=32,b=16]: 0.56 (128 total cost, 1.75 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N= 64,l=32,b=16]: 0.56 (128 total cost, 1.75 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=512,l=32,b=16]: 0.56 (128 total cost, 1.75 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=  0,l=32,b=32]: 64.00 (14592 total cost, 100.00 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=  2,l=32,b=32]: 1.68 (384 total cost, 2.63 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=  4,l=32,b=32]: 0.84 (192 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=  8,l=32,b=32]: 0.84 (192 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N= 16,l=32,b=32]: 0.84 (192 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N= 32,l=32,b=32]: 0.84 (192 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N= 64,l=32,b=32]: 0.84 (192 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=512,l=32,b=32]: 0.84 (192 total cost, 1.32 % cost of no cache, 0 bypass cost)
 ***** ***** MODE = field-as-tag ***** *****
 
  - max tags accessed (upper bound) = 23, max fields accesses = 228
@@ -165,14 +141,6 @@ Object Cache Configuration: S(D)RAM [access=0, delay=10, cycles-per-word=2]
  + Cycles Per Access [N= 32,l= 4,b= 1]: 7.32 (1668 total cost, 60.96 % cost of no cache, 1548 bypass cost)
  + Cycles Per Access [N= 64,l= 4,b= 1]: 7.32 (1668 total cost, 60.96 % cost of no cache, 1548 bypass cost)
  + Cycles Per Access [N=512,l= 4,b= 1]: 7.32 (1668 total cost, 60.96 % cost of no cache, 1548 bypass cost)
- + Cycles Per Access [N=  0,l= 4,b= 2]: 13.93 (3176 total cost, 100.00 % cost of no cache, 1790 bypass cost)
- + Cycles Per Access [N=  2,l= 4,b= 2]: 7.34 (1674 total cost, 52.71 % cost of no cache, 1548 bypass cost)
- + Cycles Per Access [N=  4,l= 4,b= 2]: 7.16 (1632 total cost, 51.39 % cost of no cache, 1548 bypass cost)
- + Cycles Per Access [N=  8,l= 4,b= 2]: 7.16 (1632 total cost, 51.39 % cost of no cache, 1548 bypass cost)
- + Cycles Per Access [N= 16,l= 4,b= 2]: 7.16 (1632 total cost, 51.39 % cost of no cache, 1548 bypass cost)
- + Cycles Per Access [N= 32,l= 4,b= 2]: 7.16 (1632 total cost, 51.39 % cost of no cache, 1548 bypass cost)
- + Cycles Per Access [N= 64,l= 4,b= 2]: 7.16 (1632 total cost, 51.39 % cost of no cache, 1548 bypass cost)
- + Cycles Per Access [N=512,l= 4,b= 2]: 7.16 (1632 total cost, 51.39 % cost of no cache, 1548 bypass cost)
  + Cycles Per Access [N=  0,l= 4,b= 4]: 17.79 (4056 total cost, 100.00 % cost of no cache, 2274 bypass cost)
  + Cycles Per Access [N=  2,l= 4,b= 4]: 7.18 (1638 total cost, 40.38 % cost of no cache, 1548 bypass cost)
  + Cycles Per Access [N=  4,l= 4,b= 4]: 7.03 (1602 total cost, 39.50 % cost of no cache, 1548 bypass cost)
@@ -189,14 +157,6 @@ Object Cache Configuration: S(D)RAM [access=0, delay=10, cycles-per-word=2]
  + Cycles Per Access [N= 32,l= 8,b= 1]: 5.63 (1284 total cost, 46.93 % cost of no cache, 1128 bypass cost)
  + Cycles Per Access [N= 64,l= 8,b= 1]: 5.63 (1284 total cost, 46.93 % cost of no cache, 1128 bypass cost)
  + Cycles Per Access [N=512,l= 8,b= 1]: 5.63 (1284 total cost, 46.93 % cost of no cache, 1128 bypass cost)
- + Cycles Per Access [N=  0,l= 8,b= 2]: 13.93 (3176 total cost, 100.00 % cost of no cache, 1300 bypass cost)
- + Cycles Per Access [N=  2,l= 8,b= 2]: 5.62 (1282 total cost, 40.37 % cost of no cache, 1128 bypass cost)
- + Cycles Per Access [N=  4,l= 8,b= 2]: 5.44 (1240 total cost, 39.04 % cost of no cache, 1128 bypass cost)
- + Cycles Per Access [N=  8,l= 8,b= 2]: 5.44 (1240 total cost, 39.04 % cost of no cache, 1128 bypass cost)
- + Cycles Per Access [N= 16,l= 8,b= 2]: 5.44 (1240 total cost, 39.04 % cost of no cache, 1128 bypass cost)
- + Cycles Per Access [N= 32,l= 8,b= 2]: 5.44 (1240 total cost, 39.04 % cost of no cache, 1128 bypass cost)
- + Cycles Per Access [N= 64,l= 8,b= 2]: 5.44 (1240 total cost, 39.04 % cost of no cache, 1128 bypass cost)
- + Cycles Per Access [N=512,l= 8,b= 2]: 5.44 (1240 total cost, 39.04 % cost of no cache, 1128 bypass cost)
  + Cycles Per Access [N=  0,l= 8,b= 4]: 17.79 (4056 total cost, 100.00 % cost of no cache, 1644 bypass cost)
  + Cycles Per Access [N=  2,l= 8,b= 4]: 5.42 (1236 total cost, 30.47 % cost of no cache, 1128 bypass cost)
  + Cycles Per Access [N=  4,l= 8,b= 4]: 5.26 (1200 total cost, 29.59 % cost of no cache, 1128 bypass cost)
@@ -221,14 +181,6 @@ Object Cache Configuration: S(D)RAM [access=0, delay=10, cycles-per-word=2]
  + Cycles Per Access [N= 32,l=16,b= 1]: 1.32 (300 total cost, 10.96 % cost of no cache, 60 bypass cost)
  + Cycles Per Access [N= 64,l=16,b= 1]: 1.32 (300 total cost, 10.96 % cost of no cache, 60 bypass cost)
  + Cycles Per Access [N=512,l=16,b= 1]: 1.32 (300 total cost, 10.96 % cost of no cache, 60 bypass cost)
- + Cycles Per Access [N=  0,l=16,b= 2]: 14.00 (3192 total cost, 100.00 % cost of no cache, 84 bypass cost)
- + Cycles Per Access [N=  2,l=16,b= 2]: 1.18 (270 total cost, 8.46 % cost of no cache, 60 bypass cost)
- + Cycles Per Access [N=  4,l=16,b= 2]: 1.00 (228 total cost, 7.14 % cost of no cache, 60 bypass cost)
- + Cycles Per Access [N=  8,l=16,b= 2]: 1.00 (228 total cost, 7.14 % cost of no cache, 60 bypass cost)
- + Cycles Per Access [N= 16,l=16,b= 2]: 1.00 (228 total cost, 7.14 % cost of no cache, 60 bypass cost)
- + Cycles Per Access [N= 32,l=16,b= 2]: 1.00 (228 total cost, 7.14 % cost of no cache, 60 bypass cost)
- + Cycles Per Access [N= 64,l=16,b= 2]: 1.00 (228 total cost, 7.14 % cost of no cache, 60 bypass cost)
- + Cycles Per Access [N=512,l=16,b= 2]: 1.00 (228 total cost, 7.14 % cost of no cache, 60 bypass cost)
  + Cycles Per Access [N=  0,l=16,b= 4]: 18.00 (4104 total cost, 100.00 % cost of no cache, 108 bypass cost)
  + Cycles Per Access [N=  2,l=16,b= 4]: 0.95 (216 total cost, 5.26 % cost of no cache, 72 bypass cost)
  + Cycles Per Access [N=  4,l=16,b= 4]: 0.79 (180 total cost, 4.39 % cost of no cache, 72 bypass cost)
@@ -261,14 +213,6 @@ Object Cache Configuration: S(D)RAM [access=0, delay=10, cycles-per-word=2]
  + Cycles Per Access [N= 32,l=32,b= 1]: 1.21 (276 total cost, 10.09 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N= 64,l=32,b= 1]: 1.21 (276 total cost, 10.09 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=512,l=32,b= 1]: 1.21 (276 total cost, 10.09 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=  0,l=32,b= 2]: 14.00 (3192 total cost, 100.00 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=  2,l=32,b= 2]: 1.04 (238 total cost, 7.46 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=  4,l=32,b= 2]: 0.86 (196 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=  8,l=32,b= 2]: 0.86 (196 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N= 16,l=32,b= 2]: 0.86 (196 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N= 32,l=32,b= 2]: 0.86 (196 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N= 64,l=32,b= 2]: 0.86 (196 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=512,l=32,b= 2]: 0.86 (196 total cost, 6.14 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=  0,l=32,b= 4]: 18.00 (4104 total cost, 100.00 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=  2,l=32,b= 4]: 0.71 (162 total cost, 3.95 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=  4,l=32,b= 4]: 0.55 (126 total cost, 3.07 % cost of no cache, 0 bypass cost)
@@ -293,6 +237,14 @@ Object Cache Configuration: S(D)RAM [access=0, delay=10, cycles-per-word=2]
  + Cycles Per Access [N= 32,l=32,b=16]: 0.74 (168 total cost, 1.75 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N= 64,l=32,b=16]: 0.74 (168 total cost, 1.75 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=512,l=32,b=16]: 0.74 (168 total cost, 1.75 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=  0,l=32,b=32]: 74.00 (16872 total cost, 100.00 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=  2,l=32,b=32]: 1.95 (444 total cost, 2.63 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=  4,l=32,b=32]: 0.97 (222 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=  8,l=32,b=32]: 0.97 (222 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N= 16,l=32,b=32]: 0.97 (222 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N= 32,l=32,b=32]: 0.97 (222 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N= 64,l=32,b=32]: 0.97 (222 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=512,l=32,b=32]: 0.97 (222 total cost, 1.32 % cost of no cache, 0 bypass cost)
 ***** ***** MODE = field-as-tag ***** *****
 
  - max tags accessed (upper bound) = 23, max fields accesses = 228
@@ -318,14 +270,6 @@ Object Cache Configuration: SRAM [cores=8,slotlength(l=4)=2,access=0,delay=0,cyc
  + Cycles Per Access [N= 32,l= 4,b= 1]: 10.36 (2363 total cost, 60.96 % cost of no cache, 2193 bypass cost)
  + Cycles Per Access [N= 64,l= 4,b= 1]: 10.36 (2363 total cost, 60.96 % cost of no cache, 2193 bypass cost)
  + Cycles Per Access [N=512,l= 4,b= 1]: 10.36 (2363 total cost, 60.96 % cost of no cache, 2193 bypass cost)
- + Cycles Per Access [N=  0,l= 4,b= 2]: 32.44 (7396 total cost, 100.00 % cost of no cache, 4129 bypass cost)
- + Cycles Per Access [N=  2,l= 4,b= 2]: 10.92 (2490 total cost, 33.67 % cost of no cache, 2193 bypass cost)
- + Cycles Per Access [N=  4,l= 4,b= 2]: 10.49 (2391 total cost, 32.33 % cost of no cache, 2193 bypass cost)
- + Cycles Per Access [N=  8,l= 4,b= 2]: 10.49 (2391 total cost, 32.33 % cost of no cache, 2193 bypass cost)
- + Cycles Per Access [N= 16,l= 4,b= 2]: 10.49 (2391 total cost, 32.33 % cost of no cache, 2193 bypass cost)
- + Cycles Per Access [N= 32,l= 4,b= 2]: 10.49 (2391 total cost, 32.33 % cost of no cache, 2193 bypass cost)
- + Cycles Per Access [N= 64,l= 4,b= 2]: 10.49 (2391 total cost, 32.33 % cost of no cache, 2193 bypass cost)
- + Cycles Per Access [N=512,l= 4,b= 2]: 10.49 (2391 total cost, 32.33 % cost of no cache, 2193 bypass cost)
  + Cycles Per Access [N=  0,l= 4,b= 4]: 63.32 (14436 total cost, 100.00 % cost of no cache, 8001 bypass cost)
  + Cycles Per Access [N=  2,l= 4,b= 4]: 11.04 (2518 total cost, 17.44 % cost of no cache, 2193 bypass cost)
  + Cycles Per Access [N=  4,l= 4,b= 4]: 10.47 (2388 total cost, 16.54 % cost of no cache, 2193 bypass cost)
@@ -342,14 +286,6 @@ Object Cache Configuration: SRAM [cores=8,slotlength(l=4)=2,access=0,delay=0,cyc
  + Cycles Per Access [N= 32,l= 8,b= 1]: 7.98 (1819 total cost, 46.93 % cost of no cache, 1598 bypass cost)
  + Cycles Per Access [N= 64,l= 8,b= 1]: 7.98 (1819 total cost, 46.93 % cost of no cache, 1598 bypass cost)
  + Cycles Per Access [N=512,l= 8,b= 1]: 7.98 (1819 total cost, 46.93 % cost of no cache, 1598 bypass cost)
- + Cycles Per Access [N=  0,l= 8,b= 2]: 32.44 (7396 total cost, 100.00 % cost of no cache, 2974 bypass cost)
- + Cycles Per Access [N=  2,l= 8,b= 2]: 8.60 (1961 total cost, 26.51 % cost of no cache, 1598 bypass cost)
- + Cycles Per Access [N=  4,l= 8,b= 2]: 8.17 (1862 total cost, 25.18 % cost of no cache, 1598 bypass cost)
- + Cycles Per Access [N=  8,l= 8,b= 2]: 8.17 (1862 total cost, 25.18 % cost of no cache, 1598 bypass cost)
- + Cycles Per Access [N= 16,l= 8,b= 2]: 8.17 (1862 total cost, 25.18 % cost of no cache, 1598 bypass cost)
- + Cycles Per Access [N= 32,l= 8,b= 2]: 8.17 (1862 total cost, 25.18 % cost of no cache, 1598 bypass cost)
- + Cycles Per Access [N= 64,l= 8,b= 2]: 8.17 (1862 total cost, 25.18 % cost of no cache, 1598 bypass cost)
- + Cycles Per Access [N=512,l= 8,b= 2]: 8.17 (1862 total cost, 25.18 % cost of no cache, 1598 bypass cost)
  + Cycles Per Access [N=  0,l= 8,b= 4]: 63.32 (14436 total cost, 100.00 % cost of no cache, 5726 bypass cost)
  + Cycles Per Access [N=  2,l= 8,b= 4]: 8.72 (1988 total cost, 13.77 % cost of no cache, 1598 bypass cost)
  + Cycles Per Access [N=  4,l= 8,b= 4]: 8.15 (1858 total cost, 12.87 % cost of no cache, 1598 bypass cost)
@@ -374,14 +310,6 @@ Object Cache Configuration: SRAM [cores=8,slotlength(l=4)=2,access=0,delay=0,cyc
  + Cycles Per Access [N= 32,l=16,b= 1]: 1.86 (425 total cost, 10.96 % cost of no cache, 85 bypass cost)
  + Cycles Per Access [N= 64,l=16,b= 1]: 1.86 (425 total cost, 10.96 % cost of no cache, 85 bypass cost)
  + Cycles Per Access [N=512,l=16,b= 1]: 1.86 (425 total cost, 10.96 % cost of no cache, 85 bypass cost)
- + Cycles Per Access [N=  0,l=16,b= 2]: 33.00 (7524 total cost, 100.00 % cost of no cache, 198 bypass cost)
- + Cycles Per Access [N=  2,l=16,b= 2]: 2.54 (580 total cost, 7.71 % cost of no cache, 85 bypass cost)
- + Cycles Per Access [N=  4,l=16,b= 2]: 2.11 (481 total cost, 6.39 % cost of no cache, 85 bypass cost)
- + Cycles Per Access [N=  8,l=16,b= 2]: 2.11 (481 total cost, 6.39 % cost of no cache, 85 bypass cost)
- + Cycles Per Access [N= 16,l=16,b= 2]: 2.11 (481 total cost, 6.39 % cost of no cache, 85 bypass cost)
- + Cycles Per Access [N= 32,l=16,b= 2]: 2.11 (481 total cost, 6.39 % cost of no cache, 85 bypass cost)
- + Cycles Per Access [N= 64,l=16,b= 2]: 2.11 (481 total cost, 6.39 % cost of no cache, 85 bypass cost)
- + Cycles Per Access [N=512,l=16,b= 2]: 2.11 (481 total cost, 6.39 % cost of no cache, 85 bypass cost)
  + Cycles Per Access [N=  0,l=16,b= 4]: 65.00 (14820 total cost, 100.00 % cost of no cache, 390 bypass cost)
  + Cycles Per Access [N=  2,l=16,b= 4]: 2.73 (622 total cost, 4.20 % cost of no cache, 102 bypass cost)
  + Cycles Per Access [N=  4,l=16,b= 4]: 2.16 (492 total cost, 3.32 % cost of no cache, 102 bypass cost)
@@ -414,14 +342,6 @@ Object Cache Configuration: SRAM [cores=8,slotlength(l=4)=2,access=0,delay=0,cyc
  + Cycles Per Access [N= 32,l=32,b= 1]: 1.71 (391 total cost, 10.09 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N= 64,l=32,b= 1]: 1.71 (391 total cost, 10.09 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=512,l=32,b= 1]: 1.71 (391 total cost, 10.09 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=  0,l=32,b= 2]: 33.00 (7524 total cost, 100.00 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=  2,l=32,b= 2]: 2.46 (561 total cost, 7.46 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=  4,l=32,b= 2]: 2.03 (462 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=  8,l=32,b= 2]: 2.03 (462 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N= 16,l=32,b= 2]: 2.03 (462 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N= 32,l=32,b= 2]: 2.03 (462 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N= 64,l=32,b= 2]: 2.03 (462 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=512,l=32,b= 2]: 2.03 (462 total cost, 6.14 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=  0,l=32,b= 4]: 65.00 (14820 total cost, 100.00 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=  2,l=32,b= 4]: 2.57 (585 total cost, 3.95 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=  4,l=32,b= 4]: 2.00 (455 total cost, 3.07 % cost of no cache, 0 bypass cost)
@@ -446,6 +366,14 @@ Object Cache Configuration: SRAM [cores=8,slotlength(l=4)=2,access=0,delay=0,cyc
  + Cycles Per Access [N= 32,l=32,b=16]: 4.51 (1028 total cost, 1.75 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N= 64,l=32,b=16]: 4.51 (1028 total cost, 1.75 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=512,l=32,b=16]: 4.51 (1028 total cost, 1.75 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=  0,l=32,b=32]: 513.00 (116964 total cost, 100.00 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=  2,l=32,b=32]: 13.50 (3078 total cost, 2.63 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=  4,l=32,b=32]: 6.75 (1539 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=  8,l=32,b=32]: 6.75 (1539 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N= 16,l=32,b=32]: 6.75 (1539 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N= 32,l=32,b=32]: 6.75 (1539 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N= 64,l=32,b=32]: 6.75 (1539 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=512,l=32,b=32]: 6.75 (1539 total cost, 1.32 % cost of no cache, 0 bypass cost)
 ***** ***** MODE = field-as-tag ***** *****
 
  - max tags accessed (upper bound) = 23, max fields accesses = 228
@@ -471,14 +399,6 @@ Object Cache Configuration: SRAM [cores=8,slotlength(l=4)=18,access=0,delay=10,c
  + Cycles Per Access [N= 32,l= 4,b= 1]: 98.15 (22379 total cost, 60.96 % cost of no cache, 20769 bypass cost)
  + Cycles Per Access [N= 64,l= 4,b= 1]: 98.15 (22379 total cost, 60.96 % cost of no cache, 20769 bypass cost)
  + Cycles Per Access [N=512,l= 4,b= 1]: 98.15 (22379 total cost, 60.96 % cost of no cache, 20769 bypass cost)
- + Cycles Per Access [N=  0,l= 4,b= 2]: 161.00 (36708 total cost, 100.00 % cost of no cache, 20769 bypass cost)
- + Cycles Per Access [N=  2,l= 4,b= 2]: 97.45 (22218 total cost, 60.53 % cost of no cache, 20769 bypass cost)
- + Cycles Per Access [N=  4,l= 4,b= 2]: 95.33 (21735 total cost, 59.21 % cost of no cache, 20769 bypass cost)
- + Cycles Per Access [N=  8,l= 4,b= 2]: 95.33 (21735 total cost, 59.21 % cost of no cache, 20769 bypass cost)
- + Cycles Per Access [N= 16,l= 4,b= 2]: 95.33 (21735 total cost, 59.21 % cost of no cache, 20769 bypass cost)
- + Cycles Per Access [N= 32,l= 4,b= 2]: 95.33 (21735 total cost, 59.21 % cost of no cache, 20769 bypass cost)
- + Cycles Per Access [N= 64,l= 4,b= 2]: 95.33 (21735 total cost, 59.21 % cost of no cache, 20769 bypass cost)
- + Cycles Per Access [N=512,l= 4,b= 2]: 95.33 (21735 total cost, 59.21 % cost of no cache, 20769 bypass cost)
  + Cycles Per Access [N=  0,l= 4,b= 4]: 161.00 (36708 total cost, 100.00 % cost of no cache, 20769 bypass cost)
  + Cycles Per Access [N=  2,l= 4,b= 4]: 94.62 (21574 total cost, 58.77 % cost of no cache, 20769 bypass cost)
  + Cycles Per Access [N=  4,l= 4,b= 4]: 93.21 (21252 total cost, 57.89 % cost of no cache, 20769 bypass cost)
@@ -495,14 +415,6 @@ Object Cache Configuration: SRAM [cores=8,slotlength(l=4)=18,access=0,delay=10,c
  + Cycles Per Access [N= 32,l= 8,b= 1]: 75.56 (17227 total cost, 46.93 % cost of no cache, 15134 bypass cost)
  + Cycles Per Access [N= 64,l= 8,b= 1]: 75.56 (17227 total cost, 46.93 % cost of no cache, 15134 bypass cost)
  + Cycles Per Access [N=512,l= 8,b= 1]: 75.56 (17227 total cost, 46.93 % cost of no cache, 15134 bypass cost)
- + Cycles Per Access [N=  0,l= 8,b= 2]: 161.00 (36708 total cost, 100.00 % cost of no cache, 15134 bypass cost)
- + Cycles Per Access [N=  2,l= 8,b= 2]: 74.14 (16905 total cost, 46.05 % cost of no cache, 15134 bypass cost)
- + Cycles Per Access [N=  4,l= 8,b= 2]: 72.03 (16422 total cost, 44.74 % cost of no cache, 15134 bypass cost)
- + Cycles Per Access [N=  8,l= 8,b= 2]: 72.03 (16422 total cost, 44.74 % cost of no cache, 15134 bypass cost)
- + Cycles Per Access [N= 16,l= 8,b= 2]: 72.03 (16422 total cost, 44.74 % cost of no cache, 15134 bypass cost)
- + Cycles Per Access [N= 32,l= 8,b= 2]: 72.03 (16422 total cost, 44.74 % cost of no cache, 15134 bypass cost)
- + Cycles Per Access [N= 64,l= 8,b= 2]: 72.03 (16422 total cost, 44.74 % cost of no cache, 15134 bypass cost)
- + Cycles Per Access [N=512,l= 8,b= 2]: 72.03 (16422 total cost, 44.74 % cost of no cache, 15134 bypass cost)
  + Cycles Per Access [N=  0,l= 8,b= 4]: 161.00 (36708 total cost, 100.00 % cost of no cache, 15134 bypass cost)
  + Cycles Per Access [N=  2,l= 8,b= 4]: 70.61 (16100 total cost, 43.86 % cost of no cache, 15134 bypass cost)
  + Cycles Per Access [N=  4,l= 8,b= 4]: 69.20 (15778 total cost, 42.98 % cost of no cache, 15134 bypass cost)
@@ -527,14 +439,6 @@ Object Cache Configuration: SRAM [cores=8,slotlength(l=4)=18,access=0,delay=10,c
  + Cycles Per Access [N= 32,l=16,b= 1]: 17.65 (4025 total cost, 10.96 % cost of no cache, 805 bypass cost)
  + Cycles Per Access [N= 64,l=16,b= 1]: 17.65 (4025 total cost, 10.96 % cost of no cache, 805 bypass cost)
  + Cycles Per Access [N=512,l=16,b= 1]: 17.65 (4025 total cost, 10.96 % cost of no cache, 805 bypass cost)
- + Cycles Per Access [N=  0,l=16,b= 2]: 161.00 (36708 total cost, 100.00 % cost of no cache, 966 bypass cost)
- + Cycles Per Access [N=  2,l=16,b= 2]: 14.12 (3220 total cost, 8.77 % cost of no cache, 966 bypass cost)
- + Cycles Per Access [N=  4,l=16,b= 2]: 12.00 (2737 total cost, 7.46 % cost of no cache, 966 bypass cost)
- + Cycles Per Access [N=  8,l=16,b= 2]: 12.00 (2737 total cost, 7.46 % cost of no cache, 966 bypass cost)
- + Cycles Per Access [N= 16,l=16,b= 2]: 12.00 (2737 total cost, 7.46 % cost of no cache, 966 bypass cost)
- + Cycles Per Access [N= 32,l=16,b= 2]: 12.00 (2737 total cost, 7.46 % cost of no cache, 966 bypass cost)
- + Cycles Per Access [N= 64,l=16,b= 2]: 12.00 (2737 total cost, 7.46 % cost of no cache, 966 bypass cost)
- + Cycles Per Access [N=512,l=16,b= 2]: 12.00 (2737 total cost, 7.46 % cost of no cache, 966 bypass cost)
  + Cycles Per Access [N=  0,l=16,b= 4]: 161.00 (36708 total cost, 100.00 % cost of no cache, 966 bypass cost)
  + Cycles Per Access [N=  2,l=16,b= 4]: 9.89 (2254 total cost, 6.14 % cost of no cache, 966 bypass cost)
  + Cycles Per Access [N=  4,l=16,b= 4]: 8.47 (1932 total cost, 5.26 % cost of no cache, 966 bypass cost)
@@ -567,14 +471,6 @@ Object Cache Configuration: SRAM [cores=8,slotlength(l=4)=18,access=0,delay=10,c
  + Cycles Per Access [N= 32,l=32,b= 1]: 16.24 (3703 total cost, 10.09 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N= 64,l=32,b= 1]: 16.24 (3703 total cost, 10.09 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=512,l=32,b= 1]: 16.24 (3703 total cost, 10.09 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=  0,l=32,b= 2]: 161.00 (36708 total cost, 100.00 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=  2,l=32,b= 2]: 12.00 (2737 total cost, 7.46 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=  4,l=32,b= 2]: 9.89 (2254 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=  8,l=32,b= 2]: 9.89 (2254 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N= 16,l=32,b= 2]: 9.89 (2254 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N= 32,l=32,b= 2]: 9.89 (2254 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N= 64,l=32,b= 2]: 9.89 (2254 total cost, 6.14 % cost of no cache, 0 bypass cost)
- + Cycles Per Access [N=512,l=32,b= 2]: 9.89 (2254 total cost, 6.14 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=  0,l=32,b= 4]: 161.00 (36708 total cost, 100.00 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=  2,l=32,b= 4]: 6.36 (1449 total cost, 3.95 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=  4,l=32,b= 4]: 4.94 (1127 total cost, 3.07 % cost of no cache, 0 bypass cost)
@@ -599,6 +495,14 @@ Object Cache Configuration: SRAM [cores=8,slotlength(l=4)=18,access=0,delay=10,c
  + Cycles Per Access [N= 32,l=32,b=16]: 10.40 (2372 total cost, 1.75 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N= 64,l=32,b=16]: 10.40 (2372 total cost, 1.75 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=512,l=32,b=16]: 10.40 (2372 total cost, 1.75 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=  0,l=32,b=32]: 1169.00 (266532 total cost, 100.00 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=  2,l=32,b=32]: 30.76 (7014 total cost, 2.63 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=  4,l=32,b=32]: 15.38 (3507 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=  8,l=32,b=32]: 15.38 (3507 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N= 16,l=32,b=32]: 15.38 (3507 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N= 32,l=32,b=32]: 15.38 (3507 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N= 64,l=32,b=32]: 15.38 (3507 total cost, 1.32 % cost of no cache, 0 bypass cost)
+ + Cycles Per Access [N=512,l=32,b=32]: 15.38 (3507 total cost, 1.32 % cost of no cache, 0 bypass cost)
 ***** ***** MODE = field-as-tag ***** *****
 
  - max tags accessed (upper bound) = 23, max fields accesses = 228
@@ -610,6 +514,7 @@ Object Cache Configuration: SRAM [cores=8,slotlength(l=4)=18,access=0,delay=10,c
  + Cycles Per Access [N= 32,l= 1,b= 1]: 16.24 (3703 total cost, 10.09 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N= 64,l= 1,b= 1]: 16.24 (3703 total cost, 10.09 % cost of no cache, 0 bypass cost)
  + Cycles Per Access [N=512,l= 1,b= 1]: 16.24 (3703 total cost, 10.09 % cost of no cache, 0 bypass cost)
+Block Sizes: [I@90d810
 # PLOT DATA for config= 0 with block size 1 
 L=4,2.00,1.23,1.22,1.22,1.22,1.22,1.22,1.22 # Ways: [0, 2, 4, 8, 16, 32, 64, 512]
 L=8,2.00,0.95,0.94,0.94,0.94,0.94,0.94,0.94 # Ways: [0, 2, 4, 8, 16, 32, 64, 512]
@@ -617,152 +522,156 @@ L=16,2.00,0.23,0.22,0.22,0.22,0.22,0.22,0.22 # Ways: [0, 2, 4, 8, 16, 32, 64, 51
 L=32,2.00,0.21,0.20,0.20,0.20,0.20,0.20,0.20 # Ways: [0, 2, 4, 8, 16, 32, 64, 512]
 # PLOT DATA for config= 0 with different block sizes
 
-N=0 L=4,2.00,3.93,7.79
-N=0 L=8,2.00,3.93,7.79,15.51
-N=0 L=16,2.00,4.00,8.00,16.00,32.00
-N=0 L=32,2.00,4.00,8.00,16.00,32.00
-N=2 L=4,1.23,1.29,1.31
-N=2 L=8,0.95,1.02,1.04,1.25
-N=2 L=16,0.23,0.31,0.33,0.54,0.89
-N=2 L=32,0.21,0.30,0.32,0.56,0.98
-N=4 L=4,1.22,1.24,1.24
-N=4 L=8,0.94,0.96,0.96,1.04
-N=4 L=16,0.22,0.25,0.26,0.33,0.47
-N=4 L=32,0.20,0.25,0.25,0.35,0.56
-N=8 L=4,1.22,1.24,1.24
-N=8 L=8,0.94,0.96,0.96,1.04
-N=8 L=16,0.22,0.25,0.26,0.33,0.47
-N=8 L=32,0.20,0.25,0.25,0.35,0.56
-N=16 L=4,1.22,1.24,1.24
-N=16 L=8,0.94,0.96,0.96,1.04
-N=16 L=16,0.22,0.25,0.26,0.33,0.47
-N=16 L=32,0.20,0.25,0.25,0.35,0.56
-N=32 L=4,1.22,1.24,1.24
-N=32 L=8,0.94,0.96,0.96,1.04
-N=32 L=16,0.22,0.25,0.26,0.33,0.47
-N=32 L=32,0.20,0.25,0.25,0.35,0.56
-N=64 L=4,1.22,1.24,1.24
-N=64 L=8,0.94,0.96,0.96,1.04
-N=64 L=16,0.22,0.25,0.26,0.33,0.47
-N=64 L=32,0.20,0.25,0.25,0.35,0.56
-N=512 L=4,1.22,1.24,1.24
-N=512 L=8,0.94,0.96,0.96,1.04
-N=512 L=16,0.22,0.25,0.26,0.33,0.47
-N=512 L=32,0.20,0.25,0.25,0.35,0.56# PLOT DATA for config= 1 with block size 1 
+N=0 L=4,2.00,7.79
+N=0 L=8,2.00,7.79,15.51
+N=0 L=16,2.00,8.00,16.00,32.00
+N=0 L=32,2.00,8.00,16.00,32.00,64.00
+N=2 L=4,1.23,1.31
+N=2 L=8,0.95,1.04,1.25
+N=2 L=16,0.23,0.33,0.54,0.89
+N=2 L=32,0.21,0.32,0.56,0.98,1.68
+N=4 L=4,1.22,1.24
+N=4 L=8,0.94,0.96,1.04
+N=4 L=16,0.22,0.26,0.33,0.47
+N=4 L=32,0.20,0.25,0.35,0.56,0.84
+N=8 L=4,1.22,1.24
+N=8 L=8,0.94,0.96,1.04
+N=8 L=16,0.22,0.26,0.33,0.47
+N=8 L=32,0.20,0.25,0.35,0.56,0.84
+N=16 L=4,1.22,1.24
+N=16 L=8,0.94,0.96,1.04
+N=16 L=16,0.22,0.26,0.33,0.47
+N=16 L=32,0.20,0.25,0.35,0.56,0.84
+N=32 L=4,1.22,1.24
+N=32 L=8,0.94,0.96,1.04
+N=32 L=16,0.22,0.26,0.33,0.47
+N=32 L=32,0.20,0.25,0.35,0.56,0.84
+N=64 L=4,1.22,1.24
+N=64 L=8,0.94,0.96,1.04
+N=64 L=16,0.22,0.26,0.33,0.47
+N=64 L=32,0.20,0.25,0.35,0.56,0.84
+N=512 L=4,1.22,1.24
+N=512 L=8,0.94,0.96,1.04
+N=512 L=16,0.22,0.26,0.33,0.47
+N=512 L=32,0.20,0.25,0.35,0.56,0.84
+# PLOT DATA for config= 1 with block size 1 
 L=4,12.00,7.37,7.32,7.32,7.32,7.32,7.32,7.32 # Ways: [0, 2, 4, 8, 16, 32, 64, 512]
 L=8,12.00,5.68,5.63,5.63,5.63,5.63,5.63,5.63 # Ways: [0, 2, 4, 8, 16, 32, 64, 512]
 L=16,12.00,1.37,1.32,1.32,1.32,1.32,1.32,1.32 # Ways: [0, 2, 4, 8, 16, 32, 64, 512]
 L=32,12.00,1.26,1.21,1.21,1.21,1.21,1.21,1.21 # Ways: [0, 2, 4, 8, 16, 32, 64, 512]
 # PLOT DATA for config= 1 with different block sizes
 
-N=0 L=4,12.00,13.93,17.79
-N=0 L=8,12.00,13.93,17.79,25.51
-N=0 L=16,12.00,14.00,18.00,26.00,42.00
-N=0 L=32,12.00,14.00,18.00,26.00,42.00
-N=2 L=4,7.37,7.34,7.18
-N=2 L=8,5.68,5.62,5.42,5.63
-N=2 L=16,1.37,1.18,0.95,1.11,1.42
-N=2 L=32,1.26,1.04,0.71,0.91,1.29
-N=4 L=4,7.32,7.16,7.03
-N=4 L=8,5.63,5.44,5.26,5.29
-N=4 L=16,1.32,1.00,0.79,0.77,0.87
-N=4 L=32,1.21,0.86,0.55,0.57,0.74
-N=8 L=4,7.32,7.16,7.03
-N=8 L=8,5.63,5.44,5.26,5.29
-N=8 L=16,1.32,1.00,0.79,0.77,0.87
-N=8 L=32,1.21,0.86,0.55,0.57,0.74
-N=16 L=4,7.32,7.16,7.03
-N=16 L=8,5.63,5.44,5.26,5.29
-N=16 L=16,1.32,1.00,0.79,0.77,0.87
-N=16 L=32,1.21,0.86,0.55,0.57,0.74
-N=32 L=4,7.32,7.16,7.03
-N=32 L=8,5.63,5.44,5.26,5.29
-N=32 L=16,1.32,1.00,0.79,0.77,0.87
-N=32 L=32,1.21,0.86,0.55,0.57,0.74
-N=64 L=4,7.32,7.16,7.03
-N=64 L=8,5.63,5.44,5.26,5.29
-N=64 L=16,1.32,1.00,0.79,0.77,0.87
-N=64 L=32,1.21,0.86,0.55,0.57,0.74
-N=512 L=4,7.32,7.16,7.03
-N=512 L=8,5.63,5.44,5.26,5.29
-N=512 L=16,1.32,1.00,0.79,0.77,0.87
-N=512 L=32,1.21,0.86,0.55,0.57,0.74# PLOT DATA for config= 2 with block size 1 
+N=0 L=4,12.00,17.79
+N=0 L=8,12.00,17.79,25.51
+N=0 L=16,12.00,18.00,26.00,42.00
+N=0 L=32,12.00,18.00,26.00,42.00,74.00
+N=2 L=4,7.37,7.18
+N=2 L=8,5.68,5.42,5.63
+N=2 L=16,1.37,0.95,1.11,1.42
+N=2 L=32,1.26,0.71,0.91,1.29,1.95
+N=4 L=4,7.32,7.03
+N=4 L=8,5.63,5.26,5.29
+N=4 L=16,1.32,0.79,0.77,0.87
+N=4 L=32,1.21,0.55,0.57,0.74,0.97
+N=8 L=4,7.32,7.03
+N=8 L=8,5.63,5.26,5.29
+N=8 L=16,1.32,0.79,0.77,0.87
+N=8 L=32,1.21,0.55,0.57,0.74,0.97
+N=16 L=4,7.32,7.03
+N=16 L=8,5.63,5.26,5.29
+N=16 L=16,1.32,0.79,0.77,0.87
+N=16 L=32,1.21,0.55,0.57,0.74,0.97
+N=32 L=4,7.32,7.03
+N=32 L=8,5.63,5.26,5.29
+N=32 L=16,1.32,0.79,0.77,0.87
+N=32 L=32,1.21,0.55,0.57,0.74,0.97
+N=64 L=4,7.32,7.03
+N=64 L=8,5.63,5.26,5.29
+N=64 L=16,1.32,0.79,0.77,0.87
+N=64 L=32,1.21,0.55,0.57,0.74,0.97
+N=512 L=4,7.32,7.03
+N=512 L=8,5.63,5.26,5.29
+N=512 L=16,1.32,0.79,0.77,0.87
+N=512 L=32,1.21,0.55,0.57,0.74,0.97
+# PLOT DATA for config= 2 with block size 1 
 L=4,17.00,10.44,10.36,10.36,10.36,10.36,10.36,10.36 # Ways: [0, 2, 4, 8, 16, 32, 64, 512]
 L=8,17.00,8.05,7.98,7.98,7.98,7.98,7.98,7.98 # Ways: [0, 2, 4, 8, 16, 32, 64, 512]
 L=16,17.00,1.94,1.86,1.86,1.86,1.86,1.86,1.86 # Ways: [0, 2, 4, 8, 16, 32, 64, 512]
 L=32,17.00,1.79,1.71,1.71,1.71,1.71,1.71,1.71 # Ways: [0, 2, 4, 8, 16, 32, 64, 512]
 # PLOT DATA for config= 2 with different block sizes
 
-N=0 L=4,17.00,32.44,63.32
-N=0 L=8,17.00,32.44,63.32,125.07
-N=0 L=16,17.00,33.00,65.00,129.00,257.00
-N=0 L=32,17.00,33.00,65.00,129.00,257.00
-N=2 L=4,10.44,10.92,11.04
-N=2 L=8,8.05,8.60,8.72,10.40
-N=2 L=16,1.94,2.54,2.73,4.41,7.21
-N=2 L=32,1.79,2.46,2.57,4.53,7.89
-N=4 L=4,10.36,10.49,10.47
-N=4 L=8,7.98,8.17,8.15,8.71
-N=4 L=16,1.86,2.11,2.16,2.71,3.83
-N=4 L=32,1.71,2.03,2.00,2.83,4.51
-N=8 L=4,10.36,10.49,10.47
-N=8 L=8,7.98,8.17,8.15,8.71
-N=8 L=16,1.86,2.11,2.16,2.71,3.83
-N=8 L=32,1.71,2.03,2.00,2.83,4.51
-N=16 L=4,10.36,10.49,10.47
-N=16 L=8,7.98,8.17,8.15,8.71
-N=16 L=16,1.86,2.11,2.16,2.71,3.83
-N=16 L=32,1.71,2.03,2.00,2.83,4.51
-N=32 L=4,10.36,10.49,10.47
-N=32 L=8,7.98,8.17,8.15,8.71
-N=32 L=16,1.86,2.11,2.16,2.71,3.83
-N=32 L=32,1.71,2.03,2.00,2.83,4.51
-N=64 L=4,10.36,10.49,10.47
-N=64 L=8,7.98,8.17,8.15,8.71
-N=64 L=16,1.86,2.11,2.16,2.71,3.83
-N=64 L=32,1.71,2.03,2.00,2.83,4.51
-N=512 L=4,10.36,10.49,10.47
-N=512 L=8,7.98,8.17,8.15,8.71
-N=512 L=16,1.86,2.11,2.16,2.71,3.83
-N=512 L=32,1.71,2.03,2.00,2.83,4.51# PLOT DATA for config= 3 with block size 1 
+N=0 L=4,17.00,63.32
+N=0 L=8,17.00,63.32,125.07
+N=0 L=16,17.00,65.00,129.00,257.00
+N=0 L=32,17.00,65.00,129.00,257.00,513.00
+N=2 L=4,10.44,11.04
+N=2 L=8,8.05,8.72,10.40
+N=2 L=16,1.94,2.73,4.41,7.21
+N=2 L=32,1.79,2.57,4.53,7.89,13.50
+N=4 L=4,10.36,10.47
+N=4 L=8,7.98,8.15,8.71
+N=4 L=16,1.86,2.16,2.71,3.83
+N=4 L=32,1.71,2.00,2.83,4.51,6.75
+N=8 L=4,10.36,10.47
+N=8 L=8,7.98,8.15,8.71
+N=8 L=16,1.86,2.16,2.71,3.83
+N=8 L=32,1.71,2.00,2.83,4.51,6.75
+N=16 L=4,10.36,10.47
+N=16 L=8,7.98,8.15,8.71
+N=16 L=16,1.86,2.16,2.71,3.83
+N=16 L=32,1.71,2.00,2.83,4.51,6.75
+N=32 L=4,10.36,10.47
+N=32 L=8,7.98,8.15,8.71
+N=32 L=16,1.86,2.16,2.71,3.83
+N=32 L=32,1.71,2.00,2.83,4.51,6.75
+N=64 L=4,10.36,10.47
+N=64 L=8,7.98,8.15,8.71
+N=64 L=16,1.86,2.16,2.71,3.83
+N=64 L=32,1.71,2.00,2.83,4.51,6.75
+N=512 L=4,10.36,10.47
+N=512 L=8,7.98,8.15,8.71
+N=512 L=16,1.86,2.16,2.71,3.83
+N=512 L=32,1.71,2.00,2.83,4.51,6.75
+# PLOT DATA for config= 3 with block size 1 
 L=4,161.00,98.86,98.15,98.15,98.15,98.15,98.15,98.15 # Ways: [0, 2, 4, 8, 16, 32, 64, 512]
 L=8,161.00,76.26,75.56,75.56,75.56,75.56,75.56,75.56 # Ways: [0, 2, 4, 8, 16, 32, 64, 512]
 L=16,161.00,18.36,17.65,17.65,17.65,17.65,17.65,17.65 # Ways: [0, 2, 4, 8, 16, 32, 64, 512]
 L=32,161.00,16.95,16.24,16.24,16.24,16.24,16.24,16.24 # Ways: [0, 2, 4, 8, 16, 32, 64, 512]
 # PLOT DATA for config= 3 with different block sizes
 
-N=0 L=4,161.00,161.00,161.00
-N=0 L=8,161.00,161.00,161.00,299.95
-N=0 L=16,161.00,161.00,161.00,305.00,593.00
-N=0 L=32,161.00,161.00,161.00,305.00,593.00
-N=2 L=4,98.86,97.45,94.62
-N=2 L=8,76.26,74.14,70.61,74.40
-N=2 L=16,18.36,14.12,9.89,13.60,19.84
-N=2 L=32,16.95,12.00,6.36,10.70,18.21
-N=4 L=4,98.15,95.33,93.21
-N=4 L=8,75.56,72.03,69.20,70.39
-N=4 L=16,17.65,12.00,8.47,9.59,12.04
-N=4 L=32,16.24,9.89,4.94,6.69,10.40
-N=8 L=4,98.15,95.33,93.21
-N=8 L=8,75.56,72.03,69.20,70.39
-N=8 L=16,17.65,12.00,8.47,9.59,12.04
-N=8 L=32,16.24,9.89,4.94,6.69,10.40
-N=16 L=4,98.15,95.33,93.21
-N=16 L=8,75.56,72.03,69.20,70.39
-N=16 L=16,17.65,12.00,8.47,9.59,12.04
-N=16 L=32,16.24,9.89,4.94,6.69,10.40
-N=32 L=4,98.15,95.33,93.21
-N=32 L=8,75.56,72.03,69.20,70.39
-N=32 L=16,17.65,12.00,8.47,9.59,12.04
-N=32 L=32,16.24,9.89,4.94,6.69,10.40
-N=64 L=4,98.15,95.33,93.21
-N=64 L=8,75.56,72.03,69.20,70.39
-N=64 L=16,17.65,12.00,8.47,9.59,12.04
-N=64 L=32,16.24,9.89,4.94,6.69,10.40
-N=512 L=4,98.15,95.33,93.21
-N=512 L=8,75.56,72.03,69.20,70.39
-N=512 L=16,17.65,12.00,8.47,9.59,12.04
-N=512 L=32,16.24,9.89,4.94,6.69,10.40# PLOT DATA for config= 0 and block size 1
+N=0 L=4,161.00,161.00
+N=0 L=8,161.00,161.00,299.95
+N=0 L=16,161.00,161.00,305.00,593.00
+N=0 L=32,161.00,161.00,305.00,593.00,1169.00
+N=2 L=4,98.86,94.62
+N=2 L=8,76.26,70.61,74.40
+N=2 L=16,18.36,9.89,13.60,19.84
+N=2 L=32,16.95,6.36,10.70,18.21,30.76
+N=4 L=4,98.15,93.21
+N=4 L=8,75.56,69.20,70.39
+N=4 L=16,17.65,8.47,9.59,12.04
+N=4 L=32,16.24,4.94,6.69,10.40,15.38
+N=8 L=4,98.15,93.21
+N=8 L=8,75.56,69.20,70.39
+N=8 L=16,17.65,8.47,9.59,12.04
+N=8 L=32,16.24,4.94,6.69,10.40,15.38
+N=16 L=4,98.15,93.21
+N=16 L=8,75.56,69.20,70.39
+N=16 L=16,17.65,8.47,9.59,12.04
+N=16 L=32,16.24,4.94,6.69,10.40,15.38
+N=32 L=4,98.15,93.21
+N=32 L=8,75.56,69.20,70.39
+N=32 L=16,17.65,8.47,9.59,12.04
+N=32 L=32,16.24,4.94,6.69,10.40,15.38
+N=64 L=4,98.15,93.21
+N=64 L=8,75.56,69.20,70.39
+N=64 L=16,17.65,8.47,9.59,12.04
+N=64 L=32,16.24,4.94,6.69,10.40,15.38
+N=512 L=4,98.15,93.21
+N=512 L=8,75.56,69.20,70.39
+N=512 L=16,17.65,8.47,9.59,12.04
+N=512 L=32,16.24,4.94,6.69,10.40,15.38
+# PLOT DATA for config= 0 and block size 1
 
 
 0       	2.00
@@ -811,55 +720,6 @@ N=512 L=32,16.24,9.89,4.94,6.69,10.40# PLOT DATA for config= 0 and block size 1
 16384   	0.94
 32768   	0.22
 65536   	0.20
-# PLOT DATA for config= 0 and block size 2
-
-
-0       	3.93
-0       	3.93
-0       	4.00
-0       	4.00
-
-
-32      	1.29
-64      	1.02
-128     	0.31
-256     	0.30
-
-
-64      	1.24
-128     	0.96
-256     	0.25
-512     	0.25
-
-
-128     	1.24
-256     	0.96
-512     	0.25
-1024    	0.25
-
-
-256     	1.24
-512     	0.96
-1024    	0.25
-2048    	0.25
-
-
-512     	1.24
-1024    	0.96
-2048    	0.25
-4096    	0.25
-
-
-1024    	1.24
-2048    	0.96
-4096    	0.25
-8192    	0.25
-
-
-8192    	1.24
-16384   	0.96
-32768   	0.25
-65536   	0.25
 # PLOT DATA for config= 0 and block size 4
 
 
@@ -983,6 +843,31 @@ N=512 L=32,16.24,9.89,4.94,6.69,10.40# PLOT DATA for config= 0 and block size 1
 
 32768   	0.47
 65536   	0.56
+# PLOT DATA for config= 0 and block size 32
+
+
+0       	64.00
+
+
+256     	1.68
+
+
+512     	0.84
+
+
+1024    	0.84
+
+
+2048    	0.84
+
+
+4096    	0.84
+
+
+8192    	0.84
+
+
+65536   	0.84
 # PLOT DATA for config= 1 and block size 1
 
 
@@ -1032,55 +917,6 @@ N=512 L=32,16.24,9.89,4.94,6.69,10.40# PLOT DATA for config= 0 and block size 1
 16384   	5.63
 32768   	1.32
 65536   	1.21
-# PLOT DATA for config= 1 and block size 2
-
-
-0       	13.93
-0       	13.93
-0       	14.00
-0       	14.00
-
-
-32      	7.34
-64      	5.62
-128     	1.18
-256     	1.04
-
-
-64      	7.16
-128     	5.44
-256     	1.00
-512     	0.86
-
-
-128     	7.16
-256     	5.44
-512     	1.00
-1024    	0.86
-
-
-256     	7.16
-512     	5.44
-1024    	1.00
-2048    	0.86
-
-
-512     	7.16
-1024    	5.44
-2048    	1.00
-4096    	0.86
-
-
-1024    	7.16
-2048    	5.44
-4096    	1.00
-8192    	0.86
-
-
-8192    	7.16
-16384   	5.44
-32768   	1.00
-65536   	0.86
 # PLOT DATA for config= 1 and block size 4
 
 
@@ -1204,6 +1040,31 @@ N=512 L=32,16.24,9.89,4.94,6.69,10.40# PLOT DATA for config= 0 and block size 1
 
 32768   	0.87
 65536   	0.74
+# PLOT DATA for config= 1 and block size 32
+
+
+0       	74.00
+
+
+256     	1.95
+
+
+512     	0.97
+
+
+1024    	0.97
+
+
+2048    	0.97
+
+
+4096    	0.97
+
+
+8192    	0.97
+
+
+65536   	0.97
 # PLOT DATA for config= 2 and block size 1
 
 
@@ -1253,55 +1114,6 @@ N=512 L=32,16.24,9.89,4.94,6.69,10.40# PLOT DATA for config= 0 and block size 1
 16384   	7.98
 32768   	1.86
 65536   	1.71
-# PLOT DATA for config= 2 and block size 2
-
-
-0       	32.44
-0       	32.44
-0       	33.00
-0       	33.00
-
-
-32      	10.92
-64      	8.60
-128     	2.54
-256     	2.46
-
-
-64      	10.49
-128     	8.17
-256     	2.11
-512     	2.03
-
-
-128     	10.49
-256     	8.17
-512     	2.11
-1024    	2.03
-
-
-256     	10.49
-512     	8.17
-1024    	2.11
-2048    	2.03
-
-
-512     	10.49
-1024    	8.17
-2048    	2.11
-4096    	2.03
-
-
-1024    	10.49
-2048    	8.17
-4096    	2.11
-8192    	2.03
-
-
-8192    	10.49
-16384   	8.17
-32768   	2.11
-65536   	2.03
 # PLOT DATA for config= 2 and block size 4
 
 
@@ -1425,6 +1237,31 @@ N=512 L=32,16.24,9.89,4.94,6.69,10.40# PLOT DATA for config= 0 and block size 1
 
 32768   	3.83
 65536   	4.51
+# PLOT DATA for config= 2 and block size 32
+
+
+0       	513.00
+
+
+256     	13.50
+
+
+512     	6.75
+
+
+1024    	6.75
+
+
+2048    	6.75
+
+
+4096    	6.75
+
+
+8192    	6.75
+
+
+65536   	6.75
 # PLOT DATA for config= 3 and block size 1
 
 
@@ -1474,55 +1311,6 @@ N=512 L=32,16.24,9.89,4.94,6.69,10.40# PLOT DATA for config= 0 and block size 1
 16384   	75.56
 32768   	17.65
 65536   	16.24
-# PLOT DATA for config= 3 and block size 2
-
-
-0       	161.00
-0       	161.00
-0       	161.00
-0       	161.00
-
-
-32      	97.45
-64      	74.14
-128     	14.12
-256     	12.00
-
-
-64      	95.33
-128     	72.03
-256     	12.00
-512     	9.89
-
-
-128     	95.33
-256     	72.03
-512     	12.00
-1024    	9.89
-
-
-256     	95.33
-512     	72.03
-1024    	12.00
-2048    	9.89
-
-
-512     	95.33
-1024    	72.03
-2048    	12.00
-4096    	9.89
-
-
-1024    	95.33
-2048    	72.03
-4096    	12.00
-8192    	9.89
-
-
-8192    	95.33
-16384   	72.03
-32768   	12.00
-65536   	9.89
 # PLOT DATA for config= 3 and block size 4
 
 
@@ -1646,67 +1434,92 @@ N=512 L=32,16.24,9.89,4.94,6.69,10.40# PLOT DATA for config= 0 and block size 1
 
 32768   	12.04
 65536   	10.40
+# PLOT DATA for config= 3 and block size 32
+
+
+0       	1169.00
+
+
+256     	30.76
+
+
+512     	15.38
+
+
+1024    	15.38
+
+
+2048    	15.38
+
+
+4096    	15.38
+
+
+8192    	15.38
+
+
+65536   	15.38
 \midrule 4
- & 0 B & 16 B & 0 way & 0.00 \% & 2.00 & 12.00 & 17.00 & 161.00 & 3.93 & 13.93 & 32.44 & 161.00 & 7.79 & 17.79 & 63.32 & 161.00\\ %missCycles = 456 [miss-cost=198, bypass-cost = 258, relevant-accesses=99]
+ & 0 B & 16 B & 0 way & 0.00 \% & 2.00 & 12.00 & 17.00 & 161.00 & 7.79 & 17.79 & 63.32 & 161.00\\ %missCycles = 456 [miss-cost=198, bypass-cost = 258, relevant-accesses=99]
 \midrule 4
- & 0 B & 32 B & 0 way & 0.00 \% & 2.00 & 12.00 & 17.00 & 161.00 & 3.93 & 13.93 & 32.44 & 161.00 & 7.79 & 17.79 & 63.32 & 161.00 & 15.51 & 25.51 & 125.07 & 299.95\\ %missCycles = 456 [miss-cost=268, bypass-cost = 188, relevant-accesses=134]
+ & 0 B & 32 B & 0 way & 0.00 \% & 2.00 & 12.00 & 17.00 & 161.00 & 7.79 & 17.79 & 63.32 & 161.00 & 15.51 & 25.51 & 125.07 & 299.95\\ %missCycles = 456 [miss-cost=268, bypass-cost = 188, relevant-accesses=134]
 \midrule 4
- & 0 B & 64 B & 0 way & 0.00 \% & 2.00 & 12.00 & 17.00 & 161.00 & 4.00 & 14.00 & 33.00 & 161.00 & 8.00 & 18.00 & 65.00 & 161.00 & 16.00 & 26.00 & 129.00 & 305.00 & 32.00 & 42.00 & 257.00 & 593.00\\ %missCycles = 456 [miss-cost=444, bypass-cost = 12, relevant-accesses=222]
+ & 0 B & 64 B & 0 way & 0.00 \% & 2.00 & 12.00 & 17.00 & 161.00 & 8.00 & 18.00 & 65.00 & 161.00 & 16.00 & 26.00 & 129.00 & 305.00 & 32.00 & 42.00 & 257.00 & 593.00\\ %missCycles = 456 [miss-cost=444, bypass-cost = 12, relevant-accesses=222]
 \midrule 4
- & 0 B & 128 B & 0 way & 0.00 \% & 2.00 & 12.00 & 17.00 & 161.00 & 4.00 & 14.00 & 33.00 & 161.00 & 8.00 & 18.00 & 65.00 & 161.00 & 16.00 & 26.00 & 129.00 & 305.00 & 32.00 & 42.00 & 257.00 & 593.00\\ %missCycles = 456 [miss-cost=456, bypass-cost = 0, relevant-accesses=228]
+ & 0 B & 128 B & 0 way & 0.00 \% & 2.00 & 12.00 & 17.00 & 161.00 & 8.00 & 18.00 & 65.00 & 161.00 & 16.00 & 26.00 & 129.00 & 305.00 & 32.00 & 42.00 & 257.00 & 593.00 & 64.00 & 74.00 & 513.00 & 1169.00\\ %missCycles = 456 [miss-cost=456, bypass-cost = 0, relevant-accesses=228]
 \midrule 4
- & 32 B & 16 B & 2 way & 38.60 \% & 1.23 & 7.37 & 10.44 & 98.86 & 1.29 & 7.34 & 10.92 & 97.45 & 1.31 & 7.18 & 11.04 & 94.62\\ %missCycles = 280 [miss-cost=22, bypass-cost = 258, relevant-accesses=49]
+ & 32 B & 16 B & 2 way & 38.60 \% & 1.23 & 7.37 & 10.44 & 98.86 & 1.31 & 7.18 & 11.04 & 94.62\\ %missCycles = 280 [miss-cost=22, bypass-cost = 258, relevant-accesses=49]
 \midrule 4
- & 64 B & 32 B & 2 way & 52.63 \% & 0.95 & 5.68 & 8.05 & 76.26 & 1.02 & 5.62 & 8.60 & 74.14 & 1.04 & 5.42 & 8.72 & 70.61 & 1.25 & 5.63 & 10.40 & 74.40\\ %missCycles = 216 [miss-cost=28, bypass-cost = 188, relevant-accesses=82]
+ & 64 B & 32 B & 2 way & 52.63 \% & 0.95 & 5.68 & 8.05 & 76.26 & 1.04 & 5.42 & 8.72 & 70.61 & 1.25 & 5.63 & 10.40 & 74.40\\ %missCycles = 216 [miss-cost=28, bypass-cost = 188, relevant-accesses=82]
 \midrule 4
- & 128 B & 64 B & 2 way & 88.60 \% & 0.23 & 1.37 & 1.94 & 18.36 & 0.31 & 1.18 & 2.54 & 14.12 & 0.33 & 0.95 & 2.73 & 9.89 & 0.54 & 1.11 & 4.41 & 13.60 & 0.89 & 1.42 & 7.21 & 19.84\\ %missCycles = 52 [miss-cost=42, bypass-cost = 10, relevant-accesses=41]
+ & 128 B & 64 B & 2 way & 88.60 \% & 0.23 & 1.37 & 1.94 & 18.36 & 0.33 & 0.95 & 2.73 & 9.89 & 0.54 & 1.11 & 4.41 & 13.60 & 0.89 & 1.42 & 7.21 & 19.84\\ %missCycles = 52 [miss-cost=42, bypass-cost = 10, relevant-accesses=45]
 \midrule 4
- & 256 B & 128 B & 2 way & 89.47 \% & 0.21 & 1.26 & 1.79 & 16.95 & 0.30 & 1.04 & 2.46 & 12.00 & 0.32 & 0.71 & 2.57 & 6.36 & 0.56 & 0.91 & 4.53 & 10.70 & 0.98 & 1.29 & 7.89 & 18.21\\ %missCycles = 48 [miss-cost=48, bypass-cost = 0, relevant-accesses=46]
+ & 256 B & 128 B & 2 way & 89.47 \% & 0.21 & 1.26 & 1.79 & 16.95 & 0.32 & 0.71 & 2.57 & 6.36 & 0.56 & 0.91 & 4.53 & 10.70 & 0.98 & 1.29 & 7.89 & 18.21 & 1.68 & 1.95 & 13.50 & 30.76\\ %missCycles = 48 [miss-cost=48, bypass-cost = 0, relevant-accesses=52]
 \midrule 4
- & 64 B & 16 B & 4 way & 39.04 \% & 1.22 & 7.32 & 10.36 & 98.15 & 1.24 & 7.16 & 10.49 & 95.33 & 1.24 & 7.03 & 10.47 & 93.21\\ %missCycles = 278 [miss-cost=20, bypass-cost = 258, relevant-accesses=49]
+ & 64 B & 16 B & 4 way & 39.04 \% & 1.22 & 7.32 & 10.36 & 98.15 & 1.24 & 7.03 & 10.47 & 93.21\\ %missCycles = 278 [miss-cost=20, bypass-cost = 258, relevant-accesses=49]
 \midrule 4
- & 128 B & 32 B & 4 way & 53.07 \% & 0.94 & 5.63 & 7.98 & 75.56 & 0.96 & 5.44 & 8.17 & 72.03 & 0.96 & 5.26 & 8.15 & 69.20 & 1.04 & 5.29 & 8.71 & 70.39\\ %missCycles = 214 [miss-cost=26, bypass-cost = 188, relevant-accesses=82]
+ & 128 B & 32 B & 4 way & 53.07 \% & 0.94 & 5.63 & 7.98 & 75.56 & 0.96 & 5.26 & 8.15 & 69.20 & 1.04 & 5.29 & 8.71 & 70.39\\ %missCycles = 214 [miss-cost=26, bypass-cost = 188, relevant-accesses=82]
 \midrule 4
- & 256 B & 64 B & 4 way & 89.04 \% & 0.22 & 1.32 & 1.86 & 17.65 & 0.25 & 1.00 & 2.11 & 12.00 & 0.26 & 0.79 & 2.16 & 8.47 & 0.33 & 0.77 & 2.71 & 9.59 & 0.47 & 0.87 & 3.83 & 12.04\\ %missCycles = 50 [miss-cost=40, bypass-cost = 10, relevant-accesses=40]
+ & 256 B & 64 B & 4 way & 89.04 \% & 0.22 & 1.32 & 1.86 & 17.65 & 0.26 & 0.79 & 2.16 & 8.47 & 0.33 & 0.77 & 2.71 & 9.59 & 0.47 & 0.87 & 3.83 & 12.04\\ %missCycles = 50 [miss-cost=40, bypass-cost = 10, relevant-accesses=48]
 \midrule 4
- & 512 B & 128 B & 4 way & 89.91 \% & 0.20 & 1.21 & 1.71 & 16.24 & 0.25 & 0.86 & 2.03 & 9.89 & 0.25 & 0.55 & 2.00 & 4.94 & 0.35 & 0.57 & 2.83 & 6.69 & 0.56 & 0.74 & 4.51 & 10.40\\ %missCycles = 46 [miss-cost=46, bypass-cost = 0, relevant-accesses=45]
+ & 512 B & 128 B & 4 way & 89.91 \% & 0.20 & 1.21 & 1.71 & 16.24 & 0.25 & 0.55 & 2.00 & 4.94 & 0.35 & 0.57 & 2.83 & 6.69 & 0.56 & 0.74 & 4.51 & 10.40 & 0.84 & 0.97 & 6.75 & 15.38\\ %missCycles = 46 [miss-cost=46, bypass-cost = 0, relevant-accesses=52]
 \midrule 4
- & 128 B & 16 B & 8 way & 39.04 \% & 1.22 & 7.32 & 10.36 & 98.15 & 1.24 & 7.16 & 10.49 & 95.33 & 1.24 & 7.03 & 10.47 & 93.21\\ %missCycles = 278 [miss-cost=20, bypass-cost = 258, relevant-accesses=49]
+ & 128 B & 16 B & 8 way & 39.04 \% & 1.22 & 7.32 & 10.36 & 98.15 & 1.24 & 7.03 & 10.47 & 93.21\\ %missCycles = 278 [miss-cost=20, bypass-cost = 258, relevant-accesses=49]
 \midrule 4
- & 256 B & 32 B & 8 way & 53.07 \% & 0.94 & 5.63 & 7.98 & 75.56 & 0.96 & 5.44 & 8.17 & 72.03 & 0.96 & 5.26 & 8.15 & 69.20 & 1.04 & 5.29 & 8.71 & 70.39\\ %missCycles = 214 [miss-cost=26, bypass-cost = 188, relevant-accesses=82]
+ & 256 B & 32 B & 8 way & 53.07 \% & 0.94 & 5.63 & 7.98 & 75.56 & 0.96 & 5.26 & 8.15 & 69.20 & 1.04 & 5.29 & 8.71 & 70.39\\ %missCycles = 214 [miss-cost=26, bypass-cost = 188, relevant-accesses=82]
 \midrule 4
- & 512 B & 64 B & 8 way & 89.04 \% & 0.22 & 1.32 & 1.86 & 17.65 & 0.25 & 1.00 & 2.11 & 12.00 & 0.26 & 0.79 & 2.16 & 8.47 & 0.33 & 0.77 & 2.71 & 9.59 & 0.47 & 0.87 & 3.83 & 12.04\\ %missCycles = 50 [miss-cost=40, bypass-cost = 10, relevant-accesses=40]
+ & 512 B & 64 B & 8 way & 89.04 \% & 0.22 & 1.32 & 1.86 & 17.65 & 0.26 & 0.79 & 2.16 & 8.47 & 0.33 & 0.77 & 2.71 & 9.59 & 0.47 & 0.87 & 3.83 & 12.04\\ %missCycles = 50 [miss-cost=40, bypass-cost = 10, relevant-accesses=48]
 \midrule 4
- & 1024 B & 128 B & 8 way & 89.91 \% & 0.20 & 1.21 & 1.71 & 16.24 & 0.25 & 0.86 & 2.03 & 9.89 & 0.25 & 0.55 & 2.00 & 4.94 & 0.35 & 0.57 & 2.83 & 6.69 & 0.56 & 0.74 & 4.51 & 10.40\\ %missCycles = 46 [miss-cost=46, bypass-cost = 0, relevant-accesses=45]
+ & 1024 B & 128 B & 8 way & 89.91 \% & 0.20 & 1.21 & 1.71 & 16.24 & 0.25 & 0.55 & 2.00 & 4.94 & 0.35 & 0.57 & 2.83 & 6.69 & 0.56 & 0.74 & 4.51 & 10.40 & 0.84 & 0.97 & 6.75 & 15.38\\ %missCycles = 46 [miss-cost=46, bypass-cost = 0, relevant-accesses=52]
 \midrule 4
- & 256 B & 16 B & 16 way & 39.04 \% & 1.22 & 7.32 & 10.36 & 98.15 & 1.24 & 7.16 & 10.49 & 95.33 & 1.24 & 7.03 & 10.47 & 93.21\\ %missCycles = 278 [miss-cost=20, bypass-cost = 258, relevant-accesses=49]
+ & 256 B & 16 B & 16 way & 39.04 \% & 1.22 & 7.32 & 10.36 & 98.15 & 1.24 & 7.03 & 10.47 & 93.21\\ %missCycles = 278 [miss-cost=20, bypass-cost = 258, relevant-accesses=49]
 \midrule 4
- & 512 B & 32 B & 16 way & 53.07 \% & 0.94 & 5.63 & 7.98 & 75.56 & 0.96 & 5.44 & 8.17 & 72.03 & 0.96 & 5.26 & 8.15 & 69.20 & 1.04 & 5.29 & 8.71 & 70.39\\ %missCycles = 214 [miss-cost=26, bypass-cost = 188, relevant-accesses=82]
+ & 512 B & 32 B & 16 way & 53.07 \% & 0.94 & 5.63 & 7.98 & 75.56 & 0.96 & 5.26 & 8.15 & 69.20 & 1.04 & 5.29 & 8.71 & 70.39\\ %missCycles = 214 [miss-cost=26, bypass-cost = 188, relevant-accesses=82]
 \midrule 4
- & 1024 B & 64 B & 16 way & 89.04 \% & 0.22 & 1.32 & 1.86 & 17.65 & 0.25 & 1.00 & 2.11 & 12.00 & 0.26 & 0.79 & 2.16 & 8.47 & 0.33 & 0.77 & 2.71 & 9.59 & 0.47 & 0.87 & 3.83 & 12.04\\ %missCycles = 50 [miss-cost=40, bypass-cost = 10, relevant-accesses=40]
+ & 1024 B & 64 B & 16 way & 89.04 \% & 0.22 & 1.32 & 1.86 & 17.65 & 0.26 & 0.79 & 2.16 & 8.47 & 0.33 & 0.77 & 2.71 & 9.59 & 0.47 & 0.87 & 3.83 & 12.04\\ %missCycles = 50 [miss-cost=40, bypass-cost = 10, relevant-accesses=48]
 \midrule 4
- & 2048 B & 128 B & 16 way & 89.91 \% & 0.20 & 1.21 & 1.71 & 16.24 & 0.25 & 0.86 & 2.03 & 9.89 & 0.25 & 0.55 & 2.00 & 4.94 & 0.35 & 0.57 & 2.83 & 6.69 & 0.56 & 0.74 & 4.51 & 10.40\\ %missCycles = 46 [miss-cost=46, bypass-cost = 0, relevant-accesses=45]
+ & 2048 B & 128 B & 16 way & 89.91 \% & 0.20 & 1.21 & 1.71 & 16.24 & 0.25 & 0.55 & 2.00 & 4.94 & 0.35 & 0.57 & 2.83 & 6.69 & 0.56 & 0.74 & 4.51 & 10.40 & 0.84 & 0.97 & 6.75 & 15.38\\ %missCycles = 46 [miss-cost=46, bypass-cost = 0, relevant-accesses=52]
 \midrule 4
- & 512 B & 16 B & 32 way & 39.04 \% & 1.22 & 7.32 & 10.36 & 98.15 & 1.24 & 7.16 & 10.49 & 95.33 & 1.24 & 7.03 & 10.47 & 93.21\\ %missCycles = 278 [miss-cost=20, bypass-cost = 258, relevant-accesses=49]
+ & 512 B & 16 B & 32 way & 39.04 \% & 1.22 & 7.32 & 10.36 & 98.15 & 1.24 & 7.03 & 10.47 & 93.21\\ %missCycles = 278 [miss-cost=20, bypass-cost = 258, relevant-accesses=49]
 \midrule 4
- & 1024 B & 32 B & 32 way & 53.07 \% & 0.94 & 5.63 & 7.98 & 75.56 & 0.96 & 5.44 & 8.17 & 72.03 & 0.96 & 5.26 & 8.15 & 69.20 & 1.04 & 5.29 & 8.71 & 70.39\\ %missCycles = 214 [miss-cost=26, bypass-cost = 188, relevant-accesses=82]
+ & 1024 B & 32 B & 32 way & 53.07 \% & 0.94 & 5.63 & 7.98 & 75.56 & 0.96 & 5.26 & 8.15 & 69.20 & 1.04 & 5.29 & 8.71 & 70.39\\ %missCycles = 214 [miss-cost=26, bypass-cost = 188, relevant-accesses=82]
 \midrule 4
- & 2048 B & 64 B & 32 way & 89.04 \% & 0.22 & 1.32 & 1.86 & 17.65 & 0.25 & 1.00 & 2.11 & 12.00 & 0.26 & 0.79 & 2.16 & 8.47 & 0.33 & 0.77 & 2.71 & 9.59 & 0.47 & 0.87 & 3.83 & 12.04\\ %missCycles = 50 [miss-cost=40, bypass-cost = 10, relevant-accesses=40]
+ & 2048 B & 64 B & 32 way & 89.04 \% & 0.22 & 1.32 & 1.86 & 17.65 & 0.26 & 0.79 & 2.16 & 8.47 & 0.33 & 0.77 & 2.71 & 9.59 & 0.47 & 0.87 & 3.83 & 12.04\\ %missCycles = 50 [miss-cost=40, bypass-cost = 10, relevant-accesses=48]
 \midrule 4
- & 4096 B & 128 B & 32 way & 89.91 \% & 0.20 & 1.21 & 1.71 & 16.24 & 0.25 & 0.86 & 2.03 & 9.89 & 0.25 & 0.55 & 2.00 & 4.94 & 0.35 & 0.57 & 2.83 & 6.69 & 0.56 & 0.74 & 4.51 & 10.40\\ %missCycles = 46 [miss-cost=46, bypass-cost = 0, relevant-accesses=45]
+ & 4096 B & 128 B & 32 way & 89.91 \% & 0.20 & 1.21 & 1.71 & 16.24 & 0.25 & 0.55 & 2.00 & 4.94 & 0.35 & 0.57 & 2.83 & 6.69 & 0.56 & 0.74 & 4.51 & 10.40 & 0.84 & 0.97 & 6.75 & 15.38\\ %missCycles = 46 [miss-cost=46, bypass-cost = 0, relevant-accesses=52]
 \midrule 4
- & 1024 B & 16 B & 64 way & 39.04 \% & 1.22 & 7.32 & 10.36 & 98.15 & 1.24 & 7.16 & 10.49 & 95.33 & 1.24 & 7.03 & 10.47 & 93.21\\ %missCycles = 278 [miss-cost=20, bypass-cost = 258, relevant-accesses=49]
+ & 1024 B & 16 B & 64 way & 39.04 \% & 1.22 & 7.32 & 10.36 & 98.15 & 1.24 & 7.03 & 10.47 & 93.21\\ %missCycles = 278 [miss-cost=20, bypass-cost = 258, relevant-accesses=49]
 \midrule 4
- & 2048 B & 32 B & 64 way & 53.07 \% & 0.94 & 5.63 & 7.98 & 75.56 & 0.96 & 5.44 & 8.17 & 72.03 & 0.96 & 5.26 & 8.15 & 69.20 & 1.04 & 5.29 & 8.71 & 70.39\\ %missCycles = 214 [miss-cost=26, bypass-cost = 188, relevant-accesses=82]
+ & 2048 B & 32 B & 64 way & 53.07 \% & 0.94 & 5.63 & 7.98 & 75.56 & 0.96 & 5.26 & 8.15 & 69.20 & 1.04 & 5.29 & 8.71 & 70.39\\ %missCycles = 214 [miss-cost=26, bypass-cost = 188, relevant-accesses=82]
 \midrule 4
- & 4096 B & 64 B & 64 way & 89.04 \% & 0.22 & 1.32 & 1.86 & 17.65 & 0.25 & 1.00 & 2.11 & 12.00 & 0.26 & 0.79 & 2.16 & 8.47 & 0.33 & 0.77 & 2.71 & 9.59 & 0.47 & 0.87 & 3.83 & 12.04\\ %missCycles = 50 [miss-cost=40, bypass-cost = 10, relevant-accesses=40]
+ & 4096 B & 64 B & 64 way & 89.04 \% & 0.22 & 1.32 & 1.86 & 17.65 & 0.26 & 0.79 & 2.16 & 8.47 & 0.33 & 0.77 & 2.71 & 9.59 & 0.47 & 0.87 & 3.83 & 12.04\\ %missCycles = 50 [miss-cost=40, bypass-cost = 10, relevant-accesses=48]
 \midrule 4
- & 8192 B & 128 B & 64 way & 89.91 \% & 0.20 & 1.21 & 1.71 & 16.24 & 0.25 & 0.86 & 2.03 & 9.89 & 0.25 & 0.55 & 2.00 & 4.94 & 0.35 & 0.57 & 2.83 & 6.69 & 0.56 & 0.74 & 4.51 & 10.40\\ %missCycles = 46 [miss-cost=46, bypass-cost = 0, relevant-accesses=45]
+ & 8192 B & 128 B & 64 way & 89.91 \% & 0.20 & 1.21 & 1.71 & 16.24 & 0.25 & 0.55 & 2.00 & 4.94 & 0.35 & 0.57 & 2.83 & 6.69 & 0.56 & 0.74 & 4.51 & 10.40 & 0.84 & 0.97 & 6.75 & 15.38\\ %missCycles = 46 [miss-cost=46, bypass-cost = 0, relevant-accesses=52]
 \midrule 4
- & 8192 B & 16 B & 512 way & 39.04 \% & 1.22 & 7.32 & 10.36 & 98.15 & 1.24 & 7.16 & 10.49 & 95.33 & 1.24 & 7.03 & 10.47 & 93.21\\ %missCycles = 278 [miss-cost=20, bypass-cost = 258, relevant-accesses=49]
+ & 8192 B & 16 B & 512 way & 39.04 \% & 1.22 & 7.32 & 10.36 & 98.15 & 1.24 & 7.03 & 10.47 & 93.21\\ %missCycles = 278 [miss-cost=20, bypass-cost = 258, relevant-accesses=49]
 \midrule 4
- & 16384 B & 32 B & 512 way & 53.07 \% & 0.94 & 5.63 & 7.98 & 75.56 & 0.96 & 5.44 & 8.17 & 72.03 & 0.96 & 5.26 & 8.15 & 69.20 & 1.04 & 5.29 & 8.71 & 70.39\\ %missCycles = 214 [miss-cost=26, bypass-cost = 188, relevant-accesses=82]
+ & 16384 B & 32 B & 512 way & 53.07 \% & 0.94 & 5.63 & 7.98 & 75.56 & 0.96 & 5.26 & 8.15 & 69.20 & 1.04 & 5.29 & 8.71 & 70.39\\ %missCycles = 214 [miss-cost=26, bypass-cost = 188, relevant-accesses=82]
 \midrule 4
- & 32768 B & 64 B & 512 way & 89.04 \% & 0.22 & 1.32 & 1.86 & 17.65 & 0.25 & 1.00 & 2.11 & 12.00 & 0.26 & 0.79 & 2.16 & 8.47 & 0.33 & 0.77 & 2.71 & 9.59 & 0.47 & 0.87 & 3.83 & 12.04\\ %missCycles = 50 [miss-cost=40, bypass-cost = 10, relevant-accesses=40]
+ & 32768 B & 64 B & 512 way & 89.04 \% & 0.22 & 1.32 & 1.86 & 17.65 & 0.26 & 0.79 & 2.16 & 8.47 & 0.33 & 0.77 & 2.71 & 9.59 & 0.47 & 0.87 & 3.83 & 12.04\\ %missCycles = 50 [miss-cost=40, bypass-cost = 10, relevant-accesses=48]
 \midrule 4
- & 65536 B & 128 B & 512 way & 89.91 \% & 0.20 & 1.21 & 1.71 & 16.24 & 0.25 & 0.86 & 2.03 & 9.89 & 0.25 & 0.55 & 2.00 & 4.94 & 0.35 & 0.57 & 2.83 & 6.69 & 0.56 & 0.74 & 4.51 & 10.40\\ %missCycles = 46 [miss-cost=46, bypass-cost = 0, relevant-accesses=45]
+ & 65536 B & 128 B & 512 way & 89.91 \% & 0.20 & 1.21 & 1.71 & 16.24 & 0.25 & 0.55 & 2.00 & 4.94 & 0.35 & 0.57 & 2.83 & 6.69 & 0.56 & 0.74 & 4.51 & 10.40 & 0.84 & 0.97 & 6.75 & 15.38\\ %missCycles = 46 [miss-cost=46, bypass-cost = 0, relevant-accesses=52]
