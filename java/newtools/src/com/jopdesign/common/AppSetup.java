@@ -23,8 +23,8 @@ package com.jopdesign.common;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.logger.LogConfig;
-import com.jopdesign.common.tools.ClassWriter;
 import com.jopdesign.common.tools.AppLoader;
+import com.jopdesign.common.tools.ClassWriter;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.util.ClassPath;
 
@@ -34,6 +34,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -471,13 +472,13 @@ public class AppSetup {
         if ( mainName == null ) {
             mainName = config.getOption(Config.MAIN_METHOD_NAME);
         }
-        MethodInfo[] methods = clsInfo.getMethodByName(mainName);
+        Collection<MethodInfo> methods = clsInfo.getMethodByName(mainName);
 
-        if ( methods.length == 0 ) {
+        if ( methods.isEmpty() ) {
             throw new Config.BadConfigurationException("Method '"+mainName+"' not found in '"
                         +clsName+"'.");
         }
-        if ( methods.length > 1 ) {
+        if ( methods.size() > 1 ) {
             // TODO maybe check if there is a single static method by that name?
             StringBuffer s = new StringBuffer(String.format(
                     "Multiple candidates for '%s' in '%s', please specify a signature: ", mainName, clsName) );
@@ -488,7 +489,7 @@ public class AppSetup {
             throw new Config.BadConfigurationException(s.toString());
         }
 
-        return methods[0];
+        return methods.iterator().next();
     }
 
 }
