@@ -49,7 +49,7 @@ public class ObjectCacheAnalysisDemo {
 		private long missCost;
 		private long bypassCost;
 		private long fieldAccesses;
-		private long bypassAccesses;
+		private long bypassCount;
 		private long missCount;
 
 		/**
@@ -62,7 +62,7 @@ public class ObjectCacheAnalysisDemo {
 			this.bypassCost = bypassCost;
 			this.fieldAccesses = fieldAccesses;
 			this.missCount = missCount;
-			this.bypassAccesses = bypassAccesses;
+			this.bypassCount = bypassAccesses;
 		}
 
 		public ObjectCacheCost() {
@@ -75,11 +75,11 @@ public class ObjectCacheAnalysisDemo {
 		}
 		
 		public long getBypassCost() { return bypassCost; }
-		public long getBypassAccesses() { return this.bypassAccesses; }
+		public long getBypassCount() { return this.bypassCount; }
 		
 		public void addBypassCost(long bypassCost, int accesses) {
 			this.bypassCost += bypassCost;
-			this.bypassAccesses += accesses;			
+			this.bypassCount += accesses;			
 		}
 
 		public ObjectCacheCost addMissCost(long missCost, int missCount) {
@@ -95,7 +95,7 @@ public class ObjectCacheAnalysisDemo {
 
 		public long getTotalFieldAccesses()
 		{
-			return bypassAccesses + fieldAccesses;
+			return bypassCount + fieldAccesses;
 		}
 		
 		public long getFieldAccessesWithoutBypass()
@@ -110,7 +110,7 @@ public class ObjectCacheAnalysisDemo {
 		public void addCost(ObjectCacheCost occ) {
 			this.missCount += occ.missCount;
 			this.missCost += occ.missCost;
-			this.bypassAccesses += occ.bypassAccesses;
+			this.bypassCount += occ.bypassCount;
 			this.bypassCost += occ.bypassCost;
 			addAccessToCachedField(occ.fieldAccesses);
 		}
@@ -121,7 +121,7 @@ public class ObjectCacheAnalysisDemo {
 
 		public ObjectCacheCost times(Long value) {
 			return new ObjectCacheCost(missCount * value, missCost * value,
-					                   bypassAccesses * value, bypassCost * value,
+					                   bypassCount * value, bypassCost * value,
 					                   fieldAccesses * value);
 		}
 
@@ -193,12 +193,7 @@ public class ObjectCacheAnalysisDemo {
 		// Cost ~ number of cache misses
 		// TODO: A basic block is a scope too!
 		public void visitBasicBlockNode(BasicBlockNode n) {
-			long worstCaseMissCost;
-			if(jopconfig.objectCacheFillLine()) {
-				worstCaseMissCost = jopconfig.getObjectCacheAccessTime(true);	
-			} else {
-				worstCaseMissCost = jopconfig.getObjectCacheAccessTime(false);
-			}
+			long worstCaseMissCost = jopconfig.getObjectCacheLoadBlockCycles();
 			for(InstructionHandle ih : n.getBasicBlock().getInstructions()) {
 				if(null == ObjectRefAnalysis.getHandleType(project, n, ih)) continue;
 				if(! ObjectRefAnalysis.isFieldCached(n.getControlFlowGraph(), ih, jopconfig.getObjectCacheMaxCachedFieldIndex())) {
@@ -266,7 +261,7 @@ public class ObjectCacheAnalysisDemo {
 		this.project = p;
 		this.jopconfig = jopconfig;
 		this.maxCachedFieldIndex = jopconfig.getObjectCacheMaxCachedFieldIndex();
-		this.objRefAnalysis = new ObjectRefAnalysis(project, jopconfig.objectCacheFillLine, jopconfig.objectCacheSingleField(), maxCachedFieldIndex, DEFAULT_SET_SIZE);
+		this.objRefAnalysis = new ObjectRefAnalysis(project, jopconfig.objectCacheSingleField(), jopconfig.objectCacheBlockSize(), maxCachedFieldIndex, DEFAULT_SET_SIZE);
 		this.costModel = getCostModel();		
 	}
 	
@@ -275,21 +270,10 @@ public class ObjectCacheAnalysisDemo {
 	}
 	
 	private ObjectCacheCostModel getCostModel() {
-		long loadCacheLineCost;
-		long loadFieldCost;
 		long fieldAccessCostBypass = jopconfig.getObjectCacheBypassTime();
 		/* field-as-tag */
-		if(jopconfig.objectCacheSingleField()) {
-			loadCacheLineCost = 0;
-			loadFieldCost = jopconfig.getObjectCacheAccessTime(false); 
-		} else if(jopconfig.objectCacheFillLine()) {
-			loadCacheLineCost = jopconfig.getObjectCacheAccessTime(true);
-			loadFieldCost = 0;
-		} else {
-			loadCacheLineCost = 0;
-			loadFieldCost = jopconfig.getObjectCacheAccessTime(false);			
-		}
-		return new ObjectCacheCostModel(loadFieldCost, loadCacheLineCost, fieldAccessCostBypass);
+		long loadBlockCost = jopconfig.getObjectCacheLoadBlockCycles(); 
+		return new ObjectCacheCostModel(loadBlockCost, 0,  fieldAccessCostBypass);
 	}
 
 	public ObjectCacheCost computeCost() {

@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.Vector;
 import java.util.Map.Entry;
 
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
@@ -60,17 +61,16 @@ public class ObjectCacheEvaluation {
 		return resultMap;		
 	}
 
-	public enum OCacheMode { WORD_FILL, LINE_FILL, SINGLE_FIELD };
+	public enum OCacheMode { BLOCK_FILL, SINGLE_FIELD };
 	public static class OCacheAnalysisResult {
-		public OCacheMode mode;
 		public int lineWords;
 		public int ways;
 		public double hitrate;
 		public int configId;
 		public double cyclesPerAccess;
-		private ObjectCacheCost ocCost;		
+		private ObjectCacheCost ocCost;
+		private int blockSize;		
 		/**
-		 * @param mode2
 		 * @param ways2
 		 * @param lineSize
 		 * @param ocCost 
@@ -78,16 +78,16 @@ public class ObjectCacheEvaluation {
 		 * @param hitRate2
 		 * @param bestCyclesPerAccessForConfig
 		 */
-		public OCacheAnalysisResult(OCacheMode mode, 
-									int ways, 
+		public OCacheAnalysisResult(int ways,								
 									int lineSize,
+									int blockSize,
 				                    int configId, 
 				                    double hitRate,
 				                    double cyclesPerAccess, 
 				                    ObjectCacheCost ocCost) {
-			this.mode = mode;
 			this.ways = ways;
 			this.lineWords = lineSize;
+			this.blockSize = blockSize;
 			this.configId = configId;
 			this.hitrate = hitRate;
 			this.cyclesPerAccess = cyclesPerAccess;
@@ -99,21 +99,28 @@ public class ObjectCacheEvaluation {
 		public static Comparator<OCacheAnalysisResult> wayLineComperator() {
 			return new Comparator<OCacheAnalysisResult>() {				
 				public int compare(OCacheAnalysisResult arg0, OCacheAnalysisResult arg1) {
-					int cmpMode = arg0.mode.compareTo(arg1.mode);
 					int cmpWays = new Integer(arg0.ways).compareTo(arg1.ways);
 					int cmpLineSz = new Integer(arg0.lineWords).compareTo(arg1.lineWords);
+					int cmpWordSz = new Integer(arg0.blockSize).compareTo(arg1.blockSize);
 					int cmpConfig = new Integer(arg0.configId).compareTo(arg1.configId);
-					if(cmpMode != 0) return cmpMode;
 					if(cmpWays != 0) return cmpWays;
 					if(cmpLineSz != 0) return cmpLineSz;
+					if(cmpWordSz != 0) return cmpWordSz;
 					return cmpConfig;
 				}
 			};
 		}
-		public static Map<OCacheMode,List<OCacheAnalysisResult>> partitionByMode(List<OCacheAnalysisResult> results) {
-			return partitionBy(results, new Selector<OCacheAnalysisResult,OCacheMode>() {
-				public OCacheMode getKey(OCacheAnalysisResult r) { return r.mode; }
-			}, new TreeMap<OCacheMode,List<OCacheAnalysisResult>>());
+		
+		public static Map<Integer,List<OCacheAnalysisResult>> partitionByLineSize(List<OCacheAnalysisResult> results) {
+			return partitionBy(results, new Selector<OCacheAnalysisResult,Integer>() {
+				public Integer getKey(OCacheAnalysisResult r) { return r.lineWords; }
+			}, new TreeMap<Integer,List<OCacheAnalysisResult>>());
+		}
+
+		public static Map<Integer,List<OCacheAnalysisResult>> partitionByBlockSize(List<OCacheAnalysisResult> results) {
+			return partitionBy(results, new Selector<OCacheAnalysisResult,Integer>() {
+				public Integer getKey(OCacheAnalysisResult r) { return r.blockSize; }
+			}, new TreeMap<Integer,List<OCacheAnalysisResult>>());
 		}
 		
 		private static Map<Integer, List<OCacheAnalysisResult>> partitionByConfig(List<OCacheAnalysisResult> samples) {
@@ -122,12 +129,48 @@ public class ObjectCacheEvaluation {
 			}, new TreeMap<Integer,List<OCacheAnalysisResult>>());
 		}
 
+		public static void dumpBarPlot(List<OCacheAnalysisResult> samples, PrintStream out) {
+			for(Entry<Integer, List<OCacheAnalysisResult>> entryConfig : partitionByConfig(samples).entrySet()) {
+				int config = entryConfig.getKey();				
+				/* Bar Plot for Blocksize=1 : Group By Line Size, Associtativity on X, CMC on Y */
+				boolean first = true;
+				out.println("# PLOT DATA for config= " + config +" with block size 1 ");
+				for(Entry<Integer, List<OCacheAnalysisResult>> entry : partitionByLineSize(entryConfig.getValue()).entrySet()) {
+					int lineSize = entry.getKey();
+					out.printf("L=%d",lineSize);
+					List<OCacheAnalysisResult> results = entry.getValue();
+					Collections.sort(results, OCacheAnalysisResult.wayLineComperator());
+					Vector<Integer> sampleWays = new Vector<Integer>();
+					for(OCacheAnalysisResult r : results) {
+						if(r.blockSize > 1) continue;
+						out.printf(",%.2f",r.cyclesPerAccess);
+						sampleWays.add(r.ways);
+					}
+					out.println(" # Ways: "+sampleWays);
+				}
+				out.println("# PLOT DATA for config= " + config +" with different block sizes");
+				List<OCacheAnalysisResult> results = entryConfig.getValue();
+				Collections.sort(results, OCacheAnalysisResult.wayLineComperator());
+				int oldWays = -1;
+				int oldLineSize = -1;
+				for(OCacheAnalysisResult r : results) {
+					if(r.ways != oldWays || r.lineWords != oldLineSize) {
+						oldWays = r.ways;
+						oldLineSize = r.lineWords;
+						out.printf("\nN=%d L=%d",r.ways, r.lineWords);
+					}
+					out.printf(",%.2f", r.cyclesPerAccess);
+				}
+				out.println("");
+			}
+		}
+
 		public static void dumpPlot(List<OCacheAnalysisResult> samples, PrintStream out) {
 			for(Entry<Integer, List<OCacheAnalysisResult>> entryConfig : partitionByConfig(samples).entrySet()) {
 				int config = entryConfig.getKey();				
-				for(Entry<OCacheMode, List<OCacheAnalysisResult>> entry : partitionByMode(entryConfig.getValue()).entrySet()) {
-					OCacheMode listMode = entry.getKey();
-					System.out.println("# PLOT DATA for config= "+config+" and mode "+listMode.toString());
+				for(Entry<Integer, List<OCacheAnalysisResult>> entry : partitionByBlockSize(entryConfig.getValue()).entrySet()) {
+					int blockSize = entry.getKey();
+					out.println("# PLOT DATA for config= "+config+" and block size "+blockSize);
 					List<OCacheAnalysisResult> results = entry.getValue();
 					Collections.sort(results, OCacheAnalysisResult.wayLineComperator());
 					Iterator<OCacheAnalysisResult> it = results.iterator();
@@ -152,8 +195,9 @@ public class ObjectCacheEvaluation {
 			if(it.hasNext()) sample = it.next();
 			else             sample = null;
 			while(sample != null) {
-				if(oldSample == null || ! oldSample.mode.equals(sample.mode))
-					out.println("\\midrule "+sample.mode);
+				if(oldSample == null || oldSample.blockSize != sample.blockSize) {
+					out.println("\\midrule "+sample.blockSize * 4);
+				}
 				// size, line, assoc, hitrate
 				String comment = sample.ocCost.toString();
 				out.print(String.format(" & %d B",sample.cacheSize()));

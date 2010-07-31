@@ -38,6 +38,15 @@ make java_app wcet P1=paper/trading/plain P2=com/sun/oss/trader P3=Main TARGET_J
 cp ${RESULT_FILE} ${RESULT_DIR}/order_manager.txt
 fi
 
+# The Cruiser Benchmark (dispatcher)
+if [ $RUNCRUISER ] ; then
+    make java_app wcet P1=bench P2=cruiser/control P3=Main \
+        WCET_METHOD="cruiser.control.Dispatcher.dispatch" \
+        TARGET_JDK=jdk16mod \
+        WCET_OPTIONS="${WCET_OPTIONS}"
+    cp java/target/wcet/cruiser.control.Main_cruiser.control.Dispatcher.dispatch/ocache_eval.txt ocache_eval/cruiser.txt
+fi
+
 # The CDx (micro) benchmark
 #make java_app wcet P1=bench P2=scd_micro P3=Main WCET_METHOD="scd_micro.Motion.findIntersection(Lscd_micro/Motion)" \
 if [ $RUNCDX ] ; then

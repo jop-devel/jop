@@ -81,16 +81,16 @@ public class JavaDown {
 			sysoutStream.println(e);
 		}
 		try {
-			outputStream = serialPort.getOutputStream();
-			iStream = serialPort.getInputStream();
-		} catch (IOException e) {
-			sysoutStream.println(e);
-		}
-		try {
 			serialPort.setSerialPortParams(115200, SerialPort.DATABITS_8,
 					SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
 			serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_NONE);
 		} catch (UnsupportedCommOperationException e) {
+			sysoutStream.println(e);
+		}
+ 		try {
+			outputStream = serialPort.getOutputStream();
+			iStream = serialPort.getInputStream();
+		} catch (IOException e) {
 			sysoutStream.println(e);
 		}
 
@@ -103,6 +103,8 @@ public class JavaDown {
 		serialPort.close();
 
 	}
+
+	static final int CNTMOD = 64;
 
 	static public boolean downLoad(String fname) {
 		FileReader fileIn = null;
@@ -118,11 +120,12 @@ public class JavaDown {
 			StreamTokenizer in = new StreamTokenizer(fileIn);
 			in.slashSlashComments(true);
 			in.whitespaceChars(',', ',');
-			byte adword[] = new byte[4];
 			int cnt = 0;
+			int lbuf [] = new int[CNTMOD];
 			for (; in.nextToken() != StreamTokenizer.TT_EOF; ++cnt) {
 				// in.nval contains the next 32 bit word to be sent
 				int l = (int) in.nval;
+				lbuf[cnt % CNTMOD] = l;
 
 				// Java code length at index 1 position in .jop
 				if (cnt == 1) {
@@ -133,17 +136,35 @@ public class JavaDown {
 					byte b = (byte) (l >> ((3 - i) * 8));
 					outputStream.write(b);
 				}
+
 				if (!usb) {
-				    int r = 0;
-				    for (int i = 0; i < 4; i++) {
-					r = (r << 8) | (iStream.read() & 0xff);
-				    }
-				    if (r != l) {
-					sysoutStream.println("received word differs from sent word");
-				    }
+					if (cnt % CNTMOD == CNTMOD-1) {
+						for (int k = 0; k < CNTMOD; k++) {
+							int r = 0;
+							for (int i = 0; i < 4; i++) {
+								r = (r << 8) | (iStream.read() & 0xff);
+							}
+							if (r != lbuf[k]) {
+								sysoutStream.println("received word differs from sent word");
+							}
+						}
+					}
 				}
+
 				if ((cnt & 0x3f) == 0) {
 					sysoutStream.print(prog_char[(cnt >> 6) & 0x07] + "\r");
+				}
+			}
+
+			if (!usb) {
+				for (int k = 0; k < cnt % CNTMOD; k++) {
+					int r = 0;
+					for (int i = 0; i < 4; i++) {
+						r = (r << 8) | (iStream.read() & 0xff);
+					}
+					if (r != lbuf[k]) {
+						sysoutStream.println("received word differs from sent word");
+					}
 				}
 			}
 

@@ -119,7 +119,7 @@ public class Dispatcher implements Runnable {
 
 			try {
 				int i = 0;
-				while (i++ < 32 && System.in.available() > 0) {
+				while (i++ < 32 && System.in.available() > 0) { //@WCA loop <= 32
 					
 					// I/O handling
 					try {
