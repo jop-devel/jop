@@ -466,7 +466,7 @@ public final class AppInfo {
     //////////////////////////////////////////////////////////////////////////////
 
     public ClassRef getClassRef(String className) {
-        ClassInfo cls = getClassInfo(className);
+        ClassInfo cls = classes.get(className);
         if ( cls != null ) {
             return cls.getClassRef();
         }
@@ -474,7 +474,7 @@ public final class AppInfo {
     }
 
     public ClassRef getClassRef(String className, boolean isInterface) {
-        ClassInfo cls = getClassInfo(className);
+        ClassInfo cls = classes.get(className);
         if ( cls != null ) {
             if ( cls.isInterface() != isInterface ) {
                 throw new ClassFormatException("Class '"+className+"' interface flag does not match.");
@@ -486,7 +486,7 @@ public final class AppInfo {
     }
 
     public MethodRef getMethodRef(Signature signature, boolean isInterfaceMethod) {
-        ClassInfo cls = getClassInfo(signature.getClassName());
+        ClassInfo cls = classes.get(signature.getClassName());
         if ( cls != null ) {
             if ( cls.isInterface() != isInterfaceMethod ) {
                 throw new ClassFormatException("Class '"+cls.getClassName()+"' interface flag does not match.");
@@ -504,7 +504,7 @@ public final class AppInfo {
     }
 
     public FieldRef getFieldRef(Signature signature) {
-        ClassInfo cls = getClassInfo(signature.getClassName());
+        ClassInfo cls = classes.get(signature.getClassName());
         if ( cls != null ) {
             FieldInfo field = cls.getFieldInfo(signature.getMemberName());
             if ( field == null ) {

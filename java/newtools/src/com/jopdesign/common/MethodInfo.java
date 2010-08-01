@@ -25,6 +25,7 @@ import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
+import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.log4j.Logger;
@@ -80,9 +81,9 @@ public final class MethodInfo extends ClassMemberInfo {
         methodGen.isStrictfp(val);
     }
 
-    public MethodGen getMethodGen() {
+    public Method getMethod() {
         compileCodeRep();
-        return new MethodGen(methodGen.getMethod(), methodGen.getClassName(), methodGen.getConstantPool());
+        return methodGen.getMethod();
     }
 
     public void setMethodCode(MethodGen method) {
@@ -167,5 +168,13 @@ public final class MethodInfo extends ClassMemberInfo {
     @Override
     public Signature getSignature() {
         return new Signature(getClassInfo().getClassName(), getName(), getDescriptor());
+    }
+
+    /**
+     * Should only be used by ClassInfo.
+     * @return the internal methodGen.                           
+     */
+    protected MethodGen getMethodGen() {
+        return methodGen;
     }
 }

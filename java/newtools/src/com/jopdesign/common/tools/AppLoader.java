@@ -24,6 +24,7 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.type.ClassRef;
+import com.jopdesign.common.type.ConstantInfo;
 import org.apache.log4j.Logger;
 
 import java.util.Collection;
@@ -110,8 +111,8 @@ public class AppLoader {
 
     private void processQueue() {
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("Starting transitive hull loader");
+        if (logger.isInfoEnabled()) {
+            logger.info("Starting transitive hull loader");
         }
 
         while (!queue.isEmpty()) {
@@ -140,7 +141,11 @@ public class AppLoader {
         // process constantpool/fields+methods for class references, load and enqueue them
         int size = classInfo.getConstantPoolSize();
         for (int i = 0; i < size; i++) {
-            ClassRef ref = classInfo.getConstantInfo(i).getClassRef();
+            ConstantInfo constantInfo = classInfo.getConstantInfo(i);
+            if ( constantInfo == null ) {
+                continue;
+            }
+            ClassRef ref = constantInfo.getClassRef();
             if ( ref == null ) {
                 continue;
             }

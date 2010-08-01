@@ -81,22 +81,28 @@ public class LogConfig {
 
         boolean verbose = config.getOption(Config.VERBOSE);
         boolean debug = config.getOption(Config.DEBUG);
+        boolean quiet = config.getOption(Config.QUIET);
 
         ConsoleAppender defaultAppender;
 
         if (verbose) {
-            defaultAppender = new ConsoleAppender(new PatternLayout("%r [%c{1}] %m\n"), "System.err");
+            defaultAppender = new ConsoleAppender(new PatternLayout("%r [%c] %m\n"), "System.err");
         } else {
             defaultAppender = new ConsoleAppender(new ConsoleLayout("%r [%c{1}] %m\n"), "System.err");
         }
         defaultAppender.setName("ACONSOLE");
 
+        Level defaultLevel = Level.INFO;
+
         if (debug) {
-			defaultAppender.setThreshold(verbose ? Level.DEBUG : Level.INFO);
-		} else {
-			defaultAppender.setThreshold(Level.WARN);
+			defaultLevel = Level.DEBUG;
+        } else if ( quiet ) {
+            defaultLevel = Level.WARN;
 		}
+        defaultAppender.setThreshold(defaultLevel);
+
 		Logger.getRootLogger().addAppender(defaultAppender);
+        Logger.getRootLogger().setLevel(defaultLevel);
 
         // TODO if Config option is used, add html-report logger (or add it anyway?)
 

@@ -296,6 +296,7 @@ public class AppSetup {
         }
 
         appInfo.setClassPath(new ClassPath(config.getOption(Config.CLASSPATH)));
+        appInfo.setExitOnMissingClass(!config.getOption(Config.VERBOSE));
 
         String[] natives = Config.splitStringList(config.getOption(Config.NATIVE_CLASSES));
         for (String n : natives) {

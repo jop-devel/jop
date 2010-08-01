@@ -61,10 +61,13 @@ public class Config {
             new BoolOption("showconfig", "print current configuration values", Option.SHORT_NONE, true);
 
     public static final BoolOption DEBUG =
-            new BoolOption("debug", "show debug messages", 'd', false);
+            new BoolOption("debug", "show debug level messages", 'd', false);
+
+    public static final BoolOption QUIET =
+            new BoolOption("quiet", "only show warnings and errors. Overruled by '-d'", 'q', false);
 
     public static final BoolOption VERBOSE =
-            new BoolOption("verbose", "be more verbose, and use a more detailed output format", 'v', false);
+            new BoolOption("verbose", "use a more detailed log format and show stacktraces. Can be used with '-d' or '-q'", 'v', false);
 
     public static final StringOption CLASSPATH =
             new StringOption("cp", "classpath of the classes to load", "java/target/dist/classes");
@@ -96,7 +99,8 @@ public class Config {
     public static final StringOption WRITE_CLASSPATH =
             new StringOption("classout", "output path for generated class files", "${out}/classes");
 
-    public static final Option<?>[] standardOptions = { SHOW_HELP, SHOW_VERSION, SHOW_CONFIG, DEBUG, VERBOSE };
+    public static final Option<?>[] standardOptions =
+            { SHOW_HELP, SHOW_VERSION, SHOW_CONFIG, DEBUG, QUIET, VERBOSE };
 
 
     /*

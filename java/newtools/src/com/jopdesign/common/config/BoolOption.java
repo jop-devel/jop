@@ -63,4 +63,14 @@ public class BoolOption extends Option<Boolean> {
         }
         return super.getDefaultsText(defaultValue);
     }
+
+    @Override
+    public boolean isValue(String arg) {
+        try {
+            parse(arg);
+            return true;
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
+    }
 }

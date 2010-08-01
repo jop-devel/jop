@@ -32,6 +32,7 @@ import org.apache.bcel.classfile.ConstantFloat;
 import org.apache.bcel.classfile.ConstantInteger;
 import org.apache.bcel.classfile.ConstantInterfaceMethodref;
 import org.apache.bcel.classfile.ConstantLong;
+import org.apache.bcel.classfile.ConstantMethodref;
 import org.apache.bcel.classfile.ConstantNameAndType;
 import org.apache.bcel.classfile.ConstantPool;
 import org.apache.bcel.classfile.ConstantString;
@@ -81,7 +82,7 @@ public abstract class ConstantInfo<T, U extends Type> {
                 FieldRef fieldRef = appInfo.getFieldRef(sig);
                 return new ConstantFieldInfo(fieldRef);
             case Constants.CONSTANT_Methodref:
-                ConstantInterfaceMethodref mRef = (ConstantInterfaceMethodref) constant;
+                ConstantMethodref mRef = (ConstantMethodref) constant;
                 nRef = (ConstantNameAndType) cp.getConstant(mRef.getNameAndTypeIndex());
                 sig = new Signature(mRef.getClass(cp), nRef.getName(cp), Descriptor.parse(nRef.getSignature(cp)));
                 methodRef = appInfo.getMethodRef(sig, false);

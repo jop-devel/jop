@@ -105,6 +105,9 @@ public final class ClassInfo extends MemberInfo {
             return null;
         }
         Constant c = cpg.getConstant(i);
+        if ( c == null ) {
+            return null;
+        }
         return ConstantInfo.createFromConstant(cpg.getConstantPool(), c);
     }
 
@@ -285,10 +288,9 @@ public final class ClassInfo extends MemberInfo {
     /**
      * Get a set of all superclasses (including this class) and all implemented/extended interfaces.
      *
-     * TODO better name for method.
      * @return a set of all superclasses and all interfaces of this class.
      */
-    public Set<ClassInfo> getAllSuperClasses() {
+    public Set<ClassInfo> getAncestors() {
         Set<ClassInfo> sc = new HashSet<ClassInfo>();
         List<ClassInfo> queue = new LinkedList<ClassInfo>();
 
@@ -437,12 +439,12 @@ public final class ClassInfo extends MemberInfo {
     }
 
     /**
-     * Get a reference to the parent class if this is an inner class, else return
+     * Get a reference to the outer class if this is an inner class, else return
      * null.
      *
      * @return a classRef to the parent class or null if this is not an inner class.
      */
-    public ClassRef getParentClass() {
+    public ClassRef getOuterClass() {
         int idx = classGen.getClassName().lastIndexOf('$');
         if ( idx == -1 ) {
             return null;
@@ -475,7 +477,7 @@ public final class ClassInfo extends MemberInfo {
     }
 
     /**
-     * Check if the given class is a subclass of this class.
+     * Check if the given class is the same as this class or a subclass of this class.
      *
      * @param classInfo the possible subclass of this class.
      * @return true if the given class is this class or a superclass of this class.
@@ -506,7 +508,7 @@ public final class ClassInfo extends MemberInfo {
         if ( !classInfo.isInterface() ) {
             return false;
         }
-        Set<ClassInfo> interfaces = classInfo.getAllSuperClasses();
+        Set<ClassInfo> interfaces = classInfo.getAncestors();
         return interfaces.contains(this);
     }
 
@@ -522,7 +524,7 @@ public final class ClassInfo extends MemberInfo {
             return classInfo.isSuperclassOf(this);
         }
         // if classInfo is an interface..
-        Set<ClassInfo> supers = getAllSuperClasses();
+        Set<ClassInfo> supers = getAncestors();
         return supers.contains(classInfo);
     }
 
@@ -574,6 +576,7 @@ public final class ClassInfo extends MemberInfo {
         }
         field = new FieldInfo(this, new FieldGen(0, type, name, cpg));
         fields.put(name,field);
+        // TODO call manager eventhandler
         return field;
     }
 
@@ -593,30 +596,72 @@ public final class ClassInfo extends MemberInfo {
         method = new MethodInfo(this, new MethodGen(0, desc.getType(), desc.getArgumentTypes(), argNames,
                 signature.getMemberName(), classGen.getClassName(), null, cpg));
         methods.put(signature.getMemberSignature(), method);
+        // TODO call manager eventhandler
         return method;
     }
 
-    public MethodInfo copyMethod(Signature signature, String newName) {
-        return null;
+    public MethodInfo copyMethod(String memberSignature, String newName) {
+        MethodInfo method = methods.get(memberSignature);
+        if ( method == null ) {
+            return null;
+        }
+        method.compileCodeRep();
+        MethodGen methodGen = new MethodGen(method.getMethod(), getClassName(), cpg);
+        methodGen.setName(newName);
+
+        MethodInfo newMethod = new MethodInfo(this, methodGen);
+        
+        // TODO copy all the attribute stuff?, call manager eventhandler
+
+        methods.put(newMethod.getMemberSignature(), newMethod);
+        return newMethod;
     }
 
     public FieldInfo copyField(String name, String newName) {
-        return null;
+        FieldInfo field = fields.get(name);
+        if ( field == null ) {
+            return null;
+        }
+        FieldGen fieldGen = new FieldGen(field.getField(), cpg);
+        fieldGen.setName(newName);
+
+        FieldInfo newField = new FieldInfo(this, fieldGen);
+
+        // TODO copy all the attribute stuff?, call manager eventhandler
+
+        fields.put(newName, newField);
+        return newField;
     }
 
-    public MethodInfo renameMethod(Signature signature, String newName) {
-        return null;
+    public MethodInfo renameMethod(String memberSignature, String newName) {
+        MethodInfo method = methods.remove(memberSignature);
+        if ( method == null ) {
+            return null;
+        }
+        method.getMethodGen().setName(newName);
+        methods.put(method.getMemberSignature(), method);
+        // TODO call manager eventhandler
+        return method;
     }
 
     public FieldInfo renameField(String name, String newName) {
-        return null;
+        FieldInfo field = fields.remove(name);
+        if ( field == null ) {
+            return null;
+        }
+        field.getFieldGen().setName(newName);
+        fields.put(newName, field);
+        // TODO call manager eventhandler
+        return field;
     }
 
     public FieldInfo removeField(String name) {
+        // TODO call manager eventhandler
         return fields.remove(name);
     }
 
     public MethodInfo removeMethod(Signature signature) {
+        // TODO call manager eventhandler
         return methods.remove(signature.getMemberSignature());
     }
 

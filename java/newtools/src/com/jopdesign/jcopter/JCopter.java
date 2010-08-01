@@ -129,7 +129,7 @@ public class JCopter implements Module<JCopterManager> {
         setup.registerModule("jcopter", jcopter);
 
         // parse options and config, setup everything, load application classes
-        String[] rest = setup.setupConfig(args);
+        String[] rest = setup.setupConfig(args, "jcopter.properties");
 
         setup.setupLogger();
         setup.setupAppInfo(rest, true);
