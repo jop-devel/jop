@@ -21,6 +21,7 @@
 package test;
 
 import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.logger.LogConfig;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -92,13 +93,14 @@ public class MainRunner {
                 
                 // cleanup for next invoke
                 AppInfo.getSingleton().clear(true);
+                LogConfig.stopLogger();
             }
 
         } catch (ClassNotFoundException e) {
-            System.out.println("Main class '"+args[0]+"' not found!");
+            System.out.println("Main class '"+args[0]+"' not found: "+e.getMessage());
             System.exit(1);
         } catch (NoSuchMethodException e) {
-            System.out.println("Main method in class '"+args[0]+"' not found!");
+            System.out.println("Main method in class '"+args[0]+"' not found: "+e.getMessage());
             System.exit(1);            
         } catch (IOException e) {
             System.out.println("Could not read stdin: " + e.getMessage());

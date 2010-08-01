@@ -113,7 +113,7 @@ public class ExampleTool implements Module<ExampleManager> {
 
         // parse options and setup config
         String[] rest = setup.setupConfig(args, "example.properties");
-        setup.setupLogger();
+        setup.setupLogger(false);
 
         // setup classpath, roots and main method, load transitive hull
         setup.setupAppInfo(rest, true);

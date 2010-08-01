@@ -118,8 +118,8 @@ public class AppLoader {
         while (!queue.isEmpty()) {
             ClassInfo next = queue.remove(0);
 
-            if (logger.isTraceEnabled()) {
-                logger.trace("Processing class: "+next.getClassName());
+            if (logger.isDebugEnabled()) {
+                logger.debug("Processing class: "+next.getClassName());
             }
 
             int found = processClass(next);

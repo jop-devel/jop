@@ -368,9 +368,20 @@ public class AppSetup {
      * load commandline options.
      *
      * @see LogConfig#setupLogger(Config)
+     * @param addReportLoggers if true, add html-report loggers writing to {@link Config#WRITE_PATH}.
      */
-    public void setupLogger() {
+    public void setupLogger(boolean addReportLoggers) {
         logConfig.setupLogger(config);
+
+        if ( addReportLoggers ) {
+            String outDir = config.getOption(Config.WRITE_PATH) + File.separator;
+            try {
+                logConfig.setReportLoggers(new File(outDir + "error.html"), new File(outDir + "info.html"));
+            } catch (IOException e) {
+                System.err.println("Error creating log files: "+e.getMessage());
+                System.exit(4);
+            }
+        }
     }
 
     public void printUsage() {

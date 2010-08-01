@@ -131,7 +131,7 @@ public class JCopter implements Module<JCopterManager> {
         // parse options and config, setup everything, load application classes
         String[] rest = setup.setupConfig(args, "jcopter.properties");
 
-        setup.setupLogger();
+        setup.setupLogger(true);
         setup.setupAppInfo(rest, true);
 
         // run optimizations

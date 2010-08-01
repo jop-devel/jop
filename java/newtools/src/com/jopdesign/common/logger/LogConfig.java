@@ -102,9 +102,7 @@ public class LogConfig {
         defaultAppender.setThreshold(defaultLevel);
 
 		Logger.getRootLogger().addAppender(defaultAppender);
-        Logger.getRootLogger().setLevel(defaultLevel);
-
-        // TODO if Config option is used, add html-report logger (or add it anyway?)
+        Logger.getRootLogger().setLevel(Level.ALL);
 
         PropertyConfigurator.configure(config.getProperties());
 	}
@@ -113,15 +111,21 @@ public class LogConfig {
     public void setReportLoggers(File errorLog, File infoLog)
 		throws IOException
     {
-			errorLog.delete();
-			FileAppender eapp = new FileAppender(new HTMLLayout(), errorLog.getPath());
-			eapp.setName("AERROR");
-			eapp.setThreshold(Level.ERROR);
-			infoLog.delete();
-			FileAppender iapp = new FileAppender(new HTMLLayout(), infoLog.getPath());
-			iapp.setThreshold(Level.ALL);
-			iapp.setName("AINFO");
-			Logger.getRootLogger().addAppender(eapp);
-			Logger.getRootLogger().addAppender(iapp);
+        errorLog.delete();
+        FileAppender eapp = new FileAppender(new HTMLLayout(), errorLog.getPath());
+        eapp.setName("AERROR");
+        eapp.setThreshold(Level.ERROR);
+        infoLog.delete();
+        FileAppender iapp = new FileAppender(new HTMLLayout(), infoLog.getPath());
+        iapp.setThreshold(Level.ALL);
+        iapp.setName("AINFO");
+        Logger.getRootLogger().addAppender(eapp);
+        Logger.getRootLogger().addAppender(iapp);
 	}
+
+    public static void stopLogger() {
+        Logger.getRootLogger().removeAppender("ACONSOLE");
+        Logger.getRootLogger().removeAppender("AERROR");
+        Logger.getRootLogger().removeAppender("AINFO");
+    }
 }

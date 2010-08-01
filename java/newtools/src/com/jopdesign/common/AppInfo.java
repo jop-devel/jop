@@ -268,8 +268,7 @@ public final class AppInfo {
         try {
             info = loadClass(className, false, false);
         } catch (ClassInfoNotFoundException e) {
-            handleClassLoadFailure("Error loading class '"+className+"': " +
-                e.getMessage(), e);
+            handleClassLoadFailure(e.getMessage(), e);
         }
         return info;
     }
