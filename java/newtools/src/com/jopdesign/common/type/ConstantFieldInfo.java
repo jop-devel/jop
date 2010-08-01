@@ -24,12 +24,12 @@ import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantFieldref;
 import org.apache.bcel.generic.ConstantPoolGen;
-import org.apache.bcel.generic.ObjectType;
+import org.apache.bcel.generic.Type;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantFieldInfo extends ConstantInfo<FieldRef, ObjectType> {
+public class ConstantFieldInfo extends ConstantInfo<FieldRef, Type> {
 
     public ConstantFieldInfo(FieldRef value) {
         super(Constants.CONSTANT_Fieldref, value);
@@ -41,9 +41,8 @@ public class ConstantFieldInfo extends ConstantInfo<FieldRef, ObjectType> {
     }
 
     @Override
-    public ObjectType getType() {
-        // TODO better return type of field? (but could be unknown!)
-        return getClassRef().getType();
+    public Type getType() {
+        return getValue().getType();
     }
 
     @Override

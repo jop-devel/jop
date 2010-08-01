@@ -122,6 +122,12 @@ public abstract class ConstantInfo<T, U extends Type> {
         return value;
     }
 
+    /**
+     * Get a reference to the class this constant refers to if it is a
+     * class-, method- or field-constant.
+     *
+     * @return the referenced class or null if no class is referenced by this constant type.
+     */
     public abstract ClassRef getClassRef();
 
     public abstract U getType();

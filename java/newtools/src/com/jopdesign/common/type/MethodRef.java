@@ -65,6 +65,9 @@ public class MethodRef {
     }
 
     public Ternary isInterfaceMethod() {
+        if ( methodInfo != null ) {
+            return Ternary.valueOf(methodInfo.getClassInfo().isInterface());
+        }
         return classRef.isInterface();
     }
 

@@ -25,12 +25,12 @@ import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantClass;
 import org.apache.bcel.generic.ConstantPoolGen;
-import org.apache.bcel.generic.ObjectType;
+import org.apache.bcel.generic.ReferenceType;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantClassInfo extends ConstantInfo<ClassRef, ObjectType> {
+public class ConstantClassInfo extends ConstantInfo<ClassRef, ReferenceType> {
     
     public ConstantClassInfo(ClassRef value) {
         super(Constants.CONSTANT_Class, value);
@@ -46,7 +46,7 @@ public class ConstantClassInfo extends ConstantInfo<ClassRef, ObjectType> {
     }
 
     @Override
-    public ObjectType getType() {
+    public ReferenceType getType() {
         return getValue().getType();
     }
 

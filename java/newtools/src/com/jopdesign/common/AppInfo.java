@@ -455,6 +455,10 @@ public final class AppInfo {
         }
     }
 
+    public boolean hasClassInfo(String className) {
+        return classes.containsKey(className);
+    }
+
     public Collection<ClassInfo> getClassInfos() {
         return classes.values();
     }

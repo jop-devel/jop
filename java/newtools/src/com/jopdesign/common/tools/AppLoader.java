@@ -25,6 +25,9 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.ConstantInfo;
+import org.apache.bcel.generic.ArrayType;
+import org.apache.bcel.generic.ObjectType;
+import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
 import java.util.Collection;
@@ -150,9 +153,23 @@ public class AppLoader {
                 continue;
             }
 
-            ClassInfo cls = ref.getClassInfo();
-            if ( cls == null ) {
-                cls = appInfo.loadClass(ref.getClassName());
+            String className;
+            if ( ref.isArray() ) {
+                Type baseType = ((ArrayType)ref.getType()).getBasicType();
+                if ( baseType instanceof ObjectType) {
+                    className = ((ObjectType)baseType).getClassName();
+                } else {
+                    continue;
+                }
+            } else {
+                className = ref.getClassName();
+            }
+
+            ClassInfo cls;
+            if ( appInfo.hasClassInfo(className) ) {
+                cls = appInfo.getClassInfo(className);
+            } else {
+                cls = appInfo.loadClass(className);
                 if ( cls != null ) {
                     newClasses.add(cls);
                     cnt++;

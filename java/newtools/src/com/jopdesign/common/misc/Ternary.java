@@ -64,4 +64,8 @@ public enum Ternary {
         }
         return "invalid";
     }
+
+    public static Ternary valueOf(boolean val) {
+        return val ? TRUE : FALSE;
+    }
 }
