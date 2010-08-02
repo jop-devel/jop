@@ -53,14 +53,14 @@ public class ConsoleLayout extends PatternLayout {
                 Throwable ex = ti.getThrowable();
 
                 while ( ex != null) {
-                    out.append("  Caused by: ");
+                    out.append("    Caused by [");
 
                     StackTraceElement[] trace = ex.getStackTrace();
                     if ( trace != null && trace.length > 0 ) {
                         out.append(trace[0].getClassName());
-                        out.append(".");
+                        out.append("#");
                         out.append(trace[0].getMethodName());
-                        out.append(": ");
+                        out.append("] ");
                     }
 
                     out.append(ex.getMessage());

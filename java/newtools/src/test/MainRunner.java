@@ -82,6 +82,7 @@ public class MainRunner {
                 try {
                     main.invoke(null, new Object[] {mainArgs});
                 } catch (Exception e) {
+                    System.err.flush();
                     if ( e.getCause() instanceof SecurityException ) {
                         System.out.println(e.getCause().getMessage());
                     } else {

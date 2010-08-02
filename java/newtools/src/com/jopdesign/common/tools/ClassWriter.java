@@ -39,7 +39,7 @@ import java.io.IOException;
  */
 public class ClassWriter {
 
-    private static final Logger logger = Logger.getLogger(LogConfig.LOG_WRITING+".ClassWriter");
+    public static final Logger logger = Logger.getLogger(LogConfig.LOG_WRITING+".ClassWriter");
 
     public ClassWriter() {
     }
@@ -74,7 +74,11 @@ public class ClassWriter {
         }
 
         File classDir = new File(writeDir);
-        if ( !classDir.mkdir() ) {
+        if ( classDir.exists() ) {
+            if ( classDir.isFile() ) {
+                throw new IOException("Output directory '"+classDir+"' is a file.");
+            }
+        } else if ( !classDir.mkdirs() ) {
             throw new IOException("Could not create output directory "+classDir);
         }
 

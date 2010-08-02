@@ -41,6 +41,7 @@ import java.util.zip.ZipFile;
  * @version $Id: ClassPath.java 386056 2006-03-15 11:31:56Z tcurdt $
  * @author  <A HREF="mailto:m.dahm@gmx.de">M. Dahm</A>
  */
+@SuppressWarnings({"ALL"})
 public class ClassPath implements Serializable {
 
     public static final ClassPath SYSTEM_CLASS_PATH = new ClassPath();

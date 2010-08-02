@@ -67,6 +67,7 @@ import java.util.regex.Pattern;
  * @see org.apache.bcel.generic.Instruction
  * @see org.apache.bcel.generic.InstructionList
  */
+@SuppressWarnings({"ALL"})
 public class InstructionFinder {
 
     private static final int OFFSET = 32767; // char + OFFSET is

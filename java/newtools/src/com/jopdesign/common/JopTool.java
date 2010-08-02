@@ -23,6 +23,7 @@ package com.jopdesign.common;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.OptionGroup;
 
+import java.io.IOException;
 import java.util.Properties;
 
 /**
@@ -30,13 +31,20 @@ import java.util.Properties;
  * 
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public interface Module<T extends AttributeManager> {
+public interface JopTool<T extends AttributeManager> {
 
-    String getModuleVersion();
+    String getToolVersion();
 
     T getAttributeManager();
 
-    Properties getDefaultProperties();
+    /**
+     * Get a properties file containing defaults which should be added to the configuration.
+     *
+     * @see AppSetup#loadResourceProps(Class, String)
+     * @return default properties or null if no additional defaults are used.
+     * @throws IOException on loading errors.
+     */
+    Properties getDefaultProperties() throws IOException;
 
     void registerOptions(OptionGroup options);
 
