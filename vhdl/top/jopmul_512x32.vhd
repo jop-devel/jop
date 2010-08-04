@@ -66,6 +66,19 @@ port (
 --	watchdog
 --
 	wd				: out std_logic;
+	
+--
+--	LEDs
+--
+	oLEDR		: out std_logic_vector(17 downto 0);
+--	oLEDG		: out std_logic_vector(7 downto 0);
+
+
+	
+--
+--	Switches
+--
+	iSW				: in std_logic_vector(17 downto 0);
 
 --
 --	only one ram bank
@@ -240,6 +253,11 @@ end process;
 			rxd => ser_rxd,
 			ncts => oUART_CTS,
 			nrts => iUART_RTS,
+			
+			oLEDR => oLEDR,
+--			oLEDG => oLEDG,
+			iSW => iSW,
+						
 			wd => wd_out(0),
 			l => open,
 			r => open,

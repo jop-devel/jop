@@ -593,9 +593,8 @@ set_location_assignment PIN_B15 -to oVGA_SYNC_N
 set_location_assignment PIN_H19 -to oVGA_VS
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
-set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-STATED"
 set_location_assignment PIN_AD15 -to clk
-set_location_assignment PIN_AJ6 -to wd
+set_location_assignment PIN_AA24 -to wd
 set_location_assignment PIN_D21 -to ser_rxd
 set_location_assignment PIN_E21 -to ser_txd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_de2.vhd
@@ -605,6 +604,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc2_pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/led_switch.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_min_DE2-70.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/arom.vhd
@@ -629,3 +629,6 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jopmul_512x32.vhd
 
 set_global_assignment -name CDF_FILE jop.cdf
+
+set_global_assignment -name USE_CONFIGURATION_DEVICE ON
+set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"

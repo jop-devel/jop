@@ -59,17 +59,6 @@ port (
 	oLEDR		: out std_logic_vector(17 downto 0);
 --	oLEDG		: out std_logic_vector(7 downto 0);
 
---
---	Ethernet
---
-	oENET_CMD			: out std_logic;
-	oENET_IOR_N		: out std_logic;
-	oENET_IOW_N		: out std_logic;
-	oENET_RESET_N	: out std_logic;
-	oENET_CS_N		: out std_logic;
-	iENET_INT			: in std_logic;
-	ENET_D				: inout std_logic_vector(15 downto 0);
-
 	
 --
 --	Switches
@@ -228,14 +217,6 @@ end process;
 			oLEDR => oLEDR,
 --			oLEDG => oLEDG,
 			iSW => iSW,
-			
-			oENET_CMD => oENET_CMD,
-			oENET_IOR_N => oENET_IOR_N,
-			oENET_IOW_N => oENET_IOW_N,
-			oENET_RESET_N => oENET_RESET_N,
-			oENET_CS_N => oENET_CS_N,
-			iENET_INT => iENET_INT,
-			ENET_D => ENET_D,
 			
 			wd => wd_out,
 			--- IO pins
