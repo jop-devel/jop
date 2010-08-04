@@ -18,38 +18,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common;
+package com.jopdesign.common.graph;
 
-import com.jopdesign.common.type.Descriptor;
-import org.apache.bcel.generic.FieldGenOrMethodGen;
-import org.apache.bcel.generic.Type;
+import com.jopdesign.common.MethodInfo;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public abstract class ClassMemberInfo extends MemberInfo {
+public interface MethodVisitor extends ClassVisitor {
 
-    private final ClassInfo classInfo;
-    private final FieldGenOrMethodGen classMember;
-
-    public ClassMemberInfo(ClassInfo classInfo, FieldGenOrMethodGen classMember) {
-        super(classMember);
-        this.classInfo = classInfo;
-        this.classMember = classMember;
-    }
-
-    public ClassInfo getClassInfo() {
-        return classInfo;
-    }
-
-    public String getName() {
-        return classMember.getName();
-    }
-
-    public Type getType() {
-        return classMember.getType();
-    }
-
-    public abstract Descriptor getDescriptor();
-
+    boolean visitMethod(MethodInfo methodInfo);
+    
 }

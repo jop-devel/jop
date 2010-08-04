@@ -38,8 +38,8 @@ public final class MethodInfo extends ClassMemberInfo {
     private final MethodGen methodGen;
     private final Descriptor descriptor;
 
-    private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT+".methodinfo");
-    private static final Logger codeLogger = Logger.getLogger(LogConfig.LOG_CODE+".methodinfo");
+    private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT+".MethodInfo");
+    private static final Logger codeLogger = Logger.getLogger(LogConfig.LOG_CODE+".MethodInfo");
 
     private CodeRepresentation codeRep;
 
@@ -81,8 +81,30 @@ public final class MethodInfo extends ClassMemberInfo {
         methodGen.isStrictfp(val);
     }
 
-    public Method getMethod() {
+    /**
+     * Get a BCEL method for this methodInfo.
+     *
+     * @param compile if true, this does the same as {@link #compileMethod()}.
+     * @return a method for this methodInfo.
+     */
+    public Method getMethod(boolean compile) {
+        if ( compile ) {
+            // we use the compile flag primarily as a reminder to the API user to compile first
+            return compileMethod();
+        }
+        return methodGen.getMethod();
+    }
+
+    /**
+     * Compile all changes and update maxStack and maxLocals, and
+     * return a new BCEL method.
+     * 
+     * @return an updated method for this methodInfo.
+     */
+    public Method compileMethod() {
         compileCodeRep();
+        methodGen.setMaxLocals();
+        methodGen.setMaxStack();
         return methodGen.getMethod();
     }
 
@@ -107,7 +129,6 @@ public final class MethodInfo extends ClassMemberInfo {
         methodGen.removeNOPs();
     }
 
-    @SuppressWarnings({"unchecked"})
     public <T extends CodeRepresentation> T getCode(T codeRep) {
         if ( this.codeRep == null ) {
             this.codeRep = codeRep;
@@ -120,6 +141,7 @@ public final class MethodInfo extends ClassMemberInfo {
         {
             // this.codeRep is same type and already contains the current code.
             // cast is checked above
+            //noinspection unchecked
             return (T) this.codeRep;
         }
 
@@ -149,10 +171,6 @@ public final class MethodInfo extends ClassMemberInfo {
     }
 
     @Override
-    public String getName() {
-        return methodGen.getName();
-    }
-
     public Descriptor getDescriptor() {
         return descriptor;
     }

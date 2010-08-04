@@ -20,6 +20,8 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.logger.LogConfig;
+import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.Ternary;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.ConstantInfo;
@@ -34,6 +36,7 @@ import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.FieldGen;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.Type;
+import org.apache.log4j.Logger;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -61,6 +64,8 @@ public final class ClassInfo extends MemberInfo {
     private final Map<String, FieldInfo> fields;
 
     private final Map<AppInfo.CustomKey,Map<Integer, Object>> cpCustomValues;
+
+    private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT + ".ClassInfo");
 
     public ClassInfo(ClassGen classGen) {
         super(classGen);
@@ -227,7 +232,7 @@ public final class ClassInfo extends MemberInfo {
      * therefore do not call this method while modifying the code.</p>
      *
      * @see #removeConstant(int)
-     * @return true if the constantpool has been changed
+     * @return true if the constantpool has been changed and all methods, fields, .. have been updated.
      */
     public boolean cleanupConstantPool() {
 
@@ -253,7 +258,13 @@ public final class ClassInfo extends MemberInfo {
         }
 
         // TODO update all usages of this constantpool
-        
+        for (MethodInfo mi : methods.values()) {
+            mi.compileCodeRep();
+
+
+        }
+
+
 
         classGen.setConstantPool(newPool);
         return true;
@@ -561,6 +572,41 @@ public final class ClassInfo extends MemberInfo {
     }
 
     /**
+     * Get the index of the given method in the class method array, or -1 if not found.
+     *
+     * @param memberSignature name and descriptor of the method to find.
+     * @return the index in the methods array or -1 if not found.
+     */
+    public int lookupMethodInfo(String memberSignature) {
+        Method[] methods = classGen.getMethods();
+        for (int i = 0; i < methods.length; i++) {
+            Method m = methods[i];
+            String s = Signature.getSignature(null, m.getName(), m.getSignature());
+            if ( s.equals(memberSignature) ) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Get the index of the given field in the class field array, or -1 if not found.
+     *
+     * @param fieldName the name of the field to found.
+     * @return the index in the fields array or -1 if not found.
+     */
+    public int lookupFieldInfo(String fieldName) {
+        Field[] fields = classGen.getFields();
+        for (int i = 0; i < fields.length; i++) {
+            Field f = fields[i];
+            if ( f.getName().equals(fieldName) ) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
      * Create a new non-static, package-visible field with the given name and type.
      * If a field by that name exists, the existing field is returned.
      *
@@ -574,8 +620,12 @@ public final class ClassInfo extends MemberInfo {
             return field;
         }
         field = new FieldInfo(this, new FieldGen(0, type, name, cpg));
+
         fields.put(name,field);
+        classGen.addField(field.getField());
+
         // TODO call manager eventhandler
+
         return field;
     }
 
@@ -594,8 +644,12 @@ public final class ClassInfo extends MemberInfo {
         Descriptor desc = signature.getMemberDescriptor();
         method = new MethodInfo(this, new MethodGen(0, desc.getType(), desc.getArgumentTypes(), argNames,
                 signature.getMemberName(), classGen.getClassName(), null, cpg));
+
         methods.put(signature.getMemberSignature(), method);
+        classGen.addMethod(method.getMethod(false));
+
         // TODO call manager eventhandler
+
         return method;
     }
 
@@ -605,7 +659,7 @@ public final class ClassInfo extends MemberInfo {
             return null;
         }
         method.compileCodeRep();
-        MethodGen methodGen = new MethodGen(method.getMethod(), getClassName(), cpg);
+        MethodGen methodGen = new MethodGen(method.compileMethod(), getClassName(), cpg);
         methodGen.setName(newName);
 
         MethodInfo newMethod = new MethodInfo(this, methodGen);
@@ -613,6 +667,8 @@ public final class ClassInfo extends MemberInfo {
         // TODO copy all the attribute stuff?, call manager eventhandler
 
         methods.put(newMethod.getMemberSignature(), newMethod);
+        classGen.addMethod(newMethod.getMethod(false));
+
         return newMethod;
     }
 
@@ -629,6 +685,8 @@ public final class ClassInfo extends MemberInfo {
         // TODO copy all the attribute stuff?, call manager eventhandler
 
         fields.put(newName, newField);
+        classGen.addField(newField.getField());
+
         return newField;
     }
 
@@ -638,8 +696,18 @@ public final class ClassInfo extends MemberInfo {
             return null;
         }
         method.getMethodGen().setName(newName);
+
         methods.put(method.getMemberSignature(), method);
+        int i = lookupMethodInfo(memberSignature);
+        if ( i == -1 ) {
+            // This should never happen
+            throw new JavaClassFormatError("Renaming method "+memberSignature+" in " +getClassName()+ " to " + newName
+                    +", but old method was not found in classGen!");
+        }
+        classGen.setMethodAt(method.getMethod(false), i);
+
         // TODO call manager eventhandler
+
         return method;
     }
 
@@ -649,19 +717,60 @@ public final class ClassInfo extends MemberInfo {
             return null;
         }
         field.getFieldGen().setName(newName);
+
         fields.put(newName, field);
+        int i = lookupFieldInfo(name);
+        if ( i == -1 ) {
+            // This should never happen
+            throw new JavaClassFormatError("Renaming field "+name+" in " +getClassName()+ " to " + newName
+                    +", but old field was not found in classGen!");
+        }
+        // Damn, BCEL does not have a setFieldAt method
+        classGen.removeField(classGen.getFields()[i]);
+        classGen.addField(field.getField());
+
+
         // TODO call manager eventhandler
+
         return field;
     }
 
     public FieldInfo removeField(String name) {
+        FieldInfo fieldInfo = fields.remove(name);
+        if ( fieldInfo == null ) {
+            return null;
+        }
+
+        int i = lookupFieldInfo(name);
+        if ( i == -1 ) {
+            // this should never happen
+            throw new JavaClassFormatError("Removing field "+name+" in " +getClassName()
+                    +", but field was not found in classGen!");
+        }
+        classGen.removeField(classGen.getFields()[i]);
+
         // TODO call manager eventhandler
-        return fields.remove(name);
+
+        return fieldInfo;
     }
 
-    public MethodInfo removeMethod(Signature signature) {
+    public MethodInfo removeMethod(String memberSignature) {
+        MethodInfo methodInfo = methods.remove(memberSignature);
+        if ( methodInfo == null ) {
+            return null;
+        }
+
+        int i = lookupMethodInfo(memberSignature);
+        if ( i == -1 ) {
+            // this should never happen
+            throw new JavaClassFormatError("Removing method "+memberSignature+" in " +getClassName()
+                    +", but method was not found in classGen!");
+        }
+        classGen.removeMethod(classGen.getMethodAt(i));
+
         // TODO call manager eventhandler
-        return methods.remove(signature.getMemberSignature());
+
+        return methodInfo;
     }
 
     public String getClassName() {
@@ -711,33 +820,56 @@ public final class ClassInfo extends MemberInfo {
      *
      * @see #cleanupConstantPool()
      * @see MethodInfo#compileCodeRep()
-     * @see #getJavaClass()
+     * @see #getJavaClass(boolean)
      * @return a JavaClass representing this ClassInfo.
      */
     public JavaClass compileJavaClass() {
 
-        for (MethodInfo mi : methods.values()) {
-            mi.compileCodeRep();
+        // remove everything from constantpool marked for removal
+        boolean changed = cleanupConstantPool();
+
+        // TODO We could keep a modified flag in both MethodInfo and FieldInfo
+        // (maybe even ClassInfo), and update only what is needed here
+        // - implement protected modify() with private modified flag in MemberInfo
+        // - set modified on EVERY setter,..
+        // - clear on method/field compile + update in classGen (i.e. here and in rename*(),..)
+        // could make class-writing faster, but makes code more complex
+
+
+        for (Field f : classGen.getFields()) {
+            classGen.removeField(f);
+        }
+        for (FieldInfo f : fields.values()) {
+            classGen.addField(f.getField());
         }
 
-        // remove everything from constantpool marked for removal
-        cleanupConstantPool();
+        for (Method m : classGen.getMethods()) {
+            classGen.removeMethod(m);
+        }
+        for (MethodInfo m : methods.values()) {
+            classGen.addMethod(m.getMethod(!changed));
+        }
 
-        // TODO add/update all attributes, methodInfos and fieldInfos to classGen
-        
+        // TODO update/clear attributes + CustomValues which may depend on method/field-order 
+
         return classGen.getJavaClass();
     }
 
     /**
      * Compile and return a BCEL JavaClass for this ClassInfo.
      *
-     * <p>The JavaClass does not contain any modifications not yet commited to the internal BCEL
-     * ClassGen (e.g. it does not cleanup the constantpool, add new methods, ..).</p>
+     * <p>If compile is false, then the JavaClass does not contain any modifications not yet
+     * commited to the internal BCEL ClassGen (e.g. it does not cleanup the constantpool, add new methods, ..).</p>
      *
-     * @see #compileJavaClass() 
+     * @see #compileJavaClass()
+     * @param compile if true, this does the same as {@link #compileJavaClass()}
      * @return a JavaClass for this ClassInfo.
      */
-    public JavaClass getJavaClass() {
+    public JavaClass getJavaClass(boolean compile) {
+        if ( compile ) {
+            // using the compile flag here primarily as a reminder to the API user to compile first
+            return compileJavaClass();
+        }
         return classGen.getJavaClass();
     }
 
@@ -782,15 +914,17 @@ public final class ClassInfo extends MemberInfo {
         if ( superClass != null ) {
             superClass.subClasses.remove(this);
         }
-        // interface references are not stored, direct subclasses of a class are only classes, so
+
+        // all extensions of this will now be incomplete
+        
+
+        // interface references are not stored; direct subclasses of a class are only classes, so
         // all their superclasses must be this class
         if ( !isInterface() ) {
             for (ClassInfo c : subClasses) {
                 c.superClass = null;
             }
         }
-        // all extensions of this are now incomplete
-
 
         resetHierarchyInfos();
     }

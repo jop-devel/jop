@@ -512,6 +512,7 @@ public class AppSetup {
             throw new Config.BadConfigurationException("Class '"+clsName+"' for main method not found.");
         }
 
+        // check if we have a full signature
         if ( sMain.isMethodSignature() ) {
             MethodInfo method = clsInfo.getMethodInfo(sMain.getMemberSignature());
             if ( method == null ) {
@@ -529,11 +530,9 @@ public class AppSetup {
         Collection<MethodInfo> methods = clsInfo.getMethodByName(mainName);
 
         if ( methods.isEmpty() ) {
-            throw new Config.BadConfigurationException("Method '"+mainName+"' not found in '"
-                        +clsName+"'.");
+            throw new Config.BadConfigurationException("'No method '"+mainName+"' found in '"+clsName+"'.");
         }
         if ( methods.size() > 1 ) {
-            // TODO maybe check if there is a single static method by that name?
             StringBuffer s = new StringBuffer(String.format(
                     "Multiple candidates for '%s' in '%s', please specify a signature: ", mainName, clsName) );
             for (MethodInfo m : methods) {

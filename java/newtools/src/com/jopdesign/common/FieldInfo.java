@@ -25,14 +25,13 @@ import com.jopdesign.common.type.FieldRef;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.classfile.Field;
 import org.apache.bcel.generic.FieldGen;
-import org.apache.bcel.generic.Type;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public final class FieldInfo extends ClassMemberInfo {
 
-    private FieldGen fieldGen;
+    private final FieldGen fieldGen;
 
     public FieldInfo(ClassInfo classInfo, FieldGen fieldGen) {
         super(classInfo, fieldGen);
@@ -55,10 +54,6 @@ public final class FieldInfo extends ClassMemberInfo {
         fieldGen.isVolatile(val);
     }
 
-    public Type getType() {
-        return fieldGen.getType();
-    }
-
     public Field getField() {
         return fieldGen.getField();
     }
@@ -66,11 +61,6 @@ public final class FieldInfo extends ClassMemberInfo {
     @Override
     public Signature getSignature() {
         return new Signature(getClassInfo().getClassName(), fieldGen.getName(), getDescriptor());
-    }
-
-    @Override
-    public String getName() {
-        return fieldGen.getName();
     }
 
     @Override

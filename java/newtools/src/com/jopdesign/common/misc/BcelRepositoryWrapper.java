@@ -47,7 +47,7 @@ public class BcelRepositoryWrapper implements Repository {
     public JavaClass findClass(String className) {
         ClassInfo cls = AppInfo.getSingleton().getClassInfo(className);
         if ( cls != null ) {
-            return cls.getJavaClass();
+            return cls.getJavaClass(false);
         }
         return null;
     }
@@ -55,20 +55,20 @@ public class BcelRepositoryWrapper implements Repository {
     public JavaClass loadClass(String className) throws ClassNotFoundException {
         ClassInfo cls = AppInfo.getSingleton().loadClass(className);
         if ( cls != null ) {
-            return cls.getJavaClass();
+            return cls.getJavaClass(false);
         }
         return null;
     }
 
     public JavaClass loadClass(Class clazz) throws ClassNotFoundException {
-        ClassInfo cls = null;
+        ClassInfo cls;
         try {
             cls = AppInfo.getSingleton().loadClass(clazz.getName(), false, false);
         } catch (ClassInfoNotFoundException e) {
             throw new ClassNotFoundException(e.getMessage(), e);
         }
         if ( cls != null ) {
-            return cls.getJavaClass();
+            return cls.getJavaClass(false);
         }
         return null;
     }
