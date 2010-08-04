@@ -20,6 +20,7 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.BcelRepositoryWrapper;
 import com.jopdesign.common.misc.ClassInfoNotFoundException;
 import com.jopdesign.common.misc.MissingClassError;
@@ -35,6 +36,7 @@ import org.apache.bcel.classfile.ClassParser;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.generic.ClassGen;
 import org.apache.bcel.util.ClassPath;
+import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,6 +56,8 @@ import java.util.Set;
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public final class AppInfo {
+
+    private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT + ".AppInfo");
 
     private ClassPath classPath;
     private final Map<String,ClassInfo> classes;
@@ -772,8 +776,7 @@ public final class AppInfo {
 
     private void handleClassLoadFailure(String message, Exception cause) {
         if ( exitOnMissingClass ) {
-            // TODO logging
-            System.out.println(message);
+            logger.error(message, cause);
             System.exit(4);
         } else {
             throw new MissingClassError(message, cause);

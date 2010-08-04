@@ -22,6 +22,7 @@
 package com.jopdesign.common.logger;
 
 import com.jopdesign.common.config.Config;
+import org.apache.log4j.Appender;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.HTMLLayout;
@@ -86,9 +87,9 @@ public class LogConfig {
         ConsoleAppender defaultAppender;
 
         if (verbose) {
-            defaultAppender = new ConsoleAppender(new PatternLayout("%r [%c] %m\n"), "System.err");
+            defaultAppender = new ConsoleAppender(new PatternLayout("%5r %-5p [%c] %m\n"), "System.err");
         } else {
-            defaultAppender = new ConsoleAppender(new ConsoleLayout("%r [%c{1}] %m\n"), "System.err");
+            defaultAppender = new ConsoleAppender(new ConsoleLayout("%5r %-5p [%c{1}] %m\n"), "System.err");
         }
         defaultAppender.setName("ACONSOLE");
 
@@ -100,7 +101,6 @@ public class LogConfig {
             defaultLevel = Level.WARN;
 		}
         defaultAppender.setThreshold(defaultLevel);
-
 		Logger.getRootLogger().addAppender(defaultAppender);
         Logger.getRootLogger().setLevel(Level.ALL);
 
@@ -111,21 +111,35 @@ public class LogConfig {
     public void setReportLoggers(File errorLog, File infoLog)
 		throws IOException
     {
-        errorLog.delete();
-        FileAppender eapp = new FileAppender(new HTMLLayout(), errorLog.getPath());
-        eapp.setName("AERROR");
-        eapp.setThreshold(Level.ERROR);
-        infoLog.delete();
-        FileAppender iapp = new FileAppender(new HTMLLayout(), infoLog.getPath());
-        iapp.setThreshold(Level.ALL);
-        iapp.setName("AINFO");
-        Logger.getRootLogger().addAppender(eapp);
-        Logger.getRootLogger().addAppender(iapp);
-	}
+        if ( errorLog != null ) {
+            errorLog.delete();
+            FileAppender eapp = new FileAppender(new HTMLLayout(), errorLog.getPath());
+            eapp.setName("AERROR");
+            eapp.setThreshold(Level.WARN);
+            Logger.getRootLogger().addAppender(eapp);
+        }
+
+        if ( infoLog != null ) {
+            infoLog.delete();
+            FileAppender iapp = new FileAppender(new HTMLLayout(), infoLog.getPath());
+            // TODO maybe make level of info logger configurable (one of INFO, DEBUG, ALL)?
+            iapp.setThreshold(Level.ALL);
+            iapp.setName("AINFO");
+            Logger.getRootLogger().addAppender(iapp);
+        }
+    }
 
     public static void stopLogger() {
-        Logger.getRootLogger().removeAppender("ACONSOLE");
-        Logger.getRootLogger().removeAppender("AERROR");
-        Logger.getRootLogger().removeAppender("AINFO");
+
+        String[] names = {"ACONSOLE", "AERROR", "AINFO"};
+
+        for ( String appender : names) {
+            Appender app = Logger.getRootLogger().getAppender(appender);
+            if ( app == null ) {
+                continue;
+            }
+            app.close();
+            Logger.getRootLogger().removeAppender(app);
+        }
     }
 }

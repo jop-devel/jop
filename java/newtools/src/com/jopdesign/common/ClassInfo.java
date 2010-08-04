@@ -230,27 +230,26 @@ public final class ClassInfo extends MemberInfo {
      * @return true if the constantpool has been changed
      */
     public boolean cleanupConstantPool() {
-        // since we also check for duplicates here, this may modify the CP even if removeIndices is empty.
+
+        if ( removeIndices.isEmpty() ) {
+            return false;
+        }
+
         ConstantPoolGen newPool = new ConstantPoolGen();
 
         // map old index -> new index
         int[] idxMap = new int[cpg.getSize()];
-        boolean changed = false;
 
         for (int i = 0; i < idxMap.length; i++) {
             if ( removeIndices.contains(i) ) {
                 idxMap[i] = -1;
-                changed = true;
                 continue;
             }
-            idxMap[i] = newPool.addConstant(cpg.getConstant(i), cpg);
-            if ( idxMap[i] != i ) {
-                changed = true;
+            Constant c = cpg.getConstant(i);
+            if ( c == null ) {
+                continue;
             }
-        }
-
-        if ( !changed ) {
-            return false;
+            idxMap[i] = newPool.addConstant(c, cpg);
         }
 
         // TODO update all usages of this constantpool

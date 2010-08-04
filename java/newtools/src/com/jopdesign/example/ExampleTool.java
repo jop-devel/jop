@@ -23,7 +23,7 @@ package com.jopdesign.example;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.ClassInfo;
-import com.jopdesign.common.Module;
+import com.jopdesign.common.JopTool;
 import com.jopdesign.common.config.BoolOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.IntOption;
@@ -38,7 +38,7 @@ import java.util.Properties;
  * 
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ExampleTool implements Module<ExampleManager> {
+public class ExampleTool implements JopTool<ExampleManager> {
 
     public static final String VERSION = "0.1";
 
@@ -48,7 +48,7 @@ public class ExampleTool implements Module<ExampleManager> {
         manager = new ExampleManager();
     }
 
-    public String getModuleVersion() {
+    public String getToolVersion() {
         return VERSION;
     }
 
@@ -56,7 +56,8 @@ public class ExampleTool implements Module<ExampleManager> {
         return manager;
     }
 
-    public Properties getDefaultProperties() {
+    public Properties getDefaultProperties() throws IOException {
+        // return AppSetup.loadResourceProps(ExampleTool.class, "defaults.properties");
         return null;
     }
 
@@ -108,11 +109,12 @@ public class ExampleTool implements Module<ExampleManager> {
 
         setup.addStandardOptions(true, true);
         setup.addWriteOptions(true);
+        setup.setConfigFilename("example.properties");
 
-        setup.registerModule("example", example);
+        setup.registerTool("example", example);
 
         // parse options and setup config
-        String[] rest = setup.setupConfig(args, "example.properties");
+        String[] rest = setup.setupConfig(args);
         setup.setupLogger(false);
 
         // setup classpath, roots and main method, load transitive hull

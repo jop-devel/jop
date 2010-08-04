@@ -49,7 +49,7 @@ public class Config {
         };
 
     /* Options which are always present */
-    /* The default values can be changed using the Module.getDefaultProps() method. */
+    /* The default values can be changed using the JopTool.getDefaultProps() method. */
 
     public static final BoolOption SHOW_HELP =
             new BoolOption("help", "show help", 'h', true);

@@ -22,7 +22,7 @@ package com.jopdesign.jcopter;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
-import com.jopdesign.common.Module;
+import com.jopdesign.common.JopTool;
 import com.jopdesign.common.config.BoolOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.OptionGroup;
@@ -35,7 +35,7 @@ import java.util.Properties;
  * User: Stefan Hepp (stefan@stefant.org)
  * Date: 18.05.2010
  */
-public class JCopter implements Module<JCopterManager> {
+public class JCopter implements JopTool<JCopterManager> {
 
     public static final String VERSION = "0.1";
 
@@ -61,7 +61,7 @@ public class JCopter implements Module<JCopterManager> {
         manager = new JCopterManager();
     }
 
-    public String getModuleVersion() {
+    public String getToolVersion() {
         return VERSION;
     }
 
@@ -69,17 +69,8 @@ public class JCopter implements Module<JCopterManager> {
         return manager;
     }
 
-    public Properties getDefaultProperties() {
-        // load defaults configuration file
-        Properties defaults = null;
-        try {
-            defaults = AppSetup.loadResourceProps(JCopter.class, "defaults.properties");
-        } catch (IOException e) {
-            System.out.println("Error loading default configuration file: "+e.getMessage());
-            System.exit(1);
-        }
-
-        return defaults;
+    public Properties getDefaultProperties() throws IOException {
+        return AppSetup.loadResourceProps(JCopter.class, "defaults.properties");
     }
 
     public void registerOptions(OptionGroup options) {
@@ -125,11 +116,12 @@ public class JCopter implements Module<JCopterManager> {
         setup.addStandardOptions(true, true);
         setup.addPackageOptions(true);
         setup.addWriteOptions(true);
+        setup.setConfigFilename("jcopter.properties");
 
-        setup.registerModule("jcopter", jcopter);
+        setup.registerTool("jcopter", jcopter);
 
         // parse options and config, setup everything, load application classes
-        String[] rest = setup.setupConfig(args, "jcopter.properties");
+        String[] rest = setup.setupConfig(args);
 
         setup.setupLogger(true);
         setup.setupAppInfo(rest, true);

@@ -46,6 +46,7 @@ import java.util.Properties;
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class AppSetup {
+    private boolean loadSystemProps;
 
     /**
      * Helper to load a property file in the package of a given class.
@@ -85,25 +86,40 @@ public class AppSetup {
     private LogConfig logConfig;
     private AppInfo appInfo;
     private boolean handleAppInfoInit;
-    private String prgmName;
+    private String programName;
     private String usageDescription;
     private String optionSyntax;
     private String versionInfo;
+    private String configFilename;
 
-    private Map<String,Module> modules;
+    private Map<String, JopTool> tools;
 
+    /**
+     * Initialize a new AppSetup with no default properties
+     * (note that tools can add their own default config).
+     *
+     * @param loadSystemProps if true, add all JVM system properties to the default properties.
+     */
     public AppSetup(boolean loadSystemProps) {
         this(new Properties(), loadSystemProps);
     }
 
+    /**
+     * Initialize a new AppSetup and set the given default properties
+     * (note that tools can add their own default config).
+     *
+     * @param defaultProps defaults or the config.
+     * @param loadSystemProps if true, add all JVM system properties to the default properties.  
+     */
     public AppSetup(Properties defaultProps, boolean loadSystemProps) {
+        this.loadSystemProps = loadSystemProps;
 
-        Properties def;
+        Properties def = new Properties();
+        if ( defaultProps != null ) {
+            def.putAll(defaultProps);
+        }
         if ( loadSystemProps ) {
-            def = new Properties(defaultProps);
             def.putAll(System.getProperties());
-        } else {
-            def = defaultProps;
         }
 
         config = new Config(def);
@@ -112,7 +128,7 @@ public class AppSetup {
         appInfo = AppInfo.getSingleton();
 
         logConfig = new LogConfig();
-        modules = new HashMap<String, Module>();
+        tools = new HashMap<String, JopTool>();
     }
 
     public Config getConfig() {
@@ -128,20 +144,25 @@ public class AppSetup {
     }
 
 
-    public void registerModule(String name, Module module) {
-        modules.put(name, module);
+    public void registerTool(String name, JopTool jopTool) {
+        tools.put(name, jopTool);
 
         // setup defaults and config
-        Properties defaults = module.getDefaultProperties();
-        if ( defaults != null ) {
-            config.addDefaults(defaults);
+        try {
+            Properties defaults = jopTool.getDefaultProperties();
+            if ( defaults != null ) {
+                config.addDefaults(defaults);
+            }
+        } catch (IOException e) {
+            System.err.println("Error loading default configuration file: "+e.getMessage());
+            System.exit(1);
         }
 
         // setup options
-        module.registerOptions(config.getOptions());
+        jopTool.registerOptions(config.getOptions());
 
         // register manager
-        AttributeManager manager = module.getAttributeManager();
+        AttributeManager manager = jopTool.getAttributeManager();
         if ( manager != null ) {
             appInfo.registerManager(name, manager);
         }
@@ -203,8 +224,8 @@ public class AppSetup {
         setUsageInfo(prgmName, description, null);
     }
 
-    public void setUsageInfo(String prgmName, String description, String optionSyntax) {
-        this.prgmName = prgmName;
+    public void setUsageInfo(String programName, String description, String optionSyntax) {
+        this.programName = programName;
         usageDescription = description;
         this.optionSyntax = optionSyntax;
     }
@@ -213,8 +234,20 @@ public class AppSetup {
         this.versionInfo = versionInfo;
     }
 
-    public String[] setupConfig(String[] args) {
-        return setupConfig(args, null);
+    public String getConfigFilename() {
+        return configFilename;
+    }
+
+    /**
+     * Set the filename of the user configuration file to load if it exists.
+     *
+     * Note that in contrast to the default config there is only one configfile
+     * per application, not per tool.
+     *
+     * @param configFilename the name of the config file for this app.
+     */
+    public void setConfigFilename(String configFilename) {
+        this.configFilename = configFilename;
     }
 
     /**
@@ -222,23 +255,23 @@ public class AppSetup {
      * set, also initialize AppInfo.
      *
      * @param args cmdline arguments to parse
-     * @param configFile filename of an optional user configuration file, will be tried to be loaded before
-     *                   arguments are parsed.
      * @return arguments not consumed.
      */
-    public String[] setupConfig(String[] args, String configFile) {
+    public String[] setupConfig(String[] args) {
 
-        File file = findConfigFile(configFile);
-        if ( file != null && file.exists() ) {
-            try {
-                InputStream is = new BufferedInputStream(new FileInputStream(file));
-                config.addProperties(is);
-            } catch (FileNotFoundException e) {
-                // should never happen
-                System.out.println("Configuration file '"+configFile+"' not found: "+e.getMessage());
-            } catch (IOException e) {
-                System.out.println("Could not read config file '"+file+"': "+e.getMessage());
-                System.exit(3);
+        if ( configFilename != null ) {
+            File file = findConfigFile(configFilename);
+            if ( file != null && file.exists() ) {
+                try {
+                    InputStream is = new BufferedInputStream(new FileInputStream(file));
+                    config.addProperties(is);
+                } catch (FileNotFoundException e) {
+                    // should never happen
+                    System.err.println("Configuration file '"+configFilename+"' not found: "+e.getMessage());
+                } catch (IOException e) {
+                    System.err.println("Could not read config file '"+file+"': "+e.getMessage());
+                    System.exit(3);
+                }
             }
         }
 
@@ -247,19 +280,19 @@ public class AppSetup {
             rest = config.parseArguments(args);
             config.checkOptions();
         } catch (Config.BadConfigurationException e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
-                System.out.println("Use '--help' to show a usage message.");
+                System.err.println("Use '--help' to show a usage message.");
             }
             System.exit(2);
         }
 
         // handle standard options
-        if ( config.getOption(Config.SHOW_HELP) && prgmName != null ) {
+        if ( config.getOption(Config.SHOW_HELP) ) {
             printUsage();
             System.exit(0);
         }
-        if ( config.getOption(Config.SHOW_VERSION) && versionInfo != null ) {
+        if ( config.getOption(Config.SHOW_VERSION) ) {
             printVersion();
             System.exit(0);
         }
@@ -270,13 +303,13 @@ public class AppSetup {
 
         // let modules process their config options
         try {
-            for (Module module : modules.values()) {
-                module.onSetupConfig(this);
+            for (JopTool jopTool : tools.values()) {
+                jopTool.onSetupConfig(this);
             }
         } catch (Config.BadConfigurationException e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
-                System.out.println("Use '--help' to show a usage message.");
+                System.err.println("Use '--help' to show a usage message.");
             }
             System.exit(2);            
         }
@@ -288,9 +321,9 @@ public class AppSetup {
 
         // check arguments
         if (args.length == 0 || "".equals(args[0])) {
-            System.out.println("You need to specify a main class or entry method.");
+            System.err.println("You need to specify a main class or entry method.");
             if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
-                System.out.println("Use '--help' to show a usage message.");
+                System.err.println("Use '--help' to show a usage message.");
             }
             System.exit(2);
         }
@@ -329,7 +362,7 @@ public class AppSetup {
         for (String root : roots) {
             ClassInfo rootInfo = appInfo.loadClass(root.replaceAll("/","."));
             if ( rootInfo == null ) {
-                System.out.println("Error loading root class '"+root+"'.");
+                System.err.println("Error loading root class '"+root+"'.");
                 System.exit(4);
             }
             appInfo.addRoot(rootInfo);
@@ -342,9 +375,9 @@ public class AppSetup {
             appInfo.setMainMethod(main);
 
         } catch (Config.BadConfigurationException e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
-                System.out.println("Use '--help' to show a usage message.");
+                System.err.println("Use '--help' to show a usage message.");
             }
             System.exit(2);
         }
@@ -398,7 +431,7 @@ public class AppSetup {
             }
         }
 
-        System.out.print("Usage: "+prgmName);
+        System.out.print("Usage: "+ (programName != null ? programName : ""));
         System.out.println(optionDesc);
         System.out.println();
         if ( usageDescription != null && !"".equals(usageDescription) ) {
@@ -412,6 +445,15 @@ public class AppSetup {
         }
 
         System.out.println();
+
+        if ( loadSystemProps && configFilename != null ) {
+            System.out.println("Config values can be set in the JVM system properties and in '" + configFilename + "'");
+            System.out.println("in the working directory.");
+        } else if ( configFilename != null ) {
+            System.out.println("Config values can be set in '" + configFilename + "' in the working directory.");
+        } else if ( loadSystemProps ) {
+            System.out.println("Config values can be set in the JVM system properties.");
+        }
     }
 
     public void printVersion() {
@@ -419,8 +461,8 @@ public class AppSetup {
         if (versionInfo != null && !"".equals(versionInfo)) {
             System.out.println(versionInfo);
         }
-        for (String name : modules.keySet() ) {
-            versionInfo += name + ": " + modules.get(name).getModuleVersion();
+        for (String name : tools.keySet() ) {
+            System.out.println(name + ": " + tools.get(name).getToolVersion());
         }
     }
 
@@ -442,7 +484,7 @@ public class AppSetup {
             writer.setup(config.getOptions());
             writer.write(config.getOption(outDir));
         } catch (IOException e) {
-            System.out.println("Failed to write classes: "+e.getMessage());
+            ClassWriter.logger.error("Failed to write classes: "+e.getMessage(), e);
             System.exit(5);
         }
     }
