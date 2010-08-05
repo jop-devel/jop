@@ -190,7 +190,6 @@ public final class AppInfo {
         for ( ClassInfo cls : classes.values() ) {
             if ( fromClassInfos ) {
                 cls.removeCustomValue(key);
-                cls.removeConstantPoolCustomValue(key);
             }
             if ( fromClassMembers ) {
                 for ( FieldInfo field : cls.getFields() ) {
@@ -478,6 +477,12 @@ public final class AppInfo {
         }
     }
 
+    public void compileAll() {
+        for (ClassInfo c : classes.values()) {
+            c.compileJavaClass();
+        }
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     // Helper methods to find classes, fields and methods; Convenience methods
     //////////////////////////////////////////////////////////////////////////////
@@ -550,7 +555,6 @@ public final class AppInfo {
     }
 
     public Collection<ClassInfo> getRootClasses() {
-        // TODO maintain rootClasses as field?
         Map<String,ClassInfo> rootClasses = new HashMap<String, ClassInfo>();
         for (MemberInfo root : roots) {
             rootClasses.put(root.getClassInfo().getClassName(), root.getClassInfo());
