@@ -75,6 +75,11 @@ endif
 #
 CLDC11=false
 
+#
+#	Kind of JDK 1.6
+#
+JDK16=false
+
 
 # Number of cores for JopSim and RTTM simulation
 CORE_CNT=1
@@ -154,7 +159,11 @@ TOOLS_CP=-classpath $(TOOLS)/dist/lib/jop-tools.jar$(S)$(TOOLS)/dist/lib/JopDebu
 ifeq ($(CLDC11),true)
 	TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/cldc11/cldc_orig$(S)$(TARGET)/src/cldc11/cldc_mod$(S)$(TARGET)/src/cldc11/jdk_base_orig$(S)$(TARGET)/src/cldc11/jdk_base_mod$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
 else
+ifeq ($(JDK16),true)
+	TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/jdk_base$(S)$(TARGET)/src/jdk16$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
+else
 	TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/jdk_base$(S)$(TARGET)/src/jdk11$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
+endif
 endif
 TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5
 GCC_PARAMS=
