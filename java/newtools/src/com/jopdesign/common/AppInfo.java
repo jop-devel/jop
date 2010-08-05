@@ -20,6 +20,7 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.graph.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.BcelRepositoryWrapper;
 import com.jopdesign.common.misc.ClassInfoNotFoundException;
@@ -51,7 +52,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- *
+ * The AppInfo class loads, creates and holds ClassInfos, handles all the loading related stuff,
+ * manages CustomKeys and modification events, maintains a class hierarchy and provides various
+ * methods to get and to iterate over ClassInfos.
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
@@ -467,6 +470,13 @@ public final class AppInfo {
         return classes.values();
     }
 
+    public void iterate(ClassVisitor visitor) {
+        for (ClassInfo c : classes.values()) {
+            if (!visitor.visitClass(c)) {
+                return;
+            }
+        }
+    }
 
     //////////////////////////////////////////////////////////////////////////////
     // Helper methods to find classes, fields and methods; Convenience methods
@@ -745,11 +755,6 @@ public final class AppInfo {
         }
 
         return cls;
-    }
-
-    private void updateClassHierarchy(ClassInfo classInfo) {
-        // TODO implement.. if class has been loaded on demand, update type analysis infos for new classInfo
-
     }
 
     private ClassInfo tryLoadClass(String className) throws IOException {

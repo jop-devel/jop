@@ -20,13 +20,30 @@
 
 package com.jopdesign.common.graph;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 
 /**
+ * This is an interface for actions which are applied to one or more classes.
+ *
+ * <p>This does not really used to implement a visitor pattern, but in most cases we
+ * do not need double dispatch.
+ * </p>
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public interface ClassVisitor {
-    
+
+    /**
+     * Visit a class. The concrete meaning of the return value depends on the used traverser.
+     *
+     * <p>For recursive traversers, returning false skips descending down for this class. For
+     * other traversers such as {@link AppInfo#iterate(ClassVisitor)} returning false aborts
+     * traversion.</p> 
+     *
+     * @param classInfo the class to perform some acton on.
+     * @return true to continue, false to abort iteration or recursion.
+     */
     boolean visitClass(ClassInfo classInfo);
 
 }

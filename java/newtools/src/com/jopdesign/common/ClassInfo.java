@@ -20,6 +20,8 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.graph.ClassHierarchyTraverser;
+import com.jopdesign.common.graph.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.Ternary;
@@ -267,6 +269,8 @@ public final class ClassInfo extends MemberInfo {
 
 
         classGen.setConstantPool(newPool);
+        removeIndices.clear();
+
         return true;
     }
 
@@ -581,7 +585,7 @@ public final class ClassInfo extends MemberInfo {
         Method[] methods = classGen.getMethods();
         for (int i = 0; i < methods.length; i++) {
             Method m = methods[i];
-            String s = Signature.getSignature(null, m.getName(), m.getSignature());
+            String s = Signature.getMemberSignature(m.getName(), m.getSignature());
             if ( s.equals(memberSignature) ) {
                 return i;
             }
@@ -830,11 +834,7 @@ public final class ClassInfo extends MemberInfo {
 
         // TODO We could keep a modified flag in both MethodInfo and FieldInfo
         // (maybe even ClassInfo), and update only what is needed here
-        // - implement protected modify() with private modified flag in MemberInfo
-        // - set modified on EVERY setter,..
-        // - clear on method/field compile + update in classGen (i.e. here and in rename*(),..)
         // could make class-writing faster, but makes code more complex
-
 
         for (Field f : classGen.getFields()) {
             classGen.removeField(f);
@@ -859,7 +859,8 @@ public final class ClassInfo extends MemberInfo {
      * Compile and return a BCEL JavaClass for this ClassInfo.
      *
      * <p>If compile is false, then the JavaClass does not contain any modifications not yet
-     * commited to the internal BCEL ClassGen (e.g. it does not cleanup the constantpool, add new methods, ..).</p>
+     * commited to the internal BCEL ClassGen (e.g. it does not cleanup the constantpool, does not contain
+     * modifications to methods/fields, ..).</p>
      *
      * @see #compileJavaClass()
      * @param compile if true, this does the same as {@link #compileJavaClass()}
@@ -894,18 +895,53 @@ public final class ClassInfo extends MemberInfo {
     @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
     protected void updateClassHierarchy() {
         AppInfo appInfo = AppInfo.getSingleton();
-        superClass = appInfo.getClassInfo(classGen.getSuperclassName());
+        if ( "java.lang.Object".equals(getClassName()) ) {
+            superClass = null;
+        } else {
+            superClass = appInfo.getClassInfo(classGen.getSuperclassName());
+        }
         if ( superClass != null ) {
             superClass.subClasses.add(this);
         }
     }
 
+    @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
     protected void updateCompleteFlag(boolean updateSubclasses) {
 
-        
+        if ( isInterface() ) {
+            // need to check all extended interfaces
+            Set<ClassInfo> interfaces = getInterfaces();
+            if ( interfaces.size() < classGen.getInterfaceNames().length ) {
+                // some interfaces are not loaded
+                fullyKnown = Ternary.FALSE;
+            } else {
+                boolean known = true;
+                // if this interface extends no other interface, 'known' will stay true
+                // else we check if all extended interfaces are known
+                for (ClassInfo i : interfaces) {
+                    // update interfaces recursively first
+                    if ( i.fullyKnown == Ternary.UNKNOWN ) {
+                        i.updateCompleteFlag(false);
+                    }
+                    known &= i.fullyKnown == Ternary.TRUE;
+                }
+                fullyKnown = Ternary.valueOf(known);
+            }
+
+        } else if ( superClass == null ) {
+            fullyKnown = Ternary.valueOf("java.lang.Object".equals(getClassName()));
+        } else {
+            // if superclass is unknown, update recursively first
+            if ( superClass.fullyKnown == Ternary.UNKNOWN ) {
+                superClass.updateCompleteFlag(false);
+            }
+            fullyKnown = superClass.fullyKnown;
+        }
 
         if ( updateSubclasses ) {
-
+            for (ClassInfo c : subClasses) {
+                c.updateCompleteFlag(true);
+            }
         }
     }
 
@@ -916,10 +952,20 @@ public final class ClassInfo extends MemberInfo {
         }
 
         // all extensions of this will now be incomplete
-        
+        if ( fullyKnown == Ternary.TRUE ) {
+            ClassVisitor visitor = new ClassVisitor() {
+                public boolean visitClass(ClassInfo classInfo) {
+                    classInfo.fullyKnown = Ternary.FALSE;
+                    return true;
+                }
+            };
+            ClassHierarchyTraverser traverser = new ClassHierarchyTraverser(visitor, false);
+            traverser.setExtensionsOnly(true);
+            traverser.traverse(this);
+        }
 
         // interface references are not stored; direct subclasses of a class are only classes, so
-        // all their superclasses must be this class
+        // all their superclasses must be this class, so unset them
         if ( !isInterface() ) {
             for (ClassInfo c : subClasses) {
                 c.superClass = null;
