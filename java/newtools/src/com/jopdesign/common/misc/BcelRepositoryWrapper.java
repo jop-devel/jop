@@ -40,7 +40,7 @@ public class BcelRepositoryWrapper implements Repository {
     public void removeClass(JavaClass clazz) {
         ClassInfo cls = AppInfo.getSingleton().getClassInfo(clazz.getClassName());
         if ( cls != null ) {
-            AppInfo.getSingleton().removeClass(cls);
+            AppInfo.getSingleton().removeClass(cls, true);
         }
     }
 

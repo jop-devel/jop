@@ -216,7 +216,6 @@ public class AppSetup {
         config.addOption(Config.WRITE_PATH);
         if ( writeClasses ) {
             config.addOption(Config.WRITE_CLASSPATH);
-            ClassWriter.addOptions(config.getOptions());
         }
     }
 
@@ -481,7 +480,6 @@ public class AppSetup {
     public void writeClasses(Option<String> outDir) {
         try {
             ClassWriter writer = new ClassWriter();
-            writer.setup(config.getOptions());
             writer.write(config.getOption(outDir));
         } catch (IOException e) {
             ClassWriter.logger.error("Failed to write classes: "+e.getMessage(), e);

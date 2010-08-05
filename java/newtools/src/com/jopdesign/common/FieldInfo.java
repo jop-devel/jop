@@ -24,6 +24,7 @@ import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.FieldRef;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.classfile.Field;
+import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.FieldGen;
 
 /**
@@ -78,5 +79,10 @@ public final class FieldInfo extends ClassMemberInfo {
      */
     protected FieldGen getFieldGen() {
         return fieldGen;
+    }
+
+    protected void rebuildConstantPool(ConstantPoolGen oldPool, ConstantPoolGen newPool) {
+        fieldGen.setConstantPool(newPool);
+        
     }
 }

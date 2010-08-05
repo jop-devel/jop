@@ -300,7 +300,7 @@ public final class AppInfo {
         ClassInfo cls = classes.get(className);
         if ( cls != null ) {
             if ( reload ) {
-                removeClass(cls);
+                removeClass(cls, false);
             } else {
                 return cls;
             }
@@ -317,14 +317,16 @@ public final class AppInfo {
         return performLoadClass(className, required);
     }
 
-    public void removeClass(ClassInfo classInfo) {
+    public void removeClass(ClassInfo classInfo, boolean updateHierarchy) {
         classes.remove(classInfo.getClassName());
 
         for ( AttributeManager mgr : managers.values() ) {
             mgr.onRemoveClass(classInfo);
         }
 
-        classInfo.removeFromClassHierarchy();
+        if ( updateHierarchy ) {
+            classInfo.removeFromClassHierarchy();
+        }
     }
 
     /**
@@ -465,8 +467,15 @@ public final class AppInfo {
         return classes.containsKey(className);
     }
 
+    /**
+     * Get a collection of all classInfos in this AppInfo.
+     * Changes to the AppInfo are visible to the returned collection.
+     * You should not modify this collection directly.
+     *
+     * @return an unmodifiable view of the collection of AppInfos.
+     */
     public Collection<ClassInfo> getClassInfos() {
-        return classes.values();
+        return Collections.unmodifiableCollection(classes.values());
     }
 
     public void iterate(ClassVisitor visitor) {

@@ -42,6 +42,7 @@ import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -91,7 +92,11 @@ public final class ClassInfo extends MemberInfo {
             fields.put(f.getName(), field);
         }
     }
-    
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Various getter and setter
+    //////////////////////////////////////////////////////////////////////////////
+
     @Override
     public ClassInfo getClassInfo() {
         return this;
@@ -101,6 +106,58 @@ public final class ClassInfo extends MemberInfo {
     public Signature getSignature() {
         return new Signature(classGen.getClassName(), null, null);
     }
+
+    @Override
+    public String getModifierString() {
+        String s = super.getModifierString();
+        if ( isInterface() ) {
+            s += "interface ";
+        } else {
+            s += "class ";
+        }
+        return s;
+    }
+
+    public String getClassName() {
+        return classGen.getClassName();
+    }
+
+    public ClassRef getClassRef() {
+        return new ClassRef(this);
+    }
+
+    public boolean isInterface() {
+        return classGen.isInterface();
+    }
+
+    public boolean isAbstract() {
+        return classGen.isAbstract();
+    }
+
+    public void setAbstract(boolean val) {
+        classGen.isAbstract(val);
+    }
+
+    public boolean isStrictFP() {
+        return classGen.isStrictfp();
+    }
+
+    public void setStrictFP(boolean val) {
+        classGen.isStrictfp(val);
+    }
+
+    public String getSuperClassName() {
+        return classGen.getSuperclassName();
+    }
+
+    public String[] getInterfaceNames() {
+        return classGen.getInterfaceNames();
+    }
+
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Access to the constantpool, lookups and modification
+    //////////////////////////////////////////////////////////////////////////////
 
     public ConstantInfo getConstantInfo(int i) {
         if ( i < 0 || i >= cpg.getSize() ) {
@@ -184,10 +241,11 @@ public final class ClassInfo extends MemberInfo {
 
         
 
-        for (MethodInfo mi : methods.values()) {
-            mi.compileCodeRep();
-
-
+        for (MethodInfo m : methods.values()) {
+            m.rebuildConstantPool(cpg, newPool);
+        }
+        for (FieldInfo f : fields.values()) {
+            f.rebuildConstantPool(cpg, newPool);
         }
 
 
@@ -196,6 +254,11 @@ public final class ClassInfo extends MemberInfo {
 
         cpg = newPool;
     }
+
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Class-hierarchy access
+    //////////////////////////////////////////////////////////////////////////////
 
     /**
      * Get the ClassInfo of the superClass if it is known, else return null.
@@ -220,34 +283,6 @@ public final class ClassInfo extends MemberInfo {
             }
         }
         return interfaces;
-    }
-
-    /**
-     * Get a set of all superclasses (including this class) and all implemented/extended interfaces.
-     *
-     * @return a set of all superclasses and all interfaces of this class.
-     */
-    public Set<ClassInfo> getAncestors() {
-        Set<ClassInfo> sc = new HashSet<ClassInfo>();
-        List<ClassInfo> queue = new LinkedList<ClassInfo>();
-
-        queue.add(this);
-        while (!queue.isEmpty()) {
-            ClassInfo cls = queue.remove(0);
-            sc.add(cls);
-
-            ClassInfo superClass = cls.getSuperClassInfo();
-            if ( superClass != null && !sc.contains(superClass) ) {
-                queue.add(cls);
-            }
-            for (ClassInfo i : cls.getInterfaces()) {
-                if ( !sc.contains(i) ) {
-                    queue.add(i);
-                }
-            }
-        }
-
-        return sc;
     }
 
     /**
@@ -292,125 +327,37 @@ public final class ClassInfo extends MemberInfo {
         return false;
     }
 
-    public boolean isInterface() {
-        return classGen.isInterface();
-    }
 
-    public boolean isAbstract() {
-        return classGen.isAbstract();
-    }
-
-    public void setAbstract(boolean val) {
-        classGen.isAbstract(val);
-    }
-
-    public boolean isStrictFP() {
-        return classGen.isStrictfp();
-    }
-
-    public void setStrictFP(boolean val) {
-        classGen.isStrictfp(val);
-    }
-
-    public String getSuperClassName() {
-        return classGen.getSuperclassName();
-    }
-
-    public String[] getInterfaceNames() {
-        return classGen.getInterfaceNames();
-    }
-
-    public FieldInfo getFieldInfo(String name) {
-        return fields.get(name);
-    }
-
-
-    public MethodInfo getMethodInfo(Signature signature) {
-        return getMethodInfo(signature.getMemberSignature());
-    }
-
-    public MethodInfo getMethodInfo(String memberSignature) {
-        return methods.get(memberSignature);
-    }
-
-    public Set<MethodInfo> getMethodByName(String name) {
-        Set<MethodInfo> mList = new HashSet<MethodInfo>();
-        for (MethodInfo m : methods.values()) {
-            if (m.getName().equals(name)) {
-                mList.add(m);
-            }
-        }
-        return mList;
-    }
-
-    public MethodInfo getMethodInfoVirtual(Signature signature, boolean ignoreAccess) {
-        ClassInfo cls = this;
-        while ( cls != null ) {
-            MethodInfo m = cls.getMethodInfo(signature);
-            if ( m != null ) {
-                if ( ignoreAccess || canAccess(m) ) {
-                    return m;
-                } else {
-                    return null;
-                }
-            }
-            cls = cls.getSuperClassInfo();
-        }
-        return null;
-    }
-
-    public FieldInfo getFieldVirtual(String name, boolean ignoreAccess) {
-        ClassInfo cls = this;
-        while ( cls != null ) {
-            FieldInfo f = cls.getFieldInfo(name);
-            if ( f != null ) {
-                if ( ignoreAccess || canAccess(f) ) {
-                    return f;
-                } else {
-                    return null;
-                }
-            }
-            cls = cls.getSuperClassInfo();
-        }
-        return null;
-    }
+    //////////////////////////////////////////////////////////////////////////////
+    // Class-hierarchy lookups and helpers
+    //////////////////////////////////////////////////////////////////////////////
 
     /**
-     * Get a reference to the outer class if this is an inner class, else return
-     * null.
+     * Get a set of all superclasses (including this class) and all implemented/extended interfaces.
      *
-     * @return a classRef to the parent class or null if this is not an inner class.
+     * @return a set of all superclasses and all interfaces of this class.
      */
-    public ClassRef getOuterClass() {
-        int idx = classGen.getClassName().lastIndexOf('$');
-        if ( idx == -1 ) {
-            return null;
+    public Set<ClassInfo> getAncestors() {
+        Set<ClassInfo> sc = new HashSet<ClassInfo>();
+        List<ClassInfo> queue = new LinkedList<ClassInfo>();
+
+        queue.add(this);
+        while (!queue.isEmpty()) {
+            ClassInfo cls = queue.remove(0);
+            sc.add(cls);
+
+            ClassInfo superClass = cls.getSuperClassInfo();
+            if ( superClass != null && !sc.contains(superClass) ) {
+                queue.add(cls);
+            }
+            for (ClassInfo i : cls.getInterfaces()) {
+                if ( !sc.contains(i) ) {
+                    queue.add(i);
+                }
+            }
         }
-        return getAppInfo().getClassRef(classGen.getClassName().substring(0, idx));
-    }
 
-    public String getPackageName() {
-        String clsName = getClassName();
-        int index = clsName.lastIndexOf('.');
-        if ( index > 0 ) {
-            return clsName.substring(0, index);
-        } else {
-            return "";
-        }
-    }
-
-    public boolean hasSamePackage(ClassInfo classInfo) {
-        return getPackageName().equals(classInfo.getPackageName());
-    }
-
-    /**
-     * Check if the given class is an outer class of this class.
-     *
-     * @param outer the potential outer class.
-     * @return true if this class is an inner class of the given class.
-     */
-    public boolean isInnerclassOf(ClassInfo outer) {
-        return getClassName().startsWith(outer.getClassName()+"$");
+        return sc;
     }
 
     /**
@@ -465,6 +412,25 @@ public final class ClassInfo extends MemberInfo {
         return supers.contains(classInfo);
     }
 
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Various helper, access checks
+    //////////////////////////////////////////////////////////////////////////////
+
+    public String getPackageName() {
+        String clsName = getClassName();
+        int index = clsName.lastIndexOf('.');
+        if ( index > 0 ) {
+            return clsName.substring(0, index);
+        } else {
+            return "";
+        }
+    }
+
+    public boolean hasSamePackage(ClassInfo classInfo) {
+        return getPackageName().equals(classInfo.getPackageName());
+    }
+
     /**
      * Check if the given member can be accessed by this class.
      *
@@ -490,12 +456,122 @@ public final class ClassInfo extends MemberInfo {
                 if ( cls.isSuperclassOf(this) ) {
                     return true;
                 }
+                // fallthrough
             case ACC_PACKAGE:
                 return this.hasSamePackage(cls);
             case ACC_PRIVATE:
                 return this.equals(cls) || cls.isInnerclassOf(this);
         }
         return false;
+    }
+
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Inner-class stuff
+    //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Get a reference to the outer class if this is an inner class, else return
+     * null.
+     *
+     * @return a classRef to the parent class or null if this is not an inner class.
+     */
+    public ClassRef getOuterClass() {
+        int idx = classGen.getClassName().lastIndexOf('$');
+        if ( idx == -1 ) {
+            return null;
+        }
+        return getAppInfo().getClassRef(classGen.getClassName().substring(0, idx));
+    }
+
+    /**
+     * Check if the given class is an outer class of this class.
+     *
+     * @param outer the potential outer class.
+     * @return true if this class is an inner class of the given class.
+     */
+    public boolean isInnerclassOf(ClassInfo outer) {
+        return getClassName().startsWith(outer.getClassName()+"$");
+    }
+
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Access to fields and methods, lookups
+    //////////////////////////////////////////////////////////////////////////////
+
+    public FieldInfo getFieldInfo(String name) {
+        return fields.get(name);
+    }
+
+
+    public MethodInfo getMethodInfo(Signature signature) {
+        return getMethodInfo(signature.getMemberSignature());
+    }
+
+    public MethodInfo getMethodInfo(String memberSignature) {
+        return methods.get(memberSignature);
+    }
+
+    public Set<MethodInfo> getMethodByName(String name) {
+        Set<MethodInfo> mList = new HashSet<MethodInfo>();
+        for (MethodInfo m : methods.values()) {
+            if (m.getName().equals(name)) {
+                mList.add(m);
+            }
+        }
+        return mList;
+    }
+
+    /**
+     * Return a collection of all fields of this class.
+     * You really should not modify this list directly.
+     *
+     * @return a collection of all fields.
+     */
+    public Collection<FieldInfo> getFields() {
+        return Collections.unmodifiableCollection(fields.values());
+    }
+
+    /**
+     * Return a collection of all methods of this class.
+     * You really should not modify this list directly.
+     *
+     * @return a collection of all methods.
+     */
+    public Collection<MethodInfo> getMethods() {
+        return Collections.unmodifiableCollection(methods.values());
+    }
+
+    public MethodInfo getMethodInfoVirtual(Signature signature, boolean ignoreAccess) {
+        ClassInfo cls = this;
+        while ( cls != null ) {
+            MethodInfo m = cls.getMethodInfo(signature);
+            if ( m != null ) {
+                if ( ignoreAccess || canAccess(m) ) {
+                    return m;
+                } else {
+                    return null;
+                }
+            }
+            cls = cls.getSuperClassInfo();
+        }
+        return null;
+    }
+
+    public FieldInfo getFieldVirtual(String name, boolean ignoreAccess) {
+        ClassInfo cls = this;
+        while ( cls != null ) {
+            FieldInfo f = cls.getFieldInfo(name);
+            if ( f != null ) {
+                if ( ignoreAccess || canAccess(f) ) {
+                    return f;
+                } else {
+                    return null;
+                }
+            }
+            cls = cls.getSuperClassInfo();
+        }
+        return null;
     }
 
     /**
@@ -532,6 +608,11 @@ public final class ClassInfo extends MemberInfo {
         }
         return -1;
     }
+
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Modify fields and methods (create, copy, rename, remove)
+    //////////////////////////////////////////////////////////////////////////////
 
     /**
      * Create a new non-static, package-visible field with the given name and type.
@@ -700,44 +781,10 @@ public final class ClassInfo extends MemberInfo {
         return methodInfo;
     }
 
-    public String getClassName() {
-        return classGen.getClassName();
-    }
 
-    /**
-     * Return a collection of all fields of this class.
-     * You really should not modify this list directly.
-     *
-     * @return a collection of all fields.
-     */
-    public Collection<FieldInfo> getFields() {
-        return fields.values();
-    }
-
-    /**
-     * Return a collection of all methods of this class.
-     * You really should not modify this list directly.
-     *
-     * @return a collection of all methods.
-     */
-    public Collection<MethodInfo> getMethods() {
-        return methods.values();
-    }
-
-    @Override
-    public String getModifierString() {
-        String s = super.getModifierString();
-        if ( isInterface() ) {
-            s += "interface ";
-        } else {
-            s += "class ";
-        }
-        return s;
-    }
-
-    public ClassRef getClassRef() {
-        return new ClassRef(this);
-    }
+    //////////////////////////////////////////////////////////////////////////////
+    // BCEL stuff
+    //////////////////////////////////////////////////////////////////////////////
 
     /**
      * Commit all modifications to this ClassInfo and return a BCEL JavaClass for this ClassInfo.
@@ -752,21 +799,35 @@ public final class ClassInfo extends MemberInfo {
         // (maybe even ClassInfo), and update only what is needed here
         // could make class-writing,.. faster, but makes code more complex
 
+        List<String> order = new LinkedList<String>();
+
         for (Field f : classGen.getFields()) {
+            order.add(f.getName());
             classGen.removeField(f);
         }
-        for (FieldInfo f : fields.values()) {
+        if (order.size() != fields.size() ) {
+            // should never happen
+            throw new JavaClassFormatError("Number of fields in classGen of " + getClassName() +
+                    " differs from number of FieldInfos!");
+        }
+        for (String name : order) {
+            FieldInfo f = fields.get(name);
             classGen.addField(f.getField());
         }
 
-        for (Method m : classGen.getMethods()) {
-            classGen.removeMethod(m);
+        Method[] mList = classGen.getMethods();
+        if (mList.length != methods.size()) {
+            // should never happen
+            throw new JavaClassFormatError("Number of methods in classGen of " + getClassName() +
+                    " differs from number of MethodInfos!");
         }
-        for (MethodInfo m : methods.values()) {
-            classGen.addMethod(m.compileMethod());
+        for (int i = 0; i < mList.length; i++) {
+            MethodInfo method = methods.get(Signature.getMemberSignature(mList[i].getName(),
+                                                                         mList[i].getSignature()));
+            classGen.setMethodAt(method.compileMethod(), i);
         }
 
-        // TODO update/clear attributes + CustomValues which may depend on method/field-order 
+        // TODO call manager eventhandler
 
         return classGen.getJavaClass();
     }
@@ -790,6 +851,11 @@ public final class ClassInfo extends MemberInfo {
         return classGen.getJavaClass();
     }
 
+
+    //////////////////////////////////////////////////////////////////////////////
+    // hashCode, equals
+    //////////////////////////////////////////////////////////////////////////////
+
     public int hashCode() {
         return classGen.getClassName().hashCode();
     }
@@ -801,6 +867,10 @@ public final class ClassInfo extends MemberInfo {
         return ((ClassInfo)o).getClassName().equals(getClassName());
     }
 
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Internal affairs, class hierarchy management; To be used only be AppInfo
+    //////////////////////////////////////////////////////////////////////////////
 
     protected void resetHierarchyInfos() {
         superClass = null;

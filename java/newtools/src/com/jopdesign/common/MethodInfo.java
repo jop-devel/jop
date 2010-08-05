@@ -26,6 +26,7 @@ import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.classfile.Method;
+import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.log4j.Logger;
@@ -194,5 +195,10 @@ public final class MethodInfo extends ClassMemberInfo {
      */
     protected MethodGen getMethodGen() {
         return methodGen;
+    }
+
+    protected void rebuildConstantPool(ConstantPoolGen oldPool, ConstantPoolGen newPool) {
+        methodGen.setConstantPool(newPool);
+        
     }
 }
