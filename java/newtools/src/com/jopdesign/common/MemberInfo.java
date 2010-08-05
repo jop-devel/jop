@@ -23,12 +23,9 @@ package com.jopdesign.common;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.AccessFlags;
+import org.apache.bcel.classfile.Attribute;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -190,4 +187,9 @@ public abstract class MemberInfo {
         return customValues[key.getId()];
     }
 
+    public abstract Attribute[] getAttributes();
+
+    public abstract void addAttribute(Attribute a);
+
+    public abstract void removeAttribute(Attribute a);
 }

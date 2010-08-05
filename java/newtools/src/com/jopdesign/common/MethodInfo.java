@@ -21,6 +21,8 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.code.CodeRepresentation;
+import com.jopdesign.common.graph.ClassHierarchyTraverser;
+import com.jopdesign.common.graph.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MethodRef;
@@ -30,6 +32,10 @@ import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.log4j.Logger;
+
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -187,6 +193,73 @@ public final class MethodInfo extends ClassMemberInfo {
     @Override
     public Signature getSignature() {
         return new Signature(getClassInfo().getClassName(), getName(), getDescriptor());
+    }
+
+    public MethodInfo getSuperMethod(boolean ignoreAccess) {
+        // TODO check: if this is a private method and not ignoreAccess, always return null?
+
+        ClassInfo superClass = getClassInfo().getSuperClassInfo();
+        MethodInfo superMethod = null;
+        while (superClass != null) {
+            superMethod = superClass.getMethodInfo(getMemberSignature());
+            if ( superMethod != null ) {
+                break;
+            }
+            superClass = superClass.getSuperClassInfo();
+        }
+        if (superMethod != null && !ignoreAccess && superMethod.isPrivate()) {
+            return null;
+        }
+        return superMethod;
+    }
+
+    public Collection<MethodInfo> findInterfaceMethods() {
+        final List<MethodInfo> ifMethods = new LinkedList<MethodInfo>();
+
+        ClassVisitor visitor = new ClassVisitor() {
+            public boolean visitClass(ClassInfo classInfo) {
+                if ( !classInfo.isInterface() ) {
+                    return false;
+                }
+                MethodInfo ifMethod = classInfo.getMethodInfo(getMemberSignature());
+                if ( ifMethod != null ) {
+                    ifMethods.add(ifMethod);
+                }
+                return true;
+            }
+        };
+
+        new ClassHierarchyTraverser(visitor, true).traverse(getClassInfo());
+
+        return ifMethods;
+    }
+    
+    public Collection<MethodInfo> findOverriders(boolean ignoreAccess) {
+        final List<MethodInfo> overriders = new LinkedList<MethodInfo>();
+
+        if (!ignoreAccess && isPrivate()) {
+            return overriders;
+        }
+
+        ClassVisitor visitor = new ClassVisitor() {
+            public boolean visitClass(ClassInfo classInfo) {
+                MethodInfo overrider = classInfo.getMethodInfo(getMemberSignature());
+                if ( overrider != null ) {
+                    if ( overrider.isPrivate() && !isPrivate() ) {
+                        // found an overriding method which is private .. this is interesting..
+                        logger.warn("Found private method "+overrider.getMemberSignature()+" in "+
+                                classInfo.getClassName()+" overriding non-private method in "+
+                                getClassInfo().getClassName());
+                    }
+                    overriders.add(overrider);
+                }
+                return true;
+            }
+        };
+
+        new ClassHierarchyTraverser(visitor, false).traverse(getClassInfo());
+
+        return overriders;
     }
 
     /**

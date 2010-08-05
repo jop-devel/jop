@@ -29,6 +29,7 @@ import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.ConstantInfo;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.Signature;
+import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantUtf8;
 import org.apache.bcel.classfile.Field;
@@ -154,6 +155,20 @@ public final class ClassInfo extends MemberInfo {
         return classGen.getInterfaceNames();
     }
 
+    @Override
+    public Attribute[] getAttributes() {
+        return classGen.getAttributes();
+    }
+
+    @Override
+    public void addAttribute(Attribute a) {
+        classGen.addAttribute(a);
+    }
+
+    @Override
+    public void removeAttribute(Attribute a) {
+        classGen.removeAttribute(a);
+    }
 
     //////////////////////////////////////////////////////////////////////////////
     // Access to the constantpool, lookups and modification
@@ -239,7 +254,8 @@ public final class ClassInfo extends MemberInfo {
         String superName = ((ConstantUtf8)cpg.getConstant(classGen.getSuperclassNameIndex())).getBytes();
         classGen.setSuperclassName(superName);
 
-        
+        // calling getInterfaces has the side-effect of adding all interface names to the CP
+        classGen.getInterfaces();
 
         for (MethodInfo m : methods.values()) {
             m.rebuildConstantPool(cpg, newPool);
@@ -248,9 +264,7 @@ public final class ClassInfo extends MemberInfo {
             f.rebuildConstantPool(cpg, newPool);
         }
 
-
-
-        // TODO update/remove attributes/customValues which depend on constantpool-entry-indices 
+        // TODO update all attributes, update/remove customValues which depend on CP and call eventbroker  
 
         cpg = newPool;
     }
@@ -799,20 +813,14 @@ public final class ClassInfo extends MemberInfo {
         // (maybe even ClassInfo), and update only what is needed here
         // could make class-writing,.. faster, but makes code more complex
 
-        List<String> order = new LinkedList<String>();
-
-        for (Field f : classGen.getFields()) {
-            order.add(f.getName());
-            classGen.removeField(f);
-        }
-        if (order.size() != fields.size() ) {
+        Field[] fList = classGen.getFields();
+        if (fList.length != fields.size() ) {
             // should never happen
             throw new JavaClassFormatError("Number of fields in classGen of " + getClassName() +
                     " differs from number of FieldInfos!");
         }
-        for (String name : order) {
-            FieldInfo f = fields.get(name);
-            classGen.addField(f.getField());
+        for (Field f : fList) {
+            classGen.replaceField(f, fields.get(f.getName()).getField());
         }
 
         Method[] mList = classGen.getMethods();

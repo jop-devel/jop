@@ -21,6 +21,7 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.type.Descriptor;
+import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.generic.FieldGenOrMethodGen;
 import org.apache.bcel.generic.Type;
 
@@ -51,5 +52,20 @@ public abstract class ClassMemberInfo extends MemberInfo {
     }
 
     public abstract Descriptor getDescriptor();
+
+    @Override
+    public Attribute[] getAttributes() {
+        return classMember.getAttributes();
+    }
+
+    @Override
+    public void addAttribute(Attribute a) {
+        classMember.addAttribute(a);
+    }
+
+    @Override
+    public void removeAttribute(Attribute a) {
+        classMember.removeAttribute(a);
+    }
 
 }
