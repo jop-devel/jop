@@ -81,8 +81,4 @@ public final class FieldInfo extends ClassMemberInfo {
         return fieldGen;
     }
 
-    protected void rebuildConstantPool(ConstantPoolGen oldPool, ConstantPoolGen newPool) {
-        fieldGen.setConstantPool(newPool);
-        
-    }
 }

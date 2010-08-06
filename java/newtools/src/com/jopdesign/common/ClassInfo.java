@@ -25,13 +25,13 @@ import com.jopdesign.common.graph.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.Ternary;
+import com.jopdesign.common.tools.ConstantPoolRebuilder;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.ConstantInfo;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Constant;
-import org.apache.bcel.classfile.ConstantUtf8;
 import org.apache.bcel.classfile.Field;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
@@ -185,6 +185,10 @@ public final class ClassInfo extends MemberInfo {
         return ConstantInfo.createFromConstant(cpg.getConstantPool(), c);
     }
 
+    public ConstantInfo getConstantInfo(Constant c) {
+        return ConstantInfo.createFromConstant(cpg.getConstantPool(), c);
+    }
+
     public Constant getConstant(int i) {
         return cpg.getConstant(i);
     }
@@ -242,26 +246,15 @@ public final class ClassInfo extends MemberInfo {
     public void rebuildConstantPool() {
 
         ConstantPoolGen newPool = new ConstantPoolGen();
-        classGen.setConstantPool(newPool);
+        ConstantPoolRebuilder rebuilder = new ConstantPoolRebuilder(cpg, newPool);
 
-        // re-add all usages of this constantpool
-        // -> classnameIdx, superclassIdx, interfaces-Idx, attributes,
-        //    method/field-signatures, code, ConstantPoolCustomValues
-
-        String name = ((ConstantUtf8)cpg.getConstant(classGen.getClassNameIndex())).getBytes();
-        classGen.setClassName(name);
-
-        String superName = ((ConstantUtf8)cpg.getConstant(classGen.getSuperclassNameIndex())).getBytes();
-        classGen.setSuperclassName(superName);
-
-        // calling getInterfaces has the side-effect of adding all interface names to the CP
-        classGen.getInterfaces();
+        rebuilder.updateClassGen(classGen);
 
         for (MethodInfo m : methods.values()) {
-            m.rebuildConstantPool(cpg, newPool);
+            rebuilder.updateMethodGen(m.getMethodGen());
         }
         for (FieldInfo f : fields.values()) {
-            f.rebuildConstantPool(cpg, newPool);
+            rebuilder.updateFieldGen(f.getFieldGen());
         }
 
         // TODO update all attributes, update/remove customValues which depend on CP and call eventbroker  
@@ -934,6 +927,8 @@ public final class ClassInfo extends MemberInfo {
 
         if ( updateSubclasses ) {
             for (ClassInfo c : subClasses) {
+                // we need to recurse down here since we cannot set the fullyKnown flag
+                // of interfaces directly
                 c.updateCompleteFlag(true);
             }
         }
@@ -948,9 +943,13 @@ public final class ClassInfo extends MemberInfo {
         // all extensions of this will now be incomplete
         if ( fullyKnown == Ternary.TRUE ) {
             ClassVisitor visitor = new ClassVisitor() {
+
                 public boolean visitClass(ClassInfo classInfo) {
                     classInfo.fullyKnown = Ternary.FALSE;
                     return true;
+                }
+
+                public void finishClass(ClassInfo classInfo) {
                 }
             };
             ClassHierarchyTraverser traverser = new ClassHierarchyTraverser(visitor, false);

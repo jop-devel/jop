@@ -27,7 +27,7 @@ import com.jopdesign.common.ClassInfo;
  * This is an interface for actions which are applied to one or more classes.
  *
  * <p>This does not really used to implement a visitor pattern, but in most cases we
- * do not need double dispatch.
+ * do not need double dispatch. Instead, we use this interface for pre- and post-order traversal.
  * </p>
  *
  * @author Stefan Hepp (stefan@stefant.org)
@@ -35,7 +35,7 @@ import com.jopdesign.common.ClassInfo;
 public interface ClassVisitor {
 
     /**
-     * Visit a class. The concrete meaning of the return value depends on the used traverser.
+     * Visit a class before recursion. The concrete meaning of the return value depends on the used traverser.
      *
      * <p>For recursive traversers, returning false skips descending down for this class. For
      * other traversers such as {@link AppInfo#iterate(ClassVisitor)} returning false aborts
@@ -45,5 +45,13 @@ public interface ClassVisitor {
      * @return true to continue, false to abort iteration or recursion.
      */
     boolean visitClass(ClassInfo classInfo);
+
+    /**
+     * Finish visiting a class. Called after all children have been visited, but only if
+     * {@link #visitClass(ClassInfo)} has returned true.
+     *
+     * @param classInfo the class for which recursion is finished.
+     */
+    void finishClass(ClassInfo classInfo);
 
 }

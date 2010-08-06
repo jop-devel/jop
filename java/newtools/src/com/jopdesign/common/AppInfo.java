@@ -483,6 +483,7 @@ public final class AppInfo {
             if (!visitor.visitClass(c)) {
                 return;
             }
+            visitor.finishClass(c);
         }
     }
 

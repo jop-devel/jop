@@ -28,7 +28,6 @@ import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.classfile.Method;
-import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.log4j.Logger;
@@ -217,6 +216,7 @@ public final class MethodInfo extends ClassMemberInfo {
         final List<MethodInfo> ifMethods = new LinkedList<MethodInfo>();
 
         ClassVisitor visitor = new ClassVisitor() {
+
             public boolean visitClass(ClassInfo classInfo) {
                 if ( !classInfo.isInterface() ) {
                     return false;
@@ -226,6 +226,9 @@ public final class MethodInfo extends ClassMemberInfo {
                     ifMethods.add(ifMethod);
                 }
                 return true;
+            }
+
+            public void finishClass(ClassInfo classInfo) {
             }
         };
 
@@ -242,6 +245,7 @@ public final class MethodInfo extends ClassMemberInfo {
         }
 
         ClassVisitor visitor = new ClassVisitor() {
+
             public boolean visitClass(ClassInfo classInfo) {
                 MethodInfo overrider = classInfo.getMethodInfo(getMemberSignature());
                 if ( overrider != null ) {
@@ -254,6 +258,9 @@ public final class MethodInfo extends ClassMemberInfo {
                     overriders.add(overrider);
                 }
                 return true;
+            }
+
+            public void finishClass(ClassInfo classInfo) {
             }
         };
 
@@ -270,8 +277,4 @@ public final class MethodInfo extends ClassMemberInfo {
         return methodGen;
     }
 
-    protected void rebuildConstantPool(ConstantPoolGen oldPool, ConstantPoolGen newPool) {
-        methodGen.setConstantPool(newPool);
-        
-    }
 }

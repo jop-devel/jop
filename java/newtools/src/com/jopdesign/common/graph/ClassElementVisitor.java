@@ -20,53 +20,111 @@
 
 package com.jopdesign.common.graph;
 
+import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.FieldInfo;
+import com.jopdesign.common.MemberInfo;
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.type.ConstantClassInfo;
-import com.jopdesign.common.type.ConstantDoubleInfo;
-import com.jopdesign.common.type.ConstantFieldInfo;
-import com.jopdesign.common.type.ConstantFloatInfo;
-import com.jopdesign.common.type.ConstantIntegerInfo;
-import com.jopdesign.common.type.ConstantLongInfo;
-import com.jopdesign.common.type.ConstantMethodInfo;
-import com.jopdesign.common.type.ConstantNameAndTypeInfo;
-import com.jopdesign.common.type.ConstantStringInfo;
+import org.apache.bcel.classfile.CodeException;
+import org.apache.bcel.classfile.ConstantClass;
+import org.apache.bcel.classfile.ConstantDouble;
+import org.apache.bcel.classfile.ConstantFieldref;
+import org.apache.bcel.classfile.ConstantFloat;
+import org.apache.bcel.classfile.ConstantInteger;
+import org.apache.bcel.classfile.ConstantInterfaceMethodref;
+import org.apache.bcel.classfile.ConstantLong;
+import org.apache.bcel.classfile.ConstantMethodref;
+import org.apache.bcel.classfile.ConstantNameAndType;
+import org.apache.bcel.classfile.ConstantString;
+import org.apache.bcel.classfile.ConstantUtf8;
+import org.apache.bcel.classfile.ConstantValue;
+import org.apache.bcel.classfile.Deprecated;
+import org.apache.bcel.classfile.ExceptionTable;
+import org.apache.bcel.classfile.InnerClass;
+import org.apache.bcel.classfile.InnerClasses;
+import org.apache.bcel.classfile.LineNumber;
+import org.apache.bcel.classfile.LineNumberTable;
+import org.apache.bcel.classfile.LocalVariable;
+import org.apache.bcel.classfile.LocalVariableTable;
+import org.apache.bcel.classfile.SourceFile;
+import org.apache.bcel.classfile.StackMap;
+import org.apache.bcel.classfile.StackMapEntry;
+import org.apache.bcel.classfile.Synthetic;
+import org.apache.bcel.classfile.Unknown;
+import org.apache.bcel.generic.ConstantPoolGen;
 
 /**
  * This interface is used to visit a single element of a classInfo (including the class itself).
  * To visit all elements of a class, use a {@link DescendingClassTraverser}.
  *
- * TODO this interface currently serves primarily as a note to myself, is not yet complete or used!
- *
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public interface ClassElementVisitor extends ClassVisitor {
 
-    void start();
-
-    void stop();
-
     boolean visitMethod(MethodInfo methodInfo);
+
+    void    finishMethod(MethodInfo methodInfo);
 
     boolean visitField(FieldInfo fieldInfo);
 
-    boolean visitConstantClass(ConstantClassInfo constant);
+    void    finishField(FieldInfo fieldInfo);
 
-    boolean visitConstantDouble(ConstantDoubleInfo constant);
+    boolean visitConstantPoolGen(ClassInfo classInfo, ConstantPoolGen cpg);
 
-    boolean visitConstantField(ConstantFieldInfo constant);
+    void    finishConstantPoolGen(ClassInfo classInfo, ConstantPoolGen cpg);
 
-    boolean visitConstantFloat(ConstantFloatInfo constant);
-
-    boolean visitConstantInteger(ConstantIntegerInfo constant);
-
-    boolean visitConstantLong(ConstantLongInfo constant);
-
-    boolean visitConstantMethod(ConstantMethodInfo constant);
-
-    boolean visitConstantNameAndType(ConstantNameAndTypeInfo constant);
-
-    boolean visitConstantString(ConstantStringInfo constant);
 
     
+    void visitConstantClass(ClassInfo classInfo, ConstantClass constant);
+
+    void visitConstantDouble(ClassInfo classInfo, ConstantDouble constant);
+
+    void visitConstantField(ClassInfo classInfo, ConstantFieldref constant);
+
+    void visitConstantFloat(ClassInfo classInfo, ConstantFloat constant);
+
+    void visitConstantInteger(ClassInfo classInfo, ConstantInteger constant);
+
+    void visitConstantLong(ClassInfo classInfo, ConstantLong constant);
+
+    void visitConstantMethod(ClassInfo classInfo, ConstantMethodref constant);
+
+    void visitConstantInterfaceMethod(ClassInfo classInfo, ConstantInterfaceMethodref constant);
+
+    void visitConstantNameAndType(ClassInfo classInfo, ConstantNameAndType constant);
+
+    void visitConstantString(ClassInfo classInfo, ConstantString constant);
+
+    void visitConstantUtf8(ClassInfo classInfo, ConstantUtf8 constant);
+
+
+    void visitInnerClass(ClassInfo member, InnerClass obj );
+
+    void visitInnerClasses(ClassInfo member, InnerClasses obj );
+
+    void visitSourceFile(ClassInfo member, SourceFile obj );
+
+    void visitConstantValue(FieldInfo member, ConstantValue obj );
+
+    void visitCodeException(MethodInfo member, CodeException obj );
+
+    void visitExceptionTable(MethodInfo member, ExceptionTable obj );
+
+    void visitLineNumber(MethodInfo member, LineNumber obj );
+
+    void visitLineNumberTable(MethodInfo member, LineNumberTable obj );
+
+    void visitLocalVariable(MethodInfo member, LocalVariable obj );
+
+    void visitLocalVariableTable(MethodInfo member, LocalVariableTable obj );
+
+    void visitStackMap(MethodInfo member, StackMap obj );
+
+    void visitStackMapEntry(MethodInfo member, StackMapEntry obj );
+
+    void visitDeprecated(MemberInfo member, Deprecated obj );
+
+    void visitSynthetic(MemberInfo member, Synthetic obj );
+
+    void visitUnknown(MemberInfo member, Unknown obj );
+
 }

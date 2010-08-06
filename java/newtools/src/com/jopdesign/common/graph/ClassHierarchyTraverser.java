@@ -89,6 +89,8 @@ public class ClassHierarchyTraverser {
                 traverseDown(c);
             }
         }
+
+        visitor.finishClass(classInfo);
     }
 
     private void traverseUp(ClassInfo classInfo) {
@@ -108,6 +110,8 @@ public class ClassHierarchyTraverser {
                 traverseUp(i);
             }
         }
+
+        visitor.finishClass(classInfo);
     }
 
 
