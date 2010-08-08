@@ -30,13 +30,17 @@ import com.jopdesign.common.ClassInfo;
 public class ClassHierarchyTraverser {
 
     private ClassVisitor visitor;
-    private boolean visitSuper;
-    private boolean extensionsOnly;
+    private boolean traverseSuper;
+    private boolean visitExtensions;
+    private boolean visitImplementations;
+    private boolean visitInnerClasses;
 
-    public ClassHierarchyTraverser(ClassVisitor visitor, boolean visitSuper) {
+    public ClassHierarchyTraverser(ClassVisitor visitor, boolean traverseSuper) {
         this.visitor = visitor;
-        this.visitSuper = visitSuper;
-        extensionsOnly = false;
+        this.traverseSuper = traverseSuper;
+        visitExtensions = true;
+        visitImplementations = true;
+        visitInnerClasses = false;
     }
 
     public ClassVisitor getVisitor() {
@@ -47,30 +51,51 @@ public class ClassHierarchyTraverser {
         this.visitor = visitor;
     }
 
-    public boolean doVisitSuper() {
-        return visitSuper;
+    public boolean doTraverseSuper() {
+        return traverseSuper;
     }
 
-    public void setVisitSuper(boolean visitSuper) {
-        this.visitSuper = visitSuper;
+    /**
+     * Set direction of traverser to all super/outer classes or all sub/inner classes.
+     *
+     * @param traverseSuper if true, traverse superclasses instead of subclasses.
+     */
+    public void setTraverseSuper(boolean traverseSuper) {
+        this.traverseSuper = traverseSuper;
     }
 
-    public boolean doExtensionsOnly() {
-        return extensionsOnly;
+    public boolean doVisitExtensions() {
+        return visitExtensions;
+    }
+
+    public void setVisitExtensions(boolean visitExtensions) {
+        this.visitExtensions = visitExtensions;
+    }
+
+    public boolean doVisitInnerClasses() {
+        return visitInnerClasses;
+    }
+
+    public void setVisitInnerClasses(boolean visitInnerClasses) {
+        this.visitInnerClasses = visitInnerClasses;
+    }
+
+    public boolean doVisitImplementations() {
+        return visitImplementations;
     }
 
     /**
      * Visit only the same type (class or interface) as the root class.
      * 
-     * @param extensionsOnly if true, follow only extensions, else follow both classes and interfaces.
+     * @param visitImplementations if true, follow only extensions, else follow both classes and interfaces.
      */
-    public void setExtensionsOnly(boolean extensionsOnly) {
-        this.extensionsOnly = extensionsOnly;
+    public void setVisitImplementations(boolean visitImplementations) {
+        this.visitImplementations = visitImplementations;
     }
 
 
     public void traverse(ClassInfo root) {
-        if ( visitSuper ) {
+        if (traverseSuper) {
             traverseUp(root);
         } else {
             traverseDown(root);
@@ -82,10 +107,19 @@ public class ClassHierarchyTraverser {
             return;
         }
 
-        for (ClassInfo c : classInfo.getDirectSubclasses()) {
-            // if extensions only, only go down if the subclass is a class for classes or
-            // if the subclass is an interface for interfaces.
-            if ( !extensionsOnly || c.isInterface() == classInfo.isInterface() ) {
+        if ( visitImplementations || visitExtensions ) {
+            for (ClassInfo c : classInfo.getDirectSubclasses()) {
+                // if extensions only, only go down if the subclass is a class for classes or
+                // if the subclass is an interface for interfaces.
+                if ( (visitExtensions && c.isInterface() == classInfo.isInterface()) ||
+                     (visitImplementations && !c.isInterface() && classInfo.isInterface()) )
+                {
+                    traverseDown(c);
+                }
+            }
+        }
+        if ( visitInnerClasses ) {
+            for (ClassInfo c : classInfo.getDirectInnerClasses()) {
                 traverseDown(c);
             }
         }
@@ -98,16 +132,26 @@ public class ClassHierarchyTraverser {
             return;
         }
 
-        if ( !extensionsOnly || !classInfo.isInterface() ) {
+        // we never visit Object from interfaces
+        if ( visitExtensions && !classInfo.isInterface()) {
             ClassInfo superClass = classInfo.getSuperClassInfo();
             if ( superClass != null ) {
                 traverseUp(superClass);
             }
         }
 
-        if ( !extensionsOnly || classInfo.isInterface() ) {
+        if ( (visitExtensions && classInfo.isInterface()) || 
+             (visitImplementations && !classInfo.isInterface()) )
+        {
             for (ClassInfo i : classInfo.getInterfaces()) {
                 traverseUp(i);
+            }
+        }
+
+        if (visitInnerClasses) {
+            ClassInfo outerClass = classInfo.getOuterClassInfo();
+            if ( outerClass != null ) {
+                traverseUp(outerClass);
             }
         }
 

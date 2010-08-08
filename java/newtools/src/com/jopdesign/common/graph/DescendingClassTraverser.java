@@ -22,9 +22,15 @@ package com.jopdesign.common.graph;
 
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.FieldInfo;
+import com.jopdesign.common.MemberInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.logger.LogConfig;
+import com.jopdesign.common.misc.CustomAttribute;
+import com.jopdesign.common.misc.JavaClassFormatError;
+import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Code;
 import org.apache.bcel.classfile.CodeException;
+import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantClass;
 import org.apache.bcel.classfile.ConstantDouble;
 import org.apache.bcel.classfile.ConstantFieldref;
@@ -55,6 +61,11 @@ import org.apache.bcel.classfile.StackMapEntry;
 import org.apache.bcel.classfile.Synthetic;
 import org.apache.bcel.classfile.Unknown;
 import org.apache.bcel.classfile.Visitor;
+import org.apache.bcel.generic.CodeExceptionGen;
+import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.LineNumberGen;
+import org.apache.bcel.generic.LocalVariableGen;
+import org.apache.log4j.Logger;
 
 /**
  * A class visitor which traverses all elements of a classInfo. Similar to BCELs DescendingVisitor.
@@ -64,103 +75,180 @@ import org.apache.bcel.classfile.Visitor;
 public class DescendingClassTraverser implements ClassVisitor {
 
     private final ClassElementVisitor visitor;
+    
+    private BcelVisitor bcelVisitor;
+    
+    private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT+".DescendingClassTraverser");
 
     private class BcelVisitor implements Visitor {
 
+        private ClassInfo classInfo;
+        private FieldInfo fieldInfo;
+        private MethodInfo methodInfo;
+        private boolean code = false;
+
+        private BcelVisitor() {
+        }
+
+        public void setClassInfo(ClassInfo classInfo) {
+            this.classInfo = classInfo;
+            fieldInfo = null;
+            methodInfo = null;
+        }
+
+        public void setFieldInfo(FieldInfo fieldInfo) {
+            this.fieldInfo = fieldInfo;
+            methodInfo = null;
+            classInfo = null;
+        }
+
+        public void setMethodInfo(MethodInfo methodInfo) {
+            this.methodInfo = methodInfo;
+            fieldInfo = null;
+            classInfo = null;
+        }
+
+        public boolean isCode() {
+            return code;
+        }
+
+        public void setCode(boolean code) {
+            this.code = code;
+        }
+
+        public MemberInfo getMemberInfo() {
+            if ( classInfo != null ) return classInfo;
+            if ( methodInfo != null ) return methodInfo;
+            return fieldInfo;
+        }
+        
+        
         public void visitCode(Code obj) {
+            logger.warn("Visiting Code attribute, but MethodInfo should not have one. Skipping.");
         }
 
         public void visitCodeException(CodeException obj) {
+            logger.warn("Visiting CodeException attribute, but MethodInfo should not have one. Skipping.");
         }
 
         public void visitConstantClass(ConstantClass obj) {
+            visitor.visitConstantClass(classInfo, obj);
         }
 
         public void visitConstantDouble(ConstantDouble obj) {
+            visitor.visitConstantDouble(classInfo, obj);
         }
 
         public void visitConstantFieldref(ConstantFieldref obj) {
+            visitor.visitConstantField(classInfo, obj);
         }
 
         public void visitConstantFloat(ConstantFloat obj) {
+            visitor.visitConstantFloat(classInfo, obj);
         }
 
         public void visitConstantInteger(ConstantInteger obj) {
+            visitor.visitConstantInteger(classInfo, obj);
         }
 
         public void visitConstantInterfaceMethodref(ConstantInterfaceMethodref obj) {
+            visitor.visitConstantInterfaceMethod(classInfo, obj);
         }
 
         public void visitConstantLong(ConstantLong obj) {
+            visitor.visitConstantLong(classInfo, obj);
         }
 
         public void visitConstantMethodref(ConstantMethodref obj) {
+            visitor.visitConstantMethod(classInfo, obj);
         }
 
         public void visitConstantNameAndType(ConstantNameAndType obj) {
+            visitor.visitConstantNameAndType(classInfo, obj);
         }
 
         public void visitConstantPool(ConstantPool obj) {
+            throw new JavaClassFormatError("Visiting ConstantPool, but this should not happen.");
         }
 
         public void visitConstantString(ConstantString obj) {
+            visitor.visitConstantString(classInfo, obj);
         }
 
         public void visitConstantUtf8(ConstantUtf8 obj) {
+            visitor.visitConstantUtf8(classInfo, obj);
         }
 
         public void visitConstantValue(ConstantValue obj) {
+            visitor.visitConstantValue(fieldInfo, obj);
         }
 
         public void visitDeprecated(org.apache.bcel.classfile.Deprecated obj) {
+            visitor.visitDeprecated(getMemberInfo(), obj);
         }
 
         public void visitExceptionTable(ExceptionTable obj) {
+            logger.warn("Visiting ExceptionTable attribute, but MethodInfo should not have one. Skipping.");
         }
 
         public void visitField(Field obj) {
+            throw new JavaClassFormatError("Visiting Field, but this should not happen.");
         }
 
         public void visitInnerClass(InnerClass obj) {
+            visitor.visitInnerClass(classInfo, obj);
         }
 
         public void visitInnerClasses(InnerClasses obj) {
+            visitor.visitInnerClasses(classInfo, obj);
         }
 
         public void visitJavaClass(JavaClass obj) {
+            throw new JavaClassFormatError("Visiting JavaClass, but this should not happen.");
         }
 
         public void visitLineNumber(LineNumber obj) {
+            throw new JavaClassFormatError("Visiting LineNumber, but this should not happen.");
         }
 
         public void visitLineNumberTable(LineNumberTable obj) {
+            logger.warn("Visiting LineNumberTable attribute, but MethodInfo should not have one. Skipping.");
         }
 
         public void visitLocalVariable(LocalVariable obj) {
+            throw new JavaClassFormatError("Visiting LocalVariable, but this should not happen.");
         }
 
         public void visitLocalVariableTable(LocalVariableTable obj) {
+            logger.warn("Visiting LocalVariableTable attribute, but MethodInfo should not have one. Skipping.");
         }
 
         public void visitMethod(Method obj) {
+            throw new JavaClassFormatError("Visiting Method, but this should not happen.");
         }
 
         public void visitSignature(Signature obj) {
+            visitor.visitSignature(getMemberInfo(), obj);
         }
 
         public void visitSourceFile(SourceFile obj) {
+            visitor.visitSourceFile(classInfo, obj);
         }
 
         public void visitSynthetic(Synthetic obj) {
+            visitor.visitSynthetic(getMemberInfo(), obj);
         }
 
         public void visitUnknown(Unknown obj) {
+            visitor.visitUnknown(getMemberInfo(), obj, code);
         }
 
         public void visitStackMap(StackMap obj) {
+            visitor.visitStackMap(methodInfo, obj);
         }
 
         public void visitStackMapEntry(StackMapEntry obj) {
+            visitor.visitStackMapEntry(methodInfo, obj);
         }
     }
 
@@ -175,15 +263,23 @@ public class DescendingClassTraverser implements ClassVisitor {
     public boolean visitClass(ClassInfo classInfo) {
 
         if ( !visitor.visitClass(classInfo) ) {
-            // TODO we might want to make this return-value configurable
+            // TODO we might want to make this return-value configurable, default should remain 'true'
             return true;
         }
 
-        if (visitor.visitConstantPoolGen(classInfo, classInfo.getConstantPoolGen())) {
+        bcelVisitor = new BcelVisitor();
+        ConstantPoolGen cpg = classInfo.getConstantPoolGen();
 
+        if (visitor.visitConstantPoolGen(classInfo, cpg)) {
 
+            bcelVisitor.setClassInfo(classInfo);
 
-            visitor.finishConstantPoolGen(classInfo, classInfo.getConstantPoolGen());
+            for (int i = 1; i < cpg.getSize(); i++) {
+                Constant c = cpg.getConstant(i);
+                c.accept(bcelVisitor);
+            }
+
+            visitor.finishConstantPoolGen(classInfo, cpg);
         }
 
         // methods and fields are final, no need to call accept()
@@ -192,6 +288,9 @@ public class DescendingClassTraverser implements ClassVisitor {
                 continue;
             }
 
+            bcelVisitor.setFieldInfo(f);
+            
+            visitAttributes(f.getAttributes());
 
             visitor.finishField(f);
         }
@@ -200,13 +299,32 @@ public class DescendingClassTraverser implements ClassVisitor {
                 continue;
             }
 
-
+            bcelVisitor.setMethodInfo(m);
+            
+            for (CodeExceptionGen ex : m.getExceptionHandlers()) {
+                visitor.visitCodeException(m, ex);
+            }
+            
+            bcelVisitor.setCode(true);
+            
+            for (LineNumberGen lng : m.getLineNumbers()) {
+                visitor.visitLineNumber(m, lng);
+            }
+            for (LocalVariableGen lvg : m.getLocalVariables()) {
+                visitor.visitLocalVariable(m, lvg);
+            }
+            visitAttributes(m.getCodeAttributes());
+            
+            bcelVisitor.setCode(false);
+            visitAttributes(m.getAttributes());
+            
             visitor.finishMethod(m);
         }
 
-        // TODO visit constants using accept(), visit attributes
+        bcelVisitor.setClassInfo(classInfo);
 
-
+        visitAttributes(classInfo.getAttributes());
+        
         visitor.finishClass(classInfo);
 
         return true;
@@ -215,4 +333,14 @@ public class DescendingClassTraverser implements ClassVisitor {
     public void finishClass(ClassInfo classInfo) {
     }
 
+    private void visitAttributes(Attribute[] attributes) {
+        for (Attribute a : attributes) {
+            if ( a instanceof CustomAttribute ) {
+                visitor.visitCustomAttribute(bcelVisitor.getMemberInfo(), (CustomAttribute) a, bcelVisitor.isCode());
+            } else {
+                a.accept(bcelVisitor);
+            }
+        }        
+    }
+    
 }

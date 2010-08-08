@@ -27,9 +27,16 @@ import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
+import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Method;
+import org.apache.bcel.generic.CodeExceptionGen;
+import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
+import org.apache.bcel.generic.LineNumberGen;
+import org.apache.bcel.generic.LocalVariableGen;
 import org.apache.bcel.generic.MethodGen;
+import org.apache.bcel.generic.ObjectType;
+import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
 import java.util.Collection;
@@ -85,6 +92,114 @@ public final class MethodInfo extends ClassMemberInfo {
 
     public void setStrictFP(boolean val) {
         methodGen.isStrictfp(val);
+    }
+
+    public Attribute[] getCodeAttributes() {
+        return methodGen.getCodeAttributes();
+    }
+
+    public String[] getArgumentNames() {
+        return methodGen.getArgumentNames();
+    }
+
+    public void setArgumentNames(String[] arg_names) {
+        methodGen.setArgumentNames(arg_names);
+    }
+
+    public void setArgumentName(int i, String name) {
+        methodGen.setArgumentName(i, name);
+    }
+
+    public Type getArgumentType(int i) {
+        return methodGen.getArgumentType(i);
+    }
+
+    public int getMaxStack() {
+        return methodGen.getMaxStack();
+    }
+
+    public int getMaxLocals() {
+        return methodGen.getMaxLocals();
+    }
+
+    public CodeExceptionGen[] getExceptionHandlers() {
+        return methodGen.getExceptionHandlers();
+    }
+
+    public LineNumberGen[] getLineNumbers() {
+        return methodGen.getLineNumbers();
+    }
+
+    public LocalVariableGen addLocalVariable(String name, Type type, int slot, InstructionHandle start, InstructionHandle end) {
+        return methodGen.addLocalVariable(name, type, slot, start, end);
+    }
+
+    public LocalVariableGen addLocalVariable(String name, Type type, InstructionHandle start, InstructionHandle end) {
+        return methodGen.addLocalVariable(name, type, start, end);
+    }
+
+    public void removeLocalVariable(LocalVariableGen l) {
+        methodGen.removeLocalVariable(l);
+    }
+
+    public void removeLocalVariables() {
+        methodGen.removeLocalVariables();
+    }
+
+    public LocalVariableGen[] getLocalVariables() {
+        return methodGen.getLocalVariables();
+    }
+
+    public LineNumberGen addLineNumber(InstructionHandle ih, int src_line) {
+        return methodGen.addLineNumber(ih, src_line);
+    }
+
+    public void removeLineNumber(LineNumberGen l) {
+        methodGen.removeLineNumber(l);
+    }
+
+    public void removeLineNumbers() {
+        methodGen.removeLineNumbers();
+    }
+
+    public CodeExceptionGen addExceptionHandler(InstructionHandle start_pc, InstructionHandle end_pc, InstructionHandle handler_pc, ObjectType catch_type) {
+        return methodGen.addExceptionHandler(start_pc, end_pc, handler_pc, catch_type);
+    }
+
+    public void removeExceptionHandler(CodeExceptionGen c) {
+        methodGen.removeExceptionHandler(c);
+    }
+
+    public void removeExceptionHandlers() {
+        methodGen.removeExceptionHandlers();
+    }
+
+    public void addException(String class_name) {
+        methodGen.addException(class_name);
+    }
+
+    public void removeException(String c) {
+        methodGen.removeException(c);
+    }
+
+    public void removeExceptions() {
+        methodGen.removeExceptions();
+    }
+
+    public String[] getExceptions() {
+        return methodGen.getExceptions();
+    }
+
+    public void addCodeAttribute(Attribute a) {
+        methodGen.addCodeAttribute(a);
+    }
+
+    public void removeCodeAttribute(Attribute a) {
+        methodGen.removeCodeAttribute(a);
+    }
+
+    public void removeCodeAttributes() {
+        methodGen.removeCodeAttributes();
     }
 
     /**
@@ -168,14 +283,6 @@ public final class MethodInfo extends ClassMemberInfo {
         }
     }
 
-    public boolean rollbackCodeRep() {
-        if ( codeRep == null ) {
-            return false;
-        }
-        codeRep = null;
-        return true;
-    }
-
     @Override
     public Descriptor getDescriptor() {
         return descriptor;
@@ -194,8 +301,21 @@ public final class MethodInfo extends ClassMemberInfo {
         return new Signature(getClassInfo().getClassName(), getName(), getDescriptor());
     }
 
+    public boolean overrides(MethodInfo superMethod) {
+        if ( !getMemberSignature().equals(superMethod.getMemberSignature()) ) {
+            return false;
+        }
+        if ( !getClassInfo().isExtensionOf(superMethod.getClassInfo())) {
+            return false;
+        }
+        return checkOverride(superMethod);
+    }
+
     public MethodInfo getSuperMethod(boolean ignoreAccess) {
-        // TODO check: if this is a private method and not ignoreAccess, always return null?
+        
+        if ( !ignoreAccess && isPrivate() ) {
+            return null;
+        }
 
         ClassInfo superClass = getClassInfo().getSuperClassInfo();
         MethodInfo superMethod = null;
@@ -275,6 +395,11 @@ public final class MethodInfo extends ClassMemberInfo {
      */
     protected MethodGen getMethodGen() {
         return methodGen;
+    }
+
+    private boolean checkOverride(MethodInfo superMethod) {
+        // TODO implement
+        return false;
     }
 
 }

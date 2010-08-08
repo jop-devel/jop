@@ -24,7 +24,7 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.MemberInfo;
 import com.jopdesign.common.MethodInfo;
-import org.apache.bcel.classfile.CodeException;
+import com.jopdesign.common.misc.CustomAttribute;
 import org.apache.bcel.classfile.ConstantClass;
 import org.apache.bcel.classfile.ConstantDouble;
 import org.apache.bcel.classfile.ConstantFieldref;
@@ -38,19 +38,18 @@ import org.apache.bcel.classfile.ConstantString;
 import org.apache.bcel.classfile.ConstantUtf8;
 import org.apache.bcel.classfile.ConstantValue;
 import org.apache.bcel.classfile.Deprecated;
-import org.apache.bcel.classfile.ExceptionTable;
 import org.apache.bcel.classfile.InnerClass;
 import org.apache.bcel.classfile.InnerClasses;
-import org.apache.bcel.classfile.LineNumber;
-import org.apache.bcel.classfile.LineNumberTable;
-import org.apache.bcel.classfile.LocalVariable;
-import org.apache.bcel.classfile.LocalVariableTable;
+import org.apache.bcel.classfile.Signature;
 import org.apache.bcel.classfile.SourceFile;
 import org.apache.bcel.classfile.StackMap;
 import org.apache.bcel.classfile.StackMapEntry;
 import org.apache.bcel.classfile.Synthetic;
 import org.apache.bcel.classfile.Unknown;
+import org.apache.bcel.generic.CodeExceptionGen;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.LineNumberGen;
+import org.apache.bcel.generic.LocalVariableGen;
 
 /**
  * This interface is used to visit a single element of a classInfo (including the class itself).
@@ -105,26 +104,23 @@ public interface ClassElementVisitor extends ClassVisitor {
 
     void visitConstantValue(FieldInfo member, ConstantValue obj );
 
-    void visitCodeException(MethodInfo member, CodeException obj );
+    void visitCodeException(MethodInfo member, CodeExceptionGen obj );
 
-    void visitExceptionTable(MethodInfo member, ExceptionTable obj );
+    void visitLineNumber(MethodInfo member, LineNumberGen obj );
 
-    void visitLineNumber(MethodInfo member, LineNumber obj );
-
-    void visitLineNumberTable(MethodInfo member, LineNumberTable obj );
-
-    void visitLocalVariable(MethodInfo member, LocalVariable obj );
-
-    void visitLocalVariableTable(MethodInfo member, LocalVariableTable obj );
+    void visitLocalVariable(MethodInfo member, LocalVariableGen obj );
 
     void visitStackMap(MethodInfo member, StackMap obj );
 
     void visitStackMapEntry(MethodInfo member, StackMapEntry obj );
 
+    void visitSignature(MemberInfo member, Signature obj );
+
     void visitDeprecated(MemberInfo member, Deprecated obj );
 
     void visitSynthetic(MemberInfo member, Synthetic obj );
 
-    void visitUnknown(MemberInfo member, Unknown obj );
+    void visitUnknown(MemberInfo member, Unknown obj, boolean isCodeAttribute );
 
+    void visitCustomAttribute(MemberInfo member, CustomAttribute obj, boolean isCodeAttribute );
 }

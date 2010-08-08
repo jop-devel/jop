@@ -66,4 +66,7 @@ public class ConstantClassInfo extends ConstantInfo<ClassRef, ReferenceType> {
         return cpg.lookupClass(getValue().getClassName());
     }
 
+    public String getClassName() {
+        return getValue().getClassName();
+    }
 }

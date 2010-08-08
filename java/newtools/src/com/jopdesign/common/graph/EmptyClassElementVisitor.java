@@ -24,7 +24,7 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.MemberInfo;
 import com.jopdesign.common.MethodInfo;
-import org.apache.bcel.classfile.CodeException;
+import com.jopdesign.common.misc.CustomAttribute;
 import org.apache.bcel.classfile.ConstantClass;
 import org.apache.bcel.classfile.ConstantDouble;
 import org.apache.bcel.classfile.ConstantFieldref;
@@ -37,19 +37,18 @@ import org.apache.bcel.classfile.ConstantNameAndType;
 import org.apache.bcel.classfile.ConstantString;
 import org.apache.bcel.classfile.ConstantUtf8;
 import org.apache.bcel.classfile.ConstantValue;
-import org.apache.bcel.classfile.ExceptionTable;
 import org.apache.bcel.classfile.InnerClass;
 import org.apache.bcel.classfile.InnerClasses;
-import org.apache.bcel.classfile.LineNumber;
-import org.apache.bcel.classfile.LineNumberTable;
-import org.apache.bcel.classfile.LocalVariable;
-import org.apache.bcel.classfile.LocalVariableTable;
+import org.apache.bcel.classfile.Signature;
 import org.apache.bcel.classfile.SourceFile;
 import org.apache.bcel.classfile.StackMap;
 import org.apache.bcel.classfile.StackMapEntry;
 import org.apache.bcel.classfile.Synthetic;
 import org.apache.bcel.classfile.Unknown;
+import org.apache.bcel.generic.CodeExceptionGen;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.LineNumberGen;
+import org.apache.bcel.generic.LocalVariableGen;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -122,22 +121,13 @@ public class EmptyClassElementVisitor implements ClassElementVisitor {
     public void visitConstantValue(FieldInfo member, ConstantValue obj) {
     }
 
-    public void visitCodeException(MethodInfo member, CodeException obj) {
+    public void visitCodeException(MethodInfo member, CodeExceptionGen obj) {
     }
 
-    public void visitExceptionTable(MethodInfo member, ExceptionTable obj) {
+    public void visitLineNumber(MethodInfo member, LineNumberGen obj) {
     }
 
-    public void visitLineNumber(MethodInfo member, LineNumber obj) {
-    }
-
-    public void visitLineNumberTable(MethodInfo member, LineNumberTable obj) {
-    }
-
-    public void visitLocalVariable(MethodInfo member, LocalVariable obj) {
-    }
-
-    public void visitLocalVariableTable(MethodInfo member, LocalVariableTable obj) {
+    public void visitLocalVariable(MethodInfo member, LocalVariableGen obj) {
     }
 
     public void visitStackMap(MethodInfo member, StackMap obj) {
@@ -146,13 +136,19 @@ public class EmptyClassElementVisitor implements ClassElementVisitor {
     public void visitStackMapEntry(MethodInfo member, StackMapEntry obj) {
     }
 
+    public void visitSignature(MemberInfo member, Signature obj) {
+    }
+
     public void visitDeprecated(MemberInfo member, org.apache.bcel.classfile.Deprecated obj) {
     }
 
     public void visitSynthetic(MemberInfo member, Synthetic obj) {
     }
 
-    public void visitUnknown(MemberInfo member, Unknown obj) {
+    public void visitUnknown(MemberInfo member, Unknown obj, boolean isCodeAttribute) {
+    }
+
+    public void visitCustomAttribute(MemberInfo member, CustomAttribute obj, boolean isCodeAttribute) {
     }
 
     public boolean visitClass(ClassInfo classInfo) {

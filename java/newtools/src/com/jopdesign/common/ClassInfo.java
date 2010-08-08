@@ -23,16 +23,21 @@ package com.jopdesign.common;
 import com.jopdesign.common.graph.ClassHierarchyTraverser;
 import com.jopdesign.common.graph.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
+import com.jopdesign.common.misc.AppInfoException;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.Ternary;
 import com.jopdesign.common.tools.ConstantPoolRebuilder;
 import com.jopdesign.common.type.ClassRef;
+import com.jopdesign.common.type.ConstantClassInfo;
 import com.jopdesign.common.type.ConstantInfo;
 import com.jopdesign.common.type.Descriptor;
+import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.Field;
+import org.apache.bcel.classfile.InnerClass;
+import org.apache.bcel.classfile.InnerClasses;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ClassGen;
@@ -42,6 +47,7 @@ import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -62,6 +68,9 @@ public final class ClassInfo extends MemberInfo {
 
     protected final Set<ClassInfo> subClasses;
     protected ClassInfo superClass;
+    protected final Set<ClassInfo> innerClasses;
+    protected ClassInfo outerClass;
+    protected boolean anInnerClass;
     protected Ternary fullyKnown;
 
     private final Map<String, MethodInfo> methods;
@@ -76,7 +85,12 @@ public final class ClassInfo extends MemberInfo {
 
         superClass = null;
         subClasses = new HashSet<ClassInfo>();
+        outerClass = null;
+        anInnerClass = false;
+        innerClasses = new HashSet<ClassInfo>();
         fullyKnown = Ternary.UNKNOWN;
+
+        updateInnerClassFlag();
 
         Method[] cgMethods = classGen.getMethods();
         Field[] cgFields = classGen.getFields();
@@ -95,7 +109,7 @@ public final class ClassInfo extends MemberInfo {
     }
 
     //////////////////////////////////////////////////////////////////////////////
-    // Various getter and setter
+    // Various getter and setter, modify class
     //////////////////////////////////////////////////////////////////////////////
 
     @Override
@@ -127,10 +141,6 @@ public final class ClassInfo extends MemberInfo {
         return new ClassRef(this);
     }
 
-    public boolean isInterface() {
-        return classGen.isInterface();
-    }
-
     public boolean isAbstract() {
         return classGen.isAbstract();
     }
@@ -145,14 +155,6 @@ public final class ClassInfo extends MemberInfo {
 
     public void setStrictFP(boolean val) {
         classGen.isStrictfp(val);
-    }
-
-    public String getSuperClassName() {
-        return classGen.getSuperclassName();
-    }
-
-    public String[] getInterfaceNames() {
-        return classGen.getInterfaceNames();
     }
 
     @Override
@@ -175,13 +177,10 @@ public final class ClassInfo extends MemberInfo {
     //////////////////////////////////////////////////////////////////////////////
 
     public ConstantInfo getConstantInfo(int i) {
-        if ( i < 0 || i >= cpg.getSize() ) {
+        if ( i < 1 || i >= cpg.getSize() ) {
             return null;
         }
         Constant c = cpg.getConstant(i);
-        if ( c == null ) {
-            return null;
-        }
         return ConstantInfo.createFromConstant(cpg.getConstantPool(), c);
     }
 
@@ -264,8 +263,12 @@ public final class ClassInfo extends MemberInfo {
 
 
     //////////////////////////////////////////////////////////////////////////////
-    // Class-hierarchy access
+    // Superclass and Interfaces
     //////////////////////////////////////////////////////////////////////////////
+
+    public String getSuperClassName() {
+        return classGen.getSuperclassName();
+    }
 
     /**
      * Get the ClassInfo of the superClass if it is known, else return null.
@@ -273,6 +276,27 @@ public final class ClassInfo extends MemberInfo {
      */
     public ClassInfo getSuperClassInfo() {
         return superClass;
+    }
+
+    public boolean isInterface() {
+        return classGen.isInterface();
+    }
+
+    /**
+     * Set interface flag of this class.
+     *
+     * <p>This does not check if this is a valid operation, i.e. you need to check
+     * for yourself if all methods are abstract and public and this class is not a superclass of a
+     * normal class if you make this class an interface, ...</p>
+     *
+     * @param val the new value of the interface flag.
+     */
+    public void setInterface(boolean val) {
+        classGen.isInterface(val);
+    }
+
+    public String[] getInterfaceNames() {
+        return classGen.getInterfaceNames();
     }
 
     /**
@@ -292,6 +316,244 @@ public final class ClassInfo extends MemberInfo {
         return interfaces;
     }
 
+    @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
+    public void addInterface(ClassInfo classInfo) {
+        classGen.addInterface(classInfo.getClassName());
+        classInfo.subClasses.add(this);
+        if ( fullyKnown == Ternary.TRUE && isInterface() ) {
+            if ( classInfo.fullyKnown == Ternary.UNKNOWN ) {
+                classInfo.updateCompleteFlag(false);
+            }
+            fullyKnown = classInfo.fullyKnown;
+        }
+    }
+
+    public void addInterface(ClassRef classRef) {
+        ClassInfo cls = classRef.getClassInfo();
+        if (cls != null) {
+            addInterface(cls);
+        } else {
+            // adding unknown interface
+            classGen.addInterface(classRef.getClassName());
+            if ( fullyKnown != Ternary.UNKNOWN && isInterface() ) {
+                fullyKnown = Ternary.FALSE;
+            }
+        }
+    }
+
+    @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
+    public void removeInterface(ClassInfo classInfo) {
+        classGen.removeInterface(classInfo.getClassName());
+        classInfo.subClasses.remove(this);
+    }
+
+    public void removeInterface(ClassRef classRef) {
+        ClassInfo cls = classRef.getClassInfo();
+        if (cls != null) {
+            removeInterface(cls);
+        } else {
+            // removing unknown interface
+            classGen.removeInterface(classRef.getClassName());
+        }
+    }
+
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Inner-class stuff
+    //////////////////////////////////////////////////////////////////////////////
+
+    public boolean isInnerclass() {
+        return anInnerClass;
+    }
+
+    public boolean isAnonymousInnerclass() {
+        InnerClass i = getInnerClassAttribute(getClassName());
+        return i != null && i.getInnerNameIndex() == 0;
+    }
+
+    public boolean isNonmemberInnerclass() {
+        InnerClass i = getInnerClassAttribute(getClassName());
+        return i != null && i.getOuterClassIndex() == 0;
+    }
+
+    /**
+     * Check if the given class is an outer class of this class.
+     *
+     * <p>Note that for non-member inner classes this always returns false.</p>
+     *
+     * @param outer the potential outer class.
+     * @return true if this class is a member inner class of the given class.
+     */
+    public boolean isInnerclassOf(ClassInfo outer) {
+        return isInnerclassOf(outer.getClassName());
+    }
+
+    /**
+     * Check if the given class is an outer class of this class.
+     *
+     * <p>Note that for non-member inner classes this always returns false.</p>
+     *
+     * @param outerClassName the fully qualified name of the potential outer class.
+     * @return true if this class is a member inner class of the given class.
+     */
+    public boolean isInnerclassOf(String outerClassName) {
+        if ( !anInnerClass) {
+            return false;
+        }
+        String[] outerClasses = getOuterClassNames();
+        for (String outer : outerClasses) {
+            if (outer.equals(outerClassName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public InnerClasses getInnerClassesAttribute() {
+        for (Attribute a : classGen.getAttributes()) {
+            if ( a instanceof InnerClasses ) {
+                return (InnerClasses) a;
+            }
+        }
+        return null;
+    }
+
+    public InnerClass getInnerClassAttribute(String innerClassName) {
+        InnerClasses ic = getInnerClassesAttribute();
+        if ( ic != null ) {
+            for (InnerClass i : ic.getInnerClasses()) {
+                if (getInnerClassName(i).equals(innerClassName)) {
+                    return i;
+                }
+            }
+        }
+        return null;
+    }
+
+    public String getInnerClassName(InnerClass i) {
+        return ((ConstantClassInfo) getConstantInfo(i.getInnerClassIndex())).getClassName();
+    }
+
+    public String getOuterClassName(InnerClass i) {
+        int index = i.getOuterClassIndex();
+        if ( index == 0 ) {
+            return null;
+        }
+        return ((ConstantClassInfo) getConstantInfo(index)).getClassName();
+    }
+
+    public MethodRef getEnclosingMethodRef() {
+        // TODO check for EnclosingMethod attribute
+        return null;
+    }
+
+    /**
+     * Get the class names of all enclosing classes of this class.
+     *
+     * @return an array of classnames of the enclosing classes, starting with the top-level class, or null if this
+     *   is not an inner class, or an empty array for non-member inner classes.
+     */
+    public String[] getOuterClassNames() {
+        if ( !anInnerClass) {
+            return null;
+        }
+        InnerClasses ic = getInnerClassesAttribute();
+        if ( ic == null ) {
+            throw new JavaClassFormatError("Could not find InnerClasses attribute for inner class " +getClassName());
+        }
+
+        List<String> outer = new LinkedList<String>();
+        String name = getOuterClassName(ic, getClassName());
+        while ( name != null ) {
+            outer.add(0, name);
+            name = getOuterClassName(ic, name);
+        }
+
+        return outer.toArray(new String[outer.size()]);
+    }
+
+    /**
+     * Get a reference to the outer class if this is an inner class, or a reference to the class
+     * of the enclosing method if set, else return null.
+     * To check if this is an inner class, use {@link #isInnerclass()}.
+     *
+     * @return a classRef to the parent class or null if this is not an inner class.
+     */
+    public ClassRef getOuterClassRef() {
+        if (!anInnerClass) {
+            return null;
+        }
+        if ( outerClass != null ) {
+            return outerClass.getClassRef();
+        }
+        String[] outer = getOuterClassNames();
+        if (outer.length == 0) {
+            // This is a non-member innerclass.
+            MethodRef enclosingMethod = getEnclosingMethodRef();
+            if ( enclosingMethod != null ) {
+                return enclosingMethod.getClassRef();
+            } else {
+                return null;
+            }
+        }
+        return getAppInfo().getClassRef(outer[outer.length-1], Arrays.copyOf(outer, outer.length-1));
+    }
+
+    public ClassInfo getOuterClassInfo() {
+        return outerClass;
+    }
+
+    /**
+     * Get a list of fully qualified classnames of all direct inner classes of this class, including anonymous classes.
+     * 
+     * @return a collection of fully qualified classnames of the inner classes or an empty collection if this class
+     *   has no inner classes.
+     */
+    public Collection<String> getDirectInnerClassNames() {
+        InnerClasses ic = getInnerClassesAttribute();
+        if ( ic == null ) {
+            return new LinkedList<String>();
+        }
+        List<String> inner = new LinkedList<String>();
+        for (InnerClass i : ic.getInnerClasses()) {
+            String outerName = getOuterClassName(i);
+            // TODO check if this is correct: if outerName is null, this is an inner class of *this* class
+            if (outerName == null && getInnerClassName(i).equals(getClassName())) {
+                continue;
+            }
+            if (outerName == null || getClassName().equals(outerName)) {
+                inner.add(getInnerClassName(i));
+            }
+        }
+        return inner;
+    }
+
+    public Set<ClassInfo> getDirectInnerClasses() {
+        return innerClasses;
+    }
+
+    /**
+     * Set the outer class of this class or move this class to toplevel. Not yet implemented!
+     *
+     * @param outerClass the new outer class of this class, or null to move this class to the toplevel.
+     * @throws AppInfoException until this gets properly implemented...
+     */
+    public void setOuterClass(ClassInfo outerClass) throws AppInfoException {
+        // TODO implement setOuterClass(), if needed. But this is not a simple task.
+        // need to
+        // - remove references to old outerClass from InnerClasses of this and all old outer classes
+        // - create InnerClasses attribute if none exists
+        // - add new entries to InnerClasses of this and all new outer classes.
+        // - update class hierarchy infos and fullyKnown flags
+        // - handle setOuterClass(null) => move innerclass to toplevel
+        // - remove this exception from the signature ;)
+        throw new AppInfoException("Not yet implemented!");
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Class-hierarchy lookups and helpers
+    //////////////////////////////////////////////////////////////////////////////
+
     /**
      * Get a set of all known direct subclasses of this class if this is a class,
      * or if this is an interface, get a collection of all known direct implementations
@@ -304,7 +566,7 @@ public final class ClassInfo extends MemberInfo {
     }
 
     /**
-     * Check if all superclasses of this class or interface are loaded.
+     * Check if all superclasses and outer classes of this class or interface are loaded.
      * If checkInterfaces is true or if this is class is an interface, also check if all extended/implemented
      * interfaces are loaded.
      *
@@ -333,11 +595,6 @@ public final class ClassInfo extends MemberInfo {
         }
         return false;
     }
-
-
-    //////////////////////////////////////////////////////////////////////////////
-    // Class-hierarchy lookups and helpers
-    //////////////////////////////////////////////////////////////////////////////
 
     /**
      * Get a set of all superclasses (including this class) and all implemented/extended interfaces.
@@ -369,7 +626,9 @@ public final class ClassInfo extends MemberInfo {
 
     /**
      * Check if the given class is the same as this class or a subclass of this class.
+     * This does not check the implemented/extended interfaces.
      *
+     * @see #isExtensionOf(ClassInfo)
      * @param classInfo the possible subclass of this class.
      * @return true if the given class is this class or a superclass of this class.
      */
@@ -389,6 +648,7 @@ public final class ClassInfo extends MemberInfo {
      * check if the given class is a subclass, if this is an interface, check if the given
      * class is an interface and if this is an extension of the given interface.
      *
+     * @see #isSubclassOf(ClassInfo)
      * @param classInfo the class to check.
      * @return true if the class is an extension of this class.
      */
@@ -399,6 +659,7 @@ public final class ClassInfo extends MemberInfo {
         if ( !classInfo.isInterface() ) {
             return false;
         }
+        // could use visitor+ClassHierarchyTraverser here to speed things up a little
         Set<ClassInfo> interfaces = classInfo.getAncestors();
         return interfaces.contains(this);
     }
@@ -407,14 +668,16 @@ public final class ClassInfo extends MemberInfo {
      * Check if this class is either an extension or an implementation of the given class or
      * interface.
      *
+     * @see #isExtensionOf(ClassInfo)
      * @param classInfo the super class to check.
      * @return true if this class is is a subtype of the given class.
      */
-    public boolean isSubtypeOf(ClassInfo classInfo) {
+    public boolean isSubclassOf(ClassInfo classInfo) {
         if ( !classInfo.isInterface() ) {
             return classInfo.isSuperclassOf(this);
         }
         // if classInfo is an interface..
+        // could use visitor+ClassHierarchyTraverser here to speed things up a little
         Set<ClassInfo> supers = getAncestors();
         return supers.contains(classInfo);
     }
@@ -445,7 +708,41 @@ public final class ClassInfo extends MemberInfo {
      * @return true if this class is allowed to access the member.
      */
     public boolean canAccess(MemberInfo member) {
+        if ( member instanceof ClassInfo ) {
+            return canAccess((ClassInfo) member);
+        }
         return canAccess(member.getClassInfo(), member.getAccessType());
+    }
+
+    public boolean canAccess(ClassInfo classInfo) {
+
+        if (classInfo.isInnerclass()) {
+            // now this is where the fun begins ..
+            
+        }
+
+        switch (classInfo.getAccessType()) {
+            case ACC_PUBLIC: break;
+            case ACC_PROTECTED:
+                // TODO implement
+
+                // fallthrough
+            case ACC_PACKAGE:
+                if ( !classInfo.hasSamePackage(this) ) {
+                    return false;
+                }
+                break;
+            case ACC_PRIVATE:
+                // private class can only be accessed by an outer class
+                if ( !classInfo.isInnerclassOf(this) ) {
+                    return false;
+                }
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid accesstype "+classInfo.getAccessType()+" of class "+
+                        classInfo.getClassName());
+        }
+        return false;
     }
 
     /**
@@ -456,6 +753,12 @@ public final class ClassInfo extends MemberInfo {
      * @return true if this class is allowed to access members of the given accessType of the given class.
      */
     public boolean canAccess(ClassInfo cls, int accessType) {
+        // first, check if we can access the class itself
+        if ( !canAccess(cls) ) {
+            return false;
+        }
+
+        // now check if we can access the member
         switch (accessType) {
             case ACC_PUBLIC:
                 return true;
@@ -470,35 +773,6 @@ public final class ClassInfo extends MemberInfo {
                 return this.equals(cls) || cls.isInnerclassOf(this);
         }
         return false;
-    }
-
-
-    //////////////////////////////////////////////////////////////////////////////
-    // Inner-class stuff
-    //////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * Get a reference to the outer class if this is an inner class, else return
-     * null.
-     *
-     * @return a classRef to the parent class or null if this is not an inner class.
-     */
-    public ClassRef getOuterClass() {
-        int idx = classGen.getClassName().lastIndexOf('$');
-        if ( idx == -1 ) {
-            return null;
-        }
-        return getAppInfo().getClassRef(classGen.getClassName().substring(0, idx));
-    }
-
-    /**
-     * Check if the given class is an outer class of this class.
-     *
-     * @param outer the potential outer class.
-     * @return true if this class is an inner class of the given class.
-     */
-    public boolean isInnerclassOf(ClassInfo outer) {
-        return getClassName().startsWith(outer.getClassName()+"$");
     }
 
 
@@ -554,6 +828,7 @@ public final class ClassInfo extends MemberInfo {
         while ( cls != null ) {
             MethodInfo m = cls.getMethodInfo(signature);
             if ( m != null ) {
+                // TODO fix!                
                 if ( ignoreAccess || canAccess(m) ) {
                     return m;
                 } else {
@@ -570,6 +845,7 @@ public final class ClassInfo extends MemberInfo {
         while ( cls != null ) {
             FieldInfo f = cls.getFieldInfo(name);
             if ( f != null ) {
+                // TODO fix!
                 if ( ignoreAccess || canAccess(f) ) {
                     return f;
                 } else {
@@ -828,6 +1104,10 @@ public final class ClassInfo extends MemberInfo {
             classGen.setMethodAt(method.compileMethod(), i);
         }
 
+        for (int i = 1; i < cpg.getSize(); i++) {
+
+        }
+
         // TODO call manager eventhandler
 
         return classGen.getJavaClass();
@@ -873,15 +1153,41 @@ public final class ClassInfo extends MemberInfo {
     // Internal affairs, class hierarchy management; To be used only be AppInfo
     //////////////////////////////////////////////////////////////////////////////
 
+    /**
+     * Get the name of the outer class of this class as it is stored in the InnerClasses attribute.
+     * Note that this does return null for non-member inner classes.
+     *
+     * @param ic the InnerClasses attribute of this class.
+     * @param innerClass the name of the inner class to lookup
+     * @return the name of the outer name if it is stored in InnerClass.
+     */
+    private String getOuterClassName(InnerClasses ic, String innerClass) {
+        for (InnerClass i : ic.getInnerClasses()) {
+            if ( getInnerClassName(i).equals(innerClass) ) {
+                return getOuterClassName(i);
+            }
+        }
+        return null;
+    }
+
+    private void updateInnerClassFlag() {
+        // check if this class appears as inner class (iff this is an inner class, it must
+        // appear in the attribute by definition)
+        anInnerClass = getInnerClassAttribute(getClassName()) != null;
+    }
+
     protected void resetHierarchyInfos() {
         superClass = null;
         subClasses.clear();
+        outerClass = null;
+        innerClasses.clear();
         fullyKnown = Ternary.UNKNOWN;
     }
 
     @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
     protected void updateClassHierarchy() {
         AppInfo appInfo = AppInfo.getSingleton();
+
         if ( "java.lang.Object".equals(getClassName()) ) {
             superClass = null;
         } else {
@@ -889,6 +1195,15 @@ public final class ClassInfo extends MemberInfo {
         }
         if ( superClass != null ) {
             superClass.subClasses.add(this);
+        }
+
+        for (ClassInfo i : getInterfaces()) {
+            i.subClasses.add(this);
+        }
+
+        outerClass = getOuterClassRef().getClassInfo();
+        if ( outerClass != null ) {
+            outerClass.innerClasses.add(this);
         }
     }
 
@@ -925,10 +1240,28 @@ public final class ClassInfo extends MemberInfo {
             fullyKnown = superClass.fullyKnown;
         }
 
+        // by now, fullyKnown is either TRUE or FALSE
+
+        if ( anInnerClass && fullyKnown == Ternary.TRUE ) {
+            // check if all outer classes are here, we might need them for access checks
+            // however missing inner classes are ignored here (similar to subclasses)
+            if ( outerClass != null ) {
+                if ( outerClass.fullyKnown == Ternary.UNKNOWN ) {
+                    outerClass.updateCompleteFlag(false);
+                }
+                fullyKnown = outerClass.fullyKnown;
+            } else {
+                fullyKnown = Ternary.FALSE;
+            }
+        }
+
         if ( updateSubclasses ) {
+            // we need to recurse down here since the flag might depend on other interfaces- and
+            // outer-classes too
             for (ClassInfo c : subClasses) {
-                // we need to recurse down here since we cannot set the fullyKnown flag
-                // of interfaces directly
+                c.updateCompleteFlag(true);
+            }
+            for (ClassInfo c : innerClasses) {
                 c.updateCompleteFlag(true);
             }
         }
@@ -940,7 +1273,11 @@ public final class ClassInfo extends MemberInfo {
             superClass.subClasses.remove(this);
         }
 
-        // all extensions of this will now be incomplete
+        if ( outerClass != null ) {
+            outerClass.innerClasses.remove(this);
+        }
+
+        // all extensions and inner classes of this class will now be incomplete
         if ( fullyKnown == Ternary.TRUE ) {
             ClassVisitor visitor = new ClassVisitor() {
 
@@ -953,7 +1290,8 @@ public final class ClassInfo extends MemberInfo {
                 }
             };
             ClassHierarchyTraverser traverser = new ClassHierarchyTraverser(visitor, false);
-            traverser.setExtensionsOnly(true);
+            traverser.setVisitImplementations(false);
+            traverser.setVisitInnerClasses(true);
             traverser.traverse(this);
         }
 
@@ -963,6 +1301,10 @@ public final class ClassInfo extends MemberInfo {
             for (ClassInfo c : subClasses) {
                 c.superClass = null;
             }
+        }
+
+        for (ClassInfo c : innerClasses) {
+            c.outerClass = null;
         }
 
         resetHierarchyInfos();

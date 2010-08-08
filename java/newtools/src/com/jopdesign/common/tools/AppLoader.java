@@ -143,11 +143,9 @@ public class AppLoader {
                 
         // process constantpool/fields+methods for class references, load and enqueue them
         int size = classInfo.getConstantPoolSize();
-        for (int i = 0; i < size; i++) {
+        for (int i = 1; i < size; i++) {
             ConstantInfo constantInfo = classInfo.getConstantInfo(i);
-            if ( constantInfo == null ) {
-                continue;
-            }
+
             ClassRef ref = constantInfo.getClassRef();
             if ( ref == null ) {
                 continue;

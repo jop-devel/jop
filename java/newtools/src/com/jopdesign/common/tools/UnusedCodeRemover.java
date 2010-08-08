@@ -119,7 +119,7 @@ public class UnusedCodeRemover {
         }
 
         for (ClassInfo cls : unusedClasses) {
-            appInfo.removeClass(cls, true);
+            appInfo.removeClass(cls, true, true);
         }
     }
 }
