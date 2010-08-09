@@ -22,7 +22,7 @@ package com.jopdesign.common;
 
 import com.jopdesign.common.graph.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
-import com.jopdesign.common.misc.BcelRepositoryWrapper;
+import com.jopdesign.common.bcel.BcelRepositoryWrapper;
 import com.jopdesign.common.misc.ClassInfoNotFoundException;
 import com.jopdesign.common.misc.MissingClassError;
 import com.jopdesign.common.misc.NamingConflictException;

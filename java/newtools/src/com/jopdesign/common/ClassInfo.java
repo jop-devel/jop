@@ -157,6 +157,22 @@ public final class ClassInfo extends MemberInfo {
         classGen.isStrictfp(val);
     }
 
+    public int getMajor() {
+        return classGen.getMajor();
+    }
+
+    public int getMinor() {
+        return classGen.getMinor();
+    }
+
+    public void setMinor(int minor) {
+        classGen.setMinor(minor);
+    }
+
+    public void setMajor(int major) {
+        classGen.setMajor(major);
+    }
+
     @Override
     public Attribute[] getAttributes() {
         return classGen.getAttributes();
@@ -371,6 +387,10 @@ public final class ClassInfo extends MemberInfo {
         return i != null && i.getInnerNameIndex() == 0;
     }
 
+    /**
+     * Check if this is a member of its outer class or not (i.e. local or anonymous classes).
+     * @return true if this class is not a member of a class.
+     */
     public boolean isNonmemberInnerclass() {
         InnerClass i = getInnerClassAttribute(getClassName());
         return i != null && i.getOuterClassIndex() == 0;
@@ -473,8 +493,7 @@ public final class ClassInfo extends MemberInfo {
     }
 
     /**
-     * Get a reference to the outer class if this is an inner class, or a reference to the class
-     * of the enclosing method if set, else return null.
+     * Get a reference to the outer class if this is an inner class, else return null.
      * To check if this is an inner class, use {@link #isInnerclass()}.
      *
      * @return a classRef to the parent class or null if this is not an inner class.
@@ -493,6 +512,7 @@ public final class ClassInfo extends MemberInfo {
             if ( enclosingMethod != null ) {
                 return enclosingMethod.getClassRef();
             } else {
+                logger.warn("Could not find outer class for class " +getClassName());
                 return null;
             }
         }
@@ -533,11 +553,28 @@ public final class ClassInfo extends MemberInfo {
     }
 
     /**
+     * Find the class enclosing this class which is the same as or a superclass or an interface of the given class.
+     * @param classInfo the (sub)class containing this class.
+     * @return the found class or null if none found.
+     */
+    public ClassInfo getEnclosingSuperClass(ClassInfo classInfo) {
+        ClassInfo outer = outerClass;
+        while (outer != null) {
+            if (outer.isInstanceOf(classInfo)) {
+                return outer;
+            }
+            outer = outer.getOuterClassInfo();
+        }
+        return null;
+    }
+
+    /**
      * Set the outer class of this class or move this class to toplevel. Not yet implemented!
      *
      * @param outerClass the new outer class of this class, or null to move this class to the toplevel.
      * @throws AppInfoException until this gets properly implemented...
      */
+    @SuppressWarnings("ALL")
     public void setOuterClass(ClassInfo outerClass) throws AppInfoException {
         // TODO implement setOuterClass(), if needed. But this is not a simple task.
         // need to
@@ -644,42 +681,67 @@ public final class ClassInfo extends MemberInfo {
     }
 
     /**
-     * Check if the given class is an extension of this class, i.e. if this is a class,
-     * check if the given class is a subclass, if this is an interface, check if the given
+     * Check if this class is an extension of the given class, i.e. if this is a class,
+     * check if the given class is a superclass, if this is an interface, check if the given
      * class is an interface and if this is an extension of the given interface.
      *
-     * @see #isSubclassOf(ClassInfo)
+     * @see #isInstanceOf(ClassInfo) 
      * @param classInfo the class to check.
      * @return true if the class is an extension of this class.
      */
     public boolean isExtensionOf(ClassInfo classInfo) {
+        // if this is not an interface, can only extend (super-)classes
         if ( !isInterface() ) {
-            return isSuperclassOf(classInfo);
+            // can only be a superclass if it is not an interface
+            return !classInfo.isInterface() && classInfo.isSuperclassOf(this);
         }
+        // if classInfo is not a superclass, this can only be an extension if this and classInfo are interfaces
         if ( !classInfo.isInterface() ) {
             return false;
         }
         // could use visitor+ClassHierarchyTraverser here to speed things up a little
-        Set<ClassInfo> interfaces = classInfo.getAncestors();
-        return interfaces.contains(this);
+        Set<ClassInfo> interfaces = getAncestors();
+        return interfaces.contains(classInfo);
+    }
+
+    /**
+     * Check if this class is an implementation of the given class, i.e. if this class
+     * is a class, the given class is an interface, and this class implements the given class.
+     * @param classInfo the interface to check.
+     * @return true if this class implements the interface.
+     */
+    public boolean isImplementationOf(ClassInfo classInfo) {
+        // can only implement if this is a class and other class is an interface
+        if (isInterface() || !classInfo.isInterface()) {
+            return false;
+        }
+        // could use visitor+ClassHierarchyTraverser here to speed things up a little
+        Set<ClassInfo> interfaces = getAncestors();
+        return interfaces.contains(classInfo);
     }
 
     /**
      * Check if this class is either an extension or an implementation of the given class or
      * interface.
      *
+     * <p>Note that this is slightly different from {@code isExtensionOf() || isImplementationOf()}, because
+     * an interface is an instance of java.lang.Object, but neither implements or extends java.lang.Object.</p>
+     *
      * @see #isExtensionOf(ClassInfo)
      * @param classInfo the super class to check.
      * @return true if this class is is a subtype of the given class.
      */
-    public boolean isSubclassOf(ClassInfo classInfo) {
+    public boolean isInstanceOf(ClassInfo classInfo) {
+        // classes can only be superclasses
         if ( !classInfo.isInterface() ) {
             return classInfo.isSuperclassOf(this);
         }
-        // if classInfo is an interface..
-        // could use visitor+ClassHierarchyTraverser here to speed things up a little
-        Set<ClassInfo> supers = getAncestors();
-        return supers.contains(classInfo);
+        // classInfo is an interface ..
+        if ( isInterface() ) {
+            return classInfo.isExtensionOf(this);
+        } else {
+            return classInfo.isImplementationOf(this);
+        }
     }
 
 
@@ -699,6 +761,21 @@ public final class ClassInfo extends MemberInfo {
 
     public boolean hasSamePackage(ClassInfo classInfo) {
         return getPackageName().equals(classInfo.getPackageName());
+    }
+
+    public boolean inherits(MemberInfo member) {
+
+        ClassInfo cls;
+        if ( member instanceof ClassInfo ) {
+            cls = ((ClassInfo)member).getEnclosingSuperClass(this);
+        } else {
+            cls = member.getClassInfo();
+        }
+        if ( cls == null ) {
+            return false;
+        }
+
+        return canAccess(cls, member.getAccessType());
     }
 
     /**
@@ -775,7 +852,6 @@ public final class ClassInfo extends MemberInfo {
         return false;
     }
 
-
     //////////////////////////////////////////////////////////////////////////////
     // Access to fields and methods, lookups
     //////////////////////////////////////////////////////////////////////////////
@@ -823,37 +899,70 @@ public final class ClassInfo extends MemberInfo {
         return Collections.unmodifiableCollection(methods.values());
     }
 
-    public MethodInfo getMethodInfoVirtual(Signature signature, boolean ignoreAccess) {
+    /**
+     * Find a method of this class or in the superclasses of this class.
+     * If no such method is found, look in the interfaces too and return the first found method.
+     * 
+     * @param signature the signature of the method to find. The classname in the signature is ignored.
+     * @param ignoreAccess if true, also return non-accessible or static methods in superclasses.
+     * @return the MethodInfo with the given signature in this class or its extended classes, or null if not found.
+     */
+    public MethodInfo getMethodInfoInherited(Signature signature, boolean ignoreAccess) {
         ClassInfo cls = this;
         while ( cls != null ) {
             MethodInfo m = cls.getMethodInfo(signature);
             if ( m != null ) {
-                // TODO fix!                
-                if ( ignoreAccess || canAccess(m) ) {
+                if ( ignoreAccess || inherits(m) ) {
                     return m;
                 } else {
-                    return null;
+                    // if we find a method but we do not override this method, no need to look in
+                    // superclasses, but we may find something in the interfaces
+                    break;
                 }
             }
             cls = cls.getSuperClassInfo();
         }
+
+        // not very nice, but works: get all ancestors, look in interfaces
+        for (ClassInfo i : getAncestors()) {
+            if ( !i.isInterface() ) {
+                continue;
+            }
+            MethodInfo m = i.getMethodInfo(signature);
+            if ( m != null ) {
+                // we always inherit from interfaces
+                return m;
+            }
+        }
+
         return null;
     }
 
-    public FieldInfo getFieldVirtual(String name, boolean ignoreAccess) {
+    public FieldInfo getFieldInfoInherited(String name, boolean ignoreAccess) {
         ClassInfo cls = this;
         while ( cls != null ) {
             FieldInfo f = cls.getFieldInfo(name);
             if ( f != null ) {
-                // TODO fix!
-                if ( ignoreAccess || canAccess(f) ) {
+                if ( ignoreAccess || inherits(f) ) {
                     return f;
                 } else {
-                    return null;
+                    break;
                 }
             }
             cls = cls.getSuperClassInfo();
         }
+
+        // not very nice, but works: get all ancestors, look in interfaces
+        for (ClassInfo i : getAncestors()) {
+            if ( !i.isInterface() ) {
+                continue;
+            }
+            FieldInfo f = i.getFieldInfo(name);
+            if ( f != null ) {
+                return f;
+            }
+        }
+
         return null;
     }
 
@@ -1201,9 +1310,27 @@ public final class ClassInfo extends MemberInfo {
             i.subClasses.add(this);
         }
 
-        outerClass = getOuterClassRef().getClassInfo();
+        // set the outer class
+        String[] outer = getOuterClassNames();
+        if (outer != null && outer.length > 0 ) {
+            outerClass = AppInfo.getSingleton().getClassInfo(outer[outer.length-1]);
+        }
         if ( outerClass != null ) {
             outerClass.innerClasses.add(this);
+        }
+
+        // For non-member inner classes, the above getOuterClassNames returns an empty array,
+        // but they are returned by getDirectInnerClassNames, so we add this class as
+        // outer class to all non-member inner classes of this class
+        InnerClasses ic = getInnerClassesAttribute();
+        for (InnerClass i : ic.getInnerClasses()) {
+            if ( i.getOuterClassIndex() == 0 ) {
+                ClassInfo innerClass = AppInfo.getSingleton().getClassInfo(getInnerClassName(i));
+                if ( innerClass != null ) {
+                    innerClass.outerClass = this;
+                    innerClasses.add(innerClass);
+                }
+            }
         }
     }
 

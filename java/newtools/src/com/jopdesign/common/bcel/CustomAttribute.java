@@ -18,13 +18,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common.misc;
+package com.jopdesign.common.bcel;
 
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.ConstantPool;
 import org.apache.bcel.classfile.Visitor;
 
 /**
+ * This class should be the base class for all additional BCEL attribute classes, so
+ * that they can be visited by a ClassElementVisitor.
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public abstract class CustomAttribute extends Attribute {

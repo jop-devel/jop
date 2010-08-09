@@ -22,8 +22,8 @@ package com.jopdesign.common;
 
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.Constants;
-import org.apache.bcel.classfile.AccessFlags;
-import org.apache.bcel.classfile.Attribute;
+import org.apache.bcel.classfile.*;
+import org.apache.bcel.generic.ConstantPoolGen;
 
 import java.util.Arrays;
 
@@ -187,9 +187,79 @@ public abstract class MemberInfo {
         return customValues[key.getId()];
     }
 
+    public void setSynthetic(boolean flag) {
+        // from version 49 on, ACC_SYNTHETIC is supported
+        Synthetic s = findSynthetic();
+        if ( getClassInfo().getMajor() < 49 ) {
+            if ( flag ) {
+                if ( s == null ) {
+                    ConstantPoolGen cpg = getClassInfo().getConstantPoolGen();
+                    int index = cpg.addUtf8("Synthetic");
+                    addAttribute(new Synthetic(index, 0, new byte[0], cpg.getConstantPool()));
+                }
+            } else {
+                if ( s != null ) {
+                    removeAttribute(s);
+                }
+            }
+        } else {
+            accessFlags.isSynthetic(flag);
+            if ( !flag && s != null ) {
+                removeAttribute(s);
+            }
+        }
+    }
+
+    public boolean isSynthetic() {
+        if (accessFlags.isSynthetic()) {
+            return true;
+        }
+        Synthetic s = findSynthetic();
+        return s != null;
+    }
+
+    public void setDeprecated(boolean flag) {
+        if (flag) {
+            if (findDeprecated() == null) {
+                ConstantPoolGen cpg = getClassInfo().getConstantPoolGen();
+                int index = cpg.addUtf8("Deprecated"); 
+                addAttribute(new org.apache.bcel.classfile.Deprecated(index, 0, new byte[0], cpg.getConstantPool()));
+            }
+        } else {
+            org.apache.bcel.classfile.Deprecated d = findDeprecated();
+            if ( d != null ) {
+                removeAttribute(d);
+            }
+        }
+    }
+
+    public boolean isDeprecated() {
+        return findDeprecated() != null;
+    }
+
     public abstract Attribute[] getAttributes();
 
     public abstract void addAttribute(Attribute a);
 
     public abstract void removeAttribute(Attribute a);
+
+
+
+    private Synthetic findSynthetic() {
+        for (Attribute a : getAttributes()) {
+            if ( a instanceof Synthetic ) {
+                return (Synthetic) a;
+            }
+        }
+        return null;
+    }
+
+    private org.apache.bcel.classfile.Deprecated findDeprecated() {
+        for (Attribute a : getAttributes()) {
+            if ( a instanceof org.apache.bcel.classfile.Deprecated ) {
+                return (org.apache.bcel.classfile.Deprecated) a;
+            }
+        }
+        return null;
+    }
 }

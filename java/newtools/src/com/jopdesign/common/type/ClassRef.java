@@ -112,6 +112,13 @@ public class ClassRef {
         return innerClass;
     }
 
+    public boolean isNonmemberInnerclass() {
+        if ( classInfo != null ) {
+            return classInfo.isNonmemberInnerclass();
+        }
+        return outerClasses != null && outerClasses.length == 0;
+    }
+
     /**
      * Get a reference to the outer class of this class.
      *

@@ -301,38 +301,42 @@ public final class MethodInfo extends ClassMemberInfo {
         return new Signature(getClassInfo().getClassName(), getName(), getDescriptor());
     }
 
+    /**
+     * Check if this method overrides a given method.
+     * 
+     * @param superMethod the superMethod to check.
+     * @return true if this method overrides the given method and can access the method.
+     */
     public boolean overrides(MethodInfo superMethod) {
         if ( !getMemberSignature().equals(superMethod.getMemberSignature()) ) {
             return false;
         }
-        if ( !getClassInfo().isExtensionOf(superMethod.getClassInfo())) {
+        if ( !getClassInfo().isInstanceOf(superMethod.getClassInfo()) ) {
             return false;
         }
-        return checkOverride(superMethod);
+        return checkOverrides(superMethod);
     }
 
     public MethodInfo getSuperMethod(boolean ignoreAccess) {
         
-        if ( !ignoreAccess && isPrivate() ) {
+        if ( !ignoreAccess && (isPrivate() || isStatic()) ) {
             return null;
         }
 
         ClassInfo superClass = getClassInfo().getSuperClassInfo();
-        MethodInfo superMethod = null;
-        while (superClass != null) {
-            superMethod = superClass.getMethodInfo(getMemberSignature());
-            if ( superMethod != null ) {
-                break;
-            }
-            superClass = superClass.getSuperClassInfo();
-        }
-        if (superMethod != null && !ignoreAccess && superMethod.isPrivate()) {
+        if ( superClass != null ) {
+            MethodInfo inherited = superClass.getMethodInfoInherited(getSignature(), ignoreAccess);
+            return inherited;
+        } else {
             return null;
         }
-        return superMethod;
     }
 
-    public Collection<MethodInfo> findInterfaceMethods() {
+    /**
+     * Get all implemented methods defined in all interfaces implemented by this method's class.
+     * @return a list of all implemented interface methods.
+     */
+    public Collection<MethodInfo> getInterfaceMethods() {
         final List<MethodInfo> ifMethods = new LinkedList<MethodInfo>();
 
         ClassVisitor visitor = new ClassVisitor() {
@@ -356,11 +360,18 @@ public final class MethodInfo extends ClassMemberInfo {
 
         return ifMethods;
     }
-    
-    public Collection<MethodInfo> findOverriders(boolean ignoreAccess) {
+
+    /**
+     * Find all methods which override/implement this method.
+     * 
+     * @param ignoreAccess if true, find methods with the same signature in subclasses even if they
+     *        do not override this method (i.e. private or static methods).
+     * @return a list of all overriding methods.
+     */
+    public Collection<MethodInfo> getOverriders(final boolean ignoreAccess) {
         final List<MethodInfo> overriders = new LinkedList<MethodInfo>();
 
-        if (!ignoreAccess && isPrivate()) {
+        if ((isPrivate() || isStatic()) && !ignoreAccess) {
             return overriders;
         }
 
@@ -369,17 +380,22 @@ public final class MethodInfo extends ClassMemberInfo {
             public boolean visitClass(ClassInfo classInfo) {
                 MethodInfo overrider = classInfo.getMethodInfo(getMemberSignature());
                 if ( overrider != null ) {
-                    if ( overrider.isPrivate() && !isPrivate() ) {
+                    if ( overrider.isPrivate() ) {
                         // found an overriding method which is private .. this is interesting..
-                        logger.warn("Found private method "+overrider.getMemberSignature()+" in "+
+                        logger.error("Found private method "+overrider.getMemberSignature()+" in "+
                                 classInfo.getClassName()+" overriding non-private method in "+
                                 getClassInfo().getClassName());
                     }
-                    overriders.add(overrider);
+
+                    // If a subclass contains a static method or a package visible method with same
+                    // signature, but is in a different package, it does NOT override this method.
+                    if ( ignoreAccess || overrider.checkOverrides(MethodInfo.this) ) {
+                        overriders.add(overrider);
+                    }
+
                 }
                 return true;
             }
-
             public void finishClass(ClassInfo classInfo) {
             }
         };
@@ -390,6 +406,64 @@ public final class MethodInfo extends ClassMemberInfo {
     }
 
     /**
+     * Get all non-abstract methods (including this method if it is not abstract) overriding this method.
+     * @param ignoreAccess if true, find all non-abstract methods with same signature even if they do not
+     *        override this method.
+     * @return a collection of all implementations of this method.
+     */
+    public Collection<MethodInfo> getImplementations(final boolean ignoreAccess) {
+        final List<MethodInfo> implementations = new LinkedList<MethodInfo>();
+
+        if (!isAbstract()) {
+            implementations.add(this);
+        }
+
+        if ( (isPrivate() || isStatic()) && !ignoreAccess) {
+            return implementations;
+        }
+
+        ClassVisitor visitor = new ClassVisitor() {
+
+            public boolean visitClass(ClassInfo classInfo) {
+                MethodInfo m = classInfo.getMethodInfo(getMemberSignature());
+                if ( m != null ) {
+                    if ( m.isPrivate() && !isPrivate() ) {
+                        // found an overriding method which is private .. this is interesting..
+                        logger.error("Found private method "+m.getMemberSignature()+" in "+
+                                classInfo.getClassName()+" overriding non-private method in "+
+                                getClassInfo().getClassName());
+                    }
+                    if ( !m.isAbstract() && (ignoreAccess || m.checkOverrides(MethodInfo.this)) ) {
+                        implementations.add(m);
+                    }
+                }
+                return true;
+            }
+
+            public void finishClass(ClassInfo classInfo) {
+            }
+        };
+
+        new ClassHierarchyTraverser(visitor, false).traverse(getClassInfo());
+
+        return implementations;
+    }
+
+    @Override
+    public int hashCode() {
+        return getMemberSignature().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if ( !(obj instanceof MethodInfo) ) {
+            return false;
+        }
+        return ((MethodInfo)obj).getClassInfo().equals(getClassInfo()) &&
+               ((MethodInfo)obj).getMemberSignature().equals(getMemberSignature());
+    }
+
+    /**
      * Should only be used by ClassInfo.
      * @return the internal methodGen.                           
      */
@@ -397,9 +471,14 @@ public final class MethodInfo extends ClassMemberInfo {
         return methodGen;
     }
 
-    private boolean checkOverride(MethodInfo superMethod) {
-        // TODO implement
-        return false;
+    protected boolean checkOverrides(MethodInfo superMethod) {
+        if ( superMethod.equals(this) ) {
+            return true;
+        }
+        if ( isStatic() || superMethod.isStatic() ) {
+            return false;
+        }
+        return getClassInfo().canAccess(superMethod);
     }
 
 }
