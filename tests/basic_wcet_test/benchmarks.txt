@@ -1,0 +1,6 @@
+test;wcet;StartLineFollower
+test;wcet;StartLift
+test;wcet;StartKfl
+test;wcet;StartBenchUdpIp
+test;wcet;StartEjipCmp
+

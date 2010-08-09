@@ -1,0 +1,114 @@
+#!/usr/bin/env ruby
+# Configuration
+COM_PORT="/dev/ttyUSB1"
+
+
+ROOT=`git rev-parse --show-cdup`.chomp
+
+def make(*var_args)
+  args = []
+  var_args.each do |va|
+    if va.kind_of? Hash
+      va.each do |k,v|
+        args.push("#{k}=#{v}")
+      end
+    else
+      args.push(va)
+    end
+  end
+  r = false
+  Dir.chdir(ROOT) do |rootdir|
+    puts (["make"] + args).inspect
+    argline = "make " + args.map { |a| "'#{a}'" }.join(" ") + " </dev/null"
+    IO.popen(argline) do |f|
+      while((l=f.gets))
+        yield l if block_given?
+      end
+    end
+    r = ($? == 0)
+  end
+  return r
+end
+
+class Result
+  attr_reader :name, :am,:ah,:ipet
+  attr_accessor :jsim, :measured
+  def initialize(name)
+    @name=name
+  end
+  def read_cvs(cvsfile)
+    File.readlines(cvsfile).each do |line|
+      kind, *fields = line.strip.split(/;/)
+      if(kind == "metric")
+        metric, cost, *rest = fields
+        case metric
+          when "always-miss"; @am = cost.to_i
+          when "always-hit";  @ah = cost.to_i
+        end
+      elsif(kind == "wcet")
+        method, cost, *rest = fields
+        @ipet = cost.to_i
+      else
+      end
+    end
+  end
+  def Result.header
+    [ "Name","Measured","JSIM", "Ipet", "No-Cache", "Inf-Cache" ].
+      map {|s| s.to_s.ljust(20) }. join(" | ")
+  end
+  def to_s
+    [ name, measured, jsim, ipet, am, ah ].
+      map {|s| s.to_s.ljust(20) }. join(" | ")
+  end
+end
+
+WORKDIR=Dir.pwd
+SRCDIR=File.join(ROOT,"java","target","src")
+BENCHFILE="benchmarks.txt"
+
+# build tools
+#make("tools")
+
+out = File.open("benchresults.txt","w")
+out.puts(Result.header)
+
+# Iterate benchmarks
+File.readlines(BENCHFILE).each do |bench|
+  next if bench.strip == ""
+  p1,p2,p3 = bench.strip.split(/;/)
+  base_opts = { "P1" => p1, "P2" => p2, "P3" => p3 }
+  result = Result.new(p3)
+  
+  # compute WCET
+  resultfile = File.join(WORKDIR,"result.tmp")
+  make("java_app",base_opts)
+  wcet_opts = [ "-result-file", resultfile,
+                "-target-method", "measure" ]
+  success = make("wcet",base_opts, { "WCET_OPTIONS" => wcet_opts.join(" ") })
+  if(success)
+    # extract CVS info
+    result.read_cvs(resultfile)
+  end
+
+
+  # measure WCET (jsim)
+  driver=File.join(SRCDIR,p1,p2,p3+".java")
+  raise Exception.new("sed bak file exists") if File.exist?("#{driver}.bak")
+  system("sed 's/MEASURE \s*=\s*false/MEASURE = true/' -i.bak #{driver}")
+  make("jsim",base_opts) do |l|
+    result.jsim = $1.to_i if(l =~ /wcet:(\d+)/)
+  end
+
+  # measure WCET (jop)
+  jop_opts = { "USB" => "true", "COM_PORT" => COM_PORT }
+  make("config_usb", base_opts, jop_opts)
+  make("download", base_opts, jop_opts) do |l|
+    puts l
+    result.measured = $1.to_i if(l =~ /wcet:(\d+)/)
+  end
+  system("mv #{driver}.bak #{driver}")
+
+  # print
+  out.puts result.to_s
+end
+out.close
