@@ -51,8 +51,12 @@ public class StartKfl {
 			if (val<min) min = val;
 			if (val>max) max = val;
 		}
-		if (MEASURE) System.out.println(min);
-		if (MEASURE) System.out.println(max);
+		if (MEASURE) {
+                    System.out.print("bcet:");
+                    System.out.println(min);
+                    System.out.print("wcet:");
+                    System.out.println(max);
+                }
 	}
 	
 	static void invoke() {
