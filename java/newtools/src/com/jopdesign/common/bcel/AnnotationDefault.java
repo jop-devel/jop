@@ -20,42 +20,48 @@
 
 package com.jopdesign.common.bcel;
 
+import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.ConstantPool;
-import org.apache.bcel.classfile.Visitor;
+
+import java.io.DataOutputStream;
+import java.io.IOException;
 
 /**
- * This class should be the base class for all additional BCEL attribute classes, so
- * that they can be visited by a ClassElementVisitor.
- *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public abstract class CustomAttribute extends Attribute {
+public class AnnotationDefault extends CustomAttribute {
 
-    public static void registerDefaultReader() {
-        Attribute.addAttributeReader(EnclosingMethodReader.ATTRIBUTE_NAME, new EnclosingMethodReader());
+    private AnnotationElementValue value;
 
-        for (String name : AnnotationReader.ATTRIBUTE_NAMES) {
-            Attribute.addAttributeReader(name, new AnnotationReader(name));
-        }
+    public AnnotationDefault(int name_index, int length, ConstantPool constant_pool, AnnotationElementValue value) {
+        super(Constants.ATTR_UNKNOWN, name_index, length, constant_pool);
 
-        // SourceDebugExtension and LocalVariableTypeTable is not handled..
+        this.value = value;
     }
 
-    protected CustomAttribute(byte tag, int name_index, int length, ConstantPool constant_pool) {
-        super(tag, name_index, length, constant_pool);
+    public AnnotationElementValue getValue() {
+        return value;
+    }
+
+    public void setValue(AnnotationElementValue value) {
+        this.value = value;
     }
 
     @Override
-    public void accept(Visitor v) {
+    public void dump(DataOutputStream file) throws IOException {
+        setLength(value.length());
+        super.dump(file);
+        value.dump(file);
     }
 
-    /**
-     * If this attribute references any classes they must be returned here.
-     * @return a list of classnames this attribute references.
-     */
-    public String[] getReferencedClassNames() {
-        return null;
+    @Override
+    public String toString() {
+        return super.toString();
     }
 
+    @Override
+    public Attribute copy(ConstantPool _constant_pool) {
+        return new AnnotationDefault(name_index, length, _constant_pool, value.copy());
+    }
 }

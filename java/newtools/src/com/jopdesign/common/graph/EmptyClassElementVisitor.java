@@ -24,7 +24,10 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.MemberInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.bcel.AnnotationAttribute;
 import com.jopdesign.common.bcel.CustomAttribute;
+import com.jopdesign.common.bcel.EnclosingMethod;
+import com.jopdesign.common.bcel.ParameterAnnotationAttribute;
 import org.apache.bcel.classfile.ConstantClass;
 import org.apache.bcel.classfile.ConstantDouble;
 import org.apache.bcel.classfile.ConstantFieldref;
@@ -109,46 +112,55 @@ public class EmptyClassElementVisitor implements ClassElementVisitor {
     public void visitConstantUtf8(ClassInfo classInfo, ConstantUtf8 constant) {
     }
 
-    public void visitInnerClass(ClassInfo member, InnerClass obj) {
+    public void visitInnerClass(ClassInfo classInfo, InnerClass obj) {
     }
 
-    public void visitInnerClasses(ClassInfo member, InnerClasses obj) {
+    public void visitInnerClasses(ClassInfo classInfo, InnerClasses obj) {
     }
 
-    public void visitSourceFile(ClassInfo member, SourceFile obj) {
+    public void visitSourceFile(ClassInfo classInfo, SourceFile obj) {
     }
 
-    public void visitConstantValue(FieldInfo member, ConstantValue obj) {
+    public void visitEnclosingMethod(ClassInfo classInfo, EnclosingMethod obj) {
     }
 
-    public void visitCodeException(MethodInfo member, CodeExceptionGen obj) {
+    public void visitConstantValue(FieldInfo fieldInfo, ConstantValue obj) {
     }
 
-    public void visitLineNumber(MethodInfo member, LineNumberGen obj) {
+    public void visitCodeException(MethodInfo methodInfo, CodeExceptionGen obj) {
     }
 
-    public void visitLocalVariable(MethodInfo member, LocalVariableGen obj) {
+    public void visitLineNumber(MethodInfo methodInfo, LineNumberGen obj) {
     }
 
-    public void visitStackMap(MethodInfo member, StackMap obj) {
+    public void visitLocalVariable(MethodInfo methodInfo, LocalVariableGen obj) {
     }
 
-    public void visitStackMapEntry(MethodInfo member, StackMapEntry obj) {
+    public void visitStackMap(MethodInfo methodInfo, StackMap obj) {
     }
 
-    public void visitSignature(MemberInfo member, Signature obj) {
+    public void visitStackMapEntry(MethodInfo methodInfo, StackMapEntry obj) {
     }
 
-    public void visitDeprecated(MemberInfo member, org.apache.bcel.classfile.Deprecated obj) {
+    public void visitSignature(MemberInfo memberInfo, Signature obj) {
     }
 
-    public void visitSynthetic(MemberInfo member, Synthetic obj) {
+    public void visitDeprecated(MemberInfo memberInfo, org.apache.bcel.classfile.Deprecated obj) {
     }
 
-    public void visitUnknown(MemberInfo member, Unknown obj, boolean isCodeAttribute) {
+    public void visitSynthetic(MemberInfo memberInfo, Synthetic obj) {
     }
 
-    public void visitCustomAttribute(MemberInfo member, CustomAttribute obj, boolean isCodeAttribute) {
+    public void visitAnnotation(MemberInfo memberInfo, AnnotationAttribute obj) {
+    }
+
+    public void visitParameterAnnotation(MemberInfo memberInfo, ParameterAnnotationAttribute obj) {
+    }
+
+    public void visitUnknown(MemberInfo memberInfo, Unknown obj, boolean isCodeAttribute) {
+    }
+
+    public void visitCustomAttribute(MemberInfo memberInfo, CustomAttribute obj, boolean isCodeAttribute) {
     }
 
     public boolean visitClass(ClassInfo classInfo) {

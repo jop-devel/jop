@@ -43,7 +43,8 @@ public abstract class ClassMemberInfo extends MemberInfo {
         return classInfo;
     }
 
-    public String getName() {
+    @Override
+    public String getSimpleName() {
         return classMember.getName();
     }
 

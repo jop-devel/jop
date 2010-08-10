@@ -20,6 +20,7 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.bcel.CustomAttribute;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.logger.LogConfig;
@@ -326,6 +327,8 @@ public class AppSetup {
             }
             System.exit(2);
         }
+
+        CustomAttribute.registerDefaultReader();
 
         appInfo.setClassPath(new ClassPath(config.getOption(Config.CLASSPATH)));
         appInfo.setExitOnMissingClass(!config.getOption(Config.VERBOSE));

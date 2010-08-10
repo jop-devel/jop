@@ -54,6 +54,14 @@ public final class FieldInfo extends ClassMemberInfo {
         fieldGen.isVolatile(val);
     }
 
+    public void setEnum(boolean flag) {
+        fieldGen.isEnum(flag);
+    }
+
+    public boolean isEnum() {
+        return fieldGen.isEnum();
+    }
+
     public Field getField() {
         return fieldGen.getField();
     }

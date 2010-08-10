@@ -111,7 +111,7 @@ public class UnusedCodeRemover {
             }
 
             for (FieldInfo f : unusedFields) {
-                cls.removeField(f.getName());
+                cls.removeField(f.getSimpleName());
             }
             for (MethodInfo m : unusedMethods) {
                 cls.removeMethod(m.getMemberSignature());
@@ -119,7 +119,9 @@ public class UnusedCodeRemover {
         }
 
         for (ClassInfo cls : unusedClasses) {
-            appInfo.removeClass(cls, true, true);
+            appInfo.removeClass(cls, true, false);
         }
+
+        appInfo.reloadClassHierarchy();
     }
 }

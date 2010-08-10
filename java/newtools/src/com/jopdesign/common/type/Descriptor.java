@@ -78,11 +78,11 @@ public class Descriptor {
     }
 
     public boolean isArray() {
-        return getType().getType() == Constants.T_ARRAY;
+        return type.getType() == Constants.T_ARRAY;
     }
 
     public boolean isMethod() {
-        return getArgumentTypes() != null;
+        return arguments != null;
     }
 
     public Type[] getArgumentTypes() {

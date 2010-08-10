@@ -583,6 +583,17 @@ public final class AppInfo {
     }
 
 
+    public MethodRef getMethodRef(Signature signature) {
+        ClassInfo cls = classes.get(signature.getClassName());
+        ClassRef clsRef;
+        if ( cls != null ) {
+            clsRef = cls.getClassRef();
+        } else {
+            clsRef = new ClassRef(signature.getClassName());
+        }
+        return getMethodRef(clsRef, signature);
+    }
+
     /**
      * Get a reference to a method using the given signature.
      * If you already have a classRef, use {@link #getMethodRef(ClassRef, Signature)}

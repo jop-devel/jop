@@ -20,9 +20,12 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.bcel.AnnotationAttribute;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.Constants;
-import org.apache.bcel.classfile.*;
+import org.apache.bcel.classfile.AccessFlags;
+import org.apache.bcel.classfile.Attribute;
+import org.apache.bcel.classfile.Synthetic;
 import org.apache.bcel.generic.ConstantPoolGen;
 
 import java.util.Arrays;
@@ -57,6 +60,8 @@ public abstract class MemberInfo {
     public abstract ClassInfo getClassInfo();
 
     public abstract Signature getSignature();
+
+    public abstract String getSimpleName();
 
     public boolean isPublic() {
         return accessFlags.isPublic();
@@ -235,6 +240,17 @@ public abstract class MemberInfo {
 
     public boolean isDeprecated() {
         return findDeprecated() != null;
+    }
+
+    public AnnotationAttribute getAnnotation(boolean visible) {
+        for (Attribute a : getAttributes()) {
+            if ( a instanceof AnnotationAttribute ) {
+                if ( ((AnnotationAttribute)a).isVisible() == visible ) {
+                    return (AnnotationAttribute) a;
+                }
+            }
+        }
+        return null;
     }
 
     public abstract Attribute[] getAttributes();

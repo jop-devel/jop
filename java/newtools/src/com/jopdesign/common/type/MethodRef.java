@@ -81,7 +81,7 @@ public class MethodRef {
     }
 
     public String getName() {
-        return methodInfo != null ? methodInfo.getName() : methodName;
+        return methodInfo != null ? methodInfo.getSimpleName() : methodName;
     }
 
     public String getClassName() {

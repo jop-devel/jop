@@ -26,7 +26,7 @@ import org.apache.bcel.generic.FieldGen;
 import org.apache.bcel.generic.MethodGen;
 
 /**
- * This class rebuilds the constantpool of a ClassInfo, and should only be used by ClassInfo itself.
+ * This helper class rebuilds the constantpool of a ClassInfo, and should only be used by ClassInfo itself.
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */

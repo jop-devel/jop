@@ -73,7 +73,7 @@ public abstract class ConstantInfo<T, U extends Type> {
         byte tag = constant.getTag();
         switch (tag) {
             case Constants.CONSTANT_Class:
-                ClassRef classRef = appInfo.getClassRef(((ConstantClass)constant).getBytes(cp));
+                ClassRef classRef = appInfo.getClassRef(((ConstantClass)constant).getBytes(cp).replace('/','.'));
                 return new ConstantClassInfo(classRef);
             case Constants.CONSTANT_Fieldref:
                 ConstantFieldref fRef = (ConstantFieldref) constant;
@@ -132,8 +132,22 @@ public abstract class ConstantInfo<T, U extends Type> {
 
     public abstract U getType();
 
+    /**
+     * Create a new constant but do not add it to the constant pool.
+     * Note however that in order to get the indices for supplementary constants,
+     * new constants might be created.
+     *
+     * @param cpg the constantpool to lookup or add required referenced constants.
+     * @return a new constant for this constantinfo using the given constantpool.
+     */
     public abstract Constant createConstant(ConstantPoolGen cpg);
 
+    /**
+     * Add this constant to the constantpool if needed and return the index of this constant in the constantpool.
+     *
+     * @param cpg the constantpool to use.
+     * @return the index of this constant in the pool.
+     */
     public abstract int addConstant(ConstantPoolGen cpg);
 
     public abstract int lookupConstant(ConstantPoolGen cpg);

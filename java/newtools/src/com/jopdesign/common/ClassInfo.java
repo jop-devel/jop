@@ -20,6 +20,7 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.bcel.EnclosingMethod;
 import com.jopdesign.common.graph.ClassHierarchyTraverser;
 import com.jopdesign.common.graph.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
@@ -123,6 +124,12 @@ public final class ClassInfo extends MemberInfo {
     }
 
     @Override
+    public String getSimpleName() {
+        String name = getClassName();
+        return name.substring(name.lastIndexOf('.')+1);
+    }
+
+    @Override
     public String getModifierString() {
         String s = super.getModifierString();
         if ( isInterface() ) {
@@ -133,6 +140,10 @@ public final class ClassInfo extends MemberInfo {
         return s;
     }
 
+    /**
+     * Get the fully qualified name of this class.
+     * @return the FQN.
+     */
     public String getClassName() {
         return classGen.getClassName();
     }
@@ -171,6 +182,22 @@ public final class ClassInfo extends MemberInfo {
 
     public void setMajor(int major) {
         classGen.setMajor(major);
+    }
+
+    public void setAnnotation(boolean flag) {
+        classGen.isAnnotation(flag);
+    }
+
+    public boolean isAnnotation() {
+        return classGen.isAnnotation();
+    }
+
+    public void setEnum(boolean flag) {
+        classGen.isEnum(flag);
+    }
+
+    public boolean isEnum() {
+        return classGen.isEnum();
     }
 
     @Override
@@ -391,9 +418,9 @@ public final class ClassInfo extends MemberInfo {
      * Check if this is a member of its outer class or not (i.e. local or anonymous classes).
      * @return true if this class is not a member of a class.
      */
-    public boolean isNonmemberInnerclass() {
+    public boolean isMemberInnerclass() {
         InnerClass i = getInnerClassAttribute(getClassName());
-        return i != null && i.getOuterClassIndex() == 0;
+        return i != null && i.getOuterClassIndex() != 0;
     }
 
     /**
@@ -463,7 +490,11 @@ public final class ClassInfo extends MemberInfo {
     }
 
     public MethodRef getEnclosingMethodRef() {
-        // TODO check for EnclosingMethod attribute
+        for (Attribute a : getAttributes()) {
+            if ( a instanceof EnclosingMethod ) {
+                return ((EnclosingMethod)a).getMethodRef();
+            }
+        }
         return null;
     }
 
@@ -493,7 +524,7 @@ public final class ClassInfo extends MemberInfo {
     }
 
     /**
-     * Get a reference to the outer class if this is an inner class, else return null.
+     * Get a reference to the outer class if this is an inner class (member or local), else return null.
      * To check if this is an inner class, use {@link #isInnerclass()}.
      *
      * @return a classRef to the parent class or null if this is not an inner class.
@@ -507,7 +538,7 @@ public final class ClassInfo extends MemberInfo {
         }
         String[] outer = getOuterClassNames();
         if (outer.length == 0) {
-            // This is a non-member innerclass.
+            // This is a local innerclass.
             MethodRef enclosingMethod = getEnclosingMethodRef();
             if ( enclosingMethod != null ) {
                 return enclosingMethod.getClassRef();
@@ -516,7 +547,8 @@ public final class ClassInfo extends MemberInfo {
                 return null;
             }
         }
-        return getAppInfo().getClassRef(outer[outer.length-1], Arrays.copyOf(outer, outer.length-1));
+        return getAppInfo().getClassRef(outer[outer.length-1],
+                  outer.length > 1 ? Arrays.copyOf(outer, outer.length-1): null);
     }
 
     public ClassInfo getOuterClassInfo() {
@@ -524,7 +556,7 @@ public final class ClassInfo extends MemberInfo {
     }
 
     /**
-     * Get a list of fully qualified classnames of all direct inner classes of this class, including anonymous classes.
+     * Get a list of fully qualified classnames of all direct inner classes of this class, including local classes.
      * 
      * @return a collection of fully qualified classnames of the inner classes or an empty collection if this class
      *   has no inner classes.
@@ -537,10 +569,11 @@ public final class ClassInfo extends MemberInfo {
         List<String> inner = new LinkedList<String>();
         for (InnerClass i : ic.getInnerClasses()) {
             String outerName = getOuterClassName(i);
-            // TODO check if this is correct: if outerName is null, this is an inner class of *this* class
-            if (outerName == null && getInnerClassName(i).equals(getClassName())) {
+
+            if (getInnerClassName(i).equals(getClassName())) {
                 continue;
             }
+            // if outer is null, inner is a local inner class of this class.
             if (outerName == null || getClassName().equals(outerName)) {
                 inner.add(getInnerClassName(i));
             }
@@ -553,17 +586,26 @@ public final class ClassInfo extends MemberInfo {
     }
 
     /**
-     * Find the class enclosing this class which is the same as or a superclass or an interface of the given class.
+     * Find the class enclosing this class which is the same as or a superclass or an interface of
+     * the given class.
      * @param classInfo the (sub)class containing this class.
+     * @param membersOnly if true, only check outer classes of member inner classes.
      * @return the found class or null if none found.
      */
-    public ClassInfo getEnclosingSuperClass(ClassInfo classInfo) {
+    public ClassInfo getEnclosingSuperClassOf(ClassInfo classInfo, boolean membersOnly) {
+        if ( membersOnly && !isMemberInnerclass() ) {
+            return null;
+        }
         ClassInfo outer = outerClass;
         while (outer != null) {
             if (outer.isInstanceOf(classInfo)) {
                 return outer;
             }
-            outer = outer.getOuterClassInfo();
+            if ( membersOnly && !outer.isMemberInnerclass() ) {
+                return null;
+            } else {
+                outer = outer.getOuterClassInfo();
+            }
         }
         return null;
     }
@@ -584,7 +626,7 @@ public final class ClassInfo extends MemberInfo {
         // - update class hierarchy infos and fullyKnown flags
         // - handle setOuterClass(null) => move innerclass to toplevel
         // - remove this exception from the signature ;)
-        throw new AppInfoException("Not yet implemented!");
+        throw new UnsupportedOperationException("Not yet implemented!");
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -763,11 +805,24 @@ public final class ClassInfo extends MemberInfo {
         return getPackageName().equals(classInfo.getPackageName());
     }
 
+    /**
+     * Check if this class inherits the given member.
+     * If member is a class, it is only inherited if it is a member inner class of a
+     * superclass of this class.
+     *
+     * @param member the member to inherit.
+     * @return true if this class inherits it.
+     */
     public boolean inherits(MemberInfo member) {
 
         ClassInfo cls;
         if ( member instanceof ClassInfo ) {
-            cls = ((ClassInfo)member).getEnclosingSuperClass(this);
+            ClassInfo innerClass = (ClassInfo) member;
+            // only member inner classes are inherited
+            if ( !innerClass.isInnerclass() ) {
+                return false;
+            }
+            cls = innerClass.getEnclosingSuperClassOf(this, true);
         } else {
             cls = member.getClassInfo();
         }
@@ -872,7 +927,7 @@ public final class ClassInfo extends MemberInfo {
     public Set<MethodInfo> getMethodByName(String name) {
         Set<MethodInfo> mList = new HashSet<MethodInfo>();
         for (MethodInfo m : methods.values()) {
-            if (m.getName().equals(name)) {
+            if (m.getSimpleName().equals(name)) {
                 mList.add(m);
             }
         }
@@ -1311,27 +1366,11 @@ public final class ClassInfo extends MemberInfo {
         }
 
         // set the outer class
-        String[] outer = getOuterClassNames();
-        if (outer != null && outer.length > 0 ) {
-            outerClass = AppInfo.getSingleton().getClassInfo(outer[outer.length-1]);
-        }
+        outerClass = getOuterClassRef().getClassInfo();
         if ( outerClass != null ) {
             outerClass.innerClasses.add(this);
         }
 
-        // For non-member inner classes, the above getOuterClassNames returns an empty array,
-        // but they are returned by getDirectInnerClassNames, so we add this class as
-        // outer class to all non-member inner classes of this class
-        InnerClasses ic = getInnerClassesAttribute();
-        for (InnerClass i : ic.getInnerClasses()) {
-            if ( i.getOuterClassIndex() == 0 ) {
-                ClassInfo innerClass = AppInfo.getSingleton().getClassInfo(getInnerClassName(i));
-                if ( innerClass != null ) {
-                    innerClass.outerClass = this;
-                    innerClasses.add(innerClass);
-                }
-            }
-        }
     }
 
     @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})

@@ -20,6 +20,7 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.bcel.ParameterAnnotationAttribute;
 import com.jopdesign.common.code.CodeRepresentation;
 import com.jopdesign.common.graph.ClassHierarchyTraverser;
 import com.jopdesign.common.graph.ClassVisitor;
@@ -202,6 +203,16 @@ public final class MethodInfo extends ClassMemberInfo {
         methodGen.removeCodeAttributes();
     }
 
+    public ParameterAnnotationAttribute getParameterAnnotation(boolean visible) {
+        for (Attribute a : getAttributes()) {
+            if ( a instanceof ParameterAnnotationAttribute ) {
+                if ( ((ParameterAnnotationAttribute)a).isVisible() == visible ) {
+                    return (ParameterAnnotationAttribute) a;
+                }
+            }
+        }
+        return null;
+    }
     /**
      * Get a BCEL method for this methodInfo.
      *
@@ -298,7 +309,7 @@ public final class MethodInfo extends ClassMemberInfo {
 
     @Override
     public Signature getSignature() {
-        return new Signature(getClassInfo().getClassName(), getName(), getDescriptor());
+        return new Signature(getClassInfo().getClassName(), getSimpleName(), getDescriptor());
     }
 
     /**

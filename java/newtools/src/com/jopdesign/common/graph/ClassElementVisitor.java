@@ -24,7 +24,10 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.MemberInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.bcel.AnnotationAttribute;
 import com.jopdesign.common.bcel.CustomAttribute;
+import com.jopdesign.common.bcel.EnclosingMethod;
+import com.jopdesign.common.bcel.ParameterAnnotationAttribute;
 import org.apache.bcel.classfile.ConstantClass;
 import org.apache.bcel.classfile.ConstantDouble;
 import org.apache.bcel.classfile.ConstantFieldref;
@@ -96,31 +99,38 @@ public interface ClassElementVisitor extends ClassVisitor {
     void visitConstantUtf8(ClassInfo classInfo, ConstantUtf8 constant);
 
 
-    void visitInnerClass(ClassInfo member, InnerClass obj );
+    void visitInnerClass(ClassInfo classInfo, InnerClass obj );
 
-    void visitInnerClasses(ClassInfo member, InnerClasses obj );
+    void visitInnerClasses(ClassInfo classInfo, InnerClasses obj );
 
-    void visitSourceFile(ClassInfo member, SourceFile obj );
+    void visitSourceFile(ClassInfo classInfo, SourceFile obj );
 
-    void visitConstantValue(FieldInfo member, ConstantValue obj );
+    void visitEnclosingMethod(ClassInfo classInfo, EnclosingMethod obj );
 
-    void visitCodeException(MethodInfo member, CodeExceptionGen obj );
+    void visitConstantValue(FieldInfo fieldInfo, ConstantValue obj );
 
-    void visitLineNumber(MethodInfo member, LineNumberGen obj );
+    void visitCodeException(MethodInfo methodInfo, CodeExceptionGen obj );
 
-    void visitLocalVariable(MethodInfo member, LocalVariableGen obj );
+    void visitLineNumber(MethodInfo methodInfo, LineNumberGen obj );
 
-    void visitStackMap(MethodInfo member, StackMap obj );
+    void visitLocalVariable(MethodInfo methodInfo, LocalVariableGen obj );
 
-    void visitStackMapEntry(MethodInfo member, StackMapEntry obj );
+    void visitStackMap(MethodInfo methodInfo, StackMap obj );
 
-    void visitSignature(MemberInfo member, Signature obj );
+    void visitStackMapEntry(MethodInfo methodInfo, StackMapEntry obj );
 
-    void visitDeprecated(MemberInfo member, Deprecated obj );
+    void visitSignature(MemberInfo memberInfo, Signature obj );
 
-    void visitSynthetic(MemberInfo member, Synthetic obj );
+    void visitDeprecated(MemberInfo memberInfo, Deprecated obj );
 
-    void visitUnknown(MemberInfo member, Unknown obj, boolean isCodeAttribute );
+    void visitSynthetic(MemberInfo memberInfo, Synthetic obj );
 
-    void visitCustomAttribute(MemberInfo member, CustomAttribute obj, boolean isCodeAttribute );
+    void visitAnnotation(MemberInfo memberInfo, AnnotationAttribute obj );
+
+    void visitParameterAnnotation(MemberInfo memberInfo, ParameterAnnotationAttribute obj );
+
+    void visitUnknown(MemberInfo memberInfo, Unknown obj, boolean isCodeAttribute );
+
+    void visitCustomAttribute(MemberInfo memberInfo, CustomAttribute obj, boolean isCodeAttribute );
+
 }

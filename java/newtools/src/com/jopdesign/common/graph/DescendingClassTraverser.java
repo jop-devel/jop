@@ -24,7 +24,10 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.MemberInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.bcel.AnnotationAttribute;
 import com.jopdesign.common.bcel.CustomAttribute;
+import com.jopdesign.common.bcel.EnclosingMethod;
+import com.jopdesign.common.bcel.ParameterAnnotationAttribute;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import org.apache.bcel.classfile.Attribute;
@@ -121,8 +124,11 @@ public class DescendingClassTraverser implements ClassVisitor {
             if ( methodInfo != null ) return methodInfo;
             return fieldInfo;
         }
-        
-        
+
+        public ClassInfo getClassInfo() {
+            return classInfo;
+        }
+
         public void visitCode(Code obj) {
             logger.warn("Visiting Code attribute, but MethodInfo should not have one. Skipping.");
         }
@@ -335,7 +341,13 @@ public class DescendingClassTraverser implements ClassVisitor {
 
     private void visitAttributes(Attribute[] attributes) {
         for (Attribute a : attributes) {
-            if ( a instanceof CustomAttribute ) {
+            if ( a instanceof EnclosingMethod) {
+                visitor.visitEnclosingMethod(bcelVisitor.getClassInfo(), (EnclosingMethod) a);
+            } else if ( a instanceof AnnotationAttribute ) {
+                visitor.visitAnnotation(bcelVisitor.getMemberInfo(), (AnnotationAttribute) a);
+            } else if ( a instanceof ParameterAnnotationAttribute) {
+                visitor.visitParameterAnnotation(bcelVisitor.getMemberInfo(), (ParameterAnnotationAttribute) a);
+            } else if ( a instanceof CustomAttribute ) {
                 visitor.visitCustomAttribute(bcelVisitor.getMemberInfo(), (CustomAttribute) a, bcelVisitor.isCode());
             } else {
                 a.accept(bcelVisitor);

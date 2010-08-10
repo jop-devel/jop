@@ -112,11 +112,11 @@ public class ClassRef {
         return innerClass;
     }
 
-    public boolean isNonmemberInnerclass() {
+    public boolean isMemberInnerclass() {
         if ( classInfo != null ) {
-            return classInfo.isNonmemberInnerclass();
+            return classInfo.isMemberInnerclass();
         }
-        return outerClasses != null && outerClasses.length == 0;
+        return outerClasses != null && outerClasses.length > 0;
     }
 
     /**
