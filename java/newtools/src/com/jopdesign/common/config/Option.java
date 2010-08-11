@@ -237,9 +237,10 @@ public abstract class Option<T> {
             // replace placeholder with value
             String key = s.substring(p1+2, p2);
 
-            // try to use the option if available to get default value from option.
+            // try to use the option if available to get default value from option or environment.
+            // We do NOT want to use config.getOption(key) here to avoid infinite recursion
             Option<?> opt = config.getOptions().getOptionSpec(key);
-            String val = config.getValue(key);
+            String val = config.getValue(key,System.getenv(key));
             if ( val == null && opt != null ) {
                 Object o = opt.getDefaultValue();
                 val = o != null ? o.toString() : null;

@@ -546,43 +546,6 @@ public final class AppInfo {
         return new ClassRef(className, isInterface);
     }
 
-    /**
-     * Get a reference to a class.
-     *
-     * @param className the name of the class.
-     * @param outerClasses a list of outer classnames, or null if the class is not an inner class.
-     * @return a reference to a class.
-     */
-    public ClassRef getClassRef(String className, String[] outerClasses) {
-        ClassInfo cls = classes.get(className);
-        if ( cls != null ) {
-            return cls.getClassRef();
-        }
-
-        return new ClassRef(className, outerClasses);
-    }
-
-    /**
-     * Get a reference to a class.
-     *
-     * @param className the name of the class.
-     * @param isInterface true if the class is an interface.
-     * @param outerClasses a list of outer classnames, or null if the class is not an inner class.
-     * @return a reference to a class.
-     */
-    public ClassRef getClassRef(String className, boolean isInterface, String[] outerClasses) {
-        ClassInfo cls = classes.get(className);
-        if ( cls != null ) {
-            if ( cls.isInterface() != isInterface ) {
-                throw new ClassFormatException("Class '"+className+"' interface flag does not match.");
-            }
-            return cls.getClassRef();
-        }
-
-        return new ClassRef(className, isInterface, outerClasses);
-    }
-
-
     public MethodRef getMethodRef(Signature signature) {
         ClassInfo cls = classes.get(signature.getClassName());
         ClassRef clsRef;

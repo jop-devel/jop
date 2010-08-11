@@ -30,6 +30,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * A class for RuntimeVisibleAnnotations and RuntimeInvisibleAnnotations, as defined in
+ * http://java.sun.com/docs/books/jvms/second_edition/ClassFileFormat-Java5.pdf
+ * including support for custom atomic attribute.
+ *
  * @author Peter Hilber (peter@hilber.name)
  * @author Stefan Hepp (stefan@stefant.org)
  */

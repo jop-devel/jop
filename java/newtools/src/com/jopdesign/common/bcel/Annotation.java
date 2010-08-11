@@ -30,6 +30,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Class for an annotation entry in an annotation attribute.
+ * 
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class Annotation {

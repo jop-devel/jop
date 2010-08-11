@@ -119,7 +119,7 @@ public class ClassHierarchyTraverser {
             }
         }
         if ( visitInnerClasses ) {
-            for (ClassInfo c : classInfo.getDirectInnerClasses()) {
+            for (ClassInfo c : classInfo.getDirectNestedClasses()) {
                 traverseDown(c);
             }
         }
@@ -149,7 +149,7 @@ public class ClassHierarchyTraverser {
         }
 
         if (visitInnerClasses) {
-            ClassInfo outerClass = classInfo.getOuterClassInfo();
+            ClassInfo outerClass = classInfo.getEnclosingClassInfo();
             if ( outerClass != null ) {
                 traverseUp(outerClass);
             }
