@@ -27,6 +27,8 @@ import org.apache.bcel.classfile.Field;
 import org.apache.bcel.generic.FieldGen;
 
 /**
+ * Class for a field member of a ClassInfo.
+ *  
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public final class FieldInfo extends ClassMemberInfo {
