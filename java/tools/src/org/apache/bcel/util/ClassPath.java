@@ -1,18 +1,21 @@
 /*
- * Copyright  2000-2004 The Apache Software Foundation
+ * This file is part of JOP, the Java Optimized Processor
+ *   see <http://www.jopdesign.com/>
  *
- *  Licensed under the Apache License, Version 2.0 (the "License"); 
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Copyright (C) 2010, Stefan Hepp (stefan@stefant.org).
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License. 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.apache.bcel.util;
 
@@ -35,9 +38,17 @@ import java.util.zip.ZipFile;
  * Responsible for loading (class) files from the CLASSPATH. Inspired by
  * sun.tools.ClassPath.
  *
+ * <p>
+ * Modifications to the original BCEL class:
+ * <ul><li>MS FIXED: don't lookup first in current JVM class loader.</li>
+ *
+ * </ul>
+ * </p>
+ *
  * @version $Id: ClassPath.java 386056 2006-03-15 11:31:56Z tcurdt $
  * @author  <A HREF="mailto:m.dahm@gmx.de">M. Dahm</A>
  */
+@SuppressWarnings({"ALL"})
 public class ClassPath implements Serializable {
 
     public static final ClassPath SYSTEM_CLASS_PATH = new ClassPath();
@@ -168,7 +179,7 @@ public class ClassPath implements Serializable {
 
     /**
      * Return stream for class or resource on CLASSPATH.
-     * 
+     *
      * MS FIXED: don't lookup first in current JVM class loader.
      *
      * @param name fully qualified file name, e.g. java/lang/String
@@ -176,14 +187,14 @@ public class ClassPath implements Serializable {
      * @return input stream for file on class path
      */
     public InputStream getInputStream( String name, String suffix ) throws IOException {
-        InputStream is = null;
+//        InputStream is = null;
 //        try {
 //            is = getClass().getClassLoader().getResourceAsStream(name + suffix);
 //        } catch (Exception e) {
 //        }
-        if (is != null) {
-            return is;
-        }
+//        if (is != null) {
+//            return is;
+//        }
         return getClassFile(name, suffix).getInputStream();
     }
 
