@@ -418,6 +418,7 @@ public final class ClassInfo extends MemberInfo {
     }
 
     public boolean isAnonymousInnerClass() {
+        if (!aNestedClass) return false;
         InnerClass i = getInnerClassAttribute(getClassName());
         return i != null && i.getInnerNameIndex() == 0;
     }
@@ -427,6 +428,7 @@ public final class ClassInfo extends MemberInfo {
      * @return true if this class is not a member of a class.
      */
     public boolean isLocalInnerClass() {
+        if (!aNestedClass) return false;
         InnerClass i = getInnerClassAttribute(getClassName());
         return i != null && i.getOuterClassIndex() == 0;
     }
@@ -625,7 +627,7 @@ public final class ClassInfo extends MemberInfo {
      */
     /*
     public void setEnclosingClass(ClassInfo enclosingClass, String innerName) throws AppInfoException {
-        // TODO implement setOuterClass(), if needed. But this is not a simple task.
+        // implement setOuterClass(), if needed. But this is not a simple task.
         // need to
         // - remove references to old outerClass from InnerClasses of this and all old outer classes
         // - create InnerClasses attribute if none exists
@@ -762,8 +764,10 @@ public final class ClassInfo extends MemberInfo {
 
     /**
      * Check if the given class is the same as this class or a subclass of this class.
-     * This does not check the implemented/extended interfaces.
+     * This does not check the implemented interfaces. For interfaces this will always return
+     * false, even if the given class implements the given interface.
      *
+     * @see #isInstanceOf(ClassInfo)
      * @see #isExtensionOf(ClassInfo)
      * @param classInfo the possible subclass of this class.
      * @return true if the given class is this class or a superclass of this class.
@@ -784,7 +788,8 @@ public final class ClassInfo extends MemberInfo {
      * check if the given class is a superclass, if this is an interface, check if the given
      * class is an interface and if this is an extension of the given interface.
      *
-     * @see #isInstanceOf(ClassInfo) 
+     * @see #isInstanceOf(ClassInfo)
+     * @see #isImplementationOf(ClassInfo)
      * @param classInfo the class to check.
      * @return true if the class is an extension of this class.
      */
@@ -824,7 +829,7 @@ public final class ClassInfo extends MemberInfo {
      * interface.
      *
      * <p>Note that this is slightly different from {@code isExtensionOf() || isImplementationOf()}, because
-     * an interface is an instance of java.lang.Object, but neither implements or extends java.lang.Object.</p>
+     * an interface is an instance of java.lang.Object, but it neither implements or extends java.lang.Object.</p>
      *
      * @see #isExtensionOf(ClassInfo)
      * @param classInfo the super class to check.
@@ -863,77 +868,111 @@ public final class ClassInfo extends MemberInfo {
     }
 
     /**
-     * Check if this class inherits the given member.
-     * If member is a class, it is only inherited if it is a member inner class of a
-     * superclass of this class.
-     *
-     * @param member the member to inherit.
-     * @return true if this class inherits it.
+     * Check if this class inherits the given nested class.
+     * @param classInfo the nested class to check.
+     * @return true if the class is inherited by this class.
      */
-    public boolean inherits(MemberInfo member) {
-
-        ClassInfo cls;
-        if ( member instanceof ClassInfo ) {
-            ClassInfo innerClass = (ClassInfo) member;
-            // only member inner classes are inherited
-            if ( !innerClass.isNestedClass() ) {
-                return false;
-            }
-            cls = innerClass.getEnclosingSuperClassOf(this, true);
-        } else {
-            cls = member.getClassInfo();
-        }
-        if ( cls == null ) {
+    public boolean inherits(ClassInfo classInfo) {
+        ClassInfo superClass = classInfo.getEnclosingSuperClassOf(this, true);
+        if (superClass == null) {
             return false;
         }
-
-        return canAccess(cls, member.getAccessType());
+        // canAccess checks if all enclosing classes can be accessed too
+        return canAccess(classInfo);
     }
 
     /**
-     * Check if the given member can be accessed by this class.
+     * Check if this class inherits the given class member.
      *
-     * @param member the member to access.
-     * @return true if this class is allowed to access the member.
+     * @param member the member to inherit.
+     * @param checkInstanceOf if true, check if the member is defined in a superclass or interface of this class,
+     *        else assume that this has already been checked.
+     * @return true if this class inherits it.
      */
-    public boolean canAccess(MemberInfo member) {
-        if ( member instanceof ClassInfo ) {
-            return canAccess((ClassInfo) member);
+    public boolean inherits(ClassMemberInfo member, boolean checkInstanceOf) {
+        ClassInfo cls = member.getClassInfo();
+        if ( checkInstanceOf && !isInstanceOf(cls) ) {
+            return false;
         }
-        return canAccess(member.getClassInfo(), member.getAccessType());
+        return canAccess(cls, member.getAccessType());
     }
 
     public boolean canAccess(ClassInfo classInfo) {
 
-        if (classInfo.isNestedClass()) {
-            // now this is where the fun begins ..
-            
+        if (!classInfo.isNestedClass()) {
+            // Toplevel classes can only be public or package visible
+            switch (classInfo.getAccessType()) {
+                case ACC_PUBLIC: return true;
+                case ACC_PACKAGE: return hasSamePackage(classInfo);
+                default:
+                    throw new JavaClassFormatError("Invalid access type "+classInfo.getAccessType()
+                            +" of toplevel class "+getClassName());
+            }
         }
 
-        switch (classInfo.getAccessType()) {
-            case ACC_PUBLIC: break;
-            case ACC_PROTECTED:
-                // TODO implement
+        // this is where the fun begins .. check nested class access
 
-                // fallthrough
-            case ACC_PACKAGE:
-                if ( !classInfo.hasSamePackage(this) ) {
-                    return false;
-                }
-                break;
-            case ACC_PRIVATE:
-                // private class can only be accessed by an outer class
-                if ( !classInfo.isNestedClassOf(this, true) ) {
-                    return false;
-                }
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid accesstype "+classInfo.getAccessType()+" of class "+
-                        classInfo.getClassName());
+        // check if we inherit from an enclosing class
+        ClassInfo superClass = classInfo.getEnclosingSuperClassOf(this, false);
+        ClassInfo enclosing = classInfo;
+
+        while (enclosing != null) {
+
+            if ( enclosing.isLocalInnerClass() ) {
+                // we can only access (the nested member classes of) a local class if we are the
+                // direct enclosing class of the local class
+                return this.equals(enclosing.getEnclosingClassInfo());
+            }
+
+            switch (enclosing.getAccessType()) {
+                case ACC_PUBLIC: break;
+                case ACC_PROTECTED:
+                    // if we inherit from an enclosing class, we can access protected nested classes
+                    if ( superClass != null ) { break; }
+                    // else we have only package access
+                case ACC_PACKAGE:
+                    if (!hasSamePackage(enclosing)) {
+                        return false;
+                    }
+                    break;
+                case ACC_PRIVATE:
+                    // Can only access private nested classes if this class encloses it
+                    if ( superClass == null || !superClass.equals(this) ) {
+                        return false;
+                    }
+                    break;
+                default:
+                    throw new JavaClassFormatError("Invalid access type "+classInfo.getAccessType()
+                            +" of class "+getClassName());
+            }
+
+            enclosing = enclosing.getEnclosingClassInfo();
+
+            if ( superClass != null && superClass.equals(enclosing) ) {
+                // we inherit from this enclosing class, and have been able to access
+                // all 'nested enclosing classes of the class to test, so we are done!
+                return true;
+            }
         }
-        return false;
+        if ( superClass != null ) {
+            // now this is funny .. we somehow missed the superClass. Should never happen
+            throw new JavaClassFormatError("Reached toplevel class of "+classInfo.getClassName()
+                    +" but we never encountered the expected enclosing class " +superClass.getClassName());
+        }
+        // successfully tested every enclosing class
+        return true;
     }
 
+    /**
+     * Check if this class has access to the given class member.
+     *
+     * @param memberInfo the member to access
+     * @return true if this class can access the method or field.
+     */
+    public boolean canAccess(ClassMemberInfo memberInfo) {
+        return canAccess(memberInfo.getClassInfo(), memberInfo.getAccessType());
+    }
+    
     /**
      * Check if a member of another class with the given accessType can be accessed by this class.
      *
@@ -952,7 +991,7 @@ public final class ClassInfo extends MemberInfo {
             case ACC_PUBLIC:
                 return true;
             case ACC_PROTECTED:
-                if ( cls.isSuperclassOf(this) ) {
+                if ( isInstanceOf(cls) ) {
                     return true;
                 }
                 // fallthrough
@@ -1016,15 +1055,15 @@ public final class ClassInfo extends MemberInfo {
      * If no such method is found, look in the interfaces too and return the first found method.
      * 
      * @param signature the signature of the method to find. The classname in the signature is ignored.
-     * @param ignoreAccess if true, also return non-accessible or static methods in superclasses.
+     * @param checkAccess if false, also return non-accessible or static methods in superclasses.
      * @return the MethodInfo with the given signature in this class or its extended classes, or null if not found.
      */
-    public MethodInfo getMethodInfoInherited(Signature signature, boolean ignoreAccess) {
+    public MethodInfo getMethodInfoInherited(Signature signature, boolean checkAccess) {
         ClassInfo cls = this;
         while ( cls != null ) {
             MethodInfo m = cls.getMethodInfo(signature);
             if ( m != null ) {
-                if ( ignoreAccess || inherits(m) ) {
+                if ( !checkAccess || inherits(m, false) ) {
                     return m;
                 } else {
                     // if we find a method but we do not override this method, no need to look in
@@ -1037,12 +1076,9 @@ public final class ClassInfo extends MemberInfo {
 
         // not very nice, but works: get all ancestors, look in interfaces
         for (ClassInfo i : getAncestors()) {
-            if ( !i.isInterface() ) {
-                continue;
-            }
             MethodInfo m = i.getMethodInfo(signature);
             if ( m != null ) {
-                // we always inherit from interfaces
+                // we always inherit from interfaces, no need to check
                 return m;
             }
         }
@@ -1050,12 +1086,12 @@ public final class ClassInfo extends MemberInfo {
         return null;
     }
 
-    public FieldInfo getFieldInfoInherited(String name, boolean ignoreAccess) {
+    public FieldInfo getFieldInfoInherited(String name, boolean checkAccess) {
         ClassInfo cls = this;
         while ( cls != null ) {
             FieldInfo f = cls.getFieldInfo(name);
             if ( f != null ) {
-                if ( ignoreAccess || inherits(f) ) {
+                if ( !checkAccess || inherits(f,false) ) {
                     return f;
                 } else {
                     break;
@@ -1066,9 +1102,6 @@ public final class ClassInfo extends MemberInfo {
 
         // not very nice, but works: get all ancestors, look in interfaces
         for (ClassInfo i : getAncestors()) {
-            if ( !i.isInterface() ) {
-                continue;
-            }
             FieldInfo f = i.getFieldInfo(name);
             if ( f != null ) {
                 return f;

@@ -54,6 +54,8 @@ public abstract class ClassMemberInfo extends MemberInfo {
 
     public abstract Descriptor getDescriptor();
 
+    public abstract String getMemberSignature();
+
     @Override
     public Attribute[] getAttributes() {
         return classMember.getAttributes();
@@ -67,6 +69,20 @@ public abstract class ClassMemberInfo extends MemberInfo {
     @Override
     public void removeAttribute(Attribute a) {
         classMember.removeAttribute(a);
+    }
+
+    @Override
+    public int hashCode() {
+        return getMemberSignature().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if ( !(obj instanceof ClassMemberInfo) ) {
+            return false;
+        }
+        return ((ClassMemberInfo)obj).getClassInfo().equals(getClassInfo()) &&
+               ((ClassMemberInfo)obj).getMemberSignature().equals(getMemberSignature());
     }
 
 }

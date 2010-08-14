@@ -303,6 +303,7 @@ public final class MethodInfo extends ClassMemberInfo {
         return new MethodRef(this);
     }
 
+    @Override
     public String getMemberSignature() {
         return methodGen.getName() + methodGen.getSignature();
     }
@@ -313,39 +314,64 @@ public final class MethodInfo extends ClassMemberInfo {
     }
 
     /**
-     * Check if this method overrides a given method.
+     * Check if this method is the same as or overrides a given method.
      * 
      * @param superMethod the superMethod to check.
+     * @param checkSignature if true, check if the given method has the same signature and is defined in a subclass
+     *  of this method's class.
      * @return true if this method overrides the given method and can access the method.
      */
-    public boolean overrides(MethodInfo superMethod) {
-        if ( !getMemberSignature().equals(superMethod.getMemberSignature()) ) {
+    public boolean overrides(MethodInfo superMethod, boolean checkSignature) {
+
+        // A static method may hide a static or instance method, but does not override it.
+        if ( isStatic() ) {
             return false;
         }
-        if ( !getClassInfo().isInstanceOf(superMethod.getClassInfo()) ) {
-            return false;
+        if ( superMethod.isStatic() ) {
+            logger.warn("Instance method " +getSignature()+" overrides static method "+superMethod.getSignature());
         }
-        return checkOverrides(superMethod);
+
+        if (checkSignature) {
+            if ( !getMemberSignature().equals(superMethod.getMemberSignature()) ) {
+                return false;
+            }
+            if ( !getClassInfo().isInstanceOf(superMethod.getClassInfo()) ) {
+                return false;
+            }
+        }
+        
+        if ( superMethod.equals(this) ) {
+            return true;
+        }
+
+        return getClassInfo().canAccess(superMethod);
     }
 
-    public MethodInfo getSuperMethod(boolean ignoreAccess) {
+    /**
+     * Get the super method for this method, if there is any.
+     *
+     * @param checkAccess if false, also return hidden methods and methods which cannot be accessed by this method's class.
+     * @return the super method or null if none found.
+     */
+    public MethodInfo getSuperMethod(boolean checkAccess) {
         
-        if ( !ignoreAccess && (isPrivate() || isStatic()) ) {
+        if ( checkAccess && (isPrivate() || isStatic()) ) {
             return null;
         }
 
         ClassInfo superClass = getClassInfo().getSuperClassInfo();
         if ( superClass != null ) {
-            MethodInfo inherited = superClass.getMethodInfoInherited(getSignature(), ignoreAccess);
-            return inherited;
+            MethodInfo inherited = superClass.getMethodInfoInherited(getSignature(), checkAccess);
+            return checkAccess || overrides(inherited, false) ? inherited : null;
         } else {
             return null;
         }
     }
 
     /**
-     * Get all implemented methods defined in all interfaces implemented by this method's class.
-     * @return a list of all implemented interface methods.
+     * Get all methods definitions from all interfaces implemented by this method.
+     *
+     * @return a list of all interface methods implemented by this method.
      */
     public Collection<MethodInfo> getInterfaceMethods() {
         final List<MethodInfo> ifMethods = new LinkedList<MethodInfo>();
@@ -374,15 +400,16 @@ public final class MethodInfo extends ClassMemberInfo {
 
     /**
      * Find all methods which override/implement this method.
+     * Instance method are overridden by other instance methods and hidden by static methods.
      * 
-     * @param ignoreAccess if true, find methods with the same signature in subclasses even if they
+     * @param checkAccess if false, find methods with the same signature in subclasses even if they
      *        do not override this method (i.e. private or static methods).
      * @return a list of all overriding methods.
      */
-    public Collection<MethodInfo> getOverriders(final boolean ignoreAccess) {
+    public Collection<MethodInfo> getOverriders(final boolean checkAccess) {
         final List<MethodInfo> overriders = new LinkedList<MethodInfo>();
 
-        if ((isPrivate() || isStatic()) && !ignoreAccess) {
+        if (checkAccess && (isPrivate() || isStatic())) {
             return overriders;
         }
 
@@ -400,7 +427,7 @@ public final class MethodInfo extends ClassMemberInfo {
 
                     // If a subclass contains a static method or a package visible method with same
                     // signature, but is in a different package, it does NOT override this method.
-                    if ( ignoreAccess || overrider.checkOverrides(MethodInfo.this) ) {
+                    if ( !checkAccess || overrider.overrides(MethodInfo.this, false) ) {
                         overriders.add(overrider);
                     }
 
@@ -418,18 +445,18 @@ public final class MethodInfo extends ClassMemberInfo {
 
     /**
      * Get all non-abstract methods (including this method if it is not abstract) overriding this method.
-     * @param ignoreAccess if true, find all non-abstract methods with same signature even if they do not
+     * @param checkAccess if false, find all non-abstract methods with same signature even if they do not
      *        override this method.
      * @return a collection of all implementations of this method.
      */
-    public Collection<MethodInfo> getImplementations(final boolean ignoreAccess) {
+    public Collection<MethodInfo> getImplementations(final boolean checkAccess) {
         final List<MethodInfo> implementations = new LinkedList<MethodInfo>();
 
         if (!isAbstract()) {
             implementations.add(this);
         }
 
-        if ( (isPrivate() || isStatic()) && !ignoreAccess) {
+        if (checkAccess && (isPrivate() || isStatic())) {
             return implementations;
         }
 
@@ -444,7 +471,7 @@ public final class MethodInfo extends ClassMemberInfo {
                                 classInfo.getClassName()+" overriding non-private method in "+
                                 getClassInfo().getClassName());
                     }
-                    if ( !m.isAbstract() && (ignoreAccess || m.checkOverrides(MethodInfo.this)) ) {
+                    if ( !m.isAbstract() && (!checkAccess || m.overrides(MethodInfo.this,false)) ) {
                         implementations.add(m);
                     }
                 }
@@ -460,36 +487,12 @@ public final class MethodInfo extends ClassMemberInfo {
         return implementations;
     }
 
-    @Override
-    public int hashCode() {
-        return getMemberSignature().hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if ( !(obj instanceof MethodInfo) ) {
-            return false;
-        }
-        return ((MethodInfo)obj).getClassInfo().equals(getClassInfo()) &&
-               ((MethodInfo)obj).getMemberSignature().equals(getMemberSignature());
-    }
-
     /**
      * Should only be used by ClassInfo.
      * @return the internal methodGen.                           
      */
     protected MethodGen getMethodGen() {
         return methodGen;
-    }
-
-    protected boolean checkOverrides(MethodInfo superMethod) {
-        if ( superMethod.equals(this) ) {
-            return true;
-        }
-        if ( isStatic() || superMethod.isStatic() ) {
-            return false;
-        }
-        return getClassInfo().canAccess(superMethod);
     }
 
 }

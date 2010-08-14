@@ -78,6 +78,11 @@ public final class FieldInfo extends ClassMemberInfo {
         return new Descriptor(getType());
     }
 
+    @Override
+    public String getMemberSignature() {
+        return fieldGen.getName();
+    }
+
     public FieldRef getFieldRef() {
         return new FieldRef(this);
     }
