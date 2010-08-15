@@ -21,6 +21,8 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.bcel.AnnotationAttribute;
+import com.jopdesign.common.misc.JavaClassFormatError;
+import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.AccessFlags;
@@ -258,6 +260,125 @@ public abstract class MemberInfo {
     public abstract void addAttribute(Attribute a);
 
     public abstract void removeAttribute(Attribute a);
+
+    /**
+     * Check if this class or class member can access the given class.
+     * Note that only methods are able to access local classes.
+     *
+     * @param classInfo the class to access.
+     * @return true if this member is able to access the class.
+     */
+    public boolean canAccess(ClassInfo classInfo) {
+
+        ClassInfo thisClass = getClassInfo();
+
+        if (!classInfo.isNestedClass()) {
+            // Toplevel classes can only be public or package visible
+            switch (classInfo.getAccessType()) {
+                case ACC_PUBLIC: return true;
+                case ACC_PACKAGE: return thisClass.hasSamePackage(classInfo);
+                default:
+                    throw new JavaClassFormatError("Invalid access type "+classInfo.getAccessType()
+                            +" of toplevel class "+thisClass.getClassName());
+            }
+        }
+
+        // this is where the fun begins .. check nested class access
+
+        // check if we inherit from an enclosing class
+        ClassInfo superClass = classInfo.getEnclosingSuperClassOf(thisClass, false);
+        ClassInfo enclosing = classInfo;
+
+        while (enclosing != null) {
+
+            if ( enclosing.isLocalInnerClass() ) {
+                // we can only access (the nested member classes of) a local class if we are the
+                // direct enclosing method of the local class
+                MethodRef methodRef = enclosing.getEnclosingMethodRef();
+                return methodRef != null && this.equals(methodRef.getMethodInfo());
+            }
+
+            switch (enclosing.getAccessType()) {
+                case ACC_PUBLIC: break;
+                case ACC_PROTECTED:
+                    // if we inherit from an enclosing class, we can access protected nested classes
+                    if ( superClass != null ) { break; }
+                    // else we have only package access
+                case ACC_PACKAGE:
+                    if (!thisClass.hasSamePackage(enclosing)) {
+                        return false;
+                    }
+                    break;
+                case ACC_PRIVATE:
+                    // Can only access private nested classes if this class encloses it
+                    if ( superClass == null || !superClass.equals(this) ) {
+                        return false;
+                    }
+                    break;
+                default:
+                    throw new JavaClassFormatError("Invalid access type "+classInfo.getAccessType()
+                            +" of class "+thisClass.getClassName());
+            }
+
+            enclosing = enclosing.getEnclosingClassInfo();
+
+            if ( superClass != null && superClass.equals(enclosing) ) {
+                // we inherit from this enclosing class, and have been able to access
+                // all 'nested enclosing classes of the class to test, so we are done!
+                return true;
+            }
+        }
+        if ( superClass != null ) {
+            // now this is funny .. we somehow missed the superClass. Should never happen
+            throw new JavaClassFormatError("Reached toplevel class of "+classInfo.getClassName()
+                    +" but we never encountered the expected enclosing class " +superClass.getClassName());
+        }
+        // successfully tested every enclosing class
+        return true;
+    }
+
+    /**
+     * Check if this class or class member has access to the given class member.
+     * Note that only methods are able to access local classes.
+     *
+     * @param memberInfo the member to access
+     * @return true if this class can access the method or field.
+     */
+    public boolean canAccess(ClassMemberInfo memberInfo) {
+        return canAccess(memberInfo.getClassInfo(), memberInfo.getAccessType());
+    }
+
+    /**
+     * Check if a member of another class with the given accessType can be accessed by this class or this
+     * class member.
+     * Note that only methods are able to access local classes.
+     *
+     * @param cls the class containing the member to check.
+     * @param accessType the accessType of the member to check, as returned by {@link MemberInfo#getAccessType()}.
+     * @return true if this class is allowed to access members of the given accessType of the given class.
+     */
+    public boolean canAccess(ClassInfo cls, int accessType) {
+        // first, check if we can access the class itself
+        if ( !canAccess(cls) ) {
+            return false;
+        }
+
+        // now check if we can access the member
+        switch (accessType) {
+            case ACC_PUBLIC:
+                return true;
+            case ACC_PROTECTED:
+                if ( getClassInfo().isInstanceOf(cls) ) {
+                    return true;
+                }
+                // fallthrough
+            case ACC_PACKAGE:
+                return getClassInfo().hasSamePackage(cls);
+            case ACC_PRIVATE:
+                return this.equals(cls) || cls.isNestedClassOf(getClassInfo(), true);
+        }
+        return false;
+    }
 
 
 

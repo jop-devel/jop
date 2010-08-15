@@ -487,6 +487,8 @@ public final class MethodInfo extends ClassMemberInfo {
         return implementations;
     }
 
+    
+
     /**
      * Should only be used by ClassInfo.
      * @return the internal methodGen.                           

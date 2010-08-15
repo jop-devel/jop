@@ -42,6 +42,7 @@ import org.apache.bcel.classfile.InnerClass;
 import org.apache.bcel.classfile.InnerClasses;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
+import org.apache.bcel.classfile.SourceFile;
 import org.apache.bcel.generic.ClassGen;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.FieldGen;
@@ -200,6 +201,10 @@ public final class ClassInfo extends MemberInfo {
         return classGen.isEnum();
     }
 
+    //////////////////////////////////////////////////////////////////////////////
+    // Attributes access and lookups
+    //////////////////////////////////////////////////////////////////////////////
+
     @Override
     public Attribute[] getAttributes() {
         return classGen.getAttributes();
@@ -213,6 +218,61 @@ public final class ClassInfo extends MemberInfo {
     @Override
     public void removeAttribute(Attribute a) {
         classGen.removeAttribute(a);
+    }
+
+    public String getSourceFileName() {
+        for (Attribute a : getAttributes()) {
+            if ( a instanceof SourceFile ) {
+                return ((SourceFile)a).getSourceFileName();
+            }
+        }
+        return null;
+    }
+    public InnerClasses getInnerClassesAttribute() {
+        // we could keep a reference to the attribute in the class, but this should be sufficiently fast.
+        for (Attribute a : classGen.getAttributes()) {
+            if ( a instanceof InnerClasses ) {
+                return (InnerClasses) a;
+            }
+        }
+        return null;
+    }
+
+    public InnerClass getInnerClassAttribute(String innerClassName) {
+        InnerClasses ic = getInnerClassesAttribute();
+        if ( ic != null ) {
+            for (InnerClass i : ic.getInnerClasses()) {
+                if (getInnerClassName(i).equals(innerClassName)) {
+                    return i;
+                }
+            }
+        }
+        return null;
+    }
+
+    public String getInnerClassName(InnerClass i) {
+        return ((ConstantClassInfo) getConstantInfo(i.getInnerClassIndex())).getClassName();
+    }
+
+    public String getOuterClassName(InnerClass i) {
+        int index = i.getOuterClassIndex();
+        if ( index == 0 ) {
+            return null;
+        }
+        return ((ConstantClassInfo) getConstantInfo(index)).getClassName();
+    }
+
+    /**
+     * Get the member name of a class if it is a non-anonymous class.
+     * @param i the attribute corresponding to the nested class.
+     * @return the member name of the nested class or null if anonymous.
+     */
+    public String getInnerName(InnerClass i) {
+        int index = i.getInnerNameIndex();
+        if ( index == 0 ) {
+            return null;
+        }
+        return ((ConstantUtf8)getConstant(index)).getBytes();
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -330,7 +390,8 @@ public final class ClassInfo extends MemberInfo {
      *
      * <p>This does not check if this is a valid operation, i.e. you need to check
      * for yourself if all methods are abstract and public and this class is not a superclass of a
-     * normal class if you make this class an interface, ...</p>
+     * normal class if you make this class an interface, ... This also does not update the
+     * class hierarchy, you should call {@link AppInfo#reloadClassHierarchy()} later.</p>
      *
      * @param val the new value of the interface flag.
      */
@@ -586,11 +647,11 @@ public final class ClassInfo extends MemberInfo {
 
     /**
      * Find the class enclosing this class which is the same as or a superclass or an interface of
-     * the given class. This does not check if this class is a superclass of the given class.
+     * the given class. If the given class is a subclass of this class, this returns null.
      *
      * @param classInfo the (sub)class containing this class.
      * @param membersOnly if true, only check outer classes of member inner classes.
-     * @return the found class or null if none found.
+     * @return the found enclosing class or null if none found.
      */
     public ClassInfo getEnclosingSuperClassOf(ClassInfo classInfo, boolean membersOnly) {
         if ( membersOnly && isLocalInnerClass() ) {
@@ -645,48 +706,6 @@ public final class ClassInfo extends MemberInfo {
     public void setEnclosingMethod(MethodInfo methodInfo) {
     }
     */
-
-    public InnerClasses getInnerClassesAttribute() {
-        // we could keep a reference to the attribute in the class, but this should be sufficiently fast.
-        for (Attribute a : classGen.getAttributes()) {
-            if ( a instanceof InnerClasses ) {
-                return (InnerClasses) a;
-            }
-        }
-        return null;
-    }
-
-    public InnerClass getInnerClassAttribute(String innerClassName) {
-        InnerClasses ic = getInnerClassesAttribute();
-        if ( ic != null ) {
-            for (InnerClass i : ic.getInnerClasses()) {
-                if (getInnerClassName(i).equals(innerClassName)) {
-                    return i;
-                }
-            }
-        }
-        return null;
-    }
-
-    public String getInnerClassName(InnerClass i) {
-        return ((ConstantClassInfo) getConstantInfo(i.getInnerClassIndex())).getClassName();
-    }
-
-    public String getOuterClassName(InnerClass i) {
-        int index = i.getOuterClassIndex();
-        if ( index == 0 ) {
-            return null;
-        }
-        return ((ConstantClassInfo) getConstantInfo(index)).getClassName();
-    }
-
-    public String getInnerName(InnerClass i) {
-        int index = i.getInnerNameIndex();
-        if ( index == 0 ) {
-            return null;
-        }
-        return ((ConstantUtf8)getConstant(index)).getBytes();
-    }
 
     //////////////////////////////////////////////////////////////////////////////
     // Class-hierarchy lookups and helpers
@@ -897,111 +916,6 @@ public final class ClassInfo extends MemberInfo {
         return canAccess(cls, member.getAccessType());
     }
 
-    public boolean canAccess(ClassInfo classInfo) {
-
-        if (!classInfo.isNestedClass()) {
-            // Toplevel classes can only be public or package visible
-            switch (classInfo.getAccessType()) {
-                case ACC_PUBLIC: return true;
-                case ACC_PACKAGE: return hasSamePackage(classInfo);
-                default:
-                    throw new JavaClassFormatError("Invalid access type "+classInfo.getAccessType()
-                            +" of toplevel class "+getClassName());
-            }
-        }
-
-        // this is where the fun begins .. check nested class access
-
-        // check if we inherit from an enclosing class
-        ClassInfo superClass = classInfo.getEnclosingSuperClassOf(this, false);
-        ClassInfo enclosing = classInfo;
-
-        while (enclosing != null) {
-
-            if ( enclosing.isLocalInnerClass() ) {
-                // we can only access (the nested member classes of) a local class if we are the
-                // direct enclosing class of the local class
-                return this.equals(enclosing.getEnclosingClassInfo());
-            }
-
-            switch (enclosing.getAccessType()) {
-                case ACC_PUBLIC: break;
-                case ACC_PROTECTED:
-                    // if we inherit from an enclosing class, we can access protected nested classes
-                    if ( superClass != null ) { break; }
-                    // else we have only package access
-                case ACC_PACKAGE:
-                    if (!hasSamePackage(enclosing)) {
-                        return false;
-                    }
-                    break;
-                case ACC_PRIVATE:
-                    // Can only access private nested classes if this class encloses it
-                    if ( superClass == null || !superClass.equals(this) ) {
-                        return false;
-                    }
-                    break;
-                default:
-                    throw new JavaClassFormatError("Invalid access type "+classInfo.getAccessType()
-                            +" of class "+getClassName());
-            }
-
-            enclosing = enclosing.getEnclosingClassInfo();
-
-            if ( superClass != null && superClass.equals(enclosing) ) {
-                // we inherit from this enclosing class, and have been able to access
-                // all 'nested enclosing classes of the class to test, so we are done!
-                return true;
-            }
-        }
-        if ( superClass != null ) {
-            // now this is funny .. we somehow missed the superClass. Should never happen
-            throw new JavaClassFormatError("Reached toplevel class of "+classInfo.getClassName()
-                    +" but we never encountered the expected enclosing class " +superClass.getClassName());
-        }
-        // successfully tested every enclosing class
-        return true;
-    }
-
-    /**
-     * Check if this class has access to the given class member.
-     *
-     * @param memberInfo the member to access
-     * @return true if this class can access the method or field.
-     */
-    public boolean canAccess(ClassMemberInfo memberInfo) {
-        return canAccess(memberInfo.getClassInfo(), memberInfo.getAccessType());
-    }
-    
-    /**
-     * Check if a member of another class with the given accessType can be accessed by this class.
-     *
-     * @param cls the class containing the member to check.
-     * @param accessType the accessType of the member to check, as returned by {@link MemberInfo#getAccessType()}.
-     * @return true if this class is allowed to access members of the given accessType of the given class.
-     */
-    public boolean canAccess(ClassInfo cls, int accessType) {
-        // first, check if we can access the class itself
-        if ( !canAccess(cls) ) {
-            return false;
-        }
-
-        // now check if we can access the member
-        switch (accessType) {
-            case ACC_PUBLIC:
-                return true;
-            case ACC_PROTECTED:
-                if ( isInstanceOf(cls) ) {
-                    return true;
-                }
-                // fallthrough
-            case ACC_PACKAGE:
-                return this.hasSamePackage(cls);
-            case ACC_PRIVATE:
-                return this.equals(cls) || cls.isNestedClassOf(this, true);
-        }
-        return false;
-    }
 
     //////////////////////////////////////////////////////////////////////////////
     // Access to fields and methods, lookups
@@ -1362,6 +1276,8 @@ public final class ClassInfo extends MemberInfo {
 
         }
 
+        // TODO check+update InnerClasses attribute (and add referenced nested classes)
+
         // TODO call manager eventhandler
 
         return classGen.getJavaClass();
@@ -1391,10 +1307,12 @@ public final class ClassInfo extends MemberInfo {
     // hashCode, equals
     //////////////////////////////////////////////////////////////////////////////
 
+    @Override
     public int hashCode() {
         return classGen.getClassName().hashCode();
     }
 
+    @Override
     public boolean equals(Object o) {
         if ( !(o instanceof ClassInfo)) {
             return false;
