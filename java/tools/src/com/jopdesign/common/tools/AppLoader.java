@@ -22,24 +22,7 @@ package com.jopdesign.common.tools;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
-import com.jopdesign.common.FieldInfo;
-import com.jopdesign.common.MemberInfo;
-import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.bcel.CustomAttribute;
-import com.jopdesign.common.graph.DescendingClassTraverser;
-import com.jopdesign.common.graph.EmptyClassElementVisitor;
 import com.jopdesign.common.logger.LogConfig;
-import com.jopdesign.common.type.ClassRef;
-import com.jopdesign.common.type.ConstantNameAndTypeInfo;
-import com.jopdesign.common.type.Descriptor;
-import org.apache.bcel.classfile.ConstantClass;
-import org.apache.bcel.classfile.ConstantNameAndType;
-import org.apache.bcel.classfile.ConstantUtf8;
-import org.apache.bcel.classfile.InnerClass;
-import org.apache.bcel.generic.ArrayType;
-import org.apache.bcel.generic.ConstantPoolGen;
-import org.apache.bcel.generic.ObjectType;
-import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
 import java.util.Collection;
@@ -116,10 +99,6 @@ public class AppLoader {
         processQueue();
     }
 
-    public void loadSuperClasses(ClassInfo classInfo) {
-
-    }
-
     public Collection<ClassInfo> getLoadedClasses() {
         return newClasses;
     }
@@ -137,7 +116,10 @@ public class AppLoader {
                 logger.debug("Processing class: "+next.getClassName());
             }
 
-            int found = processClass(next);
+            int found = 0;
+            for (String name : ClassAnalyzer.findReferencedClasses(next)) {
+                found += processClassName(name);
+            }
 
             if (logger.isDebugEnabled()) {
                 logger.debug("Found "+found+" new classes in " +next.getClassName());
@@ -147,97 +129,6 @@ public class AppLoader {
         if (logger.isInfoEnabled()) {
             logger.info("AppLoader loaded " + newClasses.size() + " new classes");
         }
-    }
-
-    private int processClass(ClassInfo classInfo) {
-
-        class ProcessVisitor extends EmptyClassElementVisitor {
-            private int cnt = 0;
-            public int getCount() { return cnt; }
-
-            @Override
-            public boolean visitMethod(MethodInfo methodInfo) {
-                cnt += processDescriptor(methodInfo.getDescriptor());
-                return true;
-            }
-
-            @Override
-            public boolean visitField(FieldInfo fieldInfo) {
-                cnt += processDescriptor(fieldInfo.getDescriptor());
-                return true;
-            }
-
-            @Override
-            public void visitConstantClass(ClassInfo classInfo, ConstantClass constant) {
-                cnt += processClassRef(classInfo.getConstantInfo(constant).getClassRef());
-            }
-
-            @Override
-            public void visitConstantNameAndType(ClassInfo classInfo, ConstantNameAndType constant) {
-                ConstantNameAndTypeInfo nat = (ConstantNameAndTypeInfo) classInfo.getConstantInfo(constant);
-                cnt += processDescriptor(nat.getValue().getMemberDescriptor());
-            }
-
-            @Override
-            public void visitCustomAttribute(MemberInfo memberInfo, CustomAttribute obj, boolean isCodeAttribute) {
-                String[] classes = obj.getReferencedClassNames();
-                if ( classes != null ) {
-                    for (String cName : classes) {
-                        cnt += processClassName(cName);
-                    }
-                }
-            }
-
-            @Override
-            public void visitInnerClass(ClassInfo classInfo, InnerClass obj) {
-                ConstantPoolGen cpg = classInfo.getConstantPoolGen();
-                processUtf8(cpg, obj.getInnerClassIndex());
-                processUtf8(cpg, obj.getOuterClassIndex());
-            }
-
-            private void processUtf8(ConstantPoolGen cpg, int index) {
-                if (index == 0) {
-                    return;
-                }
-                ConstantUtf8 constant = (ConstantUtf8) cpg.getConstant(index);
-                cnt += processClassName(constant.getBytes());
-            }
-        }
-
-        ProcessVisitor visitor = new ProcessVisitor();
-        new DescendingClassTraverser(visitor).visitClass(classInfo);
-
-        return visitor.getCount();
-    }
-
-    private int processDescriptor(Descriptor d) {
-        int cnt = 0;
-
-        Type ret = d.getType();
-        cnt += processType(ret);
-
-        if (d.isMethod()) {
-            for (Type t : d.getArgumentTypes()) {
-                cnt += processType(t);
-            }
-        }
-
-        return cnt;
-    }
-
-    private int processType(Type type) {
-
-        if ( type instanceof ArrayType ) {
-            return processType( ((ArrayType)type).getBasicType() );
-        }
-        if ( type instanceof ObjectType ) {
-            return processClassName( ((ObjectType)type).getClassName() );
-        }
-        return 0;
-    }
-
-    private int processClassRef(ClassRef ref) {
-        return processType( ref.getType() );
     }
 
     private int processClassName(String className) {

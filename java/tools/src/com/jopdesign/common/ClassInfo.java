@@ -27,6 +27,7 @@ import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.Ternary;
+import com.jopdesign.common.tools.ClassAnalyzer;
 import com.jopdesign.common.tools.ConstantPoolRebuilder;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.ConstantClassInfo;
@@ -1272,11 +1273,17 @@ public final class ClassInfo extends MemberInfo {
             classGen.setMethodAt(method.compileMethod(), i);
         }
 
-        for (int i = 1; i < cpg.getSize(); i++) {
-
+        // check+update InnerClasses attribute (and add referenced nested classes)
+        for (String name : ClassAnalyzer.findReferencedClasses(this)) {
+            ClassInfo cls = getAppInfo().getClassInfo(name);
+            if (cls != null && cls.isNestedClass()) {
+                InnerClass i = getInnerClassAttribute(name);
+                if ( i == null ) {
+                    // TODO create a new InnerClass, add it to InnerClasses
+                    
+                }
+            }
         }
-
-        // TODO check+update InnerClasses attribute (and add referenced nested classes)
 
         // TODO call manager eventhandler
 
