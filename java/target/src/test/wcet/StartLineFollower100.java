@@ -20,42 +20,32 @@
 
 package wcet;
 
-import com.jopdesign.sys.Const;
-import com.jopdesign.sys.Native;
+import lego.LineFollower;
 
-import jbe.kfl.Mast;
+import com.jopdesign.sys.*;
 
-public class StartKfl {
+public class StartLineFollower100 {
 
 	/**
 	 * Set to false for the WCET analysis, true for measurement
 	 */
 	final static boolean MEASURE = false;
+        static int ITERATIONS = 100;
 	static int ts, te, to;
 
-
+	/**
+	 * @param args
+	 */
 	public static void main(String[] args) {
-
+		
 		ts = Native.rdMem(Const.IO_CNT);
 		te = Native.rdMem(Const.IO_CNT);
 		to = te-ts;
-		// initialization
-		Mast.main(null);
-
-		int min = 0x7fffffff;
-		int max = 0;
-		int val = 0;
-		for (int i=0; i<100; ++i) {
-			invoke();
-			val = te-ts-to;
-			if (val<min) min = val;
-			if (val>max) max = val;
-		}
+		LineFollower.init();
+		invoke();
 		if (MEASURE) {
-                    System.out.print("bcet:");
-                    System.out.println(min);
                     System.out.print("wcet:");
-                    System.out.println(max);
+                    System.out.println(te-ts-to);
                 }
 	}
 	
@@ -66,7 +56,12 @@ public class StartKfl {
 
 	static void measure() {
 		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
-		Mast.loop();
+                loop();
 	}
-			
+        static void loop() {
+            for(int i = 0; i < ITERATIONS; i++) {
+                LineFollower.loop();
+            }
+        }
+	
 }

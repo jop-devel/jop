@@ -1,0 +1,14 @@
+WCET Regression Test
+--------------------
+Make sure WCET does not change after refactoring, computing the WCET
+of the benchmarks specified in benchmarks.txt
+
+Use
+  ./wcet_test set <name>
+to record a new set of WCET times
+and
+  ./wcet_test check <name>
+to check against a set of WCET times.
+
+All tests have to follow the scheme used in test/wcet/StartLift.java,
+with a global variable MEASURE set to true for measurements.

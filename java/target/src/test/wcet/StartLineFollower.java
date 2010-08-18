@@ -42,7 +42,10 @@ public class StartLineFollower {
 		to = te-ts;
 		LineFollower.init();
 		invoke();
-		if (MEASURE) System.out.println(te-ts-to);
+		if (MEASURE) {
+                    System.out.print("wcet:");
+                    System.out.println(te-ts-to);
+                }
 	}
 	
 	static void invoke() {

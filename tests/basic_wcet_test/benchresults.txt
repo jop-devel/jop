@@ -1,0 +1,6 @@
+Name                 | Measured             | JSIM                 | Ipet                 | No-Cache             | Inf-Cache           
+StartLineFollower    | 2245                 | 2283                 | 2326                 | 2525                 | 2270                
+StartLift            | 5030                 | 5030                 | 7643                 | 8074                 | 7326                
+StartKfl             | 10055                | 10084                | 37419                | 48408                | 34584               
+StartBenchUdpIp      | 8040                 | 8210                 | 136070               | 138072               | 135104              
+StartEjipCmp         | 19061                | 19195                | 668449               | 669942               | 667575              

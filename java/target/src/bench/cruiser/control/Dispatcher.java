@@ -41,7 +41,7 @@ public class Dispatcher implements Runnable {
 		this.rearRightFilter = rrf;
 	}
 
-	private void dispatch(String msg) {
+	public void dispatch(String msg) {
 
 		if (!WireMessage.checkMessage(msg)) {
 			System.err.print("?");
