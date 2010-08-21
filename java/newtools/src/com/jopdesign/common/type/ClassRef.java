@@ -46,7 +46,7 @@ public class ClassRef {
     public ClassRef(ClassInfo classInfo) {
         this.classInfo = classInfo;
         anInterface = classInfo.isInterface() ? Ternary.TRUE : Ternary.FALSE;
-        this.className = null;
+        className = null;
         // we have no classInfo for arrays
         arrayClass = false;
     }
@@ -59,7 +59,7 @@ public class ClassRef {
 
     public ClassRef(String className, boolean anInterface) {
         this.className = className;
-        this.anInterface = anInterface ? Ternary.TRUE : Ternary.FALSE;
+        this.anInterface = Ternary.valueOf(anInterface);
         arrayClass = className.startsWith("[");
     }
 

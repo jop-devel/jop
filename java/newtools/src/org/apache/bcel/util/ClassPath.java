@@ -38,6 +38,13 @@ import java.util.zip.ZipFile;
  * Responsible for loading (class) files from the CLASSPATH. Inspired by
  * sun.tools.ClassPath.
  *
+ * <p>
+ * Modifications to the original BCEL class:
+ * <ul><li>MS FIXED: don't lookup first in current JVM class loader.</li>
+ *
+ * </ul>
+ * </p>
+ *
  * @version $Id: ClassPath.java 386056 2006-03-15 11:31:56Z tcurdt $
  * @author  <A HREF="mailto:m.dahm@gmx.de">M. Dahm</A>
  */
@@ -180,14 +187,14 @@ public class ClassPath implements Serializable {
      * @return input stream for file on class path
      */
     public InputStream getInputStream( String name, String suffix ) throws IOException {
-        InputStream is = null;
+//        InputStream is = null;
 //        try {
 //            is = getClass().getClassLoader().getResourceAsStream(name + suffix);
 //        } catch (Exception e) {
 //        }
-        if (is != null) {
-            return is;
-        }
+//        if (is != null) {
+//            return is;
+//        }
         return getClassFile(name, suffix).getInputStream();
     }
 

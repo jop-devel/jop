@@ -52,7 +52,7 @@ public class ConstantClassInfo extends ConstantInfo<ClassRef, ReferenceType> {
 
     @Override
     public Constant createConstant(ConstantPoolGen cpg) {
-        int i = cpg.addUtf8(getValue().getClassName());
+        int i = cpg.addUtf8(getValue().getClassName().replace('.','/'));
         return new ConstantClass(i);
     }
 
@@ -66,4 +66,7 @@ public class ConstantClassInfo extends ConstantInfo<ClassRef, ReferenceType> {
         return cpg.lookupClass(getValue().getClassName());
     }
 
+    public String getClassName() {
+        return getValue().getClassName();
+    }
 }

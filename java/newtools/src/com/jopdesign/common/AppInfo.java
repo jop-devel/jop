@@ -20,8 +20,9 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.graph.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
-import com.jopdesign.common.misc.BcelRepositoryWrapper;
+import com.jopdesign.common.bcel.BcelRepositoryWrapper;
 import com.jopdesign.common.misc.ClassInfoNotFoundException;
 import com.jopdesign.common.misc.MissingClassError;
 import com.jopdesign.common.misc.NamingConflictException;
@@ -51,7 +52,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- *
+ * The AppInfo class loads, creates and holds ClassInfos, handles all the loading related stuff,
+ * manages CustomKeys and modification events, maintains a class hierarchy and provides various
+ * methods to get and to iterate over ClassInfos.
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
@@ -187,7 +190,6 @@ public final class AppInfo {
         for ( ClassInfo cls : classes.values() ) {
             if ( fromClassInfos ) {
                 cls.removeCustomValue(key);
-                cls.removeConstantPoolCustomValue(key);
             }
             if ( fromClassMembers ) {
                 for ( FieldInfo field : cls.getFields() ) {
@@ -226,13 +228,33 @@ public final class AppInfo {
     // Methods to create, load, get and remove ClassInfos
     //////////////////////////////////////////////////////////////////////////////
 
+    /**
+     * Create a new classInfo. If a class with the same name exists, return the existing classInfo.
+     *
+     * <p>Note that this does not update the complete class hierarchy. You need to call {@link #reloadClassHierarchy()}
+     * after you finished creating and loading classes. SuperClass will be set, but nothing more.</p>
+     *
+     * @param className the fully qualified name of the class.
+     * @param superClass the references to the superclass, or null to use java.lang.Object (except if the new class is
+     *   java.lang.Object).
+     * @param isInterface true if this class should be an interface.
+     * @return a new ClassInfo or the current ClassInfo by the same name if it exists.
+     * @throws NamingConflictException if a class with the same name exists, but has a different definition.
+     */
     public ClassInfo createClass(String className, ClassRef superClass, boolean isInterface)
             throws NamingConflictException
     {
+        String superClassName;
+        if (superClass == null) {
+            superClassName = "java.lang.Object".equals(className) ? null : "java.lang.Object";
+        } else {
+            superClassName = superClass.getClassName();
+        }
+
         ClassInfo cls = classes.get(className);
         if ( cls != null ) {
             if ( isInterface != cls.isInterface() ||
-                 !cls.getSuperClassName().equals(superClass.getClassName()) )
+                 !cls.getSuperClassName().equals(superClassName) )
             {
                 throw new NamingConflictException("Class '"+className+
                         "' already exists but has a different definition.");
@@ -240,15 +262,12 @@ public final class AppInfo {
             return cls;
         }
 
-        cls = createClassInfo(className, superClass.getClassName(), isInterface);
+        cls = createClassInfo(className, superClassName, isInterface);
+
+        // do a "partial" class hierarchy update (i.e. set superClass, but not subclasses of the new class)
+        cls.updateClassHierarchy();
 
         classes.put(className, cls);
-
-        // since any existing class could extend this new class, we call update for all classInfos
-        for (ClassInfo c : classes.values()) {
-            c.updateClassHierarchy();
-        }
-        cls.updateCompleteFlag(true);
 
         for (AttributeManager mgr : managers.values()) {
             mgr.onCreateClass(cls);
@@ -298,7 +317,7 @@ public final class AppInfo {
         ClassInfo cls = classes.get(className);
         if ( cls != null ) {
             if ( reload ) {
-                removeClass(cls);
+                removeClass(cls, false, false);
             } else {
                 return cls;
             }
@@ -315,14 +334,28 @@ public final class AppInfo {
         return performLoadClass(className, required);
     }
 
-    public void removeClass(ClassInfo classInfo) {
+    /**
+     * Remove a class from AppInfo.
+     *
+     * @param classInfo the class to remove.
+     * @param purgeClass if true, remove all extensions and inner classes too, remove from implemented interfaces
+     *        lists and from InnerClasses of enclosing classes.
+     * @param updateHierarchy if true, update the class hierarchy infos now.
+     */
+    public void removeClass(ClassInfo classInfo, boolean purgeClass, boolean updateHierarchy) {
         classes.remove(classInfo.getClassName());
+
+        if ( purgeClass ) {
+            // TODO purge
+        }
 
         for ( AttributeManager mgr : managers.values() ) {
             mgr.onRemoveClass(classInfo);
         }
 
-        classInfo.removeFromClassHierarchy();
+        if ( updateHierarchy ) {
+            classInfo.removeFromClassHierarchy();
+        }
     }
 
     /**
@@ -463,10 +496,31 @@ public final class AppInfo {
         return classes.containsKey(className);
     }
 
+    /**
+     * Get a collection of all classInfos in this AppInfo.
+     * Changes to the AppInfo are visible to the returned collection.
+     * You should not modify this collection directly.
+     *
+     * @return an unmodifiable view of the collection of AppInfos.
+     */
     public Collection<ClassInfo> getClassInfos() {
-        return classes.values();
+        return Collections.unmodifiableCollection(classes.values());
     }
 
+    public void iterate(ClassVisitor visitor) {
+        for (ClassInfo c : classes.values()) {
+            if (!visitor.visitClass(c)) {
+                return;
+            }
+            visitor.finishClass(c);
+        }
+    }
+
+    public void compileAll() {
+        for (ClassInfo c : classes.values()) {
+            c.compileJavaClass();
+        }
+    }
 
     //////////////////////////////////////////////////////////////////////////////
     // Helper methods to find classes, fields and methods; Convenience methods
@@ -492,26 +546,88 @@ public final class AppInfo {
         return new ClassRef(className, isInterface);
     }
 
+    public MethodRef getMethodRef(Signature signature) {
+        ClassInfo cls = classes.get(signature.getClassName());
+        ClassRef clsRef;
+        if ( cls != null ) {
+            clsRef = cls.getClassRef();
+        } else {
+            clsRef = new ClassRef(signature.getClassName());
+        }
+        return getMethodRef(clsRef, signature);
+    }
+
+    /**
+     * Get a reference to a method using the given signature.
+     * If you already have a classRef, use {@link #getMethodRef(ClassRef, Signature)}
+     * instead.
+     *
+     * @param signature the signature of the method
+     * @param isInterfaceMethod true if the class is an interface.
+     * @return a method reference with or without MethodInfo or ClassInfo.
+     */
     public MethodRef getMethodRef(Signature signature, boolean isInterfaceMethod) {
         ClassInfo cls = classes.get(signature.getClassName());
+        ClassRef clsRef;
         if ( cls != null ) {
             if ( cls.isInterface() != isInterfaceMethod ) {
                 throw new ClassFormatException("Class '"+cls.getClassName()+"' interface flag does not match.");
             }
-            MethodInfo method = cls.getMethodInfo(signature);
+            clsRef = cls.getClassRef();
+        } else {
+            clsRef = new ClassRef(signature.getClassName(),isInterfaceMethod);
+        }
+        return getMethodRef(clsRef, signature);
+    }
+
+    /**
+     * Get a reference to a method using the given signature.
+     *
+     * @param classRef The reference to the class or interface containing the method.
+     * @param signature The signature of the method. Only memberName and memberDescriptor are used.
+     * @return A method reference with or without MethodInfo or ClassInfo.
+     */
+    public MethodRef getMethodRef(ClassRef classRef, Signature signature) {
+        ClassInfo classInfo = classRef.getClassInfo();
+        if ( classInfo != null ) {
+            MethodInfo method = classInfo.getMethodInfo(signature);
             if ( method == null ) {
-                return new MethodRef(cls.getClassRef(), signature.getMemberName(), signature.getMemberDescriptor());
+                return new MethodRef(classInfo.getClassRef(), signature.getMemberName(),
+                        signature.getMemberDescriptor());
             } else {
                 return method.getMethodRef();
             }
         }
 
-        return new MethodRef(new ClassRef(signature.getClassName(),isInterfaceMethod),
-                             signature.getMemberName(), signature.getMemberDescriptor());
+        return new MethodRef(classRef, signature.getMemberName(), signature.getMemberDescriptor());
     }
 
+    /**
+     * Get a reference to a field using the given signature.
+     *
+     * @param signature The signature of the field.
+     * @return A field reference with or without FieldInfo or ClassInfo.
+     */
     public FieldRef getFieldRef(Signature signature) {
         ClassInfo cls = classes.get(signature.getClassName());
+        ClassRef clsRef;
+        if ( cls != null ) {
+            clsRef = cls.getClassRef();
+        } else {
+            clsRef = new ClassRef(signature.getClassName());
+        }
+        return getFieldRef(clsRef, signature);
+    }
+
+    /**
+     * Get a reference to a field using the given signature.
+     *
+     * @param classRef The class which contains the field.
+     * @param signature The signature of the field. Only memberName and memberDescriptor are used.
+     * @return A field reference with or without FieldInfo or ClassInfo.
+     */
+    public FieldRef getFieldRef(ClassRef classRef, Signature signature) {
+        ClassInfo cls = classRef.getClassInfo();
         if ( cls != null ) {
             FieldInfo field = cls.getFieldInfo(signature.getMemberName());
             if ( field == null ) {
@@ -522,8 +638,7 @@ public final class AppInfo {
             }
         }
 
-        return new FieldRef(new ClassRef(signature.getClassName()),
-                            signature.getMemberName(), signature.getMemberDescriptor().getType());
+        return new FieldRef(classRef, signature.getMemberName(), signature.getMemberDescriptor().getType());
     }
 
 
@@ -540,7 +655,6 @@ public final class AppInfo {
     }
 
     public Collection<ClassInfo> getRootClasses() {
-        // TODO maintain rootClasses as field?
         Map<String,ClassInfo> rootClasses = new HashMap<String, ClassInfo>();
         for (MemberInfo root : roots) {
             rootClasses.put(root.getClassInfo().getClassName(), root.getClassInfo());
@@ -745,11 +859,6 @@ public final class AppInfo {
         }
 
         return cls;
-    }
-
-    private void updateClassHierarchy(ClassInfo classInfo) {
-        // TODO implement.. if class has been loaded on demand, update type analysis infos for new classInfo
-
     }
 
     private ClassInfo tryLoadClass(String className) throws IOException {

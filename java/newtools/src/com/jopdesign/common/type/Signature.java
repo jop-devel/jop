@@ -25,7 +25,7 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MemberInfo;
 
 /**
- * This is a helper class to handle parsing, generating, lookups and other signature related tasks
+ * This is a (immutable) class to handle parsing, generating, lookups and other signature related tasks
  * for signatures including classname and/or member names.
  *
  * @see Descriptor
@@ -50,6 +50,10 @@ public class Signature {
 
     public static String getSignature(String className, String memberName, String descriptor) {
         return className + MEMBER_SEPARATOR +  memberName + descriptor;
+    }
+
+    public static String getMemberSignature(String memberName, String descriptor) {
+        return memberName + descriptor;
     }
 
     public static Signature parse(String signature) {

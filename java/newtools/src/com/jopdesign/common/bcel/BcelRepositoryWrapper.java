@@ -18,10 +18,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common.misc;
+package com.jopdesign.common.bcel;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.misc.ClassInfoNotFoundException;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.util.ClassPath;
 import org.apache.bcel.util.Repository;
@@ -40,14 +41,14 @@ public class BcelRepositoryWrapper implements Repository {
     public void removeClass(JavaClass clazz) {
         ClassInfo cls = AppInfo.getSingleton().getClassInfo(clazz.getClassName());
         if ( cls != null ) {
-            AppInfo.getSingleton().removeClass(cls);
+            AppInfo.getSingleton().removeClass(cls, true, true);
         }
     }
 
     public JavaClass findClass(String className) {
         ClassInfo cls = AppInfo.getSingleton().getClassInfo(className);
         if ( cls != null ) {
-            return cls.getJavaClass();
+            return cls.getJavaClass(false);
         }
         return null;
     }
@@ -55,20 +56,20 @@ public class BcelRepositoryWrapper implements Repository {
     public JavaClass loadClass(String className) throws ClassNotFoundException {
         ClassInfo cls = AppInfo.getSingleton().loadClass(className);
         if ( cls != null ) {
-            return cls.getJavaClass();
+            return cls.getJavaClass(false);
         }
         return null;
     }
 
     public JavaClass loadClass(Class clazz) throws ClassNotFoundException {
-        ClassInfo cls = null;
+        ClassInfo cls;
         try {
             cls = AppInfo.getSingleton().loadClass(clazz.getName(), false, false);
         } catch (ClassInfoNotFoundException e) {
             throw new ClassNotFoundException(e.getMessage(), e);
         }
         if ( cls != null ) {
-            return cls.getJavaClass();
+            return cls.getJavaClass(false);
         }
         return null;
     }

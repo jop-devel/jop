@@ -20,15 +20,15 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.bcel.AnnotationAttribute;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.AccessFlags;
+import org.apache.bcel.classfile.Attribute;
+import org.apache.bcel.classfile.Synthetic;
+import org.apache.bcel.generic.ConstantPoolGen;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -60,6 +60,8 @@ public abstract class MemberInfo {
     public abstract ClassInfo getClassInfo();
 
     public abstract Signature getSignature();
+
+    public abstract String getSimpleName();
 
     public boolean isPublic() {
         return accessFlags.isPublic();
@@ -190,4 +192,90 @@ public abstract class MemberInfo {
         return customValues[key.getId()];
     }
 
+    public void setSynthetic(boolean flag) {
+        // from version 49 on, ACC_SYNTHETIC is supported
+        Synthetic s = findSynthetic();
+        if ( getClassInfo().getMajor() < 49 ) {
+            if ( flag ) {
+                if ( s == null ) {
+                    ConstantPoolGen cpg = getClassInfo().getConstantPoolGen();
+                    int index = cpg.addUtf8("Synthetic");
+                    addAttribute(new Synthetic(index, 0, new byte[0], cpg.getConstantPool()));
+                }
+            } else {
+                if ( s != null ) {
+                    removeAttribute(s);
+                }
+            }
+        } else {
+            accessFlags.isSynthetic(flag);
+            if ( !flag && s != null ) {
+                removeAttribute(s);
+            }
+        }
+    }
+
+    public boolean isSynthetic() {
+        if (accessFlags.isSynthetic()) {
+            return true;
+        }
+        Synthetic s = findSynthetic();
+        return s != null;
+    }
+
+    public void setDeprecated(boolean flag) {
+        if (flag) {
+            if (findDeprecated() == null) {
+                ConstantPoolGen cpg = getClassInfo().getConstantPoolGen();
+                int index = cpg.addUtf8("Deprecated"); 
+                addAttribute(new org.apache.bcel.classfile.Deprecated(index, 0, new byte[0], cpg.getConstantPool()));
+            }
+        } else {
+            org.apache.bcel.classfile.Deprecated d = findDeprecated();
+            if ( d != null ) {
+                removeAttribute(d);
+            }
+        }
+    }
+
+    public boolean isDeprecated() {
+        return findDeprecated() != null;
+    }
+
+    public AnnotationAttribute getAnnotation(boolean visible) {
+        for (Attribute a : getAttributes()) {
+            if ( a instanceof AnnotationAttribute ) {
+                if ( ((AnnotationAttribute)a).isVisible() == visible ) {
+                    return (AnnotationAttribute) a;
+                }
+            }
+        }
+        return null;
+    }
+
+    public abstract Attribute[] getAttributes();
+
+    public abstract void addAttribute(Attribute a);
+
+    public abstract void removeAttribute(Attribute a);
+
+
+
+    private Synthetic findSynthetic() {
+        for (Attribute a : getAttributes()) {
+            if ( a instanceof Synthetic ) {
+                return (Synthetic) a;
+            }
+        }
+        return null;
+    }
+
+    private org.apache.bcel.classfile.Deprecated findDeprecated() {
+        for (Attribute a : getAttributes()) {
+            if ( a instanceof org.apache.bcel.classfile.Deprecated ) {
+                return (org.apache.bcel.classfile.Deprecated) a;
+            }
+        }
+        return null;
+    }
 }

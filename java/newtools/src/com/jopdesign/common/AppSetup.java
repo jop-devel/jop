@@ -20,6 +20,7 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.bcel.CustomAttribute;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.logger.LogConfig;
@@ -216,7 +217,6 @@ public class AppSetup {
         config.addOption(Config.WRITE_PATH);
         if ( writeClasses ) {
             config.addOption(Config.WRITE_CLASSPATH);
-            ClassWriter.addOptions(config.getOptions());
         }
     }
 
@@ -327,6 +327,8 @@ public class AppSetup {
             }
             System.exit(2);
         }
+
+        CustomAttribute.registerDefaultReader();
 
         appInfo.setClassPath(new ClassPath(config.getOption(Config.CLASSPATH)));
         appInfo.setExitOnMissingClass(!config.getOption(Config.VERBOSE));
@@ -481,7 +483,6 @@ public class AppSetup {
     public void writeClasses(Option<String> outDir) {
         try {
             ClassWriter writer = new ClassWriter();
-            writer.setup(config.getOptions());
             writer.write(config.getOption(outDir));
         } catch (IOException e) {
             ClassWriter.logger.error("Failed to write classes: "+e.getMessage(), e);
@@ -512,6 +513,7 @@ public class AppSetup {
             throw new Config.BadConfigurationException("Class '"+clsName+"' for main method not found.");
         }
 
+        // check if we have a full signature
         if ( sMain.isMethodSignature() ) {
             MethodInfo method = clsInfo.getMethodInfo(sMain.getMemberSignature());
             if ( method == null ) {
@@ -529,11 +531,9 @@ public class AppSetup {
         Collection<MethodInfo> methods = clsInfo.getMethodByName(mainName);
 
         if ( methods.isEmpty() ) {
-            throw new Config.BadConfigurationException("Method '"+mainName+"' not found in '"
-                        +clsName+"'.");
+            throw new Config.BadConfigurationException("'No method '"+mainName+"' found in '"+clsName+"'.");
         }
         if ( methods.size() > 1 ) {
-            // TODO maybe check if there is a single static method by that name?
             StringBuffer s = new StringBuffer(String.format(
                     "Multiple candidates for '%s' in '%s', please specify a signature: ", mainName, clsName) );
             for (MethodInfo m : methods) {

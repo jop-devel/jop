@@ -27,8 +27,6 @@ import java.io.IOException;
 import java.util.Properties;
 
 /**
- * TODO better name for interface
- * 
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public interface JopTool<T extends AttributeManager> {

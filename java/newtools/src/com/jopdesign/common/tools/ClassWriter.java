@@ -44,28 +44,7 @@ public class ClassWriter {
     public ClassWriter() {
     }
 
-    public ClassWriter(OptionGroup options) {
-        setup(options);
-    }
 
-    /**
-     * Add options this Writer supports to the given option-group (excluding an output-path option).
-     *
-     * @param options the OptionGroup to set options to.
-     */
-    public static void addOptions(OptionGroup options) {
-        // TODO options to write to .jar?, exclude native/.. classes from writing,.. ?
-    }
-
-    /**
-     * Use options from the given OptionGroup to setup this ClassWriter.
-     *
-     * @param options the options to use to set the options of this ClassWriter.
-     */
-    public void setup(OptionGroup options) {
-    }
-
-    
     public void write(String writeDir) throws IOException {
         AppInfo appInfo = AppInfo.getSingleton();
 
