@@ -64,9 +64,9 @@ public class BenchCspNew implements Runnable {
 //				Runnable r = new Main(i+1);
 //				Startup.setRunnable(r, i);
 //			}
-			Runnable r = new BenchCsp(1);
+			Runnable r = new BenchCspNew(1);
 			Startup.setRunnable(r, 0);
-//			Startup.setRunnable(new BenchCsp(2), 1);
+//			Startup.setRunnable(new BenchCspNew(2), 1);
 			
 			// start the other CPUs
 			sys.signal = 1;
