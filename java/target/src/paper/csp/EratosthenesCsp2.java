@@ -32,7 +32,7 @@ import com.jopdesign.sys.Startup;
  * @author martin
  *
  */
-public class EratosthenesCsp implements Runnable {
+public class EratosthenesCsp2 implements Runnable {
 	
 		final static int PRIMECNT = 20;
 		
@@ -41,7 +41,7 @@ public class EratosthenesCsp implements Runnable {
 		int crtlvl;
 		int[] primes;		
 
-		public EratosthenesCsp(int i, int ni) {
+		public EratosthenesCsp2(int i, int ni) {
 			id = i;
 			nid = ni;
 			crtlvl = 0;
@@ -53,7 +53,7 @@ public class EratosthenesCsp implements Runnable {
 		 */
 		public static void main(String[] args) {
 			
-			System.out.println("Eratosthenes Sieve");
+			System.out.println("Eratosthenes Sieve, v2");
 //			System.out.print("Status: ");
 //			System.out.println(Native.rd(NoC.NOC_REG_STATUS));
 
@@ -65,10 +65,10 @@ public class EratosthenesCsp implements Runnable {
 				int ni = i+1;
 				if(ni==sys.nrCpu) ni = 0;
 				System.out.println(ni);
-				Runnable r = new EratosthenesCsp(i, ni);
+				Runnable r = new EratosthenesCsp2(i, ni);
 				Startup.setRunnable(r, i-1);
 			}
-			EratosthenesCsp r = new EratosthenesCsp(0,1); 
+			EratosthenesCsp2 r = new EratosthenesCsp2(0,1); 
 //			Startup.setRunnable(r, 0);
 			
 			System.out.println("starting cpus.");
@@ -87,23 +87,34 @@ public class EratosthenesCsp implements Runnable {
 				if(NoC.isReceiving()) {
 					System.out.println("<");
 					// something to process
-					lvl = NoC.b_receive1();
-					candidate = NoC.b_receive1();
+/////////////////////// receive a two word message instead ////////////////
+//					while(!NoC.isReceiving());
+					lvl = Native.rd(NoC.NOC_REG_RCVDATA);
+					while(NoC.isReceiveBufferEmpty());
+					candidate = Native.rd(NoC.NOC_REG_RCVDATA);
+					Native.wr(0, NoC.NOC_REG_RCVRESET);
+///////////////////////////////////////////////////////////////////////////
 					// level increases here
 					lvl++;
 				} else {
 					i++;
 				}
 
-				System.out.print(" Processing ");
-				System.out.print(candidate);
-				System.out.print(" level = ");
-				System.out.print(lvl);
+//				System.out.print(" Processing ");
+//				System.out.print(candidate);
+//				System.out.print(" level = ");
+//				System.out.print(lvl);
 				
 				if(r.sendAlong(lvl, candidate)) {
-					System.out.println("->");
-					NoC.b_send1(1, lvl);
-					NoC.b_send1(1, candidate);
+//					System.out.println("->");
+////////////////// send a two word message instead ///////////////////////////
+					while(NoC.isSending());
+					Native.wr(1, NoC.NOC_REG_SNDDST);
+					Native.wr(2, NoC.NOC_REG_SNDCNT);
+					Native.wr(lvl, NoC.NOC_REG_SNDDATA);
+//					while(NoC.isSendBufferFull());
+					Native.wr(candidate, NoC.NOC_REG_SNDDATA);
+//////////////////////////////////////////////////////////////////////////////
 				
 				} else {
 //					System.out.println(".");
@@ -120,13 +131,25 @@ public class EratosthenesCsp implements Runnable {
 		public void run() {
 		    while(crtlvl < PRIMECNT) {
 			// receive a level and a candidate
-			int lvl = NoC.b_receive1();
-			int candidate = NoC.b_receive1();
+			int lvl, candidate;
+/////////////////////// receive a two word message instead ////////////////
+			while(!NoC.isReceiving());
+			lvl = Native.rd(NoC.NOC_REG_RCVDATA);
+			while(NoC.isReceiveBufferEmpty());
+			candidate = Native.rd(NoC.NOC_REG_RCVDATA);
+			Native.wr(0, NoC.NOC_REG_RCVRESET);
+///////////////////////////////////////////////////////////////////////////
 			// check it against the current prime
 			if(sendAlong(lvl, candidate)) {
 				// send it further
-				NoC.b_send1(nid, lvl);
-				NoC.b_send1(nid, candidate);
+////////////////// send a two word message instead ///////////////////////////
+					while(NoC.isSending());
+					Native.wr(nid, NoC.NOC_REG_SNDDST);
+					Native.wr(2, NoC.NOC_REG_SNDCNT);
+					Native.wr(lvl, NoC.NOC_REG_SNDDATA);
+//					while(NoC.isSendBufferFull());
+					Native.wr(candidate, NoC.NOC_REG_SNDDATA);
+//////////////////////////////////////////////////////////////////////////////
 //				RtThread.sleepMs(10);
 			}
 		   }
