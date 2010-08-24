@@ -73,7 +73,7 @@ public class BenchCsp implements Runnable {
 		end = sys.cntInt;
 		off = end - start;
 
-		// receive n words via CSP
+		// receive n words via CSP, 1-word packets
 		start = sys.cntInt;
 		for (int i = 0; i < CNT; ++i) {
 			while (!((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_RCV) != 0))
@@ -84,9 +84,28 @@ public class BenchCsp implements Runnable {
 			// System.out.print(val);
 		}
 		end = sys.cntInt;
-		System.out.println("Communication via HW CSP");
+		System.out.println("Communication via HW CSP, many 1-word packets");
 		System.out.println(CNT + " words received in " + (end - start - off)
 				+ " micro seconds");
+
+
+		// receive n words via CSP, n-word packet
+		start = sys.cntInt;
+		while (!((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_RCV) != 0))
+				;
+		for (int i = 0; i < CNT; ++i) {
+			
+			int val = Native.rd(NoC.NOC_REG_RCVDATA);
+			// System.out.print(" Received ");
+			// System.out.print(val);
+		}
+		Native.wr(0, NoC.NOC_REG_RCVRESET); // aka writeReset();
+		end = sys.cntInt;
+		System.out.println("Communication via HW CSP, one N-word packet");
+		System.out.println(CNT + " words received in " + (end - start - off)
+				+ " micro seconds");
+
+
 
 		// receive n words via shared memory
 		start = sys.cntInt;
@@ -109,6 +128,8 @@ public class BenchCsp implements Runnable {
 
 	public void run() {
 
+		// 1 word packets send
+
 		while ((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_SND) != 0) {
 			// nop
 		}
@@ -123,6 +144,20 @@ public class BenchCsp implements Runnable {
 			Native.wr(i, NoC.NOC_REG_SNDDATA);
 
 		}
+
+		// CNT-words packet send
+
+		while ((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_SND) != 0) {
+			// nop
+		}
+		Native.wr(0, NoC.NOC_REG_SNDDST);
+		Native.wr(CNT, NoC.NOC_REG_SNDCNT);
+
+		for (int i = 0; i < CNT; ++i) {
+			Native.wr(i, NoC.NOC_REG_SNDDATA);
+		}
+
+
 		while (!startCopy) {
 			;
 		}
