@@ -36,9 +36,9 @@ import com.jopdesign.sys.Startup;
  */
 public class BenchCsp implements Runnable {
 
-	final static int CNT = 100;
+	final static int CNT = 100; // that's 1 KB
 	static int[] buffer = new int[CNT];
-	
+
 	static volatile boolean startCopy, endCopy;
 
 	int id;
@@ -56,15 +56,9 @@ public class BenchCsp implements Runnable {
 
 		msg = new Vector();
 
-		System.out.println("Hello World from CPU 0");
-		System.out.print("Status: ");
-		System.out.println(Native.rd(NoC.NOC_REG_STATUS));
+		System.out.println("Hello CSP World from CPU 0");
 
 		SysDevice sys = IOFactory.getFactory().getSysDevice();
-		// for (int i=0; i<sys.nrCpu-1; ++i) {
-		// Runnable r = new Main(i+1);
-		// Startup.setRunnable(r, i);
-		// }
 		Runnable r = new BenchCsp(1);
 		Startup.setRunnable(r, 0);
 		// Startup.setRunnable(new BenchCspNew(2), 1);
@@ -81,15 +75,11 @@ public class BenchCsp implements Runnable {
 
 		// receive n words via CSP
 		start = sys.cntInt;
-		for (int i = 0; i < 100; ++i) {
-			while(!((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_RCV) != 0));
-			int d = Native.rd(NoC.NOC_REG_RCVDATA);
-			// NoC.isEoD() should be true here for single word messages!
-			//
-			// does reset for more receive. after this,
-			// the source, count and everything else may be faulty
-			Native.wr(0, NoC.NOC_REG_RCVRESET); // aka writeReset();		
-			int val = d;
+		for (int i = 0; i < CNT; ++i) {
+			while (!((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_RCV) != 0))
+				;
+			int val = Native.rd(NoC.NOC_REG_RCVDATA);
+			Native.wr(0, NoC.NOC_REG_RCVRESET); // aka writeReset();
 			// System.out.print(" Received ");
 			// System.out.print(val);
 		}
@@ -102,7 +92,7 @@ public class BenchCsp implements Runnable {
 		start = sys.cntInt;
 		// start the other copy thread
 		startCopy = true;
-		while (!endCopy){
+		while (!endCopy) {
 			;
 		}
 		for (int i = 0; i < 100; ++i) {
@@ -114,17 +104,24 @@ public class BenchCsp implements Runnable {
 		System.out.println("Communication via shared memory");
 		System.out.println(CNT + " words received in " + (end - start - off)
 				+ " micro seconds");
-	
-	
+
 	}
 
 	public void run() {
 
+		while ((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_SND) != 0) {
+			// nop
+		}
+		Native.wr(0, NoC.NOC_REG_SNDDST);
+
 		for (int i = 0; i < CNT; ++i) {
-			while (NoC.isSending()) {
+			while ((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_SND) != 0) {
 				// nop
 			}
-			NoC.nb_send1(0, i);
+			// Native.wr(0, NoC.NOC_REG_SNDDST);
+			Native.wr(1, NoC.NOC_REG_SNDCNT);
+			Native.wr(i, NoC.NOC_REG_SNDDATA);
+
 		}
 		while (!startCopy) {
 			;
