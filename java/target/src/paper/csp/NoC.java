@@ -110,6 +110,15 @@ public class NoC {
 		Native.wr(1, NOC_REG_SNDCNT);
 		Native.wr(d, NOC_REG_SNDDATA);
 	}
+
+	// waits until the previous send completes
+	public static void b_send1(int dstAddr, int d) {
+		while(isSending());
+		Native.wr(dstAddr, NOC_REG_SNDDST);
+		Native.wr(1, NOC_REG_SNDCNT);
+		Native.wr(d, NOC_REG_SNDDATA);
+	}
+	
 	
 	// receives from any source
 	// check NoC.getSourceAddress() for the NoC node address of the

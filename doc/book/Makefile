@@ -45,6 +45,7 @@ javadoc:
 
 clean:
 	-rm *.aux
+	-rm *.gz
 	-rm *.log
 	-rm *.lof
 	-rm *.lol

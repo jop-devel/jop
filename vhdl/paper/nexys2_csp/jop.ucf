@@ -1,0 +1,91 @@
+# Constraints for JOP
+#
+# Digilent nexys2 board
+#
+#
+# Time specifications for 50MHz clock
+#
+NET "clk" TNM_NET = "clk";
+TIMESPEC "TS_clk" = PERIOD "clk" 20 ns HIGH 50 %;
+#
+#
+# clock pin for Nexys 2 Board 
+ NET "clk" LOC= "B8" |  IOSTANDARD = LVCMOS33; # Bank = 0 , Pin name = IP_L13P_0/GCLK8 , Type = GCLK , Sch name = GCLK0
+# NET "clk2?" LOC= "U9"; # Bank = 2 , Pin name = IO_L13P_2/D4/GCLK14 , Type = DUAL/GCLK , Sch name = GCLK1
+ 
+# Pin assignment for UsbCtl 
+
+# Pin assignment for OnBoardMemCtrl 
+# Connected to Nexys 2 onBoard Cellular RAM and StrataFlash 
+ NET "MemOE" LOC= "T2" |  IOSTANDARD = LVCMOS33  |  DRIVE=2  |  PULLUP; # Bank = 3 , Pin name = IO_L24P_3 , Type = I/O , Sch name = OE
+ NET "MemWR" LOC= "N7" |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 2 , Pin name = IO_L07P_2 , Type = I/O , Sch name = WE
+
+ NET "RamAdv" LOC= "J4"  |  IOSTANDARD = LVCMOS33; # Bank = 3 , Pin name = IO_L11N_3/LHCLK1 , Type = LHCLK , Sch name = MT-ADV
+ NET "RamCS" LOC= "R6"  |  IOSTANDARD = LVCMOS33; # Bank = 2 , Pin name = IO_L05P_2 , Type = I/O , Sch name = MT-CE
+ NET "RamClk" LOC= "H5"  |  IOSTANDARD = LVCMOS33; # Bank = 3 , Pin name = IO_L08N_3 , Type = I/O , Sch name = MT-CLK
+ NET "RamCRE" LOC= "P7"  |  IOSTANDARD = LVCMOS33; # Bank = 2 , Pin name = IO_L07N_2 , Type = I/O , Sch name = MT-CRE
+ NET "RamLB" LOC= "K5" |  IOSTANDARD = LVCMOS33  |  DRIVE=2  |  PULLDOWN; # Bank = 3 , Pin name = IO_L14N_3/LHCLK7 , Type = LHCLK , Sch name = MT-LB
+ NET "RamUB" LOC= "K4" |  IOSTANDARD = LVCMOS33  |  DRIVE=2  |  PULLDOWN; # Bank = 3 , Pin name = IO_L13N_3/LHCLK5 , Type = LHCLK , Sch name = MT-UB
+ NET "RamWait" LOC= "F5"  |  IOSTANDARD = LVCMOS33; # Bank = 3 , Pin name = IP , Type = INPUT , Sch name = MT-WAIT
+
+# NET "FlashRp" LOC= "T5"; # Bank = 2 , Pin name = IO_L04N_2 , Type = I/O , Sch name = RP#
+ NET "FlashCS" LOC= "R5"  |  IOSTANDARD = LVCMOS33; # Bank = 2 , Pin name = IO_L04P_2 , Type = I/O , Sch name = ST-CE
+# NET "FlashStSts" LOC= "D3"; # Bank = 3 , Pin name = IP , Type = INPUT , Sch name = ST-STS
+
+ NET "MemAdr<1>" LOC= "J1"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L12P_3/LHCLK2 , Type = LHCLK , Sch name = ADR1
+ NET "MemAdr<2>" LOC= "J2"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L12N_3/LHCLK3/IRDY2 , Type = LHCLK , Sch name = ADR2
+ NET "MemAdr<3>" LOC= "H4"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L09P_3 , Type = I/O , Sch name = ADR3
+ NET "MemAdr<4>" LOC= "H1"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L10N_3 , Type = I/O , Sch name = ADR4
+ NET "MemAdr<5>" LOC= "H2"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L10P_3 , Type = I/O , Sch name = ADR5
+ NET "MemAdr<6>" LOC= "J5"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L11P_3/LHCLK0 , Type = LHCLK , Sch name = ADR6
+ NET "MemAdr<7>" LOC= "H3"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L09N_3 , Type = I/O , Sch name = ADR7
+ NET "MemAdr<8>" LOC= "H6"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L08P_3 , Type = I/O , Sch name = ADR8
+ NET "MemAdr<9>" LOC= "F1"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L05P_3 , Type = I/O , Sch name = ADR9
+ NET "MemAdr<10>" LOC= "G3"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L06P_3 , Type = I/O , Sch name = ADR10
+ NET "MemAdr<11>" LOC= "G6"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L07P_3 , Type = I/O , Sch name = ADR11
+ NET "MemAdr<12>" LOC= "G5"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L07N_3 , Type = I/O , Sch name = ADR12
+ NET "MemAdr<13>" LOC= "G4"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L06N_3/VREF_3 , Type = VREF , Sch name = ADR13
+ NET "MemAdr<14>" LOC= "F2"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L05N_3 , Type = I/O , Sch name = ADR14
+ NET "MemAdr<15>" LOC= "E1"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L03N_3 , Type = I/O , Sch name = ADR15
+ NET "MemAdr<16>" LOC= "M5"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L19P_3 , Type = I/O , Sch name = ADR16
+ NET "MemAdr<17>" LOC= "E2"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L03P_3 , Type = I/O , Sch name = ADR17
+ NET "MemAdr<18>" LOC= "C2"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L01N_3 , Type = I/O , Sch name = ADR18
+ NET "MemAdr<19>" LOC= "C1"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L01P_3 , Type = I/O , Sch name = ADR19
+ NET "MemAdr<20>" LOC= "D2"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L02N_3/VREF_3 , Type = VREF , Sch name = ADR20
+ NET "MemAdr<21>" LOC= "K3"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L13P_3/LHCLK4/TRDY2 , Type = LHCLK , Sch name = ADR21
+ NET "MemAdr<22>" LOC= "D1"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L02P_3 , Type = I/O , Sch name = ADR22
+ NET "MemAdr<23>" LOC= "K6"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L14P_3/LHCLK6 , Type = LHCLK , Sch name = ADR23
+
+ NET "MemDB<0>" LOC= "L1"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L15P_3 , Type = I/O , Sch name = DB0
+ NET "MemDB<1>" LOC= "L4"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L16N_3 , Type = I/O , Sch name = DB1
+ NET "MemDB<2>" LOC= "L6"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L17P_3 , Type = I/O , Sch name = DB2
+ NET "MemDB<3>" LOC= "M4"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L18P_3 , Type = I/O , Sch name = DB3
+ NET "MemDB<4>" LOC= "N5"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L20N_3 , Type = I/O , Sch name = DB4
+ NET "MemDB<5>" LOC= "P1"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L21N_3 , Type = I/O , Sch name = DB5
+ NET "MemDB<6>" LOC= "P2"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L21P_3 , Type = I/O , Sch name = DB6
+ NET "MemDB<7>" LOC= "R2"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L23N_3 , Type = I/O , Sch name = DB7
+ NET "MemDB<8>" LOC= "L3"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L16P_3 , Type = I/O , Sch name = DB8
+ NET "MemDB<9>" LOC= "L5"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L17N_3/VREF_3 , Type = VREF , Sch name = DB9
+ NET "MemDB<10>" LOC= "M3"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L18N_3 , Type = I/O , Sch name = DB10
+ NET "MemDB<11>" LOC= "M6"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L19N_3 , Type = I/O , Sch name = DB11
+ NET "MemDB<12>" LOC= "L2"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L15N_3 , Type = I/O , Sch name = DB12
+ NET "MemDB<13>" LOC= "N4"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L20P_3 , Type = I/O , Sch name = DB13
+ NET "MemDB<14>" LOC= "R3"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L23P_3 , Type = I/O , Sch name = DB14
+ NET "MemDB<15>" LOC= "T1"  |  IOSTANDARD = LVCMOS33  |  DRIVE=2; # Bank = 3 , Pin name = IO_L24N_3 , Type = I/O , Sch name = DB15
+
+# Pin assignment for Leds 
+# Connected to Nexys 2 
+ NET "Led<0>" LOC= "J14"  |  IOSTANDARD = LVCMOS33; # Bank = 1 , Pin name = IO_L14N_1/A3/RHCLK7 , Type = RHCLK/DUAL , Sch name = JD10/LD0
+ NET "Led<1>" LOC= "J15"  |  IOSTANDARD = LVCMOS33; # Bank = 1 , Pin name = IO_L14P_1/A4/RHCLK6 , Type = RHCLK/DUAL , Sch name = JD9/LD1
+ NET "Led<2>" LOC= "K15"  |  IOSTANDARD = LVCMOS33; # Bank = 1 , Pin name = IO_L12P_1/A8/RHCLK2 , Type = RHCLK/DUAL , Sch name = JD8/LD2 
+ NET "Led<3>" LOC= "K14"  |  IOSTANDARD = LVCMOS33; # Bank = 1 , Pin name = IO_L12N_1/A7/RHCLK3/TRDY1 , Type = RHCLK/DUAL , Sch name = JD7/LD3
+# NET "Led<4>" LOC= "E17"  |  IOSTANDARD = LVCMOS33; # Bank = 1 , Pin name = IO , Type = I/O , Sch name = LD4? 
+# NET "Led<5>" LOC= "P15"  |  IOSTANDARD = LVCMOS33; # Bank = 1 , Pin name = IO , Type = I/O , Sch name = LD5? 
+# NET "Led<6>" LOC= "F4"  |  IOSTANDARD = LVCMOS33; # Bank = 3 , Pin name = IO , Type = I/O , Sch name = LD6? 
+# NET "Led<7>" LOC= "R4"  |  IOSTANDARD = LVCMOS33; # Bank = 3 , Pin name = IO/VREF_3 , Type = VREF , Sch name = LD7? 
+ NET "Led<4>" LOC= "E16"  |  IOSTANDARD = LVCMOS33; # Bank = 1 , Pin name = IO , Type = I/O , Sch name = LD4? 
+ NET "Led<5>" LOC= "P16"  |  IOSTANDARD = LVCMOS33; # Bank = 1 , Pin name = IO , Type = I/O , Sch name = LD5? 
+ NET "Led<6>" LOC= "E4"  |  IOSTANDARD = LVCMOS33; # Bank = 3 , Pin name = IO , Type = I/O , Sch name = LD6? 
+ NET "Led<7>" LOC= "P4"  |  IOSTANDARD = LVCMOS33; # Bank = 3 , Pin name = IO/VREF_3 , Type = VREF , Sch name = LD7? 
+ NET "RsRx" LOC= "U6" | DRIVE = 2 |  IOSTANDARD = LVCMOS33  | PULLUP ; # Bank = 2 , Pin name = IP , Type = INPUT , Sch name = RS-RX
+ NET "RsTx" LOC= "P9" | DRIVE = 2 |  IOSTANDARD = LVCMOS33  | PULLUP ; # Bank = 2 , Pin name = IO , Type = I/O , Sch name = RS-TX

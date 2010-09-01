@@ -20,13 +20,72 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.type.Descriptor;
+import com.jopdesign.common.type.FieldRef;
+import com.jopdesign.common.type.Signature;
+import org.apache.bcel.classfile.Field;
+import org.apache.bcel.generic.FieldGen;
+
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public final class FieldInfo extends ClassMemberInfo {
 
-    public FieldInfo(ClassInfo classInfo) {
-        super(classInfo);
+    private final FieldGen fieldGen;
+
+    public FieldInfo(ClassInfo classInfo, FieldGen fieldGen) {
+        super(classInfo, fieldGen);
+        this.fieldGen = fieldGen;
+    }
+
+    public boolean isTransient() {
+        return fieldGen.isTransient();
+    }
+
+    public void setTransient(boolean val) {
+        fieldGen.isTransient(val);
+    }
+
+    public boolean isVolatile() {
+        return fieldGen.isVolatile();
+    }
+    
+    public void setVolatile(boolean val) {
+        fieldGen.isVolatile(val);
+    }
+
+    public void setEnum(boolean flag) {
+        fieldGen.isEnum(flag);
+    }
+
+    public boolean isEnum() {
+        return fieldGen.isEnum();
+    }
+
+    public Field getField() {
+        return fieldGen.getField();
+    }
+
+    @Override
+    public Signature getSignature() {
+        return new Signature(getClassInfo().getClassName(), fieldGen.getName(), getDescriptor());
+    }
+
+    @Override
+    public Descriptor getDescriptor() {
+        return new Descriptor(getType());
+    }
+
+    public FieldRef getFieldRef() {
+        return new FieldRef(this);
+    }
+
+    /**
+     * Should only be used by ClassInfo.
+     * @return the internal fieldGen.
+     */
+    protected FieldGen getFieldGen() {
+        return fieldGen;
     }
 
 }

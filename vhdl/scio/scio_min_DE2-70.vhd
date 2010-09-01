@@ -100,7 +100,7 @@ port (
 --	Switches
 --
 	iSW			: in std_logic_vector(17 downto 0);
-
+	
 -- watch dog
 
 	wd			: out std_logic;
@@ -318,6 +318,7 @@ begin
 --		oLEDG => oLEDG,
 		iSW => iSW
 	);
+	
 	
 --	ps2kbd : kbd_cntrl
 --  generic map(

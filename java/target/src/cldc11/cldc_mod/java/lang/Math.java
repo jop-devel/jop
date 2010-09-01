@@ -59,6 +59,8 @@ public final strictfp class Math {
      * @since CLDC 1.1
      */
     public static final double PI = 3.14159265358979323846;
+    
+    private static final double halfPI = PI/2;
 
     /**
      * Returns the trigonometric sine of an angle.  Special cases:
@@ -105,7 +107,7 @@ public final strictfp class Math {
      */
 //    public static native double tan(double a);
     public static double tan(double a) {
-    	if(!(a != a) || a == Double.POSITIVE_INFINITY || a == Double.NEGATIVE_INFINITY) {
+    	if(Double.isNaN(a) || Double.isInfinite(a) || a % halfPI == 0) {
     		return Double.NaN;
     	}
     	if(a == 0.0) {

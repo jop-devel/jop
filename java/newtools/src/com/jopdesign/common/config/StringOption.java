@@ -44,13 +44,42 @@ public class StringOption extends Option<String> {
         this.shortKey = shortKey;
     }
 
-	public String parse(String s) {
+    public StringOption(String key, String descr, boolean optional, boolean replaceOptions) {
+        super(key, String.class, descr, optional);
+        this.replaceOptions = replaceOptions;
+    }
+
+    public StringOption(String key, String descr, String def, boolean replaceOptions) {
+        super(key, descr, def);
+        this.replaceOptions = replaceOptions;
+    }
+
+    @Override
+	protected String parse(String s) {
         return s.trim();
     }
 
-	public StringOption mandatory() {
+    @Override
+    public String getDefaultValue(OptionGroup options) {
+        if ( defaultValue != null && replaceOptions ) {
+            // we allow replacement for defaults of string options as well!
+            return parse(options, defaultValue);
+        }
+        return defaultValue;
+    }
+
+    public StringOption mandatory() {
         StringOption option = new StringOption(key, description, false);
         option.setShortKey(shortKey);
         return option;
 	}
+
+    @Override
+    protected String getDefaultsText(String defaultValue) {
+        if ("".equals(defaultValue)) {
+            return "[optional]";
+        } else {
+            return super.getDefaultsText(defaultValue);
+        }
+    }
 }

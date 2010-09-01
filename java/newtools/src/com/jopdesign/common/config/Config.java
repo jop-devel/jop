@@ -21,16 +21,21 @@
 
 package com.jopdesign.common.config;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Collections;
+import java.io.PrintStream;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 /**
+ * Configuration container, based on String-properties.
+ * Option handling and -parsing is done by the {@link OptionGroup} class.
+ *
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  * @author Stefan Hepp (stefan@stefant.org)
  */
@@ -44,17 +49,28 @@ public class Config {
         };
 
     /* Options which are always present */
+    /* The default values can be changed using the JopTool.getDefaultProps() method. */
+
     public static final BoolOption SHOW_HELP =
             new BoolOption("help", "show help", 'h', true);
 
     public static final BoolOption SHOW_VERSION =
-            new BoolOption("version","get version number", Option.SHORT_NONE, true);
+            new BoolOption("version", "show version number", Option.SHORT_NONE, true);
+
+    public static final BoolOption SHOW_CONFIG =
+            new BoolOption("showconfig", "print current configuration values", Option.SHORT_NONE, true);
 
     public static final BoolOption DEBUG =
-            new BoolOption("debug","verbose debugging mode", Option.SHORT_NONE, true);
+            new BoolOption("debug", "show debug level messages", 'd', false);
+
+    public static final BoolOption QUIET =
+            new BoolOption("quiet", "only show warnings and errors. Overruled by '-d'", 'q', false);
+
+    public static final BoolOption VERBOSE =
+            new BoolOption("verbose", "use a more detailed log format and show stacktraces. Can be used with '-d' or '-q'", 'v', false);
 
     public static final StringOption CLASSPATH =
-            new StringOption("cp", "classpath of target app", ".");
+            new StringOption("cp", "classpath of the classes to load", "java/target/dist/classes");
 
     public static final StringOption MAIN_METHOD_NAME =
             new StringOption("mm", "method name of the entry method", "main");
@@ -62,30 +78,35 @@ public class Config {
     public static final StringOption NATIVE_CLASSES =
             new StringOption("native", "comma-separated list of native classes and packages", DEFAULT_NATIVE);
 
+    public static final StringOption LIBRARY_CLASSES =
+            new StringOption("libraries", "comma-separated list of library classes and packages", "");
+
+    public static final StringOption IGNORE_CLASSES =
+            new StringOption("ignore", "comma-separated list of classes and packages to ignore", "");
+
+    public static final BoolOption EXCLUDE_LIBRARIES =
+            new BoolOption("exclude-libs", "do not load library classes", false);
+
+    public static final BoolOption LOAD_NATIVES =
+            new BoolOption("load-natives", "load native classes too", false);
+
     public static final StringOption ROOTS =
             new StringOption("roots", "comma-separated list of additional root classes", "");
 
     public static final StringOption WRITE_PATH =
-            new StringOption("out", "path to write generated classfiles", 'o', "out");
+            new StringOption("out", "base path for writing all generated files", 'o', "out");
 
-    public static final Option<?>[] standardOptions = { SHOW_HELP, SHOW_VERSION, DEBUG };
-    
+    public static final StringOption WRITE_CLASSPATH =
+            new StringOption("classout", "output path for generated class files", "${out}/classes");
+
+    public static final Option<?>[] standardOptions =
+            { SHOW_HELP, SHOW_VERSION, SHOW_CONFIG, DEBUG, QUIET, VERBOSE };
+
 
     /*
-	 * Singleton
-	 * ~~~~~~~~~
-	 */
-	private static Config theConfig = null;
-	public static Config instance() {
-		if(theConfig == null) theConfig = new Config();
-		return theConfig;
-	}
-
-
-	/*
-	 * Exception classes
-	 * ~~~~~~~~~~~~~~~~~
-	 */
+    * Exception classes
+    * ~~~~~~~~~~~~~~~~~
+    */
     @SuppressWarnings({"UncheckedExceptionClass"})
     public static class BadConfigurationError extends Error {
 		private static final long serialVersionUID = 1L;
@@ -110,9 +131,7 @@ public class Config {
     private OptionGroup options;
 
     public Config() {
-        this.defaultProps = null;
-        props = new Properties();
-        options = new OptionGroup(this);
+        this(new Properties());
     }
 
     public Config(Properties defaultProps) {
@@ -180,6 +199,18 @@ public class Config {
     }
 
     /**
+     * Get the default value used to indent the descriptions or values of options.
+     * @return the default indent for help texts.
+     */
+    public int getDefaultIndent() {
+        int i = 1;
+        for (Option o : options.availableOptions()) {
+            i = Math.max(i, o.getKey().length());
+        }
+        return Math.max(8, Math.min(i, 25));
+    }
+
+    /**
      * Parse configuration options.
      *
      * @see OptionGroup#consumeOptions(String[])
@@ -212,6 +243,19 @@ public class Config {
         props.putAll(oldProps);
     }
 
+    /**
+     * Add a set of properties to the default properties.
+     *
+     * @param defaults a set of default properties.
+     */
+    public void addDefaults(Properties defaults) {
+        //noinspection unchecked
+        defaultProps.putAll(defaults);
+    }
+
+    /**
+     * Clear all set properties, but not the default values.
+     */
     public void clearValues() {
         props.clear();
     }
@@ -268,41 +312,116 @@ public class Config {
         return props.getProperty(key, defaultVal);
     }
 
+    public String getDefaultValue(String key) {
+        return defaultProps.getProperty(key);
+    }
+
+    /**
+     * This is a shortcut to add an option to the main option group.
+     *
+     * @see OptionGroup#addOption(Option)
+     * @param option the option to add.
+     */
     public void addOption(Option<?> option) {
         options.addOption(option);
     }
 
+    /**
+     * This is a shortcut to add a list of options to the main option group.
+     *
+     * @see OptionGroup#addOptions(Option[])
+     * @param options the options to add.
+     */
     public void addOptions(Option<?>[] options) {
         this.options.addOptions(options);
     }
 
+    public boolean hasOption(Option<?> option) {
+        return this.options.containsOption(option);
+    }
+
+    /**
+     * This is a shortcut to get an option from the main option group.
+     *
+     * @see OptionGroup#getOption(Option)
+     * @param option the option to read.
+     * @return the value of the option
+     * @throws Config.BadConfigurationError if the format of the option is invalid if required and not set.
+     */
     public <T> T getOption(Option<T> option) throws BadConfigurationError {
         return options.getOption(option);
     }
 
+    /**
+     * This is a shortcut to get an option from the main option group.
+     *
+     * @see OptionGroup#getOption(Option, Object)
+     * @param option the option to read.
+     * @param defaultVal the default value to use if no other value is found.
+     * @return the value of the option
+     * @throws IllegalArgumentException if the format of the option is invalid
+     */
     public <T> T getOption(Option<T> option, T defaultVal) throws IllegalArgumentException {
         return options.getOption(option, defaultVal);
     }
 
+    public <T> T getDefaultValue(Option<T> option) {
+        return options.getDefaultValue(option);
+    }
+
+    /**
+     * This is a shortcut to get an option from the main option group.
+     *
+     * @see OptionGroup#tryGetOption(Option)
+     * @param option the option to read.
+     * @return the value of the option or null if not set, even if required.
+     * @throws IllegalArgumentException if the format of the option is invalid
+     */
     public <T> T tryGetOption(Option<T> option) throws IllegalArgumentException {
         return options.tryGetOption(option);
     }
 
     /**
-     * Dump configuration of all set properties for debugging purposes.
+     * Dump configuration of all user-set properties for debugging purposes.
      * To print a list of all options with their values,
-     * use {@link OptionGroup#dumpConfiguration(int)}.
-     *  
+     * use {@link #printConfiguration(int)}.
+     *
+     * @see #printConfiguration(int)
      * @param indent indent used for keys
      * @return a dump of all options with their respective values.
      */
     public String dumpConfiguration(int indent) {
-        StringBuilder sb = new StringBuilder();
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        PrintStream p = new PrintStream(os);
+
         for (Map.Entry<Object,Object> e : props.entrySet()) {
-            sb.append(String.format("%"+indent+"s%-20s ==> %s\n", "", e.getKey(),
-                      e.getValue() == null ? "<not set>": e.getValue()));
+            printOption(p, indent, e.getKey().toString(), e.getValue());
         }
-        return sb.toString();
+
+        return os.toString();
+    }
+
+    public void printConfiguration(int indent) {
+        Set<String> keys = new HashSet<String>();
+
+        keys.addAll(options.printOptions(System.out, indent));
+
+        System.out.println();
+        System.out.println("Other configuration values:");
+
+        for (Map.Entry<Object,Object> e : props.entrySet()) {
+            if ( keys.contains(e.getKey().toString()) ) {
+                continue;
+            }
+            printOption(System.out, indent, e.getKey().toString(), e.getValue());
+        }
+
+        System.out.println();
+    }
+
+    protected static void printOption(PrintStream p, int indent, String key, Object value) {
+        p.println(String.format("%4s%-"+(indent+1)+"s ==> %s", "", key,
+                  value == null ? "<not set>": value));
     }
 
 }

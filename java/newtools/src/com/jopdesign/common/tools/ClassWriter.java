@@ -22,29 +22,72 @@ package com.jopdesign.common.tools;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.config.OptionGroup;
+import com.jopdesign.common.logger.LogConfig;
+import org.apache.bcel.classfile.JavaClass;
+import org.apache.log4j.Logger;
 
+import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 /**
+ * Simple tool to write classInfos
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class ClassWriter {
-    private AppInfo appInfo;
 
-    public ClassWriter(AppInfo appInfo) {
-        this.appInfo = appInfo;
+    public static final Logger logger = Logger.getLogger(LogConfig.LOG_WRITING+".ClassWriter");
+
+    public ClassWriter() {
     }
 
-    public void writeToDir(String dir) {
-        File outDir = new File(dir);
-        if ( !outDir.mkdir() ) {
-            // TODO handle
+
+    public void write(String writeDir) throws IOException {
+        AppInfo appInfo = AppInfo.getSingleton();
+
+        if (logger.isInfoEnabled()) {
+            logger.info("Start writing classes to '"+writeDir+"' ..");
+        }
+
+        File classDir = new File(writeDir);
+        if ( classDir.exists() ) {
+            if ( classDir.isFile() ) {
+                throw new IOException("Output directory '"+classDir+"' is a file.");
+            }
+        } else if ( !classDir.mkdirs() ) {
+            throw new IOException("Could not create output directory "+classDir);
         }
 
         for (ClassInfo cls : appInfo.getClassInfos() ) {
-            // TODO write
+            if (logger.isDebugEnabled()) {
+                logger.debug("Writing class: " + cls.getClassName());
+            }
+            
+            JavaClass jc = cls.compileJavaClass();
+
+            String filename = classDir + File.separator +
+                    cls.getClassName().replace(".", File.separator) + ".class";
+
+
+            File file = new File(filename);
+            String parent = file.getParent();
+
+            if(parent != null) {
+                File pDir = new File(parent);
+                //noinspection ResultOfMethodCallIgnored
+                pDir.mkdirs();
+            }
+
+            BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file));
+            jc.dump(new DataOutputStream(out));
+        }
+
+        if (logger.isInfoEnabled()) {
+            logger.info(appInfo.getClassInfos().size() + " classes written.");
         }
     }
-
 
 }

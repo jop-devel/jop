@@ -23,11 +23,12 @@ package com.jopdesign.example;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.JopTool;
 import com.jopdesign.common.config.BoolOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.IntOption;
-import com.jopdesign.common.tools.ClassWriter;
-import com.jopdesign.common.tools.TransitiveHull;
+import com.jopdesign.common.config.OptionGroup;
+import com.jopdesign.common.misc.NamingConflictException;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -37,10 +38,60 @@ import java.util.Properties;
  * 
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ExampleTool {
+public class ExampleTool implements JopTool<ExampleManager> {
+
     public static final String VERSION = "0.1";
-   
+
+    private final ExampleManager manager;
+
+    public ExampleTool() {
+        manager = new ExampleManager();
+    }
+
+    public String getToolVersion() {
+        return VERSION;
+    }
+
+    public ExampleManager getAttributeManager() {
+        return manager;
+    }
+
+    public Properties getDefaultProperties() throws IOException {
+        // return AppSetup.loadResourceProps(ExampleTool.class, "defaults.properties");
+        return null;
+    }
+
+    public void registerOptions(OptionGroup options) {
+        options.addOption( new BoolOption("flag", "switch some stuff on or off") );
+        options.addOption( new IntOption("new", "create n new classes", 2).setMinMax(0,10) );
+    }
+
+    public void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException {
+    }
+
+    public void run(AppSetup setup) {
+
+        AppInfo appInfo = setup.getAppInfo();
+
+        // access and modify some classes
+        System.out.println("field of main class: " + manager.getMyField(appInfo.getMainMethod().getClassInfo()) );
+        for (ClassInfo root : appInfo.getRootClasses() ) {
+            System.out.println("field of root: " + manager.getMyField(root) );
+        }
+
+        // create a new class and new methods
+        try {
+            ClassInfo newCls = appInfo.createClass("MyTest", appInfo.getClassRef("java.lang.Object"), false);
+        } catch (NamingConflictException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
     public static void main(String[] args) {
+
+        ExampleTool example = new ExampleTool();
 
         // load defaults configuration file
         Properties defaults = null;
@@ -53,41 +104,23 @@ public class ExampleTool {
 
         // setup some defaults
         AppSetup setup = new AppSetup(defaults, true);
-        setup.addStandardOptions(true, true);
         setup.setUsageInfo("example", "An example application");
-        setup.setVersionInfo("example: "+VERSION);
+        setup.setVersionInfo("This is the version of this application");
 
-        // setup options
-        setup.getConfig().addOption( Config.WRITE_PATH );
-        setup.getConfig().addOption( new BoolOption("flag", "switch some stuff on or off") );
-        setup.getConfig().addOption( new IntOption("new", "create n new classes", 2).setMinMax(0,10) );
+        setup.addStandardOptions(true, true);
+        setup.addWriteOptions(true);
+        setup.setConfigFilename("example.properties");
 
-        // parse options and to config
-        String[] rest = setup.setupConfig("example.properties", args);
-        setup.setupLogger();
+        setup.registerTool("example", example);
 
-        // init AppInfo
-        ExampleManager myMgr = new ExampleManager();
+        // parse options and setup config
+        String[] rest = setup.setupConfig(args);
+        setup.setupLogger(false);
 
-        AppInfo appInfo = setup.getAppInfo();
-        appInfo.registerManager("example", myMgr);
-
-        // setup classpath, roots and main method
-        setup.setupAppInfo(rest);
-
-        new TransitiveHull(appInfo).load();
-
-        // access and modify some classes
-        System.out.println("field of main class: " + myMgr.getMyField(appInfo.getMainMethod().getClassInfo()) );
-        for (ClassInfo root : appInfo.getRootClasses() ) {
-            System.out.println("field of root: " + myMgr.getMyField(root) );
-        }
-
-        // create a new class and new methods
-        ClassInfo newCls = appInfo.createClass("MyTest", appInfo.getClassRef("java.lang.Object"));
+        // setup classpath, roots and main method, load transitive hull
+        setup.setupAppInfo(rest, true);
 
         // write results
-        new ClassWriter(appInfo).writeToDir(setup.getConfig().getOption(Config.WRITE_PATH));
+        setup.writeClasses();
     }
-
 }

@@ -20,6 +20,8 @@
 
 package com.jopdesign.common.code;
 
+import com.jopdesign.common.MethodInfo;
+
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
@@ -29,11 +31,10 @@ public class CFG implements CodeRepresentation {
         return false;
     }
 
-    public void load(byte[] code) {
+    public void load(MethodInfo method) {
     }
 
-    public byte[] compile() {
-        return new byte[0];
+    public void compile(MethodInfo method) {
     }
     
 }

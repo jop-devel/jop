@@ -44,7 +44,7 @@ public class BoolOption extends Option<Boolean> {
     }
 
     @Override
-	public Boolean parse(String s) throws IllegalArgumentException {
+	protected Boolean parse(String s) throws IllegalArgumentException {
 		String sl = s.toLowerCase();
 		if("true".equals(sl) || "yes".equals(sl) || "y".equals(sl)) return Boolean.TRUE;
 		else if ("false".equals(sl) || "no".equals(sl) || "n".equals(sl)) return Boolean.FALSE;
@@ -53,6 +53,24 @@ public class BoolOption extends Option<Boolean> {
 
     @Override
     public boolean isEnabled(OptionGroup options) {
-        return options.hasValue(this) && options.tryGetOption(this);
+        return options.getOption(this);
+    }
+
+    @Override
+    protected String getDefaultsText(String defaultValue) {
+        if ( optional && (defaultValue == null || "false".equalsIgnoreCase(defaultValue)) ) {
+            return skipChecks ? "" : "[flag]";
+        }
+        return super.getDefaultsText(defaultValue);
+    }
+
+    @Override
+    public boolean isValue(String arg) {
+        try {
+            parse(arg);
+            return true;
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
     }
 }

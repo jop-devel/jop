@@ -1,109 +1,109 @@
 # Constraints for JOP
 #
 # Design provided for ML50x Virtex-5 Board.
-
-NET "clk" TNM_NET = "clk";
-TIMESPEC "TS_clk" = PERIOD "clk" 33 ns HIGH 50 %;
-
 #NET  CLK_33MHZ_FPGA       LOC="AH17";  # Bank 4, Vcco=3.3V, No DCI      
 # 33 MHz
 NET "clk" LOC = "AH17";
+NET "clk" TNM_NET = "clk";
+TIMESPEC "TS_clk" = PERIOD "clk" 30.303 ns HIGH 50 %;
+NET "clk_int" TNM_NET = "clk_int";
+TIMESPEC "TS_clk_int" = PERIOD "clk_int" "TS_clk" / 3;
+
+NET "sram_data*" OFFSET = IN 3 ns VALID 8 ns BEFORE "clk_int" RISING;
+NET "sram_data*" OFFSET = OUT 1 ns AFTER "clk_int";
+NET "sram_addr*" OFFSET = OUT 100 ps AFTER "clk_int";
+NET "sram_we_n" OFFSET = OUT 1 ns AFTER "clk_int";
+NET "sram_oe_n" OFFSET = OUT 1 ns AFTER "clk_int";
+#TIMESPEC "TS_abc" = FROM "clk_int" TO "sram_addr<0>" 1 ns;
 
 NET "wd" LOC = "H18";
 NET "led" LOC = "L18";
 
 
 # UART connections 
-
 NET "ser_rxd" LOC = "AG15";
 NET "ser_txd" LOC = "AG20";
 
-## SRAM
-##
-#NET  "sram_addr<0>"     LOC="K12";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<1>"     LOC="K13";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<2>"     LOC="H23";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<3>"     LOC="G23";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<4>"     LOC="H12";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<5>"     LOC="J12";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<6>"     LOC="K22";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<7>"     LOC="K23";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<8>"     LOC="K14";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<9>"     LOC="L14";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<10>"    LOC="H22";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<11>"    LOC="G22";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<12>"    LOC="J15";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<13>"    LOC="K16";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<14>"    LOC="K21";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<15>"    LOC="J22";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<16>"    LOC="L16";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<17>"    LOC="L15";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<18>"    LOC="L20";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<19>"    LOC="L21";   # Bank 1, Vcco=3.3V
-#NET  "sram_addr<20>"    LOC="AE23";  # Bank 2, Vcco=3.3V
-#NET  "sram_addr<21>"    LOC="AE22";  # Bank 2, Vcco=3.3V
-##
-#NET  "sram_we_n"   LOC="AF20";  # Bank 2, Vcco=3.3V
-#NET  "sram_oe_n"            LOC="B12";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
-#NET  "sram_cen"         LOC="J10";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
+# SRAM
 #
-## Xilix UCF contains two pins for SRAM clk???
-##NET  SRAM_CLK          LOC="AG21";  # Bank 4, Vcco=3.3V, No DCI      
-##NET  SRAM_CLK          LOC="G8";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
+NET  "sram_addr<0>"     LOC="K12";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<1>"     LOC="K13";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<2>"     LOC="H23";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<3>"     LOC="G23";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<4>"     LOC="H12";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<5>"     LOC="J12";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<6>"     LOC="K22";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<7>"     LOC="K23";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<8>"     LOC="K14";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<9>"     LOC="L14";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<10>"    LOC="H22";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<11>"    LOC="G22";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<12>"    LOC="J15";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<13>"    LOC="K16";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<14>"    LOC="K21";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<15>"    LOC="J22";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<16>"    LOC="L16";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<17>"    LOC="L15";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<18>"    LOC="L20";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<19>"    LOC="L21";   # Bank 1, Vcco=3.3V
+NET  "sram_addr<20>"    LOC="AE23";  # Bank 2, Vcco=3.3V
+NET  "sram_addr<21>"    LOC="AE22";  # Bank 2, Vcco=3.3V
 #
-#NET  "sram_clk"          LOC="AG21";  # Bank 4, Vcco=3.3V, No DCI      
+NET  "sram_we_n"   LOC="AF20";  # Bank 2, Vcco=3.3V
+NET  "sram_oe_n"            LOC="B12";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
+NET  "sram_cen"         LOC="J10";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
+# Xilix UCF contains two pins for SRAM clk???
+#NET  SRAM_CLK          LOC="AG21";  # Bank 4, Vcco=3.3V, No DCI      
+#NET  SRAM_CLK          LOC="G8";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
+NET  "sram_clk"          LOC="AG21";  # Bank 4, Vcco=3.3V, No DCI      
 #
-##
-#NET  "sram_data<0>"     LOC="AD19";  # Bank 2, Vcco=3.3V
-#NET  "sram_data<1>"     LOC="AE19";  # Bank 2, Vcco=3.3V
-#NET  "sram_data<2>"     LOC="AE17";  # Bank 2, Vcco=3.3V
-#NET  "sram_data<3>"     LOC="AF16";  # Bank 2, Vcco=3.3V
-#NET  "sram_data<4>"     LOC="AD20";  # Bank 2, Vcco=3.3V
-#NET  "sram_data<5>"     LOC="AE21";  # Bank 2, Vcco=3.3V
-#NET  "sram_data<6>"     LOC="AE16";  # Bank 2, Vcco=3.3V
-#NET  "sram_data<7>"     LOC="AF15";  # Bank 2, Vcco=3.3V
-#NET  "sram_data<8>"     LOC="AH13";  # Bank 4, Vcco=3.3V, No DCI
-#NET  "sram_data<9>"     LOC="AH14";  # Bank 4, Vcco=3.3V, No DCI
-#NET  "sram_data<10>"    LOC="AH19";  # Bank 4, Vcco=3.3V, No DCI
-#NET  "sram_data<11>"    LOC="AH20";  # Bank 4, Vcco=3.3V, No DCI
-#NET  "sram_data<12>"    LOC="AG13";  # Bank 4, Vcco=3.3V, No DCI
-#NET  "sram_data<13>"    LOC="AH12";  # Bank 4, Vcco=3.3V, No DCI
-#NET  "sram_data<14>"    LOC="AH22";  # Bank 4, Vcco=3.3V, No DCI
-#NET  "sram_data<15>"    LOC="AG22";  # Bank 4, Vcco=3.3V, No DCI
-#NET  "sram_data<16>"          LOC="N10";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
-#NET  "sram_data<17>"          LOC="E13";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
-#NET  "sram_data<18>"          LOC="E12";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
-#NET  "sram_data<19>"          LOC="L9";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
-#NET  "sram_data<20>"          LOC="M10";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
-#NET  "sram_data<21>"          LOC="E11";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
-#NET  "sram_data<22>"          LOC="F11";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
-#NET  "sram_data<23>"          LOC="L8";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
-#NET  "sram_data<24>"          LOC="M8";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
-#NET  "sram_data<25>"          LOC="G12";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
-#NET  "sram_data<26>"          LOC="G11";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
-#NET  "sram_data<27>"          LOC="C13";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
-#NET  "sram_data<28>"          LOC="B13";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
-#NET  "sram_data<29>"          LOC="K9";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
-#NET  "sram_data<30>"          LOC="K8";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
-#NET  "sram_data<31>"          LOC="J9";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
-##
+NET  "sram_data<0>"     LOC="AD19";  # Bank 2, Vcco=3.3V
+NET  "sram_data<1>"     LOC="AE19";  # Bank 2, Vcco=3.3V
+NET  "sram_data<2>"     LOC="AE17";  # Bank 2, Vcco=3.3V
+NET  "sram_data<3>"     LOC="AF16";  # Bank 2, Vcco=3.3V
+NET  "sram_data<4>"     LOC="AD20";  # Bank 2, Vcco=3.3V
+NET  "sram_data<5>"     LOC="AE21";  # Bank 2, Vcco=3.3V
+NET  "sram_data<6>"     LOC="AE16";  # Bank 2, Vcco=3.3V
+NET  "sram_data<7>"     LOC="AF15";  # Bank 2, Vcco=3.3V
+NET  "sram_data<8>"     LOC="AH13";  # Bank 4, Vcco=3.3V, No DCI
+NET  "sram_data<9>"     LOC="AH14";  # Bank 4, Vcco=3.3V, No DCI
+NET  "sram_data<10>"    LOC="AH19";  # Bank 4, Vcco=3.3V, No DCI
+NET  "sram_data<11>"    LOC="AH20";  # Bank 4, Vcco=3.3V, No DCI
+NET  "sram_data<12>"    LOC="AG13";  # Bank 4, Vcco=3.3V, No DCI
+NET  "sram_data<13>"    LOC="AH12";  # Bank 4, Vcco=3.3V, No DCI
+NET  "sram_data<14>"    LOC="AH22";  # Bank 4, Vcco=3.3V, No DCI
+NET  "sram_data<15>"    LOC="AG22";  # Bank 4, Vcco=3.3V, No DCI
+NET  "sram_data<16>"          LOC="N10";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
+NET  "sram_data<17>"          LOC="E13";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
+NET  "sram_data<18>"          LOC="E12";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
+NET  "sram_data<19>"          LOC="L9";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
+NET  "sram_data<20>"          LOC="M10";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
+NET  "sram_data<21>"          LOC="E11";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
+NET  "sram_data<22>"          LOC="F11";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
+NET  "sram_data<23>"          LOC="L8";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
+NET  "sram_data<24>"          LOC="M8";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
+NET  "sram_data<25>"          LOC="G12";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
+NET  "sram_data<26>"          LOC="G11";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
+NET  "sram_data<27>"          LOC="C13";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
+NET  "sram_data<28>"          LOC="B13";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
+NET  "sram_data<29>"          LOC="K9";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
+NET  "sram_data<30>"          LOC="K8";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
+NET  "sram_data<31>"          LOC="J9";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
 #
-#NET  "sram_bw0"          LOC="D10";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
-#NET  "sram_bw1"          LOC="D11";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
-#NET  "sram_bw2"          LOC="J11";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
-#NET  "sram_bw3"          LOC="K11";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
-##
-##
-#NET  "sram_adv_ld_n"     LOC="H8";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
-#NET  "sram_mode"         LOC="A13";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
+NET  "sram_bw0"          LOC="D10";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
+NET  "sram_bw1"          LOC="D11";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
+NET  "sram_bw2"          LOC="J11";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
+NET  "sram_bw3"          LOC="K11";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
 #
 #
-## parity, not used
-##NET  SRAM_DQP0         LOC="D12";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
-##NET  SRAM_DQP1         LOC="C12";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
-##NET  SRAM_DQP2         LOC="H10";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
-##NET  SRAM_DQP3         LOC="H9";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
+NET  "sram_adv_ld_n"     LOC="H8";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors      
+NET  "sram_mode"         LOC="A13";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
 
+# parity, not used
+#NET  SRAM_DQP0         LOC="D12";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
+#NET  SRAM_DQP1         LOC="C12";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
+#NET  SRAM_DQP2         LOC="H10";   # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
+#NET  SRAM_DQP3         LOC="H9";    # Bank 20, Vcco=3.3V, DCI using 49.9 ohm resistors
 
 # Don't know what IO standards should be used....
 #NET sram_clk	IOSTANDARD = LVCMOS33;
@@ -400,9 +400,7 @@ NET "ser_txd" LOC = "AG20";
 #NET ser_txd IOSTANDARD = LVCMOS33;
 #NET ser_txd TIG;
 
-
 ### original stuff from Xilinx ###
-
 
 #NET  AUDIO_BIT_CLK        LOC="AF18";  # Bank 4, Vcco=3.3V, No DCI    
 #NET  AUDIO_SDATA_IN       LOC="AE18";  # Bank 4, Vcco=3.3V, No DCI    

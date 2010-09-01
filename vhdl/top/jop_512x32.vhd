@@ -58,6 +58,7 @@ port (
 --
 	oLEDR		: out std_logic_vector(17 downto 0);
 --	oLEDG		: out std_logic_vector(7 downto 0);
+
 	
 --
 --	Switches
@@ -214,18 +215,21 @@ end process;
 			rxd => ser_rxd,
 			ncts => oUART_CTS,
 			nrts => iUART_RTS,
+			
+			oLEDR => oLEDR,
+--			oLEDG => oLEDG,
+			iSW => iSW,
+			
 			wd => wd_out,
 			--- IO pins
 			l => open,
 			r => open,
 			t => open,
-			b => open,
+			b => open
 			-- remove the comment for RAM access counting
 			-- ram_cnt => ram_count
 			
-			oLEDR => oLEDR,
---			oLEDG => oLEDG,
-			iSW => iSW
+
 		);
 
 	scm: entity work.sc_mem_if

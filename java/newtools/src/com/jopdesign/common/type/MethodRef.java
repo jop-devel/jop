@@ -20,6 +20,9 @@
 
 package com.jopdesign.common.type;
 
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.misc.Ternary;
+
 /**
  * A container of a class reference.
  * Holds either a ClassInfo object or a classname with some infos if the
@@ -28,4 +31,67 @@ package com.jopdesign.common.type;
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class MethodRef {
+
+    private final ClassRef classRef;
+    private final MethodInfo methodInfo;
+
+    private String methodName;
+    private Descriptor descriptor;
+
+    public MethodRef(ClassRef classRef, String methodName, Descriptor descriptor) {
+        this.classRef = classRef;
+
+        this.methodName = methodName;
+        this.descriptor = descriptor;
+        methodInfo = null;
+    }
+
+    public MethodRef(MethodInfo methodInfo) {
+        this.methodInfo = methodInfo;
+        this.classRef = null;
+    }
+
+    public MethodInfo getMethodInfo() {
+        // TODO if null, try getting from AppInfo
+        return methodInfo;
+    }
+
+    public ClassRef getClassRef() {
+        return methodInfo != null ? methodInfo.getClassInfo().getClassRef() : classRef;
+    }
+
+    public Descriptor getDescriptor() {
+        return methodInfo != null ? methodInfo.getDescriptor() : descriptor;
+    }
+
+    public Ternary isInterfaceMethod() {
+        if ( methodInfo != null ) {
+            return Ternary.valueOf(methodInfo.getClassInfo().isInterface());
+        }
+        return classRef.isInterface();
+    }
+
+    public Ternary exists() {
+        if ( methodInfo != null ) return Ternary.TRUE;
+        if ( classRef.getClassInfo() != null ) {
+            return classRef.getClassInfo().getMethodInfo(getMemberSignature()) != null ?
+                    Ternary.TRUE : Ternary.FALSE;
+        }
+        return Ternary.UNKNOWN;
+    }
+
+    public String getName() {
+        return methodInfo != null ? methodInfo.getSimpleName() : methodName;
+    }
+
+    public String getClassName() {
+        return methodInfo != null ? methodInfo.getClassInfo().getClassName() : classRef.getClassName();
+    }
+
+    public String getMemberSignature() {
+        if ( methodInfo != null ) {
+            return methodInfo.getMemberSignature();
+        }
+        return methodName + descriptor;
+    }
 }

@@ -1,5 +1,5 @@
 NAME=ml50x
-PART=xc5vlx110t-3-ff1136
+PART=xc5vlx50t-1-ff1136
 
 all:
 	rm -rf out
@@ -8,17 +8,28 @@ all:
         -ofn out/${NAME}.syr || exit 1
 	ngdbuild -intstyle ise -dd out/_ngo -uc ${NAME}.ucf \
         -p ${PART} out/${NAME}.ngc out/${NAME}.ngd || exit 1
-	map -intstyle ise -p ${PART} -cm area -pr b -k 4 -c 100 -tx off \
+	map -intstyle ise -p ${PART} -cm area -pr b -c 100 -tx off \
         -o out/${NAME}_map.ncd out/${NAME}.ngd out/${NAME}.pcf || exit 1
-	par -w -intstyle ise -ol std -t 1 out/${NAME}_map.ncd \
+	par -w -intstyle ise -ol std  out/${NAME}_map.ncd \
         out/${NAME}.ncd out/${NAME}.pcf || exit 1
-	trce -intstyle ise -e 3 -l 3 -xml out/${NAME} \
+	trce -intstyle ise -s 1 -v 3 -l 3 -xml out/${NAME} \
         out/${NAME}.ncd -o out/${NAME}.twr out/${NAME}.pcf || exit 1
 	bitgen -intstyle ise -f ${NAME}.ut out/${NAME}.ncd || exit 1
 	cp out/${NAME}.bit . || exit 1
 
-configure:
+tr:
+	trce -intstyle ise -s 1 -l 3 -v 3 -xml out/${NAME} \
+        out/${NAME}.ncd -o out/${NAME}.twr out/${NAME}.pcf || exit 1
+
+config:
 	impact -batch impact.in
 
 clean:
-	rm *.ise
+	rm -f *.ise
+	rm -f *.xrpt
+	rm -f *.bit
+	rm -f *.log
+	rm -f *.twr
+	rm -f *.xml
+	rm -rf xlnx_auto*
+	rm -rf out

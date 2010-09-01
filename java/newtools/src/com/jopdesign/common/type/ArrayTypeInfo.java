@@ -18,27 +18,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common.tools;
+package com.jopdesign.common.type;
 
-import com.jopdesign.common.AppInfo;
+import org.apache.bcel.generic.ArrayType;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class TransitiveHull {
+public class ArrayTypeInfo extends ReferenceTypeInfo<ArrayType> {
 
-    private AppInfo appInfo;
+    private final TypeInfo elementType;
 
-    public TransitiveHull(AppInfo appInfo) {
-        this.appInfo = appInfo;
+    public ArrayTypeInfo(TypeInfo elementType, int dimensions) {
+        super(new ArrayType(elementType.getType(), dimensions));
+        this.elementType = elementType;
     }
 
-    public void load() {
-        load(false);
+    public ArrayTypeInfo(ArrayType type) {
+        super(type);
+        elementType = TypeInfo.getTypeInfo(type.getElementType());
     }
-    
-    public void load(boolean startFromRootsOnly) {
 
+    public TypeInfo getElementType() {
+        return elementType;
+    }
+
+    public int getDimensions() {
+        return getType().getDimensions();
     }
 
 }
