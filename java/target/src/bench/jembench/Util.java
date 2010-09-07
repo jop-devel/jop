@@ -36,7 +36,6 @@ package jembench;
  * Container for utility functions.
  * 
  * @author Martin Schoeberl (martin@jopdesign.com)
- * @author Thomas B. Preußer <thomas.preusser@tu-dresden.de>
  *
  */
 public final class Util {
@@ -51,8 +50,8 @@ public final class Util {
 	 * @return
 	 */
 	public static int getNrOfCores() {
-		return 1;
-		// return Runtime.getRuntime().availableProcessors();
+	  return  1;
+	  // return  Runtime.getRuntime().availableProcessors();
 	}
 
 	/**

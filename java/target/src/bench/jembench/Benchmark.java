@@ -124,10 +124,4 @@ public abstract class Benchmark {
 		}
 		return countResult*1000*100/timeResult - countResult*1000/timeResult*100;
 	}
-	
-
-	// MS: what's the point on a checkSum method for benchmarks?
-	public int getCheckSum() {
-		return 0;
-	}
 }
