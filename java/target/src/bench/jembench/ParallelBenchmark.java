@@ -28,14 +28,10 @@ package jembench;
  */
 public abstract class ParallelBenchmark extends Benchmark {
 
-	static ParallelExecutor pe;
+	ParallelExecutor pe;
 	
 	public ParallelBenchmark() {
-		synchronized (this) {
-			if (pe==null) {
-				pe = new ParallelExecutor();
-			}
-		}
+		pe = ParallelExecutor.getExecutor();
 	} 
 	
 	public String toString() {

@@ -26,7 +26,25 @@ import java.io.PrintStream;
 /**
  * Main class to start all benchmarks.
  * 
- * @author
+ * The benchmark JemBench is a collection of benchmarks for
+ * embedded Java. The version 2.0 has been described in following
+ * JTRES 2010 paper:
+ * 
+ * Martin Schoeberl, Thomas B. Preusser, and Sascha Uhrig,
+ * The Embedded Java Benchmark Suite JemBench,
+ * In Proceedings of the 8th International Workshop on Java
+ * Technologies for Real-time and Embedded Systems (JTRES 2010),
+ * ACM Press, 2010
+ * 
+ * Available from ACM:
+ * 		http://doi.acm.org/10.1145/1850771.1850789
+ * and
+ * 		http://www.jopdesign.com/doc/jembench.pdf
+ * 
+ * Results for embedded Java systems can be entered at:
+ * 		http://www.jopwiki.com/JemBench
+ * 
+ * @author Martin Schoeberl, Thomas B. Preusser, and Sascha Uhrig
  * 
  */
 public final class Main {
@@ -42,17 +60,11 @@ public final class Main {
 	private static final int BENCH_STREAM = 0x10;
 	private static final String SPACES = "?           ";
 
-	private final boolean verbose;
-
-	// private final Executor exec;
-
-	private Main(final boolean verbose) {
-		this.verbose = verbose;
-		// this.exec = new Executor();
-	}
+	// No Instances!
+	private Main() {}
 
 	// TODO: printout should go to Util
-	private void execute(final Benchmark bench) {
+	private static void execute(final Benchmark bench) {
 		final PrintStream out = System.out;
 
 		{ // Print Label
@@ -63,18 +75,10 @@ public final class Main {
 		}
 
 		// Measurement
-		String s;
-
-		// int res = exec.measure(bench);
-		int result = bench.measure();
-		if (verbose) {
-			s = String.valueOf(bench.getCheckSum());
-			out.print(SPACES.substring(s.length()));
-			out.print(s);
-		}
+		final int  result = bench.measure();
 
 		// Output Score
-		s = (result == -1) ? "n/a" : String.valueOf(result);
+		final String  s = (result == -1) ? "n/a" : String.valueOf(result);
 		out.print(SPACES.substring(s.length()));
 		out.print(s);
 		if (result < 100 && result > -1) {
@@ -88,12 +92,16 @@ public final class Main {
 		out.println();
 	}
 
-	private void printVersion() {
-		System.out.println("JemBench V 1.8");
-		System.out.println();
+	private static void printInfo() {
+	  final PrintStream  out = System.out;
+	  out.println("JemBench V 2.0");
+	  out.print("Assuming ");
+	    out.print(Util.getNrOfCores());
+	    out.println(" Core(s).");
+	  out.println();
 	}
 	
-	private void runMicroBenchmarks() {
+	private static void runMicroBenchmarks() {
 		System.out.println("Micro Benchmarks:");
 		execute(new jembench.micro.Add());
 		execute(new jembench.micro.Mul());
@@ -116,14 +124,14 @@ public final class Main {
 		System.out.println();
 	}
 
-	private void runKernelBenchmarks() {
+	private static void runKernelBenchmarks() {
 		System.out.println("Kernel Benchmarks:");
 		execute(new jembench.kernel.Sieve());
 		execute(new jembench.kernel.BubbleSort());
 		System.out.println();
 	}
 
-	private void runApplicationBenchmarks() {
+	private static void runApplicationBenchmarks() {
 		System.out.println("Application Benchmarks:");
 		execute(new jembench.application.BenchKfl());
 		execute(new jembench.application.BenchLift());
@@ -131,7 +139,7 @@ public final class Main {
 		System.out.println();
 	}
 
-	private void runParallelBenchmarks() {
+	private static void runParallelBenchmarks() {
 		System.out.println("Parallel Benchmarks:");
 		execute(new jembench.EnumeratedParallelBenchmark());
 		execute(new jembench.parallel.MatrixMul());
@@ -141,73 +149,51 @@ public final class Main {
 		System.out.println();
 	}
 
-	private void runStreamBenchmarks() {
+	private static void runStreamBenchmarks() {
 		System.out.println("Stream Benchmarks:");
 		execute(new jembench.stream.AES());
 		System.out.println();
 	}
 
-	public static void main(String[] args) {
+  public static void main(String[] args) {
 
-		// Evaluate Parameters
-		boolean verbose = false;
-		int benches = 0;
-		// How do you expect that an embedded system gets command line
-		// arguments?
-		// With JOP I simply pass a null pointer to main.
-		if (args != null) {
-			for (int i = args.length; --i >= 0;) {
-				final String arg = args[i];
-				if ("-micro".startsWith(arg))
-					benches |= BENCH_MICRO;
-				else if ("-kernel".startsWith(arg))
-					benches |= BENCH_KERNEL;
-				else if ("-application".startsWith(arg))
-					benches |= BENCH_APPLICATION;
-				else if ("-parallel".startsWith(arg))
-					benches |= BENCH_PARALLEL;
-				else if ("-stream".startsWith(arg))
-					benches |= BENCH_STREAM;
-				else if ("-verbose".startsWith(arg))
-					verbose = true;
-				else {
-					System.err
-							.println("jbe.Main [-verbose] [-<bench_group> ...]\n\n"
-									+ "The JBE Benchmark Suite.\n"
-									+ "\tOutput: Benchmark [Complexity Checksum] Score\n"
-									+ "\t-verbose\tverbose output messages\n\n"
-									+ "Benchmark Groups <bench_group>:\n"
-									+ "\t-micro\n"
-									+ "\t-kernel\n"
-									+ "\t-application\n"
-									+ "\t-parallel\n"
-									+ "\t-stream\n\n"
-									+ "Without the selection of benchmark groups, all benchmarks will be executed.\n"
-									+ "All Options may be given as unique prefix.\n");
-					return;
-				}
+    // Evaluate Parameters
+    int  benches = 0;
 
-			}
-		}
-		if (benches == 0)
-			benches = -1;
-
-		// Execute Benchmark Groups
-		final Main main = new Main(verbose);
-		main.printVersion();
-//		main.runParallelBenchmarks();
-		
-		if ((benches & BENCH_MICRO) != 0)
-			main.runMicroBenchmarks();
-		if ((benches & BENCH_KERNEL) != 0)
-			main.runKernelBenchmarks();
-		if ((benches & BENCH_APPLICATION) != 0)
-			main.runApplicationBenchmarks();
-		Executor.getExecutor().startParallel();
-		if ((benches & BENCH_PARALLEL) != 0)
-			main.runParallelBenchmarks();
-		if ((benches & BENCH_STREAM) != 0)
-			main.runStreamBenchmarks();
-		Executor.getExecutor().stopParallel();
+    // JOP simply passes a null pointer to main.
+    if(args != null) {
+      for(int i = args.length; --i >= 0;) {
+	final String arg = args[i];
+	if     ("-micro"      .startsWith(arg))  benches |= BENCH_MICRO;
+	else if("-kernel"     .startsWith(arg))  benches |= BENCH_KERNEL;
+	else if("-application".startsWith(arg))  benches |= BENCH_APPLICATION;
+	else if("-parallel"   .startsWith(arg))  benches |= BENCH_PARALLEL;
+	else if("-stream"     .startsWith(arg))  benches |= BENCH_STREAM;
+	else {
+	  System.err.println("jembench.Main [-<bench_group> ...]\n\n"
+			     + "The JemBench Suite.\n"
+			     + "\tOutput: Benchmark Score\n\n"
+			     + "Benchmark Groups <bench_group>:\n"
+			     + "\t-micro\n"
+			     + "\t-kernel\n"
+			     + "\t-application\n"
+			     + "\t-parallel\n"
+			     + "\t-stream\n\n"
+			     + "Without the selection of benchmark groups, all benchmarks will be executed.\n"
+			     + "All Options may be given as unique prefix.\n");
+	  return;
 	}
+      }
+    }
+    if(benches == 0)  benches = -1;
+
+    // Print Info & Execute Benchmark Groups
+    printInfo();
+
+    if((benches & BENCH_MICRO)       != 0)  runMicroBenchmarks();
+    if((benches & BENCH_KERNEL)      != 0)  runKernelBenchmarks();
+    if((benches & BENCH_APPLICATION) != 0)  runApplicationBenchmarks();
+    if((benches & BENCH_PARALLEL)    != 0)  runParallelBenchmarks();
+    if((benches & BENCH_STREAM)      != 0)  runStreamBenchmarks();
+  }
 }

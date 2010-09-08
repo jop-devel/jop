@@ -69,10 +69,22 @@ public class ParallelExecutor {
 	private Worker runner[];
 	int cpus = Util.getNrOfCores();
 
-	public ParallelExecutor() {
+	private ParallelExecutor() {
 
 		runner = new Worker[cpus-1];
 	}
+	
+	private static ParallelExecutor pe;
+	
+	static ParallelExecutor getExecutor() {
+		synchronized (ParallelExecutor.class) {
+			if (pe==null) {
+				pe = new ParallelExecutor();
+			}
+		}
+		return pe;
+	}
+
 
 	/**
 	 * Create and start all worker threads
@@ -107,6 +119,34 @@ public class ParallelExecutor {
 		}
 		// do also some work
 		r.run();
+		// Now wait for others finishing their work.
+		// We could use join, but the following is
+		// also OK.
+		boolean allFinished;
+
+		do {
+			allFinished = true;
+			for (int i=0; i<cpus-1; ++i) {
+				allFinished &= runner[i].finished;
+			}
+		} while (!allFinished);
+		// now we can return
+	}
+
+	/**
+	 * Does the parallel execution. Can reuse the worker threads
+	 * without stop/start.
+	 * @param r
+	 */
+	public void executeParallel(Runnable r[]) {
+
+		// distribute the work to all cores.
+		for (int i=0; i<cpus-1; ++i) {
+			runner[i].setExecute(r[i+1]);
+			runner[i].finished = false;
+		}
+		// do also some work
+		r[0].run();
 		// Now wait for others finishing their work.
 		// We could use join, but the following is
 		// also OK.

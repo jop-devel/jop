@@ -32,7 +32,7 @@ public class EnumeratedParallelBenchmark extends Benchmark implements WorkUnit {
 	static EnumeratedExecutor ee;
 	
 	public EnumeratedParallelBenchmark() {
-		synchronized (this) {
+		synchronized (EnumeratedParallelBenchmark.class) {
 			if (ee==null) {
 				ee = new EnumeratedExecutor();
 			}
