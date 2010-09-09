@@ -110,7 +110,7 @@ port (
 );
 end component;
 
-	constant ENABLE_COPY : boolean := false;
+	constant ENABLE_COPY : boolean := true;
 
 --
 --	signals for mem interface
