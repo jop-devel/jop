@@ -204,7 +204,7 @@ begin
 		next_mem_out.wr <= '0';
 		next_mem_out.wr_data <= cpu_out_reg.wr_data;
 		next_mem_out.address <= cpu_out_reg.address;
-		next_mem_out.atomic <= cpu_out_reg.atomic;
+		next_mem_out.atomic <= '0';
 		next_mem_out.cache <= cpu_out_reg.cache;
 		
 		-- signals for ram block
@@ -218,13 +218,11 @@ begin
 
 		case state is
 
-			when idle => null; 			-- handled below
-
 			-- the write sequence, updating cache
 			when wr0 =>  				-- pass on data to main memory
 				cpu_in.rdy_cnt <= "11";
 				next_state <= wr1;
-
+				
 			when wr1 =>  				-- wait for memory
 				cpu_in.rdy_cnt <= mem_in.rdy_cnt;
 				if mem_in.rdy_cnt <= 1 then
@@ -292,6 +290,7 @@ begin
 
 				-- trigger a write
 				next_mem_out.wr <= '1';
+				next_mem_out.atomic <= cpu_out_reg.atomic;
 				cpu_in.rdy_cnt <= "11";
 				next_state <= wr0;
 
@@ -316,6 +315,7 @@ begin
 
 					-- trigger a read
 					next_mem_out.rd <= '1';
+					next_mem_out.atomic <= cpu_out_reg.atomic;
 					cpu_in.rdy_cnt <= "11";
 					next_state <= rd0;
 				end if;
