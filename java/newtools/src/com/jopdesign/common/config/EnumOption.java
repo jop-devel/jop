@@ -45,7 +45,7 @@ public class EnumOption<T extends Enum<T>> extends Option<T> {
 	}
 
     @Override
-	public T parse(String s) throws IllegalArgumentException {
+	protected T parse(String s) throws IllegalArgumentException {
 		try {
 			return Enum.valueOf(this.valClass,s);
 		} catch(IllegalArgumentException e) {

@@ -44,7 +44,7 @@ public class IntOption extends Option<Long> {
     }
 
 	@Override
-	public Long parse(String s) throws IllegalArgumentException {
+	protected Long parse(String s) throws IllegalArgumentException {
         long val;
         try {
             val = Long.parseLong(s);
@@ -57,4 +57,24 @@ public class IntOption extends Option<Long> {
         return val;
 	}
 
+    @Override
+    public boolean isEnabled(OptionGroup options) {
+        return options.hasValue(this) && options.getOption(this, 0L) != 0;
+    }
+
+    @Override
+    public boolean isValue(String arg) {
+        // if it starts with '-', it may be a negative integer
+        if ( arg.startsWith("-") ) {
+            try {
+                Long val = Long.parseLong(arg);
+                return true;
+            } catch (NumberFormatException ignored) {
+                return false;
+            }
+        }
+        // in other cases, if it does not start with '-', we assume it is a value
+        // (even if it is not well formatted!)
+        return !arg.startsWith("--");
+    }
 }

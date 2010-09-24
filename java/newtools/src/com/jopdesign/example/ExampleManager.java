@@ -22,7 +22,7 @@ package com.jopdesign.example;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
-import com.jopdesign.common.CustomValueManager;
+import com.jopdesign.common.AttributeManager;
 import com.jopdesign.common.MethodInfo;
 
 /**
@@ -30,9 +30,9 @@ import com.jopdesign.common.MethodInfo;
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ExampleManager implements CustomValueManager {
+public class ExampleManager implements AttributeManager {
 
-    private int myFieldID;
+    private AppInfo.CustomKey myFieldID;
 
     public ExampleManager() {
     }
@@ -46,8 +46,17 @@ public class ExampleManager implements CustomValueManager {
         }
     }
 
+    public void onCreateClass(ClassInfo classInfo) {
+    }
+
     public void onLoadClass(ClassInfo classInfo) {
-        classInfo.setCustomValue("iExampleField", myFieldID, classInfo.getAppInfo().getClassInfos().size());
+        classInfo.setCustomValue(myFieldID, classInfo.getAppInfo().getClassInfos().size());
+    }
+
+    public void onRemoveClass(ClassInfo classInfo) {
+    }
+
+    public void onClearAppInfo(AppInfo appInfo) {
     }
 
     public void onClassModified(ClassInfo classInfo) {
@@ -57,7 +66,7 @@ public class ExampleManager implements CustomValueManager {
     }
 
     public int setMyField(ClassInfo clsInfo, int value) {
-        return (Integer) clsInfo.setCustomValue("iExampleField", myFieldID, value);
+        return (Integer) clsInfo.setCustomValue(myFieldID, value);
     }
 
     public int getMyField(ClassInfo clsInfo) {

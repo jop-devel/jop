@@ -34,9 +34,4 @@ public class Raytrace extends ParallelBenchmark { // implements Runnable {
 		}
 
 		
-	  public int getCheckSum() {
-		  return 0;
-	  }
-
-
 }

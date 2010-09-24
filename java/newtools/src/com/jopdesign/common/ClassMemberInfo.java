@@ -20,24 +20,53 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.type.Descriptor;
+import org.apache.bcel.classfile.Attribute;
+import org.apache.bcel.generic.FieldGenOrMethodGen;
+import org.apache.bcel.generic.Type;
+
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public abstract class ClassMemberInfo extends BaseInfo {
+public abstract class ClassMemberInfo extends MemberInfo {
 
-    private ClassInfo classInfo;
+    private final ClassInfo classInfo;
+    private final FieldGenOrMethodGen classMember;
 
-    public ClassMemberInfo(ClassInfo classInfo) {
-        super(classInfo.getAppInfo());
+    public ClassMemberInfo(ClassInfo classInfo, FieldGenOrMethodGen classMember) {
+        super(classMember);
         this.classInfo = classInfo;
+        this.classMember = classMember;
     }
 
     public ClassInfo getClassInfo() {
         return classInfo;
     }
 
-    public String getName() {
-        return null;
+    @Override
+    public String getSimpleName() {
+        return classMember.getName();
+    }
+
+    public Type getType() {
+        return classMember.getType();
+    }
+
+    public abstract Descriptor getDescriptor();
+
+    @Override
+    public Attribute[] getAttributes() {
+        return classMember.getAttributes();
+    }
+
+    @Override
+    public void addAttribute(Attribute a) {
+        classMember.addAttribute(a);
+    }
+
+    @Override
+    public void removeAttribute(Attribute a) {
+        classMember.removeAttribute(a);
     }
 
 }

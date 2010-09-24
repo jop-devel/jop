@@ -82,10 +82,6 @@ public class NQueens extends ParallelBenchmark implements Runnable {
 		return "NQueens(N=" + N + ";L=" + L + ")";
 	}
 
-	public int getCheckSum() {
-		return (int) total;
-	}
-
 	protected Runnable getWorker() {
 		// Reset State
 		sl[0] = ~bh[0];

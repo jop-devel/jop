@@ -20,6 +20,8 @@
 
 package com.jopdesign.common.code;
 
+import com.jopdesign.common.MethodInfo;
+
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
@@ -34,7 +36,7 @@ public interface CodeRepresentation {
      */
     boolean isSameType(CodeRepresentation codeRep);
 
-    void load(byte[] code);
+    void load(MethodInfo method);
 
-    byte[] compile();
+    void compile(MethodInfo method);
 }

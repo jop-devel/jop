@@ -20,7 +20,13 @@
 
 package com.jopdesign.common.type;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.misc.Ternary;
+import org.apache.bcel.generic.ArrayType;
+import org.apache.bcel.generic.ObjectType;
+import org.apache.bcel.generic.ReferenceType;
+import org.apache.bcel.generic.Type;
 
 /**
  * A container of a class reference.
@@ -32,21 +38,64 @@ import com.jopdesign.common.ClassInfo;
 public class ClassRef {
 
     private ClassInfo classInfo;
-    private String className;
+
+    private final String className;
+    private final Ternary anInterface;
+    private final boolean arrayClass;
 
     public ClassRef(ClassInfo classInfo) {
         this.classInfo = classInfo;
+        anInterface = classInfo.isInterface() ? Ternary.TRUE : Ternary.FALSE;
+        className = null;
+        // we have no classInfo for arrays
+        arrayClass = false;
     }
 
     public ClassRef(String className) {
         this.className = className;
+        anInterface = Ternary.UNKNOWN;
+        arrayClass = className.startsWith("[");
+    }
+
+    public ClassRef(String className, boolean anInterface) {
+        this.className = className;
+        this.anInterface = Ternary.valueOf(anInterface);
+        arrayClass = className.startsWith("[");
+    }
+
+    public ClassInfo getClassInfo() {
+        if ( classInfo == null && !arrayClass ) {
+            classInfo = AppInfo.getSingleton().getClassInfo(className);
+        }
+        return classInfo;
     }
 
     public String getClassName() {
         return classInfo != null ? classInfo.getClassName() : className;
     }
 
-    public ClassInfo getClassInfo() {
-        return classInfo;
+    public Ternary isInterface() {
+        return anInterface;
     }
+
+    public boolean isArray() {
+        return arrayClass;
+    }
+
+    public boolean isNative() {
+        return AppInfo.getSingleton().isNative(getClassName());
+    }
+
+    public ReferenceType getType() {
+        if ( arrayClass ) {
+            int dim = className.lastIndexOf('[') + 1;
+            return new ArrayType(Type.getType(className.substring(dim)),dim);
+        }
+        return new ObjectType(getClassName());
+    }
+
+    public String toString() {
+        return getClassName();
+    }
+
 }

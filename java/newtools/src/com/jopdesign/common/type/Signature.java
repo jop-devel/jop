@@ -21,11 +21,11 @@
 package com.jopdesign.common.type;
 
 import com.jopdesign.common.AppInfo;
-import com.jopdesign.common.BaseInfo;
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.MemberInfo;
 
 /**
- * This is a helper class to handle parsing, generating, lookups and other signature related tasks
+ * This is a (immutable) class to handle parsing, generating, lookups and other signature related tasks
  * for signatures including classname and/or member names.
  *
  * @see Descriptor
@@ -33,21 +33,44 @@ import com.jopdesign.common.ClassInfo;
  */
 public class Signature {
 
-    private String className;
-    private String memberName;
-    private Descriptor descriptor;
+    public static final char MEMBER_SEPARATOR = '#';
 
-    public Signature(String signature) {
-        int p1 = signature.indexOf("#");
+    private final String className;
+    private final String memberName;
+    private final Descriptor descriptor;
+
+    public static String getClassName(String signature) {
+        int pos = signature.indexOf(MEMBER_SEPARATOR);
+        return pos == -1 ? signature : signature.substring(0, pos);
+    }
+
+    public static String getSignature(String className, String memberName) {
+        return className + MEMBER_SEPARATOR +  memberName;
+    }
+
+    public static String getSignature(String className, String memberName, String descriptor) {
+        return className + MEMBER_SEPARATOR +  memberName + descriptor;
+    }
+
+    public static String getMemberSignature(String memberName, String descriptor) {
+        return memberName + descriptor;
+    }
+
+    public static Signature parse(String signature) {
+        int p1 = signature.indexOf(MEMBER_SEPARATOR);
         int p2 = signature.indexOf("(");
+
+        String className = null;
+        String memberName = null;
+        Descriptor descriptor = null;
 
         if ( p1 == -1 ) {
             if ( p2 == -1 ) {
-                // assume classname here
+                // assume signature is classname only
                 className = signature;
             } else {
                 memberName = signature.substring(0,p2);
-                descriptor = new Descriptor(signature.substring(p2));
+                descriptor = Descriptor.parse(signature.substring(p2));
             }
         } else {
             className = signature.substring(0,p1);
@@ -55,10 +78,11 @@ public class Signature {
                 memberName = signature.substring(p1+1);
             } else {
                 memberName = signature.substring(p1+1, p2);
-                descriptor = new Descriptor(signature.substring(p2));
+                descriptor = Descriptor.parse(signature.substring(p2));
             }
         }
-        
+
+        return new Signature(className, memberName, descriptor);
     }
 
     public Signature(String className, String memberName, Descriptor descriptor) {
@@ -67,9 +91,10 @@ public class Signature {
         this.descriptor = descriptor;
     }
 
-    public static String getClassName(String signature) {
-        int pos = signature.indexOf("#");
-        return pos == -1 ? signature : signature.substring(0, pos);
+    public Signature(String memberName, Descriptor descriptor) {
+        this.className = null;
+        this.memberName = memberName;
+        this.descriptor = descriptor;
     }
 
     public boolean hasMemberSignature() {
@@ -96,15 +121,15 @@ public class Signature {
         return memberName;
     }
 
-    public Descriptor getDescriptor() {
+    public Descriptor getMemberDescriptor() {
         return descriptor;
     }
 
-    public BaseInfo findInfo(AppInfo appInfo) {
+    public MemberInfo findInfo(AppInfo appInfo) {
         if ( className == null ) {
             return null;
         }
-        ClassInfo cls = appInfo.getClass(className);
+        ClassInfo cls = appInfo.getClassInfo(className);
         if ( cls == null || !hasMemberSignature() ) {
             return cls;
         }
@@ -123,7 +148,7 @@ public class Signature {
         }
         if (memberName != null) {
             if ( className != null ) {
-                s.append('#');
+                s.append(MEMBER_SEPARATOR);
             }
             s.append(memberName);
         }
@@ -132,4 +157,5 @@ public class Signature {
         }
         return s.toString();
     }
+
 }
