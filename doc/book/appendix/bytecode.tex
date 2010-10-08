@@ -9,11 +9,11 @@
 8 & iconst\_5 & hw & 1 \\
 9 & lconst\_0 & mc & 2 \\
 10 & lconst\_1 & mc & 2 \\
-11 & fconst\_0 & Java &  \\
+11 & fconst\_0 & mc & 1 \\
 12 & fconst\_1 & Java &  \\
 13 & fconst\_2 & Java &  \\
-14 & dconst\_0 & - &  \\
-15 & dconst\_1 & - &  \\
+14 & dconst\_0 & mc & 2 \\
+15 & dconst\_1 & Java &  \\
 16 & bipush & mc & 2 \\
 17 & sipush & mc & 3 \\
 18 & ldc & mc & 7+r \\
@@ -45,14 +45,14 @@
 44 & aload\_2 & hw & 1 \\
 45 & aload\_3 & hw & 1 \\
 %46 & iaload\footnotemark[46] & mc & 32+3*r \\
-46 & iaload\footnotemark[46] & hw & 7+3*r \\
+46 & iaload\footnotemark[46] & hw & 6+3*r \\
 47 & laload & mc & 43+4*r \\
-48 & faload\footnotemark[46] & hw & 7+3*r \\
-49 & daload & - &  \\
-50 & aaload\footnotemark[46] & hw & 7+3*r \\
-51 & baload\footnotemark[46] & hw & 7+3*r \\
-52 & caload\footnotemark[46] & hw & 7+3*r \\
-53 & saload\footnotemark[46] & hw & 7+3*r \\
+48 & faload\footnotemark[46] & hw & 6+3*r \\
+49 & daload & hw & 43+4*r \\
+50 & aaload\footnotemark[46] & hw & 6+3*r \\
+51 & baload\footnotemark[46] & hw & 6+3*r \\
+52 & caload\footnotemark[46] & hw & 6+3*r \\
+53 & saload\footnotemark[46] & hw & 6+3*r \\
 54 & istore & mc & 2 \\
 55 & lstore & mc & 11 \\
 56 & fstore & mc & 2 \\
@@ -82,7 +82,7 @@
 79 & iastore\footnotemark[79] & hw & 10+2*r+w \\
 80 & lastore\footnotemark[1] & mc & 48+2*r+2*w \\
 81 & fastore\footnotemark[79] & hw & 10+2*r+w \\
-82 & dastore & - &  \\
+82 & dastore\footnotemark[82] & mc & 48+2*r+w \\
 83 & aastore & Java & \\
 84 & bastore\footnotemark[79] & hw & 10+2*r+w \\
 85 & castore\footnotemark[79] & hw & 10+2*r+w \\
@@ -148,7 +148,7 @@
 145 & i2b & Java &  \\
 146 & i2c & mc & 2 \\
 147 & i2s & Java &  \\
-148 & lcmp & Java &  \\
+148 & lcmp & mc &  85 \\
 149 & fcmpl & Java &  \\
 150 & fcmpg & Java &  \\
 151 & dcmpl & - &  \\
@@ -180,12 +180,12 @@
 177 & return\footnotemark[177] & mc &  21+r+l \\
 178 & getstatic & mc & 5+r \\
 179 & putstatic & mc & 5+w \\
-180 & getfield & hw & 8+2*r \\
+180 & getfield & hw & 7+2*r \\
 181 & putfield & hw & 9+r+w \\
 182 & invokevirtual\footnotemark[182] & mc & 98+4r+l \\
-183 & invokespecial\footnotemark[183] & mc &  72+3*r+l \\
+183 & invokespecial\footnotemark[183] & mc &  73+3*r+l \\
 184 & invokestatic\footnotemark[183] & mc &  72+3*r+l \\
-185 & invokeinterface\footnotemark[185] & mc &  110+6r+l \\
+185 & invokeinterface\footnotemark[185] & mc &  111+6r+l \\
 186 & unused\_ba & - &  \\
 187 & new\footnotemark[187] & Java &   \\
 188 & newarray\footnotemark[188] & Java &  \\
@@ -224,9 +224,9 @@
 221 & jopsys\_nop & mc & 1 \\
 222 & jopsys\_invoke & mc &  \\
 223 & jopsys\_cond\_move & mc & 5 \\
-224 & getstatic\_ref & mc & 12+2*r \\
+224 & getstatic\_ref & mc & 5+r \\
 225 & putstatic\_ref & Java & \\
-226 & getfield\_ref & mc & 11+2*r \\
+226 & getfield\_ref & mc & 7+2*r \\
 227 & putfield\_ref & Java & \\
 228 & getstatic\_long & mc & \\
 229 & putstatic\_long & mc & \\
