@@ -102,14 +102,13 @@ public class AppSetup {
      * @param loadSystemProps if true, add all JVM system properties to the default properties.
      */
     public AppSetup(boolean loadSystemProps) {
-        this(new Properties(), loadSystemProps);
+        this(null, loadSystemProps);
     }
 
     /**
-     * Initialize a new AppSetup and set the given default properties
-     * (note that tools can add their own default config).
+     * Initialize a new AppSetup and set the given (application specific) default properties.
      *
-     * @param defaultProps defaults or the config.
+     * @param defaultProps defaults for the application, can overwrite tool defaults.
      * @param loadSystemProps if true, add all JVM system properties to the default properties.  
      */
     public AppSetup(Properties defaultProps, boolean loadSystemProps) {
@@ -144,7 +143,11 @@ public class AppSetup {
         return appInfo;
     }
 
-
+    /**
+     * Register a tool and its AttributeManager to AppInfo and AppSetup.
+     * @param name the unique name of the tool
+     * @param jopTool the tool to register
+     */
     public void registerTool(String name, JopTool jopTool) {
         tools.put(name, jopTool);
 
@@ -152,7 +155,7 @@ public class AppSetup {
         try {
             Properties defaults = jopTool.getDefaultProperties();
             if ( defaults != null ) {
-                config.addDefaults(defaults);
+                config.addDefaults(defaults, false);
             }
         } catch (IOException e) {
             System.err.println("Error loading default configuration file: "+e.getMessage());
@@ -220,31 +223,53 @@ public class AppSetup {
         }
     }
 
-    public void setUsageInfo(String prgmName, String description) {
-        setUsageInfo(prgmName, description, null);
+    /**
+     * Set some usage infos.
+     *
+     * @param programName the executable program name
+     * @param description a short additional usage description text
+     */
+    public void setUsageInfo(String programName, String description) {
+        setUsageInfo(programName, description, null);
     }
 
+    /**
+     * Set some usage infos.
+     *
+     * @param programName the executable program name
+     * @param description a short additional usage description text
+     * @param optionSyntax overwrite the generated program options syntax string.
+     */
     public void setUsageInfo(String programName, String description, String optionSyntax) {
         this.programName = programName;
         usageDescription = description;
         this.optionSyntax = optionSyntax;
     }
 
+    /**
+     * Add some text written out before the tool versions for --version.
+     * @param versionInfo some version info text for the application.
+     */
     public void setVersionInfo(String versionInfo) {
         this.versionInfo = versionInfo;
     }
 
+    /**
+     * Get the base filename of the user-provided application configuration file.
+     *
+     * @return the configuration file without directory prefix.
+     */
     public String getConfigFilename() {
         return configFilename;
     }
 
     /**
-     * Set the filename of the user configuration file to load if it exists.
+     * Set the filename of the user-provided configuration file to load if it exists.
+     * <p>
+     * There is only one user-configfile for the whole application, not for each tool.
+     * </p>
      *
-     * Note that in contrast to the default config there is only one configfile
-     * per application, not per tool.
-     *
-     * @param configFilename the name of the config file for this app.
+     * @param configFilename the name of the config file for this app without path prefix
      */
     public void setConfigFilename(String configFilename) {
         this.configFilename = configFilename;

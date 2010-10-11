@@ -30,14 +30,18 @@ import com.jopdesign.common.ClassInfo;
 public class ClassHierarchyTraverser {
 
     private ClassVisitor visitor;
-    private boolean traverseSuper;
     private boolean visitExtensions;
     private boolean visitImplementations;
     private boolean visitInnerClasses;
 
-    public ClassHierarchyTraverser(ClassVisitor visitor, boolean traverseSuper) {
+    /**
+     * Create a new traverser for the given visitor.
+     * By default, traverse down all subclasses but not the nested classes.
+     *
+     * @param visitor the visitor to use.
+     */
+    public ClassHierarchyTraverser(ClassVisitor visitor) {
         this.visitor = visitor;
-        this.traverseSuper = traverseSuper;
         visitExtensions = true;
         visitImplementations = true;
         visitInnerClasses = false;
@@ -51,25 +55,23 @@ public class ClassHierarchyTraverser {
         this.visitor = visitor;
     }
 
-    public boolean doTraverseSuper() {
-        return traverseSuper;
-    }
-
-    /**
-     * Set direction of traverser to all super/outer classes or all sub/inner classes.
-     *
-     * @param traverseSuper if true, traverse superclasses instead of subclasses.
-     */
-    public void setTraverseSuper(boolean traverseSuper) {
-        this.traverseSuper = traverseSuper;
-    }
-
     public boolean doVisitExtensions() {
         return visitExtensions;
     }
 
-    public void setVisitExtensions(boolean visitExtensions) {
+    public boolean doVisitImplementations() {
+        return visitImplementations;
+    }
+
+    /**
+     * Set which subclasses of a class to visit.
+     *
+     * @param visitExtensions if true, visit extensions, i.e. classes of the same type (class or interface)
+     * @param visitImplementations if true, visit implementations, i.e. classes which implement an interface
+     */
+    public void setVisitSubclasses(boolean visitExtensions, boolean visitImplementations) {
         this.visitExtensions = visitExtensions;
+        this.visitImplementations = visitImplementations;
     }
 
     public boolean doVisitInnerClasses() {
@@ -80,29 +82,15 @@ public class ClassHierarchyTraverser {
         this.visitInnerClasses = visitInnerClasses;
     }
 
-    public boolean doVisitImplementations() {
-        return visitImplementations;
-    }
-
     /**
-     * Visit only the same type (class or interface) as the root class.
-     * 
-     * @param visitImplementations if true, follow only extensions, else follow both classes and interfaces.
+     * Visit the given class, all its subclasses and nested classes, depending on the set modes.
+     * If the visitor returns false for a class, the subclasses/nested classes of this class are not
+     * visited and the traverser continues with its next sibling.
+     * <p>This traverser does not check if an interface has already been visited.</p>
+     *
+     * @param classInfo the class to visit first
      */
-    public void setVisitImplementations(boolean visitImplementations) {
-        this.visitImplementations = visitImplementations;
-    }
-
-
-    public void traverse(ClassInfo root) {
-        if (traverseSuper) {
-            traverseUp(root);
-        } else {
-            traverseDown(root);
-        }
-    }
-
-    private void traverseDown(ClassInfo classInfo) {
+    public void traverseDown(ClassInfo classInfo) {
         if ( !visitor.visitClass(classInfo) ) {
             return;
         }
@@ -118,6 +106,7 @@ public class ClassHierarchyTraverser {
                 }
             }
         }
+
         if ( visitInnerClasses ) {
             for (ClassInfo c : classInfo.getDirectNestedClasses()) {
                 traverseDown(c);
@@ -127,7 +116,20 @@ public class ClassHierarchyTraverser {
         visitor.finishClass(classInfo);
     }
 
-    private void traverseUp(ClassInfo classInfo) {
+    /**
+     * Visit the superclasses, its implemented interfaces and enclosing classes of a class.
+     * If the visitor returns false for a class, the superclasses/interfaces/enclosing classes of this class are not
+     * visited and the traverser continues with its next sibling.
+     * <p>
+     * For classes, the superclass is visited if extensions should be visited, and its implemented interfaces are
+     * visited if implementations should be visited.
+     * For interfaces, the extended interfaces are visited (this traverser does not check if an interface has
+     * already been visited), the implementations-flag is ignored.
+     * </p>
+     *
+     * @param classInfo the class to visit first
+     */
+    public void traverseUp(ClassInfo classInfo) {
         if ( !visitor.visitClass(classInfo) ) {
             return;
         }

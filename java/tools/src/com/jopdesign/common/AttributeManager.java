@@ -21,38 +21,57 @@
 package com.jopdesign.common;
 
 /**
+ * An AttributeManager is used to access attributes and flow-facts from classes, methods, fields and code.
+ * It manages the {@link AppInfo.CustomKey} keys and type casts internally, and provides some callback
+ * methods to AppInfo to be notified of (some) changes to the classes.
+ * <p>
+ * Each AttributeManager should provide custom methods to get/set its custom attributes in addition to
+ * the callback methods.
+ * </p>
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public interface AttributeManager {
 
     /**
      * Called on registration by AppInfo.
+     * <p>
      * Let the manager perform tasks on registration, like registering keys and updating
-     * flowfacts for all already loaded classes.
+     * flow-facts for all already loaded classes.
+     * </p>
      *
      * @param appInfo the AppInfo for which the manager is registered.
      */
-    void registerManager(AppInfo appInfo);
+    void onRegisterManager(AppInfo appInfo);
 
-    
-    void onCreateClass(ClassInfo classInfo);
+    /**
+     * Called when a new class is created or loaded from disk, allows the manager to add custom fields to the class.
+     *
+     * @param classInfo the classInfo which has been created.
+     * @param loaded true if the class has been loaded from a file, false if it has been created from scratch.
+     */
+    void onCreateClass(ClassInfo classInfo, boolean loaded);
     
     /**
-     * Called if a class is loaded, allows the manager to add custom fields to the class.
+     * Called when a class is removed from AppInfo.
      *
-     * @param classInfo the classInfo which has been loaded.
+     * @param classInfo the classInfo before it is removed.
      */
-    void onLoadClass(ClassInfo classInfo);
-
     void onRemoveClass(ClassInfo classInfo);
 
+    /**
+     * Called before all classes are removed from AppInfo.
+     * @param appInfo the appinfo which will be cleared.
+     */
     void onClearAppInfo(AppInfo appInfo);
 
-    // TODO methods to update/clear/reset custom fields on class/method/field-modify
-    // TODO add reason/modification-type to onModified
-
-    void onClassModified(ClassInfo classInfo);
-
+    /**
+     * Called when a method was modified.
+     *
+     * // TODO pass to handler type of change (?), which flow-facts have been kept and which have been removed.
+     *
+     * @param methodInfo the method which got modified.
+     */
     void onMethodModified(MethodInfo methodInfo);
 
 }

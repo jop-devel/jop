@@ -20,6 +20,7 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.graph.ClassHierarchyTraverser;
 import com.jopdesign.common.graph.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.bcel.BcelRepositoryWrapper;
@@ -157,7 +158,7 @@ public final class AppInfo {
     //////////////////////////////////////////////////////////////////////////////
 
     public AttributeManager registerManager(String key, AttributeManager manager) {
-        manager.registerManager(this);
+        manager.onRegisterManager(this);
         return managers.put(key, manager);
     }
 
@@ -235,7 +236,7 @@ public final class AppInfo {
      * after you finished creating and loading classes. SuperClass will be set, but nothing more.</p>
      *
      * @param className the fully qualified name of the class.
-     * @param superClass the references to the superclass, or null to use java.lang.Object (except if the new class is
+     * @param superClass the references to the superclass, or null to use java.lang.Object (ignored if the new class is
      *   java.lang.Object).
      * @param isInterface true if this class should be an interface.
      * @return a new ClassInfo or the current ClassInfo by the same name if it exists.
@@ -251,6 +252,7 @@ public final class AppInfo {
             superClassName = superClass.getClassName();
         }
 
+        // check for existing class
         ClassInfo cls = classes.get(className);
         if ( cls != null ) {
             if ( isInterface != cls.isInterface() ||
@@ -262,15 +264,17 @@ public final class AppInfo {
             return cls;
         }
 
+        // create
         cls = createClassInfo(className, superClassName, isInterface);
 
         // do a "partial" class hierarchy update (i.e. set superClass, but not subclasses of the new class)
         cls.updateClassHierarchy();
 
+        // register class
         classes.put(className, cls);
 
         for (AttributeManager mgr : managers.values()) {
-            mgr.onCreateClass(cls);
+            mgr.onCreateClass(cls, false);
         }
 
         return cls;
@@ -317,7 +321,7 @@ public final class AppInfo {
         ClassInfo cls = classes.get(className);
         if ( cls != null ) {
             if ( reload ) {
-                removeClass(cls, false, false);
+                removeClass(cls);
             } else {
                 return cls;
             }
@@ -335,26 +339,66 @@ public final class AppInfo {
     }
 
     /**
-     * Remove a class from AppInfo.
+     * Remove a single class and all its nested classes from AppInfo, and update the class hierarchy.
+     * <p>
+     * To remove several classes or all subclasses of a class, use {@link #removeClasses(Collection)} to
+     * remove all classes in one step, as this is faster.
+     * </p>
      *
      * @param classInfo the class to remove.
-     * @param purgeClass if true, remove all extensions and inner classes too, remove from implemented interfaces
-     *        lists and from InnerClasses of enclosing classes.
-     * @param updateHierarchy if true, update the class hierarchy infos now.
      */
-    public void removeClass(ClassInfo classInfo, boolean purgeClass, boolean updateHierarchy) {
-        classes.remove(classInfo.getClassName());
+    public void removeClass(ClassInfo classInfo) {
+        removeClasses(Collections.singleton(classInfo));
+    }
 
-        if ( purgeClass ) {
-            // TODO purge
+    /**
+     * Remove a collection of classes and all their nested classes from AppInfo, and update the class hierarchy.
+     *
+     * @param classes the classes to remove. Duplicates in this collection will be removed first.
+     */
+    public void removeClasses(Collection<ClassInfo> classes) {
+
+        // first, collect all nested classes and remove duplicates.
+        final Map<String,ClassInfo> map = new HashMap<String, ClassInfo>(classes.size());
+
+        for (ClassInfo classInfo : classes) {
+
+            ClassVisitor v = new ClassVisitor() {
+                @Override
+                public boolean visitClass(ClassInfo classInfo) {
+                    // we put the visited (nested) class in the map, and descend if it is not already there
+                    return map.put(classInfo.getClassName(), classInfo) == null;
+                }
+
+                @Override
+                public void finishClass(ClassInfo classInfo) {}
+            };
+
+            ClassHierarchyTraverser cht = new ClassHierarchyTraverser(v);
+            cht.setVisitSubclasses(false, false);
+            cht.setVisitInnerClasses(true);
+            cht.traverseDown(classInfo);
+
         }
 
-        for ( AttributeManager mgr : managers.values() ) {
-            mgr.onRemoveClass(classInfo);
-        }
+        // now we go through all classes and remove them from the class-list and from the class hierarchy
+        for (ClassInfo classInfo : classes) {
 
-        if ( updateHierarchy ) {
+            for ( AttributeManager mgr : managers.values() ) {
+                mgr.onRemoveClass(classInfo);
+            }
+
+            this.classes.remove(classInfo.getClassName());
+
             classInfo.removeFromClassHierarchy();
+        }
+
+        // finally go through all classes once more to update the FullyKnown-flags
+        for (ClassInfo classInfo : classes) {
+            // since we already removed the classes from the class hierarchy, this won't descend down
+            // classes we are removing
+            classInfo.finishRemoveFromHierarchy();
+            classInfo.resetHierarchyInfos();
         }
     }
 
@@ -513,12 +557,6 @@ public final class AppInfo {
                 return;
             }
             visitor.finishClass(c);
-        }
-    }
-
-    public void compileAll() {
-        for (ClassInfo c : classes.values()) {
-            c.compileJavaClass();
         }
     }
 
@@ -848,14 +886,14 @@ public final class AppInfo {
             classes.put(className, cls);
 
             for (AttributeManager mgr : managers.values()) {
-                mgr.onLoadClass(cls);
+                mgr.onCreateClass(cls,true);
             }
         } catch (IOException e) {
             if ( required || !ignoreMissingClasses) {
                 throw new ClassInfoNotFoundException("Class '"+className+"' could not be loaded: " +
                         e.getMessage(), e);
             }
-            // else cls = null
+            else cls = null;
         }
 
         return cls;

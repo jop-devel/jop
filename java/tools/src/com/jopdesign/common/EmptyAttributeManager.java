@@ -18,18 +18,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.jcopter;
-
-import com.jopdesign.common.AppInfo;
-import com.jopdesign.common.EmptyAttributeManager;
+package com.jopdesign.common;
 
 /**
+ * An empty class which implements all callback handlers of AttributeManager, so you
+ * don't need to.
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class JCopterManager extends EmptyAttributeManager {
+public abstract class EmptyAttributeManager implements AttributeManager {
 
-    public void onRegisterManager(AppInfo appInfo) {
-        
+    @Override
+    public void onCreateClass(ClassInfo classInfo, boolean loaded) {
     }
-    
+
+    @Override
+    public void onRemoveClass(ClassInfo classInfo) {
+    }
+
+    @Override
+    public void onClearAppInfo(AppInfo appInfo) {
+    }
+
+    @Override
+    public void onMethodModified(MethodInfo methodInfo) {
+    }
 }

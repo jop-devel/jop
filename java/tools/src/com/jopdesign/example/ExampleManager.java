@@ -22,22 +22,23 @@ package com.jopdesign.example;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
-import com.jopdesign.common.AttributeManager;
-import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.EmptyAttributeManager;
 
 /**
  * A demonstration of a manager which maintains a single integer field.
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ExampleManager implements AttributeManager {
+public class ExampleManager extends EmptyAttributeManager {
 
     private AppInfo.CustomKey myFieldID;
 
     public ExampleManager() {
     }
 
-    public void registerManager(AppInfo appInfo) {
+    public void onRegisterManager(AppInfo appInfo) {
+
+        // register a new custom attribute and set it to every existing class
         myFieldID = appInfo.registerKey("iExampleField");
 
         int cnt = 0;
@@ -46,30 +47,21 @@ public class ExampleManager implements AttributeManager {
         }
     }
 
-    public void onCreateClass(ClassInfo classInfo) {
-    }
-
-    public void onLoadClass(ClassInfo classInfo) {
+    @Override
+    public void onCreateClass(ClassInfo classInfo, boolean loaded) {
+        // set our custom attribute to every new class
         classInfo.setCustomValue(myFieldID, classInfo.getAppInfo().getClassInfos().size());
     }
 
-    public void onRemoveClass(ClassInfo classInfo) {
-    }
-
-    public void onClearAppInfo(AppInfo appInfo) {
-    }
-
-    public void onClassModified(ClassInfo classInfo) {
-    }
-
-    public void onMethodModified(MethodInfo methodInfo) {
-    }
+    /////// Provide access methods to the custom attribute ///////
 
     public int setMyField(ClassInfo clsInfo, int value) {
         return (Integer) clsInfo.setCustomValue(myFieldID, value);
     }
 
     public int getMyField(ClassInfo clsInfo) {
-        return (Integer) clsInfo.getCustomValue(myFieldID);
+        Object value = clsInfo.getCustomValue(myFieldID);
+        // just for demo, do some null-pointer handling
+        return value != null ? (Integer) value : -1;
     }
 }

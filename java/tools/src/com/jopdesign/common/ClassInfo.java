@@ -276,6 +276,14 @@ public final class ClassInfo extends MemberInfo {
         return ((ConstantUtf8)getConstant(index)).getBytes();
     }
 
+    public String getInnerName() {
+        InnerClass attribute = getInnerClassAttribute(getClassName());
+        if ( attribute == null ) {
+            return null;
+        }
+        return getInnerName(attribute);
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     // Access to the constantpool, lookups and modification
     //////////////////////////////////////////////////////////////////////////////
@@ -707,6 +715,65 @@ public final class ClassInfo extends MemberInfo {
     public void setEnclosingMethod(MethodInfo methodInfo) {
     }
     */
+
+    /**
+     * Add or replace InnerClass entries of this class with the info of the given classes.
+     * If no InnerClasses attribute exists, it is created. Enclosing classes are added if needed.
+     *
+     * @param nestedClasses a list of nested classes to add to the InnerClasses attribute.
+     */
+    public void addInnerClassRefs(Collection<ClassInfo> nestedClasses) {
+        if ( nestedClasses == null || nestedClasses.isEmpty() ) {
+            return;
+        }
+
+        Set<ClassInfo> newClasses = new HashSet<ClassInfo>();
+        for (ClassInfo cls : nestedClasses) {
+            if ( !cls.isNestedClass() ) { continue; }
+            ClassInfo enclosing = cls;
+            while (enclosing != null) {
+                newClasses.add(cls);
+
+                if (enclosing.isLocalInnerClass() || !enclosing.isNestedClass()) {
+                    break;
+                }
+                // add enclosing classes too if this is a member class and the enclosing class is a nested class
+                enclosing = enclosing.getEnclosingClassInfo();
+            }
+        }
+        if (newClasses.isEmpty()) {
+            return;
+        }
+
+        InnerClasses ic = getInnerClassesAttribute();
+        if ( ic == null ) {
+            ic = new InnerClasses(cpg.addUtf8("InnerClasses"), 0, new InnerClass[0], cpg.getConstantPool());
+            addAttribute(ic);
+        }
+
+        Map<String, InnerClass> entries = new HashMap<String, InnerClass>(ic.getInnerClasses().length + newClasses.size());
+        for (InnerClass i : ic.getInnerClasses()) {
+            entries.put(getInnerClassName(i), i);
+        }
+
+        for (ClassInfo cls : newClasses) {
+            String innerName = cls.getClassName().replace('.', '/');
+            int outerIdx = 0;
+            int nameIdx = 0;
+            if ( !cls.isLocalInnerClass() ) {
+                outerIdx = cpg.addUtf8(cls.getEnclosingClassName().replace('.','/'));
+            }
+            if ( !cls.isAnonymousInnerClass() ) {
+                nameIdx = cpg.addUtf8(cls.getInnerName());
+            }
+            InnerClass i = new InnerClass(cpg.addUtf8(innerName), outerIdx, nameIdx, cls.getAccessFlags());
+            entries.put(innerName, i);
+        }
+
+        InnerClass[] classes = entries.values().toArray(new InnerClass[entries.size()]);
+        ic.setInnerClasses(classes);
+        ic.setLength(2 + classes.length * 8);
+    }
 
     //////////////////////////////////////////////////////////////////////////////
     // Class-hierarchy lookups and helpers
@@ -1239,10 +1306,27 @@ public final class ClassInfo extends MemberInfo {
     //////////////////////////////////////////////////////////////////////////////
 
     /**
+     * Add or update all references to nested classes found in this class in the InnerClasses attribute.
+     */
+    public void updateInnerClasses() {
+        // check+update InnerClasses attribute (and add referenced nested classes)
+        List<ClassInfo> nestedClasses = new LinkedList<ClassInfo>();
+        for (String name : ClassAnalyzer.findReferencedClasses(this)) {
+            ClassInfo cls = getAppInfo().getClassInfo(name);
+            if (cls != null && cls.isNestedClass()) {
+                nestedClasses.add(cls);
+            }
+        }
+        addInnerClassRefs(nestedClasses);
+    }
+
+    /**
      * Commit all modifications to this ClassInfo and return a BCEL JavaClass for this ClassInfo.
+     * You may want to call {@link #updateInnerClasses()} first if needed.
      *
      * @see MethodInfo#compileCodeRep()
-     * @see #getJavaClass(boolean)
+     * @see #updateInnerClasses()
+     * @see #getJavaClass()
      * @return a JavaClass representing this ClassInfo.
      */
     public JavaClass compileJavaClass() {
@@ -1273,39 +1357,22 @@ public final class ClassInfo extends MemberInfo {
             classGen.setMethodAt(method.compileMethod(), i);
         }
 
-        // check+update InnerClasses attribute (and add referenced nested classes)
-        for (String name : ClassAnalyzer.findReferencedClasses(this)) {
-            ClassInfo cls = getAppInfo().getClassInfo(name);
-            if (cls != null && cls.isNestedClass()) {
-                InnerClass i = getInnerClassAttribute(name);
-                if ( i == null ) {
-                    // TODO create a new InnerClass, add it to InnerClasses
-                    
-                }
-            }
-        }
-
         // TODO call manager eventhandler
 
         return classGen.getJavaClass();
     }
 
     /**
-     * Compile and return a BCEL JavaClass for this ClassInfo.
+     * Create and return a BCEL JavaClass for this ClassInfo.
      *
-     * <p>If compile is false, then the JavaClass does not contain any modifications not yet
+     * <p>The returned JavaClass does not contain any modifications not yet
      * commited to the internal BCEL ClassGen (e.g. it does not cleanup the constantpool, does not contain
      * modifications to methods/fields/code, ..).</p>
      *
      * @see #compileJavaClass()
-     * @param compile if true, this does the same as {@link #compileJavaClass()}
      * @return a JavaClass for this ClassInfo.
      */
-    public JavaClass getJavaClass(boolean compile) {
-        if ( compile ) {
-            // using the compile flag here primarily as a reminder to the API user to compile first
-            return compileJavaClass();
-        }
+    public JavaClass getJavaClass() {
         return classGen.getJavaClass();
     }
 
@@ -1321,33 +1388,13 @@ public final class ClassInfo extends MemberInfo {
 
     @Override
     public boolean equals(Object o) {
-        if ( !(o instanceof ClassInfo)) {
-            return false;
-        }
-        return ((ClassInfo)o).getClassName().equals(getClassName());
+        return o instanceof ClassInfo && ((ClassInfo) o).getClassName().equals(getClassName());
     }
 
 
     //////////////////////////////////////////////////////////////////////////////
     // Internal affairs, class hierarchy management; To be used only be AppInfo
     //////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * Get the name of the outer class of this class as it is stored in the InnerClasses attribute.
-     * Note that this does return null for non-member inner classes.
-     *
-     * @param ic the InnerClasses attribute of this class.
-     * @param innerClass the name of the inner class to lookup
-     * @return the name of the outer name if it is stored in InnerClass.
-     */
-    private String getOuterClassName(InnerClasses ic, String innerClass) {
-        for (InnerClass i : ic.getInnerClasses()) {
-            if ( getInnerClassName(i).equals(innerClass) ) {
-                return getOuterClassName(i);
-            }
-        }
-        return null;
-    }
 
     private void updateInnerClassFlag() {
         // check if this class appears as inner class (iff this is an inner class, it must
@@ -1439,35 +1486,21 @@ public final class ClassInfo extends MemberInfo {
 
     @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
     protected void removeFromClassHierarchy() {
+
         if ( superClass != null ) {
             superClass.subClasses.remove(this);
         }
+
 
         if ( enclosingClass != null ) {
             enclosingClass.nestedClasses.remove(this);
         }
 
-        // all extensions and inner classes of this class will now be incomplete
-        if ( fullyKnown == Ternary.TRUE ) {
-            ClassVisitor visitor = new ClassVisitor() {
-
-                public boolean visitClass(ClassInfo classInfo) {
-                    classInfo.fullyKnown = Ternary.FALSE;
-                    return true;
-                }
-
-                public void finishClass(ClassInfo classInfo) {
-                }
-            };
-            ClassHierarchyTraverser traverser = new ClassHierarchyTraverser(visitor, false);
-            traverser.setVisitImplementations(false);
-            traverser.setVisitInnerClasses(true);
-            traverser.traverse(this);
-        }
-
-        // interface references are not stored; direct subclasses of a class are only classes, so
-        // all their superclasses must be this class, so unset them
+        // direct subclasses of an interface can be other interfaces, which have java.lang.Object as superclass,
+        // or implementing classes, which have a class as superclass, so no need to update them if this is an interface
         if ( !isInterface() ) {
+            // direct subclasses of a class are only classes, so
+            // all their superclasses must be this class, so unset them
             for (ClassInfo c : subClasses) {
                 c.superClass = null;
             }
@@ -1477,6 +1510,29 @@ public final class ClassInfo extends MemberInfo {
             c.enclosingClass = null;
         }
 
-        resetHierarchyInfos();
+    }
+
+    protected void finishRemoveFromHierarchy() {
+
+        // all extensions and inner classes of this class will now be incomplete
+        if ( fullyKnown == Ternary.TRUE ) {
+            ClassVisitor visitor = new ClassVisitor() {
+
+                @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
+                public boolean visitClass(ClassInfo classInfo) {
+                    classInfo.fullyKnown = Ternary.FALSE;
+                    return true;
+                }
+
+                public void finishClass(ClassInfo classInfo) {
+                }
+            };
+            ClassHierarchyTraverser traverser = new ClassHierarchyTraverser(visitor);
+            traverser.setVisitSubclasses(true, false);
+            // we do not support nested classes without enclosing class, so no need to visit them
+            // as they are removed too
+            traverser.setVisitInnerClasses(false);
+            traverser.traverseDown(this);
+        }
     }
 }

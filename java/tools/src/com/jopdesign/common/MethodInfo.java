@@ -393,7 +393,7 @@ public final class MethodInfo extends ClassMemberInfo {
             }
         };
 
-        new ClassHierarchyTraverser(visitor, true).traverse(getClassInfo());
+        new ClassHierarchyTraverser(visitor).traverseUp(getClassInfo());
 
         return ifMethods;
     }
@@ -438,7 +438,7 @@ public final class MethodInfo extends ClassMemberInfo {
             }
         };
 
-        new ClassHierarchyTraverser(visitor, false).traverse(getClassInfo());
+        new ClassHierarchyTraverser(visitor).traverseDown(getClassInfo());
 
         return overriders;
     }
@@ -482,12 +482,26 @@ public final class MethodInfo extends ClassMemberInfo {
             }
         };
 
-        new ClassHierarchyTraverser(visitor, false).traverse(getClassInfo());
+        new ClassHierarchyTraverser(visitor).traverseDown(getClassInfo());
 
         return implementations;
     }
 
-    
+    /**
+     * Get a collection of classes local to this method.
+     * @return a collection of local classes, or an empty collection of this method does not have local classes.
+     */
+    public Collection<ClassInfo> getLocalClasses() {
+        List<ClassInfo> classes = new LinkedList<ClassInfo>();
+
+        for (ClassInfo nested : getClassInfo().getDirectNestedClasses()) {
+            if (nested.isLocalInnerClass() && this.equals(nested.getEnclosingMethodRef().getMethodInfo())) {
+                classes.add(nested);
+            }
+        }
+
+        return classes;
+    }
 
     /**
      * Should only be used by ClassInfo.

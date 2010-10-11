@@ -36,14 +36,14 @@ public class UnusedCodeRemover {
 
     private static AppInfo.CustomKey keyUsed;
 
-    public UnusedCodeRemover() {
-    }
-
     private static AppInfo.CustomKey getCustomKey() {
         if (keyUsed == null) {
             keyUsed = AppInfo.getSingleton().registerKey("UnusedCodeRemover");
         }
         return keyUsed;
+    }
+
+    public UnusedCodeRemover() {
     }
 
     /**
@@ -55,13 +55,15 @@ public class UnusedCodeRemover {
      */
     public boolean isUsed(MemberInfo member) {
         Boolean used = (Boolean) member.getCustomValue(getCustomKey());
-        if ( used == null ) {
-            // hasn't been marked, assume unused!
-            return false;
-        }
-        return used;
+        // if it hasn't been marked, assume unused
+        return used != null && used;
     }
 
+    /**
+     * Mark all used members and remove the rest.
+     *
+     * @param rebuildConstantPools if true, cleanup the ConstantPool of the remaining classes.
+     */
     public void run(boolean rebuildConstantPools) {
         AppInfo appInfo = AppInfo.getSingleton();
         appInfo.clearKey(getCustomKey());
@@ -82,6 +84,13 @@ public class UnusedCodeRemover {
 
     }
 
+    /**
+     * Remove all unused classes, methods and fields.
+     * <p>
+     * Make sure you ran {@link #markUsedMembers()} before!</p>
+     *
+     * @see #run(boolean)
+     */
     public void removeUnusedMembers() {
         AppInfo appInfo = AppInfo.getSingleton();
 
@@ -118,10 +127,6 @@ public class UnusedCodeRemover {
             }
         }
 
-        for (ClassInfo cls : unusedClasses) {
-            appInfo.removeClass(cls, true, false);
-        }
-
-        appInfo.reloadClassHierarchy();
+        appInfo.removeClasses(unusedClasses);
     }
 }

@@ -93,6 +93,10 @@ public abstract class MemberInfo {
         accessFlags.isFinal(val);
     }
 
+    public int getAccessFlags() {
+        return accessFlags.getAccessFlags();
+    }
+
     /**
      * Get the access type of this object.
      * @return one of {@link #ACC_PRIVATE}, {@link #ACC_PROTECTED}, {@link #ACC_PACKAGE} or {@link #ACC_PUBLIC}.

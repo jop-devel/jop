@@ -57,7 +57,9 @@ public class ExampleTool implements JopTool<ExampleManager> {
     }
 
     public Properties getDefaultProperties() throws IOException {
+        // we could also provide defaults in a file to overwrite the values in registerOptions()
         // return AppSetup.loadResourceProps(ExampleTool.class, "defaults.properties");
+        // .. but we don't use it here
         return null;
     }
 
@@ -91,26 +93,17 @@ public class ExampleTool implements JopTool<ExampleManager> {
 
     public static void main(String[] args) {
 
-        ExampleTool example = new ExampleTool();
-
-        // load defaults configuration file
-        Properties defaults = null;
-        try {
-            defaults = AppSetup.loadResourceProps(ExampleTool.class, "defaults.properties");
-        } catch (IOException e) {
-            System.out.println("Error loading default configuration file: "+e.getMessage());
-            System.exit(1);
-        }
-
         // setup some defaults
-        AppSetup setup = new AppSetup(defaults, true);
-        setup.setUsageInfo("example", "An example application");
-        setup.setVersionInfo("This is the version of this application");
+        AppSetup setup = new AppSetup(true);
+        setup.setUsageInfo("example", "This is an example application just to show off.");
+        setup.setVersionInfo("The version of this whole application is 0.1");
 
         setup.addStandardOptions(true, true);
         setup.addWriteOptions(true);
+        // set the name of the (optional) user-provided config file
         setup.setConfigFilename("example.properties");
 
+        ExampleTool example = new ExampleTool();
         setup.registerTool("example", example);
 
         // parse options and setup config

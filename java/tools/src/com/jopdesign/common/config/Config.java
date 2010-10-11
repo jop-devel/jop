@@ -247,10 +247,19 @@ public class Config {
      * Add a set of properties to the default properties.
      *
      * @param defaults a set of default properties.
+     * @param override if true, override existing default props
      */
-    public void addDefaults(Properties defaults) {
+    public void addDefaults(Properties defaults, boolean override) {
         //noinspection unchecked
-        defaultProps.putAll(defaults);
+        if ( override ) {
+            defaultProps.putAll(defaults);
+        } else {
+            for (Object key : defaults.entrySet()) {
+                if ( !defaultProps.containsKey(key) ) {
+                    defaultProps.put(key, defaults.get(key));
+                }
+            }
+        }
     }
 
     /**
