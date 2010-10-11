@@ -248,7 +248,7 @@ begin
 	--	Tag instantiation
 	--
 	
-	tag: entity work.tag
+	tag: entity work.tm_tag
 		generic map(
 			addr_width => addr_width,
 			way_bits => way_bits
