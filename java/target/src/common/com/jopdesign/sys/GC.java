@@ -275,6 +275,7 @@ public class GC {
 			// assuming we run on CPU 0 we fire the scanner event for
 			// CPU 0 last, so we do not delay the start on other CPUs
 			for (i = cpus-1; i >= 0; --i) {
+				// log("#");
 				if (Scheduler.sched[i].scanner != null) {
 					cnt = Scheduler.sched[i].ref.length;
 					for (j = 0; j < cnt; j++) {
@@ -283,9 +284,11 @@ public class GC {
 					Scheduler.sched[i].scanner.fire();
 				} else {
 					// TODO: no scanner for this CPU, what should we do?
+					log("!");
 				}
 			}
 			for (i = 0; i < cpus; i++) {
+				// log("@");
 				cnt = Scheduler.sched[i].ref.length;
 				for (j = 0; j < cnt; j++) {
 					while (Scheduler.sched[i].ref[j].scan) {
@@ -295,15 +298,15 @@ public class GC {
 			}
 		} else {
 			// add stack of the current thread to the root list
-			log("own");
+			// log("own");
 			ScanEvent.getOwnStackRoots();
 
-			log("others");
+			// log("others");
  			cpus = Scheduler.sched.length;
  			for (i = 0; i < cpus; i++) {
-				log("C");
+				// log("C");
  				if (Scheduler.sched[i].ref != null) {
-					log("T");
+					// log("T");
 					cnt = Scheduler.sched[i].ref.length;
 					for (j = 0; j < cnt; j++) {
 						synchronized(mutex) {						
@@ -339,11 +342,11 @@ public class GC {
 		
 		int i, ref;
 
-// 		log("stack");
+ 		// log("stack");
 		getStackRoots();			
-// 		log("static");
+ 		// log("static");
 		getStaticRoots();
-// 		log("trace");
+ 		// log("trace");
 		for (;;) {
 			// pop one object from the gray list
 			synchronized (mutex) {
@@ -407,17 +410,17 @@ public class GC {
 			if (size>0) {
 				// copy it
 				for (i=0; i<size; i++) {
-//  					Native.wrMem(Native.rdMem(addr+i), dest+i);
-  					Native.memCopy(dest, addr, i);					
+  					Native.wrMem(Native.rdMem(addr+i), dest+i);
+  					// Native.memCopy(dest, addr, i);					
 				}
 			}
 
 			// update object pointer to the new location
 			Native.wrMem(dest, ref+OFF_PTR);
-			// wait until everybody uses the new location
-			for (i = 0; i < 10; i++);
-			// turn off address translation
-			Native.memCopy(dest, dest, -1);		
+			// // wait until everybody uses the new location
+			// for (i = 0; i < 10; i++);
+			// // turn off address translation
+			// Native.memCopy(dest, dest, -1);		
 		}
 	}
 	
@@ -487,20 +490,17 @@ public class GC {
 
 	public static void gc() {
 //  		log("GC called - free memory:", freeMemory());
-		System.out.print("[");
 
-//  		log("flip");
+  		// log("flip");
 		flip();
-//  		log("m&c");
+  		// log("m&c");
 		markAndCopy();
-//  		log("sweep");
+  		// log("sweep");
 		sweepHandles();
-//  		log("zap");
+  		// log("zap");
 		zapSemi();	
 
 //  		log("GC end - free memory:",freeMemory());
-		System.out.println("]");
-		
 	}
 	
 	static int free() {
@@ -569,9 +569,9 @@ public class GC {
 			}			
 		}
 		
-		JVMHelp.wr('O');
-		JVMHelp.wrByte(size);
-		JVMHelp.wr('\n');
+		// JVMHelp.wr('O');
+		// JVMHelp.wrByte(size);
+		// JVMHelp.wr('\n');
 
 		int ref;
 		
@@ -659,9 +659,9 @@ public class GC {
 			}			
 		}
 
-		JVMHelp.wr('A');
-		JVMHelp.wrSmall(size);
-		JVMHelp.wr('\n');
+		// JVMHelp.wr('A');
+		// JVMHelp.wrSmall(size);
+		// JVMHelp.wr('\n');
 
 		int ref;
 		synchronized (mutex) {
@@ -733,6 +733,7 @@ public class GC {
 		}
 		public void run() {
 			for (;;) {
+				// log("G");
 				GC.gc();
 				waitForNextPeriod();
 			}
@@ -756,16 +757,19 @@ public class GC {
 		}
 
 		public ScanEvent(int prio, int minTime) {
+			this(prio, minTime, sys.cpuId);
+		}
+
+		public ScanEvent(int prio, int minTime, int cpu) {
 			super(prio, minTime);
-			Scheduler.sched[sys.cpuId].scanner = this;
-			Scheduler.sched[sys.cpuId].scanThres = prio+RtThreadImpl.MAX_PRIORITY+RtThreadImpl.RT_BASE;
+			Scheduler.sched[cpu].scanner = this;
+			Scheduler.sched[cpu].scanThres = prio+RtThreadImpl.MAX_PRIORITY+RtThreadImpl.RT_BASE;
+			setProcessor(cpu);
 		}
 
 		public void handle() {
 		
 			int i, j;
-
-			System.out.print('<');
 
 			Scheduler sched = Scheduler.sched[sys.cpuId];
 			int cnt = sched.ref.length;
@@ -786,18 +790,12 @@ public class GC {
 						push(mem[j]);
 					}
 						
-					for (int k = 0; k < 25000; k++) {
-						// wait
-					}
-
 					ref.scan = false;
 				}
 			}
 
 			// our own stack is empty
 			sched.ref[sched.active].scan = false;
-
-			System.out.print('>');
 		}
 
 	}
