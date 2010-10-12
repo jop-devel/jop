@@ -22,6 +22,8 @@ package cruiser.control;
 
 import com.jopdesign.io.*;
 import joprt.RtThread;
+import joprt.SwEvent;
+import com.jopdesign.sys.GC;
 
 public class CmpMain {
 
@@ -64,10 +66,20 @@ public class CmpMain {
 											 frontRightFilter,
 											 rearLeftFilter,
 											 rearRightFilter);
-		RtThread dThread = new RtThread(dispatch, 7, 1000);
+		RtThread dThread = new RtThread(dispatch, 8, 1000);
 		dThread.setProcessor(0);
 
 		System.out.println("created Dispatcher");
+
+		for (int i = 0; i < sys.nrCpu; i++) {
+			SwEvent scanner = new GC.ScanEvent(7, 100*1000, i);
+		}
+		System.out.println("created ScanEvents");
+
+		RtThread gcThread = new GC.GCThread(3, 200*1000);
+		GC.setConcurrent();
+
+		System.out.println("created GCThread");
 
 		RtThread.startMission();
 

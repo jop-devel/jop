@@ -87,6 +87,12 @@ public abstract class WireMessage {
 	}
 
 	public static boolean checkMessage(String msg) {
+
+		if (msg.length() < OVERHEAD_LENGTH) {
+			// System.err.print("#");
+			return false;
+		}
+
 		// check message start
 		if (msg.charAt(0) != ':') {
 			// System.err.print("^");

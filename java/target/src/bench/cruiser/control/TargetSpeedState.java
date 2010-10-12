@@ -39,9 +39,9 @@ class TargetSpeedState {
 	TargetSpeedState(int lastTargetSpeed, StampedDistanceMessage msg) {
 		this.lastTargetSpeed = lastTargetSpeed;
 		WireTargetSpeedMessage m = (WireTargetSpeedMessage)msg.getMessage();
-		this.lastTargetDistance = msg.getDistance()/1000;
+		this.lastTargetDistance = msg.getDistance();
 		this.targetSpeed = m.getSpeed();
-		this.targetDistance = msg.getDistance()/1000+m.getDistance()*100;
+		this.targetDistance = msg.getDistance()+m.getDistance()*100;
 	}
 
 }
