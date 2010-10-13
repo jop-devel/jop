@@ -1,42 +1,62 @@
-/*
-  This file is part of JOP, the Java Optimized Processor
-    see <http://www.jopdesign.com/>
-
-  Copyright (C) 2008, Martin Schoeberl (martin@jopdesign.com)
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-
-/**
- * 
- */
 package javax.realtime;
 
+import javax.safetycritical.annotate.SCJAllowed;
+import javax.safetycritical.annotate.SCJProtected;
+
+import static javax.safetycritical.annotate.Level.LEVEL_0;
+
+
 /**
- * This class is almost empty - just mark SCJ RTSJ compatible.
- * @author Martin Schoeberl
+ * AsyncEventHandler
  *
  */
-public class AsyncEventHandler implements Schedulable {
+@SCJAllowed(LEVEL_0)
+public class AsyncEventHandler extends AbstractAsyncEventHandler
+{
+  /*
+   * Not @SCJAllowed
+   *
+  public AsyncEventHandler(SchedulingParameters scheduling,
+               ReleaseParameters release,
+               MemoryParameters memory,
+               MemoryArea area,
+               ProcessingGroupParameters group,
+                           boolean noheap,
+               Runnable logic)
+  {
+  }
+  */
 
-	// TODO: get parameters
-	
-	/**
-	 * This is the RTSJ handle method.
-	 */
-	public void handleAsyncEvent() {
-		
-	}
+  // not scj allowed
+  @Override
+  public MemoryParameters getMemoryParameters() { return null; }
+
+  /**
+   * @return A reference to the associated ReleaseParameter object.
+   */
+  //@BlockFree
+  //@SCJAllowed
+  @Override
+  public ReleaseParameters getReleaseParameters() { return null; }
+
+  /**
+   *  @return A reference to the associated SchedulingParameter object.
+   */
+  //@SCJAllowed
+  @Override
+  public SchedulingParameters getSchedulingParameters() { return null; }
+  
+ /**
+   * Infrastructure code.
+   * Must not be called.
+   */
+  @Override
+  @SCJProtected
+  public final void run() {}
+
+  /**
+   * 
+   */
+  @SCJAllowed
+  public void handleAsyncEvent() {}
 }
