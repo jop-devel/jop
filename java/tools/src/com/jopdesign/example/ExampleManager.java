@@ -22,6 +22,7 @@ package com.jopdesign.example;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.KeyManager;
 import com.jopdesign.common.EmptyAttributeManager;
 
 /**
@@ -31,7 +32,7 @@ import com.jopdesign.common.EmptyAttributeManager;
  */
 public class ExampleManager extends EmptyAttributeManager {
 
-    private AppInfo.CustomKey myFieldID;
+    private KeyManager.CustomKey myFieldID;
 
     public ExampleManager() {
     }
@@ -39,7 +40,7 @@ public class ExampleManager extends EmptyAttributeManager {
     public void onRegisterManager(AppInfo appInfo) {
 
         // register a new custom attribute and set it to every existing class
-        myFieldID = appInfo.registerKey("iExampleField");
+        myFieldID = KeyManager.getSingleton().registerKey(KeyManager.KeyType.STRUCT, "iExampleField");
 
         int cnt = 0;
         for (ClassInfo clsInfo : appInfo.getClassInfos()) {

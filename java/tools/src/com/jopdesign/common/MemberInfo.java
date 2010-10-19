@@ -48,7 +48,7 @@ public abstract class MemberInfo {
 
     public MemberInfo(AccessFlags flags) {
         accessFlags = flags;
-        customValues = new Object[getAppInfo().getRegisteredKeyCount()];
+        customValues = null;
     }
 
     /**
@@ -155,7 +155,7 @@ public abstract class MemberInfo {
         return out.toString();
     }
 
-    public Object removeCustomValue(AppInfo.CustomKey key) {
+    public Object removeCustomValue(KeyManager.CustomKey key) {
         return setCustomValue(key, null);
     }
 
@@ -167,7 +167,7 @@ public abstract class MemberInfo {
      * @param customValue the new value to set, or null to unset the value.
      * @return the old value, or null if not set previously.
      */
-    public Object setCustomValue(AppInfo.CustomKey key, Object customValue) {
+    public Object setCustomValue(KeyManager.CustomKey key, Object customValue) {
         // We could use generics here, and even use customValue.class as key, but
         // 1) using class as key makes it impossible to attach the same CustomValue class
         //    with different values multiple times,
@@ -183,8 +183,10 @@ public abstract class MemberInfo {
 
         int id = key.getId();
 
-        if ( id >= customValues.length ) {
-            customValues = Arrays.copyOf(customValues, getAppInfo().getRegisteredKeyCount());
+        if ( customValues == null ) {
+            customValues = new Object[getAppInfo().getKeyManager().getNumStructKeys()];
+        } else if ( id >= customValues.length ) {
+            customValues = Arrays.copyOf(customValues, getAppInfo().getKeyManager().getNumStructKeys());
         }
 
         Object oldVal = customValues[id];
@@ -193,8 +195,8 @@ public abstract class MemberInfo {
         return oldVal;
     }
 
-    public Object getCustomValue(AppInfo.CustomKey key) {
-        if ( key == null || key.getId() >= customValues.length ) {return null;}
+    public Object getCustomValue(KeyManager.CustomKey key) {
+        if ( customValues == null || key == null || key.getId() >= customValues.length ) {return null;}
         return customValues[key.getId()];
     }
 

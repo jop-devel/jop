@@ -22,12 +22,13 @@ package com.jopdesign.common;
 
 /**
  * An AttributeManager is used to access attributes and flow-facts from classes, methods, fields and code.
- * It manages the {@link AppInfo.CustomKey} keys and type casts internally, and provides some callback
+ * It manages the {@link com.jopdesign.common.KeyManager.CustomKey} keys and type casts internally, and provides some callback
  * methods to AppInfo to be notified of (some) changes to the classes.
  * <p>
  * Each AttributeManager should provide custom methods to get/set its custom attributes in addition to
  * the callback methods.
  * </p>
+ * TODO find a better name for this interface
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
@@ -67,8 +68,6 @@ public interface AttributeManager {
 
     /**
      * Called when a method was modified.
-     *
-     * // TODO pass to handler type of change (?), which flow-facts have been kept and which have been removed.
      *
      * @param methodInfo the method which got modified.
      */

@@ -243,6 +243,7 @@ public final class MethodInfo extends ClassMemberInfo {
     public void setMethodCode(MethodGen method) {
         codeRep = null;
 
+        // TODO copy InstructionList!
         // TODO copy all code relevant infos from method, excluding name, params and access flags
         methodGen.setInstructionList(method.getInstructionList());
     }

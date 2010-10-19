@@ -83,41 +83,7 @@ public final class AppInfo {
     private final Set<String> ignoredClasses;
 
     private final Map<String, AttributeManager> managers;
-    private final Map<String,CustomKey> registeredKeys;
-
-
-    /**
-     * A class for custom attribute key.
-     * To create a new key, use {@link com.jopdesign.common.AppInfo#registerKey(String)}.
-     */
-    public static final class CustomKey  {
-        private final String keyname;
-        private final int id;
-
-        private CustomKey(String keyname, int id) {
-            this.keyname = keyname;
-            this.id = id;
-        }
-
-        public String getKeyname() {
-            return keyname;
-        }
-
-        public int getId() {
-            return id;
-        }
-
-        public int hashCode() {
-            return id;
-        }
-
-        public boolean equals(Object o) {
-            if ( o instanceof CustomKey ) {
-                return ((CustomKey)o).getId() == id;
-            }
-            return false;
-        }
-    }
+    private CommonKeys commonKeys;
 
     //////////////////////////////////////////////////////////////////////////////
     // Singleton
@@ -149,7 +115,10 @@ public final class AppInfo {
         ignoredClasses = new HashSet<String>(1);
 
         managers = new HashMap<String, AttributeManager>(1);
-        registeredKeys = new HashMap<String, CustomKey>();
+
+        // TODO make this optional? (need to move this somewhere else in order to do that)
+        commonKeys = new CommonKeys();
+        registerManager("CommonKeys", commonKeys);
     }
 
 
@@ -166,50 +135,34 @@ public final class AppInfo {
         return managers.get(key);
     }
 
-    public CustomKey registerKey(String key) {
-
-        // check if exists
-        CustomKey k = registeredKeys.get(key);
-        if ( k != null ) {
-            return k;
-        }
-
-        k = new CustomKey(key, registeredKeys.size());
-        registeredKeys.put(key, k);
-        return k;
+    /**
+     * Get a collection of all registered managers. Do not modify this collection.
+     * @return a collection of registered AttributeManagers
+     */
+    public Collection<AttributeManager> getManagers() {
+        return managers.values();
     }
 
-    public CustomKey getRegisteredKey(String key) {
-        return registeredKeys.get(key);
+    /**
+     * Get the {@link CommonKeys} AttributeManager
+     * @return the manager for the common keys.
+     */
+    public CommonKeys getCommonKeys() {
+        return commonKeys;
     }
 
-    public void clearKey(CustomKey key) {
-        clearKey(key, true, true, true);
+    /**
+     * Just a shortcut for {@link KeyManager#getSingleton()}
+     * @return the KeyManager
+     */
+    public KeyManager getKeyManager() {
+        return KeyManager.getSingleton();
     }
 
-    public void clearKey(CustomKey key, boolean fromClassInfos, boolean fromClassMembers, boolean fromCode) {
-        for ( ClassInfo cls : classes.values() ) {
-            if ( fromClassInfos ) {
-                cls.removeCustomValue(key);
-            }
-            if ( fromClassMembers ) {
-                for ( FieldInfo field : cls.getFields() ) {
-                    field.removeCustomValue(key);
-                }
-            }
-            if ( fromClassMembers || fromCode ) {
-                for ( MethodInfo method : cls.getMethods() ) {
-                    if ( fromClassMembers ) {
-                        method.removeCustomValue(key);
-                    }
-                    if ( fromCode ) {
-                        // TODO implement
-                    }
-                }
-            }
-        }
-    }
-
+    /**
+     * Get the current classpath used for loading classes.
+     * @return the current BCEL classpath.
+     */
     public ClassPath getClassPath() {
         return classPath;
     }
@@ -867,15 +820,6 @@ public final class AppInfo {
     // Internal Affairs
     //////////////////////////////////////////////////////////////////////////////
 
-    /**
-     * Get number of registered keys. Should be accessed only by MemberInfo.
-     *
-     * @return number of currently registered keys.
-     */
-    int getRegisteredKeyCount() {
-        return registeredKeys.size();
-    }
-    
     private ClassInfo performLoadClass(String className, boolean required) throws ClassInfoNotFoundException {
 
         // try to load the class

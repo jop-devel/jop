@@ -23,6 +23,7 @@ package com.jopdesign.common.tools;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.FieldInfo;
+import com.jopdesign.common.KeyManager;
 import com.jopdesign.common.MemberInfo;
 import com.jopdesign.common.MethodInfo;
 
@@ -34,11 +35,11 @@ import java.util.List;
  */
 public class UnusedCodeRemover {
 
-    private static AppInfo.CustomKey keyUsed;
+    private static KeyManager.CustomKey keyUsed;
 
-    private static AppInfo.CustomKey getCustomKey() {
+    private static KeyManager.CustomKey getCustomKey() {
         if (keyUsed == null) {
-            keyUsed = AppInfo.getSingleton().registerKey("UnusedCodeRemover");
+            keyUsed = KeyManager.getSingleton().registerKey(KeyManager.KeyType.STRUCT, "UnusedCodeRemover");
         }
         return keyUsed;
     }
@@ -66,7 +67,7 @@ public class UnusedCodeRemover {
      */
     public void run(boolean rebuildConstantPools) {
         AppInfo appInfo = AppInfo.getSingleton();
-        appInfo.clearKey(getCustomKey());
+        KeyManager.getSingleton().clearAllValues(getCustomKey());
 
         markUsedMembers();
         removeUnusedMembers();
