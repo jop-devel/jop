@@ -21,7 +21,7 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.bcel.ParameterAnnotationAttribute;
-import com.jopdesign.common.code.CodeRepresentation;
+import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.graph.ClassHierarchyTraverser;
 import com.jopdesign.common.graph.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
@@ -55,7 +55,7 @@ public final class MethodInfo extends ClassMemberInfo {
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT+".MethodInfo");
     private static final Logger codeLogger = Logger.getLogger(LogConfig.LOG_CODE+".MethodInfo");
 
-    private CodeRepresentation codeRep;
+    private ControlFlowGraph cfg;
 
     public MethodInfo(ClassInfo classInfo, MethodGen methodGen) {
         super(classInfo, methodGen);
@@ -234,14 +234,14 @@ public final class MethodInfo extends ClassMemberInfo {
      * @return an updated method for this methodInfo.
      */
     public Method compileMethod() {
-        compileCodeRep();
+        compileCFG();
         methodGen.setMaxLocals();
         methodGen.setMaxStack();
         return methodGen.getMethod();
     }
 
     public void setMethodCode(MethodGen method) {
-        codeRep = null;
+        cfg = null;
 
         // TODO copy InstructionList!
         // TODO copy all code relevant infos from method, excluding name, params and access flags
@@ -249,49 +249,40 @@ public final class MethodInfo extends ClassMemberInfo {
     }
 
     public InstructionList getInstructionList() {
-        compileCodeRep();
+        compileCFG();
+        // If one only uses the IList to analyze code but does not modify it, we could keep an existing CFG.
+        // Unfortunately, there is no 'const InstructionList' or 'UnmodifiableInstructionList', so we
+        // can never be sure what the user will do with the list..
+        cfg = null;
         return methodGen.getInstructionList();
     }
 
     public void setInstructionList(InstructionList il) {
         methodGen.setInstructionList(il);
-        codeRep = null;
+        cfg = null;
     }
 
     public void removeNOPs() {
+        compileCFG();
+        cfg = null;
         methodGen.removeNOPs();
     }
 
-    public <T extends CodeRepresentation> T getCode(T codeRep) {
-        if ( this.codeRep == null ) {
-            this.codeRep = codeRep;
-            codeRep.load(this);
-            return codeRep;
+    public ControlFlowGraph getControlFlowGraph() {
+        if ( this.cfg == null ) {
+            cfg = new ControlFlowGraph(this);
         }
 
-        if ( codeRep.getClass().isInstance(this.codeRep) &&
-             codeRep.isSameType(this.codeRep) )
-        {
-            // this.codeRep is same type and already contains the current code.
-            // cast is checked above
-            //noinspection unchecked
-            return (T) this.codeRep;
-        }
-
-        // this.codeRep is set but different
-        compileCodeRep();
-        this.codeRep = codeRep;
-        codeRep.load(this);
-        return codeRep;
+        return cfg;
     }
 
-    public boolean hasCodeRep() {
-        return codeRep != null;
+    public boolean hasCFG() {
+        return cfg != null;
     }
 
-    public void compileCodeRep() {
-        if ( codeRep != null ) {
-            codeRep.compile(this);
+    public void compileCFG() {
+        if ( cfg != null ) {
+            cfg.compile();
         }
     }
 

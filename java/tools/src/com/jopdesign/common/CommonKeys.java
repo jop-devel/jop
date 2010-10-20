@@ -21,6 +21,8 @@
 package com.jopdesign.common;
 
 /**
+ * The common keys class registers and manages keys common to all tools.
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class CommonKeys extends EmptyAttributeManager {
@@ -29,9 +31,16 @@ public class CommonKeys extends EmptyAttributeManager {
 
     @Override
     public void onRegisterManager(AppInfo appInfo) {
-        KEY_LOOPBOUND = KeyManager.getSingleton().registerKey(KeyManager.KeyType.CODE, "loopbound");
+        KEY_LOOPBOUND = KeyManager.getSingleton().registerStructKey("loopbound");
 
     }
 
-    
+    @Override
+    public void onCreateClass(ClassInfo classInfo, boolean loaded) {
+        if (!loaded) {
+            return;
+        }
+        // TODO load annotations from sourcecode comments to CustomValues (?)
+
+    }
 }

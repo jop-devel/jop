@@ -25,18 +25,12 @@ import com.jopdesign.common.MethodInfo;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public interface CodeRepresentation {
+public class ControlFlowGraph {
 
-    /**
-     * Check if this is the same representation type, including representation parameters,
-     * but excluding code, as the given CodeRepresentation.
-     *
-     * @param codeRep the code representation to compare
-     * @return true if it is the same representation type.
-     */
-    boolean isSameType(CodeRepresentation codeRep);
+    public ControlFlowGraph(MethodInfo method) {
+    }
 
-    void load(MethodInfo method);
-
-    void compile(MethodInfo method);
+    public void compile() {
+        
+    }
 }

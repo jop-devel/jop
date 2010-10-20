@@ -2,7 +2,7 @@
  * This file is part of JOP, the Java Optimized Processor
  *   see <http://www.jopdesign.com/>
  *
- * Copyright (C) 2010, Stefan Hepp (stefan@stefant.org).
+ * Copyright (C) 2008, Benedikt Huber (benedikt.huber@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,23 +18,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common.code;
+package com.jopdesign.common.graph;
 
-import com.jopdesign.common.MethodInfo;
+import org.jgrapht.DirectedGraph;
 
-/**
- * @author Stefan Hepp (stefan@stefant.org)
- */
-public class CFG implements CodeRepresentation {
-
-    public boolean isSameType(CodeRepresentation codeRep) {
-        return false;
-    }
-
-    public void load(MethodInfo method) {
-    }
-
-    public void compile(MethodInfo method) {
-    }
-    
+public interface FlowGraph<V, E> extends DirectedGraph<V, E> {
+	V getEntry();
+	V getExit();
 }

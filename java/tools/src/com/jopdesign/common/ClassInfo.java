@@ -1185,12 +1185,11 @@ public final class ClassInfo extends MemberInfo {
         if ( method == null ) {
             return null;
         }
-        method.compileCodeRep();
         MethodGen methodGen = new MethodGen(method.compileMethod(), getClassName(), cpg);
         methodGen.setName(newName);
 
         MethodInfo newMethod = new MethodInfo(this, methodGen);
-        
+
         // TODO copy all the attribute stuff?, call manager eventhandler
 
         methods.put(newMethod.getMemberSignature(), newMethod);
@@ -1324,7 +1323,7 @@ public final class ClassInfo extends MemberInfo {
      * Commit all modifications to this ClassInfo and return a BCEL JavaClass for this ClassInfo.
      * You may want to call {@link #updateInnerClasses()} first if needed.
      *
-     * @see MethodInfo#compileCodeRep()
+     * @see MethodInfo#compileCFG()
      * @see #updateInnerClasses()
      * @see #getJavaClass()
      * @return a JavaClass representing this ClassInfo.

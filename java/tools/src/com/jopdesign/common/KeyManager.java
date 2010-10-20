@@ -20,7 +20,6 @@
 
 package com.jopdesign.common;
 
-import com.jopdesign.common.misc.AppInfoError;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
 
@@ -135,6 +134,28 @@ public class KeyManager {
     // Key registration
     //////////////////////////////////////////////////////////////////////////////
 
+    /**
+     * Register a new key which can be used to attach values to structure elements (i.e. all {@link MemberInfo}).
+     *
+     * @see #registerKey(KeyType, String, AttributeManager)
+     * @param keyname a unique keyname for the key
+     * @return the new key
+     */
+    public CustomKey registerStructKey(String keyname) {
+        return registerKey(KeyType.STRUCT, keyname, null);
+    }
+
+    /**
+     * Register a new key which can be used to attach values to instructions or code blocks).
+     *
+     * @see #registerKey(KeyType, String, AttributeManager)
+     * @param keyname a unique keyname for the key
+     * @return the new key
+     */
+    public CustomKey registerCodeKey(String keyname) {
+        return registerKey(KeyType.CODE, keyname, null);
+    }
+
     public CustomKey registerKey(KeyType type, String keyname) {
         return registerKey(type, keyname, null);
     }
@@ -144,8 +165,7 @@ public class KeyManager {
         // check if exists
         CustomKey k = registeredKeys.get(keyname);
         if ( k != null ) {
-            // TODO find better class, throw exception instead of error?, do some logging?
-            throw new AppInfoError("CustomKey "+keyname+" already exists but has a different definition.");
+            throw new IllegalArgumentException("CustomKey "+keyname+" already exists but has a different definition.");
         }
 
         // currently there is no way to unregister a key and storing struct-keys might get replaced by maps for
