@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2004, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2006, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,21 +23,20 @@
  * questions.
  */
 
-package java.lang.annotation;
+package java.lang;
+
+import java.lang.annotation.*;
 
 /**
- * Indicates that annotations with a type are to be documented by javadoc
- * and similar tools by default.  This type should be used to annotate the
- * declarations of types whose annotations affect the use of annotated
- * elements by their clients.  If a type declaration is annotated with
- * Documented, its annotations become part of the public API
- * of the annotated elements.
+ * Indicates that a method declaration is intended to override a
+ * method declaration in a superclass.  If a method is annotated with
+ * this annotation type but does not override a superclass method,
+ * compilers are required to generate an error message.
  *
  * @author  Joshua Bloch
  * @since 1.5
  */
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.ANNOTATION_TYPE)
-public @interface Documented {
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.SOURCE)
+public @interface Override {
 }
