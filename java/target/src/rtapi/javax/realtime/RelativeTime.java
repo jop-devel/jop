@@ -1,117 +1,212 @@
-/*
-  This file is part of JOP, the Java Optimized Processor
-    see <http://www.jopdesign.com/>
-  This subset of javax.realtime is provided for the JSR 302
-  Safety Critical Specification for Java
-
-  Copyright (C) 2008, Martin Schoeberl (martin@jopdesign.com)
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 package javax.realtime;
 
-import javax.safetycritical.annotate.BlockFree;
+import static javax.safetycritical.annotate.Allocate.Area.CURRENT;
+
+import javax.safetycritical.annotate.Allocate;
 import javax.safetycritical.annotate.SCJAllowed;
+import javax.safetycritical.annotate.SCJRestricted;
 
-//import javax.safetycritical.annotate.Allocate;
-//import static javax.safetycritical.annotate.Allocate.Area.CURRENT;
-
-//@SCJAllowed
+/**
+ * An object that represents a time interval milliseconds/10^3 +
+ * nanoseconds/10^9 seconds long that is divided into subintervals by
+ * some frequency. This is generally used in periodic events, threads,
+ * and feasibility analysis to specify periods where there is a basic
+ * period that must be adhered to strictly (the interval), but within
+ * that interval the periodic events are supposed to happen frequency
+ * times, as uniformly spaced as possible, but clock and scheduling
+ * jitter is moderately acceptable.  
+ *
+ */
+@SCJAllowed
 public class RelativeTime extends HighResolutionTime {
 
+  /**
+   * Equivalent to new RelativeTime(0,0).
+   */
+  @SCJAllowed
+  @SCJRestricted(maySelfSuspend = false)
+  public RelativeTime() {
+  }
+
+  /**
+   * Construct a RelativeTime object representing an interval based on
+   * the parameter millis plus the parameter nanos. 
+   * 
+   * @param ms The desired value for the millisecond component of
+   * this. The actual value is the result of parameter normalization. 
+   * @param ns The desired value for the nanosecond component of
+   * this. The actual value is the result of parameter normalization. 
+   */
+  @SCJAllowed
+  @SCJRestricted(maySelfSuspend = false)
+  public RelativeTime(long ms, int ns) {
+  }
+
+  /**
+   * Equivalent to new RelativeTime(0,0,clock). 
+   * 
+   * @param clock The clock providing the association for the newly
+   * constructed object. 
+   */
+  @SCJAllowed
+  @SCJRestricted(maySelfSuspend = false)
+  public RelativeTime(Clock clock) {
+  }
+
+  /**
+   * Construct a RelativeTime object representing an interval based on
+   * the parameter millis plus the parameter nanos. 
+   * 
+   * @param ms The desired value for the millisecond component of
+   * this. The actual value is the result of parameter normalization. 
+   * @param ns The desired value for the nanosecond component of
+   * this. The actual value is the result of parameter normalization. 
+   * @param clock The clock providing the association for the newly
+   * constructed object. 
+   */
+  @SCJAllowed
+  @SCJRestricted(maySelfSuspend = false)
+  public RelativeTime(long ms, int ns, Clock clock) {
+  }
+  
+//	/**
+//	 * TBD: Do we want to require MemoryAreaEncloses(inner = {"this"}, outer =
+//	 * {"time.getClock()"})? PERC Pico says that Clock must be allocated in
+//	 * immortal memory to avoid this "difficulty"?
+//	 */
+
+  /**
+   * Make a new RelativeTime object from the given RelativeTime object. 
+   * 
+   * @param time The RelativeTime object which is the source for the copy.
+   */
+  @SCJAllowed
+  @SCJRestricted(maySelfSuspend = false)
+  public RelativeTime(RelativeTime time) {
+  }
 
 
-	public int compareTo(Object o) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-	/**
-	 * Create and normalize the time.
-	 * How are negative values normalized?
-	 * 
-	 * TODO: see in the OVM source if GPLed versions exist.
-	 * @param ms
-	 * @param ns
-	 */
-//	@BlockFree
-//	@SCJAllowed
-	public RelativeTime(long ms, int ns) {
-		ms += ns/1000;
-		ns %= 1000;
-		if (ns<0) {
-			ns += 1000;
-			ms--;
-		}
-		millis = ms;
-		nanos = ns;
-	}
+  /**
+   * Create a new object representing the result of adding millis and
+   * nanos to the values from this  and normalizing the result. 
+   * @param millis The number of milliseconds to be added to this.
+   * @param nanos The number of nanoseconds to be added to this. 
+   * @return A new RelativeTime object whose time is the normalization
+   * of this plus millis and nanos.  
+   */
+  @Allocate( { CURRENT })
+  @SCJAllowed
+  @SCJRestricted(maySelfSuspend = false)
+  public RelativeTime add(long millis, int nanos) {
+    return add(millis, nanos);
+  }
+  
+  /**
+   * Create a new instance of RelativeTime  representing the result of
+   * adding time to the value of this  and normalizing the result. 
+   * @param time The time to add to this. 
+   * @return A new RelativeTime object whose time is the normalization
+   * of this plus millis and nanos.  
+   */
+  @Allocate( { CURRENT })
+  @SCJAllowed
+  @SCJRestricted(maySelfSuspend = false)
+  public RelativeTime add(RelativeTime time) {
+    return add(time);
+  }
+  
+  /**
+   * Return an object containing the value resulting from adding
+   * millis and nanos to the values from this  and normalizing the
+   * result. 
+   * @param millis The number of milliseconds to be added to this.
+   * @param nanos The number of nanoseconds to be added to this. 
+   * @param dest If dest is not null, the result is placed there and
+   * returned. Otherwise, a new object is allocated for the result.  
+   * @return the result of the normalization of this plus millis and
+   * nanos in dest if dest is not null, otherwise the result is
+   * returned in a newly allocated object.  
+   */
+  @SCJAllowed
+  @SCJRestricted(maySelfSuspend = false)
+  public RelativeTime add(long millis, int nanos, RelativeTime dest) {
+    return null;
+  }
 
-	/**
-	 * Why do we need this constructor when RelativeTime is in
-	 * fact immutable?
-	 * @param time
-	 */
-//	@BlockFree
-//	@SCJAllowed
-	public RelativeTime(RelativeTime time) {
-		millis = time.millis;
-		nanos = time.nanos;
-	}
+  /**
+   * Return an object containing the value resulting from adding time
+   * to the value of this  and normalizing the result. 
+   * @param time The time to add to this.
+   * @param dest If dest is not null, the result is placed there and
+   * returned. Otherwise, a new object is allocated for the result. 
+   * @return the result of the normalization of this plus the
+   * RelativeTime  parameter time in dest if dest is not null,
+   * otherwise the result is returned in a newly allocated object. 
+   */
+  @SCJAllowed
+  @SCJRestricted(maySelfSuspend = false)
+  public RelativeTime add(RelativeTime time, RelativeTime dest) {
+    return null;
+  }
 
-	/**
-	 * TBD: is AbsoluteTime mutable?
-	 */
-	public AbsoluteTime absolute(Clock clock, AbsoluteTime destination) {
-		return null; // dummy return
-	}
+  /**
+   * Create a new instance of RelativeTime  representing the result of
+   * subtracting time from the value of this  and normalizing the
+   * result. 
+   * @param time The time to subtract from this.
+   * @return A new RelativeTime object whose time is the normalization
+   * of this minus the parameter time  parameter time. 
+   */
+  @Allocate( { CURRENT })
+  @SCJAllowed
+  @SCJRestricted(maySelfSuspend = false)
+  public RelativeTime subtract(RelativeTime time) {
+    return subtract(time);
+  }
 
-	/**
-	 * TBD: it is not "safe" to automatically convert from one clock basis
-	 * to another. Do we want to support this?
-	 */
-	public AbsoluteTime absolute(Clock clock) {
-		return absolute(clock, null);
-	}
 
+  /**
+   * Return an object containing the value resulting from subtracting
+   * the value of time from the value of this  and normalizing the
+   * result. 
+   * @param time The time to subtract from this.
+   * @param dest If dest is not null, the result is placed there and
+   * returned. Otherwise, a new object is allocated for the result.  
+   * @return the result of the normalization of this minus the
+   * RelativeTime  parameter time in dest if dest is not null,
+   * otherwise the result is returned in a newly allocated object.  
+   */
+  @SCJAllowed
+  @SCJRestricted(maySelfSuspend = false)
+  public RelativeTime subtract(RelativeTime time, RelativeTime dest) {
+    return null;
+  }
 
-	public RelativeTime relative(Clock clock) {
-		return null; // dummy return
-	}
-	public RelativeTime relative(Clock clock, RelativeTime destination) {
-		return null; // dummy return
-	}
+  /************** unused RTSJ methods ******************************/
+  
+  /**
+   * Note: it is not "safe" to automatically convert from one clock basis to
+   * another.
+   */
+  public AbsoluteTime absolute(Clock clock) {
+    return absolute(clock);
+  }
 
-//	@Allocate({CURRENT})
-//	@BlockFree
-//	@SCJAllowed
-	public RelativeTime add(long millis, int nanos) {
-		return new RelativeTime(this.millis + millis, this.nanos + nanos);
-	}
-
-//	@Allocate({CURRENT})
-//	@BlockFree
-//	@SCJAllowed
-	public RelativeTime add(RelativeTime time) {
-		return add(time.millis, time.nanos);
-	}
-
-//	@Allocate({CURRENT})
-//	@BlockFree
-//	@SCJAllowed
-	public RelativeTime subtract(RelativeTime time) {
-		return new RelativeTime(millis - time.millis, nanos - time.nanos);
-	}
+  /**
+   * Note: it is not "safe" to automatically convert from one clock basis to
+   * another.
+   */
+  public RelativeTime relative(Clock clock) {
+    return null; // dummy return
+  }
+  
+  // clock conversion
+  public RelativeTime(RelativeTime time, Clock clock) {
+  }
+  public AbsoluteTime absolute(Clock clock, AbsoluteTime destination) {
+    return null;
+  }
+  public RelativeTime relative(Clock clock, RelativeTime destination) {
+    return null;
+  }
 }
-
