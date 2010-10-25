@@ -47,7 +47,7 @@ public class DirectedCycleDetector {
 			while(pi.hasNext()) pi.next();
 			return null;
 		} catch(CycleDetectedException ex) {
-			return new Pair<List<V>,List<V>>(ex.prefix,ex.cyclePath);
+			return new Pair<List<V>,List<V>>(ex.getPrefix(),ex.getCyclePath());
 		}
 	}
 
@@ -56,15 +56,23 @@ public class DirectedCycleDetector {
 	private static class CycleDetectedException extends Error {
 
 		private static final long serialVersionUID = 1L;
-		List prefix;
-		List cyclePath;
+		private List prefix;
+		private List cyclePath;
 
 		public CycleDetectedException(List prefix, List path) {
 			super("CycleDetected: "+path + "reachable via "+prefix);
 			this.prefix    = prefix;
 			this.cyclePath = path;
 		}
-	}
+
+        public List getPrefix() {
+            return prefix;
+        }
+
+        public List getCyclePath() {
+            return cyclePath;
+        }
+    }
 
     /**
      * Version of DFS which maintains a backtracking path used to probe for

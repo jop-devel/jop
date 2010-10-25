@@ -2,7 +2,7 @@
  * This file is part of JOP, the Java Optimized Processor
  *   see <http://www.jopdesign.com/>
  *
- * Copyright (C) 2010, Stefan Hepp (stefan@stefant.org).
+ * Copyright (C) 2008, Benedikt Huber (benedikt.huber@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,9 +26,10 @@ import org.jgrapht.traverse.DepthFirstIterator;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Vector;
 
 /** Compute Dominators of a graph, following:
  * A Simple, Fast Dominance Algorithm
@@ -37,7 +38,7 @@ import java.util.Vector;
 public class Dominators<V,E> {
 
 	private DirectedGraph<V, E> graph;
-	private Vector<V> vertexPreOrder;
+	private List<V> vertexPreOrder;
 	private Map<V,V> idom = null;
 	private Map<V, Integer> preOrderMap;
 
@@ -59,12 +60,12 @@ public class Dominators<V,E> {
 		this(g,dfsPreOrder(g,entry));		
 	}
 
-	private static<V,E> Vector<V> dfsPreOrder(DirectedGraph<V,E> g, V exit) {
+	private static<V,E> List<V> dfsPreOrder(DirectedGraph<V,E> g, V exit) {
 		DepthFirstIterator<V, E> iter = new DepthFirstIterator<V, E>(g,exit);
 		iter.setCrossComponentTraversal(false);
-		Vector<V> trav = new Vector<V>();
+		List<V> trav = new LinkedList<V>();
 		while(iter.hasNext()) {
-			trav .add(iter.next());			
+			trav.add(iter.next());
 		}
 		return trav;
 	}
@@ -74,9 +75,12 @@ public class Dominators<V,E> {
 	 * @param g the graph
 	 * @param preOrder a pre-order DFS traversal of the graph. Its first node is the entry point of the graph.
 	 */
-	public Dominators(DirectedGraph<V,E> g, Vector<V> preOrder) {
+	public Dominators(DirectedGraph<V,E> g, List<V> preOrder) {
 		this.graph = g;
 		this.vertexPreOrder = preOrder;
+        // just making sure we have a non-empty graph,
+        assert vertexPreOrder != null && !vertexPreOrder.isEmpty();
+
 		this.preOrderMap = new HashMap<V,Integer>();
 		for(int i = 0; i < this.vertexPreOrder.size(); i++) {
 			preOrderMap.put(vertexPreOrder.get(i),i);
@@ -86,11 +90,12 @@ public class Dominators<V,E> {
 	protected void computeDominators() {
 		if(this.idom != null) return;
 		this.idom = new HashMap<V,V>();
-		V firstElement = vertexPreOrder.firstElement();
+		V firstElement = vertexPreOrder.get(0);
 		idom.put(firstElement,firstElement);
-		if(! graph.incomingEdgesOf(vertexPreOrder.firstElement()).isEmpty())
+		if(! graph.incomingEdgesOf(vertexPreOrder.get(0)).isEmpty())
 			throw new AssertionError("The entry of the flow graph is not allowed to have incoming edges");
-		boolean changed;
+
+        boolean changed;
 		do {
 			changed = false;
 			for(V v : vertexPreOrder) {

@@ -2,7 +2,7 @@
  * This file is part of JOP, the Java Optimized Processor
  *   see <http://www.jopdesign.com/>
  *
- * Copyright (C) 2010, Stefan Hepp (stefan@stefant.org).
+ * Copyright (C) 2008, Benedikt Huber (benedikt.huber@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,10 +18,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package common.config;
+package com.jopdesign.common.code;
 
 /**
- * @author Stefan Hepp (stefan@stefant.org)
+ * Purpose: Simple Interface implemented by all objects which provide
+ * a callstring (usually an ExecutionContext)
+ * 
+ * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
+ *
  */
-public class ConfigTest {
+public interface CallStringProvider {
+
+	CallString getCallString();
+    
 }

@@ -126,7 +126,7 @@ public final class ClassInfo extends MemberInfo {
     }
 
     @Override
-    public String getSimpleName() {
+    public String getShortName() {
         String name = getClassName();
         return name.substring(name.lastIndexOf('.')+1);
     }
@@ -362,7 +362,7 @@ public final class ClassInfo extends MemberInfo {
         rebuilder.updateClassGen(classGen);
 
         for (MethodInfo m : methods.values()) {
-            rebuilder.updateMethodGen(m.getMethodGen());
+            rebuilder.updateMethodGen(m.getInternalMethodGen());
         }
         for (FieldInfo f : fields.values()) {
             rebuilder.updateFieldGen(f.getFieldGen());
@@ -1005,7 +1005,7 @@ public final class ClassInfo extends MemberInfo {
     public Set<MethodInfo> getMethodByName(String name) {
         Set<MethodInfo> mList = new HashSet<MethodInfo>();
         for (MethodInfo m : methods.values()) {
-            if (m.getSimpleName().equals(name)) {
+            if (m.getShortName().equals(name)) {
                 mList.add(m);
             }
         }
@@ -1221,7 +1221,7 @@ public final class ClassInfo extends MemberInfo {
         if ( method == null ) {
             return null;
         }
-        method.getMethodGen().setName(newName);
+        method.getInternalMethodGen().setName(newName);
 
         methods.put(method.getMemberSignature(), method);
         int i = lookupMethodInfo(memberSignature);

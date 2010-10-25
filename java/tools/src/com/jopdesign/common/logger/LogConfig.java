@@ -69,7 +69,10 @@ public class LogConfig {
      * Logger for code handling related tasks
      */
     public static final String LOG_CODE = "common.appinfo.code";
-
+    /**
+     * Logger for control flow graph and related classes
+     */
+    public static final String LOG_CFG = "common.appinfo.code.cfg";
 
     /**
      * Setup the logger using configuration options.

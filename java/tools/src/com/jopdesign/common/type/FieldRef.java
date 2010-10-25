@@ -62,7 +62,7 @@ public class FieldRef {
     }
 
     public String getName() {
-        return fieldInfo != null ? fieldInfo.getSimpleName() : name;
+        return fieldInfo != null ? fieldInfo.getShortName() : name;
     }
 
     public Type getType() {

@@ -20,13 +20,14 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.bcel.BcelRepositoryWrapper;
 import com.jopdesign.common.graph.ClassHierarchyTraverser;
 import com.jopdesign.common.graph.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
-import com.jopdesign.common.bcel.BcelRepositoryWrapper;
 import com.jopdesign.common.misc.ClassInfoNotFoundException;
 import com.jopdesign.common.misc.MissingClassError;
 import com.jopdesign.common.misc.NamingConflictException;
+import com.jopdesign.common.model.ProcessorModel;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.FieldRef;
 import com.jopdesign.common.type.MethodRef;
@@ -84,6 +85,8 @@ public final class AppInfo {
 
     private final Map<String, AttributeManager> managers;
     private CommonKeys commonKeys;
+
+    private ProcessorModel processor;
 
     //////////////////////////////////////////////////////////////////////////////
     // Singleton
@@ -632,6 +635,27 @@ public final class AppInfo {
         return new FieldRef(classRef, signature.getMemberName(), signature.getMemberDescriptor().getType());
     }
 
+    /**
+     * Find a MethodInfo using a class name and the given signature or name of a method.
+     *
+     * @param className the fully qualified name of the class
+     * @param methodSignature either the name of the method if unique, or the method signature.
+     * @return the method if it exists
+     */
+    public MethodInfo getMethodInfo(String className, String methodSignature) {
+        ClassInfo classInfo = classes.get(className);
+        if (classInfo == null) { return null; }
+        // check signature first since this is faster
+        MethodInfo method = classInfo.getMethodInfo(methodSignature);
+        if (method == null) {
+            Set<MethodInfo> candidates = classInfo.getMethodByName(methodSignature);
+            if (candidates.size() == 1) {
+                method = candidates.iterator().next();
+            }
+            // else method = null;
+        }
+        return method;
+    }
 
     //////////////////////////////////////////////////////////////////////////////
     // Roots
@@ -670,8 +694,16 @@ public final class AppInfo {
 
 
     //////////////////////////////////////////////////////////////////////////////
-    // Class loading configuration
+    // Class loading configuration, processor model
     //////////////////////////////////////////////////////////////////////////////
+
+    public ProcessorModel getProcessorModel() {
+        return processor;
+    }
+
+    public void setProcessorModel(ProcessorModel processor) {
+        this.processor = processor;
+    }
 
     /**
      * Add the name of a native class or a package of native classes.

@@ -81,7 +81,7 @@ public class MethodRef {
     }
 
     public String getName() {
-        return methodInfo != null ? methodInfo.getSimpleName() : methodName;
+        return methodInfo != null ? methodInfo.getShortName() : methodName;
     }
 
     public String getClassName() {
@@ -93,5 +93,29 @@ public class MethodRef {
             return methodInfo.getMemberSignature();
         }
         return methodName + descriptor;
+    }
+
+    public String getFQMethodName() {
+        return getClassName() + "." + getName();
+    }
+
+    /**
+     * Check if this MethodRef refers to the same method as the given object.
+     *
+     * <p>Note that an unresolved method reference and a MethodInfo reference are equal
+     * if they refer to the same method, but a MethodInfo object is never equal to a MethodRef.</p>
+     *
+     * @param obj the object to test.
+     * @return true if the object is a methodref and refers to the same method.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        // we might even allow equality for MethodInfo.getMethodRef(), but then we should
+        // also test for MethodRef objects in MethodInfo.equals(), which is somehow creepy.. 
+        if (!(obj instanceof MethodRef)) {
+            return false;
+        }
+        MethodRef ref = (MethodRef) obj;
+        return getClassName().equals(ref.getClassName()) && getMemberSignature().equals(ref.getMemberSignature());
     }
 }

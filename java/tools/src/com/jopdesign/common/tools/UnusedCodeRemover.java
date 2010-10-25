@@ -121,7 +121,7 @@ public class UnusedCodeRemover {
             }
 
             for (FieldInfo f : unusedFields) {
-                cls.removeField(f.getSimpleName());
+                cls.removeField(f.getShortName());
             }
             for (MethodInfo m : unusedMethods) {
                 cls.removeMethod(m.getMemberSignature());

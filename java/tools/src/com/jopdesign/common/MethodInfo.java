@@ -22,13 +22,16 @@ package com.jopdesign.common;
 
 import com.jopdesign.common.bcel.ParameterAnnotationAttribute;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.graph.ClassHierarchyTraverser;
 import com.jopdesign.common.graph.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
+import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.classfile.Attribute;
+import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.CodeExceptionGen;
 import org.apache.bcel.generic.InstructionHandle;
@@ -49,6 +52,11 @@ import java.util.List;
  */
 public final class MethodInfo extends ClassMemberInfo {
 
+    /**
+     * A key used to attach an {@link InvokeSite} object to an InstructionHandle.
+     */
+    public static final Object KEY_IH_INVOKESITE = "MethodInfo.InvokeSite";
+
     private final MethodGen methodGen;
     private final Descriptor descriptor;
 
@@ -62,6 +70,11 @@ public final class MethodInfo extends ClassMemberInfo {
         this.methodGen = methodGen;
         descriptor = Descriptor.parse(methodGen.getSignature());
     }
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Lots of wrapper stuff for MethodGen.
+    // You do not get direct access to my private methodGen. Nix.
+    //////////////////////////////////////////////////////////////////////////////
 
     public boolean isAbstract() {
         return methodGen.isAbstract();
@@ -129,6 +142,10 @@ public final class MethodInfo extends ClassMemberInfo {
 
     public LineNumberGen[] getLineNumbers() {
         return methodGen.getLineNumbers();
+    }
+
+    public LineNumberTable getLineNumberTable() {
+        return methodGen.getLineNumberTable(getConstantPoolGen());
     }
 
     public LocalVariableGen addLocalVariable(String name, Type type, int slot, InstructionHandle start, InstructionHandle end) {
@@ -213,6 +230,11 @@ public final class MethodInfo extends ClassMemberInfo {
         }
         return null;
     }
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Code access and Control Flow Graph stuff
+    //////////////////////////////////////////////////////////////////////////////
+
     /**
      * Get a BCEL method for this methodInfo.
      *
@@ -262,6 +284,15 @@ public final class MethodInfo extends ClassMemberInfo {
         cfg = null;
     }
 
+    public InvokeSite getInvokeSite(InstructionHandle ih) {
+        InvokeSite is = (InvokeSite) ih.getAttribute(KEY_IH_INVOKESITE);
+        if (is == null) {
+            is = new InvokeSite(ih, this);
+            ih.addAttribute(KEY_IH_INVOKESITE, is);
+        }
+        return is;
+    }
+
     public void removeNOPs() {
         compileCFG();
         cfg = null;
@@ -270,7 +301,12 @@ public final class MethodInfo extends ClassMemberInfo {
 
     public ControlFlowGraph getControlFlowGraph() {
         if ( this.cfg == null ) {
-            cfg = new ControlFlowGraph(this);
+            try {
+                cfg = new ControlFlowGraph(this);
+            } catch (BadGraphException e) {
+                // TODO handle this!
+                e.printStackTrace();
+            }
         }
 
         return cfg;
@@ -284,6 +320,14 @@ public final class MethodInfo extends ClassMemberInfo {
         if ( cfg != null ) {
             cfg.compile();
         }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Interface implementations, name and signature
+    //////////////////////////////////////////////////////////////////////////////
+
+    public String getFQMethodName() {
+        return getClassInfo().getClassName() + "." + getShortName();
     }
 
     @Override
@@ -302,8 +346,12 @@ public final class MethodInfo extends ClassMemberInfo {
 
     @Override
     public Signature getSignature() {
-        return new Signature(getClassInfo().getClassName(), getSimpleName(), getDescriptor());
+        return new Signature(getClassInfo().getClassName(), getShortName(), getDescriptor());
     }
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Helper methods to find implementations and super methods
+    //////////////////////////////////////////////////////////////////////////////
 
     /**
      * Check if this method is the same as or overrides a given method.
@@ -495,11 +543,16 @@ public final class MethodInfo extends ClassMemberInfo {
         return classes;
     }
 
+    //////////////////////////////////////////////////////////////////////////////
+    // Internal stuff
+    //////////////////////////////////////////////////////////////////////////////
+
     /**
-     * Should only be used by ClassInfo.
+     * Should only be used by ClassInfo!
+     *
      * @return the internal methodGen.                           
      */
-    protected MethodGen getMethodGen() {
+    protected MethodGen getInternalMethodGen() {
         return methodGen;
     }
 

@@ -21,6 +21,7 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.bcel.AnnotationAttribute;
+import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
@@ -63,7 +64,15 @@ public abstract class MemberInfo {
 
     public abstract Signature getSignature();
 
-    public abstract String getSimpleName();
+    public abstract ConstantPoolGen getConstantPoolGen();
+
+    /**
+     * Get only the last part of the name (i.e. the class name without package or the field/method name
+     * without class prefix and descriptor).
+     *
+     * @return the short name of this member without prefix or descriptor.
+     */
+    public abstract String getShortName();
 
     public boolean isPublic() {
         return accessFlags.isPublic();
@@ -195,13 +204,21 @@ public abstract class MemberInfo {
         return oldVal;
     }
 
+    public Object setCustomValue(KeyManager.CustomKey key, CallString context, Object customValue) {
+        return null;
+    }
+
     public Object getCustomValue(KeyManager.CustomKey key) {
         if ( customValues == null || key == null || key.getId() >= customValues.length ) {return null;}
         return customValues[key.getId()];
     }
 
+    public Object getCustomValue(KeyManager.CustomKey key, CallString context, boolean checkSuffixes) {
+        return null;
+    }
+
     public void setSynthetic(boolean flag) {
-        // from version 49 on, ACC_SYNTHETIC is supported
+        // from major version 49 on, ACC_SYNTHETIC is supported
         Synthetic s = findSynthetic();
         if ( getClassInfo().getMajor() < 49 ) {
             if ( flag ) {

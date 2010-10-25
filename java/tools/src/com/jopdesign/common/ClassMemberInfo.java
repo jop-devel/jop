@@ -22,6 +22,7 @@ package com.jopdesign.common;
 
 import com.jopdesign.common.type.Descriptor;
 import org.apache.bcel.classfile.Attribute;
+import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.FieldGenOrMethodGen;
 import org.apache.bcel.generic.Type;
 
@@ -43,8 +44,12 @@ public abstract class ClassMemberInfo extends MemberInfo {
         return classInfo;
     }
 
+    public ConstantPoolGen getConstantPoolGen() {
+        return classInfo.getConstantPoolGen();
+    }
+
     @Override
-    public String getSimpleName() {
+    public String getShortName() {
         return classMember.getName();
     }
 

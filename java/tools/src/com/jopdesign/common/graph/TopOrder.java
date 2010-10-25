@@ -19,6 +19,7 @@
  */
 package com.jopdesign.common.graph;
 
+import com.jopdesign.common.misc.BadGraphException;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.alg.BellmanFordShortestPath;
 import org.jgrapht.alg.ConnectivityInspector;
@@ -27,10 +28,11 @@ import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.traverse.DepthFirstIterator;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.Vector;
 
 /**
  * Given a rooted, directed graph, identify back-edges.
@@ -41,27 +43,12 @@ import java.util.Vector;
  */
 public class TopOrder<V,E> {
 
-	/**
-	 * Raised if the given graph isn't reducible, i.e. there are cycles without back-edges,
-	 * or if there is more than one component.
-	 */
-	public static class BadGraphException extends Exception {
-		private static final long serialVersionUID = 1L;
-		public BadGraphException(String reason) { super(reason); }
-	}
-
-	@SuppressWarnings({"UncheckedExceptionClass"})
-    public static class BadGraphError extends RuntimeException {
-		private static final long serialVersionUID = 1L;
-		public BadGraphError(BadGraphException reason) { super(reason); }
-	}
-
-	private DirectedGraph<V, E> graph;
-	private Vector<V> dfsOrder = null;
-	private Vector<E> backEdges = null;
+    private DirectedGraph<V, E> graph;
+	private List<V> dfsOrder = null;
+	private List<E> backEdges = null;
 	private V startVertex;
 	private Dominators<V, E> dominators;
-	private Vector<V> topTraversal;
+	private List<V> topTraversal;
 
 	/* Iterator detecting back edges using DFS search.
 	 * This works for reducible graphs only.
@@ -102,12 +89,12 @@ public class TopOrder<V,E> {
 	}
 
 	private void analyse(boolean isAcyclic) throws BadGraphException {
-		backEdges = new Vector<E>();
-		dfsOrder = new Vector<V>();
+		backEdges = new ArrayList<E>();
+		dfsOrder = new ArrayList<V>();
 		BackEdgeDetector iter = new BackEdgeDetector(graph,startVertex);
 		while(iter.hasNext()) iter.next();
 		if(isAcyclic && ! backEdges.isEmpty()) {
-			E e1 = backEdges.firstElement();
+			E e1 = backEdges.get(0);
 			List<E> cycle = BellmanFordShortestPath.findPathBetween(graph, graph.getEdgeTarget(e1), graph.getEdgeSource(e1));			
 			throw new BadGraphException("Expected acyclic graph, but found cycle: "+cycle);
 		}
@@ -119,7 +106,7 @@ public class TopOrder<V,E> {
 	 * An edge B->A is a back-edge if A dominates B w.r.t. <code>Entry</code>.
 	 * @return the back-edges of this graph
 	 */
-	public Vector<E> getBackEdges() {
+	public List<E> getBackEdges() {
 		return backEdges; 
 	}
 
@@ -128,9 +115,9 @@ public class TopOrder<V,E> {
 	 * free graph.
 	 * @return The traversal as list of nodes
 	 */
-	public Vector<V> getTopologicalTraversal() {
+	public List<V> getTopologicalTraversal() {
 		if(topTraversal != null) return topTraversal;
-		topTraversal = new Vector<V>();
+		topTraversal = new LinkedList<V>();
 		Set<E> edgeSet = new HashSet<E>(graph.edgeSet());
 		for(E backEdge : this.getBackEdges()) {
 			edgeSet.remove(backEdge);			
@@ -149,7 +136,7 @@ public class TopOrder<V,E> {
 	 * Get a DFS traversal of the graph
 	 * @return
 	 */
-	public Vector<V> getDFSTraversal() {
+	public List<V> getDFSTraversal() {
 		return dfsOrder;
 	}
 
@@ -175,7 +162,8 @@ public class TopOrder<V,E> {
 
 	/**
 	 * Get the connected components of the graph
-	 * @return 
+	 * @param graph
+     * @return
 	 */
 	public static <V,E> List<Set<V>> getComponents(DirectedGraph<V,E> graph) {
 		return new ConnectivityInspector<V, E>(graph).connectedSets();
@@ -246,7 +234,11 @@ public class TopOrder<V,E> {
 	 * <li/> There is a path from the entry to every nodes, and entry dominates all nodes
 	 * <li/> There is a path from every node to exit, and exit postdominates all nodes 
 	 * </ul>
-	 */
+     * @param graph the graph to check
+     * @param entry the entry node
+     * @param exit the exit node
+     * @throws com.jopdesign.common.misc.BadGraphException if the graph is not a flow graph
+     */
 	public static <V,E> void checkIsFlowGraph(DirectedGraph<V,E> graph, V entry, V exit)
 		throws BadGraphException 
 	{

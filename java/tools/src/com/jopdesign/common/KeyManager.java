@@ -20,6 +20,7 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.code.CallString;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
 
@@ -203,6 +204,22 @@ public class KeyManager {
         return getCustomValue(ih, key, KEY_BLOCK_VALUE);
     }
 
+    public Object setCustomValue(InstructionHandle ih, CustomKey key, CallString context, Object value) {
+        return setCustomValue(ih, key, context, value, KEY_INSTRUCTION_VALUE);
+    }
+
+    public Object setCustomBlockValue(InstructionHandle ih, CustomKey key, CallString context, Object value) {
+        return setCustomValue(ih, key, context, value, KEY_BLOCK_VALUE);
+    }
+
+    public Object getCustomValue(InstructionHandle ih, CustomKey key, CallString context, boolean checkSuffixes) {
+        return getCustomValue(ih, key, context, checkSuffixes, KEY_INSTRUCTION_VALUE);
+    }
+
+    public Object getCustomBlockValue(InstructionHandle ih, CustomKey key, CallString context, boolean checkSuffixes) {
+        return getCustomValue(ih, key, context, checkSuffixes, KEY_BLOCK_VALUE);
+    }
+
     public Object clearCustomKey(InstructionHandle ih, CustomKey key) {
         return clearCustomKey(ih, key, KEY_INSTRUCTION_VALUE);
     }
@@ -217,8 +234,16 @@ public class KeyManager {
         return member.setCustomValue(key, value);
     }
 
+    public Object setCustomValue(MemberInfo member, CustomKey key, CallString context, Object value) {
+        return member.setCustomValue(key, context, value);
+    }
+
     public Object getCustomValue(MemberInfo member, CustomKey key) {
         return member.getCustomValue(key);
+    }
+
+    public Object getCustomValue(MemberInfo member, CustomKey key, CallString context, boolean checkSuffixes) {
+        return member.getCustomValue(key, context, checkSuffixes);
     }
 
     public Object clearCustomKey(MemberInfo member, CustomKey key) {
@@ -316,6 +341,16 @@ public class KeyManager {
             return null;
         }
         return map.get(key);
+    }
+
+    private Object setCustomValue(InstructionHandle ih, CustomKey key, CallString context, Object value, Object ihKey) {
+        // TODO implement
+        return null;
+    }
+
+    private Object getCustomValue(InstructionHandle ih, CustomKey key, CallString context, boolean checkSuffixes, Object ihKey) {
+        // TODO implement
+        return null;
     }
 
     private Object clearCustomKey(InstructionHandle ih, CustomKey key, Object ihKey) {

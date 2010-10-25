@@ -28,6 +28,7 @@ import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.traverse.AbstractGraphIterator;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -90,7 +91,7 @@ public class LoopColoring<V,E> {
 	private DirectedGraph<V, E> graph;
 	private TopOrder<V, E> topOrder;
 	private Map<V, Set<V>> loopColors;
-	private Map<V, Vector<E>> backEdgesByHOL;
+	private Map<V, List<E>> backEdgesByHOL;
 	private Map<V, List<E>> exitEdges;
 	private SimpleDirectedGraph<V, DefaultEdge> loopNestForest;
 	private Map<E,IterationBranchLabel<V>> iterationBranchEdges;
@@ -110,11 +111,11 @@ public class LoopColoring<V,E> {
 		loopColors = new HashMap<V, Set<V>>();
 		for(V v : graph.vertexSet()) loopColors.put(v, new TreeSet<V>());
 		/* Step 1: Group backedges by Head-Of-Loop */
-		backEdgesByHOL = new HashMap<V,Vector<E>>();
+		backEdgesByHOL = new HashMap<V,List<E>>();
 		for(E backedge : this.topOrder.getBackEdges()) {
 			V hol = graph.getEdgeTarget(backedge);
-			Vector<E> endVxs = backEdgesByHOL.get(hol);
-			if(endVxs == null) endVxs = new Vector<E>();
+			List<E> endVxs = backEdgesByHOL.get(hol);
+			if(endVxs == null) endVxs = new ArrayList<E>();
 			endVxs.add(backedge);
 			backEdgesByHOL.put(hol, endVxs);
 		}
@@ -122,7 +123,7 @@ public class LoopColoring<V,E> {
 		 * on the RCFG with all outgoing edges of hol removed. For this purpose, we provide
 		 * a special iterator.
 		 */
-		for(Entry<V, Vector<E>> loop : backEdgesByHOL.entrySet()) {
+		for(Entry<V, List<E>> loop : backEdgesByHOL.entrySet()) {
 			V hol = loop.getKey();
 			LoopColorIterator iter = new LoopColorIterator(hol, loop.getValue());
 			while(iter.hasNext()) {
@@ -143,7 +144,7 @@ public class LoopColoring<V,E> {
 			for(V loop : exitSet) {
 				List<E> exits = this.exitEdges.get(loop);
 				if(exits == null) {
-					exits = new Vector<E>();
+					exits = new ArrayList<E>();
 					this.exitEdges.put(loop, exits);
 				}
 				exits.add(e);
@@ -190,8 +191,8 @@ public class LoopColoring<V,E> {
 	 * </p> 
 	 * @return The traversal as list of nodes
 	 */
-	public Vector<V> getFlowTraversal() {
-		Vector<V> flowTraversal = new Vector<V>();
+	public List<V> getFlowTraversal() {
+		List<V> flowTraversal = new ArrayList<V>();
 		TopologicalOrderIterator<V, DefaultEdge> iter = 
 			new TopologicalOrderIterator<V, DefaultEdge>(getFlowTraversalGraph());
 		while(iter.hasNext()) {
@@ -250,12 +251,13 @@ public class LoopColoring<V,E> {
 
 	/**
 	 * Get set of back edges
-	 */
+     * @return
+     */
 	public Set<E> getBackEdges() {
 		if(backEdges != null) return backEdges;
 		backEdges = new HashSet<E>();
 		if(backEdgesByHOL == null) analyse();
-		for(Vector<E> edge : backEdgesByHOL.values()) {
+		for(List<E> edge : backEdgesByHOL.values()) {
 			backEdges.addAll(edge);
 		}
 		return backEdges;
@@ -264,12 +266,12 @@ public class LoopColoring<V,E> {
 	 * Get source of back edges, grouped by head of loop
 	 * @return a map from head-of-loop nodes to back-edge source vertices.
 	 */
-	public Map<V, Vector<E>> getBackEdgesByHOL() {
+	public Map<V, List<E>> getBackEdgesByHOL() {
 		if(backEdgesByHOL == null) analyse();
 		return backEdgesByHOL;
 	}
 
-	public Vector<E> getBackEdgesTo(V hol) {
+	public List<E> getBackEdgesTo(V hol) {
 		return backEdgesByHOL.get(hol);
 	}
 
@@ -327,15 +329,21 @@ public class LoopColoring<V,E> {
 
 	public static class IterationBranchLabel<V> extends Pair<Set<V>,Set<V>>{
 		private static final long serialVersionUID = 1L;
+
 		public IterationBranchLabel(Set<V> fst, Set<V> snd) {
 			super(fst, snd);
 		}
+
 		public Set<V> getContinues() { return fst(); }
+
 		public Set<V> getExits() { return snd(); }
-		public void mergeLabel(IterationBranchLabel<V> other) {
+
+		@SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
+        public void mergeLabel(IterationBranchLabel<V> other) {
 			this.fst.addAll(other.fst);
 			this.snd.addAll(other.snd);
 		}
+
 		public boolean isEmpty() {
 			return this.fst.isEmpty() && this.snd.isEmpty();
 		}
@@ -360,7 +368,7 @@ public class LoopColoring<V,E> {
 		iterationBranchEdges = new HashMap<E,IterationBranchLabel<V>>();
 		Map<V, IterationBranchLabel<V>> nodeLabels = new HashMap<V,IterationBranchLabel<V>>();
 		if(hols.isEmpty()) return iterationBranchEdges;
-		Vector<V> rTopTrav = this.topOrder.getTopologicalTraversal();
+		List<V> rTopTrav = this.topOrder.getTopologicalTraversal();
 		Collections.reverse(rTopTrav);
 		for(V source : rTopTrav) {
 			/* mark edges */
@@ -400,7 +408,10 @@ public class LoopColoring<V,E> {
 	}
 
 	/** return an acyclic subgraph which only contains nodes from the given loop,
-	 *  and no back-edges at all  */
+	 *  and no back-edges at all
+     * @param hol
+     * @return
+     */
 	public DirectedGraph<V, E> getLinearSubgraph(V hol) {		
 		Set<V> nodesOfInterest;
 		if(hol==null) nodesOfInterest = this.graph.vertexSet();
