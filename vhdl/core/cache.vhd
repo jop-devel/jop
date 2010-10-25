@@ -98,6 +98,8 @@ architecture rtl of cache is
 
 begin
 
+	assert jpc_width>=11 report "Minimum M$ size is 2KB";
+	
 	bcstart <= block_addr & std_logic_vector(to_unsigned(0, jpc_width-2-block_bits));
 	use_addr <= bc_addr(tag_width-1 downto 0);
 
