@@ -365,7 +365,7 @@ public final class ClassInfo extends MemberInfo {
             rebuilder.updateMethodGen(m.getInternalMethodGen());
         }
         for (FieldInfo f : fields.values()) {
-            rebuilder.updateFieldGen(f.getFieldGen());
+            rebuilder.updateFieldGen(f.getInternalFieldGen());
         }
 
         // TODO update all attributes, update/remove customValues which depend on CP and call eventbroker  
@@ -1242,7 +1242,7 @@ public final class ClassInfo extends MemberInfo {
         if ( field == null ) {
             return null;
         }
-        field.getFieldGen().setName(newName);
+        field.getInternalFieldGen().setName(newName);
 
         fields.put(newName, field);
         int i = lookupFieldInfo(name);

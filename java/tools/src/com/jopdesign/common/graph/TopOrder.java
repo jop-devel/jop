@@ -237,7 +237,7 @@ public class TopOrder<V,E> {
      * @param graph the graph to check
      * @param entry the entry node
      * @param exit the exit node
-     * @throws com.jopdesign.common.misc.BadGraphException if the graph is not a flow graph
+     * @throws BadGraphException if the graph is not a flow graph
      */
 	public static <V,E> void checkIsFlowGraph(DirectedGraph<V,E> graph, V entry, V exit)
 		throws BadGraphException 

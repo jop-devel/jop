@@ -28,6 +28,10 @@ import java.util.List;
 /**
  * Provide config options and callback methods to setup and build the callgraph.
  *
+ * TODO either define all java.lang.Thread implementations/extensions as root-classes, or add special
+ *      edges from Thread.start() calls to Thread.run() implementations
+ * TODO optionally return all abstract methods/interfaces too
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class DefaultCallgraphConfig implements CallGraph.CallgraphConfig {
@@ -40,11 +44,6 @@ public class DefaultCallgraphConfig implements CallGraph.CallgraphConfig {
 
     public int getCallstringLength() {
         return callstringLength;
-    }
-
-    @Override
-    public boolean doCheckForCycles() {
-        return true;
     }
 
     @Override

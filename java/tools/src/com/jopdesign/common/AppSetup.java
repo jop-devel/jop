@@ -276,8 +276,7 @@ public class AppSetup {
     }
 
     /**
-     * Load the config file, parse and check options, and if handleApInfoInit has been
-     * set, also initialize AppInfo.
+     * Load the config file, parse and check options.
      *
      * @param args cmdline arguments to parse
      * @return arguments not consumed.
@@ -342,6 +341,12 @@ public class AppSetup {
         return rest;
     }
 
+    /**
+     * Setup AppInfo using the config previously initialized with {@link #setupConfig(String[])}.
+     * 
+     * @param args the arguments containing the name of the main method and additional roots without config options.
+     * @param loadTransitiveHull if true, load the transitive hull of the root classes too.
+     */
     public void setupAppInfo(String[] args, boolean loadTransitiveHull) {
 
         // check arguments

@@ -378,6 +378,10 @@ public class Config {
         return options.getDefaultValue(option);
     }
 
+    public <T> void setOption(Option<T> option, T value) {
+        options.setOption(option, value);
+    }
+
     /**
      * This is a shortcut to get an option from the main option group.
      *

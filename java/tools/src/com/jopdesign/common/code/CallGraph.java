@@ -56,8 +56,7 @@ import java.util.Stack;
  *
  * TODO allow multiple roots, additionally initialize from AppInfo directly (use AppInfo.getRoots(),
  *      use all methods in root-classes as root; provide method find all 'real' roots)
- * TODO either define all java.lang.Thread implementations/extensions as root-classes, or add special
- *      edges from Thread.start() calls to Thread.run() implementations !
+ * TODO support for callgraph thinning (ie. remove edges/methods/...)
  *
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  * @author Stefan Hepp (stefan@stefant.org)
@@ -65,8 +64,6 @@ import java.util.Stack;
 public class CallGraph {
 
     public interface CallgraphConfig {
-
-        boolean doCheckForCycles();
 
         List<ExecutionContext> getInvokedMethods(ExecutionContext context);
     }
@@ -119,7 +116,6 @@ public class CallGraph {
 
 	// Fields
 	// ~~~~~~
-	private final AppInfo appInfo;
 	private final ExecutionContext rootNode;
     private final CallgraphConfig config;
 
@@ -139,12 +135,10 @@ public class CallGraph {
 
 	/**
 	 * Initialize a CallGraph object.
-	 * @param appInfo    Reference to the application info.
 	 * @param rootMethod The root method of the callgraph (not abstract).
      * @param config the config class to use to build this graph
 	 */
-	protected CallGraph(AppInfo appInfo, MethodInfo rootMethod, CallgraphConfig config) {
-		this.appInfo = appInfo;
+	protected CallGraph(MethodInfo rootMethod, CallgraphConfig config) {
         this.rootNode = new ExecutionContext(rootMethod, CallString.EMPTY);
         this.config = config;
 
@@ -186,23 +180,22 @@ public class CallGraph {
         if (rootMethod == null) {
             throw new MethodNotFoundException("Could not find method "+className+"."+methodSig);
         }
-        return buildCallGraph(appInfo, rootMethod, config);
+        return buildCallGraph(rootMethod, config);
 	}
 
     /**
      * Build a callgraph rooted at the given method
      *
      * @see AppInfo#getMethodInfo(String, String)
-     * @param appInfo    The application (with classes loaded)
      * @param rootMethod The root method of the callgraph
      * @param config the config class to use to build this graph
      * @throws MethodNotFoundException if the referenced method was not found
      * @return a freshly built callgraph.
      */
-    public static CallGraph buildCallGraph(AppInfo appInfo, MethodInfo rootMethod, CallgraphConfig config)
+    public static CallGraph buildCallGraph(MethodInfo rootMethod, CallgraphConfig config)
                             throws MethodNotFoundException
     {
-        CallGraph cg = new CallGraph(appInfo,rootMethod,config);
+        CallGraph cg = new CallGraph(rootMethod,config);
         cg.build();
         return cg;
     }
@@ -222,20 +215,17 @@ public class CallGraph {
 			classInfos.add(node.getMethodInfo().getClassInfo());
 		}
 
-        // TODO check what blows up when we do have cycles
-        if (config.doCheckForCycles()) {
-            /* Check the callgraph is cycle free */
-            Pair<List<ExecutionContext>,List<ExecutionContext>> cycle =
-                DirectedCycleDetector.findCycle(callGraph,rootNode);
-            if(cycle != null) {
-                // TODO maybe make dumping the whole graph optional :)
-                for(DefaultEdge e : callGraph.edgeSet()) {
-                    ExecutionContext src = callGraph.getEdgeSource(e);
-                    ExecutionContext target = callGraph.getEdgeTarget(e);
-                    System.err.println(""+src+" --> "+target);
-                }
-                throw new AssertionError(cyclicCallGraphMsg(cycle));
+        /* Check the callgraph is cycle free */
+        Pair<List<ExecutionContext>,List<ExecutionContext>> cycle =
+            DirectedCycleDetector.findCycle(callGraph,rootNode);
+        if(cycle != null) {
+            // TODO maybe make dumping the whole graph optional :)
+            for(DefaultEdge e : callGraph.edgeSet()) {
+                ExecutionContext src = callGraph.getEdgeSource(e);
+                ExecutionContext target = callGraph.getEdgeTarget(e);
+                System.err.println(""+src+" --> "+target);
             }
+            throw new AssertionError(cyclicCallGraphMsg(cycle));
         }
 
 		invalidate();
@@ -289,7 +279,28 @@ public class CallGraph {
      * Used to get all execution contexts per method and all invoked methods per InvokeSite.
      */
     private void buildMergedGraph() {
+        // nodes are already uptodate due to addExecutionContext()
+        for (MethodNode node : methodNodes.values()) {
+            mergedCallGraph.addVertex(node);
+        }
 
+        // for all edges in callGraph, add or update the edge in this graph
+        for (DefaultEdge edge : callGraph.edgeSet()) {
+            ExecutionContext source = callGraph.getEdgeSource(edge);
+            ExecutionContext target = callGraph.getEdgeTarget(edge);
+            MethodNode invoker = methodNodes.get(source.getMethodInfo());
+            MethodNode invokee = methodNodes.get(target.getMethodInfo());
+
+            InvokeEdge invoke = mergedCallGraph.getEdge(invoker, invokee);
+            if (invoke == null) {
+                invoke = mergedCallGraph.addEdge(invoker, invokee);
+            }
+
+            //
+            if (target.getCallString().length() > 0) {
+                invoke.addInvokeSite(target.getCallString().top());
+            }
+        }
     }
 
     /**
@@ -359,7 +370,7 @@ public class CallGraph {
 		this.maxCallStackLeaf = this.getRootNode();
 		this.maxCallstackDAG  = new HashMap<ExecutionContext,ExecutionContext>();
 		this.subgraphHeight = new HashMap<ExecutionContext, Integer>();
-        
+
 		/* calculate longest distance to root and max call stack DAG */
 		List<ExecutionContext> toList = new ArrayList<ExecutionContext>();
 		TopologicalOrderIterator<ExecutionContext, DefaultEdge> toIter =

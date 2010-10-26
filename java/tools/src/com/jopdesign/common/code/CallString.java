@@ -126,6 +126,22 @@ public class CallString implements CallStringProvider {
 		return new CallString(cs);
 	}
 
+    public int length() {
+        return callString.length;
+    }
+
+    /**
+     * Return the most previously pushed InvokeSite.
+     * @return the last InvokeSite in this string, or null if this is the empty callstring.
+     */
+    public InvokeSite top() {
+        if (callString.length > 0) {
+            return callString[callString.length-1];
+        } else {
+            return null;
+        }
+    }
+
 	@Override
 	public int hashCode() {
         // TODO we should reimplement this (?)

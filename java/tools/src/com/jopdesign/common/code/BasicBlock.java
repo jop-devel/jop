@@ -63,6 +63,7 @@ import java.util.Vector;
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class BasicBlock  {
+
 	private static final long serialVersionUID = 1L;
 
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_CFG + ".BasicBlock");
@@ -89,9 +90,11 @@ public class BasicBlock  {
 	static class FlowTarget {
 		InstructionHandle target;
 		ControlFlowGraph.EdgeKind edgeKind;
+
 		FlowTarget(InstructionHandle target, ControlFlowGraph.EdgeKind edgeKind) {
 			this.target = target; this.edgeKind = edgeKind;
 		}
+
 		@Override public String toString() {
 			return "FlowTarget<"+target.getPosition()+","+edgeKind+">";
 		}

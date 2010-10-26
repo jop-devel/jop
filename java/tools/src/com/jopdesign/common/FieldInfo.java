@@ -91,7 +91,7 @@ public final class FieldInfo extends ClassMemberInfo {
      * Should only be used by ClassInfo.
      * @return the internal fieldGen.
      */
-    protected FieldGen getFieldGen() {
+    protected FieldGen getInternalFieldGen() {
         return fieldGen;
     }
 
