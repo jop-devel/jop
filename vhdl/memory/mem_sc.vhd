@@ -280,11 +280,11 @@ end process;
 process(read_ocache, sc_mem_in, ocout)
 begin
 
-	--if read_ocache='1' then
-	--	mem_out.dout <= ocout.dout;
-	--else
+	if read_ocache='1' then
+		mem_out.dout <= ocout.dout;
+	else
 		mem_out.dout <= sc_mem_in.rd_data;
-	--end if;
+	end if;
 end process;
 
 
