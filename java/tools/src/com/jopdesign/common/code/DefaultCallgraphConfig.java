@@ -50,7 +50,7 @@ public class DefaultCallgraphConfig implements CallGraph.CallgraphConfig {
     public List<ExecutionContext> getInvokedMethods(ExecutionContext context) {
 
         CallString callstring = context.getCallString();
-        ControlFlowGraph currentCFG = context.getMethodInfo().getControlFlowGraph();
+        ControlFlowGraph currentCFG = context.getMethodInfo().getCode().getControlFlowGraph();
         List<ExecutionContext> newContexts = new LinkedList<ExecutionContext>();
 
         for(ControlFlowGraph.CFGNode node : currentCFG.getGraph().vertexSet()) {

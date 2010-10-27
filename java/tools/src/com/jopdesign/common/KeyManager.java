@@ -20,7 +20,6 @@
 
 package com.jopdesign.common;
 
-import com.jopdesign.common.code.CallString;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
 
@@ -106,7 +105,7 @@ public class KeyManager {
             }
             return false;
         }
-        
+
         int getId() {
             return id;
         }
@@ -185,78 +184,8 @@ public class KeyManager {
 
 
     //////////////////////////////////////////////////////////////////////////////
-    // Get and set CustomValues
+    // Key management
     //////////////////////////////////////////////////////////////////////////////
-
-    public Object setCustomValue(InstructionHandle ih, CustomKey key, Object value) {
-        return setCustomValue(ih, key, value, KEY_INSTRUCTION_VALUE);
-    }
-
-    public Object setCustomBlockValue(InstructionHandle ih, CustomKey key, Object value) {
-        return setCustomValue(ih, key, value, KEY_BLOCK_VALUE);
-    }
-
-    public Object getCustomValue(InstructionHandle ih, CustomKey key) {
-        return getCustomValue(ih, key, KEY_INSTRUCTION_VALUE);
-    }
-
-    public Object getCustomBlockValue(InstructionHandle ih, CustomKey key) {
-        return getCustomValue(ih, key, KEY_BLOCK_VALUE);
-    }
-
-    public Object setCustomValue(InstructionHandle ih, CustomKey key, CallString context, Object value) {
-        return setCustomValue(ih, key, context, value, KEY_INSTRUCTION_VALUE);
-    }
-
-    public Object setCustomBlockValue(InstructionHandle ih, CustomKey key, CallString context, Object value) {
-        return setCustomValue(ih, key, context, value, KEY_BLOCK_VALUE);
-    }
-
-    public Object getCustomValue(InstructionHandle ih, CustomKey key, CallString context, boolean checkSuffixes) {
-        return getCustomValue(ih, key, context, checkSuffixes, KEY_INSTRUCTION_VALUE);
-    }
-
-    public Object getCustomBlockValue(InstructionHandle ih, CustomKey key, CallString context, boolean checkSuffixes) {
-        return getCustomValue(ih, key, context, checkSuffixes, KEY_BLOCK_VALUE);
-    }
-
-    public Object clearCustomKey(InstructionHandle ih, CustomKey key) {
-        return clearCustomKey(ih, key, KEY_INSTRUCTION_VALUE);
-    }
-
-    public Object clearCustomBlockKey(InstructionHandle ih, CustomKey key) {
-        return clearCustomKey(ih, key, KEY_BLOCK_VALUE);
-    }
-
-    public Object setCustomValue(MemberInfo member, CustomKey key, Object value) {
-        // TODO might be more memory-efficient to store all custom-values in a single map per CustomKey
-        //      would make clean easier, but needs special handling on rename/copy/remove/.. ops in ClassInfo
-        return member.setCustomValue(key, value);
-    }
-
-    public Object setCustomValue(MemberInfo member, CustomKey key, CallString context, Object value) {
-        return member.setCustomValue(key, context, value);
-    }
-
-    public Object getCustomValue(MemberInfo member, CustomKey key) {
-        return member.getCustomValue(key);
-    }
-
-    public Object getCustomValue(MemberInfo member, CustomKey key, CallString context, boolean checkSuffixes) {
-        return member.getCustomValue(key, context, checkSuffixes);
-    }
-
-    public Object clearCustomKey(MemberInfo member, CustomKey key) {
-        return member.removeCustomValue(key);
-    }
-
-    public void copyCustomValues(MemberInfo from, MemberInfo to) {
-
-    }
-
-    public void copyCustomValues(InstructionHandle from, InstructionHandle to) {
-        // TODO copy all instruction- and block-values
-    }
 
     public void clearAllValues(CustomKey key) {
         // do we need a version of this method with more fine-grained control (clear only from methods,..)?
@@ -277,22 +206,19 @@ public class KeyManager {
                     method.removeCustomValue(key);
                 }
                 if ( fromCode && !method.isAbstract() ) {
-                    InstructionList il = method.getInstructionList();
+                    MethodCode code = method.getCode();
+                    InstructionList il = code.getInstructionList();
                     if (il == null) {
                         continue;
                     }
                     for (InstructionHandle ih : il.getInstructionHandles()) {
-                        clearCustomKey(ih, key, KEY_INSTRUCTION_VALUE);
-                        clearCustomKey(ih, key, KEY_BLOCK_VALUE);
+                        code.clearCustomKey(ih, key);
+                        code.clearCustomBlockKey(ih, key);
                     }
                 }
             }
         }
     }
-
-    //////////////////////////////////////////////////////////////////////////////
-    // Key management
-    //////////////////////////////////////////////////////////////////////////////
 
     public void updateKeys(CustomKey[] keep) {
         // TODO invalidate all keys which have not been handled/kept
@@ -321,49 +247,6 @@ public class KeyManager {
      */
     int getNumStructKeys() {
         return maxStructKeyID;
-    }
-        
-
-    private Object setCustomValue(InstructionHandle ih, CustomKey key, Object value, Object ihKey) {
-        @SuppressWarnings({"unchecked"})
-        Map<CustomKey,Object> map = (Map<CustomKey, Object>) ih.getAttribute(ihKey);
-        if (map == null) {
-            map = new HashMap<CustomKey, Object>(1);
-            ih.addAttribute(ihKey, map);
-        }
-        return map.put(key, value);
-    }
-
-    private Object getCustomValue(InstructionHandle ih, CustomKey key, Object ihKey) {
-        @SuppressWarnings({"unchecked"})
-        Map<CustomKey,Object> map = (Map<CustomKey, Object>) ih.getAttribute(ihKey);
-        if (map == null) {
-            return null;
-        }
-        return map.get(key);
-    }
-
-    private Object setCustomValue(InstructionHandle ih, CustomKey key, CallString context, Object value, Object ihKey) {
-        // TODO implement
-        return null;
-    }
-
-    private Object getCustomValue(InstructionHandle ih, CustomKey key, CallString context, boolean checkSuffixes, Object ihKey) {
-        // TODO implement
-        return null;
-    }
-
-    private Object clearCustomKey(InstructionHandle ih, CustomKey key, Object ihKey) {
-        @SuppressWarnings({"unchecked"})
-        Map<CustomKey,Object> map = (Map<CustomKey, Object>) ih.getAttribute(ihKey);
-        if (map == null) {
-            return null;
-        }
-        Object value = map.remove(key);
-        if (map.size() == 0) {
-            ih.removeAttribute(ihKey);
-        }
-        return value;
     }
 
 }

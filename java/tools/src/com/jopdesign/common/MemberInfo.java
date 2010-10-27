@@ -217,6 +217,11 @@ public abstract class MemberInfo {
         return null;
     }
 
+    public void copyCustomValuesFrom(MemberInfo from) {
+        // TODO implement
+    }
+
+
     public void setSynthetic(boolean flag) {
         // from major version 49 on, ACC_SYNTHETIC is supported
         Synthetic s = findSynthetic();

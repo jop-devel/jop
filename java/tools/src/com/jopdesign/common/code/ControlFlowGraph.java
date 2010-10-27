@@ -260,7 +260,7 @@ public class ControlFlowGraph {
 		public ControlFlowGraph receiverFlowGraph() {
 			if(isVirtual()) return null;
 			if(this.receiverFlowGraph == null) {
-				this.receiverFlowGraph = receiverImpl.getControlFlowGraph();
+				this.receiverFlowGraph = receiverImpl.getCode().getControlFlowGraph();
 			}
 			return this.receiverFlowGraph;
 		}
@@ -339,7 +339,7 @@ public class ControlFlowGraph {
 		}
 		public ControlFlowGraph receiverFlowGraph() {
 			if(this.receiverFlowGraph == null) {
-				this.receiverFlowGraph = receiverImpl.getControlFlowGraph();
+				this.receiverFlowGraph = receiverImpl.getCode().getControlFlowGraph();
 			}
 			return this.receiverFlowGraph;
 		}
@@ -453,7 +453,7 @@ public class ControlFlowGraph {
 	/* worker: create the flow graph */
 	private void createFlowGraph(MethodInfo method) {
 		logger.info("creating flow graph for: "+method);
-		blocks = BasicBlock.buildBasicBlocks(this.appInfo,method);
+		blocks = BasicBlock.buildBasicBlocks(method.getCode());
 		Map<Integer,BasicBlockNode> nodeTable =
 			new HashMap<Integer, BasicBlockNode>();
 		graph = new DefaultFlowGraph<CFGNode,CFGEdge>(
@@ -488,7 +488,7 @@ public class ControlFlowGraph {
 		for(BasicBlockNode bbNode : nodeTable.values()) {
 			BasicBlock bb = bbNode.getBasicBlock();
 			FlowInfo bbf = BasicBlock.getFlowInfo(bb.getLastInstruction());
-			if(bbf.exit) { // exit edge
+			if(bbf.isExit()) { // exit edge
 				// do not connect exception edges
 				if(bbNode.getBasicBlock().getLastInstruction().getInstruction().getOpcode()
 				   == Constants.ATHROW) {
@@ -496,7 +496,7 @@ public class ControlFlowGraph {
 				} else {
 					graph.addEdge(bbNode, graph.getExit(), exitEdge());
 				}
-			} else if(! bbf.alwaysTaken) { // next block edge
+			} else if(! bbf.isAlwaysTaken()) { // next block edge
 				BasicBlockNode bbSucc = nodeTable.get(bbNode.getBasicBlock().getLastInstruction().getNext().getPosition());
 				if(bbSucc == null) {
 					internalError("Next Edge to non-existing next block from "+
@@ -506,12 +506,12 @@ public class ControlFlowGraph {
 							  bbSucc,
 							  new CFGEdge(EdgeKind.NEXT_EDGE));
 			}
-			for(FlowTarget target: bbf.targets) { // jmps
-				BasicBlockNode targetNode = nodeTable.get(target.target.getPosition());
+			for(FlowTarget target: bbf.getTargets()) { // jmps
+				BasicBlockNode targetNode = nodeTable.get(target.getTarget().getPosition());
 				if(targetNode == null) internalError("No node for flow target: "+bbNode+" -> "+target);
 				graph.addEdge(bbNode,
 							  targetNode,
-							  new CFGEdge(target.edgeKind));
+							  new CFGEdge(target.getEdgeKind()));
 			}
 		}
 		this.graph.addEdge(graph.getEntry(), graph.getExit(), exitEdge());

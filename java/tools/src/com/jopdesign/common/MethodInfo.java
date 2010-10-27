@@ -21,25 +21,15 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.bcel.ParameterAnnotationAttribute;
-import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.graph.ClassHierarchyTraverser;
 import com.jopdesign.common.graph.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
-import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.classfile.Attribute;
-import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.classfile.Method;
-import org.apache.bcel.generic.CodeExceptionGen;
-import org.apache.bcel.generic.InstructionHandle;
-import org.apache.bcel.generic.InstructionList;
-import org.apache.bcel.generic.LineNumberGen;
-import org.apache.bcel.generic.LocalVariableGen;
 import org.apache.bcel.generic.MethodGen;
-import org.apache.bcel.generic.ObjectType;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
@@ -52,23 +42,20 @@ import java.util.List;
  */
 public final class MethodInfo extends ClassMemberInfo {
 
-    /**
-     * A key used to attach an {@link InvokeSite} object to an InstructionHandle.
-     */
-    public static final Object KEY_IH_INVOKESITE = "MethodInfo.InvokeSite";
-
     private final MethodGen methodGen;
     private final Descriptor descriptor;
+    private MethodCode methodCode;
 
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT+".MethodInfo");
-    private static final Logger codeLogger = Logger.getLogger(LogConfig.LOG_CODE+".MethodInfo");
-
-    private ControlFlowGraph cfg;
 
     public MethodInfo(ClassInfo classInfo, MethodGen methodGen) {
         super(classInfo, methodGen);
         this.methodGen = methodGen;
         descriptor = Descriptor.parse(methodGen.getSignature());
+        
+        if (!isAbstract()) {
+            methodCode = new MethodCode(this);
+        }
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -108,10 +95,6 @@ public final class MethodInfo extends ClassMemberInfo {
         methodGen.isStrictfp(val);
     }
 
-    public Attribute[] getCodeAttributes() {
-        return methodGen.getCodeAttributes();
-    }
-
     public String[] getArgumentNames() {
         return methodGen.getArgumentNames();
     }
@@ -126,98 +109,6 @@ public final class MethodInfo extends ClassMemberInfo {
 
     public Type getArgumentType(int i) {
         return methodGen.getArgumentType(i);
-    }
-
-    public int getMaxStack() {
-        return methodGen.getMaxStack();
-    }
-
-    public int getMaxLocals() {
-        return methodGen.getMaxLocals();
-    }
-
-    public CodeExceptionGen[] getExceptionHandlers() {
-        return methodGen.getExceptionHandlers();
-    }
-
-    public LineNumberGen[] getLineNumbers() {
-        return methodGen.getLineNumbers();
-    }
-
-    public LineNumberTable getLineNumberTable() {
-        return methodGen.getLineNumberTable(getConstantPoolGen());
-    }
-
-    public LocalVariableGen addLocalVariable(String name, Type type, int slot, InstructionHandle start, InstructionHandle end) {
-        return methodGen.addLocalVariable(name, type, slot, start, end);
-    }
-
-    public LocalVariableGen addLocalVariable(String name, Type type, InstructionHandle start, InstructionHandle end) {
-        return methodGen.addLocalVariable(name, type, start, end);
-    }
-
-    public void removeLocalVariable(LocalVariableGen l) {
-        methodGen.removeLocalVariable(l);
-    }
-
-    public void removeLocalVariables() {
-        methodGen.removeLocalVariables();
-    }
-
-    public LocalVariableGen[] getLocalVariables() {
-        return methodGen.getLocalVariables();
-    }
-
-    public LineNumberGen addLineNumber(InstructionHandle ih, int src_line) {
-        return methodGen.addLineNumber(ih, src_line);
-    }
-
-    public void removeLineNumber(LineNumberGen l) {
-        methodGen.removeLineNumber(l);
-    }
-
-    public void removeLineNumbers() {
-        methodGen.removeLineNumbers();
-    }
-
-    public CodeExceptionGen addExceptionHandler(InstructionHandle start_pc, InstructionHandle end_pc, InstructionHandle handler_pc, ObjectType catch_type) {
-        return methodGen.addExceptionHandler(start_pc, end_pc, handler_pc, catch_type);
-    }
-
-    public void removeExceptionHandler(CodeExceptionGen c) {
-        methodGen.removeExceptionHandler(c);
-    }
-
-    public void removeExceptionHandlers() {
-        methodGen.removeExceptionHandlers();
-    }
-
-    public void addException(String class_name) {
-        methodGen.addException(class_name);
-    }
-
-    public void removeException(String c) {
-        methodGen.removeException(c);
-    }
-
-    public void removeExceptions() {
-        methodGen.removeExceptions();
-    }
-
-    public String[] getExceptions() {
-        return methodGen.getExceptions();
-    }
-
-    public void addCodeAttribute(Attribute a) {
-        methodGen.addCodeAttribute(a);
-    }
-
-    public void removeCodeAttribute(Attribute a) {
-        methodGen.removeCodeAttribute(a);
-    }
-
-    public void removeCodeAttributes() {
-        methodGen.removeCodeAttributes();
     }
 
     public ParameterAnnotationAttribute getParameterAnnotation(boolean visible) {
@@ -235,6 +126,10 @@ public final class MethodInfo extends ClassMemberInfo {
     // Code access and Control Flow Graph stuff
     //////////////////////////////////////////////////////////////////////////////
 
+    public MethodCode getCode() {
+        return methodCode;
+    }
+
     /**
      * Get a BCEL method for this methodInfo.
      *
@@ -250,76 +145,15 @@ public final class MethodInfo extends ClassMemberInfo {
     }
 
     /**
-     * Compile all changes and update maxStack and maxLocals, and
-     * return a new BCEL method.
-     * 
-     * @return an updated method for this methodInfo.
+     * Compile the code and return a new BCEL method.
+     * @see MethodCode#compile()
+     * @return a new BCEL method class containing all changes to the code.
      */
     public Method compileMethod() {
-        compileCFG();
-        methodGen.setMaxLocals();
-        methodGen.setMaxStack();
+        if (!isAbstract()) {
+            methodCode.compile();
+        }
         return methodGen.getMethod();
-    }
-
-    public void setMethodCode(MethodGen method) {
-        cfg = null;
-
-        // TODO copy InstructionList!
-        // TODO copy all code relevant infos from method, excluding name, params and access flags
-        methodGen.setInstructionList(method.getInstructionList());
-    }
-
-    public InstructionList getInstructionList() {
-        compileCFG();
-        // If one only uses the IList to analyze code but does not modify it, we could keep an existing CFG.
-        // Unfortunately, there is no 'const InstructionList' or 'UnmodifiableInstructionList', so we
-        // can never be sure what the user will do with the list..
-        cfg = null;
-        return methodGen.getInstructionList();
-    }
-
-    public void setInstructionList(InstructionList il) {
-        methodGen.setInstructionList(il);
-        cfg = null;
-    }
-
-    public InvokeSite getInvokeSite(InstructionHandle ih) {
-        InvokeSite is = (InvokeSite) ih.getAttribute(KEY_IH_INVOKESITE);
-        if (is == null) {
-            is = new InvokeSite(ih, this);
-            ih.addAttribute(KEY_IH_INVOKESITE, is);
-        }
-        return is;
-    }
-
-    public void removeNOPs() {
-        compileCFG();
-        cfg = null;
-        methodGen.removeNOPs();
-    }
-
-    public ControlFlowGraph getControlFlowGraph() {
-        if ( this.cfg == null ) {
-            try {
-                cfg = new ControlFlowGraph(this);
-            } catch (BadGraphException e) {
-                // TODO handle this!
-                e.printStackTrace();
-            }
-        }
-
-        return cfg;
-    }
-
-    public boolean hasCFG() {
-        return cfg != null;
-    }
-
-    public void compileCFG() {
-        if ( cfg != null ) {
-            cfg.compile();
-        }
     }
 
     //////////////////////////////////////////////////////////////////////////////

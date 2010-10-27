@@ -23,6 +23,7 @@ package common.code;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ExecutionContext;
@@ -49,13 +50,15 @@ public class HashTest {
         ClassInfo testClass = appInfo.loadClass("common.TestFramework");
         MethodInfo mainMethod = appInfo.getMainMethod();
 
-        InstructionHandle[] ih = mainMethod.getInstructionList().getInstructionHandles();
+        MethodCode code = mainMethod.getCode();
 
-        InvokeSite i1 = mainMethod.getInvokeSite(ih[1]);
-        InvokeSite i2 = mainMethod.getInvokeSite(ih[2]);
-        InvokeSite i3 = mainMethod.getInvokeSite(ih[3]);
+        InstructionHandle[] ih = code.getInstructionList().getInstructionHandles();
 
-        InvokeSite i11 = mainMethod.getInvokeSite(ih[1]);
+        InvokeSite i1 = code.getInvokeSite(ih[1]);
+        InvokeSite i2 = code.getInvokeSite(ih[2]);
+        InvokeSite i3 = code.getInvokeSite(ih[3]);
+
+        InvokeSite i11 = code.getInvokeSite(ih[1]);
         check(i1 == i11);
 
         CallString c1 = new CallString(i1);
@@ -74,14 +77,14 @@ public class HashTest {
 
 
         // modify instruction list, check if everything still works
-        InstructionList il = mainMethod.getInstructionList();
+        InstructionList il = code.getInstructionList();
         il.insert(new ILOAD(0));
         il.insert(ih[2], new ILOAD(1));
 
         ih = il.getInstructionHandles();
 
-        InvokeSite i12 = mainMethod.getInvokeSite(ih[2]);
-        InvokeSite i22 = mainMethod.getInvokeSite(ih[4]);
+        InvokeSite i12 = code.getInvokeSite(ih[2]);
+        InvokeSite i22 = code.getInvokeSite(ih[4]);
         check(i12 == i1);
         check(i22 == i2);
 

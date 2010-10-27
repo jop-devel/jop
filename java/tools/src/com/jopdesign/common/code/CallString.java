@@ -21,6 +21,7 @@
 
 package com.jopdesign.common.code;
 
+import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import org.apache.bcel.generic.InstructionHandle;
 
@@ -98,7 +99,7 @@ public class CallString implements CallStringProvider {
      * @return a new callstring with the given invocation as the last element.
      */
 	public CallString push(MethodInfo method, InstructionHandle invoke, int maxLen) {
-        return push(method.getInvokeSite(invoke), maxLen);
+        return push(method.getCode().getInvokeSite(invoke), maxLen);
     }
 
     /**
@@ -109,7 +110,7 @@ public class CallString implements CallStringProvider {
      *     <li/>If k &gt;=   maxDepth, the resulting callstring is {@code n(1),n(2),...,n(maxDepth)}
      *  </ol>
      *
-     * @see MethodInfo#getInvokeSite(InstructionHandle)
+     * @see MethodCode#getInvokeSite(InstructionHandle)
      * @param is the invokesite to be pushed at the end of the string.
      * @param maxLen the maximum length of the callstring
      * @return a new callstring with the given invocation as the last element.
@@ -140,6 +141,17 @@ public class CallString implements CallStringProvider {
         } else {
             return null;
         }
+    }
+    
+    public CallString getSuffix(int length) {
+        if (length == 0) return EMPTY;
+        if (length > callString.length) {
+            throw new IllegalArgumentException("Trying to get suffix with length "+length+
+                    " greater than callstring length "+callString.length);
+        }
+
+        InvokeSite[] cs = Arrays.copyOfRange(callString, callString.length - length, callString.length);
+        return new CallString(cs);
     }
 
 	@Override

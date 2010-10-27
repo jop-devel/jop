@@ -23,6 +23,7 @@ package com.jopdesign.common.graph;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.MemberInfo;
+import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.bcel.AnnotationAttribute;
 import com.jopdesign.common.bcel.CustomAttribute;
@@ -306,22 +307,27 @@ public class DescendingClassTraverser implements ClassVisitor {
             }
 
             bcelVisitor.setMethodInfo(m);
-            
-            for (CodeExceptionGen ex : m.getExceptionHandlers()) {
-                visitor.visitCodeException(m, ex);
+
+            if (!m.isAbstract()) {
+                bcelVisitor.setCode(true);
+
+                MethodCode code = m.getCode();
+
+                for (CodeExceptionGen ex : code.getExceptionHandlers()) {
+                    visitor.visitCodeException(m, ex);
+                }
+
+                for (LineNumberGen lng : code.getLineNumbers()) {
+                    visitor.visitLineNumber(m, lng);
+                }
+                for (LocalVariableGen lvg : code.getLocalVariables()) {
+                    visitor.visitLocalVariable(m, lvg);
+                }
+                visitAttributes(code.getAttributes());
             }
-            
-            bcelVisitor.setCode(true);
-            
-            for (LineNumberGen lng : m.getLineNumbers()) {
-                visitor.visitLineNumber(m, lng);
-            }
-            for (LocalVariableGen lvg : m.getLocalVariables()) {
-                visitor.visitLocalVariable(m, lvg);
-            }
-            visitAttributes(m.getCodeAttributes());
-            
+
             bcelVisitor.setCode(false);
+
             visitAttributes(m.getAttributes());
             
             visitor.finishMethod(m);

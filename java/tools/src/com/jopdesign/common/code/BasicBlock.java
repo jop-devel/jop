@@ -22,8 +22,10 @@ package com.jopdesign.common.code;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.logger.LogConfig;
+import com.jopdesign.common.model.ProcessorModel;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.generic.ATHROW;
@@ -73,27 +75,58 @@ public class BasicBlock  {
 	 * Should only be used by {@link ControlFlowGraph}
 	 */
 	static class FlowInfo {
-		boolean alwaysTaken = false;
-		boolean splitBefore = false;
-		boolean splitAfter = false;
-		boolean exit = false;
-		List<FlowTarget> targets = new ArrayList<FlowTarget>();
+		private boolean alwaysTaken = false;
+		private boolean splitBefore = false;
+		private boolean splitAfter = false;
+		private boolean exit = false;
+		private final List<FlowTarget> targets = new ArrayList<FlowTarget>();
 
 		void addTarget(InstructionHandle ih, ControlFlowGraph.EdgeKind kind) {
 			targets.add(new FlowTarget(ih,kind));
 		}
-	}
+
+        public boolean isAlwaysTaken() { return alwaysTaken; }
+
+        public boolean doSplitBefore() { return splitBefore; }
+
+        public boolean doSplitAfter() { return splitAfter; }
+
+        public boolean isExit() { return exit; }
+
+        public List<FlowTarget> getTargets() { return targets; }
+
+        public void setAlwaysTaken() { this.alwaysTaken = true; }
+
+        public void setSplitBefore() { this.splitBefore = true; }
+
+        public void setSplitAfter() { this.splitAfter = true; }
+
+        public void setExit() {
+            this.exit = true;
+            this.splitAfter = true;
+        }
+    }
 
 	/**
 	 * Represents targets of a control flow instruction
 	 */
 	static class FlowTarget {
-		InstructionHandle target;
-		ControlFlowGraph.EdgeKind edgeKind;
+		private InstructionHandle target;
+		private ControlFlowGraph.EdgeKind edgeKind;
 
 		FlowTarget(InstructionHandle target, ControlFlowGraph.EdgeKind edgeKind) {
 			this.target = target; this.edgeKind = edgeKind;
 		}
+
+        public InstructionHandle getTarget() { return target; }
+
+        public ControlFlowGraph.EdgeKind getEdgeKind() { return edgeKind; }
+
+        public void setTarget(InstructionHandle target) { this.target = target; }
+
+        public void setEdgeKind(ControlFlowGraph.EdgeKind edgeKind) {
+            this.edgeKind = edgeKind;
+        }
 
 		@Override public String toString() {
 			return "FlowTarget<"+target.getPosition()+","+edgeKind+">";
@@ -104,15 +137,25 @@ public class BasicBlock  {
 	/** Keys for the custom {@link InstructionHandle} attributes */
 	private enum InstrField { FLOW_INFO, LINE_NUMBER, CFGNODE }
 
-	/** Get FlowInfo associated with an {@link InstructionHandle} */
-	static FlowInfo getFlowInfo(InstructionHandle ih) {
+	/**
+     * Get FlowInfo associated with an {@link InstructionHandle}
+     * @param ih
+     * @return
+     */
+	public static FlowInfo getFlowInfo(InstructionHandle ih) {
 		return (FlowInfo)ih.getAttribute(InstrField.FLOW_INFO);
 	}
 
-	/** Get Line number associated with an {@link InstructionHandle} */
-	static Integer getLineNumber(InstructionHandle ih) {
+	/**
+     * Get Line number associated with an {@link InstructionHandle}
+     * @param ih
+     * @return
+     */
+	public static Integer getLineNumber(InstructionHandle ih) {
 		return (Integer)ih.getAttribute(InstrField.LINE_NUMBER);
 	}
+
+    // TODO move to CFG class, remove links on dispose()
 
 	// FIXME: [wcet-frontend] Remove the ugly ih.getAttribute() hack for CFG Nodes
 	/** Get the basic block node associated with an instruction handle  */
@@ -131,29 +174,26 @@ public class BasicBlock  {
 		ih.addAttribute(InstrField.CFGNODE, basicBlockNode);
 	}
 
-	private LinkedList<InstructionHandle> instructions = new LinkedList<InstructionHandle>();
-	private MethodInfo methodInfo;
-	private AppInfo appInfo;
+	private final LinkedList<InstructionHandle> instructions = new LinkedList<InstructionHandle>();
+    private final MethodCode methodCode;
 
 	/** Create a basic block
-	 * @param appInfo    The WCET context
-	 * @param methodInfo The method the basic block belongs to
+	 * @param methodCode The method code this basic block belongs to
 	 */
-	public BasicBlock(AppInfo appInfo, MethodInfo methodInfo) {
-		this.appInfo = appInfo;
-		this.methodInfo = methodInfo;
+	public BasicBlock(MethodCode methodCode) {
+        this.methodCode = methodCode;
 	}
 
 	public AppInfo getAppInfo() {
-		return appInfo;
+		return methodCode.getAppInfo();
 	}
 
 	public ClassInfo getClassInfo() {
-		return methodInfo.getClassInfo();
+		return methodCode.getClassInfo();
 	}
 
 	public MethodInfo getMethodInfo() {
-		return methodInfo;
+		return methodCode.getMethodInfo();
 	}
 
 	/**
@@ -171,14 +211,15 @@ public class BasicBlock  {
 
 	/** Get the first instruction of an basic block
 	 *  (potential target of control flow instruction)
-	 */
+     * @return the first instruction in this block.
+     */
 	public InstructionHandle getFirstInstruction() {
 		return this.instructions.getFirst();
 	}
 
 	/** Get the last instruction of an basic block
 	 *  (potential control flow instruction)
-	 * @return
+	 * @return the last instruction of this block
 	 */
 	public InstructionHandle getLastInstruction() {
 		return this.instructions.getLast();
@@ -187,8 +228,10 @@ public class BasicBlock  {
 	/**
 	 * Get the invoke instruction of the basic block (which must be
 	 * the only instruction in the basic block)
+     *
+     * @see ProcessorModel#isSpecialInvoke(MethodInfo, Instruction)
 	 * @return the invoke instruction, or <code>null</code>, if the basic block doesn't
-	 *         contain an invoke instruction.
+	 *         contain an invoke instruction or if it is a special invoke.
 	 * @throws ControlFlowGraph.ControlFlowError if there is more than one invoke instruction in the block.
 	 */
 	public InvokeInstruction getTheInvokeInstruction() {
@@ -196,7 +239,7 @@ public class BasicBlock  {
 		for(InstructionHandle ih : this.instructions) {
 			if(! (ih.getInstruction() instanceof InvokeInstruction)) continue;
 			InvokeInstruction inv = (InvokeInstruction) ih.getInstruction();
-			if(this.getAppInfo().getProcessorModel().isSpecialInvoke(this.methodInfo, inv)) {
+			if(this.getAppInfo().getProcessorModel().isSpecialInvoke(methodCode.getMethodInfo(), inv)) {
 				continue;
 			}
 			if(theInvInstr != null) {
@@ -222,8 +265,8 @@ public class BasicBlock  {
 	public int getNumberOfBytes() {
 		int len = 0;
 		for(InstructionHandle ih : this.instructions) {
-			len += appInfo.getProcessorModel().getNumberOfBytes(
-					this.methodInfo, ih.getInstruction()
+			len += getAppInfo().getProcessorModel().getNumberOfBytes(
+					methodCode.getMethodInfo(), ih.getInstruction()
 			);
 		}
 		return len;
@@ -233,24 +276,32 @@ public class BasicBlock  {
 	 *  Control flow graph construction
 	 *---------------------------------------------------------------------------
 	 */
+
 	/**
 	 * Override this class to get specific basic block partitioning
 	 */
 	public static class InstructionTargetVisitor extends EmptyVisitor {
 		private FlowInfo flowInfo;
 		private HashSet<InstructionHandle> targeted;
-		public boolean isTarget(InstructionHandle ih) {
-			return targeted.contains(ih);
-		}
-		private MethodInfo methodInfo;
-		private AppInfo appInfo;
+		private MethodCode methodCode;
+
+        protected InstructionTargetVisitor(MethodCode m) {
+            this.targeted = new HashSet<InstructionHandle>();
+            this.methodCode = m;
+        }
+        
+        public boolean isTarget(InstructionHandle ih) {
+            return targeted.contains(ih);
+        }
+
 		public void visitInstruction(InstructionHandle ih) {
 			ih.accept(this);
-			if(appInfo.getProcessorModel().isImplementedInJava(ih.getInstruction())) {
+			if(methodCode.getAppInfo().getProcessorModel().isImplementedInJava(ih.getInstruction())) {
 				flowInfo.splitBefore = true;
 				flowInfo.splitAfter  = true;
 			}
 		}
+
 		@Override public void visitBranchInstruction(BranchInstruction obj) {
 			flowInfo.splitAfter=true; /* details follow in goto/if/jsr/select */
 		}
@@ -286,7 +337,7 @@ public class BasicBlock  {
 
 		// Not neccesarily, but nice for WCET analysis
 		@Override public void visitInvokeInstruction(InvokeInstruction obj) {
-			if(! appInfo.getProcessorModel().isSpecialInvoke(methodInfo, obj)) {
+			if(! methodCode.getAppInfo().getProcessorModel().isSpecialInvoke(methodCode.getMethodInfo(), obj)) {
 				flowInfo.splitBefore = true;
 				flowInfo.splitAfter = true;
 			}
@@ -294,11 +345,6 @@ public class BasicBlock  {
 		@Override public void visitReturnInstruction(ReturnInstruction obj) {
 			flowInfo.splitAfter = true;
 			flowInfo.exit = true;
-		}
-		protected InstructionTargetVisitor(AppInfo ai, MethodInfo m) {
-			this.targeted = new HashSet<InstructionHandle>();
-			this.methodInfo = m;
-			this.appInfo = ai;
 		}
 
 		public FlowInfo getFlowInfo(InstructionHandle ih) {
@@ -311,17 +357,17 @@ public class BasicBlock  {
 
 	/**
 	 * Create a vector of basic blocks, annotated with flow information
-	 * @param methodInfo The MethodInfo of the method where should extract basic blocks.
+     * @param methodCode The MethodCode of the method from which basic blocks should be extracted.
 	 * @return A vector of BasicBlocks, which instruction handles annotated with
 	 * flow information.
 	 */
-	static List<BasicBlock> buildBasicBlocks(AppInfo ai, MethodInfo methodInfo) {
-		InstructionTargetVisitor itv = new InstructionTargetVisitor(ai,methodInfo);
+	static List<BasicBlock> buildBasicBlocks(MethodCode methodCode) {
+		InstructionTargetVisitor itv = new InstructionTargetVisitor(methodCode);
 		List<BasicBlock> basicBlocks = new Vector<BasicBlock>();
-		InstructionList il = methodInfo.getInstructionList();
+		InstructionList il = methodCode.getInstructionList();
 		il.setPositions(true);
 		LineNumberTable lineNumberTable =
-			methodInfo.getLineNumberTable();
+			methodCode.getLineNumberTable();
 
 		/* Step 1: compute flow info */
 		for(InstructionHandle ih : il.getInstructionHandles()) {
@@ -330,7 +376,7 @@ public class BasicBlock  {
 		}
 		/* Step 2: create basic blocks */
 		{
-			BasicBlock bb = new BasicBlock(ai, methodInfo);
+			BasicBlock bb = new BasicBlock(methodCode);
 			InstructionHandle[] handles = il.getInstructionHandles();
 			for(int i = 0; i < handles.length; i++) {
 				InstructionHandle ih = handles[i];
@@ -342,7 +388,7 @@ public class BasicBlock  {
 				}
 				if(doSplit) {
 					basicBlocks.add(bb);
-					bb = new BasicBlock(ai,methodInfo);
+					bb = new BasicBlock(methodCode);
 				}
 			}
 			if(! bb.instructions.isEmpty()) {
@@ -365,7 +411,7 @@ public class BasicBlock  {
 	 */
 	public TreeSet<Integer> getSourceLineRange() {
 		TreeSet<Integer> lines = new TreeSet<Integer>();
-		LineNumberTable lnt = this.getMethodInfo().getLineNumberTable();
+		LineNumberTable lnt = methodCode.getLineNumberTable();
 		for(InstructionHandle ih : instructions) {
 			int sourceLine = lnt.getSourceLine(ih.getPosition());
 			if(sourceLine >= 0) lines.add(sourceLine);
@@ -379,7 +425,9 @@ public class BasicBlock  {
 	 *  Example:<br/>
 	 *  {@code local_0 <- sipush[3] sipush[4] dup add add} <br/>
 	 *  {@code local_1 <- load[local_0] load[local_0] mul}
-	 *  */
+	 *
+     * @return a compact string representation of this block
+     **/
 	public String dump() {
 		StringBuilder sb = new StringBuilder();
 		Iterator<InstructionHandle> ihIter = this.instructions.iterator();
@@ -407,9 +455,9 @@ public class BasicBlock  {
 
 		public InstructionPrettyPrinter() {
 			this.sb = new StringBuilder();
-			this.lnt = methodInfo.getLineNumberTable();
+			this.lnt = methodCode.getLineNumberTable();
 			this.lineBuffer = new StringBuilder();
-			this.cfg = methodInfo.getControlFlowGraph();
+			this.cfg = methodCode.getControlFlowGraph();
 		}
 		public StringBuilder getBuffer() {
 			nextLine();
@@ -438,7 +486,8 @@ public class BasicBlock  {
 				lastPos  = currentPos;
 			}
 		}
-		private void append(String stackOp) {
+		@SuppressWarnings({"AssignmentToMethodParameter"})
+        private void append(String stackOp) {
 			if(lineBuffer.length() > 0) {
 				if(lineBuffer.length() < 45) lineBuffer.append(" ");
 				else lineBuffer.append("\n  \\ ");
@@ -447,7 +496,8 @@ public class BasicBlock  {
 			lineBuffer.append(stackOp);
 			markVisited();
 		}
-		private void assign(String lhs) {
+		@SuppressWarnings({"AssignmentToMethodParameter"})
+        private void assign(String lhs) {
 			if(address != null) lhs = String.format("%s<%d>",lhs,address);
 			lineBuffer.insert(0, lhs + "<-");
 			nextLine();
