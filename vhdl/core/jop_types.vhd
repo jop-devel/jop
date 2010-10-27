@@ -62,8 +62,8 @@ package jop_types is
 
 	type mem_in_type is record
 		bcopd		: std_logic_vector(15 downto 0);
-		rd			: std_logic;
-		wr			: std_logic;
+		rd			: std_logic;	-- uncached read
+		wr			: std_logic;	-- uncached write
 		addr_wr	    : std_logic;
 		bc_rd       : std_logic;
 		iaload      : std_logic;
@@ -73,9 +73,9 @@ package jop_types is
 		putfield    : std_logic;
 		getstatic   : std_logic;
 		putstatic   : std_logic;
-		rdc         : std_logic;
-		rdf         : std_logic;
-		wrf         : std_logic;
+		rdc         : std_logic;	-- read with possible constant cache
+		rdf         : std_logic;	-- read with coherent cache (fully assoc)
+		wrf         : std_logic;	-- write into coherente cache
 		copy        : std_logic;
 	end record;
 

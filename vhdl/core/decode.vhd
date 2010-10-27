@@ -504,11 +504,11 @@ begin
 				when STPS =>
 					mem_in.putstatic <= '1';	-- start putstatic
 				when STMRAC =>
-					mem_in.rdc <= '1';		-- start memory or io read
+					mem_in.rdc <= '1';		-- start memory constant read
 				when STMRAF =>
-					mem_in.rdf <= '1';		-- start memory or io read
+					mem_in.rdf <= '1';		-- start memory read through full assoc. cache
 				when STMWDF =>
-					mem_in.wrf <= '1';		-- start memory or io write
+					mem_in.wrf <= '1';		-- start memory write through full assoc. cache
 				when others =>
 					null;
 			end case;
