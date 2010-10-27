@@ -310,9 +310,9 @@ tools:
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/build/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/tools/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wca_rup/*.java
-	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/dfa/*.java
-	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wcet/*.java
-	cp $(TOOLS)/src/com/jopdesign/wcet/report/*.vm $(TOOLS)/dist/classes/com/jopdesign/wcet/report
+#	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/dfa/*.java
+#	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wcet/*.java
+#	cp $(TOOLS)/src/com/jopdesign/wcet/report/*.vm $(TOOLS)/dist/classes/com/jopdesign/wcet/report
 # Build libgraph and joptimizer
 #	make joptimizer -e TOOLS_JFLAGS="$(TOOLS_JFLAGS)" TOOLS="$(TOOLS)"
 # quick hack to get the tools with the debugger ok
