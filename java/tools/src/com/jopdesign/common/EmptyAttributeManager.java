@@ -20,11 +20,6 @@
 
 package com.jopdesign.common;
 
-import com.jopdesign.common.AppInfo;
-import com.jopdesign.common.AttributeManager;
-import com.jopdesign.common.ClassInfo;
-import com.jopdesign.common.MethodInfo;
-
 /**
  * An empty class which implements all callback handlers of AttributeManager, so you
  * don't need to.
