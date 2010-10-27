@@ -90,7 +90,7 @@ end mem_sc;
 
 architecture rtl of mem_sc is
 
-component cache is
+component mcache is
 generic (jpc_width : integer; block_bits : integer);
 
 port (
@@ -177,11 +177,11 @@ end component;
 
 	signal bc_addr		: std_logic_vector(jpc_width-3 downto 0);	-- address for jbc (in words!)
 --
---	signals for cache connection
+--	signals for method cache connection
 --
-	signal cache_rdy	: std_logic;
-	signal cache_in_cache	: std_logic;
-	signal cache_bcstart	: std_logic_vector(jpc_width-3 downto 0);
+	signal mcache_rdy	: std_logic;
+	signal mcache_in_cache	: std_logic;
+	signal mcache_bcstart	: std_logic_vector(jpc_width-3 downto 0);
 
 --
 -- signals for copying and address translation
@@ -214,7 +214,7 @@ begin
 	end if;
 end process;
 
-	mem_out.bcstart <= std_logic_vector(to_unsigned(0, 32-jpc_width)) & cache_bcstart & "00";
+	mem_out.bcstart <= std_logic_vector(to_unsigned(0, 32-jpc_width)) & mcache_bcstart & "00";
 
 
 	np_exc <= null_pointer;
@@ -229,12 +229,12 @@ end process;
 	bc_wr_addr <= bc_addr;
 
 
-	mc: cache generic map (jpc_width, block_bits) port map(
+	mc: mcache generic map (jpc_width, block_bits) port map(
 		clk, reset,
 		std_logic_vector(bc_len), std_logic_vector(addr_reg(17 downto 0)),
 		mem_in.bc_rd,
-		cache_bcstart,
-		cache_rdy, cache_in_cache
+		mcache_bcstart,
+		mcache_rdy, mcache_in_cache
 	);
 
 
@@ -325,6 +325,9 @@ end process;
 --
 process (mem_in, state_dcache)
 begin  -- process	
+	-- MS: in what state is the cache marker on the other MMU
+	-- commands? E.g. putfield, get/putstatic, stidx, iastore
+	-- Looks ok as state_dcache is changed in the state machine
 	ram_dcache <= state_dcache;
 	if mem_in.rd = '1' then
 		ram_dcache <= bypass;
@@ -421,7 +424,7 @@ end process;
 --	next state logic
 --
 process(state, mem_in, sc_mem_in,
-	cache_rdy, cache_in_cache, bc_len, value, index, 
+	mcache_rdy, mcache_in_cache, bc_len, value, index, 
 	addr_reg, cp_stopbit, was_a_store, ocout)
 begin
 
@@ -492,8 +495,8 @@ begin
 --
 		-- cache lookup
 		when bc_cc =>
-			if cache_rdy = '1' then
-				if cache_in_cache = '1' then
+			if mcache_rdy = '1' then
+				if mcache_in_cache = '1' then
 					next_state <= idl;
 				else
 					next_state <= bc_r1;
@@ -918,7 +921,7 @@ begin
 
 			when bc_r1 =>
 				-- setup data
-				bc_addr <= cache_bcstart;
+				bc_addr <= mcache_bcstart;
 				-- first memory read
 				inc_addr_reg <= '1';
 				state_rd <= '1';

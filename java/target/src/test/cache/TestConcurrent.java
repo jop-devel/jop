@@ -40,6 +40,7 @@ public class TestConcurrent implements Runnable {
 	volatile long volLong;
 	
 	int a, b;
+	long lo;
 	
 
 	/**
@@ -48,6 +49,7 @@ public class TestConcurrent implements Runnable {
 	public static void main(String[] args) {
 		
 		int i;
+		long l;
 
 		System.out.println("Test concurrent access");	
 		SysDevice sys = IOFactory.getFactory().getSysDevice();
@@ -57,6 +59,24 @@ public class TestConcurrent implements Runnable {
 		}
 		
 		TestConcurrent tc = new TestConcurrent();
+
+		// test r/w/r
+		i = tc.a;
+		i = 123456789;	// force a cache state change
+		tc.a = 123;
+		i = tc.a;
+		if (i!=123) {
+			System.out.println("Error in r/w/r on field");
+		}
+		l = tc.lo;
+		i = 123456789;	// force a cache state change
+		tc.lo = 456;
+		l = tc.lo;
+		if (l!=456) {
+			System.out.println("Error in r/w/r on long field");
+		}
+
+		
 		// set runnable 
 		Startup.setRunnable(tc, 0);
 		// set some default values

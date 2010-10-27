@@ -47,7 +47,7 @@ use work.jop_types.all;
 -- 2**jpc_width is the caches size in bytes
 -- 2**block_bits is the number of blocks
 
-entity cache is
+entity mcache is
 generic (jpc_width : integer; block_bits : integer; tag_width : integer := 18);
 
 port (
@@ -67,9 +67,9 @@ port (
 	in_cache	: out std_logic							-- method is in cache
 
 );
-end cache;
+end mcache;
 
-architecture rtl of cache is
+architecture rtl of mcache is
 
 --
 --	signals for mem interface
