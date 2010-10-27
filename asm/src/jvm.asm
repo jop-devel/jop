@@ -156,7 +156,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhd files
 //
-version		= 20100622
+version		= 20101027
 
 //
 //	start of stack area in the on-chip RAM

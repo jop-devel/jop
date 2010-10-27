@@ -270,7 +270,8 @@ end process;
 
 	sc_mem_out.address <= ram_addr;
 	sc_mem_out.wr_data <= ram_wr_data;
-	sc_mem_out.rd <= mem_in.rd or mem_in.rdc or mem_in.rdf or mem_in.getfield or mem_in.iaload or state_rd;
+--	sc_mem_out.rd <= mem_in.rd or mem_in.rdc or mem_in.rdf or mem_in.getfield or mem_in.iaload or state_rd;
+	sc_mem_out.rd <= mem_in.rd or mem_in.rdc or mem_in.rdf or mem_in.iaload or state_rd;
 	sc_mem_out.wr <= mem_in.wr or mem_in.wrf or state_wr;
 	sc_mem_out.cache <= ram_dcache;
 
@@ -297,7 +298,10 @@ end process;
 --
 process(ain, bin, addr_reg, offset_reg, mem_in, base_reg, pos_reg, translate_bit)
 begin
-	if mem_in.rd='1' or mem_in.rdc='1' or mem_in.rdf='1' or mem_in.getfield='1' then
+	-- MS: why should the first memory operation on getfield, which is the handle
+	-- read go through the GC copy translation?
+--	if mem_in.rd='1' or mem_in.rdc='1' or mem_in.rdf='1' or mem_in.getfield='1' then
+	if mem_in.rd='1' or mem_in.rdc='1' or mem_in.rdf='1' then
 		if unsigned(ain(SC_ADDR_SIZE-1 downto 0)) >= base_reg and unsigned(ain(SC_ADDR_SIZE-1 downto 0)) < pos_reg then
 			ram_addr <= std_logic_vector(unsigned(ain(SC_ADDR_SIZE-1 downto 0)) + offset_reg);
 		else
@@ -311,6 +315,9 @@ begin
 		end if;		
 	else
 		-- default is the registered address for wr, bc load
+		-- MS: we could get rid of the adder when doing the addition
+		-- one cycle before. Perhaps it's not worth the effort as the
+		-- copy unit will go away at some point.
 		if translate_bit='1' then
 			ram_addr <= std_logic_vector(addr_reg(SC_ADDR_SIZE-1 downto 0) + offset_reg);
 		else
@@ -1008,6 +1015,7 @@ begin
 
 			when gf0 =>
 				read_ocache<='0';
+				state_rd <= '1';
 				state_bsy <= '1';
 				sc_mem_out.atomic <= '1';
 

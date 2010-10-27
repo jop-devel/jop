@@ -1150,7 +1150,7 @@ public class WCETInstruction {
 			break;
 		// GETFIELD = 180
 		case org.apache.bcel.Constants.GETFIELD:
-			wcet = 7 + 2 * r;
+			wcet = 8 + 2 * r;
 			if (CMP_WCET==true)
 				wcet = getfield.wcet;
 			break;
@@ -1382,7 +1382,7 @@ public class WCETInstruction {
 			
 		// GETFIELD_REF = 226
 		case GETFIELD_REF:
-			wcet = 7 + 2 * r;
+			wcet = 8 + 2 * r;
 			if (CMP_WCET==true){
 				WCETMemInstruction getfield_ref = new WCETMemInstruction();
 				getfield_ref.microcode = new int [wcet];
@@ -1432,6 +1432,7 @@ public class WCETInstruction {
 
 		// JOPSYS_GETFIELD = 233
 		case JOPSYS_GETFIELD:
+			// perhaps it is 9 + 2r?
 			wcet = 8 + 2*r;
 			if (CMP_WCET==true)
 				wcet = -1;

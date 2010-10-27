@@ -199,7 +199,9 @@ public class MicropathTiming {
                         break;
                     case MicrocodeConstants.STGF:
                         /* wait(5+2r) */
-                        timing.add(new TimingExpression(4,2,0,passed-1));
+                    	// TODO: MS don't know if this is ok after
+                    	// changes by WP and changes back by MS?
+                        timing.add(new TimingExpression(5,2,0,passed-1));
                         break;
                     case MicrocodeConstants.STPF:
                         /* wait (6+r+w) */
