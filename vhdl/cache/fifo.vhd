@@ -242,7 +242,7 @@ begin
 	begin
 
 		if reset='1' then
-			cpu_out_reg <= ((others => '0'), (others => '0'), '0', '0', '0', bypass, '0', '0');
+			cpu_out_reg <= ((others => '0'), (others => '0'), '0', '0', '0', bypass, '0', '0', '0');
 			rd_data_reg <= (others => '0');
 			fetch_reg <= '0';
 			crd_reg <= '0';

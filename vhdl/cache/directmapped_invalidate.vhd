@@ -82,7 +82,7 @@ begin
 	begin  -- process sync
 		if int_reset = '1' then  -- asynchronous reset (active low)
 			
-			cpu_out_reg <= ((others => '0'), (others => '0'), '0', '0', '0', bypass, '0', '0');
+			cpu_out_reg <= ((others => '0'), (others => '0'), '0', '0', '0', bypass, '0', '0', '0');
 			rddata_reg <= (others => '0');
 			fetchtag_reg <= (others => '0');
 			fetch_reg <= '0';

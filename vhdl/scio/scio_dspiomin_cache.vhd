@@ -97,14 +97,11 @@ port (
 	l			: inout std_logic_vector(20 downto 1);
 	r			: inout std_logic_vector(20 downto 1);
 	t			: inout std_logic_vector(6 downto 1);
-	b			: inout std_logic_vector(10 downto 1);
+	b			: inout std_logic_vector(10 downto 1)
 	
 -- remove the comment for RAM access counting
 -- ram_cnt 	: in std_logic;
 
--- invalidate cache
-
-	inval       : out std_logic		
 );
 end scio;
 
@@ -198,11 +195,9 @@ begin
 			sync_out => sync_out,
 			sync_in => sync_in,
 			
-			wd => wd,
+			wd => wd
 			-- remove the comment for RAM access counting
 			-- ram_count => ram_count,
-
-			inval => inval
 		);
 		
 	-- remove the comment for RAM access counting
