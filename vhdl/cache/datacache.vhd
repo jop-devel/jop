@@ -8,8 +8,6 @@ entity datacache is
 port (
 	clk, reset:	    in std_logic;
 
-	inval:			in std_logic;
-
 	cpu_out:		in sc_out_type;
 	cpu_in:			out sc_in_type;
 
@@ -35,7 +33,6 @@ begin  -- rtl
 		port map (
 			clk		=> clk,
 			reset	=> reset,
-			inval	=> inval,
 			cpu_in	=> dmc_cpu_in,
 			cpu_out => cpu_out,
 			mem_in	=> mem_in,
@@ -45,7 +42,6 @@ begin  -- rtl
 		port map (
 			clk		=> clk,
 			reset	=> reset,
-			inval	=> inval,
 			cpu_in	=> dm_cpu_in,
 			cpu_out => cpu_out,
 			mem_in	=> mem_in,
@@ -55,7 +51,6 @@ begin  -- rtl
 		port map (
 			clk		=> clk,
 			reset	=> reset,
-			inval	=> inval,
 			cpu_in	=> fa_cpu_in,
 			cpu_out => cpu_out,
 			mem_in	=> mem_in,

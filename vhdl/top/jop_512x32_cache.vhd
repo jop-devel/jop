@@ -143,8 +143,6 @@ end component;
 	signal ser_out			: ser_out_type;
 	signal wd_out			: std_logic;
 
-	signal inval			: std_logic;
-
 -- for generation of internal reset
 
 -- memory interface
@@ -230,17 +228,15 @@ end process;
 			l => open,
 			r => open,
 			t => open,
-			b => open,
+			b => open
 			-- remove the comment for RAM access counting
 			-- ram_cnt => ram_count,
-			inval => inval
 		);
 
 	cmp_dcache: entity work.datacache
 		port map (
 			clk		=> clk_int,
 			reset	=> int_res,
-			inval	=> inval,
 			cpu_in	=> sc_dcache_in,
 			cpu_out => sc_dcache_out,
 			mem_in	=> sc_mem_in,

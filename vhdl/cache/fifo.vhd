@@ -151,8 +151,6 @@ entity fifo_cache is
 	port (
 		clk, reset	: in std_logic;
 
-		inval		: in std_logic;
-		
 		cpu_out		: in sc_out_type;
 		cpu_in		: out sc_in_type;
 
@@ -238,7 +236,7 @@ begin
 			rden	   => '1',
 			dout	   => ram_dout);
 
-	int_reset <= reset or inval;
+	int_reset <= reset or cpu_out.cinval;
 
 	sync: process(clk, reset)
 	begin

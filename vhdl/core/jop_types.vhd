@@ -58,7 +58,10 @@ package jop_types is
 	constant LDBCSTART : std_logic_vector(MMU_WIDTH-1 downto 0) := "0010"; 
 
 	-- no stack change
-	constant STGS	   : std_logic_vector(MMU_WIDTH-1 downto 0) := "0000"; 
+	constant STGS	   	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0000"; 
+	constant CINVAL	   	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0001"; 
+	constant ATMSTART	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0010"; 
+	constant ATMEND		: std_logic_vector(MMU_WIDTH-1 downto 0) := "0011"; 
 
 	type mem_in_type is record
 		bcopd		: std_logic_vector(15 downto 0);
@@ -77,6 +80,9 @@ package jop_types is
 		rdf         : std_logic;	-- read with coherent cache (fully assoc)
 		wrf         : std_logic;	-- write into coherente cache
 		copy        : std_logic;
+		cinval		: std_logic;	-- invalidate the data cache
+		atmstart	: std_logic;	-- start atomic section
+		atmend		: std_logic;	-- end atomic section
 	end record;
 
 	type mem_out_type is record

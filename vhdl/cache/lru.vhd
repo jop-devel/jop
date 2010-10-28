@@ -11,8 +11,6 @@ generic (
 port (
 	clk, reset:	    in std_logic;
 
-	inval:			in std_logic;
-
 	cpu_out:		in sc_out_type;
 	cpu_in:			out sc_in_type;
 
@@ -65,7 +63,7 @@ architecture rtl of lru is
 	
 begin
 
-	int_reset <= reset or inval;
+	int_reset <= reset or cpu_out.cinval;
 	
 	lines: for i in 0 to line_cnt-1 generate
 		cache_line: block

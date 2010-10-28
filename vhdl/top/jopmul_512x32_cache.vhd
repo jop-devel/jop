@@ -225,7 +225,6 @@ end process;
 			port map (
 				clk		=> clk_int,
 				reset	=> int_res,
-				inval   => inval(i),
 				cpu_in	=> sc_dcache_in(i),
 				cpu_out => sc_dcache_out(i),
 				mem_in	=> sc_arb_in(i),
@@ -261,10 +260,9 @@ end process;
 			l => open,
 			r => open,
 			t => open,
-			b => open,
+			b => open
 			-- remove the comment for RAM access counting
 			-- ram_cnt => ram_count
-			inval => inval(0)
 		);
 		
 	-- io for processors with only sc_sys
@@ -291,10 +289,9 @@ end process;
 			
 			sync_out => sync_out_array(i),
 			sync_in => sync_in_array(i),
-			wd => wd_out(i),
+			wd => wd_out(i)
 			-- remove the comment for RAM access counting
 			-- ram_count => ram_count
-			inval => inval(i)
 		);
 	end generate;
 

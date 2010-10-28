@@ -56,6 +56,7 @@ package sc_pack is
 		wr			: std_logic;
 		atomic		: std_logic;
 		cache		: sc_cache_type;
+		cinval		: std_logic;	-- invalidate the data cache
 		tm_cache	: std_logic;
 		tm_broadcast: std_logic;
 	end record;
