@@ -309,6 +309,7 @@ end process;
 	sc_mem_out.rd <= sc_ctrl_mem_out.rd and mem_access;
 	sc_mem_out.atomic <= sc_ctrl_mem_out.atomic;
 	sc_mem_out.cache <= sc_ctrl_mem_out.cache;
+	sc_mem_out.cinval <= sc_ctrl_mem_out.cinval;
 	sc_mem_out.tm_cache <= sc_ctrl_mem_out.tm_cache;
 
 	sc_scratch_out.address <= sc_ctrl_mem_out.address;
@@ -316,6 +317,7 @@ end process;
 	sc_scratch_out.wr <= sc_ctrl_mem_out.wr and scratch_access;
 	sc_scratch_out.rd <= sc_ctrl_mem_out.rd and scratch_access;
 	sc_scratch_out.atomic <= sc_ctrl_mem_out.atomic;
+	sc_scratch_out.cinval <= sc_ctrl_mem_out.cinval;
 	sc_scratch_out.cache <= sc_ctrl_mem_out.cache;
 
 	sc_io_out.address <= sc_ctrl_mem_out.address;
@@ -323,6 +325,7 @@ end process;
 	sc_io_out.wr <= sc_ctrl_mem_out.wr and io_access;
 	sc_io_out.rd <= sc_ctrl_mem_out.rd and io_access;
 	sc_io_out.atomic <= sc_ctrl_mem_out.atomic;
+	sc_io_out.cinval <= sc_ctrl_mem_out.cinval;
 	sc_io_out.cache <= sc_ctrl_mem_out.cache;
 
 -- *************** code from extension ****************
