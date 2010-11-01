@@ -459,6 +459,9 @@ begin
 		mem_in.rdc <= '0';
 		mem_in.rdf <= '0';
 		mem_in.copy <= '0';
+		mem_in.cinval <= '0';
+		mem_in.atmstart <= '0';
+		mem_in.atmend <= '0';
 		mul_wr <= '0';
 		wr_dly <= '0';
 
@@ -479,6 +482,9 @@ begin
 		mem_in.rdf <= '0';
 		mem_in.wrf <= '0';
 		mem_in.copy <= '0';
+		mem_in.cinval <= '0';
+		mem_in.atmstart <= '0';
+		mem_in.atmend <= '0';
 		mul_wr <= '0';
 		wr_dly <= '0';
 
