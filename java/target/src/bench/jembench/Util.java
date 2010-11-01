@@ -50,8 +50,8 @@ public final class Util {
 	 * @return
 	 */
 	public static int getNrOfCores() {
-	  return  1;
-	  // return  Runtime.getRuntime().availableProcessors();
+	  // return  1;
+	  return  Runtime.getRuntime().availableProcessors();
 	}
 
 	/**
