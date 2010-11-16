@@ -42,7 +42,7 @@ use work.jop_config.all;
 entity jop is
 
 generic (				
-	ram_cnt		: integer := 3;		-- clock cycles for external ram
+	ram_cnt		: integer := 3;	-- clock cycles for external ram
     --rom_cnt	: integer := 3;		-- clock cycles for external rom OK for 20 MHz
     rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
@@ -56,14 +56,14 @@ port (
 --
 --	LEDs
 --
-	--oLEDR		: out std_logic_vector(17 downto 0);
+	oLEDR		: out std_logic_vector(17 downto 0);
 --	oLEDG		: out std_logic_vector(7 downto 0);
 
 	
 --
 --	Switches
 --
-	--iSW				: in std_logic_vector(17 downto 0);
+	iSW				: in std_logic_vector(17 downto 0);
 	
 --
 --	serial interface
@@ -219,9 +219,9 @@ end process;
 			ncts => oUART_CTS,
 			nrts => iUART_RTS,
 			
-			--oLEDR => oLEDR,
+			oLEDR => oLEDR,
 --			oLEDG => oLEDG,
-			--iSW => iSW,
+			iSW => iSW,
 			
 			wd => wd_out,
 			--- IO pins
