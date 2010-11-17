@@ -58,7 +58,7 @@ entity jop is
 generic (
 	clk_freq	: integer := 30000000;	-- 30 MHz clock frequency
 	ram_cnt		: integer := 3;		-- clock cycles for external ram
-	jpc_width	: integer := 10	-- address bits of java byte code pc
+	jpc_width	: integer := 11	-- address bits of java byte code pc
 );
 
 port (

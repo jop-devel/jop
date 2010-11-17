@@ -55,7 +55,7 @@ generic (
 	clk_freq	: integer := 20000000;	-- 20 MHz clock frequency
 	ram_cnt		: integer := 2;		-- clock cycles for external ram
 	rom_cnt		: integer := 3;		-- clock cycles for external rom
-	jpc_width	: integer := 10		-- address bits of java byte code pc
+	jpc_width	: integer := 11		-- address bits of java byte code pc
 );
 
 port (

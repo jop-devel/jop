@@ -90,7 +90,7 @@ end mem_sc;
 
 architecture rtl of mem_sc is
 
-component cache is
+component mcache is
 generic (jpc_width : integer; block_bits : integer);
 
 port (
@@ -178,11 +178,11 @@ end component;
 
 	signal bc_addr		: std_logic_vector(jpc_width-3 downto 0);	-- address for jbc (in words!)
 --
---	signals for cache connection
+--	signals for method cache connection
 --
-	signal cache_rdy	: std_logic;
-	signal cache_in_cache	: std_logic;
-	signal cache_bcstart	: std_logic_vector(jpc_width-3 downto 0);
+	signal mcache_rdy	: std_logic;
+	signal mcache_in_cache	: std_logic;
+	signal mcache_bcstart	: std_logic_vector(jpc_width-3 downto 0);
 
 --
 -- signals for copying and address translation
@@ -215,7 +215,7 @@ begin
 	end if;
 end process;
 
-	mem_out.bcstart <= std_logic_vector(to_unsigned(0, 32-jpc_width)) & cache_bcstart & "00";
+	mem_out.bcstart <= std_logic_vector(to_unsigned(0, 32-jpc_width)) & mcache_bcstart & "00";
 
 
 	np_exc <= null_pointer;
@@ -230,12 +230,12 @@ end process;
 	bc_wr_addr <= bc_addr;
 
 
-	mc: cache generic map (jpc_width, block_bits) port map(
+	mc: mcache generic map (jpc_width, block_bits) port map(
 		clk, reset,
 		std_logic_vector(bc_len), std_logic_vector(addr_reg(17 downto 0)),
 		mem_in.bc_rd,
-		cache_bcstart,
-		cache_rdy, cache_in_cache
+		mcache_bcstart,
+		mcache_rdy, mcache_in_cache
 	);
 
 
@@ -263,7 +263,7 @@ end process;
 	ocin.chk_gf <= mem_in.getfield and not was_a_stidx;
 	ocin.gf_val <= sc_mem_in.rd_data;
 	ocin.pf_val <= value;
-	ocin.inval <= mem_in.stidx;
+	ocin.inval <= mem_in.stidx or mem_in.cinval;
 
 --
 --	SimpCon connections
@@ -271,9 +271,11 @@ end process;
 
 	sc_mem_out.address <= ram_addr;
 	sc_mem_out.wr_data <= ram_wr_data;
-	sc_mem_out.rd <= mem_in.rd or mem_in.rdc or mem_in.rdf or mem_in.getfield or mem_in.iaload or state_rd;
+--	sc_mem_out.rd <= mem_in.rd or mem_in.rdc or mem_in.rdf or mem_in.getfield or mem_in.iaload or state_rd;
+	sc_mem_out.rd <= mem_in.rd or mem_in.rdc or mem_in.rdf or mem_in.iaload or state_rd;
 	sc_mem_out.wr <= mem_in.wr or mem_in.wrf or state_wr;
 	sc_mem_out.cache <= ram_dcache;
+	sc_mem_out.cinval <= mem_in.cinval;
     sc_mem_out.atomic <= state_atomic;
 
 --
@@ -282,11 +284,11 @@ end process;
 process(read_ocache, sc_mem_in, ocout)
 begin
 
-	--if read_ocache='1' then
-	--	mem_out.dout <= ocout.dout;
-	--else
+	if read_ocache='1' then
+		mem_out.dout <= ocout.dout;
+	else
 		mem_out.dout <= sc_mem_in.rd_data;
-	--end if;
+	end if;
 end process;
 
 
@@ -299,7 +301,10 @@ end process;
 --
 process(ain, bin, addr_reg, offset_reg, mem_in, base_reg, pos_reg, translate_bit)
 begin
-	if mem_in.rd='1' or mem_in.rdc='1' or mem_in.rdf='1' or mem_in.getfield='1' then
+	-- MS: why should the first memory operation on getfield, which is the handle
+	-- read go through the GC copy translation?
+--	if mem_in.rd='1' or mem_in.rdc='1' or mem_in.rdf='1' or mem_in.getfield='1' then
+	if mem_in.rd='1' or mem_in.rdc='1' or mem_in.rdf='1' then
 		if unsigned(ain(SC_ADDR_SIZE-1 downto 0)) >= base_reg and unsigned(ain(SC_ADDR_SIZE-1 downto 0)) < pos_reg then
 			ram_addr <= std_logic_vector(unsigned(ain(SC_ADDR_SIZE-1 downto 0)) + offset_reg);
 		else
@@ -313,6 +318,9 @@ begin
 		end if;		
 	else
 		-- default is the registered address for wr, bc load
+		-- MS: we could get rid of the adder when doing the addition
+		-- one cycle before. Perhaps it's not worth the effort as the
+		-- copy unit will go away at some point.
 		if translate_bit='1' then
 			ram_addr <= std_logic_vector(addr_reg(SC_ADDR_SIZE-1 downto 0) + offset_reg);
 		else
@@ -327,6 +335,9 @@ end process;
 --
 process (mem_in, state_dcache)
 begin  -- process	
+	-- MS: in what state is the cache marker on the other MMU
+	-- commands? E.g. putfield, get/putstatic, stidx, iastore
+	-- Looks ok as state_dcache is changed in the state machine
 	ram_dcache <= state_dcache;
 	if mem_in.rd = '1' then
 		ram_dcache <= bypass;
@@ -423,7 +434,7 @@ end process;
 --	next state logic
 --
 process(state, mem_in, sc_mem_in,
-	cache_rdy, cache_in_cache, bc_len, value, index, 
+	mcache_rdy, mcache_in_cache, bc_len, value, index, 
 	addr_reg, cp_stopbit, was_a_store, ocout)
 begin
 
@@ -494,8 +505,8 @@ begin
 --
 		-- cache lookup
 		when bc_cc =>
-			if cache_rdy = '1' then
-				if cache_in_cache = '1' then
+			if mcache_rdy = '1' then
+				if mcache_in_cache = '1' then
 					next_state <= idl;
 				else
 					next_state <= bc_r1;
@@ -855,6 +866,13 @@ begin
 			read_ocache<='1';
 		end if;
 
+		-- change arbiter to atomic mode
+		if mem_in.atmstart='1' then
+			sc_mem_out.atomic <= '1';
+		elsif mem_in.atmend='1' then
+			sc_mem_out.atomic <= '0';
+		end if;
+			
 		--
 		-- state machine and registered outputs
 		-- default values
@@ -870,7 +888,10 @@ begin
 		bounds_error <= '0';
 		state_wr <= '0';
 		state_dcache <= bypass;
+<<<<<<< HEAD
 		state_atomic <= '0';
+=======
+>>>>>>> origin/datacache
 		sc_mem_out.tm_cache <= '1';
 		ocin.wr_gf <= '0';
 		ocin.chk_pf <= '0';
@@ -920,7 +941,7 @@ begin
 
 			when bc_r1 =>
 				-- setup data
-				bc_addr <= cache_bcstart;
+				bc_addr <= mcache_bcstart;
 				-- first memory read
 				inc_addr_reg <= '1';
 				state_rd <= '1';
@@ -939,7 +960,11 @@ begin
 
 			when bc_wr =>
 				-- BC write
+<<<<<<< HEAD
 				bc_wr_ena <= '1';
+=======
+				bc_wr_ena <= '1';				
+>>>>>>> origin/datacache
 				sc_mem_out.tm_cache <= '0';
 
 			when bc_wl =>
@@ -988,6 +1013,7 @@ begin
 
 			when gf0 =>
 				read_ocache<='0';
+				state_rd <= '1';
 				state_bsy <= '1';
 
 			when gf1 =>
@@ -1027,11 +1053,15 @@ begin
                           
 			when cp0 =>
 				read_ocache<='0';
+<<<<<<< HEAD
 				state_atomic <= '1';
+=======
+>>>>>>> origin/datacache
 				state_bsy <= '1';
 
 			when cp1 =>
 				state_rd <= '1';
+<<<<<<< HEAD
 				state_atomic <= '1';
 				
 			when cp2 =>
@@ -1043,6 +1073,15 @@ begin
 			when cp4 =>
 				state_wr <= '1';
 				state_atomic <= '1';
+=======
+				
+			when cp2 =>
+
+			when cp3 =>
+
+			when cp4 =>
+				state_wr <= '1';
+>>>>>>> origin/datacache
 
 			when cpstop =>
 

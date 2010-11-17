@@ -32,7 +32,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity tag is 
+entity tm_tag is 
 generic (
 	addr_width	: integer := 19;	-- address bits of cachable memory
 	way_bits	: integer := 6		-- 2**way_bits is number of entries
@@ -49,9 +49,9 @@ port (
 	line: out unsigned(way_bits-1 downto 0);
 	newline: out unsigned(way_bits downto 0)			
 );
-end tag;
+end tm_tag;
 
-architecture rtl of tag is 
+architecture rtl of tm_tag is 
 
 	constant lines		: integer := 2**way_bits;
 

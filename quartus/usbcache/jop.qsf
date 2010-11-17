@@ -499,7 +499,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_usb.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_dspiomin_cache.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_dspiomin.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/arom.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/aram.vhd
@@ -511,6 +511,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/memory/sdpram.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/cache.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/cache/ocache.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/cache/directmapped.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/cache/directmapped_invalidate.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/cache/lru.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/cache/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/cache/datacache.vhd

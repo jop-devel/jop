@@ -58,14 +58,14 @@ public class JOPizer extends AppInfo implements Serializable {
 	public static final int CLASSINFO_REFARRY = GCINFO_NONREFARRY + 1;
 	public static final int CLINITS_OFFSET = 11;
 
-	public static final boolean CACHE_INVAL = false;
+	public static final boolean CACHE_INVAL = true;
 	public static final boolean USE_RTTM = false;
 
-	// TODO add all changes???
 	/**
-	 * maximum method size (for minimum cache) in bytes
+	 * Maximum method size (for minimum cache) in bytes.
+	 * Is enforced in VHDL by an assertion statement.
 	 */
-	public static final int METHOD_MAX_SIZE = 2048; // 1024;
+	public static final int METHOD_MAX_SIZE = 2048;
 
 	public static boolean dumpMgci = false;
 

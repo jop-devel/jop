@@ -46,7 +46,7 @@ generic (
 	ram_cnt		: integer := 2;		-- clock cycles for external ram
 --	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
 	rom_cnt		: integer := 10;	-- clock cycles for external rom for 100 MHz
-	jpc_width	: integer := 10;	-- address bits of java bytecode pc = cache size
+	jpc_width	: integer := 11;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
 	cpu_cnt		: integer := 4		-- number of cpus
@@ -129,8 +129,6 @@ end component;
 	signal ser_out			: ser_out_type;
 	type wd_out_array is array (0 to cpu_cnt-1) of std_logic;
 	signal wd_out			: wd_out_array;
-
-	signal inval			: std_logic_vector(0 to cpu_cnt-1);
 
 	-- for generation of internal reset
 -- memory interface
@@ -215,7 +213,6 @@ end process;
 			port map (
 				clk		=> clk_int,
 				reset	=> int_res,
-				inval   => inval(i),
 				cpu_in	=> sc_dcache_in(i),
 				cpu_out => sc_dcache_out(i),
 				mem_in	=> sc_arb_in(i),
@@ -251,10 +248,9 @@ end process;
 			l => open,
 			r => open,
 			t => open,
-			b => open,
+			b => open
 			-- remove the comment for RAM access counting
 			-- ram_cnt => ram_count,
-			inval => inval(0)
 		);
 		
 	-- io for processors with only sc_sys
@@ -281,10 +277,9 @@ end process;
 			
 			sync_out => sync_out_array(i),
 			sync_in => sync_in_array(i),
-			wd => wd_out(i),
+			wd => wd_out(i)
 			-- remove the comment for RAM access counting
 			-- ram_count => ram_count,
-			inval => inval(i)
 		);
 	end generate;
 

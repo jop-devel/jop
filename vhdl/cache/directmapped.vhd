@@ -10,8 +10,6 @@ generic (
 port (
 	clk, reset:	    in std_logic;
 
-	inval:			in std_logic;
-
 	cpu_out:		in sc_out_type;
 	cpu_in:			out sc_in_type;
 
@@ -56,7 +54,7 @@ architecture rtl of directmapped_const is
 	
 begin
 
-	int_reset <= reset or inval;
+	int_reset <= reset or cpu_out.cinval;
 	
 	ram_din_raw(32+mem_bits-index_bits downto mem_bits-index_bits+1) <= ram_din.data;
 	ram_din_raw(mem_bits-index_bits downto 1) <= ram_din.tag;
@@ -85,7 +83,7 @@ begin
 	begin  -- process sync
 		if int_reset = '1' then  -- asynchronous reset (active low)
 			
-			cpu_out_reg <= ((others => '0'), (others => '0'), '0', '0', '0', bypass, '0', '0');
+			cpu_out_reg <= ((others => '0'), (others => '0'), '0', '0', '0', bypass, '0', '0', '0');
 			rddata_reg <= (others => '0');
 			fetchtag_reg <= (others => '0');
 			fetch_reg <= '0';

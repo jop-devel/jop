@@ -8,8 +8,6 @@ entity null_cache is
 port (
 	clk, reset:	    in std_logic;
 
-	inval:			in std_logic;
-
 	cpu_out:		in sc_out_type;
 	cpu_in:			out sc_in_type;
 
