@@ -122,7 +122,7 @@ GND                          : AA19      : gnd    :                   :         
 GND                          : AA20      : gnd    :                   :         :           :                
 GND_PLL4                     : AA21      : gnd    :                   :         :           :                
 GND_PLL4                     : AA22      : gnd    :                   :         :           :                
-RESERVED_INPUT               : AA23      :        :                   :         : 6         :                
+iSW[0]                       : AA23      : input  : 3.3-V LVCMOS      :         : 6         : Y              
 wd                           : AA24      : output : 3.3-V LVCMOS      :         : 6         : Y              
 RESERVED_INPUT               : AA25      :        :                   :         : 6         :                
 RESERVED_INPUT               : AA26      :        :                   :         : 6         :                
@@ -141,8 +141,8 @@ GND_PLL1                     : AB8       : gnd    :                   :         
 VCCD_PLL1                    : AB9       : power  :                   : 1.2V    :           :                
 GND                          : AB10      : gnd    :                   :         :           :                
 VCCIO8                       : AB11      : power  :                   : 3.3V    : 8         :                
-RESERVED_INPUT               : AB12      :        :                   :         : 8         :                
-RESERVED_INPUT               : AB13      :        :                   :         : 8         :                
+oLEDR[13]                    : AB12      : output : 3.3-V LVCMOS      :         : 8         : Y              
+oLEDR[11]                    : AB13      : output : 3.3-V LVCMOS      :         : 8         : Y              
 GND                          : AB14      : gnd    :                   :         :           :                
 VCCIO8                       : AB15      : power  :                   : 3.3V    : 8         :                
 VCCIO7                       : AB16      : power  :                   : 3.3V    : 7         :                
@@ -154,8 +154,8 @@ GND                          : AB21      : gnd    :                   :         
 VCCD_PLL4                    : AB22      : power  :                   : 1.2V    :           :                
 RESERVED_INPUT               : AB23      :        :                   :         : 6         :                
 RESERVED_INPUT               : AB24      :        :                   :         : 6         :                
-RESERVED_INPUT               : AB25      :        :                   :         : 6         :                
-RESERVED_INPUT               : AB26      :        :                   :         : 6         :                
+iSW[2]                       : AB25      : input  : 3.3-V LVCMOS      :         : 6         : Y              
+iSW[1]                       : AB26      : input  : 3.3-V LVCMOS      :         : 6         : Y              
 GND                          : AB27      : gnd    :                   :         :           :                
 VCCIO6                       : AB28      : power  :                   : 3.3V    : 6         :                
 RESERVED_INPUT               : AB29      :        :                   :         : 6         :                
@@ -170,9 +170,9 @@ RESERVED_INPUT               : AC7       :        :                   :         
 GND_PLL1                     : AC8       : gnd    :                   :         :           :                
 VCCA_PLL1                    : AC9       : power  :                   : 1.2V    :           :                
 GNDA_PLL1                    : AC10      : gnd    :                   :         :           :                
-RESERVED_INPUT               : AC11      :        :                   :         : 8         :                
-RESERVED_INPUT               : AC12      :        :                   :         : 8         :                
-RESERVED_INPUT               : AC13      :        :                   :         : 8         :                
+oLEDR[14]                    : AC11      : output : 3.3-V LVCMOS      :         : 8         : Y              
+oLEDR[12]                    : AC12      : output : 3.3-V LVCMOS      :         : 8         : Y              
+oLEDR[10]                    : AC13      : output : 3.3-V LVCMOS      :         : 8         : Y              
 RESERVED_INPUT               : AC14      :        :                   :         : 8         :                
 GND+                         : AC15      :        :                   :         : 7         :                
 oSRAM_A[14]                  : AC16      : output : 3.3-V LVCMOS      :         : 7         : Y              
@@ -182,11 +182,11 @@ RESERVED_INPUT               : AC19      :        :                   :         
 oSRAM_BE_N[1]                : AC20      : output : 3.3-V LVCMOS      :         : 7         : Y              
 oSRAM_BE_N[0]                : AC21      : output : 3.3-V LVCMOS      :         : 7         : Y              
 VCCA_PLL4                    : AC22      : power  :                   : 1.2V    :           :                
-RESERVED_INPUT               : AC23      :        :                   :         : 6         :                
-RESERVED_INPUT               : AC24      :        :                   :         : 6         :                
+iSW[6]                       : AC23      : input  : 3.3-V LVCMOS      :         : 6         : Y              
+iSW[5]                       : AC24      : input  : 3.3-V LVCMOS      :         : 6         : Y              
 RESERVED_INPUT               : AC25      :        :                   :         : 6         :                
-RESERVED_INPUT               : AC26      :        :                   :         : 6         :                
-RESERVED_INPUT               : AC27      :        :                   :         : 6         :                
+iSW[4]                       : AC26      : input  : 3.3-V LVCMOS      :         : 6         : Y              
+iSW[3]                       : AC27      : input  : 3.3-V LVCMOS      :         : 6         : Y              
 RESERVED_INPUT               : AC28      :        :                   :         : 6         :                
 RESERVED_INPUT               : AC29      :        :                   :         : 6         :                
 RESERVED_INPUT               : AC30      :        :                   :         : 6         :                
@@ -197,13 +197,13 @@ RESERVED_INPUT               : AD4       :        :                   :         
 RESERVED_INPUT               : AD5       :        :                   :         : 1         :                
 RESERVED_INPUT               : AD6       :        :                   :         : 1         :                
 oSRAM_CLK                    : AD7       : output : 3.3-V LVCMOS      :         : 1         : Y              
-RESERVED_INPUT               : AD8       :        :                   :         : 8         :                
-RESERVED_INPUT               : AD9       :        :                   :         : 8         :                
+oLEDR[16]                    : AD8       : output : 3.3-V LVCMOS      :         : 8         : Y              
+oLEDR[15]                    : AD9       : output : 3.3-V LVCMOS      :         : 8         : Y              
 RESERVED_INPUT               : AD10      :        :                   :         : 8         :                
 RESERVED_INPUT               : AD11      :        :                   :         : 8         :                
 RESERVED_INPUT               : AD12      :        :                   :         : 8         :                
 oSRAM_A[8]                   : AD13      : output : 3.3-V LVCMOS      :         : 8         : Y              
-RESERVED_INPUT               : AD14      :        :                   :         : 8         :                
+oLEDR[9]                     : AD14      : output : 3.3-V LVCMOS      :         : 8         : Y              
 clk                          : AD15      : input  : 3.3-V LVCMOS      :         : 7         : Y              
 oSRAM_ADV_N                  : AD16      : output : 3.3-V LVCMOS      :         : 7         : Y              
 RESERVED_INPUT               : AD17      :        :                   :         : 7         :                
@@ -213,7 +213,7 @@ oSRAM_BE_N[2]                : AD20      : output : 3.3-V LVCMOS      :         
 RESERVED_INPUT               : AD21      :        :                   :         : 7         :                
 oSRAM_CE3_N                  : AD22      : output : 3.3-V LVCMOS      :         : 7         : Y              
 GNDA_PLL4                    : AD23      : gnd    :                   :         :           :                
-RESERVED_INPUT               : AD24      :        :                   :         : 6         :                
+iSW[8]                       : AD24      : input  : 3.3-V LVCMOS      :         : 6         : Y              
 RESERVED_INPUT               : AD25      :        :                   :         : 6         :                
 RESERVED_INPUT               : AD26      :        :                   :         : 6         :                
 RESERVED_INPUT               : AD27      :        :                   :         : 6         :                
@@ -246,7 +246,7 @@ RESERVED_INPUT               : AE23      :        :                   :         
 RESERVED_INPUT               : AE24      :        :                   :         : 7         :                
 GND                          : AE25      : gnd    :                   :         :           :                
 VCCIO6                       : AE26      : power  :                   : 3.3V    : 6         :                
-RESERVED_INPUT               : AE27      :        :                   :         : 6         :                
+iSW[9]                       : AE27      : input  : 3.3-V LVCMOS      :         : 6         : Y              
 RESERVED_INPUT               : AE28      :        :                   :         : 6         :                
 RESERVED_INPUT               : AE29      :        :                   :         : 6         :                
 RESERVED_INPUT               : AE30      :        :                   :         : 6         :                
@@ -312,8 +312,8 @@ RESERVED_INPUT               : AG29      :        :                   :         
 VCCIO6                       : AG30      : power  :                   : 3.3V    : 6         :                
 RESERVED_INPUT               : AH1       :        :                   :         : 1         :                
 RESERVED_INPUT               : AH2       :        :                   :         : 1         :                
-RESERVED_INPUT               : AH3       :        :                   :         : 8         :                
-RESERVED_INPUT               : AH4       :        :                   :         : 8         :                
+oLEDR[8]                     : AH3       : output : 3.3-V LVCMOS      :         : 8         : Y              
+oLEDR[5]                     : AH4       : output : 3.3-V LVCMOS      :         : 8         : Y              
 RESERVED_INPUT               : AH5       :        :                   :         : 8         :                
 GND                          : AH6       : gnd    :                   :         :           :                
 oSRAM_A[2]                   : AH7       : output : 3.3-V LVCMOS      :         : 8         : Y              
@@ -341,12 +341,12 @@ RESERVED_INPUT               : AH28      :        :                   :         
 RESERVED_INPUT               : AH29      :        :                   :         : 6         :                
 RESERVED_INPUT               : AH30      :        :                   :         : 6         :                
 GND                          : AJ1       : gnd    :                   :         :           :                
-RESERVED_INPUT               : AJ2       :        :                   :         : 8         :                
-RESERVED_INPUT               : AJ3       :        :                   :         : 8         :                
-RESERVED_INPUT               : AJ4       :        :                   :         : 8         :                
-RESERVED_INPUT               : AJ5       :        :                   :         : 8         :                
-RESERVED_INPUT               : AJ6       :        :                   :         : 8         :                
-RESERVED_INPUT               : AJ7       :        :                   :         : 8         :                
+oLEDR[7]                     : AJ2       : output : 3.3-V LVCMOS      :         : 8         : Y              
+oLEDR[6]                     : AJ3       : output : 3.3-V LVCMOS      :         : 8         : Y              
+oLEDR[3]                     : AJ4       : output : 3.3-V LVCMOS      :         : 8         : Y              
+oLEDR[2]                     : AJ5       : output : 3.3-V LVCMOS      :         : 8         : Y              
+oLEDR[0]                     : AJ6       : output : 3.3-V LVCMOS      :         : 8         : Y              
+oLEDR[17]                    : AJ7       : output : 3.3-V LVCMOS      :         : 8         : Y              
 SRAM_DQ[30]                  : AJ8       : bidir  : 3.3-V LVCMOS      :         : 8         : Y              
 RESERVED_INPUT               : AJ9       :        :                   :         : 8         :                
 SRAM_DQ[1]                   : AJ10      : bidir  : 3.3-V LVCMOS      :         : 8         : Y              
@@ -371,9 +371,9 @@ RESERVED_INPUT               : AJ28      :        :                   :         
 RESERVED_INPUT               : AJ29      :        :                   :         : 6         :                
 GND                          : AJ30      : gnd    :                   :         :           :                
 GND                          : AK2       : gnd    :                   :         :           :                
-RESERVED_INPUT               : AK3       :        :                   :         : 8         :                
+oLEDR[4]                     : AK3       : output : 3.3-V LVCMOS      :         : 8         : Y              
 VCCIO8                       : AK4       : power  :                   : 3.3V    : 8         :                
-RESERVED_INPUT               : AK5       :        :                   :         : 8         :                
+oLEDR[1]                     : AK5       : output : 3.3-V LVCMOS      :         : 8         : Y              
 RESERVED_INPUT               : AK6       :        :                   :         : 8         :                
 SRAM_DQ[29]                  : AK7       : bidir  : 3.3-V LVCMOS      :         : 8         : Y              
 SRAM_DQ[31]                  : AK8       : bidir  : 3.3-V LVCMOS      :         : 8         : Y              
@@ -470,7 +470,7 @@ RESERVED_INPUT               : D9        :        :                   :         
 RESERVED_INPUT               : D10       :        :                   :         : 3         :                
 GND                          : D11       : gnd    :                   :         :           :                
 RESERVED_INPUT               : D12       :        :                   :         : 3         :                
-RESERVED_INPUT               : D13       :        :                   :         : 3         :                
+iSW[7]                       : D13       : input  : 3.3-V LVCMOS      :         : 3         : N              
 RESERVED_INPUT               : D14       :        :                   :         : 3         :                
 RESERVED_INPUT               : D15       :        :                   :         : 3         :                
 GND+                         : D16       :        :                   :         : 4         :                
@@ -671,11 +671,11 @@ RESERVED_INPUT               : K30       :        :                   :         
 RESERVED_INPUT               : L1        :        :                   :         : 2         :                
 RESERVED_INPUT               : L2        :        :                   :         : 2         :                
 RESERVED_INPUT               : L3        :        :                   :         : 2         :                
-RESERVED_INPUT               : L4        :        :                   :         : 2         :                
-RESERVED_INPUT               : L5        :        :                   :         : 2         :                
+iSW[15]                      : L4        : input  : 3.3-V LVCMOS      :         : 2         : Y              
+iSW[14]                      : L5        : input  : 3.3-V LVCMOS      :         : 2         : Y              
 RESERVED_INPUT               : L6        :        :                   :         : 2         :                
-RESERVED_INPUT               : L7        :        :                   :         : 2         :                
-RESERVED_INPUT               : L8        :        :                   :         : 2         :                
+iSW[16]                      : L7        : input  : 3.3-V LVCMOS      :         : 2         : Y              
+iSW[17]                      : L8        : input  : 3.3-V LVCMOS      :         : 2         : Y              
 RESERVED_INPUT               : L9        :        :                   :         : 2         :                
 RESERVED_INPUT               : L10       :        :                   :         : 2         :                
 VCCIO2                       : L11       : power  :                   : 3.3V    : 2         :                
@@ -826,7 +826,7 @@ RESERVED_INPUT               : T5        :        :                   :         
 RESERVED_INPUT               : T6        :        :                   :         : 1         :                
 RESERVED_INPUT               : T7        :        :                   :         : 1         :                
 RESERVED_INPUT               : T8        :        :                   :         : 1         :                
-RESERVED_INPUT               : T9        :        :                   :         : 1         :                
+iSW[13]                      : T9        : input  : 3.3-V LVCMOS      :         : 1         : Y              
 VCCIO1                       : T10       : power  :                   : 3.3V    : 1         :                
 GND                          : T11       : gnd    :                   :         :           :                
 VCCINT                       : T12       : power  :                   : 1.2V    :           :                
@@ -856,7 +856,7 @@ RESERVED_INPUT               : U5        :        :                   :         
 RESERVED_INPUT               : U6        :        :                   :         : 1         :                
 RESERVED_INPUT               : U7        :        :                   :         : 1         :                
 RESERVED_INPUT               : U8        :        :                   :         : 1         :                
-RESERVED_INPUT               : U9        :        :                   :         : 1         :                
+iSW[12]                      : U9        : input  : 3.3-V LVCMOS      :         : 1         : Y              
 GND                          : U10       : gnd    :                   :         :           :                
 VCCINT                       : U11       : power  :                   : 1.2V    :           :                
 VCCINT                       : U12       : power  :                   : 1.2V    :           :                
@@ -887,7 +887,7 @@ GND                          : V6        : gnd    :                   :         
 RESERVED_INPUT               : V7        :        :                   :         : 1         :                
 RESERVED_INPUT               : V8        :        :                   :         : 1         :                
 RESERVED_INPUT               : V9        :        :                   :         : 1         :                
-RESERVED_INPUT               : V10       :        :                   :         : 1         :                
+iSW[11]                      : V10       : input  : 3.3-V LVCMOS      :         : 1         : Y              
 VCCINT                       : V11       : power  :                   : 1.2V    :           :                
 VCCINT                       : V12       : power  :                   : 1.2V    :           :                
 GND                          : V13       : gnd    :                   :         :           :                
@@ -912,7 +912,7 @@ RESERVED_INPUT               : W1        :        :                   :         
 RESERVED_INPUT               : W2        :        :                   :         : 1         :                
 RESERVED_INPUT               : W3        :        :                   :         : 1         :                
 RESERVED_INPUT               : W4        :        :                   :         : 1         :                
-RESERVED_INPUT               : W5        :        :                   :         : 1         :                
+iSW[10]                      : W5        : input  : 3.3-V LVCMOS      :         : 1         : Y              
 RESERVED_INPUT               : W6        :        :                   :         : 1         :                
 RESERVED_INPUT               : W7        :        :                   :         : 1         :                
 RESERVED_INPUT               : W8        :        :                   :         : 1         :                
