@@ -32,11 +32,8 @@
 
 package com.jopdesign.tools;
 
-import java.io.*;
 
-
-import com.jopdesign.sys.*;
-import com.jopdesign.timing.WCETInstruction;
+import com.jopdesign.tools.DataMemory.Access;
 
 public class JopSimDisplay extends JopSim {
 	
@@ -60,9 +57,9 @@ public class JopSimDisplay extends JopSim {
 
 	int readMem(int addr, Access type) {
 //		System.out.println("readMem: 0x" + Integer.toHexString(addr) + " ... " + addr);
-		if ((addr == sd.KB_CTRL) || (addr == sd.KB_DATA) || (addr == sd.KB_SCANCODE)
-		    || (addr == sd.MOUSE_STATUS) || (addr == sd.MOUSE_FLAG)|| (addr == sd.MOUSE_X_INC)
-		    || (addr == sd.MOUSE_Y_INC))
+		if ((addr == JopDisplay.KB_CTRL) || (addr == JopDisplay.KB_DATA) || (addr == JopDisplay.KB_SCANCODE)
+		    || (addr == JopDisplay.MOUSE_STATUS) || (addr == JopDisplay.MOUSE_FLAG)|| (addr == JopDisplay.MOUSE_X_INC)
+		    || (addr == JopDisplay.MOUSE_Y_INC))
 			return sd.read(addr);
 
 		return super.readMem(addr, type);

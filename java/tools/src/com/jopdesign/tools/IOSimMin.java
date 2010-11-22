@@ -320,7 +320,7 @@ public class IOSimMin {
 			interrupt = 0;
 			break;
 		case SIM_CACHE_FLUSH:
-			js.cache.flushCache();
+			js.insCache.flushCache();
 			js.objectCacheSim.flushCache();
 			break;
 		case Const.IO_DEADLINE:

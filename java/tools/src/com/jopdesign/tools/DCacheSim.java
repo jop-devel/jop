@@ -1,3 +1,5 @@
+// Scheduled for removal !
+
 /*
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
@@ -23,7 +25,7 @@
  */
 package com.jopdesign.tools;
 
-import java.util.*;
+import com.jopdesign.tools.DataMemory.Access;
 
 /**
  * Extension of JopSim to simulation data caches
@@ -138,6 +140,7 @@ public class DCacheSim extends JopSim {
 		}
 	}
 
+	
 //	DirectMapped hcache = new DirectMapped(32, 3);
 	final static int CNT = 10;
 	Cache hdmcache[] = new Cache[CNT];

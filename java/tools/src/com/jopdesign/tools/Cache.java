@@ -32,6 +32,7 @@ import java.util.*;
 import java.text.*;
 
 public class Cache {
+	public enum ReplacementStrategy { LRU, FIFO };
 
 	static final int MAX_BC = 1024;		// per function
 	static final int MAX_BC_MASK = 0x3ff;

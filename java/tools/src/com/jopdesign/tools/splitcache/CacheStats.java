@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2010, Benedikt Huber (benedikt@vmars.tuwien.ac.at)
+  Copyright (C) 208, Benedikt Huber (benedikt@vmars.tuwien.ac.at)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,7 +20,11 @@
 
 package com.jopdesign.tools.splitcache;
 
+import java.io.PrintStream;
+
 public class CacheStats {
+	
+	
 	private int rdCnt;
 	private int hitCnt;
 	private int invalidateCnt;
@@ -47,11 +51,17 @@ public class CacheStats {
 		invalidateCnt=0;
 	}
 
+	public void dump(PrintStream out) {
+		out.println(String.format("%8s & %8s & %8s & %5s", "readcnt", "hitcnt", "invalcnt", "hit%"));
+		out.println(toString());
+	}
+	@Override
 	public String toString() {
 		double percent = 0;
 		if (rdCnt!=0) {
 			percent = (hitCnt*100.0/(double)rdCnt);
 		}
-		return String.format("%10d & %10d & %10d & %.2f\\%% \\\\", rdCnt, hitCnt, invalidateCnt, percent);
+		return String.format("%8d & %8d & %8d & %2.2f\\%% \\\\", rdCnt, hitCnt, invalidateCnt, percent);
 	}
+	
 }

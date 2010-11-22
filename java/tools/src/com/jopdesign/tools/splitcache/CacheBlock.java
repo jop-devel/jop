@@ -20,7 +20,26 @@
 
 package com.jopdesign.tools.splitcache;
 
+import com.jopdesign.tools.DataMemory;
+import com.jopdesign.tools.DataMemory.Access;
+
+/** 
+ * Cache block representation, comprising valid bit (for invalidation),
+ * tag (to identify data) and the data itself.
+ * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
+ *
+ */
 public class CacheBlock {
+	
+	public static class CacheLookupResult {
+		int datum;
+		boolean isHit;
+		public CacheLookupResult(int datum, boolean isHit) {
+			this.isHit = isHit;
+			this.datum = datum;
+		}
+	}
+	
 	private boolean valid;
 	private int tag;
 	private int[] data;
@@ -31,6 +50,8 @@ public class CacheBlock {
 		data = new int[blockSize];		
 	}
 	
+	/** copy data with given tag into the cache block, set tag and
+	 * mark block valid */
 	public void load(int tag, int[] rawData, int rawDataOffset) {
 		for(int i = 0; i < data.length; i++) {
 			this.data[i] = rawData[i+rawDataOffset];
@@ -38,15 +59,18 @@ public class CacheBlock {
 		this.tag = tag;
 		this.valid = true;
 	}
-
-	public void load(int tag, int baseAddr, Cache nextLevel) {
+	
+	/** copy data from another memory into the cache block, set tag and
+	 * mark block valid */
+	public void load(int tag, int baseAddr, DataMemory backingStorage) {
 		for(int i = 0; i < data.length; i++) {
-			this.data[i] = nextLevel.read(baseAddr + i);
+			this.data[i] = backingStorage.read(baseAddr + i, Access.INTERN);
 		}
 		this.tag = tag;
 		this.valid = true;
 	}
 
+	/** invalidate cache block */
 	public void invalidate() {
 		valid = false;
 	}
@@ -62,4 +86,9 @@ public class CacheBlock {
 	public int getData(int offset) {
 		return data[offset];
 	}
+
+	public void modifyData(int offset, int value) {
+		data[offset] = value;		
+	}
+
 }

@@ -1,71 +1,169 @@
-/*
-  This file is part of JOP, the Java Optimized Processor
-    see <http://www.jopdesign.com/>
-
-  Copyright (C) 2008, Martin Schoeberl (martin@jopdesign.com)
-  Copyright (C) 2010, Benedikt Huber (benedikt@vmars.tuwien.ac.at)
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 package com.jopdesign.tools.splitcache;
 
-import java.util.Random;
+import java.io.PrintStream;
+import java.util.Vector;
 
+import com.jopdesign.tools.DataMemory;
+import com.jopdesign.tools.Cache.ReplacementStrategy;
+import com.jopdesign.tools.splitcache.ObjectCache.FieldIndexMode;
 
 /**
- * Simulation (including hitrate and timing) of a configurable
- * split cache architecture.
+/**
+ * This is the interface for split data cache simulations.
+ * It's purpose is to collect statistics and simulate different
+ * data cache architectures, providing a simple interface for JopSim.
  * 
- * Intended to replace DCacheSim
+ * One part of the interface allows the simulator to start, pause,
+ * resume and stop the cache simulations and dump the collected
+ * statistics. The other part is the implementation of the DataMemory
+ * interface, which forwards the read/write/invalidate requests to
+ * cache simulations and statistics collectors.
  * 
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  *
  */
-public class SplitCacheSim {
-	
-	public static void main(String argv[])
-	{
-		final int size = 2048;
-		final int testCount = size*size;
-		final int seed = 424534;
-		Random r = new Random(seed);
+public class SplitCacheSim implements DataMemory {
+	private DataMemory backingMem;
+	private Vector<DataMemory> caches;
 
-		/* Memory with random content */
-		int[] raw_mem = new int[size];
-		for(int i = 0; i < size; i++) {
-			raw_mem[i] = r.nextInt();
-		}
-		Memory mem = new Memory(raw_mem);
-		SetAssociativeCache cache1 = new SetAssociativeCacheLRU(4, 16, 16, mem);
-		SetAssociativeCache cache  = new SetAssociativeCacheFIFO(16, 4, 4, cache1);
-		
-		/* Random access (no locality) */
-		for(int i = 0; i < testCount; i++) {
-			cache.read(r.nextInt(size));
-		}
-		System.out.println(cache.stats.toString());
-		System.out.println(cache1.stats.toString());
-		cache.invalidate();
-		cache.stats.reset();
-		/* Random test (simple spatial locality) */
-		int pos = r.nextInt(size);
-		for(int i = 0; i < testCount; i++) {
-			cache.read(pos);
-			pos = Math.abs(pos + (int)(r.nextGaussian() / 16.0 * size)) % size;
-		}
-		System.out.println(cache.stats.toString());
-		System.out.println(cache1.stats.toString());
+	private SplitCache splitAllStats;
+	private SplitCacheStats splitNoneStats;
+
+	public SplitCacheSim(DataMemory backingMem) {
+		this.backingMem = backingMem;
+		caches = new Vector<DataMemory>();
+		caches.add(backingMem);
+		splitAllStats = SplitCacheStats.splitAllStatistics(backingMem);
+		splitNoneStats = new SplitCacheStats(backingMem, "D$ (noinval)",Access.values(), false);
+		caches.add(splitAllStats);
+		caches.add(splitNoneStats);
 	}
+	
+	public void addSimulatedCache(DataMemory cache) {
+		caches.add(cache);
+	}
+	
+	@Override
+	public void invalidateData() {
+		for(DataMemory cache : caches)
+			cache.invalidateData();
+	}
+
+	@Override
+	public void invalidateHandles() {
+		for(DataMemory cache : caches)
+			cache.invalidateHandles();
+	}
+
+	@Override
+	public int read(int addr, Access type) {
+		Integer v = null, prev = null;
+		for(DataMemory cache : caches) {
+			v = cache.read(addr, type);
+			if(prev != null) checkRead(prev,v,cache, " / read " + addr + " @" + type);
+			prev = v;
+		}
+		return v;
+	}
+
+	@Override
+	public int readIndirect(int handle, int offset, Access type) {
+		Integer v = null, prev = null;
+		for(DataMemory cache : caches) {
+			v = cache.readIndirect(handle, offset, type);
+			if(prev != null) checkRead(prev, v,cache,"indirect: "+handle+" + "+offset+ " ~ " + backingMem.read(handle, Access.HANDLE)+ " @"+type);
+			prev = v;
+		}
+		return v;
+	}
+
+	private void checkRead(int ref, int actual, DataMemory actualCache, String msg) {
+		if(actual != ref) { 
+			throw new AssertionError("SplitCacheSim: Wrong value in cache " + actualCache.getName() +
+				      ": "+ "expected " + ref + " but found " + actual + " / " + msg);
+		}		
+	}
+
+	@Override
+	public void write(int addr, int value, Access type) {
+		for(DataMemory cache : caches) {
+			cache.write(addr, value, type);
+		}
+	}
+
+	@Override
+	public void writeIndirect(int handle, int offset, int value, Access type) {
+		for(DataMemory cache : caches) {
+			cache.writeIndirect(handle, offset, value, type);
+		}
+	}
+
+	@Override
+	public void resetStats() {
+		for(DataMemory mem : caches) {
+			mem.resetStats();
+		}
+	}
+
+	@Override
+	public void recordStats() {
+		for(DataMemory mem : caches) {
+			mem.recordStats();
+		}
+	}
+
+	@Override
+	public void dumpStats() {
+		String s = "=             Split Cache Simulations                =";
+		int l = s.length();
+		System.out.println(repeat('=', l));
+		System.out.println(s);
+		System.out.println(repeat('=', l));
+		for(DataMemory cache : caches) {		
+			System.out.println();
+			cache.dumpStats();
+		}
+	}
+
+	@Override
+	public String getName() {
+		return "SplitCacheSim{ "+ getName() + " }";
+	}
+
+//	public static DataMemory createIdealSplitCache(DataMemory nextLevelMem, int maxMemSize) {
+//		SplitCache splitCache = new SplitCache("ideal",nextLevelMem);
+//		for(Access ty : Access.values()) {
+//			// Even an 'ideal' cache has to invalidate data on synchronization
+//			splitCache.addCache(new SetAssociativeCache(1,maxMemSize,1,ReplacementStrategy.LRU,
+//					            ty.isMutableData(), false, nextLevelMem), ty);
+//		}
+//		return splitCache;
+//	}
+
+	public void addDefaultCaches() {
+
+		// Add a 8x8x4 object cache
+		Access handled[] = { Access.FIELD };
+		SplitCache ocSplitCache = new SplitCache("object$-8-4-4 + RAM", backingMem);
+		ObjectCache objectCache = new ObjectCache(8,4,4,FieldIndexMode.Bypass,ReplacementStrategy.FIFO,
+				false, backingMem, backingMem);
+		ocSplitCache.addCache(objectCache, handled);
+		this.caches.add(ocSplitCache);
+		
+	}
+
+
+	private static StringBuffer repeat(char c, int k) {
+		StringBuffer sb = new StringBuffer();
+		for(int i = 0; i < k; i++) sb.append(c);
+		return sb;
+	}
+
+	public static void printHeader(PrintStream out, String string) {
+		out.println(repeat('-',string.length()));
+		out.println(string);
+		out.println(repeat('-',string.length()));
+	}
+	
+
 }

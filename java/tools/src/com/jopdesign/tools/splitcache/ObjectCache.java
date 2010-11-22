@@ -20,6 +20,10 @@
 
 package com.jopdesign.tools.splitcache;
 
+import java.util.Stack;
+
+import com.jopdesign.tools.DataMemory;
+import com.jopdesign.tools.Cache.ReplacementStrategy;
 
 /**
  * A generalized object cache (fully associative cache for handle+offset), which supports</br>
@@ -28,6 +32,7 @@ package com.jopdesign.tools.splitcache;
  * <li/> Configurable Burst Load (B, in words)
  * <li/> (Optionally) caching the handle indirection (needs to be invalidated on GC)
  * <li/> Clamp (do not cache high offsets) and Wrap Around Mode (for caching arrays)
+ * <li/> Allocate on write
  * </ul>
  * An object cache is quite similar to a set-associative cache, but the tag is only
  * used to select the way, not the cache line (which depends on the field index)
@@ -36,56 +41,67 @@ package com.jopdesign.tools.splitcache;
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  *
  */
-public class ObjectCache {
+public class ObjectCache implements DataMemory {
 	
 		public enum FieldIndexMode { Bypass, Wrap };
-		
-		protected int ways;
-		protected int blocksPerObject;
-		protected int wordsPerBlock;
+		public enum BlockAccessResult { INVALID, HIT, MISS, BYPASS };
+				
+		/** Result buffer for object cache accesses */
+		public class ObjectCacheLookupResult {
+			private int buf;
+			private boolean hitObject;
+			private boolean reloadAddress;
+			private BlockAccessResult blockAccessStatus;
+			ObjectCacheLookupResult() {
+				reset();
+			}
+			public void reset() {
+				hitObject = false;
+				reloadAddress = false;
+				blockAccessStatus = BlockAccessResult.INVALID;
+			}
 
-		private ObjectCacheEntry[] cacheData;
+			void setData(int buf) {
+				this.buf = buf;
+			}
+			public boolean isObjectHit() { return hitObject; }
+			public boolean isReloadAddress() { return reloadAddress; }
+			public BlockAccessResult getBlockAccessStatus() { return blockAccessStatus; }
+			public int getData() { return buf; }
 
-		protected CacheStats stats;
-		private Cache nextLevelHandleCache;
-		protected Cache nextLevelCache;
-		private int blockBits;
-		private FieldIndexMode fieldIndexMode;
-		private boolean cacheHandleIndirection;
-		
-		public int getSize() {
-			return ways*blocksPerObject*wordsPerBlock;
 		}
 		
 		/** Depending on the configuration, the meta data block saves
-		 * - object valid bit and handle
-		 * - handle indirection
-		 * - array length ?
+		 *  <ul><li/> object valid bit and handle
+		 *      <li/> handle indirection
+		 *      <li/>array length ?
+		 *  </ul>
 		 */
 		public class ObjectCacheEntry {
 			private int arrayLength;
 			private int objectAddress;
 			private int handle;
-			private boolean valid;
+			private boolean valid, validAddress;
 			private CacheBlock[] cacheBlocks;
 
 			public ObjectCacheEntry() {
 				valid = false;
+				validAddress = false;
 				cacheBlocks = new CacheBlock[blocksPerObject];
 				for(int i = 0; i < blocksPerObject; i++)
 					cacheBlocks[i] = new CacheBlock(wordsPerBlock);
 			}
 			
-			public void loadObject(int handle, int objectAddress) {
-				this.valid = true;
+			public void initializeForObject(int handle) {
 				this.handle = handle;
-				this.objectAddress = objectAddress;
+				this.valid = true;
+				this.invalidateAddress();
 			}
 			
-			public void loadArray(int handle, int objectAddress, int arrayLen) {
+			public void initializeForArray(int handle, int arrayLen) {
 				this.valid = true;
 				this.handle = handle;
-				this.objectAddress = objectAddress;
+				this.invalidateAddress();
 				this.arrayLength = arrayLen;
 			}
 
@@ -93,9 +109,24 @@ public class ObjectCache {
 				this.valid = false;
 			}
 
+			public void invalidateAddress() {
+				this.validAddress = false;
+			}
+			
+			public boolean hasValidAddress() {
+				return this.validAddress;
+			}
+			
+			public void setObjectAddress(int address) {
+				this.objectAddress = address;
+				this.validAddress = true;
+			}
+			
 			public void loadBlock(int blockIndex) {
+				assert(valid);
+				assert(validAddress);
 				int offset = blockIndex * wordsPerBlock;
-				cacheBlocks[blockIndex].load(blockIndex, objectAddress + offset, nextLevelCache);
+				cacheBlocks[blockIndex].load(blockIndex, objectAddress + offset, nextLevelMemory);
 			}
 
 			public CacheBlock getBlock(int blockIndex) {
@@ -105,62 +136,168 @@ public class ObjectCache {
 			public int getArrayLength() {
 				return this.arrayLength;
 			}
+
+			public void modifyData(int blockIndex, int blockOffset, int data) {
+				cacheBlocks[blockIndex].modifyData(blockOffset, data);
+			}
+
+			@Override
+			public String toString() {
+				if(! this.valid) return "OCE#invalid";
+				StringBuffer s = new StringBuffer("OCE{ h=");
+				s.append(this.handle);
+				s.append(", base=");
+				s.append(this.objectAddress);
+				s.append(" }");
+				return s.toString();
+			}
+			/** Update the value at the given offset, if it is valid */
+			public void updateIfValid(int offset, int data) {
+				CacheBlock block = this.getBlock(getBlockIndex(offset));
+				if(block.isValid()) {
+					block.modifyData(getBlockOffset(offset), data);
+				}
+			}
+
 		}
+		
+		protected int ways;
+		protected int blocksPerObject;
+		protected int wordsPerBlock;
+		private int blockBits;
+
+		private FieldIndexMode fieldIndexMode;
+		private boolean allocateOnWrite;
+		private ReplacementStrategy replacement;
+
+		private DataMemory handleMemory;
+		protected DataMemory nextLevelMemory;
+
+		private ObjectCacheEntry[] objectEntry;
+
+		private CacheStats stats;
+		private Stack<CacheStats> statsStack = new Stack<CacheStats>();
+		
+				
 		/**
 		 * Build a new object cache
 		 * @param ways Associativity
 		 * @param blocksPerObject cache blocks for each object
 		 * @param wordsPerBlock block size
-		 * @param nextLevelCache
+		 * @param nextLevelMemory
 		 */
-		public ObjectCache(int ways, int blocksPerObject, int wordsPerBlock, FieldIndexMode mode, boolean cacheHandleIndirection,
-				           Cache handleCache, Cache nextLevelCache) {
+		public ObjectCache(int ways, int blocksPerObject, int wordsPerBlock, FieldIndexMode mode, ReplacementStrategy replacement,
+						   boolean allocateOnWrite, DataMemory handleMemory, DataMemory nextLevelMemory) {
 			
 			this.ways = ways;
 			this.blocksPerObject = blocksPerObject;
 			this.wordsPerBlock = wordsPerBlock;
 			this.fieldIndexMode = mode;
+			this.replacement = replacement;
+			this.allocateOnWrite = allocateOnWrite;
 			
 			blockBits = 0;
 			for(int w = wordsPerBlock - 1; w > 0; w>>=1) {
 				blockBits++;
 			}
 			
-			cacheData = new ObjectCacheEntry[ways];
+			objectEntry = new ObjectCacheEntry[ways];
 			for(int i = 0; i < ways; i++) {
-				cacheData[i] = new ObjectCacheEntry();
+				objectEntry[i] = new ObjectCacheEntry();
 			}
-			this.cacheHandleIndirection = cacheHandleIndirection;
-			this.nextLevelHandleCache = handleCache; /* handle cache or handle memory */
-			this.nextLevelCache = nextLevelCache;
-			stats = new CacheStats();
+
+			this.handleMemory = handleMemory; /* next level handle memory */
+			this.nextLevelMemory = nextLevelMemory;
+			resetStats();
 		}
-				
-		public void invalidate() {			
+						
+		@Override
+		public void  invalidateData() {			
 			for(int i = 0; i < ways; i++) {
-				cacheData[i].invalidate();
+				objectEntry[i].invalidate();
 			}
 			stats.invalidate();
-		}
-					
-		/** Read field from the given handle */
-		public int read(int handle, int offset) {
-			ObjectCacheEntry block = getOrLoadObject(handle);
-			if(fieldIndexMode == FieldIndexMode.Bypass && offset >= wordsPerObject()) {
-				return readBypassed(block, offset);				
-			} else {
-				return readCacheBlock(block, offset);				
-			}
+			nextLevelMemory.invalidateData();
 		}
 		
-		private ObjectCacheEntry getOrLoadObject(int handle) {
+		@Override
+		public void invalidateHandles() {
+			this.handleMemory.invalidateHandles();
+			for(ObjectCacheEntry entry: this.objectEntry) {
+				entry.invalidateAddress();
+			}
+		}
+
+		@Override
+		public int read(int addr, Access type) {			
+			throw new AssertionError("Attempt to to a plain " + type +
+					                 " read from object cache at address " + type);
+		}
+		
+		@Override
+		public int readIndirect(int handle, int fieldOffset, Access type) {			
+			ObjectCacheLookupResult r = new ObjectCacheLookupResult();
+			readField(handle,fieldOffset,r);
+			return r.getData();
+		}
+		
+		public void readField(int handle, int offset, ObjectCacheLookupResult r) {
+			r.reset();
+			
+			ObjectCacheEntry block = getOrLoadObjectEntry(handle, r);
+			if(fieldIndexMode == FieldIndexMode.Bypass && offset >= wordsPerObject()) {
+				r.blockAccessStatus = BlockAccessResult.BYPASS;
+				readBypassed(block, offset, r);	
+			} else {
+				readCacheBlock(block, offset, r);				
+			}			
+			// TODO: record more fine grained stats
+			stats.read(r.getBlockAccessStatus() == BlockAccessResult.HIT);
+		}
+
+		@Override
+		public void write(int address, int data, Access type) {
+			throw new AssertionError("attempt to perform direct " + type 
+					                 + " write in object cache at address "+address); 
+		}
+
+		// TODO: use ObjectCacheLookupResult
+		@Override
+		public void writeIndirect(int handle, int offset, int data, Access type) {
+			// Write through
+			nextLevelMemory.writeIndirect(handle, offset, data, type);
+			if(allocateOnWrite) {
+				getOrLoadObjectEntry(handle, null).modifyData(getBlockIndex(offset), getBlockOffset(offset), data);
+			} else {
+				// we need to update the entry if it is in the cache
+				int way = lookupObject(handle);
+				if(! isValidWay(way)) return;
+				getObjectCacheEntry(way).updateIfValid(offset, data);
+			}
+		}
+
+		public int getAddress(int oid, int field) {
+			return resolveHandle(oid) + field;
+		}
+
+		public int getSize() {
+			return ways*blocksPerObject*wordsPerBlock;
+		}
+		
+		/** Get entry for an object
+		 *  If object is already in the cache, return the corresponding ObjectCacheEntry.
+		 *  Otherwise, allocate a new ObjectCacheEntry (but do not resolve the handle indirection at this point)
+		 * @return
+		 */
+		private ObjectCacheEntry getOrLoadObjectEntry(int handle, ObjectCacheLookupResult r) {
 			ObjectCacheEntry ob;
 			int way = lookupObject(handle);
+			if(r != null) r.hitObject = isValidWay(way);
 			if(! isValidWay(way)) {
 				ob = new ObjectCacheEntry();
-				ob.loadObject(handle, resolveHandle(handle));
+				ob.initializeForObject(handle);
 			} else {
-				ob = getObjectBlock(way);
+				ob = getObjectCacheEntry(way);
 			}
 			updateCache(way, ob);
 			return ob;
@@ -168,36 +305,56 @@ public class ObjectCache {
 		
 		private int lookupObject(int handle) {
 			for(int way = 0; way < ways; way++) {
-				if(cacheData[way].valid && cacheData[way].handle == handle) return way;
+				if(objectEntry[way].valid && objectEntry[way].handle == handle) return way;
 			}
-			return ways;
+			return -1;
 		}
 
 		private int resolveHandle(int handle) {
-			return this.nextLevelHandleCache.read(handle);
+			return this.handleMemory.read(handle,Access.HANDLE);
 		}
 
-		private ObjectCacheEntry getObjectBlock(int way) {
-			return this.cacheData[way];
+		private void resolveObjectAddress(ObjectCacheEntry block, ObjectCacheLookupResult r) {
+			if(! block.hasValidAddress()) {
+				block.setObjectAddress(this.handleMemory.read(block.handle, Access.HANDLE));
+				r.reloadAddress = true;
+			}
+		}
+
+		/**
+		 * Get the object cache entry at the given index
+		 * @param way the index of the object in the cache
+		 * @return
+		 */
+		private ObjectCacheEntry getObjectCacheEntry(int way) {
+			if(! isValidWay(way)) throw new AssertionError("getObjectCacheEntry: invalid index");
+			return this.objectEntry[way];
 		}
 		
-		public int readBypassed(ObjectCacheEntry block, int offset) {
-			return nextLevelCache.read(block.objectAddress + offset);
+		private void readBypassed(ObjectCacheEntry block, int offset, ObjectCacheLookupResult r) {
+			// Need to resolve address in case handle cache has been invalidated
+			resolveObjectAddress(block, r);
+			r.buf = nextLevelMemory.read(block.objectAddress + offset, Access.FIELD); 
+			r.blockAccessStatus = BlockAccessResult.BYPASS;
 		}
 		
-		public int readCacheBlock(ObjectCacheEntry block, int offset) {
-			int blockIndex = (offset >> blockBits) % blocksPerObject;
+		private void readCacheBlock(ObjectCacheEntry block, int fieldOffset, ObjectCacheLookupResult r) {			
+			int blockIndex = getBlockIndex(fieldOffset);
 			boolean valid = block.cacheBlocks[blockIndex].isValid();
 			if(fieldIndexMode == FieldIndexMode.Wrap) {
 				valid = valid && block.cacheBlocks[blockIndex].getTag() == blockIndex;
 			}
-			stats.read(valid);
 			if(! valid) {
+				r.blockAccessStatus = BlockAccessResult.MISS;
+				resolveObjectAddress(block, r); // Need to resolve address in case handle cache has been invalidated
 				block.loadBlock(blockIndex);
+			} else {
+				r.blockAccessStatus = BlockAccessResult.HIT;				
 			}
-			return block.getBlock(blockIndex).getData(offset % wordsPerBlock);
+			r.buf = block.getBlock(blockIndex).getData(getBlockOffset(fieldOffset));
 		}
 
+		
 		private boolean isValidWay(int way) {
 			return 0 <= way && way < ways;
 		}
@@ -205,12 +362,50 @@ public class ObjectCache {
 		private int wordsPerObject() {
 			return blocksPerObject * wordsPerBlock;
 		}
-		
-		private void updateCache(int way, ObjectCacheEntry ob) {
-			replaceFifo(cacheData,  ob, way, ways);
-		}		
 
+		private int getBlockIndex(int fieldOffset) {
+			return (fieldOffset >> blockBits) % blocksPerObject;
+		}
+
+		private int getBlockOffset(int fieldOffset) {
+			return fieldOffset % wordsPerBlock;
+		}
+		
+		/** Simulate an access to the object cache entry in the specified 'way' table */
+		private void updateCache(int way, ObjectCacheEntry ob) {
+			switch(replacement) {
+			case FIFO: 			replaceFifo(objectEntry,  ob, way, ways);
+			case LRU:			replaceLRU(objectEntry,  ob, way, ways);
+			}
+		}		
+		
+		@Override
+		public String getName() {
+			return String.format("Object Cache{ ways=%d, wayblocks=%d, blockwords=%d, "+
+					             "indexmode=%s, replacement=%s, allocateOnWrite=%s }",
+					             this.ways, this.blocksPerObject, this.wordsPerBlock,
+					             this.fieldIndexMode.toString(), this.replacement.toString(),""+ this.allocateOnWrite);
+		}
+
+		@Override
+		public void resetStats() {
+			stats = new CacheStats();
+		}
+		
+		@Override
+		public void recordStats() {
+			statsStack.push(stats);
+		}
+
+		@Override
+		public void dumpStats() {
+			SplitCacheSim.printHeader(System.out,toString());
+			this.stats.dump(System.out);
+		}
+		
 		public static <T> void replaceLRU(T[] data, T obj, int oldPosition, int ways) {
+			if(oldPosition < 0 || oldPosition > ways) oldPosition = ways;
+
 			T saved = obj;
 			for(int i = 0; i < ways && i <= oldPosition; i++) {
 				T next = data[i];
@@ -228,4 +423,5 @@ public class ObjectCache {
 				saved = next;
 			}
 		}
+
 }

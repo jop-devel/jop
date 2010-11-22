@@ -20,16 +20,19 @@
 
 package com.jopdesign.tools.splitcache;
 
-public interface Cache {
-	public static class CacheLookupResult {
-		int datum;
-		boolean isHit;
-		public CacheLookupResult(int datum, boolean isHit) {
-			this.isHit = isHit;
-			this.datum = datum;
-		}
-	}
+/**
+ * A simulation interface for a memory or cache, where each address is composed out of a handle
+ * (an identifier for the object) and an field offset.
+ *
+ */
+public interface ObjectMemory {
+
+	/** Read field from the given handle */
+	public int read(int tag, int fieldOffset);
+
+	/** Modify object identified by handle */
+	public void write(int tag, int fieldOffset, int value);
 	
-	public int read(int addr);
-	public void invalidate();
+	public void invalidateHandleCache();
+	public void invalidateObjectCache();	
 }

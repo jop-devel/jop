@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2001-2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2001-2010, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -33,10 +33,15 @@
 package com.jopdesign.tools;
 
 import java.io.*;
+import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 import com.jopdesign.sys.*;
 import com.jopdesign.timing.WCETInstruction;
+import com.jopdesign.tools.DataMemory.Access;
+import com.jopdesign.tools.splitcache.SplitCacheSim;
 
 public class JopSim {
 	
@@ -61,72 +66,6 @@ public class JopSim {
 		}
 	}
 	
-	/**
-	 * Classify memory access type for cache and TM experiments.
-	 */
-	enum Access {
-		/**
-		 * General class info
-		 */
-		CLINFO,
-		/**
-		 * Method table
-		 */
-		MTAB,
-		/**
-		 * Constant pool
-		 */
-		CONST,
-		/**
-		 * Interface table
-		 */
-		IFTAB,
-		/**
-		 * Handle indirection
-		 */
-		HANDLE,
-		/**
-		 * Array length
-		 */
-		ALEN,
-		/**
-		 * Method vector base (= class reference)
-		 */
-		MVB,
-		/**
-		 * Field access
-		 */
-		FIELD,
-		/**
-		 * Static field access
-		 */
-		STATIC,
-		/**
-		 * Array access
-		 */
-		ARRAY,
-		/**
-		 * JVM internal access
-		 */
-		INTERN;
-		
-		private int rdCnt;
-		private int wrCnt;
-		
-		void incrRd() {
-			rdCnt++;
-		}
-		void incrWr() {
-			wrCnt++;
-		}
-		int getRdCnt() {
-			return rdCnt;
-		}
-		int getWrCnt() {
-			return wrCnt;
-		}
-	};
-
 	static final int MAX_MEM = 1024*1024/4;
 	// static final int MAX_MEM = 2*1024*1024/4; // 2MB for de2-70 board
 	static final int MAX_STACK = Const.STACK_SIZE;	// with internal memory
@@ -154,9 +93,11 @@ public class JopSim {
 	// local fields for each CPU
 	int[] stack = new int[MAX_STACK];
 	int[] scratchMem = new int[MAX_SCRATCHPAD];
-	Cache cache;
+	Cache insCache;
+	DataMemory dataMem; // data memory
 	IOSimMin io;
 
+	// registers
 	int pc, cp, vp, sp, mp;
 	int jjp;
 	int jjhp;
@@ -184,7 +125,10 @@ public class JopSim {
 	int localCnt;
 	int maxSp;
 	int cacheCost;
-
+	
+	// PC where to start/stop measurements and cache etc. simulations
+	Vector<Integer> measurementTriggers = new Vector<Integer>();
+	
 	public JopSim(String binaryFile, IOSimMin ioSim, int maxInstructions) {
 		
 		ioSim.setJopSimRef(this);		
@@ -230,11 +174,67 @@ public class JopSim {
 		}
 		
 		
-		cache = new Cache(mem, this);
-
+		insCache = new Cache(mem, this);
+		
+		DataMemory mainMemory = new MainDataMemory(mem);
+		SplitCacheSim splitcache = new SplitCacheSim(mainMemory);
+		splitcache.addDefaultCaches();
+		dataMem = splitcache;
+		try {
+			setupMeasurementTriggers(binaryFile);
+		} catch (IOException e) {
+			System.err.println("Failed to setup measurement triggers: "+e);
+		}
+		
 		objectCacheSim = ObjectCacheSim.configureFromEnv();
 		io = ioSim;
 		
+	}
+
+	/** Use all main() methods as measurement triggers, or
+	 *  (with higher priority) all measure() methods (if any)
+	 *  <p> To this end, we scan the binary file for two
+	 *  matching lines: the first containing the name of a trigger
+	 *  method, and the following one meta-info 'Code Start:'.</p>
+	 * @throws IOException 
+	 */
+	private void setupMeasurementTriggers(String binaryFile) throws IOException {
+		BufferedReader reader = new BufferedReader(new FileReader(binaryFile));
+		Vector<Integer> mainTriggers = new Vector<Integer>();
+		Vector<Integer> benchTriggers = new Vector<Integer>();
+		String trigger=null;
+		Pattern p = Pattern.compile(".*code start: (\\d+).*");
+		String l;
+		while( (l=reader.readLine()) != null) {
+			if(l.contains(".main([Ljava/lang/String;)V")) {
+				trigger = "main";
+			} else if(l.contains(".measure(")) {
+				trigger = "measure";
+			} else {
+				Matcher m = p.matcher(l);
+				if(trigger != null && m.matches()) {
+					int start = Integer.parseInt(m.group(1));
+					if(trigger.equals("main")) {
+						mainTriggers.add(start);
+					} else {
+						benchTriggers.add(start);
+					}
+				}
+				trigger = null;
+			}
+		}
+		if(benchTriggers.size() > 0) {
+			for(int start : benchTriggers) {
+				this.measurementTriggers.add(start);
+				System.err.println("Setting up 'measure()' trigger at "+start);
+			}
+		} else {
+			for(int start : mainTriggers) {
+				this.measurementTriggers.add(start);
+				System.err.println("Setting up 'main()' trigger at "+start);
+			}			
+		}
+		reader.close();
 	}
 
 	JopSim(String fn, IOSimMin ioSim) {
@@ -340,60 +340,103 @@ System.out.println(mp+" "+pc);
 	 * @return
 	 */
 	int readMem(int addr, Access type) {
-		
-		// System.out.println(addr+" "+mem[addr]);
-		rdMemCnt++;
-		type.incrRd();
+
+		if (addr == Const.IO_EXCPT) {
+			return exceptReason;
+		}
+		if (addr<0) {
+			if (addr<MIN_IO_ADDRESS) {
+				throw new JopSimFatalError("readMem: bad I/O address: "+addr);
+			}
+			return io.read(addr);
+		}
 
 		// translate addresses
 		if (addr >= copy_src && addr < copy_src+copy_pos) {
 			addr = addr - copy_src + copy_pos;
 		}
 
+		rdMemCnt++;
+		type.incrRd();
+
 		// that's an access to our scratchpad memory
 		if (addr >= Const.SCRATCHPAD_ADDRESS && addr <= Const.SCRATCHPAD_ADDRESS+MEM_TEST_OFF) {
 			return scratchMem[addr%MAX_SCRATCHPAD];
 		}
-		if (addr == Const.IO_EXCPT) {
-			return exceptReason;
-		}
 		
-		if (addr>MAX_MEM+MEM_TEST_OFF || addr<MIN_IO_ADDRESS) {
+		if (addr>MAX_MEM+MEM_TEST_OFF) {
 			throw new JopSimFatalError("readMem: wrong address: "+addr);
 		}
-		if (addr<0) {
-			return io.read(addr);
-		}
-
-		return mem[addr%MAX_MEM];
+		return dataMem.read(addr % MAX_MEM, type);
 	}
-	void writeMem(int addr, int data, Access type) {
 
-		wrMemCnt++;
-		type.incrWr();
+	int readMemIndirect(int handle, int offset, Access type) {
+		checkNullPointer(handle);
+		// We can fix this if neccessary
+		if(copy_pos > 0) throw new JopSimFatalError("readMem: accessing handle during memcpy");
 
-		// that's an access to our scratchpad memory
+		// work around: directly resolve handle for scratchpad
+		int addr = mem[handle];
 		if (addr >= Const.SCRATCHPAD_ADDRESS && addr <= Const.SCRATCHPAD_ADDRESS+MEM_TEST_OFF) {
-			scratchMem[addr%MAX_SCRATCHPAD] = data;
-			return;
+			return scratchMem[addr%MAX_SCRATCHPAD];
+		} else if(addr < 0) {
+			return readMem(addr+offset, type);
 		}
-		if (addr>MAX_MEM+MEM_TEST_OFF || addr<MIN_IO_ADDRESS) {
-			throw new JopSimFatalError("writeMem: wrong address: "+addr);
+		// delegate to data memory
+		return dataMem.readIndirect(handle, offset, type);
+	}
+
+	void writeMem(int addr, int data, Access type) {
+		if(type == Access.FIELD || type == Access.ARRAY) {
+			throw new JopSimFatalError("writeMem: direct write to an object/array field");
 		}
 
-		if (addr<0) {
+		if(addr < 0) {
+			if(addr < MIN_IO_ADDRESS) {
+				throw new JopSimFatalError("writeMem: bad I/O address: "+addr);				
+			}
 			io.write(addr, data);
 			return; // no Simulation of the Wishbone devices
 		}
-		mem[addr%MAX_MEM] = data;
+
+		wrMemCnt++;
+		type.incrWr();					
+		
+		// that's an access to our scratchpad memory
+		if (addr >= Const.SCRATCHPAD_ADDRESS && addr <= Const.SCRATCHPAD_ADDRESS+MEM_TEST_OFF) {
+			scratchMem[addr%MAX_SCRATCHPAD] = data;			
+			return;
+		}
+
+		if (addr > MAX_MEM+MEM_TEST_OFF) {
+			throw new JopSimFatalError("writeMem: bad address: "+addr);
+		} 
+		dataMem.write(addr % MAX_MEM, data, type);
 	}
 
-	void invalCache() {
+	void writeMemIndirect(int handle, int offset, int data, Access type) {
+		checkNullPointer(handle);
+		
+		wrMemCnt++;
+		type.incrWr();					
+
+		// work around: directly resolve handle for scratchpad
+		int addr = mem[handle];
+		if (addr >= Const.SCRATCHPAD_ADDRESS && addr <= Const.SCRATCHPAD_ADDRESS+MEM_TEST_OFF) {
+			scratchMem[addr%MAX_SCRATCHPAD] = data;			
+			return;
+		} else if(addr+offset < 0) {
+			io.write(addr, data);
+			return;
+		}
+		
+		// delegate to data memory
+		dataMem.writeIndirect(handle, offset, data, type);
 	}
-	
+
 	int readOpd16u() {
 
-		int idx = ((cache.bc(pc)<<8) | (cache.bc(pc+1)&0x0ff)) & 0x0ffff;
+		int idx = ((insCache.bc(pc)<<8) | (insCache.bc(pc+1)&0x0ff)) & 0x0ffff;
 		pc += 2;
 		return idx;
 	}
@@ -409,12 +452,12 @@ System.out.println(mp+" "+pc);
 
 	int readOpd8s() {
 
-		return cache.bc(pc++);
+		return insCache.bc(pc++);
 	}
 
 	int readOpd8u() {
 
-		return cache.bc(pc++)&0x0ff;
+		return insCache.bc(pc++)&0x0ff;
 	}
 
 	
@@ -530,12 +573,14 @@ System.out.println(mp+" "+pc);
 // System.out.println("inv: start: "+start+" len: "+len+" locals: "+locals+" args: "+args+" cp: "+cp);
 
 		stack[++sp] = old_sp;
-		stack[++sp] = cache.corrPc(pc);
+		stack[++sp] = insCache.corrPc(pc);
 		stack[++sp] = old_vp;
 		stack[++sp] = old_cp;
 		stack[++sp] = old_mp;
-
-		pc = cache.invoke(start, len);
+		
+		// is this a trigger to start cache statistics? (currently: main or measure)
+		if(measurementTriggers.contains(start)) { dataMem.resetStats(); dataMem.invalidateData(); }
+		pc = insCache.invoke(start, len);
 	}
 
 /**
@@ -554,7 +599,8 @@ System.out.println(mp+" "+pc);
 		start >>>= 10;
 		// cp = readMem(mp+1)>>>10;
 
-		pc = cache.ret(start, len, pc);
+		if(measurementTriggers.contains(start)) { dataMem.recordStats(); }
+		pc = insCache.ret(start, len, pc);
 	}
 
 	void ireturn() {
@@ -575,7 +621,7 @@ System.out.println(mp+" "+pc);
 	
 	void waitCache(int hiddenCycles) {
 		
-		int penalty = WCETInstruction.calculateB(cache.lastAccessWasHit(),cache.wordsLastRead);
+		int penalty = WCETInstruction.calculateB(insCache.lastAccessWasHit(),insCache.wordsLastRead);
 		penalty = Math.max(0, penalty-hiddenCycles);
 		this.cacheCost += penalty;
 		this.clkCnt += penalty;
@@ -613,20 +659,17 @@ System.out.println(mp+" "+pc);
 		int off = readOpd16u();
 		int val = stack[sp--];
 		int ref = stack[sp--];
-		checkNullPointer(ref);		
-		ref = readMem(ref, Access.HANDLE);
-		writeMem(ref+off, val, Access.FIELD);						
+
+		// handle indirection
+		writeMemIndirect(ref, off, val, Access.FIELD);						
 	}
 
 	void getfield() {
 
 		int off = readOpd16u();
 		int ref = stack[sp];
-		checkNullPointer(ref);		
 		// handle needs indirection		
-		ref = readMem(ref, Access.HANDLE);
-		objectCacheSim.accessField(ref,off);
-		stack[sp] = readMem(ref+off, Access.FIELD);		
+		stack[sp] = readMemIndirect(ref, off, Access.FIELD);		
 	}
 	
 	void jopsys_putfield() {
@@ -634,20 +677,16 @@ System.out.println(mp+" "+pc);
 		int val = stack[sp--];
 		int off = stack[sp--];
 		int ref = stack[sp--];
-		checkNullPointer(ref);		
+
 		// handle needs indirection
-		ref = readMem(ref, Access.HANDLE);
-		writeMem(ref+off, val, Access.FIELD);
+		writeMemIndirect(ref, off, val, Access.FIELD);
 	}
 
 	void jopsys_getfield() {
 
 		int off = stack[sp--];
 		int ref = stack[sp];
-		checkNullPointer(ref);		
-		// handle needs indirection
-		ref = readMem(ref, Access.HANDLE);
-		stack[sp] = readMem(ref+off, Access.FIELD);
+		stack[sp] = readMemIndirect(ref, off, Access.FIELD);
 	}
 
 	void putfield_long() {
@@ -656,11 +695,10 @@ System.out.println(mp+" "+pc);
 		int val_l = stack[sp--];
 		int val_h = stack[sp--];
 		int ref = stack[sp--];
-		checkNullPointer(ref);		
+
 		// handle needs indirection
-		ref = readMem(ref, Access.HANDLE);
-		writeMem(ref+off, val_h, Access.FIELD);
-		writeMem(ref+off+1, val_l, Access.FIELD);			
+		writeMemIndirect(ref, off, val_h, Access.FIELD);
+		writeMemIndirect(ref, off+1, val_l, Access.FIELD);
 	}
 
 	void getfield_long() {
@@ -668,10 +706,8 @@ System.out.println(mp+" "+pc);
 		int off = readOpd16u();
 		int ref = stack[sp];
 		// handle needs indirection
-		checkNullPointer(ref);		
-		ref = readMem(ref, Access.HANDLE);
-		stack[sp] = readMem(ref+off, Access.FIELD);
-		stack[++sp] = readMem(ref+off+1, Access.FIELD);
+		stack[sp] = readMemIndirect(ref, off, Access.FIELD);
+		stack[++sp] = readMemIndirect(ref, off+1, Access.FIELD);
 	}
 
 /**
@@ -701,7 +737,7 @@ System.out.println(mp+" "+pc);
 		if (sp > maxSp) maxSp = sp;
 
 
-		int instr = cache.bc(pc++) & 0x0ff;
+		int instr = insCache.bc(pc++) & 0x0ff;
 
 		//
 		// exception and interrupt handling
@@ -871,8 +907,7 @@ System.out.println(mp+" "+pc);
 					a = readMem(ref+1, Access.ALEN);
 					if (idx<0 || idx>=a) throw new JopSimRtsException("saload: index out of bounds",Const.EXC_AB);
 					// handle needs indirection
-					ref = readMem(ref, Access.HANDLE);
-					stack[++sp] = readMem(ref+idx, Access.ARRAY);							
+					stack[++sp] = readMemIndirect(ref, idx, Access.ARRAY);							
 					break;
 				case 47 :		// laload
 				case 49 :		// daload
@@ -882,9 +917,8 @@ System.out.println(mp+" "+pc);
 					a = readMem(ref+1, Access.ALEN);
 					if (idx<0 || idx>=a) throw new JopSimRtsException("laload: index out of bounds",Const.EXC_AB);
 					// handle needs indirection
-					ref = readMem(ref, Access.HANDLE);
-					stack[++sp] = readMem(ref+idx*2, Access.ARRAY);
-					stack[++sp] = readMem(ref+idx*2+1, Access.ARRAY);							
+					stack[++sp] = readMemIndirect(ref, idx*2, Access.ARRAY);
+					stack[++sp] = readMemIndirect(ref, idx*2+1, Access.ARRAY);							
 					break;
 				case 58 :		// astore
 				case 56 :		// fstore
@@ -957,8 +991,7 @@ System.out.println(mp+" "+pc);
 					a = readMem(ref+1, Access.ALEN);
 					if (idx<0 || idx>=a) throw new JopSimRtsException("sastore: index out of bounds",Const.EXC_AB);
 					// handle needs indirection
-					ref = readMem(ref, Access.HANDLE);
-					writeMem(ref+idx, val, Access.ARRAY);							
+					writeMemIndirect(ref, idx, val, Access.ARRAY);
 					break;
 				case 80 :		// lastore
 				case 82 :		// dastore
@@ -970,9 +1003,8 @@ System.out.println(mp+" "+pc);
 					a = readMem(ref+1, Access.ALEN);
 					if (idx<0 || idx>=a) throw new JopSimRtsException("lastore: index out of bounds",Const.EXC_AB);
 					// handle needs indirection
-					ref = readMem(ref, Access.HANDLE);
-					writeMem(ref+idx*2, val2, Access.ARRAY);					
-					writeMem(ref+idx*2+1, val, Access.ARRAY);												
+					writeMemIndirect(ref, idx << 1, val2, Access.ARRAY);
+					writeMemIndirect(ref, (idx << 1) + 1, val, Access.ARRAY);
 					break;
 				case 87 :		// pop
 					sp--;
@@ -1461,7 +1493,7 @@ System.out.println("new heap: "+heap);
 					} else {
 						pc--;	// restart if we don't get the global lock
 					}
-					invalCache();
+					dataMem.invalidateData();
 					break;
 				case 195 :		// monitorexit
 					sp--;		// we don't use the objref
@@ -1492,7 +1524,8 @@ System.out.println("new heap: "+heap);
 					noim(203);
 					break;
 				case 204 :		// jopsys_inval
-					invalCache();
+					dataMem.invalidateData();
+					dataMem.invalidateHandles(); // FIXME: wolfgang, check if this is correct					
 					break;
 				case 205 :		// resCD
 					noim(205);
@@ -1593,11 +1626,9 @@ System.out.println("new heap: "+heap);
 // public static native void int2extMem(int intAdr, int extAdr, int cnt);
 					a = stack[sp--];
 					b = stack[sp--];
-					// handle needs indirection
-					b = readMem(b, Access.HANDLE);
 					c = stack[sp--];
 					for(; a>=0; --a) {
-						writeMem(b+a, stack[c+a], Access.ARRAY);
+						writeMemIndirect(b, a, stack[c+a], Access.ARRAY);
 					}
 					break;
 				case 220 :		// jopsys_ext2int
@@ -1606,9 +1637,8 @@ System.out.println("new heap: "+heap);
 					b = stack[sp--];
 					c = stack[sp--];
 					// handle needs indirection
-					c = readMem(c, Access.HANDLE);
 					for(; a>=0; --a) {
-						stack[b+a] = readMem(c+a, Access.ARRAY);
+						stack[b+a] = readMemIndirect(c, a, Access.ARRAY);
 					}
 					break;
 				case 221 :		// jopsys_nop
@@ -1769,17 +1799,21 @@ System.out.println("new heap: "+heap);
 //		System.out.println(heap+" heap"); not the heap pointer anymore
 //		System.out.println();
 		System.out.println(instrCnt+" Instructions executed");
-		int insByte = cache.instrBytes();
+		int insByte = insCache.instrBytes();
 		System.out.println(insByte+" Instructions bytes");
 		System.out.println(((float) insByte/instrCnt)+" average Instruction length");
 		
 		System.out.println();
+		dataMem.dumpStats();
+		System.out.println();
 		System.out.println("\tType \t&       Load &      &      Store &      \\\\");
 		int ld = 0, st=0;
 		for (Access a : Access.values()) {
-			ld += a.rdCnt; st += a.wrCnt;
+			ld += a.getRdCnt(); 
+			st += a.getWrCnt();
 			System.out.printf("\t%s\t& %10d & %2d\\%% & %10d & %2d\\%% \\\\%n",
-					a.name(), a.rdCnt, (a.rdCnt*1000/rdMemCnt+5)/10, a.wrCnt, (a.wrCnt*1000/wrMemCnt+5)/10);
+					a.name(), a.getRdCnt(), (a.getRdCnt()*1000/rdMemCnt+5)/10, 
+					a.getWrCnt(), (a.getWrCnt()*1000/wrMemCnt+5)/10);
 		}
 		System.out.println("\t\\midrule");
 		System.out.printf("\tSum\t& %10d &      & %10d &      \\\\%n", ld, st);
@@ -1830,7 +1864,7 @@ System.out.println("new heap: "+heap);
 	
 	/** simple runner: 1 cpu, 1 cache implementation */
 	public void runSim() {
-		cache.use(0);
+		insCache.use(0);
 		start();
 		while(! exit) { interpret(); }
 		if (stopped) {
@@ -1839,16 +1873,16 @@ System.out.println("new heap: "+heap);
 		}
 		System.out.println();
 		stat();
-		cache.stat();
+		insCache.stat();
 	}
 	
 	/** run simulation for multicore JOP */
 	public static void runSimulation() {
 		
 		// loop over all cache simulations
-		for (int i=0; i<js[0].cache.cnt(); ++i) {
+		for (int i=0; i<js[0].insCache.cnt(); ++i) {
 			for (int j=0; j<nrCpus; ++j) {
-				js[j].cache.use(i);
+				js[j].insCache.use(i);
 				js[j].start();				
 			}
 			while (!exit) {
@@ -1866,7 +1900,7 @@ System.out.println("new heap: "+heap);
 			System.out.println();
 			for (int j=0; j<nrCpus; ++j) {
 				if (i==0) js[j].stat();
-				js[j].cache.stat();				
+				js[j].insCache.stat();
 			}
 		}
 	}
@@ -1913,7 +1947,7 @@ System.out.println("new heap: "+heap);
 	}
 
 	public Cache getCache() {
-		return cache;
+		return insCache;
 	}
 
 	public int getCacheCost() {

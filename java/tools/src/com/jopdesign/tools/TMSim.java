@@ -25,6 +25,8 @@ package com.jopdesign.tools;
 
 import java.util.*;
 
+import com.jopdesign.tools.DataMemory.Access;
+
 /**
  * Extension of JopSim to simulation real-time transactional memory (RTTM)
  * 
