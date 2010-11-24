@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.Stack;
 
 import com.jopdesign.tools.DataMemory;
-import com.jopdesign.tools.DataMemory.DataMemoryStats;
 
 /** Compute statistics for one access type.
  * They include: <ul>

@@ -25,8 +25,6 @@
 
 package com.jopdesign.tools;
 
-import java.util.*;
-
 public class GenJvm{
 
 	public static void main(String[] args) {

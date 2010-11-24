@@ -21,6 +21,9 @@
 package com.jopdesign.tools.splitcache;
 
 import java.io.PrintStream;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Stack;
 
 import com.jopdesign.tools.DataMemory;
@@ -79,15 +82,16 @@ public class ObjectCache extends DataMemory {
 		 *  </ul>
 		 */
 		public class ObjectCacheEntry {
-			private int arrayLength;
-			private int objectAddress;
 			private int handle;
-			private boolean valid, validAddress;
+			private int objectAddress;
+			private int objectMVBorALen;
+			private boolean valid, validMetaData;
 			private CacheBlock[] cacheBlocks;
+			private boolean isArray;
 
 			public ObjectCacheEntry() {
 				valid = false;
-				validAddress = false;
+				validMetaData = false;
 				cacheBlocks = new CacheBlock[blocksPerObject];
 				for(int i = 0; i < blocksPerObject; i++)
 					cacheBlocks[i] = new CacheBlock(wordsPerBlock);
@@ -96,36 +100,36 @@ public class ObjectCache extends DataMemory {
 			public void initializeForObject(int handle) {
 				this.handle = handle;
 				this.valid = true;
-				this.invalidateAddress();
+				this.invalidateMetaData();
 			}
 			
-			public void initializeForArray(int handle, int arrayLen) {
+			public void initializeForArray(int handle) {
 				this.valid = true;
 				this.handle = handle;
-				this.invalidateAddress();
-				this.arrayLength = arrayLen;
+				this.isArray = true;
+				this.invalidateMetaData();
 			}
 
 			public void invalidate() {
 				this.valid = false;
 			}
 
-			public void invalidateAddress() {
-				this.validAddress = false;
+			public void invalidateMetaData() {
+				this.validMetaData = false;
 			}
 			
 			public boolean hasValidAddress() {
-				return this.validAddress;
+				return this.validMetaData;
 			}
-			
-			public void setObjectAddress(int address) {
-				this.objectAddress = address;
-				this.validAddress = true;
+			/** load address and MVB */
+			public void loadObjectMetaData() {
+				this.objectAddress   = nextLevelMemory.read(handle, Access.HANDLE);
+				this.objectMVBorALen = nextLevelMemory.read(handle+1, isArray ? Access.ALEN : Access.MVB);
 			}
 			
 			public void loadBlock(int blockIndex) {
 				assert(valid);
-				assert(validAddress);
+				assert(validMetaData);
 				int offset = blockIndex * wordsPerBlock;
 				cacheBlocks[blockIndex].load(blockIndex, objectAddress + offset, nextLevelMemory);
 			}
@@ -134,8 +138,14 @@ public class ObjectCache extends DataMemory {
 				return cacheBlocks[blockIndex];
 			}
 
+			public int getMVB() {
+				if(this.isArray) throw new AssertionError("getMVB(): Array, not Object");
+				return this.objectMVBorALen;
+			}
+
 			public int getArrayLength() {
-				return this.arrayLength;
+				if(! this.isArray) throw new AssertionError("getArrayLength(): Not an Array");
+				return this.objectMVBorALen;
 			}
 
 			public void modifyData(int blockIndex, int blockOffset, int data) {
@@ -176,7 +186,8 @@ public class ObjectCache extends DataMemory {
 
 		private ObjectCacheEntry[] objectEntry;
 
-		private DataCacheStats stats;
+		private DataCacheStats stats, objectStats;
+		private Set<Access> handledAccessTypes;
 				
 		/**
 		 * Build a new object cache
@@ -184,9 +195,10 @@ public class ObjectCache extends DataMemory {
 		 * @param blocksPerObject cache blocks for each object
 		 * @param wordsPerBlock block size
 		 * @param nextLevelMemory
+		 * @param handledTypes 
 		 */
 		public ObjectCache(int ways, int blocksPerObject, int wordsPerBlock, FieldIndexMode mode, ReplacementStrategy replacement,
-						   boolean allocateOnWrite, DataMemory handleMemory, DataMemory nextLevelMemory) {
+						   boolean allocateOnWrite, DataMemory handleMemory, DataMemory nextLevelMemory, Access[] handledTypes) {
 			
 			this.ways = ways;
 			this.blocksPerObject = blocksPerObject;
@@ -194,7 +206,7 @@ public class ObjectCache extends DataMemory {
 			this.fieldIndexMode = mode;
 			this.replacement = replacement;
 			this.allocateOnWrite = allocateOnWrite;
-			
+			this.handledAccessTypes = new HashSet<Access>(Arrays.asList(handledTypes));
 			blockBits = 0;
 			for(int w = wordsPerBlock - 1; w > 0; w>>=1) {
 				blockBits++;
@@ -207,7 +219,8 @@ public class ObjectCache extends DataMemory {
 
 			this.handleMemory = handleMemory; /* next level handle memory */
 			this.nextLevelMemory = nextLevelMemory;
-			stats = new DataCacheStats(getName());
+			objectStats = new DataCacheStats(getName()+"-objs");
+			stats = new DataCacheStats(getName()+"-fields");
 		}
 						
 		@Override
@@ -215,6 +228,7 @@ public class ObjectCache extends DataMemory {
 			for(int i = 0; i < ways; i++) {
 				objectEntry[i].invalidate();
 			}
+			objectStats.invalidate();
 			stats.invalidate();
 			nextLevelMemory.invalidateData();
 		}
@@ -222,13 +236,17 @@ public class ObjectCache extends DataMemory {
 		@Override
 		public void invalidateHandles() {
 			this.handleMemory.invalidateHandles();
+			objectStats.invalidate();
 			for(ObjectCacheEntry entry: this.objectEntry) {
-				entry.invalidateAddress();
+				entry.invalidateMetaData();
 			}
 		}
 
 		@Override
-		public int read(int addr, Access type) {			
+		public int read(int addr, Access type) {
+			if(type == Access.MVB || type == Access.ALEN) {
+				return readMetaData(addr-1, 1, type);
+			}
 			throw new AssertionError("Attempt to to a plain " + type +
 					                 " read from object cache at address " + type);
 		}
@@ -237,7 +255,24 @@ public class ObjectCache extends DataMemory {
 		public int readField(int handle, int fieldOffset, Access type) {			
 			ObjectCacheLookupResult r = new ObjectCacheLookupResult();
 			readFieldInto(handle,fieldOffset,r);
+			objectStats.read(r.hitObject);
 			return r.getData();
+		}
+		
+		private int readMetaData(int handle, int metaOffset, Access type) {
+			ObjectCacheLookupResult r = new ObjectCacheLookupResult();
+			ObjectCacheEntry block = getOrLoadObjectEntry(handle, r);
+			int rval = 0;
+			switch(metaOffset) {
+			case 0: resolveObjectAddress(block, r);
+					rval = block.objectAddress;
+					break;
+			case 1: rval = block.objectMVBorALen;
+					break;
+			default: throw new AssertionError("Bad object metadata offset: " + metaOffset);
+			}
+			objectStats.read(r.hitObject);
+			return rval;
 		}
 		
 		public void readFieldInto(int handle, int offset, ObjectCacheLookupResult r) {
@@ -297,8 +332,11 @@ public class ObjectCache extends DataMemory {
 			if(! isValidWay(way)) {
 				ob = new ObjectCacheEntry();
 				ob.initializeForObject(handle);
+				ob.loadObjectMetaData();
+				objectStats.read(false);
 			} else {
 				ob = getObjectCacheEntry(way);
+				objectStats.read(true);
 			}
 			updateCache(way, ob);
 			return ob;
@@ -317,7 +355,7 @@ public class ObjectCache extends DataMemory {
 
 		private void resolveObjectAddress(ObjectCacheEntry block, ObjectCacheLookupResult r) {
 			if(! block.hasValidAddress()) {
-				block.setObjectAddress(this.handleMemory.read(block.handle, Access.HANDLE));
+				block.objectAddress = this.handleMemory.read(block.handle, Access.HANDLE);
 				r.reloadAddress = true;
 			}
 		}
@@ -383,35 +421,40 @@ public class ObjectCache extends DataMemory {
 		// stats + debug
 
 		private Stack<DataCacheStats> recordedStats = new Stack<DataCacheStats>();
+		private Stack<DataCacheStats> recordedObjStats = new Stack<DataCacheStats>();
 		@Override
 		public void resetStats() {
 			this.stats.reset();
+			this.objectStats.reset();
 		}
 		@Override 
 		public void recordStats() {
 			recordedStats.push(stats.clone());
+			recordedObjStats.push(objectStats.clone());
 		}
 
 		@Override
 		public String getName() {
-			return String.format("O$-%d-%d-%d-%s-%s%s",ways,blocksPerObject,wordsPerBlock,
-					fieldIndexMode == FieldIndexMode.Wrap ? "wrap" : "byp",
+			return String.format("O$-%d-%d-%d-%s%s%s",ways,blocksPerObject,wordsPerBlock,
 					this.replacement.toString(),
+					fieldIndexMode == FieldIndexMode.Wrap ? "-wrap" : "",
 					allocateOnWrite ? "-aow" : "");
 		}
 
 		@Override
 		public String toString() {
 			return String.format("Object Cache{ ways=%d, wayblocks=%d, blockwords=%d, "+
-					             "indexmode=%s, replacement=%s, allocateOnWrite=%s }",
+					             "indexmode=%s, replacement=%s, allocateOnWrite=%s, handled=%s }",
 					             this.ways, this.blocksPerObject, this.wordsPerBlock,
-					             this.fieldIndexMode.toString(), this.replacement.toString(),""+ this.allocateOnWrite);
+					             this.fieldIndexMode.toString(), this.replacement.toString(),
+					             ""+ this.allocateOnWrite, this.handledAccessTypes.toString());
 		}
 
 		@Override
 		public void dump(PrintStream out) {
 			SplitCacheSim.printHeader(out,toString());
-			new DataCacheStats(getName()).addAverage(this.recordedStats).dump(out);
+			new DataCacheStats(getName()+"-objs").addAverage(this.recordedObjStats).dump(out);
+			new DataCacheStats(getName()+"-field").addAverage(this.recordedStats).dump(out);
 		}
 		
 		

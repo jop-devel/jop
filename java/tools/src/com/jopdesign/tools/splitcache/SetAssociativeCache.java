@@ -6,7 +6,6 @@ import java.util.Stack;
 
 import com.jopdesign.tools.DataMemory;
 import com.jopdesign.tools.Cache.ReplacementStrategy;
-import com.jopdesign.tools.splitcache.ObjectCache.FieldIndexMode;
 
 /**
  * A generalized set-associative cache, with configurable number of ways (N),

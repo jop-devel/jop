@@ -105,10 +105,7 @@ public abstract class DataMemory  {
 		int address = read(handle, Access.HANDLE);
 		return read(address + offset, type);
 	}
-	// Access to array length or MVB field
-	public int readMetaData1(int handle, Access type) {
-		return read(handle+1, type);
-	}
+
 	// Write object or array field
 	public void writeField(int handle, int offset, int value, Access type) throws AccessTypeUnsupported {
 		int address = read(handle, Access.HANDLE);

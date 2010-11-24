@@ -29,8 +29,6 @@
 package com.jopdesign.tools;
 
 import java.io.*;
-import java.util.*;
-import com.jopdesign.sys.*;
 
 public class jop2dat {
 

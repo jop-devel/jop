@@ -51,8 +51,11 @@ public class ObjectCacheTest {
 		mainMemory = new MainDataMemory(new int[4096]);
 		handleMemory = new MainDataMemory(new int[1024]);
 		objectCaches = new ObjectCache[2];
-		objectCaches[0] =  new ObjectCache(8,4,4,FieldIndexMode.Bypass, ReplacementStrategy.LRU, false, handleMemory, mainMemory);
-		objectCaches [1] = new ObjectCache(8,4,4,FieldIndexMode.Bypass, ReplacementStrategy.FIFO, false, handleMemory, mainMemory);
+		Access[] handledTypes = { Access.FIELD, Access.MVB };
+		objectCaches[0] =  new ObjectCache(8,4,4,FieldIndexMode.Bypass, ReplacementStrategy.LRU,
+				                           false, handleMemory, mainMemory, handledTypes);
+		objectCaches [1] = new ObjectCache(8,4,4,FieldIndexMode.Bypass, ReplacementStrategy.FIFO,
+				                           false, handleMemory, mainMemory, handledTypes);
 		initRAM();
 	}
 	

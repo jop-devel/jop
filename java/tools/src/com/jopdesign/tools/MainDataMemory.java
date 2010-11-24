@@ -21,7 +21,6 @@
 package com.jopdesign.tools;
 
 import java.io.PrintStream;
-import java.util.Collection;
 import java.util.Stack;
 
 import com.jopdesign.tools.splitcache.DataCacheStats;

@@ -366,6 +366,7 @@ System.out.println(mp+" "+pc);
 		if (addr>MAX_MEM+MEM_TEST_OFF) {
 			throw new JopSimFatalError("readMem: wrong address: "+addr);
 		}
+
 		return dataMem.read(addr % MAX_MEM, type);
 	}
 
