@@ -41,7 +41,7 @@ public class SetAssociativeCacheTest {
 		final int WAYS = 2, LINES = 8, BLOCKWORDS = 8, BLOCKBITS = 3; 
 		MainDataMemory mem = new MainDataMemory(new int[MEM_SIZE]);
 		SetAssociativeCache cache = new SetAssociativeCache(WAYS,LINES,BLOCKWORDS,ReplacementStrategy.LRU,
-				                                            true, false, mem);
+				                                            true, false, mem, Access.values());
 
 		for(int line = 0; line < LINES; line ++)
 		for(int word = 0; word < BLOCKWORDS; word++) {
@@ -62,7 +62,8 @@ public class SetAssociativeCacheTest {
 	@Test
 	public void testReplaceLRU() {
 		MainDataMemory mem = new MainDataMemory(new int[4096]);
-		SetAssociativeCache cache = new SetAssociativeCache(8,2,2,ReplacementStrategy.LRU,true,false,mem);
+		SetAssociativeCache cache = new SetAssociativeCache(8,2,2,ReplacementStrategy.LRU,
+				                        true,false,mem,Access.values());
 		for(int i = 0; i < 8; i++) {
 			mem.write(i * cache.getSizeInBytes(), i, Access.STATIC);
 		}
@@ -79,7 +80,7 @@ public class SetAssociativeCacheTest {
 	@Test
 	public void testReplaceFIFO() {
 		MainDataMemory mem = new MainDataMemory(new int[4096]);
-		SetAssociativeCache cache = new SetAssociativeCache(8,2,2,ReplacementStrategy.FIFO,true,false,mem);
+		SetAssociativeCache cache = new SetAssociativeCache(8,2,2,ReplacementStrategy.FIFO,true,false,mem,Access.values());
 		for(int i = 0; i < 8; i++) {
 			mem.write(i * cache.getSizeInBytes(), i, Access.STATIC);
 		}

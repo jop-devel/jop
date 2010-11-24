@@ -1,9 +1,12 @@
 package com.jopdesign.tools.splitcache;
 
+import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.Stack;
 
 import com.jopdesign.tools.DataMemory;
 import com.jopdesign.tools.Cache.ReplacementStrategy;
+import com.jopdesign.tools.splitcache.ObjectCache.FieldIndexMode;
 
 /**
  * A generalized set-associative cache, with configurable number of ways (N),
@@ -11,7 +14,7 @@ import com.jopdesign.tools.Cache.ReplacementStrategy;
  * the cache replacement strategy.
  * Each parameter should be a power of 2.
  */
-public class SetAssociativeCache implements DataMemory {
+public class SetAssociativeCache extends DataMemory {
 	
 	public static class CacheLookupResult {
 		int datum;
@@ -33,8 +36,8 @@ public class SetAssociativeCache implements DataMemory {
 	private boolean needsDataInvalidation;
 	private boolean needsHandleInvalidation;
 
-	protected CacheStats stats;
-	private Stack<CacheStats> statsStack = new Stack<CacheStats>();
+	protected DataCacheStats stats;
+	private Access[] handledAccessTypes;
 
 	public int getSizeInWords() {
 		return ways*lines*blockSize;
@@ -51,8 +54,8 @@ public class SetAssociativeCache implements DataMemory {
 	 */
 	public SetAssociativeCache(int ways, int linesPerWay, int wordsPerBlock, ReplacementStrategy replacementStrategy,
 			                   boolean needsDataInvalidation, boolean needsHandleInvalidation,
-			                   DataMemory nextLevelCache) {
-		
+			                   DataMemory nextLevelCache, Access handled[]) {
+		this.handledAccessTypes = handled;
 		this.ways = ways;
 		this.lines = linesPerWay;
 		this.blockSize = wordsPerBlock;
@@ -71,7 +74,7 @@ public class SetAssociativeCache implements DataMemory {
 		this.nextLevelMemory = nextLevelCache;
 		this.needsDataInvalidation = needsDataInvalidation;
 		this.needsHandleInvalidation = needsHandleInvalidation;
-		resetStats();
+		this.stats = new DataCacheStats(getName());
 	}
 		
 	public void invalidateCache() {
@@ -114,26 +117,6 @@ public class SetAssociativeCache implements DataMemory {
 		return datum;
 	}
 
-
-	@Override
-	public void write(int addr, int value, Access type) {
-		int way = lookupTag(tagOfAddress(addr), lineOfAddress(addr));
-		if(validWay(way)) {
-			CacheBlock cb = getCacheBlock(way, lineOfAddress(addr));
-			cb.modifyData(wordOfAddress(addr), value);
-		}
-		nextLevelMemory.write(addr, value, type);
-	}
-	
-	public int readIndirect(int handle, int offset, Access type) {
-		int addr = read(handle, Access.HANDLE);
-		return read(addr+offset, type);
-	}
-	public void writeIndirect(int handle, int offset, int value, Access type) {
-		int addr = read(handle, Access.HANDLE);
-		write(addr+offset, value, type);		
-	}
-
 	private CacheBlock readCacheBlock(int addr, int tag, int line) {
 		int way = lookupTag(tag, line);
 
@@ -148,6 +131,28 @@ public class SetAssociativeCache implements DataMemory {
 		return cacheBlock;
 	}	
 	
+
+
+	@Override
+	public void write(int addr, int value, Access type) {
+		int way = lookupTag(tagOfAddress(addr), lineOfAddress(addr));
+		if(validWay(way)) {
+			CacheBlock cb = getCacheBlock(way, lineOfAddress(addr));
+			cb.modifyData(wordOfAddress(addr), value);
+		}
+		stats.write();
+		nextLevelMemory.write(addr, value, type);
+	}
+	
+	public int readField(int handle, int offset, Access type) {
+		int addr = read(handle, Access.HANDLE);
+		return read(addr+offset, type);
+	}
+	public void writeField(int handle, int offset, int value, Access type) {
+		int addr = read(handle, Access.HANDLE);
+		write(addr+offset, value, type);		
+	}
+
 	
 	private int blockMask() {		
 		return blockSize - 1;
@@ -213,25 +218,40 @@ public class SetAssociativeCache implements DataMemory {
 		
 		return cacheData[way][line];
 	}
+
+	// stats + debug
+	private Stack<DataCacheStats> recordedStats = new Stack<DataCacheStats>();
+	@Override
+	public void resetStats() {
+		this.stats.reset();
+	}
+	@Override 
+	public void recordStats() {
+		recordedStats.push(stats.clone());
+	}
+	public DataCacheStats getAverageStats() {
+		return new DataCacheStats(getName()).addAverage(this.recordedStats);
+	}
 	
 	@Override
 	public String getName() {
-		return String.format("Object Cache{ ways=%d, lines=%d, blocksize=%d, replacement=%s }",
-				             this.ways, this.lines, this.blockSize,
-				             this.replacementStrategy.toString());
-	}
-	@Override
-	public void resetStats() {
-		stats = new CacheStats();
-	}
-	@Override
-	public void recordStats() {
-		statsStack.push(stats);
+		return String.format("D$-%d-%d-%d-%s",ways,lines,blockSize,this.replacementStrategy.toString());
 	}
 
 	@Override
-	public void dumpStats() {
-		System.out.println(this.stats.toString());
+	public String toString() {
+		String handledStr = handledAccessTypes.length == Access.values().length ?
+				            "all" :
+				            Arrays.toString(handledAccessTypes);
+		return String.format("Set Associative Cache{ ways=%d, lines=%d, blocksize=%d, replacement=%s, handled=%s }",
+				             this.ways, this.lines, this.blockSize,
+				             this.replacementStrategy.toString(), handledStr);
+	}
+
+	@Override
+	public void dump(PrintStream out) {
+		SplitCacheSim.printHeader(out,toString());
+		this.getAverageStats().dump(out);
 	}
 
 	public static<BlockType> void updateLRU(BlockType accessedElement, int oldBlockPos, BlockType[][] cacheData, int line) {

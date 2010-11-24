@@ -20,6 +20,7 @@
 
 package com.jopdesign.tools.splitcache;
 
+import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
@@ -32,7 +33,7 @@ import com.jopdesign.tools.DataMemory;
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  *
  */
-public class SplitCache implements DataMemory {
+public class SplitCache extends DataMemory {
 	
 	@SuppressWarnings("unused")
 	private DataMemory defaultMemory;
@@ -81,10 +82,10 @@ public class SplitCache implements DataMemory {
 	}
 
 	@Override
-	public int readIndirect(int handle, int offset, Access type) {
+	public int readField(int handle, int offset, Access type) {
 		try {
-			return handlers[type.ordinal()].readIndirect(handle, offset, type);
-		} catch(IndirectAccessUnsupported ex) {
+			return handlers[type.ordinal()].readField(handle, offset, type);
+		} catch(AccessTypeUnsupported ex) {
 			int addr = read(handle, Access.HANDLE);
 			return read(addr+offset, type);			
 		}
@@ -96,10 +97,10 @@ public class SplitCache implements DataMemory {
 	}
 
 	@Override
-	public void writeIndirect(int handle, int offset, int value, Access type) {
+	public void writeField(int handle, int offset, int value, Access type) {
 		try {
-			handlers[type.ordinal()].writeIndirect(handle, offset, value, type);			
-		} catch(IndirectAccessUnsupported ex) {
+			handlers[type.ordinal()].writeField(handle, offset, value, type);			
+		} catch(AccessTypeUnsupported ex) {
 			int addr = read(handle, Access.HANDLE);
 			write(addr+offset, value, type);			
 		}
@@ -144,13 +145,18 @@ public class SplitCache implements DataMemory {
 	}
 
 	@Override
-	public void dumpStats() {		
-		System.out.println("=== SplitCache " + name + " ===");
-		for(DataMemory cache : caches) {
-			cache.dumpStats();
-			System.out.println();
+	public void dump(PrintStream out) {
+		if(caches.size() == 1) {
+			caches.get(0).dump(out); 
+			return;
+		}
+		else {
+			SplitCacheSim.printHeader(out, "  SplitCache  " + name, '=');
+			for(DataMemory cache : caches) {
+				cache.dump(out);
+				System.out.println();
+			}
 		}
 	}
-
 
 }

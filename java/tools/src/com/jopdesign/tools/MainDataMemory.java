@@ -20,7 +20,12 @@
 
 package com.jopdesign.tools;
 
+import java.io.PrintStream;
+import java.util.Collection;
 import java.util.Stack;
+
+import com.jopdesign.tools.splitcache.DataCacheStats;
+import com.jopdesign.tools.splitcache.SplitCacheSim;
 
 
 /**
@@ -29,71 +34,53 @@ import java.util.Stack;
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  *
  */
-public class MainDataMemory implements DataMemory {
-	public static class MainDataMemoryStats {
-		long readCount;
-		long writeCount;		
-	}
-	private int[] mem;
-	private MainDataMemoryStats stats;
-	private Stack<MainDataMemoryStats> statsStack = new Stack<MainDataMemoryStats>();
+public class MainDataMemory extends DataMemory {
 	
+	private int[] mem;
+	private DataCacheStats stats;
+
+	private Stack<DataCacheStats> recordedStats = new Stack<DataCacheStats>();
+	@Override
+	public void resetStats() {
+		this.stats.reset();
+	}
+	@Override 
+	public void recordStats() {
+		recordedStats.push(stats.clone());
+	}
+
+
 	/** create a new simple, flat data memory
 	 * @param mem the backing storage for the flat memory
 	 */
 	public MainDataMemory(int mem[]) {
 		this.mem = mem;
-		resetStats();
+		stats = new DataCacheStats(getName());
 	}
 	
 
 	@Override
 	public int read(int addr, Access type) {
-		stats.readCount++;
+		stats.read(true);
 		return mem[addr];
 	}
 
 	@Override
 	public void write(int addr, int value, Access type) {
+		stats.write();
 		mem[addr] = value; 
-		stats.writeCount++;
 	}
-
-	@Override
-	public int readIndirect(int handle, int offset, Access type) {
-		stats.readCount+=2;
-		int ref = mem[handle]; 
-		return mem[ref+offset];
-	}
-
-	@Override
-	public void writeIndirect(int handle, int offset, int value, Access type) {
-		stats.readCount++;
-		int ref = mem[handle];
-		stats.writeCount++;
-		mem[ref+offset] = value; 
-	}		
-
-	@Override public void invalidateData() {}
-
-	@Override public void invalidateHandles() {}
 
 	@Override public String getName() {
 		return "Main Memory (RAM)";
 	}
 	
-	@Override
-	public void resetStats() {
-		stats = new MainDataMemoryStats();
-	}
-	
-	@Override
-	public void recordStats() {
-		statsStack.push(stats);
+	@Override public void dump(PrintStream out) {
+		SplitCacheSim.printHeader(out, "   Main Memory   ");
+		new DataCacheStats(getName()).addAverage(recordedStats).dump(out);
 	}
 
-	@Override public void dumpStats() {
-		System.out.println(String.format("%8s & %8s & %8s \\\\","","readcnt","writecnt"));
-		System.out.println(String.format("%8s & %8s & %8s \\\\","RAM",stats.readCount,stats.writeCount));
-	}
+	@Override public void invalidateData() {}
+	@Override public void invalidateHandles() {}
+
 }

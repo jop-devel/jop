@@ -97,31 +97,31 @@ public class ObjectCacheTest {
 			int oid = 2, oid2 = 3, field1a = 14, field1b = 15, field2 = 11, fieldBypass = 16;
 			ObjectCacheLookupResult r = cache.new ObjectCacheLookupResult();
 			// read first time (should be uncached)
-			cache.readField(oid, field1a, r);
+			cache.readFieldInto(oid, field1a, r);
 			assertEquals(oid, r.getData() >> 5);
 			assertEquals(field1a, r.getData() & 31);
 			assertEquals(false, r.isObjectHit());
 			assertEquals(BlockAccessResult.MISS, r.getBlockAccessStatus());
 			// read another block (object hit, field miss)
-			cache.readField(oid, field2, r);
+			cache.readFieldInto(oid, field2, r);
 			assertEquals(oid, r.getData() >> 5);
 			assertEquals(field2, r.getData() & 31);
 			assertEquals(true, r.isObjectHit());
 			assertEquals(BlockAccessResult.MISS, r.getBlockAccessStatus());
 			// read another object (object miss, field miss)
-			cache.readField(oid2, field1a, r);
+			cache.readFieldInto(oid2, field1a, r);
 			assertEquals(oid2, r.getData() >> 5);
 			assertEquals(field1a, r.getData() & 31);
 			assertEquals(false, r.isObjectHit());
 			assertEquals(BlockAccessResult.MISS, r.getBlockAccessStatus());			
 			// read again first block of first object (object hit, field hit)
-			cache.readField(oid, field1b, r);
+			cache.readFieldInto(oid, field1b, r);
 			assertEquals(oid, r.getData() >> 5);
 			assertEquals(field1b, r.getData() & 31);
 			assertEquals(true, r.isObjectHit());
 			assertEquals(BlockAccessResult.HIT, r.getBlockAccessStatus());
 			// read bypassed field
-			cache.readField(oid, fieldBypass, r);
+			cache.readFieldInto(oid, fieldBypass, r);
 			assertEquals(oid, r.getData() >> 5);
 			assertEquals(fieldBypass, r.getData() & 31);
 			assertEquals(true, r.isObjectHit());
@@ -141,7 +141,7 @@ public class ObjectCacheTest {
 			int oid = 2, field = 14;
 			ObjectCacheLookupResult r = cache.new ObjectCacheLookupResult();
 			// read first time (should be uncached)
-			cache.readField(oid, field, r);
+			cache.readFieldInto(oid, field, r);
 			assertEquals(oid, r.getData() >> 5);
 			assertEquals(field, r.getData() & 31);
 			assertEquals(false, r.isObjectHit());
@@ -151,7 +151,7 @@ public class ObjectCacheTest {
 			mainMemory.write(addr, 0xcafebabe, Access.INTERN);
 			cache.invalidateData();
 			// read same block again (after invalidate)
-			cache.readField(oid, field, r);
+			cache.readFieldInto(oid, field, r);
 			assertEquals(0xcafebabe, r.getData());
 			assertEquals(false, r.isObjectHit());
 			assertEquals(BlockAccessResult.MISS, r.getBlockAccessStatus());
@@ -170,7 +170,7 @@ public class ObjectCacheTest {
 			int field = 11, field2 = 12;
 			ObjectCacheLookupResult r = cache.new ObjectCacheLookupResult();
 			// read first time (should be uncached)
-			cache.readField(oid, field, r);
+			cache.readFieldInto(oid, field, r);
 			assertEquals(oid, r.getData() >> 5);
 			assertEquals(field, r.getData() & 31);
 			assertEquals(false, r.isObjectHit());
@@ -183,14 +183,14 @@ public class ObjectCacheTest {
 				mainMemory.write(p, 0xdeadbeef, Access.INTERN);
 			}
 			// read same block again (should be a cache hit, as data was not invalidated)
-			cache.readField(oid, field, r);
+			cache.readFieldInto(oid, field, r);
 			assertEquals(oid, r.getData() >> 5);
 			assertEquals(field, r.getData() & 31);
 			assertEquals(true, r.isObjectHit());
 			assertEquals(false, r.isReloadAddress()); // we did not reload the address, as it was unneccessary
 			assertEquals(BlockAccessResult.HIT, r.getBlockAccessStatus());
 			// read a different block (should be handle and data miss, reading from new data)
-			cache.readField(oid, field2, r);
+			cache.readFieldInto(oid, field2, r);
 			assertEquals(oid, r.getData() >> 5);
 			assertEquals(field2, r.getData() & 31);
 			assertEquals(true, r.isObjectHit());
@@ -209,18 +209,18 @@ public class ObjectCacheTest {
 			int oid = 2, oid2 = 3, field1a = 14, field1b = 15, field2 = 11, fieldBypass = 16;
 			ObjectCacheLookupResult r = cache.new ObjectCacheLookupResult();
 			// read first time (uncached)
-			cache.readField(oid, field1a, r);
+			cache.readFieldInto(oid, field1a, r);
 			assertEquals(oid, r.getData() >> 5);
 			assertEquals(field1a, r.getData() & 31);
 			assertEquals(BlockAccessResult.MISS, r.getBlockAccessStatus());
 			// read again first block of first object (object hit, field hit)
-			cache.readField(oid, field1b, r);
+			cache.readFieldInto(oid, field1b, r);
 			assertEquals(oid, r.getData() >> 5);
 			assertEquals(field1b, r.getData() & 31);
 			assertEquals(BlockAccessResult.HIT, r.getBlockAccessStatus());
 			// write 3rd field of this block and read (other value, still cached)
-			cache.writeIndirect(oid, field1a, 0xcafebabe, Access.FIELD);
-			cache.readField(oid, field1a, r);
+			cache.writeField(oid, field1a, 0xcafebabe, Access.FIELD);
+			cache.readFieldInto(oid, field1a, r);
 			assertEquals(0xcafebabe, r.getData());
 			assertEquals(true, r.isObjectHit());
 			assertEquals(BlockAccessResult.HIT, r.getBlockAccessStatus());

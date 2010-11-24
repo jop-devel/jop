@@ -20,17 +20,25 @@
 
 package com.jopdesign.tools;
 
+import java.io.PrintStream;
+import java.util.Collection;
+
 /**
  * A Simulation Interface for standard data memory or cached data memory. The unit for addresses is
  * word (implying all accesses are word aligned).
  *
  */
-public interface DataMemory  {
-	public class IndirectAccessUnsupported extends Error {
-		public IndirectAccessUnsupported(String msg) { super(msg); }
+public abstract class DataMemory  {
+	public class AccessTypeUnsupported extends Error {
+		public AccessTypeUnsupported(String msg) { super(msg); }
 		private static final long serialVersionUID = -1904217311124106007L;		
 	}
-
+	
+	public interface DataMemoryStats {
+		public void reset();
+		public void dump(PrintStream out);
+		public DataMemoryStats addAverage(Collection<? extends DataMemoryStats> stats);
+	}
 	/**
 	 * Classify memory access type for cache and TM experiments.
 	 */
@@ -80,21 +88,6 @@ public interface DataMemory  {
 		 */
 		INTERN;
 		
-		private int rdCnt;
-		private int wrCnt;
-		
-		void incrRd() {
-			rdCnt++;
-		}
-		void incrWr() {
-			wrCnt++;
-		}
-		int getRdCnt() {
-			return rdCnt;
-		}
-		int getWrCnt() {
-			return wrCnt;
-		}
 		public static int getMaxOrdinal() {
 			return Access.values().length - 1;
 		}
@@ -103,26 +96,36 @@ public interface DataMemory  {
 		}
 	}
 
-	/** reset statistics (typically at the beginning of e.g. main or the bench() method */
-	public void resetStats();
-
-	/** push statistics on a save stack (typically at the end of e.g. main or the bench() method) */
-	public void recordStats();
-
 	public abstract int read(int addr, Access type);
 
-	// Default implementation
 	public abstract void write(int addr, int value, Access type);
 
-	// Default implementation
-	public int readIndirect(int handle, int offset, Access type) throws IndirectAccessUnsupported;
-	public void writeIndirect(int handle, int offset, int value, Access type) throws IndirectAccessUnsupported;
+	// Object cache instructions with default implementations
+	public int readField(int handle, int offset, Access type) throws AccessTypeUnsupported {
+		int address = read(handle, Access.HANDLE);
+		return read(address + offset, type);
+	}
+	// Access to array length or MVB field
+	public int readMetaData1(int handle, Access type) {
+		return read(handle+1, type);
+	}
+	// Write object or array field
+	public void writeField(int handle, int offset, int value, Access type) throws AccessTypeUnsupported {
+		int address = read(handle, Access.HANDLE);
+		write(address + offset, value, type);		
+	}
 	
 	public abstract void invalidateData();
 	public abstract void invalidateHandles();
-	
+
 	// Debugging / Analytics
-	public String getName();
-	public void dumpStats();
+
+	/** reset statistics */
+	public abstract void resetStats();
+	/** push statistics on a save stack (typically at the end of e.g. main or the bench() method) */
+	public abstract void recordStats();
+	
+	public abstract String getName();
+	public abstract void dump(PrintStream out);
 }
 

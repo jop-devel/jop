@@ -20,6 +20,7 @@
 
 package com.jopdesign.tools.splitcache;
 
+import java.io.PrintStream;
 import java.util.Stack;
 
 import com.jopdesign.tools.DataMemory;
@@ -41,7 +42,7 @@ import com.jopdesign.tools.Cache.ReplacementStrategy;
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  *
  */
-public class ObjectCache implements DataMemory {
+public class ObjectCache extends DataMemory {
 	
 		public enum FieldIndexMode { Bypass, Wrap };
 		public enum BlockAccessResult { INVALID, HIT, MISS, BYPASS };
@@ -175,9 +176,7 @@ public class ObjectCache implements DataMemory {
 
 		private ObjectCacheEntry[] objectEntry;
 
-		private CacheStats stats;
-		private Stack<CacheStats> statsStack = new Stack<CacheStats>();
-		
+		private DataCacheStats stats;
 				
 		/**
 		 * Build a new object cache
@@ -208,7 +207,7 @@ public class ObjectCache implements DataMemory {
 
 			this.handleMemory = handleMemory; /* next level handle memory */
 			this.nextLevelMemory = nextLevelMemory;
-			resetStats();
+			stats = new DataCacheStats(getName());
 		}
 						
 		@Override
@@ -235,24 +234,25 @@ public class ObjectCache implements DataMemory {
 		}
 		
 		@Override
-		public int readIndirect(int handle, int fieldOffset, Access type) {			
+		public int readField(int handle, int fieldOffset, Access type) {			
 			ObjectCacheLookupResult r = new ObjectCacheLookupResult();
-			readField(handle,fieldOffset,r);
+			readFieldInto(handle,fieldOffset,r);
 			return r.getData();
 		}
 		
-		public void readField(int handle, int offset, ObjectCacheLookupResult r) {
+		public void readFieldInto(int handle, int offset, ObjectCacheLookupResult r) {
 			r.reset();
 			
 			ObjectCacheEntry block = getOrLoadObjectEntry(handle, r);
 			if(fieldIndexMode == FieldIndexMode.Bypass && offset >= wordsPerObject()) {
 				r.blockAccessStatus = BlockAccessResult.BYPASS;
 				readBypassed(block, offset, r);	
+				stats.readBypassed();
 			} else {
 				readCacheBlock(block, offset, r);				
+				stats.read(r.getBlockAccessStatus() == BlockAccessResult.HIT);
 			}			
 			// TODO: record more fine grained stats
-			stats.read(r.getBlockAccessStatus() == BlockAccessResult.HIT);
 		}
 
 		@Override
@@ -263,9 +263,9 @@ public class ObjectCache implements DataMemory {
 
 		// TODO: use ObjectCacheLookupResult
 		@Override
-		public void writeIndirect(int handle, int offset, int data, Access type) {
+		public void writeField(int handle, int offset, int data, Access type) {
 			// Write through
-			nextLevelMemory.writeIndirect(handle, offset, data, type);
+			nextLevelMemory.writeField(handle, offset, data, type);
 			if(allocateOnWrite) {
 				getOrLoadObjectEntry(handle, null).modifyData(getBlockIndex(offset), getBlockOffset(offset), data);
 			} else {
@@ -273,6 +273,7 @@ public class ObjectCache implements DataMemory {
 				int way = lookupObject(handle);
 				if(! isValidWay(way)) return;
 				getObjectCacheEntry(way).updateIfValid(offset, data);
+				stats.write();
 			}
 		}
 
@@ -378,9 +379,29 @@ public class ObjectCache implements DataMemory {
 			case LRU:			replaceLRU(objectEntry,  ob, way, ways);
 			}
 		}		
-		
+
+		// stats + debug
+
+		private Stack<DataCacheStats> recordedStats = new Stack<DataCacheStats>();
+		@Override
+		public void resetStats() {
+			this.stats.reset();
+		}
+		@Override 
+		public void recordStats() {
+			recordedStats.push(stats.clone());
+		}
+
 		@Override
 		public String getName() {
+			return String.format("O$-%d-%d-%d-%s-%s%s",ways,blocksPerObject,wordsPerBlock,
+					fieldIndexMode == FieldIndexMode.Wrap ? "wrap" : "byp",
+					this.replacement.toString(),
+					allocateOnWrite ? "-aow" : "");
+		}
+
+		@Override
+		public String toString() {
 			return String.format("Object Cache{ ways=%d, wayblocks=%d, blockwords=%d, "+
 					             "indexmode=%s, replacement=%s, allocateOnWrite=%s }",
 					             this.ways, this.blocksPerObject, this.wordsPerBlock,
@@ -388,20 +409,11 @@ public class ObjectCache implements DataMemory {
 		}
 
 		@Override
-		public void resetStats() {
-			stats = new CacheStats();
+		public void dump(PrintStream out) {
+			SplitCacheSim.printHeader(out,toString());
+			new DataCacheStats(getName()).addAverage(this.recordedStats).dump(out);
 		}
 		
-		@Override
-		public void recordStats() {
-			statsStack.push(stats);
-		}
-
-		@Override
-		public void dumpStats() {
-			SplitCacheSim.printHeader(System.out,toString());
-			this.stats.dump(System.out);
-		}
 		
 		public static <T> void replaceLRU(T[] data, T obj, int oldPosition, int ways) {
 			if(oldPosition < 0 || oldPosition > ways) oldPosition = ways;
@@ -423,5 +435,6 @@ public class ObjectCache implements DataMemory {
 				saved = next;
 			}
 		}
+
 
 }

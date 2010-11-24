@@ -357,7 +357,6 @@ System.out.println(mp+" "+pc);
 		}
 
 		rdMemCnt++;
-		type.incrRd();
 
 		// that's an access to our scratchpad memory
 		if (addr >= Const.SCRATCHPAD_ADDRESS && addr <= Const.SCRATCHPAD_ADDRESS+MEM_TEST_OFF) {
@@ -383,7 +382,7 @@ System.out.println(mp+" "+pc);
 			return readMem(addr+offset, type);
 		}
 		// delegate to data memory
-		return dataMem.readIndirect(handle, offset, type);
+		return dataMem.readField(handle, offset, type);
 	}
 
 	void writeMem(int addr, int data, Access type) {
@@ -400,7 +399,6 @@ System.out.println(mp+" "+pc);
 		}
 
 		wrMemCnt++;
-		type.incrWr();					
 		
 		// that's an access to our scratchpad memory
 		if (addr >= Const.SCRATCHPAD_ADDRESS && addr <= Const.SCRATCHPAD_ADDRESS+MEM_TEST_OFF) {
@@ -418,7 +416,6 @@ System.out.println(mp+" "+pc);
 		checkNullPointer(handle);
 		
 		wrMemCnt++;
-		type.incrWr();					
 
 		// work around: directly resolve handle for scratchpad
 		int addr = mem[handle];
@@ -431,7 +428,7 @@ System.out.println(mp+" "+pc);
 		}
 		
 		// delegate to data memory
-		dataMem.writeIndirect(handle, offset, data, type);
+		dataMem.writeField(handle, offset, data, type);
 	}
 
 	int readOpd16u() {
@@ -1803,30 +1800,13 @@ System.out.println("new heap: "+heap);
 		System.out.println(insByte+" Instructions bytes");
 		System.out.println(((float) insByte/instrCnt)+" average Instruction length");
 		
-		System.out.println();
-		dataMem.dumpStats();
-		System.out.println();
-		System.out.println("\tType \t&       Load &      &      Store &      \\\\");
-		int ld = 0, st=0;
-		for (Access a : Access.values()) {
-			ld += a.getRdCnt(); 
-			st += a.getWrCnt();
-			System.out.printf("\t%s\t& %10d & %2d\\%% & %10d & %2d\\%% \\\\%n",
-					a.name(), a.getRdCnt(), (a.getRdCnt()*1000/rdMemCnt+5)/10, 
-					a.getWrCnt(), (a.getWrCnt()*1000/wrMemCnt+5)/10);
-		}
-		System.out.println("\t\\midrule");
-		System.out.printf("\tSum\t& %10d &      & %10d &      \\\\%n", ld, st);
-		
-		System.out.println();
 		System.out.println("memory word: "+rdMemCnt+" load "+wrMemCnt+" store");
 		System.out.println("memory word per instruction: "+
 			((float) rdMemCnt/instrCnt)+" load "+
 			((float) wrMemCnt/instrCnt)+" store");
 		System.out.println("total method cache load cycles: "+this.cacheCost);
 		System.out.println();
-
-
+		dataMem.dump(System.out);
 	}
 	
 	/**

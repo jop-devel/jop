@@ -1,6 +1,7 @@
 package com.jopdesign.tools.splitcache;
 
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -8,6 +9,7 @@ import java.util.Set;
 import java.util.Stack;
 
 import com.jopdesign.tools.DataMemory;
+import com.jopdesign.tools.DataMemory.DataMemoryStats;
 
 /** Compute statistics for one access type.
  * They include: <ul>
@@ -18,7 +20,7 @@ import com.jopdesign.tools.DataMemory;
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  *
  */
-public class SplitCacheStats implements DataMemory {
+public class SplitCacheStats extends DataMemory {
 
 	public static final int BUFFER_SIZE = 32;
 	public static final int SPATIAL_LOCALITY_MAX_INTERSPERSE = 3;
@@ -32,6 +34,17 @@ public class SplitCacheStats implements DataMemory {
 		public Histogram(String name, int n) {
 			this.name = name;
 			count = new long[n];
+		}
+		
+		@Override
+		public Histogram clone() {
+			Histogram histo = new Histogram(name,count.length);
+			System.arraycopy(count, 0, histo.count, 0, count.length);
+			return histo;
+		}
+		
+		public void reset() {
+			Arrays.fill(count, 0);
 		}
 		
 		public void add(Histogram other) {
@@ -73,25 +86,21 @@ public class SplitCacheStats implements DataMemory {
 	public enum StatType { ReadCount, HitCount, HitQuadCount, WriteCount, DataInvalidates, HandleInvalidates };
 	public enum HistoType { TempLocality, SpatialLocality, Offset };
 
-	private static class AccessStats {
+	private static class AccessStats implements DataMemoryStats {
 		
 		private long stats[] = new long[StatType.values().length];
 		private Histogram histos[] = new Histogram[HistoType.values().length];
+		private String name;
 
-		public AccessStats(int histoSize) {
+		public AccessStats(String name, int histoSize) {
+			this.name = name;
 			for(int i = 0; i < HistoType.values().length; i++) histos[i] = new Histogram(HistoType.values()[i].name(), histoSize);
 		}
-		
-		public static AccessStats fold(Collection<AccessStats> stats) {
-			AccessStats summary = new AccessStats(HISTO_SIZE);
-			if(stats.size() == 0) return summary;
-			for(AccessStats stat : stats) {
-				for(int i = 0; i < summary.stats.length; i++) summary.stats[i] += stat.stats[i];				
-				for(int i = 0; i < summary.histos.length; i++) summary.histos[i].add(stat.histos[i]);				
-			}
-			for(int i = 0; i < summary.stats.length; i++) summary.stats[i] /= stats.size();
-			for(int i = 0; i < summary.histos.length; i++) summary.histos[i].divBy(stats.size());				
-			return summary;
+
+		@Override
+		public void reset() {
+			Arrays.fill(stats, 0);
+			for(int i = 0; i < HistoType.values().length; i++) histos[i].reset();
 		}
 
 		public long get(StatType ty) {
@@ -111,19 +120,24 @@ public class SplitCacheStats implements DataMemory {
 			histos[HistoType.SpatialLocality.ordinal()].recordLd(sLocality);
 		}
 
-		public void dump(PrintStream out, String name) {
-			double hitpt = 100 * (double)get(StatType.HitCount) / (double)get(StatType.ReadCount);
-			double hit4pt = 100 * (double)get(StatType.HitQuadCount) / (double)get(StatType.ReadCount);
-			System.out.println(String.format("%-16s & %7s & %7s & %7s & %7s & %7s & %7s & %7s & %7s\\\\",
-					"name", "rdcnt","wrcnt","hicnt","hit%","hitcnt4", "hit4%", "invdat","invhnd"));
-			System.out.println(String.format("%-16s & %7d & %7d & %7d & %2.4f & %7d & %2.4f & %7d & %7d \\\\",
-					name, get(StatType.ReadCount), get(StatType.WriteCount),
-					get(StatType.HitCount), hitpt, get(StatType.HitQuadCount), hit4pt,
-					get(StatType.DataInvalidates), get(StatType.HandleInvalidates)));
-			dumpHistogramHeader(System.out, getHisto(HistoType.TempLocality).count.length);
+		@Override
+		public void dump(PrintStream out) {
+			out.println(String.format("%-16s & %7s & %7s & %7s & %7s & %7s & %7s & %7s & %7s\\\\",
+					"name", "rdcnt","wrcnt","hitcnt","hitrate","hitcntQW", "hitrateQW", "invdat","invhnd"));
+			out.println(this.toString());
+			dumpHistogramHeader(out, getHisto(HistoType.TempLocality).count.length);
 			for(HistoType ht : HistoType.values()) {
 				getHisto(ht).dump(out);
 			}
+		}
+		
+		public String toString() {
+			double hitpt = 100 * (double)get(StatType.HitCount) / (double)get(StatType.ReadCount);
+			double hit4pt = 100 * (double)get(StatType.HitQuadCount) / (double)get(StatType.ReadCount);
+			return String.format("%-16s & %7d & %7d & %7d & %2.4f & %7d & %2.4f & %7d & %7d \\\\",
+					name, get(StatType.ReadCount), get(StatType.WriteCount),
+					get(StatType.HitCount), hitpt, get(StatType.HitQuadCount), hit4pt,
+					get(StatType.DataInvalidates), get(StatType.HandleInvalidates));			
 		}
 
 		private void dumpHistogramHeader(PrintStream out,int n) {
@@ -137,6 +151,31 @@ public class SplitCacheStats implements DataMemory {
 			}
 			out.println(" \\\\");		
 		}
+
+		@Override
+		public AccessStats addAverage(Collection<? extends DataMemoryStats> statList) {
+			int n = statList.size();
+			if(n == 0) return this;
+			for(DataMemoryStats elem : statList) {
+				AccessStats stat = (AccessStats) elem;
+				for(int i = 0; i < stats.length; i++) stats[i] += stat.stats[i];				
+				for(int i = 0; i < histos.length; i++) histos[i].add(stat.histos[i]);				
+			}
+			for(int i = 0; i < stats.length; i++) stats[i] /= n;
+			for(int i = 0; i < histos.length; i++) histos[i].divBy(n);				
+			return this;
+		}
+		
+		@Override
+		public AccessStats clone() {
+			AccessStats as = new AccessStats(name, histos.length);
+			System.arraycopy(this.stats, 0, as.stats, 0, stats.length);
+			for(int i = 0; i < histos.length; i++) {
+				as.histos[i] = histos[i].clone();
+			}
+			return as;
+		}
+
 	}
 
 	public static SplitCache splitAllStatistics(DataMemory defaultMemory) {
@@ -159,14 +198,14 @@ public class SplitCacheStats implements DataMemory {
 
 	// configuration
 	private String name;
-	private Access[] handledTypes;
+	private Set<Access> handledTypes;
 	private boolean processesType[];
 	private DataMemory memory;
 	private boolean hasMutableData;
 
 	// statistics
 	private AccessStats stats;
-	private Stack<AccessStats> statStack = new Stack<AccessStats>();
+	private Stack<AccessStats> recordedStats = new Stack<AccessStats>();
 	private LinkedList<Integer> lastAccessBuffer;
 	private Set<Integer> allAccessed, allQuadsAccessed;
 
@@ -177,8 +216,9 @@ public class SplitCacheStats implements DataMemory {
 		this.name = cacheName;
 		this.memory = memory;
 		processesType = new boolean[Access.getMaxOrdinal() + 1];
-		this.handledTypes = types;
+		this.handledTypes = new HashSet<Access>();
 		for(Access ty : types) {
+			handledTypes.add(ty);
 			processesType[ty.ordinal()] = true;
 		}
 		this.hasMutableData = false; //hasMutableData;
@@ -239,13 +279,13 @@ public class SplitCacheStats implements DataMemory {
 
 
 	@Override
-	public int readIndirect(int handle, int offset, Access type) {
+	public int readField(int handle, int offset, Access type) {
 		// offset histogram
 		stats.histos[HistoType.Offset.ordinal()].recordLd(offset);
 
 		// split cache should resolve indirection if we do not handle HANDLE
 		if(! this.processesType[Access.HANDLE.ordinal()]) {
-			throw new IndirectAccessUnsupported("readIndirect: not supported by statistics");
+			throw new AccessTypeUnsupported("readIndirect: not supported by statistics");
 		} else {
 			int addr = read(handle, Access.HANDLE);
 			return read(addr+offset, type);
@@ -259,35 +299,39 @@ public class SplitCacheStats implements DataMemory {
 	}
 
 	@Override
-	public void writeIndirect(int handle, int offset, int value, Access type) {
+	public void writeField(int handle, int offset, int value, Access type) {
 		// split cache should resolve indirection if we do not handle HANDLE
 		if(! this.processesType[Access.HANDLE.ordinal()]) {
-			throw new IndirectAccessUnsupported("writeIndirect: not supported by statistics");
+			throw new AccessTypeUnsupported("writeIndirect: not supported by statistics");
 		} else {
 			int addr = read(handle, Access.HANDLE);
 			write(addr+offset, value, type);
 		}
 	}
-	@Override
-	public String getName() {
-		return name+"-statistitics" + (hasMutableData ? "" : " IMMUTABLE");
-	}
 
 	@Override
 	public void resetStats() {
-		stats = new AccessStats(HISTO_SIZE);		
+		stats = new AccessStats(this.name, HISTO_SIZE);		
 		allAccessed = new HashSet<Integer>();
 		allQuadsAccessed = new HashSet<Integer>();
 		lastAccessBuffer = new LinkedList<Integer>();		
 	}
 	@Override
 	public void recordStats() {
-		statStack.push(stats);
+		recordedStats.push(stats.clone());
+	}
+	public AccessStats getAverageStats() {
+		return new AccessStats(name, HISTO_SIZE).addAverage(this.recordedStats);
 	}
 
 	@Override
-	public void dumpStats() {
-		AccessStats summary = AccessStats.fold(statStack);
+	public String getName() {
+		return name+"-statistitics" + (hasMutableData ? "" : " IMMUTABLE");
+	}
+
+
+	@Override
+	public void dump(PrintStream out) {
 		StringBuffer sb = new StringBuffer();
 		sb.append("----- ");
 		sb.append(getName());
@@ -296,8 +340,7 @@ public class SplitCacheStats implements DataMemory {
 		}
 		sb.append(" -----");
 		SplitCacheSim.printHeader(System.out, sb.toString());
-		summary.dump(System.out, name);
+		getAverageStats().dump(System.out);
 	}
-
 
 }

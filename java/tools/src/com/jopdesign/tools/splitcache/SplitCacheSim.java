@@ -22,7 +22,7 @@ import com.jopdesign.tools.splitcache.ObjectCache.FieldIndexMode;
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  *
  */
-public class SplitCacheSim implements DataMemory {
+public class SplitCacheSim extends DataMemory {
 	private DataMemory backingMem;
 	private Vector<DataMemory> caches;
 
@@ -67,10 +67,10 @@ public class SplitCacheSim implements DataMemory {
 	}
 
 	@Override
-	public int readIndirect(int handle, int offset, Access type) {
+	public int readField(int handle, int offset, Access type) {
 		Integer v = null, prev = null;
 		for(DataMemory cache : caches) {
-			v = cache.readIndirect(handle, offset, type);
+			v = cache.readField(handle, offset, type);
 			if(prev != null) checkRead(prev, v,cache,"indirect: "+handle+" + "+offset+ " ~ " + backingMem.read(handle, Access.HANDLE)+ " @"+type);
 			prev = v;
 		}
@@ -92,9 +92,9 @@ public class SplitCacheSim implements DataMemory {
 	}
 
 	@Override
-	public void writeIndirect(int handle, int offset, int value, Access type) {
+	public void writeField(int handle, int offset, int value, Access type) {
 		for(DataMemory cache : caches) {
-			cache.writeIndirect(handle, offset, value, type);
+			cache.writeField(handle, offset, value, type);
 		}
 	}
 
@@ -113,17 +113,15 @@ public class SplitCacheSim implements DataMemory {
 	}
 
 	@Override
-	public void dumpStats() {
-		String s = "=             Split Cache Simulations                =";
-		int l = s.length();
-		System.out.println(repeat('=', l));
-		System.out.println(s);
-		System.out.println(repeat('=', l));
+	public void dump(PrintStream out) {
+		printHeader(out, "            Split Cache Simulations            ", '=');
 		for(DataMemory cache : caches) {		
-			System.out.println();
-			cache.dumpStats();
+			out.println();
+			cache.dump(out);
 		}
+		printHeader(out, "            End of Split Cache Simulation      ", '*');
 	}
+
 
 	@Override
 	public String getName() {
@@ -141,17 +139,79 @@ public class SplitCacheSim implements DataMemory {
 //	}
 
 	public void addDefaultCaches() {
-
-		// Add a 8x8x4 object cache
-		Access handled[] = { Access.FIELD };
-		SplitCache ocSplitCache = new SplitCache("object$-8-4-4 + RAM", backingMem);
-		ObjectCache objectCache = new ObjectCache(8,4,4,FieldIndexMode.Bypass,ReplacementStrategy.FIFO,
-				false, backingMem, backingMem);
-		ocSplitCache.addCache(objectCache, handled);
-		this.caches.add(ocSplitCache);
-		
+		// Add a few (pure) object caches
+		addObjectCacheSims();
+		// Add standard data caches
+		addStdDataCacheSims();
+		// Add split caches
+		addSplitCacheSims();
 	}
 
+	private void addStdDataCacheSims() {
+		SetAssociativeCache dCache;
+		dCache = new SetAssociativeCache(4,64,1,ReplacementStrategy.LRU,
+                true,false,this.backingMem, Access.values());
+		this.caches.add(dCache);	
+		dCache = new SetAssociativeCache(4,128,1,ReplacementStrategy.LRU,
+                true,false,this.backingMem, Access.values());
+		this.caches.add(dCache);	
+		dCache = new SetAssociativeCache(4,16,4,ReplacementStrategy.LRU,
+				                         true,false,this.backingMem, Access.values());
+		this.caches.add(dCache);	
+		dCache = new SetAssociativeCache(4,32,4,ReplacementStrategy.LRU,
+                true,false,this.backingMem, Access.values());
+		this.caches.add(dCache);	
+	}
+
+	private void addSplitCacheSims() {
+		// Add a 8x8x4 object cache
+		Access handledConst[] = { Access.CLINFO, Access.CONST, Access.IFTAB, Access.MTAB };
+		Access handledStatic[] = { Access.STATIC };
+		Access handledOCache[] = { Access.FIELD }; // TODO: also handle MVB
+		Access handledMem[] = { Access.ALEN, Access.ARRAY, Access.HANDLE, Access.INTERN, Access.MVB };
+		SplitCache splitCache;
+		SetAssociativeCache constCache;
+		SetAssociativeCache staticCache;
+		ObjectCache objectCache;
+
+		splitCache = new SplitCache("const-128 + static-128 + object$-8-4-4-LRU + RAM", backingMem);
+		constCache = new SetAssociativeCache(1,128,1,ReplacementStrategy.LRU,false,false,backingMem,handledConst);
+		splitCache.addCache(constCache, handledConst);
+		staticCache = new SetAssociativeCache(1,128,1,ReplacementStrategy.LRU,true,false,backingMem,handledStatic);
+		splitCache.addCache(staticCache, handledStatic);
+		objectCache = new ObjectCache(16,8,4,FieldIndexMode.Bypass,ReplacementStrategy.FIFO, false, backingMem, backingMem);
+		splitCache.addCache(objectCache, handledOCache);
+		splitCache.addCache(new UncachedDataMemory(backingMem, handledMem), handledMem);
+		this.caches.add(splitCache);
+	}
+
+
+	private void addObjectCacheSims() {
+		// Add a 8x8x4 object cache
+		Access handled[] = { Access.FIELD };
+		SplitCache ocSplitCache;
+		ObjectCache objectCache;
+
+		ocSplitCache = new SplitCache("object$-16-8-4-LRU + RAM", backingMem);
+		objectCache = new ObjectCache(16,8,4,FieldIndexMode.Bypass,ReplacementStrategy.FIFO, false, backingMem, backingMem);
+		ocSplitCache.addCache(objectCache, handled);
+		this.caches.add(ocSplitCache);
+
+		ocSplitCache = new SplitCache("object$-8-4-4-LRU + RAM", backingMem);
+		objectCache = new ObjectCache(8,4,4,FieldIndexMode.Bypass,ReplacementStrategy.LRU, false, backingMem, backingMem);
+		ocSplitCache.addCache(objectCache, handled);
+		this.caches.add(ocSplitCache);
+
+		ocSplitCache = new SplitCache("object$-8-16-1-LRU + RAM", backingMem);
+		objectCache = new ObjectCache(8,16,1,FieldIndexMode.Bypass,ReplacementStrategy.LRU, false, backingMem, backingMem);
+		ocSplitCache.addCache(objectCache, handled);
+		this.caches.add(ocSplitCache);
+
+		ocSplitCache = new SplitCache("object$-4-4-2-FIFO + RAM", backingMem);
+		objectCache = new ObjectCache(4,4,2,FieldIndexMode.Bypass,ReplacementStrategy.FIFO, false, backingMem, backingMem);
+		ocSplitCache.addCache(objectCache, handled);
+		this.caches.add(ocSplitCache);
+	}
 
 	private static StringBuffer repeat(char c, int k) {
 		StringBuffer sb = new StringBuffer();
@@ -160,10 +220,13 @@ public class SplitCacheSim implements DataMemory {
 	}
 
 	public static void printHeader(PrintStream out, String string) {
-		out.println(repeat('-',string.length()));
-		out.println(string);
-		out.println(repeat('-',string.length()));
+		printHeader(out, string, '-');
 	}
 	
+	static void printHeader(PrintStream out, String string, char c) {
+		out.println(repeat(c,string.length()));
+		out.println(string);
+		out.println(repeat(c,string.length()));
+	}
 
 }

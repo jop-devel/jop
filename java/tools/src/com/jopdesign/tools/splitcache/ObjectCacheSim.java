@@ -1,5 +1,5 @@
 package com.jopdesign.tools.splitcache;
-// TODO: remove
+// TODO: scheduled for removal
 /**
  * Object Cache Simulator
  * To enable object cache simulation, you should add DUMP_CACHE statements to your test driver.
