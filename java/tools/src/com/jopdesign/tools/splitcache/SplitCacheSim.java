@@ -172,6 +172,19 @@ public class SplitCacheSim extends DataMemory {
 		SetAssociativeCache constCache;
 		SetAssociativeCache staticCache;
 		ObjectCache objectCache;
+		// Currently implemented split cache (source: wolfgang)
+		Access handledFullyAssoc[] = { Access.FIELD, Access.MVB, Access.HANDLE, Access.INTERN };
+		Access handledArrayBypass[] = { Access.INTERN, Access.ARRAY };
+		splitCache = new SplitCache("const-1-256-1 + static-1-256-1 + fullassoc-16-1-1 + RAM", backingMem);
+		constCache = new SetAssociativeCache(1,256,1,ReplacementStrategy.LRU,false,false,backingMem,handledConst);
+		splitCache.addCache(constCache, handledConst);
+		staticCache = new SetAssociativeCache(1,256,1,ReplacementStrategy.LRU,true,false,backingMem,handledStatic);
+		splitCache.addCache(staticCache, handledStatic);
+		staticCache = new SetAssociativeCache(16,1,1,ReplacementStrategy.LRU,true,false,backingMem,handledFullyAssoc);
+		splitCache.addCache(staticCache, handledFullyAssoc);
+		splitCache.addCache(new UncachedDataMemory(backingMem, handledArrayBypass), handledArrayBypass);
+		this.caches.add(splitCache);
+
 		// One sample split cache configuration
 		splitCache = new SplitCache("const-128 + static-128 + object$-8-4-4-LRU + RAM", backingMem);
 		constCache = new SetAssociativeCache(1,128,1,ReplacementStrategy.LRU,false,false,backingMem,handledConst);

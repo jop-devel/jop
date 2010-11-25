@@ -38,23 +38,23 @@ public class SetAssociativeCacheTest {
 	@Test
 	public void testInsertLine() {
 		final int MEM_SIZE = 4096;
-		final int WAYS = 2, LINES = 8, BLOCKWORDS = 8, BLOCKBITS = 3; 
+		final int WAYS = 2, SETS = 8, BLOCKWORDS = 8, BLOCKBITS = 3; 
 		MainDataMemory mem = new MainDataMemory(new int[MEM_SIZE]);
-		SetAssociativeCache cache = new SetAssociativeCache(WAYS,LINES,BLOCKWORDS,ReplacementStrategy.LRU,
+		SetAssociativeCache cache = new SetAssociativeCache(WAYS,SETS,BLOCKWORDS,ReplacementStrategy.LRU,
 				                                            true, false, mem, Access.values());
 
-		for(int line = 0; line < LINES; line ++)
+		for(int set = 0; set < SETS; set ++)
 		for(int word = 0; word < BLOCKWORDS; word++) {
-			int addr = (line << BLOCKBITS) | word;
+			int addr = (set << BLOCKBITS) | word;
 			assertEquals(cache.wordOfAddress(addr), word);
-			assertEquals(cache.lineOfAddress(addr), line);
+			assertEquals(cache.setOfAddress(addr), set);
 
 			int value = addr;
 			mem.write(addr, value, Access.STATIC);
 			cache.invalidateCache();
 			int v1 = cache.read(addr, Access.STATIC);
 			assertEquals(v1, value);
-			int v2 = cache.getCacheBlock(0, line).getData(word);
+			int v2 = cache.getCacheBlock(0, set).getData(word);
 			assertEquals(v2, value);
 		}
 	}
