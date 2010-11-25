@@ -83,7 +83,12 @@ entity sc_uart is
 		txd		: out std_logic;
 		rxd		: in std_logic;
 		ncts	: in std_logic;
-		nrts	: out std_logic
+		nrts	: out std_logic;
+
+-- Signals to aid CMP front-end
+		tf_ready : out std_logic;
+		rf_avail : out std_logic;
+		pa_error : out std_logic
 		);
 end sc_uart;
 
@@ -190,10 +195,13 @@ begin
 		end if;
 
 	end process;
-
+	
 	-- write is on address offset 1	
 	ua_wr <= wr and address(0);
 
+	tf_ready <= tdre;
+	rf_avail <= rdrf;
+	
 --
 --	serial clock
 --

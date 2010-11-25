@@ -52,11 +52,13 @@ type state_type is (idle, locked);
 signal state : state_type;
 signal next_state : state_type;
 
-signal locked_id	: integer;
-signal next_locked_id : integer;
+subtype id_type is integer range 0 to cpu_cnt;
+signal locked_id	: id_type;
+signal next_locked_id : id_type;
 
-signal rr_index : integer;
-signal next_rr_index : integer;
+subtype index_type is integer range 0 to cpu_cnt-1;
+signal rr_index : index_type;
+signal next_rr_index : index_type;
 
 begin
 
