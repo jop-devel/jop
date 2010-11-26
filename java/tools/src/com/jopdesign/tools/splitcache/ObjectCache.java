@@ -304,12 +304,15 @@ public class ObjectCache extends DataMemory {
 			if(allocateOnWrite) {
 				getOrLoadObjectEntry(handle, null).modifyData(getBlockIndex(offset), getBlockOffset(offset), data);
 			} else {
-				// we need to update the entry if it is in the cache
-				int way = lookupObject(handle);
-				objectStats.read(isValidWay(way));
-				if(! isValidWay(way)) return;
-				getObjectCacheEntry(way).updateIfValid(offset, data);
-				stats.write();
+				if(fieldIndexMode == FieldIndexMode.Wrap || offset < wordsPerObject()) {
+					// we need to update the entry if it is in the cache
+					// FIXME: probably still broken for wrap-around, but works now for bypassing
+					int way = lookupObject(handle);
+					objectStats.read(isValidWay(way));
+					if(! isValidWay(way)) return;
+					getObjectCacheEntry(way).updateIfValid(offset, data);
+					stats.write();
+				}
 			}
 		}
 
