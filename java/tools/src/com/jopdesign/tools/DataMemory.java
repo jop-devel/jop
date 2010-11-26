@@ -112,6 +112,7 @@ public abstract class DataMemory  {
 		write(address + offset, value, type);		
 	}
 	
+	public abstract void invalidateCache();
 	public abstract void invalidateData();
 	public abstract void invalidateHandles();
 

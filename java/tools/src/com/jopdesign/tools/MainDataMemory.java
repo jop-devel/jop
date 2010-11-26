@@ -79,6 +79,7 @@ public class MainDataMemory extends DataMemory {
 		new DataCacheStats(getName()).addAverage(recordedStats).dump(out);
 	}
 
+	@Override public void invalidateCache() {}
 	@Override public void invalidateData() {}
 	@Override public void invalidateHandles() {}
 

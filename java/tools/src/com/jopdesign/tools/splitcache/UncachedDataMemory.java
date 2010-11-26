@@ -33,6 +33,8 @@ public class UncachedDataMemory extends DataMemory {
 	}
 
 	@Override
+	public void invalidateCache() {}
+	@Override
 	public void invalidateData() {}
 	@Override
 	public void invalidateHandles() {}

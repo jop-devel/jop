@@ -76,8 +76,8 @@ public class SetAssociativeCache extends DataMemory {
 		this.stats = new DataCacheStats(getName());
 	}
 		
+	@Override
 	public void invalidateCache() {
-		
 		for(int i = 0; i < ways; i++)
 			for(int j = 0; j < sets; j++)
 				cacheData[i][j].invalidate();

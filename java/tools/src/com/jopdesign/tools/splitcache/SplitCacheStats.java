@@ -225,6 +225,13 @@ public class SplitCacheStats extends DataMemory {
 	}
 
 	@Override
+	public void invalidateCache() {
+		allAccessed.clear();
+		allQuadsAccessed.clear();
+		stats.incrStat(StatType.DataInvalidates);
+	}
+
+	@Override
 	public void invalidateData() {
 		if(! hasMutableData) return;
 		allAccessed.clear();

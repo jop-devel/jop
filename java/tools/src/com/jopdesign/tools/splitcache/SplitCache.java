@@ -107,6 +107,13 @@ public class SplitCache extends DataMemory {
 	}
 
 	@Override
+	public void invalidateCache() {
+		for(DataMemory cache : caches) {
+			cache.invalidateCache();
+		}
+	}
+
+	@Override
 	public void invalidateData() {
 		for(DataMemory cache : caches) {
 			cache.invalidateData();

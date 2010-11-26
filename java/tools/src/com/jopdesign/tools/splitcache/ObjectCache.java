@@ -224,6 +224,21 @@ public class ObjectCache extends DataMemory {
 		}
 						
 		@Override
+		public void  invalidateCache() {
+			for(int i = 0; i < ways; i++) {
+				objectEntry[i].invalidate();
+			}
+			this.handleMemory.invalidateHandles();
+			for(ObjectCacheEntry entry: this.objectEntry) {
+				entry.invalidateMetaData();
+			}
+			nextLevelMemory.invalidateData();
+
+			objectStats.invalidate();
+			stats.invalidate();
+		}
+
+		@Override
 		public void  invalidateData() {			
 			for(int i = 0; i < ways; i++) {
 				objectEntry[i].invalidate();

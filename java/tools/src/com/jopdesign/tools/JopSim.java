@@ -577,7 +577,7 @@ System.out.println(mp+" "+pc);
 		stack[++sp] = old_mp;
 		
 		// is this a trigger to start cache statistics? (currently: main or measure)
-		if(measurementTriggers.contains(start)) { dataMem.resetStats(); dataMem.invalidateData(); }
+		if(measurementTriggers.contains(start)) { dataMem.resetStats(); dataMem.invalidateCache(); }
 		pc = insCache.invoke(start, len);
 	}
 
@@ -1491,7 +1491,9 @@ System.out.println("new heap: "+heap);
 					} else {
 						pc--;	// restart if we don't get the global lock
 					}
-					dataMem.invalidateData();
+					if (nrCpus > 1) {
+						dataMem.invalidateData();
+					}
 					break;
 				case 195 :		// monitorexit
 					sp--;		// we don't use the objref
@@ -1522,8 +1524,10 @@ System.out.println("new heap: "+heap);
 					noim(203);
 					break;
 				case 204 :		// jopsys_inval
-					dataMem.invalidateData();
-					dataMem.invalidateHandles(); // FIXME: wolfgang, check if this is correct					
+					if (nrCpus > 1) {
+						dataMem.invalidateData();
+						dataMem.invalidateHandles(); // FIXME: wolfgang, check if this is correct
+					}
 					break;
 				case 205 :		// resCD
 					noim(205);
