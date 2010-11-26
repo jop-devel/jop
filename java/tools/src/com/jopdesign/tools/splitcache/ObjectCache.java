@@ -306,6 +306,7 @@ public class ObjectCache extends DataMemory {
 			} else {
 				// we need to update the entry if it is in the cache
 				int way = lookupObject(handle);
+				objectStats.read(isValidWay(way));
 				if(! isValidWay(way)) return;
 				getObjectCacheEntry(way).updateIfValid(offset, data);
 				stats.write();
@@ -333,10 +334,8 @@ public class ObjectCache extends DataMemory {
 				ob = new ObjectCacheEntry();
 				ob.initializeForObject(handle);
 				ob.loadObjectMetaData();
-				objectStats.read(false);
 			} else {
 				ob = getObjectCacheEntry(way);
-				objectStats.read(true);
 			}
 			updateCache(way, ob);
 			return ob;

@@ -103,9 +103,10 @@ public class DataCacheStats implements DataMemoryStats {
 				this.stats[ty.ordinal()] += cs.get(ty);
 			}
 		}
-		for(StatTy ty : StatTy.values()) {
-			this.stats[ty.ordinal()] /= n;
-		}
+		// The following code causes rounding errors
+		// for(StatTy ty : StatTy.values()) {
+		// 	this.stats[ty.ordinal()] /= n;
+		// }
 		return this;
 	}
 
