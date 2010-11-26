@@ -569,10 +569,6 @@ public class GC {
 			}			
 		}
 		
-		JVMHelp.wr('O');
-		JVMHelp.wrByte(size);
-		JVMHelp.wr('\n');
-
 		int ref;
 		
 		synchronized (mutex) {
@@ -664,10 +660,6 @@ public class GC {
 				}
 			}			
 		}
-
-		JVMHelp.wr('A');
-		JVMHelp.wrSmall(size);
-		JVMHelp.wr('\n');
 
 		int ref;
 		synchronized (mutex) {
