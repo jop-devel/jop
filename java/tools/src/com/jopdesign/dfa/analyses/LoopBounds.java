@@ -1423,8 +1423,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			if (method.isSynchronized()) {
 				c.syncLevel = context.syncLevel+1;
 			}
-			c.method = methodName;
-			c.callString = c.callString.push(p.getMethod(context.method), stmt.getPosition(), callStringLength);
+			c.method = mi;
+			c.callString = c.callString.push(mi, stmt.getPosition(), callStringLength);
 			
 			// carry only minimal information with call
 			Map<Location, ValueMapping> in = input.get(context.callString);
@@ -1658,7 +1658,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			ContextMap<CallString, Pair<ValueMapping>> r = bounds.get(instr);
 			Context c = r.getContext();
 
-			LineNumberTable lines = program.getMethod(c.method).getMethod().getLineNumberTable();
+			LineNumberTable lines = c.method.getMethod().getLineNumberTable();
 			int sourceLine = lines.getSourceLine(instr.getPosition());			
 
 			for (Iterator<CallString> k = r.keySet().iterator(); k.hasNext(); ) {
@@ -1716,7 +1716,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			ContextMap<CallString, Interval[]> r = sizes.get(instr);
 			Context c = r.getContext();
 
-			LineNumberTable lines = program.getMethod(c.method).getMethod().getLineNumberTable();
+			LineNumberTable lines = c.method.getMethod().getLineNumberTable();
 			int sourceLine = lines.getSourceLine(instr.getPosition());			
 
 			for (Iterator<CallString> k = r.keySet().iterator(); k.hasNext(); ) {

@@ -134,7 +134,7 @@ public class SymbolicAddressMapTest {
 		SymbolicAddressMap m2 = map2();
 		SymbolicAddressMap top = SymbolicAddressMap.top();
 
-		SymbolicAddressMap m1a = m1.cloneFilterStack(2);
+		SymbolicAddressMap m1a = m1.cloneWithStackPtr(2);
 		assert(! m1a.equals(m1));
 		assert(m1a.isSubset(m1));
 		assert(m1a.getStack(0).equals(m1.getStack(0)));
@@ -143,10 +143,10 @@ public class SymbolicAddressMapTest {
 		m1a.putStack(2, m1.getStack(2));
 		assert(m1a.equals(m1));
 		
-		SymbolicAddressMap m2a = m2.cloneFilterStack(2);
+		SymbolicAddressMap m2a = m2.cloneWithStackPtr(2);
 		assert(m2a.equals(m2));
 
-		SymbolicAddressMap topa = top.cloneFilterStack(1);
+		SymbolicAddressMap topa = top.cloneWithStackPtr(1);
 		assert(topa.equals(top));
 	}
 

@@ -38,6 +38,7 @@ import org.jgrapht.graph.Subgraph;
 import org.jgrapht.traverse.DepthFirstIterator;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
+import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.wcet.graphutils.AdvancedDOTExporter;
 import com.jopdesign.wcet.graphutils.Pair;
@@ -68,9 +69,9 @@ public class TypeGraph extends DefaultDirectedGraph<ClassInfo,DefaultEdge> {
     private ClassInfo rootNode;
     public ClassInfo getRootNode() { return rootNode; }
 
-    public TypeGraph(WcetAppInfo ai) {
+    public TypeGraph(AppInfo ai) {
         super(DefaultEdge.class);
-        build(ai.getCliMap());
+        build(ai.cliMap);
     }
 
     private void build(Map<String, ? extends ClassInfo> cliMap) {

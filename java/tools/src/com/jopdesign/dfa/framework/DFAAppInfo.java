@@ -47,6 +47,7 @@ import com.jopdesign.build.MethodInfo;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.ClinitOrder;
 import com.jopdesign.dfa.analyses.LoopBounds;
+import com.jopdesign.wcet.frontend.TypeGraph;
 
 public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 
@@ -66,6 +67,9 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 	private Map<InstructionHandle, ContextMap<CallString, Set<String>>> receivers;
 
 	private LoopBounds loopBounds;
+
+	// FIXME: this will live in a proper place in newtools
+	TypeGraph typeGraph;
 	
 	public DFAAppInfo(DFAClassInfo cliTemplate) {		
 		super(cliTemplate);
@@ -84,8 +88,8 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 		ClinitOrder c = new ClinitOrder(this);
 		iterate(c);
 
-		List order = c.findOrder();
-		for (Iterator i = order.iterator(); i.hasNext(); ) {
+		List<ClassInfo> order = c.findOrder();
+		for (Iterator<ClassInfo> i = order.iterator(); i.hasNext(); ) {
 			JavaClass jc = ((DFAClassInfo)i.next()).clazz;
 			clinits.add(jc.getClassName()+"."+clinitName+clinitSig);
 		}
@@ -93,6 +97,9 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 		if(! cliMap.containsKey(mainClass)) {
 			throw new ClassNotFoundException("class '"+mainClass+ "' not found");
 		}
+		// Build type graph
+		typeGraph = new TypeGraph(this);
+		
 		// create prologue
 		buildPrologue(mainClass, statements, flow, clinits);	
 	}
@@ -176,7 +183,7 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 			context.stackPtr = 0;
 			context.syncLevel = 0;
 			context.constPool = new ConstantPoolGen(prologue.getMethod().getConstantPool());
-			context.method = prologue.methodId;
+			context.method = prologue;
 			
 			MethodInfo main = getMethod(mainClass+"."+mainName+mainSig);
 			analysis.initialize(main, context);
@@ -201,7 +208,7 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 			Context context = new Context();
 			context.stackPtr = start.getMethodGen().getMaxLocals();
 			context.constPool = new ConstantPoolGen(start.getMethod().getConstantPool());
-			context.method = start.getFQMethodName();
+			context.method = start;
 
 			analysis.initialize(start, context);
 			InstructionHandle entry = start.getMethodGen().getInstructionList().getStart();
@@ -276,6 +283,10 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 	
 	public void setLoopBounds(LoopBounds lb) {
 		this.loopBounds = lb;
+	}
+
+	public TypeGraph getTypeGraph() {
+		return this.typeGraph;
 	}
 	
 }

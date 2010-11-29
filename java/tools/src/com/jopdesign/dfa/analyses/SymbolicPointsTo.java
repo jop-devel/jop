@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.LineNumberTable;
+import org.apache.bcel.generic.AALOAD;
 import org.apache.bcel.generic.AASTORE;
 import org.apache.bcel.generic.ARRAYLENGTH;
 import org.apache.bcel.generic.ArrayInstruction;
@@ -22,7 +23,6 @@ import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.LDC;
-import org.apache.bcel.generic.LDC2_W;
 import org.apache.bcel.generic.LoadInstruction;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.PUTFIELD;
@@ -32,6 +32,7 @@ import org.apache.bcel.generic.StoreInstruction;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
+import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.framework.Analysis;
 import com.jopdesign.dfa.framework.BoundedSetFactory;
@@ -213,13 +214,13 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			
 		case Constants.BIPUSH:
 		case Constants.SIPUSH: {
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));		
 		}
 		break;
 
 		case Constants.ACONST_NULL: {
 			// Null -> No reference
-			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
+			SymbolicAddressMap result = in.cloneWithStackPtr(newStackPtr);
 			result.putStack(newStackPtr-1, bsFactory.empty());
 			retval.put(context.callString, result);		
 		}
@@ -227,7 +228,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			
 		/* Long/Double Constants */
 		case Constants.LDC2_W: {
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));		
 		}
 		break;
 		/* Int/Float/String Constants */
@@ -236,14 +237,13 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			LDC ldc = (LDC) instruction;
 			Type t = ldc.getType(context.constPool);
 			if(t instanceof ReferenceType) {
-				SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
-				/* FIXME: This is overly conservative, but class pointer not available here */
-				String classContext = context.method;
-				SymbolicAddress addr = SymbolicAddress.stringLiteral(classContext,ldc.getIndex());
-				result.putStack(newStackPtr-1, bsFactory.singleton(addr ));
+				SymbolicAddressMap result = in.cloneWithStackPtr(newStackPtr);
+				ClassInfo classContext = context.method.getCli(); 
+				SymbolicAddress addr = SymbolicAddress.stringLiteral(classContext.toString(),ldc.getIndex());
+				result.putStack(newStackPtr-1, bsFactory.singleton(addr));
 				retval.put(context.callString, result);		
 			} else {
-				retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
+				retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));		
 			}
 		}
 		break;
@@ -268,7 +268,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.ISTORE_2:
 		case Constants.ISTORE_3:
 		case Constants.ISTORE: {	
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));		
 		}
 		break;
 		// 
@@ -279,7 +279,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.ASTORE: {
 			// copy value to local variable
 			StoreInstruction instr = (StoreInstruction)instruction; 
-			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
+			SymbolicAddressMap result = in.cloneWithStackPtr(newStackPtr);
 			if(DEBUG_PRINT) {
 				System.out.println(String.format("[DD] Copy: stack[%d] <- stack[%d]",
 						instr.getIndex(), context.stackPtr-1));
@@ -311,7 +311,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.ILOAD_2:
 		case Constants.ILOAD_3:
 		case Constants.ILOAD: {	
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));		
 		}
 		break;
 
@@ -322,7 +322,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			/* Instructions above need two stack slots */
 		case Constants.FCMPG:
 		case Constants.FCMPL:{
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));		
 		}
 		break;
 
@@ -334,26 +334,32 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.ALOAD: {
 			LoadInstruction instr = (LoadInstruction)instruction; 
 			// copy value from local variable
-			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
+			SymbolicAddressMap result = in.cloneWithStackPtr(newStackPtr);
 			result.copyStack(in, context.stackPtr, instr.getIndex());
 			retval.put(context.callString, result);		
 		}
 		break;	
 		// Access Object Handle (area), top of stack
 		case Constants.ARRAYLENGTH: {
-			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-1));
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
+			putResultFromStack(stmt, context, input, context.stackPtr - 1);
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));		
 		}
 		break;
-		// Access Object Handle, second on stack
+		// Access Object Handle (second on stack)
+		// Note that the value at top-of-stack may span 1 or 2 words
 		case Constants.PUTFIELD: {
 			PUTFIELD instr = (PUTFIELD)instruction;
-			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-1-instr.getType(context.constPool).getSize()));
-			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
+			putResultFromStack(stmt, context, input,
+					           context.stackPtr - 1 - instr.getType(context.constPool).getSize());
+			
+			SymbolicAddressMap result = in.cloneWithStackPtr(newStackPtr);
 			// Change alias information
+			// For fields, a simple yet effective alias set is the field name
 			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
-				String ty = instr.getFieldType(context.constPool).getSignature();
-				result.addAlias(ty, in.getStack(context.stackPtr-1));
+				// Reference at top of stack
+				BoundedSet<SymbolicAddress> newRef = in.getStack(context.stackPtr-1);
+				// Add alias info for the field
+				result.addFieldAlias(instr.getFieldName(context.constPool), newRef);
 			}
 			retval.put(context.callString, result);		
 		}
@@ -361,16 +367,18 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		
 		
 		// Access Object Handle, top of stack
-		case Constants.GETFIELD: {			
-			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-1));
+		case Constants.GETFIELD: {
+			putResultFromStack(stmt, context, input, context.stackPtr - 1);
+
 			GETFIELD instr = (GETFIELD)instruction;
-			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
+			SymbolicAddressMap result = in.cloneWithStackPtr(newStackPtr);
 			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
 				BoundedSet<SymbolicAddress> newMapping =
 					SymbolicAddress.fieldAccess(bsFactory,
 												in.getStack(context.stackPtr-1),
 							                    instr.getFieldName(context.constPool));
-				newMapping.addAll(in.getAliases(instr.getFieldType(context.constPool).getSignature()));
+				// Get aliases for this field
+				newMapping.addAll(in.getFieldAliases(instr.getFieldName(context.constPool)));
 				result.putStack(context.stackPtr-1, newMapping);
 			}
 			retval.put(context.callString, result);
@@ -380,7 +388,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		// Handles the same way as MOV
 		case Constants.PUTSTATIC: {			
 			PUTSTATIC instr = (PUTSTATIC)instruction;
-			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
+			SymbolicAddressMap result = in.cloneWithStackPtr(newStackPtr);
 			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
 				BoundedSet<SymbolicAddress> pointers = in.getStack(context.stackPtr - 1);
 				result.putHeap(fieldSignature(context, instr), pointers);
@@ -392,7 +400,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		// Handled the same as MOV
 		case Constants.GETSTATIC: {			
 			GETSTATIC instr = (GETSTATIC)instruction;
-			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
+			SymbolicAddressMap result = in.cloneWithStackPtr(newStackPtr);
 			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
 				result.putStack(context.stackPtr, in.getHeap(fieldSignature(context, instr)));
 			}
@@ -409,20 +417,22 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.BASTORE: {
 			int offset = 3;
 			if(opcode == Constants.LASTORE || opcode == Constants.DASTORE) offset=4;
-			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-offset));
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
+			putResultFromStack(stmt, context, input, context.stackPtr - offset);
+
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));		
 		}
 		break;
 		// changing the heap -> TOP
 		case Constants.AASTORE: {
-			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-3));
+			putResultFromStack(stmt, context, input, context.stackPtr - 3);
 			
 			AASTORE instr = (AASTORE) stmt.getInstruction();
-			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
-			// Change alias information
+			SymbolicAddressMap result = in.cloneWithStackPtr(newStackPtr);
+			// Add alias info for the array type
 			if(instr.getType(context.constPool) instanceof ReferenceType) {
-				String ty = instr.getType(context.constPool).getSignature();
-				result.addAlias(ty, in.getStack(context.stackPtr-1));
+				Type ty = instr.getType(context.constPool);
+				BoundedSet<SymbolicAddress> newRefs = in.getStack(context.stackPtr-1);
+				result.addArrayAlias(ty, newRefs);
 			}
 			retval.put(context.callString, result);		
 		}
@@ -436,15 +446,16 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.SALOAD:
 		case Constants.BALOAD: {
 			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-2));
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));		
 		}
 		break;
 		// AALOAD objectref, index -> objectref
 		// TODO: Use index info
 		case Constants.AALOAD: {
-			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-2));
-			//AALOAD instr = (AALOAD)instruction;
-			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
+			putResultFromStack(stmt, context, input, context.stackPtr - 2);
+			
+			AALOAD instr = (AALOAD)instruction;
+			SymbolicAddressMap result = in.cloneWithStackPtr(newStackPtr);
 			BoundedSet<SymbolicAddress> objectMapping = in.getStack(context.stackPtr-2);
 			BoundedSet<SymbolicAddress> newMapping;
 			LoopBounds bounds = interpreter.getProgram().getLoopBounds();
@@ -466,24 +477,10 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 					newMapping = bsFactory.top();					
 				}
 			}
-				
-//				Doesn't work, but is probably stupid anyway :(
-//  			LoopBounds bounds = interpreter.getProgram().getLoopBounds();
-//              bounds.getArraySizes().get(stmt).get(context.callString);
-//			    newMapping = bsFactory.empty();
-//				Interval[] sizeBounds = { new Interval(2,3) }; 
-//				for(Interval i : sizeBounds) {
-//					if(! i.hasUb()) {
-//						newMapping = bsFactory.top();
-//					}
-//					int ub = i.getUb();
-//					for(int j = 0; j <= ub; j++) {
-//						for(SymbolicAddress addr: objectMapping.getSet()) {
-//							newMapping.add(addr.accessArray(j));
-//						}					
-//					}
-//				}
-//			}
+			// Add aliases
+			newMapping.addAll(in.getArrayAliases(instr.getType(context.constPool)));
+
+
 			result.putStack(context.stackPtr-2, newMapping);
 			retval.put(context.callString, result);
 		}
@@ -491,14 +488,14 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 					
 		case Constants.DUP: {
 			// copy value on stack
-			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
+			SymbolicAddressMap result = in.cloneWithStackPtr(newStackPtr);
 			result.copyStack(in, context.stackPtr, context.stackPtr-1);
 			retval.put(context.callString, result);		
 		}
 		break;
 		case Constants.DUP_X1: {
 			// copy value on stack
-			SymbolicAddressMap result = in.cloneFilterStack(context.stackPtr-2);
+			SymbolicAddressMap result = in.cloneWithStackPtr(context.stackPtr-2);
 			result.copyStack(in, context.stackPtr-2, context.stackPtr-1);
 			result.copyStack(in, context.stackPtr-1, context.stackPtr-2);
 			result.copyStack(in, context.stackPtr, context.stackPtr-1);
@@ -507,7 +504,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		break;
 		case Constants.DUP_X2: {
 			// copy value on stack
-			SymbolicAddressMap result = in.cloneFilterStack(context.stackPtr-3);
+			SymbolicAddressMap result = in.cloneWithStackPtr(context.stackPtr-3);
 			result.copyStack(in, context.stackPtr-3, context.stackPtr-1);
 			result.copyStack(in, context.stackPtr-2, context.stackPtr-3);
 			result.copyStack(in, context.stackPtr-1, context.stackPtr-2);
@@ -518,7 +515,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		
 		case Constants.DUP2: {
 			// v1,v2 -> v1,v2,v1,v2
-			SymbolicAddressMap result = in.cloneFilterStack(context.stackPtr);
+			SymbolicAddressMap result = in.cloneWithStackPtr(context.stackPtr);
 			result.copyStack(in, context.stackPtr, context.stackPtr-2);
 			result.copyStack(in, context.stackPtr+1, context.stackPtr-1);
 			retval.put(context.callString, result);		
@@ -527,12 +524,12 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		
 		case Constants.POP: 
 		case Constants.POP2: {	
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));		
 		}
 		break;
 
 		case Constants.IINC: {	
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));		
 		}
 		break;
 		
@@ -548,7 +545,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.IDIV: 
 		case Constants.IREM:
 		case Constants.ISHL: {
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));			
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));			
 		}
 		break;
 
@@ -578,7 +575,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.FMUL: 
 		case Constants.FDIV: 
 		case Constants.FREM: {
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));			
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));			
 		}
 		break;
 			
@@ -587,7 +584,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.D2I:
 			/* Instructions above need two stack slots */
 		case Constants.D2L: {
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));						
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));						
 		}
 		break;
 		 
@@ -595,7 +592,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.L2I: 
 			/* Instructions above need two stack slots */
 		case Constants.L2D: {
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));						
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));						
 		}
 		break;
 			
@@ -609,27 +606,27 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.I2C:
 		case Constants.I2F:
 		case Constants.I2S:{
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));						
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));						
 		}
 		break;
 
 		case Constants.MONITORENTER:
 			// not supported yet
-			if(ASSUME_NO_CONC) retval.put(context.callString, in.cloneFilterStack(newStackPtr));
+			if(ASSUME_NO_CONC) retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));
 			else               retval.put(context.callString, SymbolicAddressMap.top());						
 			break;
 
 		case Constants.MONITOREXIT:
 			// not supported yet
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));		
 			break;
 
 		case Constants.CHECKCAST:
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));						
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));						
 			break;
 			
 		case Constants.INSTANCEOF: {
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));						
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));						
 		}
 		break;
 
@@ -637,7 +634,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.NEWARRAY:
 		case Constants.ANEWARRAY:
 		{
-			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
+			SymbolicAddressMap result = in.cloneWithStackPtr(newStackPtr);
 			BoundedSet<SymbolicAddress> newMapping;
 			if(executedOnce.query(stmt)) {
 				newMapping = bsFactory.singleton(SymbolicAddress.newName());
@@ -658,18 +655,18 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		break;
 
 		case Constants.GOTO:
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));						
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));						
 			break;
 		
 		case Constants.IFNULL:
 		case Constants.IFNONNULL: {	
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));						
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));						
 		}
 		break;
 		
 		case Constants.IF_ACMPEQ:
 		case Constants.IF_ACMPNE: {	
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));						
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));						
 		}
 		break;			
 			
@@ -679,7 +676,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.IFGE:
 		case Constants.IFLE:
 		case Constants.IFGT:
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));						
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));						
 			break;
 
 		case Constants.IF_ICMPEQ:
@@ -688,12 +685,12 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.IF_ICMPGE:
 		case Constants.IF_ICMPGT:
 		case Constants.IF_ICMPLE:
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));						
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));						
 			break;
 
 		case Constants.LOOKUPSWITCH:
 		case Constants.TABLESWITCH:
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));						
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));						
 			break;
 			
 		case Constants.INVOKEVIRTUAL:
@@ -732,7 +729,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 //				System.out.println(String.format("%s: args+1: %d; stack[%d] %s",
 //						mi.methodId,refPos,context.stackPtr,input.get(context.callString)));
 				try {
-					putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-refPos));
+					putResultFromStack(stmt, context, input, context.stackPtr - refPos);
 				} catch(Error e) {
 					System.err.println("We have problems with method "+mi);
 					System.err.println(e.getMessage());
@@ -746,7 +743,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		break;
 		
 		case Constants.ARETURN: {
-			SymbolicAddressMap result = in.cloneFilterStack(0);
+			SymbolicAddressMap result = in.cloneWithStackPtr(0);
 			// store results
 			result.copyStack(in, 0, context.stackPtr-1);
 			retval.put(context.callString, result);
@@ -759,13 +756,13 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.FRETURN:
 		case Constants.IRETURN:
 		case Constants.RETURN: {
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));						
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));						
 		}
 		break;						
 
 		default:
 			System.err.println("unknown instruction: "+stmt+" in method "+context.method);
-			retval.put(context.callString, in.cloneFilterStack(newStackPtr));						
+			retval.put(context.callString, in.cloneWithStackPtr(newStackPtr));						
 			break;
 		}
 		
@@ -785,7 +782,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 	}
 	
 	private String fieldSignature(Context context, FieldInstruction instr) {
-		return instr.getClassName(context.constPool) + instr.getFieldName(context.constPool);
+		return instr.getClassName(context.constPool) + "." + instr.getFieldName(context.constPool);
 	}
 
 	/** Save used object handle */
@@ -797,6 +794,14 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 					new HashMap<CallString, BoundedSet<SymbolicAddress>>()));
 		}
 		usedRefs.get(stmt).put(ctx.callString,stackEntry);
+	}
+	
+									
+
+	private void putResultFromStack(InstructionHandle stmt, Context context,
+			ContextMap<CallString, SymbolicAddressMap> input, int stackPtr) {
+		putResult(stmt, context, input.get(context.callString).getStack(stackPtr));
+		
 	}
 
 	private void doInvoke(String methodName,
@@ -828,8 +833,8 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			if (method.isSynchronized()) {
 				c.syncLevel = context.syncLevel+1;
 			}
-			c.method = methodName;
-			c.callString = c.callString.push(p.getMethod(context.method), stmt.getPosition(), callStringLength);
+			c.method = mi;
+			c.callString = c.callString.push(mi, stmt.getPosition(), callStringLength);
 			
 			// carry only minimal information with call
 			SymbolicAddressMap in = input.get(context.callString);
@@ -890,33 +895,33 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		if (methodId.equals("com.jopdesign.sys.Native.rd(I)I")
 				|| methodId.equals("com.jopdesign.sys.Native.rdMem(I)I")
 				|| methodId.equals("com.jopdesign.sys.Native.rdIntMem(I)I")) {
-			out = in.cloneFilterStack(nextStackPtr);
+			out = in.cloneWithStackPtr(nextStackPtr);
 		} else if (methodId.equals("com.jopdesign.sys.Native.wr(II)V")
 				|| methodId.equals("com.jopdesign.sys.Native.wrMem(II)V")
 				|| methodId.equals("com.jopdesign.sys.Native.wrIntMem(II)V")) {
-			out = in.cloneFilterStack(nextStackPtr-2);
+			out = in.cloneWithStackPtr(nextStackPtr-2);
 		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")) {
-			out = in.cloneFilterStack(nextStackPtr);
+			out = in.cloneWithStackPtr(nextStackPtr);
 		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(F)I")) {
-			out = in.cloneFilterStack(nextStackPtr);
+			out = in.cloneWithStackPtr(nextStackPtr);
 		} else if (methodId.equals("com.jopdesign.sys.Native.makeLong(II)J")) {
-			out = in.cloneFilterStack(nextStackPtr);			
+			out = in.cloneWithStackPtr(nextStackPtr);			
 		} else if (methodId.equals("com.jopdesign.sys.Native.toObject(I)Ljava/lang/Object;")
 				|| methodId.equals("com.jopdesign.sys.Native.toIntArray(I)[I")) {
-			out = in.cloneFilterStack(nextStackPtr);
+			out = in.cloneWithStackPtr(nextStackPtr);
 			out.putStack(context.stackPtr - 1, bsFactory.top());
 		} else if (methodId.equals("com.jopdesign.sys.Native.getSP()I")) {
-			out = in.cloneFilterStack(nextStackPtr+1);
+			out = in.cloneWithStackPtr(nextStackPtr+1);
 		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")) {
-			out = in.cloneFilterStack(nextStackPtr);
+			out = in.cloneWithStackPtr(nextStackPtr);
 		} else if (methodId.equals("com.jopdesign.sys.Native.condMove(IIZ)I")) {
-			out = in.cloneFilterStack(nextStackPtr-2);
+			out = in.cloneWithStackPtr(nextStackPtr-2);
 		} else if(methodId.equals("com.jopdesign.sys.Native.arrayLoad(II)I")) {
-			out = in.cloneFilterStack(nextStackPtr-1);
+			out = in.cloneWithStackPtr(nextStackPtr-1);
 		} else if(methodId.equals("com.jopdesign.sys.Native.arrayStore(III)V")) {
-			out = in.cloneFilterStack(nextStackPtr-3);			
+			out = in.cloneWithStackPtr(nextStackPtr-3);			
 		} else if(methodId.equals("com.jopdesign.sys.Native.condMoveRef(Ljava/lang/Object;Ljava/lang/Object;Z)Ljava/lang/Object;")) { 
-			out = in.cloneFilterStack(nextStackPtr-2);
+			out = in.cloneWithStackPtr(nextStackPtr-2);
 			BoundedSet<SymbolicAddress> joined =
 				in.getStack(context.stackPtr-3).join(in.getStack(context.stackPtr-2));
 			out.putStack(context.stackPtr-3, joined);
@@ -937,17 +942,15 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			
 			ContextMap<CallString, BoundedSet<SymbolicAddress>> r = usedRefs.get(instr);
 			Context c = r.getContext();
-			MethodInfo method = program.getMethod(c.method);
-			if(method == null) {
-				throw new AssertionError("Internal Error: No method '"+c.method+"'");
-			}
+			MethodInfo method = c.method;
+
 			LineNumberTable lines = method.getMethod().getLineNumberTable();
 			int sourceLine = lines.getSourceLine(instr.getPosition());			
 
 			for (Iterator<CallString> k = r.keySet().iterator(); k.hasNext(); ) {
 				CallString callString = k.next();
 
-				System.out.println(c.method+":"+sourceLine+":"+callString+": "+instr);
+				System.out.println(c.method.methodId+":"+sourceLine+":"+callString+": "+instr);
 				BoundedSet<SymbolicAddress> symAddr = r.get(callString);
 				
 				String infoStr;

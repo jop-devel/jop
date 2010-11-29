@@ -22,13 +22,15 @@ package com.jopdesign.dfa.framework;
 
 import org.apache.bcel.generic.ConstantPoolGen;
 
+import com.jopdesign.build.MethodInfo;
+
 public class Context {
 
 	public int stackPtr;
 	public int syncLevel;
 	public boolean threaded;
 	public ConstantPoolGen constPool;
-	public String method;
+	public MethodInfo method;
 	public CallString callString;	
 	
 	public Context() {

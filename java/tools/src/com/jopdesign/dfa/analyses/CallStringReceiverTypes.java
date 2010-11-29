@@ -1130,8 +1130,8 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 		if (method.isSynchronized()) {
 			c.syncLevel = context.syncLevel+1;
 		}
-		c.method = methodName;
-		c.callString = c.callString.push(p.getMethod(context.method), stmt.getPosition(), callStringLength);
+		c.method = p.getMethod(methodName);
+		c.callString = c.callString.push(context.method, stmt.getPosition(), callStringLength);
 		
 		boolean threaded = false;	
 		
@@ -1225,8 +1225,8 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 			if (method.isSynchronized()) {
 				c.syncLevel = context.syncLevel+1;
 			}
-			c.method = methodName;
-			c.callString = c.callString.push(p.getMethod(context.method), stmt.getPosition(), callStringLength);
+			c.method = p.getMethod(methodName);
+			c.callString = c.callString.push(c.method, stmt.getPosition(), callStringLength);
 
 			// carry only minimal information with call
 			Set<TypeMapping> in = input.get(context.callString);

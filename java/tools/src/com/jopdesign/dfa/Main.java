@@ -33,15 +33,14 @@ public class Main {
 //	private static final String POINTS_TO_TARGET = "jbe.lift.LiftControl.loop(Ljbe/lift/TalIo;)V";
 //	private static final String POINTS_TO_TARGET = "jbe.lift.LiftControl.waitForMotorStart(Ljbe/lift/TalIo;)V";
 //	wcet.devel.ObjectCache
-//	private static final String POINTS_TO_TARGET = "wcet.devel.ObjectCache.test1()I";
-//	private static final String POINTS_TO_TARGET = "wcet.devel.ObjectCache.test3()I";
+private static final String POINTS_TO_TARGET = "wcet.devel.ObjectCache.test4()I";
 //	private static final String POINTS_TO_TARGET = 
 //		"wcet.devel.ObjectCache$Obj1.test2(Lwcet/devel/ObjectCache$Obj1;Lwcet/devel/ObjectCache$Obj2;)I";
 //  wcet.StartEjipCmp
 //	private static final String POINTS_TO_TARGET = "jbe.BenchUdpIp.request()V";
 //	private static final String POINTS_TO_TARGET = "cmp.EjipBenchCMP.macServer()V";
 //	private static final String POINTS_TO_TARGET = "ejip.Ejip.returnPacket(Lejip/Packet;)V";
-	private static final String POINTS_TO_TARGET = "ttpa.protocol.Node.doMpSlotAction()V";
+//	private static final String POINTS_TO_TARGET = "ttpa.protocol.Node.doMpSlotAction()V";
 
 	private static final int CALLSTRING_LENGTH = 0;
 	

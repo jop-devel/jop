@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
 import com.jopdesign.dfa.framework.BoundedSetFactory;
@@ -27,17 +28,17 @@ public class SymbolicAddressMap {
 	private BoundedSetFactory<SymbolicAddress> bsFactory;
 
 	/* Invariant: obj.map == null iff obj == TOP */
-	private Map<Location, BoundedSet<SymbolicAddress>> mapP;
-	private HashMap<String, BoundedSet<SymbolicAddress>> mapA;
+	private Map<Location, BoundedSet<SymbolicAddress>> mapPointsTo;
+	private HashMap<String, BoundedSet<SymbolicAddress>> mapFieldAliases;
 
 	public boolean isTop()
 	{
-		return(this.mapP == null);
+		return(this.mapPointsTo == null);
 	}
 	private void setTop()
 	{
-		this.mapP = null;
-		this.mapA = null;
+		this.mapPointsTo = null;
+		this.mapFieldAliases = null;
 	}
 	
 
@@ -57,14 +58,14 @@ public class SymbolicAddressMap {
 							   HashMap<Location,BoundedSet<SymbolicAddress>> initP,
 							   HashMap<String,BoundedSet<SymbolicAddress>> initA) {
 		this.bsFactory = bsFactory;
-		this.mapP = initP;
-		this.mapA = initA;
+		this.mapPointsTo = initP;
+		this.mapFieldAliases = initA;
 	}
 
 	@Override
 	public int hashCode() {
 		if(isTop()) return 1;
-		else return 2 + 31 * mapP.hashCode() + mapA.hashCode();
+		else return 2 + 31 * mapPointsTo.hashCode() + mapFieldAliases.hashCode();
 	}
 	@Override
 	public boolean equals(Object obj) {
@@ -73,7 +74,7 @@ public class SymbolicAddressMap {
 		if (getClass() != obj.getClass()) return false;
 		SymbolicAddressMap other = (SymbolicAddressMap) obj;
 		if(this.isTop() || other.isTop()) return (this.isTop() && other.isTop());
-		return mapP.equals(other.mapP) && mapA.equals(other.mapA);
+		return mapPointsTo.equals(other.mapPointsTo) && mapFieldAliases.equals(other.mapFieldAliases);
 	}
 
 	public boolean isSubset(SymbolicAddressMap other) {
@@ -81,15 +82,15 @@ public class SymbolicAddressMap {
 		else if(this.isTop())   return false;
 		else if(other == null)  return false;
 		/* Neither is \bot or \top -> pointwise subseteq */
-		for(Location l : this.mapP.keySet()) {
-			BoundedSet<SymbolicAddress> thisEntry = mapP.get(l);
-			BoundedSet<SymbolicAddress> otherEntry = other.mapP.get(l);
+		for(Location l : this.mapPointsTo.keySet()) {
+			BoundedSet<SymbolicAddress> thisEntry = mapPointsTo.get(l);
+			BoundedSet<SymbolicAddress> otherEntry = other.mapPointsTo.get(l);
 			if(otherEntry == null) return false;
 			if(! thisEntry.isSubset(otherEntry)) return false;
 		}
-		for(String l : this.mapA.keySet()) {
-			BoundedSet<SymbolicAddress> thisEntry = mapP.get(l);
-			BoundedSet<SymbolicAddress> otherEntry = other.mapP.get(l);
+		for(String l : this.mapFieldAliases.keySet()) {
+			BoundedSet<SymbolicAddress> thisEntry = mapPointsTo.get(l);
+			BoundedSet<SymbolicAddress> otherEntry = other.mapPointsTo.get(l);
 			if(otherEntry == null) return false;
 			if(! thisEntry.isSubset(otherEntry)) return false;
 		}
@@ -100,20 +101,21 @@ public class SymbolicAddressMap {
 	protected SymbolicAddressMap clone() {
 		if(this.isTop()) return this;
 		return new SymbolicAddressMap(this.bsFactory,
-				new HashMap<Location, BoundedSet<SymbolicAddress>>(this.mapP),
-				new HashMap<String, BoundedSet<SymbolicAddress>>(this.mapA));
+				new HashMap<Location, BoundedSet<SymbolicAddress>>(this.mapPointsTo),
+				new HashMap<String, BoundedSet<SymbolicAddress>>(this.mapFieldAliases));
 	}
 	
 	/** Clone address map, but only those stack variables below {@code bound} */
-	public SymbolicAddressMap cloneFilterStack(int bound) {
+	public SymbolicAddressMap cloneWithStackPtr(int bound) {
 		if(this.isTop()) return this;
 		SymbolicAddressMap copy = new SymbolicAddressMap(this.bsFactory);
-		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : mapP.entrySet()) {
+		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : mapPointsTo.entrySet()) {
 			Location loc = entry.getKey();
 			if(loc.isHeapLoc() || loc.stackLoc < bound) {
 				copy.put(loc, entry.getValue());
 			}
 		}
+		copy.mapFieldAliases = new HashMap<String, BoundedSet<SymbolicAddress>>(this.mapFieldAliases);
 		return copy;
 	}
 	
@@ -122,7 +124,7 @@ public class SymbolicAddressMap {
 	public SymbolicAddressMap cloneInvoke(int framePtr) {
 		if(this.isTop()) return this;
 		SymbolicAddressMap copy = new SymbolicAddressMap(this.bsFactory);
-		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : mapP.entrySet()) {
+		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : mapPointsTo.entrySet()) {
 			Location loc = entry.getKey();
 			if(loc.isHeapLoc()) {
 				copy.put(loc, entry.getValue());
@@ -144,10 +146,10 @@ public class SymbolicAddressMap {
 			setTop();
 			return;
 		}
-		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : in.mapP.entrySet()) {
+		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : in.mapPointsTo.entrySet()) {
 			Location loc = entry.getKey();
 			if(! loc.isHeapLoc() && loc.stackLoc < bound) {
-				mapP.put(loc, in.getStack(loc.stackLoc));
+				mapPointsTo.put(loc, in.getStack(loc.stackLoc));
 			}
 		}		
 	}
@@ -168,7 +170,7 @@ public class SymbolicAddressMap {
 			return;
 		}
 
-		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : returned.mapP.entrySet()) {
+		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : returned.mapPointsTo.entrySet()) {
 			Location locReturnedFrame = entry.getKey();
 			Location locCallerFrame; 
 			if(locReturnedFrame.isHeapLoc()) {
@@ -176,8 +178,8 @@ public class SymbolicAddressMap {
 			} else {
 				locCallerFrame = new Location(locReturnedFrame.stackLoc + framePtr); 
 			}
-			BoundedSet<SymbolicAddress> callerSet = mapP.get(locCallerFrame);
-			BoundedSet<SymbolicAddress> returnedSet = returned.mapP.get(locReturnedFrame);
+			BoundedSet<SymbolicAddress> callerSet = mapPointsTo.get(locCallerFrame);
+			BoundedSet<SymbolicAddress> returnedSet = returned.mapPointsTo.get(locReturnedFrame);
 			put(locCallerFrame, returnedSet.join(callerSet));
 		}		
 	}
@@ -186,7 +188,7 @@ public class SymbolicAddressMap {
 		if(in.isTop()) return;
 		if(this.isTop()) return;
 		Location srcLoc = new Location(src);
-		BoundedSet<SymbolicAddress> val = in.mapP.get(srcLoc);
+		BoundedSet<SymbolicAddress> val = in.mapPointsTo.get(srcLoc);
 		if(val == null) return;
 		putStack(dst, val);
 	}
@@ -194,10 +196,10 @@ public class SymbolicAddressMap {
 	public BoundedSet<SymbolicAddress> getStack(int index) {
 		if(this.isTop()) return bsFactory.top();
 		Location loc = new Location(index);
-		BoundedSet<SymbolicAddress> val = mapP.get(loc);
+		BoundedSet<SymbolicAddress> val = mapPointsTo.get(loc);
 		if(val == null) {
 			Logger.getLogger(this.getClass()).error("Undefined stack location: "+loc);
-			for(Entry<Location, BoundedSet<SymbolicAddress>> entry : this.mapP.entrySet()) {
+			for(Entry<Location, BoundedSet<SymbolicAddress>> entry : this.mapPointsTo.entrySet()) {
 				System.err.println("  "+entry.getKey()+ " --> "+entry.getValue());
 			}
 //			throw new AssertionError("Undefined stack Location");
@@ -210,7 +212,7 @@ public class SymbolicAddressMap {
 	public BoundedSet<SymbolicAddress> getHeap(String staticfield) {
 		if(this.isTop()) return bsFactory.top();
 		Location loc = new Location(staticfield);
-		BoundedSet<SymbolicAddress> val = mapP.get(loc);
+		BoundedSet<SymbolicAddress> val = mapPointsTo.get(loc);
 		if(val == null) {
 			val = bsFactory.singleton(SymbolicAddress.rootAddress(staticfield));
 		}
@@ -225,27 +227,39 @@ public class SymbolicAddressMap {
 			throw new AssertionError("put "+l+": null");
 		}
 		if(this.isTop()) return;
-		this.mapP.put(l, bs);
+		this.mapPointsTo.put(l, bs);
 	}
 
-	public void addAlias(String ty, BoundedSet<SymbolicAddress> newAliases) {
+	public void addFieldAlias(String fieldName, BoundedSet<SymbolicAddress> newRefs) {
 		if(this.isTop()) return;
-		BoundedSet<SymbolicAddress> oldAlias = this.mapA.get(ty);
+		BoundedSet<SymbolicAddress> oldAlias = this.mapFieldAliases.get(fieldName);
 		if(oldAlias == null) oldAlias = bsFactory.empty();
 		// FIXME: Debugging
-		if(newAliases == null) {
-			Logger.getLogger("Object Cache Analysis").error("Undefined alias set for "+ty);
+		if(newRefs == null) {
+			Logger.getLogger("Object Cache Analysis").error("Undefined alias set for "+fieldName);
 			return;
 		}
-		oldAlias.addAll(newAliases);
-		mapA.put(ty, newAliases);
+		oldAlias.addAll(newRefs);
+		mapFieldAliases.put(fieldName, oldAlias);
 	}
 	
-	public BoundedSet<SymbolicAddress> getAliases(String fieldType) {
+	public void addArrayAlias(Type elementType, BoundedSet<SymbolicAddress> newRefs) {
+		addFieldAlias(elementType.getSignature()+"[]", newRefs);
+	}
+
+	private BoundedSet<SymbolicAddress> getAliases(String fieldType) {
 		if(this.isTop()) return bsFactory.top();
-		BoundedSet<SymbolicAddress> aliases = this.mapA.get(fieldType);
+		BoundedSet<SymbolicAddress> aliases = this.mapFieldAliases.get(fieldType);
 		if(aliases == null) return bsFactory.empty();
 		return aliases;
+	}
+	
+	public BoundedSet<SymbolicAddress> getArrayAliases(Type type) {
+		return getAliases(type.getSignature() + "[]");
+	}
+
+	public BoundedSet<SymbolicAddress> getFieldAliases(String fieldName) {
+		return getAliases(fieldName);
 	}
 
 	/** Print results
@@ -259,9 +273,9 @@ public class SymbolicAddressMap {
 		if(this.isTop()) {
 			out.println("TOP"); return;
 		}
-		out.println("SymbolicAddressMap ("+mapP.size()+")");
+		out.println("SymbolicAddressMap ("+mapPointsTo.size()+")");
 		indentstr.append(' ');
-		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : mapP.entrySet()) {
+		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : mapPointsTo.entrySet()) {
 			out.print(indentstr.toString());
 			out.print(entry.getKey());
 			out.print(": ");
@@ -269,7 +283,7 @@ public class SymbolicAddressMap {
 			out.print(entry.getValue());
 			out.print("\n");
 		}
-		for(Entry<String, BoundedSet<SymbolicAddress>> entry : mapA.entrySet()) {
+		for(Entry<String, BoundedSet<SymbolicAddress>> entry : mapFieldAliases.entrySet()) {
 			out.print(indentstr.toString());
 			out.print(entry.getKey());
 			out.print("~~> ");
@@ -287,9 +301,9 @@ public class SymbolicAddressMap {
 			sb.append(".TOP");
 		} else {
 			sb.append("{ ");
-			sb.append(mapP);
+			sb.append(mapPointsTo);
 			sb.append(", ");
-			sb.append(mapA);
+			sb.append(mapFieldAliases);
 			sb.append(" }");
 		}
 		return sb.toString();

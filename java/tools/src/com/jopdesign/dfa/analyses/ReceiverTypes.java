@@ -1009,11 +1009,12 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			ContextMap<TypeMapping, TypeMapping> result) {
 		
 		DFAAppInfo p = interpreter.getProgram();
-		if (p.getMethod(methodName) == null) {
+		MethodInfo mi = p.getMethod(methodName);
+		if (mi == null) {
 			System.out.println(context.method+": "+stmt+" unknown method: "+methodName);
 			return;					
 		}
-		MethodGen method = p.getMethod(methodName).getMethodGen();
+		MethodGen method = mi.getMethodGen();
 		String signature = method.getName()+method.getSignature();
 		methodName = method.getClassName()+"."+signature;
 				
@@ -1031,7 +1032,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 		if (method.isSynchronized()) {
 			c.syncLevel = context.syncLevel+1;
 		}
-		c.method = methodName;
+		c.method = mi;
 
 		boolean threaded = false;	
 		
@@ -1102,7 +1103,8 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			Map<TypeMapping, TypeMapping> result) {
 
 		DFAAppInfo p = interpreter.getProgram();
-		MethodGen method = p.getMethod(methodName).getMethodGen();
+		MethodInfo mi = p.getMethod(methodName);
+		MethodGen method = mi.getMethodGen();
 		methodName = method.getClassName()+"."+method.getName()+method.getSignature();
 
 		recordReceiver(stmt, context, methodName);
@@ -1121,7 +1123,7 @@ public class ReceiverTypes implements Analysis<TypeMapping, TypeMapping> {
 			if (method.isSynchronized()) {
 				c.syncLevel = context.syncLevel+1;
 			}
-			c.method = methodName;
+			c.method = mi;
 
 			// carry only minimal information with call
 			ContextMap<TypeMapping, TypeMapping> tmpresult = new ContextMap<TypeMapping, TypeMapping>(c, new HashMap<TypeMapping, TypeMapping>());
