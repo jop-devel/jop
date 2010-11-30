@@ -471,24 +471,28 @@ public class ObjectCache extends DataMemory {
 		@Override
 		public void dump(PrintStream out) {
 			SplitCacheSim.printHeader(out,toString());
-			new DataCacheStats(getName()+"-objs").addAverage(this.recordedObjStats).dump(out);
-			new DataCacheStats(getName()+"-field").addAverage(this.recordedStats).dump(out);
-			out.println("Cache Miss Cycles (SRAM): "+cmc(0,2));
-			out.println("Cache Miss Cycles (SDRAM): "+cmc(10,2));
+			DataCacheStats objStats = new DataCacheStats(getName()+"-objs").addAverage(this.recordedObjStats);
+			DataCacheStats fieldStats = new DataCacheStats(getName()+"-field").addAverage(this.recordedStats);			
+			objStats.dump(out);
+			fieldStats.dump(out);
+
+			long totalAccesses = objStats.get(StatTy.ReadCount);
+			long cmcSRAM = cmc(objStats,fieldStats,0,2);
+			long cmcSDRAM = cmc(objStats,fieldStats,10,2);
+			out.println("Cache Miss Cycles (SRAM): "+cmcSRAM+" / "+totalAccesses+" = "+
+					    (cmcSRAM / (double)objStats.get(StatTy.ReadCount)));
+			out.println("Cache Miss Cycles (SDRAM): "+cmcSDRAM+" / "+totalAccesses+" = "+
+				    (cmcSRAM / (double)objStats.get(StatTy.ReadCount)));
 		}
 		
 		// The beautiful power of arithmetic presents:
 		// Cache Miss Cycles for the paper
-		private double cmc(int delay, int cyclesPerWord) {
-			DataCacheStats objStats = new DataCacheStats(getName()+"-objs").addAverage(this.recordedObjStats);
-			DataCacheStats fieldStats = new DataCacheStats(getName()+"-field").addAverage(this.recordedStats);			
-			long totalAccesses = objStats.get(StatTy.ReadCount);
+		private long cmc(DataCacheStats objStats, DataCacheStats fieldStats, int delay, int cyclesPerWord) {
 			long handleMisses = objStats.get(StatTy.ReadCount) - objStats.get(StatTy.HitCount);
 			long fieldMissesOrBypasses = fieldStats.get(StatTy.ReadCount) - fieldStats.get(StatTy.HitCount); 
 			//		let cmc or oh fr fh = ((or-oh) * 14.0 + (fr - fh) * 18) / or
 			return (handleMisses * (delay + 2*cyclesPerWord) + 
-				    fieldMissesOrBypasses * (delay + wordsPerBlock*cyclesPerWord)) /
-				    ((double)totalAccesses);
+				    fieldMissesOrBypasses * (delay + wordsPerBlock*cyclesPerWord));
 		}
 		
 		public static <T> void replaceLRU(T[] data, T obj, int oldPosition, int ways) {
