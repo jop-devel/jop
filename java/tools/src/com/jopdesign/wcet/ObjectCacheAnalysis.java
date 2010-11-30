@@ -21,7 +21,6 @@ import com.jopdesign.wcet.analysis.cache.ObjectRefAnalysis;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation.OCacheAnalysisResult;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation.OCacheMode;
-import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.CallGraph.CallGraphNode;
 import com.jopdesign.wcet.graphutils.MiscUtils;
 import com.jopdesign.wcet.graphutils.MiscUtils.Function2;
@@ -34,8 +33,10 @@ public class ObjectCacheAnalysis {
 	private interface ObjectCacheTiming {
 		public int  loadTime(int words);
 		public void setObjectCacheTiming(JOPConfig jopConfig, int lineSize);
+		public void setNoCacheTiming(JOPConfig jopconfig, int lineSize);
 	}
-	
+
+
 	private static class OCTimingUni implements ObjectCacheTiming {
 		private int accessCycles;
 		private int delay;
@@ -53,10 +54,19 @@ public class ObjectCacheAnalysis {
 		
 		public void setObjectCacheTiming(JOPConfig jopConfig, int blockSize) {
 			jopConfig.objectCacheHitCycles = accessCycles;
+			jopConfig.objectCacheLoadObjectCycles = accessCycles + loadTime(2);
 			jopConfig.objectCacheLoadFieldCycles = accessCycles + loadTime(1);
 			jopConfig.objectCacheLoadBlockCycles = accessCycles + loadTime(blockSize);
 		}
-		
+
+		public void setNoCacheTiming(JOPConfig jopConfig, int blockSize) {
+			jopConfig.objectCacheHitCycles = accessCycles;
+			jopConfig.objectCacheLoadObjectCycles = accessCycles + loadTime(1);
+			jopConfig.objectCacheLoadFieldCycles = accessCycles + loadTime(1);
+			// Should never be used without cache
+			jopConfig.objectCacheLoadBlockCycles = -100;
+		}
+
 		public String toString() {
 			return String.format("S(D)RAM [access=%d, delay=%d, cycles-per-word=%d]",
 					accessCycles,delay,cyclesPerWord);
@@ -98,6 +108,15 @@ public class ObjectCacheAnalysis {
 
 		public void setObjectCacheTiming(JOPConfig jopConfig, int cacheBlockSize) {			
 			jopConfig.objectCacheHitCycles = accessCycles;
+			// Two words miss on object miss
+			jopConfig.objectCacheLoadObjectCycles = accessCycles + loadTime(2);
+			jopConfig.objectCacheLoadFieldCycles = accessCycles + loadTime(1);
+			jopConfig.objectCacheLoadBlockCycles = accessCycles + loadTime(cacheBlockSize);
+		}
+		
+		public void setNoCacheTiming(JOPConfig jopConfig, int cacheBlockSize) {
+			jopConfig.objectCacheHitCycles = accessCycles;
+			jopConfig.objectCacheLoadObjectCycles = accessCycles + loadTime(1);
 			jopConfig.objectCacheLoadFieldCycles = accessCycles + loadTime(1);
 			jopConfig.objectCacheLoadBlockCycles = accessCycles + loadTime(cacheBlockSize);
 		}
@@ -124,13 +143,13 @@ public class ObjectCacheAnalysis {
 	private void evaluateObjectCache() {
 		long start,stop;
 		JOPConfig jopconfig = new JOPConfig(project);
-
+		
 		// Method Cache
 		//testExactAllFit();
 
 		// Object Cache (debugging)
 
-		ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project, false, 1, 65536, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE);
+		ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project, false, 1, 65536, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE, true);
 		TopologicalOrderIterator<CallGraphNode, DefaultEdge> cgIter = this.project.getCallGraph().topDownIterator();
 		while(cgIter.hasNext()) {
 			CallGraphNode scope = cgIter.next();
@@ -154,7 +173,7 @@ public class ObjectCacheAnalysis {
 		}
 		ObjectCacheAnalysisDemo oca;
 		ObjectCacheTiming configs[] = { 
-				new OCTimingUni(0,0,2),  // sram,uni:  2 cycles field cost, 2*w cycles line cost
+				new OCTimingUni(0,0,2),  // sram,uni:  2 cycles hanlde cost, 2 cycles field cost, 2*w cycles line cost
 				new OCTimingUni(0,10,2), // sdram,uni: 10+2*w cycles for each w-word access
 				new OCTimingCmp(8, 1, 0, 0, 2), // SRAM, cmp, 2 cycles word load cost, s=2
 				new OCTimingCmp(8, 4, 0, 10, 2) // SDRAM, cmp, 18 cycles quadword load cost, s=18
@@ -188,18 +207,14 @@ public class ObjectCacheAnalysis {
 				for(int lineSize : lineSizes) {
 					for(int blockSize : blockSizesObjCache) {
 						if(blockSize > lineSize) continue;
-						if(mode == OCacheMode.BLOCK_FILL) {
-							
-						} else {
-							if(blockSize > 1) continue;
+						if(mode != OCacheMode.BLOCK_FILL && blockSize > 1) {
+							continue;
 						}
-						/* Configure object cache timing */
-						ocConfig.setObjectCacheTiming(jopconfig, blockSize);
-
+						
 						/* We have to take field access count of cache size = 0; our analysis otherwise does not assign
 						 * sensible field access counts (thats the fault of the IPET method)
 						 */
-						long totalFieldAccesses = -1, cachedFieldAccesses = -1;
+						long totalMVBAccesses = -1, totalFieldAccesses = -1, cachedFieldAccesses = -1;
 						double bestCyclesPerAccessForConfig = Double.POSITIVE_INFINITY;
 						double bestHitRate = 0.0;
 						long bestCostPerConfig = Long.MAX_VALUE;
@@ -210,6 +225,17 @@ public class ObjectCacheAnalysis {
 							jopconfig.setObjectCacheBlockSize(blockSize);				
 							jopconfig.setObjectCacheFieldTag(mode == OCacheMode.SINGLE_FIELD);
 							jopconfig.setObjectCacheLineSize(lineSize);
+							if(ways == 0) {
+								ocConfig.setNoCacheTiming(jopconfig, blockSize);
+								jopconfig.setObjectCacheLineSize(0);
+							} else {
+								/* Configure object cache timing */
+								ocConfig.setObjectCacheTiming(jopconfig, blockSize);								
+							}
+							if(ocConfig instanceof OCTimingCmp) {
+								jopconfig.cmp = true;
+							}
+							
 							oca = new ObjectCacheAnalysisDemo(project, jopconfig);
 
 							double cyclesPerAccess, hitRate;
@@ -221,6 +247,7 @@ public class ObjectCacheAnalysis {
 							if(ways == 0) { 
 								maxCost = cost; 
 								totalFieldAccesses = ocCost.getTotalFieldAccesses();
+								totalMVBAccesses = ocCost.getMVBAccesses();
 								cachedFieldAccesses = ocCost.getFieldAccessesWithoutBypass();
 								bestRatio = 1.0; 
 								ratio = 1.0;
@@ -228,21 +255,22 @@ public class ObjectCacheAnalysis {
 								bestRatio = (double)bestCostPerConfig/(double)maxCost;
 								ratio = (double)cost/(double)maxCost; 
 							}
-							cyclesPerAccess = (double)cost / (double)totalFieldAccesses ;						
+							long totalAccesses = totalFieldAccesses + totalMVBAccesses;
+							cyclesPerAccess = (double)cost / (double)totalAccesses ;						
 							if(cyclesPerAccess < bestCyclesPerAccessForConfig || ways <= 1) {
 								bestCyclesPerAccessForConfig = cyclesPerAccess;
 							}
 							/* hit rate is defined as: 1 - ((cache misses+accesses to bypassed fields) / total field accesses (with n=0) */
 							long missAccesses = ocCost.getCacheMissCount() + ocCost.getBypassCount();
-							hitRate = (1 - ((double)missAccesses / (double)totalFieldAccesses));						
+							hitRate = (1 - ((double)missAccesses / (double)totalAccesses));						
 							if(hitRate > bestHitRate || ways <= 1) {
 								bestHitRate = hitRate;
 							}
 
 							if(first) {
 								oStream.println(String.format("***** ***** MODE = %s ***** *****\n",modeString));
-								oStream.println(String.format(" - max tags accessed (upper bound) = %d, max fields accesses = %d",
-										oca.getMaxAccessedTags(project.getTargetMethod(), CallString.EMPTY), totalFieldAccesses)
+								oStream.println(String.format(" - max tags accessed (upper bound) = %d, max fields accesses = %d, max MVB accessed = %d",
+										oca.getMaxAccessedTags(project.getTargetMethod(), CallString.EMPTY), totalFieldAccesses, totalMVBAccesses)
 								);						
 								first = false;
 							}					

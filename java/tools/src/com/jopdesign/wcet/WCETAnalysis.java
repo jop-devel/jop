@@ -3,7 +3,7 @@
     see <http://www.jopdesign.com/>
 
   Copyright (C) 2006-2008, Martin Schoeberl (martin@jopdesign.com)
-  Copyright (C) 2008-2009, Benedikt Huber (benedikt.huber@gmail.com)
+  Copyright (C) 2008-2010, Benedikt Huber (benedikt.huber@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by

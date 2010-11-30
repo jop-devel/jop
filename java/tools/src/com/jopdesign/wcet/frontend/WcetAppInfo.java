@@ -83,7 +83,7 @@ public class WcetAppInfo  {
 		this.project = p;
 		this.ai = ai;
 		this.processor = processor;
-		this.typeGraph = new TypeGraph(this);
+		this.typeGraph = new TypeGraph(this.ai);
 		cfgsByIndex = new Vector<ControlFlowGraph>();
 		cfgs = new Hashtable<MethodInfo, ControlFlowGraph>();
 	}

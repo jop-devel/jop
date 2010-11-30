@@ -47,6 +47,7 @@ public class JOPConfig {
 	public long objectCacheHitCycles;
 	public long objectCacheLoadFieldCycles;
 	public long objectCacheLoadBlockCycles;
+	public long objectCacheLoadObjectCycles;
 
 	public JOPConfig(Project p) {
 		configData = p.getConfig();
@@ -65,6 +66,7 @@ public class JOPConfig {
 		
 		this.objectCacheHitCycles = configData.getOption(OBJECT_CACHE_HIT_CYCLES).longValue();
 		this.objectCacheLoadFieldCycles = configData.getOption(OBJECT_CACHE_LOAD_FIELD_CYCLES).longValue();
+		this.objectCacheLoadObjectCycles = configData.getOption(OBJECT_CACHE_LOAD_OBJECT_CYCLES).longValue();
 		this.objectCacheLoadBlockCycles = configData.getOption(OBJECT_CACHE_LOAD_BLOCK_CYCLES).longValue();
 	}
 	
@@ -96,6 +98,8 @@ public class JOPConfig {
 		new IntegerOption("jop-ocache-hit-cycles", "JOP object access cycles on cache hit", 1);		
 	private static final IntegerOption OBJECT_CACHE_LOAD_FIELD_CYCLES =
 		new IntegerOption("jop-ocache-load-field-cycles", "JOP object cache load cycles for field (bypass)", 2);
+	private static final IntegerOption OBJECT_CACHE_LOAD_OBJECT_CYCLES =
+		new IntegerOption("jop-ocache-load-line-cycles", "JOP object cache load cycles for one object (handle miss)", 2);
 	private static final IntegerOption OBJECT_CACHE_LOAD_BLOCK_CYCLES =
 		new IntegerOption("jop-ocache-load-line-cycles", "JOP object cache load cycles for cache block (miss)", 2);
 
@@ -184,6 +188,9 @@ public class JOPConfig {
 
 	public long getObjectCacheBypassTime() {
 		return this.objectCacheLoadFieldCycles;
+	}
+	public long getObjectCacheLoadObjectCycles() {
+		return this.objectCacheLoadObjectCycles;
 	}
 
 /* Removed for now, as is not flexible enough */

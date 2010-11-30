@@ -19,10 +19,7 @@ import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.PUTFIELD;
 import org.apache.bcel.generic.ReferenceType;
-import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.analyses.SymbolicAddress;
@@ -38,7 +35,6 @@ import com.jopdesign.wcet.frontend.BasicBlock;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.SuperGraph;
 import com.jopdesign.wcet.frontend.CallGraph.CallGraphNode;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.frontend.SuperGraph.SuperInvokeEdge;
@@ -50,7 +46,6 @@ import com.jopdesign.wcet.ipet.LinearVector;
 import com.jopdesign.wcet.ipet.MaxCostFlow;
 import com.jopdesign.wcet.ipet.ILPModelBuilder.MapCostProvider;
 import com.jopdesign.wcet.ipet.MaxCostFlow.DecisionVariable;
-import com.jopdesign.wcet.jop.JOPConfig;
 
 /** Analysis of the used object references.
  *  Goal: Detect persistence scopes.
@@ -92,19 +87,20 @@ public class ObjectRefAnalysis {
 	/* Only consider getfield (false) or all handle accesses */
 	private static boolean ALL_HANDLE_ACCESSES = false; 
 		
+	private static boolean DO_CACHE_MVB = true;
 	
 	/* Simple Cost Models for our Object Cache */
 	public static class ObjectCacheCostModel {
 		public static final ObjectCacheCostModel COUNT_REF_TAGS = new ObjectCacheCostModel(0,1,0);;
 		public static final ObjectCacheCostModel COUNT_FIELD_TAGS = new ObjectCacheCostModel(1,0,0);
 		private long loadCacheBlockCost;
-		private long replaceLineCost;
+		private long replaceObjectCost;
 		private long fieldAccessCostBypass;
 
-		public ObjectCacheCostModel(long loadCacheBlockCost, long replaceLineCost, long fieldAccessCostBypass)
+		public ObjectCacheCostModel(long loadCacheBlockCost, long replaceObjectCost, long fieldAccessCostBypass)
 		{
 			this.loadCacheBlockCost = loadCacheBlockCost;
-			this.replaceLineCost = replaceLineCost;
+			this.replaceObjectCost = replaceObjectCost;
 			this.fieldAccessCostBypass = fieldAccessCostBypass;
 		}
 		/**
@@ -115,10 +111,12 @@ public class ObjectRefAnalysis {
 		}
 
 		/**
-		 * @return the loadCacheLineCost
+		 * This cost parameter can be used to model
+		 * the replacement of HANDLE and MVB
+		 * @return the replaceObjectCost
 		 */
-		public long getReplaceLineCost() {
-			return replaceLineCost;
+		public long getReplaceObjectCost() {
+			return replaceObjectCost;
 		}
 
 		/**
@@ -222,8 +220,9 @@ public class ObjectRefAnalysis {
 	private Project project;
 	private Map<DecisionVariable, SymbolicAddress> decisionVariables;
 	private Set<DecisionVariable> refDecisions;
-	
-	public ObjectRefAnalysis(Project p,  boolean fieldAsTag, int blockSize, int maxCachedIndex, int setSize) {
+
+	public ObjectRefAnalysis(Project p,  boolean fieldAsTag, int blockSize, int maxCachedIndex, int setSize,
+			                 boolean loadMVBwithHandle) {
 		this.project = p;
 		this.fieldAsTag = fieldAsTag;
 		this.blockSize = blockSize;
@@ -308,7 +307,13 @@ public class ObjectRefAnalysis {
 		maxCachedTagsAccessed.put(scope,maxCachedTags);
 		return maxCachedTags;
 	} 
-	
+	/**
+	 * Get the maximum cost for the object cache when executing the given
+	 * scope, <strong>GIVEN</strong> that the tags in the scope are persistent
+	 * @param scope
+	 * @param costModel
+	 * @return
+	 */
 	public ObjectCacheCost getMaxCacheCost(CallGraphNode scope, ObjectCacheCostModel costModel)
 	{
 		LocalPointsToResult usedRefs = getUsedRefs(scope);
@@ -325,7 +330,6 @@ public class ObjectRefAnalysis {
 								  HashSet<SymbolicAddress> usedSetOut,
 								  ObjectCacheCostModel costModel)
 	{
-		CallString emptyCallString = new CallString();
 
 		HashMap<SymbolicAddress, Map<CFGNode, Integer>> refAccessSets =
 			new HashMap<SymbolicAddress,Map<CFGNode, Integer>>();
@@ -341,7 +345,6 @@ public class ObjectRefAnalysis {
 		 * For references whose type cannot be fully resolved, at a
 		 * cost of 1.
 		 */
-		// FIXME: We should deal with subtyping (or better use storage based alias-analysis)
 		for(CFGNode node : sg.vertexSet()) {
 			/* Compute cost for basic block */
 			BasicBlock bb = node.getBasicBlock();
@@ -355,28 +358,31 @@ public class ObjectRefAnalysis {
 				String handleType = getHandleType(project, node, ih); 				
 				if(handleType == null) continue; /* No getfield/handle access */
 				
-				if(usedRefs.containsKey(ih)) {					
-					String fieldName = ((FieldInstruction)ih.getInstruction()).getFieldName(bb.cpg());
-					int fieldIndex = getFieldIndex(project, node.getControlFlowGraph(), ih);
-					int blockIndex = getBlockIndex(fieldIndex);
-					
-					if(fieldIndex > this.maxCachedFieldIndex) {
-						bypassCost += costModel.getFieldAccessCostBypass();
-						continue;
-					}
-										
-					refs = usedRefs.get(ih);						
-					if(refs.isSaturated()) {
-						alwaysMissCost += costModel.getReplaceLineCost() + costModel.getLoadCacheBlockCost();
+				if(! usedRefs.containsKey(ih)) {					
+					System.err.println("No DFA results for: "+ih.getInstruction() + " with field " + ((FieldInstruction)ih.getInstruction()).getFieldName(bb.cpg()));
+					continue;
+				}
+				int fieldIndex = getFieldIndex(project, node.getControlFlowGraph(), ih);
+				int blockIndex = getBlockIndex(fieldIndex);
+
+				refs = usedRefs.get(ih);						
+				if(refs.isSaturated()) {
+					if(fieldIndex < 0) { // no field access, just HANDLE or MVB
+						alwaysMissCost += costModel.getReplaceObjectCost();
 					} else {
-						for(SymbolicAddress ref : refs.getSet()) {
-							addAccessSite(refAccessSets, ref, node);
+						alwaysMissCost += costModel.getReplaceObjectCost() + costModel.getLoadCacheBlockCost();
+					}
+				} else {
+					for(SymbolicAddress ref : refs.getSet()) {
+						addAccessSite(refAccessSets, ref, node);
+						if(fieldIndex > this.maxCachedFieldIndex) {
+							bypassCost += costModel.getFieldAccessCostBypass();
+						} else if(fieldIndex >= 0) { // not a pure handle/mvb access, not bypassed
 							addAccessSite(blockAccessSets, ref.accessArray(blockIndex), node);
 						}
 					}
-				} else {
-					System.err.println("No DFA results for: "+ih.getInstruction() + " with field " + ((FieldInstruction)ih.getInstruction()).getFieldName(bb.cpg()));
 				}
+
 			}
 			bypassCostMap.put(node,bypassCost);
 			costMap.put(node,bypassCost + alwaysMissCost);
@@ -390,7 +396,7 @@ public class ObjectRefAnalysis {
 		
 		/* Add decision variables for all tags */		
 		for(Entry<SymbolicAddress, Map<CFGNode, Integer>> accessEntry : refAccessSets.entrySet()) {
-			addDecision(sg, maxCostFlow, accessEntry, costModel.getReplaceLineCost(),true);
+			addDecision(sg, maxCostFlow, accessEntry, costModel.getReplaceObjectCost(),true);
 		}
 		for(Entry<SymbolicAddress, Map<CFGNode, Integer>> accessEntry : blockAccessSets.entrySet()) {
 			addDecision(sg, maxCostFlow, accessEntry, costModel.getLoadCacheBlockCost(), false);
@@ -432,6 +438,7 @@ public class ObjectRefAnalysis {
 		long missCost = 0;   /* has to be equal to (cost - bypass cost) */
 		long bypassAccesses = 0; /* bypassed fields accesses */
 		long fieldAccesses = 0; /* cached fields accessed */
+		long mvbAccesses = 0; /* accesses to the MVB reference */
 		long bypassCost = 0; /* All object accesses * bypass cost */
 		Map<CFGNode, Long> freqMap = RecursiveWcetAnalysis.edgeToNodeFlow(sg, edgeFlowMap);
 		
@@ -445,12 +452,14 @@ public class ObjectRefAnalysis {
 			bypassCost += bbBypassCost * nodeFreq;
 			missCost   += (costMap.get(node) - bbBypassCost) * nodeFreq;
 			/* HACK */
-			long amCost = costModel.getReplaceLineCost() + costModel.getLoadCacheBlockCost();
+			long amCost = costModel.getReplaceObjectCost() + costModel.getLoadCacheBlockCost();
 			missCount  +=  ((costMap.get(node) - bbBypassCost) * nodeFreq) / amCost;
 			for(InstructionHandle ih : bb.getInstructions()) {
 				String handleType = getHandleType(project, node, ih); 				
-				if(handleType == null) continue; /* No getfield/handle access */					
-				if(! isFieldCached(node.getControlFlowGraph(), ih, maxCachedFieldIndex)) {
+				if(handleType == null) continue; /* No getfield/handle access */
+				if(handleType.equals("$mvb")) {
+					mvbAccesses += nodeFreq;
+				} else if(! isFieldCached(node.getControlFlowGraph(), ih, maxCachedFieldIndex)) {
 					bypassAccesses += nodeFreq;
 				} else {
 					fieldAccesses += nodeFreq; 
@@ -465,7 +474,7 @@ public class ObjectRefAnalysis {
 			DecisionVariable dvar = entry.getKey();
 			if(! entry.getValue()) continue;
 			if(refDecisions.contains(dvar)) {
-				missCost += costModel.getReplaceLineCost();
+				missCost += costModel.getReplaceObjectCost();
 			} else {
 				missCost += costModel.getLoadCacheBlockCost();
 				missCount += 1;
@@ -477,7 +486,8 @@ public class ObjectRefAnalysis {
 							missCount, missCost,cost-bypassCost,cost,bypassCost));
 		}
 
-		ObjectCacheCost ocCost = new ObjectCacheCost(missCount, missCost,bypassAccesses, bypassCost, fieldAccesses);
+		ObjectCacheCost ocCost = new ObjectCacheCost(missCount, missCost,bypassAccesses, bypassCost, 
+				                                     fieldAccesses, mvbAccesses);
 		return ocCost;
 	}
 
@@ -559,7 +569,7 @@ public class ObjectRefAnalysis {
 	 * @return the index of the field accessed by the instruction, or 0 if the instruction
 	 * does not access a field
 	 */
-	private static int getFieldIndex(Project p, ControlFlowGraph cfg, InstructionHandle ih) {
+	static int getFieldIndex(Project p, ControlFlowGraph cfg, InstructionHandle ih) {
 		ConstantPoolGen constPool = cfg.getMethodInfo().getConstantPoolGen();
 		Instruction instr = ih.getInstruction();
 		if(instr instanceof FieldInstruction) {
@@ -567,12 +577,15 @@ public class ObjectRefAnalysis {
 			String klassName = fieldInstr.getClassName(constPool);
 			String fieldName = fieldInstr.getFieldName(constPool);
 			return p.getLinkerInfo().getFieldIndex(klassName, fieldName);
+		} else if(DO_CACHE_MVB && (instr instanceof INVOKEVIRTUAL || instr instanceof INVOKEINTERFACE)) {
+			return -1;
 		} else {
-			return 0;			
+			return Integer.MAX_VALUE;			
 		}
 	}
 	
 	private int getBlockIndex(int fieldIndex) {
+		if(fieldIndex < 0) return fieldIndex; // Metadata block
 		return fieldIndex >> blockIndexBits;
 	}
 
@@ -596,6 +609,11 @@ public class ObjectRefAnalysis {
 			ReferenceType refty = gf.getReferenceType(constPool);
 			return refty.toString();
 		}
+		if(DO_CACHE_MVB) {
+			if(instr instanceof INVOKEVIRTUAL || instr instanceof INVOKEINTERFACE) {
+				return "$MVB";
+			}
+		}
 		if(! ALL_HANDLE_ACCESSES)
 			return null;
 		
@@ -612,10 +630,6 @@ public class ObjectRefAnalysis {
 		if(instr instanceof ARRAYLENGTH) {
 			//ARRAYLENGTH ainstr = (ARRAYLENGTH) instr;
 			return "[]";
-		}
-		if(instr instanceof INVOKEINTERFACE || instr instanceof INVOKEVIRTUAL)
-		{
-			return "$header";
 		}
 		return null;
 	}

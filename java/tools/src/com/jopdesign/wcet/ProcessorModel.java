@@ -43,6 +43,15 @@ public interface ProcessorModel {
 	 * @return true, if the instruction is translated to a processor specific bytecode
 	 */
 	public boolean isSpecialInvoke(MethodInfo ctx, Instruction i);
+
+	/**
+	 * Check whether the instruction invalidates the cache on multiprocessor systems
+     *
+	 * @param instr the instruction to check
+	 * @return true, if the instruction invalidates the cache on CMP
+	 */
+	public boolean invalidatesCache(MethodInfo ctx, Instruction i);
+	
 	/**
 	 * Check whether the given instruction is implemented in Java.
 	 */

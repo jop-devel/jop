@@ -89,8 +89,8 @@ public class SymbolicAddressMap {
 			if(! thisEntry.isSubset(otherEntry)) return false;
 		}
 		for(String l : this.mapFieldAliases.keySet()) {
-			BoundedSet<SymbolicAddress> thisEntry = mapPointsTo.get(l);
-			BoundedSet<SymbolicAddress> otherEntry = other.mapPointsTo.get(l);
+			BoundedSet<SymbolicAddress> thisEntry = mapFieldAliases.get(l);
+			BoundedSet<SymbolicAddress> otherEntry = other.mapFieldAliases.get(l);
 			if(otherEntry == null) return false;
 			if(! thisEntry.isSubset(otherEntry)) return false;
 		}

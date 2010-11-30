@@ -44,7 +44,7 @@ import org.apache.bcel.util.InstructionFinder;
 public class ClinitOrder extends AppVisitor {
 
 
-	Map clinit = new HashMap();
+	Map<ClassInfo, Set<ClassInfo>> clinit = new HashMap<ClassInfo, Set<ClassInfo>>();
 	
 	public ClinitOrder(AppInfo jz) {
 		super(jz);
@@ -54,17 +54,17 @@ public class ClinitOrder extends AppVisitor {
 		super.visitJavaClass(clazz);
 		MethodInfo mi = getCli().getMethodInfo(AppInfo.clinitSig);
 		if (mi!=null) {
-			Set depends = findDependencies(getCli(), mi, false);
+			Set<ClassInfo> depends = findDependencies(getCli(), mi, false);
 			clinit.put(getCli(), depends);
 		}
 	}	
 	
 	
-	private Set findDependencies(ClassInfo cli, MethodInfo mi, boolean inRec) {
+	private Set<ClassInfo> findDependencies(ClassInfo cli, MethodInfo mi, boolean inRec) {
 
 //		System.out.println("find dep. in "+cli.clazz.getClassName()+":"+mi.getMethod().getName());
 		Method method = mi.getMethod();
-		Set depends = new HashSet();
+		Set<ClassInfo> depends = new HashSet<ClassInfo>();
 		if (method.isNative() || method.isAbstract()) {
 			// nothing to do
 			// or should we look for all possible subclasses on
@@ -91,7 +91,7 @@ public class ClinitOrder extends AppVisitor {
 			int idx = ii.getIndex();
 			Constant co = cpool.getConstant(idx);
 			ConstantClass cocl = null;
-			Set addDepends = null;
+			Set<ClassInfo> addDepends = null;
 			String clname;
 			ClassInfo clinfo;
 			MethodInfo minfo;
@@ -169,9 +169,9 @@ public class ClinitOrder extends AppVisitor {
 			}
 			
 			if (addDepends!=null) {
-				Iterator itAddDep = addDepends.iterator();
+				Iterator<ClassInfo> itAddDep = addDepends.iterator();
 				while (itAddDep.hasNext()) {
-					ClassInfo addCli = (ClassInfo) itAddDep.next();
+					ClassInfo addCli = itAddDep.next();
 					if (addCli==cli) {
 						throw new Error("cyclic indirect <clinit> dependency");
 					}
@@ -192,17 +192,17 @@ public class ClinitOrder extends AppVisitor {
 	 */
 	private void printDependency() {
 
-		Set cliSet = clinit.keySet();
-		Iterator itCliSet = cliSet.iterator();
+		Set<ClassInfo> cliSet = clinit.keySet();
+		Iterator<ClassInfo> itCliSet = cliSet.iterator();
 		while (itCliSet.hasNext()) {
 		
-			ClassInfo clinf = (ClassInfo) itCliSet.next();
+			ClassInfo clinf = itCliSet.next();
 			System.out.println("Class "+clinf.clazz.getClassName());
-			Set depends = (Set) clinit.get(clinf);
+			Set<ClassInfo> depends = clinit.get(clinf);
 				
-			Iterator it = depends.iterator();
+			Iterator<ClassInfo> it = depends.iterator();
 			while(it.hasNext()) {
-				ClassInfo clf = (ClassInfo) it.next();
+				ClassInfo clf = it.next();
 				System.out.println("\tdepends "+clf.clazz.getClassName());
 			}
 		}
@@ -214,29 +214,29 @@ public class ClinitOrder extends AppVisitor {
 	 * 
 	 * @return the ordered list of classes
 	 */
-	public List findOrder() {
+	public List<ClassInfo> findOrder() {
 
 		printDependency();
 		
-		Set cliSet = clinit.keySet();
-		List order = new LinkedList();
+		Set<ClassInfo> cliSet = clinit.keySet();
+		List<ClassInfo> order = new LinkedList<ClassInfo>();
 		int maxIter = cliSet.size();
 
 		// maximum loop bound detects cyclic dependency
 		for (int i=0; i<maxIter && cliSet.size()!=0; ++i) {
 
-			Iterator itCliSet = cliSet.iterator();
+			Iterator<ClassInfo> itCliSet = cliSet.iterator();
 			while (itCliSet.hasNext()) {			
-				ClassInfo clinf = (ClassInfo) itCliSet.next();
-				Set depends = (Set) clinit.get(clinf);
+				ClassInfo clinf = itCliSet.next();
+				Set<ClassInfo> depends = clinit.get(clinf);
 				if (depends.size()==0) {
 					order.add(clinf);
 					// check all depends sets and remove the added
 					// element (a leave in the dependent tree
-					Iterator itCliSetInner = clinit.keySet().iterator();
+					Iterator<ClassInfo> itCliSetInner = clinit.keySet().iterator();
 					while (itCliSetInner.hasNext()) {
-						ClassInfo clinfInner = (ClassInfo) itCliSetInner.next();
-						Set dep = (Set) clinit.get(clinfInner);
+						ClassInfo clinfInner = itCliSetInner.next();
+						Set<ClassInfo> dep = clinit.get(clinfInner);
 						dep.remove(clinf);
 					}
 					itCliSet.remove();

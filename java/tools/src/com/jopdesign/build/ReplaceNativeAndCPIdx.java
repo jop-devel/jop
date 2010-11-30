@@ -131,24 +131,7 @@ public class ReplaceNativeAndCPIdx extends JOPizerVisitor {
 				FieldInstruction fi = (FieldInstruction) ih.getInstruction();
 
 				JavaClass jc = JOPizer.jz.cliMap.get(fi.getClassName(cpoolgen)).clazz;
-				Field field = null;
-				while (field == null) {
-					Field [] fields = jc.getFields();
-					for (int k = 0; k < fields.length; k++) {
-						if (fields[k].getName().equals(fi.getFieldName(cpoolgen))) {
-							field = fields[k];
-							break;
-						}
-					}
-					if (field == null) {
-						try {
-							jc = jc.getSuperClass();
-						} catch (ClassNotFoundException e) {
-							e.printStackTrace();
-							throw new Error();
-						}
-					}
-				}
+				Field field = findReferencedField(fi,jc,cpoolgen);
 
 				if (field.isVolatile()) {
 
@@ -259,6 +242,29 @@ public class ReplaceNativeAndCPIdx extends JOPizerVisitor {
 		il.dispose();
 		return m;
 
+	}
+
+	public static Field findReferencedField(FieldInstruction fi, JavaClass jc, ConstantPoolGen cpoolgen) throws Error {
+		Field field = null;
+		String fieldName = fi.getFieldName(cpoolgen);
+		while (field == null) {
+			Field [] fields = jc.getFields();
+			for (int k = 0; k < fields.length; k++) {
+				if (fields[k].getName().equals(fieldName)) {
+					field = fields[k];
+					break;
+				}
+			}
+			if (field == null) {
+				try {
+					jc = jc.getSuperClass();
+				} catch (ClassNotFoundException e) {
+					e.printStackTrace();
+					throw new Error();
+				}
+			}
+		}
+		return field;
 	}
 
 	/**

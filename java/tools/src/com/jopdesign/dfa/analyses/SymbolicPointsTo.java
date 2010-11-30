@@ -17,8 +17,6 @@ import org.apache.bcel.generic.ArrayInstruction;
 import org.apache.bcel.generic.FieldInstruction;
 import org.apache.bcel.generic.GETFIELD;
 import org.apache.bcel.generic.GETSTATIC;
-import org.apache.bcel.generic.IALOAD;
-import org.apache.bcel.generic.INVOKESTATIC;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
@@ -359,7 +357,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 				// Reference at top of stack
 				BoundedSet<SymbolicAddress> newRef = in.getStack(context.stackPtr-1);
 				// Add alias info for the field
-				result.addFieldAlias(instr.getFieldName(context.constPool), newRef);
+				result.addFieldAlias(instr.getName(context.constPool), newRef);
 			}
 			retval.put(context.callString, result);		
 		}
@@ -450,7 +448,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		}
 		break;
 		// AALOAD objectref, index -> objectref
-		// TODO: Use index info
+		// TODO: We do not use the array size yet (not accessible in the current framework)
 		case Constants.AALOAD: {
 			putResultFromStack(stmt, context, input, context.stackPtr - 2);
 			
@@ -465,11 +463,11 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 				newMapping = bsFactory.top();
 			} else {
 				
-				Interval interval = bounds.getArrayIndices(stmt, context.callString);
-				if(interval.hasLb() && interval.hasUb()) {
+				Interval indexRange = bounds.getArrayIndices(stmt, context.callString);
+				if(indexRange.hasLb() && indexRange.hasUb()) {
 					newMapping = bsFactory.empty();
 					for(SymbolicAddress addr: objectMapping.getSet()) {
-						for(int i = interval.getLb(); i <= interval.getUb(); i++) {
+						for(int i = indexRange.getLb(); i <= indexRange.getUb(); i++) {
 							newMapping.add(addr.accessArray(i));
 						}
 					}					

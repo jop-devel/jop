@@ -4,11 +4,18 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Vector;
 
+import org.apache.bcel.classfile.Field;
+import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.generic.ANEWARRAY;
 import org.apache.bcel.generic.ATHROW;
+import org.apache.bcel.generic.ArrayInstruction;
+import org.apache.bcel.generic.FieldInstruction;
+import org.apache.bcel.generic.GETFIELD;
+import org.apache.bcel.generic.GETSTATIC;
 import org.apache.bcel.generic.INVOKESTATIC;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.MONITORENTER;
 import org.apache.bcel.generic.NEW;
 import org.apache.bcel.generic.NEWARRAY;
 import org.apache.bcel.generic.ObjectType;
@@ -16,6 +23,7 @@ import org.apache.bcel.generic.ReferenceType;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.build.ReplaceNativeAndCPIdx;
 import com.jopdesign.timing.jop.JOPCmpTimingTable;
 import com.jopdesign.timing.jop.JOPTimingTable;
 import com.jopdesign.timing.jop.SingleCoreTiming;
@@ -59,17 +67,41 @@ public class JOPModel implements ProcessorModel {
 		return identifier;
 	}
 
-	public boolean isSpecialInvoke(MethodInfo context, Instruction i) {
-		if(! (i instanceof INVOKESTATIC)) return false;
+	private String getSpecialInvokeName(MethodInfo context, Instruction i) {
+		if(! (i instanceof INVOKESTATIC)) return null;
 		INVOKESTATIC isi = (INVOKESTATIC) i;
 		ReferenceType refTy = isi.getReferenceType(context.getConstantPoolGen());
 		if(refTy instanceof ObjectType){
 			ObjectType objTy = (ObjectType) refTy;
 			String className = objTy.getClassName();
-			return (className.equals(JOP_NATIVE));
+			if(! className.equals(JOP_NATIVE)) return null;
+			return isi.getMethodName(context.getConstantPoolGen());
 		} else {
+			return null;
+		}		
+	}
+	
+	@Override
+	public boolean isSpecialInvoke(MethodInfo context, Instruction i) {
+		return(getSpecialInvokeName(context,i) != null);
+	}
+
+	@Override
+	public boolean invalidatesCache(MethodInfo ctx, Instruction i) {		
+		if(i instanceof MONITORENTER) {
+			return true;
+		} else {
+			/* volatile reads also invalidate cache */
+			if(i instanceof FieldInstruction) {
+				FieldInstruction fi = (FieldInstruction) i;
+				ClassInfo ci = ctx.getCli().appInfo.cliMap.get(fi.getClassName(ctx.getConstantPoolGen()));
+				Field field = ReplaceNativeAndCPIdx.findReferencedField(fi, ci.clazz, ctx.getConstantPoolGen());
+				if(field.isVolatile() && (fi instanceof GETFIELD || fi instanceof GETSTATIC)) {
+					return true;
+				}
+			}
 			return false;
-		}
+		}		
 	}
 
 	/* FIXME: [NO THROW HACK] */

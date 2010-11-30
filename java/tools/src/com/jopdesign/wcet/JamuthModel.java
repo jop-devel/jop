@@ -114,4 +114,9 @@ public class JamuthModel implements ProcessorModel {
 		return 0;
 	}
 
+	@Override
+	public boolean invalidatesCache(MethodInfo ctx, Instruction i) {
+		return false;
+	}
+
 }

@@ -9,6 +9,7 @@ import org.apache.bcel.classfile.Field;
 import org.apache.bcel.generic.INVOKESTATIC;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.MONITORENTER;
 import org.apache.bcel.generic.MULTIANEWARRAY;
 import org.apache.bcel.generic.NEW;
 import org.apache.bcel.generic.NEWARRAY;
@@ -236,6 +237,12 @@ public abstract class AllocationModel implements ProcessorModel {
 			size += t.getSize();
 		}
 		return size;
+	}
+
+	@Override
+	public boolean invalidatesCache(MethodInfo ctx, Instruction i) {
+		/* not relevant for allocation analysis */
+		return false;
 	}
 
 }

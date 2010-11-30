@@ -1,10 +1,12 @@
 package com.jopdesign.wcet.analysis.cache;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InstructionList;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.framework.CallString;
@@ -51,22 +53,24 @@ public class ObjectCacheAnalysisDemo {
 		private long fieldAccesses;
 		private long bypassCount;
 		private long missCount;
+		private long mvbAccesses;
 
 		/**
 		 * @param missCost2
 		 * @param bypassCost2
 		 * @param fieldAccesses2
 		 */
-		public ObjectCacheCost(long missCount, long missCost, long bypassAccesses, long bypassCost, long fieldAccesses) {
+		public ObjectCacheCost(long missCount, long missCost, long bypassAccesses, long bypassCost, long fieldAccesses, long mvbAccesses) {
 			this.missCost = missCost;
 			this.bypassCost = bypassCost;
 			this.fieldAccesses = fieldAccesses;
 			this.missCount = missCount;
 			this.bypassCount = bypassAccesses;
+			this.mvbAccesses = mvbAccesses;
 		}
 
 		public ObjectCacheCost() {
-			this(0,0,0,0,0);
+			this(0,0,0,0,0,0);
 		}
 
 		public long getCost()
@@ -87,10 +91,15 @@ public class ObjectCacheAnalysisDemo {
 			this.missCount += missCount;
 			return this;
 		}
-		
+
 		/* addition field accesses either hit or miss (but not bypass) */
 		public void addAccessToCachedField(long additionalFAs) {
 			fieldAccesses += additionalFAs;
+		}
+
+		/* additional MVB accesses (not field)  */
+		public void addAccessToMVB(long additionalHAs) {
+			mvbAccesses += additionalHAs;
 		}
 
 		public long getTotalFieldAccesses()
@@ -113,6 +122,7 @@ public class ObjectCacheAnalysisDemo {
 			this.bypassCount += occ.bypassCount;
 			this.bypassCost += occ.bypassCost;
 			addAccessToCachedField(occ.fieldAccesses);
+			addAccessToMVB(occ.mvbAccesses);
 		}
 		
 		public String toString() {
@@ -122,7 +132,11 @@ public class ObjectCacheAnalysisDemo {
 		public ObjectCacheCost times(Long value) {
 			return new ObjectCacheCost(missCount * value, missCost * value,
 					                   bypassCount * value, bypassCost * value,
-					                   fieldAccesses * value);
+					                   fieldAccesses * value, mvbAccesses * value);
+		}
+
+		public long getMVBAccesses() {
+			return mvbAccesses;
 		}
 
 	}
@@ -193,13 +207,24 @@ public class ObjectCacheAnalysisDemo {
 		// Cost ~ number of cache misses
 		// TODO: A basic block is a scope too!
 		public void visitBasicBlockNode(BasicBlockNode n) {
-			long worstCaseMissCost = jopconfig.getObjectCacheLoadBlockCycles();
+			long worstCaseHandleMissCost =
+				jopconfig.getObjectCacheLoadObjectCycles();
+			long worstCaseFieldMissCost =
+				jopconfig.getObjectCacheLoadObjectCycles() +
+				jopconfig.getObjectCacheLoadBlockCycles();
+			long worstCaseFieldBypassCost =
+				jopconfig.getObjectCacheLoadObjectCycles() +
+				jopconfig.getObjectCacheBypassTime();
+			ControlFlowGraph cfg = n.getControlFlowGraph();
 			for(InstructionHandle ih : n.getBasicBlock().getInstructions()) {
 				if(null == ObjectRefAnalysis.getHandleType(project, n, ih)) continue;
-				if(! ObjectRefAnalysis.isFieldCached(n.getControlFlowGraph(), ih, jopconfig.getObjectCacheMaxCachedFieldIndex())) {
-					cost.addBypassCost(worstCaseMissCost,1);
+				if(ObjectRefAnalysis.getFieldIndex(project, cfg,ih) < 0) { // handle/mvb access
+					cost.addMissCost(worstCaseHandleMissCost,1);
+					cost.addAccessToMVB(1);
+				} else if(! ObjectRefAnalysis.isFieldCached(cfg, ih, jopconfig.getObjectCacheMaxCachedFieldIndex())) {
+					cost.addBypassCost(worstCaseFieldBypassCost,1);
 				} else {
-					cost.addMissCost(worstCaseMissCost,1);
+					cost.addMissCost(worstCaseFieldMissCost,1);
 					cost.addAccessToCachedField(1); 
 				}
 			}
@@ -261,7 +286,8 @@ public class ObjectCacheAnalysisDemo {
 		this.project = p;
 		this.jopconfig = jopconfig;
 		this.maxCachedFieldIndex = jopconfig.getObjectCacheMaxCachedFieldIndex();
-		this.objRefAnalysis = new ObjectRefAnalysis(project, jopconfig.objectCacheSingleField(), jopconfig.objectCacheBlockSize(), maxCachedFieldIndex, DEFAULT_SET_SIZE);
+		this.objRefAnalysis = new ObjectRefAnalysis(project, jopconfig.objectCacheSingleField(), jopconfig.objectCacheBlockSize(), maxCachedFieldIndex, DEFAULT_SET_SIZE,
+				jopconfig.objectCacheBlockSize() > 1);
 		this.costModel = getCostModel();		
 	}
 	
@@ -271,9 +297,10 @@ public class ObjectCacheAnalysisDemo {
 	
 	private ObjectCacheCostModel getCostModel() {
 		long fieldAccessCostBypass = jopconfig.getObjectCacheBypassTime();
+		long replaceObjectCost     = jopconfig.getObjectCacheLoadObjectCycles();
 		/* field-as-tag */
 		long loadBlockCost = jopconfig.getObjectCacheLoadBlockCycles(); 
-		return new ObjectCacheCostModel(loadBlockCost, 0,  fieldAccessCostBypass);
+		return new ObjectCacheCostModel(loadBlockCost, replaceObjectCost, fieldAccessCostBypass);
 	}
 
 	public ObjectCacheCost computeCost() {
@@ -302,7 +329,13 @@ public class ObjectCacheAnalysisDemo {
 
 	private boolean allPersistent(MethodInfo invoked, CallString context) {
 		if(assumeAllMiss) return false;
+		/* On CMP, we need to take invalidation into account */
+		if(jopconfig.cmp) {
+			for(MethodInfo mi : project.getCallGraph().getReachableImplementations(invoked)) {
+				if(project.getFlowGraph(mi).mayInvalidateCache()) return false;
+			}
+		}
 		return getMaxAccessedTags(invoked, context) <= jopconfig.getObjectCacheAssociativity();
-	}		
+	}
 	
 }

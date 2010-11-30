@@ -35,7 +35,9 @@ import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKEVIRTUAL;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.InvokeInstruction;
+import org.apache.bcel.generic.MONITORENTER;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
@@ -1045,7 +1047,22 @@ public class ControlFlowGraph {
 		}
 		return s.toString();
 	}
+	/** Check whether the cache might be invalidated when executing this method 
+	 *  Relevant on CMP only.
+	 * */
+	public boolean mayInvalidateCache() {
+		for(BasicBlock bb : this.blocks) {
+			for(InstructionHandle ih : bb.getInstructions()) {
+				Instruction i = ih.getInstruction();				
+				if(project.getProcessorModel().invalidatesCache(this.methodInfo, i)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 
+	
 //	/**
 //	 * get single entry single exit sets
 //	 * @return
