@@ -482,7 +482,7 @@ public class ObjectCache extends DataMemory {
 			out.println("Cache Miss Cycles (SRAM): "+cmcSRAM+" / "+totalAccesses+" = "+
 					    (cmcSRAM / (double)objStats.get(StatTy.ReadCount)));
 			out.println("Cache Miss Cycles (SDRAM): "+cmcSDRAM+" / "+totalAccesses+" = "+
-				    (cmcSRAM / (double)objStats.get(StatTy.ReadCount)));
+				    (cmcSDRAM / (double)objStats.get(StatTy.ReadCount)));
 		}
 		
 		// The beautiful power of arithmetic presents:
