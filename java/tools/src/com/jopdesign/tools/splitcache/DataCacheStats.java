@@ -80,6 +80,7 @@ public class DataCacheStats implements DataMemoryStats {
 		out.println(getHeader());
 		out.println(toString());
 	}
+
 	public String getHeader() {
 		return String.format("%20s & %8s & %8s & %8s & %8s & %8s & %6s & %6s & %6s \\\\",
 							 "name", "readcnt", "hitcnt", "bypass", "wrcnt", "invalcnt",

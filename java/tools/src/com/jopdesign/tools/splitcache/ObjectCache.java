@@ -28,6 +28,7 @@ import java.util.Stack;
 
 import com.jopdesign.tools.DataMemory;
 import com.jopdesign.tools.Cache.ReplacementStrategy;
+import com.jopdesign.tools.splitcache.DataCacheStats.StatTy;
 
 /**
  * A generalized object cache (fully associative cache for handle+offset), which supports</br>
@@ -472,8 +473,23 @@ public class ObjectCache extends DataMemory {
 			SplitCacheSim.printHeader(out,toString());
 			new DataCacheStats(getName()+"-objs").addAverage(this.recordedObjStats).dump(out);
 			new DataCacheStats(getName()+"-field").addAverage(this.recordedStats).dump(out);
+			out.println("Cache Miss Cycles (SRAM): "+cmc(0,2));
+			out.println("Cache Miss Cycles (SDRAM): "+cmc(10,2));
 		}
 		
+		// The beautiful power of arithmetic presents:
+		// Cache Miss Cycles for the paper
+		private double cmc(int delay, int cyclesPerWord) {
+			DataCacheStats objStats = new DataCacheStats(getName()+"-objs").addAverage(this.recordedObjStats);
+			DataCacheStats fieldStats = new DataCacheStats(getName()+"-field").addAverage(this.recordedStats);			
+			long totalAccesses = objStats.get(StatTy.ReadCount);
+			long handleMisses = objStats.get(StatTy.ReadCount) - objStats.get(StatTy.HitCount);
+			long fieldMissesOrBypasses = fieldStats.get(StatTy.ReadCount) - fieldStats.get(StatTy.HitCount); 
+			//		let cmc or oh fr fh = ((or-oh) * 14.0 + (fr - fh) * 18) / or
+			return (handleMisses * (delay + 2*cyclesPerWord) + 
+				    fieldMissesOrBypasses * (delay + wordsPerBlock*cyclesPerWord)) /
+				    ((double)totalAccesses);
+		}
 		
 		public static <T> void replaceLRU(T[] data, T obj, int oldPosition, int ways) {
 			if(oldPosition < 0 || oldPosition > ways) oldPosition = ways;
