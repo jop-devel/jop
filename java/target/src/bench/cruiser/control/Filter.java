@@ -31,7 +31,7 @@ public class Filter implements Runnable {
 
 	private static final long MAX_AGE = 100*1000*1000; // nano seconds
 
-	private final List<StampedMessage> queue = Collections.synchronizedList(new LinkedList<StampedMessage>());
+	private final LinkedList<StampedMessage> queue = new LinkedList<StampedMessage>();
 	private final String name;
 	private final SpeedState state;
 
@@ -42,7 +42,7 @@ public class Filter implements Runnable {
 
 	public void enqueue(StampedMessage msg) {
 		synchronized(queue) {
-			queue.add(0, msg);
+			queue.addFirst(msg);
 		}
 	}
 
@@ -51,8 +51,8 @@ public class Filter implements Runnable {
 		// MAX_AGE determine maximum length of queue
 		synchronized (queue) {
 			while (!queue.isEmpty()) { //@WCA loop <= 110
-				if (queue.get(queue.size()-1).getStamp() < now-MAX_AGE) {
-					queue.remove(queue.size()-1);
+				if (queue.getLast().getStamp() < now-MAX_AGE) {
+					queue.removeLast();
 				} else {
 					break;
 				}
