@@ -489,10 +489,12 @@ public class ObjectCache extends DataMemory {
 		// Cache Miss Cycles for the paper
 		private long cmc(DataCacheStats objStats, DataCacheStats fieldStats, int delay, int cyclesPerWord) {
 			long handleMisses = objStats.get(StatTy.ReadCount) - objStats.get(StatTy.HitCount);
-			long fieldMissesOrBypasses = fieldStats.get(StatTy.ReadCount) - fieldStats.get(StatTy.HitCount); 
+			long fieldMisses = fieldStats.get(StatTy.ReadCount) - fieldStats.get(StatTy.HitCount) - fieldStats.get(StatTy.BypassCount); 
+			long fieldBypasses = fieldStats.get(StatTy.BypassCount);
 			//		let cmc or oh fr fh = ((or-oh) * 14.0 + (fr - fh) * 18) / or
 			return (handleMisses * (delay + 2*cyclesPerWord) + 
-				    fieldMissesOrBypasses * (delay + wordsPerBlock*cyclesPerWord));
+				    fieldMisses * (delay + wordsPerBlock*cyclesPerWord) +
+				    fieldBypasses * (delay + cyclesPerWord));
 		}
 		
 		public static <T> void replaceLRU(T[] data, T obj, int oldPosition, int ways) {
