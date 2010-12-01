@@ -1526,7 +1526,6 @@ System.out.println("new heap: "+heap);
 				case 204 :		// jopsys_inval
 					if (nrCpus > 1) {
 						dataMem.invalidateData();
-						dataMem.invalidateHandles(); // FIXME: wolfgang, check if this is correct
 					}
 					break;
 				case 205 :		// resCD

@@ -167,11 +167,11 @@ public class SplitCacheSim extends DataMemory {
 		Access handledConst[] = { Access.CLINFO, Access.CONST, Access.IFTAB, Access.MTAB };
 		Access handledStatic[] = { Access.STATIC };
 
-		Access handledFullyAssoc[] = { Access.FIELD, Access.MVB, Access.HANDLE, Access.ALEN };
-		Access handledArrayBypass[] = { Access.INTERN, Access.ARRAY };
+		Access handledFullyAssoc[] = { Access.FIELD, Access.MVB, Access.HANDLE };
+		Access handledArrayBypass[] = { Access.INTERN, Access.ARRAY, Access.ALEN };
 
-		Access handledOCache[] = { Access.FIELD, Access.MVB, Access.HANDLE, Access.ALEN, Access.ARRAY };
-		Access handledMem[] = { Access.INTERN };
+		Access handledOCache[] = { Access.FIELD, Access.MVB, Access.HANDLE };
+		Access handledMem[] = { Access.INTERN, Access.ARRAY, Access.ALEN };
 
 		SplitCache splitCache;
 		SetAssociativeCache constCache;
@@ -201,7 +201,7 @@ public class SplitCacheSim extends DataMemory {
 		this.caches.add(splitCache);
 
 		// // One sample split cache configuration
-		for (int ways = 1; ways <= 8; ways *= 2) { 
+		for (int ways = 1; ways <= 32; ways *= 2) { 
 			for (int bpo = 1; bpo <= 32; bpo *= 2) {
 
 				splitCache = new SplitCache("const-1-256-1 + static-1-256-1 + object$-"+ways+"-"+bpo+"-1-LRU + RAM", backingMem);
