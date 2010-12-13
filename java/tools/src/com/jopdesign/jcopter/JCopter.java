@@ -65,7 +65,7 @@ public class JCopter implements JopTool<JCopterManager> {
         return VERSION;
     }
 
-    public JCopterManager getAttributeManager() {
+    public JCopterManager getEventHandler() {
         return manager;
     }
 
@@ -110,7 +110,7 @@ public class JCopter implements JopTool<JCopterManager> {
         JCopter jcopter = new JCopter();
 
         // setup some defaults
-        AppSetup setup = new AppSetup(true);
+        AppSetup setup = new AppSetup();
         setup.setUsageInfo("jcopter", "A WCET driven Java bytecode optimizer.");
 
         setup.addStandardOptions(true, true);

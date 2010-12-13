@@ -32,13 +32,13 @@ import java.util.Properties;
  * All tools should provide a class which implements this interface. The class will then
  * be used by {@link AppSetup} to initialize the tool.
  * </p><p>
- * Each tool should also provide a custom {@link AttributeManager} which can be used to retrieve
+ * Each tool should also provide a custom {@link AppEventHandler} which can be used to retrieve
  * attributes and flow-facts managed by this tool from classes, methods, code and fields.
  * </p>
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public interface JopTool<T extends AttributeManager> {
+public interface JopTool<T extends AppEventHandler> {
 
     /**
      * Get a version string for this tool (excluding the tool name) which will be displayed
@@ -48,18 +48,20 @@ public interface JopTool<T extends AttributeManager> {
     String getToolVersion();
 
     /**
-     * Get the tool-specific attribute manager for this tool. The manager should be used
-     * to set and access tool-specific flow-facts.
+     * Get the tool-specific event handler for this tool. The handler should be used
+     * to set and access tool-specific attributes.
      *
-     * @return a custom attribute manager.
+     * @return a custom event handler.
      */
-    T getAttributeManager();
+    T getEventHandler();
 
     /**
-     * Get a properties file containing defaults which should be added to the configuration.
-     * The properties override the default values of the registered options, but can be overwritten
-     * by application specific defaults provided at {@link AppSetup#AppSetup(Properties, boolean)},
-     * by the user configuration and by commandline options.
+     * Get properties containing defaults which should be added to the configuration.
+     * <p>
+     * The properties override the default values of the config options, but can be overwritten
+     * by application specific defaults provided at {@link AppSetup#AppSetup(Properties, boolean)}
+     * and by commandline options (including loading a user config file).
+     * </p>
      *
      * @see AppSetup#loadResourceProps(Class, String)
      * @return default properties or null if no additional defaults are used.

@@ -96,13 +96,17 @@ public class AppSetup {
     private Map<String, JopTool> tools;
 
     /**
-     * Initialize a new AppSetup with no default properties
-     * (note that tools can add their own default config).
-     *
-     * @param loadSystemProps if true, add all JVM system properties to the default properties.
+     * Initialize a new AppSetup with no default properties.
+     * <p>
+     * Tools however can add their own default config (see {@link JopTool#getDefaultProperties()}.
+     * </p>
+     * @see #AppSetup(Properties, boolean)
      */
-    public AppSetup(boolean loadSystemProps) {
-        this(null, loadSystemProps);
+    public AppSetup() {
+        // we do not want to load system props per default!
+        // This ensures that the defaults are only defined by the tools and
+        // execution on different machines does not differ due to different 'hidden' configurations.
+        this(null, false);
     }
 
     /**
@@ -144,7 +148,11 @@ public class AppSetup {
     }
 
     /**
-     * Register a tool and its AttributeManager to AppInfo and AppSetup.
+     * Register a tool and its AppEventHandler to AppInfo and AppSetup.
+     * <p>
+     * Event handlers will be called in the same order the tools are registered, so
+     * the order of the registrations might be important.
+     * </p>
      * @param name the unique name of the tool
      * @param jopTool the tool to register
      */
@@ -165,10 +173,10 @@ public class AppSetup {
         // setup options
         jopTool.registerOptions(config.getOptions());
 
-        // register manager
-        AttributeManager manager = jopTool.getAttributeManager();
-        if ( manager != null ) {
-            appInfo.registerManager(name, manager);
+        // register handler
+        AppEventHandler handler = jopTool.getEventHandler();
+        if ( handler != null ) {
+            appInfo.registerEventHandler(handler);
         }
     }
 

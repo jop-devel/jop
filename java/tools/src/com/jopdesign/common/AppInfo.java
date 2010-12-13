@@ -44,6 +44,7 @@ import org.apache.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -83,8 +84,8 @@ public final class AppInfo {
     private final Set<String> libraryClasses;
     private final Set<String> ignoredClasses;
 
-    private final Map<String, AttributeManager> managers;
-    private CommonKeys commonKeys;
+    private final List<AppEventHandler> eventHandlers;
+    private CommonEventHandler commonEventHandler;
 
     private ProcessorModel processor;
 
@@ -117,41 +118,41 @@ public final class AppInfo {
         libraryClasses = new HashSet<String>(1);
         ignoredClasses = new HashSet<String>(1);
 
-        managers = new HashMap<String, AttributeManager>(1);
+        eventHandlers = new ArrayList<AppEventHandler>(3);
 
-        // TODO make this optional? (need to move this somewhere else in order to do that)
-        commonKeys = new CommonKeys();
-        registerManager("CommonKeys", commonKeys);
+        // TODO make the common handler optional? (need to move this somewhere else in order to do that)
+        commonEventHandler = new CommonEventHandler();
+        registerEventHandler(commonEventHandler);
     }
 
 
     //////////////////////////////////////////////////////////////////////////////
-    // AttributeManager and CustomKey management, AppInfo setup stuff
+    // AppEventHandler and CustomKey management, AppInfo setup stuff
     //////////////////////////////////////////////////////////////////////////////
 
-    public AttributeManager registerManager(String key, AttributeManager manager) {
-        manager.onRegisterManager(this);
-        return managers.put(key, manager);
+    public void registerEventHandler(AppEventHandler handler) {
+        handler.onRegisterEventHandler(this);
+        eventHandlers.add(handler);
     }
 
-    public AttributeManager getManager(String key) {
-        return managers.get(key);
-    }
-
-    /**
-     * Get a collection of all registered managers. Do not modify this collection.
-     * @return a collection of registered AttributeManagers
-     */
-    public Collection<AttributeManager> getManagers() {
-        return managers.values();
+    public boolean hasEventHandler(AppEventHandler handler) {
+        return eventHandlers.contains(handler);
     }
 
     /**
-     * Get the {@link CommonKeys} AttributeManager
-     * @return the manager for the common keys.
+     * Get a list of all registered eventHandlers. Do not modify this list.
+     * @return a list of registered AppEventHandlers
      */
-    public CommonKeys getCommonKeys() {
-        return commonKeys;
+    public List<AppEventHandler> getEventHandlers() {
+        return Collections.unmodifiableList(eventHandlers);
+    }
+
+    /**
+     * Get the {@link CommonEventHandler} AppEventHandler
+     * @return the eventHandler of the common package.
+     */
+    public CommonEventHandler getCommonEventHandler() {
+        return commonEventHandler;
     }
 
     /**
@@ -229,7 +230,7 @@ public final class AppInfo {
         // register class
         classes.put(className, cls);
 
-        for (AttributeManager mgr : managers.values()) {
+        for (AppEventHandler mgr : eventHandlers) {
             mgr.onCreateClass(cls, false);
         }
 
@@ -340,7 +341,7 @@ public final class AppInfo {
         // now we go through all classes and remove them from the class-list and from the class hierarchy
         for (ClassInfo classInfo : classes) {
 
-            for ( AttributeManager mgr : managers.values() ) {
+            for ( AppEventHandler mgr : eventHandlers ) {
                 mgr.onRemoveClass(classInfo);
             }
 
@@ -423,7 +424,7 @@ public final class AppInfo {
      */
     public void clear(boolean clearRoots) {
 
-        for (AttributeManager mgr : managers.values()) {
+        for (AppEventHandler mgr : eventHandlers) {
             mgr.onClearAppInfo(this);
         }
 
@@ -861,7 +862,7 @@ public final class AppInfo {
 
             classes.put(className, cls);
 
-            for (AttributeManager mgr : managers.values()) {
+            for (AppEventHandler mgr : eventHandlers) {
                 mgr.onCreateClass(cls,true);
             }
         } catch (IOException e) {

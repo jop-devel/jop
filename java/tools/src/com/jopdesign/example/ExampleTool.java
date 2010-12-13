@@ -52,7 +52,7 @@ public class ExampleTool implements JopTool<ExampleManager> {
         return VERSION;
     }
 
-    public ExampleManager getAttributeManager() {
+    public ExampleManager getEventHandler() {
         return manager;
     }
 
@@ -94,7 +94,7 @@ public class ExampleTool implements JopTool<ExampleManager> {
     public static void main(String[] args) {
 
         // setup some defaults
-        AppSetup setup = new AppSetup(true);
+        AppSetup setup = new AppSetup();
         setup.setUsageInfo("example", "This is an example application just to show off.");
         setup.setVersionInfo("The version of this whole application is 0.1");
 

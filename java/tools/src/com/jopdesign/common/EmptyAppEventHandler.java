@@ -21,26 +21,26 @@
 package com.jopdesign.common;
 
 /**
- * The common keys class registers and manages keys common to all tools.
+ * An empty class which implements all callback handlers of AppEventHandler, so you
+ * don't need to.
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class CommonKeys extends EmptyAttributeManager {
-
-    public static KeyManager.CustomKey KEY_LOOPBOUND;
-
-    @Override
-    public void onRegisterManager(AppInfo appInfo) {
-        KEY_LOOPBOUND = KeyManager.getSingleton().registerStructKey("loopbound");
-
-    }
+public abstract class EmptyAppEventHandler implements AppEventHandler {
 
     @Override
     public void onCreateClass(ClassInfo classInfo, boolean loaded) {
-        if (!loaded) {
-            return;
-        }
-        // TODO load annotations from sourcecode comments to CustomValues (?)
+    }
 
+    @Override
+    public void onRemoveClass(ClassInfo classInfo) {
+    }
+
+    @Override
+    public void onClearAppInfo(AppInfo appInfo) {
+    }
+
+    @Override
+    public void onMethodModified(MethodInfo methodInfo) {
     }
 }

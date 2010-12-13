@@ -21,26 +21,26 @@
 package com.jopdesign.common;
 
 /**
- * An empty class which implements all callback handlers of AttributeManager, so you
- * don't need to.
+ * The common keys class registers and manages keys common to all tools.
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public abstract class EmptyAttributeManager implements AttributeManager {
+public class CommonEventHandler extends EmptyAppEventHandler {
+
+    public static KeyManager.CustomKey KEY_LOOPBOUND;
+
+    @Override
+    public void onRegisterEventHandler(AppInfo appInfo) {
+        KEY_LOOPBOUND = KeyManager.getSingleton().registerStructKey("loopbound");
+
+    }
 
     @Override
     public void onCreateClass(ClassInfo classInfo, boolean loaded) {
-    }
+        if (!loaded) {
+            return;
+        }
+        // TODO load annotations from sourcecode comments to CustomValues (?)
 
-    @Override
-    public void onRemoveClass(ClassInfo classInfo) {
-    }
-
-    @Override
-    public void onClearAppInfo(AppInfo appInfo) {
-    }
-
-    @Override
-    public void onMethodModified(MethodInfo methodInfo) {
     }
 }

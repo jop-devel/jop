@@ -21,14 +21,14 @@
 package com.jopdesign.jcopter;
 
 import com.jopdesign.common.AppInfo;
-import com.jopdesign.common.EmptyAttributeManager;
+import com.jopdesign.common.EmptyAppEventHandler;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class JCopterManager extends EmptyAttributeManager {
+public class JCopterManager extends EmptyAppEventHandler {
 
-    public void onRegisterManager(AppInfo appInfo) {
+    public void onRegisterEventHandler(AppInfo appInfo) {
         
     }
     

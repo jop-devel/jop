@@ -21,18 +21,18 @@
 package com.jopdesign.common;
 
 /**
- * An AttributeManager is used to access attributes and flow-facts from classes, methods, fields and code.
- * It manages the {@link com.jopdesign.common.KeyManager.CustomKey} keys and type casts internally, and provides some callback
+ * An AppEventHandler is used to access attributes and flow-facts from classes, methods, fields and code.
+ * It manages the {@link KeyManager.CustomKey} keys and type casts internally, and provides some callback
  * methods to AppInfo to be notified of (some) changes to the classes.
  * <p>
- * Each AttributeManager should provide custom methods to get/set its custom attributes in addition to
+ * Each AppEventHandler should provide custom methods to get/set its custom attributes in addition to
  * the callback methods.
  * </p>
- * TODO find a better name for this interface
+ * TODO add callback methods for KeyManager (onClearKey, ..)
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public interface AttributeManager {
+public interface AppEventHandler {
 
     /**
      * Called on registration by AppInfo.
@@ -43,7 +43,7 @@ public interface AttributeManager {
      *
      * @param appInfo the AppInfo for which the manager is registered.
      */
-    void onRegisterManager(AppInfo appInfo);
+    void onRegisterEventHandler(AppInfo appInfo);
 
     /**
      * Called when a new class is created or loaded from disk, allows the manager to add custom fields to the class.

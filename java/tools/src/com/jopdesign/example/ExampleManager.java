@@ -23,21 +23,21 @@ package com.jopdesign.example;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.KeyManager;
-import com.jopdesign.common.EmptyAttributeManager;
+import com.jopdesign.common.EmptyAppEventHandler;
 
 /**
  * A demonstration of a manager which maintains a single integer field.
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ExampleManager extends EmptyAttributeManager {
+public class ExampleManager extends EmptyAppEventHandler {
 
     private KeyManager.CustomKey myFieldID;
 
     public ExampleManager() {
     }
 
-    public void onRegisterManager(AppInfo appInfo) {
+    public void onRegisterEventHandler(AppInfo appInfo) {
 
         // register a new custom attribute and set it to every existing class
         myFieldID = KeyManager.getSingleton().registerKey(KeyManager.KeyType.STRUCT, "iExampleField");

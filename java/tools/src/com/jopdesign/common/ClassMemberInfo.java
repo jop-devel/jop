@@ -27,6 +27,8 @@ import org.apache.bcel.generic.FieldGenOrMethodGen;
 import org.apache.bcel.generic.Type;
 
 /**
+ * Common class for all members of a class (i.e. fields and methods).
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public abstract class ClassMemberInfo extends MemberInfo {

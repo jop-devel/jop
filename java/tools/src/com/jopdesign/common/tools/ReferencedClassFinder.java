@@ -47,7 +47,7 @@ import java.util.Set;
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ClassAnalyzer {
+public class ReferencedClassFinder {
 
     /**
      * Get a set of all classes referenced by the given class, including superclasses, interfaces and
@@ -125,7 +125,7 @@ public class ClassAnalyzer {
                 }
             }
 
-            private void processType(Type type) {
+            private void processType(Type  type) {
 
                 if ( type instanceof ArrayType) {
                     processType( ((ArrayType)type).getBasicType() );

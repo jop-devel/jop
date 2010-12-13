@@ -27,7 +27,7 @@ import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.Ternary;
-import com.jopdesign.common.tools.ClassAnalyzer;
+import com.jopdesign.common.tools.ReferencedClassFinder;
 import com.jopdesign.common.tools.ConstantPoolRebuilder;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.ConstantClassInfo;
@@ -1310,7 +1310,7 @@ public final class ClassInfo extends MemberInfo {
     public void updateInnerClasses() {
         // check+update InnerClasses attribute (and add referenced nested classes)
         List<ClassInfo> nestedClasses = new LinkedList<ClassInfo>();
-        for (String name : ClassAnalyzer.findReferencedClasses(this)) {
+        for (String name : ReferencedClassFinder.findReferencedClasses(this)) {
             ClassInfo cls = getAppInfo().getClassInfo(name);
             if (cls != null && cls.isNestedClass()) {
                 nestedClasses.add(cls);
@@ -1323,7 +1323,7 @@ public final class ClassInfo extends MemberInfo {
      * Commit all modifications to this ClassInfo and return a BCEL JavaClass for this ClassInfo.
      * You may want to call {@link #updateInnerClasses()} first if needed.
      *
-     * @see MethodInfo#compileCFG()
+     * @see MethodInfo#compileMethod()
      * @see #updateInnerClasses()
      * @see #getJavaClass()
      * @return a JavaClass representing this ClassInfo.

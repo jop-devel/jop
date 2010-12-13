@@ -50,17 +50,17 @@ public class KeyManager {
 
     /**
      * A class for custom attribute key.
-     * To create a new key, use {@link #registerKey(KeyType,String,AttributeManager)}.
+     * To create a new key, use {@link #registerKey(KeyType,String, AppEventHandler)}.
      */
     public static final class CustomKey  {
 
         private final String keyname;
         private final KeyType type;
-        private final AttributeManager manager;
+        private final AppEventHandler manager;
         private boolean clearOnInvalidate;
         private final int id;
 
-        private CustomKey(KeyType type, String keyname, AttributeManager manager, int id) {
+        private CustomKey(KeyType type, String keyname, AppEventHandler manager, int id) {
             this.type = type;
             this.keyname = keyname;
             this.manager = manager;
@@ -76,7 +76,7 @@ public class KeyManager {
             return keyname;
         }
 
-        public AttributeManager getManager() {
+        public AppEventHandler getManager() {
             return manager;
         }
 
@@ -137,7 +137,7 @@ public class KeyManager {
     /**
      * Register a new key which can be used to attach values to structure elements (i.e. all {@link MemberInfo}).
      *
-     * @see #registerKey(KeyType, String, AttributeManager)
+     * @see #registerKey(KeyType, String, AppEventHandler)
      * @param keyname a unique keyname for the key
      * @return the new key
      */
@@ -148,7 +148,7 @@ public class KeyManager {
     /**
      * Register a new key which can be used to attach values to instructions or code blocks).
      *
-     * @see #registerKey(KeyType, String, AttributeManager)
+     * @see #registerKey(KeyType, String, AppEventHandler)
      * @param keyname a unique keyname for the key
      * @return the new key
      */
@@ -156,11 +156,17 @@ public class KeyManager {
         return registerKey(KeyType.CODE, keyname, null);
     }
 
+    /**
+     * Register a new key which can be attached to memberInfos or code or both.
+     * @param type the type of the key.
+     * @param keyname the name of the key.
+     * @return a key by that name.
+     */
     public CustomKey registerKey(KeyType type, String keyname) {
         return registerKey(type, keyname, null);
     }
 
-    public CustomKey registerKey(KeyType type, String keyname, AttributeManager manager) {
+    public CustomKey registerKey(KeyType type, String keyname, AppEventHandler manager) {
 
         // check if exists
         CustomKey k = registeredKeys.get(keyname);
@@ -190,31 +196,35 @@ public class KeyManager {
     public void clearAllValues(CustomKey key) {
         // do we need a version of this method with more fine-grained control (clear only from methods,..)?
 
+        for ( ClassInfo cls : appInfo.getClassInfos() ) {
+            clearAllValues(key, cls);
+        }
+    }
+
+    public void clearAllValues(CustomKey key, ClassInfo classInfo) {
         boolean fromStruct = key.getType().isStruct();
         boolean fromCode = key.getType().isCode();
 
-        for ( ClassInfo cls : appInfo.getClassInfos() ) {
-            if ( fromStruct ) {
-                cls.removeCustomValue(key);
+        if ( fromStruct ) {
+            classInfo.removeCustomValue(key);
 
-                for ( FieldInfo field : cls.getFields() ) {
-                    field.removeCustomValue(key);
-                }
+            for ( FieldInfo field : classInfo.getFields() ) {
+                field.removeCustomValue(key);
             }
-            for ( MethodInfo method : cls.getMethods() ) {
-                if ( fromStruct ) {
-                    method.removeCustomValue(key);
+        }
+        for ( MethodInfo method : classInfo.getMethods() ) {
+            if ( fromStruct ) {
+                method.removeCustomValue(key);
+            }
+            if ( fromCode && !method.isAbstract() ) {
+                MethodCode code = method.getCode();
+                InstructionList il = code.getInstructionList();
+                if (il == null) {
+                    continue;
                 }
-                if ( fromCode && !method.isAbstract() ) {
-                    MethodCode code = method.getCode();
-                    InstructionList il = code.getInstructionList();
-                    if (il == null) {
-                        continue;
-                    }
-                    for (InstructionHandle ih : il.getInstructionHandles()) {
-                        code.clearCustomKey(ih, key);
-                        code.clearCustomBlockKey(ih, key);
-                    }
+                for (InstructionHandle ih : il.getInstructionHandles()) {
+                    code.clearCustomKey(ih, key);
+                    code.clearCustomBlockKey(ih, key);
                 }
             }
         }
