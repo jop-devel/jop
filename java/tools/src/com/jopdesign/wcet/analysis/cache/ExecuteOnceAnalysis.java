@@ -1,8 +1,29 @@
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
+ *
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.jopdesign.wcet.analysis.cache;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallGraph.MethodNode;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.Project;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.TopologicalOrderIterator;
@@ -33,24 +54,24 @@ import java.util.logging.Logger;
  */
 public class ExecuteOnceAnalysis {
 	private Project project;
-	private Map<CallGraphNode,Set<MethodInfo>> inLoopSet;
+	private Map<MethodNode,Set<MethodInfo>> inLoopSet;
 
 	public ExecuteOnceAnalysis(Project p) {
 		this.project = p;
 		analyze();
 	}
 	private void analyze() {
-		inLoopSet = new HashMap<CallGraphNode, Set<MethodInfo>>();
+		inLoopSet = new HashMap<MethodNode, Set<MethodInfo>>();
 		/* Top Down the Scope Graph */
-		TopologicalOrderIterator<CallGraphNode, DefaultEdge> iter =
+		TopologicalOrderIterator<MethodNode, DefaultEdge> iter =
 			project.getCallGraph().topDownIterator();
 
 		while(iter.hasNext()) {
-			CallGraphNode scope = iter.next();
-			scope = new CallGraphNode(scope.getMethodImpl(), CallString.EMPTY); /* Remove call string */
+			MethodNode scope = iter.next();
+			scope = new MethodNode(scope.getMethodImpl(), CallString.EMPTY); /* Remove call string */
 			ControlFlowGraph cfg = project.getFlowGraph(scope.getMethodImpl());
 			Set<MethodInfo> inLoop = new HashSet<MethodInfo>();
-			for(ControlFlowGraph.CFGNode node : cfg.getGraph().vertexSet()) {
+			for(CFGNode node : cfg.getGraph().vertexSet()) {
 				if(! (node instanceof ControlFlowGraph.InvokeNode)) continue;
 				ControlFlowGraph.InvokeNode iNode = (ControlFlowGraph.InvokeNode) node;
 				if(! cfg.getLoopColoring().getLoopColor(node).isEmpty()) {
@@ -66,7 +87,7 @@ public class ExecuteOnceAnalysis {
 		}
 	}
 	
-	public boolean isExecutedOnce(CallGraphNode scope, ControlFlowGraph.CFGNode node) {
+	public boolean isExecutedOnce(MethodNode scope, CFGNode node) {
 		ControlFlowGraph cfg = node.getControlFlowGraph();
 		Set<MethodInfo> inLoopMethods = inLoopSet.get(scope);
 		if(inLoopMethods == null) {

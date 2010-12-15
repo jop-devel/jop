@@ -20,7 +20,7 @@
 
 package com.jopdesign.wcet.annotations;
 
-import com.jopdesign.common.graph.Pair;
+import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.wcet.annotations.SymbolicMarker.SymbolicMarkerType;
 
 import java.util.HashMap;

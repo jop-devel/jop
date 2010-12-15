@@ -1,9 +1,37 @@
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
+ *
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.jopdesign.wcet.jop;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Vector;
-
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.BasicBlock;
+import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.misc.MethodNotFoundException;
+import com.jopdesign.timing.jop.JOPCmpTimingTable;
+import com.jopdesign.timing.jop.JOPTimingTable;
+import com.jopdesign.timing.jop.SingleCoreTiming;
+import com.jopdesign.tools.JopInstr;
+import com.jopdesign.wcet.ProcessorModel;
+import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.analysis.ExecutionContext;
 import org.apache.bcel.generic.ANEWARRAY;
 import org.apache.bcel.generic.ATHROW;
 import org.apache.bcel.generic.INVOKESTATIC;
@@ -14,19 +42,9 @@ import org.apache.bcel.generic.NEWARRAY;
 import org.apache.bcel.generic.ObjectType;
 import org.apache.bcel.generic.ReferenceType;
 
-import com.jopdesign.build.ClassInfo;
-import com.jopdesign.build.MethodInfo;
-import com.jopdesign.timing.jop.JOPCmpTimingTable;
-import com.jopdesign.timing.jop.JOPTimingTable;
-import com.jopdesign.timing.jop.SingleCoreTiming;
-import com.jopdesign.tools.JopInstr;
-import com.jopdesign.wcet.ProcessorModel;
-import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.analysis.ExecutionContext;
-import com.jopdesign.wcet.frontend.BasicBlock;
-import com.jopdesign.wcet.frontend.ControlFlowGraph;
-import com.jopdesign.wcet.frontend.WcetAppInfo;
-import com.jopdesign.wcet.frontend.WcetAppInfo.MethodNotFoundException;
+import java.io.IOException;
+import java.util.List;
+import java.util.Vector;
 
 public class JOPModel implements ProcessorModel {
 	public static final String JVM_CLASS = "com.jopdesign.sys.JVM";
@@ -82,7 +100,7 @@ public class JOPModel implements ProcessorModel {
 				ii instanceof NEWARRAY || ii instanceof ANEWARRAY);
 
 	}
-	public MethodInfo getJavaImplementation(WcetAppInfo ai, MethodInfo context, Instruction instr) {
+	public MethodInfo getJavaImplementation(AppInfo ai, MethodInfo context, Instruction instr) {
 		ClassInfo receiver = ai.getClassInfo(JVM_CLASS);
 		String methodName = "f_"+instr.getName();
 		try {

@@ -21,6 +21,10 @@
 */
 package com.jopdesign.wcet.annotations;
 
+import com.jopdesign.common.ClassInfo;
+import com.jopdesign.wcet.Project;
+import org.apache.log4j.Logger;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -30,11 +34,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.apache.log4j.Logger;
-
-import com.jopdesign.build.ClassInfo;
-import com.jopdesign.wcet.Project;
 
 /**
  * Parsing source annotations for WCET analysis.
@@ -88,7 +87,7 @@ public class SourceAnnotationReader {
 	 * @throws BadAnnotationException 
 	 * 
 	 */
-	public SourceAnnotations readAnnotations(ClassInfo ci) 
+	public SourceAnnotations readAnnotations(ClassInfo ci)
 		throws IOException, BadAnnotationException {
 		
 		SourceAnnotations flowFacts = new SourceAnnotations();

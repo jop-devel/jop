@@ -19,21 +19,21 @@
 */
 package com.jopdesign.wcet.uppaal.translator;
 
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.wcet.annotations.LoopBound;
+import com.jopdesign.wcet.uppaal.UppAalConfig;
+import com.jopdesign.wcet.uppaal.model.LayoutCFG;
+import com.jopdesign.wcet.uppaal.model.Location;
+import com.jopdesign.wcet.uppaal.model.Location.LocationAttribute;
+import com.jopdesign.wcet.uppaal.model.Template;
+import com.jopdesign.wcet.uppaal.model.Transition;
+import com.jopdesign.wcet.uppaal.model.TransitionAttributes;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
-
-import com.jopdesign.wcet.annotations.LoopBound;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
-import com.jopdesign.wcet.uppaal.UppAalConfig;
-import com.jopdesign.wcet.uppaal.model.LayoutCFG;
-import com.jopdesign.wcet.uppaal.model.Location;
-import com.jopdesign.wcet.uppaal.model.Template;
-import com.jopdesign.wcet.uppaal.model.Transition;
-import com.jopdesign.wcet.uppaal.model.TransitionAttributes;
-import com.jopdesign.wcet.uppaal.model.Location.LocationAttribute;
 
 /**
  * Builder for program templates.

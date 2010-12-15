@@ -1,23 +1,41 @@
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
+ *
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.jopdesign.wcet;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Vector;
-
-import org.apache.bcel.generic.BranchHandle;
-import org.apache.bcel.generic.Instruction;
-import org.apache.bcel.generic.InstructionHandle;
-
-import com.jopdesign.build.MethodInfo;
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.BasicBlock;
+import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.timing.jamuth.JamuthInstructionInfo;
 import com.jopdesign.timing.jamuth.JamuthTimingTable;
 import com.jopdesign.tools.JopInstr;
 import com.jopdesign.wcet.analysis.ExecutionContext;
-import com.jopdesign.wcet.frontend.BasicBlock;
-import com.jopdesign.wcet.frontend.ControlFlowGraph;
-import com.jopdesign.wcet.frontend.WcetAppInfo;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.jop.NoMethodCache;
+import org.apache.bcel.generic.BranchHandle;
+import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.InstructionHandle;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
 
 public class JamuthModel implements ProcessorModel {
 	private JamuthTimingTable tt;
@@ -72,7 +90,7 @@ public class JamuthModel implements ProcessorModel {
 		return new Vector<String>();
 	}
 	// FIXME: Java implemented bytecodes ?
-	public MethodInfo getJavaImplementation(WcetAppInfo ai,
+	public MethodInfo getJavaImplementation(AppInfo ai,
 			                                MethodInfo ctx,
 			                                Instruction instr) {
 		throw new AssertionError("jamuth model does not (yet) support java implemented methods");

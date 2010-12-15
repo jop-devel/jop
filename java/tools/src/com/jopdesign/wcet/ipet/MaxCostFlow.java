@@ -19,21 +19,19 @@
 */
 package com.jopdesign.wcet.ipet;
 
+import com.jopdesign.common.graphutils.IDProvider;
+import com.jopdesign.wcet.ProjectConfig;
+import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
+import lpsolve.LpSolveException;
+import org.jgrapht.DirectedGraph;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Vector;
 import java.util.Map.Entry;
-
-import lpsolve.LpSolveException;
-
-import org.jgrapht.DirectedGraph;
-
-import com.jopdesign.wcet.ProjectConfig;
-import com.jopdesign.wcet.graphutils.IDProvider;
-import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
+import java.util.Vector;
 
 /**
  * @deprecated Use IPETBuilder and IPETSolver instead

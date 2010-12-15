@@ -21,6 +21,7 @@
 package com.jopdesign.common.code;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -53,7 +54,7 @@ public class DefaultCallgraphConfig implements CallGraph.CallgraphConfig {
         ControlFlowGraph currentCFG = context.getMethodInfo().getCode().getControlFlowGraph();
         List<ExecutionContext> newContexts = new LinkedList<ExecutionContext>();
 
-        for(ControlFlowGraph.CFGNode node : currentCFG.getGraph().vertexSet()) {
+        for(CFGNode node : currentCFG.getGraph().vertexSet()) {
             if(node instanceof ControlFlowGraph.InvokeNode) {
                 ControlFlowGraph.InvokeNode iNode = (ControlFlowGraph.InvokeNode) node;
 

@@ -1,9 +1,31 @@
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
+ *
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.jopdesign.wcet.analysis.cache;
 
-import com.jopdesign.build.MethodInfo;
-import com.jopdesign.common.code.CallGraph;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallGraph.MethodNode;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ControlFlowGraph.CfgVisitor;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.AnalysisContext;
 import com.jopdesign.wcet.analysis.AnalysisContextSimple;
@@ -129,29 +151,29 @@ public class ObjectCacheAnalysisDemo {
 			this.recursiveStrategy = recursiveStrategy;
 		}
 		@Override
-		protected ObjectCacheCost computeCostOfNode(ControlFlowGraph.CFGNode n, AnalysisContext ctx) {
+		protected ObjectCacheCost computeCostOfNode(CFGNode n, AnalysisContext ctx) {
 			return new OCacheVisitor(this.getProject(), this, recursiveStrategy, ctx).computeCost(n);
 		}
 
 		@Override
-		protected CostProvider<ControlFlowGraph.CFGNode> getCostProvider(
-				Map<ControlFlowGraph.CFGNode, ObjectCacheCost> nodeCosts) {
-			HashMap<ControlFlowGraph.CFGNode, Long> costMap = new HashMap<ControlFlowGraph.CFGNode, Long>();
-			for(Entry<ControlFlowGraph.CFGNode, ObjectCacheCost> entry : nodeCosts.entrySet()) {
+		protected CostProvider<CFGNode> getCostProvider(
+				Map<CFGNode, ObjectCacheCost> nodeCosts) {
+			HashMap<CFGNode, Long> costMap = new HashMap<CFGNode, Long>();
+			for(Entry<CFGNode, ObjectCacheCost> entry : nodeCosts.entrySet()) {
 				costMap.put(entry.getKey(),entry.getValue().getCost());
 			}
-			return new MapCostProvider<ControlFlowGraph.CFGNode>(costMap, 1000);
+			return new MapCostProvider<CFGNode>(costMap, 1000);
 		}
 
 		@Override
 		protected ObjectCacheCost extractSolution(ControlFlowGraph cfg,
-				Map<ControlFlowGraph.CFGNode, ObjectCacheCost> nodeCosts,
+				Map<CFGNode, ObjectCacheCost> nodeCosts,
 				long maxCost,
 				Map<IPETBuilder.ExecutionEdge, Long> executionEdgeFlow) {
 			Map <ControlFlowGraph.CFGEdge, Long> edgeFlow  = RecursiveWcetAnalysis.executionToProgramFlow(cfg.getGraph(), executionEdgeFlow);
-			Map <ControlFlowGraph.CFGNode, Long> nodeFlow = RecursiveWcetAnalysis.edgeToNodeFlow(cfg.getGraph(),edgeFlow);
+			Map <CFGNode, Long> nodeFlow = RecursiveWcetAnalysis.edgeToNodeFlow(cfg.getGraph(),edgeFlow);
 			ObjectCacheCost ocCost = new ObjectCacheCost();
-			for(Entry<ControlFlowGraph.CFGNode, Long> entry : nodeFlow.entrySet()) {
+			for(Entry<CFGNode, Long> entry : nodeFlow.entrySet()) {
 				ocCost.addCost(nodeCosts.get(entry.getKey()).times(entry.getValue()));
 			}
 			if(maxCost != ocCost.getCost()) {
@@ -165,7 +187,7 @@ public class ObjectCacheAnalysisDemo {
 	} 
 
 	/** Visitor for computing the WCET of CFG nodes */
-	private class OCacheVisitor implements ControlFlowGraph.CfgVisitor {
+	private class OCacheVisitor implements CfgVisitor {
 		private ObjectCacheCost cost;
 		private RecursiveAnalysis<AnalysisContext, ObjectCacheCost> recursiveAnalysis;
 		private RecursiveStrategy<AnalysisContext, ObjectCacheCost> recursiveStrategy;
@@ -185,7 +207,7 @@ public class ObjectCacheAnalysisDemo {
 		}
 		// Cost ~ number of cache misses
 		// TODO: A basic block is a scope too!
-		public void visitBasicBlockNode(ControlFlowGraph.BasicBlockNode n) {
+		public void visitBasicBlockNode(BasicBlockNode n) {
 			long worstCaseMissCost = jopconfig.getObjectCacheLoadBlockCycles();
 			for(InstructionHandle ih : n.getBasicBlock().getInstructions()) {
 				if(null == ObjectRefAnalysis.getHandleType(project, n, ih)) continue;
@@ -213,7 +235,7 @@ public class ObjectCacheAnalysisDemo {
 			ControlFlowGraph subCfg = n.getControlFlowGraph();
 			cost.addCost(recursiveAnalysis.computeCostUncached(n.toString(), subCfg, this.context));
 		}
-		public ObjectCacheCost computeCost(ControlFlowGraph.CFGNode n) {
+		public ObjectCacheCost computeCost(CFGNode n) {
 			this.cost = new ObjectCacheCost();
 			n.accept(this);
 			return cost;
@@ -284,14 +306,14 @@ public class ObjectCacheAnalysisDemo {
 		if(! context.isEmpty()) {
 			throw new AssertionError("Callstrings are not yet supported for object cache analysis");
 		}
-		return objRefAnalysis.getMaxCachedTags(new CallGraph.CallGraphNode(invoked, context));
+		return objRefAnalysis.getMaxCachedTags(new MethodNode(invoked, context));
 	}
  
 	private ObjectCacheCost getAllFitCost(MethodInfo invoked, CallString context) {
 		if(! context.isEmpty()) {
 			throw new AssertionError("Callstrings are not yet supported for object cache analysis");
 		}
-		return objRefAnalysis.getMaxCacheCost(new CallGraph.CallGraphNode(invoked, context), costModel);
+		return objRefAnalysis.getMaxCacheCost(new MethodNode(invoked, context), costModel);
 	}
 
 

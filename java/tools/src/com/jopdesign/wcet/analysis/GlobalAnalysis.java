@@ -1,8 +1,28 @@
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
+ *
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.jopdesign.wcet.analysis;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.code.SuperGraphNode;
 import com.jopdesign.wcet.ProcessorModel;
@@ -187,7 +207,7 @@ public class GlobalAnalysis {
 			
 			/* For each CFG instance, consider CFG nodes
 			 * Currently there is no need to attribute cost to callsites */
-			for(ControlFlowGraph.CFGNode cfgNode : n.getCfg().getGraph().vertexSet()) {
+			for(CFGNode cfgNode : n.getCfg().getGraph().vertexSet()) {
 				WcetCost cost = visitor.computeCost(cfgNode);
 				for(ControlFlowGraph.CFGEdge edge : n.getCfg().getGraph().outgoingEdgesOf(cfgNode)) {
 					ExecutionEdge e = ipetBuilder.newEdge(edge);
@@ -322,7 +342,7 @@ public class GlobalAnalysis {
 			}
 		}
 		@Override
-		public void visitBasicBlockNode(ControlFlowGraph.BasicBlockNode n) {
+		public void visitBasicBlockNode(BasicBlockNode n) {
 			cost.addLocalCost(project.getProcessorModel().basicBlockWCET(ctx.getExecutionContext(n),n.getBasicBlock()));
 		}
 	}

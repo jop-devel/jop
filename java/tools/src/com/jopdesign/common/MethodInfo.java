@@ -21,8 +21,8 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.bcel.ParameterAnnotationAttribute;
-import com.jopdesign.common.graph.ClassHierarchyTraverser;
-import com.jopdesign.common.graph.ClassVisitor;
+import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
+import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MethodRef;

@@ -1,13 +1,29 @@
-/**
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
  *
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.jopdesign.wcet.analysis;
 
-import com.jopdesign.build.MethodInfo;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.jop.MethodCache;
@@ -26,7 +42,7 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 	}
 	public WcetCost recursiveCost(
 			RecursiveAnalysis<AnalysisContextLocal,WcetCost> stagedAnalysis,
-			InvokeNode n,
+			ControlFlowGraph.InvokeNode n,
 			AnalysisContextLocal ctx) {
 		StaticCacheApproximation cacheMode = ctx.getCacheApproxMode();
 		if(cacheMode.needsInterProcIPET()) {

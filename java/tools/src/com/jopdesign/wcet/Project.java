@@ -2,7 +2,7 @@
  * This file is part of JOP, the Java Optimized Processor
  * see <http://www.jopdesign.com/>
  *
- * Copyright (C) 2010, Stefan Hepp (stefan@stefant.org).
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,13 +19,17 @@
  */
 package com.jopdesign.wcet;
 
+import com.jopdesign.build.AppVisitor;
+import com.jopdesign.build.WcetPreprocess;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.ContextMap;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.config.Config;
+import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.wcet.allocation.BlockAllocationModel;
 import com.jopdesign.wcet.allocation.HandleAllocationModel;

@@ -1,25 +1,38 @@
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
+ *
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.jopdesign.wcet.analysis;
+
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ControlFlowGraph.CfgVisitor;
+import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.annotations.LoopBound;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import com.jopdesign.build.MethodInfo;
-import com.jopdesign.dfa.framework.CallString;
-import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.annotations.LoopBound;
-import com.jopdesign.wcet.frontend.ControlFlowGraph;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.BasicBlockNode;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CfgVisitor;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.DedicatedNode;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.SummaryNode;
-import com.jopdesign.wcet.graphutils.ProgressMeasure;
-import com.jopdesign.wcet.graphutils.ProgressMeasure.RelativeProgress;
 
 /** While implementing progress measure, I found that they can be used for tree based
  *  WCET analysis. Why not ?
@@ -37,8 +50,8 @@ public class TreeAnalysis {
 		}
 
 		@Override
-		public void visitInvokeNode(InvokeNode n) {
-			MethodInfo method = n.getImplementedMethod();			
+		public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
+			MethodInfo method = n.getImplementedMethod();
 			visitBasicBlockNode(n);
 			cost.addCacheCost(project.getProcessorModel().getInvokeReturnMissCost(
 					n.invokerFlowGraph(),
@@ -63,16 +76,16 @@ public class TreeAnalysis {
 			progress = 1;
 		}
 
-		public void visitInvokeNode(InvokeNode n) {
+		public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
 			long invokedProgress = subProgress.get(n.getImplementedMethod());
 			progress = 1 + invokedProgress;
 		}
 
-		public void visitSpecialNode(DedicatedNode n) {
+		public void visitSpecialNode(ControlFlowGraph.DedicatedNode n) {
 			progress = 1;
 		}
 
-		public void visitSummaryNode(SummaryNode n) {
+		public void visitSummaryNode(ControlFlowGraph.SummaryNode n) {
 			progress = 1;
 		}
 		public long getProgress(CFGNode n) {
@@ -82,8 +95,8 @@ public class TreeAnalysis {
 	}
 	private Project project;
 	private HashMap<MethodInfo, Long> methodWCET;
-	private Map<MethodInfo,Map<CFGEdge, RelativeProgress<CFGNode>>> relativeProgress
-		= new HashMap<MethodInfo, Map<CFGEdge,RelativeProgress<CFGNode>>>();
+	private Map<MethodInfo,Map<ControlFlowGraph.CFGEdge, RelativeProgress<CFGNode>>> relativeProgress
+		= new HashMap<MethodInfo, Map<ControlFlowGraph.CFGEdge,RelativeProgress<CFGNode>>>();
 	private HashMap<MethodInfo, Long> maxProgress = new HashMap<MethodInfo,Long>();
 	private boolean  filterLeafMethods;
 
@@ -106,8 +119,8 @@ public class TreeAnalysis {
 			for(CFGNode n : cfg.getGraph().vertexSet()) {
 				localProgress.put(n, progressVisitor.getProgress(n));
 			}
-			ProgressMeasure<CFGNode, CFGEdge> pm =
-				new ProgressMeasure<CFGNode, CFGEdge>(cfg.getGraph(),cfg.getLoopColoring(),
+			ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge> pm =
+				new ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge>(cfg.getGraph(),cfg.getLoopColoring(),
 													  extractUBs(cfg.getLoopBounds()) ,localProgress);
 			long progress = pm.getMaxProgress().get(cfg.getExit());
 			/* FIXME: _UGLY_ hack */
@@ -120,7 +133,7 @@ public class TreeAnalysis {
 		}
 		System.out.println("Progress Measure (max): "+maxProgress.get(targetMethod));
 	}
-	public Map<MethodInfo, Map<CFGEdge, RelativeProgress<CFGNode>>> getRelativeProgressMap() {
+	public Map<MethodInfo, Map<ControlFlowGraph.CFGEdge, RelativeProgress<CFGNode>>> getRelativeProgressMap() {
 		return this.relativeProgress;
 	}
 	public Long getMaxProgress(MethodInfo mi) {
@@ -145,8 +158,8 @@ public class TreeAnalysis {
 			for(CFGNode n : cfg.getGraph().vertexSet()) {
 				localCost.put(n, lcv.computeCost(n).getCost());
 			}
-			ProgressMeasure<CFGNode, CFGEdge> pm =
-				new ProgressMeasure<CFGNode, CFGEdge>(cfg.getGraph(),cfg.getLoopColoring(),
+			ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge> pm =
+				new ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge>(cfg.getGraph(),cfg.getLoopColoring(),
 													  extractUBs(cfg.getLoopBounds()) ,localCost);
 			long wcet = pm.getMaxProgress().get(cfg.getExit());
 			methodWCET.put(mi, wcet);

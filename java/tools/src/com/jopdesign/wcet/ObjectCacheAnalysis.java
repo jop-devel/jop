@@ -1,6 +1,27 @@
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
+ *
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.jopdesign.wcet;
 
+import com.jopdesign.common.code.CallGraph.MethodNode;
 import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.SymbolicAddress;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo;
@@ -27,8 +48,8 @@ import static com.jopdesign.wcet.ExecHelper.timeDiff;
 public class ObjectCacheAnalysis {
 	/* generator for object cache timings */
 	private interface ObjectCacheTiming {
-		public int  loadTime(int words);
-		public void setObjectCacheTiming(JOPConfig jopConfig, int lineSize);
+		int  loadTime(int words);
+		void setObjectCacheTiming(JOPConfig jopConfig, int lineSize);
 	}
 	
 	private static class OCTimingUni implements ObjectCacheTiming {
@@ -126,9 +147,9 @@ public class ObjectCacheAnalysis {
 		// Object Cache (debugging)
 
 		ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project, false, 1, 65536, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE);
-		TopologicalOrderIterator<CallGraphNode, DefaultEdge> cgIter = this.project.getCallGraph().topDownIterator();
+		TopologicalOrderIterator<MethodNode, DefaultEdge> cgIter = this.project.getCallGraph().topDownIterator();
 		while(cgIter.hasNext()) {
-			CallGraphNode scope = cgIter.next();
+			MethodNode scope = cgIter.next();
 			Set<SymbolicAddress> addresses = orefAnalysis.getAddressSet(scope);
 			String entryString = String.format("%-50s ==> |%d|%s ; Saturated Types: (%s)",
 						scope,
@@ -275,9 +296,9 @@ public class ObjectCacheAnalysis {
 				String.format("[Method Cache Analysis]: Total time: %.2f s / Total solver time: %.2f s",
 						timeDiff(start,stop),
 						LpSolveWrapper.getSolverTime()));        
-		Map<CallGraphNode, Long> blockUsage = mcAnalysis.getBlockUsage();
-		MiscUtils.printMap(System.out, blockUsage, new MiscUtils.Function2<CallGraphNode, Long, String>() {
-            public String apply(CallGraphNode v1, Long maxBlocks) {
+		Map<MethodNode, Long> blockUsage = mcAnalysis.getBlockUsage();
+		MiscUtils.printMap(System.out, blockUsage, new MiscUtils.Function2<MethodNode, Long, String>() {
+            public String apply(MethodNode v1, Long maxBlocks) {
                 MethodCache mc = project.getProcessorModel().getMethodCache();
                 return String.format("%-50s ==> %2d <= %2d",
                         v1.getMethodImpl().getFQMethodName(),

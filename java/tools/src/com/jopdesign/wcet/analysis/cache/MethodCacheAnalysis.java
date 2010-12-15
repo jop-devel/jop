@@ -1,8 +1,28 @@
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
+ *
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.jopdesign.wcet.analysis.cache;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallGraph.MethodNode;
 import com.jopdesign.common.code.SuperGraph;
-import com.jopdesign.common.graph.Pair;
+import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.ipet.IPETBuilder;
@@ -85,7 +105,7 @@ public class MethodCacheAnalysis {
 	}
 
 	/** Number of blocks needed to store the instructions of the given scope */
-	private Map<CallGraphNode, Long> blocksNeeded;
+	private Map<MethodNode, Long> blocksNeeded;
 	/** The project analyzed */
 	private Project project;
 	
@@ -188,13 +208,13 @@ public class MethodCacheAnalysis {
 		}
 	}
 	
-	public Map<CallGraphNode, Long> getBlockUsage() {
+	public Map<MethodNode, Long> getBlockUsage() {
 		if(blocksNeeded == null) analyzeBlockUsage();
 		return blocksNeeded;
 	}
 
 	
-	private SuperGraph getScopeSuperGraph(CallGraphNode scope) {
+	private SuperGraph getScopeSuperGraph(MethodNode scope) {
 		MethodInfo m = scope.getMethodImpl();
 		return new SuperGraph(project.getAppInfo(),project.getFlowGraph(m),project.getProjectConfig().callstringLength());
 	}

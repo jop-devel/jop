@@ -28,6 +28,7 @@
 package com.jopdesign.wcet;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.misc.MiscUtils;
@@ -229,7 +230,7 @@ public class WCETAnalysis {
         }		
 	}
 
-    private void computeWCET() throws IOException, DuplicateKeyException, XmlSerializationException, BadConfigurationException {
+    private void computeWCET() throws IOException, DuplicateKeyException, XmlSerializationException, Config.BadConfigurationException {
         StaticCacheApproximation preciseApprox = IPETConfig.getPreciseCacheApprox(config);
         project.setGenerateWCETReport(false);
 

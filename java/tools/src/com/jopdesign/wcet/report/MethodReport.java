@@ -19,17 +19,16 @@
 */
 package com.jopdesign.wcet.report;
 
+import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.graphutils.Pair;
+import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.annotations.LoopBound;
+
 import java.util.Collection;
 import java.util.Set;
 import java.util.TreeSet;
-
-import com.jopdesign.build.ClassInfo;
-import com.jopdesign.build.MethodInfo;
-import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.annotations.LoopBound;
-import com.jopdesign.wcet.frontend.ControlFlowGraph;
-import com.jopdesign.wcet.frontend.CallGraph.CallGraphNode;
-import com.jopdesign.wcet.graphutils.Pair;
 
 public class MethodReport {
 	private MethodInfo info;
@@ -45,7 +44,7 @@ public class MethodReport {
 		this.loopBounds = fg.getLoopBounds().values();
 		this.sizeInWords = fg.getNumberOfWords();		
 		this.referenced = new TreeSet<String>();
-		for(CallGraphNode cgn : p.getCallGraph().getReferencedMethods(m)) {
+		for(MethodNode cgn : p.getCallGraph().getReferencedMethods(m)) {
 			Pair<ClassInfo, String> ref = cgn.getReferencedMethod();
 			this.referenced.add(ref.fst().clazz.getClassName()+"."+ref.snd());
 		}

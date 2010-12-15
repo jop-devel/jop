@@ -1,7 +1,27 @@
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
+ *
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.jopdesign.wcet.analysis;
 
-import com.jopdesign.build.MethodInfo;
+import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.ipet.CostProvider;
 import com.jopdesign.wcet.ipet.IPETBuilder;
@@ -92,8 +112,8 @@ public abstract class RecursiveAnalysis<Context extends AnalysisContext, Rval> {
 	}
 
 	public Rval computeCostUncached(String ilpName, ControlFlowGraph cfg, Context ctx) {
-		Map<ControlFlowGraph.CFGNode, Rval> nodeCosts = buildNodeCostMap(cfg,ctx);
-		CostProvider<ControlFlowGraph.CFGNode> costProvider = getCostProvider(nodeCosts);
+		Map<CFGNode, Rval> nodeCosts = buildNodeCostMap(cfg,ctx);
+		CostProvider<CFGNode> costProvider = getCostProvider(nodeCosts);
 
 		Map<IPETBuilder.ExecutionEdge, Long> edgeFlowOut = new HashMap<IPETBuilder.ExecutionEdge, Long>();
 		long maxCost = runLocalComputation(ilpName, cfg, ctx, costProvider, edgeFlowOut);
@@ -102,13 +122,13 @@ public abstract class RecursiveAnalysis<Context extends AnalysisContext, Rval> {
 
 	protected abstract Rval extractSolution(
 			ControlFlowGraph cfg,
-			Map<ControlFlowGraph.CFGNode, Rval> nodeCosts,
+			Map<CFGNode, Rval> nodeCosts,
 			long maxCost,
 			Map<IPETBuilder.ExecutionEdge, Long> edgeFlow);
 
-	protected abstract CostProvider<ControlFlowGraph.CFGNode> getCostProvider(Map<ControlFlowGraph.CFGNode, Rval> nodeCosts);
+	protected abstract CostProvider<CFGNode> getCostProvider(Map<CFGNode, Rval> nodeCosts);
 
-	protected abstract Rval computeCostOfNode(ControlFlowGraph.CFGNode n, Context ctx);
+	protected abstract Rval computeCostOfNode(CFGNode n, Context ctx);
 
 	/**
 	 * Compute the cost of the given control flow graph, using a local ILP
@@ -121,7 +141,7 @@ public abstract class RecursiveAnalysis<Context extends AnalysisContext, Rval> {
 			String name, 
 			ControlFlowGraph cfg, 
 			Context ctx,
-			CostProvider<ControlFlowGraph.CFGNode> costProvider,
+			CostProvider<CFGNode> costProvider,
 			Map<IPETBuilder.ExecutionEdge, Long> edgeFlowOut) {
 		
 		IPETSolver problem = IPETUtils.buildLocalILPModel(name, ctx.getCallString(), cfg, costProvider, ipetConfig);
@@ -144,11 +164,11 @@ public abstract class RecursiveAnalysis<Context extends AnalysisContext, Rval> {
 	 * @param context the cost computation context
 	 * @return
 	 */
-	public Map<ControlFlowGraph.CFGNode, Rval>
+	public Map<CFGNode, Rval>
 		buildNodeCostMap(ControlFlowGraph fg,Context ctx) {
 
-		HashMap<ControlFlowGraph.CFGNode, Rval> nodeCost = new HashMap<ControlFlowGraph.CFGNode,Rval>();
-		for(ControlFlowGraph.CFGNode n : fg.getGraph().vertexSet()) {
+		HashMap<CFGNode, Rval> nodeCost = new HashMap<CFGNode,Rval>();
+		for(CFGNode n : fg.getGraph().vertexSet()) {
 			nodeCost.put(n, computeCostOfNode(n, ctx));
 		}
 		return nodeCost;

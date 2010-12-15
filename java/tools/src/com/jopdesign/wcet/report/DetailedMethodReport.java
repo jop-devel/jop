@@ -19,8 +19,9 @@
 */
 package com.jopdesign.wcet.report;
 
-import com.jopdesign.build.MethodInfo;
+import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.Project;
 
 import java.io.File;
@@ -28,7 +29,7 @@ import java.util.Map;
 
 public class DetailedMethodReport {
 	Map<String,Object> stats;
-	Map<ControlFlowGraph.CFGNode,?> nodeAnnotations;
+	Map<CFGNode,?> nodeAnnotations;
 	Map<ControlFlowGraph.CFGEdge,?> edgeAnnotations;
 	private String graphLink;
 	private MethodInfo method;
@@ -38,7 +39,7 @@ public class DetailedMethodReport {
 	public DetailedMethodReport(ReportConfig c, 
 			Project p, MethodInfo m, 
 			String key, Map<String, Object> stats, 
-			Map<ControlFlowGraph.CFGNode, ?> wcets, Map<ControlFlowGraph.CFGEdge, ?> flowMapOut) {
+			Map<CFGNode, ?> wcets, Map<ControlFlowGraph.CFGEdge, ?> flowMapOut) {
 		this.config = c;
 		this.project = p;
 		this.method = m;
@@ -56,7 +57,7 @@ public class DetailedMethodReport {
 		return graphLink;
 	}
 	public String getKey() { return key; }
-	private File generateGraph(MethodInfo method, String key, Map<ControlFlowGraph.CFGNode, ?> nodeAnnotations, Map<ControlFlowGraph.CFGEdge, ?> edgeAnnotations) {
+	private File generateGraph(MethodInfo method, String key, Map<CFGNode, ?> nodeAnnotations, Map<ControlFlowGraph.CFGEdge, ?> edgeAnnotations) {
 		File cgdot = config.getOutFile(method,key+".dot");
 		File cgimg = config.getOutFile(method,key+".png");
 		ControlFlowGraph flowGraph = project.getAppInfo().getFlowGraph(method);

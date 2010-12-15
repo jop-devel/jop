@@ -19,32 +19,27 @@
 */
 package com.jopdesign.wcet.uppaal.translator;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.Map.Entry;
-
+import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ControlFlowGraph.CfgVisitor;
+import com.jopdesign.common.graphutils.FlowGraph;
+import com.jopdesign.common.graphutils.LoopColoring;
 import com.jopdesign.wcet.ProcessorModel;
+import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.ExecutionContext;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
-import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
-import com.jopdesign.wcet.frontend.ControlFlowGraph;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.BasicBlockNode;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CfgVisitor;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.DedicatedNode;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.SummaryNode;
-import com.jopdesign.wcet.graphutils.FlowGraph;
-import com.jopdesign.wcet.graphutils.LoopColoring.IterationBranchLabel;
-import com.jopdesign.wcet.graphutils.ProgressMeasure.RelativeProgress;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.uppaal.model.Location;
 import com.jopdesign.wcet.uppaal.model.Transition;
 import com.jopdesign.wcet.uppaal.model.TransitionAttributes;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 /**
  * Build UppAal templates for a Java method.
  * We map the CFG's nodes and edges to
@@ -77,18 +72,18 @@ public class MethodBuilder implements CfgVisitor {
 	public void build() {
 		this.nodeTemplates = new HashMap<CFGNode, SubAutomaton>();
 		this.tBuilder.addDescription("Template for method "+cfg.getMethodInfo());
-		FlowGraph<CFGNode, CFGEdge> graph = cfg.getGraph();
+		FlowGraph<CFGNode, ControlFlowGraph.CFGEdge> graph = cfg.getGraph();
 		/* Translate the CFGs nodes */
 		for(CFGNode node : graph.vertexSet()) {
 			node.accept(this);
 		}
 		/* Translate the CFGs edges */
-		for(CFGEdge edge : graph.edgeSet()) {
+		for(ControlFlowGraph.CFGEdge edge : graph.edgeSet()) {
 			buildEdge(edge);
 		}
 	}
 
-	public void visitSpecialNode(DedicatedNode n) {
+	public void visitSpecialNode(ControlFlowGraph.DedicatedNode n) {
 		SubAutomaton localTranslation = null;
 		switch(n.getKind()) {
 		case ENTRY: localTranslation = SubAutomaton.singleton(methodAuto.getEntry()); break;
@@ -98,7 +93,7 @@ public class MethodBuilder implements CfgVisitor {
 		}
 		this.nodeTemplates.put(n,localTranslation);
 	}
-	private SubAutomaton createSpecialCommited(String name, DedicatedNode n) {
+	private SubAutomaton createSpecialCommited(String name, ControlFlowGraph.DedicatedNode n) {
 		Location split = tBuilder.createLocation(name+"_"+this.mId+"_"+n.getId());
 		split.setCommited();
 		return SubAutomaton.singleton(split);
@@ -111,7 +106,7 @@ public class MethodBuilder implements CfgVisitor {
 		this.nodeTemplates.put(n,bbLoc);
 	}
 
-	public void visitInvokeNode(InvokeNode n) {
+	public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
 		ExecutionContext ctx = new ExecutionContext(n.getBasicBlock().getMethodInfo());
 		ProcessorModel proc = jTrans.getProject().getProcessorModel();
 		SubAutomaton invokeAuto;
@@ -123,7 +118,7 @@ public class MethodBuilder implements CfgVisitor {
 		this.nodeTemplates.put(n,invokeAuto);
 	}
 
-	public void visitSummaryNode(SummaryNode n) {
+	public void visitSummaryNode(ControlFlowGraph.SummaryNode n) {
 		RecursiveWcetAnalysis<AnalysisContextLocal> an =
 			new RecursiveWcetAnalysis<AnalysisContextLocal>(
 					jTrans.getProject(),
@@ -135,11 +130,11 @@ public class MethodBuilder implements CfgVisitor {
 		SubAutomaton sumLoc = createBasicBlock(n.getId(),cost.getCost());
 		this.nodeTemplates.put(n,sumLoc);
 	}
-	private void buildEdge(CFGEdge edge) {
-		FlowGraph<CFGNode, CFGEdge> graph = cfg.getGraph();
+	private void buildEdge(ControlFlowGraph.CFGEdge edge) {
+		FlowGraph<CFGNode, ControlFlowGraph.CFGEdge> graph = cfg.getGraph();
 		Set<CFGNode> hols = cfg.getLoopColoring().getHeadOfLoops();
-		Set<CFGEdge> backEdges = cfg.getLoopColoring().getBackEdges();
-		Map<CFGEdge, IterationBranchLabel<CFGNode>> edgeColoring =
+		Set<ControlFlowGraph.CFGEdge> backEdges = cfg.getLoopColoring().getBackEdges();
+		Map<ControlFlowGraph.CFGEdge, LoopColoring.IterationBranchLabel<CFGNode>> edgeColoring =
 			cfg.getLoopColoring().getIterationBranchEdges();
 		CFGNode src = graph.getEdgeSource(edge);
 		CFGNode target = graph.getEdgeTarget(edge);
@@ -148,9 +143,9 @@ public class MethodBuilder implements CfgVisitor {
 				nodeTemplates.get(src).getExit(),
 				nodeTemplates.get(target).getEntry());
 		TransitionAttributes attrs = transition.getAttrs();
-		IterationBranchLabel<CFGNode> edgeColor = edgeColoring.get(edge);
+		LoopColoring.IterationBranchLabel<CFGNode> edgeColor = edgeColoring.get(edge);
 		if(jTrans.getConfig().useProgressMeasure) {
-			if(src instanceof InvokeNode) {
+			if(src instanceof ControlFlowGraph.InvokeNode) {
 				attrs.appendUpdate("pm := pm + 1");
 			} else {
 				RelativeProgress<CFGNode> progress = jTrans.getProgress(cfg.getMethodInfo()).get(edge);

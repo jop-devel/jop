@@ -23,11 +23,11 @@ package com.jopdesign.common.code;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.graph.AdvancedDOTExporter;
-import com.jopdesign.common.graph.DefaultFlowGraph;
-import com.jopdesign.common.graph.FlowGraph;
-import com.jopdesign.common.graph.LoopColoring;
-import com.jopdesign.common.graph.TopOrder;
+import com.jopdesign.common.graphutils.AdvancedDOTExporter;
+import com.jopdesign.common.graphutils.DefaultFlowGraph;
+import com.jopdesign.common.graphutils.FlowGraph;
+import com.jopdesign.common.graphutils.LoopColoring;
+import com.jopdesign.common.graphutils.TopOrder;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.MiscUtils;
@@ -127,7 +127,7 @@ public class ControlFlowGraph {
 	 * Abstract base class for flow graph nodes
 	 *
 	 */
-	public abstract class CFGNode implements Comparable<CFGNode>{
+    public abstract class CFGNode implements Comparable<CFGNode>{
 		private int id;
 		protected String name;
 		protected CFGNode(int id, String name) {

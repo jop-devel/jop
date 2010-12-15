@@ -19,32 +19,28 @@
 */
 package com.jopdesign.wcet.analysis;
 
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeSet;
-import java.util.Map.Entry;
-
-import org.apache.log4j.Logger;
-import org.jgrapht.DirectedGraph;
-
-import com.jopdesign.build.ClassInfo;
-import com.jopdesign.build.MethodInfo;
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.BasicBlock;
+import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.frontend.BasicBlock;
-import com.jopdesign.wcet.frontend.ControlFlowGraph;
-import com.jopdesign.wcet.frontend.WcetAppInfo;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.BasicBlockNode;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.SummaryNode;
 import com.jopdesign.wcet.ipet.CostProvider;
 import com.jopdesign.wcet.ipet.IPETBuilder;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.report.ClassReport;
+import org.apache.log4j.Logger;
+import org.jgrapht.DirectedGraph;
+
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeSet;
 
 /**
  * Simple and fast local analysis, with the possibility to use more expensive analysis
@@ -65,11 +61,11 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 			this.ctx = ctx;
 		}
 		@Override
-		public void visitSummaryNode(SummaryNode n) {
+		public void visitSummaryNode(ControlFlowGraph.SummaryNode n) {
 			cost.addCost(runWCETComputation("summary",n.getSubGraph(),ctx).getCost());
 		}
 		@Override
-		public void visitInvokeNode(InvokeNode n) {
+		public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
 
 			// FIXME: [Bug #3] Hackish implementation of callgraph pruning
 			if(n.getVirtualNode() != null) {
@@ -92,16 +88,16 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 
 	/** Solution to local WCET problem */
 	public class LocalWCETSolution {
-		private DirectedGraph<CFGNode, CFGEdge> graph;
+		private DirectedGraph<CFGNode, ControlFlowGraph.CFGEdge> graph;
 
 		private long lpCost;
 		private WcetCost cost;
 		private Map<CFGNode,Long> nodeFlow;
-		private Map<CFGEdge,Long> edgeFlow;
+		private Map<ControlFlowGraph.CFGEdge,Long> edgeFlow;
 		
 		private Map<CFGNode, WcetCost> nodeCosts;
 
-		public LocalWCETSolution(DirectedGraph<CFGNode,CFGEdge> g, Map<CFGNode,WcetCost> nodeCosts) {
+		public LocalWCETSolution(DirectedGraph<CFGNode,ControlFlowGraph.CFGEdge> g, Map<CFGNode,WcetCost> nodeCosts) {
 
 			this.graph = g;
 			this.nodeCosts= nodeCosts;
@@ -132,7 +128,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		public Map<CFGNode, Long> getNodeFlow() {
 			return nodeFlow;
 		}
-		public Map<CFGEdge, Long> getEdgeFlow() {
+		public Map<ControlFlowGraph.CFGEdge, Long> getEdgeFlow() {
 			return edgeFlow;
 		}
 		/** Safety check: compare flow*cost to actual solution */
@@ -182,7 +178,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 	}
 
 	static final Logger logger = Logger.getLogger(RecursiveWcetAnalysis.class);
-	private WcetAppInfo appInfo;
+	private AppInfo appInfo;
 	private ProcessorModel processor;
 	private RecursiveAnalysis.RecursiveStrategy<Context, WcetCost> recursiveWCET;
 
@@ -307,13 +303,13 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 	 * @param executionEdgeFlow
 	 * @return
 	 */
-	public static Map<CFGEdge, Long> executionToProgramFlow(
-			DirectedGraph<CFGNode, CFGEdge> graph,
+	public static Map<ControlFlowGraph.CFGEdge, Long> executionToProgramFlow(
+			DirectedGraph<CFGNode, ControlFlowGraph.CFGEdge> graph,
 			Map<IPETBuilder.ExecutionEdge, Long> executionEdgeFlow) {
-		Map<CFGEdge, Long> cfgEdgeFlow = new HashMap<CFGEdge, Long>();
+		Map<ControlFlowGraph.CFGEdge, Long> cfgEdgeFlow = new HashMap<ControlFlowGraph.CFGEdge, Long>();
 		for(Entry<IPETBuilder.ExecutionEdge, Long> entry : executionEdgeFlow.entrySet()) {
 
-			CFGEdge cfgEdge = entry.getKey().getModelledEdge();
+			ControlFlowGraph.CFGEdge cfgEdge = entry.getKey().getModelledEdge();
 			if(cfgEdge == null) continue;
 			Long oldFlow = cfgEdgeFlow.get(cfgEdge);
 			if(oldFlow == null) oldFlow = 0L;
@@ -322,7 +318,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		return cfgEdgeFlow;
 	}
 
-	public static Map<CFGNode, Long> edgeToNodeFlow(DirectedGraph<CFGNode,CFGEdge> graph, Map<CFGEdge, Long> cfgEdgeFlow) {
+	public static Map<CFGNode, Long> edgeToNodeFlow(DirectedGraph<CFGNode,ControlFlowGraph.CFGEdge> graph, Map<ControlFlowGraph.CFGEdge, Long> cfgEdgeFlow) {
 		
 		HashMap<CFGNode, Long> nodeFlow = new HashMap<CFGNode, Long>();
 		for(CFGNode n : graph.vertexSet()) {
@@ -330,7 +326,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 			if(graph.inDegreeOf(n) == 0) nodeFlow.put(n, 0L); // ENTRY and DEAD CODE (no flow)
 			else {
 				long flow = 0;
-				for(CFGEdge inEdge : graph.incomingEdgesOf(n)) {
+				for(ControlFlowGraph.CFGEdge inEdge : graph.incomingEdgesOf(n)) {
 					flow+=cfgEdgeFlow.get(inEdge);
 				}
 				nodeFlow.put(n, flow);

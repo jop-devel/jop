@@ -19,9 +19,10 @@
 */
 package com.jopdesign.wcet.report;
 
-import com.jopdesign.build.ClassInfo;
-import com.jopdesign.build.MethodInfo;
+import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.timing.WCETInstruction;
@@ -280,7 +281,7 @@ public class Report {
 		else reports.add(e);
 	}
 	public void addDetailedReport(MethodInfo m, String key, Map<String, Object> stats, 
-								 Map<ControlFlowGraph.CFGNode, ?> nodeAnnots,
+								 Map<CFGNode, ?> nodeAnnots,
 								 Map<ControlFlowGraph.CFGEdge, ?> edgeAnnots) {
 		DetailedMethodReport re = new DetailedMethodReport(config,project,m,key,stats,nodeAnnots,edgeAnnots);
 		this.addDetailedReport(m, re,false);

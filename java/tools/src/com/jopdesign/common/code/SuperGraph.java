@@ -22,10 +22,11 @@ package com.jopdesign.common.code;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.graph.AdvancedDOTExporter;
-import com.jopdesign.common.graph.FlowGraph;
-import com.jopdesign.common.graph.Pair;
-import com.jopdesign.common.graph.TopOrder;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.graphutils.AdvancedDOTExporter;
+import com.jopdesign.common.graphutils.FlowGraph;
+import com.jopdesign.common.graphutils.Pair;
+import com.jopdesign.common.graphutils.TopOrder;
 import com.jopdesign.common.misc.BadGraphException;
 import org.jgrapht.graph.DirectedMultigraph;
 
@@ -145,14 +146,14 @@ public class SuperGraph {
 	/** Edge representing return to the invoking method */
 	public static class SuperReturnEdge extends SuperGraphEdge {
 		private static final long serialVersionUID = 1L;
-		ControlFlowGraph.CFGNode returnNode;
+		CFGNode returnNode;
 		private CallContext context;
-		public SuperReturnEdge(ControlFlowGraph.CFGNode returnNode, CallContext context) {
+		public SuperReturnEdge(CFGNode returnNode, CallContext context) {
 			super(ControlFlowGraph.EdgeKind.RETURN_EDGE);
 			this.returnNode = returnNode;
 			this.context = context;
 		}
-		public ControlFlowGraph.CFGNode getReturnNode() {
+		public CFGNode getReturnNode() {
 			return returnNode;
 		}
 		public CallContext getCallContext() {
@@ -272,13 +273,13 @@ public class SuperGraph {
 	public CFGNodeIteratorFactory allCFGNodes() {
 		return new CFGNodeIteratorFactory();
 	}
-	private class CFGNodeIteratorFactory implements Iterable<ControlFlowGraph.CFGNode> {
+	private class CFGNodeIteratorFactory implements Iterable<CFGNode> {
 		@Override
-		public Iterator<ControlFlowGraph.CFGNode> iterator() { return new CFGNodeIterator(); }
+		public Iterator<CFGNode> iterator() { return new CFGNodeIterator(); }
 	}
-	private class CFGNodeIterator implements Iterator<ControlFlowGraph.CFGNode> {
+	private class CFGNodeIterator implements Iterator<CFGNode> {
 		private Iterator<SuperGraphNode> sgIterator;
-		private Iterator<ControlFlowGraph.CFGNode> nodeIterator;
+		private Iterator<CFGNode> nodeIterator;
 		private Set<ControlFlowGraph> cfgsVisited;
 
 		public CFGNodeIterator() {
@@ -300,9 +301,9 @@ public class SuperGraph {
 		}
 
 		@Override
-		public ControlFlowGraph.CFGNode next() {
+		public CFGNode next() {
 			if(! nodeIterator.hasNext()) throw new NoSuchElementException("Iterator.next(): no more CFG node");
-			ControlFlowGraph.CFGNode next = nodeIterator.next();
+			CFGNode next = nodeIterator.next();
 			if(! nodeIterator.hasNext()) {    /* See if there are more CFGs to investigate */
 				while(sgIterator.hasNext()) { /* Find unvisited super graph nodes */
 					SuperGraphNode nextSuperGraphNode = sgIterator.next();
@@ -336,7 +337,7 @@ public class SuperGraph {
 			
 			CallString currentCS = current.getCallString();
 			
-			for(ControlFlowGraph.CFGNode node : current.getCfg().getGraph().vertexSet()) {
+			for(CFGNode node : current.getCfg().getGraph().vertexSet()) {
 				if(node instanceof ControlFlowGraph.InvokeNode) {
 					ControlFlowGraph.InvokeNode iNode = (ControlFlowGraph.InvokeNode) node;
 					MethodInfo impl = iNode.getImplementedMethod();
@@ -357,7 +358,7 @@ public class SuperGraph {
 	private void addEdge(ControlFlowGraph.InvokeNode node, SuperGraphNode invoker, SuperGraphNode invoked) {
 		SuperInvokeEdge iEdge = new SuperInvokeEdge(node, invoker.getContext());
 		superGraph.addEdge(invoker, invoked, iEdge);
-		FlowGraph<ControlFlowGraph.CFGNode, ControlFlowGraph.CFGEdge> invokerGraph = invoker.getCfg().getGraph();
+		FlowGraph<CFGNode, ControlFlowGraph.CFGEdge> invokerGraph = invoker.getCfg().getGraph();
 		
 //		addToSet(specialInSet,invoked.getEntry(), iEdge);
 //		addToSet(specialOutSet, node, iEdge);
@@ -365,7 +366,7 @@ public class SuperGraph {
 		if(invokerGraph.outDegreeOf(node) != 1) {
 			throw new AssertionError("SuperGraph: Outdegree of invoker node > 1.");
 		}
-		ControlFlowGraph.CFGNode returnNode = invokerGraph.getEdgeTarget(invokerGraph.outgoingEdgesOf(node).iterator().next());
+		CFGNode returnNode = invokerGraph.getEdgeTarget(invokerGraph.outgoingEdgesOf(node).iterator().next());
 		if(invokerGraph.inDegreeOf(returnNode) != 1) {
 			throw new AssertionError("SuperGraph: Indegree of return node != 1. Maybe return node missing ?");
 		}

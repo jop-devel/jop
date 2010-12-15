@@ -1,22 +1,40 @@
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
+ *
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.jopdesign.wcet.uppaal.translator;
+
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallGraph;
+import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.graphutils.ProgressMeasure.RelativeProgress;
+import com.jopdesign.common.misc.BadGraphException;
+import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.analysis.TreeAnalysis;
+import com.jopdesign.wcet.uppaal.UppAalConfig;
+import com.jopdesign.wcet.uppaal.translator.cache.CacheSimBuilder;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.jopdesign.build.MethodInfo;
-import com.jopdesign.dfa.framework.CallString;
-import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.analysis.TreeAnalysis;
-import com.jopdesign.wcet.frontend.CallGraph;
-import com.jopdesign.wcet.frontend.ControlFlowGraph;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
-import com.jopdesign.wcet.graphutils.ProgressMeasure.RelativeProgress;
-import com.jopdesign.wcet.graphutils.TopOrder.BadGraphException;
-import com.jopdesign.wcet.uppaal.UppAalConfig;
-import com.jopdesign.wcet.uppaal.translator.cache.CacheSimBuilder;
 
 /** Translate Java threads, either using one process per methods or 
  *  a single process
@@ -31,7 +49,7 @@ public abstract class JavaTranslator {
 	protected SystemBuilder systemBuilder;
 	protected CacheSimBuilder cacheSim;
 	protected HashMap<MethodInfo, Integer> methodIDs;
-	private Map<MethodInfo, Map<CFGEdge, RelativeProgress<CFGNode>>> progressMap;
+	private Map<MethodInfo, Map<ControlFlowGraph.CFGEdge, RelativeProgress<CFGNode>>> progressMap;
 	
 	public Project getProject() {
 		return project;
@@ -48,7 +66,7 @@ public abstract class JavaTranslator {
 	public CacheSimBuilder getCacheSim() {
 		return cacheSim;
 	}
-	public Map<CFGEdge, RelativeProgress<CFGNode>> getProgress(MethodInfo mi) {
+	public Map<ControlFlowGraph.CFGEdge, RelativeProgress<CFGNode>> getProgress(MethodInfo mi) {
 		return progressMap.get(mi);
 	}
 	public void addMethodAutomaton(MethodInfo mi, SubAutomaton auto) {

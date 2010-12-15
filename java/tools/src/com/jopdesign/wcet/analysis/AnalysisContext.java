@@ -22,7 +22,7 @@ package com.jopdesign.wcet.analysis;
 
 
 import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 
 /**
  * Purpose:
@@ -31,5 +31,5 @@ import com.jopdesign.common.code.ControlFlowGraph;
  */
 public interface AnalysisContext {
 	CallString getCallString();
-	ExecutionContext getExecutionContext(ControlFlowGraph.CFGNode n);
+	ExecutionContext getExecutionContext(CFGNode n);
 }

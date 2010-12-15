@@ -24,6 +24,7 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.model.ProcessorModel;
 import org.apache.bcel.Constants;
@@ -159,8 +160,8 @@ public class BasicBlock  {
 
 	// FIXME: [wcet-frontend] Remove the ugly ih.getAttribute() hack for CFG Nodes
 	/** Get the basic block node associated with an instruction handle  */
-	public static ControlFlowGraph.BasicBlockNode getHandleNode(InstructionHandle ih) {
-		ControlFlowGraph.BasicBlockNode blockNode = (ControlFlowGraph.BasicBlockNode)ih.getAttribute(InstrField.CFGNODE);
+	public static BasicBlockNode getHandleNode(InstructionHandle ih) {
+		BasicBlockNode blockNode = (BasicBlockNode)ih.getAttribute(InstrField.CFGNODE);
 		if(blockNode == null) {
 			String errMsg = "No basic block recorded for instruction "+ih.toString(true);
 			// WcetAppInfo.logger.error(errMsg);
@@ -170,7 +171,7 @@ public class BasicBlock  {
 	}
 
 	/** Set a parent link to the basic block node for the given instruction handle */
-	public static void setHandleNode(InstructionHandle ih, ControlFlowGraph.BasicBlockNode basicBlockNode) {
+	public static void setHandleNode(InstructionHandle ih, BasicBlockNode basicBlockNode) {
 		ih.addAttribute(InstrField.CFGNODE, basicBlockNode);
 	}
 

@@ -21,7 +21,7 @@
 package com.jopdesign.wcet.analysis;
 
 import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 
 /**
  * Purpose:
@@ -43,7 +43,7 @@ public class AnalysisContextSimple implements AnalysisContext {
 	}
 
 	@Override
-	public ExecutionContext getExecutionContext(ControlFlowGraph.CFGNode n) {
+	public ExecutionContext getExecutionContext(CFGNode n) {
 		return new ExecutionContext(n.getControlFlowGraph().getMethodInfo(), callString);
 	}
 }

@@ -19,6 +19,11 @@
 */
 package com.jopdesign.wcet.jop;
 
+import com.jopdesign.common.ClassInfo;
+import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.ProjectConfig;
+import org.apache.log4j.Logger;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -26,15 +31,8 @@ import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.Map.Entry;
-
-import org.apache.log4j.Logger;
-
-
-import com.jopdesign.build.ClassInfo;
-import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.ProjectConfig;
+import java.util.TreeMap;
 
 /**
  * Build map for data addresses, provided by the linker

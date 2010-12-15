@@ -1,12 +1,29 @@
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
+ *
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.jopdesign.wcet.jop;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.Map.Entry;
-
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.BasicBlock;
+import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.wcet.Project;
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.CPInstruction;
 import org.apache.bcel.generic.ConstantPoolGen;
@@ -16,12 +33,12 @@ import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.ObjectType;
 
-import com.jopdesign.build.MethodInfo;
-import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.frontend.BasicBlock;
-import com.jopdesign.wcet.frontend.ControlFlowGraph;
-import com.jopdesign.wcet.frontend.WcetAppInfo;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class ConstantCache {
 
@@ -82,7 +99,7 @@ public class ConstantCache {
 		}
 	}
 	private void addStaticFieldAddress(ControlFlowGraph cfg, FieldInstruction fii) {
-		WcetAppInfo appInfo = cfg.getAppInfo();
+		AppInfo appInfo = cfg.getAppInfo();
 		ConstantPoolGen cpg = cfg.getMethodInfo().getConstantPoolGen();
 		String fieldName = fii.getFieldName(cpg) + fii.getSignature(cpg);
 		Integer address = appInfo.getProject().getLinkerInfo().getStaticFieldAddress(
@@ -90,7 +107,7 @@ public class ConstantCache {
 		addAddress(staticAddressMap, cfg.getMethodInfo(), address);
 	}
 	private void addConstantPoolAddress(ControlFlowGraph cfg,  CPInstruction ii) {
-		WcetAppInfo appInfo = cfg.getAppInfo();
+		AppInfo appInfo = cfg.getAppInfo();
 		LinkerInfo linker = appInfo.getProject().getLinkerInfo();
 		Integer address = linker.getLinkInfo(cfg.getMethodInfo().getCli()).getConstAddress(ii.getIndex());
 		addAddress(cpoolAddressMap, cfg.getMethodInfo(), address);

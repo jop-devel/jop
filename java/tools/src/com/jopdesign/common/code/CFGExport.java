@@ -20,8 +20,10 @@
 
 package com.jopdesign.common.code;
 
-import com.jopdesign.common.graph.AdvancedDOTExporter;
-import com.jopdesign.common.graph.LoopColoring;
+import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.graphutils.AdvancedDOTExporter;
+import com.jopdesign.common.graphutils.LoopColoring;
 import com.jopdesign.common.logger.LogConfig;
 import org.apache.bcel.generic.BranchInstruction;
 import org.apache.bcel.generic.Instruction;
@@ -42,19 +44,19 @@ public class CFGExport {
 
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_CFG + ".CFGExport");
 
-	public class FGCustomNodeLabeller extends AdvancedDOTExporter.MapLabeller<ControlFlowGraph.CFGNode>
-								 	 implements AdvancedDOTExporter.DOTNodeLabeller<ControlFlowGraph.CFGNode> {
-		public FGCustomNodeLabeller(Map<ControlFlowGraph.CFGNode, ?> nodeAnnotations) {
+	public class FGCustomNodeLabeller extends AdvancedDOTExporter.MapLabeller<CFGNode>
+								 	 implements AdvancedDOTExporter.DOTNodeLabeller<CFGNode> {
+		public FGCustomNodeLabeller(Map<CFGNode, ?> nodeAnnotations) {
 			super(nodeAnnotations);
 		}
-		public String getLabel(ControlFlowGraph.CFGNode object) {
+		public String getLabel(CFGNode object) {
 			if(annots.containsKey(object)) {
 				return "[" +object.getName() + "] "+ annots.get(object);
 			} else {
 				return super.getLabel(object);
 			}
 		}
-		public int getID(ControlFlowGraph.CFGNode node) { return node.getId(); }
+		public int getID(CFGNode node) { return node.getId(); }
 	}
 	public class FGEdgeLabeller extends AdvancedDOTExporter.DefaultDOTLabeller<ControlFlowGraph.CFGEdge> {
 		public boolean setAttributes(ControlFlowGraph.CFGEdge edge, Map<String,String> ht) {
@@ -70,40 +72,40 @@ public class CFGExport {
 			case ENTRY_EDGE : lab.append("entry");break;
 			default: break;
 			}
-			LoopColoring.IterationBranchLabel<ControlFlowGraph.CFGNode> branchLabels =
+			LoopColoring.IterationBranchLabel<CFGNode> branchLabels =
 				flowGraph.getLoopColoring().getIterationBranchEdges().get(edge);
 			if(branchLabels != null && ! branchLabels.isEmpty()) {
 				lab.append("{");boolean mark=false;
 				if(! branchLabels.getContinues().isEmpty()) {
 					lab.append("cont:");
-					for(ControlFlowGraph.CFGNode n : branchLabels.getContinues()) { lab.append(n.getId()+" "); }
+					for(CFGNode n : branchLabels.getContinues()) { lab.append(n.getId()+" "); }
 					mark=true;
 				}
 				if(! branchLabels.getExits().isEmpty()) {
 					if(mark) lab.append(";");
 					lab.append( "exit:");
-					for(ControlFlowGraph.CFGNode n : branchLabels.getExits()) { lab.append(n.getId()+" "); }
+					for(CFGNode n : branchLabels.getExits()) { lab.append(n.getId()+" "); }
 				}
 				lab.append("}");
 			}
 			return lab.toString();
 		}
 	}
-	public class FGNodeLabeller extends AdvancedDOTExporter.DefaultNodeLabeller<ControlFlowGraph.CFGNode> {
+	public class FGNodeLabeller extends AdvancedDOTExporter.DefaultNodeLabeller<CFGNode> {
 		@Override
-		public boolean setAttributes(ControlFlowGraph.CFGNode node, Map<String,String> ht) {
-			if(node instanceof ControlFlowGraph.BasicBlockNode) {
-				setBasicBlockAttributes((ControlFlowGraph.BasicBlockNode) node, ht);
+		public boolean setAttributes(CFGNode node, Map<String,String> ht) {
+			if(node instanceof BasicBlockNode) {
+				setBasicBlockAttributes((BasicBlockNode) node, ht);
 			} else {
 				ht.put("label", node.toString());
 			}
 			return true;
 		}
-		private void setBasicBlockAttributes(ControlFlowGraph.BasicBlockNode n, Map<String,String> ht) {
+		private void setBasicBlockAttributes(BasicBlockNode n, Map<String,String> ht) {
 			BasicBlock codeBlock = n.getBasicBlock();
 			Instruction lastInstr = codeBlock.getLastInstruction().getInstruction();
 			boolean isReturn = lastInstr instanceof ReturnInstruction;
-			LoopColoring<ControlFlowGraph.CFGNode, ControlFlowGraph.CFGEdge> loops = flowGraph.getLoopColoring();
+			LoopColoring<CFGNode, ControlFlowGraph.CFGEdge> loops = flowGraph.getLoopColoring();
 			StringBuilder nodeInfo = new StringBuilder();
 			nodeInfo.append('#');
 			nodeInfo.append(n.getId());
@@ -146,13 +148,13 @@ public class CFGExport {
 	}
 
 	private ControlFlowGraph flowGraph;
-	private AdvancedDOTExporter.DOTNodeLabeller<ControlFlowGraph.CFGNode> nl;
+	private AdvancedDOTExporter.DOTNodeLabeller<CFGNode> nl;
 	private AdvancedDOTExporter.DOTLabeller<ControlFlowGraph.CFGEdge> el;
 
 	public CFGExport(ControlFlowGraph g) {
 		this.flowGraph = g;
 	}
-	public CFGExport(ControlFlowGraph graph, Map<ControlFlowGraph.CFGNode, ?> nodeAnnotations, Map<ControlFlowGraph.CFGEdge, ?> edgeAnnotations) {
+	public CFGExport(ControlFlowGraph graph, Map<CFGNode, ?> nodeAnnotations, Map<ControlFlowGraph.CFGEdge, ?> edgeAnnotations) {
 		this(graph);
 		if(nodeAnnotations != null) {
 			this.nl = new FGCustomNodeLabeller(nodeAnnotations);
@@ -162,11 +164,11 @@ public class CFGExport {
 		}
 	}
 
-	public void exportDOT(Writer writer, DirectedGraph<ControlFlowGraph.CFGNode, ControlFlowGraph.CFGEdge> graph) throws IOException {
+	public void exportDOT(Writer writer, DirectedGraph<CFGNode, ControlFlowGraph.CFGEdge> graph) throws IOException {
 		if(nl == null) nl = new FGNodeLabeller();
 		if(el == null) el = new FGEdgeLabeller();
-		AdvancedDOTExporter<ControlFlowGraph.CFGNode, ControlFlowGraph.CFGEdge> dotExport =
-			new AdvancedDOTExporter<ControlFlowGraph.CFGNode, ControlFlowGraph.CFGEdge>(nl,el);
+		AdvancedDOTExporter<CFGNode, ControlFlowGraph.CFGEdge> dotExport =
+			new AdvancedDOTExporter<CFGNode, ControlFlowGraph.CFGEdge>(nl,el);
 		dotExport.exportDOT(writer, flowGraph.getGraph());
 	}
 }

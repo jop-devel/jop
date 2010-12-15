@@ -1,11 +1,26 @@
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
+ *
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.jopdesign.wcet.analysis;
 
-import java.io.File;
-import java.io.IOException;
-
-import org.apache.log4j.Logger;
-
-import com.jopdesign.build.MethodInfo;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
@@ -13,10 +28,14 @@ import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.uppaal.AnalysisContextUppaal;
 import com.jopdesign.wcet.uppaal.Translator;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
-import com.jopdesign.wcet.uppaal.WcetSearch;
 import com.jopdesign.wcet.uppaal.UppAalConfig.UppaalCacheApproximation;
+import com.jopdesign.wcet.uppaal.WcetSearch;
 import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;
 import com.jopdesign.wcet.uppaal.model.XmlSerializationException;
+import org.apache.log4j.Logger;
+
+import java.io.File;
+import java.io.IOException;
 
 public class UppaalAnalysis {
 
@@ -94,7 +113,7 @@ public class UppaalAnalysis {
 		/* FIXME: Some code duplication with GlobalAnalysis / LocalAnalysis */
 		public WcetCost recursiveCost(
 				RecursiveAnalysis<AnalysisContextUppaal, WcetCost> stagedAnalysis,
-				InvokeNode n,
+				ControlFlowGraph.InvokeNode n,
 				AnalysisContextUppaal ctx) {
 			Project project = stagedAnalysis.getProject();
 			MethodInfo invoker = n.getBasicBlock().getMethodInfo();

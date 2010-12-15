@@ -23,9 +23,9 @@ package com.jopdesign.common.code;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.graph.AdvancedDOTExporter;
-import com.jopdesign.common.graph.DirectedCycleDetector;
-import com.jopdesign.common.graph.Pair;
+import com.jopdesign.common.graphutils.AdvancedDOTExporter;
+import com.jopdesign.common.graphutils.DirectedCycleDetector;
+import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.EdgeFactory;
@@ -72,7 +72,7 @@ public class CallGraph {
      * A node representing a methodInfo, and stores references to all
      * execution contexts of this method in the callgraph.
      */
-    public class MethodNode {
+    public static class MethodNode {
         private final MethodInfo methodInfo;
         private final Set<ExecutionContext> instances;
 
@@ -98,7 +98,7 @@ public class CallGraph {
      * An edge representing a possible invokation of a method B by a method A, and
      * stores all invoke sites of A which might call B.
      */
-    public class InvokeEdge {
+    public static class InvokeEdge {
         private final Set<InvokeSite> invokeSites;
 
         public InvokeEdge() {

@@ -19,19 +19,17 @@
 */
 package com.jopdesign.wcet.ipet;
 
+import com.jopdesign.common.graphutils.IDProvider;
+import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
+import lpsolve.LpSolve;
+import lpsolve.LpSolveException;
+import org.apache.log4j.Logger;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.Map.Entry;
-
-import org.apache.log4j.Logger;
-
-import com.jopdesign.wcet.graphutils.IDProvider;
-import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
-
-import lpsolve.LpSolve;
-import lpsolve.LpSolveException;
+import java.util.TreeMap;
 
 /**
  * Simple, typed API for invoking LpSolve.

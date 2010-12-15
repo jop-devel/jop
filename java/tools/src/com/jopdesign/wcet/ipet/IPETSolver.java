@@ -20,6 +20,12 @@
 
 package com.jopdesign.wcet.ipet;
 
+import com.jopdesign.common.graphutils.IDProvider;
+import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.wcet.ProjectConfig;
+import com.jopdesign.wcet.ipet.IPETBuilder.ExecutionEdge;
+import lpsolve.LpSolveException;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -29,15 +35,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
-
-import lpsolve.LpSolveException;
-
-import com.jopdesign.wcet.ProjectConfig;
-import com.jopdesign.wcet.graphutils.IDProvider;
-import com.jopdesign.wcet.graphutils.MiscUtils;
-import com.jopdesign.wcet.ipet.IPETBuilder.ExecutionEdge;
+import java.util.Set;
 
 /**
  * Purpose: Invoke an ILP solver, to solve an IPET problem.

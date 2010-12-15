@@ -19,7 +19,10 @@
 */
 package com.jopdesign.wcet.uppaal;
 
+import com.jopdesign.common.config.BooleanOption;
+import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.EnumOption;
+import com.jopdesign.common.config.IntegerOption;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.StringOption;
 

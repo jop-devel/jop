@@ -1,9 +1,35 @@
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
+ *
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.jopdesign.wcet.analysis.cache;
 
-import com.jopdesign.build.MethodInfo;
+import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
+import com.jopdesign.common.code.BoundedSetFactory.BoundedSet;
+import com.jopdesign.common.code.CallGraph.MethodNode;
 import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.ContextMap;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.SuperGraph;
+import com.jopdesign.common.code.SymbolicAddress;
+import com.jopdesign.common.code.SymbolicPointsTo;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
@@ -31,7 +57,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import static com.jopdesign.wcet.graphutils.MiscUtils.addToSet;
+import static com.jopdesign.common.misc.MiscUtils.addToSet;
 
 /** Analysis of the used object references.
  *  Goal: Detect persistence scopes.
@@ -41,7 +67,7 @@ import static com.jopdesign.wcet.graphutils.MiscUtils.addToSet;
  * <li/> Only consider getfield. putfield does not modify cache
  * <li/> Handle access should be configurable (HANDLE_ACCESS = false or true)
  * </ul>
- * For the general technique, see {@link com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis#analyzeBlockUsage()}
+ * For the general technique, see {@link MethodCacheAnalysis#analyzeBlockUsage()}
  * <h2>Bytecodes using object references</h2>
  * <ul>
  *   <li/> getfield (top of stack)
@@ -120,7 +146,7 @@ public class ObjectRefAnalysis {
 	/* transparent class for hiding the type of DFA result */
 	public static class LocalPointsToResult {
 		private HashMap<InstructionHandle, ContextMap<CallString, BoundedSet<SymbolicAddress>>> pointsTo;
-		private HashMap<InstructionHandle, BoundedSet<SymbolicAddress>> pointsToNoCallString;		
+		private HashMap<InstructionHandle, BoundedSet<SymbolicAddress>> pointsToNoCallString;
 
 		private LocalPointsToResult(HashMap<InstructionHandle, ContextMap<CallString, BoundedSet<SymbolicAddress>>> pTo) {
 			pointsTo = pTo;
@@ -158,13 +184,13 @@ public class ObjectRefAnalysis {
 	/* class for checking whether a basic block is executed as most once in a scope */
 	private class ExecOnceQuery implements MiscUtils.Query<InstructionHandle> {
 		private ExecuteOnceAnalysis eoAna;
-		private CallGraphNode scope;
-		public ExecOnceQuery(ExecuteOnceAnalysis eoAnalysis, CallGraphNode scope) {
+		private MethodNode scope;
+		public ExecOnceQuery(ExecuteOnceAnalysis eoAnalysis, MethodNode scope) {
 			this.eoAna = eoAnalysis;
 			this.scope = scope;
 		}
 		public boolean query(InstructionHandle a) {
-			ControlFlowGraph.CFGNode n = BasicBlock.getHandleNode(a);
+			CFGNode n = BasicBlock.getHandleNode(a);
 			if(n == null) {				
 				Logger.getLogger("Object Cache Analysis").info("No node for instruction "+a);
 				return false;
@@ -191,13 +217,13 @@ public class ObjectRefAnalysis {
 
 	/* Those type which have an unbounded number of objects in the given scope
 	 * FIXME: maybe we should switch to allocation sites (more precise, no subtyping) */
-	private Map<CallGraphNode, Set<String>> saturatedTypes;
+	private Map<MethodNode, Set<String>> saturatedTypes;
 
 	/* Maximum number of objects which are loaded into the object cache (at least one field has to be accessed) */
-	private Map<CallGraphNode, Long> maxCachedTagsAccessed;
+	private Map<MethodNode, Long> maxCachedTagsAccessed;
 	
 	/* The set of symbolic object names loaded into the cache (without saturated references) */
-	private Map<CallGraphNode, Set<SymbolicAddress>> tagSet;
+	private Map<MethodNode, Set<SymbolicAddress>> tagSet;
 
 
 	private Project project;
@@ -216,15 +242,15 @@ public class ObjectRefAnalysis {
 			blockIndexBits++;
 		}
 
-		saturatedTypes = new HashMap<CallGraphNode, Set<String>>();
-		maxCachedTagsAccessed = new HashMap<CallGraphNode, Long>();
-		tagSet = new HashMap<CallGraphNode, Set<SymbolicAddress>>();
+		saturatedTypes = new HashMap<MethodNode, Set<String>>();
+		maxCachedTagsAccessed = new HashMap<MethodNode, Long>();
+		tagSet = new HashMap<MethodNode, Set<SymbolicAddress>>();
 	}
 	
-	public LocalPointsToResult getUsedRefs(CallGraphNode scope) {
+	public LocalPointsToResult getUsedRefs(MethodNode scope) {
 		ExecuteOnceAnalysis eoAna = new ExecuteOnceAnalysis(project);
 		DFAAppInfo dfa = project.getDfaProgram();
-		SymbolicPointsTo spt = new SymbolicPointsTo(maxSetSize, 
+		SymbolicPointsTo spt = new SymbolicPointsTo(maxSetSize,
 				(int)project.getProjectConfig().callstringLength(), 
 				new ExecOnceQuery(eoAna,scope));
 		dfa.runLocalAnalysis(spt,scope.getMethodImpl().getFQMethodName());
@@ -232,7 +258,7 @@ public class ObjectRefAnalysis {
 		return lpt;
 	}
 	
-	public Set<SymbolicAddress> getAddressSet(CallGraphNode scope) {
+	public Set<SymbolicAddress> getAddressSet(MethodNode scope) {
 		LocalPointsToResult lpt = getUsedRefs(scope);
 		return lpt.getAddressSet();
 	}
@@ -244,7 +270,7 @@ public class ObjectRefAnalysis {
 	public HashSet<String> getSaturatedTypes(SuperGraph sg, LocalPointsToResult usedRefs) {
 		HashSet<String> topTypes =
 			new HashSet<String>(); 
-		for(ControlFlowGraph.CFGNode n : sg.allCFGNodes()) {
+		for(CFGNode n : sg.allCFGNodes()) {
 			BasicBlock bb = n.getBasicBlock();
 			if(bb == null) continue;
 			for(InstructionHandle ih : bb.getInstructions()) {
@@ -262,7 +288,7 @@ public class ObjectRefAnalysis {
 		return topTypes;
 	}
 
-	public long getMaxCachedTags(CallGraphNode scope)
+	public long getMaxCachedTags(MethodNode scope)
 	{
 		Long maxCachedTags = this.maxCachedTagsAccessed.get(scope);
 		if(maxCachedTags != null) return maxCachedTags;
@@ -290,7 +316,7 @@ public class ObjectRefAnalysis {
 		return maxCachedTags;
 	} 
 	
-	public ObjectCacheCost getMaxCacheCost(CallGraphNode scope, ObjectCacheCostModel costModel)
+	public ObjectCacheCost getMaxCacheCost(MethodNode scope, ObjectCacheCostModel costModel)
 	{
 		LocalPointsToResult usedRefs = getUsedRefs(scope);
 		SuperGraph sg = getScopeSuperGraph(scope);
@@ -300,22 +326,22 @@ public class ObjectRefAnalysis {
 		return cost;		
 	}
 
-	private ObjectCacheCost computeCacheCost(CallGraphNode scope, 
+	private ObjectCacheCost computeCacheCost(MethodNode scope,
 							      SuperGraph sg, 
 								  LocalPointsToResult usedRefs, 
 								  HashSet<SymbolicAddress> usedSetOut,
 								  ObjectCacheCostModel costModel)
 	{
-		CallString emptyCallString = new CallString();
+		CallString emptyCallString = CallString.EMPTY;
 
-		HashMap<SymbolicAddress, Map<ControlFlowGraph.CFGNode, Integer>> refAccessSets =
-			new HashMap<SymbolicAddress,Map<ControlFlowGraph.CFGNode, Integer>>();
+		HashMap<SymbolicAddress, Map<CFGNode, Integer>> refAccessSets =
+			new HashMap<SymbolicAddress,Map<CFGNode, Integer>>();
 		
-		HashMap<SymbolicAddress, Map<ControlFlowGraph.CFGNode, Integer>> blockAccessSets =
-			new HashMap<SymbolicAddress,Map<ControlFlowGraph.CFGNode, Integer>>();
+		HashMap<SymbolicAddress, Map<CFGNode, Integer>> blockAccessSets =
+			new HashMap<SymbolicAddress,Map<CFGNode, Integer>>();
 		
-		Map<ControlFlowGraph.CFGNode,Long> costMap = new HashMap<ControlFlowGraph.CFGNode, Long>();
-		Map<ControlFlowGraph.CFGNode,Long> bypassCostMap = new HashMap<ControlFlowGraph.CFGNode, Long>();
+		Map<CFGNode,Long> costMap = new HashMap<CFGNode, Long>();
+		Map<CFGNode,Long> bypassCostMap = new HashMap<CFGNode, Long>();
 
 		/* Traverse vertex set.
 		 * Add vertex to access set of referenced addresses
@@ -323,7 +349,7 @@ public class ObjectRefAnalysis {
 		 * cost of 1.
 		 */
 		// FIXME: We should deal with subtyping (or better use storage based alias-analysis)
-		for(ControlFlowGraph.CFGNode node : sg.allCFGNodes()) {
+		for(CFGNode node : sg.allCFGNodes()) {
 			/* Compute cost for basic block */
 			BasicBlock bb = node.getBasicBlock();
 			if(bb == null) continue;
@@ -408,9 +434,9 @@ public class ObjectRefAnalysis {
 	private ObjectCacheCost extractCost(SuperGraph sg,
 			ObjectCacheCostModel costModel,
 			long cost,
-			Map<CFGNode, Long> costMap, 
-			Map<CFGNode, Long> bypassCostMap, 
-			Map<CFGEdge, Long> edgeFlowMap,
+			Map<CFGNode, Long> costMap,
+			Map<CFGNode, Long> bypassCostMap,
+			Map<ControlFlowGraph.CFGEdge, Long> edgeFlowMap,
 			Map<DecisionVariable, Boolean> refUseMap) {
 		throw new AssertionError("TODO");
 //		long missCount = 0;  /* miss count */
@@ -469,10 +495,10 @@ public class ObjectRefAnalysis {
 
 
 	/** Get all access sites per method */
-	public static Map<MethodInfo, Set<CFGEdge>> getAccessEdges(SuperGraph sg) {
-		Map<MethodInfo, Set<CFGEdge>> accessEdges =
-			new HashMap<MethodInfo, Set<CFGEdge>>();
-		for(Entry<SuperInvokeEdge, SuperReturnEdge> invokeSite: sg.getSuperEdgePairs().entrySet()) {
+	public static Map<MethodInfo, Set<ControlFlowGraph.CFGEdge>> getAccessEdges(SuperGraph sg) {
+		Map<MethodInfo, Set<ControlFlowGraph.CFGEdge>> accessEdges =
+			new HashMap<MethodInfo, Set<ControlFlowGraph.CFGEdge>>();
+		for(Entry<SuperGraph.SuperInvokeEdge, SuperGraph.SuperReturnEdge> invokeSite: sg.getSuperEdgePairs().entrySet()) {
 			MethodInfo invoked = invokeSite.getKey().getInvokeNode().receiverFlowGraph().getMethodInfo();
 			addToSet(accessEdges, invoked, invokeSite.getKey());
 			MethodInfo invoker = invokeSite.getKey().getInvokeNode().invokerFlowGraph().getMethodInfo();
@@ -482,18 +508,18 @@ public class ObjectRefAnalysis {
 	}
 
 	
-	private SuperGraph getScopeSuperGraph(CallGraphNode scope) {
+	private SuperGraph getScopeSuperGraph(MethodNode scope) {
 		MethodInfo m = scope.getMethodImpl();
 		return new SuperGraph(project.getAppInfo(),project.getFlowGraph(m), project.getProjectConfig().callstringLength());
 	}
 		
-	public Set<SymbolicAddress> getUsedSymbolicNames(CallGraphNode scope) {
+	public Set<SymbolicAddress> getUsedSymbolicNames(MethodNode scope) {
 		if(! tagSet.containsKey(scope)) getMaxCachedTags(scope);
 		return tagSet.get(scope);		
 	}
 	
 
-	public Object getSaturatedTypes(CallGraphNode scope) {
+	public Object getSaturatedTypes(MethodNode scope) {
 		if(! this.saturatedTypes.containsKey(scope)) getMaxCachedTags(scope);
 		return this.saturatedTypes.get(scope);
 	}
@@ -501,7 +527,7 @@ public class ObjectRefAnalysis {
 	/* Helpers */
 	/* ------- */
 	private void addDecision(
-			SuperGraph sg, MaxCostFlow<CFGNode,CFGEdge> maxCostFlow, Entry<SymbolicAddress, Map<CFGNode, Integer>> accessEntry,
+			SuperGraph sg, MaxCostFlow<CFGNode,ControlFlowGraph.CFGEdge> maxCostFlow, Entry<SymbolicAddress, Map<CFGNode, Integer>> accessEntry,
 			long varCost, boolean isRefDecision) {
 		throw new AssertionError("TODO");
 //		SymbolicAddress refOrField = accessEntry.getKey();

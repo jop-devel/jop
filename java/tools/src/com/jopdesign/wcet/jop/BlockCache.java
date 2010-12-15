@@ -1,9 +1,9 @@
 package com.jopdesign.wcet.jop;
 
-import com.jopdesign.build.MethodInfo;
-import com.jopdesign.dfa.framework.CallString;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.config.Config;
 import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.jop.JOPConfig.CacheImplementation;
 
 public class BlockCache extends MethodCache {

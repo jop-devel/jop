@@ -19,24 +19,13 @@
 */
 package com.jopdesign.wcet.uppaal.translator;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.Vector;
-import java.util.Map.Entry;
-
-import org.w3c.dom.Document;
-
-import com.jopdesign.build.MethodInfo;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.graphutils.MiscUtils;
-import com.jopdesign.wcet.graphutils.MiscUtils.Function1;
 import com.jopdesign.wcet.jop.BlockCache;
+import com.jopdesign.wcet.jop.JOPConfig.CacheImplementation;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.jop.VarBlockCache;
-import com.jopdesign.wcet.jop.JOPConfig.CacheImplementation;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.UppAalConfig.UppaalCacheApproximation;
 import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;
@@ -45,10 +34,18 @@ import com.jopdesign.wcet.uppaal.model.Template;
 import com.jopdesign.wcet.uppaal.model.XmlSerializationException;
 import com.jopdesign.wcet.uppaal.translator.cache.CacheSimBuilder;
 import com.jopdesign.wcet.uppaal.translator.cache.FIFOCacheBuilder;
+import com.jopdesign.wcet.uppaal.translator.cache.FIFOVarBlockCacheBuilder;
 import com.jopdesign.wcet.uppaal.translator.cache.LRUCacheBuilder;
 import com.jopdesign.wcet.uppaal.translator.cache.LRUVarBlockCacheBuilder;
 import com.jopdesign.wcet.uppaal.translator.cache.StaticCacheBuilder;
-import com.jopdesign.wcet.uppaal.translator.cache.FIFOVarBlockCacheBuilder;
+import org.w3c.dom.Document;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
+import java.util.Vector;
 
 /**
  * Builder for the system modeling the java program.
@@ -220,12 +217,12 @@ public class SystemBuilder {
 		sys.append("system ");
 		/* bucket sort templates by priority */
 		TreeMap<Integer, Vector<Template>> templatesByPrio = 
-			MiscUtils.partialSort(templates.keySet(), new Function1<Template,Integer>() {
-				public Integer apply(Template t) {
-					return priorities.get(t);
-				}
-			}			
-		);
+			MiscUtils.partialSort(templates.keySet(), new MiscUtils.Function1<Template, Integer>() {
+                public Integer apply(Template t) {
+                    return priorities.get(t);
+                }
+            }
+            );
 		/* create system declaration strings */
 		Vector<String> systemEntry = new Vector<String>();
 		for(Vector<Template> entry : templatesByPrio.values()) {

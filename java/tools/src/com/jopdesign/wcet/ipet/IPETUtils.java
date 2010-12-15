@@ -20,29 +20,26 @@
 
 package com.jopdesign.wcet.ipet;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.Vector;
-import java.util.Map.Entry;
-
-import com.jopdesign.dfa.framework.CallString;
-import com.jopdesign.dfa.framework.CallStringProvider;
+import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.CallStringProvider;
+import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.SuperGraph;
+import com.jopdesign.common.graphutils.FlowGraph;
+import com.jopdesign.common.graphutils.LoopColoring;
+import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.wcet.annotations.LoopBound;
 import com.jopdesign.wcet.annotations.SymbolicMarker;
 import com.jopdesign.wcet.annotations.SymbolicMarker.SymbolicMarkerType;
-import com.jopdesign.wcet.frontend.ControlFlowGraph;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
-import com.jopdesign.wcet.frontend.SuperGraph.SuperInvokeEdge;
-import com.jopdesign.wcet.frontend.SuperGraph.SuperReturnEdge;
-import com.jopdesign.wcet.graphutils.FlowGraph;
-import com.jopdesign.wcet.graphutils.LoopColoring;
-import com.jopdesign.wcet.graphutils.Pair;
 import com.jopdesign.wcet.ipet.IPETBuilder.ExecutionEdge;
 import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.Vector;
 
 /**
  * Purpose: This class provides utility functions to build +IPET models
@@ -144,7 +141,7 @@ public class IPETUtils {
 		Vector<LinearConstraint<IPETBuilder.ExecutionEdge>> constraints = new Vector<LinearConstraint<IPETBuilder.ExecutionEdge>>();
 		// - for each loop with bound B
 		// -- sum(exit_loop_edges) * B <= sum(continue_loop_edges)
-		LoopColoring<CFGNode,CFGEdge> loops = g.getLoopColoring();
+		LoopColoring<CFGNode,ControlFlowGraph.CFGEdge> loops = g.getLoopColoring();
 		for(CFGNode hol : loops.getHeadOfLoops()) {
 			LoopBound loopBound = g.getLoopBound(hol,ctx.getCallString());
 			if(loopBound == null) {
@@ -161,7 +158,7 @@ public class IPETUtils {
 	/** Generate Loop Constraints */
 	public static<C extends CallStringProvider>
 	List<LinearConstraint<IPETBuilder.ExecutionEdge>>
-		constraintsForLoop(LoopColoring<CFGNode, CFGEdge> loops, 
+		constraintsForLoop(LoopColoring<CFGNode, ControlFlowGraph.CFGEdge> loops,
 						   CFGNode hol,
 						   LoopBound loopBound,
 						   IPETBuilder<C> ctx) {
@@ -172,7 +169,7 @@ public class IPETUtils {
 
 			/* loop constraint */
 			LinearConstraint<IPETBuilder.ExecutionEdge> loopConstraint = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.GreaterEqual);
-			for(CFGEdge continueEdge : loops.getBackEdgesTo(hol)) {
+			for(ControlFlowGraph.CFGEdge continueEdge : loops.getBackEdgesTo(hol)) {
 				loopConstraint.addRHS(ctx.newEdge(continueEdge));
 			}
 			/* Multiplicities */
@@ -186,7 +183,7 @@ public class IPETUtils {
 					// FIXME: [annotations] This is a user error, not an assertion error
 					throw new AssertionError("Invalid Loop Nest Level"); 
 				}
-				for(CFGEdge exitEdge : loops.getExitEdgesOf(outerLoopHol)) {
+				for(ControlFlowGraph.CFGEdge exitEdge : loops.getExitEdgesOf(outerLoopHol)) {
 					loopConstraint.addLHS(ctx.newEdge(exitEdge), lhsMultiplicity);
 				}				
 			} else {
@@ -201,7 +198,7 @@ public class IPETUtils {
 	/** Generate constraints for super graph edges */
 	public static<C extends CallStringProvider>
 	LinearConstraint<IPETBuilder.ExecutionEdge> 
-		superEdgeConstraint(SuperInvokeEdge in, SuperReturnEdge out, IPETBuilder<C> ctx) {
+		superEdgeConstraint(SuperGraph.SuperInvokeEdge in, SuperGraph.SuperReturnEdge out, IPETBuilder<C> ctx) {
 		
 		LinearConstraint<IPETBuilder.ExecutionEdge> pairConstraint = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
 		pairConstraint.addLHS(ctx.newEdge(in));
@@ -223,7 +220,7 @@ public class IPETUtils {
 		Vector<LinearConstraint<IPETBuilder.ExecutionEdge>> constraints = new Vector<LinearConstraint<IPETBuilder.ExecutionEdge>>();
 		// - for each infeasible edge
 		// -- edge = 0
-		for(CFGEdge edge : g.getInfeasibleEdges(ctx.getCallString())) {
+		for(ControlFlowGraph.CFGEdge edge : g.getInfeasibleEdges(ctx.getCallString())) {
 			LinearConstraint<IPETBuilder.ExecutionEdge> infeasibleConstraint = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
 			infeasibleConstraint.addLHS(ctx.newEdge(edge));
 			infeasibleConstraint.addRHS(0);
@@ -242,7 +239,7 @@ public class IPETUtils {
 	 */
 	public static<C extends CallStringProvider>
 	List<LinearConstraint<ExecutionEdge>>
-		invokeReturnConstraints(SuperInvokeEdge call, SuperReturnEdge ret, IPETBuilder<C> builder) {
+		invokeReturnConstraints(SuperGraph.SuperInvokeEdge call, SuperGraph.SuperReturnEdge ret, IPETBuilder<C> builder) {
 
 		
 		ExecutionEdge callEdge = builder.newEdge(call);
@@ -258,8 +255,8 @@ public class IPETUtils {
 		{
 			LinearConstraint<ExecutionEdge> invokeLocalCnstr = new LinearConstraint<ExecutionEdge>(ConstraintType.Equal);
 			invokeLocalCnstr.addLHS(builder.newEdge(call));
-			InvokeNode invokeNode = call.getInvokeNode();
-			Set<CFGEdge> localInvokeEdge = invokeNode.getControlFlowGraph().getGraph().outgoingEdgesOf(invokeNode);
+			ControlFlowGraph.InvokeNode invokeNode = call.getInvokeNode();
+			Set<ControlFlowGraph.CFGEdge> localInvokeEdge = invokeNode.getControlFlowGraph().getGraph().outgoingEdgesOf(invokeNode);
 			if(localInvokeEdge.size() == 1) {
 				invokeLocalCnstr.addRHS(builder.newEdge(localInvokeEdge.iterator().next()));
 			} else {
@@ -308,7 +305,7 @@ public class IPETUtils {
 				
 		for(CFGNode n : cfg.getGraph().vertexSet()) {
 			long nodeCost = nodeWCET.getCost(n);
-			for(CFGEdge e : cfg.getGraph().outgoingEdgesOf(n)) {
+			for(ControlFlowGraph.CFGEdge e : cfg.getGraph().outgoingEdgesOf(n)) {
 				ipetSolver.addEdgeCost(builder.newEdge(e), nodeCost);
 			}
 		}
