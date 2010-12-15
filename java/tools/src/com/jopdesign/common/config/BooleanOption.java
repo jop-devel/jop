@@ -27,17 +27,17 @@ package com.jopdesign.common.config;
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  * @author Stefan Hepp <stefan@stefant.org>
  */
-public class BoolOption extends Option<Boolean> {
+public class BooleanOption extends Option<Boolean> {
 
-	public BoolOption(String key, String descr) {
+	public BooleanOption(String key, String descr) {
 		super(key, Boolean.class, descr, false);
 	}
 
-    public BoolOption(String key, String descr, boolean def) {
+    public BooleanOption(String key, String descr, boolean def) {
 		super(key,descr,def);
 	}
 
-    public BoolOption(String key, String descr, char shortKey, boolean skipChecks) {
+    public BooleanOption(String key, String descr, char shortKey, boolean skipChecks) {
         this(key, descr, false);
         this.shortKey = shortKey;
         this.skipChecks = skipChecks;

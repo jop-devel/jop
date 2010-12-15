@@ -1,0 +1,67 @@
+TODO  List
+==========
+Please assign names (in square brackets) to tasks, and reference them in the source
+when appropriate.
+
+[CALLSTRING SUPPORT FOR RECURSIVE LOCAL ANALYSIS]
+We would like to support callstrings, at least for the recursive variant
+(It is indeed much simpler there).
+
+[PROGRESS_MEASURE_SUPPORT_FOR_UPPAAL_SUPERGRAPH]
+
+[CREATE_FLOWGRAPH_MODIFIER_ABSTRACTION]
+There are plenty of ways we have to modify flow graphs before WCET analysis:
+Resolve virtual invokes, insert split/join nodes, create summary nodes, etc.
+This should be encapsulated as a strategy.
+
+[REFACTOR_SIMPLE_ANALYSIS]
+Little messy cause of prototyping right now
+
+[REFACTOR_REPORT]
+Clean up the report package
+
+[UPPAAL_JAVA_IMPL_BYTECODE]
+Java implemented Bytecodes should be replaced in a preprocessing step to work for
+UppAal too
+
+[NO THROW HACK]
+We do not add f_*throw, f*_new and f*_newarray calls to the callgraph,
+as we do not support exceptions or analyzing the garbage collector yet.
+Depends: WCET_EXCEPTIONS
+
+[WCET_CHECK_UNSUPPORTED]
+Check for unsupported bytecodes / features rigiously:
+It would really be a good idea to first check wheter the code uses unsupported features
+(currently: Exceptions, JSR, sync stuff ...) and be explicit about the supported set
+
+[WCET_EXCEPTIONS] Support exceptions (simple translation). Catching errors should be
+forbidden in real time code. When catching exception, add an edge from 'throwing' basic
+blocks to catch blocks.
+
+[WCET_EXCEPTIONS_TYPEANALYSIS]
+Improvement for exception analysis: Only connect a throwing to a catching BB if the
+type of exceptions thrown in the former is caught by the latter
+Depends: WCET_EXCEPTIONS
+
+[WCET_EXCEPTIONS_MULTIEXIT]
+(Needs elaboration): Improve WCET by distguishing ordinary return nodes and dedicated
+exception return nodes, i.e. computing more than one WCET (maybe a nice application for
+global analysis).
+Depends: WCET_EXCEPTIONS
+
+Done
+~~~~
+UPPAAL_CACHE:
+Add cache simulation (assuming cash flush) to UppAal
+Depends: flush cash
+UPPAAL_PORT:
+Add UPPAAL simulation (needs to be ported)
+BUG_ARRAY_ISSUE:
+wcet.ArrayIssue takes 710 cycles on the simulator, but only 43 according to analysis.
+WCET_JAVA_BYTECODES:
+Support java implemented bytecodes
+REFACTOR_PROJECT:
+Move flowgraphs to WcetAppInfo
+REFACTOR_CONFIG:
+Split into library and base config
+

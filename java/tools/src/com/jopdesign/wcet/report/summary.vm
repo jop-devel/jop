@@ -1,0 +1,36 @@
+#macro( tablerow $k $v)
+    <tr>
+      <td><emph>$k</emph></td>
+      <td><pre>$v</pre></td>
+    </tr>
+#end
+#macro( tablerows $map )
+#foreach( $e in $map.entrySet() )
+    #tablerow ( $e.getKey() $e.getValue() )
+#end
+#end
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+   "http://www.w3.org/TR/html4/loose.dtd">
+
+<html lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title>WCET Analysis results</title>
+	<meta name="generator" content="com.jopdesign.wcet08, using the Apache Velocity Engine">
+	<meta name="author" content="Benedikt Huber">
+</head>
+<body>
+<h1 id="h1">Summary</h1>
+<table border=1 cellpadding=5>
+  #tablerows ($stats)
+  <tr>
+    <td>Error Log</td>
+    <td><a href="file://$errorlog">$errorlog</a></td>
+  </tr>
+  <tr>
+    <td>Info Log</td>
+    <td><a href="file://$infolog">$infolog</a></td>
+  </tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<body>
+<h2>Call Graph</h2>
+<img src="$callgraph"/>
+<h2>List of referenced methods</h2>
+<ul>
+#foreach ($m in $methods)
+
+<li/> <a href="$m.getPage()">$m.getInfo().getFQMethodName()</a>
+<ul>
+<li/>Size in words: $m.getSizeInWords() ($m.getCacheBlocks() blocks)
+#if ($m.getLoopBounds().size() > 0)
+<li/>Loop Bounds: $m.getLoopBounds()
+#end
+<li/>Referenced methods: $m.getReferenced()
+</ul>
+#end
+</body>

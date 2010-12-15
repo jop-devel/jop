@@ -1,0 +1,129 @@
+(User) ChangeLog for wcet08. Please keep current.
+Dez 10
+------
+  - Ported to new framework
+
+April 09
+--------
+  - Big config file cleanup
+ 
+Mar 09
+------
+  - EXPERIMENTAL: progress measures (and, for free, tree based WCET analysis)
+  - Add support for (not yet existing) LRU VARBLOCK cache
+  - Add support for safe UPPAAL FIFO cache analysis (using N/2 lemma)
+  - Rewrote UPPAAL translator, substantial performance improvements
+  - Added support for one-template-per-thread UPPAAL analysis
+
+Feb 09
+--------
+  - Add support for staged UPPAAL analysis :))
+  - Rewrote CallGraph, which now takes receiver type analysis into account.
+  - Unify handling of Java implemented Bytecodes
+  - Add basic timestamp check that source file hasn't been modified after compilation.
+    It would be better to use md5 sums, of course (Makefile ?)
+  - Move all cache options into analysis/CacheConfig
+  
+Jan 09
+--------
+- 10/01/08 Create config package.
+           Split configurations for seperate packages.
+           Improve command line argument handling.
+
+
+Dez 08
+---------
+- 15/12/08: Analysis package: Create WcetCost, GlobalAnalysis. Still needs more work.
+            Frontend: Create SuperGraph (for interprocedural analysis)
+            Ipet: Create ILPModelBuilder
+            GraphUtils: Create UnmodifiableDirectedGraphAdapter (for SuperGraph)
+            
+- 12/12/08: Improve Static-Reachable heuristic (try both recursive heuristic and local heuristic)
+
+- 11/12/08: Cleanup SimpleAnalysis
+- 11/12/08: Fix external method invocation (failed if process wrote more than 4096 chars)
+
+- 10/12/08: Control Dependency Graph prototype
+- 10/12/08: analysis: Fixed bug in maxCacheBlocks() computation
+
+- 09/12/08: uppaal: Implementation of N-Block LRU and N-Block FIFO caches
+- 09/12/08: Fixed Topological Order computation
+
+- 06/12/08: Use DFA receiver analysis results
+
+- 05/12/08: Add ALWAYS_HIT, ALWAYS_MISS and 2 block LRU cache simulation to UppAal.
+
+- 05/12/08: Measure time spend in lp_solve's solve method
+- 05/12/08: Seperate concept of application and method to be measured:
+	        We now have a app-class (containing the application's main method) and
+            a target-method (method to be measured, may be in a different class).
+            Useful to analyse methods which are not in the same class as the 
+            application entry point.
+
+- 02/12/08: Do not use MessageFormat in the uppaal builder - it should only be used for UI messages
+- 02/12/08: Add WcetSearch to uppaal - binary search using verifyta
+- 02/12/08: Fix CallGraph.maxHeight
+- 02/12/08: Fix TopOrder.findDeadNodes
+
+- 01/12/08: Added ExecHelper for reusable parts in analyzer executables
+- 01/12/08: Import UppAal translation (wcet08.uppaal.translation)
+- 01/12/08: Import UppAal XML model (wcet08.uppaal.model)
+- 01/12/08: Add getIterationBranchEdges() to LoopColoring
+
+Nov 08
+---------
+- 30/11/08: Move some utilities from ControlFlowGraph to LoopColoring
+- 30/11/08: Create graphutils.FlowGraph (directed graph with entry and exit) and move
+            FlowGraph -> ControlFlowGraph, FlowGraphExport -> CFGExport,
+            FlowGraphNode -> CFGNode, FlowGraphEdge -> CFGEdge etc.
+- 30/11/08: Add maxHeight to callgraph nodes
+
+- 25/11/08: Refactor Project/WcetAppInfo (close [REFACTOR_PROJECT])
+- 25/11/08: Modify static reachable cache miss estimation (once again).
+            We have to assume that the invoked method itself is missed not on invoke,
+            but somewhere during execution of the method.
+- 25/11/08: Experimental source annotation
+- 25/11/08: Add IDs to flowgraphs. Preparation to support of array based graphs (for fast DFA).
+
+- 17/11/08: Use MethodRef instead of Pair<ClassInfo,String> (better API)
+- 17/11/08: Cache miss penalty:
+            Encode HIDDEN_LOAD_CYCLES in WCETInstruction
+            Fix bug (length of invoker)
+            Fix bug (use MIN_HIDDEN_LOAD_CYCLES instead of INVOKE_HIDDEN_LOAD_CYCLES)
+- 17/11/08: Java implemented bytecodes:
+            Add getJavaImpl (get java implementation of bytecode) to WcetAppInfo
+            Callgraph takes java implemented bytecodes into account
+            [NO THROW HACK] But not for f_*throw,f_new or f_*newarray, 
+                            as we don't support exceptions yet
+            
+
+- 14/11/08: Create an Option class, for better easier option processing and better
+            error handling of command line arguments.
+- 14/11/08: Fix bug in graphutils.Dominators : Intersect (defined) predecessors,
+            not their idoms, to find the idom of a node.
+
+- 13/11/08: Factor out common preprocessing steps into WcetPreprocess.preprocess
+- 13/11/08: Loop bound annotations now support lower and upper bound
+- 13/11/08: Add support for DFA analysis (when config.doDfaAnalysis())
+- 13/11/08: BasicBlock: fixed a bug in InstructionTargetVisitor.visitSelect
+
+- 12/11/08: frontend: Rename JOPAppInfo to WcetAppInfo. It no longer inherits from AppInfo,
+            but aggregates it. Run 'CreateMethodGenerators' after loading the classes.
+            Don't use method.getCode(), but the methodGen.getInstructionList() everywhere.
+            See NOTES [Setting MethodGen].
+- 12/11/08: frontend: Make InstrField enum private and provide (static) getters
+- 12/11/08: LpSolveWrapper: delete file before dumping .lp file
+
+- 11/11/08: Callgraph: 
+            Make sure a subgraph is only build once (fixes bug in presence of cyclic callgraphs).
+- 11/11/08: Flowgraph:
+		    * In flowgraph, graph-modifying operations now result in (lazy) re-analysis
+            * Addedd new consistency checks: find dead code (currently non-fatal), 
+              find stuck code (fatal)
+            * Updated documentation
+
+- 10/11/08: Bugfix (Child.java): 
+			Implementation of a static method may be located in superclass.
+			
+- 10/11/08: Added optional dump of LP files (via lp_solve)
+			(-dump-ilp yes|no, on by default)

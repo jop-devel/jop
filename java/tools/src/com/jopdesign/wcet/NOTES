@@ -1,0 +1,15 @@
+Misc. Notes on the wcet08 project
+---------------------------------
+[Bytecode modifications performed by com.jopdesign.build] com.jopdesign.build runs a set of
+bytecode modifications. The question is, how do we ensure that we take the same set of
+modifications into account ? Should we run all of them ? Related: How should the analyser interact
+with the optimizer ?
+
+[Method references] Suggestion: Add MethodRef (a pair of classinfo and methodId) to 
+com.jopdesign.build. 
+
+[Setting MethodGen] Problem with methodGen + visitMethod():
+Whenever setMethod is called, MethodGen is deleted.
+This leads to a subtle bug: After e.g. replacing iinc , we have to create the MethodGen again.
+And if we run e.g. ReplaceIinc after DFA analysis, the analysis is lost !
+

@@ -24,9 +24,9 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.JopTool;
-import com.jopdesign.common.config.BoolOption;
+import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
-import com.jopdesign.common.config.IntOption;
+import com.jopdesign.common.config.IntegerOption;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.misc.NamingConflictException;
 
@@ -64,8 +64,8 @@ public class ExampleTool implements JopTool<ExampleManager> {
     }
 
     public void registerOptions(OptionGroup options) {
-        options.addOption( new BoolOption("flag", "switch some stuff on or off") );
-        options.addOption( new IntOption("new", "create n new classes", 2).setMinMax(0,10) );
+        options.addOption( new BooleanOption("flag", "switch some stuff on or off") );
+        options.addOption( new IntegerOption("new", "create n new classes", 2).setMinMax(0,10) );
     }
 
     public void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException {

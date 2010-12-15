@@ -1,0 +1,28 @@
+#macro(showtree $reportEntry)
+  <li id="$reportEntry.getKey()"/>
+#if($reportEntry.getLink())
+  <a href="$reportEntry.getLink()" target="content">$reportEntry.getKey()</a>
+#else
+  $reportEntry.getKey()
+#end
+#if($reportEntry.getSubReportEntries().size() > 0)
+<ul>
+#foreach($p in $reportEntry.getSubReportEntries())
+#showtree($p)
+#end
+</ul>
+#end
+
+#end
+
+<html>
+<head>
+<script type="text/javascript" src="../mktree.js"></script>
+<link rel="stylesheet" href="../mktree.css" type="text/css">
+</head>
+<body onLoad="expandTree('tree1')">
+<div id="toc">
+  <ul class="mktree" id="tree1">
+    #showtree($tree)
+</div>
+</body></html>

@@ -23,7 +23,7 @@ package com.jopdesign.jcopter;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.JopTool;
-import com.jopdesign.common.config.BoolOption;
+import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
@@ -45,14 +45,14 @@ public class JCopter implements JopTool<JCopterManager> {
     public static final StringOption IGNORE_CLASSES =
             new StringOption("ignore", "comma-separated list of classes and packages to ignore", "");
 
-    public static final BoolOption ALLOW_INCOMPLETE_APP =
-            new BoolOption("allow-incomplete", "Ignore missing classes", false);
+    public static final BooleanOption ALLOW_INCOMPLETE_APP =
+            new BooleanOption("allow-incomplete", "Ignore missing classes", false);
 
-    public static final BoolOption USE_DFA =
-            new BoolOption("useDFA", "run and use results of the DFA tool", true);
+    public static final BooleanOption USE_DFA =
+            new BooleanOption("useDFA", "run and use results of the DFA tool", true);
 
-    public static final BoolOption USE_WCET =
-            new BoolOption("useWCET", "run and use results of the WCET analysis tool", true);
+    public static final BooleanOption USE_WCET =
+            new BooleanOption("useWCET", "run and use results of the WCET analysis tool", true);
 
 
     private final JCopterManager manager;

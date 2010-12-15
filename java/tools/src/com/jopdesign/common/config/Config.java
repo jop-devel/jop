@@ -51,23 +51,23 @@ public class Config {
     /* Options which are always present */
     /* The default values can be changed using the JopTool.getDefaultProps() method. */
 
-    public static final BoolOption SHOW_HELP =
-            new BoolOption("help", "show help", 'h', true);
+    public static final BooleanOption SHOW_HELP =
+            new BooleanOption("help", "show help", 'h', true);
 
-    public static final BoolOption SHOW_VERSION =
-            new BoolOption("version", "show version number", Option.SHORT_NONE, true);
+    public static final BooleanOption SHOW_VERSION =
+            new BooleanOption("version", "show version number", Option.SHORT_NONE, true);
 
-    public static final BoolOption SHOW_CONFIG =
-            new BoolOption("showconfig", "print current configuration values", Option.SHORT_NONE, true);
+    public static final BooleanOption SHOW_CONFIG =
+            new BooleanOption("showconfig", "print current configuration values", Option.SHORT_NONE, true);
 
-    public static final BoolOption DEBUG =
-            new BoolOption("debug", "show debug level messages", 'd', false);
+    public static final BooleanOption DEBUG =
+            new BooleanOption("debug", "show debug level messages", 'd', false);
 
-    public static final BoolOption QUIET =
-            new BoolOption("quiet", "only show warnings and errors. Overruled by '-d'", 'q', false);
+    public static final BooleanOption QUIET =
+            new BooleanOption("quiet", "only show warnings and errors. Overruled by '-d'", 'q', false);
 
-    public static final BoolOption VERBOSE =
-            new BoolOption("verbose", "use a more detailed log format and show stacktraces. Can be used with '-d' or '-q'", 'v', false);
+    public static final BooleanOption VERBOSE =
+            new BooleanOption("verbose", "use a more detailed log format and show stacktraces. Can be used with '-d' or '-q'", 'v', false);
 
     public static final StringOption CLASSPATH =
             new StringOption("cp", "classpath of the classes to load", "java/target/dist/classes");
@@ -84,11 +84,11 @@ public class Config {
     public static final StringOption IGNORE_CLASSES =
             new StringOption("ignore", "comma-separated list of classes and packages to ignore", "");
 
-    public static final BoolOption EXCLUDE_LIBRARIES =
-            new BoolOption("exclude-libs", "do not load library classes", false);
+    public static final BooleanOption EXCLUDE_LIBRARIES =
+            new BooleanOption("exclude-libs", "do not load library classes", false);
 
-    public static final BoolOption LOAD_NATIVES =
-            new BoolOption("load-natives", "load native classes too", false);
+    public static final BooleanOption LOAD_NATIVES =
+            new BooleanOption("load-natives", "load native classes too", false);
 
     public static final StringOption ROOTS =
             new StringOption("roots", "comma-separated list of additional root classes", "");

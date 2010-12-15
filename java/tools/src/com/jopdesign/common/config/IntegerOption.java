@@ -24,20 +24,20 @@ package com.jopdesign.common.config;
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  * @author Stefan Hepp <stefan@stefant.org>
  */
-public class IntOption extends Option<Long> {
+public class IntegerOption extends Option<Long> {
 
     private long minValue = Long.MIN_VALUE;
     private long maxValue = Long.MAX_VALUE;
 
-	public IntOption(String key, String descr, boolean optional) {
+	public IntegerOption(String key, String descr, boolean optional) {
 		super(key, Long.class, descr, optional);
 	}
 
-	public IntOption(String key, String descr, long i) {
+	public IntegerOption(String key, String descr, long i) {
 		super(key, descr, i);
 	}
 
-    public IntOption setMinMax(long min, long max) {
+    public IntegerOption setMinMax(long min, long max) {
         minValue = min;
         maxValue = max;
         return this;

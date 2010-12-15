@@ -21,7 +21,7 @@
 package common.config;
 
 import com.jopdesign.common.config.Config;
-import com.jopdesign.common.config.IntOption;
+import com.jopdesign.common.config.IntegerOption;
 import com.jopdesign.common.config.StringOption;
 
 /**
@@ -47,7 +47,7 @@ public class OptionTest {
         option.setReplaceOptions(true);
         config.addOption(option);
 
-        IntOption intopt = new IntOption("int", "int option", 1);
+        IntegerOption intopt = new IntegerOption("int", "int option", 1);
         intopt.setReplaceOptions(true);
         config.addOption(intopt);
 

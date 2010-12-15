@@ -1,0 +1,11 @@
+<!-- Context: ClasReport -->
+<h1>Class: $classreport.getClassInfo()</h1>
+<h2>Source</h2>
+<p>$classreport.getSource().getSourceFile()</p>
+#foreach ($l in $classreport.getSource().getLines())
+<div style="background-color: $l.getBgColor()">
+	<code>
+		$l.getInfo()| $l.getCode()
+	</code>
+</div>
+#end

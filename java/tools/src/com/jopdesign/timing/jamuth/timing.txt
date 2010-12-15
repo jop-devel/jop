@@ -1,0 +1,246 @@
+Jamuth Timing Table on Sat Jun 06 12:44:23 CEST 2009
+====================================================
+
+================================================================
+| opcode |      name       | Cyc (&jump = 4) | Cyc (&jump = 1) |
+----------------------------------------------------------------
+| r = 8, w = 5, c = 0, fcs = 1, fca = 4                        |
+| rs = 5, t = 20, j = 4, fls = 0, fla = 4                      |
+----------------------------------------------------------------
+|      0 | nop             |               1 |               1 |
+|      1 | aconst_null     |               1 |               1 |
+|      2 | iconst_m1       |               1 |               1 |
+|      3 | iconst_0        |               1 |               1 |
+|      4 | iconst_1        |               1 |               1 |
+|      5 | iconst_2        |               1 |               1 |
+|      6 | iconst_3        |               1 |               1 |
+|      7 | iconst_4        |               1 |               1 |
+|      8 | iconst_5        |               1 |               1 |
+|      9 | lconst_0        |               1 |               1 |
+|     10 | lconst_1        |               1 |               1 |
+|     11 | fconst_0        |               1 |               1 |
+|     12 | fconst_1        |               2 |               2 |
+|     13 | fconst_2        |               2 |               2 |
+|     14 | dconst_0        |               1 |               1 |
+|     15 | dconst_1        |               3 |               3 |
+|     16 | bipush          |               1 |               1 |
+|     17 | sipush          |               1 |               1 |
+|     18 | ldc             | ... no info ...                   |
+|     19 | ldc_w           |              14 |              14 |
+|     20 | ldc2_w          |              25 |              25 |
+|     21 | iload           |               1 |               1 |
+|     22 | lload           |               1 |               1 |
+|     23 | fload           |               1 |               1 |
+|     24 | dload           |               1 |               1 |
+|     25 | aload           |               1 |               1 |
+|     26 | iload_0         |               1 |               1 |
+|     27 | iload_1         |               1 |               1 |
+|     28 | iload_2         |               1 |               1 |
+|     29 | iload_3         |               1 |               1 |
+|     30 | lload_0         |               1 |               1 |
+|     31 | lload_1         |               1 |               1 |
+|     32 | lload_2         |               1 |               1 |
+|     33 | lload_3         |               1 |               1 |
+|     34 | fload_0         |               1 |               1 |
+|     35 | fload_1         |               1 |               1 |
+|     36 | fload_2         |               1 |               1 |
+|     37 | fload_3         |               1 |               1 |
+|     38 | dload_0         |               1 |               1 |
+|     39 | dload_1         |               1 |               1 |
+|     40 | dload_2         |               1 |               1 |
+|     41 | dload_3         |               1 |               1 |
+|     42 | aload_0         |               1 |               1 |
+|     43 | aload_1         |               1 |               1 |
+|     44 | aload_2         |               1 |               1 |
+|     45 | aload_3         |               1 |               1 |
+|     46 | iaload          |              12 |              12 |
+|     47 | laload          |              23 |              23 |
+|     48 | faload          |              12 |              12 |
+|     49 | daload          |              23 |              23 |
+|     50 | aaload          |              12 |              12 |
+|     51 | baload          |              12 |              12 |
+|     52 | caload          |              12 |              12 |
+|     53 | saload          |              12 |              12 |
+|     54 | istore          |               1 |               1 |
+|     55 | lstore          |               1 |               1 |
+|     56 | fstore          |               1 |               1 |
+|     57 | dstore          |               1 |               1 |
+|     58 | astore          |               2 |               2 |
+|     59 | istore_0        |               1 |               1 |
+|     60 | istore_1        |               1 |               1 |
+|     61 | istore_2        |               1 |               1 |
+|     62 | istore_3        |               1 |               1 |
+|     63 | lstore_0        |               1 |               1 |
+|     64 | lstore_1        |               1 |               1 |
+|     65 | lstore_2        |               1 |               1 |
+|     66 | lstore_3        |               1 |               1 |
+|     67 | fstore_0        |               1 |               1 |
+|     68 | fstore_1        |               1 |               1 |
+|     69 | fstore_2        |               1 |               1 |
+|     70 | fstore_3        |               1 |               1 |
+|     71 | dstore_0        |               1 |               1 |
+|     72 | dstore_1        |               1 |               1 |
+|     73 | dstore_2        |               1 |               1 |
+|     74 | dstore_3        |               1 |               1 |
+|     75 | astore_0        |               7 |               7 |
+|     76 | astore_1        |               7 |               7 |
+|     77 | astore_2        |               7 |               7 |
+|     78 | astore_3        |               7 |               7 |
+|     79 | iastore         |              12 |              12 |
+|     80 | lastore         |              21 |              21 |
+|     81 | fastore         |              12 |              12 |
+|     82 | dastore         |              21 |              21 |
+|     83 | aastore         |              18 |              18 |
+|     84 | bastore         |              10 |              10 |
+|     85 | castore         |              12 |              12 |
+|     86 | sastore         |              12 |              12 |
+|     87 | pop             |               1 |               1 |
+|     88 | pop2            |               1 |               1 |
+|     89 | dup             |               1 |               1 |
+|     90 | dup_x1          |               4 |               4 |
+|     91 | dup_x2          |               6 |               6 |
+|     92 | dup2            |               1 |               1 |
+|     93 | dup2_x1         |               5 |               5 |
+|     94 | dup2_x2         |               6 |               6 |
+|     95 | swap            | ... no info ...                   |
+|     96 | iadd            |               1 |               1 |
+|     97 | ladd            | ... no info ...                   |
+|     98 | fadd            | ... no info ...                   |
+|     99 | dadd            | ... no info ...                   |
+|    100 | isub            |               1 |               1 |
+|    101 | lsub            | ... no info ...                   |
+|    102 | fsub            | ... no info ...                   |
+|    103 | dsub            | ... no info ...                   |
+|    104 | imul            |               1 |               1 |
+|    105 | lmul            | ... no info ...                   |
+|    106 | fmul            | ... no info ...                   |
+|    107 | dmul            | ... no info ...                   |
+|    108 | idiv            | ... no info ...                   |
+|    109 | ldiv            | ... no info ...                   |
+|    110 | fdiv            | ... no info ...                   |
+|    111 | ddiv            | ... no info ...                   |
+|    112 | irem            | ... no info ...                   |
+|    113 | lrem            | ... no info ...                   |
+|    114 | frem            | ... no info ...                   |
+|    115 | drem            | ... no info ...                   |
+|    116 | ineg            |               1 |               1 |
+|    117 | lneg            | ... no info ...                   |
+|    118 | fneg            | ... no info ...                   |
+|    119 | dneg            | ... no info ...                   |
+|    120 | ishl            |               1 |               1 |
+|    121 | lshl            | ... no info ...                   |
+|    122 | ishr            |               1 |               1 |
+|    123 | lshr            | ... no info ...                   |
+|    124 | iushr           |               1 |               1 |
+|    125 | lushr           | ... no info ...                   |
+|    126 | iand            |               1 |               1 |
+|    127 | land            | ... no info ...                   |
+|    128 | ior             |               1 |               1 |
+|    129 | lor             | ... no info ...                   |
+|    130 | ixor            |               1 |               1 |
+|    131 | lxor            | ... no info ...                   |
+|    132 | iinc            |               1 |               1 |
+|    133 | i2l             | ... no info ...                   |
+|    134 | i2f             | ... no info ...                   |
+|    135 | i2d             | ... no info ...                   |
+|    136 | l2i             |               1 |               1 |
+|    137 | l2f             | ... no info ...                   |
+|    138 | l2d             | ... no info ...                   |
+|    139 | f2i             | ... no info ...                   |
+|    140 | f2l             | ... no info ...                   |
+|    141 | f2d             | ... no info ...                   |
+|    142 | d2i             | ... no info ...                   |
+|    143 | d2l             | ... no info ...                   |
+|    144 | d2f             | ... no info ...                   |
+|    145 | i2b             |               1 |               1 |
+|    146 | i2c             |               1 |               1 |
+|    147 | i2s             |               1 |               1 |
+|    148 | lcmp            | ... no info ...                   |
+|    149 | fcmpl           | ... no info ...                   |
+|    150 | fcmpg           | ... no info ...                   |
+|    151 | dcmpl           | ... no info ...                   |
+|    152 | dcmpg           | ... no info ...                   |
+|    153 | ifeq            |               5 |               5 |
+|    154 | ifne            |               5 |               9 |
+|    155 | iflt            |               5 |               9 |
+|    156 | ifge            |               5 |               9 |
+|    157 | ifgt            |               5 |               9 |
+|    158 | ifle            |               5 |               9 |
+|    159 | if_icmpeq       |               5 |               9 |
+|    160 | if_icmpne       |               5 |               9 |
+|    161 | if_icmplt       |               5 |               9 |
+|    162 | if_icmpge       |               5 |               9 |
+|    163 | if_icmpgt       |               5 |               9 |
+|    164 | if_icmple       |               5 |               9 |
+|    165 | if_acmpeq       |               5 |               9 |
+|    166 | if_acmpne       |               5 |               9 |
+|    167 | goto            |               5 |               9 |
+|    168 | jsr             |               9 |              13 |
+|    169 | ret             |               5 |               9 |
+|    170 | tableswitch     | ... no info ...                   |
+|    171 | lookupswitch    | ... no info ...                   |
+|    172 | ireturn         |               5 |               9 |
+|    173 | lreturn         |               9 |               9 |
+|    174 | freturn         |               5 |               9 |
+|    175 | dreturn         |               9 |               9 |
+|    176 | areturn         |              15 |              15 |
+|    177 | return          |               4 |               8 |
+|    178 | getstatic       |               9 |               9 |
+|    179 | putstatic       |              14 |              14 |
+|    180 | getfield        |               9 |               9 |
+|    181 | putfield        |              15 |              15 |
+|    182 | invokevirtual   |             148 |             160 |
+|    183 | invokespecial   |             128 |             136 |
+|    184 | invokestatic    |             128 |             136 |
+|    185 | invokeinterface | ... no info ...                   |
+|    186 | unused_ba       | ... no info ...                   |
+|    187 | new             | ... no info ...                   |
+|    188 | newarray        | ... no info ...                   |
+|    189 | anewarray       | ... no info ...                   |
+|    190 | arraylength     |               9 |               9 |
+|    191 | athrow          | ... no info ...                   |
+|    192 | checkcast       | ... no info ...                   |
+|    193 | instanceof      | ... no info ...                   |
+|    194 | monitorenter    | ... no info ...                   |
+|    195 | monitorexit     | ... no info ...                   |
+|    196 | wide            | ... no info ...                   |
+|    197 | multianewarray  | ... no info ...                   |
+|    198 | ifnull          |               5 |               9 |
+|    199 | ifnonnull       |               5 |               5 |
+|    200 | goto_w          | ... no info ...                   |
+|    201 | jsr_w           | ... no info ...                   |
+|    202 | breakpoint      | ... no info ...                   |
+|    204 | jopsys_inval    | ... no info ...                   |
+|    208 | jopsys_null     | ... no info ...                   |
+|    209 | jopsys_rd       | ... no info ...                   |
+|    210 | jopsys_wr       | ... no info ...                   |
+|    211 | jopsys_rdmem    | ... no info ...                   |
+|    212 | jopsys_wrmem    | ... no info ...                   |
+|    213 | jopsys_rdint    | ... no info ...                   |
+|    214 | jopsys_wrint    | ... no info ...                   |
+|    215 | jopsys_getsp    | ... no info ...                   |
+|    216 | jopsys_setsp    | ... no info ...                   |
+|    217 | jopsys_getvp    | ... no info ...                   |
+|    218 | jopsys_setvp    | ... no info ...                   |
+|    219 | jopsys_int2ext  | ... no info ...                   |
+|    220 | jopsys_ext2int  | ... no info ...                   |
+|    221 | jopsys_nop      | ... no info ...                   |
+|    222 | jopsys_invoke   | ... no info ...                   |
+|    224 | getstatic_ref   | ... no info ...                   |
+|    225 | putstatic_ref   | ... no info ...                   |
+|    226 | getfield_ref    | ... no info ...                   |
+|    227 | putfield_ref    | ... no info ...                   |
+|    228 | getstatic_long  | ... no info ...                   |
+|    229 | putstatic_long  | ... no info ...                   |
+|    230 | getfield_long   | ... no info ...                   |
+|    231 | putfield_long   | ... no info ...                   |
+|    232 | jopsys_memcpy   | ... no info ...                   |
+|    233 | jopsys_getfield | ... no info ...                   |
+|    234 | jopsys_putfield | ... no info ...                   |
+|    236 | invokesuper     | ... no info ...                   |
+|    240 | sys_int         | ... no info ...                   |
+|    241 | sys_exc         | ... no info ...                   |
+|    254 | sys_noim        | ... no info ...                   |
+|    255 | sys_init        | ... no info ...                   |
+================================================================
+

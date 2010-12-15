@@ -376,7 +376,7 @@ public class OptionGroup {
                         val = args[i+1];
                     }
 				}
-				if (spec instanceof BoolOption && val == null) {
+				if (spec instanceof BooleanOption && val == null) {
 					val = "true";
 				} else if (val == null){
 					throw new Config.BadConfigurationException("Missing argument for option: "+spec);
@@ -390,7 +390,7 @@ public class OptionGroup {
                 // maybe a boolean option, check for --no-<key>
                 if ( key.startsWith("no-") ) {
                     spec = getOptionSpec(key.substring(3));
-                    if ( spec != null && spec instanceof BoolOption ) {
+                    if ( spec != null && spec instanceof BooleanOption) {
                         config.setProperty(getConfigKey(spec), "false");
                     }
                 }
