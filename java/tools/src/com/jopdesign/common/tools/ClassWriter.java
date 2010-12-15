@@ -22,7 +22,6 @@ package com.jopdesign.common.tools;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
-import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.logger.LogConfig;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.log4j.Logger;
@@ -66,7 +65,7 @@ public class ClassWriter {
                 logger.debug("Writing class: " + cls.getClassName());
             }
             
-            JavaClass jc = cls.compileJavaClass();
+            JavaClass jc = cls.compile();
 
             String filename = classDir + File.separator +
                     cls.getClassName().replace(".", File.separator) + ".class";

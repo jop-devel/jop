@@ -39,7 +39,7 @@ public class TestFramework {
 
     public AppSetup setupAppSetup(String classPath, String outputDir) {
 
-        appSetup = new AppSetup(false);
+        appSetup = new AppSetup();
         appSetup.addStandardOptions(true, true);
 
         appSetup.getConfig().setOption(Config.CLASSPATH, classPath);

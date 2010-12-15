@@ -131,27 +131,27 @@ public final class MethodInfo extends ClassMemberInfo {
     }
 
     /**
-     * Get a BCEL method for this methodInfo.
-     *
-     * @param compile if true, this does the same as {@link #compileMethod()}.
-     * @return a method for this methodInfo.
+     * Compile the code and return a new BCEL method.
+     * @see MethodCode#compile()
+     * @return a new BCEL method class containing all changes to the code.
      */
-    public Method getMethod(boolean compile) {
-        if ( compile ) {
-            // we use the compile flag primarily as a reminder to the API user to compile first
-            return compileMethod();
+    public Method compile() {
+        if (!isAbstract()) {
+            methodCode.compile();
         }
         return methodGen.getMethod();
     }
 
     /**
-     * Compile the code and return a new BCEL method.
-     * @see MethodCode#compile()
-     * @return a new BCEL method class containing all changes to the code.
+     * Get a BCEL method for this methodInfo.
+     *
+     * @param compile if true, this does the same as {@link #compile()}.
+     * @return a method for this methodInfo.
      */
-    public Method compileMethod() {
-        if (!isAbstract()) {
-            methodCode.compile();
+    public Method getMethod(boolean compile) {
+        if ( compile ) {
+            // we use the compile flag primarily as a reminder to the API user to compile first
+            return compile();
         }
         return methodGen.getMethod();
     }

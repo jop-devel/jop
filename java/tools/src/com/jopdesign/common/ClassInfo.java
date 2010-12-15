@@ -20,26 +20,20 @@
 
 package com.jopdesign.common;
 
-import com.jopdesign.common.bcel.EnclosingMethod;
 import com.jopdesign.common.graph.ClassHierarchyTraverser;
 import com.jopdesign.common.graph.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
-import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.Ternary;
-import com.jopdesign.common.tools.ReferencedClassFinder;
 import com.jopdesign.common.tools.ConstantPoolRebuilder;
 import com.jopdesign.common.type.ClassRef;
-import com.jopdesign.common.type.ConstantClassInfo;
 import com.jopdesign.common.type.ConstantInfo;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Constant;
-import org.apache.bcel.classfile.ConstantUtf8;
 import org.apache.bcel.classfile.Field;
-import org.apache.bcel.classfile.InnerClass;
 import org.apache.bcel.classfile.InnerClasses;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
@@ -71,13 +65,11 @@ public final class ClassInfo extends MemberInfo {
 
     protected final Set<ClassInfo> subClasses;
     protected ClassInfo superClass;
-    protected final Set<ClassInfo> nestedClasses;
-    protected ClassInfo enclosingClass;
-    protected boolean aNestedClass;
     protected Ternary fullyKnown;
 
     private final Map<String, MethodInfo> methods;
     private final Map<String, FieldInfo> fields;
+    private InnerClassesInfo innerClasses;
 
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT + ".ClassInfo");
 
@@ -88,12 +80,9 @@ public final class ClassInfo extends MemberInfo {
 
         superClass = null;
         subClasses = new HashSet<ClassInfo>();
-        enclosingClass = null;
-        aNestedClass = false;
-        nestedClasses = new HashSet<ClassInfo>();
         fullyKnown = Ternary.UNKNOWN;
 
-        updateInnerClassFlag();
+        innerClasses = new InnerClassesInfo(this, classGen);
 
         Method[] cgMethods = classGen.getMethods();
         Field[] cgFields = classGen.getFields();
@@ -229,59 +218,59 @@ public final class ClassInfo extends MemberInfo {
         }
         return null;
     }
-    public InnerClasses getInnerClassesAttribute() {
-        // we could keep a reference to the attribute in the class, but this should be sufficiently fast.
-        for (Attribute a : classGen.getAttributes()) {
-            if ( a instanceof InnerClasses ) {
-                return (InnerClasses) a;
-            }
-        }
-        return null;
-    }
 
-    public InnerClass getInnerClassAttribute(String innerClassName) {
-        InnerClasses ic = getInnerClassesAttribute();
-        if ( ic != null ) {
-            for (InnerClass i : ic.getInnerClasses()) {
-                if (getInnerClassName(i).equals(innerClassName)) {
-                    return i;
-                }
-            }
-        }
-        return null;
-    }
+    //////////////////////////////////////////////////////////////////////////////
+    // Inner-class stuff; some delegates to InnerClassesInfo
+    //////////////////////////////////////////////////////////////////////////////
 
-    public String getInnerClassName(InnerClass i) {
-        return ((ConstantClassInfo) getConstantInfo(i.getInnerClassIndex())).getClassName();
-    }
-
-    public String getOuterClassName(InnerClass i) {
-        int index = i.getOuterClassIndex();
-        if ( index == 0 ) {
-            return null;
-        }
-        return ((ConstantClassInfo) getConstantInfo(index)).getClassName();
+    /**
+     * Get the InnerClassesInfo which contains infos about the inner classes, the enclosing classes
+     * and the InnerClasses attribute.
+     * @return the InnerClasses attribute manager (even if this class is not an inner class).
+     */
+    public InnerClassesInfo getInnerClassesInfo() {
+        return innerClasses;
     }
 
     /**
-     * Get the member name of a class if it is a non-anonymous class.
-     * @param i the attribute corresponding to the nested class.
-     * @return the member name of the nested class or null if anonymous.
+     * @see InnerClassesInfo#isNestedClass()
+     * @return true if this class is a nested class (a member- or inner class).
      */
-    public String getInnerName(InnerClass i) {
-        int index = i.getInnerNameIndex();
-        if ( index == 0 ) {
-            return null;
-        }
-        return ((ConstantUtf8)getConstant(index)).getBytes();
+    public boolean isNestedClass() {
+        return innerClasses.isNestedClass();
     }
 
-    public String getInnerName() {
-        InnerClass attribute = getInnerClassAttribute(getClassName());
-        if ( attribute == null ) {
-            return null;
-        }
-        return getInnerName(attribute);
+    /**
+     * @see InnerClassesInfo#getEnclosingClassInfo()
+     * @return the ClassInfo which encloses this class, if it is loaded and if this class is a nested class, else null.
+     */
+    public ClassInfo getEnclosingClassInfo() {
+        return innerClasses.getEnclosingClassInfo();
+    }
+
+    /**
+     * @see InnerClassesInfo#getEnclosingMethodRef()
+     * @return the method reference to the method which encloses this class, or null if this is not a local class.
+     */
+    public MethodRef getEnclosingMethodRef() {
+        return innerClasses.getEnclosingMethodRef();
+    }
+
+    /**
+     * @see InnerClassesInfo#getDirectNestedClasses()
+     * @return a set of all classes directly nested in this class.
+     */
+    public Set<ClassInfo> getDirectNestedClasses() {
+        return innerClasses.getDirectNestedClasses();
+    }
+
+    /**
+     * Check if this class is defined within a method.
+     * @see InnerClassesInfo#isLocalInnerClass()
+     * @return true if this class is not a member of the class.
+     */
+    public boolean isLocalInnerClass() {
+        return innerClasses.isLocalInnerClass();
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -346,31 +335,6 @@ public final class ClassInfo extends MemberInfo {
 
     public int getConstantPoolSize() {
         return cpg.getSize();
-    }
-
-    /**
-     * Rebuild the constantpool from a new, empty constantpool.
-     *
-     * <p>This updates the indices of all references in the code of all methods of this class,
-     * therefore do not call this method while modifying the code.</p>
-     */
-    public void rebuildConstantPool() {
-
-        ConstantPoolGen newPool = new ConstantPoolGen();
-        ConstantPoolRebuilder rebuilder = new ConstantPoolRebuilder(cpg, newPool);
-
-        rebuilder.updateClassGen(classGen);
-
-        for (MethodInfo m : methods.values()) {
-            rebuilder.updateMethodGen(m.getInternalMethodGen());
-        }
-        for (FieldInfo f : fields.values()) {
-            rebuilder.updateFieldGen(f.getInternalFieldGen());
-        }
-
-        // TODO update all attributes, update/remove customValues which depend on CP and call eventbroker  
-
-        cpg = newPool;
     }
 
 
@@ -470,310 +434,6 @@ public final class ClassInfo extends MemberInfo {
         }
     }
 
-
-    //////////////////////////////////////////////////////////////////////////////
-    // Inner-class stuff
-    //////////////////////////////////////////////////////////////////////////////
-
-    public boolean isNestedClass() {
-        return aNestedClass;
-    }
-
-    /**
-     * An inner class is a non-static nested class.
-     * @return true if this a non-static nested class.
-     */
-    public boolean isInnerClass() {
-        return aNestedClass && !isStatic();
-    }
-
-    public boolean isAnonymousInnerClass() {
-        if (!aNestedClass) return false;
-        InnerClass i = getInnerClassAttribute(getClassName());
-        return i != null && i.getInnerNameIndex() == 0;
-    }
-
-    /**
-     * Check if this is a local class (i.e a class defined within a method, not a member of the outer class).
-     * @return true if this class is not a member of a class.
-     */
-    public boolean isLocalInnerClass() {
-        if (!aNestedClass) return false;
-        InnerClass i = getInnerClassAttribute(getClassName());
-        return i != null && i.getOuterClassIndex() == 0;
-    }
-
-    /**
-     * Check if the given classRef is a nested class (not necessarily of this class!),
-     * using the InnerClasses attribute of this class if no ClassInfo is available for the reference.
-     *
-     * @param classRef the class to check using the InnerClasses attribute of this class.
-     * @return true if the referenced class is a nested class or if this class knows the class as nested class.
-     */
-    public boolean isNestedClass(ClassRef classRef) {
-        ClassInfo classInfo = classRef.getClassInfo();
-        if ( classInfo != null ) {
-            return classInfo.isNestedClass();
-        }
-        InnerClass ic = getInnerClassAttribute(classRef.getClassName());
-        return ic != null;
-    }
-
-    /**
-     * Check if the given class is an enclosing class of this class.
-     * This requires the class hierarchy to be up-to-date and all outer classes must be loaded.
-     *
-     * @param enclosing the potential outer class.
-     * @param membersOnly only return true if this class and all enclosing classes up to enclosing are member classes.
-     * @return true if this class is the same as or a nested class of the given class.
-     */
-    public boolean isNestedClassOf(ClassInfo enclosing, boolean membersOnly) {
-        return isNestedClassOf(enclosing.getClassName(), membersOnly);
-    }
-
-    /**
-     * Check if the given class is an outer class of this class.
-     * This requires the class hierarchy to be up-to-date and all outer classes must be loaded.
-     *
-     * @param enclosingClassName the fully qualified name of the potential outer class.
-     * @param membersOnly only return true if this class and all enclosing classes up to outer are member classes.
-     * @return true if this class is the same as or a nested class of the given class.
-     */
-    public boolean isNestedClassOf(String enclosingClassName, boolean membersOnly) {
-        if ( !aNestedClass) {
-            return false;
-        }
-
-        // We could even handle some cases (when membersOnly is true) even without knowing the
-        // enclosing ClassInfos using the InnerClasses attribute, but to make life easier we simply
-        // require that all enclosing classes are loaded and the class hierarchy is up-to-date.
-
-        ClassInfo outer = this;
-        while (outer != null) {
-            if (outer.getClassName().equals(enclosingClassName)) {
-                return true;
-            }
-            outer = outer.getEnclosingClassInfo();
-            if (membersOnly && outer.isLocalInnerClass()) {
-                return false;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Get the name of the immediatly enclosing class of this class, if this is a nested class
-     * (member or local), or null if this is not a nested class.
-     *
-     * @see #getOuterClassName()
-     * @return the immediatly enclosing class of this class, or null if this is a top-level class.
-     */
-    public String getEnclosingClassName() {
-        if ( !aNestedClass ) {
-            return null;
-        }
-        if (enclosingClass != null) {
-            return enclosingClass.getClassName();
-        }
-
-        String name = getOuterClassName();
-        if ( name == null ) {
-            MethodRef ref = getEnclosingMethodRef();
-            if (ref != null) {
-                return ref.getClassName();
-            } else {
-                throw new JavaClassFormatError("Could not find enclosing class name for nested class " +getClassName());
-            }
-        } else {
-            return name;
-        }
-    }
-
-    /**
-     * Get the immediatly enclosing class of this class.
-     *
-     * @return the immediatly enclosing class of this class, or null if this is a top-level class.
-     */
-    public ClassInfo getEnclosingClassInfo() {
-        return enclosingClass;
-    }
-
-    /**
-     * Get a collection of all known nested classes of this class.
-     * This may return a subset of {@link #getDirectInnerClassNames()} if not all
-     * directly nested classes are loaded.
-     *
-     * @return a set of all known nested classes (member and local classes).
-     */
-    public Set<ClassInfo> getDirectNestedClasses() {
-        return nestedClasses;
-    }
-
-    /**
-     * Get the name of the outer class of this class if this is a nested member class.
-     *
-     * @see #getEnclosingClassName()
-     * @return the name of the outer class as defined in the InnerClasses attribute if this is a member
-     *      nested class, else null.
-     */
-    public String getOuterClassName() {
-        if ( !aNestedClass ) {
-            return null;
-        }
-        InnerClass i = getInnerClassAttribute(getClassName());
-        if (i == null) {
-            throw new JavaClassFormatError("Someone removed the InnerClasses attribute of this nested class!");
-        }
-        return getOuterClassName(i);
-    }
-
-    /**
-     * Get a list of fully qualified classnames of all direct inner classes of this class, including local classes,
-     * using the InnerClasses attribute.
-     * 
-     * @return a collection of fully qualified classnames of the inner classes or an empty collection if this class
-     *   has no inner classes.
-     */
-    public Collection<String> getDirectInnerClassNames() {
-        InnerClasses ic = getInnerClassesAttribute();
-        if ( ic == null ) {
-            return new LinkedList<String>();
-        }
-        List<String> inner = new LinkedList<String>();
-        for (InnerClass i : ic.getInnerClasses()) {
-            String outerName = getOuterClassName(i);
-
-            if (getInnerClassName(i).equals(getClassName())) {
-                continue;
-            }
-            // if outer is null, inner is a local inner class of this class.
-            if (outerName == null || getClassName().equals(outerName)) {
-                inner.add(getInnerClassName(i));
-            }
-        }
-        return inner;
-    }
-
-    /**
-     * Find the class enclosing this class which is the same as or a superclass or an interface of
-     * the given class. If the given class is a subclass of this class, this returns null.
-     *
-     * @param classInfo the (sub)class containing this class.
-     * @param membersOnly if true, only check outer classes of member inner classes.
-     * @return the found enclosing class or null if none found.
-     */
-    public ClassInfo getEnclosingSuperClassOf(ClassInfo classInfo, boolean membersOnly) {
-        if ( membersOnly && isLocalInnerClass() ) {
-            return null;
-        }
-        ClassInfo outer = enclosingClass;
-        while (outer != null) {
-            if (outer.isInstanceOf(classInfo)) {
-                return outer;
-            }
-            if ( membersOnly && outer.isLocalInnerClass() ) {
-                return null;
-            } else {
-                outer = outer.getEnclosingClassInfo();
-            }
-        }
-        return null;
-    }
-
-    public MethodRef getEnclosingMethodRef() {
-        for (Attribute a : getAttributes()) {
-            if ( a instanceof EnclosingMethod ) {
-                return ((EnclosingMethod)a).getMethodRef();
-            }
-        }
-        return null;
-    }
-
-    /*
-     * Make this class a member nested class of the given class or move it to top-level
-     *
-     * @param enclosingClass the new outer class of this class, or null to make it a toplevel class.
-     * @param innerName the simple name of this member class.
-     */
-    /*
-    public void setEnclosingClass(ClassInfo enclosingClass, String innerName) throws AppInfoException {
-        // implement setOuterClass(), if needed. But this is not a simple task.
-        // need to
-        // - remove references to old outerClass from InnerClasses of this and all old outer classes
-        // - create InnerClasses attribute if none exists
-        // - add new entries to InnerClasses of this and all new outer classes.
-        // - update class hierarchy infos and fullyKnown flags
-        // - handle setEnclosingClass(null)
-    }
-    */
-
-    /*
-     * Make this class a local nested class of the given method.
-     * @param methodInfo the enclosing method of this class.
-     */
-    /*
-    public void setEnclosingMethod(MethodInfo methodInfo) {
-    }
-    */
-
-    /**
-     * Add or replace InnerClass entries of this class with the info of the given classes.
-     * If no InnerClasses attribute exists, it is created. Enclosing classes are added if needed.
-     *
-     * @param nestedClasses a list of nested classes to add to the InnerClasses attribute.
-     */
-    public void addInnerClassRefs(Collection<ClassInfo> nestedClasses) {
-        if ( nestedClasses == null || nestedClasses.isEmpty() ) {
-            return;
-        }
-
-        Set<ClassInfo> newClasses = new HashSet<ClassInfo>();
-        for (ClassInfo cls : nestedClasses) {
-            if ( !cls.isNestedClass() ) { continue; }
-            ClassInfo enclosing = cls;
-            while (enclosing != null) {
-                newClasses.add(cls);
-
-                if (enclosing.isLocalInnerClass() || !enclosing.isNestedClass()) {
-                    break;
-                }
-                // add enclosing classes too if this is a member class and the enclosing class is a nested class
-                enclosing = enclosing.getEnclosingClassInfo();
-            }
-        }
-        if (newClasses.isEmpty()) {
-            return;
-        }
-
-        InnerClasses ic = getInnerClassesAttribute();
-        if ( ic == null ) {
-            ic = new InnerClasses(cpg.addUtf8("InnerClasses"), 0, new InnerClass[0], cpg.getConstantPool());
-            addAttribute(ic);
-        }
-
-        Map<String, InnerClass> entries = new HashMap<String, InnerClass>(ic.getInnerClasses().length + newClasses.size());
-        for (InnerClass i : ic.getInnerClasses()) {
-            entries.put(getInnerClassName(i), i);
-        }
-
-        for (ClassInfo cls : newClasses) {
-            String innerName = cls.getClassName().replace('.', '/');
-            int outerIdx = 0;
-            int nameIdx = 0;
-            if ( !cls.isLocalInnerClass() ) {
-                outerIdx = cpg.addUtf8(cls.getEnclosingClassName().replace('.','/'));
-            }
-            if ( !cls.isAnonymousInnerClass() ) {
-                nameIdx = cpg.addUtf8(cls.getInnerName());
-            }
-            InnerClass i = new InnerClass(cpg.addUtf8(innerName), outerIdx, nameIdx, cls.getAccessFlags());
-            entries.put(innerName, i);
-        }
-
-        InnerClass[] classes = entries.values().toArray(new InnerClass[entries.size()]);
-        ic.setInnerClasses(classes);
-        ic.setLength(2 + classes.length * 8);
-    }
 
     //////////////////////////////////////////////////////////////////////////////
     // Class-hierarchy lookups and helpers
@@ -960,7 +620,7 @@ public final class ClassInfo extends MemberInfo {
      * @return true if the class is inherited by this class.
      */
     public boolean inherits(ClassInfo classInfo) {
-        ClassInfo superClass = classInfo.getEnclosingSuperClassOf(this, true);
+        ClassInfo superClass = classInfo.getInnerClassesInfo().getEnclosingSuperClassOf(this, true);
         if (superClass == null) {
             return false;
         }
@@ -1185,12 +845,12 @@ public final class ClassInfo extends MemberInfo {
         if ( method == null ) {
             return null;
         }
-        MethodGen methodGen = new MethodGen(method.compileMethod(), getClassName(), cpg);
+        MethodGen methodGen = new MethodGen(method.compile(), getClassName(), cpg);
         methodGen.setName(newName);
 
         MethodInfo newMethod = new MethodInfo(this, methodGen);
 
-        // TODO copy all the attribute stuff?, call manager eventhandler
+        // TODO copy all the attribute stuff, call manager eventhandler
 
         methods.put(newMethod.getMemberSignature(), newMethod);
         classGen.addMethod(newMethod.getMethod(false));
@@ -1208,7 +868,7 @@ public final class ClassInfo extends MemberInfo {
 
         FieldInfo newField = new FieldInfo(this, fieldGen);
 
-        // TODO copy all the attribute stuff?, call manager eventhandler
+        // TODO copy all the attribute stuff, call manager eventhandler
 
         fields.put(newName, newField);
         classGen.addField(newField.getField());
@@ -1305,32 +965,57 @@ public final class ClassInfo extends MemberInfo {
     //////////////////////////////////////////////////////////////////////////////
 
     /**
+     * Rebuild the constantpool from a new, empty constantpool.
+     *
+     * <p>This updates the indices of all references in the code of all methods of this class,
+     * therefore do not call this method while modifying the code.</p>
+     */
+    public void rebuildConstantPool() {
+
+        ConstantPoolGen newPool = new ConstantPoolGen();
+        ConstantPoolRebuilder rebuilder = new ConstantPoolRebuilder(cpg, newPool);
+
+        rebuilder.updateClassGen(classGen);
+
+        for (MethodInfo m : methods.values()) {
+            rebuilder.updateMethodGen(m.getInternalMethodGen());
+        }
+        for (FieldInfo f : fields.values()) {
+            rebuilder.updateFieldGen(f.getInternalFieldGen());
+        }
+
+        // TODO update all attributes, call eventbroker
+
+        cpg = newPool;
+    }
+
+    /**
+     * Rebuild the InnerClasses attribute of this class.
      * Add or update all references to nested classes found in this class in the InnerClasses attribute.
      */
-    public void updateInnerClasses() {
-        // check+update InnerClasses attribute (and add referenced nested classes)
-        List<ClassInfo> nestedClasses = new LinkedList<ClassInfo>();
-        for (String name : ReferencedClassFinder.findReferencedClasses(this)) {
-            ClassInfo cls = getAppInfo().getClassInfo(name);
-            if (cls != null && cls.isNestedClass()) {
-                nestedClasses.add(cls);
-            }
-        }
-        addInnerClassRefs(nestedClasses);
+    public void rebuildInnerClasses() {
+
+        InnerClasses oldIC = innerClasses.getInnerClassesAttribute();
+        InnerClasses newIC = innerClasses.buildInnerClassesAttribute();
+
+        if (oldIC != null) classGen.removeAttribute(oldIC);
+        if (newIC != null) classGen.addAttribute(newIC);
     }
 
     /**
      * Commit all modifications to this ClassInfo and return a BCEL JavaClass for this ClassInfo.
-     * You may want to call {@link #updateInnerClasses()} first if needed.
-     *
-     * @see MethodInfo#compileMethod()
-     * @see #updateInnerClasses()
+     * <p>
+     * You may want to call {@link #rebuildConstantPool()} and {@link #rebuildInnerClasses()} first if needed.
+     * </p>
+     * @see MethodInfo#compile()
+     * @see #rebuildInnerClasses()
+     * @see #rebuildConstantPool()
      * @see #getJavaClass()
      * @return a JavaClass representing this ClassInfo.
      */
-    public JavaClass compileJavaClass() {
+    public JavaClass compile() {
 
-        // TODO We could keep a modified flag in both MethodInfo and FieldInfo
+        // We could keep a modified flag in both MethodInfo and FieldInfo
         // (maybe even ClassInfo), and update only what is needed here
         // could make class-writing,.. faster, but makes code more complex
 
@@ -1353,7 +1038,7 @@ public final class ClassInfo extends MemberInfo {
         for (int i = 0; i < mList.length; i++) {
             MethodInfo method = methods.get(Signature.getMemberSignature(mList[i].getName(),
                                                                          mList[i].getSignature()));
-            classGen.setMethodAt(method.compileMethod(), i);
+            classGen.setMethodAt(method.compile(), i);
         }
 
         // TODO call manager eventhandler
@@ -1365,10 +1050,10 @@ public final class ClassInfo extends MemberInfo {
      * Create and return a BCEL JavaClass for this ClassInfo.
      *
      * <p>The returned JavaClass does not contain any modifications not yet
-     * commited to the internal BCEL ClassGen (e.g. it does not cleanup the constantpool, does not contain
-     * modifications to methods/fields/code, ..).</p>
+     * commited to the internal BCEL ClassGen (e.g. it does not contain
+     * modifications to methods/fields/code).</p>
      *
-     * @see #compileJavaClass()
+     * @see #compile()
      * @return a JavaClass for this ClassInfo.
      */
     public JavaClass getJavaClass() {
@@ -1395,18 +1080,11 @@ public final class ClassInfo extends MemberInfo {
     // Internal affairs, class hierarchy management; To be used only be AppInfo
     //////////////////////////////////////////////////////////////////////////////
 
-    private void updateInnerClassFlag() {
-        // check if this class appears as inner class (iff this is an inner class, it must
-        // appear in the attribute by definition)
-        aNestedClass = getInnerClassAttribute(getClassName()) != null;
-    }
-
     protected void resetHierarchyInfos() {
         superClass = null;
         subClasses.clear();
-        enclosingClass = null;
-        nestedClasses.clear();
         fullyKnown = Ternary.UNKNOWN;
+        innerClasses.resetHierarchyInfos();
     }
 
     @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
@@ -1427,14 +1105,7 @@ public final class ClassInfo extends MemberInfo {
         }
 
         // set the outer class
-        enclosingClass = appInfo.getClassInfo(getEnclosingClassName());
-        if ( enclosingClass != null ) {
-            enclosingClass.nestedClasses.add(this);
-        } else if ( aNestedClass ) {
-            throw new AppInfoError("Enclosing class "+getEnclosingClassName()+" of class "+getClassName()
-                        +" is not loaded, but unknown outer classes are not supported.");
-        }
-
+        innerClasses.updateClassHierarchy();
     }
 
     @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
@@ -1491,10 +1162,6 @@ public final class ClassInfo extends MemberInfo {
         }
 
 
-        if ( enclosingClass != null ) {
-            enclosingClass.nestedClasses.remove(this);
-        }
-
         // direct subclasses of an interface can be other interfaces, which have java.lang.Object as superclass,
         // or implementing classes, which have a class as superclass, so no need to update them if this is an interface
         if ( !isInterface() ) {
@@ -1505,10 +1172,7 @@ public final class ClassInfo extends MemberInfo {
             }
         }
 
-        for (ClassInfo c : nestedClasses) {
-            c.enclosingClass = null;
-        }
-
+        innerClasses.removeFromClassHierarchy();
     }
 
     protected void finishRemoveFromHierarchy() {

@@ -117,7 +117,7 @@ public class AppLoader {
             }
 
             int found = 0;
-            for (String name : ReferencedClassFinder.findReferencedClasses(next)) {
+            for (String name : ClassReferenceFinder.findReferencedClasses(next)) {
                 found += processClassName(name);
             }
 

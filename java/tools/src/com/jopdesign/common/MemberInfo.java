@@ -314,7 +314,7 @@ public abstract class MemberInfo {
         // this is where the fun begins .. check nested class access
 
         // check if we inherit from an enclosing class
-        ClassInfo superClass = classInfo.getEnclosingSuperClassOf(thisClass, false);
+        ClassInfo superClass = classInfo.getInnerClassesInfo().getEnclosingSuperClassOf(thisClass, false);
         ClassInfo enclosing = classInfo;
 
         while (enclosing != null) {
@@ -403,7 +403,7 @@ public abstract class MemberInfo {
             case ACC_PACKAGE:
                 return getClassInfo().hasSamePackage(cls);
             case ACC_PRIVATE:
-                return this.equals(cls) || cls.isNestedClassOf(getClassInfo(), true);
+                return this.equals(cls) || cls.getInnerClassesInfo().isNestedClassOf(getClassInfo(), true);
         }
         return false;
     }
