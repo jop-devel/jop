@@ -23,8 +23,11 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
+import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.CfgVisitor;
+import com.jopdesign.common.graphutils.ProgressMeasure;
+import com.jopdesign.common.graphutils.ProgressMeasure.RelativeProgress;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.annotations.LoopBound;
 
@@ -119,7 +122,7 @@ public class TreeAnalysis {
 			for(CFGNode n : cfg.getGraph().vertexSet()) {
 				localProgress.put(n, progressVisitor.getProgress(n));
 			}
-			ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge> pm =
+			ProgressMeasure<CFGNode, CFGEdge> pm =
 				new ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge>(cfg.getGraph(),cfg.getLoopColoring(),
 													  extractUBs(cfg.getLoopBounds()) ,localProgress);
 			long progress = pm.getMaxProgress().get(cfg.getExit());

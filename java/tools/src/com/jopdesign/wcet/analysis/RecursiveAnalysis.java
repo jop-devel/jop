@@ -160,8 +160,8 @@ public abstract class RecursiveAnalysis<Context extends AnalysisContext, Rval> {
 	 * map flowgraph nodes to costs
 	 * If the node is a invoke, we need to compute the cost for the invoked method
 	 * otherwise, just take the basic block cost
-	 * @param cfg the target flowgraph
-	 * @param context the cost computation context
+	 * @param fg the target flowgraph
+	 * @param ctx the cost computation context
 	 * @return
 	 */
 	public Map<CFGNode, Rval>

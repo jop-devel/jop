@@ -20,10 +20,9 @@
 package com.jopdesign.wcet.analysis.cache;
 
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.code.CallGraph.MethodNode;
-import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.wcet.Project;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.TopologicalOrderIterator;
@@ -54,22 +53,22 @@ import java.util.logging.Logger;
  */
 public class ExecuteOnceAnalysis {
 	private Project project;
-	private Map<MethodNode,Set<MethodInfo>> inLoopSet;
+	private Map<ExecutionContext,Set<MethodInfo>> inLoopSet;
 
 	public ExecuteOnceAnalysis(Project p) {
 		this.project = p;
 		analyze();
 	}
 	private void analyze() {
-		inLoopSet = new HashMap<MethodNode, Set<MethodInfo>>();
+		inLoopSet = new HashMap<ExecutionContext, Set<MethodInfo>>();
 		/* Top Down the Scope Graph */
-		TopologicalOrderIterator<MethodNode, DefaultEdge> iter =
+		TopologicalOrderIterator<ExecutionContext, DefaultEdge> iter =
 			project.getCallGraph().topDownIterator();
 
 		while(iter.hasNext()) {
-			MethodNode scope = iter.next();
-			scope = new MethodNode(scope.getMethodImpl(), CallString.EMPTY); /* Remove call string */
-			ControlFlowGraph cfg = project.getFlowGraph(scope.getMethodImpl());
+			ExecutionContext scope = iter.next();
+			scope = new ExecutionContext(scope.getMethodInfo()); /* Remove call string */
+			ControlFlowGraph cfg = project.getFlowGraph(scope.getMethodInfo());
 			Set<MethodInfo> inLoop = new HashSet<MethodInfo>();
 			for(CFGNode node : cfg.getGraph().vertexSet()) {
 				if(! (node instanceof ControlFlowGraph.InvokeNode)) continue;
@@ -87,11 +86,11 @@ public class ExecuteOnceAnalysis {
 		}
 	}
 	
-	public boolean isExecutedOnce(MethodNode scope, CFGNode node) {
+	public boolean isExecutedOnce(ExecutionContext scope, CFGNode node) {
 		ControlFlowGraph cfg = node.getControlFlowGraph();
 		Set<MethodInfo> inLoopMethods = inLoopSet.get(scope);
 		if(inLoopMethods == null) {
-			Logger.getLogger("Object Cache Analysis").warning("No loop information for " + scope.getMethodImpl().getFQMethodName() + " @ " +
+			Logger.getLogger("Object Cache Analysis").warning("No loop information for " + scope.getMethodInfo().getFQMethodName() + " @ " +
 					scope.getCallString().toString());
 			return false;
 		}

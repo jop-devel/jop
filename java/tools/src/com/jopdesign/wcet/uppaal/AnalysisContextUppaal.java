@@ -21,8 +21,8 @@ package com.jopdesign.wcet.uppaal;
 
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.wcet.analysis.AnalysisContext;
-import com.jopdesign.wcet.analysis.ExecutionContext;
 import com.jopdesign.wcet.uppaal.UppAalConfig.UppaalCacheApproximation;
 
 public class AnalysisContextUppaal implements AnalysisContext {

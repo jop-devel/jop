@@ -26,6 +26,8 @@ import com.jopdesign.common.MethodInfo;
 import org.apache.bcel.generic.InstructionHandle;
 
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Callstrings for a context sensitive analysis.
@@ -218,4 +220,20 @@ public class CallString implements CallStringProvider {
 		sb.append("}");
 		return sb.toString();
 	}
+
+    /**
+     * Create a list of all invoke sites as strings.
+     * Note that this representation can change, or it might even be incorrect!
+     *
+     * @see #toString()
+     * @return a list of invoke site string representations.
+     */
+    public List<String> toStringList() {
+        LinkedList<String> cs = new LinkedList<String>();
+        for(InvokeSite cse : callString) {
+            cs.add(cse.toString());
+        }
+        return cs;
+    }
+
 }

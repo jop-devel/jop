@@ -18,8 +18,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common.code;
+package com.jopdesign.dfa.framework;
 
+import com.jopdesign.common.code.CallString;
 import org.apache.bcel.generic.ConstantPoolGen;
 
 public class Context {
@@ -29,7 +30,7 @@ public class Context {
 	public boolean threaded;
 	public ConstantPoolGen constPool;
 	public String method;
-	public CallString callString;	
+	public CallString callString;
 	
 	public Context() {
 		stackPtr = -1;

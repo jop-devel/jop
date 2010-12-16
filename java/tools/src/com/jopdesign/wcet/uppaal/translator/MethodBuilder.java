@@ -27,7 +27,6 @@ import com.jopdesign.common.graphutils.FlowGraph;
 import com.jopdesign.common.graphutils.LoopColoring;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
-import com.jopdesign.wcet.analysis.ExecutionContext;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;

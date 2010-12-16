@@ -19,10 +19,10 @@
  */
 package com.jopdesign.wcet;
 
-import com.jopdesign.common.code.CallGraph.MethodNode;
 import com.jopdesign.common.code.CallString;
-import com.jopdesign.dfa.analyses.SymbolicAddress;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.dfa.analyses.SymbolicAddress;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
@@ -147,9 +147,9 @@ public class ObjectCacheAnalysis {
 		// Object Cache (debugging)
 
 		ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project, false, 1, 65536, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE);
-		TopologicalOrderIterator<MethodNode, DefaultEdge> cgIter = this.project.getCallGraph().topDownIterator();
+		TopologicalOrderIterator<ExecutionContext, DefaultEdge> cgIter = this.project.getCallGraph().topDownIterator();
 		while(cgIter.hasNext()) {
-			MethodNode scope = cgIter.next();
+			ExecutionContext scope = cgIter.next();
 			Set<SymbolicAddress> addresses = orefAnalysis.getAddressSet(scope);
 			String entryString = String.format("%-50s ==> |%d|%s ; Saturated Types: (%s)",
 						scope,
@@ -296,14 +296,14 @@ public class ObjectCacheAnalysis {
 				String.format("[Method Cache Analysis]: Total time: %.2f s / Total solver time: %.2f s",
 						timeDiff(start,stop),
 						LpSolveWrapper.getSolverTime()));        
-		Map<MethodNode, Long> blockUsage = mcAnalysis.getBlockUsage();
-		MiscUtils.printMap(System.out, blockUsage, new MiscUtils.Function2<MethodNode, Long, String>() {
-            public String apply(MethodNode v1, Long maxBlocks) {
+		Map<ExecutionContext, Long> blockUsage = mcAnalysis.getBlockUsage();
+		MiscUtils.printMap(System.out, blockUsage, new MiscUtils.Function2<ExecutionContext, Long, String>() {
+            public String apply(ExecutionContext v1, Long maxBlocks) {
                 MethodCache mc = project.getProcessorModel().getMethodCache();
                 return String.format("%-50s ==> %2d <= %2d",
-                        v1.getMethodImpl().getFQMethodName(),
+                        v1.getMethodInfo().getFQMethodName(),
                         maxBlocks,
-                        mc.getAllFitCacheBlocks(v1.getMethodImpl(), null));
+                        mc.getAllFitCacheBlocks(v1.getMethodInfo(), null));
             }
         });
 	}

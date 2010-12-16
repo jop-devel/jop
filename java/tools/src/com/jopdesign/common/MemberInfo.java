@@ -62,6 +62,10 @@ public abstract class MemberInfo {
 
     public abstract ClassInfo getClassInfo();
 
+    /**
+     * Get the signature object which identifies this member.
+     * @return a fully qualified signature of this member.
+     */
     public abstract Signature getSignature();
 
     public abstract ConstantPoolGen getConstantPoolGen();

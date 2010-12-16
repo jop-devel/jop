@@ -47,7 +47,7 @@ public class ReportEntry {
 	}
 	/**
 	 * Retrieve the subentry with the given name, or create it if not present.
-	 * @param name
+	 * @param key
 	 * @return the subentry
 	 */
 	public ReportEntry getOrCreate(String key) {
@@ -59,7 +59,7 @@ public class ReportEntry {
 	}
 	/**
 	 * Retrieve the subentry with the given name, or create it at the end if not present.
-	 * @param name
+	 * @param key
 	 * @return the subentry
 	 */
 	public ReportEntry getOrCreateStart(String key) {
@@ -73,7 +73,7 @@ public class ReportEntry {
 	 * Create a subreport entry at the beginning of the subreport list. 
 	 * Note that no entry with the same name must be present.
 	 * @param name the name of the entry
-	 * @param link the link to that entry
+	 * @param slink the link to that entry
 	 * @return
 	 */
 	public ReportEntry addStart(String name, String slink) {
@@ -82,7 +82,7 @@ public class ReportEntry {
 	/**
 	 * Create a subreport entry. Note that no entry with the same name must be present.
 	 * @param name the name of the entry
-	 * @param link the link to that entry
+	 * @param slink the link to that entry
 	 * @return
 	 */
 	public ReportEntry add(String name, String slink) {

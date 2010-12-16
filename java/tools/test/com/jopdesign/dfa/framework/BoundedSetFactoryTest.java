@@ -21,9 +21,9 @@
 /**
  * 
  */
-package com.jopdesign.common.code;
+package com.jopdesign.dfa.framework;
 
-import com.jopdesign.common.code.BoundedSetFactory.BoundedSet;
+import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

@@ -23,6 +23,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.code.SuperGraphNode;
 import com.jopdesign.wcet.ProcessorModel;
@@ -142,9 +143,9 @@ public class GlobalAnalysis {
 	 * <li/> super graph edges always have the callstring of the invoking method
 	 * </ul>
 	 * 
-	 * @param key      A unique identifier for the problem (for reporting)
+	 * @param problemName A unique identifier for the problem (for reporting)
 	 * @param sg       The supergraph to build the ILP for
-	 * @param nodeCosts Cost of nodes (or {@code null} if no cost is associated with nodes)
+	 * @param ipetConfig Cost of nodes (or {@code null} if no cost is associated with nodes)
 	 * @return The max-cost maxflow problem
 	 */
 	public static IPETSolver buildIpetProblem(String problemName, SuperGraph sg, IPETConfig ipetConfig) {
@@ -251,7 +252,7 @@ public class GlobalAnalysis {
 	
 	/**
 	 * For each method, get all supergraph edges which switch the context to that method
-	 * @param sg
+	 * @param superGraph
 	 * @return
 	 */
 	private Map<MethodInfo, List<SuperGraph.SuperGraphEdge>> getMethodSwitchEdges(SuperGraph superGraph) {
@@ -315,7 +316,7 @@ public class GlobalAnalysis {
 				cost.addCacheCost(recCost.getCacheCost() + invokeReturnCost);
 				cost.addNonLocalCost(recCost.getCost() - recCost.getCacheCost());
 			}
-			Project.logger.info("Recursive WCET computation [GLOBAL IPET]: " + invoked.getMethod() +
+			Project.logger.info("Recursive WCET computation [GLOBAL IPET]: " + invoked +
 			        		    ". cummulative cache cost: "+ cost.getCacheCost()+
 					            ", execution cost: "+ cost.getNonCacheCost());
 			return cost;

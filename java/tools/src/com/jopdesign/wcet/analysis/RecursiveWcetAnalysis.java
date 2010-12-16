@@ -209,7 +209,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		CacheKey key = new CacheKey(m,ctx);
 		if(super.isCached(key)) return super.getCached(key);
 		/* compute solution */
-		LocalWCETSolution sol = runWCETComputation(key.toString(), appInfo.getFlowGraph(m), ctx);
+		LocalWCETSolution sol = runWCETComputation(key.toString(), m.getCode().getControlFlowGraph(), ctx);
 		sol.checkConsistentency();
 		recordCost(key, sol.getCost());
 		/* Logging and Report */

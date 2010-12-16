@@ -21,7 +21,9 @@ package com.jopdesign.wcet.report;
 
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallGraph.MethodNode;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.annotations.LoopBound;
@@ -40,13 +42,13 @@ public class MethodReport {
 	private int cacheBlocks;
 	public MethodReport(Project p, MethodInfo m, String page) {
 		this.info = m;
-		fg = p.getAppInfo().getFlowGraph(info);
+		fg = info.getCode().getControlFlowGraph();
 		this.loopBounds = fg.getLoopBounds().values();
 		this.sizeInWords = fg.getNumberOfWords();		
 		this.referenced = new TreeSet<String>();
-		for(MethodNode cgn : p.getCallGraph().getReferencedMethods(m)) {
+		for(ExecutionContext cgn : p.getCallGraph().getReferencedMethods(m)) {
 			Pair<ClassInfo, String> ref = cgn.getReferencedMethod();
-			this.referenced.add(ref.first().clazz.getClassName()+"."+ref.second());
+			this.referenced.add(ref.first().getClassName()+"."+ref.second());
 		}
 		this.page = page;
 		this.cacheBlocks = p.getProcessorModel().getMethodCache().requiredNumberOfBlocks(fg.getNumberOfWords());

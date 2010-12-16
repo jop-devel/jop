@@ -23,6 +23,7 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.Project;
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.CPInstruction;
@@ -109,7 +110,7 @@ public class ConstantCache {
 	private void addConstantPoolAddress(ControlFlowGraph cfg,  CPInstruction ii) {
 		AppInfo appInfo = cfg.getAppInfo();
 		LinkerInfo linker = appInfo.getProject().getLinkerInfo();
-		Integer address = linker.getLinkInfo(cfg.getMethodInfo().getCli()).getConstAddress(ii.getIndex());
+		Integer address = linker.getLinkInfo(cfg.getMethodInfo().getClassInfo()).getConstAddress(ii.getIndex());
 		addAddress(cpoolAddressMap, cfg.getMethodInfo(), address);
 	}
 	public void dumpStats() {

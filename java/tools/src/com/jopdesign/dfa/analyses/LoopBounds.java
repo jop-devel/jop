@@ -22,8 +22,8 @@ package com.jopdesign.dfa.analyses;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.code.Context;
-import com.jopdesign.common.code.ContextMap;
+import com.jopdesign.dfa.framework.Context;
+import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.dfa.framework.Analysis;
 import com.jopdesign.dfa.framework.DFAAppInfo;
@@ -365,7 +365,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			Location location = new Location(context.stackPtr-1); 
 			boolean valid = false;
 			if (receivers == null) {
-				System.out.println("no receivers at: "+context.callString.asList()+context.method+stmt);
+				System.out.println("no receivers at: "+context.callString.toStringList()+context.method+stmt);
 			} else {
 				for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 					String arrayName = i.next();
@@ -400,7 +400,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			DFAAppInfo p = interpreter.getProgram();
 			Set<String> receivers = p.getReceivers(stmt, context.callString);
 			if (receivers == null) {
-				System.out.println("no receivers at: "+context.callString.asList()+context.method+stmt);
+				System.out.println("no receivers at: "+context.callString.toStringList()+context.method+stmt);
 			} else {
 				for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 
@@ -443,7 +443,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			Location location = new Location(context.stackPtr-1);
 			boolean valid = false;
 			if (receivers == null) {
-				System.out.println("no receivers at: "+context.callString.asList()+context.method+stmt);
+				System.out.println("no receivers at: "+context.callString.toStringList()+context.method+stmt);
 			} else {
 				for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 					String fieldName = i.next();
@@ -552,7 +552,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			DFAAppInfo p = interpreter.getProgram();
 			Set<String> receivers = p.getReceivers(stmt, context.callString);
 			if (receivers == null) {
-				System.out.println("no receivers at: "+context.callString.asList()+context.method+stmt);
+				System.out.println("no receivers at: "+context.callString.toStringList()+context.method+stmt);
 				break;
 			}
 			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
@@ -608,7 +608,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 		case Constants.AALOAD: {
 			ValueMapping v = in.get(new Location(context.stackPtr-1));
 			if (v == null) {
-				System.out.println("no value at: "+context.callString.asList()+context.method+stmt);
+				System.out.println("no value at: "+context.callString.toStringList()+context.method+stmt);
 			} else {
 				recordArrayIndex(stmt, context, v.assigned);
 			}
@@ -1403,9 +1403,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			Map<CallString, Map<Location, ValueMapping>> result) {
 
 		DFAAppInfo p = interpreter.getProgram();
-		MethodInfo mi = p.getMethod(methodName);
-		MethodGen method = mi.getMethodGen();
-		methodName = method.getClassName()+"."+method.getName()+method.getSignature();
+		MethodInfo method = p.getMethod(methodName);
+		methodName = method.getSignature().toString();
 
 //		System.out.println(context.callString.asList()+"/"+context.method+": "+stmt+" invokes method: "+methodName);				
 
@@ -1442,7 +1441,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			ContextMap<CallString, Map<Location, ValueMapping>> tmpresult = new ContextMap<CallString, Map<Location, ValueMapping>>(c, new HashMap<CallString, Map<Location, ValueMapping>>());
 			tmpresult.put(c.callString, out);
 					
-			InstructionHandle entry = mi.getCode().getInstructionList().getStart();
+			InstructionHandle entry = method.getCode().getInstructionList().getStart();
 			state.put(entry, join(state.get(entry), tmpresult));
 
 			// interpret method
@@ -1451,38 +1450,37 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			//System.out.println(">>>>>>>>");
 			
 			// pull out relevant information from call
-			InstructionHandle exit = mi.getCode().getInstructionList().getEnd();
+			InstructionHandle exit = method.getCode().getInstructionList().getEnd();
 			if (r.get(exit) != null) {
 				Map<Location, ValueMapping> returned = r.get(exit).get(c.callString);
 				if (returned != null) {
-					for (Iterator<Location> i = returned.keySet().iterator(); i.hasNext(); ) {
-						Location l = i.next();
-						if (l.stackLoc < 0) {
-							ValueMapping m = new ValueMapping(returned.get(l), true);
-							m.join(result.get(context.callString).get(l));
-							result.get(context.callString).put(l, m);
-						}
-						if (l.stackLoc >= 0) {
-							ValueMapping m = new ValueMapping(returned.get(l), false);
-							Location loc = new Location(l.stackLoc+varPtr);
-							m.join(result.get(context.callString).get(loc));
-							result.get(context.callString).put(loc, m);						
-						}
-					}
+                    for (Location l : returned.keySet()) {
+                        if (l.stackLoc < 0) {
+                            ValueMapping m = new ValueMapping(returned.get(l), true);
+                            m.join(result.get(context.callString).get(l));
+                            result.get(context.callString).put(l, m);
+                        }
+                        if (l.stackLoc >= 0) {
+                            ValueMapping m = new ValueMapping(returned.get(l), false);
+                            Location loc = new Location(l.stackLoc + varPtr);
+                            m.join(result.get(context.callString).get(loc));
+                            result.get(context.callString).put(loc, m);
+                        }
+                    }
 				}
 			}
 
 			// add relevant information to result
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc >= 0 && l.stackLoc < context.stackPtr-MethodHelper.getArgSize(method)) {
-					result.get(context.callString).put(l, new ValueMapping(in.get(l), true));
-				}				
-			}
+            for (Location l : in.keySet()) {
+                if (l.stackLoc >= 0 && l.stackLoc < context.stackPtr - MethodHelper.getArgSize(method)) {
+                    result.get(context.callString).put(l, new ValueMapping(in.get(l), true));
+                }
+            }
 		}
 	}
 	
-	private Map<CallString, Map<Location, ValueMapping>> handleNative(MethodGen method, Context context,
+	@SuppressWarnings({"LiteralAsArgToStringEquals"})
+    private Map<CallString, Map<Location, ValueMapping>> handleNative(MethodGen method, Context context,
 			Map<CallString, Map<Location, ValueMapping>> input,
 			Map<CallString, Map<Location, ValueMapping>> result) {
 		
@@ -1495,12 +1493,11 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 				|| methodId.equals("com.jopdesign.sys.Native.rdMem(I)I")
 				|| methodId.equals("com.jopdesign.sys.Native.rdIntMem(I)I")
 				|| methodId.equals("com.jopdesign.sys.Native.getStatic(I)I")) {
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-1) {
-					out.put(l, in.get(l));
-				}
-			}
+            for (Location l : in.keySet()) {
+                if (l.stackLoc < context.stackPtr - 1) {
+                    out.put(l, in.get(l));
+                }
+            }
 			out.put(new Location(context.stackPtr-1), new ValueMapping());
 		} else if (methodId.equals("com.jopdesign.sys.Native.wr(II)V")
 				|| methodId.equals("com.jopdesign.sys.Native.wrMem(II)V")
@@ -1508,55 +1505,49 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 				|| methodId.equals("com.jopdesign.sys.Native.putStatic(II)V")
 				|| methodId.equals("com.jopdesign.sys.Native.toLong(D)J")
 				|| methodId.equals("com.jopdesign.sys.Native.toDouble(J)D")) {
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-2) {
-					out.put(l, in.get(l));
-				}
-			}
+            for (Location l : in.keySet()) {
+                if (l.stackLoc < context.stackPtr - 2) {
+                    out.put(l, in.get(l));
+                }
+            }
 		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")
 				|| methodId.equals("com.jopdesign.sys.Native.toInt(F)I")) {
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-1) {
-					out.put(l, in.get(l));
-				}
-			}
+            for (Location l : in.keySet()) {
+                if (l.stackLoc < context.stackPtr - 1) {
+                    out.put(l, in.get(l));
+                }
+            }
 			out.put(new Location(context.stackPtr-1), new ValueMapping());
 		} else if (methodId.equals("com.jopdesign.sys.Native.toObject(I)Ljava/lang/Object;")
 				|| methodId.equals("com.jopdesign.sys.Native.toIntArray(I)[I")
 				|| methodId.equals("com.jopdesign.sys.Native.toFloat(I)F")) {
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-1) {
-					out.put(l, in.get(l));
-				}
-			}
+            for (Location l : in.keySet()) {
+                if (l.stackLoc < context.stackPtr - 1) {
+                    out.put(l, in.get(l));
+                }
+            }
 		} else if (methodId.equals("com.jopdesign.sys.Native.getSP()I")) {
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < context.stackPtr) {
-					out.put(l, in.get(l));
-				}
-			}
+            for (Location l : in.keySet()) {
+                if (l.stackLoc < context.stackPtr) {
+                    out.put(l, in.get(l));
+                }
+            }
 			out.put(new Location(context.stackPtr), new ValueMapping());
 		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")) {
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-1) {
-					out.put(l, in.get(l));
-				}
-			}
+            for (Location l : in.keySet()) {
+                if (l.stackLoc < context.stackPtr - 1) {
+                    out.put(l, in.get(l));
+                }
+            }
 			out.put(new Location(context.stackPtr-1), new ValueMapping());
 		} else if (methodId.equals("com.jopdesign.sys.Native.condMove(IIZ)I")
 				|| methodId.equals("com.jopdesign.sys.Native.condMoveRef(Ljava/lang/Object;Ljava/lang/Object;Z)Ljava/lang/Object;")
 				|| methodId.equals("com.jopdesign.sys.Native.memCopy(III)V")) {
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-3) {
-					out.put(l, in.get(l));
-				}
-			}
+            for (Location l : in.keySet()) {
+                if (l.stackLoc < context.stackPtr - 3) {
+                    out.put(l, in.get(l));
+                }
+            }
 		} else {
 			System.err.println("Unknown native method: "+methodId);
 			System.exit(-1);
@@ -1654,7 +1645,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
             ContextMap<CallString, Pair<ValueMapping, ValueMapping>> r = bounds.get(instr);
             Context c = r.getContext();
 
-            LineNumberTable lines = program.getMethod(c.method).getMethod().getLineNumberTable();
+            LineNumberTable lines = program.getMethod(c.method).getCode().getLineNumberTable();
             int sourceLine = lines.getSourceLine(instr.getPosition());
 
             for (CallString callString : r.keySet()) {
@@ -1663,7 +1654,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                 ValueMapping first = bounds.first();
                 ValueMapping second = bounds.second();
 
-                System.out.println(c.method + ":" + sourceLine + ":\t" + callString.asList() + "\t$" + scopes.get(instr) + ": ");
+                System.out.println(c.method + ":" + sourceLine + ":\t" + callString.toStringList() + "\t$" + scopes.get(instr) + ": ");
 
                 System.out.print("\t\ttrue:\t");
                 System.out.println(first);
@@ -1709,13 +1700,13 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
             ContextMap<CallString, Interval[]> r = sizes.get(instr);
             Context c = r.getContext();
 
-            LineNumberTable lines = program.getMethod(c.method).getMethod().getLineNumberTable();
+            LineNumberTable lines = program.getMethod(c.method).getCode().getLineNumberTable();
             int sourceLine = lines.getSourceLine(instr.getPosition());
 
             for (CallString callString : r.keySet()) {
                 Interval[] bounds = r.get(callString);
 
-                System.out.println(c.method + ":" + sourceLine + ":\t" + callString.asList() + ": ");
+                System.out.println(c.method + ":" + sourceLine + ":\t" + callString.toStringList() + ": ");
                 System.out.println(Arrays.asList(bounds));
             }
         }

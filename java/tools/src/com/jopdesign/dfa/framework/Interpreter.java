@@ -20,8 +20,6 @@
 
 package com.jopdesign.dfa.framework;
 
-import com.jopdesign.common.code.Context;
-import com.jopdesign.common.code.ContextMap;
 import org.apache.bcel.generic.InstructionHandle;
 
 import java.util.LinkedList;

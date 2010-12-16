@@ -26,6 +26,7 @@ import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.CfgVisitor;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.AnalysisContext;
 import com.jopdesign.wcet.analysis.AnalysisContextSimple;
@@ -66,9 +67,9 @@ public class ObjectCacheAnalysisDemo {
 		private long missCount;
 
 		/**
-		 * @param missCost2
-		 * @param bypassCost2
-		 * @param fieldAccesses2
+		 * @param missCost
+		 * @param bypassCost
+		 * @param fieldAccesses
 		 */
 		public ObjectCacheCost(long missCount, long missCost, long bypassAccesses, long bypassCost, long fieldAccesses) {
 			this.missCost = missCost;
@@ -306,14 +307,14 @@ public class ObjectCacheAnalysisDemo {
 		if(! context.isEmpty()) {
 			throw new AssertionError("Callstrings are not yet supported for object cache analysis");
 		}
-		return objRefAnalysis.getMaxCachedTags(new MethodNode(invoked, context));
+		return objRefAnalysis.getMaxCachedTags(new ExecutionContext(invoked, context));
 	}
  
 	private ObjectCacheCost getAllFitCost(MethodInfo invoked, CallString context) {
 		if(! context.isEmpty()) {
 			throw new AssertionError("Callstrings are not yet supported for object cache analysis");
 		}
-		return objRefAnalysis.getMaxCacheCost(new MethodNode(invoked, context), costModel);
+		return objRefAnalysis.getMaxCacheCost(new ExecutionContext(invoked, context), costModel);
 	}
 
 

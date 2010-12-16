@@ -21,6 +21,7 @@
 package com.jopdesign.common.code;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.misc.HashedString;
 import org.apache.bcel.generic.InstructionHandle;
 
 /**

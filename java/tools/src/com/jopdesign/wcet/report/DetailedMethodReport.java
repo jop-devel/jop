@@ -60,7 +60,7 @@ public class DetailedMethodReport {
 	private File generateGraph(MethodInfo method, String key, Map<CFGNode, ?> nodeAnnotations, Map<ControlFlowGraph.CFGEdge, ?> edgeAnnotations) {
 		File cgdot = config.getOutFile(method,key+".dot");
 		File cgimg = config.getOutFile(method,key+".png");
-		ControlFlowGraph flowGraph = project.getAppInfo().getFlowGraph(method);
+		ControlFlowGraph flowGraph = method.getCode().getControlFlowGraph();
 		flowGraph.exportDOT(cgdot,nodeAnnotations, edgeAnnotations);
 		project.getReport().recordDot(cgdot,cgimg);
 		return cgimg;

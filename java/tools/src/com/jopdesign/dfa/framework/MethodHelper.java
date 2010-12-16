@@ -20,10 +20,10 @@
 
 package com.jopdesign.dfa.framework;
 
+import com.jopdesign.common.MethodInfo;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.INVOKESTATIC;
 import org.apache.bcel.generic.InvokeInstruction;
-import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.Type;
 
 public class MethodHelper {
@@ -40,7 +40,7 @@ public class MethodHelper {
         return retval;
 	}
 
-	public static int getArgSize(MethodGen m) {
+	public static int getArgSize(MethodInfo m) {
 		int retval = 0;
 		if (!m.isStatic()) {
 			retval += 1;

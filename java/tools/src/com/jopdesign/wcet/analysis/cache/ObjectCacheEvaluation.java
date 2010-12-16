@@ -19,6 +19,8 @@
 */
 package com.jopdesign.wcet.analysis.cache;
 
+import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
+
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,11 +29,9 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.Vector;
-import java.util.Map.Entry;
-
-import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
 
 /**
  * Purpose: helper classes for the evaluation of the object cache
@@ -69,12 +69,13 @@ public class ObjectCacheEvaluation {
 		private ObjectCacheCost ocCost;
 		private int blockSize;		
 		/**
-		 * @param ways2
+		 * @param ways
 		 * @param lineSize
 		 * @param ocCost 
-		 * @param ocConfig
-		 * @param hitRate2
-		 * @param bestCyclesPerAccessForConfig
+		 * @param blockSize
+         * @param configId
+		 * @param hitRate
+		 * @param cyclesPerAccess
 		 */
 		public OCacheAnalysisResult(int ways,								
 									int lineSize,

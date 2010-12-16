@@ -23,7 +23,8 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.CallGraph.MethodNode;
 import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.code.ContextMap;
+import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.SuperGraph;
@@ -57,6 +58,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.Executor;
 
 import static com.jopdesign.common.misc.MiscUtils.addToSet;
 
@@ -185,8 +187,8 @@ public class ObjectRefAnalysis {
 	/* class for checking whether a basic block is executed as most once in a scope */
 	private class ExecOnceQuery implements MiscUtils.Query<InstructionHandle> {
 		private ExecuteOnceAnalysis eoAna;
-		private MethodNode scope;
-		public ExecOnceQuery(ExecuteOnceAnalysis eoAnalysis, MethodNode scope) {
+		private ExecutionContext scope;
+		public ExecOnceQuery(ExecuteOnceAnalysis eoAnalysis, ExecutionContext scope) {
 			this.eoAna = eoAnalysis;
 			this.scope = scope;
 		}
@@ -218,13 +220,13 @@ public class ObjectRefAnalysis {
 
 	/* Those type which have an unbounded number of objects in the given scope
 	 * FIXME: maybe we should switch to allocation sites (more precise, no subtyping) */
-	private Map<MethodNode, Set<String>> saturatedTypes;
+	private Map<ExecutionContext, Set<String>> saturatedTypes;
 
 	/* Maximum number of objects which are loaded into the object cache (at least one field has to be accessed) */
-	private Map<MethodNode, Long> maxCachedTagsAccessed;
+	private Map<ExecutionContext, Long> maxCachedTagsAccessed;
 	
 	/* The set of symbolic object names loaded into the cache (without saturated references) */
-	private Map<MethodNode, Set<SymbolicAddress>> tagSet;
+	private Map<ExecutionContext, Set<SymbolicAddress>> tagSet;
 
 
 	private Project project;
@@ -243,23 +245,23 @@ public class ObjectRefAnalysis {
 			blockIndexBits++;
 		}
 
-		saturatedTypes = new HashMap<MethodNode, Set<String>>();
-		maxCachedTagsAccessed = new HashMap<MethodNode, Long>();
-		tagSet = new HashMap<MethodNode, Set<SymbolicAddress>>();
+		saturatedTypes = new HashMap<ExecutionContext, Set<String>>();
+		maxCachedTagsAccessed = new HashMap<ExecutionContext, Long>();
+		tagSet = new HashMap<ExecutionContext, Set<SymbolicAddress>>();
 	}
 	
-	public LocalPointsToResult getUsedRefs(MethodNode scope) {
+	public LocalPointsToResult getUsedRefs(ExecutionContext scope) {
 		ExecuteOnceAnalysis eoAna = new ExecuteOnceAnalysis(project);
 		DFAAppInfo dfa = project.getDfaProgram();
 		SymbolicPointsTo spt = new SymbolicPointsTo(maxSetSize,
 				(int)project.getProjectConfig().callstringLength(), 
 				new ExecOnceQuery(eoAna,scope));
-		dfa.runLocalAnalysis(spt,scope.getMethodImpl().getFQMethodName());
+		dfa.runLocalAnalysis(spt,scope.getMethodInfo().getFQMethodName());
 		LocalPointsToResult lpt = new LocalPointsToResult(spt.getResult());
 		return lpt;
 	}
 	
-	public Set<SymbolicAddress> getAddressSet(MethodNode scope) {
+	public Set<SymbolicAddress> getAddressSet(ExecutionContext scope) {
 		LocalPointsToResult lpt = getUsedRefs(scope);
 		return lpt.getAddressSet();
 	}
@@ -289,7 +291,7 @@ public class ObjectRefAnalysis {
 		return topTypes;
 	}
 
-	public long getMaxCachedTags(MethodNode scope)
+	public long getMaxCachedTags(ExecutionContext scope)
 	{
 		Long maxCachedTags = this.maxCachedTagsAccessed.get(scope);
 		if(maxCachedTags != null) return maxCachedTags;
@@ -317,7 +319,7 @@ public class ObjectRefAnalysis {
 		return maxCachedTags;
 	} 
 	
-	public ObjectCacheCost getMaxCacheCost(MethodNode scope, ObjectCacheCostModel costModel)
+	public ObjectCacheCost getMaxCacheCost(ExecutionContext scope, ObjectCacheCostModel costModel)
 	{
 		LocalPointsToResult usedRefs = getUsedRefs(scope);
 		SuperGraph sg = getScopeSuperGraph(scope);
@@ -327,7 +329,7 @@ public class ObjectRefAnalysis {
 		return cost;		
 	}
 
-	private ObjectCacheCost computeCacheCost(MethodNode scope,
+	private ObjectCacheCost computeCacheCost(ExecutionContext scope,
 							      SuperGraph sg, 
 								  LocalPointsToResult usedRefs, 
 								  HashSet<SymbolicAddress> usedSetOut,
@@ -509,18 +511,18 @@ public class ObjectRefAnalysis {
 	}
 
 	
-	private SuperGraph getScopeSuperGraph(MethodNode scope) {
-		MethodInfo m = scope.getMethodImpl();
+	private SuperGraph getScopeSuperGraph(ExecutionContext scope) {
+		MethodInfo m = scope.getMethodInfo();
 		return new SuperGraph(project.getAppInfo(),project.getFlowGraph(m), project.getProjectConfig().callstringLength());
 	}
 		
-	public Set<SymbolicAddress> getUsedSymbolicNames(MethodNode scope) {
+	public Set<SymbolicAddress> getUsedSymbolicNames(ExecutionContext scope) {
 		if(! tagSet.containsKey(scope)) getMaxCachedTags(scope);
 		return tagSet.get(scope);		
 	}
 	
 
-	public Object getSaturatedTypes(MethodNode scope) {
+	public Object getSaturatedTypes(ExecutionContext scope) {
 		if(! this.saturatedTypes.containsKey(scope)) getMaxCachedTags(scope);
 		return this.saturatedTypes.get(scope);
 	}

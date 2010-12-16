@@ -20,7 +20,7 @@
 package com.jopdesign.wcet.analysis.cache;
 
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.code.CallGraph.MethodNode;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.wcet.Project;
@@ -105,7 +105,7 @@ public class MethodCacheAnalysis {
 	}
 
 	/** Number of blocks needed to store the instructions of the given scope */
-	private Map<MethodNode, Long> blocksNeeded;
+	private Map<ExecutionContext, Long> blocksNeeded;
 	/** The project analyzed */
 	private Project project;
 	
@@ -147,14 +147,14 @@ public class MethodCacheAnalysis {
 		IPETConfig ipetConfig = new IPETConfig(project.getConfig());
 		
 		/* initialize result data */
-		blocksNeeded = new HashMap<CallGraphNode, Long>();
+		blocksNeeded = new HashMap<ExecutionContext, Long>();
 
 		/* iterate top down the scope graph (currently: the call graph) */
-		TopologicalOrderIterator<CallGraphNode, DefaultEdge> iter =
+		TopologicalOrderIterator<ExecutionContext, DefaultEdge> iter =
 			project.getCallGraph().topDownIterator();
 
 		while(iter.hasNext()) {
-			CallGraphNode scope = iter.next();
+			ExecutionContext scope = iter.next();
 			
 			/* Create a supergraph */
 			SuperGraph sg = getScopeSuperGraph(scope);
@@ -169,7 +169,7 @@ public class MethodCacheAnalysis {
 			/* Add decision variables for all invoked methods, cost (blocks) and constraints */
 			Map<MethodInfo, List<Pair<SuperGraph.SuperInvokeEdge, SuperGraph.SuperReturnEdge>>> callSites = sg.getAllCallSites();
 			
-			callSites.remove(scope.getMethodImpl());
+			callSites.remove(scope.getMethodInfo());
 
 			for(MethodInfo mi : callSites.keySet()) {
 
@@ -202,20 +202,20 @@ public class MethodCacheAnalysis {
 				throw new RuntimeException("LP Solver failed: " + e);
 			}
 			long neededBlocks = (long) (lpCost+0.5);
-			neededBlocks+=methodCache.requiredNumberOfBlocks(scope.getMethodImpl());
-			Logger.getLogger(this.getClass()).info("Number of Blocks for " + scope.getMethodImpl() + " is " + neededBlocks);
+			neededBlocks+=methodCache.requiredNumberOfBlocks(scope.getMethodInfo());
+			Logger.getLogger(this.getClass()).info("Number of Blocks for " + scope.getMethodInfo() + " is " + neededBlocks);
 			this.blocksNeeded.put(scope,neededBlocks);
 		}
 	}
 	
-	public Map<MethodNode, Long> getBlockUsage() {
+	public Map<ExecutionContext, Long> getBlockUsage() {
 		if(blocksNeeded == null) analyzeBlockUsage();
 		return blocksNeeded;
 	}
 
 	
-	private SuperGraph getScopeSuperGraph(MethodNode scope) {
-		MethodInfo m = scope.getMethodImpl();
+	private SuperGraph getScopeSuperGraph(ExecutionContext scope) {
+		MethodInfo m = scope.getMethodInfo();
 		return new SuperGraph(project.getAppInfo(),project.getFlowGraph(m),project.getProjectConfig().callstringLength());
 	}
 	

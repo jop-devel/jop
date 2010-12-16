@@ -31,8 +31,8 @@ import com.jopdesign.common.MethodInfo;
  */
 public class ExecutionContext {
 
-	private MethodInfo method;
-	private CallString callString;
+	private final MethodInfo method;
+	private final CallString callString;
 
 	public ExecutionContext(MethodInfo method, CallString callString) {
 		assert (method != null);

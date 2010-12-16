@@ -61,6 +61,10 @@ public abstract class ClassMemberInfo extends MemberInfo {
 
     public abstract Descriptor getDescriptor();
 
+    /**
+     * Get the signature of this member (i.e. its simple name and its descriptor for methods).
+     * @return the signature of this member without the class part.
+     */
     public abstract String getMemberSignature();
 
     @Override

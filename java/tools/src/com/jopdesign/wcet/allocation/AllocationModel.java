@@ -21,19 +21,19 @@ package com.jopdesign.wcet.allocation;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.dfa.analyses.Interval;
 import com.jopdesign.tools.JopInstr;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.analysis.ExecutionContext;
 import com.jopdesign.wcet.annotations.LoopBound;
 import com.jopdesign.wcet.annotations.SourceAnnotations;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.jop.NoMethodCache;
 import org.apache.bcel.Constants;
-import org.apache.bcel.classfile.Field;
 import org.apache.bcel.generic.INVOKESTATIC;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
@@ -46,7 +46,6 @@ import org.apache.bcel.generic.Type;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Vector;
 
 public abstract class AllocationModel implements ProcessorModel {
 
@@ -165,12 +164,12 @@ public abstract class AllocationModel implements ProcessorModel {
 	}
 
 	private long getArrayBound(ExecutionContext context, InstructionHandle ih, int index) {
-		int srcLine = context.getMethodInfo().getMethod().getLineNumberTable().getSourceLine(ih.getPosition());
+		int srcLine = context.getMethodInfo().getCode().getLineNumberTable().getSourceLine(ih.getPosition());
 
 		// get annotated size
 		LoopBound annotated = null;
 		try {
-			SourceAnnotations annots = project.getAnnotations(context.getMethodInfo().getCli());
+			SourceAnnotations annots = project.getAnnotations(context.getMethodInfo().getClassInfo());
 			annotated = annots.annotationsForLine(srcLine);
 			if (annotated == null) {
 				Project.logger.info("No annotated bound for array at " + context + ":" + srcLine);
@@ -233,14 +232,13 @@ public abstract class AllocationModel implements ProcessorModel {
 
 		ClassInfo cli = project.getAppInfo().getClassInfo(className);
 
-		if (cli.superClass != null) {
-			l.addAll(getObjectFields(cli.superClass.toString()));
+		if (cli.getSuperClassName() != null) {
+			l.addAll(getObjectFields(cli.getSuperClassName()));
 		}
 
-		Field [] f = cli.clazz.getFields();
-		for (int i = 0; i < f.length; i++) {
-			if (!f[i].isStatic()) {
-				l.add(f[i].getType());
+		for (FieldInfo f : cli.getFields()) {
+			if (!f.isStatic()) {
+				l.add(f.getType());
 			}
 		}
 

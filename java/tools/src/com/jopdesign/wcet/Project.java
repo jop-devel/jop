@@ -26,11 +26,12 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.code.ContextMap;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.config.Config;
+import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.wcet.allocation.BlockAllocationModel;
 import com.jopdesign.wcet.allocation.HandleAllocationModel;
 import com.jopdesign.wcet.allocation.HeaderAllocationModel;
@@ -74,30 +75,32 @@ public class Project {
 			super(msg);
 		}
 	}
+
 	public static class AnalysisError extends Error {
 		private static final long serialVersionUID = 1L;
 		public AnalysisError(String msg, Exception inner) {
 			super(msg,inner);
 		}
 	}
+
 	/**
 	 * Remove NOPs in all reachable classes
 	 */
-	public static class RemoveNops extends AppVisitor {
-		public RemoveNops(AppInfo ai) {
-			super(ai);
-		}
-		@Override
-		public void visitJavaClass(JavaClass clazz) {
-			super.visitJavaClass(clazz);
-			ClassInfo cli = super.getCli();
-			for(MethodInfo m : cli.getMethods()) {
-				MethodGen mg = m.getMethodGen();
-				mg.removeNOPs();
-				m.updateMethodFromGen();
-			}
-		}
+	public static class RemoveNops implements ClassVisitor {
+        @Override
+        public boolean visitClass(ClassInfo classInfo) {
+            for(MethodInfo m : classInfo.getMethods()) {
+                if (m.isAbstract()) continue;
+                m.getCode().removeNOPs();
+            }
+            return true;
+        }
+
+        @Override
+        public void finishClass(ClassInfo classInfo) {
+        }
 	}
+
 	/**
 	 * Set {@link MethodGen} in all reachable classes
 	 * // FIXME: THIS SHOULD NOT BE NECCESSARY

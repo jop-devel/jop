@@ -34,7 +34,7 @@ import java.util.TreeMap;
 /**
  * Simple, typed API for invoking LpSolve.
  *
- * @param<T> type of variables. If you don't want typed variables, use {@link java.lang.Object}
+ * @param <T> type of variables. If you don't want typed variables, use {@link java.lang.Object}
  *
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  */
@@ -54,8 +54,9 @@ public class LpSolveWrapper<T> {
 	}
 	private static final long LP_SOLVE_SEC_TIMEOUT = 20;
 	private static long solverTime = 0;
+
 	/**
-	 * Get time spend in the solver since the last call to {@link resetSolverTime}
+	 * Get time spend in the solver since the last call to {@link #resetSolverTime()}
 	 * @return the time spend in the solver in seconds
 	 */
 	public static double getSolverTime() { return ((double)solverTime)/1.0E9; }

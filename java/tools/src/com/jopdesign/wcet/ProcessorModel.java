@@ -23,7 +23,7 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.wcet.analysis.ExecutionContext;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.wcet.jop.MethodCache;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
@@ -31,21 +31,23 @@ import org.apache.bcel.generic.InstructionHandle;
 import java.util.List;
 
 public interface ProcessorModel {
+
 	/** A human readable name of the Processor Model */
-	public String getName();
+    String getName();
 
 	/**
 	 * Check whether we need to deal with the given statement in a special way,
 	 * because it is translated to a processor specific bytecode.
      *
-	 * @param instr the instruction to check
+	 * @param i the instruction to check
 	 * @return true, if the instruction is translated to a processor specific bytecode
 	 */
-	public boolean isSpecialInvoke(MethodInfo ctx, Instruction i);
+    boolean isSpecialInvoke(MethodInfo ctx, Instruction i);
+
 	/**
 	 * Check whether the given instruction is implemented in Java.
 	 */
-	public boolean isImplementedInJava(Instruction i);
+    boolean isImplementedInJava(Instruction i);
 
 	/**
 	 * For Java implemented bytecodes, get the method
@@ -53,9 +55,9 @@ public interface ProcessorModel {
 	 * @return the reference to the Java implementation of the bytecode,
 	 *         or null if the instruction is not implemented in Java.
 	 */
-	public MethodInfo getJavaImplementation(AppInfo ai, MethodInfo ctx, Instruction instr);
+    MethodInfo getJavaImplementation(AppInfo ai, MethodInfo ctx, Instruction instr);
 
-	public int getNativeOpCode(MethodInfo ctx, Instruction instr);
+	int getNativeOpCode(MethodInfo ctx, Instruction instr);
 
 	/**
 	 * Get number of bytes needed to encode an instruction
@@ -63,25 +65,26 @@ public interface ProcessorModel {
 	 * @param instruction
 	 * @return
 	 */
-	public int getNumberOfBytes(MethodInfo context, Instruction instruction);
+    int getNumberOfBytes(MethodInfo context, Instruction instruction);
 
 	/**
 	 * Get classes, which contain methods invoked by the JVM.
 	 * Used for Java implemented bytecodes, exceptions.
 	 * @return
 	 */
-	public List<String> getJVMClasses();
+    List<String> getJVMClasses();
 
-	public long getExecutionTime(ExecutionContext context, InstructionHandle i);
+	long getExecutionTime(ExecutionContext context, InstructionHandle i);
 
-	public long basicBlockWCET(ExecutionContext context, BasicBlock codeBlock);
+	long basicBlockWCET(ExecutionContext context, BasicBlock codeBlock);
 
-	public boolean hasMethodCache();
+	boolean hasMethodCache();
+
 	/**
 	 * return method cache, or NoMethodCache if the processor does not have a method cache
 	 * @return
 	 */
-	public MethodCache getMethodCache();
+    MethodCache getMethodCache();
 
 	/**
 	 * get the miss penalty (method cache)
@@ -91,7 +94,7 @@ public interface ProcessorModel {
 	 * @param loadOnInvoke  ... whether the method is loaded on invoke
 	 * @return
 	 */
-	public long getMethodCacheMissPenalty(int numberOfWords, boolean loadOnInvoke);
+    long getMethodCacheMissPenalty(int numberOfWords, boolean loadOnInvoke);
 
 	/**
 	 * FIXME: We have to rewrite this portion of the analyzer - hardcoding miss penalties
@@ -100,6 +103,6 @@ public interface ProcessorModel {
 	 * @param receiverFlowGraph
 	 * @return
 	 */
-	public long getInvokeReturnMissCost(ControlFlowGraph invokerFlowGraph,ControlFlowGraph receiverFlowGraph);
+    long getInvokeReturnMissCost(ControlFlowGraph invokerFlowGraph, ControlFlowGraph receiverFlowGraph);
 
 }

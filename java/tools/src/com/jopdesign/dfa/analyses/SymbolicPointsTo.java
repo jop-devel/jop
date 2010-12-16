@@ -20,11 +20,10 @@
 
 package com.jopdesign.dfa.analyses;
 
-import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.code.Context;
-import com.jopdesign.common.code.ContextMap;
+import com.jopdesign.dfa.framework.Context;
+import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.common.misc.MiscUtils.Query;
 import com.jopdesign.dfa.framework.Analysis;
 import com.jopdesign.dfa.framework.BoundedSetFactory;
@@ -128,14 +127,13 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		SymbolicAddressMap init = new SymbolicAddressMap(bsFactory);
 		// Add symbolic stack names
 		int stackPtr = 0;
-		if(! entryMethod.getMethod().isStatic()) {
+		if(! entryMethod.isStatic()) {
 			init.putStack(stackPtr++, bsFactory.singleton(SymbolicAddress.rootAddress("$this")));
 		}
-		MethodGen mgen = entryMethod.getMethodGen();
-		String[] args = mgen.getArgumentNames();
+		String[] args = entryMethod.getArgumentNames();
 		for(int i = 0; i < args.length; i++)
 		{	
-			Type ty = mgen.getArgumentType(i);
+			Type ty = entryMethod.getArgumentType(i);
 			if(ty instanceof ReferenceType) {
 				init.putStack(stackPtr, bsFactory.singleton(SymbolicAddress.rootAddress("$"+args[i])));
 			}
@@ -197,7 +195,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		Context context = new Context(input.getContext());
 		
 		if(DEBUG_PRINT) {
-			System.out.println("[S] "+context.callString.asList()+": "+context.method+" / "+stmt);
+			System.out.println("[S] "+context.callString.toStringList()+": "+context.method+" / "+stmt);
 		}
 		
 		SymbolicAddressMap in = input.get(context.callString);
@@ -745,7 +743,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			if( instruction.getOpcode() == Constants.INVOKEVIRTUAL
 			 || instruction.getOpcode() == Constants.INVOKEINTERFACE) {
 				MethodInfo mi = p.getMethod(receivers.iterator().next());
-				int refPos = MethodHelper.getArgSize(mi.getMethodGen());
+				int refPos = MethodHelper.getArgSize(mi);
 //				System.out.println(String.format("%s: args+1: %d; stack[%d] %s",
 //						mi.methodId,refPos,context.stackPtr,input.get(context.callString)));
 				try {
@@ -825,9 +823,8 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			ContextMap<CallString, SymbolicAddressMap> retval) {
 
 		DFAAppInfo p = interpreter.getProgram();
-		MethodInfo mi = p.getMethod(methodName);
-		MethodGen method = mi.getMethodGen();
-		methodName = method.getClassName()+"."+method.getName()+method.getSignature();
+		MethodInfo method = p.getMethod(methodName);
+		methodName = method.getSignature().toString();
 
 //		System.out.println(stmt+" invokes method: "+methodName);				
 
@@ -840,8 +837,8 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			// set up new context
 			int varPtr = context.stackPtr - MethodHelper.getArgSize(method);
 			Context c = new Context(context);
-			c.stackPtr = method.getMaxLocals();
-			c.constPool = method.getConstantPool();
+			c.stackPtr = method.getCode().getMaxLocals();
+			c.constPool = method.getClassInfo().getConstantPoolGen();
 			if (method.isSynchronized()) {
 				c.syncLevel = context.syncLevel+1;
 			}
@@ -855,14 +852,14 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			HashMap<CallString, SymbolicAddressMap> initialMap =
 				new HashMap<CallString, SymbolicAddressMap>(); 
 			ContextMap<CallString, SymbolicAddressMap> tmpresult = 
-				new ContextMap<CallString, SymbolicAddressMap>(c, initialMap); 
+				new ContextMap<CallString, SymbolicAddressMap>(c, initialMap);
 			tmpresult.put(c.callString, out);
 					
-			InstructionHandle entry = mi.getMethodGen().getInstructionList().getStart();
+			InstructionHandle entry = method.getCode().getInstructionList().getStart();
 			state.put(entry, join(state.get(entry), tmpresult));
 	
 			if(DEBUG_PRINT) {
-				System.out.println("[I] Invoke: "+mi.methodId);
+				System.out.println("[I] Invoke: "+method.getSignature());
 				System.out.println(String.format("  StackPtr: %d, framePtr: %d, args: %d",
 						context.stackPtr, varPtr, MethodHelper.getArgSize(method)));
 			}
@@ -873,7 +870,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			SymbolicAddressMap ctxInfo = retval.get(context.callString);
 
 			// pull out relevant information from call
-			InstructionHandle exit = mi.getMethodGen().getInstructionList().getEnd();
+			InstructionHandle exit = method.getCode().getInstructionList().getEnd();
 			if(r.get(exit) != null) {
 				SymbolicAddressMap returned = r.get(exit).get(c.callString);
 				if (returned != null) {
@@ -888,7 +885,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			// add relevant information to result
 			ctxInfo.addStackUpto(in, context.stackPtr - MethodHelper.getArgSize(method));
 			if(DEBUG_PRINT) {
-				System.out.println("[R] Invoke: "+mi.methodId);
+				System.out.println("[R] Invoke: "+method.getSignature());
 				System.out.println(String.format("  StackPtr: %d, framePtr: %d, args: %d",
 						context.stackPtr, varPtr, MethodHelper.getArgSize(method)));
 			}
@@ -958,7 +955,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			if(method == null) {
 				throw new AssertionError("Internal Error: No method '"+c.method+"'");
 			}
-			LineNumberTable lines = method.getMethod().getLineNumberTable();
+			LineNumberTable lines = method.getCode().getLineNumberTable();
 			int sourceLine = lines.getSourceLine(instr.getPosition());			
 
 			for (Iterator<CallString> k = r.keySet().iterator(); k.hasNext(); ) {

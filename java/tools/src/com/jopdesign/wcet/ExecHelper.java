@@ -20,6 +20,7 @@
 package com.jopdesign.wcet;
 
 import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.Option;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.WcetSearch;
 import lpsolve.LpSolve;

@@ -1,5 +1,6 @@
 package com.jopdesign.wcet.jop;
 
+import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
@@ -8,7 +9,6 @@ import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.jop.JOPConfig.CacheImplementation;
-import org.apache.bcel.classfile.Code;
 import org.apache.log4j.Logger;
 
 import java.util.Set;
@@ -48,7 +48,7 @@ public abstract class MethodCache {
 	 * Precondition: The set of all methods reachable from <code>m</code> fit into the cache
 	 * </p><p>
      * Algorithm: If all methods reachable from <code>m</code> (including <code>m</code>) fit 
-     * into the cache, we can compute the WCET of <m> using the {@link ALWAYS_HIT@} cache
+     * into the cache, we can compute the WCET of <m> using the {@link ALWAYS_HIT} cache
      * approximation, and then add the sum of cache miss penalties for every reachable method.
 	 * </p><p>
 	 * Note that when using this approximation, we attribute the
@@ -122,7 +122,7 @@ public abstract class MethodCache {
 		MethodInfo largestMethod = null;
 		// It is inconvenient for testing to take all methods into account
 		for(MethodInfo mi : project.getCallGraph().getImplementedMethods(project.getTargetMethod())) {
-			Code code = mi.getCode();
+			MethodCode code = mi.getCode();
 			if(code == null) continue;
 			int size = code.getCode().length;
 			int words = MiscUtils.bytesToWords(size);

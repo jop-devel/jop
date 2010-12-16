@@ -20,7 +20,6 @@
 
 package com.jopdesign.dfa.framework;
 
-import com.jopdesign.common.code.Context;
 import org.apache.bcel.generic.InstructionHandle;
 
 public class FlowEdge {

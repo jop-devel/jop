@@ -93,7 +93,7 @@ public class IPETUtils {
 	 * @param <E> edge type
 	 * @param <C> context type
 	 * @param graph the flow graph to generate constraints for
-	 * @param entryRhsProto the left-hand side of the constraint for the entry node
+	 * @param entryLhsProto the left-hand side of the constraint for the entry node
 	 * @param exitRhsProto the right-hand side of the constraint for the exit node
 	 * @param ctx the execution context
 	 * @return the set of structural linear constraints
@@ -131,7 +131,7 @@ public class IPETUtils {
 	/**
 	 * Compute flow constraints: Loop Bound constraints (Control Flow Graph only)
 	 * @param g the flow graph
-	 * @param cs the invocation context
+	 * @param ctx the invocation context
 	 * @return A list of flow constraints
 	 */
 	public static<C extends CallStringProvider>
@@ -210,7 +210,7 @@ public class IPETUtils {
 	/**
 	 * Compute flow constraints: Infeasible edge constraints
 	 * @param g the flow graph
-	 * @param cs the invocation context
+	 * @param ctx the invocation context
 	 * @return A list of flow constraints
 	 */
 	public static<C extends CallStringProvider> 
@@ -286,9 +286,9 @@ public class IPETUtils {
 	/**
 	 * Create a max-cost maxflow problem for the given flow graph graph, based on a 
 	 * given node to cost mapping.
-	 * @param key a unique identifier for the problem (for reporting)
-	 * @param callString context of the method invocation
-	 * @param g the graph
+	 * @param problemName a unique identifier for the problem (for reporting)
+	 * @param cs context of the method invocation
+	 * @param cfg the graph
 	 * @param nodeWCET cost of nodes
 	 * @return The max-cost maxflow problem
 	 */

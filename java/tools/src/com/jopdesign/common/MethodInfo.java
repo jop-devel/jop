@@ -107,6 +107,10 @@ public final class MethodInfo extends ClassMemberInfo {
         methodGen.setArgumentName(i, name);
     }
 
+    public Type[] getArgumentTypes() {
+        return methodGen.getArgumentTypes();
+    }
+
     public Type getArgumentType(int i) {
         return methodGen.getArgumentType(i);
     }

@@ -96,7 +96,7 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 		WcetCost cost = new WcetCost();
 		cost.addNonLocalCost(nonLocalExecCost);
 		cost.addCacheCost(cacheCost);
-		RecursiveWcetAnalysis.logger.info("Recursive WCET computation: " + invoked.getMethod() +
+		RecursiveWcetAnalysis.logger.info("Recursive WCET computation: " + invoked +
 				". invoke return cache cost: " + invokeReturnCost+
 				". non-local cache cost: "    + nonLocalCacheCost+
 				". cummulative cache cost: "+cacheCost+

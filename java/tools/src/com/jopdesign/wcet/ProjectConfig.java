@@ -141,7 +141,7 @@ public class ProjectConfig {
 
 	/**
 	 * Get the name of the application class, unqualified
-	 * @see getAppClassName
+	 * @see #getAppClassName
 	 */
 	public String getUnqualifiedAppClassName() {
 		String appClassName = getAppClassName();

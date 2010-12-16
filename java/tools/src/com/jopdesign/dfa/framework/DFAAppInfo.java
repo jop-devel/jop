@@ -24,8 +24,6 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.code.Context;
-import com.jopdesign.common.code.ContextMap;
 import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import org.apache.bcel.Constants;
@@ -177,7 +175,7 @@ public class DFAAppInfo {
 			MethodInfo main = getMethod(mainClass+"."+mainName+mainSig);
 			analysis.initialize(main, context);
 
-			InstructionHandle entry = prologue.getMethodGen().getInstructionList().getStart();
+			InstructionHandle entry = prologue.getCode().getInstructionList().getStart();
 			interpreter.interpret(context, entry, new HashMap(), true);
 		} catch (Throwable thr) {
 			thr.printStackTrace();
@@ -195,12 +193,12 @@ public class DFAAppInfo {
 			MethodInfo start = getMethod(methodName);
 			if(start == null) throw new AssertionError("No such method: "+methodName);
 			Context context = new Context();
-			context.stackPtr = start.getMethodGen().getMaxLocals();
-			context.constPool = new ConstantPoolGen(start.getMethod().getConstantPool());
+			context.stackPtr = start.getCode().getMaxLocals();
+			context.constPool = start.getClassInfo().getConstantPoolGen();
 			context.method = start.getFQMethodName();
 
 			analysis.initialize(start, context);
-			InstructionHandle entry = start.getMethodGen().getInstructionList().getStart();
+			InstructionHandle entry = start.getCode().getInstructionList().getStart();
 			interpreter.interpret(context, entry, new HashMap<InstructionHandle, ContextMap<K, V>>(), true);
 		} catch (Throwable thr) {
 			thr.printStackTrace();

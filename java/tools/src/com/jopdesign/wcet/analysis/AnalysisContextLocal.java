@@ -21,6 +21,7 @@ package com.jopdesign.wcet.analysis;
 
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 
 public class AnalysisContextLocal implements AnalysisContext {

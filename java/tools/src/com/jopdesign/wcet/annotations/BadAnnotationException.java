@@ -30,7 +30,7 @@ public class BadAnnotationException extends Exception {
 	}
 	public BadAnnotationException(String reason, BasicBlock block, int codeLineStart, int codeLineEnd) {
 		super(reason+" for " + block.getLastInstruction()+ 
-		      " in class " + block.getClassInfo().clazz.getClassName()  + ":" + 
+		      " in class " + block.getClassInfo().getClassName()  + ":" +
 			  codeLineStart + "-" + codeLineEnd);
 		this.block = block;
 	}

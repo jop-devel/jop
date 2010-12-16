@@ -197,11 +197,11 @@ public class Report {
 		generateInputOverview();
 		this.addPage("details",null);
 		for(MethodInfo m : project.getCallGraph().getImplementedMethods(project.getTargetMethod())) {
-			for(LineNumber ln : m.getMethod().getLineNumberTable().getLineNumberTable()) {
-				getClassReport(m.getCli()).addLinePropertyIfNull(ln.getLineNumber(),"color","lightgreen");
+			for(LineNumber ln : m.getCode().getLineNumberTable().getLineNumberTable()) {
+				getClassReport(m.getClassInfo()).addLinePropertyIfNull(ln.getLineNumber(),"color","lightgreen");
 			}
 			logger.info("Generating report for method: "+m);
-			ControlFlowGraph flowGraph = project.getAppInfo().getFlowGraph(m);
+			ControlFlowGraph flowGraph = m.getCode().getControlFlowGraph();
 			Map<String,Object> stats = new TreeMap<String, Object>();
 			stats.put("#nodes", flowGraph.getGraph().vertexSet().size() - 2 /* entry+exit */);
 			stats.put("number of words", flowGraph.getNumberOfWords());
@@ -220,7 +220,7 @@ public class Report {
 			} catch (Exception e) {
 				logger.error(e);
 			}
-			addPage("details/"+c.clazz.getClassName(), page);
+			addPage("details/"+c.getClassName(), page);
 		}
 	}
 	public ClassReport getClassReport(ClassInfo cli) {
@@ -265,7 +265,7 @@ public class Report {
 		this.dotJobs .put(cgdot,cgimg);
 	}
 	private static String pageOf(ClassInfo ci) {
-		return MiscUtils.sanitizeFileName(ci.clazz.getClassName())+".html";
+		return MiscUtils.sanitizeFileName(ci.getClassName())+".html";
 	}
 	private static String pageOf(MethodInfo i) { 
 		return MiscUtils.sanitizeFileName(i.getFQMethodName())+".html";
@@ -301,8 +301,8 @@ public class Report {
 			logger.error(e);
 		}
 		this.addPage("details/"+
-					 method.getCli().clazz.getClassName()+"/"+
-				     sanitizePageKey(method.methodId),
+					 method.getClassInfo().getClassName()+"/"+
+				     sanitizePageKey(method.getSignature().toString()),
 				     page);		
 	}
 	/* page keys may not contain a slash - replace it by backslash */

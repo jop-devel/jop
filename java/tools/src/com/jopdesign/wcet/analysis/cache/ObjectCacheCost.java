@@ -27,9 +27,9 @@ public class ObjectCacheCost {
 	private long missCount;
 
 	/**
-	 * @param missCost2
-	 * @param bypassCost2
-	 * @param fieldAccesses2
+	 * @param missCost
+	 * @param bypassCost
+	 * @param fieldAccesses
 	 */
 	public ObjectCacheCost(long missCount, long missCost, long bypassAccesses, long bypassCost, long fieldAccesses) {
 		this.missCost = missCost;
