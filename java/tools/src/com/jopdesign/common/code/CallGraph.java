@@ -232,8 +232,8 @@ public class CallGraph {
 	}
 	
 	private static String cyclicCallGraphMsg(Pair<List<ExecutionContext>, List<ExecutionContext>> cycleWithPrefix) {
-		List<ExecutionContext> cycle = cycleWithPrefix.snd();
-		List<ExecutionContext> prefix = cycleWithPrefix.fst();
+		List<ExecutionContext> cycle = cycleWithPrefix.second();
+		List<ExecutionContext> prefix = cycleWithPrefix.first();
 		StringBuffer sb = new StringBuffer();
 		sb.append("Cyclic Callgraph !\n");
 		sb.append("One cycle is:\n");

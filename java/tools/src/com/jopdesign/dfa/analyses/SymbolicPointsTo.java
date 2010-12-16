@@ -18,12 +18,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common.code;
+package com.jopdesign.dfa.analyses;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.code.BoundedSetFactory.BoundedSet;
+import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.Context;
+import com.jopdesign.common.code.ContextMap;
 import com.jopdesign.common.misc.MiscUtils.Query;
-
+import com.jopdesign.dfa.framework.Analysis;
+import com.jopdesign.dfa.framework.BoundedSetFactory;
+import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
+import com.jopdesign.dfa.framework.DFAAppInfo;
+import com.jopdesign.dfa.framework.FlowEdge;
+import com.jopdesign.dfa.framework.Interpreter;
+import com.jopdesign.dfa.framework.MethodHelper;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.generic.AASTORE;
@@ -115,7 +124,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 					new Context(),
 					new HashMap<CallString, SymbolicAddressMap>());
 		
-		CallString l = new CallString();
+		CallString l = CallString.EMPTY;
 		SymbolicAddressMap init = new SymbolicAddressMap(bsFactory);
 		// Add symbolic stack names
 		int stackPtr = 0;
@@ -980,7 +989,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 				}
 				if(infoStr != null) {
 					String infoKey = String.format("%s:%04d:%s",c.method,sourceLine,callString);
-					while(getFields.containsKey(infoKey)) infoKey = infoKey + "'";
+					while(getFields.containsKey(infoKey)) infoKey += "'";
 					getFields.put(infoKey,infoStr);					
 				}
 			}						

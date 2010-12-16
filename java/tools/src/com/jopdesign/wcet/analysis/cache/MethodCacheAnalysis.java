@@ -176,7 +176,7 @@ public class MethodCacheAnalysis {
 				/* sum(load_edges) <= 1 */
 				LinearConstraint<ExecutionEdge> lv = new LinearConstraint<ExecutionEdge>(ConstraintType.LessEqual);
 				for(Pair<SuperGraph.SuperInvokeEdge, SuperGraph.SuperReturnEdge> callSite : callSites.get(mi)) {
-					SuperGraph.SuperInvokeEdge invokeEdge = callSite.fst();
+					SuperGraph.SuperInvokeEdge invokeEdge = callSite.first();
 					/* add load and use edges */
 					ipetBuilder.changeContext(invokeEdge.getCallContext());
 					ExecutionEdge parentEdge = ipetBuilder.newEdge(invokeEdge);

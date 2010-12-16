@@ -78,7 +78,8 @@ public class SuperGraphNode {
 		return result;
 	}
 
-	@Override
+    @Override
+    @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
 	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
@@ -86,6 +87,7 @@ public class SuperGraphNode {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
+
 		SuperGraphNode other = (SuperGraphNode) obj;
 		if (cfg == null) {
 			if (other.cfg != null)
@@ -102,7 +104,7 @@ public class SuperGraphNode {
 
 	@Override
 	public String toString() {
-		return "SuperGraphNode [" + cfg.getMethodInfo().methodId + ", context=" + context + "]";
+		return "SuperGraphNode [" + cfg.getMethodInfo() + ", context=" + context + "]";
 	}
 
 

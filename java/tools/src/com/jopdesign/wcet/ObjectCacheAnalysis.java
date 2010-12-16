@@ -21,7 +21,7 @@ package com.jopdesign.wcet;
 
 import com.jopdesign.common.code.CallGraph.MethodNode;
 import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.code.SymbolicAddress;
+import com.jopdesign.dfa.analyses.SymbolicAddress;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo;

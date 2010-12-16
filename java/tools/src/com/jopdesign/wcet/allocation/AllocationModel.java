@@ -80,7 +80,7 @@ public abstract class AllocationModel implements ProcessorModel {
 	}
 
 	public List<String> getJVMClasses() {
-		return new Vector<String>();
+		return new LinkedList<String>();
 	}
 
 	public long getMethodCacheMissPenalty(int numberOfWords, boolean loadOnInvoke) {

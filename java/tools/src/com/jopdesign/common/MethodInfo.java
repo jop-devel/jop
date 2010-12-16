@@ -183,6 +183,11 @@ public final class MethodInfo extends ClassMemberInfo {
         return new Signature(getClassInfo().getClassName(), getShortName(), getDescriptor());
     }
 
+    @Override
+    public String toString() {
+        return getSignature().toString();
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     // Helper methods to find implementations and super methods
     //////////////////////////////////////////////////////////////////////////////

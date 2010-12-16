@@ -18,10 +18,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common.code;
+package com.jopdesign.dfa.analyses;
 
-import com.jopdesign.common.code.BoundedSetFactory.BoundedSet;
+import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 import com.jopdesign.common.misc.HashedString;
+import com.jopdesign.dfa.framework.BoundedSetFactory;
 import org.apache.log4j.Logger;
 
 import java.util.HashMap;
@@ -32,13 +33,15 @@ import java.util.HashMap;
  *
  */
 public class SymbolicAddress {
-	enum Tag { ROOT, FIELD_ACCESS, ARRAY_ACCESS };
+
+	enum Tag { ROOT, FIELD_ACCESS, ARRAY_ACCESS }
+
 	private Tag tag;
 	private int depth;
 	private SymbolicAddressNode symname;
 	
 	
-	private static abstract class SymbolicAddressNode {
+	private abstract static class SymbolicAddressNode {
 
 		public abstract SymbolicAddress getParent();
 		public abstract boolean equals_same(SymbolicAddressNode oth);
@@ -64,6 +67,7 @@ public class SymbolicAddress {
 			return name.toString();
 		}
 	}
+
 	private static class FieldAccess extends SymbolicAddressNode {
 		private SymbolicAddress parent;
 		private HashedString field;
@@ -96,8 +100,10 @@ public class SymbolicAddress {
 			return stringReprCache;
 		}
 	}
+
 	private static class ArrayAccess extends SymbolicAddressNode {
-		enum ArrayAccessKind { ANY, UNIQUE, ELEM };
+		enum ArrayAccessKind { ANY, UNIQUE, ELEM }
+
 		private SymbolicAddress parent;
 		public SymbolicAddress getParent() { return parent; }
 		private ArrayAccessKind kind;

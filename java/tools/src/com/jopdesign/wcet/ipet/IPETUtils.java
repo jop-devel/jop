@@ -173,7 +173,7 @@ public class IPETUtils {
 				loopConstraint.addRHS(ctx.newEdge(continueEdge));
 			}
 			/* Multiplicities */
-			long lhsMultiplicity = markerBound.getValue().snd();
+			long lhsMultiplicity = markerBound.getValue().second();
 			SymbolicMarker marker = markerBound.getKey();
 			if(marker.getMarkerType() == SymbolicMarkerType.OUTER_LOOP_MARKER) {
 

@@ -73,9 +73,9 @@ public class LoopBound {
 		return markerBounds.get(SymbolicMarker.LOOP_ENTRY);
 	}
 	
-	public long getLowerBound()  { return getSimpleBound().fst(); }
+	public long getLowerBound()  { return getSimpleBound().first(); }
 	
-	public long getUpperBound()  { return getSimpleBound().snd(); }
+	public long getUpperBound()  { return getSimpleBound().second(); }
 	
 	public static LoopBound boundedAbove(long ub) {
 		return new LoopBound(0L,ub);
@@ -110,14 +110,14 @@ public class LoopBound {
 	private static Pair<Long, Long> 
 	mergeBounds(Pair<Long, Long> oldBound, long newLb, long newUb) {
 		if(oldBound == null) return new Pair<Long,Long>(newLb,newUb);
-		return new Pair<Long,Long>(Math.max(oldBound.fst(), newLb), 
-								   Math.min(oldBound.snd(), newUb));
+		return new Pair<Long,Long>(Math.max(oldBound.first(), newLb),
+								   Math.min(oldBound.second(), newUb));
 	}
 	
 	private Pair<Long, Long> mergeBounds(
 			Pair<Long, Long> oldBound,
 			Pair<Long, Long> newBound) {
-		return mergeBounds(oldBound, newBound.fst(), newBound.snd());
+		return mergeBounds(oldBound, newBound.first(), newBound.second());
 	}
 	
 	public String toString() {
@@ -132,9 +132,9 @@ public class LoopBound {
 	private static void boundToString(StringBuffer sb, Pair<Long, Long> bound,
 			SymbolicMarker marker) {
 		sb.append("[");
-		sb.append(bound.fst());
+		sb.append(bound.first());
 		sb.append(",");
-		sb.append(bound.snd());
+		sb.append(bound.second());
 		sb.append("] ");
 		if(marker!=null){
 			if(marker.getMarkerType() == SymbolicMarkerType.OUTER_LOOP_MARKER) {

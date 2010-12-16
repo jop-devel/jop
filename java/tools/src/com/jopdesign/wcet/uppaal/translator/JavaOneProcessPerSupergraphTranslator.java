@@ -220,7 +220,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 			MethodInfo methodInvoked = n.getCfg().getMethodInfo();
 			int maxCaller = 0;
 			for(Pair<SuperGraph.SuperInvokeEdge,SuperGraph.SuperReturnEdge> callSite : superGraph.getCallSites(n)) {
-				ControlFlowGraph.InvokeNode callSiteNode = callSite.fst().getInvokeNode();
+				ControlFlowGraph.InvokeNode callSiteNode = callSite.first().getInvokeNode();
 				ControlFlowGraph cfgInvoker = callSiteNode.invokerFlowGraph();
 				int callerRootDepth = methodMNDs.get(cfgInvoker.getMethodInfo());
 				int nestingDepth    = cfgInvoker.getLoopColoring().getLoopColor(callSiteNode).size();

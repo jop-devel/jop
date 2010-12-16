@@ -18,10 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common.code;
+package com.jopdesign.dfa.analyses;
 
-import com.jopdesign.common.code.BoundedSetFactory.BoundedSet;
-import com.jopdesign.wcet.uppaal.model.Location;
+import com.jopdesign.dfa.framework.BoundedSetFactory;
+import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 import org.apache.log4j.Logger;
 
 import java.io.PrintStream;

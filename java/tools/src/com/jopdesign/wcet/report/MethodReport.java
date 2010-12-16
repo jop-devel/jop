@@ -46,7 +46,7 @@ public class MethodReport {
 		this.referenced = new TreeSet<String>();
 		for(MethodNode cgn : p.getCallGraph().getReferencedMethods(m)) {
 			Pair<ClassInfo, String> ref = cgn.getReferencedMethod();
-			this.referenced.add(ref.fst().clazz.getClassName()+"."+ref.snd());
+			this.referenced.add(ref.first().clazz.getClassName()+"."+ref.second());
 		}
 		this.page = page;
 		this.cacheBlocks = p.getProcessorModel().getMethodCache().requiredNumberOfBlocks(fg.getNumberOfWords());

@@ -334,18 +334,18 @@ public class LoopColoring<V,E> {
 			super(fst, snd);
 		}
 
-		public Set<V> getContinues() { return fst(); }
+		public Set<V> getContinues() { return first(); }
 
-		public Set<V> getExits() { return snd(); }
+		public Set<V> getExits() { return second(); }
 
 		@SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
         public void mergeLabel(IterationBranchLabel<V> other) {
-			this.fst.addAll(other.fst);
-			this.snd.addAll(other.snd);
+			this.first.addAll(other.first);
+			this.second.addAll(other.second);
 		}
 
 		public boolean isEmpty() {
-			return this.fst.isEmpty() && this.snd.isEmpty();
+			return this.first.isEmpty() && this.second.isEmpty();
 		}
 	}
 

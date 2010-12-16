@@ -31,27 +31,43 @@ import java.io.Serializable;
  * @param <T1> type of the first component
  * @param <T2> type of the second component
  *
- * @author Benedikt Huber <benedikt.huber@gmail.com>
+ * @author Benedikt Huber (benedikt.huber@gmail.com)
  */
 public class Pair<T1,T2> implements Comparable<Pair<T1,T2>>, 
 						            Serializable
 {
 	private static final long serialVersionUID = 1L;
-	protected T1 fst;
-    protected T2 snd;
 
-    public Pair(T1 fst, T2 snd) {
-		this.fst = fst;
-		this.snd = snd;
+	protected T1 first;
+    protected T2 second;
+
+    public Pair() { }
+
+    public Pair(T1 first, T2 second) {
+		this.first = first;
+		this.second = second;
 	}
 
-    public T1 fst() { return fst; }
-	public T2 snd() { return snd; }
+    public T1 first() {
+        return first;
+    }
+
+	public T2 second() {
+        return second;
+    }
+
+    public void setFirst(T1 first) {
+        this.first = first;
+    }
+
+    public void setSecond(T2 second) {
+        this.second = second;
+    }
 
 	@SuppressWarnings({"unchecked", "AccessingNonPublicFieldOfAnotherObject"})
 	public int compareTo(Pair<T1,T2> o) {
-		int c1 = ((Comparable<T1>) fst).compareTo(o.fst);
-		if(c1 == 0) return ((Comparable<T2>) snd).compareTo(o.snd);
+		int c1 = ((Comparable<T1>) first).compareTo(o.first);
+		if(c1 == 0) return ((Comparable<T2>) second).compareTo(o.second);
 		return c1;
 	}
 
@@ -59,17 +75,17 @@ public class Pair<T1,T2> implements Comparable<Pair<T1,T2>>,
 	public boolean equals(Object o) {
 		if(this == o) return true;
         if (!(o instanceof Pair)) return false;
-        if(! fst.equals(((Pair) o).fst())) return false;
-        return snd.equals(((Pair) o).snd());
+        if(! first.equals(((Pair) o).first())) return false;
+        return second.equals(((Pair) o).second());
 	}
 
 	@Override
 	public int hashCode() {
-		return fst.hashCode() + snd.hashCode();		
+		return first.hashCode() + second.hashCode();
 	}
 
 	@Override
 	public String toString() {
-		return "("+fst+", "+snd+")";
+		return "("+ first +", "+ second +")";
 	}
 }
