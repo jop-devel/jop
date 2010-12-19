@@ -263,4 +263,19 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     public void setLoopBounds(LoopBounds lb) {
         this.loopBounds = lb;
     }
+
+    /**
+     * Helper method to find a method in AppInfo using the full signature.
+     * @param signature the signature of the method.
+     * @return the method if found, else null
+     */
+    public MethodInfo getMethod(String signature) {
+        Signature s = Signature.parse(signature, true);
+        return appInfo.getMethodInfo(s.getClassName(), s.getMemberSignature());
+    }
+
+    public boolean containsField(String strippedName) {
+        Signature s = Signature.parse(strippedName, true);
+        return appInfo.getFieldRef(s).getFieldInfo() != null;
+    }
 }

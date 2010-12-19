@@ -38,5 +38,6 @@ public class SignatureTest {
         testSig("test.myClass", false);
         testSig("test.myClass.myFunc", true);
         testSig("test.MyClass.myFunc()V", false);
+        testSig("com.jopdesign.sys.Native.toObject(I)Ljava/lang/Object;", true);
     }
 }

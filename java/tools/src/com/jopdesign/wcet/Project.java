@@ -31,6 +31,7 @@ import com.jopdesign.common.config.Config;
 import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.wcet.allocation.BlockAllocationModel;

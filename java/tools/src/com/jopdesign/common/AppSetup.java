@@ -540,7 +540,7 @@ public class AppSetup {
 
     private MethodInfo getMainMethod(String signature) throws Config.BadConfigurationException {
         Signature sMain;
-        sMain = Signature.parse(signature);
+        sMain = Signature.parse(signature, true);
 
         String clsName = sMain.getClassName();
         if ( clsName == null ) {

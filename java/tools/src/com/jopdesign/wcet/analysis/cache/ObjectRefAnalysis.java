@@ -22,15 +22,16 @@ package com.jopdesign.wcet.analysis.cache;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.analyses.SymbolicAddress;
 import com.jopdesign.dfa.analyses.SymbolicPointsTo;
 import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
+import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
@@ -253,7 +254,7 @@ public class ObjectRefAnalysis {
 		SymbolicPointsTo spt = new SymbolicPointsTo(maxSetSize,
 				(int)project.getProjectConfig().callstringLength(), 
 				new ExecOnceQuery(eoAna,scope));
-		dfa.runLocalAnalysis(spt,scope.getMethodInfo().getFQMethodName());
+		dfa.runLocalAnalysis(spt,scope.getMethodInfo());
 		LocalPointsToResult lpt = new LocalPointsToResult(spt.getResult());
 		return lpt;
 	}

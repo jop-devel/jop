@@ -53,7 +53,6 @@ import org.apache.bcel.generic.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -435,31 +434,28 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			if (receivers == null) {
 				System.out.println("no receivers at: "+context.callString.toStringList()+context.method+stmt);
 			} else {
-				for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
-					String fieldName = i.next();
+                for (String fieldName : receivers) {
+                    String f = fieldName.substring(fieldName.lastIndexOf("."), fieldName.length());
+                    String strippedName;
+                    if (fieldName.indexOf("@") >= 0) {
+                        strippedName = fieldName.split("@")[0] + f;
+                    } else {
+                        strippedName = fieldName;
+                    }
 
-					String f = fieldName.substring(fieldName.lastIndexOf("."), fieldName.length());
-					String strippedName;
-					if (fieldName.indexOf("@") >= 0) {
-						strippedName = fieldName.split("@")[0] + f;
-					} else {
-						strippedName = fieldName;
-					}
+                    //					System.out.println(fieldName+" vs "+strippedName);
 
-					//					System.out.println(fieldName+" vs "+strippedName);
-
-					if (p.containsField(strippedName)) {
-						for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
-							Location l = k.next();
-							if (l.heapLoc.equals(fieldName)) {
-								ValueMapping value = new ValueMapping(in.get(l), false);
-								value.join(result.get(location));
-								result.put(location, value);
-								valid = true;
-							}
-						}
-					}
-				}
+                    if (p.containsField(strippedName)) {
+                        for (Location l : in.keySet()) {
+                            if (l.heapLoc.equals(fieldName)) {
+                                ValueMapping value = new ValueMapping(in.get(l), false);
+                                value.join(result.get(location));
+                                result.put(location, value);
+                                valid = true;
+                            }
+                        }
+                    }
+                }
 			}
 			if (!valid && !(instr.getFieldType(context.constPool) instanceof ReferenceType)) {
 				result.put(new Location(context.stackPtr-1), new ValueMapping());				
@@ -470,30 +466,27 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 		case Constants.PUTSTATIC: {			
 			PUTSTATIC instr = (PUTSTATIC)instruction;
 			int fieldSize = instr.getFieldType(context.constPool).getSize();
-			
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc >= 0 && l.stackLoc < context.stackPtr-fieldSize) {
-					result.put(l, in.get(l));
-				}
-			}
+
+            for (Location l : in.keySet()) {
+                if (l.stackLoc >= 0 && l.stackLoc < context.stackPtr - fieldSize) {
+                    result.put(l, in.get(l));
+                }
+            }
 
 			DFATool p = interpreter.getProgram();
 			Set<String> receivers = p.getReceivers(stmt, context.callString);
-			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
-				String fieldName = i.next();
-				if (p.containsField(fieldName)) {
-					for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
-						Location l = k.next();
-						if (l.stackLoc < 0 && !receivers.contains(l.heapLoc)) {
-							result.put(l, in.get(l));
-						}
-						if (l.stackLoc == context.stackPtr-1) {
-							result.put(new Location(fieldName), new ValueMapping(in.get(l), false));
-						}
-					}
-				}
-			}
+            for (String fieldName : receivers) {
+                if (p.containsField(fieldName)) {
+                    for (Location l : in.keySet()) {
+                        if (l.stackLoc < 0 && !receivers.contains(l.heapLoc)) {
+                            result.put(l, in.get(l));
+                        }
+                        if (l.stackLoc == context.stackPtr - 1) {
+                            result.put(new Location(fieldName), new ValueMapping(in.get(l), false));
+                        }
+                    }
+                }
+            }
 		}
 		break;
 
@@ -1358,7 +1351,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
 		DFATool p = interpreter.getProgram();
 		MethodInfo method = p.getMethod(methodName);
-		methodName = method.getSignature().toString();
+		//methodName = method.getSignature().toString();
 
 //		System.out.println(context.callString.asList()+"/"+context.method+": "+stmt+" invokes method: "+methodName);				
 
@@ -1376,8 +1369,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			if (method.isSynchronized()) {
 				c.syncLevel = context.syncLevel+1;
 			}
-			c.method = methodName;
-			c.callString = c.callString.push(p.getMethod(context.method), stmt, callStringLength);
+			c.method = method.getMethodRef();
+			c.callString = c.callString.push(method, stmt, callStringLength);
 			
 			// carry only minimal information with call
 			Map<Location, ValueMapping> in = input.get(context.callString);
@@ -1598,7 +1591,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
             ContextMap<CallString, Pair<ValueMapping, ValueMapping>> r = bounds.get(instr);
             Context c = r.getContext();
 
-            LineNumberTable lines = program.getMethod(c.method).getCode().getLineNumberTable();
+            LineNumberTable lines = c.method.getMethodInfo().getCode().getLineNumberTable();
             int sourceLine = lines.getSourceLine(instr.getPosition());
 
             for (CallString callString : r.keySet()) {
@@ -1653,7 +1646,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
             ContextMap<CallString, Interval[]> r = sizes.get(instr);
             Context c = r.getContext();
 
-            LineNumberTable lines = program.getMethod(c.method).getCode().getLineNumberTable();
+            LineNumberTable lines = c.method.getMethodInfo().getCode().getLineNumberTable();
             int sourceLine = lines.getSourceLine(instr.getPosition());
 
             for (CallString callString : r.keySet()) {

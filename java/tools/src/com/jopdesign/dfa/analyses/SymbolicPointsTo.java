@@ -54,7 +54,6 @@ import org.apache.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -823,7 +822,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 
 		DFATool p = interpreter.getProgram();
 		MethodInfo method = p.getMethod(methodName);
-		methodName = method.getSignature().toString();
+		//methodName = method.getSignature().toString();
 
 //		System.out.println(stmt+" invokes method: "+methodName);				
 
@@ -841,8 +840,8 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			if (method.isSynchronized()) {
 				c.syncLevel = context.syncLevel+1;
 			}
-			c.method = methodName;
-			c.callString = c.callString.push(p.getMethod(context.method), stmt, callStringLength);
+			c.method = method.getMethodRef();
+			c.callString = c.callString.push(method, stmt, callStringLength);
 			
 			// carry only minimal information with call
 			SymbolicAddressMap in = input.get(context.callString);
@@ -891,7 +890,8 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		}
 	}
 	
-	private Map<CallString, SymbolicAddressMap> handleNative(MethodInfo method, Context context,
+	@SuppressWarnings({"LiteralAsArgToStringEquals"})
+    private Map<CallString, SymbolicAddressMap> handleNative(MethodInfo method, Context context,
 			ContextMap<CallString,SymbolicAddressMap> input,
 			ContextMap<CallString,SymbolicAddressMap> retval) {
 		
@@ -950,45 +950,43 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			
 			ContextMap<CallString, BoundedSet<SymbolicAddress>> r = usedRefs.get(instr);
 			Context c = r.getContext();
-			MethodInfo method = program.getMethod(c.method);
+			MethodInfo method = c.method.getMethodInfo();
 			if(method == null) {
 				throw new AssertionError("Internal Error: No method '"+c.method+"'");
 			}
 			LineNumberTable lines = method.getCode().getLineNumberTable();
-			int sourceLine = lines.getSourceLine(instr.getPosition());			
+			int sourceLine = lines.getSourceLine(instr.getPosition());
 
-			for (Iterator<CallString> k = r.keySet().iterator(); k.hasNext(); ) {
-				CallString callString = k.next();
+            for (CallString callString : r.keySet()) {
+                System.out.println(c.method + ":" + sourceLine + ":" + callString + ": " + instr);
+                BoundedSet<SymbolicAddress> symAddr = r.get(callString);
 
-				System.out.println(c.method+":"+sourceLine+":"+callString+": "+instr);
-				BoundedSet<SymbolicAddress> symAddr = r.get(callString);
-				
-				String infoStr;
-				if(instr.getInstruction() instanceof GETFIELD) {
-					GETFIELD gfInstr = (GETFIELD) instr.getInstruction();
-					infoStr = String.format("GETFIELD %s %s %s",
-							symAddr.toString(),
-							gfInstr.getFieldName(c.constPool),
-							gfInstr.getFieldType(c.constPool));
-				} else if(instr.getInstruction() instanceof ARRAYLENGTH) {
-					infoStr = String.format("ARRAYLENGTH %s",
-							symAddr.toString());
-				} else if(instr.getInstruction() instanceof ArrayInstruction) {
-					ArrayInstruction aInstr = (ArrayInstruction) instr.getInstruction();
-					infoStr = String.format("%s %s %s[]",
-							aInstr.getName().toUpperCase(),
-							symAddr.toString(),										
-							aInstr.getType(c.constPool));
-				} else {
-					infoStr = String.format("%s %s",instr.getInstruction().getName().toUpperCase(),
-							symAddr.toString());
-				}
-				if(infoStr != null) {
-					String infoKey = String.format("%s:%04d:%s",c.method,sourceLine,callString);
-					while(getFields.containsKey(infoKey)) infoKey += "'";
-					getFields.put(infoKey,infoStr);					
-				}
-			}						
+                String infoStr;
+                if (instr.getInstruction() instanceof GETFIELD) {
+                    GETFIELD gfInstr = (GETFIELD) instr.getInstruction();
+                    infoStr = String.format("GETFIELD %s %s %s",
+                            symAddr.toString(),
+                            gfInstr.getFieldName(c.constPool),
+                            gfInstr.getFieldType(c.constPool));
+                } else if (instr.getInstruction() instanceof ARRAYLENGTH) {
+                    infoStr = String.format("ARRAYLENGTH %s",
+                            symAddr.toString());
+                } else if (instr.getInstruction() instanceof ArrayInstruction) {
+                    ArrayInstruction aInstr = (ArrayInstruction) instr.getInstruction();
+                    infoStr = String.format("%s %s %s[]",
+                            aInstr.getName().toUpperCase(),
+                            symAddr.toString(),
+                            aInstr.getType(c.constPool));
+                } else {
+                    infoStr = String.format("%s %s", instr.getInstruction().getName().toUpperCase(),
+                            symAddr.toString());
+                }
+                if (infoStr != null) {
+                    String infoKey = String.format("%s:%04d:%s", c.method, sourceLine, callString);
+                    while (getFields.containsKey(infoKey)) infoKey += "'";
+                    getFields.put(infoKey, infoStr);
+                }
+            }
 		}
 		for(Entry<String, String> entry : getFields.entrySet()) {
 			System.out.println(entry.getKey());

@@ -19,12 +19,13 @@
  */
 package com.jopdesign.wcet.uppaal.translator.cache;
 
-import java.util.Vector;
-
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.jop.VarBlockCache;
 import com.jopdesign.wcet.uppaal.model.NTASystem;
 import com.jopdesign.wcet.uppaal.translator.SystemBuilder;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class VarBlockCacheBuilder extends DynamicCacheBuilder {
 	protected Project project;
@@ -51,7 +52,7 @@ public abstract class VarBlockCacheBuilder extends DynamicCacheBuilder {
 	}
 
 	protected StringBuilder initNumBlocks() {
-		Vector<Integer> blocksPerMethod = new Vector<Integer>();
+		List<Integer> blocksPerMethod = new ArrayList<Integer>();
 		for(int i = 0; i < numMethods; i++) {
 			int mBlocks = blocksOf(i);
 			if(mBlocks > numBlocks()) {

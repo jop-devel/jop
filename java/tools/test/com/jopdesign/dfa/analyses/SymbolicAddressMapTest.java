@@ -22,7 +22,6 @@ package com.jopdesign.dfa.analyses;
 
 import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 import com.jopdesign.dfa.framework.BoundedSetFactory;
-import com.jopdesign.wcet.uppaal.model.Location;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
