@@ -21,6 +21,7 @@
 package com.jopdesign.dfa.framework;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.dfa.DFATool;
 import org.apache.bcel.generic.InstructionHandle;
 
 import java.util.Map;
@@ -57,5 +58,5 @@ public interface Analysis<K, V> {
 	
 	Map			 	getResult();
 
-	void		    printResult(DFAAppInfo program);
+	void		    printResult(DFATool program);
 }

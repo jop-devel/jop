@@ -21,6 +21,8 @@
 
 package com.jopdesign.common.config;
 
+import com.jopdesign.common.AppInfo;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,6 +43,12 @@ import java.util.Set;
  */
 public class Config {
 
+    /**
+     * This is the default value; use {@link AppInfo#getClinitSignature()}.
+     */
+    public static final String DEFAULT_CLINIT_NAME = "<clinit>";
+    public static final String DEFAULT_CLINIT_DESCRIPTOR = "()V";
+
     public static final String DEFAULT_NATIVE = "com.jopdesign.sys.Native";
     public static final String[] JOP_SYSTEM_CLASSES = {
             "com.jopdesign.sys.JVM",
@@ -48,8 +56,9 @@ public class Config {
             "com.jopdesign.sys.Startup"
         };
 
-    /* Options which are always present */
-    /* The default values can be changed using the JopTool.getDefaultProps() method. */
+    /* Options which are always present
+     * TODO maybe move the class loading and entry-point related options to AppInfo?
+     */
 
     public static final BooleanOption SHOW_HELP =
             new BooleanOption("help", "show help", 'h', true);

@@ -38,10 +38,7 @@ import java.util.Arrays;
  */
 public abstract class MemberInfo {
 
-    public static final int ACC_PUBLIC = 1;
-    public static final int ACC_PACKAGE = 2;
-    public static final int ACC_PRIVATE = 3;
-    public static final int ACC_PROTECTED = 4;
+    public enum AccessType { ACC_PUBLIC, ACC_PACKAGE, ACC_PRIVATE, ACC_PROTECTED }
 
     private final AccessFlags accessFlags;
 
@@ -61,6 +58,8 @@ public abstract class MemberInfo {
     }
 
     public abstract ClassInfo getClassInfo();
+
+    public abstract String getClassName();
 
     /**
      * Get the signature object which identifies this member.
@@ -112,26 +111,26 @@ public abstract class MemberInfo {
 
     /**
      * Get the access type of this object.
-     * @return one of {@link #ACC_PRIVATE}, {@link #ACC_PROTECTED}, {@link #ACC_PACKAGE} or {@link #ACC_PUBLIC}.
+     * @return a value of {@link AccessType}.
      */
-    public int getAccessType() {
+    public AccessType getAccessType() {
         if ( isPublic() ) {
-            return ACC_PUBLIC;
+            return AccessType.ACC_PUBLIC;
         }
         if ( isPrivate() ) {
-            return ACC_PRIVATE;
+            return AccessType.ACC_PRIVATE;
         }
         if ( isProtected() ) {
-            return ACC_PROTECTED;
+            return AccessType.ACC_PROTECTED;
         }
-        return ACC_PACKAGE;
+        return AccessType.ACC_PACKAGE;
     }
 
     /**
      * Set the access type of this object.
-     * @param type one of {@link #ACC_PRIVATE}, {@link #ACC_PROTECTED}, {@link #ACC_PACKAGE} or {@link #ACC_PUBLIC}.
+     * @param type the access type to set.
      */
-    public void setAccessType(int type) {
+    public void setAccessType(AccessType type) {
         int af = accessFlags.getAccessFlags() & ~(Constants.ACC_PRIVATE|Constants.ACC_PROTECTED|Constants.ACC_PUBLIC);
         switch (type) {
             case ACC_PRIVATE: af |= Constants.ACC_PRIVATE; break;
@@ -389,7 +388,7 @@ public abstract class MemberInfo {
      * @param accessType the accessType of the member to check, as returned by {@link MemberInfo#getAccessType()}.
      * @return true if this class is allowed to access members of the given accessType of the given class.
      */
-    public boolean canAccess(ClassInfo cls, int accessType) {
+    public boolean canAccess(ClassInfo cls, AccessType accessType) {
         // first, check if we can access the class itself
         if ( !canAccess(cls) ) {
             return false;

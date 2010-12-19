@@ -170,7 +170,7 @@ public class ProjectConfig {
 	}
 
 	public String getProjectName() {
-		return config.getOptionWithDefault(PROJECT_NAME,
+		return config.getOption(PROJECT_NAME,
 				MiscUtils.sanitizeFileName(getAppClassName() + "_" + getTargetMethodName()));
 	}
 

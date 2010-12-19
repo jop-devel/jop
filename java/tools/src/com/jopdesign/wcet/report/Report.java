@@ -40,7 +40,7 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -85,9 +85,9 @@ public class Report {
 		new HashMap<ClassInfo,ClassReport>();
 	private HashMap<MethodInfo,Vector<DetailedMethodReport>> detailedReports =
 		new HashMap<MethodInfo, Vector<DetailedMethodReport>>();
-	private Hashtable<String,Object> stats = new Hashtable<String, Object>();
+	private HashMap<String,Object> stats = new HashMap<String, Object>();
 	private ReportEntry rootReportEntry = ReportEntry.rootReportEntry("summary.html");
-	private Hashtable<File,File> dotJobs = new Hashtable<File,File>();
+	private HashMap<File,File> dotJobs = new HashMap<File,File>();
 	
 	public Report(Config c, Project p, File outDir) throws IOException {
 		this.project = p;
@@ -213,7 +213,7 @@ public class Report {
 		for(ClassInfo c : project.getCallGraph().getClassInfos()) {
 			ClassReport cr = getClassReport(c);
 			String page = pageOf(c);
-			Hashtable<String,Object> ctx = new Hashtable<String,Object>();
+			HashMap<String,Object> ctx = new HashMap<String,Object>();
 			ctx.put("classreport", cr);			
 			try {				
 				this.generateFile("class.vm", config.getOutFile(page), ctx);
@@ -236,7 +236,7 @@ public class Report {
 		return cr;
 	}
 	private void generateInputOverview() throws IOException {
-		Hashtable<String,Object> ctx = new Hashtable<String,Object>();
+		HashMap<String,Object> ctx = new HashMap<String,Object>();
 		
 		File cgdot = config.getOutFile("callgraph.dot");
 		File cgimg = config.getOutFile("callgraph.png");
@@ -288,7 +288,7 @@ public class Report {
 	}
 	private void generateDetailedReport(MethodInfo method) {
 		String page = pageOf(method);
-		Hashtable<String,Object> ctx = new Hashtable<String,Object>();
+		HashMap<String,Object> ctx = new HashMap<String,Object>();
 		ctx.put("m", method);
 		ctx.put("dfaresults",project.getFlowGraph(method).dumpDFA());
 		ctx.put("reports", this.detailedReports.get(method));

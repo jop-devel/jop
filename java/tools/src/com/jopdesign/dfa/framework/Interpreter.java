@@ -20,6 +20,7 @@
 
 package com.jopdesign.dfa.framework;
 
+import com.jopdesign.dfa.DFATool;
 import org.apache.bcel.generic.InstructionHandle;
 
 import java.util.LinkedList;
@@ -29,14 +30,14 @@ import java.util.Set;
 public class Interpreter<K, V> {
 
 	private Analysis<K, V> analysis;
-	private DFAAppInfo program;
+	private DFATool program;
 	
-	public Interpreter(Analysis<K, V> a, DFAAppInfo p) {
+	public Interpreter(Analysis<K, V> a, DFATool p) {
 		program = p;
 		analysis = a;
 	}
 	
-	public DFAAppInfo getProgram() {
+	public DFATool getProgram() {
 		return program;
 	}
 	

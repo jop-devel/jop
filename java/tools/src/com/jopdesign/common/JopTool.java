@@ -77,13 +77,18 @@ public interface JopTool<T extends AppEventHandler> {
 
     /**
      * Called by {@link AppSetup#setupConfig(String[])} after the configuration has been loaded. The tool should
-     * use the config values from AppSetup to check the configuration, load its options
-     * and to initialize the tool if required.
+     * use the config values from AppSetup to check the configuration and load its options.
      *
      * @param setup the AppSetup used to initialize this app.
      * @throws Config.BadConfigurationException if there is something rotten in the config
      */
     void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException;
+
+    /**
+     * Initialize the tool.
+     * @param config the config for this tool
+     */
+    void initialize(Config config);
 
     /**
      * Run this tool with the current options.
@@ -92,7 +97,7 @@ public interface JopTool<T extends AppEventHandler> {
      * this tool when needed.
      * </p>
      *
-     * @param setup the AppSetup used to initialize this app.
+     * @param config the config to use
      */
-    void run(AppSetup setup);
+    void run(Config config);
 }

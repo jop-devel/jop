@@ -21,7 +21,6 @@ package com.jopdesign.wcet.analysis.cache;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
-import com.jopdesign.common.code.CallGraph.MethodNode;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.dfa.framework.ContextMap;
@@ -32,7 +31,6 @@ import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.dfa.analyses.SymbolicAddress;
 import com.jopdesign.dfa.analyses.SymbolicPointsTo;
 import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
-import com.jopdesign.dfa.framework.DFAAppInfo;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
@@ -58,7 +56,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.Executor;
 
 import static com.jopdesign.common.misc.MiscUtils.addToSet;
 
@@ -252,7 +249,7 @@ public class ObjectRefAnalysis {
 	
 	public LocalPointsToResult getUsedRefs(ExecutionContext scope) {
 		ExecuteOnceAnalysis eoAna = new ExecuteOnceAnalysis(project);
-		DFAAppInfo dfa = project.getDfaProgram();
+		DFATool dfa = project.getDfaProgram();
 		SymbolicPointsTo spt = new SymbolicPointsTo(maxSetSize,
 				(int)project.getProjectConfig().callstringLength(), 
 				new ExecOnceQuery(eoAna,scope));

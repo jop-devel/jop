@@ -21,6 +21,7 @@
 package com.jopdesign.dfa.framework;
 
 import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.type.MethodRef;
 import org.apache.bcel.generic.ConstantPoolGen;
 
 public class Context {
@@ -28,8 +29,9 @@ public class Context {
 	public int stackPtr;
 	public int syncLevel;
 	public boolean threaded;
+    // TODO maybe should be removed, use method.getMethodInfo().getConstantPoolGen() instead?
 	public ConstantPoolGen constPool;
-	public String method;
+	public MethodRef method;
 	public CallString callString;
 	
 	public Context() {
@@ -65,6 +67,7 @@ public class Context {
 	}
 	
 	public boolean equals(Object o) {
+        if (!(o instanceof Context)) return false;
 		final Context c = (Context)o;
 		if ((stackPtr == c.stackPtr || stackPtr < 0 || c.stackPtr < 0)) {
 			return true;

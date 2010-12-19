@@ -47,6 +47,7 @@ import java.util.Properties;
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class AppSetup {
+
     private boolean loadSystemProps;
 
     /**
@@ -573,7 +574,7 @@ public class AppSetup {
         }
         if ( methods.size() > 1 ) {
             StringBuffer s = new StringBuffer(String.format(
-                    "Multiple candidates for '%s' in '%s', please specify a signature: ", mainName, clsName) );
+                    "Multiple candidates for '%s' in '%s', please specify with a signature: ", mainName, clsName) );
             for (MethodInfo m : methods) {
                 s.append("\n");
                 s.append(m.getSignature());

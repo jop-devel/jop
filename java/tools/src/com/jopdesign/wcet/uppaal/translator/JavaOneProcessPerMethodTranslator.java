@@ -21,6 +21,7 @@ package com.jopdesign.wcet.uppaal.translator;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;

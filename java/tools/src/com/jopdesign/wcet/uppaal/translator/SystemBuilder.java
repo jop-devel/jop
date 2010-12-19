@@ -41,6 +41,7 @@ import com.jopdesign.wcet.uppaal.translator.cache.StaticCacheBuilder;
 import org.w3c.dom.Document;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -88,9 +89,9 @@ public class SystemBuilder {
 	/**
 	 * Create a new top-level UPPAAL System builder
 	 * @param config             configuration
-	 * @param project            uplink to Project
+	 * @param p                  uplink to Project
 	 * @param maxCallStackDepth  the maximal call stack depth
-	 * @param numMethods         the number of methods of the program
+	 * @param methods            the methods of the program
 	 */
 	public SystemBuilder(UppAalConfig config,
 			             Project p,
@@ -170,7 +171,7 @@ public class SystemBuilder {
 	 */
 	public void addCallStack(MethodInfo rootMethod, int numCallSites) {
 		int rootId = this.getMethodId(rootMethod);
-		Vector<String> initArray = new Vector<String>();
+		List<String> initArray = new LinkedList<String>();
 		initArray.add(""+rootId);
 		for(int i = 1; i < maxCallStackDepth; i++) { initArray.add(""+rootId); }
 		system.appendDeclaration(String.format("int[0,%d] callStack[%s] = %s;",
@@ -216,7 +217,7 @@ public class SystemBuilder {
 		/* Instantiate processes */
 		sys.append("system ");
 		/* bucket sort templates by priority */
-		TreeMap<Integer, Vector<Template>> templatesByPrio = 
+		TreeMap<Integer, List<Template>> templatesByPrio =
 			MiscUtils.partialSort(templates.keySet(), new MiscUtils.Function1<Template, Integer>() {
                 public Integer apply(Template t) {
                     return priorities.get(t);
@@ -224,9 +225,9 @@ public class SystemBuilder {
             }
             );
 		/* create system declaration strings */
-		Vector<String> systemEntry = new Vector<String>();
-		for(Vector<Template> entry : templatesByPrio.values()) {
-			Vector<String> proclist = new Vector<String>();
+		List<String> systemEntry = new LinkedList<String>();
+		for(List<Template> entry : templatesByPrio.values()) {
+			List<String> proclist = new LinkedList<String>();
 			for(Template t : entry) {
 				proclist.add("M"+templates.get(t));
 			}
@@ -254,7 +255,7 @@ public class SystemBuilder {
 	public Document toXML() throws XmlSerializationException {
 		return this.system.toXML();
 	}
-	public static StringBuilder constArray(Vector<?> elems) {
+	public static StringBuilder constArray(List<?> elems) {
 		StringBuilder sb = new StringBuilder("{ ");
 		boolean first = true;
 		for(Object o : elems) {

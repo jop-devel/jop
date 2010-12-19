@@ -231,4 +231,47 @@ public class MiscUtils {
 		return revTopo;
 	}
 
+    /**
+     * Inserts spaces in front of a string.
+     * @param len the desired total length
+     * @param val the string
+     * @return the prepadded string
+     */
+    public static String prepad(String val, int len){
+      StringBuffer sb = new StringBuffer();
+      for(int i=len;i>val.length();i--){
+        sb.append(" ");
+      }
+      sb.append(val);
+      return sb.toString();
+    }
+
+    /**
+     * Inserts spaces behind a string.
+     * @param len the desired total length
+     * @param val the string
+     * @return the prepadded string
+     */
+    public static String postpad(String val, int len){
+      StringBuffer sb = new StringBuffer();
+      sb.append(val);
+      for(int i=len;i>val.length();i--){
+          sb.append(" ");
+      }
+      return sb.toString();
+    }
+
+    /**
+     * Return n repetitions of a string, which is usually a single character.
+     * @param val the string
+     * @param n the repetitions
+     * @return the repeated string
+     */
+    public static String repeat(String val, int n){
+      StringBuffer sb = new StringBuffer();
+      for(int i=0;i<n;i++){
+          sb.append(val);
+      }
+      return sb.toString();
+    }
 }

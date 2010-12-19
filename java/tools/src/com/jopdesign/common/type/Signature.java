@@ -33,31 +33,51 @@ import com.jopdesign.common.MemberInfo;
  */
 public class Signature {
 
-    public static final char MEMBER_SEPARATOR = '#';
+    // alternative member separator
+    public static final char ALT_MEMBER_SEPARATOR = '#';
 
     private final String className;
     private final String memberName;
     private final Descriptor descriptor;
 
     public static String getClassName(String signature) {
-        int pos = signature.indexOf(MEMBER_SEPARATOR);
-        return pos == -1 ? signature : signature.substring(0, pos);
+        int pos = signature.indexOf(ALT_MEMBER_SEPARATOR);
+        // uses alternative separator, easy
+        if (pos != -1) return signature.substring(0, pos);
+
+        pos = signature.indexOf('(');
+        if ( pos != -1 ) {
+            // has a descriptor, is a method signature, strip last member part
+            pos = signature.lastIndexOf('.', pos);
+            return pos != -1 ? signature.substring(0, pos) : "";
+        }
+
+        // field or class name, cannot decide, assume it is a field
+        pos = signature.lastIndexOf('.');
+        return pos != -1 ? signature.substring(0, pos) : "";
     }
 
     public static String getSignature(String className, String memberName) {
-        return className + MEMBER_SEPARATOR +  memberName;
+        return className + "." +  memberName;
     }
 
     public static String getSignature(String className, String memberName, String descriptor) {
-        return className + MEMBER_SEPARATOR +  memberName + descriptor;
+        return className + "." +  memberName + descriptor;
     }
 
     public static String getMemberSignature(String memberName, String descriptor) {
         return memberName + descriptor;
     }
 
-    public static Signature parse(String signature) {
-        int p1 = signature.indexOf(MEMBER_SEPARATOR);
+    /**
+     * Parse a signature, with or without classname, with or without descriptor.
+     *
+     * @param signature the signature to parse.
+     * @param isClassMember if true, assume that the last simple member name is a class member.
+     * @return a new signature object.
+     */
+    public static Signature parse(String signature, boolean isClassMember) {
+        int p1 = signature.indexOf(ALT_MEMBER_SEPARATOR);
         int p2 = signature.indexOf("(");
 
         String className = null;
@@ -66,13 +86,29 @@ public class Signature {
 
         if ( p1 == -1 ) {
             if ( p2 == -1 ) {
-                // assume signature is classname only
-                className = signature;
+                // no descriptor, either not alternative syntax or no classname
+                if ( isClassMember ) {
+                    // is a class member with or without class name
+                    p1 = signature.lastIndexOf('.');
+                    className  = p1 != -1 ? signature.substring(0, p1) : null;
+                    memberName = p1 != -1 ? signature.substring(p1+1) : signature;
+                } else {
+                    // assume signature is classname only
+                    className = signature;
+                }
             } else {
-                memberName = signature.substring(0,p2);
+                // we have a descriptor, this is a method signature of some sort
+                p1 = signature.lastIndexOf('.', p2);
+                if (p1 != -1) {
+                    className = signature.substring(0, p1);
+                    memberName = signature.substring(p1+1,p2);
+                } else {
+                    memberName = signature.substring(0,p2);
+                }
                 descriptor = Descriptor.parse(signature.substring(p2));
             }
         } else {
+            // alternative style with classname, easy to parse
             className = signature.substring(0,p1);
             if ( p2 == -1 ) {
                 memberName = signature.substring(p1+1);
@@ -148,7 +184,7 @@ public class Signature {
         }
         if (memberName != null) {
             if ( className != null ) {
-                s.append(MEMBER_SEPARATOR);
+                s.append(ALT_MEMBER_SEPARATOR);
             }
             s.append(memberName);
         }

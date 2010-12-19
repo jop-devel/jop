@@ -19,7 +19,7 @@
 */
 package com.jopdesign.wcet.ipet;
 
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -33,13 +33,13 @@ import java.util.Map.Entry;
  * @param <T> type of the variables
  */
 public class LinearVector<T> {
-	private Hashtable<T,Long> coeffs;
+	private HashMap<T,Long> coeffs;
 
 	/**
 	 * Initialize the linear vector, with all coefficient 0.
 	 */
 	public LinearVector() {
-		coeffs = new Hashtable<T,Long>();
+		coeffs = new HashMap<T,Long>();
 	}
 	
 	/**
@@ -47,7 +47,7 @@ public class LinearVector<T> {
 	 * @param vector 
 	 */
 	public LinearVector(LinearVector<T> vector) {
-		this.coeffs = new Hashtable<T,Long>(vector.getCoeffs());
+		this.coeffs = new HashMap<T,Long>(vector.getCoeffs());
 	}
 	
 	/**

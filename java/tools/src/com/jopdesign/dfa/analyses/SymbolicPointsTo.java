@@ -22,13 +22,13 @@ package com.jopdesign.dfa.analyses;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
-import com.jopdesign.dfa.framework.Context;
-import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.common.misc.MiscUtils.Query;
+import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.framework.Analysis;
 import com.jopdesign.dfa.framework.BoundedSetFactory;
 import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
-import com.jopdesign.dfa.framework.DFAAppInfo;
+import com.jopdesign.dfa.framework.Context;
+import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.dfa.framework.Interpreter;
 import com.jopdesign.dfa.framework.MethodHelper;
@@ -45,7 +45,6 @@ import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.LDC;
 import org.apache.bcel.generic.LoadInstruction;
-import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.PUTFIELD;
 import org.apache.bcel.generic.PUTSTATIC;
 import org.apache.bcel.generic.ReferenceType;
@@ -253,7 +252,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			if(t instanceof ReferenceType) {
 				SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
 				/* FIXME: This is overly conservative, but class pointer not available here */
-				String classContext = context.method;
+				String classContext = context.method.getSignature().toString();
 				SymbolicAddress addr = SymbolicAddress.stringLiteral(classContext,ldc.getIndex());
 				result.putStack(newStackPtr-1, bsFactory.singleton(addr ));
 				retval.put(context.callString, result);		
@@ -716,7 +715,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.INVOKESTATIC:
 		case Constants.INVOKESPECIAL: {
 			
-			DFAAppInfo p = interpreter.getProgram();
+			DFATool p = interpreter.getProgram();
 			Set<String> receivers = p.getReceivers(stmt, context.callString);
 			retval.put(context.callString, new SymbolicAddressMap(bsFactory));
 			
@@ -822,7 +821,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			Map<InstructionHandle, ContextMap<CallString, SymbolicAddressMap>> state,
 			ContextMap<CallString, SymbolicAddressMap> retval) {
 
-		DFAAppInfo p = interpreter.getProgram();
+		DFATool p = interpreter.getProgram();
 		MethodInfo method = p.getMethod(methodName);
 		methodName = method.getSignature().toString();
 
@@ -843,7 +842,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 				c.syncLevel = context.syncLevel+1;
 			}
 			c.method = methodName;
-			c.callString = c.callString.push(p.getMethod(context.method), stmt.getPosition(), callStringLength);
+			c.callString = c.callString.push(p.getMethod(context.method), stmt, callStringLength);
 			
 			// carry only minimal information with call
 			SymbolicAddressMap in = input.get(context.callString);
@@ -892,11 +891,11 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		}
 	}
 	
-	private Map<CallString, SymbolicAddressMap> handleNative(MethodGen method, Context context,
+	private Map<CallString, SymbolicAddressMap> handleNative(MethodInfo method, Context context,
 			ContextMap<CallString,SymbolicAddressMap> input,
 			ContextMap<CallString,SymbolicAddressMap> retval) {
 		
-		String methodId = method.getClassName()+"."+method.getName()+method.getSignature();
+		String methodId = method.getSignature().toString();
 
 		SymbolicAddressMap in = input.get(context.callString);
 		SymbolicAddressMap out;
@@ -945,7 +944,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		return retval;
 	}
 	
-	public void printResult(DFAAppInfo program) {
+	public void printResult(DFATool program) {
 		Map<String,String> getFields = new TreeMap<String,String>();
 		for(InstructionHandle instr : usedRefs.keySet()) {
 			

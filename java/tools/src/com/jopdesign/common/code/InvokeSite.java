@@ -20,8 +20,8 @@
 
 package com.jopdesign.common.code;
 
+import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.misc.HashedString;
 import org.apache.bcel.generic.InstructionHandle;
 
 /**
@@ -30,7 +30,7 @@ import org.apache.bcel.generic.InstructionHandle;
  * <p>Two invoke-sites are considered equal if the invoker methodInfo are {@link MethodInfo#equals(Object) equal},
  * and if they point to the same InstructionHandle.</p>
  *
- * @see MethodInfo#getInvokeSite(InstructionHandle)
+ * @see MethodCode#getInvokeSite(InstructionHandle)
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class InvokeSite {
@@ -41,7 +41,7 @@ public class InvokeSite {
     /**
      * Create a new invoke site.
      * <p>
-     * You should not use this constructor yourself, instead use {@link MethodInfo#getInvokeSite(InstructionHandle)}.
+     * You should not use this constructor yourself, instead use {@link MethodCode#getInvokeSite(InstructionHandle)}.
      * </p>
      *
      * @param instruction the instruction handle containing the invoke instruction

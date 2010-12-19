@@ -31,6 +31,7 @@ import com.jopdesign.common.type.ConstantInfo;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
+import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.Field;
@@ -41,6 +42,7 @@ import org.apache.bcel.classfile.SourceFile;
 import org.apache.bcel.generic.ClassGen;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.FieldGen;
+import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
@@ -653,11 +655,16 @@ public final class ClassInfo extends MemberInfo {
         return fields.get(name);
     }
 
-
     public MethodInfo getMethodInfo(Signature signature) {
         return getMethodInfo(signature.getMemberSignature());
     }
 
+    /**
+     * Get the method with the given member signature (e.g. {@code "foo(I)V"}).
+     *
+     * @param memberSignature the signature of the method without the classname.
+     * @return the method or null if it does not exist.
+     */
     public MethodInfo getMethodInfo(String memberSignature) {
         return methods.get(memberSignature);
     }
@@ -817,20 +824,35 @@ public final class ClassInfo extends MemberInfo {
     }
 
     /**
-     * Create a new non-static, non-abstract, package-visible method with the given name and descriptor.
+     * Create a new non-static, abstract, package-visible method with the given name and descriptor.
      *
      * @param signature the membername and descriptor of the method (classname is ignored).
      * @param argNames the names of the parameters
      * @return the new method or an existing method with that signature.
      */
     public MethodInfo createMethod(Signature signature, String[] argNames) {
+        return createMethod(signature, argNames, null);
+    }
+
+    /**
+     * Create a new non-static, package-visible method with the given name and descriptor.
+     *
+     * @param signature the membername and descriptor of the method (classname is ignored).
+     * @param argNames the names of the parameters
+     * @param code an InstructionList to set to the method as code, or if null, create an abstract method.
+     * @return the new method or an existing method with that signature.
+     */
+    public MethodInfo createMethod(Signature signature, String[] argNames, InstructionList code) {
         MethodInfo method = methods.get(signature.getMemberSignature());
         if ( method != null ) {
             return method;
         }
+
         Descriptor desc = signature.getMemberDescriptor();
-        method = new MethodInfo(this, new MethodGen(0, desc.getType(), desc.getArgumentTypes(), argNames,
-                signature.getMemberName(), classGen.getClassName(), null, cpg));
+        int flags = (code == null) ? Constants.ACC_ABSTRACT : 0;
+
+        method = new MethodInfo(this, new MethodGen(flags, desc.getType(), desc.getArgumentTypes(), argNames,
+                signature.getMemberName(), classGen.getClassName(), code, cpg));
 
         methods.put(signature.getMemberSignature(), method);
         classGen.addMethod(method.getMethod(false));

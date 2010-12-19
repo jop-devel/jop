@@ -21,14 +21,13 @@
 
 package com.jopdesign.timing;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.tools.JopInstr;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 
-import com.jopdesign.tools.JopInstr;
-import com.jopdesign.wca_rup.WU;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -246,17 +245,17 @@ public class WCETInstruction {
 		for (int op = 0; op <= 255; op++) {
 			// name (25)
 			String str = new String("[" + op + "] " + getNameFromOpcode(op));
-			sb.append(WU.postpad(str, 25));
+			sb.append(MiscUtils.postpad(str, 25));
 
 			//hit n={0,1000}
 			String hitstr = getCycles(op, false, 0) + "/"
 					+ getCycles(op, false, 1000);
-			hitstr = WU.prepad(hitstr, 12);
+			hitstr = MiscUtils.prepad(hitstr, 12);
 
 			//miss n={0,1000}
 			String missstr = getCycles(op, true, 0) + "/"
 					+ getCycles(op, true, 1000);
-			missstr = WU.prepad(missstr, 12);
+			missstr = MiscUtils.prepad(missstr, 12);
 
 			sb.append(hitstr + missstr + "\n");
 		}

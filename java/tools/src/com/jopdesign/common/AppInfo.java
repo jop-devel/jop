@@ -21,6 +21,7 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.bcel.BcelRepositoryWrapper;
+import com.jopdesign.common.config.Config;
 import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
 import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
@@ -29,6 +30,7 @@ import com.jopdesign.common.misc.MissingClassError;
 import com.jopdesign.common.misc.NamingConflictException;
 import com.jopdesign.common.model.ProcessorModel;
 import com.jopdesign.common.type.ClassRef;
+import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.FieldRef;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
@@ -693,6 +695,13 @@ public final class AppInfo {
         return mainMethod;
     }
 
+    public Signature getMainSignature() {
+        return mainMethod.getSignature();
+    }
+
+    public Signature getClinitSignature(String className) {
+        return new Signature(className, Config.DEFAULT_CLINIT_NAME, Descriptor.parse(Config.DEFAULT_CLINIT_DESCRIPTOR));
+    }
 
     //////////////////////////////////////////////////////////////////////////////
     // Class loading configuration, processor model

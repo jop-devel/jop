@@ -64,6 +64,11 @@ public class MethodRef {
         return methodInfo != null ? methodInfo.getDescriptor() : descriptor;
     }
 
+    public Signature getSignature() {
+        return methodInfo != null ? methodInfo.getSignature()
+                : new Signature(classRef.getClassName(), methodName, descriptor);
+    }
+
     public Ternary isInterfaceMethod() {
         if ( methodInfo != null ) {
             return Ternary.valueOf(methodInfo.getClassInfo().isInterface());
@@ -99,6 +104,13 @@ public class MethodRef {
         return getClassName() + "." + getName();
     }
 
+    @Override
+    public int hashCode() {
+        int hash = getClassName().hashCode();
+        hash = 31 * hash + getMemberSignature().hashCode();
+        return hash;
+    }
+
     /**
      * Check if this MethodRef refers to the same method as the given object.
      *
@@ -118,4 +130,5 @@ public class MethodRef {
         MethodRef ref = (MethodRef) obj;
         return getClassName().equals(ref.getClassName()) && getMemberSignature().equals(ref.getMemberSignature());
     }
+
 }

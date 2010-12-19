@@ -46,6 +46,10 @@ public abstract class ClassMemberInfo extends MemberInfo {
         return classInfo;
     }
 
+    public String getClassName() {
+        return classInfo.getClassName();
+    }
+
     public ConstantPoolGen getConstantPoolGen() {
         return classInfo.getConstantPoolGen();
     }

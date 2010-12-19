@@ -36,7 +36,7 @@ import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 
 import java.util.HashMap;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -237,7 +237,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 	// FIXME: [recursive-wet-analysis] Report generation is a big mess
 	private void updateReport(CacheKey key, LocalWCETSolution sol) {
 		Map<CFGNode,WcetCost> nodeCosts = sol.getNodeCostMap();
-		Hashtable<CFGNode, String> nodeFlowCostDescrs = new Hashtable<CFGNode, String>();
+		HashMap<CFGNode, String> nodeFlowCostDescrs = new HashMap<CFGNode, String>();
 		MethodInfo m = key.m;
 		for(Entry<CFGNode, WcetCost> entry: nodeCosts.entrySet()) {
 			CFGNode n = entry.getKey();
@@ -267,7 +267,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 			}
 		}
 		logger.info("WCET for " + key + ": "+sol.getCost());
-		Map<String,Object> stats = new Hashtable<String, Object>();
+		Map<String,Object> stats = new HashMap<String, Object>();
 		stats.put("WCET",sol.getCost());
 		stats.put("mode",key.ctx);
 		stats.put("all-methods-fit-in-cache",getProject().getProcessorModel().getMethodCache().allFit(m,null));

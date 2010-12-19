@@ -25,6 +25,7 @@ import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.dfa.analyses.Interval;
 import com.jopdesign.tools.JopInstr;
 import com.jopdesign.wcet.ProcessorModel;

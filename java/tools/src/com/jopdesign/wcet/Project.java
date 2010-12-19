@@ -19,7 +19,6 @@
  */
 package com.jopdesign.wcet;
 
-import com.jopdesign.build.AppVisitor;
 import com.jopdesign.build.WcetPreprocess;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
@@ -27,10 +26,12 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.wcet.allocation.BlockAllocationModel;
 import com.jopdesign.wcet.allocation.HandleAllocationModel;
@@ -47,11 +48,7 @@ import com.jopdesign.wcet.jop.LinkerInfo;
 import com.jopdesign.wcet.jop.LinkerInfo.LinkInfo;
 import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
-import org.apache.bcel.classfile.JavaClass;
-import org.apache.bcel.classfile.Method;
-import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.InstructionHandle;
-import org.apache.bcel.generic.MethodGen;
 import org.apache.log4j.Logger;
 
 import java.io.File;
@@ -59,12 +56,12 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Date;
-import java.util.Hashtable;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.Vector;
 
 /** WCET 'project', information on which method in which class to analyse etc. */
 public class Project {
@@ -99,31 +96,6 @@ public class Project {
         @Override
         public void finishClass(ClassInfo classInfo) {
         }
-	}
-
-	/**
-	 * Set {@link MethodGen} in all reachable classes
-	 * // FIXME: THIS SHOULD NOT BE NECCESSARY
-	 *    REMOVEME when not needed anymore
-	 */
-	public static class CreateMethodGenerators extends AppVisitor {
-		public CreateMethodGenerators(AppInfo ai) {
-			super(ai);
-		}
-		public void visitJavaClass(JavaClass clazz) {
-			super.visitJavaClass(clazz);
-			ConstantPoolGen cpg = new ConstantPoolGen(clazz.getConstantPool());
-			Method[] methods = clazz.getMethods();
-			for(int i=0; i < methods.length; i++) {
-				if(!(methods[i].isAbstract() || methods[i].isNative())) {
-					Method m = methods[i];
-			        MethodInfo mi = getCli().getMethodInfo(m.getName()+m.getSignature());
-			        mi.setMethodGen(new MethodGen(m,
-			        							  mi.getCli().clazz.getClassName(),
-			        							  cpg));
-				}
-			}
-		}
 	}
 
 	public static final Logger logger = Logger.getLogger(Project.class);
@@ -209,9 +181,6 @@ public class Project {
 		return MiscUtils.sanitizeFileName(projectConfig.getAppClassName()+"_"+projectConfig.getTargetMethodName());
 	}
 
-	public File getSourceFile(MethodInfo method) throws FileNotFoundException {
-		return getSourceFile(method.getCli());
-	}
 	public File getClassFile(ClassInfo ci) throws FileNotFoundException {
 		List<File> dirs = getSearchDirs(ci, projectConfig.getClassPath());
 		for(File classDir : dirs) {
@@ -229,13 +198,13 @@ public class Project {
 	public File getSourceFile(ClassInfo ci) throws FileNotFoundException {
 		List<File> dirs = getSearchDirs(ci, projectConfig.getSourcePath());
 		for(File sourceDir : dirs) {
-			File sourceFile = new File(sourceDir, ci.clazz.getSourceFileName());
+			File sourceFile = new File(sourceDir, ci.getSourceFileName());
 			if(sourceFile.exists()) return sourceFile;
 		}
 		throw new FileNotFoundException("Source for "+ci.clazz.getClassName()+" not found in "+dirs);
 	}
 	private List<File> getSearchDirs(ClassInfo ci, String path) {
-		List<File> dirs = new Vector<File>();
+		List<File> dirs = new LinkedList<File>();
 		StringTokenizer st = new StringTokenizer(path,File.pathSeparator);
 		while (st.hasMoreTokens()) {
 			String sourcePath = st.nextToken();
@@ -270,7 +239,7 @@ public class Project {
 	public AppInfo loadApp() throws IOException {
 		AppInfo appInfo;
 		if(projectConfig.doDataflowAnalysis()) {
-			appInfo = new com.jopdesign.dfa.framework.DFAAppInfo(
+			appInfo = new DFATool(
 							new com.jopdesign.dfa.framework.DFAClassInfo());
 		} else {
 			appInfo = new AppInfo(ClassInfo.getTemplate());
@@ -301,7 +270,7 @@ public class Project {
 		AppInfo appInfo = loadApp();
 		this.appInfo = new WcetAppInfo(this,appInfo,processor);
 		/* Initialize annotation map */
-		annotationMap = new Hashtable<ClassInfo, SourceAnnotations>();
+		annotationMap = new HashMap<ClassInfo, SourceAnnotations>();
 		sourceAnnotations = new SourceAnnotationReader(this);
 		linkerInfo = new LinkerInfo(this);
 		linkerInfo.loadLinkInfo();
@@ -360,16 +329,16 @@ public class Project {
 		return projectConfig.doDataflowAnalysis();
 	}
 
-	public com.jopdesign.dfa.framework.DFAAppInfo getDfaProgram() {
-		if(! (this.appInfo.getAppInfo() instanceof com.jopdesign.dfa.framework.DFAAppInfo)) {
+	public DFATool getDfaProgram() {
+		if(! (this.appInfo.getAppInfo() instanceof DFATool)) {
 			throw new AssertionError("getDfaProgram(): DFA not enabled");
 		}
-		return (com.jopdesign.dfa.framework.DFAAppInfo) this.appInfo.getAppInfo();
+		return (DFATool) this.appInfo.getAppInfo();
 	}
 
 	@SuppressWarnings("unchecked")
 	public void dataflowAnalysis() {
-		com.jopdesign.dfa.framework.DFAAppInfo program = getDfaProgram();
+		DFATool program = getDfaProgram();
 		int callstringLength = (int)projectConfig.callstringLength();
 		topLevelLogger.info("Receiver analysis");
 		CallStringReceiverTypes recTys = new CallStringReceiverTypes(callstringLength);
@@ -431,8 +400,8 @@ public class Project {
 		int pLocal = g.getLoopBounds().size();
 		int ccLocal = eLocal - nLocal + 2 * pLocal;
 		int ccGlobal = 0;
-		for(CallGraphNode n: this.getCallGraph().getReferencedMethods(m)) {
-			MethodInfo impl = n.getMethodImpl();
+		for(ExecutionContext n: this.getCallGraph().getReferencedMethods(m)) {
+			MethodInfo impl = n.getMethodInfo();
 			ccGlobal += 2 + computeCyclomaticComplexity(impl);
 		}
 		return ccLocal + ccGlobal;

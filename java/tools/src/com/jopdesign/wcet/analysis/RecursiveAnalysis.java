@@ -30,7 +30,7 @@ import com.jopdesign.wcet.ipet.IPETSolver;
 import com.jopdesign.wcet.ipet.IPETUtils;
 
 import java.util.HashMap;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -87,7 +87,7 @@ public abstract class RecursiveAnalysis<Context extends AnalysisContext, Rval> {
 	}
 
 	private Project project;
-	private Hashtable<CacheKey, Rval> costMap;
+	private HashMap<CacheKey, Rval> costMap;
 	private IPETConfig ipetConfig;
 
 	public Project getProject() {
@@ -97,7 +97,7 @@ public abstract class RecursiveAnalysis<Context extends AnalysisContext, Rval> {
 	public RecursiveAnalysis(Project p, IPETConfig ipetConfig) {
 		this.project = p;
 		this.ipetConfig = ipetConfig;
-		this.costMap = new Hashtable<CacheKey,Rval>();
+		this.costMap = new HashMap<CacheKey,Rval>();
 	}
 
 	public Rval computeCost(MethodInfo m, Context ctx) {
