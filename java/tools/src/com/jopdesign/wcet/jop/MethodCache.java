@@ -6,21 +6,22 @@ import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.misc.MiscUtils;
-import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETProcessorModel;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.jop.JOPConfig.CacheImplementation;
 import org.apache.log4j.Logger;
 
 import java.util.Set;
 
 public abstract class MethodCache {
-	protected Project project;
+	protected WCETTool project;
 	protected int cacheSizeWords;
-	public MethodCache(Project p, int cacheSizeWords) {
+	public MethodCache(WCETTool p, int cacheSizeWords) {
 		this.project = p;
 		this.cacheSizeWords = cacheSizeWords;
 	}
-	public static MethodCache getCacheModel(Project p) {
+	public static MethodCache getCacheModel(WCETTool p) {
 		Config c = p.getConfig();
 		switch(c.getOption(JOPConfig.CACHE_IMPL)) {
 		case NO_METHOD_CACHE: return new NoMethodCache(p);
@@ -85,12 +86,12 @@ public abstract class MethodCache {
 	}
 
 	/** Get miss penalty for invoking the given method */
-	public long getMissOnInvokeCost(ProcessorModel proc, ControlFlowGraph cfg) {
+	public long getMissOnInvokeCost(WCETProcessorModel proc, ControlFlowGraph cfg) {
 		return proc.getMethodCacheMissPenalty(cfg.getNumberOfWords(), true);
 	}
 	
 	/** Get miss penalty for returning to the given method */
-	public long getMissOnReturnCost(ProcessorModel proc, ControlFlowGraph cfg) {
+	public long getMissOnReturnCost(WCETProcessorModel proc, ControlFlowGraph cfg) {
 		return proc.getMethodCacheMissPenalty(cfg.getNumberOfWords(), false);
 	}
 
@@ -154,7 +155,7 @@ public abstract class MethodCache {
 		return largestMethod;
 	}
 
-	public long getMaxMissCost(ProcessorModel proc, ControlFlowGraph cfg) {
+	public long getMaxMissCost(WCETProcessorModel proc, ControlFlowGraph cfg) {
 		long invokeCost = proc.getMethodCacheMissPenalty(cfg.getNumberOfWords(), true);
 		if(! cfg.isLeafMethod()) return Math.max(invokeCost, getMissOnReturnCost(proc,cfg));
 		else                     return invokeCost;
@@ -166,7 +167,7 @@ public abstract class MethodCache {
 	 * @param invoked
 	 * @return the maximal cache miss penalty for the invoke/return
 	 */
-	public long getInvokeReturnMissCost(ProcessorModel proc, ControlFlowGraph invoker, ControlFlowGraph invoked) {
+	public long getInvokeReturnMissCost(WCETProcessorModel proc, ControlFlowGraph invoker, ControlFlowGraph invoked) {
 		return proc.getMethodCacheMissPenalty(invoked.getNumberOfWords(), true) +
 		       proc.getMethodCacheMissPenalty(invoker.getNumberOfWords(), false);
 	}

@@ -24,6 +24,7 @@ import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
@@ -52,10 +53,10 @@ import java.util.logging.Logger;
  *
  */
 public class ExecuteOnceAnalysis {
-	private Project project;
+	private WCETTool project;
 	private Map<ExecutionContext,Set<MethodInfo>> inLoopSet;
 
-	public ExecuteOnceAnalysis(Project p) {
+	public ExecuteOnceAnalysis(WCETTool p) {
 		this.project = p;
 		analyze();
 	}

@@ -21,8 +21,8 @@ package com.jopdesign.wcet.analysis;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.wcet.ProcessorModel;
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETProcessorModel;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
@@ -33,7 +33,7 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 	private boolean assumeMissOnceOnInvoke;
 	private int maxCallstringLength;
 
-	public LocalAnalysis(Project p, IPETConfig ipetConfig) {
+	public LocalAnalysis(WCETTool p, IPETConfig ipetConfig) {
 		this.assumeMissOnceOnInvoke = ipetConfig.assumeMissOnceOnInvoke;
 		this.maxCallstringLength = (int)p.getProjectConfig().callstringLength();
 	}
@@ -49,10 +49,10 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 			throw new AssertionError("Error: Cache Mode "+cacheMode+" not supported using local IPET strategy - " +
 					"it needs an interprocedural IPET analysis");
 		}
-		Project project    = stagedAnalysis.getProject();
+		WCETTool project   = stagedAnalysis.getWCETTool();
 		MethodInfo invoker = n.getBasicBlock().getMethodInfo();
 		MethodInfo invoked = n.getImplementedMethod();
-		ProcessorModel proc = project.getProcessorModel();
+		WCETProcessorModel proc = project.getProcessorModel();
 		MethodCache cache = proc.getMethodCache();
 		long cacheCost;
 		AnalysisContextLocal recCtx = ctx.withCallString(ctx.getCallString().push(n,maxCallstringLength));

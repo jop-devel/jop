@@ -22,13 +22,13 @@ package com.jopdesign.wcet.jop;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.wcet.ProcessorModel;
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETProcessorModel;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.jop.JOPConfig.CacheImplementation;
 
 public class NoMethodCache extends MethodCache {
 
-	public NoMethodCache(Project p) {
+	public NoMethodCache(WCETTool p) {
 		super(p,0);
 	}
 
@@ -52,11 +52,11 @@ public class NoMethodCache extends MethodCache {
 		return 0;
 	}
 	@Override 
-	public long getMissOnReturnCost(ProcessorModel proc, ControlFlowGraph invoker) {
+	public long getMissOnReturnCost(WCETProcessorModel proc, ControlFlowGraph invoker) {
 		return 0;		
 	}
 	@Override 
-	public long getInvokeReturnMissCost(ProcessorModel proc, ControlFlowGraph invoker, ControlFlowGraph invoked) {
+	public long getInvokeReturnMissCost(WCETProcessorModel proc, ControlFlowGraph invoker, ControlFlowGraph invoked) {
 		return 0;		
 	}
 

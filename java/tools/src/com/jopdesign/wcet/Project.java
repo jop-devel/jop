@@ -105,27 +105,6 @@ public class Project {
 		this.topLevelLogger = tlLogger;
 	}
 
-	private ProjectConfig projectConfig;
-	public ProjectConfig getProjectConfig() {
-		return projectConfig;
-	}
-	public Config getConfig() {
-		return projectConfig.getConfigManager();
-	}
-	private String projectName;
-
-	private AppInfo appInfo;
-	private CallGraph callGraph;
-
-	private Map<ClassInfo, SourceAnnotations> annotationMap;
-
-	private boolean genWCETReport;
-	private Report results;
-	private ProcessorModel processor;
-	private SourceAnnotationReader sourceAnnotations;
-	private File resultRecord;
-	private LinkerInfo linkerInfo;
-	private boolean hasDfaResults;
 
 	public Project(ProjectConfig config) throws IOException {
 		this.projectConfig =  config;
@@ -147,7 +126,7 @@ public class Project {
 		}
 		
 		if(projectConfig.saveResults()) {
-			this.resultRecord = new File(config.getConfigManager().getOption(ProjectConfig.RESULT_FILE));
+			this.resultRecord = new File(config.getConfig().getOption(ProjectConfig.RESULT_FILE));
 			if(! projectConfig.appendResults()) {
 				recordMetric("problem",this.getProjectName());
 				recordMetric("date",new Date());
@@ -166,16 +145,6 @@ public class Project {
 		} else {
 			this.processor = new JOPModel(this);
 		}
-	}
-
-	public String getProjectName() {
-		return this.projectName;
-	}
-	public boolean reportGenerationActive() {
-		return this.genWCETReport ;
-	}
-	public void setGenerateWCETReport(boolean generateReport) {
-		this.genWCETReport = generateReport;
 	}
 
 	public String getTargetName() {
@@ -215,9 +184,6 @@ public class Project {
 		}
 		return dirs;
 	}
-	public CallGraph getCallGraph() {
-		return callGraph;
-	}
 	public ClassInfo getApplicationEntryClass() {
 		return this.appInfo.getClassInfo(projectConfig.getAppClassName());
 	}
@@ -229,14 +195,6 @@ public class Project {
 			throw new AssertionError("Target method not found: "+e);
 		}
 	}
-	public ClassInfo getTargetClass() {
-		return appInfo.getClassInfo(projectConfig.getTargetClass());
-	}
-	public Report getReport() { return results; }
-	public boolean doWriteReport() {
-		return projectConfig.getReportDir() != null;
-	}
-
 	public AppInfo loadApp() throws IOException {
 		AppInfo appInfo;
 		if(projectConfig.doDataflowAnalysis()) {
@@ -289,10 +247,6 @@ public class Project {
 											 projectConfig.getTargetMethod());
 	}
 
-	public AppInfo getAppInfo() {
-		return this.appInfo;
-	}
-
 	/**
 	 * Get flow fact annotations for a class, lazily.
 	 * @param cli
@@ -309,32 +263,12 @@ public class Project {
 		return annots;
 	}
 
-	/**
-	 * Get link info for a given class
-	 * @param cli
-	 * @return the linker info
-	 */
-	public LinkInfo getLinkInfo(ClassInfo cli) {
-		return this.linkerInfo.getLinkInfo(cli);
-	}
-
-	public LinkerInfo getLinkerInfo() {
-		return this.linkerInfo;
-	}
-
 
 	/* Data flow analysis
 	 * ------------------
 	 */
 	public boolean doDataflowAnalysis() {
 		return projectConfig.doDataflowAnalysis();
-	}
-
-	public DFATool getDfaProgram() {
-		if(! (this.appInfo.getAppInfo() instanceof DFATool)) {
-			throw new AssertionError("getDfaProgram(): DFA not enabled");
-		}
-		return (DFATool) this.appInfo.getAppInfo();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -362,113 +296,5 @@ public class Project {
 		if(! hasDfaResults) return null;
 		return getDfaProgram().getLoopBounds();
 	}
-	/**
-	 * Convenience delegator to get the flowgraph of the given method
-	 */
-	public ControlFlowGraph getFlowGraph(MethodInfo mi) {
-		return appInfo.getFlowGraph(mi);
-	}
-	/**
-	 * Convenience delegator to get the size of the given method
-	 */
-	public int getSizeInWords(MethodInfo mi) {
-		return this.getFlowGraph(mi).getNumberOfWords();
-	}
 
-	public void writeReport() throws Exception {
-		this.results.addStat( "classpath", projectConfig.getClassPath());
-		this.results.addStat( "application", projectConfig.getAppClassName());
-		this.results.addStat( "class", projectConfig.getTargetClass());
-		this.results.addStat( "method", projectConfig.getTargetMethod());
-		this.results.writeReport();
-	}
-
-	public File getOutDir(String sub) {
-		File outDir = projectConfig.getOutDir();
-		File subDir = new File(outDir,sub);
-		if(! subDir.exists()) subDir.mkdir();
-		return subDir;
-	}
-	public File getOutFile(String file) {
-		return new File(projectConfig.getOutDir(),file);
-	}
-	
-	/** FIXME: Slow, caching is missing */
-	public int computeCyclomaticComplexity(MethodInfo m) {
-		ControlFlowGraph g = getFlowGraph(m);
-		int nLocal = g.getGraph().vertexSet().size();
-		int eLocal = g.getGraph().edgeSet().size();
-		int pLocal = g.getLoopBounds().size();
-		int ccLocal = eLocal - nLocal + 2 * pLocal;
-		int ccGlobal = 0;
-		for(ExecutionContext n: this.getCallGraph().getReferencedMethods(m)) {
-			MethodInfo impl = n.getMethodInfo();
-			ccGlobal += 2 + computeCyclomaticComplexity(impl);
-		}
-		return ccLocal + ccGlobal;
-	}
-
-	public ProcessorModel getProcessorModel() {
-		return this.processor;
-	}
-	/* recording for scripted evaluation */
-	public void recordResult(WcetCost wcet, double timeDiff, double solverTime) {
-		if(resultRecord == null) return;
-		Config c = projectConfig.getConfigManager();
-		recordCVS("wcet","ipet",wcet,timeDiff,solverTime,
-					c.getOption(JOPConfig.CACHE_IMPL),
-					c.getOption(JOPConfig.CACHE_SIZE_WORDS),
-					c.getOption(JOPConfig.CACHE_BLOCKS),
-					c.getOption(IPETConfig.STATIC_CACHE_APPROX),
-					c.getOption(IPETConfig.ASSUME_MISS_ONCE_ON_INVOKE));
-
-	}
-	public void recordResultUppaal(WcetCost wcet,
-			                       double timeDiff, double searchtime,double solvertimemax) {
-		if(resultRecord == null) return;
-		Config c = projectConfig.getConfigManager();
-		recordCVS("wcet","uppaal",wcet,timeDiff,searchtime,solvertimemax,
-				c.getOption(JOPConfig.CACHE_IMPL),
-				c.getOption(JOPConfig.CACHE_SIZE_WORDS),
-				c.getOption(JOPConfig.CACHE_BLOCKS),
-				c.getOption(UppAalConfig.UPPAAL_CACHE_APPROX),
-				c.getOption(UppAalConfig.UPPAAL_COMPLEXITY_TRESHOLD),
-				c.getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES),
-				c.getOption(UppAalConfig.UPPAAL_CONVEX_HULL),
-				c.getOption(UppAalConfig.UPPAAL_TIGHT_BOUNDS),
-				c.getOption(UppAalConfig.UPPAAL_PROGRESS_MEASURE),
-				c.getOption(UppAalConfig.UPPAAL_SUPERGRAPH_TEMPLATE),
-				c.getOption(UppAalConfig.UPPAAL_EMPTY_INITIAL_CACHE)
-				);
-	}
-	public void recordSpecialResult(String metric, WcetCost cost) {
-		if(resultRecord == null) return;
-		if(projectConfig.appendResults()) return;
-		recordCVS("metric",metric,cost);
-	}
-	public void recordMetric(String metric, Object... params) {
-		if(resultRecord == null) return;
-		if(projectConfig.appendResults()) return;
-		recordCVS("metric",metric,null,params);
-	}
-	private void recordCVS(String key, String subkey, WcetCost cost, Object... params) {
-		Object fixedCols[] = { key, subkey };
-		try {
-			FileWriter fw = new FileWriter(resultRecord,true);
-			fw.write(MiscUtils.joinStrings(fixedCols, ";"));
-			if(cost != null) {
-				Object costCols[] = { cost.getCost(), cost.getNonCacheCost(),cost.getCacheCost() };
-				fw.write(";");
-				fw.write(MiscUtils.joinStrings(costCols, ";"));
-			}
-			if(params.length > 0) {
-				fw.write(";");
-				fw.write(MiscUtils.joinStrings(params, ";"));
-			}
-			fw.write("\n");
-			fw.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
 }

@@ -27,7 +27,7 @@ import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.graphutils.FlowGraph;
 import com.jopdesign.common.graphutils.LoopColoring;
 import com.jopdesign.common.graphutils.ProgressMeasure.RelativeProgress;
-import com.jopdesign.wcet.ProcessorModel;
+import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
@@ -109,7 +109,7 @@ public class MethodBuilder implements CfgVisitor {
 
 	public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
 		ExecutionContext ctx = new ExecutionContext(n.getBasicBlock().getMethodInfo());
-		ProcessorModel proc = jTrans.getProject().getProcessorModel();
+		WCETProcessorModel proc = jTrans.getProject().getProcessorModel();
 		SubAutomaton invokeAuto;
 		long staticWCET = proc.basicBlockWCET(ctx, n.getBasicBlock());
 		if(jTrans.getCacheSim().isAlwaysMiss()) {

@@ -28,7 +28,7 @@ import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.dfa.analyses.Interval;
 import com.jopdesign.tools.JopInstr;
-import com.jopdesign.wcet.ProcessorModel;
+import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.annotations.LoopBound;
 import com.jopdesign.wcet.annotations.SourceAnnotations;
@@ -48,7 +48,7 @@ import org.apache.bcel.generic.Type;
 import java.util.LinkedList;
 import java.util.List;
 
-public abstract class AllocationModel implements ProcessorModel {
+public abstract class AllocationModel implements WCETProcessorModel {
 
 	public static final String JOP_NATIVE = "com.jopdesign.sys.Native";
 	private final MethodCache NO_METHOD_CACHE;

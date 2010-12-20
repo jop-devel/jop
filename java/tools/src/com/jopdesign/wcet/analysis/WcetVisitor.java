@@ -24,16 +24,20 @@ import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.CfgVisitor;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 
 public abstract class WcetVisitor implements CfgVisitor {
 	protected WcetCost cost;
-	protected Project project;
-	public WcetVisitor(Project p) {
+	protected WCETTool project;
+
+	public WcetVisitor(WCETTool p) {
 		this.project = p;
 		this.cost = null;
 	}
+
 	public void visitSpecialNode(ControlFlowGraph.DedicatedNode n) {
 	}
+
 	public void visitSummaryNode(ControlFlowGraph.SummaryNode n) {
 		throw new AssertionError("summary nodes not supported using this WCET calculation method");
 	}

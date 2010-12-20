@@ -30,8 +30,9 @@ import com.jopdesign.timing.jop.JOPCmpTimingTable;
 import com.jopdesign.timing.jop.JOPTimingTable;
 import com.jopdesign.timing.jop.SingleCoreTiming;
 import com.jopdesign.tools.JopInstr;
-import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETProcessorModel;
+import com.jopdesign.wcet.WCETTool;
 import org.apache.bcel.generic.ANEWARRAY;
 import org.apache.bcel.generic.ATHROW;
 import org.apache.bcel.generic.INVOKESTATIC;
@@ -46,7 +47,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Vector;
 
-public class JOPModel implements ProcessorModel {
+public class JOPModel implements WCETProcessorModel {
 	public static final String JVM_CLASS = "com.jopdesign.sys.JVM";
 	public static final String JOP_NATIVE = "com.jopdesign.sys.Native";
 	
@@ -56,7 +57,7 @@ public class JOPModel implements ProcessorModel {
 	private JOPConfig config;
 
 	/* TODO: add configuration stuff */
-	public JOPModel(Project p) throws IOException {
+	public JOPModel(WCETTool p) throws IOException {
 		StringBuffer key = new StringBuffer();
 		this.config = new JOPConfig(p);
 		this.cache = MethodCache.getCacheModel(p);

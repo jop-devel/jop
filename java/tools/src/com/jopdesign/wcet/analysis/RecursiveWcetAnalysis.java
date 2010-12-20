@@ -26,8 +26,9 @@ import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
-import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETProcessorModel;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.ipet.CostProvider;
 import com.jopdesign.wcet.ipet.IPETBuilder;
 import com.jopdesign.wcet.ipet.IPETConfig;
@@ -35,7 +36,6 @@ import com.jopdesign.wcet.report.ClassReport;
 import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 
-import java.util.HashMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +56,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 	/** Visitor for computing the WCET of CFG nodes */
 	private class LocalWcetVisitor extends WcetVisitor {
 		Context ctx;
-		public LocalWcetVisitor(Project project, Context ctx) {
+		public LocalWcetVisitor(WCETTool project, Context ctx) {
 			super(project);
 			this.ctx = ctx;
 		}
@@ -179,20 +179,20 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 
 	static final Logger logger = Logger.getLogger(RecursiveWcetAnalysis.class);
 	private AppInfo appInfo;
-	private ProcessorModel processor;
+	private WCETProcessorModel processor;
 	private RecursiveAnalysis.RecursiveStrategy<Context, WcetCost> recursiveWCET;
 
-	public RecursiveWcetAnalysis(Project project,
+	public RecursiveWcetAnalysis(WCETTool project,
 			RecursiveAnalysis.RecursiveStrategy<Context, WcetCost> recursiveStrategy) {
 		this(project, new IPETConfig(project.getConfig()), recursiveStrategy);
 	}
 
-	public RecursiveWcetAnalysis(Project project,
+	public RecursiveWcetAnalysis(WCETTool project,
 			                 IPETConfig ipetConfig,
 			                 RecursiveAnalysis.RecursiveStrategy<Context,WcetCost> recursiveStrategy) {
 		super(project, ipetConfig);
 		this.appInfo = project.getAppInfo();
-		this.processor = project.getAppInfo().getProcessorModel();
+		this.processor = project.getProcessorModel();
 
 		this.recursiveWCET = recursiveStrategy;
 	}
@@ -213,7 +213,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		sol.checkConsistentency();
 		recordCost(key, sol.getCost());
 		/* Logging and Report */
-		if(getProject().reportGenerationActive()) {
+		if(getWCETTool().reportGenerationActive()) {
 			logger.info("Report generation active: "+m+" in context "+ctx);
 			updateReport(key, sol);
 		}
@@ -252,7 +252,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 						Project.logger.error("No source code lines associated with basic block ! ");
 					}
 					ClassInfo cli = basicBlock.getClassInfo();
-					ClassReport cr = getProject().getReport().getClassReport(cli);
+					ClassReport cr = getWCETTool().getReport().getClassReport(cli);
 					Long oldCost = (Long) cr.getLineProperty(lineRange.first(), "cost");
 					if(oldCost == null) oldCost = 0L;
 					long newCost = sol.getNodeFlow(n)*nodeCosts.get(n).getCost();
@@ -270,12 +270,12 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		Map<String,Object> stats = new HashMap<String, Object>();
 		stats.put("WCET",sol.getCost());
 		stats.put("mode",key.ctx);
-		stats.put("all-methods-fit-in-cache",getProject().getProcessorModel().getMethodCache().allFit(m,null));
-		getProject().getReport().addDetailedReport(m,"WCET_"+key.ctx.toString(),stats,nodeFlowCostDescrs,sol.getEdgeFlow());
+		stats.put("all-methods-fit-in-cache", getWCETTool().getProcessorModel().getMethodCache().allFit(m,null));
+		getWCETTool().getReport().addDetailedReport(m,"WCET_"+key.ctx.toString(),stats,nodeFlowCostDescrs,sol.getEdgeFlow());
 	}
 	@Override
 	public WcetCost computeCostOfNode(CFGNode n ,Context ctx) {
-		WcetVisitor wcetVisitor = new LocalWcetVisitor(getProject(), ctx);
+		WcetVisitor wcetVisitor = new LocalWcetVisitor(getWCETTool(), ctx);
 		return wcetVisitor.computeCost(n);
 	}
 

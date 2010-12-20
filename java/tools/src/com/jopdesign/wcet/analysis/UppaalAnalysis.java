@@ -21,7 +21,7 @@ package com.jopdesign.wcet.analysis;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.wcet.ProcessorModel;
+import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.jop.MethodCache;
@@ -115,10 +115,10 @@ public class UppaalAnalysis {
 				RecursiveAnalysis<AnalysisContextUppaal, WcetCost> stagedAnalysis,
 				ControlFlowGraph.InvokeNode n,
 				AnalysisContextUppaal ctx) {
-			Project project = stagedAnalysis.getProject();
+			Project project = stagedAnalysis.getWCETTool();
 			MethodInfo invoker = n.getBasicBlock().getMethodInfo();
 			MethodInfo invoked = n.getImplementedMethod();
-			ProcessorModel proc = project.getProcessorModel();
+			WCETProcessorModel proc = project.getProcessorModel();
 			MethodCache cache = proc.getMethodCache();
 			int cc = project.computeCyclomaticComplexity(invoked);
 			long invokeReturnCost = cache.getInvokeReturnMissCost(proc,project.getFlowGraph(invoker),project.getFlowGraph(invoked));

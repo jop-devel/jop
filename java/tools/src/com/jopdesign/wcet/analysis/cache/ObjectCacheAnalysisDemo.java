@@ -20,7 +20,6 @@
 package com.jopdesign.wcet.analysis.cache;
 
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.code.CallGraph.MethodNode;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
@@ -153,7 +152,7 @@ public class ObjectCacheAnalysisDemo {
 		}
 		@Override
 		protected ObjectCacheCost computeCostOfNode(CFGNode n, AnalysisContext ctx) {
-			return new OCacheVisitor(this.getProject(), this, recursiveStrategy, ctx).computeCost(n);
+			return new OCacheVisitor(this.getWCETTool(), this, recursiveStrategy, ctx).computeCost(n);
 		}
 
 		@Override

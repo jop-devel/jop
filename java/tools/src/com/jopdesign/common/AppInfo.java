@@ -28,7 +28,7 @@ import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.ClassInfoNotFoundException;
 import com.jopdesign.common.misc.MissingClassError;
 import com.jopdesign.common.misc.NamingConflictException;
-import com.jopdesign.common.model.ProcessorModel;
+import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.FieldRef;

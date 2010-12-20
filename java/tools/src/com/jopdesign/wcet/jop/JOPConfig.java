@@ -27,13 +27,14 @@ import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.StringOption;
 import com.jopdesign.timing.WCETInstruction;
 import com.jopdesign.timing.jop.MicrocodeAnalysis;
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 
 import java.io.File;
 
+@SuppressWarnings({"PublicField"})
 public class JOPConfig {
-	private Config configData;
-	public int rws;
+
+    public int rws;
 	public int wws;
 	public boolean cmp;
 	public Long cpus;
@@ -48,8 +49,8 @@ public class JOPConfig {
 	public long objectCacheLoadFieldCycles;
 	public long objectCacheLoadBlockCycles;
 
-	public JOPConfig(Project p) {
-		configData = p.getConfig();
+	public JOPConfig(WCETTool p) {
+        Config configData = p.getConfig();
 		this.asmFile = new File(configData.getOption(ASM_FILE));
 		
 		this.rws = configData.getOption(READ_WAIT_STATES).intValue();
@@ -63,9 +64,9 @@ public class JOPConfig {
 		this.objectCacheFieldTag = false;
 		this.objectCacheLineSize = configData.getOption(OBJECT_CACHE_WORDS_PER_LINE).intValue();
 		
-		this.objectCacheHitCycles = configData.getOption(OBJECT_CACHE_HIT_CYCLES).longValue();
-		this.objectCacheLoadFieldCycles = configData.getOption(OBJECT_CACHE_LOAD_FIELD_CYCLES).longValue();
-		this.objectCacheLoadBlockCycles = configData.getOption(OBJECT_CACHE_LOAD_BLOCK_CYCLES).longValue();
+		this.objectCacheHitCycles = configData.getOption(OBJECT_CACHE_HIT_CYCLES);
+		this.objectCacheLoadFieldCycles = configData.getOption(OBJECT_CACHE_LOAD_FIELD_CYCLES);
+		this.objectCacheLoadBlockCycles = configData.getOption(OBJECT_CACHE_LOAD_BLOCK_CYCLES);
 	}
 	
 	public static final StringOption ASM_FILE =

@@ -26,7 +26,7 @@ import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.logger.LogConfig;
-import com.jopdesign.common.model.ProcessorModel;
+import com.jopdesign.common.processormodel.ProcessorModel;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.generic.ATHROW;

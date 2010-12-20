@@ -23,6 +23,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.jop.JOPConfig.CacheImplementation;
 
 public class VarBlockCache extends MethodCache {
@@ -31,7 +32,7 @@ public class VarBlockCache extends MethodCache {
 	private int blockSize;
 	private boolean isLRU;
 
-	public VarBlockCache(Project p, int blockCount, int cacheSizeInWords, boolean isLRU) {
+	public VarBlockCache(WCETTool p, int blockCount, int cacheSizeInWords, boolean isLRU) {
 		super(p,cacheSizeInWords);
 		this.blockCount = blockCount;
 		if(cacheSizeWords % blockCount != 0) {
@@ -42,7 +43,7 @@ public class VarBlockCache extends MethodCache {
 		this.isLRU = isLRU;
 	}
 
-	public static MethodCache fromConfig(Project p, boolean isLRU) {
+	public static MethodCache fromConfig(WCETTool p, boolean isLRU) {
 		Config c = p.getConfig();
 		return new VarBlockCache(p,
 				                 c.getOption(JOPConfig.CACHE_BLOCKS).intValue(),

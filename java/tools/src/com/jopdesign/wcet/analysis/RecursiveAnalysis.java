@@ -23,13 +23,13 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.ipet.CostProvider;
 import com.jopdesign.wcet.ipet.IPETBuilder;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETSolver;
 import com.jopdesign.wcet.ipet.IPETUtils;
 
-import java.util.HashMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -86,15 +86,15 @@ public abstract class RecursiveAnalysis<Context extends AnalysisContext, Rval> {
 		}
 	}
 
-	private Project project;
+	private WCETTool project;
 	private HashMap<CacheKey, Rval> costMap;
 	private IPETConfig ipetConfig;
 
-	public Project getProject() {
+	public WCETTool getWCETTool() {
 		return project;
 	}
 
-	public RecursiveAnalysis(Project p, IPETConfig ipetConfig) {
+	public RecursiveAnalysis(WCETTool p, IPETConfig ipetConfig) {
 		this.project = p;
 		this.ipetConfig = ipetConfig;
 		this.costMap = new HashMap<CacheKey,Rval>();

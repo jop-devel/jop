@@ -37,7 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
-public class JamuthModel implements ProcessorModel {
+public class JamuthModel implements WCETProcessorModel {
 	private JamuthTimingTable tt;
 	private final MethodCache NO_METHOD_CACHE;
 

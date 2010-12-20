@@ -126,9 +126,9 @@ public class ObjectCacheAnalysis {
 
 	
 	
-	private Project project;
+	private WCETTool project;
 
-	public ObjectCacheAnalysis(Project project) {
+	public ObjectCacheAnalysis(WCETTool project) {
 		this.project = project;
 	}
 	

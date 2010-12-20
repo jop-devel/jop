@@ -20,7 +20,7 @@
 package com.jopdesign.wcet.uppaal.translator.cache;
 
 import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.wcet.ProcessorModel;
+import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.jop.BlockCache;
 import com.jopdesign.wcet.uppaal.model.NTASystem;
 import com.jopdesign.wcet.uppaal.translator.SystemBuilder;
@@ -68,7 +68,7 @@ public class LRUCacheBuilder extends DynamicCacheBuilder {
 		return SystemBuilder.constArray(initElems).toString();
 	}
 	@Override
-	public long getWaitTime(ProcessorModel proc, ControlFlowGraph cfg,boolean isInvoke) {
+	public long getWaitTime(WCETProcessorModel proc, ControlFlowGraph cfg,boolean isInvoke) {
 		return proc.getMethodCacheMissPenalty(cfg.getNumberOfWords(), isInvoke);
 	}
 }

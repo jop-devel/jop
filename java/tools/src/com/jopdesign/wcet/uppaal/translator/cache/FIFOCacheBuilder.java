@@ -20,7 +20,7 @@
 package com.jopdesign.wcet.uppaal.translator.cache;
 
 import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.wcet.ProcessorModel;
+import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.jop.BlockCache;
 import com.jopdesign.wcet.uppaal.model.NTASystem;
 import com.jopdesign.wcet.uppaal.translator.SystemBuilder;
@@ -39,7 +39,7 @@ public class FIFOCacheBuilder extends DynamicCacheBuilder {
 		else                 this.simNumBlocks = blockCache.getNumBlocks() / 2;
 	}
 	@Override
-	public long getWaitTime(ProcessorModel proc, ControlFlowGraph cfg, boolean isInvoke) {
+	public long getWaitTime(WCETProcessorModel proc, ControlFlowGraph cfg, boolean isInvoke) {
 		if(isInvoke && assumeEmptyCache) return this.cache.getMissOnInvokeCost(proc, cfg);
 		else                             return this.cache.getMaxMissCost(proc, cfg);
 	}

@@ -3,7 +3,7 @@ package com.jopdesign.wcet.jop;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.config.Config;
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.jop.JOPConfig.CacheImplementation;
 
 public class BlockCache extends MethodCache {
@@ -12,7 +12,7 @@ public class BlockCache extends MethodCache {
 	private int blockCount;
 	private int blockSize;
 
-	public BlockCache(Project p, boolean isLRU, int cacheSizeWords, int blockCount) {
+	public BlockCache(WCETTool p, boolean isLRU, int cacheSizeWords, int blockCount) {
 		super(p,cacheSizeWords);
 		this.isLRU = isLRU;
 		this.blockCount = blockCount;
@@ -24,7 +24,7 @@ public class BlockCache extends MethodCache {
 	public int getBlockSize() {
 		return blockSize;
 	}
-	public static MethodCache fromConfig(Project p, boolean isLRU) {
+	public static MethodCache fromConfig(WCETTool p, boolean isLRU) {
 		Config c = p.getConfig();
 		return new BlockCache(p,isLRU,
 							  c.getOption(JOPConfig.CACHE_SIZE_WORDS).intValue(),

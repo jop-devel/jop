@@ -45,9 +45,6 @@ public class ProjectConfig {
 						 "the name (optional: class,signature) of the method to be analyzed",
 						 "measure");
 
-	public static final StringOption TARGET_CLASSPATH =
-		new StringOption("cp","the classpath",false);
-
 	public static final StringOption TARGET_SOURCEPATH =
 		new StringOption("sp","the sourcepath",false);
 
@@ -79,53 +76,28 @@ public class ProjectConfig {
 	public static final BooleanOption RESULTS_APPEND =
 		new BooleanOption("results-append","append analysis results to the result file",false);
 
-	public static final BooleanOption DEBUG =
-		new BooleanOption("debug","verbose debugging mode",false);
-
 	public static final Option<?>[] projectOptions =
 	{
 		OUT_DIR,
 		APP_CLASS_NAME, TARGET_METHOD, PROJECT_NAME,
-		TARGET_CLASSPATH, TARGET_SOURCEPATH, TARGET_BINPATH,
+		TARGET_SOURCEPATH, TARGET_BINPATH,
 		JAVA_PROCESSOR, 
 		DO_DFA, CALLSTRING_LENGTH,
 		OBJECT_CACHE_ANALYSIS,
 		USE_UPPAAL,
 		RESULT_FILE, RESULTS_APPEND,
-		DEBUG
 	};
 
 
-	public static File getOutDirStatic(String subdir) {
-		return new ProjectConfig(Config.instance()).getOutDir(subdir);
-	}
-
-	/** If no instance of project is available, us this one to get a path for
-	 * writing a file (not recommended, but sometimes useful for debugging stuff)
-	 * @param subdir
-	 * @param name
-	 */
-	public static File getOutFileStatic(String subdir, String name) {
-		return new ProjectConfig(Config.instance()).getOutFile(subdir, name);
-	}
-		
-
 	private Config config;
-
-	public Config getConfigManager() {
-		return this.config;
-	}
 
 	public ProjectConfig(Config config) {
 		this.config = config;
 	}
 
-	/** Return the configured classpath, a list of path separated by {@see File.pathSeparatorChar}
-	 * @return the classpath used for looking up compiled class files
-	 */
-	public String getClassPath() {
-		return config.getOption(TARGET_CLASSPATH);
-	}
+    public Config getConfig() {
+        return this.config;
+    }
 
 	/**
 	 * Get the name of the application class defining the entry point main()
@@ -188,9 +160,7 @@ public class ProjectConfig {
 	 * @return the path to the subdirectory for output
 	 */
 	public File getOutDir(String subdir) {
-		File dir = new File(
-				new ProjectConfig(Config.instance()).getOutDir(),
-				subdir);
+		File dir = new File(getOutDir(), subdir);
 		dir.mkdir();
 		return dir;		
 	}
@@ -247,7 +217,7 @@ public class ProjectConfig {
 	}
 
 	public boolean isDebugMode() {
-		return config.getOption(DEBUG);
+		return config.getOption(Config.DEBUG);
 	}
 	
 	/* Helpers */

@@ -26,7 +26,7 @@ import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.code.SuperGraphNode;
-import com.jopdesign.wcet.ProcessorModel;
+import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
@@ -286,11 +286,11 @@ public class GlobalAnalysis {
 				throw new AssertionError("Cache Mode " + ctx.getCacheApproxMode() + " not supported using" +
 						                " _mixed_ local/global IPET strategy");
 			}
-			Project project = stagedAnalysis.getProject();
+			Project project = stagedAnalysis.getWCETTool();
 			int callStringLength = project.getProjectConfig().callstringLength();
 			MethodInfo invoker = n.getBasicBlock().getMethodInfo();
 			MethodInfo invoked = n.getImplementedMethod();
-			ProcessorModel proc = project.getProcessorModel();
+			WCETProcessorModel proc = project.getProcessorModel();
 			MethodCache cache = proc.getMethodCache();
 			long returnCost = cache.getMissOnReturnCost(proc, project.getFlowGraph(invoker));
 			long invokeReturnCost = cache.getInvokeReturnMissCost(
@@ -336,7 +336,7 @@ public class GlobalAnalysis {
 		public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
 			visitBasicBlockNode(n);
 			if(addAlwaysMissCost) {
-				ProcessorModel proc = project.getProcessorModel();
+				WCETProcessorModel proc = project.getProcessorModel();
 				this.cost.addCacheCost(proc.getInvokeReturnMissCost(
 						n.invokerFlowGraph(),
 						n.receiverFlowGraph()));

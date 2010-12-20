@@ -84,7 +84,7 @@ public class WCETAnalysis {
     }
 
     private Config config;
-    private Project project;
+    private WCETTool project;
     private ExecHelper exec;
 	private WcetCost wcet;
 	private WcetCost alwaysMissCost;

@@ -33,6 +33,7 @@ import com.jopdesign.dfa.analyses.SymbolicPointsTo;
 import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
 import com.jopdesign.wcet.ipet.IPETConfig;
@@ -227,11 +228,11 @@ public class ObjectRefAnalysis {
 	private Map<ExecutionContext, Set<SymbolicAddress>> tagSet;
 
 
-	private Project project;
+	private WCETTool project;
 	private Map<DecisionVariable, SymbolicAddress> decisionVariables;
 	private Set<DecisionVariable> refDecisions;
 	
-	public ObjectRefAnalysis(Project p,  boolean fieldAsTag, int blockSize, int maxCachedIndex, int setSize) {
+	public ObjectRefAnalysis(WCETTool p,  boolean fieldAsTag, int blockSize, int maxCachedIndex, int setSize) {
 		this.project = p;
 		this.fieldAsTag = fieldAsTag;
 		this.blockSize = blockSize;
