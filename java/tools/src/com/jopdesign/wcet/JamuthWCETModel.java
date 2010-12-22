@@ -2,7 +2,7 @@
  * This file is part of JOP, the Java Optimized Processor
  * see <http://www.jopdesign.com/>
  *
- * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ * Copyright (C) 2010, Stefan Hepp (stefan@stefant.org).
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,29 +19,23 @@
  */
 package com.jopdesign.wcet;
 
-import com.jopdesign.common.AppInfo;
-import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.timing.jamuth.JamuthInstructionInfo;
 import com.jopdesign.timing.jamuth.JamuthTimingTable;
-import com.jopdesign.tools.JopInstr;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.jop.NoMethodCache;
 import org.apache.bcel.generic.BranchHandle;
-import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Vector;
 
-public class JamuthModel implements WCETProcessorModel {
+public class JamuthWCETModel implements WCETProcessorModel {
 	private JamuthTimingTable tt;
 	private final MethodCache NO_METHOD_CACHE;
 
-	public JamuthModel(Project p) {
+	public JamuthWCETModel(WCETTool p) {
 		tt = new JamuthTimingTable();
 		NO_METHOD_CACHE = new NoMethodCache(p);
 	}
@@ -85,16 +79,6 @@ public class JamuthModel implements WCETProcessorModel {
 			                            ControlFlowGraph receiverFlowGraph) {
 		return 0;
 	}
-	// FIXME: native jamuth classes not yet supported
-	public List<String> getJVMClasses() {
-		return new Vector<String>();
-	}
-	// FIXME: Java implemented bytecodes ?
-	public MethodInfo getJavaImplementation(AppInfo ai,
-			                                MethodInfo ctx,
-			                                Instruction instr) {
-		throw new AssertionError("jamuth model does not (yet) support java implemented methods");
-	}
 
 	public MethodCache getMethodCache() {
 		return NO_METHOD_CACHE;
@@ -105,29 +89,10 @@ public class JamuthModel implements WCETProcessorModel {
 		// throw new AssertionError("jamuth model does not have method cache");
 	}
 
-	public int getNativeOpCode(MethodInfo ctx, Instruction instr) {
-		// FIXME: jamuth specific instructions ?
-		return instr.getOpcode();
-	}
-
-	public int getNumberOfBytes(MethodInfo context, Instruction instruction) {
-		int opCode = getNativeOpCode(context, instruction);
-		// FIXME jamuth specific instructions ?
-		if(opCode >= 0) return JopInstr.len(opCode);
-		else throw new AssertionError("Invalid opcode: "+context+" : "+instruction);
-	}
-
 	public boolean hasMethodCache() {
 		return false;
 	}
 
-	public boolean isImplementedInJava(Instruction i) {
-		return false;
-	}
-
-	public boolean isSpecialInvoke(MethodInfo ctx, Instruction i) {
-		return false;
-	}
 	public long getMethodCacheMissPenalty(int numberOfWords, boolean loadOnInvoke) {
 		return 0;
 	}

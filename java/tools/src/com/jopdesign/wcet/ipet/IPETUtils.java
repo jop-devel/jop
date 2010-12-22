@@ -55,7 +55,7 @@ public class IPETUtils {
 	 *   <pre>sum (e_y_Exit) = 1</pre>
 	 */
 	public static<V,E,C extends CallStringProvider>
-	Vector<LinearConstraint<IPETBuilder.ExecutionEdge>>  
+	List<LinearConstraint<IPETBuilder.ExecutionEdge>>
 		structuralFlowConstraintsRoot(FlowGraph<V, E> g, IPETBuilder<C> ctx) {
 
 		LinearConstraint<IPETBuilder.ExecutionEdge> entryLhsProto = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
@@ -70,7 +70,7 @@ public class IPETUtils {
 	 * Structural flow constraints with given input and output edges.
 	 */
 	public static<V,E,C extends CallStringProvider>
-	Vector<LinearConstraint<IPETBuilder.ExecutionEdge>>  
+	List<LinearConstraint<IPETBuilder.ExecutionEdge>>
 		structuralFlowConstraints(FlowGraph<V, E> g,
 								  Collection<IPETBuilder.ExecutionEdge> inputEdges,
 								  Collection<IPETBuilder.ExecutionEdge> outputEdges,
@@ -99,13 +99,13 @@ public class IPETUtils {
 	 * @return the set of structural linear constraints
 	 */
 	public static<V,E, C extends CallStringProvider>
-	Vector<LinearConstraint<IPETBuilder.ExecutionEdge>> 
+	List<LinearConstraint<IPETBuilder.ExecutionEdge>>
 	    structuralFlowConstraints(FlowGraph<V,E> graph, 
 	    						  LinearConstraint<IPETBuilder.ExecutionEdge> entryLhsProto,
 	    						  LinearConstraint<IPETBuilder.ExecutionEdge> exitRhsProto,
 	    						  IPETBuilder<C> ctx) {
 
-		Vector<LinearConstraint<IPETBuilder.ExecutionEdge>> constraints = new Vector<LinearConstraint<IPETBuilder.ExecutionEdge>>();
+		List<LinearConstraint<IPETBuilder.ExecutionEdge>> constraints = new ArrayList<LinearConstraint<IPETBuilder.ExecutionEdge>>();
 
 		for(V node : graph.vertexSet()) {
 			LinearConstraint<IPETBuilder.ExecutionEdge> flowConstraint;
@@ -135,10 +135,10 @@ public class IPETUtils {
 	 * @return A list of flow constraints
 	 */
 	public static<C extends CallStringProvider>
-	Vector<LinearConstraint<IPETBuilder.ExecutionEdge>> 
+	List<LinearConstraint<IPETBuilder.ExecutionEdge>>
 		loopBoundConstraints(ControlFlowGraph g, IPETBuilder<C> ctx) {
 		
-		Vector<LinearConstraint<IPETBuilder.ExecutionEdge>> constraints = new Vector<LinearConstraint<IPETBuilder.ExecutionEdge>>();
+		List<LinearConstraint<IPETBuilder.ExecutionEdge>> constraints = new ArrayList<LinearConstraint<IPETBuilder.ExecutionEdge>>();
 		// - for each loop with bound B
 		// -- sum(exit_loop_edges) * B <= sum(continue_loop_edges)
 		LoopColoring<CFGNode,ControlFlowGraph.CFGEdge> loops = g.getLoopColoring();
@@ -163,7 +163,7 @@ public class IPETUtils {
 						   LoopBound loopBound,
 						   IPETBuilder<C> ctx) {
 		
-		Vector<LinearConstraint<IPETBuilder.ExecutionEdge>> loopConstraints = new Vector<LinearConstraint<IPETBuilder.ExecutionEdge>>();
+		List<LinearConstraint<IPETBuilder.ExecutionEdge>> loopConstraints = new ArrayList<LinearConstraint<IPETBuilder.ExecutionEdge>>();
 		/* marker loop constraints */
 		for(Entry<SymbolicMarker, Pair<Long, Long>> markerBound: loopBound.getLoopBounds()) {
 
@@ -214,10 +214,10 @@ public class IPETUtils {
 	 * @return A list of flow constraints
 	 */
 	public static<C extends CallStringProvider> 
-	Vector<LinearConstraint<IPETBuilder.ExecutionEdge>>
+	List<LinearConstraint<IPETBuilder.ExecutionEdge>>
 		infeasibleEdgeConstraints(ControlFlowGraph g, IPETBuilder<C> ctx) {
 		
-		Vector<LinearConstraint<IPETBuilder.ExecutionEdge>> constraints = new Vector<LinearConstraint<IPETBuilder.ExecutionEdge>>();
+		List<LinearConstraint<IPETBuilder.ExecutionEdge>> constraints = new ArrayList<LinearConstraint<IPETBuilder.ExecutionEdge>>();
 		// - for each infeasible edge
 		// -- edge = 0
 		for(ControlFlowGraph.CFGEdge edge : g.getInfeasibleEdges(ctx.getCallString())) {

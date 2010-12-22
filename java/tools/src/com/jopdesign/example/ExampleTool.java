@@ -23,22 +23,19 @@ package com.jopdesign.example;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.ClassInfo;
-import com.jopdesign.common.JopTool;
+import com.jopdesign.common.EmptyTool;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.IntegerOption;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.misc.NamingConflictException;
 
-import java.io.IOException;
-import java.util.Properties;
-
 /**
  * Just an example program to demonstrate some features of the common library.
  * 
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ExampleTool implements JopTool<ExampleManager> {
+public class ExampleTool extends EmptyTool<ExampleManager> {
 
     public static final String VERSION = "0.1";
 
@@ -56,24 +53,24 @@ public class ExampleTool implements JopTool<ExampleManager> {
         return manager;
     }
 
-    public Properties getDefaultProperties() throws IOException {
-        // we could also provide defaults in a file to overwrite the values in registerOptions()
-        // return AppSetup.loadResourceProps(ExampleTool.class, "defaults.properties");
-        // .. but we don't use it here
-        return null;
-    }
-
+    @Override
     public void registerOptions(OptionGroup options) {
         options.addOption( new BooleanOption("flag", "switch some stuff on or off") );
         options.addOption( new IntegerOption("new", "create n new classes", 2).setMinMax(0,10) );
     }
 
+    @Override
     public void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException {
     }
 
-    public void run(AppSetup setup) {
+    @Override
+    public void initialize(Config config) {
+    }
 
-        AppInfo appInfo = setup.getAppInfo();
+    @Override
+    public void run(Config config) {
+
+        AppInfo appInfo = AppInfo.getSingleton();
 
         // access and modify some classes
         System.out.println("field of main class: " + manager.getMyField(appInfo.getMainMethod().getClassInfo()) );

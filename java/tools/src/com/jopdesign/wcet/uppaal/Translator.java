@@ -20,7 +20,7 @@
 package com.jopdesign.wcet.uppaal;
 
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;
 import com.jopdesign.wcet.uppaal.model.XmlBuilder;
 import com.jopdesign.wcet.uppaal.model.XmlSerializationException;
@@ -37,12 +37,12 @@ import java.io.PrintStream;
 public class Translator {
 	private static final Logger logger = Logger.getLogger(Translator.class);
 
-	private Project project;
+	private WCETTool project;
 	private SystemBuilder sys;
 
 	private UppAalConfig config;
 
-	public Translator(UppAalConfig c, Project p) {
+	public Translator(UppAalConfig c, WCETTool p) {
 		this.config = c;
 		this.project = p;
 	}

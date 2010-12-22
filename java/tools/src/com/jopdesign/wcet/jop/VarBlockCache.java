@@ -22,9 +22,9 @@ package com.jopdesign.wcet.jop;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.config.Config;
-import com.jopdesign.wcet.Project;
+import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.wcet.WCETTool;
-import com.jopdesign.wcet.jop.JOPConfig.CacheImplementation;
+import com.jopdesign.common.processormodel.JOPConfig.CacheImplementation;
 
 public class VarBlockCache extends MethodCache {
 

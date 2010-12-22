@@ -31,6 +31,7 @@ import java.util.Properties;
 import java.util.TreeMap;
 
 public class ClassReport {
+
 	public static class JavaSource {
 		File sourceFile;
 		private Map<Integer,Line> lines = new TreeMap<Integer,Line>();
@@ -122,7 +123,7 @@ public class ClassReport {
 		this.ci = ci;
 		try {
 			this.source = JavaSource.readSource(sourceFile);
-		} catch (IOException e) {
+		} catch (IOException ignored) {
 			this.source = null;
 		}
 	}

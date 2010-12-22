@@ -69,7 +69,7 @@ public class LpSolveWrapper<T> {
 	private static Map<Integer,SolverStatus> readMap = null;
 
 	/**
-	 * Wrap the return code of lp_solve into a {@ link SolverStatus} variable.
+	 * Wrap the return code of lp_solve into a {@link SolverStatus} variable.
 	 * @param code the code returned by the solver
 	 * @return
 	 */

@@ -21,7 +21,7 @@ package com.jopdesign.wcet.uppaal.translator.cache;
 
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.wcet.WCETProcessorModel;
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.jop.VarBlockCache;
 import com.jopdesign.wcet.uppaal.model.NTASystem;
 import com.jopdesign.wcet.uppaal.translator.SystemBuilder;
@@ -29,7 +29,7 @@ import com.jopdesign.wcet.uppaal.translator.SystemBuilder;
 import java.util.Vector;
 
 public class LRUVarBlockCacheBuilder extends VarBlockCacheBuilder {
-	public LRUVarBlockCacheBuilder(Project p, VarBlockCache cache, int numMethods) {
+	public LRUVarBlockCacheBuilder(WCETTool p, VarBlockCache cache, int numMethods) {
 		super(p, cache, numMethods);
 	}
 	@Override

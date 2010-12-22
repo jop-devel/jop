@@ -23,7 +23,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.graphutils.Pair;
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.ipet.IPETBuilder;
 import com.jopdesign.wcet.ipet.IPETBuilder.ExecutionEdge;
@@ -107,9 +107,9 @@ public class MethodCacheAnalysis {
 	/** Number of blocks needed to store the instructions of the given scope */
 	private Map<ExecutionContext, Long> blocksNeeded;
 	/** The project analyzed */
-	private Project project;
+	private WCETTool project;
 	
-	public MethodCacheAnalysis(Project p) {
+	public MethodCacheAnalysis(WCETTool p) {
 		this.project = p;
 	}
 	
@@ -138,12 +138,12 @@ public class MethodCacheAnalysis {
 	 */
 	public void analyzeBlockUsage() {
 		/* Get Method Cache */
-		if(! project.getProcessorModel().hasMethodCache()) {
+		if(! project.getWCETProcessorModel().hasMethodCache()) {
 			throw new AssertionError(String.format("MethodCacheAnalysis: Processor %s has no method cache",
-					                 project.getProcessorModel().getName()));
+					                 project.getWCETProcessorModel().getName()));
 		}
 		
-		MethodCache methodCache = project.getProcessorModel().getMethodCache();
+		MethodCache methodCache = project.getWCETProcessorModel().getMethodCache();
 		IPETConfig ipetConfig = new IPETConfig(project.getConfig());
 		
 		/* initialize result data */

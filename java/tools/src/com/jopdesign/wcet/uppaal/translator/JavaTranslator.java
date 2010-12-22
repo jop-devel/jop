@@ -26,7 +26,7 @@ import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.graphutils.ProgressMeasure.RelativeProgress;
 import com.jopdesign.common.misc.BadGraphException;
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.TreeAnalysis;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.translator.cache.CacheSimBuilder;
@@ -44,14 +44,14 @@ public abstract class JavaTranslator {
 	protected Map<MethodInfo,SubAutomaton> methodAutomata;
 	protected List<MethodInfo> methodInfos;
 	protected UppAalConfig config;
-	protected Project project;
+	protected WCETTool project;
 	protected MethodInfo root;
 	protected SystemBuilder systemBuilder;
 	protected CacheSimBuilder cacheSim;
 	protected HashMap<MethodInfo, Integer> methodIDs;
 	private Map<MethodInfo, Map<ControlFlowGraph.CFGEdge, RelativeProgress<CFGNode>>> progressMap;
 	
-	public Project getProject() {
+	public WCETTool getProject() {
 		return project;
 	}
 	public UppAalConfig getConfig() {
@@ -75,7 +75,7 @@ public abstract class JavaTranslator {
 	public SubAutomaton getMethodAutomaton(MethodInfo mi) {
 		return methodAutomata.get(mi);
 	}
-	public JavaTranslator(UppAalConfig c, Project p, MethodInfo root) {
+	public JavaTranslator(UppAalConfig c, WCETTool p, MethodInfo root) {
 		this.config = c;
 		this.project = p;
 		this.root = root;

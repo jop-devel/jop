@@ -28,7 +28,7 @@ import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.BadGraphError;
 import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.MiscUtils;
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
@@ -130,7 +130,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 	private SuperGraph superGraph;
 	private HashMap<ControlFlowGraph.InvokeNode, Integer> callSiteIDs;
 
-	public JavaOneProcessPerSupergraphTranslator(UppAalConfig c, Project p,MethodInfo root) {
+	public JavaOneProcessPerSupergraphTranslator(UppAalConfig c, WCETTool p,MethodInfo root) {
 		super(c, p, root);
 		this.superGraph =  new SuperGraph(project.getAppInfo(), project.getFlowGraph(root), p.getProjectConfig().callstringLength());
 	}

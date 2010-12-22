@@ -21,9 +21,9 @@ package com.jopdesign.wcet.uppaal.translator;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.misc.MiscUtils;
-import com.jopdesign.wcet.Project;
+import com.jopdesign.common.processormodel.JOPConfig.CacheImplementation;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.jop.BlockCache;
-import com.jopdesign.wcet.jop.JOPConfig.CacheImplementation;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.jop.VarBlockCache;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
@@ -80,7 +80,7 @@ public class SystemBuilder {
 	private HashMap<Template,Integer> priorities = new HashMap<Template,Integer>();
 	private HashMap<MethodInfo,Integer> methodId = new HashMap<MethodInfo, Integer>();
 	private CacheSimBuilder cacheSim;
-	private Project project;
+	private WCETTool project;
 	private UppAalConfig config;
 	private int numMethods;
 	private int maxCallStackDepth;
@@ -94,7 +94,7 @@ public class SystemBuilder {
 	 * @param methods            the methods of the program
 	 */
 	public SystemBuilder(UppAalConfig config,
-			             Project p,
+			             WCETTool p,
 			             int maxCallStackDepth, List<MethodInfo> methods) {
 		this.config = config;
 		this.project = p;
@@ -111,7 +111,7 @@ public class SystemBuilder {
 		cacheSim.appendDeclarations(system,NUM_METHODS);
 	}
 	private CacheSimBuilder getCacheSimulation() {
-		MethodCache cache = project.getProcessorModel().getMethodCache();
+		MethodCache cache = project.getWCETProcessorModel().getMethodCache();
 		UppaalCacheApproximation cacheApprox = config.getCacheApproximation();
 		CacheSimBuilder sim;
 		if(cache.getName() == CacheImplementation.NO_METHOD_CACHE) {
@@ -138,7 +138,7 @@ public class SystemBuilder {
 		}
 		return sim;
 	}
-	public Project getProject() {
+	public WCETTool getProject() {
 		return project;
 	}
 	public CacheSimBuilder getCacheSim() {

@@ -22,6 +22,7 @@ package com.jopdesign.wcet;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.dfa.analyses.SymbolicAddress;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo;
@@ -31,7 +32,6 @@ import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation.OCacheAnalysisRes
 import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation.OCacheMode;
 import com.jopdesign.wcet.analysis.cache.ObjectRefAnalysis;
 import com.jopdesign.wcet.ipet.LpSolveWrapper;
-import com.jopdesign.wcet.jop.JOPConfig;
 import com.jopdesign.wcet.jop.MethodCache;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.TopologicalOrderIterator;
@@ -68,9 +68,9 @@ public class ObjectCacheAnalysis {
 		}
 		
 		public void setObjectCacheTiming(JOPConfig jopConfig, int blockSize) {
-			jopConfig.objectCacheHitCycles = accessCycles;
-			jopConfig.objectCacheLoadFieldCycles = accessCycles + loadTime(1);
-			jopConfig.objectCacheLoadBlockCycles = accessCycles + loadTime(blockSize);
+			jopConfig.setObjectCacheHitCycles(accessCycles);
+			jopConfig.setObjectCacheLoadFieldCycles(accessCycles + loadTime(1));
+			jopConfig.setObjectCacheLoadBlockCycles(accessCycles + loadTime(blockSize));
 		}
 		
 		public String toString() {
@@ -113,9 +113,9 @@ public class ObjectCacheAnalysis {
 		}
 
 		public void setObjectCacheTiming(JOPConfig jopConfig, int cacheBlockSize) {			
-			jopConfig.objectCacheHitCycles = accessCycles;
-			jopConfig.objectCacheLoadFieldCycles = accessCycles + loadTime(1);
-			jopConfig.objectCacheLoadBlockCycles = accessCycles + loadTime(cacheBlockSize);
+			jopConfig.setObjectCacheHitCycles(accessCycles);
+			jopConfig.setObjectCacheLoadFieldCycles(accessCycles + loadTime(1));
+			jopConfig.setObjectCacheLoadBlockCycles(accessCycles + loadTime(cacheBlockSize));
 		}
 		
 		public String toString() {
@@ -139,7 +139,9 @@ public class ObjectCacheAnalysis {
 
 	private void evaluateObjectCache() {
 		long start,stop;
-		JOPConfig jopconfig = new JOPConfig(project);
+
+        // TODO check if we can/need to get jopconfig elsewhere
+		JOPConfig jopconfig = new JOPConfig(project.getConfig());
 
 		// Method Cache
 		//testExactAllFit();
@@ -299,7 +301,7 @@ public class ObjectCacheAnalysis {
 		Map<ExecutionContext, Long> blockUsage = mcAnalysis.getBlockUsage();
 		MiscUtils.printMap(System.out, blockUsage, new MiscUtils.Function2<ExecutionContext, Long, String>() {
             public String apply(ExecutionContext v1, Long maxBlocks) {
-                MethodCache mc = project.getProcessorModel().getMethodCache();
+                MethodCache mc = project.getWCETProcessorModel().getMethodCache();
                 return String.format("%-50s ==> %2d <= %2d",
                         v1.getMethodInfo().getFQMethodName(),
                         maxBlocks,

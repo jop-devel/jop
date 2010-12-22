@@ -21,7 +21,7 @@ package com.jopdesign.wcet.uppaal.translator.cache;
 
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.wcet.WCETProcessorModel;
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.jop.VarBlockCache;
 import com.jopdesign.wcet.uppaal.model.NTASystem;
 import com.jopdesign.wcet.uppaal.translator.SystemBuilder;
@@ -35,7 +35,7 @@ public class FIFOVarBlockCacheBuilder extends VarBlockCacheBuilder {
 	protected int numBlocks() {
 		return simNumBlocks;
 	}
-	public FIFOVarBlockCacheBuilder(Project p, VarBlockCache cache, 
+	public FIFOVarBlockCacheBuilder(WCETTool p, VarBlockCache cache,
 			                        int numMethods, boolean assumeEmptyCache) {
 		super(p,cache,numMethods);
 		this.assumeEmptyCache = assumeEmptyCache;

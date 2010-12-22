@@ -21,11 +21,10 @@ package com.jopdesign.wcet.report;
 
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.code.CallGraph.MethodNode;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.graphutils.Pair;
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.annotations.LoopBound;
 
 import java.util.Collection;
@@ -40,7 +39,8 @@ public class MethodReport {
 	private int sizeInWords;
 	private ControlFlowGraph fg;
 	private int cacheBlocks;
-	public MethodReport(Project p, MethodInfo m, String page) {
+
+	public MethodReport(WCETTool p, MethodInfo m, String page) {
 		this.info = m;
 		fg = info.getCode().getControlFlowGraph();
 		this.loopBounds = fg.getLoopBounds().values();
@@ -51,7 +51,7 @@ public class MethodReport {
 			this.referenced.add(ref.first().getClassName()+"."+ref.second());
 		}
 		this.page = page;
-		this.cacheBlocks = p.getProcessorModel().getMethodCache().requiredNumberOfBlocks(fg.getNumberOfWords());
+		this.cacheBlocks = p.getWCETProcessorModel().getMethodCache().requiredNumberOfBlocks(fg.getNumberOfWords());
 	}
 	public MethodInfo getInfo() {
 		return info;

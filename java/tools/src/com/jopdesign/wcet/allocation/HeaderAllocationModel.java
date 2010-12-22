@@ -19,13 +19,13 @@
  */
 package com.jopdesign.wcet.allocation;
 
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 
-public class HeaderAllocationModel extends AllocationModel {
+public class HeaderAllocationModel extends AllocationWcetModel {
 
 	public static final int HEADER_SIZE = 4;
 
-	public HeaderAllocationModel(Project p) {
+	public HeaderAllocationModel(WCETTool p) {
 		super(p);
 	}
 	

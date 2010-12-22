@@ -24,7 +24,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.CPInstruction;
 import org.apache.bcel.generic.ConstantPoolGen;
@@ -43,11 +43,12 @@ import java.util.TreeSet;
 
 public class ConstantCache {
 
-	private Project project;
+	private WCETTool project;
+
 	private Map<MethodInfo,Set<Integer>> cpoolAddressMap =
 		new HashMap<MethodInfo, Set<Integer>>();
 	private Map<MethodInfo, Set<Integer>> staticAddressMap =
-		new HashMap<MethodInfo, Set<Integer>>();;
+		new HashMap<MethodInfo, Set<Integer>>();
 
 	private void addAddress(Map<MethodInfo, Set<Integer>> map, MethodInfo mi, int address) {
 		if(! map.containsKey(mi)) {
@@ -56,7 +57,7 @@ public class ConstantCache {
 		map.get(mi).add(address);
 	}
 
-	public ConstantCache(Project project) {
+	public ConstantCache(WCETTool project) {
 		this.project = project;
 	}
 
@@ -103,13 +104,13 @@ public class ConstantCache {
 		AppInfo appInfo = cfg.getAppInfo();
 		ConstantPoolGen cpg = cfg.getMethodInfo().getConstantPoolGen();
 		String fieldName = fii.getFieldName(cpg) + fii.getSignature(cpg);
-		Integer address = appInfo.getProject().getLinkerInfo().getStaticFieldAddress(
+		Integer address = project.getLinkerInfo().getStaticFieldAddress(
 				((ObjectType) fii.getReferenceType(cpg)).getClassName(),fieldName);
 		addAddress(staticAddressMap, cfg.getMethodInfo(), address);
 	}
 	private void addConstantPoolAddress(ControlFlowGraph cfg,  CPInstruction ii) {
 		AppInfo appInfo = cfg.getAppInfo();
-		LinkerInfo linker = appInfo.getProject().getLinkerInfo();
+		LinkerInfo linker = project.getLinkerInfo();
 		Integer address = linker.getLinkInfo(cfg.getMethodInfo().getClassInfo()).getConstAddress(ii.getIndex());
 		addAddress(cpoolAddressMap, cfg.getMethodInfo(), address);
 	}

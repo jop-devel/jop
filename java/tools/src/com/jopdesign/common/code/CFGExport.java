@@ -126,7 +126,7 @@ public class CFGExport {
 			}
 			nodeInfo.append(infoHeader);
 			nodeInfo.append("{"+codeBlock.getNumberOfBytes()+" By, ");
-			nodeInfo.append(n.getBasicBlock().getAppInfo().getProcessorModel().basicBlockWCET(
+			nodeInfo.append(n.getBasicBlock().getAppInfo().getWCETProcessorModel().basicBlockWCET(
 					new ExecutionContext(codeBlock.getMethodInfo()),
 					codeBlock)+" Cyc");
 			if(loops.getHeadOfLoops().contains(n)) {

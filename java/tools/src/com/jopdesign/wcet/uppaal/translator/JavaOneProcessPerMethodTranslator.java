@@ -23,7 +23,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.misc.MiscUtils;
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
@@ -122,7 +122,7 @@ public class JavaOneProcessPerMethodTranslator extends JavaTranslator {
 	}
 	private Map<MethodInfo,TemplateBuilder> processes = new HashMap<MethodInfo, TemplateBuilder>();
 
-	public JavaOneProcessPerMethodTranslator(UppAalConfig c, Project p, MethodInfo root) {
+	public JavaOneProcessPerMethodTranslator(UppAalConfig c, WCETTool p, MethodInfo root) {
 		super(c, p, root);
 	}
 

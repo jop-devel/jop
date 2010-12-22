@@ -21,8 +21,9 @@ package com.jopdesign.wcet.analysis;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETProcessorModel;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.uppaal.AnalysisContextUppaal;
@@ -40,11 +41,12 @@ import java.io.IOException;
 public class UppaalAnalysis {
 
 	private Logger logger;
-	private Project project;
+	private WCETTool project;
 	private double searchtime = 0.0;
 	private double solvertimemax = 0.0;
 	private UppAalConfig uppaalConfig;
-	public UppaalAnalysis(Logger logger, Project project, File outDir) {
+
+	public UppaalAnalysis(Logger logger, WCETTool project, File outDir) {
 		if(project.getProjectConfig().callstringLength() > 0) {
 			throw new AssertionError("Callstrings for UPPAAL analysis are not supported");
 		}
@@ -52,6 +54,7 @@ public class UppaalAnalysis {
 		this.logger = logger;
 		this.project = project;
 	}
+
 	public WcetCost computeWCET(MethodInfo targetMethod, long upperBound) throws IOException, DuplicateKeyException, XmlSerializationException {
 		if(uppaalConfig.hasComplexityTreshold()) {
 			int cc = project.computeCyclomaticComplexity(targetMethod);
@@ -62,6 +65,7 @@ public class UppaalAnalysis {
 		}
 		return calculateWCET(targetMethod, upperBound);
 	}
+
 	public WcetCost computeWCETWithTreshold(MethodInfo targetMethod, long complexityTreshold) {
 		RecursiveWcetAnalysis<AnalysisContextUppaal> sa =
 			new RecursiveWcetAnalysis< AnalysisContextUppaal>(
@@ -69,9 +73,11 @@ public class UppaalAnalysis {
 		return sa.computeCost(targetMethod,
 							  new AnalysisContextUppaal(uppaalConfig.getCacheApproximation()));
 	}
+
 	public WcetCost calculateWCET(MethodInfo m) throws IOException, DuplicateKeyException, XmlSerializationException {
 		return calculateWCET(m,-1);
 	}
+
 	public WcetCost calculateWCET(MethodInfo m, long ub) throws IOException, DuplicateKeyException, XmlSerializationException {
 		Long upperBound = null;
 		if(ub > 0) upperBound = ub + 20;
@@ -114,11 +120,12 @@ public class UppaalAnalysis {
 		public WcetCost recursiveCost(
 				RecursiveAnalysis<AnalysisContextUppaal, WcetCost> stagedAnalysis,
 				ControlFlowGraph.InvokeNode n,
-				AnalysisContextUppaal ctx) {
-			Project project = stagedAnalysis.getWCETTool();
+				AnalysisContextUppaal ctx)
+        {
+			WCETTool project = stagedAnalysis.getWCETTool();
 			MethodInfo invoker = n.getBasicBlock().getMethodInfo();
 			MethodInfo invoked = n.getImplementedMethod();
-			WCETProcessorModel proc = project.getProcessorModel();
+			WCETProcessorModel proc = project.getWCETProcessorModel();
 			MethodCache cache = proc.getMethodCache();
 			int cc = project.computeCyclomaticComplexity(invoked);
 			long invokeReturnCost = cache.getInvokeReturnMissCost(proc,project.getFlowGraph(invoker),project.getFlowGraph(invoked));

@@ -79,6 +79,7 @@ public class JCopter implements JopTool<JCopterManager> {
         options.addOption( USE_WCET );
     }
 
+    @Override
     public void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException {
         Config config = setup.getConfig();
         AppInfo appInfo = AppInfo.getSingleton();
@@ -89,14 +90,18 @@ public class JCopter implements JopTool<JCopterManager> {
 
     }
 
+    @Override
+    public void initialize(Config config) {
+    }
 
-    public void run(AppSetup setup) {
+    @Override
+    public void run(Config config) {
 
-        if ( setup.getConfig().getOption(USE_DFA) ) {
+        if ( config.getOption(USE_DFA) ) {
 
         }
 
-        if ( setup.getConfig().getOption(USE_WCET) ) {
+        if ( config.getOption(USE_WCET) ) {
 
         }
 
@@ -127,7 +132,7 @@ public class JCopter implements JopTool<JCopterManager> {
         setup.setupAppInfo(rest, true);
 
         // run optimizations
-        jcopter.run(setup);
+        jcopter.run(setup.getConfig());
 
         // write results
         setup.writeClasses();

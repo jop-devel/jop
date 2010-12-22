@@ -43,7 +43,7 @@ import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.ipet.LpSolveWrapper;
-import com.jopdesign.wcet.jop.JOPConfig;
+import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.report.ReportConfig;
 import com.jopdesign.wcet.uppaal.UppAalConfig;

@@ -19,11 +19,11 @@
  */
 package com.jopdesign.wcet.allocation;
 
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 
-public class HandleAllocationModel extends AllocationModel {
+public class HandleAllocationModel extends AllocationWcetModel {
 
-	public HandleAllocationModel(Project p) {
+	public HandleAllocationModel(WCETTool p) {
 		super(p);
 	}
 	

@@ -24,7 +24,7 @@ import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
-import com.jopdesign.wcet.jop.JOPConfig.CacheImplementation;
+import com.jopdesign.common.processormodel.JOPConfig.CacheImplementation;
 
 public class NoMethodCache extends MethodCache {
 

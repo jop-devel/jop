@@ -21,11 +21,7 @@ package com.jopdesign.common.processormodel;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.code.BasicBlock;
-import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.common.code.ExecutionContext;
 import org.apache.bcel.generic.Instruction;
-import org.apache.bcel.generic.InstructionHandle;
 
 import java.util.List;
 
@@ -79,39 +75,16 @@ public interface ProcessorModel {
 	 * Get classes, which contain methods invoked by the JVM.
 	 * Used for Java implemented bytecodes, exceptions.
      *
-	 * @return a list of fully qualified class names used by the JVM
+	 * @return a list of fully qualified class names used by the JVM or an empty list
 	 */
     List<String> getJVMClasses();
 
-	long getExecutionTime(ExecutionContext context, InstructionHandle i);
-
-	long basicBlockWCET(ExecutionContext context, BasicBlock codeBlock);
-
-	boolean hasMethodCache();
-
-	/**
-	 * return method cache, or NoMethodCache if the processor does not have a method cache
-	 * @return
-	 */
-	// MethodCache getMethodCache();
-
-	/**
-	 * get the miss penalty (method cache)
-	 * FIXME: We have to rewrite this portion of the analyzer - hardcoding miss penalties
-	 * is to inflexible
-	 * @param numberOfWords ... size of the method
-	 * @param loadOnInvoke  ... whether the method is loaded on invoke
-	 * @return
-	 */
-	long getMethodCacheMissPenalty(int numberOfWords, boolean loadOnInvoke);
-
-	/**
-	 * FIXME: We have to rewrite this portion of the analyzer - hardcoding miss penalties
-	 * is to inflexible
-	 * @param invokerFlowGraph
-	 * @param receiverFlowGraph
-	 * @return
-	 */
-	long getInvokeReturnMissCost(ControlFlowGraph invokerFlowGraph,ControlFlowGraph receiverFlowGraph);
+    /**
+     * Get classes, which are implemented native by the processor or JVM and will
+     * normally not be loaded.
+     *
+     * @return a list of fully qualified class names used by the JVM or an empty list
+     */
+    List<String> getNativeClasses();
 
 }

@@ -103,13 +103,13 @@ public class MethodBuilder implements CfgVisitor {
 	public void visitBasicBlockNode(BasicBlockNode n) {
 		ExecutionContext ctx = new ExecutionContext(n.getBasicBlock().getMethodInfo());
 		SubAutomaton bbLoc =
-			createBasicBlock(n.getId(),jTrans.getProject().getProcessorModel().basicBlockWCET(ctx,n.getBasicBlock()));
+			createBasicBlock(n.getId(),jTrans.getProject().getWCETProcessorModel().basicBlockWCET(ctx,n.getBasicBlock()));
 		this.nodeTemplates.put(n,bbLoc);
 	}
 
 	public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
 		ExecutionContext ctx = new ExecutionContext(n.getBasicBlock().getMethodInfo());
-		WCETProcessorModel proc = jTrans.getProject().getProcessorModel();
+		WCETProcessorModel proc = jTrans.getProject().getWCETProcessorModel();
 		SubAutomaton invokeAuto;
 		long staticWCET = proc.basicBlockWCET(ctx, n.getBasicBlock());
 		if(jTrans.getCacheSim().isAlwaysMiss()) {

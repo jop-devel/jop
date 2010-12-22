@@ -17,7 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-package com.jopdesign.wcet.jop;
+package com.jopdesign.common.processormodel;
 
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
@@ -27,48 +27,11 @@ import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.StringOption;
 import com.jopdesign.timing.WCETInstruction;
 import com.jopdesign.timing.jop.MicrocodeAnalysis;
-import com.jopdesign.wcet.WCETTool;
 
 import java.io.File;
 
-@SuppressWarnings({"PublicField"})
 public class JOPConfig {
 
-    public int rws;
-	public int wws;
-	public boolean cmp;
-	public Long cpus;
-	public Long timeslot;
-	public File asmFile;
-
-	public int objectCacheAssociativity;	
-	public int objectCacheBlockSize;
-	public boolean objectCacheFieldTag;
-	public int objectCacheLineSize;
-	public long objectCacheHitCycles;
-	public long objectCacheLoadFieldCycles;
-	public long objectCacheLoadBlockCycles;
-
-	public JOPConfig(WCETTool p) {
-        Config configData = p.getConfig();
-		this.asmFile = new File(configData.getOption(ASM_FILE));
-		
-		this.rws = configData.getOption(READ_WAIT_STATES).intValue();
-		this.wws = configData.getOption(WRITE_WAIT_STATES).intValue();
-		this.cmp = configData.getOption(MULTIPROCESSOR);
-		this.cpus = configData.getOption(CMP_CPUS);
-		this.timeslot = configData.getOption(CMP_TIMESLOT);
-		
-		this.objectCacheAssociativity = configData.getOption(OBJECT_CACHE_ASSOCIATIVITY).intValue();
-		this.objectCacheBlockSize = configData.getOption(OBJECT_CACHE_BLOCK_SIZE).intValue();
-		this.objectCacheFieldTag = false;
-		this.objectCacheLineSize = configData.getOption(OBJECT_CACHE_WORDS_PER_LINE).intValue();
-		
-		this.objectCacheHitCycles = configData.getOption(OBJECT_CACHE_HIT_CYCLES);
-		this.objectCacheLoadFieldCycles = configData.getOption(OBJECT_CACHE_LOAD_FIELD_CYCLES);
-		this.objectCacheLoadBlockCycles = configData.getOption(OBJECT_CACHE_LOAD_BLOCK_CYCLES);
-	}
-	
 	public static final StringOption ASM_FILE =
 		new StringOption("jop-asm-file","JOP assembler file",MicrocodeAnalysis.DEFAULT_ASM_FILE.getAbsolutePath());
 
@@ -111,13 +74,15 @@ public class JOPConfig {
 	public enum CacheImplementation {
 		LRU_CACHE, FIFO_CACHE,
 		LRU_VARBLOCK_CACHE, FIFO_VARBLOCK_CACHE,
-		NO_METHOD_CACHE,
+		NO_METHOD_CACHE
 	}
+
 	public static final EnumOption<CacheImplementation> CACHE_IMPL =
 		new EnumOption<CacheImplementation>(
 				"cache-impl",
 				"method cache implementation",
 				CacheImplementation.FIFO_VARBLOCK_CACHE);
+
 	public static final IntegerOption CACHE_BLOCKS =
 		new IntegerOption("cache-blocks","number of cache blocks",16);
 
@@ -139,12 +104,86 @@ public class JOPConfig {
 	};
 
 
-	/**
+    private int rws;
+	private int wws;
+	private boolean cmp;
+	private int cpus;
+	private int timeslot;
+	private File asmFile;
+
+    private CacheImplementation objectCacheName;
+	private int objectCacheAssociativity;
+	private int objectCacheBlockSize;
+	private boolean objectCacheFieldTag;
+	private int objectCacheLineSize;
+	private long objectCacheHitCycles;
+	private long objectCacheLoadFieldCycles;
+	private long objectCacheLoadBlockCycles;
+
+    public JOPConfig(Config configData) {
+        this.asmFile = new File(configData.getOption(ASM_FILE));
+
+        this.rws = configData.getOption(READ_WAIT_STATES).intValue();
+        this.wws = configData.getOption(WRITE_WAIT_STATES).intValue();
+        this.cmp = configData.getOption(MULTIPROCESSOR);
+        this.cpus = configData.getOption(CMP_CPUS).intValue();
+        this.timeslot = configData.getOption(CMP_TIMESLOT).intValue();
+
+        this.objectCacheName = configData.getOption(CACHE_IMPL);
+
+        this.objectCacheAssociativity = configData.getOption(OBJECT_CACHE_ASSOCIATIVITY).intValue();
+        this.objectCacheBlockSize = configData.getOption(OBJECT_CACHE_BLOCK_SIZE).intValue();
+        this.objectCacheFieldTag = false;
+        this.objectCacheLineSize = configData.getOption(OBJECT_CACHE_WORDS_PER_LINE).intValue();
+
+        this.objectCacheHitCycles = configData.getOption(OBJECT_CACHE_HIT_CYCLES);
+        this.objectCacheLoadFieldCycles = configData.getOption(OBJECT_CACHE_LOAD_FIELD_CYCLES);
+        this.objectCacheLoadBlockCycles = configData.getOption(OBJECT_CACHE_LOAD_BLOCK_CYCLES);
+    }
+
+    public int rws() {
+        return rws;
+    }
+
+    public int wws() {
+        return wws;
+    }
+
+    public boolean isCmp() {
+        return cmp;
+    }
+
+    public int getCpus() {
+        return cpus;
+    }
+
+    public int getTimeslot() {
+        return timeslot;
+    }
+
+    public File getAsmFile() {
+        return asmFile;
+    }
+
+    public boolean isObjectCacheFieldTag() {
+        return objectCacheFieldTag;
+    }
+
+    public long getObjectCacheHitCycles() {
+        return objectCacheHitCycles;
+    }
+
+    public CacheImplementation getCacheName() {
+        return objectCacheName;
+    }
+
+    /**
 	 * @return the associativity of the object cache
 	 */
 	public long getObjectCacheAssociativity() {
 		return this.objectCacheAssociativity;
 	}
+
 	public void setObjectCacheAssociativity(int assoc) {
 		this.objectCacheAssociativity = assoc;
 	}
@@ -152,6 +191,7 @@ public class JOPConfig {
 	public boolean objectCacheSingleField() {
 		return this.objectCacheFieldTag;
 	}
+
 	/**
 	 * @param b whether to use fields as tag (only for experiments)
 	 */
@@ -159,10 +199,11 @@ public class JOPConfig {
 		this.objectCacheFieldTag = b;
 	}
 	
-	public int getObjectLineSize() {
+	public int getObjectCacheLineSize() {
 		return objectCacheLineSize;
 	}
-	public int objectCacheBlockSize() {
+
+	public int getObjectCacheBlockSize() {
 		return objectCacheBlockSize;
 	}
 	
@@ -187,7 +228,19 @@ public class JOPConfig {
 		return this.objectCacheLoadFieldCycles;
 	}
 
-/* Removed for now, as is not flexible enough */
+    public void setObjectCacheHitCycles(long objectCacheHitCycles) {
+        this.objectCacheHitCycles = objectCacheHitCycles;
+    }
+
+    public void setObjectCacheLoadFieldCycles(long objectCacheLoadFieldCycles) {
+        this.objectCacheLoadFieldCycles = objectCacheLoadFieldCycles;
+    }
+
+    public void setObjectCacheLoadBlockCycles(long objectCacheLoadBlockCycles) {
+        this.objectCacheLoadBlockCycles = objectCacheLoadBlockCycles;
+    }
+
+    /* Removed for now, as is not flexible enough */
 //	public long getObjectCacheAccessTime(int words) {
 //		int  burstLength = this.objectCacheMaxBurst;
 //		long delay       = this.objectCacheAccessDelay;

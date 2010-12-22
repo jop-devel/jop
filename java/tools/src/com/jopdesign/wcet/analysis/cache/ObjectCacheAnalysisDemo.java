@@ -26,7 +26,8 @@ import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.CfgVisitor;
 import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.wcet.Project;
+import com.jopdesign.common.processormodel.JOPConfig;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.AnalysisContext;
 import com.jopdesign.wcet.analysis.AnalysisContextSimple;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis;
@@ -37,7 +38,6 @@ import com.jopdesign.wcet.ipet.CostProvider;
 import com.jopdesign.wcet.ipet.CostProvider.MapCostProvider;
 import com.jopdesign.wcet.ipet.IPETBuilder;
 import com.jopdesign.wcet.ipet.IPETConfig;
-import com.jopdesign.wcet.jop.JOPConfig;
 import org.apache.bcel.generic.InstructionHandle;
 
 import java.util.HashMap;
@@ -145,7 +145,7 @@ public class ObjectCacheAnalysisDemo {
 
 		private RecursiveStrategy<AnalysisContext, ObjectCacheCost> recursiveStrategy;
 
-		public RecursiveOCacheAnalysis(Project p, IPETConfig ipetConfig,
+		public RecursiveOCacheAnalysis(WCETTool p, IPETConfig ipetConfig,
 				RecursiveStrategy<AnalysisContext, ObjectCacheCost> recursiveStrategy) {
 			super(p, ipetConfig);
 			this.recursiveStrategy = recursiveStrategy;
@@ -192,10 +192,10 @@ public class ObjectCacheAnalysisDemo {
 		private RecursiveAnalysis<AnalysisContext, ObjectCacheCost> recursiveAnalysis;
 		private RecursiveStrategy<AnalysisContext, ObjectCacheCost> recursiveStrategy;
 		private AnalysisContext context;
-		private Project project;
+		private WCETTool project;
 
 		public OCacheVisitor(
-				Project p,
+				WCETTool p,
 				RecursiveAnalysis<AnalysisContext, ObjectCacheCost> recursiveAnalysis,
 				RecursiveStrategy<AnalysisContext, ObjectCacheCost> recursiveStrategy, 
 				AnalysisContext ctx
@@ -210,8 +210,8 @@ public class ObjectCacheAnalysisDemo {
 		public void visitBasicBlockNode(BasicBlockNode n) {
 			long worstCaseMissCost = jopconfig.getObjectCacheLoadBlockCycles();
 			for(InstructionHandle ih : n.getBasicBlock().getInstructions()) {
-				if(null == ObjectRefAnalysis.getHandleType(project, n, ih)) continue;
-				if(! ObjectRefAnalysis.isFieldCached(n.getControlFlowGraph(), ih, jopconfig.getObjectCacheMaxCachedFieldIndex())) {
+				if(ObjectRefAnalysis.getHandleType(project, n, ih) == null) continue;
+				if(! ObjectRefAnalysis.isFieldCached(project, n.getControlFlowGraph(), ih, jopconfig.getObjectCacheMaxCachedFieldIndex())) {
 					cost.addBypassCost(worstCaseMissCost,1);
 				} else {
 					cost.addMissCost(worstCaseMissCost,1);
@@ -267,18 +267,19 @@ public class ObjectCacheAnalysisDemo {
 
 	}
 
-	private Project project;
+	private WCETTool project;
 	private JOPConfig jopconfig;
 	private ObjectRefAnalysis objRefAnalysis;
 	private int maxCachedFieldIndex;
 	private ObjectCacheCostModel costModel;
 	private boolean assumeAllMiss;
 
-	public ObjectCacheAnalysisDemo(Project p, JOPConfig jopconfig) {
+	public ObjectCacheAnalysisDemo(WCETTool p, JOPConfig jopconfig) {
 		this.project = p;
 		this.jopconfig = jopconfig;
 		this.maxCachedFieldIndex = jopconfig.getObjectCacheMaxCachedFieldIndex();
-		this.objRefAnalysis = new ObjectRefAnalysis(project, jopconfig.objectCacheSingleField(), jopconfig.objectCacheBlockSize(), maxCachedFieldIndex, DEFAULT_SET_SIZE);
+		this.objRefAnalysis = new ObjectRefAnalysis(project, jopconfig.objectCacheSingleField(),
+                jopconfig.getObjectCacheBlockSize(), maxCachedFieldIndex, DEFAULT_SET_SIZE);
 		this.costModel = getCostModel();		
 	}
 	

@@ -88,7 +88,6 @@ public class TemplateBuilder {
 	 * A number of loop variables, depending on the maximum nesting depth is created.
 	 * @param name the template's name
 	 * @param bbClock the basic block clock
-	 * @param createBBClock whether to create the basic block clock
 	 */
 	public TemplateBuilder(UppAalConfig config,
 						   String name, int processId,

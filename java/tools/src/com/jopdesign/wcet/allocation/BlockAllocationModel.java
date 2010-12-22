@@ -19,14 +19,14 @@
  */
 package com.jopdesign.wcet.allocation;
 
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 
-public class BlockAllocationModel extends AllocationModel {
+public class BlockAllocationModel extends AllocationWcetModel {
 
 	public static final int HEADER_SIZE = 4;
 	public static final int BLOCK_SIZE = 8;
 
-	public BlockAllocationModel(Project p) {
+	public BlockAllocationModel(WCETTool p) {
 		super(p);
 	}
 	

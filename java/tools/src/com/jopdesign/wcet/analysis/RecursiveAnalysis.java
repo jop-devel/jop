@@ -48,9 +48,9 @@ public abstract class RecursiveAnalysis<Context extends AnalysisContext, Rval> {
 	/** Used for configuring recursive WCET caluclation */
 	public interface RecursiveStrategy<Context extends AnalysisContext, Rval> {
 
-		public Rval recursiveCost(RecursiveAnalysis<Context,Rval> stagedAnalysis,
-				ControlFlowGraph.InvokeNode invocation,
-				Context ctx);
+		Rval recursiveCost(RecursiveAnalysis<Context, Rval> stagedAnalysis,
+                           ControlFlowGraph.InvokeNode invocation,
+                           Context ctx);
 	}
 	
 	/** Key for caching recursive calculations */

@@ -29,6 +29,7 @@ import com.jopdesign.common.code.ControlFlowGraph.CfgVisitor;
 import com.jopdesign.common.graphutils.ProgressMeasure;
 import com.jopdesign.common.graphutils.ProgressMeasure.RelativeProgress;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.annotations.LoopBound;
 
 import java.util.Collections;
@@ -47,7 +48,7 @@ public class TreeAnalysis {
 	private class LocalCostVisitor extends WcetVisitor {
 		private AnalysisContext ctx;
 
-		public LocalCostVisitor(AnalysisContext c, Project p) {
+		public LocalCostVisitor(AnalysisContext c, WCETTool p) {
 			super(p);
 			ctx = c;
 		}
@@ -56,7 +57,7 @@ public class TreeAnalysis {
 		public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
 			MethodInfo method = n.getImplementedMethod();
 			visitBasicBlockNode(n);
-			cost.addCacheCost(project.getProcessorModel().getInvokeReturnMissCost(
+			cost.addCacheCost(project.getWCETProcessorModel().getInvokeReturnMissCost(
 					n.invokerFlowGraph(),
 					n.receiverFlowGraph()));
 			cost.addNonLocalCost(methodWCET.get(method));
@@ -64,7 +65,7 @@ public class TreeAnalysis {
 
 		@Override
 		public void visitBasicBlockNode(BasicBlockNode n) {
-			cost.addLocalCost(project.getProcessorModel().basicBlockWCET(ctx.getExecutionContext(n), n.getBasicBlock()));
+			cost.addLocalCost(project.getWCETProcessorModel().basicBlockWCET(ctx.getExecutionContext(n), n.getBasicBlock()));
 		}
 	}
 
@@ -96,14 +97,14 @@ public class TreeAnalysis {
 			return progress;
 		}
 	}
-	private Project project;
+	private WCETTool project;
 	private HashMap<MethodInfo, Long> methodWCET;
 	private Map<MethodInfo,Map<ControlFlowGraph.CFGEdge, RelativeProgress<CFGNode>>> relativeProgress
 		= new HashMap<MethodInfo, Map<ControlFlowGraph.CFGEdge,RelativeProgress<CFGNode>>>();
 	private HashMap<MethodInfo, Long> maxProgress = new HashMap<MethodInfo,Long>();
 	private boolean  filterLeafMethods;
 
-	public TreeAnalysis(Project p, boolean filterLeafMethods) {
+	public TreeAnalysis(WCETTool p, boolean filterLeafMethods) {
 		this.project = p;
 		this.filterLeafMethods = filterLeafMethods;
 		computeProgress(p.getTargetMethod());

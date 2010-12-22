@@ -20,8 +20,8 @@
 package com.jopdesign.wcet.jop;
 
 import com.jopdesign.common.ClassInfo;
-import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.ProjectConfig;
+import com.jopdesign.wcet.WCETTool;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
@@ -121,7 +121,7 @@ public class LinkerInfo {
 
 		@Override
 		public String toString() {
-			return "LinkInfo "+this.klass.clazz.getClassName()+" "+clinfoAddress;
+			return "LinkInfo "+this.klass.getClassName()+" "+clinfoAddress;
 		}
 
 		public void dump(PrintStream out) {
@@ -131,7 +131,7 @@ public class LinkerInfo {
 		}
 		
 		public void dump(StringBuilder sb) {
-			sb.append("LinkInfo: "+this.klass.clazz.getClassName()+"\n");
+			sb.append("LinkInfo: "+this.klass.getClassName()+"\n");
 			sb.append("  instSize: "+this.instSize+"\n");
 			sb.append("  classInfo @ "+this.clinfoAddress+"\n");
 			sb.append("  mtab @ "+this.getMTabAddress()+"\n");
@@ -172,12 +172,12 @@ public class LinkerInfo {
 
 		private void loadSuperClassFields() {
 			if(this.superClassFields != null) return;
-			if(this.klass.superClass == null) return;
+			if(this.klass.getSuperClassInfo() == null) return;
 			LinkInfo superLinkInfo;
 			try {
-				superLinkInfo = getOrCreateLinkInfo(klass.clazz.getSuperclassName());
+				superLinkInfo = getOrCreateLinkInfo(klass.getSuperClassName());
 			} catch (ClassNotFoundException e) {
-				throw new AssertionError("Superclass not found: "+klass.clazz.getSuperclassName());
+				throw new AssertionError("Superclass not found: "+klass.getSuperClassName());
 			}
 			superClassFields = superLinkInfo.getFieldOffsets();
 			this.fieldOffsets.putAll(superClassFields);
@@ -207,14 +207,14 @@ public class LinkerInfo {
 
 	}
 	
-	private Project project;
+	private WCETTool project;
 	private Map<String, LinkInfo> classLinkInfo;
 
 	public Map<String, LinkInfo> getClassLinkInfo() {
 		return classLinkInfo;
 	}
 
-	public LinkerInfo(Project p) {
+	public LinkerInfo(WCETTool p) {
 		this.project = p;
 	}
 	
@@ -287,7 +287,7 @@ public class LinkerInfo {
 	}
 
 	public LinkInfo getLinkInfo(ClassInfo cli) {
-		return classLinkInfo.get(cli.clazz.getClassName());
+		return classLinkInfo.get(cli.getClassName());
 	}
 
 	public Integer getStaticFieldAddress(String className, String fieldName) {
@@ -302,9 +302,9 @@ public class LinkerInfo {
 
 	/**
 	 * Compute the (physical) index of a given field (using linker infos)
-	 * @param methodInfo
-	 * @param ih
-	 * @return
+     * @param klassName
+     * @param fieldName
+     * @return
 	 */
 	public int getFieldIndex(String klassName, String fieldName)
 	{

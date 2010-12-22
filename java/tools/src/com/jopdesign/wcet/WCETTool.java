@@ -28,26 +28,40 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.EmptyTool;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
+import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.OptionGroup;
+import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.common.processormodel.JOPConfig;
+import com.jopdesign.common.processormodel.ProcessorModel;
+import com.jopdesign.dfa.DFATool;
+import com.jopdesign.dfa.analyses.CallStringReceiverTypes;
+import com.jopdesign.dfa.analyses.LoopBounds;
+import com.jopdesign.dfa.framework.ContextMap;
+import com.jopdesign.wcet.allocation.BlockAllocationModel;
+import com.jopdesign.wcet.allocation.HandleAllocationModel;
+import com.jopdesign.wcet.allocation.HeaderAllocationModel;
+import com.jopdesign.wcet.allocation.ObjectAllocationModel;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.annotations.SourceAnnotationReader;
-import com.jopdesign.wcet.annotations.SourceAnnotations;
 import com.jopdesign.wcet.ipet.IPETConfig;
-import com.jopdesign.wcet.jop.JOPConfig;
+import com.jopdesign.wcet.jop.JOPWcetModel;
 import com.jopdesign.wcet.jop.LinkerInfo;
 import com.jopdesign.wcet.jop.LinkerInfo.LinkInfo;
 import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
+import org.apache.bcel.generic.InstructionHandle;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Date;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -61,8 +75,7 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
 
     private AppInfo appInfo;
     private CallGraph callGraph;
-
-    private Map<ClassInfo, SourceAnnotations> annotationMap;
+    private DFATool dfaTool;
 
     private boolean genWCETReport;
     private Report results;
@@ -85,15 +98,65 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
 
     }
 
+    @SuppressWarnings({"LiteralAsArgToStringEquals"})
     @Override
     public void onSetupConfig(AppSetup setup) throws BadConfigurationException {
         appInfo = setup.getAppInfo();
+        Config config = setup.getConfig();
 
+
+        this.projectConfig =  config;
+        this.projectName = projectConfig.getProjectName();
+
+        {
+            File outDir = projectConfig.getOutDir();
+            Config.checkDir(outDir,true);
+            File ilpDir = new File(outDir,"ilps");
+            Config.checkDir(ilpDir, true);
+        }
+
+        if(projectConfig.doGenerateReport()) {
+            try {
+                this.results = new Report(projectConfig.getConfig(),
+                                          this,
+                                          projectConfig.getReportDir());
+            } catch (IOException e) {
+                throw new BadConfigurationException("Unable to initialize reports", e);
+            }
+            this.genWCETReport = true;
+        } else {
+            this.genWCETReport = false;
+        }
+
+        if(projectConfig.saveResults()) {
+            this.resultRecord = new File(config.getOption(ProjectConfig.RESULT_FILE));
+            if(! projectConfig.appendResults()) {
+                recordMetric("problem",this.getProjectName());
+                recordMetric("date",new Date());
+            }
+        }
+
+        if (projectConfig.getProcessorName().equals("allocObjs")) {
+            this.processor = new ObjectAllocationModel(this);
+        } else if (projectConfig.getProcessorName().equals("allocHandles")) {
+            this.processor = new HandleAllocationModel(this);
+        } else if (projectConfig.getProcessorName().equals("allocHeaders")) {
+            this.processor = new HeaderAllocationModel(this);
+        } else if (projectConfig.getProcessorName().equals("allocBlocks")) {
+            this.processor = new BlockAllocationModel(this);
+        } else if(projectConfig.getProcessorName().equals("jamuth")) {
+            this.processor = new JamuthWCETModel(this);
+        } else {
+            try {
+                this.processor = new JOPWcetModel(this);
+            } catch (IOException e) {
+                throw new BadConfigurationException("Unable to initialize JopWcetModel", e);
+            }
+        }
     }
 
     @Override
     public void initialize(Config config) {
-
     }
 
     @Override
@@ -105,7 +168,11 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
         return appInfo;
     }
 
-    public WCETProcessorModel getProcessorModel() {
+    public ProcessorModel getProcessorModel() {
+        return appInfo.getProcessorModel();
+    }
+
+    public WCETProcessorModel getWCETProcessorModel() {
         return processor;
     }
 
@@ -121,8 +188,30 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
         return callGraph;
     }
 
+    public DFATool getDfaTool() {
+        return dfaTool;
+    }
+
+    public void setDfaTool(DFATool dfaTool) {
+        this.dfaTool = dfaTool;
+    }
+
     public ClassInfo getTargetClass() {
         return appInfo.getClassInfo(projectConfig.getTargetClass());
+    }
+
+    public String getTargetName() {
+        return MiscUtils.sanitizeFileName(projectConfig.getAppClassName()
+                + "_" + projectConfig.getTargetMethodName());
+    }
+
+    public MethodInfo getTargetMethod() {
+        try {
+            return appInfo.getMethodInfo(projectConfig.getTargetClass(),
+                    projectConfig.getTargetMethod());
+        } catch (MethodNotFoundException e) {
+            throw new AssertionError("Target method not found: "+e);
+        }
     }
 
     public String getProjectName() {
@@ -147,7 +236,7 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
 
     /**
      * Get link info for a given class
-     * @param cli
+     * @param cli the class
      * @return the linker info
      */
     public LinkInfo getLinkInfo(ClassInfo cli) {
@@ -177,7 +266,7 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
 
 
     public void writeReport() throws Exception {
-        this.results.addStat( "classpath", projectConfig.getClassPath());
+        this.results.addStat( "classpath", getAppInfo().getClassPath());
         this.results.addStat( "application", projectConfig.getAppClassName());
         this.results.addStat( "class", projectConfig.getTargetClass());
         this.results.addStat( "method", projectConfig.getTargetMethod());
@@ -190,6 +279,7 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
         if(! subDir.exists()) subDir.mkdir();
         return subDir;
     }
+
     public File getOutFile(String file) {
         return new File(projectConfig.getOutDir(),file);
     }
@@ -254,12 +344,12 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
     }
 
     private void recordCVS(String key, String subkey, WcetCost cost, Object... params) {
-        Object fixedCols[] = { key, subkey };
+        Object[] fixedCols = { key, subkey };
         try {
             FileWriter fw = new FileWriter(resultRecord,true);
             fw.write(MiscUtils.joinStrings(fixedCols, ";"));
             if(cost != null) {
-                Object costCols[] = { cost.getCost(), cost.getNonCacheCost(),cost.getCacheCost() };
+                Object[] costCols = { cost.getCost(), cost.getNonCacheCost(),cost.getCacheCost() };
                 fw.write(";");
                 fw.write(MiscUtils.joinStrings(costCols, ";"));
             }
@@ -273,4 +363,37 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
             e.printStackTrace();
         }
     }
+
+	/* Data flow analysis
+	 * ------------------
+	 */
+	public boolean doDataflowAnalysis() {
+		return projectConfig.doDataflowAnalysis();
+	}
+
+	@SuppressWarnings("unchecked")
+	public void dataflowAnalysis() {
+		int callstringLength = (int)projectConfig.callstringLength();
+		topLevelLogger.info("Receiver analysis");
+		CallStringReceiverTypes recTys = new CallStringReceiverTypes(callstringLength);
+		Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults =
+			dfaTool.runAnalysis(recTys);
+
+		dfaTool.setReceivers(receiverResults);
+		appInfo.setReceivers(receiverResults, callstringLength);
+
+		topLevelLogger.info("Loop bound analysis");
+		LoopBounds dfaLoopBounds = new LoopBounds(callstringLength);
+		dfaTool.runAnalysis(dfaLoopBounds);
+		dfaTool.setLoopBounds(dfaLoopBounds);
+		this.hasDfaResults = true;
+	}
+	/**
+	 * Get the loop bounds found by dataflow analysis
+	 */
+	public LoopBounds getDfaLoopBounds() {
+		if(! hasDfaResults) return null;
+		return dfaTool.getLoopBounds();
+	}
+
 }

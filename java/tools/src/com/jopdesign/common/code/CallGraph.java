@@ -177,9 +177,6 @@ public class CallGraph {
 							throws MethodNotFoundException
     {
 		MethodInfo rootMethod = appInfo.getMethodInfo(className,methodSig);
-        if (rootMethod == null) {
-            throw new MethodNotFoundException("Could not find method "+className+"."+methodSig);
-        }
         return buildCallGraph(rootMethod, config);
 	}
 

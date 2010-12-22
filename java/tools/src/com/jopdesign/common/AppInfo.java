@@ -26,6 +26,7 @@ import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
 import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.ClassInfoNotFoundException;
+import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MissingClassError;
 import com.jopdesign.common.misc.NamingConflictException;
 import com.jopdesign.common.processormodel.ProcessorModel;
@@ -643,21 +644,34 @@ public final class AppInfo {
      *
      * @param className the fully qualified name of the class
      * @param methodSignature either the name of the method if unique, or the method signature.
-     * @return the method if it exists
+     * @return the method
+     * @throws MethodNotFoundException if the method is not found or if multiple matches are found.
      */
-    public MethodInfo getMethodInfo(String className, String methodSignature) {
+    public MethodInfo getMethodInfo(String className, String methodSignature) throws MethodNotFoundException {
         ClassInfo classInfo = classes.get(className);
-        if (classInfo == null) { return null; }
+        if (classInfo == null) {
+            throw new MethodNotFoundException("Could not find class for method "+className+"."+methodSignature);
+        }
         // check signature first since this is faster
         MethodInfo method = classInfo.getMethodInfo(methodSignature);
         if (method == null) {
             Set<MethodInfo> candidates = classInfo.getMethodByName(methodSignature);
             if (candidates.size() == 1) {
                 method = candidates.iterator().next();
+            } else {
+                if (candidates.size() == 0) {
+                    throw new MethodNotFoundException("Could not find method "+className+"."+methodSignature);
+                } else {
+                    throw new MethodNotFoundException("Multiple candidates for method "+className+"."+methodSignature);
+                }
             }
-            // else method = null;
+
         }
         return method;
+    }
+
+    public MethodInfo getMethodInfo(Signature signature) throws MethodNotFoundException {
+        return getMethodInfo(signature.getClassName(), signature.getMemberSignature());
     }
 
     //////////////////////////////////////////////////////////////////////////////

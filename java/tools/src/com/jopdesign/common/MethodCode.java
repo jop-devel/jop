@@ -26,6 +26,7 @@ import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.BadGraphException;
 import org.apache.bcel.classfile.Attribute;
+import org.apache.bcel.classfile.Code;
 import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.generic.CodeExceptionGen;
 import org.apache.bcel.generic.ConstantPoolGen;
@@ -98,6 +99,17 @@ public class MethodCode {
 
     public int getMaxLocals() {
         return methodGen.getMaxLocals();
+    }
+
+    /**
+     * Get the length of the code attribute. This needs to compile the CFG first.
+     * @see Code#length
+     * @return the length of the code attribute
+     */
+    public int getLength() {
+        // TODO if CFG is set, get length from CFG ?
+        compileCFG();
+        return methodGen.getMethod().getCode().getLength();
     }
 
     public LocalVariableGen addLocalVariable(String name, Type type, int slot, InstructionHandle start, InstructionHandle end) {

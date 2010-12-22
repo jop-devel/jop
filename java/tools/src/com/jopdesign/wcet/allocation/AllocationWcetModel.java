@@ -28,8 +28,9 @@ import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.dfa.analyses.Interval;
 import com.jopdesign.tools.JopInstr;
-import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETProcessorModel;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.annotations.LoopBound;
 import com.jopdesign.wcet.annotations.SourceAnnotations;
 import com.jopdesign.wcet.jop.MethodCache;
@@ -48,13 +49,13 @@ import org.apache.bcel.generic.Type;
 import java.util.LinkedList;
 import java.util.List;
 
-public abstract class AllocationModel implements WCETProcessorModel {
+public abstract class AllocationWcetModel implements WCETProcessorModel {
 
 	public static final String JOP_NATIVE = "com.jopdesign.sys.Native";
 	private final MethodCache NO_METHOD_CACHE;
-	protected Project project;
+	protected WCETTool project;
 
-	public AllocationModel(Project p) {
+	public AllocationWcetModel(WCETTool p) {
 		project = p;
 		NO_METHOD_CACHE = new NoMethodCache(p);
 	}
@@ -75,14 +76,6 @@ public abstract class AllocationModel implements WCETProcessorModel {
 		return 0;
 	}
 
-	public MethodInfo getJavaImplementation(AppInfo ai, MethodInfo ctx, Instruction instr) {
-		throw new AssertionError("allocation model model does not (yet) support java implemented methods");
-	}
-
-	public List<String> getJVMClasses() {
-		return new LinkedList<String>();
-	}
-
 	public long getMethodCacheMissPenalty(int numberOfWords, boolean loadOnInvoke) {
 		return 0;
 	}
@@ -92,42 +85,8 @@ public abstract class AllocationModel implements WCETProcessorModel {
 	}
 
 
-	public int getNativeOpCode(MethodInfo context, Instruction instr) {
-		if(isSpecialInvoke(context,instr)) {
-			INVOKESTATIC isi = (INVOKESTATIC) instr;
-			String methodName = isi.getMethodName(context.getConstantPoolGen());
-			return JopInstr.getNative(methodName);
-		} else {
-			return instr.getOpcode();
-		}
-	}
-
-	public int getNumberOfBytes(MethodInfo context, Instruction instruction) {
-		int opCode = getNativeOpCode(context, instruction);
-		// FIXME jamuth specific instructions ?
-		if(opCode >= 0) return JopInstr.len(opCode);
-		else throw new AssertionError("Invalid opcode: "+context+" : "+instruction);
-	}
-
 	public boolean hasMethodCache() {
 		return false;
-	}
-
-	public boolean isImplementedInJava(Instruction i) {
-		return false;
-	}
-
-	public boolean isSpecialInvoke(MethodInfo context, Instruction i) {
-		if(! (i instanceof INVOKESTATIC)) return false;
-		INVOKESTATIC isi = (INVOKESTATIC) i;
-		ReferenceType refTy = isi.getReferenceType(context.getConstantPoolGen());
-		if(refTy instanceof ObjectType){
-			ObjectType objTy = (ObjectType) refTy;
-			String className = objTy.getClassName();
-			return (className.equals(JOP_NATIVE));
-		} else {
-			return false;
-		}
 	}
 
 	public long getExecutionTime(ExecutionContext context, InstructionHandle ih) {

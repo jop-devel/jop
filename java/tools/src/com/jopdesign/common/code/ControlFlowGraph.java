@@ -46,6 +46,7 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -679,7 +680,7 @@ public class ControlFlowGraph {
 	 * @throws BadGraphException If the flow graph analysis (post replacement) fails
 	 */
 	public void resolveVirtualInvokes() throws BadGraphException {
-		List<InvokeNode> virtualInvokes = new Vector<InvokeNode>();
+		List<InvokeNode> virtualInvokes = new ArrayList<InvokeNode>();
 		/* find virtual invokes */
 		for(CFGNode n : this.graph.vertexSet()) {
 			if(n instanceof InvokeNode) {
@@ -744,7 +745,7 @@ public class ControlFlowGraph {
 				DedicatedNode splitNode = this.splitNode();
 				graph.addVertex(splitNode);
 				/* copy, as the iterators don't work when removing elements while iterating */
-				List<CFGEdge> outEdges = new Vector<CFGEdge>(graph.outgoingEdgesOf(n));
+				List<CFGEdge> outEdges = new ArrayList<CFGEdge>(graph.outgoingEdgesOf(n));
 				/* move edges */
 				for(CFGEdge e : outEdges) {
 					graph.addEdge(splitNode, graph.getEdgeTarget(e),e.clone());
@@ -768,7 +769,7 @@ public class ControlFlowGraph {
 				DedicatedNode returnNode = this.splitNode();
 				graph.addVertex(returnNode);
 				/* copy, as the iterators don't work when removing elements while iterating */
-				List<CFGEdge> outEdges = new Vector<CFGEdge>(graph.outgoingEdgesOf(n));
+				List<CFGEdge> outEdges = new ArrayList<CFGEdge>(graph.outgoingEdgesOf(n));
 				/* move edges */
 				for(CFGEdge e : outEdges) {
 					graph.addEdge(returnNode, graph.getEdgeTarget(e), e.clone());
@@ -820,7 +821,7 @@ public class ControlFlowGraph {
 			this.getLoopColoring().getLoopNestDAG();
 		TopologicalOrderIterator<CFGNode, DefaultEdge> lnfIter =
 			new TopologicalOrderIterator<CFGNode, DefaultEdge>(loopNestForest);
-		List<CFGNode> summaryLoops = new Vector<CFGNode>();
+		List<CFGNode> summaryLoops = new ArrayList<CFGNode>();
 		Set<CFGNode> marked = new HashSet<CFGNode>();
 		while(lnfIter.hasNext()) {
 			CFGNode hol = lnfIter.next();

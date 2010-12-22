@@ -25,12 +25,10 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.graphutils.ClassVisitor;
-import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.common.processormodel.JamuthModel;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.framework.ContextMap;
@@ -38,23 +36,17 @@ import com.jopdesign.wcet.allocation.BlockAllocationModel;
 import com.jopdesign.wcet.allocation.HandleAllocationModel;
 import com.jopdesign.wcet.allocation.HeaderAllocationModel;
 import com.jopdesign.wcet.allocation.ObjectAllocationModel;
-import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.annotations.BadAnnotationException;
 import com.jopdesign.wcet.annotations.SourceAnnotationReader;
 import com.jopdesign.wcet.annotations.SourceAnnotations;
-import com.jopdesign.wcet.ipet.IPETConfig;
-import com.jopdesign.wcet.jop.JOPConfig;
-import com.jopdesign.wcet.jop.JOPModel;
+import com.jopdesign.wcet.jop.JOPWcetModel;
 import com.jopdesign.wcet.jop.LinkerInfo;
-import com.jopdesign.wcet.jop.LinkerInfo.LinkInfo;
 import com.jopdesign.wcet.report.Report;
-import com.jopdesign.wcet.uppaal.UppAalConfig;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
@@ -107,48 +99,6 @@ public class Project {
 
 
 	public Project(ProjectConfig config) throws IOException {
-		this.projectConfig =  config;
-		this.projectName = projectConfig.getProjectName();
-		{
-			File outDir = projectConfig.getOutDir();
-			Config.checkDir(outDir,true);
-			File ilpDir = new File(outDir,"ilps");
-			Config.checkDir(ilpDir, true);
-		}
-				
-		if(projectConfig.doGenerateReport()) {
-			this.results = new Report(projectConfig.getConfigManager(),
-									  this,
-									  projectConfig.getReportDir());
-			this.genWCETReport = true;
-		} else {
-			this.genWCETReport = false;
-		}
-		
-		if(projectConfig.saveResults()) {
-			this.resultRecord = new File(config.getConfig().getOption(ProjectConfig.RESULT_FILE));
-			if(! projectConfig.appendResults()) {
-				recordMetric("problem",this.getProjectName());
-				recordMetric("date",new Date());
-			}
-		}
-		if (projectConfig.getProcessorName().equals("allocObjs")) {
-			this.processor = new ObjectAllocationModel(this);
-		} else if (projectConfig.getProcessorName().equals("allocHandles")) {
-			this.processor = new HandleAllocationModel(this);
-		} else if (projectConfig.getProcessorName().equals("allocHeaders")) {
-			this.processor = new HeaderAllocationModel(this);
-		} else if (projectConfig.getProcessorName().equals("allocBlocks")) {
-			this.processor = new BlockAllocationModel(this);
-		} else if(projectConfig.getProcessorName().equals("jamuth")) {
-			this.processor = new JamuthModel(this);
-		} else {
-			this.processor = new JOPModel(this);
-		}
-	}
-
-	public String getTargetName() {
-		return MiscUtils.sanitizeFileName(projectConfig.getAppClassName()+"_"+projectConfig.getTargetMethodName());
 	}
 
 	public File getClassFile(ClassInfo ci) throws FileNotFoundException {
@@ -186,14 +136,6 @@ public class Project {
 	}
 	public ClassInfo getApplicationEntryClass() {
 		return this.appInfo.getClassInfo(projectConfig.getAppClassName());
-	}
-	public MethodInfo getTargetMethod() {
-		try {
-			return appInfo.searchMethod(projectConfig.getTargetClass(),
-					                        projectConfig.getTargetMethod());
-		} catch (MethodNotFoundException e) {
-			throw new AssertionError("Target method not found: "+e);
-		}
 	}
 	public AppInfo loadApp() throws IOException {
 		AppInfo appInfo;
@@ -263,38 +205,5 @@ public class Project {
 		return annots;
 	}
 
-
-	/* Data flow analysis
-	 * ------------------
-	 */
-	public boolean doDataflowAnalysis() {
-		return projectConfig.doDataflowAnalysis();
-	}
-
-	@SuppressWarnings("unchecked")
-	public void dataflowAnalysis() {
-		DFATool program = getDfaProgram();
-		int callstringLength = (int)projectConfig.callstringLength();
-		topLevelLogger.info("Receiver analysis");
-		CallStringReceiverTypes recTys = new CallStringReceiverTypes(callstringLength);
-		Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults =
-			program.runAnalysis(recTys);
-		
-		program.setReceivers(receiverResults);
-		appInfo.setReceivers(receiverResults, callstringLength);
-		
-		topLevelLogger.info("Loop bound analysis");
-		LoopBounds dfaLoopBounds = new LoopBounds(callstringLength);
-		program.runAnalysis(dfaLoopBounds);
-		program.setLoopBounds(dfaLoopBounds);
-		this.hasDfaResults = true;
-	}
-	/**
-	 * Get the loop bounds found by dataflow analysis
-	 */
-	public LoopBounds getDfaLoopBounds() {
-		if(! hasDfaResults) return null;
-		return getDfaProgram().getLoopBounds();
-	}
 
 }

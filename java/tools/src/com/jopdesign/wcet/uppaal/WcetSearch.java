@@ -29,8 +29,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.Vector;
+import java.util.List;
 
 /**
  * Binary search for WCET using UppAal
@@ -51,9 +52,9 @@ public class WcetSearch {
 		this.modelFile = modelFile;
 	}
 	public long searchWCET(Long upperBound) throws IOException {
-		long ub = (upperBound == null) ? -1 : upperBound.longValue();
+		long ub = (upperBound == null) ? -1 : upperBound;
 		queryFile = File.createTempFile("query", ".q");
-		Vector<String> cmdlist = new Vector<String>();
+		List<String> cmdlist = new ArrayList<String>();
 		cmdlist.add(config.getOption(UppAalConfig.UPPAAL_VERIFYTA_BINARY));
 		cmdlist.add("-q");
 		cmdlist.add("-S");
@@ -100,7 +101,7 @@ public class WcetSearch {
 		return safe;
 	}
 	private static class StreamReaderThread extends Thread {
-		private Vector<String> data = null;
+		private List<String> data = null;
 		private BufferedReader reader;
 		private int limit;
 		private LinkedList<String> dataList = null;
@@ -109,7 +110,7 @@ public class WcetSearch {
 
 		public StreamReaderThread(InputStream inputStream) {
 			this.reader = new BufferedReader(new InputStreamReader(inputStream));
-			this.data = new Vector<String>();
+			this.data = new ArrayList<String>();
 			this.limit = -1;
 		}
 		public StreamReaderThread(InputStream inputStream,int limit) {
@@ -122,7 +123,7 @@ public class WcetSearch {
 		public void run() {
 			String l ;
 			try {
-				while(null != (l=reader.readLine())) {
+				while((l = reader.readLine()) != null) {
 					if(doEcho) System.out.println(l);
 					if(doStatusEcho > 0) {
 						System.out.print(".");
@@ -134,9 +135,9 @@ public class WcetSearch {
 				e.printStackTrace();
 			}
 		}
-		public Vector<String> getData() {
+		public List<String> getData() {
 			if(dataList != null) {
-				data = new Vector<String>(dataList);
+				data = new ArrayList<String>(dataList);
 			}
 			return data;
 		}
@@ -176,7 +177,7 @@ public class WcetSearch {
 				maxSolverTime = Math.max(maxSolverTime,((double)(stop-start)) / 1.0E9);				
 			}
 		} catch (InterruptedException e) {
-			throw new IOException("Interrupted while waiting for verifier to finish");
+			throw new IOException("Interrupted while waiting for verifier to finish", e);
 		}
 		return checkIfSafe(outLines.getData());	
 	}
@@ -189,11 +190,11 @@ public class WcetSearch {
 		fw.write('\n');
 		fw.close();		
 	}
-	private boolean checkIfSafe(Vector<String> vector) throws IOException {
+	private boolean checkIfSafe(List<String> vector) throws IOException {
 		if(vector.size() == 0) {
 			throw new IOException("No output from verifyta");
 		}
-		String last = vector.lastElement();
+		String last = vector.get(vector.size()-1);
 		if(last.matches(".*NOT satisfied.*") ||
 			last.matches(".*MAYBE satisfied.*")) {
 			return false;
@@ -214,10 +215,10 @@ public class WcetSearch {
 			if(verifier.waitFor() != 0) {
 				throw new IOException("Uppaal verifier terminated with exit code: "+verifier.exitValue());
 			} else {
-				return outLines.getData().firstElement();
+				return outLines.getData().iterator().next();
 			}
 		} catch (InterruptedException e) {
-			throw new IOException("Interrupted while waiting for verifier to finish");
+			throw new IOException("Interrupted while waiting for verifier to finish", e);
 		}
 	}
 }

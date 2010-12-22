@@ -48,6 +48,7 @@ public class UppAalConfig {
 		ALWAYS_MISS,
 		CACHE_SIM
 	}
+
 	public static final EnumOption<UppaalCacheApproximation> UPPAAL_CACHE_APPROX =
 		new EnumOption<UppaalCacheApproximation>(
 				"uppaal-cache-approx",

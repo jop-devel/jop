@@ -5,22 +5,27 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.config.Config;
+import com.jopdesign.common.misc.AppInfoException;
 import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.common.processormodel.JOPConfig;
+import com.jopdesign.common.processormodel.JOPConfig.CacheImplementation;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
-import com.jopdesign.wcet.jop.JOPConfig.CacheImplementation;
 import org.apache.log4j.Logger;
 
 import java.util.Set;
 
 public abstract class MethodCache {
+
 	protected WCETTool project;
 	protected int cacheSizeWords;
+
 	public MethodCache(WCETTool p, int cacheSizeWords) {
 		this.project = p;
 		this.cacheSizeWords = cacheSizeWords;
 	}
+
 	public static MethodCache getCacheModel(WCETTool p) {
 		Config c = p.getConfig();
 		switch(c.getOption(JOPConfig.CACHE_IMPL)) {
@@ -33,9 +38,13 @@ public abstract class MethodCache {
 				                          c.getOption(JOPConfig.CACHE_IMPL));
 		}
 	}
+
 	public abstract boolean allFit(MethodInfo m, CallString cs);
+
 	public abstract boolean isLRU();
+
 	public abstract boolean fitsInCache(int sizeInWords);
+
 	public abstract int requiredNumberOfBlocks(int sizeInWords);
 	
 	public int requiredNumberOfBlocks(MethodInfo mi) {
@@ -49,7 +58,7 @@ public abstract class MethodCache {
 	 * Precondition: The set of all methods reachable from <code>m</code> fit into the cache
 	 * </p><p>
      * Algorithm: If all methods reachable from <code>m</code> (including <code>m</code>) fit 
-     * into the cache, we can compute the WCET of <m> using the {@link ALWAYS_HIT} cache
+     * into the cache, we can compute the WCET of <m> using the {@code ALWAYS_HIT} cache
      * approximation, and then add the sum of cache miss penalties for every reachable method.
 	 * </p><p>
 	 * Note that when using this approximation, we attribute the
@@ -80,7 +89,7 @@ public abstract class MethodCache {
 		boolean loadOnInvoke =    project.getCallGraph().isLeafMethod(mi) 
 		                       || this.isLRU() 
 		                       || assumeOnInvoke;
-		long thisMiss = project.getProcessorModel().getMethodCacheMissPenalty(words,loadOnInvoke);
+		long thisMiss = project.getWCETProcessorModel().getMethodCacheMissPenalty(words,loadOnInvoke);
 		Project.logger.info("Cache miss penalty to cumulative cache cost: "+mi+": "+thisMiss);
 		return thisMiss;
 	}
@@ -118,17 +127,17 @@ public abstract class MethodCache {
 	
 	/** Check that cache is big enough to hold any method possibly invoked
 	 *  Return largest method */
-	public MethodInfo checkCache() throws Exception {
+	public MethodInfo checkCache() throws AppInfoException {
 		int maxWords = 0;
 		MethodInfo largestMethod = null;
 		// It is inconvenient for testing to take all methods into account
 		for(MethodInfo mi : project.getCallGraph().getImplementedMethods(project.getTargetMethod())) {
 			MethodCode code = mi.getCode();
 			if(code == null) continue;
-			int size = code.getCode().length;
+			int size = code.getLength();
 			int words = MiscUtils.bytesToWords(size);
 			if(! this.fitsInCache(words)) {
-				throw new Exception("Cache to small for target method: "+mi.getFQMethodName() + " / "+ words + " words");
+				throw new AppInfoException("Cache to small for target method: "+mi.getFQMethodName() + " / "+ words + " words");
 			}
 			if(words >= maxWords) {
 				largestMethod = mi;

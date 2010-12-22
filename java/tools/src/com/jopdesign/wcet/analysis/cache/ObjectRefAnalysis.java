@@ -32,7 +32,6 @@ import com.jopdesign.dfa.analyses.SymbolicAddress;
 import com.jopdesign.dfa.analyses.SymbolicPointsTo;
 import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 import com.jopdesign.dfa.framework.ContextMap;
-import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
@@ -251,7 +250,7 @@ public class ObjectRefAnalysis {
 	
 	public LocalPointsToResult getUsedRefs(ExecutionContext scope) {
 		ExecuteOnceAnalysis eoAna = new ExecuteOnceAnalysis(project);
-		DFATool dfa = project.getDfaProgram();
+		DFATool dfa = project.getDfaTool();
 		SymbolicPointsTo spt = new SymbolicPointsTo(maxSetSize,
 				(int)project.getProjectConfig().callstringLength(), 
 				new ExecOnceQuery(eoAna,scope));
@@ -324,8 +323,7 @@ public class ObjectRefAnalysis {
 		SuperGraph sg = getScopeSuperGraph(scope);
 		/* Compute worst-case cost */
 		HashSet<SymbolicAddress> usedObjectsSet = new HashSet<SymbolicAddress>();
-		ObjectCacheCost cost = computeCacheCost(scope, sg, usedRefs, usedObjectsSet, costModel);
-		return cost;		
+        return computeCacheCost(scope, sg, usedRefs, usedObjectsSet, costModel);
 	}
 
 	private ObjectCacheCost computeCacheCost(ExecutionContext scope,
@@ -574,7 +572,7 @@ public class ObjectRefAnalysis {
 	 * @return the index of the field accessed by the instruction, or 0 if the instruction
 	 * does not access a field
 	 */
-	private static int getFieldIndex(Project p, ControlFlowGraph cfg, InstructionHandle ih) {
+	private static int getFieldIndex(WCETTool p, ControlFlowGraph cfg, InstructionHandle ih) {
 		ConstantPoolGen constPool = cfg.getMethodInfo().getConstantPoolGen();
 		Instruction instr = ih.getInstruction();
 		if(instr instanceof FieldInstruction) {
@@ -595,15 +593,14 @@ public class ObjectRefAnalysis {
 	 * @param maxCachedFieldIndex 
 	 * @return whether the field accessed by the given instruction handle is cached
 	 */
-	public static boolean isFieldCached(ControlFlowGraph cfg, InstructionHandle ih, int maxCachedFieldIndex) {
-		Project p = cfg.getAppInfo().getProject();
-		int index = ObjectRefAnalysis.getFieldIndex(p, cfg,ih);
+	public static boolean isFieldCached(WCETTool project, ControlFlowGraph cfg, InstructionHandle ih, int maxCachedFieldIndex) {
+		int index = ObjectRefAnalysis.getFieldIndex(project, cfg,ih);
 		
 		/* Uncached fields are treated separately */ 
 		return (index <= maxCachedFieldIndex);
 	}
 
-	public static String getHandleType(Project project, CFGNode n, InstructionHandle ih) {
+	public static String getHandleType(WCETTool project, CFGNode n, InstructionHandle ih) {
 		ConstantPoolGen constPool = n.getControlFlowGraph().getMethodInfo().getConstantPoolGen();
 		Instruction instr = ih.getInstruction();
 		if(instr instanceof GETFIELD) {

@@ -19,7 +19,7 @@
  */
 package com.jopdesign.wcet.uppaal.translator.cache;
 
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.jop.VarBlockCache;
 import com.jopdesign.wcet.uppaal.model.NTASystem;
 import com.jopdesign.wcet.uppaal.translator.SystemBuilder;
@@ -28,10 +28,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class VarBlockCacheBuilder extends DynamicCacheBuilder {
-	protected Project project;
+	protected WCETTool project;
 	protected VarBlockCache cache;
 	protected int numMethods;
-	public VarBlockCacheBuilder(Project p, VarBlockCache cache, int numMethods) {
+	public VarBlockCacheBuilder(WCETTool p, VarBlockCache cache, int numMethods) {
 		this.project = p;
 		this.cache = cache;
 		this.numMethods = numMethods;
@@ -40,8 +40,9 @@ public abstract class VarBlockCacheBuilder extends DynamicCacheBuilder {
 	protected abstract StringBuilder initCache(String NUM_METHODS);
 	
 	protected int blocksOf(int id) {
-		return project.getProcessorModel().getMethodCache().requiredNumberOfBlocks(project.getAppInfo().getFlowGraph(id).getNumberOfWords());
+		return project.getWCETProcessorModel().getMethodCache().requiredNumberOfBlocks(project.getAppInfo().getFlowGraph(id).getNumberOfWords());
 	}
+
 	@Override
 	public void appendDeclarations(NTASystem system,String NUM_METHODS) {
 		system.appendDeclaration(String.format("const int NUM_BLOCKS[%s] = %s;",

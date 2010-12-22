@@ -46,7 +46,7 @@ public abstract class InvokeBuilder {
 		tBuilder.getIncomingAttrs(beforeNode).appendUpdate("access_cache("+pid+")");
 		toHit.getAttrs().appendGuard("lastHit");
 		toMiss.getAttrs().appendGuard("! lastHit");
-		long waitTime = cacheSim.getWaitTime(javaTranslator.project.getProcessorModel(),cfg, isInvoke);
+		long waitTime = cacheSim.getWaitTime(javaTranslator.project.getWCETProcessorModel(),cfg, isInvoke);
 		tBuilder.waitAtLocation(missNode, waitTime);
 	}
 	

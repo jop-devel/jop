@@ -22,7 +22,7 @@ package com.jopdesign.wcet.report;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 
 import java.io.File;
 import java.util.Map;
@@ -34,10 +34,10 @@ public class DetailedMethodReport {
 	private String graphLink;
 	private MethodInfo method;
 	private String key;
-	private Project project;
+	private WCETTool project;
 	private ReportConfig config;
 	public DetailedMethodReport(ReportConfig c, 
-			Project p, MethodInfo m, 
+			WCETTool p, MethodInfo m,
 			String key, Map<String, Object> stats, 
 			Map<CFGNode, ?> wcets, Map<ControlFlowGraph.CFGEdge, ?> flowMapOut) {
 		this.config = c;

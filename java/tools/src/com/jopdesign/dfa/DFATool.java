@@ -31,6 +31,8 @@ import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.OptionGroup;
+import com.jopdesign.common.misc.JavaClassFormatError;
+import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.Signature;
@@ -82,6 +84,10 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 		this.receivers = null;
     }
 
+    public AppInfo getAppInfo() {
+        return appInfo;
+    }
+
     @Override
     public void registerOptions(OptionGroup options) {
     }
@@ -101,7 +107,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
     public void load() {
 
-        // find oredering for class initializers
+        // find ordering for class initializers
         ClinitOrder c = new ClinitOrder();
         appInfo.iterate(c);
 
@@ -270,8 +276,13 @@ public class DFATool extends EmptyTool<AppEventHandler> {
      * @return the method if found, else null
      */
     public MethodInfo getMethod(String signature) {
+        // TODO this method should be removed (?), remove this try/catch ?
         Signature s = Signature.parse(signature, true);
-        return appInfo.getMethodInfo(s.getClassName(), s.getMemberSignature());
+        try {
+            return appInfo.getMethodInfo(s.getClassName(), s.getMemberSignature());
+        } catch (MethodNotFoundException e) {
+            throw new JavaClassFormatError("Could not find method "+signature, e);
+        }
     }
 
     public boolean containsField(String strippedName) {

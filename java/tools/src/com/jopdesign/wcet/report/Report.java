@@ -27,6 +27,7 @@ import com.jopdesign.common.config.Config;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.timing.WCETInstruction;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 import org.apache.bcel.classfile.LineNumber;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -39,7 +40,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -80,7 +80,8 @@ public class Report {
 		Velocity.init(ps);
 	}
 
-	private Project project;
+	private WCETTool project;
+
 	private HashMap<ClassInfo,ClassReport> classReports =
 		new HashMap<ClassInfo,ClassReport>();
 	private HashMap<MethodInfo,Vector<DetailedMethodReport>> detailedReports =
@@ -89,7 +90,7 @@ public class Report {
 	private ReportEntry rootReportEntry = ReportEntry.rootReportEntry("summary.html");
 	private HashMap<File,File> dotJobs = new HashMap<File,File>();
 	
-	public Report(Config c, Project p, File outDir) throws IOException {
+	public Report(Config c, WCETTool p, File outDir) throws IOException {
 		this.project = p;
 		this.config = new ReportConfig(outDir, c);
 		outDir = config.getOutDir();
