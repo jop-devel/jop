@@ -57,11 +57,15 @@ import com.jopdesign.wcet.uppaal.UppAalConfig;
 import org.apache.bcel.generic.InstructionHandle;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -157,6 +161,20 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
 
     @Override
     public void initialize(Config config) {
+        linkerInfo = new LinkerInfo(this);
+        linkerInfo.loadLinkInfo();
+
+        /* run dataflow analysis */
+        if(projectConfig.doDataflowAnalysis()) {
+            topLevelLogger.info("Starting DFA analysis");
+            dataflowAnalysis();
+            topLevelLogger.info("DFA analysis finished");
+        }
+
+        /* build callgraph */
+        callGraph = CallGraph.buildCallGraph(this.appInfo,
+                                             projectConfig.getTargetClass(),
+                                             projectConfig.getTargetMethod());
     }
 
     @Override
@@ -362,6 +380,44 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public File getClassFile(ClassInfo ci) throws FileNotFoundException {
+        // TODO maybe move to AppInfo?
+        List<File> dirs = getSearchDirs(ci, appInfo.getClassPath().toString());
+        for(File classDir : dirs) {
+            String classname = ci.getClassName();
+            classname = classname.substring(classname.lastIndexOf(".")+1);
+            File classFile = new File(classDir, classname + ".class");
+            if(classFile.exists()) return classFile;
+        }
+        for(File classDir : dirs) {
+            File classFile = new File(classDir, ci.getClassName()+".class");
+            System.err.println("Class file not found: "+classFile);
+        }
+        throw new FileNotFoundException("Class file for "+ci.getClassName()+" not found.");
+    }
+
+    public File getSourceFile(ClassInfo ci) throws FileNotFoundException {
+        // TODO maybe move to AppInfo?
+        List<File> dirs = getSearchDirs(ci, projectConfig.getSourcePath());
+        for(File sourceDir : dirs) {
+            File sourceFile = new File(sourceDir, ci.getSourceFileName());
+            if(sourceFile.exists()) return sourceFile;
+        }
+        throw new FileNotFoundException("Source for "+ci.getClassName()+" not found in "+dirs);
+    }
+
+    private List<File> getSearchDirs(ClassInfo ci, String path) {
+        List<File> dirs = new LinkedList<File>();
+        StringTokenizer st = new StringTokenizer(path,File.pathSeparator);
+        while (st.hasMoreTokens()) {
+            String sourcePath = st.nextToken();
+            String pkgPath = ci.getPackageName().replace('.', File.separatorChar);
+            sourcePath += File.separator + pkgPath;
+            dirs.add(new File(sourcePath));
+        }
+        return dirs;
     }
 
 	/* Data flow analysis

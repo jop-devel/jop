@@ -23,6 +23,7 @@ package com.jopdesign.wcet.annotations;
 
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.WCETTool;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
@@ -70,9 +71,9 @@ import java.util.regex.Pattern;
 public class SourceAnnotationReader {
 	private static final Logger logger = Logger.getLogger(SourceAnnotationReader.class);
 	
-	private Project project;
+	private WCETTool project;
 
-	public SourceAnnotationReader(Project p) {
+	public SourceAnnotationReader(WCETTool p) {
 		this.project = p;
 	}
 
@@ -126,7 +127,7 @@ public class SourceAnnotationReader {
 				throw new BadAnnotationException("Timestamp error: source file modified after compilation");
 			}
 		} catch(IOException ex) {
-			Project.logger.warn("Could not find class file for " + ci);
+			Project.logger.warn("Could not find class file for " + ci, ex);
 		}
 		return src;
 	}

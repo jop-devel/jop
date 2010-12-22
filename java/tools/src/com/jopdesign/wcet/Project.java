@@ -101,42 +101,6 @@ public class Project {
 	public Project(ProjectConfig config) throws IOException {
 	}
 
-	public File getClassFile(ClassInfo ci) throws FileNotFoundException {
-		List<File> dirs = getSearchDirs(ci, projectConfig.getClassPath());
-		for(File classDir : dirs) {
-			String classname = ci.clazz.getClassName();
-			classname = classname.substring(classname.lastIndexOf(".")+1);
-			File classFile = new File(classDir, classname + ".class");
-			if(classFile.exists()) return classFile;
-		}
-		for(File classDir : dirs) {
-			File classFile = new File(classDir, ci.clazz.getClassName()+".class");
-			System.err.println("Class file not found: "+classFile);
-		}
-		throw new FileNotFoundException("Class file for "+ci.clazz.getClassName()+" not found.");
-	}
-	public File getSourceFile(ClassInfo ci) throws FileNotFoundException {
-		List<File> dirs = getSearchDirs(ci, projectConfig.getSourcePath());
-		for(File sourceDir : dirs) {
-			File sourceFile = new File(sourceDir, ci.getSourceFileName());
-			if(sourceFile.exists()) return sourceFile;
-		}
-		throw new FileNotFoundException("Source for "+ci.clazz.getClassName()+" not found in "+dirs);
-	}
-	private List<File> getSearchDirs(ClassInfo ci, String path) {
-		List<File> dirs = new LinkedList<File>();
-		StringTokenizer st = new StringTokenizer(path,File.pathSeparator);
-		while (st.hasMoreTokens()) {
-			String sourcePath = st.nextToken();
-			String pkgPath = ci.clazz.getPackageName().replace('.', File.separatorChar);
-			sourcePath += File.separator + pkgPath;
-			dirs.add(new File(sourcePath));
-		}
-		return dirs;
-	}
-	public ClassInfo getApplicationEntryClass() {
-		return this.appInfo.getClassInfo(projectConfig.getAppClassName());
-	}
 	public AppInfo loadApp() throws IOException {
 		AppInfo appInfo;
 		if(projectConfig.doDataflowAnalysis()) {
@@ -173,20 +137,6 @@ public class Project {
 		/* Initialize annotation map */
 		annotationMap = new HashMap<ClassInfo, SourceAnnotations>();
 		sourceAnnotations = new SourceAnnotationReader(this);
-		linkerInfo = new LinkerInfo(this);
-		linkerInfo.loadLinkInfo();
-
-		/* run dataflow analysis */
-		if(projectConfig.doDataflowAnalysis()) {
-			topLevelLogger.info("Starting DFA analysis");
-			dataflowAnalysis();
-			topLevelLogger.info("DFA analysis finished");
-		}
-
-		/* build callgraph */
-		callGraph = CallGraph.buildCallGraph(this.appInfo,
-											 projectConfig.getTargetClass(),
-											 projectConfig.getTargetMethod());
 	}
 
 	/**
