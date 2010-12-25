@@ -115,7 +115,7 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
         Config config = setup.getConfig();
 
 
-        this.projectConfig =  config;
+        this.projectConfig = new ProjectConfig(config);
         this.projectName = projectConfig.getProjectName();
 
         File outDir = projectConfig.getOutDir();
@@ -124,13 +124,7 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
         Config.checkDir(ilpDir, true);
 
         if(projectConfig.doGenerateReport()) {
-            try {
-                this.results = new Report(projectConfig.getConfig(),
-                                          this,
-                                          projectConfig.getReportDir());
-            } catch (IOException e) {
-                throw new BadConfigurationException("Unable to initialize reports", e);
-            }
+            this.results = new Report(this);
             this.genWCETReport = true;
         } else {
             this.genWCETReport = false;
@@ -264,7 +258,9 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
     }
 
     public boolean doWriteReport() {
-        return projectConfig.getReportDir() != null;
+        // TODO should be checked if this is really the same ..
+        //return projectConfig.getReportDir() != null;
+        return genWCETReport;
     }
 
     /**
