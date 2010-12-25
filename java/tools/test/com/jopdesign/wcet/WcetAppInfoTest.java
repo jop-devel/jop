@@ -50,7 +50,7 @@ public class WcetAppInfoTest {
 		ProjectConfig pConfig = null;
 		try {
 			Config config = Config.instance();
-			Option<?> options[] = { ProjectConfig.APP_CLASS_NAME, ProjectConfig.TARGET_METHOD,
+			Option<?>[] options = { ProjectConfig.APP_CLASS_NAME, ProjectConfig.TARGET_METHOD,
 									ProjectConfig.OUT_DIR, ReportConfig.PROGRAM_DOT.mandatory() };			
 			config.addOptions(options);
 			String[] argvrest = Config.load(System.getProperty("config"),argv);

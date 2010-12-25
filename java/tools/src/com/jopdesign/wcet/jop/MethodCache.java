@@ -90,7 +90,7 @@ public abstract class MethodCache {
 		                       || this.isLRU() 
 		                       || assumeOnInvoke;
 		long thisMiss = project.getWCETProcessorModel().getMethodCacheMissPenalty(words,loadOnInvoke);
-		Project.logger.info("Cache miss penalty to cumulative cache cost: "+mi+": "+thisMiss);
+		WCETTool.logger.info("Cache miss penalty to cumulative cache cost: "+mi+": "+thisMiss);
 		return thisMiss;
 	}
 

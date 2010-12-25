@@ -118,7 +118,7 @@ public class JCopter implements JopTool<JCopterManager> {
         AppSetup setup = new AppSetup();
         setup.setUsageInfo("jcopter", "A WCET driven Java bytecode optimizer.");
 
-        setup.addStandardOptions(true, true);
+        setup.addStandardOptions(true, true, true);
         setup.addPackageOptions(true);
         setup.addWriteOptions(true);
         setup.setConfigFilename("jcopter.properties");

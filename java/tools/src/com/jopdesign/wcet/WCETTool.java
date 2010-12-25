@@ -30,10 +30,12 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.DefaultCallgraphConfig;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.OptionGroup;
+import com.jopdesign.common.misc.AppInfoException;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.processormodel.JOPConfig;
@@ -55,6 +57,7 @@ import com.jopdesign.wcet.jop.LinkerInfo.LinkInfo;
 import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -72,6 +75,9 @@ import java.util.StringTokenizer;
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  */
 public class WCETTool extends EmptyTool<AppEventHandler> {
+
+    public static final Logger logger = Logger.getLogger(Project.class);
+    private Logger topLevelLogger = Logger.getLogger(Project.class); /* special logger */
 
     private ProjectConfig projectConfig;
 
@@ -112,12 +118,10 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
         this.projectConfig =  config;
         this.projectName = projectConfig.getProjectName();
 
-        {
-            File outDir = projectConfig.getOutDir();
-            Config.checkDir(outDir,true);
-            File ilpDir = new File(outDir,"ilps");
-            Config.checkDir(ilpDir, true);
-        }
+        File outDir = projectConfig.getOutDir();
+        Config.checkDir(outDir,true);
+        File ilpDir = new File(outDir,"ilps");
+        Config.checkDir(ilpDir, true);
 
         if(projectConfig.doGenerateReport()) {
             try {
@@ -160,9 +164,15 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
     }
 
     @Override
-    public void initialize(Config config) {
+    public void initialize(Config config) throws AppInfoException {
         linkerInfo = new LinkerInfo(this);
-        linkerInfo.loadLinkInfo();
+        try {
+            linkerInfo.loadLinkInfo();
+        } catch (IOException e) {
+            throw new AppInfoException("Could not load link infos", e);
+        } catch (ClassNotFoundException e) {
+            throw new AppInfoException("Could not load link infos", e);
+        }
 
         /* run dataflow analysis */
         if(projectConfig.doDataflowAnalysis()) {
@@ -172,9 +182,14 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
         }
 
         /* build callgraph */
-        callGraph = CallGraph.buildCallGraph(this.appInfo,
-                                             projectConfig.getTargetClass(),
-                                             projectConfig.getTargetMethod());
+        try {
+            callGraph = CallGraph.buildCallGraph(this.appInfo,
+                                                 projectConfig.getTargetClass(),
+                                                 projectConfig.getTargetMethod(),
+                                                 new DefaultCallgraphConfig(projectConfig.callstringLength()));
+        } catch (MethodNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -429,6 +444,7 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
 
 	@SuppressWarnings("unchecked")
 	public void dataflowAnalysis() {
+        // TODO move this stuff to DFATool
 		int callstringLength = (int)projectConfig.callstringLength();
 		topLevelLogger.info("Receiver analysis");
 		CallStringReceiverTypes recTys = new CallStringReceiverTypes(callstringLength);
@@ -444,6 +460,7 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
 		dfaTool.setLoopBounds(dfaLoopBounds);
 		this.hasDfaResults = true;
 	}
+
 	/**
 	 * Get the loop bounds found by dataflow analysis
 	 */

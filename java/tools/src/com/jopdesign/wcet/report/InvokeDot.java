@@ -20,7 +20,7 @@
 package com.jopdesign.wcet.report;
 
 import com.jopdesign.common.config.Config;
-import com.jopdesign.wcet.ProjectConfig;
+import com.jopdesign.wcet.WCETTool;
 import org.apache.log4j.Logger;
 
 import java.io.File;
@@ -41,28 +41,35 @@ import java.util.Arrays;
  *
  */
 public class InvokeDot {
+
 	private static final Logger logger = Logger.getLogger(InvokeDot.class);
 	private static final String DEFAULT_CACHE_DIR = "dot-cache";
+
 	public File getCacheFile(String filename) {
 		return new File(cacheDir,filename);
 	}
-	public static void invokeDot(File dotFile, File outFile) throws IOException {
-		Config c = Config.instance();
-		File cacheDir = ProjectConfig.getOutDirStatic(DEFAULT_CACHE_DIR);
+
+	public static void invokeDot(WCETTool project, File dotFile, File outFile) throws IOException {
+		Config c = project.getConfig();
+		File cacheDir = project.getOutDir(DEFAULT_CACHE_DIR);
 		InvokeDot id = new InvokeDot(c.getOption(ReportConfig.PROGRAM_DOT),cacheDir);
 		id.runDot(dotFile, outFile);
 	}
+
 	private String dotBinary;
 	private File cacheDir;
 	private String format;
+
 	public InvokeDot(String dotBinary, File cacheDir) {
 		this.dotBinary = dotBinary;
 		this.cacheDir  = cacheDir;
 		this.format = "png";
 	}
+
 	public void setFormat(String format) {
 		this.format = format;
 	}
+
 	public void runDot(File dotFile, File imageFile) throws IOException {
 		byte[] md5;
 		try {
@@ -82,7 +89,7 @@ public class InvokeDot {
 	}
 	
 	private void runDot(File dotFile,File imageFile, String fmt) throws IOException {
-		String cmd[] = { dotBinary, dotFile.getPath(), "-T"+fmt, "-o", imageFile.getPath() };
+		String[] cmd = { dotBinary, dotFile.getPath(), "-T"+fmt, "-o", imageFile.getPath() };
 		Process p;
 		logger.info("Invoking dot: "+Arrays.toString(cmd));
 		p = Runtime.getRuntime().exec(cmd);
@@ -108,6 +115,7 @@ public class InvokeDot {
 	    fis.close();
 		return m.digest();
 	}
+
 	private String byteArrayToString(byte[] barray) {
 		StringBuffer buf = new StringBuffer();
 		for(Byte by : barray) {
@@ -115,17 +123,14 @@ public class InvokeDot {
 		}
 		return buf.toString();
 	}
+
 	public static void copyFile(File in, File out) throws IOException 
 	{
 		FileChannel inChannel = new FileInputStream(in).getChannel();
 		FileChannel outChannel = new FileOutputStream(out).getChannel();
 		try {
 			inChannel.transferTo(0, inChannel.size(),outChannel);
-		} 
-		catch (IOException e) {
-			throw e;
-		}
-		finally {
+		} finally {
 			if (inChannel != null) inChannel.close();
 			if (outChannel != null) outChannel.close();
 		}

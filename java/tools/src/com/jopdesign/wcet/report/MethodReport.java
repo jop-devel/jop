@@ -19,11 +19,9 @@
 */
 package com.jopdesign.wcet.report;
 
-import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.annotations.LoopBound;
 
@@ -34,7 +32,7 @@ import java.util.TreeSet;
 public class MethodReport {
 	private MethodInfo info;
 	private Collection<LoopBound> loopBounds;
-	private Set<String> referenced;
+	private Set<MethodInfo> referenced;
 	String page;
 	private int sizeInWords;
 	private ControlFlowGraph fg;
@@ -45,10 +43,10 @@ public class MethodReport {
 		fg = info.getCode().getControlFlowGraph();
 		this.loopBounds = fg.getLoopBounds().values();
 		this.sizeInWords = fg.getNumberOfWords();		
-		this.referenced = new TreeSet<String>();
+		this.referenced = new TreeSet<MethodInfo>();
 		for(ExecutionContext cgn : p.getCallGraph().getReferencedMethods(m)) {
-			Pair<ClassInfo, String> ref = cgn.getReferencedMethod();
-			this.referenced.add(ref.first().getClassName()+"."+ref.second());
+			MethodInfo ref = cgn.getMethodInfo();
+			this.referenced.add(ref);
 		}
 		this.page = page;
 		this.cacheBlocks = p.getWCETProcessorModel().getMethodCache().requiredNumberOfBlocks(fg.getNumberOfWords());
@@ -59,7 +57,7 @@ public class MethodReport {
 	public Collection<LoopBound> getLoopBounds() {
 		return loopBounds;
 	}
-	public Set<String> getReferenced() {
+	public Set<MethodInfo> getReferenced() {
 		return referenced;
 	}
 	public String getPage() {

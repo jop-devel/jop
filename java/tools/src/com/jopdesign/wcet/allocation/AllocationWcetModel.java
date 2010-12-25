@@ -19,7 +19,6 @@
  */
 package com.jopdesign.wcet.allocation;
 
-import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.MethodInfo;
@@ -27,7 +26,6 @@ import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.dfa.analyses.Interval;
-import com.jopdesign.tools.JopInstr;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
@@ -36,14 +34,11 @@ import com.jopdesign.wcet.annotations.SourceAnnotations;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.jop.NoMethodCache;
 import org.apache.bcel.Constants;
-import org.apache.bcel.generic.INVOKESTATIC;
-import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.MULTIANEWARRAY;
 import org.apache.bcel.generic.NEW;
 import org.apache.bcel.generic.NEWARRAY;
 import org.apache.bcel.generic.ObjectType;
-import org.apache.bcel.generic.ReferenceType;
 import org.apache.bcel.generic.Type;
 
 import java.util.LinkedList;
@@ -132,11 +127,11 @@ public abstract class AllocationWcetModel implements WCETProcessorModel {
 			SourceAnnotations annots = project.getAnnotations(context.getMethodInfo().getClassInfo());
 			annotated = annots.annotationsForLine(srcLine);
 			if (annotated == null) {
-				Project.logger.info("No annotated bound for array at " + context + ":" + srcLine);
+				WCETTool.logger.info("No annotated bound for array at " + context + ":" + srcLine);
 			}
 		} catch (Exception exc) {
 			// TODO: anything else to do?
-			Project.logger.warn("Problem reading annotated bound for array at " + context + ":" + srcLine);
+			WCETTool.logger.warn("Problem reading annotated bound for array at " + context + ":" + srcLine);
 		}
 
 		// get analyzed size
@@ -146,11 +141,11 @@ public abstract class AllocationWcetModel implements WCETProcessorModel {
 			sizes = project.getDfaLoopBounds().getArraySizes(ih, context.getCallString());
 		}
 		if (sizes == null) {
-			Project.logger.info("No DFA available for array at " + context + ":" + srcLine);
+			WCETTool.logger.info("No DFA available for array at " + context + ":" + srcLine);
 		} else {
 			analyzed = sizes[index];
 			if (analyzed == null) {
-				Project.logger.info("No DFA bound for array at " + context + ":" + srcLine);
+				WCETTool.logger.info("No DFA bound for array at " + context + ":" + srcLine);
 			}
 		}
 
@@ -158,13 +153,13 @@ public abstract class AllocationWcetModel implements WCETProcessorModel {
 		if (analyzed != null && analyzed.hasUb()) {
 			if (annotated != null) {
 				if (annotated.getUpperBound() > analyzed.getUb()) {
-					Project.logger.warn("DFA bound smaller than annotated bound for array at " + context + ":" + srcLine);
+					WCETTool.logger.warn("DFA bound smaller than annotated bound for array at " + context + ":" + srcLine);
 				}
 				if (annotated.getUpperBound() < analyzed.getUb()) {
-					Project.logger.warn("DFA bound larger than annotated bound for array at " + context + ":" + srcLine);
+					WCETTool.logger.warn("DFA bound larger than annotated bound for array at " + context + ":" + srcLine);
 				}
 				if (annotated.getUpperBound() == analyzed.getUb()) {
-					Project.logger.info("DFA bound equals annotated bound for array at " + context + ":" + srcLine);
+					WCETTool.logger.info("DFA bound equals annotated bound for array at " + context + ":" + srcLine);
 				}
 				return Math.max(annotated.getUpperBound(), analyzed.getUb());
 			} else {
@@ -174,7 +169,7 @@ public abstract class AllocationWcetModel implements WCETProcessorModel {
 			if (annotated != null) {
 				return annotated.getUpperBound();
 			} else {
-				Project.logger.error("Cannot determine cost of unbounded array " +
+				WCETTool.logger.error("Cannot determine cost of unbounded array " +
 						             context.getMethodInfo().getFQMethodName() +
 									 ":" + srcLine +
 									 ".\nApproximating with 1024 words, but result is not safe anymore.");

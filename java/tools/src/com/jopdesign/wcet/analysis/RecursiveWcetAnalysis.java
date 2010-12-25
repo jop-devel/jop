@@ -26,7 +26,6 @@ import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
-import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.ipet.CostProvider;
@@ -82,7 +81,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		}
 		@Override
 		public void visitBasicBlockNode(BasicBlockNode n) {
-			cost.addLocalCost(project.getProcessorModel().basicBlockWCET(ctx.getExecutionContext(n),n.getBasicBlock()));
+			cost.addLocalCost(project.getWCETProcessorModel().basicBlockWCET(ctx.getExecutionContext(n),n.getBasicBlock()));
 		}
 	}
 
@@ -192,7 +191,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 			                 RecursiveAnalysis.RecursiveStrategy<Context,WcetCost> recursiveStrategy) {
 		super(project, ipetConfig);
 		this.appInfo = project.getAppInfo();
-		this.processor = project.getProcessorModel();
+		this.processor = project.getWCETProcessorModel();
 
 		this.recursiveWCET = recursiveStrategy;
 	}
@@ -249,14 +248,14 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 				if(basicBlock != null) {
 					TreeSet<Integer> lineRange = basicBlock.getSourceLineRange();
 					if(lineRange.isEmpty()) {
-						Project.logger.error("No source code lines associated with basic block ! ");
+						WCETTool.logger.error("No source code lines associated with basic block ! ");
 					}
 					ClassInfo cli = basicBlock.getClassInfo();
 					ClassReport cr = getWCETTool().getReport().getClassReport(cli);
 					Long oldCost = (Long) cr.getLineProperty(lineRange.first(), "cost");
 					if(oldCost == null) oldCost = 0L;
 					long newCost = sol.getNodeFlow(n)*nodeCosts.get(n).getCost();
-					Project.logger.debug("Attaching cost "+oldCost + " + "+newCost+" to line "+lineRange.first());
+					WCETTool.logger.debug("Attaching cost "+oldCost + " + "+newCost+" to line "+lineRange.first());
 					cr.addLineProperty(lineRange.first(), "cost", oldCost + newCost);
 					for(int i : lineRange) {
 						cr.addLineProperty(i, "color", "red");
@@ -270,7 +269,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		Map<String,Object> stats = new HashMap<String, Object>();
 		stats.put("WCET",sol.getCost());
 		stats.put("mode",key.ctx);
-		stats.put("all-methods-fit-in-cache", getWCETTool().getProcessorModel().getMethodCache().allFit(m,null));
+		stats.put("all-methods-fit-in-cache", getWCETTool().getWCETProcessorModel().getMethodCache().allFit(m,null));
 		getWCETTool().getReport().addDetailedReport(m,"WCET_"+key.ctx.toString(),stats,nodeFlowCostDescrs,sol.getEdgeFlow());
 	}
 	@Override

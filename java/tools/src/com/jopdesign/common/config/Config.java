@@ -24,6 +24,7 @@ package com.jopdesign.common.config;
 import com.jopdesign.common.AppInfo;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -44,7 +45,7 @@ import java.util.Set;
 public class Config {
 
     /**
-     * This is the default value; use {@link AppInfo#getClinitSignature()}.
+     * This is the default value; use {@link AppInfo#getClinitSignature(String)}.
      */
     public static final String DEFAULT_CLINIT_NAME = "<clinit>";
     public static final String DEFAULT_CLINIT_DESCRIPTOR = "()V";
@@ -108,6 +109,15 @@ public class Config {
     public static final StringOption WRITE_CLASSPATH =
             new StringOption("classout", "output path for generated class files", "${out}/classes");
 
+    public static final StringOption REPORTDIR =
+        new StringOption("reportdir", "the directory to write reports into", "${out}/report");
+
+    public static final StringOption ERROR_LOG_FILE =
+        new StringOption("error-log","the error log file, placed in the report dir","error.log.html");
+
+    public static final StringOption INFO_LOG_FILE =
+        new StringOption("info-log","the info log file, placed in the report dir","info.log.html");
+
     public static final Option<?>[] standardOptions =
             { SHOW_HELP, SHOW_VERSION, SHOW_CONFIG, DEBUG, QUIET, VERBOSE };
 
@@ -168,6 +178,28 @@ public class Config {
         }
         return newList.toArray(new String[newList.size()]);
     }
+
+    /**
+     * Check whether the given file is a directory, possibly creating it if
+	 * non existing
+	 * @param outDir the path to the directory
+	 * @param createIfNonExist whether the directory should be created, if it doesn't exist yet
+	 * @throws BadConfigurationException if the file is not a directory or does not exist and is not created.
+	 */
+	public static void checkDir(File outDir, boolean createIfNonExist) throws BadConfigurationException {
+		if(outDir.exists()) {
+			if(! outDir.isDirectory()) {
+				throw new BadConfigurationException("Not a directory: "+outDir);
+			}
+		} else if(createIfNonExist) {
+			if (!outDir.mkdirs()) {
+                throw new BadConfigurationException("Directory could not be created: "+outDir);
+            }
+		} else {
+			throw new BadConfigurationException("Directory does not exist: "+outDir);
+		}
+	}
+
 
     public OptionGroup getOptions() {
         return options;

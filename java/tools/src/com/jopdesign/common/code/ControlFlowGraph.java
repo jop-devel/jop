@@ -32,6 +32,7 @@ import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.type.MethodRef;
+import com.jopdesign.wcet.annotations.LoopBound;
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKEVIRTUAL;
@@ -640,7 +641,6 @@ public class ControlFlowGraph {
 	 * Get infeasible edges for certain call string
 	 * @return The infeasible edges
 	 */
-    /* -- TODO comment for commit
 	public List<CFGEdge> getInfeasibleEdges(CallString cs) {
 		List<CFGEdge> edges = new Vector<CFGEdge>();
 		for (BasicBlock b : blocks) {
@@ -649,7 +649,6 @@ public class ControlFlowGraph {
 		}
 		return edges;
 	}
-	-- */
 
 	/**
 	 * Get infeasible edges for certain basic block call string
@@ -992,19 +991,15 @@ public class ControlFlowGraph {
 	 * retrieve the loop bound (annotations)
 	 * @return a map from head-of-loop nodes to their loop bounds
 	 */
-    /* -- TODO comment for commit
 	public Map<CFGNode, LoopBound> getLoopBounds() {
 		return this.annotations;
 	}
-	-- */
 
 	/** Get improved loopbound considering the callcontext */
-    /* -- TODO comment for commit
 	public LoopBound getLoopBound(CFGNode hol, CallString cs) {
 		LoopBound globalBound = this.annotations.get(hol);
 		return this.dfaLoopBound(hol.getBasicBlock(), cs, globalBound);
 	}
-	-- */
 
 	/**
 	 * Calculate (cached) the "loop coloring" of the flow graph.
@@ -1052,26 +1047,6 @@ public class ControlFlowGraph {
 	@Override public String toString() {
 		return super.toString()+this.methodInfo.getFQMethodName();
 	}
-    /* -- TODO comment for commit
-	@SuppressWarnings("unchecked")
-	public String dumpDFA() {
-	    if(this.project.getDfaLoopBounds() == null) return "n/a";
-		Map<InstructionHandle, ContextMap<List<HashedString>, Pair<ValueMapping>>> results = this.project.getDfaLoopBounds().getResult();
-		if(results == null) return "n/a";
-		StringBuilder s = new StringBuilder();
-		for(CFGNode n: this.graph.vertexSet()) {
-			if(n.getBasicBlock() == null) continue;
-			ContextMap<List<HashedString>, Pair<ValueMapping>> r = results.get(n.getBasicBlock().getLastInstruction());
-			if(r != null) {
-				s.append(n);
-				s.append(" :: ");
-				s.append(r);
-				s.append("\n");
-			}
-		}
-		return s.toString();
-	}
-	-- */
 
 //	/**
 //	 * get single entry single exit sets

@@ -186,8 +186,9 @@ public class AppSetup {
      *
      * @param stdOptions if true, add options defined in {@link Config#standardOptions}.
      * @param setupAppInfo if true, this will also add common setup options for AppInfo used by {@link #setupAppInfo}
+     * @param setupReports if true, add options to setup reports
      */
-    public void addStandardOptions(boolean stdOptions, boolean setupAppInfo) {
+    public void addStandardOptions(boolean stdOptions, boolean setupAppInfo, boolean setupReports) {
         this.handleAppInfoInit = setupAppInfo;
 
         if (stdOptions) {
@@ -199,6 +200,12 @@ public class AppSetup {
             config.addOption(Config.ROOTS);
             config.addOption(Config.NATIVE_CLASSES);
             config.addOption(Config.MAIN_METHOD_NAME);
+        }
+
+        if (setupReports) {
+            config.addOption(Config.REPORTDIR);
+            config.addOption(Config.ERROR_LOG_FILE);
+            config.addOption(Config.INFO_LOG_FILE);
         }
     }
 
@@ -448,9 +455,11 @@ public class AppSetup {
         logConfig.setupLogger(config);
 
         if ( addReportLoggers ) {
-            String outDir = config.getOption(Config.WRITE_PATH) + File.separator;
+            String outDir = config.getOption(Config.REPORTDIR) + File.separator;
             try {
-                logConfig.setReportLoggers(new File(outDir + "error.html"), new File(outDir + "info.html"));
+                String errorFile = outDir + config.getOption(Config.ERROR_LOG_FILE);
+                String infoFile  = outDir + config.getOption(Config.INFO_LOG_FILE);
+                logConfig.setReportLoggers(new File(errorFile), new File(infoFile));
             } catch (IOException e) {
                 System.err.println("Error creating log files: "+e.getMessage());
                 System.exit(4);

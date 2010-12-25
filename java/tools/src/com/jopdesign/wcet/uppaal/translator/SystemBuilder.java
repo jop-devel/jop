@@ -127,11 +127,11 @@ public class SystemBuilder {
 				sim = new FIFOCacheBuilder((BlockCache)cache, config.emptyInitialCache);
 				break;
 			case LRU_VARBLOCK_CACHE:
-				sim = new LRUVarBlockCacheBuilder(project, (VarBlockCache)cache, this.numMethods);
+				sim = new LRUVarBlockCacheBuilder(project, (VarBlockCache)cache, this.methodId.keySet());
 				break;				
 			case FIFO_VARBLOCK_CACHE: 
 				sim = new FIFOVarBlockCacheBuilder(project,        (VarBlockCache)cache, 
-						                       this.numMethods, config.emptyInitialCache);
+						                       this.methodId.keySet(), config.emptyInitialCache);
 				break;
 			default: throw new AssertionError("Unsupport cache implementation: "+cache.getName());
 			}

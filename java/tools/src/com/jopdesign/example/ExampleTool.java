@@ -95,7 +95,7 @@ public class ExampleTool extends EmptyTool<ExampleManager> {
         setup.setUsageInfo("example", "This is an example application just to show off.");
         setup.setVersionInfo("The version of this whole application is 0.1");
 
-        setup.addStandardOptions(true, true);
+        setup.addStandardOptions(true, true, true);
         setup.addWriteOptions(true);
         // set the name of the (optional) user-provided config file
         setup.setConfigFilename("example.properties");

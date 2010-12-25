@@ -33,21 +33,23 @@ import com.jopdesign.wcet.uppaal.UppAalConfig;
 import org.apache.log4j.Logger;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Vector;
 
 public class UppAalAnalysis {
 	private static final String CONFIG_FILE_PROP = "config";
 	private static final Logger tlLogger = Logger.getLogger(UppAalAnalysis.class);
 	private static final int ECC_TRESHOLD = 400;
-	public static Option<?>[][] options = {
+
+    private static Option<?>[][] options = {
 		ProjectConfig.projectOptions,
 		JOPConfig.jopOptions,
 		IPETConfig.ipetOptions,
 		UppAalConfig.uppaalOptions,
 		ReportConfig.reportOptions
 	};
+
 	class WCETEntry {
 		MethodInfo target;
 		long wcet;
@@ -76,7 +78,7 @@ public class UppAalAnalysis {
 	private boolean run(ExecHelper exec) {
 		Config c = Config.instance();
 		File uppaalOutDir = null;
-		Project project = null;
+		WCETTool project = null;
 		try { 
 			project = new Project(new ProjectConfig(c));
 			project.setTopLevelLogger(tlLogger);
@@ -91,7 +93,7 @@ public class UppAalAnalysis {
 		UppaalAnalysis ua = new UppaalAnalysis(tlLogger,project,uppaalOutDir);
 		List<MethodInfo> methods = project.getCallGraph().getImplementedMethods(project.getTargetMethod());
 		Collections.reverse(methods);
-		List<WCETEntry> entries = new Vector<WCETEntry>();
+		List<WCETEntry> entries = new ArrayList<WCETEntry>();
 		for( MethodInfo m : methods ) {
 			if(project.computeCyclomaticComplexity(m) > ECC_TRESHOLD) {
 				tlLogger.info("Skipping UppAal translation for "+m+

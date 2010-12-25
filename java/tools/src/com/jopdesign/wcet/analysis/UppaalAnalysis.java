@@ -158,7 +158,7 @@ public class UppaalAnalysis {
 			WcetCost cost = new WcetCost();
 			cost.addNonLocalCost(nonLocalExecCost);
 			cost.addCacheCost(cacheCost);
-			Project.logger.info("Recursive WCET computation [GLOBAL IPET]: " + invoked +
+			WCETTool.logger.info("Recursive WCET computation [GLOBAL IPET]: " + invoked +
 			        		    ". cummulative cache cost: "+cacheCost+
 					            " non local execution cost: "+nonLocalExecCost);
 			return cost;

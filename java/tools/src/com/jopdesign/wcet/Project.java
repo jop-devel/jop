@@ -91,15 +91,10 @@ public class Project {
         }
 	}
 
-	public static final Logger logger = Logger.getLogger(Project.class);
-	private Logger topLevelLogger = Logger.getLogger(Project.class); /* special logger */
 	public void setTopLevelLogger(Logger tlLogger) {
 		this.topLevelLogger = tlLogger;
 	}
 
-
-	public Project(ProjectConfig config) throws IOException {
-	}
 
 	public AppInfo loadApp() throws IOException {
 		AppInfo appInfo;

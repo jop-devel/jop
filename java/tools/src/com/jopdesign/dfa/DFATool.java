@@ -25,18 +25,24 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.EmptyTool;
+import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.MemberInfo.AccessType;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.OptionGroup;
+import com.jopdesign.common.graphutils.Pair;
+import com.jopdesign.common.misc.HashedString;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.Signature;
 import com.jopdesign.dfa.analyses.LoopBounds;
+import com.jopdesign.dfa.analyses.ValueMapping;
 import com.jopdesign.dfa.framework.Analysis;
 import com.jopdesign.dfa.framework.Context;
 import com.jopdesign.dfa.framework.ContextMap;
@@ -285,8 +291,37 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         }
     }
 
-    public boolean containsField(String strippedName) {
-        Signature s = Signature.parse(strippedName, true);
-        return appInfo.getFieldRef(s).getFieldInfo() != null;
+    public ClassInfo classForField(String fieldName) {
+        Signature s = Signature.parse(fieldName, true);
+        ClassInfo cls = getAppInfo().getClassInfo(s.getClassName());
+        if (cls == null) {
+            return null;
+        }
+        // TODO maybe we *do* want to check access here...
+        FieldInfo field = cls.getFieldInfoInherited(s.getMemberName(), false);
+        return field != null ? field.getClassInfo() : null;
     }
+
+	@SuppressWarnings("unchecked")
+	public String dumpDFA(MethodInfo method) {
+	    if(getLoopBounds() == null) return "n/a";
+        if ( method.isAbstract() ) { return "n/a"; }
+
+		Map<InstructionHandle, ContextMap<List<HashedString>, Pair<ValueMapping,ValueMapping>>> results = getLoopBounds().getResult();
+		if(results == null) return "n/a";
+		StringBuilder s = new StringBuilder();
+
+        ControlFlowGraph cfg = method.getCode().getControlFlowGraph();
+		for(CFGNode n: cfg.getGraph().vertexSet()) {
+			if(n.getBasicBlock() == null) continue;
+			ContextMap<List<HashedString>, Pair<ValueMapping,ValueMapping>> r = results.get(n.getBasicBlock().getLastInstruction());
+			if(r != null) {
+				s.append(n);
+				s.append(" :: ");
+				s.append(r);
+				s.append("\n");
+			}
+		}
+		return s.toString();
+	}
 }

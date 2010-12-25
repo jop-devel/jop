@@ -22,7 +22,6 @@ package com.jopdesign.wcet.ipet;
 
 import com.jopdesign.common.graphutils.IDProvider;
 import com.jopdesign.common.misc.MiscUtils;
-import com.jopdesign.wcet.ProjectConfig;
 import com.jopdesign.wcet.ipet.IPETBuilder.ExecutionEdge;
 import lpsolve.LpSolveException;
 
@@ -61,7 +60,7 @@ public class IPETSolver {
 	private HashMap<ExecutionEdge, Integer> edgeIdMap = null;
 	private HashMap<Integer, ExecutionEdge> idEdgeMap = null;
 
-	private boolean doDumpILP;
+	private File outDir;
 
 	private String problemName;
 
@@ -75,7 +74,7 @@ public class IPETSolver {
 	 */
 	public IPETSolver(String problemName, IPETConfig config) {
 		this.problemName = problemName;
-		this.doDumpILP = config.dumpIlp;
+        outDir = config.getOutDir();
 	}
 	
 	public void addConstraint(LinearConstraint<ExecutionEdge> lc) {
@@ -140,7 +139,7 @@ public class IPETSolver {
 		double[] objVec = new double[edgeSet.size()];
 		wrapper.freeze();
 		
-		if(this.doDumpILP) {
+		if(this.outDir != null) {
 			dumpILP(wrapper);
 		}
 		double sol = Math.round(wrapper.solve(objVec));
@@ -154,7 +153,6 @@ public class IPETSolver {
 	}
 
 	private void dumpILP(LpSolveWrapper<?> wrapper) throws LpSolveException, IOException {
-		File outDir = ProjectConfig.getOutDirStatic("ilps");
 		File outFile = File.createTempFile(MiscUtils.sanitizeFileName(this.problemName), ".lp", outDir);
 		wrapper.dumpToFile(outFile);
 		FileWriter fw = null;

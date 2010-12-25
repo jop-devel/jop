@@ -23,6 +23,9 @@ import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.EnumOption;
 import com.jopdesign.common.config.Option;
+import com.jopdesign.common.config.StringOption;
+
+import java.io.File;
 
 public class IPETConfig {
 	  /** Static cache approximations:
@@ -44,7 +47,8 @@ public class IPETConfig {
 		public boolean needsInterProcIPET() {
 			return this == StaticCacheApproximation.ALL_FIT_REGIONS ||
 			       this == StaticCacheApproximation.GLOBAL_ALL_FIT; }
-	};
+	}
+
 	public static final EnumOption<StaticCacheApproximation> STATIC_CACHE_APPROX =
 		new EnumOption<StaticCacheApproximation>(
 				"ipet-cache-approx",
@@ -59,25 +63,47 @@ public class IPETConfig {
 	public static final BooleanOption DUMP_ILP =
 		new BooleanOption("ipet-dump-ilp","whether the LP problems should be dumped to files",true);
 
+    public static final StringOption ILP_OUTDIR =
+        new StringOption("ipet-out", "the output directory for the solver", "${out}/ilps");
 
 	public static final Option<?>[] ipetOptions = {
-		STATIC_CACHE_APPROX, ASSUME_MISS_ONCE_ON_INVOKE, DUMP_ILP
+		STATIC_CACHE_APPROX, ASSUME_MISS_ONCE_ON_INVOKE, DUMP_ILP, ILP_OUTDIR
 	};
-	public boolean assumeMissOnceOnInvoke;
-	public boolean dumpIlp;
+
+	private boolean assumeMissOnceOnInvoke;
+	private boolean dumpIlp;
+    private File outDir;
 
 	private IPETConfig() {}
+
 	public IPETConfig(Config c) {
+        this.outDir = new File(c.getOption(ILP_OUTDIR));
 		this.assumeMissOnceOnInvoke = c.getOption(ASSUME_MISS_ONCE_ON_INVOKE);
 		this.dumpIlp = c.getOption(DUMP_ILP);
 	}
-	@Override
+
+    public boolean doAssumeMissOnceOnInvoke() {
+        return assumeMissOnceOnInvoke;
+    }
+
+    public boolean doDumpIlp() {
+        return dumpIlp;
+    }
+
+    public File getOutDir() {
+        return outDir;
+    }
+
+	@SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
+    @Override
 	public IPETConfig clone() {
 		IPETConfig ipc = new IPETConfig();
 		ipc.assumeMissOnceOnInvoke = this.assumeMissOnceOnInvoke;
 		ipc.dumpIlp = this.dumpIlp;
+        ipc.outDir = this.outDir;
 		return ipc;
 	}
+
 	public static StaticCacheApproximation getPreciseCacheApprox(Config config) {
 		return config.getOption(STATIC_CACHE_APPROX);
 	}

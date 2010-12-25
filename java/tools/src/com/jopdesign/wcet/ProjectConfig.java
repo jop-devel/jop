@@ -188,10 +188,6 @@ public class ProjectConfig {
 		return config.getOption(DO_GENERATE_REPORTS);
 	}
 
-	public File getReportDir() {
-		return new File(getOutDir(),"report");
-	}
-
 	public boolean doDataflowAnalysis() {
 		return config.getOption(DO_DFA);
 	}

@@ -23,6 +23,7 @@ package com.jopdesign.common;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.OptionGroup;
+import com.jopdesign.common.misc.AppInfoException;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -56,7 +57,7 @@ public abstract class EmptyTool<T extends AppEventHandler> implements JopTool<T>
     }
 
     @Override
-    public void initialize(Config config) {
+    public void initialize(Config config) throws AppInfoException {
     }
 
     @Override

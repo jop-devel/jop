@@ -130,9 +130,7 @@ public class CFGExport {
 					new ExecutionContext(codeBlock.getMethodInfo()),
 					codeBlock)+" Cyc");
 			if(loops.getHeadOfLoops().contains(n)) {
-                /* -- TODO comment for commit
 				nodeInfo.append(", LOOP "+n.getId()+"/"+flowGraph.getLoopBounds().get(n));
-				-- */
 			}
 			nodeInfo.append("}\n");
 			nodeInfo.append(codeBlock.dump());

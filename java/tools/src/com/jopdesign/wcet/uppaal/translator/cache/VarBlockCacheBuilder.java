@@ -19,6 +19,8 @@
  */
 package com.jopdesign.wcet.uppaal.translator.cache;
 
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.jop.VarBlockCache;
 import com.jopdesign.wcet.uppaal.model.NTASystem;
@@ -26,21 +28,25 @@ import com.jopdesign.wcet.uppaal.translator.SystemBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public abstract class VarBlockCacheBuilder extends DynamicCacheBuilder {
 	protected WCETTool project;
 	protected VarBlockCache cache;
-	protected int numMethods;
-	public VarBlockCacheBuilder(WCETTool p, VarBlockCache cache, int numMethods) {
+	protected Set<MethodInfo> methods;
+
+	public VarBlockCacheBuilder(WCETTool p, VarBlockCache cache, Set<MethodInfo> methods) {
 		this.project = p;
 		this.cache = cache;
-		this.numMethods = numMethods;
+		this.methods = methods;
 	}
+
 	protected abstract int numBlocks();
 	protected abstract StringBuilder initCache(String NUM_METHODS);
 	
-	protected int blocksOf(int id) {
-		return project.getWCETProcessorModel().getMethodCache().requiredNumberOfBlocks(project.getAppInfo().getFlowGraph(id).getNumberOfWords());
+	protected int blocksOf(MethodInfo method) {
+        ControlFlowGraph cfg = method.getCode().getControlFlowGraph();
+		return project.getWCETProcessorModel().getMethodCache().requiredNumberOfBlocks(cfg.getNumberOfWords());
 	}
 
 	@Override
@@ -54,10 +60,13 @@ public abstract class VarBlockCacheBuilder extends DynamicCacheBuilder {
 
 	protected StringBuilder initNumBlocks() {
 		List<Integer> blocksPerMethod = new ArrayList<Integer>();
-		for(int i = 0; i < numMethods; i++) {
-			int mBlocks = blocksOf(i);
+		for(MethodInfo method : methods) {
+            if ( method.isAbstract() ) {
+                continue;
+            }
+			int mBlocks = blocksOf(method);
 			if(mBlocks > numBlocks()) {
-				throw new AssertionError("Cache too small for method: "+project.getAppInfo().getFlowGraph(i)+
+				throw new AssertionError("Cache too small for method: "+method+
 									     " which requires at least " + mBlocks + " blocks, but only "+
 									     numBlocks() + " are available in the simulation ");
 			}

@@ -34,7 +34,7 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 	private int maxCallstringLength;
 
 	public LocalAnalysis(WCETTool p, IPETConfig ipetConfig) {
-		this.assumeMissOnceOnInvoke = ipetConfig.assumeMissOnceOnInvoke;
+		this.assumeMissOnceOnInvoke = ipetConfig.doAssumeMissOnceOnInvoke();
 		this.maxCallstringLength = (int)p.getProjectConfig().callstringLength();
 	}
 	public LocalAnalysis() {

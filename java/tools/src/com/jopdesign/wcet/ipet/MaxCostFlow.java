@@ -20,7 +20,6 @@
 package com.jopdesign.wcet.ipet;
 
 import com.jopdesign.common.graphutils.IDProvider;
-import com.jopdesign.wcet.ProjectConfig;
 import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
 import lpsolve.LpSolveException;
 import org.jgrapht.DirectedGraph;
@@ -83,15 +82,15 @@ public class MaxCostFlow<V,E> {
 	private IDProvider<Object> idProvider;
 	private String key;
 	private HashMap<Integer, DecisionVariable> dRevMap;
-	private boolean doDumpILP = false;
+    private File outFile = null;
 
 	/**
 	 * if set, the problem will be dumped into a file
-	 * @param dumpILP whether the ILP should be written into a file
+	 * @param outFile the file to dump to, or null to disable dumping
 	 * 
 	 */
-	public void setDumpILP(boolean dumpILP) {
-		doDumpILP = dumpILP;
+	public void setDumpILP(File outFile) {
+		this.outFile = outFile;
 	}
 
 	/**
@@ -173,7 +172,7 @@ public class MaxCostFlow<V,E> {
 		wrapper.setObjective(costVec,true);
 		double[] objVec = new double[dGen-1];
 		wrapper.freeze();
-		if(this.doDumpILP ) {
+		if(this.outFile != null) {
 			dumpILP(wrapper);
 		}
 		double sol = Math.round(wrapper.solve(objVec));
@@ -192,8 +191,8 @@ public class MaxCostFlow<V,E> {
 		}
 		return sol;
 	}
+
 	private void dumpILP(LpSolveWrapper<?> wrapper) throws LpSolveException {
-		File outFile = ProjectConfig.getOutFileStatic("ilps",this.key + ".ilp");
 		wrapper.dumpToFile(outFile);
 		FileWriter fw = null;
 		try {
@@ -221,6 +220,7 @@ public class MaxCostFlow<V,E> {
 			}
 		}
 	}
+
 	/* generate a bijective mapping between edges/decision variables and integers */
 	private void generateMapping() {
 		idMap = new HashMap<E, Integer>();
@@ -300,7 +300,7 @@ public class MaxCostFlow<V,E> {
 	
 	/**
 	 * Add an lower bound {@code lb <= b * M } for a decision variable {@code b}.
-	 * As a consequence, {@code lb > 0} implies {@ b == true } in each valid solution.
+	 * As a consequence, {@code lb > 0} implies {@code b == true } in each valid solution.
 	 * This is a risky operation, as the Big M method used may cause numerical instabilities.
 	 * @param dvar the decision variable
 	 * @param lb the right hand side of {@code b * M >= lb }
@@ -316,7 +316,7 @@ public class MaxCostFlow<V,E> {
 	
 	/**
 	 * Add an upper bound {@code b <= ub} for a decision variable {@code b}.
-	 * As a consequence, {@code ub == 0} implies {@ b == false } in each valid solution.
+	 * As a consequence, {@code ub == 0} implies {@code b == false } in each valid solution.
      *
 	 * @param dvar the decision variable
 	 * @param ub the right hand side of {@code b <= ub}

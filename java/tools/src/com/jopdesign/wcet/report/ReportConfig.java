@@ -21,53 +21,55 @@ package com.jopdesign.wcet.report;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.StringOption;
 import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.wcet.WCETTool;
 
 import java.io.File;
 
 public class ReportConfig {
-	public static final StringOption ERROR_LOG_FILE =
-		new StringOption("error-log","the error log file","error.log.html");
-	public static final StringOption INFO_LOG_FILE =
-		new StringOption("info-log","the info log file","info.log.html");
 	public static final StringOption TEMPLATEDIR =
 		new StringOption("templatedir",
 				"directory with custom templates for report generation",true);	
 	public static final StringOption PROGRAM_DOT = 
 		new StringOption("program-dot","if graphs should be generated from java, the path to the 'dot' binary", true);
-	public static final StringOption REPORTDIR =
-		new StringOption("reportdir",
-				"the directory to write reports into",true);			
 		
-	public static final Option<?> reportOptions[] =
-		{ REPORTDIR, TEMPLATEDIR, 
-		  ERROR_LOG_FILE, INFO_LOG_FILE, PROGRAM_DOT };	
+	public static final Option<?>[] reportOptions =
+		{ TEMPLATEDIR, PROGRAM_DOT };	
 
 	/* dynamic configuration */
 	private Config config;
-	private File outDir;
-	public ReportConfig(File outDir, Config configData) {
-		this.outDir = outDir;
-		this.config = configData;
+	private File reportDir;
+
+	public ReportConfig(WCETTool project) throws BadConfigurationException {
+        this.config = project.getConfig();
+        // TODO we should use a different report dir/subdir for wcet reports
+        //      but then we must get the correct relative path for this.get(Error|Info)LogFile()
+        //      (relative to the report dir)
+		this.reportDir = new File(config.getOption(Config.REPORTDIR));
+        Config.checkDir(reportDir,true);
 	}	
+    
 	/** get path for templates */
 	public String getTemplatePath() {
 		return config.getOption(TEMPLATEDIR);
 	}
+    
 	/**
 	 * get the directory to create output files in
 	 */
-	public File getOutDir() {
-		return this.outDir;
+	public File getReportDir() {
+		return this.reportDir;
 	}
-	public File getOutFile(File file) {
-		return new File(outDir,file.getPath());
+    
+	public File getReportFile(File file) {
+		return new File(reportDir,file.getPath());
 	}
 
-	public File getOutFile(String filename) {
-		return new File(outDir, filename);
+	public File getReportFile(String filename) {
+		return new File(reportDir, filename);
 	}
 
 	/**
@@ -77,25 +79,29 @@ public class ReportConfig {
 	 * @return the filename
 	 */
 	public File getOutFile(MethodInfo method, String extension) {
-		return new File(outDir,
+		return new File(reportDir,
 				        MiscUtils.sanitizeFileName(method.getFQMethodName() + extension));
 	}
+
 	public String getDotBinary() {
 		return config.getOption(PROGRAM_DOT);
 	}
+
 	public boolean doInvokeDot() {
 		return (getDotBinary() != null);
 	}
+
 	public boolean hasDotBinary() {
-		if(getDotBinary() == null) return false;
+		if (getDotBinary() == null) return false;
 		return new File(getDotBinary()).exists();
 	}
+
 	public File getErrorLogFile() {
-		return new File(this.getOutDir(),config.getOption(ERROR_LOG_FILE));
+		return new File(getReportDir(),config.getOption(Config.ERROR_LOG_FILE));
 	}
 
 	public File getInfoLogFile() {
-		return new File(this.getOutDir(),config.getOption(INFO_LOG_FILE));
+		return new File(getReportDir(),config.getOption(Config.INFO_LOG_FILE));
 	}
 
 }

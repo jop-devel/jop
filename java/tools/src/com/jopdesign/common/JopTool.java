@@ -22,6 +22,7 @@ package com.jopdesign.common;
 
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.OptionGroup;
+import com.jopdesign.common.misc.AppInfoException;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -88,7 +89,7 @@ public interface JopTool<T extends AppEventHandler> {
      * Initialize the tool.
      * @param config the config for this tool
      */
-    void initialize(Config config);
+    void initialize(Config config) throws AppInfoException;
 
     /**
      * Run this tool with the current options.

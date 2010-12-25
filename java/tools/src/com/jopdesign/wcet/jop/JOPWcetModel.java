@@ -92,7 +92,7 @@ public class JOPWcetModel implements WCETProcessorModel {
 		long cycles = timing.getLocalCycles(jopcode);
 		if(cycles < 0) {
 			if(isUnboundedBytecode(i)){
-				Project.logger.error("[HACK] Unsupported (unbounded) bytecode: "+i.getName()+
+				WCETTool.logger.error("[HACK] Unsupported (unbounded) bytecode: "+i.getName()+
 									" in " + mctx.getFQMethodName()+
 									".\nApproximating with 2000 cycles, but result is not safe anymore.");
 				return 2000L;

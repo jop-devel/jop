@@ -24,12 +24,11 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.timing.WCETInstruction;
-import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.WCETTool;
 import org.apache.bcel.classfile.LineNumber;
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
@@ -41,6 +40,7 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -90,14 +90,11 @@ public class Report {
 	private ReportEntry rootReportEntry = ReportEntry.rootReportEntry("summary.html");
 	private HashMap<File,File> dotJobs = new HashMap<File,File>();
 	
-	public Report(Config c, WCETTool p, File outDir) throws IOException {
+	public Report(WCETTool p) throws BadConfigurationException {
 		this.project = p;
-		this.config = new ReportConfig(outDir, c);
-		outDir = config.getOutDir();
-		Config.checkDir(outDir,true);
-		c.initHtmlLoggers(config.getErrorLogFile(),config.getInfoLogFile(),Level.ERROR);
+		this.config = new ReportConfig(p);
 		if(config.doInvokeDot()) {
-			this.dotInvoker = new InvokeDot(config.getDotBinary(), config.getOutDir());			
+			this.dotInvoker = new InvokeDot(config.getDotBinary(), config.getReportDir());
 		}
 	}
 
@@ -135,7 +132,7 @@ public class Report {
 				dotInvoker.runDot(dotJob.getKey(), dotJob.getValue());
 			}
 		} else {
-			FileWriter fw = new FileWriter(config.getOutFile("Makefile"));
+			FileWriter fw = new FileWriter(config.getReportFile("Makefile"));
 			fw.append("dot:\n");
 			for(Entry<File,File> dotJob : this.dotJobs.entrySet()) {
 				fw.append("\tdot -Tpng -o "+dotJob.getValue().getName()+" "+
@@ -145,7 +142,7 @@ public class Report {
 		}
 	}
 	private void generateBytecodeTable() throws IOException {
-		File file = config.getOutFile("Bytecode WCET Table.txt");
+		File file = config.getReportFile("Bytecode WCET Table.txt");
 		FileWriter fw = new FileWriter(file);
 		fw.append(WCETInstruction.toWCAString());
 		fw.close();
@@ -153,13 +150,13 @@ public class Report {
 	}
 
 	private void generateIndex() throws Exception {
-		generateFile("index.vm",config.getOutFile("index.html"), new VelocityContext());
+		generateFile("index.vm",config.getReportFile("index.html"), new VelocityContext());
 	}
 
 	private void generateTOC() throws Exception {
 		VelocityContext context = new VelocityContext();
 		context.put("tree", this.rootReportEntry);
-		generateFile("toc.vm",config.getOutFile("toc.html"), context);
+		generateFile("toc.vm",config.getReportFile("toc.html"), context);
 	}
 
 	private void generateSummary() throws Exception {
@@ -167,8 +164,9 @@ public class Report {
 		context.put( "errorlog",config.getErrorLogFile());
 		context.put( "infolog", config.getInfoLogFile());
 		context.put( "stats", stats);
-		generateFile("summary.vm", config.getOutFile("summary.html"), context);
+		generateFile("summary.vm", config.getReportFile("summary.html"), context);
 	}
+
 	private void generateFile(String templateName, File outFile, VelocityContext ctx) 
 			throws Exception 
 	{
@@ -217,13 +215,14 @@ public class Report {
 			HashMap<String,Object> ctx = new HashMap<String,Object>();
 			ctx.put("classreport", cr);			
 			try {				
-				this.generateFile("class.vm", config.getOutFile(page), ctx);
+				this.generateFile("class.vm", config.getReportFile(page), ctx);
 			} catch (Exception e) {
 				logger.error(e);
 			}
 			addPage("details/"+c.getClassName(), page);
 		}
 	}
+
 	public ClassReport getClassReport(ClassInfo cli) {
 		ClassReport cr = this.classReports.get(cli);
 		if(cr==null) {
@@ -236,18 +235,19 @@ public class Report {
 		}
 		return cr;
 	}
+
 	private void generateInputOverview() throws IOException {
 		HashMap<String,Object> ctx = new HashMap<String,Object>();
 		
-		File cgdot = config.getOutFile("callgraph.dot");
-		File cgimg = config.getOutFile("callgraph.png");
+		File cgdot = config.getReportFile("callgraph.dot");
+		File cgimg = config.getReportFile("callgraph.png");
 		FileWriter fw = new FileWriter(cgdot);
 		project.getCallGraph().exportDOT(fw);
 		fw.close();
 		recordDot(cgdot,cgimg);
 		ctx.put("callgraph", "callgraph.png");
 
-		Vector<MethodReport> mrv = new Vector<MethodReport>();
+		List<MethodReport> mrv = new Vector<MethodReport>();
 		for(MethodInfo m : project.getCallGraph().getImplementedMethods(project.getTargetMethod())) { 
 			mrv.add(new MethodReport(project,m,pageOf(m))); 
 		}
@@ -255,7 +255,7 @@ public class Report {
 
 		
 		try {
-			this.generateFile("input_overview.vm", config.getOutFile("input_overview.html"),ctx);
+			this.generateFile("input_overview.vm", config.getReportFile("input_overview.html"),ctx);
 		} catch (Exception e) {
 			logger.error(e);
 		}
@@ -265,9 +265,11 @@ public class Report {
 	void recordDot(File cgdot, File cgimg) {
 		this.dotJobs .put(cgdot,cgimg);
 	}
+
 	private static String pageOf(ClassInfo ci) {
 		return MiscUtils.sanitizeFileName(ci.getClassName())+".html";
 	}
+
 	private static String pageOf(MethodInfo i) { 
 		return MiscUtils.sanitizeFileName(i.getFQMethodName())+".html";
 	}
@@ -281,23 +283,25 @@ public class Report {
 		if(prepend) reports.insertElementAt(e, 0);
 		else reports.add(e);
 	}
+
 	public void addDetailedReport(MethodInfo m, String key, Map<String, Object> stats, 
 								 Map<CFGNode, ?> nodeAnnots,
 								 Map<ControlFlowGraph.CFGEdge, ?> edgeAnnots) {
 		DetailedMethodReport re = new DetailedMethodReport(config,project,m,key,stats,nodeAnnots,edgeAnnots);
 		this.addDetailedReport(m, re,false);
 	}
+
 	private void generateDetailedReport(MethodInfo method) {
 		String page = pageOf(method);
 		HashMap<String,Object> ctx = new HashMap<String,Object>();
 		ctx.put("m", method);
-		ctx.put("dfaresults",project.getFlowGraph(method).dumpDFA());
+		ctx.put("dfaresults", project.doDataflowAnalysis() ? project.getDfaTool().dumpDFA(method) : "");
 		ctx.put("reports", this.detailedReports.get(method));
 		for(DetailedMethodReport m: this.detailedReports.get(method)) {
 			m.getGraph();
 		}
 		try {
-			this.generateFile("method.vm", config.getOutFile(page), ctx);
+			this.generateFile("method.vm", config.getReportFile(page), ctx);
 		} catch (Exception e) {
 			logger.error(e);
 		}
@@ -306,6 +310,7 @@ public class Report {
 				     sanitizePageKey(method.getSignature().toString()),
 				     page);		
 	}
+
 	/* page keys may not contain a slash - replace it by backslash */
 	private String sanitizePageKey(String s) {
 		return s.replace('/', '\\');

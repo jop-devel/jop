@@ -245,9 +245,9 @@ public class LinkerInfo {
 		try {
 			while(l != null) {
 				LinkInfo linkInfo;
-				String tks[] = l.split("\\s+");
+				String[] tks = l.split("\\s+");
 				if(tks[0].equals("static") || tks[0].equals("bytecode")) {
-					String nameParts[] = ProjectConfig.splitClassName(tks[1]);
+					String[] nameParts = ProjectConfig.splitClassName(tks[1]);
 					linkInfo = getOrCreateLinkInfo(nameParts[0]);
 					String objectName = nameParts[1];
 					int address = Integer.parseInt(tks[2]);
@@ -294,7 +294,7 @@ public class LinkerInfo {
 		LinkInfo li;
 		try {
 			li = this.getOrCreateLinkInfo(className);
-		} catch (ClassNotFoundException e) {
+		} catch (ClassNotFoundException ignored) {
 			return null;
 		}
 		return li.getStaticFieldAddress(fieldName);

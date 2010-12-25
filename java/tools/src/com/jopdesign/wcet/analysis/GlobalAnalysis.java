@@ -26,7 +26,6 @@ import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.code.SuperGraphNode;
-import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
@@ -241,7 +240,7 @@ public class GlobalAnalysis {
 				IPETBuilder.ExecutionEdge missEdge = c.newEdge(MethodCacheAnalysis.splitEdge(e,false));
 				ipetSolver.addConstraint(IPETUtils.lowLevelEdgeSplit(parentEdge, hitEdge, missEdge));
 				missEdges .add(missEdge);
-				ipetSolver.addEdgeCost(missEdge, cache.missOnceCost(entry.getKey(), ipetConfig.assumeMissOnceOnInvoke));
+				ipetSolver.addEdgeCost(missEdge, cache.missOnceCost(entry.getKey(), ipetConfig.doAssumeMissOnceOnInvoke()));
 				lv.addLHS(missEdge,1);
 			}
 			lv.addRHS(1);
@@ -317,7 +316,7 @@ public class GlobalAnalysis {
 				cost.addCacheCost(recCost.getCacheCost() + invokeReturnCost);
 				cost.addNonLocalCost(recCost.getCost() - recCost.getCacheCost());
 			}
-			Project.logger.info("Recursive WCET computation [GLOBAL IPET]: " + invoked +
+			WCETTool.logger.info("Recursive WCET computation [GLOBAL IPET]: " + invoked +
 			        		    ". cummulative cache cost: "+ cost.getCacheCost()+
 					            ", execution cost: "+ cost.getNonCacheCost());
 			return cost;

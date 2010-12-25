@@ -19,6 +19,7 @@
  */
 package com.jopdesign.wcet.uppaal.translator.cache;
 
+import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
@@ -26,11 +27,13 @@ import com.jopdesign.wcet.jop.VarBlockCache;
 import com.jopdesign.wcet.uppaal.model.NTASystem;
 import com.jopdesign.wcet.uppaal.translator.SystemBuilder;
 
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 public class LRUVarBlockCacheBuilder extends VarBlockCacheBuilder {
-	public LRUVarBlockCacheBuilder(WCETTool p, VarBlockCache cache, int numMethods) {
-		super(p, cache, numMethods);
+	public LRUVarBlockCacheBuilder(WCETTool p, VarBlockCache cache, Set<MethodInfo> methods) {
+		super(p, cache, methods);
 	}
 	@Override
 	protected int numBlocks() {
@@ -66,9 +69,11 @@ public class LRUVarBlockCacheBuilder extends VarBlockCacheBuilder {
 				"}\n");
 	}
 	protected StringBuilder initCache(String NUM_METHODS) {
-		Vector<Object> cacheElems = new Vector<Object>();
+		List<Object> cacheElems = new ArrayList<Object>();
 		for(int i = 0; i < numBlocks(); i++) cacheElems.add(NUM_METHODS);
-		cacheElems.set(blocksOf(0)-1,0);
+        // TODO check: this has been "blocksOf(0)", check if this is the same!!
+        MethodInfo method = project.getAppInfo().getMainMethod();
+		cacheElems.set(blocksOf(method)-1,0);
 		return SystemBuilder.constArray(cacheElems);
 	}
 	public long getWaitTime(WCETProcessorModel proc, ControlFlowGraph cfg, boolean isInvoke) {

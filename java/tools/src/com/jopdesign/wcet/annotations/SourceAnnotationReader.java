@@ -127,7 +127,7 @@ public class SourceAnnotationReader {
 				throw new BadAnnotationException("Timestamp error: source file modified after compilation");
 			}
 		} catch(IOException ex) {
-			Project.logger.warn("Could not find class file for " + ci, ex);
+			WCETTool.logger.warn("Could not find class file for " + ci, ex);
 		}
 		return src;
 	}
