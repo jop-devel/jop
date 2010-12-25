@@ -52,7 +52,7 @@ public class FindUsedConstants extends JOPizerVisitor {
 
 	private ConstantPoolGen cpool;
 	
-	public FindUsedConstants(AppInfo jz) {
+	public FindUsedConstants(OldAppInfo jz) {
 		super(jz);
 	}
 	

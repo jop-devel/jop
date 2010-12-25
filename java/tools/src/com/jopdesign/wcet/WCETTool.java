@@ -49,7 +49,9 @@ import com.jopdesign.wcet.allocation.HandleAllocationModel;
 import com.jopdesign.wcet.allocation.HeaderAllocationModel;
 import com.jopdesign.wcet.allocation.ObjectAllocationModel;
 import com.jopdesign.wcet.analysis.WcetCost;
+import com.jopdesign.wcet.annotations.BadAnnotationException;
 import com.jopdesign.wcet.annotations.SourceAnnotationReader;
+import com.jopdesign.wcet.annotations.SourceAnnotations;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.jop.JOPWcetModel;
 import com.jopdesign.wcet.jop.LinkerInfo;
@@ -184,6 +186,15 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
         } catch (MethodNotFoundException e) {
             e.printStackTrace();
         }
+
+        if(projectConfig.doDataflowAnalysis()) {
+            appInfo.iterate(new RemoveNops(appInfo));
+        } else {
+            WcetPreprocess.preprocess(appInfo);
+        }
+
+		/* Initialize annotation map */
+		sourceAnnotations = new SourceAnnotationReader(this);
     }
 
     @Override
@@ -429,6 +440,22 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
             dirs.add(new File(sourcePath));
         }
         return dirs;
+    }
+
+    /**
+     * Get flow fact annotations for a class, lazily.
+     * @param cli
+     * @return
+     * @throws IOException
+     * @throws BadAnnotationException
+     */
+    public SourceAnnotations getAnnotations(ClassInfo cli) throws IOException, BadAnnotationException {
+        SourceAnnotations annots = this.annotationMap.get(cli);
+        if(annots == null) {
+            annots = sourceAnnotations.readAnnotations(cli);
+            annotationMap.put(cli, annots);
+        }
+        return annots;
     }
 
 	/* Data flow analysis

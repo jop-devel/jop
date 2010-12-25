@@ -26,8 +26,8 @@ import org.apache.bcel.classfile.*;
  * @author rup, ms
  */
 public class SetGCRTMethodInfo extends JOPizerVisitor {
-  AppInfo jz;
-	public SetGCRTMethodInfo(AppInfo jz) {
+  OldAppInfo jz;
+	public SetGCRTMethodInfo(OldAppInfo jz) {
 		super(jz);
 		this.jz = jz; 
 	}
@@ -41,7 +41,7 @@ public class SetGCRTMethodInfo extends JOPizerVisitor {
 		for(int i=0; i < methods.length; i++) {
 			Method m = methods[i];
 			String methodId = m.getName()+m.getSignature();
-	    MethodInfo mi = getCli().getMethodInfo(methodId);
+	    OldMethodInfo mi = getCli().getMethodInfo(methodId);
 	    // GCRT: Walk the method
 	    GCRTMethodInfo.stackWalker(mi);
 		}

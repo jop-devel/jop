@@ -23,7 +23,6 @@ import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.CfgVisitor;
-import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.WCETTool;
 
 public abstract class WcetVisitor implements CfgVisitor {

@@ -20,13 +20,11 @@
 
 package com.jopdesign.build;
 
-import java.util.Iterator;
-
-import org.apache.bcel.classfile.ConstantPool;
-import org.apache.bcel.classfile.JavaClass;
-import org.apache.bcel.classfile.Method;
+import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.MethodCode;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.graphutils.ClassVisitor;
 import org.apache.bcel.generic.BIPUSH;
-import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.IADD;
 import org.apache.bcel.generic.ICONST;
 import org.apache.bcel.generic.IINC;
@@ -34,9 +32,10 @@ import org.apache.bcel.generic.ILOAD;
 import org.apache.bcel.generic.ISTORE;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
-import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.SIPUSH;
 import org.apache.bcel.util.InstructionFinder;
+
+import java.util.Iterator;
 
 /**
  * @author Martin
@@ -47,45 +46,30 @@ import org.apache.bcel.util.InstructionFinder;
  * generates faster code on JOP.
  * 
  */
-public class ReplaceIinc extends AppVisitor {
+public class ReplaceIinc implements ClassVisitor {
 
-	// Why do we use a ConstantPoolGen and a ConstantPool?
-	private ConstantPoolGen cpoolgen;
-	private ConstantPool cp;
-	
-	public ReplaceIinc(AppInfo jz) {
-		super(jz);
+	public ReplaceIinc() {
 	}
 	
-	public void visitJavaClass(JavaClass clazz) {
+    @Override
+    public boolean visitClass(ClassInfo classInfo) {
 
-		super.visitJavaClass(clazz);
-		
-		Method[] methods = clazz.getMethods();
-		cp = clazz.getConstantPool();
-		cpoolgen = new ConstantPoolGen(cp);
-		
-		for(int i=0; i < methods.length; i++) {
-			if(!(methods[i].isAbstract() || methods[i].isNative())) {
-				Method m = replace(methods[i]);
-		        MethodInfo mi = getCli().getMethodInfo(m.getName()+m.getSignature());
-		        // set new method also in MethodInfo
-		        mi.setMethod(m);
-				if (m!=null) {
-					// overwrite the BCEL method with the changed one
-					methods[i] = m;
-				}
-				// update constant pool
-				clazz.setConstantPool(cpoolgen.getFinalConstantPool());
-			}
-		}
-	}
+        for(MethodInfo method : classInfo.getMethods()) {
+            if(!(method.isAbstract() || method.isNative())) {
+                replace(method);
+            }
+        }
+        return true;
+    }
 
+    @Override
+    public void finishClass(ClassInfo classInfo) {
+    }
 
-	private Method replace(Method method) {
+	private void replace(MethodInfo method) {
 		
-		MethodGen mg  = new MethodGen(method, clazz.getClassName(), cpoolgen);
-		InstructionList il  = mg.getInstructionList();
+		MethodCode mc  = method.getCode();
+		InstructionList il  = mc.getInstructionList();
 		InstructionFinder f = new InstructionFinder(il);
     
 		for(Iterator i = f.search("IINC"); i.hasNext(); ) {
@@ -110,11 +94,6 @@ public class ReplaceIinc extends AppVisitor {
 			ih = il.append(ih, new ISTORE(idx));
 		}
 		
-
-		Method m = mg.getMethod();
-		il.dispose();
-		return m;
-
+		method.compile();
 	}
-
 }

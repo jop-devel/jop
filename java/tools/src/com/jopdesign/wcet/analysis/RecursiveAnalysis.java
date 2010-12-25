@@ -22,7 +22,6 @@ package com.jopdesign.wcet.analysis;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
-import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.ipet.CostProvider;
 import com.jopdesign.wcet.ipet.IPETBuilder;

@@ -52,7 +52,7 @@ import org.apache.bcel.classfile.*;
  * @author Flavius, Martin
  */
 
-public class JopClassInfo extends ClassInfo implements Serializable {
+public class JopClassInfo extends OldClassInfo implements Serializable {
 
     public class JopCliVisitor extends CliVisitor implements Serializable {
 
@@ -60,7 +60,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 
         private ConstantPool cpool;
 
-        public JopCliVisitor(Map<String, ClassInfo> map) {
+        public JopCliVisitor(Map<String, OldClassInfo> map) {
             super(map);
         }
 
@@ -83,7 +83,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
             // now get the MethodInfo back from the ClassInfo for
             // additional work.
             String methodId = method.getName() + method.getSignature();
-            MethodInfo mi = getITMethodInfo(methodId);
+            OldMethodInfo mi = getITMethodInfo(methodId);
             if (JOPizer.dumpMgci) {
                 // GCRT
                 new GCRTMethodInfo(mi, method);
@@ -187,17 +187,17 @@ public class JopClassInfo extends ClassInfo implements Serializable {
     private Map<Integer, Integer> cpoolMap = new TreeMap<Integer,Integer>();
 
     @Override
-    public ClassInfo newClassInfo(JavaClass jc, AppInfo ai) {
+    public OldClassInfo newClassInfo(JavaClass jc, OldAppInfo ai) {
         return new JopClassInfo(jc, ai);
     }
 
     @Override
-    public CliVisitor newCliVisitor(Map<String, ClassInfo> map) {
+    public CliVisitor newCliVisitor(Map<String, OldClassInfo> map) {
         return new JopCliVisitor(map);
     }
 
     @Override
-    public MethodInfo newMethodInfo(String mid) {
+    public OldMethodInfo newMethodInfo(String mid) {
         return new JopMethodInfo(this, mid);
     }
 
@@ -206,7 +206,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
      *
      * @return
      */
-    public static ClassInfo getTemplate() {
+    public static OldClassInfo getTemplate() {
         return new JopClassInfo(null, null);
     }
 
@@ -217,7 +217,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
      * @param clazz
      * @param ai
      */
-    private JopClassInfo(JavaClass clazz, AppInfo ai) {
+    private JopClassInfo(JavaClass clazz, OldAppInfo ai) {
         super(clazz, ai);
         methodsAddress = 0;
         cpoolAddress = 0;
@@ -325,7 +325,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
      * @param addr
      * @return
      */
-    public int setAddress(AppInfo ai, int addr) {
+    public int setAddress(OldAppInfo ai, int addr) {
 
         int i;
         instGCinfo = getGCInfo();
@@ -411,7 +411,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
     }
 
     private boolean implementsInterface(String ifname) {
-        ClassInfo cli = this;
+        OldClassInfo cli = this;
         do {
             String[] interfaces = cli.clazz.getInterfaceNames();
             for (int i = 0; i < interfaces.length; i++) {
@@ -426,7 +426,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
                     }
                 }
             }
-            cli = (ClassInfo) cli.superClass;
+            cli = (OldClassInfo) cli.superClass;
         } while (cli != null);
         return false;
     }

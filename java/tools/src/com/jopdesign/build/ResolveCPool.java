@@ -30,7 +30,7 @@ import org.apache.bcel.classfile.*;
 public class ResolveCPool extends JOPizerVisitor {
 
 
-	public ResolveCPool(AppInfo jz) {
+	public ResolveCPool(OldAppInfo jz) {
 		super(jz);
 	}
 	

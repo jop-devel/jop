@@ -9,7 +9,6 @@ import com.jopdesign.common.misc.AppInfoException;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.common.processormodel.JOPConfig.CacheImplementation;
-import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import org.apache.log4j.Logger;

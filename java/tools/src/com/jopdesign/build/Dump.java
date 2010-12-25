@@ -35,7 +35,7 @@ import org.apache.bcel.classfile.*;
 public class Dump extends AppVisitor {
 
 	PrintWriter outTxt;
-	public Dump(AppInfo ai, PrintWriter pw) {
+	public Dump(OldAppInfo ai, PrintWriter pw) {
 		super(ai);
 		outTxt = pw;
 	}

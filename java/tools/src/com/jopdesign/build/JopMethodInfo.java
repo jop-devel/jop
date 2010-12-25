@@ -21,18 +21,19 @@
 
 package com.jopdesign.build;
 
-import java.util.*;
+import org.apache.bcel.classfile.CodeException;
+import org.apache.bcel.classfile.Method;
+import org.apache.bcel.generic.Type;
+
 import java.io.PrintWriter;
 import java.io.Serializable;
-
-import org.apache.bcel.classfile.*;
-import org.apache.bcel.generic.Type;
+import java.util.List;
 
 /**
  * @author Flavius, Martin
- *
+ * @deprecated code needs to be moved to other class, data should be attached to methodinfo using CustomKeys
  */
-public class JopMethodInfo extends MethodInfo implements Serializable {
+public class JopMethodInfo extends OldMethodInfo implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
@@ -53,7 +54,7 @@ public class JopMethodInfo extends MethodInfo implements Serializable {
 	 * @param jc
 	 * @param mid
 	 */
-	protected JopMethodInfo(ClassInfo jc, String mid) {
+	protected JopMethodInfo(OldClassInfo jc, String mid) {
 		super(jc, mid);
 		codeAddress = 0;
 		structAddress = 0;
@@ -127,7 +128,7 @@ public class JopMethodInfo extends MethodInfo implements Serializable {
 
 	public void dumpMethodStruct(PrintWriter out, int addr) {
 
-		if (methodId.equals(AppInfo.clinitSig)
+		if (methodId.equals(OldAppInfo.clinitSig)
 				&& len >= JOPizer.METHOD_MAX_SIZE / 4) {
 			out.println("\t// no size for <clinit> - we interpret it and allow larger methods!");
 		}
@@ -155,7 +156,7 @@ public class JopMethodInfo extends MethodInfo implements Serializable {
 		int word1 = codeAddress << 10 | len;
 		// no length on large <clinit> methods
 		// get interpreted at start - see Startup.clazzinit()
-		if (methodId.equals(AppInfo.clinitSig)
+		if (methodId.equals(OldAppInfo.clinitSig)
 				&& len >= JOPizer.METHOD_MAX_SIZE / 4) {
 			word1 = codeAddress << 10;
 		}

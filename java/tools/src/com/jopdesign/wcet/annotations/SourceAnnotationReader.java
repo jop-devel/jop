@@ -22,7 +22,6 @@
 package com.jopdesign.wcet.annotations;
 
 import com.jopdesign.common.ClassInfo;
-import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.WCETTool;
 import org.apache.log4j.Logger;
 

@@ -29,7 +29,6 @@ import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.timing.jop.JOPCmpTimingTable;
 import com.jopdesign.timing.jop.JOPTimingTable;
 import com.jopdesign.timing.jop.SingleCoreTiming;
-import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import org.apache.bcel.generic.ANEWARRAY;

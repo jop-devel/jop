@@ -38,7 +38,7 @@ public class ClassAddress extends JOPizerVisitor {
 
 	private int addr;
 	
-	public ClassAddress(AppInfo jz, int addr) {
+	public ClassAddress(OldAppInfo jz, int addr) {
 		super(jz);
 		this.addr = addr;
 	}

@@ -33,17 +33,17 @@ import org.apache.bcel.generic.MethodGen;
  * Info for methods. Shall be extended fo application specific
  * type and use the funny factory contructor.
  * @author Martin Schoeberl
- *
+ * @deprecated
  */
-public class MethodInfo {
+public class OldMethodInfo {
 
-	private ClassInfo cli;
+	private OldClassInfo cli;
 	private Method method;
 	private MethodGen methodGen;
 	private ConstantPoolGen constGen;
 	public String methodId;
 
-	public MethodInfo(ClassInfo classInfo, String mid) {
+	public OldMethodInfo(OldClassInfo classInfo, String mid) {
 		cli = classInfo;
 		methodId = mid;
 	}
@@ -85,7 +85,7 @@ public class MethodInfo {
 		return method.getCode();
 	}
 	
-	public ClassInfo getCli() {
+	public OldClassInfo getCli() {
 		return cli;
 	}
 
@@ -98,7 +98,7 @@ public class MethodInfo {
 	}
 	@Override public boolean equals(Object other) {
 		if(this == other) return true;
-		return(this.getFQMethodName().equals(((MethodInfo) other).getFQMethodName()));
+		return(this.getFQMethodName().equals(((OldMethodInfo) other).getFQMethodName()));
 	}
 	@Override public int hashCode() {
 		return(this.getFQMethodName().hashCode());

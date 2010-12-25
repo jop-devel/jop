@@ -26,7 +26,6 @@ import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.dfa.analyses.Interval;
-import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.annotations.LoopBound;

@@ -90,25 +90,17 @@ public class ExampleTool extends EmptyTool<ExampleManager> {
 
     public static void main(String[] args) {
 
-        // setup some defaults
+        // setup some defaults, initialize without any per-program defaults
         AppSetup setup = new AppSetup();
         setup.setUsageInfo("example", "This is an example application just to show off.");
         setup.setVersionInfo("The version of this whole application is 0.1");
-
-        setup.addStandardOptions(true, true, true);
-        setup.addWriteOptions(true);
         // set the name of the (optional) user-provided config file
         setup.setConfigFilename("example.properties");
 
         ExampleTool example = new ExampleTool();
         setup.registerTool("example", example);
 
-        // parse options and setup config
-        String[] rest = setup.setupConfig(args);
-        setup.setupLogger(false);
-
-        // setup classpath, roots and main method, load transitive hull
-        setup.setupAppInfo(rest, true);
+        AppInfo appInfo = setup.initAndLoad(args, false, true, true);
 
         // write results
         setup.writeClasses();

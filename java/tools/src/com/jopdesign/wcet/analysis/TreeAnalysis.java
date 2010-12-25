@@ -28,7 +28,6 @@ import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.CfgVisitor;
 import com.jopdesign.common.graphutils.ProgressMeasure;
 import com.jopdesign.common.graphutils.ProgressMeasure.RelativeProgress;
-import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.annotations.LoopBound;
 

@@ -218,7 +218,7 @@ public class WCETAnalysis {
             /* minimal cache cost (too expensive for large problems) */
             if(CALCULATE_MINIMUM_CACHE_COST)  {                
             	IPETConfig mmcConfig = ipetConfig.clone();
-            	mmcConfig.assumeMissOnceOnInvoke = true;
+            	mmcConfig.setAssumeMissOnceOnInvoke(true);
             	GlobalAnalysis gb = new GlobalAnalysis(project, mmcConfig);
             	LpSolveWrapper.resetSolverTime();
             	start = System.nanoTime();

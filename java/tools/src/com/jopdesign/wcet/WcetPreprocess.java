@@ -22,54 +22,51 @@
 /**
  * 
  */
-package com.jopdesign.build;
+package com.jopdesign.wcet;
 
-import java.io.IOException;
+import com.jopdesign.build.ReplaceIinc;
+import com.jopdesign.build.InsertSynchronized;
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.AppSetup;
 
 /**
  * Perform the JOPtimizer transformations on the class files
  * and write class fils to the output directory for the WCET
  * analysis
- * 
- * @author Martin Schoeberl
  *
+ * TODO (temporarily?) moved to WCET package to avoid import clashes, maybe move back to build package?
+ *
+ * @author Martin Schoeberl
+ * @author Stefan Hepp
  */
-public class WcetPreprocess extends AppInfo {
+public class WcetPreprocess {
 
-	public WcetPreprocess(ClassInfo cliTemplate) {
-		super(cliTemplate);
+    private static final long serialVersionUID = 1L;
+
+	public WcetPreprocess() {
 	}
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
+    public static void preprocess(AppInfo ai) {
+        ai.iterate(new ReplaceIinc());
+        ai.iterate(new InsertSynchronized());
+    }
 
-	/**
-	 * @param args
-	 */
 	public static void main(String[] args) {
-		AppInfo ai = new AppInfo(ClassInfo.getTemplate());
-		ai.parseOptions(args);
-		try {
-			ai.load();
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.exit(-1);
-		}
+
+        AppSetup setup = new AppSetup();
+        AppInfo ai = setup.initAndLoad(args, false, false, true);
+
 		preprocess(ai);
+
 		// dump the methods
 //		try {
 //			ai.iterate(new Dump(ai, new PrintWriter(new FileOutputStream(ai.outFile+"/dump.txt"))));
 //		} catch (FileNotFoundException e) {
 //			e.printStackTrace();
 //		}
+
 		// write the class files
-		ai.iterate(new ClassWriter(ai, ai.outFile));
+		setup.writeClasses();
 	}
 
-	public static void preprocess(AppInfo ai) {
-		ai.iterate(new ReplaceIinc(ai));
-		ai.iterate(new InsertSynchronized(ai));		
-	}
 }

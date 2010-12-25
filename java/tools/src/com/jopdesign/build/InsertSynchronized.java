@@ -20,10 +20,20 @@
 
 package com.jopdesign.build;
 
-import java.util.*;
-import org.apache.bcel.classfile.*;
-import org.apache.bcel.generic.*;
+import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.MethodCode;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.graphutils.ClassVisitor;
+import com.jopdesign.common.misc.JavaClassFormatError;
+import org.apache.bcel.generic.ALOAD;
+import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InstructionList;
+import org.apache.bcel.generic.InstructionTargeter;
+import org.apache.bcel.generic.MONITORENTER;
+import org.apache.bcel.generic.MONITOREXIT;
 import org.apache.bcel.util.InstructionFinder;
+
+import java.util.Iterator;
 
 /**
  * 
@@ -32,45 +42,39 @@ import org.apache.bcel.util.InstructionFinder;
  * @author Martin Schoeberl, Wolfgang Puffitsch
  * 
  */
-public class InsertSynchronized extends JOPizerVisitor {
+public class InsertSynchronized implements ClassVisitor {
 
-	private ConstantPoolGen cpoolgen;
-
-	public InsertSynchronized(AppInfo jz) {
-		super(jz);
+	public InsertSynchronized() {
 	}
 
-	public void visitJavaClass(JavaClass clazz) {
+    @Override
+    public boolean visitClass(ClassInfo classInfo) {
 
-		super.visitJavaClass(clazz);
-
-		Method[] methods = clazz.getMethods();
-		cpoolgen = new ConstantPoolGen(clazz.getConstantPool());
-
-		for(int i=0; i < methods.length; i++) {
-			if(!(methods[i].isAbstract() || methods[i].isNative())
-					&& methods[i].isSynchronized()) {		
-				Method m = synchronize(methods[i]);
-		        // why does this work without the following line?
-		        // mi.setMethod(m);
-				if (m!=null) {
-					methods[i] = m;
-				}
+		for (MethodInfo method : classInfo.getMethods()) {
+			if(!(method.isAbstract() || method.isNative())
+					&& method.isSynchronized())
+            {
+				synchronize(method);
 			}
 		}
+        return true;
 	}
 
-	private Method synchronize(Method method) {
+    @Override
+    public void finishClass(ClassInfo classInfo) {
+    }
 
-		MethodGen mg  = new MethodGen(method, clazz.getClassName(), cpoolgen);
-		InstructionList il  = mg.getInstructionList();
+	private void synchronize(MethodInfo method) {
+
+		MethodCode mc  = method.getCode();
+		InstructionList il  = mc.getInstructionList();
 		InstructionFinder f;
 
 		// prepend monitorenter (reversed order of opcodes)
 		il.insert(new MONITORENTER());
 		if (method.isStatic()) {
 			// il.insert(new GET_CURRENT_CLASS());
-			throw new Error("synchronized on static methods not yet supported");
+			throw new JavaClassFormatError("synchronized on static methods not yet supported");
 		} else {
 			il.insert(new ALOAD(0));
 		}
@@ -87,7 +91,7 @@ public class InsertSynchronized extends JOPizerVisitor {
 
 			if (method.isStatic()) {
 				// il.insert(ih, new GET_CURRENT_CLASS());
-				throw new Error("synchronized on static methods not yet supported");
+				throw new JavaClassFormatError("synchronized on static methods not yet supported");
 			} else {
 				newh = il.insert(ih, new ALOAD(0));
 			}
@@ -101,11 +105,7 @@ public class InsertSynchronized extends JOPizerVisitor {
 		}	
 		il.setPositions();
 
-		mg.setInstructionList(il);
-
-		Method m = mg.getMethod();
-		il.dispose();
-		return m;
+        method.compile();
 	}
 
 }

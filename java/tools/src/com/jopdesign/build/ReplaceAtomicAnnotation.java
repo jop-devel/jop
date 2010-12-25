@@ -49,7 +49,7 @@ import boxpeeking.instrument.bcel.AnnotationsAttribute;
  */
 public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 
-	public ReplaceAtomicAnnotation(AppInfo jz) {
+	public ReplaceAtomicAnnotation(OldAppInfo jz) {
 		super(jz);
 	}
 	
@@ -66,7 +66,7 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 						ConstantPoolGen cpoolgen = new ConstantPoolGen(clazz.getConstantPool()); 
 						
 						Method nm = transform(methods[i], clazz, cpoolgen);						
-				        MethodInfo mi = getCli().getMethodInfo(nm.getName()+nm.getSignature());
+				        OldMethodInfo mi = getCli().getMethodInfo(nm.getName()+nm.getSignature());
 				        // set new method also in MethodInfo
 				        mi.setMethod(nm);
 						

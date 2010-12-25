@@ -82,6 +82,10 @@ public class IPETConfig {
 		this.dumpIlp = c.getOption(DUMP_ILP);
 	}
 
+    public void setAssumeMissOnceOnInvoke(boolean assumeMissOnceOnInvoke) {
+        this.assumeMissOnceOnInvoke = assumeMissOnceOnInvoke;
+    }
+
     public boolean doAssumeMissOnceOnInvoke() {
         return assumeMissOnceOnInvoke;
     }

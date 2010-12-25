@@ -49,9 +49,9 @@ import org.apache.bcel.util.SyntheticRepository;
  * 	in XClassInfo and XMethodInfo?
  * 
  * @author Martin
- *
+ * @deprecated
  */
-public class AppInfo implements Serializable {
+public class OldAppInfo implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	
@@ -78,14 +78,14 @@ public class AppInfo implements Serializable {
 	 * A template of the specific cli type to create
 	 * the specific cli map (some form of factory pattern)
 	 */
-	private ClassInfo template;
+	private OldClassInfo template;
 
 	/**
 	 * Map of ClassInfo that represents the application.
 	 * 
 	 * It's public for the debugger.
 	 */
-	public Map<String, ? extends ClassInfo> cliMap;
+	public Map<String, ? extends OldClassInfo> cliMap;
 //	protected Map<String, ClassInfo> cliMap;
 
 	public final static String clinitSig = "<clinit>()V";
@@ -95,7 +95,7 @@ public class AppInfo implements Serializable {
 	 * 
 	 * @param cliTemplate a template to create the correct ClassInfo type
 	 */
-	public AppInfo(ClassInfo cliTemplate) {
+	public OldAppInfo(OldClassInfo cliTemplate) {
 		template = cliTemplate;
 		template.appInfo = this;
 	}
@@ -212,7 +212,7 @@ public class AppInfo implements Serializable {
 	 */
 	public void iterate(Visitor v) {
 	
-		Iterator<? extends ClassInfo> it = cliMap.values().iterator();
+		Iterator<? extends OldClassInfo> it = cliMap.values().iterator();
 		while (it.hasNext()) {
 			JavaClass clz = it.next().clazz;
 			new DescendingVisitor(clz, v).visit();
@@ -226,7 +226,7 @@ public class AppInfo implements Serializable {
 	 */
 	public static void main(String[] args) {
 
-		AppInfo ai = new AppInfo(ClassInfo.getTemplate());
+		OldAppInfo ai = new OldAppInfo(OldClassInfo.getTemplate());
 		ai.parseOptions(args);
 		System.out.println("CLASSPATH="+ai.classpath+"\tmain class="+ai.mainClass);
 		try {

@@ -24,27 +24,31 @@
  */
 package com.jopdesign.build;
 
+import org.apache.bcel.classfile.DescendingVisitor;
+import org.apache.bcel.classfile.EmptyVisitor;
+import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.classfile.Method;
+
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.*;
-
-import org.apache.bcel.classfile.*;
-
-
-import org.apache.bcel.classfile.JavaClass;
-import org.apache.bcel.generic.ConstantPoolGen;
-import org.apache.bcel.generic.MethodGen;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * The new version of ClassInfo
  * @author Martin Schoeberl
- *
+ * @deprecated
  */
-public class ClassInfo implements Serializable {
+public class OldClassInfo implements Serializable {
 	
 	/**
 	 * Is invoked on cli map creation for additional information setting.
@@ -55,10 +59,10 @@ public class ClassInfo implements Serializable {
 		
 		private static final long serialVersionUID = 1L;
 
-		protected Map<String, ClassInfo> map;
-		protected ClassInfo cli;
+		protected Map<String, OldClassInfo> map;
+		protected OldClassInfo cli;
 	
-		public CliVisitor(Map<String, ClassInfo> map) {
+		public CliVisitor(Map<String, OldClassInfo> map) {
 			this.map = map;
 		}
 		public void visitJavaClass(JavaClass clazz) {
@@ -76,16 +80,16 @@ public class ClassInfo implements Serializable {
 		
 		public void visitMethod(Method method) {
 			
-			ClassInfo cli = (ClassInfo) this.cli;
+			OldClassInfo cli = (OldClassInfo) this.cli;
 			
 			String methodId = method.getName()+method.getSignature();
 	        if(!cli.methods.containsKey(methodId)) {
-				MethodInfo mi1 = cli.newMethodInfo(methodId);
+				OldMethodInfo mi1 = cli.newMethodInfo(methodId);
 				cli.methods.put(methodId, mi1);
 				cli.list.add(mi1);
 			}
 	        
-	        MethodInfo mi = cli.getMethodInfo(methodId);
+	        OldMethodInfo mi = cli.getMethodInfo(methodId);
 	        mi.setMethod(method);
 	        
 	        /* NOTE: don't set MethodGen here. You have to explicitly ask for it later,
@@ -105,28 +109,28 @@ public class ClassInfo implements Serializable {
 	/**
 	 * Reference to the super class.
 	 */
-	public ClassInfo superClass;
+	public OldClassInfo superClass;
 	
 	/**
 	 * Set of sub classes.
 	 */
-	private Set<ClassInfo> subClasses = new HashSet<ClassInfo>();
+	private Set<OldClassInfo> subClasses = new HashSet<OldClassInfo>();
 	/**
 	 * Back link to the application info
 	 */
-	public AppInfo appInfo;
+	public OldAppInfo appInfo;
 
 	/**
 	 * Map of method signatures to a MethodInfo.
 	 */
-	protected Map<String, MethodInfo> methods = new HashMap<String, MethodInfo>();
+	protected Map<String, OldMethodInfo> methods = new HashMap<String, OldMethodInfo>();
 
 	/**
 	 * Methods in a list ordered in the visit order.
 	 */
-	protected List<MethodInfo> list = new LinkedList<MethodInfo>();
+	protected List<OldMethodInfo> list = new LinkedList<OldMethodInfo>();
 	
-	protected ClassInfo(JavaClass jc, AppInfo ai) {
+	protected OldClassInfo(JavaClass jc, OldAppInfo ai) {
 		clazz = jc;
 		appInfo = ai;
 	}
@@ -135,8 +139,8 @@ public class ClassInfo implements Serializable {
 	 * A dummy instance for the dispatch of newClassInfo() that
 	 * creates the real ClassInfo sub type
 	 */
-	public static ClassInfo getTemplate() {
-		return new ClassInfo(null, null);
+	public static OldClassInfo getTemplate() {
+		return new OldClassInfo(null, null);
 	}
 
 	/**
@@ -144,15 +148,15 @@ public class ClassInfo implements Serializable {
 	 * @param jc
 	 * @return
 	 */
-	Map<String, ? extends ClassInfo> genClassInfoMap(JavaClass jc[], AppInfo ai) {
-		Map<String, ClassInfo> map = new HashMap<String, ClassInfo>();
+	Map<String, ? extends OldClassInfo> genClassInfoMap(JavaClass jc[], OldAppInfo ai) {
+		Map<String, OldClassInfo> map = new HashMap<String, OldClassInfo>();
 		for (int i=0; i<jc.length; ++i) {
-			ClassInfo cli = newClassInfo(jc[i], ai);
+			OldClassInfo cli = newClassInfo(jc[i], ai);
 			map.put(cli.clazz.getClassName(), cli);
 		}
 		// second iteration over all class infos for additional information setting
 		CliVisitor v = newCliVisitor(map);
-		Iterator<? extends ClassInfo> it = map.values().iterator();
+		Iterator<? extends OldClassInfo> it = map.values().iterator();
 		while (it.hasNext()) {
 			JavaClass clz = it.next().clazz;
 			new DescendingVisitor(clz, v).visit();
@@ -165,8 +169,8 @@ public class ClassInfo implements Serializable {
 	 * types. Has to be overwritten by each sub-type.
 	 * Wolfgang and Martin in SF, Saint Mary's Square
 	 */
-	public ClassInfo newClassInfo(JavaClass jc,AppInfo ai) {
-		return new ClassInfo(jc, ai);
+	public OldClassInfo newClassInfo(JavaClass jc,OldAppInfo ai) {
+		return new OldClassInfo(jc, ai);
 	}
 	
 	/**
@@ -174,7 +178,7 @@ public class ClassInfo implements Serializable {
 	 * @param map
 	 * @return
 	 */
-	public CliVisitor newCliVisitor(Map<String, ClassInfo> map) {
+	public CliVisitor newCliVisitor(Map<String, OldClassInfo> map) {
 		return new CliVisitor(map);
 	}
 	
@@ -183,19 +187,19 @@ public class ClassInfo implements Serializable {
 	 * @param mid
 	 * @return
 	 */
-	public MethodInfo newMethodInfo(String mid) {
-		return new MethodInfo(this, mid);
+	public OldMethodInfo newMethodInfo(String mid) {
+		return new OldMethodInfo(this, mid);
 	}
 	
 	public String toString() {
 		return clazz.getClassName();
 	}
 
-	public MethodInfo getMethodInfo(String amth) {
+	public OldMethodInfo getMethodInfo(String amth) {
 		return methods.get(amth);
 	}
 
-	public Map<String, MethodInfo> getMethodInfoMap() {
+	public Map<String, OldMethodInfo> getMethodInfoMap() {
 		return methods;
 	}
 
@@ -203,7 +207,7 @@ public class ClassInfo implements Serializable {
 	 * Return the methods as list in the order they have been visited.
 	 * @return
 	 */
-	public List<MethodInfo> getMethods() {
+	public List<OldMethodInfo> getMethods() {
 		return list;
 	}
 

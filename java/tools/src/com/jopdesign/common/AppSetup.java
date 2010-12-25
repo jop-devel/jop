@@ -83,7 +83,6 @@ public class AppSetup {
         return p;
     }
 
-
     private Config config;
     private LogConfig logConfig;
     private AppInfo appInfo;
@@ -134,6 +133,33 @@ public class AppSetup {
 
         logConfig = new LogConfig();
         tools = new HashMap<String, JopTool>();
+    }
+
+    /**
+     * Initialize this AppSetup, and load the classes into AppInfo.
+     * <p>
+     * Use {@link #registerTool(String, JopTool)} first to add all tools you want to use, as well as
+     * {@link #setUsageInfo(String, String)}, {@link #setConfigFilename(String)} and {@link #setVersionInfo(String)}
+     * if required.
+     * </p>
+     * @param args the commandline arguments
+     * @param initReports if true, add options and initialize html report loggers.
+     * @param allowExcludes if true, add options to allow to exclude packages or classes from loading.
+     * @param writeClassOption if true, add options to write classes using {@link #writeClasses()}
+     * @return a new AppSetup which has initialized AppInfo.
+     */
+    public AppInfo initAndLoad(String[] args,
+                               boolean initReports, boolean allowExcludes, boolean writeClassOption)
+    {
+        addStandardOptions(true, true, initReports);
+        addPackageOptions(allowExcludes);
+        addWriteOptions(writeClassOption);
+
+        String[] remain = setupConfig(args);
+        setupLogger(initReports);
+        setupAppInfo(remain, true);
+
+        return appInfo;
     }
 
     public Config getConfig() {
