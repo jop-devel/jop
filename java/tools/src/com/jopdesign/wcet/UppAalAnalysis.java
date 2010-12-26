@@ -21,6 +21,7 @@
 
 package com.jopdesign.wcet;
 
+import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Option;
@@ -64,9 +65,17 @@ public class UppAalAnalysis {
 	}
 	
 	public static void main(String[] args) {
+
+        AppSetup setup = new AppSetup();
+        setup.setVersionInfo("1.0 [deprecated]");
+        setup.setConfigFilename(CONFIG_FILE_PROP);
+        setup.setUsageInfo("UppAllAnalysis", "UppAll WCET Analysis");
+
+
+
 		Config config = Config.instance();
 		config.addOptions(options);
-		ExecHelper exec = new ExecHelper(UppAalAnalysis.class, "1.0 [deprecated]", tlLogger, CONFIG_FILE_PROP);
+		ExecHelper exec = new ExecHelper(UppAalAnalysis.class, , tlLogger, );
 		
 		exec.loadConfig(args);           /* Load config */
 		UppAalAnalysis inst = new UppAalAnalysis();

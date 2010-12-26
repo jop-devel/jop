@@ -22,6 +22,7 @@ package com.jopdesign.common.processormodel;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.config.Config;
 import com.jopdesign.tools.JopInstr;
 import org.apache.bcel.generic.Instruction;
 
@@ -32,6 +33,9 @@ import java.util.List;
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class JamuthModel implements ProcessorModel {
+
+    public JamuthModel(Config config) {
+    }
 
     public String getName() {
         return "jamuth";

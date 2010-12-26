@@ -84,6 +84,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     private LoopBounds loopBounds;
 
     public DFATool() {
+        super("head");
         this.appInfo = AppInfo.getSingleton();
 		this.statements = new LinkedList<InstructionHandle>();
 		this.flow = new Flow();
@@ -100,10 +101,6 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
     @Override
     public void onSetupConfig(AppSetup setup) throws BadConfigurationException {
-    }
-
-    @Override
-    public void initialize(Config config) {
         load();
     }
 

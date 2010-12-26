@@ -21,9 +21,17 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.bcel.CustomAttribute;
+import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.Config.BadConfigurationError;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.logger.LogConfig;
+import com.jopdesign.common.processormodel.AllocationModel;
+import com.jopdesign.common.processormodel.JOPConfig;
+import com.jopdesign.common.processormodel.JOPModel;
+import com.jopdesign.common.processormodel.JamuthModel;
+import com.jopdesign.common.processormodel.ProcessorModel;
+import com.jopdesign.common.processormodel.ProcessorModel.Model;
 import com.jopdesign.common.tools.AppLoader;
 import com.jopdesign.common.tools.ClassWriter;
 import com.jopdesign.common.type.Signature;
@@ -36,9 +44,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.TreeMap;
 
 /**
  * This class is a helper used for creating and setting up the AppInfo class as well as for common
@@ -94,6 +103,7 @@ public class AppSetup {
     private String configFilename;
 
     private Map<String, JopTool> tools;
+    private Map<String, BooleanOption> optionalTools;
 
     /**
      * Initialize a new AppSetup with no default properties.
@@ -132,7 +142,8 @@ public class AppSetup {
         appInfo = AppInfo.getSingleton();
 
         logConfig = new LogConfig();
-        tools = new HashMap<String, JopTool>();
+        tools = new TreeMap<String, JopTool>();
+        optionalTools = new LinkedHashMap<String,BooleanOption>();
     }
 
     /**
@@ -184,7 +195,30 @@ public class AppSetup {
      * @param jopTool the tool to register
      */
     public void registerTool(String name, JopTool jopTool) {
+        registerTool(name, jopTool, false, false);
+    }
+
+    /**
+     * Register a tool and its AppEventHandler to AppInfo and AppSetup.
+     * <p>
+     * Event handlers will be called in the same order the tools are registered, so
+     * the order of the registrations might be important.
+     * </p>
+     * If the tool is registered as optional, an additional option {@code use-<toolname>} will be
+     * added, and the tool will only be initialized and used if the option is set.
+     *
+     * @param name the unique name of the tool
+     * @param jopTool the tool to register
+     * @param optional make the tool optional and add an option to config.
+     * @param useDefault default value for the 'use' option if the tool is optional
+     */
+    public void registerTool(String name, JopTool jopTool, boolean optional, boolean useDefault) {
         tools.put(name, jopTool);
+
+        if (optional) {
+            BooleanOption option = new BooleanOption("use-"+name, "Use the "+name+" tool", useDefault);
+            optionalTools.put(name, option);
+        }
 
         // setup defaults and config
         try {
@@ -199,12 +233,17 @@ public class AppSetup {
 
         // setup options
         jopTool.registerOptions(config.getOptions());
+    }
 
-        // register handler
-        AppEventHandler handler = jopTool.getEventHandler();
-        if ( handler != null ) {
-            appInfo.registerEventHandler(handler);
-        }
+    /**
+     * Check if a given tool is enabled.
+     * @param name the name of the tool used to register it.
+     * @return true if the tool is enabled.
+     */
+    public boolean useTool(String name) {
+        if (!tools.containsKey(name)) return false;
+        if (!optionalTools.containsKey(name)) return true;
+        return config.getOption(optionalTools.get(name));
     }
 
     /**
@@ -224,8 +263,10 @@ public class AppSetup {
         if (setupAppInfo) {
             config.addOption(Config.CLASSPATH);
             config.addOption(Config.ROOTS);
-            config.addOption(Config.NATIVE_CLASSES);
+            config.addOption(Config.PROCESSOR_MODEL);
             config.addOption(Config.MAIN_METHOD_NAME);
+
+            config.addOptions(JOPConfig.jopOptions);
         }
 
         if (setupReports) {
@@ -344,6 +385,7 @@ public class AppSetup {
         String[] rest = null;
         try {
             rest = config.parseArguments(args);
+            // TODO options of non-enabled tools should not be required (but checked if present?)
             config.checkOptions();
         } catch (Config.BadConfigurationException e) {
             System.err.println(e.getMessage());
@@ -369,8 +411,10 @@ public class AppSetup {
 
         // let modules process their config options
         try {
-            for (JopTool jopTool : tools.values()) {
-                jopTool.onSetupConfig(this);
+            for (String tool : tools.keySet()) {
+                if (useTool(tool)) {
+                    tools.get(tool).onSetupConfig(this);
+                }
             }
         } catch (Config.BadConfigurationException e) {
             System.err.println(e.getMessage());
@@ -405,10 +449,7 @@ public class AppSetup {
         appInfo.setClassPath(new ClassPath(config.getOption(Config.CLASSPATH)));
         appInfo.setExitOnMissingClass(!config.getOption(Config.VERBOSE));
 
-        String[] natives = Config.splitStringList(config.getOption(Config.NATIVE_CLASSES));
-        for (String n : natives) {
-            appInfo.addNative(n.replaceAll("/","."));
-        }
+        initProcessorModel(config.getOption(Config.PROCESSOR_MODEL));
 
         // handle class loading options if set
         if ( config.hasOption(Config.LIBRARY_CLASSES) ) {
@@ -430,6 +471,16 @@ public class AppSetup {
         if ( config.hasOption(Config.LOAD_NATIVES) ) {
             appInfo.setLoadNatives(config.getOption(Config.LOAD_NATIVES));
         }        
+
+        // register handler
+        for (String toolName : tools.keySet()) {
+            if (useTool(toolName)) {
+                AppEventHandler handler = tools.get(toolName).getEventHandler();
+                if ( handler != null ) {
+                    appInfo.registerEventHandler(handler);
+                }
+            }
+        }
 
         // add system classes as roots
         String[] roots = Config.splitStringList(config.getOption(Config.ROOTS));
@@ -468,6 +519,25 @@ public class AppSetup {
             appInfo.reloadClassHierarchy();
         }
 
+    }
+
+    private void initProcessorModel(Model model) {
+        ProcessorModel pm;
+        switch (model) {
+            case JOP:
+                pm = new JOPModel(config);
+                break;
+            case jamuth:
+                pm = new JamuthModel(config);
+                break;
+            case allocation:
+                pm = new AllocationModel(config);
+                break;
+            default:
+                throw new BadConfigurationError("Unknown processor model " + model);
+        }
+
+        appInfo.setProcessorModel(pm);
     }
 
     /**

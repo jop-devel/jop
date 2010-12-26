@@ -18,50 +18,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common;
+package com.jopdesign.common.tools;
 
-import com.jopdesign.common.config.Config;
-import com.jopdesign.common.config.Config.BadConfigurationException;
-import com.jopdesign.common.config.OptionGroup;
-
-import java.io.IOException;
-import java.util.Properties;
+import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.graphutils.ClassVisitor;
 
 /**
+ * A very simple helper class to remove all NOPs
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public abstract class EmptyTool<T extends AppEventHandler> implements JopTool<T> {
+public class RemoveNops implements ClassVisitor {
 
-    private final String version;
+    @Override
+    public boolean visitClass(ClassInfo classInfo) {
 
-    protected EmptyTool(String version) {
-        this.version = version;
+        for (MethodInfo method : classInfo.getMethods()) {
+            if (!method.isAbstract()) {
+                method.getCode().removeNOPs();
+            }
+        }
+        return true;
     }
 
     @Override
-    public String getToolVersion() {
-        return version;
-    }
-
-    @Override
-    public T getEventHandler() {
-        return null;
-    }
-
-    @Override
-    public Properties getDefaultProperties() throws IOException {
-        return null;
-    }
-
-    @Override
-    public void registerOptions(OptionGroup options) {
-    }
-
-    @Override
-    public void onSetupConfig(AppSetup setup) throws BadConfigurationException {
-    }
-
-    @Override
-    public void run(Config config) {
+    public void finishClass(ClassInfo classInfo) {
     }
 }

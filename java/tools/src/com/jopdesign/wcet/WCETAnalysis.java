@@ -60,7 +60,6 @@ import static com.jopdesign.wcet.ExecHelper.timeDiff;
  */
 public class WCETAnalysis {
     private static final String CONFIG_FILE_PROP = "config";
-    public static final String VERSION = "1.0.1";
 	private static final boolean CALCULATE_MINIMUM_CACHE_COST = false;
 
     private static Option<?>[][] options = {
@@ -74,8 +73,8 @@ public class WCETAnalysis {
     public static void main(String[] args) {
         Config config = Config.instance();
         config.addOptions(options);
-        ExecHelper exec = new ExecHelper(WCETAnalysis.class,VERSION,Logger.getLogger(WCETAnalysis.class),CONFIG_FILE_PROP);
-        exec.loadConfig(args);           /* Load config */
+        ExecHelper exec = new ExecHelper(config, Logger.getLogger(WCETAnalysis.class));
+        exec.dumpConfig();           /* Load config */
         exec.checkLibs();                /* check environment */
 
         WCETAnalysis inst = new WCETAnalysis(config,exec);
@@ -108,8 +107,8 @@ public class WCETAnalysis {
             Report.initVelocity(config);     /* Initialize velocity engine */
             exec.info("Loading project");
             project.load();
-            MethodInfo largestMethod = project.getProcessorModel().getMethodCache().checkCache();
-            int minWords = MiscUtils.bytesToWords(largestMethod.getCode().getCode().length);
+            MethodInfo largestMethod = project.getWCETProcessorModel().getMethodCache().checkCache();
+            int minWords = MiscUtils.bytesToWords(largestMethod.getCode().getLength());
             reportMetric("min-cache-size",largestMethod.getFQMethodName(),minWords);
         } catch (Exception e) {
             exec.logException("Loading project", e);

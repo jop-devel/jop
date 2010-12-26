@@ -91,10 +91,6 @@ public class JCopter implements JopTool<JCopterManager> {
     }
 
     @Override
-    public void initialize(Config config) {
-    }
-
-    @Override
     public void run(Config config) {
 
         if ( config.getOption(USE_DFA) ) {

@@ -42,11 +42,8 @@ public class ExampleTool extends EmptyTool<ExampleManager> {
     private final ExampleManager manager;
 
     public ExampleTool() {
+        super(VERSION);
         manager = new ExampleManager();
-    }
-
-    public String getToolVersion() {
-        return VERSION;
     }
 
     public ExampleManager getEventHandler() {
@@ -61,10 +58,6 @@ public class ExampleTool extends EmptyTool<ExampleManager> {
 
     @Override
     public void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException {
-    }
-
-    @Override
-    public void initialize(Config config) {
     }
 
     @Override

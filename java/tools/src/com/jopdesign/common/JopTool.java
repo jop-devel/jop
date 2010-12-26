@@ -22,7 +22,6 @@ package com.jopdesign.common;
 
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.OptionGroup;
-import com.jopdesign.common.misc.AppInfoException;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -77,19 +76,15 @@ public interface JopTool<T extends AppEventHandler> {
     void registerOptions(OptionGroup options);
 
     /**
-     * Called by {@link AppSetup#setupConfig(String[])} after the configuration has been loaded. The tool should
-     * use the config values from AppSetup to check the configuration and load its options.
+     * Called by {@link AppSetup#setupConfig(String[])} after the configuration has been loaded.
+     * The tool should use the config values from AppSetup to check the configuration, load its options
+     * and initialize the tool.
      *
-     * @param setup the AppSetup used to initialize this app.
-     * @throws Config.BadConfigurationException if there is something rotten in the config
+     * @param setup the AppSetup used to initialize this app
+     * @throws Config.BadConfigurationException if there is something rotten in the config or
+     *                                          if the tool cannot be initialized
      */
     void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException;
-
-    /**
-     * Initialize the tool.
-     * @param config the config for this tool
-     */
-    void initialize(Config config) throws AppInfoException;
 
     /**
      * Run this tool with the current options.

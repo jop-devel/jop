@@ -22,6 +22,7 @@
 package com.jopdesign.common.config;
 
 import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.processormodel.ProcessorModel.Model;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -85,8 +86,8 @@ public class Config {
     public static final StringOption MAIN_METHOD_NAME =
             new StringOption("mm", "method name of the entry method", "main");
 
-    public static final StringOption NATIVE_CLASSES =
-            new StringOption("native", "comma-separated list of native classes and packages", DEFAULT_NATIVE);
+    public static final EnumOption<Model> PROCESSOR_MODEL =
+            new EnumOption<Model>("arch", "The processor model to use", Model.JOP);
 
     public static final StringOption LIBRARY_CLASSES =
             new StringOption("libraries", "comma-separated list of library classes and packages", "");

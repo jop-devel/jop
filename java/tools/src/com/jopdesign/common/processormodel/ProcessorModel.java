@@ -27,6 +27,8 @@ import java.util.List;
 
 public interface ProcessorModel {
 
+    enum Model {JOP, jamuth, allocation }
+
 	/**
      * A human readable name of the Processor Model
      * @return the name of the processor model.

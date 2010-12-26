@@ -83,7 +83,6 @@ public final class AppInfo {
 
     private boolean exitOnMissingClass;
 
-    private final Set<String> nativeClasses;
     private final Set<String> libraryClasses;
     private final Set<String> ignoredClasses;
 
@@ -117,7 +116,6 @@ public final class AppInfo {
 
         classes = new HashMap<String, ClassInfo>();
         roots = new HashSet<MemberInfo>();
-        nativeClasses = new HashSet<String>(1);
         libraryClasses = new HashSet<String>(1);
         ignoredClasses = new HashSet<String>(1);
 
@@ -730,17 +728,6 @@ public final class AppInfo {
     }
 
     /**
-     * Add the name of a native class or a package of native classes.
-     * Native classes will usually be handled in a special way by most tools.
-     *
-     * @see #setLoadNatives(boolean)
-     * @param nativeClass the FQN of a native class or a package of native classes.
-     */
-    public void addNative(String nativeClass) {
-        nativeClasses.add(nativeClass);
-    }
-
-    /**
      * Add the name of a library class or a library package.
      * Libraries must not contain references to application code classes.
      *
@@ -827,7 +814,7 @@ public final class AppInfo {
     }
 
     public boolean isNative(String className) {
-        for (String s : nativeClasses) {
+        for (String s : processor.getNativeClasses()) {
             if (className.equals(s) || className.startsWith(s + ".")) {
                 return true;
             }

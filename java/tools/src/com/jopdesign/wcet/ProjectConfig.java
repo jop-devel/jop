@@ -32,8 +32,8 @@ public class ProjectConfig {
 	public static final StringOption PROJECT_NAME =
 		new StringOption("projectname","name of the 'project', used when generating reports",true);
 
-	public static final StringOption JAVA_PROCESSOR =
-		new StringOption("java-processor","which java processor to use (jamuth, JOP, allocObjs, allocHandles, allocHeaders, allocBlocks)","JOP");
+	public static final StringOption WCET_MODEL =
+		new StringOption("wcet-model","which java processor to use (jamuth, JOP, allocObjs, allocHandles, allocHeaders, allocBlocks)","${arch}");
 
 	public static final StringOption APP_CLASS_NAME =
 		new StringOption("app-class",
@@ -81,7 +81,7 @@ public class ProjectConfig {
 		OUT_DIR,
 		APP_CLASS_NAME, TARGET_METHOD, PROJECT_NAME,
 		TARGET_SOURCEPATH, TARGET_BINPATH,
-		JAVA_PROCESSOR, 
+		WCET_MODEL,
 		DO_DFA, CALLSTRING_LENGTH,
 		OBJECT_CACHE_ANALYSIS,
 		USE_UPPAAL,
@@ -178,7 +178,7 @@ public class ProjectConfig {
 	}
 
 	public String getProcessorName() {
-		return config.getOption(JAVA_PROCESSOR);
+		return config.getOption(WCET_MODEL);
 	}
 	/**
 	 * Whether reports should be generated

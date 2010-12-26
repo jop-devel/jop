@@ -40,6 +40,7 @@ import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.common.processormodel.ProcessorModel;
+import com.jopdesign.common.tools.RemoveNops;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.analyses.CallStringReceiverTypes;
 import com.jopdesign.dfa.analyses.LoopBounds;
@@ -78,8 +79,11 @@ import java.util.StringTokenizer;
  */
 public class WCETTool extends EmptyTool<AppEventHandler> {
 
-    public static final Logger logger = Logger.getLogger(Project.class);
-    private Logger topLevelLogger = Logger.getLogger(Project.class); /* special logger */
+    public static final String VERSION = "1.0.1";
+
+    // TODO logger paths should use 'logical' structure instead of packages, similar to common loggers
+    public static final Logger logger = Logger.getLogger(WCETTool.class);
+    private Logger topLevelLogger = Logger.getLogger(WCETTool.class); /* special logger */
 
     private ProjectConfig projectConfig;
 
@@ -98,11 +102,7 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
     private boolean hasDfaResults;
 
     public WCETTool() {
-    }
-
-    @Override
-    public String getToolVersion() {
-        return "0.1";
+        super(VERSION);
     }
 
     @Override
@@ -150,24 +150,27 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
             this.processor = new BlockAllocationModel(this);
         } else if(projectConfig.getProcessorName().equals("jamuth")) {
             this.processor = new JamuthWCETModel(this);
-        } else {
+        } else if(projectConfig.getProcessorName().equals("JOP")) {
             try {
                 this.processor = new JOPWcetModel(this);
             } catch (IOException e) {
                 throw new BadConfigurationException("Unable to initialize JopWcetModel", e);
             }
+        } else {
+            throw new BadConfigurationException("Unknown WCET model: "+projectConfig.getProcessorName());
         }
+
+        initialize();
     }
 
-    @Override
-    public void initialize(Config config) throws AppInfoException {
+    public void initialize() throws BadConfigurationException {
         linkerInfo = new LinkerInfo(this);
         try {
             linkerInfo.loadLinkInfo();
         } catch (IOException e) {
-            throw new AppInfoException("Could not load link infos", e);
+            throw new BadConfigurationException("Could not load link infos", e);
         } catch (ClassNotFoundException e) {
-            throw new AppInfoException("Could not load link infos", e);
+            throw new BadConfigurationException("Could not load link infos", e);
         }
 
         /* run dataflow analysis */
@@ -188,7 +191,7 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
         }
 
         if(projectConfig.doDataflowAnalysis()) {
-            appInfo.iterate(new RemoveNops(appInfo));
+            appInfo.iterate(new RemoveNops());
         } else {
             WcetPreprocess.preprocess(appInfo);
         }
