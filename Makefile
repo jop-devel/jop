@@ -275,7 +275,7 @@ install:
 	@echo nothing to install
 
 # cleanup
-EXTENSIONS=class rbf rpt sof pin summary ttf qdf dat wlf
+EXTENSIONS=class rbf rpt sof pin summary ttf qdf dat wlf done qws
 
 clean:
 	for ext in $(EXTENSIONS); do \
