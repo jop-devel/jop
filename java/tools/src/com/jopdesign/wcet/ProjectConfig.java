@@ -169,7 +169,11 @@ public class ProjectConfig {
 		dir.mkdir();
 		return dir;		
 	}
-	
+
+    public File getOutFile(String filename) {
+        return new File(getOutDir(), MiscUtils.sanitizeFileName(filename));
+    }
+
 	public File getOutFile(String subdir, String name) {
 		return new File(getOutDir(subdir),MiscUtils.sanitizeFileName(name));		
 	}

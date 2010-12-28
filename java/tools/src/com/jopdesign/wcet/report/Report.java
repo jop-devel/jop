@@ -112,6 +112,7 @@ public class Report {
 	public void generateFile(String templateName,File outFile, Map<String, Object> ctxMap) throws Exception {
 		generateFile(templateName,outFile,new VelocityContext(ctxMap));
 	}
+
 	/**
 	 * Write the reports to disk
 	 * @throws Exception

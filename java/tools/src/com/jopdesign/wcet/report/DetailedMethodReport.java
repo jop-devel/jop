@@ -23,8 +23,10 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.WCETTool;
+import org.apache.log4j.Logger;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
 public class DetailedMethodReport {
@@ -36,7 +38,10 @@ public class DetailedMethodReport {
 	private String key;
 	private WCETTool project;
 	private ReportConfig config;
-	public DetailedMethodReport(ReportConfig c, 
+
+    private static final Logger logger = Logger.getLogger(DetailedMethodReport.class);
+
+    public DetailedMethodReport(ReportConfig c,
 			WCETTool p, MethodInfo m,
 			String key, Map<String, Object> stats, 
 			Map<CFGNode, ?> wcets, Map<ControlFlowGraph.CFGEdge, ?> flowMapOut) {
@@ -48,20 +53,34 @@ public class DetailedMethodReport {
 		this.nodeAnnotations = wcets;
 		this.edgeAnnotations = flowMapOut;
 	}
+
 	public Map<String,Object> getStats() { return stats; }
+
 	public String getGraph() {
 		if(graphLink == null) {
-			File graphfile = generateGraph(method,key,nodeAnnotations,edgeAnnotations);
-			graphLink = graphfile.getName();
+            File graphfile;
+            try {
+                graphfile = generateGraph(method,key,nodeAnnotations,edgeAnnotations);
+                graphLink = graphfile.getName();
+            } catch (IOException e) {
+                logger.error("Failed to generate graph file for "+method, e);
+            }
 		}
 		return graphLink;
 	}
+
 	public String getKey() { return key; }
-	private File generateGraph(MethodInfo method, String key, Map<CFGNode, ?> nodeAnnotations, Map<ControlFlowGraph.CFGEdge, ?> edgeAnnotations) {
+
+	private File generateGraph(MethodInfo method, String key, Map<CFGNode, ?> nodeAnnotations,
+                               Map<ControlFlowGraph.CFGEdge, ?> edgeAnnotations) throws IOException {
 		File cgdot = config.getOutFile(method,key+".dot");
 		File cgimg = config.getOutFile(method,key+".png");
 		ControlFlowGraph flowGraph = method.getCode().getControlFlowGraph();
-		flowGraph.exportDOT(cgdot,nodeAnnotations, edgeAnnotations);
+        if (nodeAnnotations != null || edgeAnnotations != null) {
+		    flowGraph.exportDOT(cgdot,nodeAnnotations, edgeAnnotations);
+        } else {
+            flowGraph.exportDOT(cgdot, new WCETNodeLabeller(project), null);
+        }
 		project.getReport().recordDot(cgdot,cgimg);
 		return cgimg;
 	}

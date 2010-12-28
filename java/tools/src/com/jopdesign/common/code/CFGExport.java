@@ -21,8 +21,11 @@
 package com.jopdesign.common.code;
 
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
+import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.graphutils.AdvancedDOTExporter;
+import com.jopdesign.common.graphutils.AdvancedDOTExporter.DOTLabeller;
+import com.jopdesign.common.graphutils.AdvancedDOTExporter.DOTNodeLabeller;
 import com.jopdesign.common.graphutils.LoopColoring;
 import com.jopdesign.common.logger.LogConfig;
 import org.apache.bcel.generic.BranchInstruction;
@@ -45,10 +48,12 @@ public class CFGExport {
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_CFG + ".CFGExport");
 
 	public class FGCustomNodeLabeller extends AdvancedDOTExporter.MapLabeller<CFGNode>
-								 	 implements AdvancedDOTExporter.DOTNodeLabeller<CFGNode> {
+								 	 implements AdvancedDOTExporter.DOTNodeLabeller<CFGNode>
+    {
 		public FGCustomNodeLabeller(Map<CFGNode, ?> nodeAnnotations) {
 			super(nodeAnnotations);
 		}
+
 		public String getLabel(CFGNode object) {
 			if(annots.containsKey(object)) {
 				return "[" +object.getName() + "] "+ annots.get(object);
@@ -56,15 +61,19 @@ public class CFGExport {
 				return super.getLabel(object);
 			}
 		}
+
 		public int getID(CFGNode node) { return node.getId(); }
 	}
+
 	public class FGEdgeLabeller extends AdvancedDOTExporter.DefaultDOTLabeller<ControlFlowGraph.CFGEdge> {
+
 		public boolean setAttributes(ControlFlowGraph.CFGEdge edge, Map<String,String> ht) {
 			super.setAttributes(edge,ht);
 			if(flowGraph.getLoopColoring().isBackEdge(edge)) ht.put("arrowhead", "empty");
 			if(flowGraph.getLoopColoring().getLoopEntrySet(edge).size() > 0) ht.put("arrowhead", "diamond");
 			return true;
 		}
+
 		public String getLabel(ControlFlowGraph.CFGEdge edge) {
 			StringBuilder lab = new StringBuilder();
 			switch(edge.getKind()) {
@@ -91,7 +100,8 @@ public class CFGExport {
 			return lab.toString();
 		}
 	}
-	public class FGNodeLabeller extends AdvancedDOTExporter.DefaultNodeLabeller<CFGNode> {
+
+	public static class FGNodeLabeller extends AdvancedDOTExporter.DefaultNodeLabeller<CFGNode> {
 		@Override
 		public boolean setAttributes(CFGNode node, Map<String,String> ht) {
 			if(node instanceof BasicBlockNode) {
@@ -101,8 +111,13 @@ public class CFGExport {
 			}
 			return true;
 		}
+
+        protected void addNodeLabel(BasicBlockNode n, StringBuilder nodeInfo) {
+        }
+
 		private void setBasicBlockAttributes(BasicBlockNode n, Map<String,String> ht) {
 			BasicBlock codeBlock = n.getBasicBlock();
+            ControlFlowGraph flowGraph = n.getControlFlowGraph();
 			Instruction lastInstr = codeBlock.getLastInstruction().getInstruction();
 			boolean isReturn = lastInstr instanceof ReturnInstruction;
 			LoopColoring<CFGNode, ControlFlowGraph.CFGEdge> loops = flowGraph.getLoopColoring();
@@ -126,11 +141,9 @@ public class CFGExport {
 			}
 			nodeInfo.append(infoHeader);
 			nodeInfo.append("{"+codeBlock.getNumberOfBytes()+" By, ");
-			nodeInfo.append(n.getBasicBlock().getAppInfo().getWCETProcessorModel().basicBlockWCET(
-					new ExecutionContext(codeBlock.getMethodInfo()),
-					codeBlock)+" Cyc");
+            addNodeLabel(n, nodeInfo);
 			if(loops.getHeadOfLoops().contains(n)) {
-				nodeInfo.append(", LOOP "+n.getId()+"/"+flowGraph.getLoopBounds().get(n));
+				nodeInfo.append("LOOP "+n.getId()+"/"+flowGraph.getLoopBounds().get(n));
 			}
 			nodeInfo.append("}\n");
 			nodeInfo.append(codeBlock.dump());
@@ -152,7 +165,14 @@ public class CFGExport {
 	public CFGExport(ControlFlowGraph g) {
 		this.flowGraph = g;
 	}
-	public CFGExport(ControlFlowGraph graph, Map<CFGNode, ?> nodeAnnotations, Map<ControlFlowGraph.CFGEdge, ?> edgeAnnotations) {
+
+    public CFGExport(ControlFlowGraph flowGraph, DOTNodeLabeller<CFGNode> nl, DOTLabeller<CFGEdge> el) {
+        this.flowGraph = flowGraph;
+        this.nl = nl;
+        this.el = el;
+    }
+
+    public CFGExport(ControlFlowGraph graph, Map<CFGNode, ?> nodeAnnotations, Map<ControlFlowGraph.CFGEdge, ?> edgeAnnotations) {
 		this(graph);
 		if(nodeAnnotations != null) {
 			this.nl = new FGCustomNodeLabeller(nodeAnnotations);

@@ -24,6 +24,8 @@ package com.jopdesign.common.code;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.graphutils.AdvancedDOTExporter;
+import com.jopdesign.common.graphutils.AdvancedDOTExporter.DOTLabeller;
+import com.jopdesign.common.graphutils.AdvancedDOTExporter.DOTNodeLabeller;
 import com.jopdesign.common.graphutils.DefaultFlowGraph;
 import com.jopdesign.common.graphutils.FlowGraph;
 import com.jopdesign.common.graphutils.LoopColoring;
@@ -32,6 +34,7 @@ import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.type.MethodRef;
+import com.jopdesign.wcet.annotations.BadAnnotationException;
 import com.jopdesign.wcet.annotations.LoopBound;
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.INVOKEINTERFACE;
@@ -419,6 +422,8 @@ public class ControlFlowGraph {
 	/* basic blocks associated with the CFG */
 	private List<BasicBlock> blocks;
 
+    private Map<CFGNode, LoopBound> annotations;
+
 	/* graph */
 	private FlowGraph<CFGNode, CFGEdge> graph;
 	private Set<CFGNode> deadNodes;
@@ -642,11 +647,13 @@ public class ControlFlowGraph {
 	 * @return The infeasible edges
 	 */
 	public List<CFGEdge> getInfeasibleEdges(CallString cs) {
-		List<CFGEdge> edges = new Vector<CFGEdge>();
+		List<CFGEdge> edges = new ArrayList<CFGEdge>();
+        /* --- TODO comment for commit
 		for (BasicBlock b : blocks) {
 			List<CFGEdge> edge = dfaInfeasibleEdge(b, cs);
 			edges.addAll(edge);
 		}
+		*/
 		return edges;
 	}
 
@@ -881,6 +888,7 @@ public class ControlFlowGraph {
 			subGraph.addEdge(graph.getEdgeSource(e), subGraph.getExit(), e.clone());
 		}
 		try {
+            // TODO hmm, maybe make dump optional :)
 			FileWriter writer;
 			writer = new FileWriter(File.createTempFile("subcfg", ".dot"));
 			new CFGExport(subCFG).exportDOT(writer, subGraph);
@@ -998,7 +1006,9 @@ public class ControlFlowGraph {
 	/** Get improved loopbound considering the callcontext */
 	public LoopBound getLoopBound(CFGNode hol, CallString cs) {
 		LoopBound globalBound = this.annotations.get(hol);
-		return this.dfaLoopBound(hol.getBasicBlock(), cs, globalBound);
+        // FIXME move somewhere else
+		//return this.dfaLoopBound(hol.getBasicBlock(), cs, globalBound);
+        return globalBound;
 	}
 
 	/**
@@ -1030,20 +1040,24 @@ public class ControlFlowGraph {
 		return MiscUtils.bytesToWords(getNumberOfBytes());
 	}
 
-	public void exportDOT(File file) {
-		exportDOT(file,null,null);
+	public void exportDOT(File file) throws IOException {
+		exportDOT(file,(Map)null,null);
 	}
 
-	public void exportDOT(File file, Map<CFGNode, ?> nodeAnnotations, Map<CFGEdge, ?> edgeAnnotations) {
-		CFGExport export = new CFGExport(this, nodeAnnotations, edgeAnnotations);
-		try {
-			FileWriter w = new FileWriter(file);
-			export.exportDOT(w, graph);
-			w.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+    public void exportDOT(File file, DOTNodeLabeller<CFGNode> nl, DOTLabeller<CFGEdge> el) throws IOException {
+        CFGExport export = new CFGExport(this, nl, el);
+        FileWriter w = new FileWriter(file);
+        export.exportDOT(w, graph);
+        w.close();
+    }
+
+	public void exportDOT(File file, Map<CFGNode, ?> nodeAnnotations, Map<CFGEdge, ?> edgeAnnotations) throws IOException {
+        CFGExport export = new CFGExport(this, nodeAnnotations, edgeAnnotations);
+        FileWriter w = new FileWriter(file);
+        export.exportDOT(w, graph);
+        w.close();
+    }
+
 	@Override public String toString() {
 		return super.toString()+this.methodInfo.getFQMethodName();
 	}
