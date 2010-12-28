@@ -32,6 +32,7 @@ Library IEEE;
 use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.jop_config_global.all;
 use work.jop_types.all;
 use work.sc_pack.all;
 
@@ -72,8 +73,7 @@ begin
 	end if;
 end process;
 
---	ocout.hit <= hit;
-	ocout.hit <= '0';
+	ocout.hit <= hit and USE_OCACHE;
 
 process(clk, reset)
 begin
