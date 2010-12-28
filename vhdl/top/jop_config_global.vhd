@@ -2,7 +2,7 @@
 --
 --  This file is a part of JOP, the Java Optimized Processor
 --
---  Copyright (C) 2001-2008, Martin Schoeberl (martin@jopdesign.com)
+--  Copyright (C) 2010, Martin Schoeberl (martin@jopdesign.com)
 --
 --  This program is free software: you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -20,28 +20,24 @@
 
 
 --
---	jop_config_100.vhd
+--	jop_config_global.vhd
 --
---	package for 100MHz definitions
+--	package for global JOP configuration
+--
+--	Constants ending with _GLOBAL can be overwritten by
+--	local configurations (and shall not be used directly).
+--	Constants without the _GLOBAL suffix are used directly.
 --
 
 library ieee;
 use ieee.std_logic_1164.all;
 
-use work.jop_config_global.all;
+package jop_config_global is
 
-package jop_config is
+	-- on-chip memory size (stack plus JVM vaiables and constants)
+	constant STACK_SIZE_GLOBAL : integer := 8; -- # of address bits of internal ram (sp,...)
+	
+end package jop_config_global;
 
-	-- constants for 20MHz input and 100MHz internal clock
-	constant clk_freq : integer := 100000000;
-	constant pll_mult : natural := 5;
-	constant pll_div : natural := 1;
-
-	-- constant for on-chip memory
-	constant ram_width : integer := STACK_SIZE_GLOBAL;	-- address bits of internal ram (sp,...)
-
-end jop_config;
-
-package body jop_config is
-
-end jop_config;
+package body jop_config_global is
+end package body jop_config_global;

@@ -28,6 +28,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
+use work.jop_config_global.all;
+
 package jop_config is
 
 	-- constants for 50 MHz input clock
@@ -36,7 +38,7 @@ package jop_config is
 	constant pll_div : natural := 5;
 
 	-- constant for on-chip memory
-	constant ram_width : integer := 8;	-- address bits of internal ram (sp,...)
+	constant ram_width : integer := STACK_SIZE_GLOBAL;	-- address bits of internal ram (sp,...)
 
 end jop_config;
 

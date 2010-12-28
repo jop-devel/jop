@@ -33,6 +33,7 @@ use ieee.numeric_std.all;
 
 use work.jop_types.all;
 use work.sc_pack.all;
+use work.jop_config_global.all;
 use work.jop_config.all;
 
 
