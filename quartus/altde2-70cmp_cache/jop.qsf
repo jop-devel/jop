@@ -597,6 +597,7 @@ set_location_assignment PIN_AD15 -to clk
 set_location_assignment PIN_AJ6 -to wd
 set_location_assignment PIN_D21 -to ser_rxd
 set_location_assignment PIN_E21 -to ser_txd
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_global.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_de2.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd

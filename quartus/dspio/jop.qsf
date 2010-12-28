@@ -515,6 +515,7 @@ set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_sin.v
 set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_soc.v
 set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_sout.v
 set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_top.v
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_global.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_60.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd

@@ -480,6 +480,7 @@ set_global_assignment -name LL_MEMBER_STATE LOCKED -section_id "Root Region"
 
 set_global_assignment -name ALLOW_ANY_RAM_SIZE_FOR_RECOGNITION OFF
 
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_global.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_60.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd

@@ -118,6 +118,7 @@ set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_COLOR 2147039 -section_id Top
 set_global_assignment -name LL_ROOT_REGION ON -section_id "Root Region"
 set_global_assignment -name LL_MEMBER_STATE LOCKED -section_id "Root Region"
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_global.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_de2.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
