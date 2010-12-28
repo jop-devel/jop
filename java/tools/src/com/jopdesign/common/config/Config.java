@@ -273,6 +273,12 @@ public class Config {
         options.checkOptions();
     }
 
+    public void checkPresent(Option<?> option) throws BadConfigurationException {
+        if(getOption(option) == null) {
+            throw new BadConfigurationException("Missing option: "+option);
+        }
+    }
+
     /**
      * Set a new set of default values, replaces the old default values.
      * @param defaultProps the new default values.

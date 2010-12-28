@@ -71,8 +71,8 @@ public class LRUVarBlockCacheBuilder extends VarBlockCacheBuilder {
 	protected StringBuilder initCache(String NUM_METHODS) {
 		List<Object> cacheElems = new ArrayList<Object>();
 		for(int i = 0; i < numBlocks(); i++) cacheElems.add(NUM_METHODS);
-        // TODO check: this has been "blocksOf(0)", check if this is the same!!
-        MethodInfo method = project.getAppInfo().getMainMethod();
+        // FIXME check: this has been "blocksOf(0)", check if this is the same!!
+        MethodInfo method = project.getProjectConfig().getTargetMethodInfo();
 		cacheElems.set(blocksOf(method)-1,0);
 		return SystemBuilder.constArray(cacheElems);
 	}

@@ -51,6 +51,11 @@ public class MethodRef {
         this.classRef = null;
     }
 
+    public MethodRef(ClassRef classRef, MethodInfo methodInfo) {
+        this.methodInfo = methodInfo;
+        this.classRef = classRef;
+    }
+
     public MethodInfo getMethodInfo() {
         // TODO if null, try getting from AppInfo
         return methodInfo;

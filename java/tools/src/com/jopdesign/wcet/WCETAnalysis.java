@@ -27,11 +27,13 @@
 
 package com.jopdesign.wcet;
 
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.config.Config;
-import com.jopdesign.common.config.Option;
 import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.dfa.DFATool;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
@@ -43,9 +45,7 @@ import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.ipet.LpSolveWrapper;
-import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.wcet.report.Report;
-import com.jopdesign.wcet.report.ReportConfig;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;
 import com.jopdesign.wcet.uppaal.model.XmlSerializationException;
@@ -62,22 +62,31 @@ public class WCETAnalysis {
     private static final String CONFIG_FILE_PROP = "config";
 	private static final boolean CALCULATE_MINIMUM_CACHE_COST = false;
 
-    private static Option<?>[][] options = {
-        ProjectConfig.projectOptions,
-        JOPConfig.jopOptions,
-        IPETConfig.ipetOptions,
-        UppAalConfig.uppaalOptions,
-        ReportConfig.reportOptions 
-    };
-
     public static void main(String[] args) {
-        Config config = Config.instance();
-        config.addOptions(options);
-        ExecHelper exec = new ExecHelper(config, Logger.getLogger(WCETAnalysis.class));
+
+        AppSetup setup = new AppSetup();
+        setup.setVersionInfo("1.0.1");
+        setup.setConfigFilename(CONFIG_FILE_PROP);
+        setup.setUsageInfo("WCETAnalysis", "WCET Analysis tool");
+
+        WCETTool wcetTool = new WCETTool();
+        DFATool dfaTool = new DFATool();
+
+        setup.registerTool("dfa", dfaTool, true, false);
+        setup.registerTool("wcet", wcetTool);
+
+        AppInfo appInfo = setup.initAndLoad(args, true, false, false);
+
+        if (setup.useTool("dfa")) {
+            wcetTool.setDfaTool(dfaTool);
+        }
+
+        ExecHelper exec = new ExecHelper(setup.getConfig(), Logger.getLogger(WCETAnalysis.class));
         exec.dumpConfig();           /* Load config */
         exec.checkLibs();                /* check environment */
 
-        WCETAnalysis inst = new WCETAnalysis(config,exec);
+        WCETAnalysis inst = new WCETAnalysis(wcetTool, exec);
+
         if(! inst.run()) exec.bail("Worst Case Analysis failed");
         else             exec.info("Worst Case Analysis finished");        	
     }
@@ -89,24 +98,21 @@ public class WCETAnalysis {
 	private WcetCost alwaysMissCost;
 	private WcetCost alwaysHitCost;
 	private WcetCost minCacheCost;
-	private ProjectConfig projectConfig;
 	private IPETConfig ipetConfig;
 
-    public WCETAnalysis(Config c, ExecHelper e) {
-        this.config = c;
+    public WCETAnalysis(WCETTool wcetTool, ExecHelper e) {
+        this.project = wcetTool;
+        this.config = wcetTool.getConfig();
         this.exec   = e;
     }
 
     private boolean run() {
-        project = null;
-        projectConfig = new ProjectConfig(config);
         /* Initialize */
         try {
-            project = new Project(projectConfig);
             project.setTopLevelLogger(exec.getExecLogger());
             Report.initVelocity(config);     /* Initialize velocity engine */
             exec.info("Loading project");
-            project.load();
+            project.initialize();
             MethodInfo largestMethod = project.getWCETProcessorModel().getMethodCache().checkCache();
             int minWords = MiscUtils.bytesToWords(largestMethod.getCode().getLength());
             reportMetric("min-cache-size",largestMethod.getFQMethodName(),minWords);
@@ -161,7 +167,7 @@ public class WCETAnalysis {
             project.getReport().generateInfoPages();
             exec.info("Generating result document");
             project.writeReport();
-            exec.info("Generated files are in " + projectConfig.getOutDir());
+            exec.info("Generated files are in " + project.getProjectConfig().getOutDir());
         } catch (Exception e) {
             exec.logException("Report generation", e);
             succeed = false;
@@ -235,7 +241,7 @@ public class WCETAnalysis {
 
         if(project.getProjectConfig().useUppaal()) {
             UppaalAnalysis an = new UppaalAnalysis(exec.getExecLogger(),project,project.getOutDir("uppaal"));
-            config.isSet(UppAalConfig.UPPAAL_VERIFYTA_BINARY);
+            config.checkPresent(UppAalConfig.UPPAAL_VERIFYTA_BINARY);
 
             /* Run uppaal analysis */
             long start = System.nanoTime();

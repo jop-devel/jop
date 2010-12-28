@@ -21,7 +21,6 @@
 
 package com.jopdesign.wcet;
 
-import com.jopdesign.common.AppEventHandler;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.ClassInfo;
@@ -34,13 +33,15 @@ import com.jopdesign.common.code.DefaultCallgraphConfig;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
+import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
-import com.jopdesign.common.misc.AppInfoException;
+import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.common.tools.RemoveNops;
+import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.analyses.CallStringReceiverTypes;
 import com.jopdesign.dfa.analyses.LoopBounds;
@@ -51,25 +52,30 @@ import com.jopdesign.wcet.allocation.HeaderAllocationModel;
 import com.jopdesign.wcet.allocation.ObjectAllocationModel;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.annotations.BadAnnotationException;
-import com.jopdesign.wcet.annotations.SourceAnnotationReader;
 import com.jopdesign.wcet.annotations.SourceAnnotations;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.jop.JOPWcetModel;
 import com.jopdesign.wcet.jop.LinkerInfo;
 import com.jopdesign.wcet.jop.LinkerInfo.LinkInfo;
 import com.jopdesign.wcet.report.Report;
+import com.jopdesign.wcet.report.ReportConfig;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.StringTokenizer;
 
@@ -77,7 +83,7 @@ import java.util.StringTokenizer;
  * @author Stefan Hepp (stefan@stefant.org)
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  */
-public class WCETTool extends EmptyTool<AppEventHandler> {
+public class WCETTool extends EmptyTool<WCETEventHandler> {
 
     public static final String VERSION = "1.0.1";
 
@@ -85,8 +91,15 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
     public static final Logger logger = Logger.getLogger(WCETTool.class);
     private Logger topLevelLogger = Logger.getLogger(WCETTool.class); /* special logger */
 
-    private ProjectConfig projectConfig;
+    private static final Option<?>[][] options = {
+        ProjectConfig.projectOptions,
+        IPETConfig.ipetOptions,
+        UppAalConfig.uppaalOptions,
+        ReportConfig.reportOptions
+    };
 
+    private WCETEventHandler eventHandler;
+    private ProjectConfig projectConfig;
     private String projectName;
 
     private AppInfo appInfo;
@@ -96,18 +109,24 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
     private boolean genWCETReport;
     private Report results;
     private WCETProcessorModel processor;
-    private SourceAnnotationReader sourceAnnotations;
     private File resultRecord;
     private LinkerInfo linkerInfo;
     private boolean hasDfaResults;
+    private Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverAnalysis = null;
 
     public WCETTool() {
         super(VERSION);
+        eventHandler = new WCETEventHandler(this);
+    }
+
+    @Override
+    public WCETEventHandler getEventHandler() {
+        return eventHandler;
     }
 
     @Override
     public void registerOptions(OptionGroup options) {
-
+        options.addOptions(WCETTool.options);
     }
 
     @SuppressWarnings({"LiteralAsArgToStringEquals"})
@@ -159,8 +178,6 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
         } else {
             throw new BadConfigurationException("Unknown WCET model: "+projectConfig.getProcessorName());
         }
-
-        initialize();
     }
 
     public void initialize() throws BadConfigurationException {
@@ -196,8 +213,6 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
             WcetPreprocess.preprocess(appInfo);
         }
 
-		/* Initialize annotation map */
-		sourceAnnotations = new SourceAnnotationReader(this);
     }
 
     @Override
@@ -231,6 +246,10 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
 
     public DFATool getDfaTool() {
         return dfaTool;
+    }
+
+    public void setTopLevelLogger(Logger topLevelLogger) {
+        this.topLevelLogger = topLevelLogger;
     }
 
     public void setDfaTool(DFATool dfaTool) {
@@ -453,12 +472,7 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
      * @throws BadAnnotationException
      */
     public SourceAnnotations getAnnotations(ClassInfo cli) throws IOException, BadAnnotationException {
-        SourceAnnotations annots = this.annotationMap.get(cli);
-        if(annots == null) {
-            annots = sourceAnnotations.readAnnotations(cli);
-            annotationMap.put(cli, annots);
-        }
-        return annots;
+        return eventHandler.getAnnotations(cli);
     }
 
 	/* Data flow analysis
@@ -478,7 +492,7 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
 			dfaTool.runAnalysis(recTys);
 
 		dfaTool.setReceivers(receiverResults);
-		appInfo.setReceivers(receiverResults, callstringLength);
+		this.receiverAnalysis = receiverResults;
 
 		topLevelLogger.info("Loop bound analysis");
 		LoopBounds dfaLoopBounds = new LoopBounds(callstringLength);
@@ -494,5 +508,84 @@ public class WCETTool extends EmptyTool<AppEventHandler> {
 		if(! hasDfaResults) return null;
 		return dfaTool.getLoopBounds();
 	}
+
+    /**
+     * Find possible implementations of the given method in the given class
+     * <p>
+     * For all candidates, check whether they implement the method.
+     * All subclasses of the receiver class are candidates. If the method isn't implemented
+     * in the receiver, the lowest superclass implementing the method is a candidate too.
+     * </p>
+     * This is basically a wrapper for {@link MethodInfo#getImplementations(boolean)}. This does not
+     * check any DFA results.
+     *
+     * @param methodRef the method reference to resolve.
+     * @return list of method infos that might be invoked
+     */
+    public Collection<MethodInfo> findImplementations(MethodRef methodRef) {
+        MethodInfo method = methodRef.getMethodInfo();
+        if (method == null) {
+            // TODO maybe just return an empty set here?
+            throw new AppInfoError("Trying to find implementations from unknown method " + methodRef);
+        }
+        // note that methodRef.getMethodInfo() already returns the super-method if the method is inherited
+        // (since there is no 'inherited methodInfo')
+        return method.getImplementations(true);
+    }
+
+    /**
+     * Find Implementations of the method called with the given instruction handle
+     * Uses receiver type analysis to refine the results
+     * @param invokerM invoking method
+     * @param ih the invoke instruction
+     * @return list of possibly invoked methods
+     */
+    public Collection<MethodInfo> findImplementations(MethodInfo invokerM, InstructionHandle ih) {
+        return findImplementations(invokerM, ih, CallString.EMPTY);
+    }
+
+    /**
+     * Find Implementations of the method called with the given instruction handle
+     * Uses receiver type analysis to refine the results
+     * @param invokerM invoking method
+     * @param ih the invoke instruction
+     * @param ctx the call context
+     * @return list of possibly invoked methods
+     */
+    public Collection<MethodInfo> findImplementations(MethodInfo invokerM, InstructionHandle ih, CallString ctx) {
+        MethodRef ref = appInfo.getReferencedMethod(invokerM, (InvokeInstruction) ih.getInstruction());
+        Collection<MethodInfo> staticImpls = findImplementations(ref);
+        staticImpls = dfaReceivers(ih, staticImpls, ctx);
+        return staticImpls;
+    }
+
+    // TODO: [wcet-app-info] dfaReceivers() is rather slow, for debugging purposes
+    private Collection<MethodInfo> dfaReceivers(InstructionHandle ih, Collection<MethodInfo> staticImpls, CallString ctx) {
+        if(this.receiverAnalysis != null && receiverAnalysis.containsKey(ih)) {
+            List<MethodInfo> dynImpls = new ArrayList<MethodInfo>();
+            Set<String> dynReceivers = new HashSet<String>();
+
+            ContextMap<CallString, Set<String>> allReceivers = receiverAnalysis.get(ih);
+            for (Entry<CallString, Set<String>> e : allReceivers.entrySet()) {
+                if(e.getKey().hasSuffix(ctx)) {
+                    dynReceivers.addAll(e.getValue());
+                }
+            }
+            for(MethodInfo impl : staticImpls) {
+                if(dynReceivers.contains(impl.getFQMethodName())) {
+                    dynReceivers.remove(impl.getFQMethodName());
+                    dynImpls.add(impl);
+                } else {
+                    logger.info("Static but not dynamic receiver: "+impl);
+                }
+            }
+            if(! dynReceivers.isEmpty()) {
+                throw new AssertionError("Bad receiver analysis ? Dynamic but not static receivers: "+dynReceivers);
+            }
+            return dynImpls;
+        } else {
+            return staticImpls;
+        }
+    }
 
 }

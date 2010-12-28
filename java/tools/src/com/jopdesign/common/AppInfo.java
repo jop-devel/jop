@@ -31,7 +31,6 @@ import com.jopdesign.common.misc.MissingClassError;
 import com.jopdesign.common.misc.NamingConflictException;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.common.type.ClassRef;
-import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.FieldRef;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
@@ -41,6 +40,9 @@ import org.apache.bcel.classfile.ClassFormatException;
 import org.apache.bcel.classfile.ClassParser;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.generic.ClassGen;
+import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.INVOKEINTERFACE;
+import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.util.ClassPath;
 import org.apache.log4j.Logger;
 
@@ -555,9 +557,12 @@ public final class AppInfo {
 
     /**
      * Get a reference to a method using the given signature.
+     * If the method is defined only in a (known) superclass and is inherited by this class,
+     * get a methodRef which contains a ClassRef to the given class but a MethodInfo from the superclass.
+     * <p>
      * If you already have a classRef, use {@link #getMethodRef(ClassRef, Signature)}
      * instead.
-     *
+     * </p>
      * @param signature the signature of the method
      * @param isInterfaceMethod true if the class is an interface.
      * @return a method reference with or without MethodInfo or ClassInfo.
@@ -578,20 +583,26 @@ public final class AppInfo {
 
     /**
      * Get a reference to a method using the given signature.
+     * If the method is defined only in a (known) superclass and is inherited by this class,
+     * get a methodRef which contains a ClassRef to the given class but a MethodInfo from the superclass.
      *
-     * @param classRef The reference to the class or interface containing the method.
+     * @param classRef The reference to the class or interface of the method.
      * @param signature The signature of the method. Only memberName and memberDescriptor are used.
      * @return A method reference with or without MethodInfo or ClassInfo.
      */
     public MethodRef getMethodRef(ClassRef classRef, Signature signature) {
         ClassInfo classInfo = classRef.getClassInfo();
         if ( classInfo != null ) {
-            MethodInfo method = classInfo.getMethodInfo(signature);
+            MethodInfo method = classInfo.getMethodInfoInherited(signature, true);
             if ( method == null ) {
                 return new MethodRef(classInfo.getClassRef(), signature.getMemberName(),
                         signature.getMemberDescriptor());
-            } else {
+            } else if (method.getClassName().equals(classRef.getClassName())) {
+                // method is defined in the given class
                 return method.getMethodRef();
+            } else {
+                // method is defined in a superclass
+                return new MethodRef(classRef, method);
             }
         }
 
@@ -639,6 +650,7 @@ public final class AppInfo {
 
     /**
      * Find a MethodInfo using a class name and the given signature or name of a method.
+     * This does not check superclasses for inherited methods.
      *
      * @param className the fully qualified name of the class
      * @param methodSignature either the name of the method if unique, or the method signature.
@@ -670,6 +682,20 @@ public final class AppInfo {
 
     public MethodInfo getMethodInfo(Signature signature) throws MethodNotFoundException {
         return getMethodInfo(signature.getClassName(), signature.getMemberSignature());
+    }
+
+    public MethodRef getReferencedMethod(ClassInfo invokerClass, InvokeInstruction instr) {
+        ConstantPoolGen cpg = invokerClass.getConstantPoolGen();
+        // TODO use getReferencedType() here, eliminated deprecated call
+        String classname = instr.getClassName(cpg);
+        String methodname = instr.getMethodName(cpg);
+        boolean isInterface = (instr instanceof INVOKEINTERFACE);
+        return getMethodRef(new Signature(classname, methodname, instr.getSignature(cpg)),
+                            isInterface);
+    }
+
+    public MethodRef getReferencedMethod(MethodInfo invoker, InvokeInstruction instruction) {
+        return getReferencedMethod(invoker.getClassInfo(), instruction);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -712,7 +738,7 @@ public final class AppInfo {
     }
 
     public Signature getClinitSignature(String className) {
-        return new Signature(className, Config.DEFAULT_CLINIT_NAME, Descriptor.parse(Config.DEFAULT_CLINIT_DESCRIPTOR));
+        return new Signature(className, Config.DEFAULT_CLINIT_NAME, Config.DEFAULT_CLINIT_DESCRIPTOR);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -916,5 +942,4 @@ public final class AppInfo {
             throw new MissingClassError(message, cause);
         }
     }
-
 }

@@ -113,7 +113,7 @@ public final class ClassInfo extends MemberInfo {
 
     @Override
     public Signature getSignature() {
-        return new Signature(classGen.getClassName(), null, null);
+        return new Signature(classGen.getClassName());
     }
 
     @Override

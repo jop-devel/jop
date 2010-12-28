@@ -19,11 +19,15 @@
  */
 package com.jopdesign.wcet;
 
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.Config.BadConfigurationError;
 import com.jopdesign.common.config.IntegerOption;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.StringOption;
+import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
 
 import java.io.File;
@@ -34,11 +38,6 @@ public class ProjectConfig {
 
 	public static final StringOption WCET_MODEL =
 		new StringOption("wcet-model","which java processor to use (jamuth, JOP, allocObjs, allocHandles, allocHeaders, allocBlocks)","${arch}");
-
-	public static final StringOption APP_CLASS_NAME =
-		new StringOption("app-class",
-			             "the name of the class containing the main entry point of the RTJava application",
-			             false);
 
 	public static final StringOption TARGET_METHOD =
 		new StringOption("target-method",
@@ -79,7 +78,7 @@ public class ProjectConfig {
 	public static final Option<?>[] projectOptions =
 	{
 		OUT_DIR,
-		APP_CLASS_NAME, TARGET_METHOD, PROJECT_NAME,
+		TARGET_METHOD, PROJECT_NAME,
 		TARGET_SOURCEPATH, TARGET_BINPATH,
 		WCET_MODEL,
 		DO_DFA, CALLSTRING_LENGTH,
@@ -90,9 +89,11 @@ public class ProjectConfig {
 
 
 	private Config config;
+    private AppInfo appInfo;
 
 	public ProjectConfig(Config config) {
 		this.config = config;
+        this.appInfo = AppInfo.getSingleton();
 	}
 
     public Config getConfig() {
@@ -104,11 +105,7 @@ public class ProjectConfig {
 	 * @return
 	 */
 	public String getAppClassName() {
-		String appClass = config.getOption(APP_CLASS_NAME);
-		if(appClass.indexOf('/') > 0) {
-			appClass = appClass.replace('/','.');
-		}
-		return appClass;
+        return appInfo.getMainMethod().getClassName();
 	}
 
 	/**
@@ -140,6 +137,14 @@ public class ProjectConfig {
 	public String getTargetMethod() {
 		return splitFQMethod(getTargetMethodName(),false);
 	}
+
+    public MethodInfo getTargetMethodInfo() {
+        try {
+            return appInfo.getMethodInfo(getTargetClass(), getTargetMethod());
+        } catch (MethodNotFoundException e) {
+            throw new BadConfigurationError("Cannot find target method " + getTargetMethodName(), e);
+        }
+    }
 
 	public String getProjectName() {
 		return config.getOption(PROJECT_NAME,

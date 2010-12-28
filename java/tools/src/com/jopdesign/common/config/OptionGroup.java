@@ -20,8 +20,21 @@
 
 package com.jopdesign.common.config;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -119,6 +132,12 @@ public class OptionGroup {
 
         // we keep the options in an additional list to have them sorted in the same way they are added.
         optionList.add(option);
+    }
+
+    public void addOptions(Option[][] options) {
+        for (Option[] optList : options) {
+            addOptions(optList);
+        }
     }
 
     public void addOptions(Option[] options) {

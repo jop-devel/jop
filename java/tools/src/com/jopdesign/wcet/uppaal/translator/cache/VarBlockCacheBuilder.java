@@ -45,6 +45,7 @@ public abstract class VarBlockCacheBuilder extends DynamicCacheBuilder {
 	protected abstract StringBuilder initCache(String NUM_METHODS);
 	
 	protected int blocksOf(MethodInfo method) {
+        // FIXME old code used ids instead of MethodInfo, check for correctness
         ControlFlowGraph cfg = method.getCode().getControlFlowGraph();
 		return project.getWCETProcessorModel().getMethodCache().requiredNumberOfBlocks(cfg.getNumberOfWords());
 	}

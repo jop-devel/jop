@@ -78,19 +78,19 @@ public abstract class ConstantInfo<T, U extends Type> {
             case Constants.CONSTANT_Fieldref:
                 ConstantFieldref fRef = (ConstantFieldref) constant;
                 nRef = (ConstantNameAndType) cp.getConstant(fRef.getNameAndTypeIndex());
-                sig = new Signature(fRef.getClass(cp), nRef.getName(cp), Descriptor.parse(nRef.getSignature(cp)));
+                sig = new Signature(fRef.getClass(cp), nRef.getName(cp), nRef.getSignature(cp));
                 FieldRef fieldRef = appInfo.getFieldRef(sig);
                 return new ConstantFieldInfo(fieldRef);
             case Constants.CONSTANT_Methodref:
                 ConstantMethodref mRef = (ConstantMethodref) constant;
                 nRef = (ConstantNameAndType) cp.getConstant(mRef.getNameAndTypeIndex());
-                sig = new Signature(mRef.getClass(cp), nRef.getName(cp), Descriptor.parse(nRef.getSignature(cp)));
+                sig = new Signature(mRef.getClass(cp), nRef.getName(cp), nRef.getSignature(cp));
                 methodRef = appInfo.getMethodRef(sig, false);
                 return new ConstantMethodInfo(methodRef);
             case Constants.CONSTANT_InterfaceMethodref:
                 ConstantInterfaceMethodref imRef = (ConstantInterfaceMethodref) constant;
                 nRef = (ConstantNameAndType) cp.getConstant(imRef.getNameAndTypeIndex());
-                sig = new Signature(imRef.getClass(cp), nRef.getName(cp), Descriptor.parse(nRef.getSignature(cp)));
+                sig = new Signature(imRef.getClass(cp), nRef.getName(cp), nRef.getSignature(cp));
                 methodRef = appInfo.getMethodRef(sig, true);
                 return new ConstantMethodInfo(methodRef);
             case Constants.CONSTANT_String:
@@ -106,7 +106,7 @@ public abstract class ConstantInfo<T, U extends Type> {
             case Constants.CONSTANT_NameAndType:
                 String name = ((ConstantNameAndType)constant).getName(cp);
                 String signature = ((ConstantNameAndType)constant).getSignature(cp);
-                return new ConstantNameAndTypeInfo(new Signature(name, Descriptor.parse(signature)));
+                return new ConstantNameAndTypeInfo(new Signature(name, signature));
             case Constants.CONSTANT_Utf8:
                 return new ConstantStringInfo(((ConstantUtf8)constant).getBytes(), true);
             default:

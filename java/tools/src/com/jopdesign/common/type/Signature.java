@@ -121,10 +121,28 @@ public class Signature {
         return new Signature(className, memberName, descriptor);
     }
 
+    public Signature(String className) {
+        this.className = className;
+        this.memberName = null;
+        this.descriptor = null;
+    }
+
+    public Signature(String className, String memberName, String descriptor) {
+        this.className = className;
+        this.memberName = memberName;
+        this.descriptor = Descriptor.parse(descriptor);
+    }
+
     public Signature(String className, String memberName, Descriptor descriptor) {
         this.className = className;
         this.memberName = memberName;
         this.descriptor = descriptor;
+    }
+
+    public Signature(String memberName, String descriptor) {
+        this.className = null;
+        this.memberName = memberName;
+        this.descriptor = Descriptor.parse(descriptor);
     }
 
     public Signature(String memberName, Descriptor descriptor) {

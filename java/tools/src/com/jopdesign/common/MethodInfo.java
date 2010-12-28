@@ -233,10 +233,11 @@ public final class MethodInfo extends ClassMemberInfo {
     /**
      * Get the super method for this method, if there is any.
      *
+     * @param nonAbstractOnly if true, return the method from the lowest superclass
      * @param checkAccess if false, also return hidden methods and methods which cannot be accessed by this method's class.
      * @return the super method or null if none found.
      */
-    public MethodInfo getSuperMethod(boolean checkAccess) {
+    public MethodInfo getSuperMethod(boolean nonAbstractOnly, boolean checkAccess) {
         
         if ( checkAccess && (isPrivate() || isStatic()) ) {
             return null;
@@ -337,6 +338,8 @@ public final class MethodInfo extends ClassMemberInfo {
 
         if (!isAbstract()) {
             implementations.add(this);
+        } else {
+
         }
 
         if (checkAccess && (isPrivate() || isStatic())) {

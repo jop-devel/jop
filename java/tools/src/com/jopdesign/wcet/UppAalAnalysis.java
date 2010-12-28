@@ -21,16 +21,12 @@
 
 package com.jopdesign.wcet;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.config.Config;
-import com.jopdesign.common.config.Option;
-import com.jopdesign.common.processormodel.JOPConfig;
+import com.jopdesign.dfa.DFATool;
 import com.jopdesign.wcet.analysis.UppaalAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
-import com.jopdesign.wcet.ipet.IPETConfig;
-import com.jopdesign.wcet.report.ReportConfig;
-import com.jopdesign.wcet.uppaal.UppAalConfig;
 import org.apache.log4j.Logger;
 
 import java.io.File;
@@ -42,14 +38,6 @@ public class UppAalAnalysis {
 	private static final String CONFIG_FILE_PROP = "config";
 	private static final Logger tlLogger = Logger.getLogger(UppAalAnalysis.class);
 	private static final int ECC_TRESHOLD = 400;
-
-    private static Option<?>[][] options = {
-		ProjectConfig.projectOptions,
-		JOPConfig.jopOptions,
-		IPETConfig.ipetOptions,
-		UppAalConfig.uppaalOptions,
-		ReportConfig.reportOptions
-	};
 
 	class WCETEntry {
 		MethodInfo target;
@@ -71,28 +59,39 @@ public class UppAalAnalysis {
         setup.setConfigFilename(CONFIG_FILE_PROP);
         setup.setUsageInfo("UppAllAnalysis", "UppAll WCET Analysis");
 
+        WCETTool wcetTool = new WCETTool();
+        DFATool dfaTool = new DFATool();
 
+        setup.registerTool("dfa", dfaTool, true, false);
+        setup.registerTool("wcet", wcetTool);
 
-		Config config = Config.instance();
-		config.addOptions(options);
-		ExecHelper exec = new ExecHelper(UppAalAnalysis.class, , tlLogger, );
+        AppInfo appInfo = setup.initAndLoad(args, true, false, false);
+
+        if (setup.useTool("dfa")) {
+            wcetTool.setDfaTool(dfaTool);
+        }
+
+		ExecHelper exec = new ExecHelper(setup.getConfig(), tlLogger);
 		
-		exec.loadConfig(args);           /* Load config */
-		UppAalAnalysis inst = new UppAalAnalysis();
+		exec.dumpConfig();
+		UppAalAnalysis inst = new UppAalAnalysis(wcetTool);
 		/* run */
 		if(! inst.run(exec)) exec.bail("UppAal translation failed");
 		tlLogger.info("UppAal translation finished");
 	}
 
-	private boolean run(ExecHelper exec) {
-		Config c = Config.instance();
-		File uppaalOutDir = null;
-		WCETTool project = null;
-		try { 
-			project = new Project(new ProjectConfig(c));
+    private WCETTool project;
+
+    public UppAalAnalysis(WCETTool wcetTool) {
+        project = wcetTool;
+    }
+
+    private boolean run(ExecHelper exec) {
+		File uppaalOutDir;
+		try {
 			project.setTopLevelLogger(tlLogger);
 			tlLogger.info("Loading project");
-			project.load();
+			project.initialize();
 			uppaalOutDir = project.getOutDir("uppaal");
 		}
 		catch (Exception e) { 
@@ -106,8 +105,8 @@ public class UppAalAnalysis {
 		for( MethodInfo m : methods ) {
 			if(project.computeCyclomaticComplexity(m) > ECC_TRESHOLD) {
 				tlLogger.info("Skipping UppAal translation for "+m+
-						      " because extended cyclomatic compleity "+
-						      project.computeCyclomaticComplexity(m) + " > treshold");				
+						      " because extended cyclomatic complexity "+
+						      project.computeCyclomaticComplexity(m) + " > treshold");
 			} else {
 				tlLogger.info("Starting UppAal translation for "+m);
 				WcetCost wcet;
