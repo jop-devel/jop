@@ -895,6 +895,7 @@ begin
 
 			when idl =>
 				state_bsy <= '0';
+				-- update object cache on a missed getfield
 				-- only valid on first idle cycle when comming
 				-- from a 'real' getfield (no preceeding stidx)
 				if state=gf4 then
@@ -1033,6 +1034,8 @@ begin
 			when pf3 =>
 
 			when pf4 =>
+				-- update object cache on a putfield
+				-- no write allocation is determined in ocache
 				-- only on 'normal' putfield (no Native, no I/O)
 				-- decision on write allocate is in cache
 				if was_a_stidx='0' and sc_mem_in.rd_data(31)='0' then

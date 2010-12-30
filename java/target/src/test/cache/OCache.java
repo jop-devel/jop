@@ -41,6 +41,7 @@ public class OCache {
 	public static void main(String[] args) {
 		
 		OCache oc = new OCache();
+		OCache oc2 = new OCache();
 		int i, j;
 		com.jopdesign.io.SysDevice sys = com.jopdesign.io.IOFactory.getFactory().getSysDevice();
 
@@ -58,6 +59,12 @@ public class OCache {
 		i = sys.cntInt;
 		j = sys.cntInt;
 		sys.wd = 0;
+		oc2.a = 3;
+		i = oc.a;
+		j = oc.a;
+		i = oc2.a;
+		j = oc2.a;
+		sys.wd = 1;
 	}
 
 }

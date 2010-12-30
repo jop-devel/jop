@@ -74,22 +74,34 @@ begin
 end process;
 
 	ocout.hit <= hit and USE_OCACHE;
+	
+-- main signals:
+--
+--	chk_gf, chk_pf: hit detection on get/putfield - also on *non-cached* fields
+--		=> no cache state update at this stage!
+--	wr_gf: set when cached should be updated on a missed getfield
+--	wr_pf: set on a cacheable putfield, but also on a missed write
+--		=> decide on write allocation in the cache depending on the
+--		former chk_pf (hit_reg)
 
 process(clk, reset)
 begin
 	if reset='1' then
 		valid <= '0';
 	elsif rising_edge(clk) then
+		-- remember handle, index, and if it was a hit
 		if ocin.chk_gf='1' or ocin.chk_pf='1' then
 			hit_reg <= hit;
 			ocin_reg <= ocin;
 		end if;
+		-- update on a getfield miss
 		if ocin.wr_gf='1' then
 			valid <= '1';
 			tag <= ocin_reg.handle;
 			index <= ocin_reg.index;
 			data <= ocin.gf_val;
 		end if;
+		-- update on a putfield hit
 		-- no write allocaton, just update cached values
 		if ocin.wr_pf='1' and hit_reg='1' then
 			data <= ocin.pf_val;

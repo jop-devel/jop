@@ -20,17 +20,15 @@ add wave -noupdate -format Logic /tb_jop/joptop/cpu/core/dec/br
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/core/dec/jmp
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/core/dec/jbr
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/core/dec/ena_a
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/dec/mem_in
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cpu/core/fch/bsy
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/stk/sp
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/stk/vp0
 add wave -noupdate -divider execute
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/stk/a
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/stk/b
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/stk/stkram/ram
 add wave -noupdate -divider mem_sc
 add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/cpu/mem/mem_in
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/mem_out
+add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/cpu/mem/mem_out
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/state
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/addr_reg
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/index
@@ -38,6 +36,7 @@ add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/val
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/was_a_store
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/was_a_stidx
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/was_a_hwo
+add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/read_ocache
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cpu/mem/null_pointer
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cpu/mem/bounds_error
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/np_exc
@@ -55,7 +54,7 @@ add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/oc/
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cpu/mem/oc/valid
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/oc/data
 add wave -noupdate -divider SimpCon
-add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/cpu/sc_mem_out
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/sc_mem_out
 add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/cpu/sc_mem_in
 add wave -noupdate -divider {external signals}
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/addr
@@ -71,7 +70,7 @@ add wave -noupdate -format Logic /tb_jop/joptop/fl_noe
 add wave -noupdate -format Logic /tb_jop/joptop/fl_nwe
 add wave -noupdate -format Logic /tb_jop/joptop/fl_rdy
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {35999000 ps} 0}
+WaveRestoreCursors {{Cursor 1} {5200699804 ps} 0}
 configure wave -namecolwidth 228
 configure wave -valuecolwidth 144
 configure wave -justifyvalue left
@@ -86,4 +85,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {11789100 ps} {12011100 ps}
+WaveRestoreZoom {5200640975 ps} {5200648479 ps}

@@ -38,7 +38,7 @@ package jop_config_global is
 	constant STACK_SIZE_GLOBAL : integer := 8; -- # of address bits of internal ram (sp,...)
 	
 	-- enable or diable the object cache
-	constant USE_OCACHE : std_logic := '0';
+	constant USE_OCACHE : std_logic := '1';
 	
 end package jop_config_global;
 
