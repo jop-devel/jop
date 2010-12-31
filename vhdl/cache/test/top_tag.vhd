@@ -28,36 +28,24 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.jop_config_global.all;
+use work.oc_types.all;
+
 entity top_tag is
 port (
 	clk, reset		: in std_logic;
-	din				: in std_logic;
-	dout			: out std_logic
+		top_in		: in oc_tag_in_type;
+		top_out		: out oc_tag_out_type
 );
 end top_tag;
 
 architecture rtl of top_tag is
 
 
-	constant  MEM_BITS	: integer := 24;
-	constant  WAY_BITS	: integer := 4;
-
-	signal x: std_logic;
-
 	signal clk_int: std_logic;
 
-	signal inval_reg: std_logic;
-	signal addr_reg: std_logic_vector(MEM_BITS-1 downto 0);
-	--		wraddr      : in std_logic_vector(addr_width-1 downto 0);
-	signal wr_reg, hit_reg: std_logic;
-	signal line_reg: unsigned(WAY_BITS-1 downto 0);
-	
-	signal inreg: std_logic_vector(MEM_BITS-1+2 downto 0);
-	signal outreg: std_logic_vector(WAY_BITS-1+1 downto 0);
-
-	-- size of main memory simulation in 32-bit words.
-	-- change it to less memory to speedup the simulation
-	-- minimum is 64 KB, 14 bits
+	signal in_reg_1, in_reg_2: oc_tag_in_type;
+	signal out_reg_1, out_reg_2: oc_tag_out_type;
 
 begin
 
@@ -71,19 +59,11 @@ begin
 	);
 
 	tag: entity work.oc_tag
-		generic map(
-			addr_width => MEM_BITS,
-			way_bits => WAY_BITS
-		)
 		port map(
 			clk => clk_int,
 			reset => reset,
-			invalidate => inval_reg,
-			addr => addr_reg,
-	--		wraddr      : in std_logic_vector(addr_width-1 downto 0);
-			wr => wr_reg,
-			hit => hit_reg,
-			line => line_reg
+			tag_in => in_reg_2,
+			tag_out => out_reg_1
 		);
 		
 		
@@ -92,20 +72,10 @@ begin
 
 	-- some registers for fmax tests
 	if rising_edge(clk_int) then
-		x <= din;
-		inreg(MEM_BITS-1+2 downto 1) <= inreg(MEM_BITS-1+2-1 downto 0);
-		inreg(0) <= x;
-		addr_reg <= inreg(MEM_BITS-1 downto 0);
-		inval_reg <= inreg(MEM_BITS);
-		wr_reg <= inreg(MEM_BITS+1);
-		outreg(WAY_BITS-1 downto 0) <= std_logic_vector(line_reg);
-		outreg(WAY_BITS) <= hit_reg;
-		
-		if outreg(WAY_BITS downto 0) = (outreg'range => '0') then
-			dout <= '1';
-		else
-			dout <= '0';
-		end if;
+		in_reg_1 <= top_in;
+		in_reg_2 <= in_reg_1;
+		out_reg_2 <= out_reg_1;
+		top_out <= out_reg_2;
 	end if;
 end process;
 

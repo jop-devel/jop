@@ -40,6 +40,9 @@ package jop_config_global is
 	-- enable or diable the object cache
 	constant USE_OCACHE : std_logic := '1';
 	
+	constant OCACHE_ADDR_BITS : integer := 24; -- TODO: align with other memory parameters
+	constant OCACHE_WAY_BITS : integer := 4;
+	
 end package jop_config_global;
 
 package body jop_config_global is
