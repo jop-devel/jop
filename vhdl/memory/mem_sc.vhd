@@ -51,6 +51,7 @@ Library IEEE;
 use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.jop_config_global.all;
 use work.jop_types.all;
 use work.sc_pack.all;
 
@@ -243,9 +244,6 @@ end process;
 --
 
 	oc: entity work.ocache
-		generic map (
-			size_bits => 2
-		)
 		port map (
 			clk => clk,
 			reset => reset,
@@ -255,7 +253,7 @@ end process;
 
 	-- TODO: what about larger field indexes?
 	-- at least we need to signal a miss....
-	ocin.index <= mem_in.bcopd(MAX_OBJECT_SIZE-1 downto 0);
+	ocin.index <= mem_in.bcopd(OCACHE_MAX_INDEX_BITS-1 downto 0);
 	ocin.handle <= ain(SC_ADDR_SIZE-1 downto 0);
 	-- putfield has the handle in bin...
 	-- check cache only on real getfield
@@ -860,6 +858,7 @@ begin
 			was_a_store <= '1';
 		end if;		
 
+		-- would be better to set it only on a getfield
 		if ocout.hit='1' then
 			read_ocache<='1';
 		end if;

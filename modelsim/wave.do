@@ -41,38 +41,40 @@ add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cpu/mem/null_
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cpu/mem/bounds_error
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/np_exc
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/ab_exc
-add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/cpu/mem/sc_mem_out
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/sc_mem_out
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/sc_mem_in
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/data
 add wave -noupdate -divider ocache
 add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/cpu/mem/oc/ocin
+add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/oc/chk_gf_dly
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/oc/ram_dout_store
 add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/cpu/mem/oc/ocout
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/oc/hit_reg
 add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/cpu/mem/oc/ocin_reg
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/oc/tag
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/oc/index
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cpu/mem/oc/valid
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/oc/data
+add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/oc/update_cache
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/oc/ram_wraddr
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/oc/ram
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/oc/ram_din
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/oc/oc_tag_out.hit_line
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/oc/ram_dout
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/oc/tag/nxt
+add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/cpu/mem/oc/tag/tag_in
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/oc/tag/tag
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/oc/tag/valid
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/oc/tag/tag_out
 add wave -noupdate -divider SimpCon
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/sc_mem_out
-add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/cpu/sc_mem_in
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/sc_mem_in
 add wave -noupdate -divider {external signals}
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/addr
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/data
 add wave -noupdate -format Logic /tb_jop/main_mem/ncs
 add wave -noupdate -format Logic /tb_jop/main_mem/noe
 add wave -noupdate -format Logic /tb_jop/main_mem/nwr
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/fl_a
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/fl_d
-add wave -noupdate -format Logic /tb_jop/joptop/fl_ncs
-add wave -noupdate -format Logic /tb_jop/joptop/fl_ncsb
-add wave -noupdate -format Logic /tb_jop/joptop/fl_noe
-add wave -noupdate -format Logic /tb_jop/joptop/fl_nwe
-add wave -noupdate -format Logic /tb_jop/joptop/fl_rdy
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {5200699804 ps} 0}
-configure wave -namecolwidth 228
-configure wave -valuecolwidth 144
+WaveRestoreCursors {{Cursor 1} {4083368934 ps} 0}
+configure wave -namecolwidth 122
+configure wave -valuecolwidth 40
 configure wave -justifyvalue left
 configure wave -signalnamewidth 0
 configure wave -snapdistance 10
@@ -85,4 +87,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {5200640975 ps} {5200648479 ps}
+WaveRestoreZoom {4083326368 ps} {4083386806 ps}

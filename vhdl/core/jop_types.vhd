@@ -28,6 +28,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
+use work.jop_config_global.all;
+
 package jop_types is
 
 	constant MMU_WIDTH : integer := 4;
@@ -157,17 +159,11 @@ package jop_types is
 	-- changes here require also the object layout to be changed
 	constant METHOD_SIZE_BITS : integer := 10;
 
-	-- object cache constants and types
-	-- depends on main memry size (sc_pack)
-
-	-- tag width, in words
-	constant CACHE_ADDR_SIZE : integer := 23;
-	-- maximum number of cached fields
-	constant MAX_OBJECT_SIZE : integer := 16;
+	-- object cache types
 
 	type ocache_in_type is record
-		handle	: std_logic_vector(CACHE_ADDR_SIZE-1 downto 0);
-		index	: std_logic_vector(MAX_OBJECT_SIZE-1 downto 0);
+		handle	: std_logic_vector(OCACHE_ADDR_BITS-1 downto 0);
+		index	: std_logic_vector(OCACHE_MAX_INDEX_BITS-1 downto 0);
 		gf_val	: std_logic_vector(31 downto 0);
 		pf_val	: std_logic_vector(31 downto 0);
 		chk_gf	: std_logic;
