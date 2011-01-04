@@ -73,7 +73,7 @@ add wave -noupdate -format Logic /tb_jop/main_mem/noe
 add wave -noupdate -format Logic /tb_jop/main_mem/nwr
 TreeUpdate [SetDefaultTree]
 WaveRestoreCursors {{Cursor 1} {4083368934 ps} 0}
-configure wave -namecolwidth 122
+configure wave -namecolwidth 233
 configure wave -valuecolwidth 40
 configure wave -justifyvalue left
 configure wave -signalnamewidth 0
@@ -87,4 +87,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {4083326368 ps} {4083386806 ps}
+WaveRestoreZoom {5157027090 ps} {5177126152 ps}

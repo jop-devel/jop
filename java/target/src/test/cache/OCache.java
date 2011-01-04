@@ -26,13 +26,17 @@ package cache;
 
 import com.jopdesign.sys.Native;
 
+import jembench.application.BenchLift;
+import jembench.micro.*;
+
 /**
  * @author Martin Schoeberl (martin@jopdesign.com)
  *
  */
 public class OCache {
 	
-	int a, b;
+	public int a;
+	int b;
 	static int s;
 
 	/**
@@ -53,17 +57,24 @@ public class OCache {
 		i = oc.a;
 		j = oc.a;
 		int ref = Native.toInt(oc);
-		Native.putField(ref, 0, 2);
+//		Native.putField(ref, 0, 2);
+		i = Native.getField(ref, 0);
 		i = oc.a;
-		// test caching of I/O devices
-		i = sys.cntInt;
-		j = sys.cntInt;
+//		// test caching of I/O devices
+//		i = sys.cntInt;
+//		j = sys.cntInt;
 		sys.wd = 0;
 		oc2.a = 3;
 		i = oc.a;
-		j = oc.a;
 		i = oc2.a;
+		j = oc.a;
 		j = oc2.a;
+		sys.wd = 1;
+//		GetField gf = new GetField();
+		BenchLift bl = new BenchLift();
+		sys.wd = 0;
+//		gf.perform(10);
+		bl.perform(10);
 		sys.wd = 1;
 	}
 

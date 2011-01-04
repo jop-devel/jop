@@ -858,9 +858,14 @@ begin
 			was_a_store <= '1';
 		end if;		
 
-		-- would be better to set it only on a getfield
-		if ocout.hit='1' then
-			read_ocache<='1';
+		-- set MUX selection on getfield and hit
+		if state=idl then
+			if ocout.hit='1' and ocin.chk_gf='1' then
+				read_ocache <= '1';
+			end if;
+		else
+			-- default on every state other then idl
+			read_ocache <= '0';
 		end if;
 
 		-- change arbiter to atomic mode
@@ -889,6 +894,7 @@ begin
 		ocin.wr_gf <= '0';
 		ocin.chk_pf <= '0';
 		ocin.wr_pf <= '0';
+		
 
 		case next_state is
 
@@ -908,27 +914,27 @@ begin
 				end if;
 
 			when rd1 =>
-				read_ocache<='0';
+--				read_ocache<='0';
 				state_bsy <= '0';
 
 			when wr1 =>
-				read_ocache<='0';
+--				read_ocache<='0';
 				state_bsy <= '0';
 
 			when ps1 =>
-				read_ocache<='0';
+--				read_ocache<='0';
 				state_bsy <= '1';
 				state_wr <= '1';
 				state_dcache <= direct_mapped;
 
 			when gs1 =>
-				read_ocache<='0';
+--				read_ocache<='0';
 				state_bsy <= '1';
 				state_rd <= '1';
 				state_dcache <= direct_mapped;
 
 			when bc_cc =>
-				read_ocache<='0';
+--				read_ocache<='0';
 				state_bsy <= '1';
 				-- cache check
 				sc_mem_out.tm_cache <= '0';				
@@ -962,11 +968,11 @@ begin
 				sc_mem_out.tm_cache <= '0';
 
 			when iast0 =>
-				read_ocache<='0';
+--				read_ocache<='0';
 				state_bsy <= '1';
 
 			when iald0 =>
-				read_ocache<='0';
+--				read_ocache<='0';
 				state_bsy <= '1';
 				inc_addr_reg <= '1';
 				-- read for store cannot happen earlier
@@ -1002,7 +1008,7 @@ begin
 				state_wr <= '1';
 
 			when gf0 =>
-				read_ocache<='0';
+--				read_ocache<='0';
 				state_rd <= '1';
 				state_bsy <= '1';
 
@@ -1018,7 +1024,7 @@ begin
 			when gf4 =>
 
 			when pf0 =>
-				read_ocache<='0';
+--				read_ocache<='0';
 				state_bsy <= '1';
 				if was_a_stidx='0' then
 					ocin.chk_pf <= '1';
@@ -1044,7 +1050,7 @@ begin
 				state_dcache <= full_assoc;
                           
 			when cp0 =>
-				read_ocache<='0';
+--				read_ocache<='0';
 				state_bsy <= '1';
 
 			when cp1 =>

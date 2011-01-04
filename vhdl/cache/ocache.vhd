@@ -26,6 +26,9 @@
 --
 --	2009-11-11  first version
 --	2009-11-28	single entry works
+--	2011-01-04	multiple objects, single field (index 0) per object
+--		Basic jbe runs, but still buggy
+--		test.jvm Basic object test fails, JemBench CMP Dummy does not stop
 --
 
 --
@@ -273,18 +276,22 @@ end process;
 -- the next request
 -- Is this the solution?	
 --	ocout.dout <= ram_dout;
+	-- that's very late. Can we do better on a hit?
+	ocout.dout <= ram_dout_store;
 
 -- that looks like a solution, but is it needed?
 -- the ocache is still not working :-(
 
-process(ocin.chk_gf, ram_dout, ram_dout_store)
-begin
-	if ocin.chk_gf='1' then
-		ocout.dout <= ram_dout;
-	else
-		ocout.dout <= ram_dout_store;
-	end if;
-end process;
+--process(ocin.chk_gf, ram_dout, ram_dout_store)
+--begin
+--	if ocin.chk_gf='1' then
+--		ocout.dout <= ram_dout;
+--	else
+--		ocout.dout <= ram_dout_store;
+--	end if;
+--end process;
+
+
 -- main signals:
 --
 --	chk_gf, chk_pf: hit detection on get/putfield - also on *non-cached* fields
@@ -307,7 +314,7 @@ begin
 		-- shuldn't we assign default values here to all signals?
 		
 		chk_gf_dly <= ocin.chk_gf;
-		if ocin.chk_gf='1' then
+		if chk_gf_dly='1' then
 			ram_dout_store <= ram_dout;
 		end if;
 		-- remember handle, index, and if it was a hit
