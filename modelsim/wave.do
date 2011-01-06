@@ -47,6 +47,8 @@ add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/data
 add wave -noupdate -divider ocache
 add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/cpu/mem/oc/ocin
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/oc/chk_gf_dly
+add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/oc/cacheable
+add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/oc/cacheable_reg
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/oc/ram_dout_store
 add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/cpu/mem/oc/ocout
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/oc/hit_reg
@@ -87,4 +89,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {5157027090 ps} {5177126152 ps}
+WaveRestoreZoom {583125892 ps} {603224954 ps}

@@ -140,12 +140,15 @@ begin
 		for i in 0 to line_cnt-1 loop
 			h_or := h_or or h(i);
 		end loop;
-		-- hack for index
-		if tag_in.index(4 downto 0) = "00000" then
-			hit <= h_or;
-		else
-			hit <= '0';
-		end if;
+		-- ignore uncacheable index values, it is checked in ocache
+		hit <= h_or;
+		
+		-- check if index is in the cachable area
+--		if tag_in.index(OCACHE_MAX_INDEX_BITS-1 downto OCACHE_INDEX_BITS) = (others => '0') then
+--			hit <= h_or;
+--		else
+--			hit <= '0';
+--		end if;
 
 		-- encoder without priority
 		line <= (others => '0');
@@ -219,10 +222,14 @@ end ocache;
 
 architecture rtl of ocache is
 
+	constant INDEX_ZERO: std_logic_vector(OCACHE_MAX_INDEX_BITS-OCACHE_INDEX_BITS-1 downto 0)
+		:= (others => '0');
 	signal ocin_reg: ocache_in_type;
 	signal line_reg: unsigned(OCACHE_WAY_BITS-1 downto 0);
 	signal hit_reg: std_logic;
 	signal inc_nxt_reg: std_logic;
+
+	signal cacheable, cacheable_reg: std_logic;
 
 	signal update_cache: std_logic;
 	
@@ -235,15 +242,14 @@ architecture rtl of ocache is
 	
 
 	-- RAM signals
-	constant nwords : integer := 2 ** (OCACHE_WAY_BITS+0);
+	constant nwords : integer := 2 ** (OCACHE_WAY_BITS+OCACHE_INDEX_BITS);
 	type ram_type is array(0 to nwords-1) of std_logic_vector(31 downto 0);
 
 	signal ram : ram_type;
 	signal ram_din, ram_dout : std_logic_vector(31 downto 0);
-	signal ram_wraddr: unsigned(OCACHE_WAY_BITS-1 downto 0);
+	signal ram_wraddr: unsigned(OCACHE_WAY_BITS+OCACHE_INDEX_BITS-1 downto 0);
 
 begin
-
 
 	tag: entity work.oc_tag
 		port map(
@@ -262,25 +268,30 @@ begin
 	oc_tag_in.wrline <= line_reg;
 	oc_tag_in.wr <= update_cache;
 	
--- TODO: ***** the following is needed for single field OC ****
--- check for cachable fields is missing when caching several fields
-process(ocin, ocin_reg, hit_reg, inc_nxt_reg)
+-- check for cachable fields 
+process(ocin, hit_reg, inc_nxt_reg, cacheable_reg)
 begin
+
+	cacheable <= '0';
+	if ocin.index(OCACHE_MAX_INDEX_BITS-1 downto OCACHE_INDEX_BITS) = INDEX_ZERO then
+		cacheable <= '1';
+	end if;
+
 	-- TODO: tag update only needed on a (tag) miss, not on a wr_pf
 	-- valid update needed by multi word cache line
 	-- update_cache is used by the data memory too
 	-- we could split into: update_data, update_tag, update_valid
 	update_cache <= '0';
 	if ocin.wr_gf='1' or (ocin.wr_pf='1' and hit_reg='1') then
-		-- index hack
-		if ocin_reg.index(4 downto 0) = "00000" then
+		-- update only on valid index
+		if cacheable_reg='1' then
 			update_cache <= '1';
 		end if;
 	end if;
 	-- increment nxt pointer on a miss
 	-- TODO: change when caching several fields
 	oc_tag_in.inc_nxt <= '0';
-	if ocin.wr_gf='1' then -- that's a getfield miss (now)
+	if ocin.wr_gf='1' and cacheable_reg='1' then -- that's a getfield miss (now)
 		oc_tag_in.inc_nxt <= inc_nxt_reg;
 	end if;
 end process;
@@ -292,11 +303,11 @@ end process;
 --	putfield => was a hit, use line from hit and don't increment nxt
 --
 
-	ocout.hit <= oc_tag_out.hit and USE_OCACHE;
+	ocout.hit <= oc_tag_out.hit and cacheable and USE_OCACHE;
 
--- TODO: make sure that data stays valid after a hit till
--- the next request
--- This should be ok	
+	-- Make sure that data stays valid after a hit till
+	-- the next request
+	-- This should be ok	
 	-- that's very late. Can we do better on a hit?
 	ocout.dout <= ram_dout_store;
 
@@ -309,6 +320,9 @@ end process;
 --	wr_pf: set on a cacheable putfield, but also on a missed write
 --		=> decide on write allocation in the cache depending on the
 --		former chk_pf (hit_reg)
+--
+--	On non-cachable access (HWO, native get/putField) no wr_gf or
+--	wr_pf is generated (check is in mem_sc).
 
 process(clk, reset)
 begin
@@ -316,6 +330,7 @@ begin
 		oc_tag_in.invalidate <= '1';
 		chk_gf_dly <= '0';
 		hit_reg <= '0';
+		cacheable_reg <= '0';
 		line_reg <= (others => '0');
 		ram_dout_store <= (others => '0');
 	elsif rising_edge(clk) then
@@ -328,8 +343,9 @@ begin
 		
 		-- remember handle, index, and if it was a hit
 		if ocin.chk_gf='1' or ocin.chk_pf='1' then
-			hit_reg <= oc_tag_out.hit;
+			hit_reg <= oc_tag_out.hit and cacheable;
 			ocin_reg <= ocin;
+			cacheable_reg <= cacheable;
 		end if;
 		-- decide on line address:
 		-- chk_gf will result (at the moment) in a wr_gf on

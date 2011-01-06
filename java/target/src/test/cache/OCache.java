@@ -51,26 +51,33 @@ public class OCache {
 		int i, j;
 		com.jopdesign.io.SysDevice sys = com.jopdesign.io.IOFactory.getFactory().getSysDevice();
 
+		oc.b = 15;
 		// a marker for the ModelSim simulation
-//		sys.wd = 1;
-//		s = 15;
-//		
-//		oc.a = 1;
-//		i = oc.a;
-//		j = oc.a;
-//		int ref = Native.toInt(oc);
-////		Native.putField(ref, 0, 2);
-//		i = Native.getField(ref, 0);
-//		i = oc.a;
-////		// test caching of I/O devices
-////		i = sys.cntInt;
-////		j = sys.cntInt;
-//		sys.wd = 0;
-//		oc2.a = 3;
-//		i = oc.a;
-//		i = oc2.a;
-//		j = oc.a;
-//		j = oc2.a;
+		sys.wd = 1;
+		s = 15;
+		
+		oc.a = 1;
+		i = oc.a;
+		j = oc.a;
+		i = oc.b;
+		j = oc.b;
+		oc.b = 64;
+		i = oc.b;
+		oc.a = 7;
+		j = oc.a;
+		int ref = Native.toInt(oc);
+//		Native.putField(ref, 0, 2);
+		i = Native.getField(ref, 0);
+		i = oc.a;
+//		// test caching of I/O devices
+//		i = sys.cntInt;
+//		j = sys.cntInt;
+		sys.wd = 0;
+		oc2.a = 3;
+		i = oc.a;
+		i = oc2.a;
+		j = oc.a;
+		j = oc2.a;
 		sys.wd = 1;
 //		GetField gf = new GetField();
 //		BenchLift bl = new BenchLift();

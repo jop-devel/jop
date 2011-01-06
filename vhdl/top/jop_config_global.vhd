@@ -47,6 +47,8 @@ package jop_config_global is
 	-- assume that the number of maximum fields per object will not
 	-- grow beyond 256 in the next years
 	constant OCACHE_MAX_INDEX_BITS : integer := 8;
+	-- number of fields per cache line
+	constant OCACHE_INDEX_BITS : integer := 0;
 	
 end package jop_config_global;
 
