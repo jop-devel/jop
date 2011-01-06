@@ -28,8 +28,7 @@
 --	2009-11-28	single entry works
 --	2011-01-06	multiple objects, single field (index 0) per object works
 --		Simulation and usbmin is ok, usb100 crashes -- a fmax problem?
---		but getfield (in original jbe) is *very* slow on usbmin, should
---		be a hit. TODO: check agains disabled O$ (also w Lift)
+--		without GC redirection in mem_sc, usb100 is ok (GC crashes)
 --
 
 --
