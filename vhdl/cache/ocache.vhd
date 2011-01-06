@@ -26,9 +26,10 @@
 --
 --	2009-11-11  first version
 --	2009-11-28	single entry works
---	2011-01-04	multiple objects, single field (index 0) per object
---		Basic jbe runs, but still buggy
---		test.jvm Basic object test fails, JemBench CMP Dummy does not stop
+--	2011-01-06	multiple objects, single field (index 0) per object works
+--		Simulation and usbmin is ok, usb100 crashes -- a fmax problem?
+--		but getfield (in original jbe) is *very* slow on usbmin, should
+--		be a hit. TODO: check agains disabled O$ (also w Lift)
 --
 
 --
@@ -48,14 +49,16 @@ package oc_types is
 		addr        : std_logic_vector(OCACHE_ADDR_BITS-1 downto 0);
 		index		: std_logic_vector(OCACHE_MAX_INDEX_BITS-1 downto 0);
 		wraddr      : std_logic_vector(OCACHE_ADDR_BITS-1 downto 0);
+		wrline      : unsigned(OCACHE_WAY_BITS-1 downto 0);
 		wr          : std_logic; -- update the tag memory
+		inc_nxt     : std_logic; -- increment nxt pointer (was a miss) 
 	end record;
 
 	type oc_tag_out_type is record
 		hit         : std_logic; -- field hit
 --		hit_tag		: out std_logic; -- just tag hit
 		hit_line    : unsigned(OCACHE_WAY_BITS-1 downto 0); -- cache line on a hit
-		miss_line    : unsigned(OCACHE_WAY_BITS-1 downto 0); -- cache line on a hit
+		nxt_line    : unsigned(OCACHE_WAY_BITS-1 downto 0); -- next cache line to use on a miss
 		
 	end record;
 end oc_types;
@@ -69,6 +72,10 @@ end oc_types;
 --	for transaction start).
 --
 --	Should also be used by the method cache as it is smaller.
+--
+--	Could be reduced by a few bits, as the handle area uses some words
+--	and lower bits need not be compared. However, take care as the handle
+--	area for strings is shorter!
 --
 --	Cyclone 1 fmax (with 24 address bits):
 --		 8 entries 202 MHz
@@ -114,7 +121,7 @@ begin
 
 	tag_out.hit <= hit;
 	tag_out.hit_line <= line;
-	tag_out.miss_line <= nxt;
+	tag_out.nxt_line <= nxt;
 
 	process(tag, tag_in.addr, valid)
 		variable h: std_logic_vector(line_cnt-1 downto 0);
@@ -170,11 +177,11 @@ begin
 
 			-- update tag memory when data is available
 			if tag_in.wr='1' then
---				tag(to_integer(wrline)) <= wraddr;
---				valid(to_integer(wrline)) <= '1';
-				tag(to_integer(nxt)) <= tag_in.wraddr;
+				tag(to_integer(tag_in.wrline)) <= tag_in.wraddr;
 				-- TODO: index ignored
-				valid(to_integer(nxt)) <= '1';
+				valid(to_integer(tag_in.wrline)) <= '1';
+			end if;
+			if tag_in.inc_nxt='1' then
 				nxt <= nxt + 1;
 			end if;
 			
@@ -214,9 +221,10 @@ end ocache;
 architecture rtl of ocache is
 
 	signal ocin_reg: ocache_in_type;
-	signal miss_line_reg, hit_line_reg: unsigned(OCACHE_WAY_BITS-1 downto 0);
+	signal nxt_line_reg, hit_line_reg: unsigned(OCACHE_WAY_BITS-1 downto 0);
 	signal hit_reg: std_logic;
 	signal update_cache: std_logic;
+	signal inc_nxt: std_logic;
 	
 	signal chk_gf_dly: std_logic;
 	signal ram_dout_store: std_logic_vector(31 downto 0);
@@ -256,10 +264,14 @@ begin
 	-- TODO: use field index, now it is hard coded to 0
 	-- oc_tag_in.wrindex <= ocin_reg.index;
 	oc_tag_in.wr <= update_cache;
+	oc_tag_in.inc_nxt <= inc_nxt;
 	
--- TODO: ***** the following is needed for single field OC, but its not working!! ****
-process(ocin, ocin_reg, hit_reg)
+-- TODO: ***** the following is needed for single field OC ****
+process(ocin, ocin_reg, hit_reg, hit_line_reg, nxt_line_reg)
 begin
+	-- TODO: tag update only needed on a (tag) miss, not on a wr_pf
+	-- valid update needed by multi word cache line
+	-- update_cache is used by the data memory too
 	update_cache <= '0';
 	if ocin.wr_gf='1' or (ocin.wr_pf='1' and hit_reg='1') then
 		-- index hack
@@ -267,29 +279,31 @@ begin
 			update_cache <= '1';
 		end if;
 	end if;
+	-- TODO: this decission should be taken during hit detection
+	-- and put into a register
+	-- same line info is used for the RAM => merge that stuff
+	inc_nxt <= '0';
+	oc_tag_in.wrline <= hit_line_reg;
+	if ocin.wr_gf='1' then -- that's a getfield miss
+		inc_nxt <= '1';
+		oc_tag_in.wrline <= nxt_line_reg;
+	end if;
 end process;
 
+-- Cache update:
+--	getfield => there was a miss, use nxt and increment
+--		!! with several fields it could be a handle (tag) hit
+--			=> no nxt increment, use line from tag hit
+--	putfield => was a hit, use line from hit and don't increment nxt
+--
 
 	ocout.hit <= oc_tag_out.hit and USE_OCACHE;
 
 -- TODO: make sure that data stays valid after a hit till
 -- the next request
--- Is this the solution?	
---	ocout.dout <= ram_dout;
+-- This should be ok	
 	-- that's very late. Can we do better on a hit?
 	ocout.dout <= ram_dout_store;
-
--- that looks like a solution, but is it needed?
--- the ocache is still not working :-(
-
---process(ocin.chk_gf, ram_dout, ram_dout_store)
---begin
---	if ocin.chk_gf='1' then
---		ocout.dout <= ram_dout;
---	else
---		ocout.dout <= ram_dout_store;
---	end if;
---end process;
 
 
 -- main signals:
@@ -308,7 +322,7 @@ begin
 		chk_gf_dly <= '0';
 		hit_reg <= '0';
 		hit_line_reg <= (others => '0');
-		miss_line_reg <= (others => '0');
+		nxt_line_reg <= (others => '0');
 		ram_dout_store <= (others => '0');
 	elsif rising_edge(clk) then
 		-- shuldn't we assign default values here to all signals?
@@ -323,7 +337,7 @@ begin
 			-- could be simpler, as we alread now if it
 			-- was a gf hit or miss, or pf hit
 			hit_line_reg <= oc_tag_out.hit_line;
-			miss_line_reg <= oc_tag_out.miss_line;
+			nxt_line_reg <= oc_tag_out.nxt_line;
 			ocin_reg <= ocin;
 		end if;
 		-- invalidate the cache (e.g. on jopsys_get/putfield)
@@ -340,12 +354,12 @@ end process;
 -- RAM for the ocache
 
 -- RAM write mux
-process(ocin, miss_line_reg, hit_line_reg)
+process(ocin, nxt_line_reg, hit_line_reg)
 begin
 	-- update on a getfield miss
 	if ocin.wr_gf='1' then
 		ram_din <= ocin.gf_val;
-		ram_wraddr <= miss_line_reg;
+		ram_wraddr <= nxt_line_reg;
 	-- update on a putfield hit
 	else
 		ram_din <= ocin.pf_val;
