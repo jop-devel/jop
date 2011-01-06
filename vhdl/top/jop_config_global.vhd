@@ -42,13 +42,13 @@ package jop_config_global is
 	
 	-- depends on main memry size (sc_pack)
 	constant OCACHE_ADDR_BITS : integer := 23; -- TODO: align with other memory parameters
-	constant OCACHE_WAY_BITS : integer := 3;
+	constant OCACHE_WAY_BITS : integer := 4;
 	-- current field index is 8 bit, but JOPizer allows only 32 fields
 	-- assume that the number of maximum fields per object will not
 	-- grow beyond 256 in the next years
 	constant OCACHE_MAX_INDEX_BITS : integer := 8;
 	-- number of fields per cache line
-	constant OCACHE_INDEX_BITS : integer := 0;
+	constant OCACHE_INDEX_BITS : integer := 3;
 	
 end package jop_config_global;
 

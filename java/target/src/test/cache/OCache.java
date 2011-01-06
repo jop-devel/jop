@@ -39,6 +39,7 @@ public class OCache {
 	
 	public int a;
 	int b;
+	int c;
 	static int s;
 
 	/**
@@ -52,6 +53,7 @@ public class OCache {
 		com.jopdesign.io.SysDevice sys = com.jopdesign.io.IOFactory.getFactory().getSysDevice();
 
 		oc.b = 15;
+		oc.c = 255;
 		// a marker for the ModelSim simulation
 		sys.wd = 1;
 		s = 15;
@@ -61,6 +63,8 @@ public class OCache {
 		j = oc.a;
 		i = oc.b;
 		j = oc.b;
+		i = oc.c;
+		j = oc.c;
 		oc.b = 64;
 		i = oc.b;
 		oc.a = 7;

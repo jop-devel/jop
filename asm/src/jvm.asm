@@ -148,6 +148,7 @@
 //				stmraf	load through fully assoc. cache
 //				stmwdf	store through fully assoc. cache
 //	2010-10-28	MS: cinval, atmstart, atmend added
+//	2011-01-06	MS: O$ multiple objects and fields, but no tag sharing
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -157,7 +158,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhd files
 //
-version		= 20101028
+version		= 20110106
 
 //
 //	start of stack area in the on-chip RAM

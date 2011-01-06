@@ -49,6 +49,7 @@ package oc_types is
 		index		: std_logic_vector(OCACHE_MAX_INDEX_BITS-1 downto 0);
 		wraddr      : std_logic_vector(OCACHE_ADDR_BITS-1 downto 0);
 		wrline      : unsigned(OCACHE_WAY_BITS-1 downto 0);
+		wrindex		: std_logic_vector(OCACHE_MAX_INDEX_BITS-1 downto 0);
 		wr          : std_logic; -- update the tag memory
 		inc_nxt     : std_logic; -- increment nxt pointer (was a miss) 
 	end record;
@@ -102,15 +103,18 @@ end oc_tag;
 architecture rtl of oc_tag is 
 
 	constant line_cnt: integer := 2**OCACHE_WAY_BITS;
+	constant FIELD_CNT: integer := 2**OCACHE_INDEX_BITS;
 
 	signal hit: std_logic;
 	signal line: unsigned(OCACHE_WAY_BITS-1 downto 0);
+	signal idx, wridx: unsigned(OCACHE_INDEX_BITS-1 downto 0);
 
 	-- tag_width can be used to reduce cachable area - saves a lot in the comperators
 	type tag_array is array (0 to line_cnt-1) of std_logic_vector(OCACHE_ADDR_BITS-1 downto 0);
 	signal tag: tag_array;
 	
-	signal valid: std_logic_vector(line_cnt-1 downto 0);
+	type valid_array is array (0 to line_cnt-1) of std_logic_vector(FIELD_CNT-1 downto 0);
+	signal valid: valid_array;
 
 	-- pointer to next block to be used on a miss
 	signal nxt: unsigned(OCACHE_WAY_BITS-1 downto 0);
@@ -121,17 +125,26 @@ begin
 	tag_out.hit <= hit;
 	tag_out.hit_line <= line;
 	tag_out.nxt_line <= nxt;
+	
+	idx <= unsigned(tag_in.index(OCACHE_INDEX_BITS-1 downto 0));
+	wridx <= unsigned(tag_in.wrindex(OCACHE_INDEX_BITS-1 downto 0));
 
-	process(tag, tag_in.addr, valid)
+	process(tag, tag_in.addr, valid, idx)
 		variable h: std_logic_vector(line_cnt-1 downto 0);
 		variable h_or: std_logic;
 		variable n: unsigned(OCACHE_WAY_BITS-1 downto 0);
+		variable v: std_logic_vector(FIELD_CNT-1 downto 0);
 	begin
 
 		-- hit detection
+		-- TODO: tag and valid detection
 		h := (others => '0');
 		for i in 0 to line_cnt-1 loop
-			if tag(i)= tag_in.addr and valid(i)='1' then
+			-- TODO: we can remove v again and
+			-- use valid(i)(to_integer(idx))
+			v := valid(i);
+			if tag(i)= tag_in.addr 
+				and v(to_integer(idx))='1' then
 				h(i) := '1';
 			end if;
 		end loop;
@@ -164,15 +177,16 @@ begin
 	end process;
 
 	process(clk, reset)
+		variable v: std_logic_vector(FIELD_CNT-1 downto 0);
 	begin
 
 		if reset='1' then
 
 			nxt <= (others => '0');
-			valid <= (others => '0');
 			
 			for i in 0 to line_cnt-1 loop
 				tag(i) <= (others => '0');
+				valid(i) <= (others => '0');
 			end loop;
 
 		elsif rising_edge(clk) then
@@ -180,8 +194,10 @@ begin
 			-- update tag memory when data is available
 			if tag_in.wr='1' then
 				tag(to_integer(tag_in.wrline)) <= tag_in.wraddr;
-				-- TODO: index ignored
-				valid(to_integer(tag_in.wrline)) <= '1';
+				-- TODO: only reset other valid signals on a new tag
+				v := (others => '0');
+				v(to_integer(wridx)) := '1';
+				valid(to_integer(tag_in.wrline)) <= v; 
 			end if;
 			if tag_in.inc_nxt='1' then
 				nxt <= nxt + 1;
@@ -189,7 +205,9 @@ begin
 			
 			if tag_in.invalidate = '1' then
 				nxt <= (others => '0'); -- shall we reset nxt?
-				valid <= (others => '0');			
+				for i in 0 to line_cnt-1 loop
+					valid(i) <= (others => '0');
+				end loop;	
 			end if;
 			
 		end if;
@@ -263,8 +281,7 @@ begin
 	oc_tag_in.index <= ocin.index;
 	
 	oc_tag_in.wraddr <= ocin_reg.handle;
-	-- TODO: use field index, now it is hard coded to 0
-	-- oc_tag_in.wrindex <= ocin_reg.index;
+	oc_tag_in.wrindex <= ocin_reg.index;
 	oc_tag_in.wrline <= line_reg;
 	oc_tag_in.wr <= update_cache;
 	
@@ -373,7 +390,7 @@ end process;
 
 -- RAM for the ocache
 
-	ram_wraddr <= line_reg;
+	ram_wraddr <= line_reg & unsigned(ocin_reg.index(OCACHE_INDEX_BITS-1 downto 0));
 -- RAM write data mux
 process(ocin)
 begin
@@ -390,7 +407,8 @@ end process;
 process (clk)
 begin
 	if rising_edge(clk) then
-		ram_dout <= ram(to_integer(unsigned(oc_tag_out.hit_line)));
+		ram_dout <= ram(to_integer(unsigned(oc_tag_out.hit_line &
+						unsigned(ocin.index(OCACHE_INDEX_BITS-1 downto 0)))));
 		if update_cache='1' then
 			ram(to_integer(unsigned(ram_wraddr))) <= ram_din;
 		end if;
