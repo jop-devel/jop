@@ -220,10 +220,11 @@ end ocache;
 architecture rtl of ocache is
 
 	signal ocin_reg: ocache_in_type;
-	signal nxt_line_reg, hit_line_reg: unsigned(OCACHE_WAY_BITS-1 downto 0);
+	signal line_reg: unsigned(OCACHE_WAY_BITS-1 downto 0);
 	signal hit_reg: std_logic;
+	signal inc_nxt_reg: std_logic;
+
 	signal update_cache: std_logic;
-	signal inc_nxt: std_logic;
 	
 	signal chk_gf_dly: std_logic;
 	signal ram_dout_store: std_logic_vector(31 downto 0);
@@ -234,16 +235,12 @@ architecture rtl of ocache is
 	
 
 	-- RAM signals
-	subtype word is std_logic_vector(31 downto 0);
 	constant nwords : integer := 2 ** (OCACHE_WAY_BITS+0);
-	type ram_type is array(0 to nwords-1) of word;
+	type ram_type is array(0 to nwords-1) of std_logic_vector(31 downto 0);
 
 	signal ram : ram_type;
 	signal ram_din, ram_dout : std_logic_vector(31 downto 0);
 	signal ram_wraddr: unsigned(OCACHE_WAY_BITS-1 downto 0);
-	-- TODO: ram output needs to stay longer than single cycle
-	
-
 
 begin
 
@@ -262,15 +259,17 @@ begin
 	oc_tag_in.wraddr <= ocin_reg.handle;
 	-- TODO: use field index, now it is hard coded to 0
 	-- oc_tag_in.wrindex <= ocin_reg.index;
+	oc_tag_in.wrline <= line_reg;
 	oc_tag_in.wr <= update_cache;
-	oc_tag_in.inc_nxt <= inc_nxt;
 	
 -- TODO: ***** the following is needed for single field OC ****
-process(ocin, ocin_reg, hit_reg, hit_line_reg, nxt_line_reg)
+-- check for cachable fields is missing when caching several fields
+process(ocin, ocin_reg, hit_reg, inc_nxt_reg)
 begin
 	-- TODO: tag update only needed on a (tag) miss, not on a wr_pf
 	-- valid update needed by multi word cache line
 	-- update_cache is used by the data memory too
+	-- we could split into: update_data, update_tag, update_valid
 	update_cache <= '0';
 	if ocin.wr_gf='1' or (ocin.wr_pf='1' and hit_reg='1') then
 		-- index hack
@@ -278,14 +277,11 @@ begin
 			update_cache <= '1';
 		end if;
 	end if;
-	-- TODO: this decission should be taken during hit detection
-	-- and put into a register
-	-- same line info is used for the RAM => merge that stuff
-	inc_nxt <= '0';
-	oc_tag_in.wrline <= hit_line_reg;
-	if ocin.wr_gf='1' then -- that's a getfield miss
-		inc_nxt <= '1';
-		oc_tag_in.wrline <= nxt_line_reg;
+	-- increment nxt pointer on a miss
+	-- TODO: change when caching several fields
+	oc_tag_in.inc_nxt <= '0';
+	if ocin.wr_gf='1' then -- that's a getfield miss (now)
+		oc_tag_in.inc_nxt <= inc_nxt_reg;
 	end if;
 end process;
 
@@ -320,24 +316,33 @@ begin
 		oc_tag_in.invalidate <= '1';
 		chk_gf_dly <= '0';
 		hit_reg <= '0';
-		hit_line_reg <= (others => '0');
-		nxt_line_reg <= (others => '0');
+		line_reg <= (others => '0');
 		ram_dout_store <= (others => '0');
 	elsif rising_edge(clk) then
-		-- shuldn't we assign default values here to all signals?
-		
+
+		-- store data from RAM that is one cycle later		
 		chk_gf_dly <= ocin.chk_gf;
 		if chk_gf_dly='1' then
 			ram_dout_store <= ram_dout;
 		end if;
+		
 		-- remember handle, index, and if it was a hit
 		if ocin.chk_gf='1' or ocin.chk_pf='1' then
 			hit_reg <= oc_tag_out.hit;
-			-- could be simpler, as we alread now if it
-			-- was a gf hit or miss, or pf hit
-			hit_line_reg <= oc_tag_out.hit_line;
-			nxt_line_reg <= oc_tag_out.nxt_line;
 			ocin_reg <= ocin;
+		end if;
+		-- decide on line address:
+		-- chk_gf will result (at the moment) in a wr_gf on
+		-- a miss
+		if ocin.chk_gf='1' then
+			line_reg <= oc_tag_out.nxt_line;
+			-- nxt increment only on a getfield miss
+			inc_nxt_reg <= '1';
+		end if;
+		-- putfield update only on a hit
+		if ocin.chk_pf='1' then
+			line_reg <= oc_tag_out.hit_line;
+			inc_nxt_reg <= '0';
 		end if;
 		-- invalidate the cache (e.g. on jopsys_get/putfield)
 		-- TODO: also on monitorenter (or exit?) and GC start?
@@ -352,17 +357,16 @@ end process;
 
 -- RAM for the ocache
 
--- RAM write mux
-process(ocin, nxt_line_reg, hit_line_reg)
+	ram_wraddr <= line_reg;
+-- RAM write data mux
+process(ocin)
 begin
 	-- update on a getfield miss
 	if ocin.wr_gf='1' then
 		ram_din <= ocin.gf_val;
-		ram_wraddr <= nxt_line_reg;
 	-- update on a putfield hit
 	else
 		ram_din <= ocin.pf_val;
-		ram_wraddr <= hit_line_reg;
 	end if;
 end process;
 
