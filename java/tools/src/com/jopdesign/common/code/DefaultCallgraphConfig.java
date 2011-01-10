@@ -23,21 +23,18 @@ package com.jopdesign.common.code;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 /**
  * Provide config options and callback methods to setup and build the callgraph.
  *
- * TODO either define all java.lang.Thread implementations/extensions as root-classes, or add special
- *      edges from Thread.start() calls to Thread.run() implementations
- * TODO optionally return all abstract methods/interfaces too
- *
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class DefaultCallgraphConfig implements CallGraph.CallgraphConfig {
 
-    private int callstringLength;
+    private final int callstringLength;
 
     public DefaultCallgraphConfig(int callstringLength) {
         this.callstringLength = callstringLength;
@@ -51,7 +48,16 @@ public class DefaultCallgraphConfig implements CallGraph.CallgraphConfig {
     public List<ExecutionContext> getInvokedMethods(ExecutionContext context) {
 
         CallString callstring = context.getCallString();
-        ControlFlowGraph currentCFG = context.getMethodInfo().getCode().getControlFlowGraph();
+        MethodInfo method = context.getMethodInfo();
+
+        if (method.isAbstract()) {
+            //noinspection unchecked
+            return (List<ExecutionContext>) Collections.EMPTY_LIST;
+        }
+
+        // TODO save some memory here by using InstructionList instead of CFG if CFG is not set
+
+        ControlFlowGraph currentCFG = method.getCode().getControlFlowGraph();
         List<ExecutionContext> newContexts = new LinkedList<ExecutionContext>();
 
         for(CFGNode node : currentCFG.getGraph().vertexSet()) {

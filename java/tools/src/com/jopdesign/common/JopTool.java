@@ -85,15 +85,4 @@ public interface JopTool<T extends AppEventHandler> {
      *                                          if the tool cannot be initialized
      */
     void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException;
-
-    /**
-     * Run this tool with the current options.
-     * <p>
-     * This is mainly a convenience method provided by the tool so that other tools can execute
-     * this tool when needed.
-     * </p>
-     *
-     * @param config the config to use
-     */
-    void run(Config config);
 }

@@ -114,31 +114,31 @@ public class CallGraph {
         }
     }
 
-	// Fields
-	// ~~~~~~
-	private final ExecutionContext rootNode;
+    // Fields
+    // ~~~~~~
+    private final ExecutionContext rootNode;
     private final CallgraphConfig config;
 
-	private DirectedGraph<ExecutionContext, DefaultEdge> callGraph;
+    private DirectedGraph<ExecutionContext, DefaultEdge> callGraph;
     private DirectedGraph<MethodNode, InvokeEdge> mergedCallGraph;
 
-	private HashSet<ClassInfo> classInfos;
+    private HashSet<ClassInfo> classInfos;
     private HashMap<MethodInfo,MethodNode> methodNodes;
 
-	// Caching Fields
-	// ~~~~~~~~~~~~~~
-	private HashMap<ExecutionContext, Integer> maxDistanceToRoot = null;
-	private HashMap<ExecutionContext, ExecutionContext> maxCallstackDAG = null;
-	private HashMap<ExecutionContext, Integer> subgraphHeight = null;
-	private ExecutionContext maxCallStackLeaf = null;
-	private HashMap<MethodInfo,Boolean> leafNodeCache;
+    // Caching Fields
+    // ~~~~~~~~~~~~~~
+    private HashMap<ExecutionContext, Integer> maxDistanceToRoot = null;
+    private HashMap<ExecutionContext, ExecutionContext> maxCallstackDAG = null;
+    private HashMap<ExecutionContext, Integer> subgraphHeight = null;
+    private ExecutionContext maxCallStackLeaf = null;
+    private HashMap<MethodInfo,Boolean> leafNodeCache;
 
-	/**
-	 * Initialize a CallGraph object.
-	 * @param rootMethod The root method of the callgraph (not abstract).
+    /**
+     * Initialize a CallGraph object.
+     * @param rootMethod The root method of the callgraph (not abstract).
      * @param config the config class to use to build this graph
-	 */
-	protected CallGraph(MethodInfo rootMethod, CallgraphConfig config) {
+     */
+    protected CallGraph(MethodInfo rootMethod, CallgraphConfig config) {
         this.rootNode = new ExecutionContext(rootMethod, CallString.EMPTY);
         this.config = config;
 
@@ -150,7 +150,7 @@ public class CallGraph {
                         return new InvokeEdge();
                     }
                 });
-	}
+    }
 
     private void invalidate() {
         maxCallStackLeaf = null;
@@ -160,25 +160,25 @@ public class CallGraph {
         leafNodeCache = new HashMap<MethodInfo, Boolean>();
     }
 
-	/**
-	 * Build a callgraph rooted at the given method
+    /**
+     * Build a callgraph rooted at the given method
      *
      * @see AppInfo#getMethodInfo(String, String)
-	 * @param appInfo   The application (with classes loaded)
-	 * @param className The class where the root method of the callgraph is located
-	 * @param methodSig The root method of the call graph. Either a plain method name
-	 *                   (e.g. "measure"), if unique, or a method with signature (e.g. "measure()Z")
+     * @param appInfo   The application (with classes loaded)
+     * @param className The class where the root method of the callgraph is located
+     * @param methodSig The root method of the call graph. Either a plain method name
+     *                   (e.g. "measure"), if unique, or a method with signature (e.g. "measure()Z")
      * @param config the config class to use to build this graph
      * @return a freshly built callgraph.
-	 * @throws MethodNotFoundException if the referenced method was not found
-	 */
-	public static CallGraph buildCallGraph(AppInfo appInfo, String className, String methodSig,
-                                           CallgraphConfig config)
-							throws MethodNotFoundException
+     * @throws MethodNotFoundException if the referenced main method was not found
+     */
+    public static CallGraph buildCallGraph(AppInfo appInfo, String className, String methodSig,
+                                       CallgraphConfig config)
+                                                    throws MethodNotFoundException
     {
-		MethodInfo rootMethod = appInfo.getMethodInfo(className,methodSig);
+        MethodInfo rootMethod = appInfo.getMethodInfo(className,methodSig);
         return buildCallGraph(rootMethod, config);
-	}
+    }
 
     /**
      * Build a callgraph rooted at the given method
@@ -186,31 +186,29 @@ public class CallGraph {
      * @see AppInfo#getMethodInfo(String, String)
      * @param rootMethod The root method of the callgraph
      * @param config the config class to use to build this graph
-     * @throws MethodNotFoundException if the referenced method was not found
      * @return a freshly built callgraph.
      */
     public static CallGraph buildCallGraph(MethodInfo rootMethod, CallgraphConfig config)
-                            throws MethodNotFoundException
     {
         CallGraph cg = new CallGraph(rootMethod,config);
         cg.build();
         return cg;
     }
 
-	/**
+    /**
      * Build and initialize everything, perform checks
      */
-	private void build() {
-		this.buildGraph();
+    private void build() {
+        this.buildGraph();
 
         // TODO we could make this optional (user calls this method before using methods which require this graph)
         this.buildMergedGraph();
 
-		/* Compute set of classes */
-		classInfos = new HashSet<ClassInfo>();
-		for(MethodNode node : methodNodes.values()) {
-			classInfos.add(node.getMethodInfo().getClassInfo());
-		}
+        /* Compute set of classes */
+        classInfos = new HashSet<ClassInfo>();
+        for(MethodNode node : methodNodes.values()) {
+                classInfos.add(node.getMethodInfo().getClassInfo());
+        }
 
         /* Check the callgraph is cycle free */
         Pair<List<ExecutionContext>,List<ExecutionContext>> cycle =
@@ -225,51 +223,50 @@ public class CallGraph {
             throw new AssertionError(cyclicCallGraphMsg(cycle));
         }
 
-		invalidate();
-	}
+        invalidate();
+    }
 	
-	private static String cyclicCallGraphMsg(Pair<List<ExecutionContext>, List<ExecutionContext>> cycleWithPrefix) {
-		List<ExecutionContext> cycle = cycleWithPrefix.second();
-		List<ExecutionContext> prefix = cycleWithPrefix.first();
-		StringBuffer sb = new StringBuffer();
-		sb.append("Cyclic Callgraph !\n");
-		sb.append("One cycle is:\n");
-		for(ExecutionContext cn : cycle) sb.append("  "+cn+"\n");
-		sb.append("Reachable via:\n");
-		for(ExecutionContext cn : prefix) sb.append("  "+cn+"\n");
-		return sb.toString();
-	}
+    private static String cyclicCallGraphMsg(Pair<List<ExecutionContext>, List<ExecutionContext>> cycleWithPrefix) {
+        List<ExecutionContext> cycle = cycleWithPrefix.second();
+        List<ExecutionContext> prefix = cycleWithPrefix.first();
+        StringBuffer sb = new StringBuffer();
+        sb.append("Cyclic Callgraph !\n");
+        sb.append("One cycle is:\n");
+        for(ExecutionContext cn : cycle) sb.append("  "+cn+"\n");
+        sb.append("Reachable via:\n");
+        for(ExecutionContext cn : prefix) sb.append("  "+cn+"\n");
+        return sb.toString();
+    }
 	
-	/**
+    /**
      * Build the callgraph.
      *
-	 * <p>NEW: now we also use callstrings to get a more precise call graph model</p>
-	 */
-	private void buildGraph() {
-		/* Initialize DFS data structures and lookup maps */
-		Stack<ExecutionContext> todo = new Stack<ExecutionContext>();
-		todo.push(rootNode);
+     * <p>NEW: now we also use callstrings to get a more precise call graph model</p>
+     */
+    private void buildGraph() {
+        /* Initialize DFS data structures and lookup maps */
+        Stack<ExecutionContext> todo = new Stack<ExecutionContext>();
+        todo.push(rootNode);
 
-		methodNodes = new HashMap<MethodInfo, MethodNode>();
+        methodNodes = new HashMap<MethodInfo, MethodNode>();
 
         addExecutionContext(rootNode);
 
-		while(! todo.empty()) {
-			ExecutionContext current = todo.pop();
+        while(! todo.empty()) {
+            ExecutionContext current = todo.pop();
 
             List<ExecutionContext> invoked = config.getInvokedMethods(current);
             for (ExecutionContext cgn : invoked) {
 
-                if (!callGraph.containsVertex(cgn)) {
-                    addExecutionContext(cgn);
-                    todo.push(cgn);
-                }
+            if (!callGraph.containsVertex(cgn)) {
+                addExecutionContext(cgn);
+                todo.push(cgn);
+            }
 
-				callGraph.addEdge(current, cgn);
-			}
-		} /* end while */
-
-	}
+            callGraph.addEdge(current, cgn);
+                    }
+        } /* end while */
+    }
 
     /**
      * <p>EVEN NEWER: Build a second graph with a single node per method to get a less precise call graph model :)
@@ -314,27 +311,27 @@ public class CallGraph {
         node.addInstance(context);
     }
 
-	/**
+    /**
      * Get node for a method info and call context
      * @param m the method
      * @param cs the call string to use (if null, {@link CallString#EMPTY} is used).
      * @return a new execution context.
      */
-	public ExecutionContext getNode(MethodInfo m, CallString cs) {
-		return new ExecutionContext(m,cs == null ? CallString.EMPTY : cs);
-	}
+    public ExecutionContext getNode(MethodInfo m, CallString cs) {
+        return new ExecutionContext(m,cs == null ? CallString.EMPTY : cs);
+    }
 	
-	/**
+    /**
      * Check if the callgraph contains a given method with a given callstring.
      * @param m the method
      * @param cs the call string to use (if null, {@link CallString#EMPTY} is used).
      * @return true if the given call graph node is present in the call graph
-	 */
-	private boolean hasNode(MethodInfo m, CallString cs) {
-		return callGraph.containsVertex(new ExecutionContext(m,cs == null ? CallString.EMPTY : cs));
-	}
+     */
+    private boolean hasNode(MethodInfo m, CallString cs) {
+        return callGraph.containsVertex(new ExecutionContext(m,cs == null ? CallString.EMPTY : cs));
+    }
 	
-	/**
+    /**
      * Get all nodes matching the given method info.
      *
      * @see #getMethodNode(MethodInfo)
@@ -342,12 +339,12 @@ public class CallGraph {
      * @return a set of execution contexts of this method in the callgraph.
      * @throws AssertionError if the method has no contexts in the callgraph
      */
-	public Set<ExecutionContext> getNodes(MethodInfo m) {
-		if (!methodNodes.containsKey(m)) {
-			throw new AssertionError("No callgraph nodes for "+ m);
-		}
-		return methodNodes.get(m).getInstances();
-	}
+    public Set<ExecutionContext> getNodes(MethodInfo m) {
+        if (!methodNodes.containsKey(m)) {
+            throw new AssertionError("No callgraph nodes for "+ m);
+        }
+        return methodNodes.get(m).getInstances();
+    }
 
     /**
      * Get a MethodNode for a given methodInfo.
@@ -358,239 +355,237 @@ public class CallGraph {
         return methodNodes.get(m);
     }
 
-	/* calculate the depth of each node, the height of the subgraph
-	 * rooted at that node, and a maximum call-stack tree.
-	 */
-	private void calculateDepthAndHeight() {
-		if(this.maxDistanceToRoot != null) return; // caching
-		this.maxDistanceToRoot = new HashMap<ExecutionContext,Integer>();
-		this.maxCallStackLeaf = this.getRootNode();
-		this.maxCallstackDAG  = new HashMap<ExecutionContext,ExecutionContext>();
-		this.subgraphHeight = new HashMap<ExecutionContext, Integer>();
+    /* calculate the depth of each node, the height of the subgraph
+     * rooted at that node, and a maximum call-stack tree.
+     */
+    private void calculateDepthAndHeight() {
+        if(this.maxDistanceToRoot != null) return; // caching
+        this.maxDistanceToRoot = new HashMap<ExecutionContext,Integer>();
+        this.maxCallStackLeaf = this.getRootNode();
+        this.maxCallstackDAG  = new HashMap<ExecutionContext,ExecutionContext>();
+        this.subgraphHeight = new HashMap<ExecutionContext, Integer>();
 
-		/* calculate longest distance to root and max call stack DAG */
-		List<ExecutionContext> toList = new ArrayList<ExecutionContext>();
-		TopologicalOrderIterator<ExecutionContext, DefaultEdge> toIter =
-			new TopologicalOrderIterator<ExecutionContext, DefaultEdge>(callGraph);
+        /* calculate longest distance to root and max call stack DAG */
+        List<ExecutionContext> toList = new ArrayList<ExecutionContext>();
+        TopologicalOrderIterator<ExecutionContext, DefaultEdge> toIter =
+                new TopologicalOrderIterator<ExecutionContext, DefaultEdge>(callGraph);
 
-		int globalMaxDist = 0;
-		while(toIter.hasNext()) {
-			ExecutionContext node = toIter.next();
-			toList.add(node);
-			int maxDist = 0;
-			ExecutionContext maxCallStackPred = null;
-			for(DefaultEdge e : callGraph.incomingEdgesOf(node)) {
-				ExecutionContext pred = callGraph.getEdgeSource(e);
-				int distViaPred = maxDistanceToRoot.get(pred) + 1;
-				if(distViaPred > maxDist) {
-					maxDist = distViaPred;
-					maxCallStackPred = pred;
-				}
-			}
-			this.maxDistanceToRoot.put(node,maxDist);
-			if(maxCallStackPred != null) this.maxCallstackDAG.put(node,maxCallStackPred);
-			if(maxDist > globalMaxDist) this.maxCallStackLeaf = node;
-		}
+        int globalMaxDist = 0;
+        while(toIter.hasNext()) {
+            ExecutionContext node = toIter.next();
+            toList.add(node);
+            int maxDist = 0;
+            ExecutionContext maxCallStackPred = null;
+            for(DefaultEdge e : callGraph.incomingEdgesOf(node)) {
+                ExecutionContext pred = callGraph.getEdgeSource(e);
+                int distViaPred = maxDistanceToRoot.get(pred) + 1;
+                if(distViaPred > maxDist) {
+                    maxDist = distViaPred;
+                    maxCallStackPred = pred;
+                }
+            }
+            this.maxDistanceToRoot.put(node,maxDist);
+            if(maxCallStackPred != null) this.maxCallstackDAG.put(node,maxCallStackPred);
+            if(maxDist > globalMaxDist) this.maxCallStackLeaf = node;
+        }
 
-		/* calculate subgraph height */
-		Collections.reverse(toList);
-		for(ExecutionContext n : toList) {
-			int maxHeight = 0;
-			for(DefaultEdge e : callGraph.outgoingEdgesOf(n)) {
-				int predHeight = subgraphHeight.get(callGraph.getEdgeTarget(e));
-				maxHeight = Math.max(maxHeight, predHeight + 1);
-			}
-			subgraphHeight.put(n, maxHeight);
-		}
-	}
+        /* calculate subgraph height */
+        Collections.reverse(toList);
+        for(ExecutionContext n : toList) {
+            int maxHeight = 0;
+            for(DefaultEdge e : callGraph.outgoingEdgesOf(n)) {
+                int predHeight = subgraphHeight.get(callGraph.getEdgeTarget(e));
+                maxHeight = Math.max(maxHeight, predHeight + 1);
+            }
+            subgraphHeight.put(n, maxHeight);
+        }
+    }
 
-	/**
-	 * Export callgraph as .dot file
-	 * @param w Write the graph to this writer. To improve performance, to use a buffered writer.
-	 * @throws IOException
-	 */
-	public void exportDOT(Writer w) throws IOException {
-		new AdvancedDOTExporter<ExecutionContext, DefaultEdge>().exportDOT(w, this.callGraph);
-	}
+    /**
+     * Export callgraph as .dot file
+     * @param w Write the graph to this writer. To improve performance, to use a buffered writer.
+     * @throws IOException
+     */
+    public void exportDOT(Writer w) throws IOException {
+        new AdvancedDOTExporter<ExecutionContext, DefaultEdge>().exportDOT(w, this.callGraph);
+    }
 
-	public ClassInfo getRootClass() {
-		return rootNode.getMethodInfo().getClassInfo();
-	}
+    public ClassInfo getRootClass() {
+        return rootNode.getMethodInfo().getClassInfo();
+    }
 
-	public MethodInfo getRootMethod() {
-		return rootNode.getMethodInfo();
-	}
+    public MethodInfo getRootMethod() {
+        return rootNode.getMethodInfo();
+    }
 
-	public ExecutionContext getRootNode() {
-		return rootNode;
-	}
+    public ExecutionContext getRootNode() {
+        return rootNode;
+    }
 
-	public Set<ClassInfo> getClassInfos() {
-		return classInfos;
-	}
+    public Set<ClassInfo> getClassInfos() {
+        return classInfos;
+    }
 
-	/**
-	 * Get non-abstract methods, in topological order.
-	 * 
-	 * Requires an acyclic callgraph.
-	 * @param rootMethod
+    /**
+     * Get non-abstract methods, in topological order.
+     *
+     * Requires an acyclic callgraph.
+     * @param rootMethod
      * @return
-	 */
-	public List<MethodInfo> getImplementedMethods(MethodInfo rootMethod) {
-		List<MethodInfo> implemented = new ArrayList<MethodInfo>();
+     */
+    public List<MethodInfo> getImplementedMethods(MethodInfo rootMethod) {
+        List<MethodInfo> implemented = new ArrayList<MethodInfo>();
 
-		Set<MethodInfo> reachable = getImplementationsReachableFromMethod(rootMethod);
+        Set<MethodInfo> reachable = getImplementationsReachableFromMethod(rootMethod);
 
-		TopologicalOrderIterator<ExecutionContext, DefaultEdge> ti = topDownIterator();
-		while(ti.hasNext()) {
-			MethodInfo m = ti.next().getMethodInfo();
-			if(m != null && reachable.contains(m)) implemented.add(m);
-		}
-		return implemented;
-	}
+        TopologicalOrderIterator<ExecutionContext, DefaultEdge> ti = topDownIterator();
+        while(ti.hasNext()) {
+            MethodInfo m = ti.next().getMethodInfo();
+            if(m != null && reachable.contains(m)) implemented.add(m);
+        }
+        return implemented;
+    }
 
-	/** Return a top-down (topological) iterator for the callgraph 
-	 * @return A topological order iterator
-	 */
-	public TopologicalOrderIterator<ExecutionContext, DefaultEdge> topDownIterator() {
-		return new TopologicalOrderIterator<ExecutionContext, DefaultEdge>(callGraph);
-	}
+    /** Return a top-down (topological) iterator for the callgraph
+     * @return A topological order iterator
+     */
+    public TopologicalOrderIterator<ExecutionContext, DefaultEdge> topDownIterator() {
+        return new TopologicalOrderIterator<ExecutionContext, DefaultEdge>(callGraph);
+    }
 
-	/**
-	 * Retrieve non-abstract methods reachable from the given method.
-	 * All callgraph nodes reachable from nodes representing the given a method are collected
-	 * @param rootMethod
+    /**
+     * Retrieve non-abstract methods reachable from the given method.
+     * All callgraph nodes reachable from nodes representing the given a method are collected
+     * @param rootMethod
      * @return
-	 */
-	public Set<MethodInfo> getImplementationsReachableFromMethod(MethodInfo rootMethod) {
-		Set<MethodInfo> implemented = new HashSet<MethodInfo>();
-		for(ExecutionContext cgNode : methodNodes.get(rootMethod).getInstances()) {
-			DepthFirstIterator<ExecutionContext, DefaultEdge> ti =
-				new DepthFirstIterator<ExecutionContext, DefaultEdge>(callGraph,cgNode);
-			ti.setCrossComponentTraversal(false);
-			while(ti.hasNext()) {
-				MethodInfo m = ti.next().getMethodInfo();
-				if(m == null) throw new AssertionError("Abstract method in callgraph");
-				implemented.add(m);
-			}			
-		}
-		return implemented;
-	}
+     */
+    public Set<MethodInfo> getImplementationsReachableFromMethod(MethodInfo rootMethod) {
+        Set<MethodInfo> implemented = new HashSet<MethodInfo>();
+        for(ExecutionContext cgNode : methodNodes.get(rootMethod).getInstances()) {
+            DepthFirstIterator<ExecutionContext, DefaultEdge> ti =
+                    new DepthFirstIterator<ExecutionContext, DefaultEdge>(callGraph,cgNode);
+            ti.setCrossComponentTraversal(false);
+            while(ti.hasNext()) {
+                MethodInfo m = ti.next().getMethodInfo();
+                if(m == null) throw new AssertionError("Abstract method in callgraph");
+                implemented.add(m);
+            }
+        }
+        return implemented;
+    }
 
-	/**
-	 * Retrieve non-abstract methods reachable from the given call graph node.
-	 * All callgraph nodes reachable from nodes representing the given a method are collected
-	 * @param rootMethod
+    /**
+     * Retrieve non-abstract methods reachable from the given call graph node.
+     * All callgraph nodes reachable from nodes representing the given a method are collected
+     * @param rootMethod
      * @param cs
      * @return
-	 */
-	public Set<MethodInfo> getReachableImplementations(MethodInfo rootMethod, CallString cs) {
-		
-		if(! this.hasNode(rootMethod, cs)) {
-			throw new AssertionError("CallGraph#getReachableImplementations: no such node: "+
-                    new ExecutionContext(rootMethod, cs));
-		}
-		Set<MethodInfo> implemented = new HashSet<MethodInfo>();
-		ExecutionContext cgNode = this.getNode(rootMethod, cs);
-		DepthFirstIterator<ExecutionContext, DefaultEdge> ti =
-			new DepthFirstIterator<ExecutionContext, DefaultEdge>(callGraph,cgNode);
-		ti.setCrossComponentTraversal(false);
-		while(ti.hasNext()) {
-			MethodInfo m = ti.next().getMethodInfo();
-			if(m == null) throw new AssertionError("Abstract method in callgraph");
-			implemented.add(m);
-		}			
-		return implemented;
-	}
+     */
+    public Set<MethodInfo> getReachableImplementations(MethodInfo rootMethod, CallString cs) {
+
+        if(! this.hasNode(rootMethod, cs)) {
+            throw new AssertionError("CallGraph#getReachableImplementations: no such node: "+
+                new ExecutionContext(rootMethod, cs));
+        }
+        Set<MethodInfo> implemented = new HashSet<MethodInfo>();
+        ExecutionContext cgNode = this.getNode(rootMethod, cs);
+        DepthFirstIterator<ExecutionContext, DefaultEdge> ti =
+                new DepthFirstIterator<ExecutionContext, DefaultEdge>(callGraph,cgNode);
+        ti.setCrossComponentTraversal(false);
+        while(ti.hasNext()) {
+            MethodInfo m = ti.next().getMethodInfo();
+            if(m == null) throw new AssertionError("Abstract method in callgraph");
+            implemented.add(m);
+        }
+        return implemented;
+    }
 
 
-
-
-	/**
+    /**
      * Get methods possibly directly invoked from the given method
      * @param m
      * @return
      */
-	public List<ExecutionContext> getReferencedMethods(MethodInfo m) {
-		Set<ExecutionContext> nodes = getNodes(m);
-		List<ExecutionContext> succs = new ArrayList<ExecutionContext>();
-		for(ExecutionContext node : nodes) {
-			for(DefaultEdge e : callGraph.outgoingEdgesOf(node)) {
-				succs.add(callGraph.getEdgeTarget(e));
-			}
-		}
-		return succs;
-	}
-	
-	/**
-	 * Return true when the given method does not invoke any other methods
-	 * @param node
-	 * @return
-	 */
-	public boolean isLeafNode(ExecutionContext node) {
-		return callGraph.outDegreeOf(node) == 0;
-	}
+    public List<ExecutionContext> getReferencedMethods(MethodInfo m) {
+        Set<ExecutionContext> nodes = getNodes(m);
+        List<ExecutionContext> succs = new ArrayList<ExecutionContext>();
+        for(ExecutionContext node : nodes) {
+            for(DefaultEdge e : callGraph.outgoingEdgesOf(node)) {
+                succs.add(callGraph.getEdgeTarget(e));
+            }
+        }
+        return succs;
+    }
 
-	public boolean isLeafMethod(MethodInfo mi) {
-		/* Using caching, as this method is used quite often */
-		Boolean isLeafNode = leafNodeCache.get(mi);
-		if(isLeafNode != null) return isLeafNode;
-		isLeafNode = true;
-		for(ExecutionContext node : getNodes(mi)) {
-			if(! isLeafNode(node)) {
-				isLeafNode = false;
-				break;
-			}			
-		}
-		leafNodeCache.put(mi,isLeafNode);
-		return isLeafNode;
-	}
+    /**
+     * Return true when the given method does not invoke any other methods
+     * @param node
+     * @return
+     */
+    public boolean isLeafNode(ExecutionContext node) {
+        return callGraph.outDegreeOf(node) == 0;
+    }
 
-	/**
-	 * Get the maximum height of the call stack.
-	 * <p>A leaf method has height 1, an abstract method's height is the
-	 * maximum height of its children, and the height of an implemented method
-	 * is the maximum height of its children + 1. <p>
-	 * @return
-	 */
-	public List<ExecutionContext> getMaximalCallStack() {
-		if(maxCallStackLeaf == null) calculateDepthAndHeight();
-		ExecutionContext n = this.maxCallStackLeaf;
-		List<ExecutionContext> maxCallStack = new ArrayList<ExecutionContext>();
-		maxCallStack.add(n);
-		while(maxCallstackDAG.containsKey(n)) {
-			n = maxCallstackDAG.get(n);
-			maxCallStack.add(n);
-		}
-		Collections.reverse(maxCallStack);
-		return maxCallStack;
-	}
+    public boolean isLeafMethod(MethodInfo mi) {
+        /* Using caching, as this method is used quite often */
+        Boolean isLeafNode = leafNodeCache.get(mi);
+        if(isLeafNode != null) return isLeafNode;
+        isLeafNode = true;
+        for(ExecutionContext node : getNodes(mi)) {
+            if(! isLeafNode(node)) {
+                isLeafNode = false;
+                break;
+            }
+        }
+        leafNodeCache.put(mi,isLeafNode);
+        return isLeafNode;
+    }
 
-	public int getMaxHeight() {
-		calculateDepthAndHeight();
-		return this.subgraphHeight.get(this.rootNode);
-	}
+    /**
+     * Get the maximum height of the call stack.
+     * <p>A leaf method has height 1, an abstract method's height is the
+     * maximum height of its children, and the height of an implemented method
+     * is the maximum height of its children + 1. <p>
+     * @return
+     */
+    public List<ExecutionContext> getMaximalCallStack() {
+        if(maxCallStackLeaf == null) calculateDepthAndHeight();
+        ExecutionContext n = this.maxCallStackLeaf;
+        List<ExecutionContext> maxCallStack = new ArrayList<ExecutionContext>();
+        maxCallStack.add(n);
+        while(maxCallstackDAG.containsKey(n)) {
+            n = maxCallstackDAG.get(n);
+            maxCallStack.add(n);
+        }
+        Collections.reverse(maxCallStack);
+        return maxCallStack;
+    }
 
-	public ControlFlowGraph getLargestMethod() {
-		ControlFlowGraph largest = null;
-		int maxBytes = 0;
-		for(MethodInfo mi : this.getImplementedMethods(this.rootNode.getMethodInfo())) {
-			ControlFlowGraph cfg = mi.getCode().getControlFlowGraph();
-			int bytes = cfg.getNumberOfBytes();
-			if(bytes > maxBytes) {
-				largest = cfg;
-				maxBytes = bytes;
-			}
-		}
-		return largest;
-	}
+    public int getMaxHeight() {
+        calculateDepthAndHeight();
+        return this.subgraphHeight.get(this.rootNode);
+    }
 
-	public int getTotalSizeInBytes() {
-		int bytes = 0;
-		for (MethodInfo mi : this.getImplementedMethods(this.rootNode.getMethodInfo())) {
-			 bytes += mi.getCode().getControlFlowGraph().getNumberOfBytes();
-		}
-		return bytes;
-	}
+    public ControlFlowGraph getLargestMethod() {
+        ControlFlowGraph largest = null;
+        int maxBytes = 0;
+        for(MethodInfo mi : this.getImplementedMethods(this.rootNode.getMethodInfo())) {
+            ControlFlowGraph cfg = mi.getCode().getControlFlowGraph();
+            int bytes = cfg.getNumberOfBytes();
+            if(bytes > maxBytes) {
+                largest = cfg;
+                maxBytes = bytes;
+            }
+        }
+        return largest;
+    }
+
+    public int getTotalSizeInBytes() {
+        int bytes = 0;
+        for (MethodInfo mi : this.getImplementedMethods(this.rootNode.getMethodInfo())) {
+             bytes += mi.getCode().getControlFlowGraph().getNumberOfBytes();
+        }
+        return bytes;
+    }
 
 }

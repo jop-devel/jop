@@ -104,6 +104,9 @@ public class Config {
     public static final StringOption ROOTS =
             new StringOption("roots", "comma-separated list of additional root classes", "");
 
+    public static final IntegerOption CALLSTRING_LENGTH =
+	    new IntegerOption("callstring-length", "Length of the callstring", 0);
+
     public static final StringOption WRITE_PATH =
             new StringOption("out", "base path for writing all generated files", 'o', "out");
 

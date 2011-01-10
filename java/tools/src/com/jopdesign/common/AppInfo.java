@@ -21,6 +21,9 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.bcel.BcelRepositoryWrapper;
+import com.jopdesign.common.code.CallGraph;
+import com.jopdesign.common.code.CallGraph.CallgraphConfig;
+import com.jopdesign.common.code.DefaultCallgraphConfig;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
 import com.jopdesign.common.graphutils.ClassVisitor;
@@ -92,6 +95,9 @@ public final class AppInfo {
     private CommonEventHandler commonEventHandler;
 
     private ProcessorModel processor;
+
+    private int callstringLength;
+    private CallGraph callGraph;
 
     //////////////////////////////////////////////////////////////////////////////
     // Singleton
@@ -739,6 +745,57 @@ public final class AppInfo {
 
     public Signature getClinitSignature(String className) {
         return new Signature(className, Config.DEFAULT_CLINIT_NAME, Config.DEFAULT_CLINIT_DESCRIPTOR);
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+    // CallGraph
+    //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @return the maximum length of the callstrings used in the callgraph
+     */
+    public int getCallstringLength() {
+        return callstringLength;
+    }
+
+    /**
+     * Set the maximum length of the callstrings of the default callgraph.
+     * <p>
+     * The next call to {@link #getCallGraph()} will create a new callgraph if this value is changed.
+     * </p>
+     * @param callstringLength the new callstring length to use.
+     */
+    public void setCallstringLength(int callstringLength) {
+        this.callstringLength = callstringLength;
+    }
+
+    /**
+     * Build a new default callgraph using the current roots as roots for the callgraph, if the default
+     * callgraph has not yet been created.
+     * @param rebuild if true, rebuild the graph if it already exists. All manual changes and optimizations
+     *                of the graph will be lost.
+     * @return the default callgraph
+     */
+    public CallGraph buildCallGraph(boolean rebuild) {
+        CallgraphConfig config = new DefaultCallgraphConfig(getCallstringLength());
+        callGraph = CallGraph.buildCallGraph(getMainMethod(), config);
+        return callGraph;
+    }
+
+    /**
+     * Get the current default callgraph.
+     * <p>
+     * Changes to the classes, the roots or callstringLength are not reflected automatically in the callgraph,
+     * call {@link #buildCallGraph(boolean)} with rebuild=true to ensure that the callgraph is uptodate, but
+     * make sure that nobody holds any references to elements of the graph.
+     * </p>
+     * <p>
+     * Note that you do not need to use this graph, you can create your own callgraph if required.
+     * </p>
+     * @return the callgraph starting at the AppInfo roots.
+     */
+    public CallGraph getCallGraph() {
+        return callGraph;
     }
 
     //////////////////////////////////////////////////////////////////////////////

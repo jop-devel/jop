@@ -33,7 +33,7 @@ import java.io.File;
 public class JOPConfig {
 
 	public static final StringOption ASM_FILE =
-		new StringOption("jop-asm-file","JOP assembler file",MicrocodeAnalysis.DEFAULT_ASM_FILE.getAbsolutePath());
+		new StringOption("jop-asm-file","JOP assembler file",MicrocodeAnalysis.DEFAULT_ASM_FILE.getPath());
 
 	// FIXME: default values are fetched from WCETInstruction until transition to
 	// new timing system is complete

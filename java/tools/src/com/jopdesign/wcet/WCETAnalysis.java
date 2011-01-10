@@ -59,14 +59,14 @@ import static com.jopdesign.wcet.ExecHelper.timeDiff;
  * WCET Analysis for JOP - Executable
  */
 public class WCETAnalysis {
-    private static final String CONFIG_FILE_PROP = "config";
-	private static final boolean CALCULATE_MINIMUM_CACHE_COST = false;
+    private static final String CONFIG_FILE_NAME = "wcetanalysis.properties";
+    private static final boolean CALCULATE_MINIMUM_CACHE_COST = false;
 
     public static void main(String[] args) {
 
         AppSetup setup = new AppSetup();
         setup.setVersionInfo("1.0.1");
-        setup.setConfigFilename(CONFIG_FILE_PROP);
+        setup.setConfigFilename(CONFIG_FILE_NAME);
         setup.setUsageInfo("WCETAnalysis", "WCET Analysis tool");
 
         WCETTool wcetTool = new WCETTool();
@@ -94,11 +94,11 @@ public class WCETAnalysis {
     private Config config;
     private WCETTool project;
     private ExecHelper exec;
-	private WcetCost wcet;
-	private WcetCost alwaysMissCost;
-	private WcetCost alwaysHitCost;
-	private WcetCost minCacheCost;
-	private IPETConfig ipetConfig;
+    private WcetCost wcet;
+    private WcetCost alwaysMissCost;
+    private WcetCost alwaysHitCost;
+    private WcetCost minCacheCost;
+    private IPETConfig ipetConfig;
 
     public WCETAnalysis(WCETTool wcetTool, ExecHelper e) {
         this.project = wcetTool;
@@ -125,20 +125,20 @@ public class WCETAnalysis {
         // new ConstantCache(project).build().dumpStats();
 
         /* Perf-Test */
-//		for(int i = 0; i < 50; i++) {
-//			RecursiveAnalysis<StaticCacheApproximation> an =
-//				new RecursiveAnalysis<StaticCacheApproximation>(project,new RecursiveAnalysis.LocalIPETStrategy());
-//			an.computeWCET(project.getTargetMethod(),StaticCacheApproximation.ALWAYS_HIT);
-//		}
-//		System.err.println("Total solver time (50): "+LpSolveWrapper.getSolverTime());
-//		System.exit(1);
+//        for(int i = 0; i < 50; i++) {
+//            RecursiveAnalysis<StaticCacheApproximation> an =
+//                new RecursiveAnalysis<StaticCacheApproximation>(project,new RecursiveAnalysis.LocalIPETStrategy());
+//            an.computeWCET(project.getTargetMethod(),StaticCacheApproximation.ALWAYS_HIT);
+//        }
+//        System.err.println("Total solver time (50): "+LpSolveWrapper.getSolverTime());
+//        System.exit(1);
 
         
         if(project.getProjectConfig().doObjectCacheAnalysis()) {
-        	ObjectCacheAnalysis oca = new ObjectCacheAnalysis(project);
-        	return oca.run();
+            ObjectCacheAnalysis oca = new ObjectCacheAnalysis(project);
+            return oca.run();
         } else {
-        	return runWCETAnalysis();
+            return runWCETAnalysis();
         }
     }
     
@@ -150,7 +150,7 @@ public class WCETAnalysis {
         // bh wants to fix this soon
         try {
             /* Analysis */
-        	computeMetrics(); /* some metrics, and some cheap analysis for comparison */
+            computeMetrics(); /* some metrics, and some cheap analysis for comparison */
             exec.info("Starting precise WCET analysis");
             computeWCET();
         } catch (Exception e) {
@@ -175,8 +175,8 @@ public class WCETAnalysis {
         return succeed;
     }
 
-		
-	private void computeMetrics() throws Exception {
+        
+    private void computeMetrics() throws Exception {
         StaticCacheApproximation preciseApprox = IPETConfig.getPreciseCacheApprox(config);
         project.setGenerateWCETReport(false); /* generate reports later (except preciseApprox does not support reports) */
 
@@ -184,7 +184,7 @@ public class WCETAnalysis {
         if(! project.getWCETProcessorModel().hasMethodCache()) preciseApprox = StaticCacheApproximation.ALWAYS_MISS;
         /* Perform a few standard analysis (MIN_CACHE_COST, ALWAYS_HIT, ALWAYS_MISS) without call strings */
         if(project.getWCETProcessorModel().hasMethodCache()) {
-        	long start,stop;
+            long start,stop;
 
             /* Tree based WCET analysis - has to be equal to ALWAYS_MISS */
             {
@@ -222,18 +222,18 @@ public class WCETAnalysis {
 
             /* minimal cache cost (too expensive for large problems) */
             if(CALCULATE_MINIMUM_CACHE_COST)  {                
-            	IPETConfig mmcConfig = ipetConfig.clone();
-            	mmcConfig.setAssumeMissOnceOnInvoke(true);
-            	GlobalAnalysis gb = new GlobalAnalysis(project, mmcConfig);
-            	LpSolveWrapper.resetSolverTime();
-            	start = System.nanoTime();
-            	AnalysisContextLocal initialContext = new AnalysisContextLocal(StaticCacheApproximation.GLOBAL_ALL_FIT, CallString.EMPTY);
-            	minCacheCost = gb.computeWCET(project.getTargetMethod(), initialContext);
-            	stop  = System.nanoTime();
-            	reportSpecial("min-cache-cost",minCacheCost, start, stop, LpSolveWrapper.getSolverTime());
+                IPETConfig mmcConfig = ipetConfig.clone();
+                mmcConfig.setAssumeMissOnceOnInvoke(true);
+                GlobalAnalysis gb = new GlobalAnalysis(project, mmcConfig);
+                LpSolveWrapper.resetSolverTime();
+                start = System.nanoTime();
+                AnalysisContextLocal initialContext = new AnalysisContextLocal(StaticCacheApproximation.GLOBAL_ALL_FIT, CallString.EMPTY);
+                minCacheCost = gb.computeWCET(project.getTargetMethod(), initialContext);
+                stop  = System.nanoTime();
+                reportSpecial("min-cache-cost",minCacheCost, start, stop, LpSolveWrapper.getSolverTime());
             }
-        }		
-	}
+        }        
+    }
 
     private void computeWCET() throws IOException, DuplicateKeyException, XmlSerializationException, Config.BadConfigurationException {
         StaticCacheApproximation preciseApprox = IPETConfig.getPreciseCacheApprox(config);
@@ -267,7 +267,7 @@ public class WCETAnalysis {
         } else {
             AnalysisContextLocal initialContext = new AnalysisContextLocal(preciseApprox);
             RecursiveStrategy<AnalysisContextLocal, WcetCost> recStrategy =
-            	new LocalAnalysis(project, ipetConfig);
+                new LocalAnalysis(project, ipetConfig);
             RecursiveWcetAnalysis<AnalysisContextLocal> an =
                 new RecursiveWcetAnalysis<AnalysisContextLocal>(project,ipetConfig,recStrategy);
 
@@ -279,8 +279,8 @@ public class WCETAnalysis {
             long stop  = System.nanoTime();
             report(wcet,start,stop,LpSolveWrapper.getSolverTime());
         }
-        exec.info("WCET analysis finsihed: "+wcet);
-	}
+        exec.info("WCET analysis finished: "+wcet);
+    }
 
     private void reportMetric(String metric, Object... args) {
         project.recordMetric(metric, args);

@@ -24,11 +24,9 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.code.CallGraph;
-import com.jopdesign.common.code.DefaultCallgraphConfig;
 import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.graphutils.TypeGraph;
-import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.wcet.report.InvokeDot;
 
 import java.io.File;
@@ -36,70 +34,67 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class WcetAppInfoTest {
-	/*
-	 * DEMO
-	 * ~~~~
-	 */
+    /*
+     * DEMO
+     * ~~~~
+     */
 
-	/* small demo using the class loader */	
-	public static void main(String[] argv) {
+    /* small demo using the class loader */	
+    public static void main(String[] argv) {
 
         AppSetup appSetup = new AppSetup();
-
+    
         WCETTool wcetTool = new WCETTool();
         appSetup.registerTool("wcet", wcetTool);
-
+    
         Config config = appSetup.getConfig();
         config.setOption(ProjectConfig.PROJECT_NAME, "typegraph");
-
+    
         AppInfo appInfo = appSetup.initAndLoad(argv, false, false, false);
-
+    
         ProjectConfig pConfig = wcetTool.getProjectConfig();
 
-		try {
-			System.out.println("Classloader Demo: "+pConfig.getAppClassName());
-			String rootClass = pConfig.getAppClassName();
-			String rootPkg = rootClass.substring(0, rootClass.lastIndexOf("."));
-			ClassInfo ci = appInfo.getClassInfo(pConfig.getAppClassName());
-			System.out.println("Source file: "+ci.getSourceFileName());
-			System.out.println("Root class: "+ci.toString());
-			{ 
-				System.out.println("Writing type graph to "+pConfig.getOutFile("typegraph.png"));
-				File dotFile = pConfig.getOutFile("typegraph.dot");
-				FileWriter dotWriter = new FileWriter(dotFile);
+        try {
+            System.out.println("Classloader Demo: "+pConfig.getAppClassName());
+            String rootClass = pConfig.getAppClassName();
+            String rootPkg = rootClass.substring(0, rootClass.lastIndexOf("."));
+            ClassInfo ci = appInfo.getClassInfo(pConfig.getAppClassName());
+            System.out.println("Source file: "+ci.getSourceFileName());
+            System.out.println("Root class: "+ci.toString());
+            { 
+                System.out.println("Writing type graph to "+pConfig.getOutFile("typegraph.png"));
+                File dotFile = pConfig.getOutFile("typegraph.dot");
+                FileWriter dotWriter = new FileWriter(dotFile);
                 // FIXME TypeGraph is not used anymore, export ClassInfo/.. graph
                 TypeGraph typeGraph = new TypeGraph();
-				typeGraph.exportDOT(dotWriter,rootPkg);
-				dotWriter.close();
-				InvokeDot.invokeDot(wcetTool, dotFile, pConfig.getOutFile("typegraph.png"));
-			}
-			SuperGraph sg = new SuperGraph(appInfo,pConfig.getTargetMethodInfo().getCode().getControlFlowGraph(), 0);
-			{
-				System.out.println("Writing supergraph graph to "+pConfig.getOutFile("supergraph.png"));
-				File dotFile = pConfig.getOutFile("callgraph.dot");
-				FileWriter dotWriter = new FileWriter(dotFile);
-				sg.exportDOT(dotWriter);			
-				dotWriter.close();			
-				InvokeDot.invokeDot(wcetTool, dotFile, pConfig.getOutFile("supergraph.png"));
-			}
-			CallGraph cg = CallGraph.buildCallGraph(appInfo, pConfig.getTargetClass(), pConfig.getTargetMethod(),
-                    new DefaultCallgraphConfig(pConfig.callstringLength()));
-			{
-				System.out.println("Writing call graph to "+pConfig.getOutFile("callgraph.png"));
-				File dotFile = pConfig.getOutFile("callgraph.dot");
-				FileWriter dotWriter = new FileWriter(dotFile);
-				cg.exportDOT(dotWriter);			
-				dotWriter.close();			
-				InvokeDot.invokeDot(wcetTool, dotFile, pConfig.getOutFile("callgraph.png"));
-			}
-			
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (MethodNotFoundException e) {
-			e.printStackTrace();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+                typeGraph.exportDOT(dotWriter,rootPkg);
+                dotWriter.close();
+                InvokeDot.invokeDot(wcetTool, dotFile, pConfig.getOutFile("typegraph.png"));
+            }
+            SuperGraph sg = new SuperGraph(appInfo,pConfig.getTargetMethodInfo().getCode().getControlFlowGraph(), 0);
+            {
+                System.out.println("Writing supergraph graph to "+pConfig.getOutFile("supergraph.png"));
+                File dotFile = pConfig.getOutFile("callgraph.dot");
+                FileWriter dotWriter = new FileWriter(dotFile);
+                sg.exportDOT(dotWriter);			
+                dotWriter.close();			
+                InvokeDot.invokeDot(wcetTool, dotFile, pConfig.getOutFile("supergraph.png"));
+            }
+            CallGraph cg = appInfo.buildCallGraph(false);
+            {
+                System.out.println("Writing call graph to "+pConfig.getOutFile("callgraph.png"));
+                File dotFile = pConfig.getOutFile("callgraph.dot");
+                FileWriter dotWriter = new FileWriter(dotFile);
+                cg.exportDOT(dotWriter);			
+                dotWriter.close();			
+                InvokeDot.invokeDot(wcetTool, dotFile, pConfig.getOutFile("callgraph.png"));
+            }
+                    
+        } catch (IOException e) {
+                e.printStackTrace();
+        } catch (Exception e) {
+                e.printStackTrace();
+        }
+    }
 
 }

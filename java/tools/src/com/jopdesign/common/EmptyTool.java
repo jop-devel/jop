@@ -60,8 +60,4 @@ public abstract class EmptyTool<T extends AppEventHandler> implements JopTool<T>
     @Override
     public void onSetupConfig(AppSetup setup) throws BadConfigurationException {
     }
-
-    @Override
-    public void run(Config config) {
-    }
 }

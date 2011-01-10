@@ -263,6 +263,7 @@ public class AppSetup {
         if (setupAppInfo) {
             config.addOption(Config.CLASSPATH);
             config.addOption(Config.ROOTS);
+            config.addOption(Config.CALLSTRING_LENGTH);
             config.addOption(Config.PROCESSOR_MODEL);
             config.addOption(Config.MAIN_METHOD_NAME);
 

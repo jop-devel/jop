@@ -136,6 +136,9 @@ public final class MethodInfo extends ClassMemberInfo {
 
     /**
      * Compile the code and return a new BCEL method.
+     * <p>
+     * This function should also clean up internal resources of MethodInfo and MethodCode.
+     * </p>
      * @see MethodCode#compile()
      * @return a new BCEL method class containing all changes to the code.
      */
@@ -143,6 +146,7 @@ public final class MethodInfo extends ClassMemberInfo {
         if (!isAbstract()) {
             methodCode.compile();
         }
+        // TODO: to reduce memory consumption, dispose instruction handlers and compile to Method instead of MethodGen?
         return methodGen.getMethod();
     }
 

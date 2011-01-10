@@ -256,12 +256,6 @@ public class MethodCode {
         return cfg != null;
     }
 
-    public void compileCFG() {
-        if ( cfg != null ) {
-            cfg.compile();
-        }
-    }
-
     /**
      * Compile all changes and update maxStack and maxLocals.
      */
@@ -323,6 +317,12 @@ public class MethodCode {
     //////////////////////////////////////////////////////////////////////////////
     // Private area. For staff only..
     //////////////////////////////////////////////////////////////////////////////
+
+    private void compileCFG() {
+        if ( cfg != null ) {
+            cfg.compile();
+        }
+    }
 
     private Object setCustomValue(InstructionHandle ih, KeyManager.CustomKey key, Object value, Object ihKey) {
         @SuppressWarnings({"unchecked"})

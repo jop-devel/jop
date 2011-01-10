@@ -104,10 +104,6 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         load();
     }
 
-    @Override
-    public void run(Config config) {
-    }
-
     public void load() {
 
         // find ordering for class initializers

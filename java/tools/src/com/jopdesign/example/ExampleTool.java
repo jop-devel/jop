@@ -60,7 +60,6 @@ public class ExampleTool extends EmptyTool<ExampleManager> {
     public void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException {
     }
 
-    @Override
     public void run(Config config) {
 
         AppInfo appInfo = AppInfo.getSingleton();

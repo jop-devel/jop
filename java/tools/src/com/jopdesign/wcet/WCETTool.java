@@ -135,28 +135,13 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         appInfo = setup.getAppInfo();
         Config config = setup.getConfig();
 
-
         this.projectConfig = new ProjectConfig(config);
-        this.projectName = projectConfig.getProjectName();
-
-        File outDir = projectConfig.getOutDir();
-        Config.checkDir(outDir,true);
-        File ilpDir = new File(outDir,"ilps");
-        Config.checkDir(ilpDir, true);
 
         if(projectConfig.doGenerateReport()) {
             this.results = new Report(this);
             this.genWCETReport = true;
         } else {
             this.genWCETReport = false;
-        }
-
-        if(projectConfig.saveResults()) {
-            this.resultRecord = new File(config.getOption(ProjectConfig.RESULT_FILE));
-            if(! projectConfig.appendResults()) {
-                recordMetric("problem",this.getProjectName());
-                recordMetric("date",new Date());
-            }
         }
 
         if (projectConfig.getProcessorName().equals("allocObjs")) {
@@ -173,7 +158,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             try {
                 this.processor = new JOPWcetModel(this);
             } catch (IOException e) {
-                throw new BadConfigurationException("Unable to initialize JopWcetModel", e);
+                throw new BadConfigurationException("Unable to initialize JopWcetModel: " + e.getMessage(), e);
             }
         } else {
             throw new BadConfigurationException("Unknown WCET model: "+projectConfig.getProcessorName());
@@ -181,6 +166,23 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     }
 
     public void initialize() throws BadConfigurationException {
+
+        // We cannot do this in onSetupConfig, since AppInfo.getMainMethod is not initialized there
+        this.projectName = projectConfig.getProjectName();
+
+        File outDir = projectConfig.getOutDir();
+        Config.checkDir(outDir,true);
+        File ilpDir = new File(outDir,"ilps");
+        Config.checkDir(ilpDir, true);
+
+        if(projectConfig.saveResults()) {
+            this.resultRecord = new File(getConfig().getOption(ProjectConfig.RESULT_FILE));
+            if(! projectConfig.appendResults()) {
+                recordMetric("problem",this.getProjectName());
+                recordMetric("date",new Date());
+            }
+        }
+
         linkerInfo = new LinkerInfo(this);
         try {
             linkerInfo.loadLinkInfo();
@@ -199,6 +201,8 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
         /* build callgraph */
         try {
+            // FIXME check if we can use the callgraph built by AppInfo instead (starts at main method!)
+            // (replace WCETTool.getCallgraph with AppInfo.getCallGraph()), run AppInfo.buildCallgraph(false) here)
             callGraph = CallGraph.buildCallGraph(this.appInfo,
                                                  projectConfig.getTargetClass(),
                                                  projectConfig.getTargetMethod(),
@@ -212,11 +216,6 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         } else {
             WcetPreprocess.preprocess(appInfo);
         }
-
-    }
-
-    @Override
-    public void run(Config config) {
 
     }
 
