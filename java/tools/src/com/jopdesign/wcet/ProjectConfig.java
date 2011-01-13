@@ -205,7 +205,7 @@ public class ProjectConfig {
     }
 
     public boolean saveResults() {
-        return config.hasOption(RESULT_FILE);
+        return config.hasValue(RESULT_FILE);
     }
 
     public boolean appendResults() {

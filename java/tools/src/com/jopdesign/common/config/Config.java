@@ -345,12 +345,23 @@ public class Config {
     /**
      * Check if a key is set (ignoring default options).
      *
-     * @see #isPresent(String)
+     * @see #hasValue(String)
      * @param key the key of the property to check.
      * @return true if set.
      */
     public boolean isSet(String key) {
         return props.containsKey(key);
+    }
+
+    /**
+     * Check if the value of an option has been set (ignoring default options).
+     *
+     * @see #hasValue(String)
+     * @param option the option to check.
+     * @return true if set.
+     */
+    public boolean isSet(Option<?> option) {
+        return isSet(options.getConfigKey(option));
     }
 
     /**
@@ -360,8 +371,20 @@ public class Config {
      * @param key the key of the property to check.
      * @return true if it has a value or default not equal to null.
      */
-    public boolean isPresent(String key) {
+    public boolean hasValue(String key) {
         return props.getProperty(key) != null;
+    }
+
+    /**
+     * Check if an option is set or has a default value.
+     *
+     * @see #isSet(String)
+     * @see OptionGroup#hasValue(Option) 
+     * @param option the option of the property to check.
+     * @return true if it has a value or default not equal to null.
+     */
+    public boolean hasValue(Option<?> option) {
+        return options.hasValue(option);
     }
 
     public String getValue(String key) {
@@ -396,6 +419,12 @@ public class Config {
         this.options.addOptions(options);
     }
 
+    /**
+     * Check if the given option has been added (e.g. by using {@link #addOption}).
+     *
+     * @param option the option to check
+     * @return true if the option has been added to the OptionGroup.
+     */
     public boolean hasOption(Option<?> option) {
         return this.options.containsOption(option);
     }
