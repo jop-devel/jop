@@ -31,7 +31,6 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
-import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.graphutils.Pair;
@@ -317,4 +316,9 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 		}
 		return s.toString();
 	}
+
+    public boolean containsField(String fieldName) {
+            return classForField(fieldName) != null;
+    }
+
 }
