@@ -19,6 +19,7 @@
  */
 
 import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.KeyManager;
 import com.jopdesign.common.logger.LogConfig;
 
 import java.io.BufferedReader;
@@ -26,10 +27,17 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.security.Permission;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * This is a helper class to repeatedly start the main method with different arguments,
  * useful for debugging.
+ *
+ * Use this class as entry point, and pass as argument the class containing the main method of the program
+ * you want to test and optionally a list of arguments which should be added for every invocation.
+ * You can then run the program multiple times with user supplied arguments.
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
@@ -37,8 +45,8 @@ public class MainRunner {
 
     public static void main(String[] args) {
 
-        if ( args.length != 1 ) {
-            System.out.println("Usage: MainRunner <mainclass>");
+        if ( args.length < 1 ) {
+            System.out.println("Usage: MainRunner <mainclass> [<options>]");
             System.exit(1);
         }
 
@@ -62,7 +70,14 @@ public class MainRunner {
                     return;
                 }
 
-                String[] mainArgs = cmd.split(" ");
+                // TODO quoted arguments are not supported
+                String[] cmdArgs = cmd.split(" ");
+
+                List<String> argList = new ArrayList<String>(args.length);
+                argList.addAll( Arrays.asList(Arrays.copyOfRange(args, 1, args.length)) );
+                argList.addAll( Arrays.asList(cmdArgs) );
+
+                String[] mainArgs = argList.toArray(new String[0]);
 
                 System.setSecurityManager(new SecurityManager() {
                     @Override
@@ -92,6 +107,7 @@ public class MainRunner {
                 
                 // cleanup for next invoke
                 AppInfo.getSingleton().clear(true);
+                KeyManager.getSingleton().reset();
                 LogConfig.stopLogger();
             }
 

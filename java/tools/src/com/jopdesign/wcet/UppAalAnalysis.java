@@ -33,28 +33,36 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 
 public class UppAalAnalysis {
-	private static final String CONFIG_FILE_PROP = "config";
-	private static final Logger tlLogger = Logger.getLogger(UppAalAnalysis.class);
-	private static final int ECC_TRESHOLD = 400;
+    private static final String CONFIG_FILE_PROP = "config";
+    private static final Logger tlLogger = Logger.getLogger(UppAalAnalysis.class);
+    private static final int ECC_TRESHOLD = 400;
 
-	class WCETEntry {
-		MethodInfo target;
-		long wcet;
-		double searchtime;
-		double  solvertime;
-		public WCETEntry(MethodInfo target, long wcet, double searchtime, double solvertime) {
-			this.target = target;
-			this.wcet = wcet;
-			this.searchtime = searchtime; 
-			this.solvertime = solvertime;
-		}
-	}
-	
-	public static void main(String[] args) {
+    class WCETEntry {
+        MethodInfo target;
+        long wcet;
+        double searchtime;
+        double solvertime;
 
-        AppSetup setup = new AppSetup();
+        public WCETEntry(MethodInfo target, long wcet, double searchtime, double solvertime) {
+            this.target = target;
+            this.wcet = wcet;
+            this.searchtime = searchtime;
+            this.solvertime = solvertime;
+        }
+    }
+
+    public static void main(String[] args) {
+
+        // We set a different output path for this tool if invoked by cmdline
+        // Note that WCETTool could also override defaults, but we do not want to change the
+        // default value of outdir if WCETTool is invoked from another tool
+        Properties defaultProps = new Properties();
+        defaultProps.put("outdir", "java/target/wcet");
+
+        AppSetup setup = new AppSetup(defaultProps, false);
         setup.setVersionInfo("1.0 [deprecated]");
         setup.setConfigFilename(CONFIG_FILE_PROP);
         setup.setUsageInfo("UppAllAnalysis", "UppAll WCET Analysis");
@@ -71,14 +79,14 @@ public class UppAalAnalysis {
             wcetTool.setDfaTool(dfaTool);
         }
 
-		ExecHelper exec = new ExecHelper(setup.getConfig(), tlLogger);
-		
-		exec.dumpConfig();
-		UppAalAnalysis inst = new UppAalAnalysis(wcetTool);
-		/* run */
-		if(! inst.run(exec)) exec.bail("UppAal translation failed");
-		tlLogger.info("UppAal translation finished");
-	}
+        ExecHelper exec = new ExecHelper(setup.getConfig(), tlLogger);
+
+        exec.dumpConfig();
+        UppAalAnalysis inst = new UppAalAnalysis(wcetTool);
+        /* run */
+        if (!inst.run(exec)) exec.bail("UppAal translation failed");
+        tlLogger.info("UppAal translation finished");
+    }
 
     private WCETTool project;
 
@@ -87,46 +95,46 @@ public class UppAalAnalysis {
     }
 
     private boolean run(ExecHelper exec) {
-		File uppaalOutDir;
-		try {
-			project.setTopLevelLogger(tlLogger);
-			tlLogger.info("Loading project");
-			project.initialize();
-			uppaalOutDir = project.getOutDir("uppaal");
-		}
-		catch (Exception e) { 
-			exec.logException("loading project", e); 
-			return false; 
-		}
-		UppaalAnalysis ua = new UppaalAnalysis(tlLogger,project,uppaalOutDir);
-		List<MethodInfo> methods = project.getCallGraph().getImplementedMethods(project.getTargetMethod());
-		Collections.reverse(methods);
-		List<WCETEntry> entries = new ArrayList<WCETEntry>();
-		for( MethodInfo m : methods ) {
-			if(project.computeCyclomaticComplexity(m) > ECC_TRESHOLD) {
-				tlLogger.info("Skipping UppAal translation for "+m+
-						      " because extended cyclomatic complexity "+
-						      project.computeCyclomaticComplexity(m) + " > treshold");
-			} else {
-				tlLogger.info("Starting UppAal translation for "+m);
-				WcetCost wcet;
-				try {
-					wcet = ua.calculateWCET(m);
-					entries.add(new WCETEntry(m,wcet.getCost(),ua.getSearchtime(),ua.getSolvertimemax()));
-				} catch (Exception e) {
-					exec.logException("Uppaal calculation",e);
-					return false;
-				}
-			}
-		}
-		for(WCETEntry entry : entries) {
-			System.out.println("***" + entry.target.toString());
-			System.out.println("    wcet: " + entry.wcet);
-			System.out.println("    complex: " + project.computeCyclomaticComplexity(entry.target));
-			System.out.println("    searchT: " + entry.searchtime);
-			System.out.println("    solverTmax: " + entry.solvertime);			
-		}
-		return true;
-	}
+        File uppaalOutDir;
+        try {
+            project.setTopLevelLogger(tlLogger);
+            tlLogger.info("Loading project");
+            project.initialize();
+            uppaalOutDir = project.getOutDir("uppaal");
+        }
+        catch (Exception e) {
+            exec.logException("loading project", e);
+            return false;
+        }
+        UppaalAnalysis ua = new UppaalAnalysis(tlLogger, project, uppaalOutDir);
+        List<MethodInfo> methods = project.getCallGraph().getImplementedMethods(project.getTargetMethod());
+        Collections.reverse(methods);
+        List<WCETEntry> entries = new ArrayList<WCETEntry>();
+        for (MethodInfo m : methods) {
+            if (project.computeCyclomaticComplexity(m) > ECC_TRESHOLD) {
+                tlLogger.info("Skipping UppAal translation for " + m +
+                        " because extended cyclomatic complexity " +
+                        project.computeCyclomaticComplexity(m) + " > treshold");
+            } else {
+                tlLogger.info("Starting UppAal translation for " + m);
+                WcetCost wcet;
+                try {
+                    wcet = ua.calculateWCET(m);
+                    entries.add(new WCETEntry(m, wcet.getCost(), ua.getSearchtime(), ua.getSolvertimemax()));
+                } catch (Exception e) {
+                    exec.logException("Uppaal calculation", e);
+                    return false;
+                }
+            }
+        }
+        for (WCETEntry entry : entries) {
+            System.out.println("***" + entry.target.toString());
+            System.out.println("    wcet: " + entry.wcet);
+            System.out.println("    complex: " + project.computeCyclomaticComplexity(entry.target));
+            System.out.println("    searchT: " + entry.searchtime);
+            System.out.println("    solverTmax: " + entry.solvertime);
+        }
+        return true;
+    }
 
 }

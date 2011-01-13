@@ -35,45 +35,47 @@ import java.io.PrintStream;
  */
 public class ExecHelper {
 
-	/* Idea adopted from the Java Cookbook; warning: did not override all methods */
-	public static class TeePrintStream extends PrintStream {
+    /* Idea adopted from the Java Cookbook; warning: did not override all methods */
 
-		private PrintStream p2;
+    public static class TeePrintStream extends PrintStream {
 
-		public TeePrintStream(PrintStream p1, PrintStream p2) {
-			super(p1);
-			this.p2 = p2;
-		}
+        private PrintStream p2;
 
-		@Override
-		public void print(String s) {
-			for(int i = 0; i < s.length(); i++) {
-				super.write(s.charAt(i));				
-				p2.write(s.charAt(i));
-			}
-		}
-		@Override
-		public void println(String s) {
-			print(s+"\n");
-		}
-		
-	}
-	
-	private Logger summaryLogger;
-	private Config config;
+        public TeePrintStream(PrintStream p1, PrintStream p2) {
+            super(p1);
+            this.p2 = p2;
+        }
 
-	public ExecHelper(Config config, Logger topLevelLogger) {
+        @Override
+        public void print(String s) {
+            for (int i = 0; i < s.length(); i++) {
+                super.write(s.charAt(i));
+                p2.write(s.charAt(i));
+            }
+        }
+
+        @Override
+        public void println(String s) {
+            print(s + "\n");
+        }
+
+    }
+
+    private Logger summaryLogger;
+    private Config config;
+
+    public ExecHelper(Config config, Logger topLevelLogger) {
         this.config = config;
-		this.summaryLogger = topLevelLogger;
-	}
+        this.summaryLogger = topLevelLogger;
+    }
 
-	/**
-	 * Print configuration to summaryLogger
-	 */
-	public void dumpConfig() {
-		summaryLogger.info("Configuration:\n"+config.dumpConfiguration(4));
-		summaryLogger.info("java.library.path: "+System.getProperty("java.library.path"));		
-	}
+    /**
+     * Print configuration to summaryLogger
+     */
+    public void dumpConfig() {
+        summaryLogger.info("Configuration:\n" + config.dumpConfiguration(4));
+        summaryLogger.info("java.library.path: " + System.getProperty("java.library.path"));
+    }
 
     public void checkLibs() {
         try {
@@ -95,39 +97,39 @@ public class ExecHelper {
         }
     }
 
-	public static double timeDiff(long nanoStart, long nanoStop) {
-		return (((double)nanoStop-nanoStart) / 1.0E9);
-	}
+    public static double timeDiff(long nanoStart, long nanoStop) {
+        return (((double) nanoStop - nanoStart) / 1.0E9);
+    }
 
-	public Logger getExecLogger() {
-		return summaryLogger;
-	}
+    public Logger getExecLogger() {
+        return summaryLogger;
+    }
 
-	public void info(String string) {
-		summaryLogger.info(string);
-	}
+    public void info(String string) {
+        summaryLogger.info(string);
+    }
 
-	public void logException(String ctx, Throwable e) {
-		e.printStackTrace();
-		summaryLogger.error("Exception occured when "+ctx+": "+e);
-	}
+    public void logException(String ctx, Throwable e) {
+        e.printStackTrace();
+        summaryLogger.error("Exception occured when " + ctx + ": " + e);
+    }
 
-	public void bail(String msg) {
-		printSep();
-		System.err.println("[ERROR] "+msg);
-		printSep();
-		System.exit(1);
-	}
+    public void bail(String msg) {
+        printSep();
+        System.err.println("[ERROR] " + msg);
+        printSep();
+        System.exit(1);
+    }
 
-	public void bail(Exception e) {
-		printSep();
-		e.printStackTrace();
-		bail(e.getMessage());
-	}
+    public void bail(Exception e) {
+        printSep();
+        e.printStackTrace();
+        bail(e.getMessage());
+    }
 
-	private void printSep() {
-		System.err.println("---------------------------------------------------------------");
-	}
+    private void printSep() {
+        System.err.println("---------------------------------------------------------------");
+    }
 
 
 }

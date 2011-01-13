@@ -44,7 +44,6 @@ public class KeyManager {
     private static final Object KEY_BLOCK_VALUE = "KeyManager.BlockValue";
 
 
-    private final AppInfo appInfo;
     private final Map<String, CustomKey> registeredKeys;
     private int maxStructKeyID;
 
@@ -116,6 +115,7 @@ public class KeyManager {
     //////////////////////////////////////////////////////////////////////////////
 
     private static final KeyManager singleton;
+
     static {
         singleton = new KeyManager();
     }
@@ -124,10 +124,13 @@ public class KeyManager {
         return singleton;
     }
 
-    public KeyManager() {
-        appInfo = AppInfo.getSingleton();
+    private KeyManager() {
         registeredKeys = new HashMap<String, CustomKey>();
         maxStructKeyID = 0;
+    }
+
+    public AppInfo getAppInfo() {
+        return AppInfo.getSingleton();
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -188,6 +191,16 @@ public class KeyManager {
         return registeredKeys.get(key);
     }
 
+    /**
+     * Unregister all keys.
+     */
+    public void reset() {
+        if (getAppInfo().getClassInfos().size() > 0) {
+            // TODO before removing, we should clear all custom-keys too
+        }
+        registeredKeys.clear();
+        maxStructKeyID = 0;
+    }
 
     //////////////////////////////////////////////////////////////////////////////
     // Key management
@@ -196,7 +209,7 @@ public class KeyManager {
     public void clearAllValues(CustomKey key) {
         // do we need a version of this method with more fine-grained control (clear only from methods,..)?
 
-        for ( ClassInfo cls : appInfo.getClassInfos() ) {
+        for ( ClassInfo cls : getAppInfo().getClassInfos() ) {
             clearAllValues(key, cls);
         }
     }

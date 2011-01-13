@@ -52,6 +52,7 @@ import com.jopdesign.wcet.uppaal.model.XmlSerializationException;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
+import java.util.Properties;
 
 import static com.jopdesign.wcet.ExecHelper.timeDiff;
 
@@ -64,7 +65,13 @@ public class WCETAnalysis {
 
     public static void main(String[] args) {
 
-        AppSetup setup = new AppSetup();
+        // We set a different output path for this tool if invoked by cmdline
+        // Note that WCETTool could also override defaults, but we do not want to change the
+        // default value of outdir if WCETTool is invoked from another tool
+        Properties defaultProps = new Properties();
+        defaultProps.put("outdir", "java/target/wcet");
+
+        AppSetup setup = new AppSetup(defaultProps, false);
         setup.setVersionInfo("1.0.1");
         setup.setConfigFilename(CONFIG_FILE_NAME);
         setup.setUsageInfo("WCETAnalysis", "WCET Analysis tool");

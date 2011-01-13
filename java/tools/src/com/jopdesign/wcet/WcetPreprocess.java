@@ -34,7 +34,8 @@ import com.jopdesign.common.AppSetup;
  * and write class fils to the output directory for the WCET
  * analysis
  *
- * TODO (temporarily?) moved to WCET package to avoid import clashes, maybe move back to build package?
+ * TODO moved to WCET package to avoid import clashes, maybe move back to build package?
+ *      The main method does not need to be used anymore, since WCETTool calls preprocess() anyway.
  *
  * @author Martin Schoeberl
  * @author Stefan Hepp
@@ -43,30 +44,30 @@ public class WcetPreprocess {
 
     private static final long serialVersionUID = 1L;
 
-	public WcetPreprocess() {
-	}
+    public WcetPreprocess() {
+    }
 
     public static void preprocess(AppInfo ai) {
         ai.iterate(new ReplaceIinc());
         ai.iterate(new InsertSynchronized());
     }
 
-	public static void main(String[] args) {
+    public static void main(String[] args) {
 
         AppSetup setup = new AppSetup();
         AppInfo ai = setup.initAndLoad(args, false, false, true);
 
-		preprocess(ai);
+        preprocess(ai);
 
-		// dump the methods
-//		try {
-//			ai.iterate(new Dump(ai, new PrintWriter(new FileOutputStream(ai.outFile+"/dump.txt"))));
-//		} catch (FileNotFoundException e) {
-//			e.printStackTrace();
-//		}
+        // dump the methods
+//	try {
+//		ai.iterate(new Dump(ai, new PrintWriter(new FileOutputStream(ai.outFile+"/dump.txt"))));
+//	} catch (FileNotFoundException e) {
+//		e.printStackTrace();
+//	}
 
-		// write the class files
-		setup.writeClasses();
-	}
+        // write the class files
+        setup.writeClasses();
+    }
 
 }

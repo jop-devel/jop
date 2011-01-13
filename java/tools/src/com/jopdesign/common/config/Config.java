@@ -81,7 +81,7 @@ public class Config {
             new BooleanOption("verbose", "use a more detailed log format and show stacktraces. Can be used with '-d' or '-q'", 'v', false);
 
     public static final StringOption CLASSPATH =
-            new StringOption("cp", "classpath of the classes to load", "java/target/dist/classes");
+            new StringOption("classpath", "classpath of the classes to load", 'c', "java/target/dist/classes");
 
     public static final StringOption MAIN_METHOD_NAME =
             new StringOption("mm", "method name of the entry method", "main");
@@ -108,13 +108,13 @@ public class Config {
 	    new IntegerOption("callstring-length", "Length of the callstring", 0);
 
     public static final StringOption WRITE_PATH =
-            new StringOption("out", "base path for writing all generated files", 'o', "out");
+            new StringOption("outdir", "base path for output directories (classdir,reportdir,..)", 'o', "java/target/dist");
 
     public static final StringOption WRITE_CLASSPATH =
-            new StringOption("classout", "output path for generated class files", "${out}/classes");
+            new StringOption("classdir", "output path for generated class files", "${outdir}/classes");
 
     public static final StringOption REPORTDIR =
-        new StringOption("reportdir", "the directory to write reports into", "${out}/report");
+        new StringOption("reportdir", "the directory to write reports into", "${outdir}/report");
 
     public static final StringOption ERROR_LOG_FILE =
         new StringOption("error-log","the error log file, placed in the report dir","error.log.html");

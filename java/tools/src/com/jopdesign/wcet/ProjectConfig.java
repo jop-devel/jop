@@ -49,9 +49,6 @@ public class ProjectConfig {
     public static final StringOption TARGET_BINPATH =
             new StringOption("linkinfo-path", "directory holding linker info (.link.txt)","java/target/dist/bin");
 
-    public static final StringOption OUT_DIR =
-             new StringOption("outdir","directory for output of the analysis tool","java/target/wcet/");
-
     private static final BooleanOption DO_GENERATE_REPORTS =
             new BooleanOption("report-generation","whether reports should be generated",true);
 
@@ -72,7 +69,6 @@ public class ProjectConfig {
 
     public static final Option<?>[] projectOptions =
     {
-            OUT_DIR,
             TARGET_METHOD, PROJECT_NAME,
             TARGET_SOURCEPATH, TARGET_BINPATH,
             WCET_MODEL,
@@ -151,7 +147,7 @@ public class ProjectConfig {
     }
 
     public File getOutDir() {
-        return new File(config.getOption(OUT_DIR),getProjectName());
+        return new File(config.getOption(Config.WRITE_PATH),getProjectName());
     }
 
     /**

@@ -64,7 +64,7 @@ public class IPETConfig {
 		new BooleanOption("ipet-dump-ilp","whether the LP problems should be dumped to files",true);
 
     public static final StringOption ILP_OUTDIR =
-        new StringOption("ipet-out", "the output directory for the solver", "${out}/ilps");
+        new StringOption("ipet-out", "the output directory for the solver", "${outdir}/ilps");
 
 	public static final Option<?>[] ipetOptions = {
 		STATIC_CACHE_APPROX, ASSUME_MISS_ONCE_ON_INVOKE, DUMP_ILP, ILP_OUTDIR
