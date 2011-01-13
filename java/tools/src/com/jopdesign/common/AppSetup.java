@@ -26,6 +26,7 @@ import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationError;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.logger.LogConfig;
+import com.jopdesign.common.misc.ClassInfoNotFoundException;
 import com.jopdesign.common.processormodel.AllocationModel;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.common.processormodel.JOPModel;
@@ -645,18 +646,35 @@ public class AppSetup {
     }
 
     private MethodInfo getMainMethod(String signature) throws Config.BadConfigurationException {
+
+        ClassInfo clsInfo;
         Signature sMain;
-        sMain = Signature.parse(signature, true);
+        String clsName;
 
-        String clsName = sMain.getClassName();
-        if ( clsName == null ) {
-            throw new Config.BadConfigurationException("You need to specify a classname for the main method.");
+        try {
+            // try if the signature is a classname
+            clsInfo = appInfo.loadClass(signature, true, false);
+            sMain = new Signature(signature);
+            clsName = signature;
+        } catch (ClassInfoNotFoundException e1) {
+
+            // else try to parse as full signature
+            sMain = Signature.parse(signature, true);
+            clsName = sMain.getClassName();
+
+            if ( clsName == null ) {
+                //noinspection ThrowInsideCatchBlockWhichIgnoresCaughtException
+                throw new Config.BadConfigurationException("You need to specify a classname for the main method.");
+            }
+
+            try {
+                clsInfo = appInfo.loadClass(clsName, true, false);
+            } catch (ClassInfoNotFoundException e) {
+                throw new Config.BadConfigurationException("Class for '"+signature+"' could not be loaded: "
+                        + e1.getMessage() + "; " + e.getMessage(), e);
+            }
         }
 
-        ClassInfo clsInfo = appInfo.loadClass(clsName);
-        if ( clsInfo == null ) {
-            throw new Config.BadConfigurationException("Class '"+clsName+"' for main method not found.");
-        }
 
         // check if we have a full signature
         if ( sMain.isMethodSignature() ) {

@@ -283,6 +283,8 @@ public class DescendingClassTraverser implements ClassVisitor {
 
             for (int i = 1; i < cpg.getSize(); i++) {
                 Constant c = cpg.getConstant(i);
+                // Some entries might be null (continuation of previous entry)
+                if (c == null) continue;
                 c.accept(bcelVisitor);
             }
 
