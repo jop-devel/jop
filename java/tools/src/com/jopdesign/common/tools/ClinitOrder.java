@@ -52,21 +52,22 @@ import java.util.Set;
 
 /**
  * Find a correct order of static class initializers (<clinit>)
+ *
  * @author martin
  */
 public class ClinitOrder implements ClassVisitor {
 
     public static final String clinitSig = "<clinit>()V";
 
-	private Map<ClassInfo, Set<ClassInfo>> clinit = new HashMap<ClassInfo, Set<ClassInfo>>();
-	
-	public ClinitOrder() {
-	}
-		
+    private Map<ClassInfo, Set<ClassInfo>> clinit = new HashMap<ClassInfo, Set<ClassInfo>>();
+
+    public ClinitOrder() {
+    }
+
     @Override
     public boolean visitClass(ClassInfo classInfo) {
         MethodInfo mi = classInfo.getMethodInfo(clinitSig);
-        if (mi!=null) {
+        if (mi != null) {
             Set<ClassInfo> depends = findDependencies(classInfo, mi, false);
             clinit.put(classInfo, depends);
         }
@@ -77,55 +78,55 @@ public class ClinitOrder implements ClassVisitor {
     public void finishClass(ClassInfo classInfo) {
     }
 
-	private Set<ClassInfo> findDependencies(ClassInfo cli, MethodInfo method, boolean inRec) {
+    private Set<ClassInfo> findDependencies(ClassInfo cli, MethodInfo method, boolean inRec) {
 
 //		System.out.println("find dep. in "+cli.clazz.getClassName()+":"+mi.getMethod().getName());
 
-		Set<ClassInfo> depends = new HashSet<ClassInfo>();
-		if (method.isNative() || method.isAbstract()) {
-			// nothing to do
-			// or should we look for all possible subclasses on
-			// abstract.... or in general also all possible
-			// subclasses???? :-(
-			return depends;
-		}
+        Set<ClassInfo> depends = new HashSet<ClassInfo>();
+        if (method.isNative() || method.isAbstract()) {
+            // nothing to do
+            // or should we look for all possible subclasses on
+            // abstract.... or in general also all possible
+            // subclasses???? :-(
+            return depends;
+        }
 
-		ConstantPoolGen cpoolgen = cli.getConstantPoolGen();
+        ConstantPoolGen cpoolgen = cli.getConstantPoolGen();
         ConstantPool cpool = cpoolgen.getConstantPool();
 
-		InstructionList il  = method.getCode().getInstructionList();
-		InstructionFinder f = new InstructionFinder(il);
-		
-		// find instructions that access the constant pool
-		// collect all indices to constants in ClassInfo
-		String cpInstr = "CPInstruction";		
-		for(Iterator it = f.search(cpInstr); it.hasNext(); ) {
-			InstructionHandle[] match = (InstructionHandle[])it.next();
-			InstructionHandle   first = match[0];
-			
-			CPInstruction ii = (CPInstruction)first.getInstruction();
-			int idx = ii.getIndex();
+        InstructionList il = method.getCode().getInstructionList();
+        InstructionFinder f = new InstructionFinder(il);
 
-			Constant co = cpoolgen.getConstant(idx);
-			ConstantClass cocl = null;
-			Set addDepends = null;
-			String clname;
-			ClassInfo clinfo;
-			MethodInfo minfo;
+        // find instructions that access the constant pool
+        // collect all indices to constants in ClassInfo
+        String cpInstr = "CPInstruction";
+        for (Iterator it = f.search(cpInstr); it.hasNext();) {
+            InstructionHandle[] match = (InstructionHandle[]) it.next();
+            InstructionHandle first = match[0];
 
-			switch(co.getTag()) {
-			case Constants.CONSTANT_Class:
-				cocl = (ConstantClass) co;
-				clname = cocl.getBytes(cpool).replace('/','.');
-				clinfo = cli.getAppInfo().getClassInfo(clname);
-				
-				if (clinfo!=null) {
-					minfo = clinfo.getMethodInfo("<init>()V");
-					if (minfo!=null) {
-						addDepends = findDependencies(clinfo, minfo, true);
-					}
-				}
-				// check for all sub classes when no going up the hierarchy
+            CPInstruction ii = (CPInstruction) first.getInstruction();
+            int idx = ii.getIndex();
+
+            Constant co = cpoolgen.getConstant(idx);
+            ConstantClass cocl = null;
+            Set addDepends = null;
+            String clname;
+            ClassInfo clinfo;
+            MethodInfo minfo;
+
+            switch (co.getTag()) {
+                case Constants.CONSTANT_Class:
+                    cocl = (ConstantClass) co;
+                    clname = cocl.getBytes(cpool).replace('/', '.');
+                    clinfo = cli.getAppInfo().getClassInfo(clname);
+
+                    if (clinfo != null) {
+                        minfo = clinfo.getMethodInfo("<init>()V");
+                        if (minfo != null) {
+                            addDepends = findDependencies(clinfo, minfo, true);
+                        }
+                    }
+                    // check for all sub classes when no going up the hierarchy
 //				if (!inRec) {
 //					Object[] y = clinfo.getSubClasses().toArray();
 //					for (int i=0; i<y.length; ++i) {
@@ -138,25 +139,25 @@ public class ClinitOrder implements ClassVisitor {
 //					}					
 //				}
 
-				break;
-			case Constants.CONSTANT_InterfaceMethodref:
-				cocl = (ConstantClass) cpoolgen.getConstant(((ConstantInterfaceMethodref) co).getClassIndex());
-				break;
-			case Constants.CONSTANT_Methodref:
-				cocl = (ConstantClass) cpoolgen.getConstant(((ConstantMethodref) co).getClassIndex());
-				clname = cocl.getBytes(cpool).replace('/','.');
-				clinfo = cli.getAppInfo().getClassInfo(clname);
+                    break;
+                case Constants.CONSTANT_InterfaceMethodref:
+                    cocl = (ConstantClass) cpoolgen.getConstant(((ConstantInterfaceMethodref) co).getClassIndex());
+                    break;
+                case Constants.CONSTANT_Methodref:
+                    cocl = (ConstantClass) cpoolgen.getConstant(((ConstantMethodref) co).getClassIndex());
+                    clname = cocl.getBytes(cpool).replace('/', '.');
+                    clinfo = cli.getAppInfo().getClassInfo(clname);
 
-				int sigidx = ((ConstantMethodref) co).getNameAndTypeIndex();
-				ConstantNameAndType signt = (ConstantNameAndType) cpool.getConstant(sigidx);
-				String sigstr = signt.getName(cpool)+signt.getSignature(cpool);
-				if (clinfo!=null) {
-					minfo = clinfo.getMethodInfo(sigstr);
-					if (minfo!=null) {
-						addDepends = findDependencies(clinfo, minfo, true);					
-					}
-				}
-				// check for all sub classes when no going up the hierarchy
+                    int sigidx = ((ConstantMethodref) co).getNameAndTypeIndex();
+                    ConstantNameAndType signt = (ConstantNameAndType) cpool.getConstant(sigidx);
+                    String sigstr = signt.getName(cpool) + signt.getSignature(cpool);
+                    if (clinfo != null) {
+                        minfo = clinfo.getMethodInfo(sigstr);
+                        if (minfo != null) {
+                            addDepends = findDependencies(clinfo, minfo, true);
+                        }
+                    }
+                    // check for all sub classes when no going up the hierarchy
 //				if (!inRec) {
 //					Object[] x = clinfo.getSubClasses().toArray();
 //					for (int i=0; i<x.length; ++i) {
@@ -168,26 +169,26 @@ public class ClinitOrder implements ClassVisitor {
 //						}
 //					}					
 //				}
-				
-				break;
-			case Constants.CONSTANT_Fieldref:
-				cocl = (ConstantClass) cpool.getConstant(((ConstantFieldref) co).getClassIndex());
-				break;
-			}
-			if (cocl!=null) {
-				clname = cocl.getBytes(cpool).replace('/','.');
-				ClassInfo clinf = cli.getAppInfo().getClassInfo(clname);
-				if (clinf!=null) {
-					if (clinf.getMethodInfo(clinitSig)!=null) {
-						// don't add myself as dependency
-						if (clinf!=cli) {
-							depends.add(clinf);
-						}
-					}					
-				}
-			}
-			
-			if (addDepends!=null) {
+
+                    break;
+                case Constants.CONSTANT_Fieldref:
+                    cocl = (ConstantClass) cpool.getConstant(((ConstantFieldref) co).getClassIndex());
+                    break;
+            }
+            if (cocl != null) {
+                clname = cocl.getBytes(cpool).replace('/', '.');
+                ClassInfo clinf = cli.getAppInfo().getClassInfo(clname);
+                if (clinf != null) {
+                    if (clinf.getMethodInfo(clinitSig) != null) {
+                        // don't add myself as dependency
+                        if (clinf != cli) {
+                            depends.add(clinf);
+                        }
+                    }
+                }
+            }
+
+            if (addDepends != null) {
                 for (Object addDepend : addDepends) {
                     ClassInfo addCli = (ClassInfo) addDepend;
                     if (addCli == cli) {
@@ -195,22 +196,22 @@ public class ClinitOrder implements ClassVisitor {
                     }
                     depends.add(addCli);
                 }
-			}
-			
-			
-		}
-		
-		il.dispose();
-		
-		return depends;
-	}
-	/**
-	 * Print the dependency for debugging. Not used at the moment.
-	 *
-	 */
-	private void printDependency() {
+            }
 
-		Set<ClassInfo> cliSet = clinit.keySet();
+
+        }
+
+        il.dispose();
+
+        return depends;
+    }
+
+    /**
+     * Print the dependency for debugging. Not used at the moment.
+     */
+    private void printDependency() {
+
+        Set<ClassInfo> cliSet = clinit.keySet();
         for (ClassInfo clinf : cliSet) {
             System.out.println("Class " + clinf.getClassName());
             Set<ClassInfo> depends = clinit.get(clinf);
@@ -219,49 +220,49 @@ public class ClinitOrder implements ClassVisitor {
                 System.out.println("\tdepends " + clf.getClassName());
             }
         }
-	}
-	
-	/**
-	 * Find a 'correct' oder for the static <clinit>.
-	 * Throws an error on cyclic dependencies.
-	 * 
-	 * @return the ordered list of classes
+    }
+
+    /**
+     * Find a 'correct' oder for the static <clinit>.
+     * Throws an error on cyclic dependencies.
+     *
+     * @return the ordered list of classes
      * @throws JavaClassFormatError if a cyclic dependency has been found.
-	 */
-	public List<ClassInfo> findOrder() {
+     */
+    public List<ClassInfo> findOrder() {
 
-		printDependency();
-		
-		Set<ClassInfo> cliSet = clinit.keySet();
-		List<ClassInfo> order = new LinkedList<ClassInfo>();
-		int maxIter = cliSet.size();
+        printDependency();
 
-		// maximum loop bound detects cyclic dependency
-		for (int i=0; i<maxIter && cliSet.size()!=0; ++i) {
+        Set<ClassInfo> cliSet = clinit.keySet();
+        List<ClassInfo> order = new LinkedList<ClassInfo>();
+        int maxIter = cliSet.size();
 
-			Iterator itCliSet = cliSet.iterator();
-			while (itCliSet.hasNext()) {			
-				ClassInfo clinf = (ClassInfo) itCliSet.next();
-				Set<ClassInfo> depends = clinit.get(clinf);
-				if (depends.size()==0) {
-					order.add(clinf);
-					// check all depends sets and remove the added
-					// element (a leave in the dependent tree
+        // maximum loop bound detects cyclic dependency
+        for (int i = 0; i < maxIter && cliSet.size() != 0; ++i) {
+
+            Iterator itCliSet = cliSet.iterator();
+            while (itCliSet.hasNext()) {
+                ClassInfo clinf = (ClassInfo) itCliSet.next();
+                Set<ClassInfo> depends = clinit.get(clinf);
+                if (depends.size() == 0) {
+                    order.add(clinf);
+                    // check all depends sets and remove the added
+                    // element (a leave in the dependent tree
                     for (ClassInfo clinfInner : clinit.keySet()) {
                         Set<ClassInfo> dep = clinit.get(clinfInner);
                         dep.remove(clinf);
                     }
-					itCliSet.remove();
-				}
-			}
-		}
-		
-		if (cliSet.size()!=0) {
-			printDependency();
-			throw new JavaClassFormatError("Cyclic dependency in <clinit>");
-		}
-		
-		return order;
-	}
+                    itCliSet.remove();
+                }
+            }
+        }
+
+        if (cliSet.size() != 0) {
+            printDependency();
+            throw new JavaClassFormatError("Cyclic dependency in <clinit>");
+        }
+
+        return order;
+    }
 
 }

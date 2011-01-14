@@ -218,6 +218,7 @@ public class AppSetup {
 
         if (optional) {
             BooleanOption option = new BooleanOption("use-"+name, "Use the "+name+" tool", useDefault);
+            config.addOption(option);
             optionalTools.put(name, option);
         }
 

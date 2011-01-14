@@ -27,58 +27,64 @@ import java.util.List;
 
 public interface ProcessorModel {
 
-    enum Model {JOP, jamuth, allocation }
+    enum Model {
+        JOP, jamuth, allocation
+    }
 
-	/**
+    /**
      * A human readable name of the Processor Model
+     *
      * @return the name of the processor model.
      */
     String getName();
 
-	/**
-	 * Check whether we need to deal with the given statement in a special way,
-	 * because it is translated to a processor specific bytecode.
+    /**
+     * Check whether we need to deal with the given statement in a special way,
+     * because it is translated to a processor specific bytecode.
      *
-	 * @param ctx the method containing the instruction
-     * @param i the instruction to check
-	 * @return true, if the instruction is translated to a processor specific bytecode
-	 */
+     * @param ctx the method containing the instruction
+     * @param i   the instruction to check
+     * @return true, if the instruction is translated to a processor specific bytecode
+     */
     boolean isSpecialInvoke(MethodInfo ctx, Instruction i);
 
-	/**
-	 * Check whether the given instruction is implemented in Java.
+    /**
+     * Check whether the given instruction is implemented in Java.
+     *
      * @param i the instruction to check
      * @return true if it is implemented as a java method
      */
     boolean isImplementedInJava(Instruction i);
 
-	/**
-	 * For Java implemented bytecodes, get the method
-	 * implementing the bytecode.
-	 * @param ai the AppInfo containing the classes containing the java implementations of bytecodes
-     * @param ctx the method of the instruction
+    /**
+     * For Java implemented bytecodes, get the method
+     * implementing the bytecode.
+     *
+     * @param ai    the AppInfo containing the classes containing the java implementations of bytecodes
+     * @param ctx   the method of the instruction
      * @param instr the instruction to check
      * @return the reference to the Java implementation of the bytecode,
-	 *         or null if the instruction is not implemented in Java.
-	 */
+     *         or null if the instruction is not implemented in Java.
+     */
     MethodInfo getJavaImplementation(AppInfo ai, MethodInfo ctx, Instruction instr);
 
-	int getNativeOpCode(MethodInfo ctx, Instruction instr);
+    int getNativeOpCode(MethodInfo ctx, Instruction instr);
 
-	/**
-	 * Get number of bytes needed to encode an instruction
-	 * @param context The method the instruction belongs to
-	 * @param instruction the instruction to check
-	 * @return the number of bytes this instruction needs
-	 */
+    /**
+     * Get number of bytes needed to encode an instruction
+     *
+     * @param context     The method the instruction belongs to
+     * @param instruction the instruction to check
+     * @return the number of bytes this instruction needs
+     */
     int getNumberOfBytes(MethodInfo context, Instruction instruction);
 
-	/**
-	 * Get classes, which contain methods invoked by the JVM.
-	 * Used for Java implemented bytecodes, exceptions.
+    /**
+     * Get classes, which contain methods invoked by the JVM.
+     * Used for Java implemented bytecodes, exceptions.
      *
-	 * @return a list of fully qualified class names used by the JVM or an empty list
-	 */
+     * @return a list of fully qualified class names used by the JVM or an empty list
+     */
     List<String> getJVMClasses();
 
     /**

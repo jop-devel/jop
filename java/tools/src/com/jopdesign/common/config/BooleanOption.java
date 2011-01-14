@@ -29,13 +29,13 @@ package com.jopdesign.common.config;
  */
 public class BooleanOption extends Option<Boolean> {
 
-	public BooleanOption(String key, String descr) {
-		super(key, Boolean.class, descr, false);
-	}
+    public BooleanOption(String key, String descr) {
+        super(key, Boolean.class, descr, false);
+    }
 
     public BooleanOption(String key, String descr, boolean def) {
-		super(key,descr,def);
-	}
+        super(key, descr, def);
+    }
 
     public BooleanOption(String key, String descr, char shortKey, boolean skipChecks) {
         this(key, descr, false);
@@ -44,12 +44,12 @@ public class BooleanOption extends Option<Boolean> {
     }
 
     @Override
-	protected Boolean parse(String s) throws IllegalArgumentException {
-		String sl = s.toLowerCase();
-		if("true".equals(sl) || "yes".equals(sl) || "y".equals(sl)) return Boolean.TRUE;
-		else if ("false".equals(sl) || "no".equals(sl) || "n".equals(sl)) return Boolean.FALSE;
-		else throw new IllegalArgumentException("Cannot parse boolean: "+sl);
-	}
+    protected Boolean parse(String s) throws IllegalArgumentException {
+        String sl = s.toLowerCase();
+        if ("true".equals(sl) || "yes".equals(sl) || "y".equals(sl)) return Boolean.TRUE;
+        else if ("false".equals(sl) || "no".equals(sl) || "n".equals(sl)) return Boolean.FALSE;
+        else throw new IllegalArgumentException("Cannot parse boolean: " + sl);
+    }
 
     @Override
     public boolean isEnabled(OptionGroup options) {
@@ -58,7 +58,7 @@ public class BooleanOption extends Option<Boolean> {
 
     @Override
     protected String getDefaultsText(String defaultValue) {
-        if ( optional && (defaultValue == null || "false".equalsIgnoreCase(defaultValue)) ) {
+        if (optional && (defaultValue == null || "false".equalsIgnoreCase(defaultValue))) {
             return skipChecks ? "" : "[flag]";
         }
         return super.getDefaultsText(defaultValue);

@@ -25,27 +25,27 @@ package com.jopdesign.common.misc;
  */
 public class HashedString {
 
-	private final String value;
-	private final int hash;
-	
-	public HashedString(String value) {
-		this.value = value;
-		this.hash = value.hashCode();
-	}
-	
-	public int hashCode() {
-		return hash;
-	}
-	
-	public String toString() {
-		return value;
-	}
-	
-	public boolean equals(Object o) {
-		if (this == o)
-			return true;
-		if (getClass() != o.getClass())
-			return false;
-		return value.equals(o.toString());
-	}
+    private final String value;
+    private final int hash;
+
+    public HashedString(String value) {
+        this.value = value;
+        this.hash = value.hashCode();
+    }
+
+    public int hashCode() {
+        return hash;
+    }
+
+    public String toString() {
+        return value;
+    }
+
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (getClass() != o.getClass())
+            return false;
+        return value.equals(o.toString());
+    }
 }

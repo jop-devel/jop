@@ -28,31 +28,31 @@ import java.io.Serializable;
  * As in {@link java.util}, {@link #compareTo} might raise a {@link ClassCastException}
  * if the T1 or T2 doesn't implement {@link Comparable}.
  *
+ * @author Benedikt Huber (benedikt.huber@gmail.com)
  * @param <T1> type of the first component
  * @param <T2> type of the second component
- *
- * @author Benedikt Huber (benedikt.huber@gmail.com)
  */
-public class Pair<T1,T2> implements Comparable<Pair<T1,T2>>, 
-						            Serializable
+public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>,
+        Serializable
 {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	protected T1 first;
+    protected T1 first;
     protected T2 second;
 
-    public Pair() { }
+    public Pair() {
+    }
 
     public Pair(T1 first, T2 second) {
-		this.first = first;
-		this.second = second;
-	}
+        this.first = first;
+        this.second = second;
+    }
 
     public T1 first() {
         return first;
     }
 
-	public T2 second() {
+    public T2 second() {
         return second;
     }
 
@@ -64,28 +64,28 @@ public class Pair<T1,T2> implements Comparable<Pair<T1,T2>>,
         this.second = second;
     }
 
-	@SuppressWarnings({"unchecked", "AccessingNonPublicFieldOfAnotherObject"})
-	public int compareTo(Pair<T1,T2> o) {
-		int c1 = ((Comparable<T1>) first).compareTo(o.first);
-		if(c1 == 0) return ((Comparable<T2>) second).compareTo(o.second);
-		return c1;
-	}
+    @SuppressWarnings({"unchecked", "AccessingNonPublicFieldOfAnotherObject"})
+    public int compareTo(Pair<T1, T2> o) {
+        int c1 = ((Comparable<T1>) first).compareTo(o.first);
+        if (c1 == 0) return ((Comparable<T2>) second).compareTo(o.second);
+        return c1;
+    }
 
-	@Override
-	public boolean equals(Object o) {
-		if(this == o) return true;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
         if (!(o instanceof Pair)) return false;
-        if(! first.equals(((Pair) o).first())) return false;
+        if (!first.equals(((Pair) o).first())) return false;
         return second.equals(((Pair) o).second());
-	}
+    }
 
-	@Override
-	public int hashCode() {
-		return first.hashCode() + second.hashCode();
-	}
+    @Override
+    public int hashCode() {
+        return first.hashCode() + second.hashCode();
+    }
 
-	@Override
-	public String toString() {
-		return "("+ first +", "+ second +")";
-	}
+    @Override
+    public String toString() {
+        return "(" + first + ", " + second + ")";
+    }
 }

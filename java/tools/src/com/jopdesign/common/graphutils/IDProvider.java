@@ -26,6 +26,7 @@ package com.jopdesign.common.graphutils;
  * @param <T>
  */
 public interface IDProvider<T> {
-	int getID(T t);
-	T fromID(int id); /* optional */
+    int getID(T t);
+
+    T fromID(int id); /* optional */
 }

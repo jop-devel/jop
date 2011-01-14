@@ -41,10 +41,11 @@ public class JamuthModel implements ProcessorModel {
         return "jamuth";
     }
 
-	// FIXME: native jamuth classes not yet supported
-	public List<String> getJVMClasses() {
-		return new ArrayList<String>(0);
-	}
+    // FIXME: native jamuth classes not yet supported
+
+    public List<String> getJVMClasses() {
+        return new ArrayList<String>(0);
+    }
 
     @Override
     public List<String> getNativeClasses() {
@@ -53,11 +54,12 @@ public class JamuthModel implements ProcessorModel {
     }
 
     // FIXME: Java implemented bytecodes ?
-	public MethodInfo getJavaImplementation(AppInfo ai,
-			                                MethodInfo ctx,
-			                                Instruction instr) {
-		throw new AssertionError("jamuth model does not (yet) support java implemented methods");
-	}
+
+    public MethodInfo getJavaImplementation(AppInfo ai,
+                                            MethodInfo ctx,
+                                            Instruction instr) {
+        throw new AssertionError("jamuth model does not (yet) support java implemented methods");
+    }
 
     public int getNativeOpCode(MethodInfo ctx, Instruction instr) {
         // FIXME: jamuth specific instructions ?
@@ -67,15 +69,15 @@ public class JamuthModel implements ProcessorModel {
     public int getNumberOfBytes(MethodInfo context, Instruction instruction) {
         int opCode = getNativeOpCode(context, instruction);
         // FIXME jamuth specific instructions ?
-        if(opCode >= 0) return JopInstr.len(opCode);
-        else throw new AssertionError("Invalid opcode: "+context+" : "+instruction);
+        if (opCode >= 0) return JopInstr.len(opCode);
+        else throw new AssertionError("Invalid opcode: " + context + " : " + instruction);
     }
 
-	public boolean isImplementedInJava(Instruction i) {
-		return false;
-	}
+    public boolean isImplementedInJava(Instruction i) {
+        return false;
+    }
 
-	public boolean isSpecialInvoke(MethodInfo ctx, Instruction i) {
-		return false;
-	}
+    public boolean isSpecialInvoke(MethodInfo ctx, Instruction i) {
+        return false;
+    }
 }

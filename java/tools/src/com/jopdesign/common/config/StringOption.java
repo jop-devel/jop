@@ -26,13 +26,13 @@ package com.jopdesign.common.config;
  */
 public class StringOption extends Option<String> {
 
-	public StringOption(String key, String descr, boolean optional) {
-		super(key, String.class, descr, optional);
-	}
+    public StringOption(String key, String descr, boolean optional) {
+        super(key, String.class, descr, optional);
+    }
 
-	public StringOption(String key, String descr, String def) {
-		super(key,descr,def);
-	}
+    public StringOption(String key, String descr, String def) {
+        super(key, descr, def);
+    }
 
     public StringOption(String key, String descr, char shortKey, boolean optional) {
         super(key, String.class, descr, optional);
@@ -55,13 +55,13 @@ public class StringOption extends Option<String> {
     }
 
     @Override
-	protected String parse(String s) {
+    protected String parse(String s) {
         return s.trim();
     }
 
     @Override
     public String getDefaultValue(OptionGroup options) {
-        if ( defaultValue != null && replaceOptions ) {
+        if (defaultValue != null && replaceOptions) {
             // we allow replacement for defaults of string options as well!
             return parse(options, defaultValue);
         }
@@ -72,7 +72,7 @@ public class StringOption extends Option<String> {
         StringOption option = new StringOption(key, description, false);
         option.setShortKey(shortKey);
         return option;
-	}
+    }
 
     @Override
     protected String getDefaultsText(String defaultValue) {

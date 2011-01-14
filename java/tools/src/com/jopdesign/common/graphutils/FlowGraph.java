@@ -23,6 +23,7 @@ package com.jopdesign.common.graphutils;
 import org.jgrapht.DirectedGraph;
 
 public interface FlowGraph<V, E> extends DirectedGraph<V, E> {
-	V getEntry();
-	V getExit();
+    V getEntry();
+
+    V getExit();
 }

@@ -28,28 +28,28 @@ import java.util.Arrays;
  */
 public class EnumOption<T extends Enum<T>> extends Option<T> {
 
-	public EnumOption(String key, String descr, Class<T> clazz) {
-		super(key,clazz,descr,false);
-	}
+    public EnumOption(String key, String descr, Class<T> clazz) {
+        super(key, clazz, descr, false);
+    }
 
-	public EnumOption(String key, String descr, T def) {
-		super(key,descr + " " + enumDescr(def), def);
-	}
+    public EnumOption(String key, String descr, T def) {
+        super(key, descr + " " + enumDescr(def), def);
+    }
 
-	private static<U extends Enum<U>> String enumDescr(U v) {
-		return Arrays.toString(v.getClass().getEnumConstants());
-	}
+    private static <U extends Enum<U>> String enumDescr(U v) {
+        return Arrays.toString(v.getClass().getEnumConstants());
+    }
 
-	private static String enumDescr(Class<?> v) {
-		return Arrays.toString(v.getEnumConstants());
-	}
+    private static String enumDescr(Class<?> v) {
+        return Arrays.toString(v.getEnumConstants());
+    }
 
     @Override
-	protected T parse(String s) throws IllegalArgumentException {
-		try {
-			return Enum.valueOf(this.valClass,s);
-		} catch(IllegalArgumentException e) {
-			throw new IllegalArgumentException("'"+s+"' failed to parse: not one of "+enumDescr(this.valClass), e);
-		}
-	}
+    protected T parse(String s) throws IllegalArgumentException {
+        try {
+            return Enum.valueOf(this.valClass, s);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("'" + s + "' failed to parse: not one of " + enumDescr(this.valClass), e);
+        }
+    }
 }

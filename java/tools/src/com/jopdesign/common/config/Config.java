@@ -132,8 +132,11 @@ public class Config {
     */
     @SuppressWarnings({"UncheckedExceptionClass"})
     public static class BadConfigurationError extends Error {
-		private static final long serialVersionUID = 1L;
-		public BadConfigurationError(String msg) { super(msg); }
+        private static final long serialVersionUID = 1L;
+
+        public BadConfigurationError(String msg) {
+            super(msg);
+        }
 
         public BadConfigurationError(String message, Throwable cause) {
             super(message, cause);
@@ -141,14 +144,16 @@ public class Config {
     }
 
     public static class BadConfigurationException extends Exception {
-		private static final long serialVersionUID = 1L;
-		public BadConfigurationException(String message) {
-			super(message);
-		}
-		public BadConfigurationException(String message, Exception e) {
-			super(message,e);
-		}
-	}
+        private static final long serialVersionUID = 1L;
+
+        public BadConfigurationException(String message) {
+            super(message);
+        }
+
+        public BadConfigurationException(String message, Exception e) {
+            super(message, e);
+        }
+    }
 
     private Properties defaultProps, props;
     private OptionGroup options;
@@ -175,7 +180,7 @@ public class Config {
         List<String> newList = new LinkedList<String>();
         for (String part : parts) {
             part = part.trim();
-            if ( "".equals(part) ) {
+            if ("".equals(part)) {
                 continue;
             }
             newList.add(part);
@@ -185,24 +190,25 @@ public class Config {
 
     /**
      * Check whether the given file is a directory, possibly creating it if
-	 * non existing
-	 * @param outDir the path to the directory
-	 * @param createIfNonExist whether the directory should be created, if it doesn't exist yet
-	 * @throws BadConfigurationException if the file is not a directory or does not exist and is not created.
-	 */
-	public static void checkDir(File outDir, boolean createIfNonExist) throws BadConfigurationException {
-		if(outDir.exists()) {
-			if(! outDir.isDirectory()) {
-				throw new BadConfigurationException("Not a directory: "+outDir);
-			}
-		} else if(createIfNonExist) {
-			if (!outDir.mkdirs()) {
-                throw new BadConfigurationException("Directory could not be created: "+outDir);
+     * non existing
+     *
+     * @param outDir           the path to the directory
+     * @param createIfNonExist whether the directory should be created, if it doesn't exist yet
+     * @throws BadConfigurationException if the file is not a directory or does not exist and is not created.
+     */
+    public static void checkDir(File outDir, boolean createIfNonExist) throws BadConfigurationException {
+        if (outDir.exists()) {
+            if (!outDir.isDirectory()) {
+                throw new BadConfigurationException("Not a directory: " + outDir);
             }
-		} else {
-			throw new BadConfigurationException("Directory does not exist: "+outDir);
-		}
-	}
+        } else if (createIfNonExist) {
+            if (!outDir.mkdirs()) {
+                throw new BadConfigurationException("Directory could not be created: " + outDir);
+            }
+        } else {
+            throw new BadConfigurationException("Directory does not exist: " + outDir);
+        }
+    }
 
 
     public OptionGroup getOptions() {
@@ -231,20 +237,21 @@ public class Config {
      * Existing keys are replaced.
      *
      * @param propStream an open InputStream serving the properties
-     * @param prefix a prefix to append to all property keys in the stream before adding them to the configuration.
+     * @param prefix     a prefix to append to all property keys in the stream before adding them to the configuration.
      * @throws IOException if loading fails.
      */
     public void addProperties(InputStream propStream, String prefix) throws IOException {
         Properties p = new Properties();
         p.load(propStream);
         String pfx = prefix == null || "".equals(prefix) ? "" : prefix + ".";
-        for (Map.Entry<Object,Object> e : p.entrySet()) {
-            props.put(pfx + e.getKey(), e.getValue() );
+        for (Map.Entry<Object, Object> e : p.entrySet()) {
+            props.put(pfx + e.getKey(), e.getValue());
         }
     }
 
     /**
      * Get the default value used to indent the descriptions or values of options.
+     *
      * @return the default indent for help texts.
      */
     public int getDefaultIndent() {
@@ -258,10 +265,10 @@ public class Config {
     /**
      * Parse configuration options.
      *
-     * @see OptionGroup#consumeOptions(String[])
      * @param args arguments to parse
      * @return string-arguments after the last known argument.
      * @throws BadConfigurationException if arguments or current properties cannot be parsed.
+     * @see OptionGroup#consumeOptions(String[])
      */
     public String[] parseArguments(String[] args) throws BadConfigurationException {
         return options.consumeOptions(args);
@@ -277,13 +284,14 @@ public class Config {
     }
 
     public void checkPresent(Option<?> option) throws BadConfigurationException {
-        if(getOption(option) == null) {
-            throw new BadConfigurationException("Missing option: "+option);
+        if (getOption(option) == null) {
+            throw new BadConfigurationException("Missing option: " + option);
         }
     }
 
     /**
      * Set a new set of default values, replaces the old default values.
+     *
      * @param defaultProps the new default values.
      */
     public void setDefaults(Properties defaultProps) {
@@ -302,11 +310,11 @@ public class Config {
      */
     public void addDefaults(Properties defaults, boolean override) {
         //noinspection unchecked
-        if ( override ) {
+        if (override) {
             defaultProps.putAll(defaults);
         } else {
             for (Object key : defaults.entrySet()) {
-                if ( !defaultProps.containsKey(key) ) {
+                if (!defaultProps.containsKey(key)) {
                     defaultProps.put(key, defaults.get(key));
                 }
             }
@@ -323,14 +331,14 @@ public class Config {
     /**
      * Set a new value for a key.
      *
-     * @param key the key to of the value to set.
-     * @param value the new value to set.
+     * @param key        the key to of the value to set.
+     * @param value      the new value to set.
      * @param setDefault if true, set the default value instead of the value.
      * @return the old value or old default value.
      */
     public String setProperty(String key, String value, boolean setDefault) {
         Object val;
-        if ( setDefault ) {
+        if (setDefault) {
             val = defaultProps.setProperty(key, value);
         } else {
             val = props.setProperty(key, value);
@@ -345,9 +353,9 @@ public class Config {
     /**
      * Check if a key is set (ignoring default options).
      *
-     * @see #hasValue(String)
      * @param key the key of the property to check.
      * @return true if set.
+     * @see #hasValue(String)
      */
     public boolean isSet(String key) {
         return props.containsKey(key);
@@ -356,9 +364,9 @@ public class Config {
     /**
      * Check if the value of an option has been set (ignoring default options).
      *
-     * @see #hasValue(String)
      * @param option the option to check.
      * @return true if set.
+     * @see #hasValue(String)
      */
     public boolean isSet(Option<?> option) {
         return isSet(options.getConfigKey(option));
@@ -367,9 +375,9 @@ public class Config {
     /**
      * Check if a key is set or has a default value.
      *
-     * @see #isSet(String)
      * @param key the key of the property to check.
      * @return true if it has a value or default not equal to null.
+     * @see #isSet(String)
      */
     public boolean hasValue(String key) {
         return props.getProperty(key) != null;
@@ -378,10 +386,10 @@ public class Config {
     /**
      * Check if an option is set or has a default value.
      *
-     * @see #isSet(String)
-     * @see OptionGroup#hasValue(Option) 
      * @param option the option of the property to check.
      * @return true if it has a value or default not equal to null.
+     * @see #isSet(String)
+     * @see OptionGroup#hasValue(Option)
      */
     public boolean hasValue(Option<?> option) {
         return options.hasValue(option);
@@ -402,8 +410,8 @@ public class Config {
     /**
      * This is a shortcut to add an option to the main option group.
      *
-     * @see OptionGroup#addOption(Option)
      * @param option the option to add.
+     * @see OptionGroup#addOption(Option)
      */
     public void addOption(Option<?> option) {
         options.addOption(option);
@@ -412,8 +420,8 @@ public class Config {
     /**
      * This is a shortcut to add a list of options to the main option group.
      *
-     * @see OptionGroup#addOptions(Option[])
      * @param options the options to add.
+     * @see OptionGroup#addOptions(Option[])
      */
     public void addOptions(Option<?>[] options) {
         this.options.addOptions(options);
@@ -432,10 +440,10 @@ public class Config {
     /**
      * This is a shortcut to get an option from the main option group.
      *
-     * @see OptionGroup#getOption(Option)
      * @param option the option to read.
      * @return the value of the option
      * @throws Config.BadConfigurationError if the format of the option is invalid if required and not set.
+     * @see OptionGroup#getOption(Option)
      */
     public <T> T getOption(Option<T> option) throws BadConfigurationError {
         return options.getOption(option);
@@ -444,11 +452,11 @@ public class Config {
     /**
      * This is a shortcut to get an option from the main option group.
      *
-     * @see OptionGroup#getOption(Option, Object)
-     * @param option the option to read.
+     * @param option     the option to read.
      * @param defaultVal the default value to use if no other value is found.
      * @return the value of the option
      * @throws IllegalArgumentException if the format of the option is invalid
+     * @see OptionGroup#getOption(Option, Object)
      */
     public <T> T getOption(Option<T> option, T defaultVal) throws IllegalArgumentException {
         return options.getOption(option, defaultVal);
@@ -465,10 +473,10 @@ public class Config {
     /**
      * This is a shortcut to get an option from the main option group.
      *
-     * @see OptionGroup#tryGetOption(Option)
      * @param option the option to read.
      * @return the value of the option or null if not set, even if required.
      * @throws IllegalArgumentException if the format of the option is invalid
+     * @see OptionGroup#tryGetOption(Option)
      */
     public <T> T tryGetOption(Option<T> option) throws IllegalArgumentException {
         return options.tryGetOption(option);
@@ -479,15 +487,15 @@ public class Config {
      * To print a list of all options with their values,
      * use {@link #printConfiguration(int)}.
      *
-     * @see #printConfiguration(int)
      * @param indent indent used for keys
      * @return a dump of all options with their respective values.
+     * @see #printConfiguration(int)
      */
     public String dumpConfiguration(int indent) {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         PrintStream p = new PrintStream(os);
 
-        for (Map.Entry<Object,Object> e : props.entrySet()) {
+        for (Map.Entry<Object, Object> e : props.entrySet()) {
             printOption(p, indent, e.getKey().toString(), e.getValue());
         }
 
@@ -502,8 +510,8 @@ public class Config {
         System.out.println();
         System.out.println("Other configuration values:");
 
-        for (Map.Entry<Object,Object> e : props.entrySet()) {
-            if ( keys.contains(e.getKey().toString()) ) {
+        for (Map.Entry<Object, Object> e : props.entrySet()) {
+            if (keys.contains(e.getKey().toString())) {
                 continue;
             }
             printOption(System.out, indent, e.getKey().toString(), e.getValue());
@@ -513,8 +521,8 @@ public class Config {
     }
 
     protected static void printOption(PrintStream p, int indent, String key, Object value) {
-        p.println(String.format("%4s%-"+(indent+1)+"s ==> %s", "", key,
-                  value == null ? "<not set>": value));
+        p.println(String.format("%4s%-" + (indent + 1) + "s ==> %s", "", key,
+                value == null ? "<not set>" : value));
     }
 
 }

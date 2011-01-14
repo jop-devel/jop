@@ -41,10 +41,10 @@ public class CallString implements CallStringProvider {
     private final InvokeSite[] callString;
 
 	public static final CallString EMPTY = new CallString() {
-		@SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
+        @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
         public boolean equals(Object obj) { return obj == this; }
-		public int hashCode() { return 1; }
-	};
+        public int hashCode() { return 1; }
+    };
 
     /**
      * Create a new callstring with one entry.
@@ -60,30 +60,30 @@ public class CallString implements CallStringProvider {
         callString = new InvokeSite[]{};
     }
 
-	private CallString(InvokeSite[] cs) {
-		assert cs != null;
-		callString = cs;
-	}
+    private CallString(InvokeSite[] cs) {
+        assert cs != null;
+        callString = cs;
+    }
 
     public CallString getCallString() {
         return this;
     }
 
-	/**
-	 * Return a new callstring, extended by the given invoke site.
-	 * <p>Let {@code n(1)} be the id of the given invoke site, and
-	 *    {@code n(2),...,n(k)} be the callstring represented by {@code this}
-	 * <ol><li/>If k &lt;= maxDepth, the resulting callstring is {@code n(1),n(2),...,n(k)}
-	 *     <li/>If k &gt;= maxDepth, the resulting callstring is {@code n(1),n(2),...,n(maxDepth)}
-	 * </ol>
+    /**
+     * Return a new callstring, extended by the given invoke site.
+     * <p>Let {@code n(1)} be the id of the given invoke site, and
+     *    {@code n(2),...,n(k)} be the callstring represented by {@code this}
+     * <ol><li/>If k &lt;= maxDepth, the resulting callstring is {@code n(1),n(2),...,n(k)}
+     *     <li/>If k &gt;= maxDepth, the resulting callstring is {@code n(1),n(2),...,n(maxDepth)}
+     * </ol>
      *
      * @param invokeNode a CFG InvokeNode representing the invocation
      * @param maxLen the maximum length of the callstring
      * @return a new callstring with the given invocation as the last element.
      */
-	public CallString push(ControlFlowGraph.InvokeNode invokeNode , int maxLen) {
-		return push(invokeNode.getBasicBlock().getMethodInfo(),invokeNode.getInstructionHandle(),maxLen);
-	}
+    public CallString push(ControlFlowGraph.InvokeNode invokeNode , int maxLen) {
+        return push(invokeNode.getBasicBlock().getMethodInfo(),invokeNode.getInstructionHandle(),maxLen);
+    }
 
     /**
      * Return a new callstring, extended by the given invoke site.
@@ -100,7 +100,7 @@ public class CallString implements CallStringProvider {
      * @param maxLen the maximum length of the callstring
      * @return a new callstring with the given invocation as the last element.
      */
-	public CallString push(MethodInfo method, InstructionHandle invoke, int maxLen) {
+    public CallString push(MethodInfo method, InstructionHandle invoke, int maxLen) {
         return push(method.getCode().getInvokeSite(invoke), maxLen);
     }
 
@@ -119,15 +119,15 @@ public class CallString implements CallStringProvider {
      */
     public CallString push(InvokeSite is, int maxLen) {
 
-        if(maxLen == 0) return EMPTY;
+        if (maxLen == 0) return EMPTY;
 
-		// shallow clone
-        int k = Math.min(callString.length+1, maxLen);
-		InvokeSite[] cs = Arrays.copyOf(callString, k);
-		cs[k-1] = is;
+        // shallow clone
+        int k = Math.min(callString.length + 1, maxLen);
+        InvokeSite[] cs = Arrays.copyOf(callString, k);
+        cs[k - 1] = is;
 
-		return new CallString(cs);
-	}
+        return new CallString(cs);
+    }
 
     public int length() {
         return callString.length;
@@ -156,81 +156,81 @@ public class CallString implements CallStringProvider {
         return new CallString(cs);
     }
 
-	@Override
-	public int hashCode() {
+    @Override
+    public int hashCode() {
         // TODO we should reimplement this (?)
-		return callString.hashCode();
-	}
+        return callString.hashCode();
+    }
 
     @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
     @Override
-	public boolean equals(Object obj) {
-		if (this == obj) return true;
-		if (obj == null) return false;
-		if (getClass() != obj.getClass()) return false;
-		CallString other = (CallString) obj;
-		return Arrays.equals(callString, other.callString);
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null) return false;
+        if (getClass() != obj.getClass()) return false;
+        CallString other = (CallString) obj;
+        return Arrays.equals(callString, other.callString);
 
-	}
+    }
 
-	/**
-	 * Return true if {@code cs} is a suffix of callstring, that is,
-	 * {@code this = prefix + cs} for some {@code prefix}.
-	 *
-	 * @param cs the suffix to check
-	 * @return true if this callstring ends with the given callstring
-	 */
-	@SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
+    /**
+     * Return true if {@code cs} is a suffix of callstring, that is,
+     * {@code this = prefix + cs} for some {@code prefix}.
+     *
+     * @param cs the suffix to check
+     * @return true if this callstring ends with the given callstring
+     */
+    @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
     public boolean hasSuffix(CallString cs) {
-		if (this.equals(cs) || cs.isEmpty()) {
-			return true;
-		}
-		if (callString.length < cs.callString.length) {
-			return false;
-		}
-		int suffixStart = callString.length - cs.callString.length;
+        if (this.equals(cs) || cs.isEmpty()) {
+            return true;
+        }
+        if (callString.length < cs.callString.length) {
+            return false;
+        }
+        int suffixStart = callString.length - cs.callString.length;
         for (int i = 0; i < cs.callString.length; i++) {
-            if (!callString[suffixStart+i].equals(cs.callString[i])) {
+            if (!callString[suffixStart + i].equals(cs.callString[i])) {
                 return false;
             }
         }
-		return true;
-	}
-	
-	public boolean isEmpty() {
-		return callString.length == 0;
-	}
+        return true;
+    }
 
-	public String toString() {
-		if(this.isEmpty()) return "CallString.EMPTY";
-		long hash = hashCode();
-		if(hash < 0) hash += Integer.MAX_VALUE;
-		return String.format("CallString[|%d|%x]",callString.length, hash);
-	}
+    public boolean isEmpty() {
+        return callString.length == 0;
+    }
 
-	public String toStringVerbose() {
-		if(this.isEmpty()) return "CallString.EMPTY";
-		StringBuffer sb = new StringBuffer("CallString{");
+    public String toString() {
+        if (this.isEmpty()) return "CallString.EMPTY";
+        long hash = hashCode();
+        if (hash < 0) hash += Integer.MAX_VALUE;
+        return String.format("CallString[|%d|%x]", callString.length, hash);
+    }
+
+    public String toStringVerbose() {
+        if (this.isEmpty()) return "CallString.EMPTY";
+        StringBuffer sb = new StringBuffer("CallString{");
         boolean first = true;
-		for(InvokeSite is : callString) {
+        for (InvokeSite is : callString) {
             if (first) first = false;
-            else sb.append(";");           
-			sb.append(is.toString());
-		}
-		sb.append("}");
-		return sb.toString();
-	}
+            else sb.append(";");
+            sb.append(is.toString());
+        }
+        sb.append("}");
+        return sb.toString();
+    }
 
     /**
      * Create a list of all invoke sites as strings.
      * Note that this representation can change, or it might even be incorrect!
      *
-     * @see #toString()
      * @return a list of invoke site string representations.
+     * @see #toString()
      */
     public List<String> toStringList() {
         LinkedList<String> cs = new LinkedList<String>();
-        for(InvokeSite cse : callString) {
+        for (InvokeSite cse : callString) {
             cs.add(cse.toString());
         }
         return cs;

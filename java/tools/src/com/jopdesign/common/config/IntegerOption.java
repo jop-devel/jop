@@ -29,13 +29,13 @@ public class IntegerOption extends Option<Long> {
     private long minValue = Long.MIN_VALUE;
     private long maxValue = Long.MAX_VALUE;
 
-	public IntegerOption(String key, String descr, boolean optional) {
-		super(key, Long.class, descr, optional);
-	}
+    public IntegerOption(String key, String descr, boolean optional) {
+        super(key, Long.class, descr, optional);
+    }
 
-	public IntegerOption(String key, String descr, long i) {
-		super(key, descr, i);
-	}
+    public IntegerOption(String key, String descr, long i) {
+        super(key, descr, i);
+    }
 
     public IntegerOption setMinMax(long min, long max) {
         minValue = min;
@@ -43,19 +43,19 @@ public class IntegerOption extends Option<Long> {
         return this;
     }
 
-	@Override
-	protected Long parse(String s) throws IllegalArgumentException {
+    @Override
+    protected Long parse(String s) throws IllegalArgumentException {
         long val;
         try {
             val = Long.parseLong(s);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid number format '" + s + '"', e);
         }
-        if ( val < minValue || val > maxValue ) {
-            throw new IllegalArgumentException("Value out of range (min: "+ minValue+", max: "+maxValue+")");
+        if (val < minValue || val > maxValue) {
+            throw new IllegalArgumentException("Value out of range (min: " + minValue + ", max: " + maxValue + ")");
         }
         return val;
-	}
+    }
 
     @Override
     public boolean isEnabled(OptionGroup options) {
@@ -65,7 +65,7 @@ public class IntegerOption extends Option<Long> {
     @Override
     public boolean isValue(String arg) {
         // if it starts with '-', it may be a negative integer
-        if ( arg.startsWith("-") ) {
+        if (arg.startsWith("-")) {
             try {
                 Long val = Long.parseLong(arg);
                 return true;

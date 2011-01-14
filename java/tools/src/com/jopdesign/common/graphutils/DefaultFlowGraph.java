@@ -25,59 +25,59 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 
 
 public class DefaultFlowGraph<V, E> extends DefaultDirectedGraph<V, E>
-		implements FlowGraph<V, E>
-{
-	private static final long serialVersionUID = 1L;
-	private V entry;
-	private V exit;
+        implements FlowGraph<V, E> {
+    private static final long serialVersionUID = 1L;
+    private V entry;
+    private V exit;
 
-	public DefaultFlowGraph(Class<? extends E> edgeClass, V entry, V exit) {
-		super(edgeClass);
-		this.entry = entry;
-		this.addVertex(entry);
-		this.exit = exit;
-		this.addVertex(exit);
-	}
+    public DefaultFlowGraph(Class<? extends E> edgeClass, V entry, V exit) {
+        super(edgeClass);
+        this.entry = entry;
+        this.addVertex(entry);
+        this.exit = exit;
+        this.addVertex(exit);
+    }
 
-	/**
-	 * Copy constructor
+    /**
+     * Copy constructor
+     *
      * @param srcGraph the source graph to copy
      */
-	public DefaultFlowGraph(FlowGraph<V,E> srcGraph) {
-		super(srcGraph.getEdgeFactory());
-		this.entry = srcGraph.getEntry();
-		this.exit = srcGraph.getExit();
-		this.addGraph(srcGraph);
-	}
-	
-	private void addGraph(DirectedGraph<V, E> srcGraph) {
-		for(V vertex : srcGraph.vertexSet()) {
-			this.addVertex(vertex);
-		}		
-		for(E edge : srcGraph.edgeSet()) {
-			V src = srcGraph.getEdgeTarget(edge);
-			V target = srcGraph.getEdgeTarget(edge);
-			this.addEdge(
-					src,
-					target,
-					edge);
-		}
-	}
+    public DefaultFlowGraph(FlowGraph<V, E> srcGraph) {
+        super(srcGraph.getEdgeFactory());
+        this.entry = srcGraph.getEntry();
+        this.exit = srcGraph.getExit();
+        this.addGraph(srcGraph);
+    }
 
-	public V getEntry() {
-		return this.entry;
-	}
+    private void addGraph(DirectedGraph<V, E> srcGraph) {
+        for (V vertex : srcGraph.vertexSet()) {
+            this.addVertex(vertex);
+        }
+        for (E edge : srcGraph.edgeSet()) {
+            V src = srcGraph.getEdgeTarget(edge);
+            V target = srcGraph.getEdgeTarget(edge);
+            this.addEdge(
+                    src,
+                    target,
+                    edge);
+        }
+    }
 
-	public void setEntry(V n) {
-		this.entry = n;
-	}
+    public V getEntry() {
+        return this.entry;
+    }
 
-	public V getExit() {
-		return this.exit;
-	}
+    public void setEntry(V n) {
+        this.entry = n;
+    }
 
-	public void setExit(V n) {
-		this.exit = n;
-	}
+    public V getExit() {
+        return this.exit;
+    }
+
+    public void setExit(V n) {
+        this.exit = n;
+    }
 
 }

@@ -79,10 +79,10 @@ import org.apache.log4j.Logger;
 public class DescendingClassTraverser implements ClassVisitor {
 
     private final ClassElementVisitor visitor;
-    
+
     private BcelVisitor bcelVisitor;
-    
-    private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT+".DescendingClassTraverser");
+
+    private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT + ".DescendingClassTraverser");
 
     private class BcelVisitor implements Visitor {
 
@@ -121,8 +121,8 @@ public class DescendingClassTraverser implements ClassVisitor {
         }
 
         public MemberInfo getMemberInfo() {
-            if ( classInfo != null ) return classInfo;
-            if ( methodInfo != null ) return methodInfo;
+            if (classInfo != null) return classInfo;
+            if (methodInfo != null) return methodInfo;
             return fieldInfo;
         }
 
@@ -269,7 +269,7 @@ public class DescendingClassTraverser implements ClassVisitor {
 
     public boolean visitClass(ClassInfo classInfo) {
 
-        if ( !visitor.visitClass(classInfo) ) {
+        if (!visitor.visitClass(classInfo)) {
             // TODO we might want to make this return-value configurable, default should remain 'true'
             return true;
         }
@@ -298,7 +298,7 @@ public class DescendingClassTraverser implements ClassVisitor {
             }
 
             bcelVisitor.setFieldInfo(f);
-            
+
             visitAttributes(f.getAttributes());
 
             visitor.finishField(f);
@@ -331,14 +331,14 @@ public class DescendingClassTraverser implements ClassVisitor {
             bcelVisitor.setCode(false);
 
             visitAttributes(m.getAttributes());
-            
+
             visitor.finishMethod(m);
         }
 
         bcelVisitor.setClassInfo(classInfo);
 
         visitAttributes(classInfo.getAttributes());
-        
+
         visitor.finishClass(classInfo);
 
         return true;
@@ -349,18 +349,18 @@ public class DescendingClassTraverser implements ClassVisitor {
 
     private void visitAttributes(Attribute[] attributes) {
         for (Attribute a : attributes) {
-            if ( a instanceof EnclosingMethod) {
+            if (a instanceof EnclosingMethod) {
                 visitor.visitEnclosingMethod(bcelVisitor.getClassInfo(), (EnclosingMethod) a);
-            } else if ( a instanceof AnnotationAttribute ) {
+            } else if (a instanceof AnnotationAttribute) {
                 visitor.visitAnnotation(bcelVisitor.getMemberInfo(), (AnnotationAttribute) a);
-            } else if ( a instanceof ParameterAnnotationAttribute) {
+            } else if (a instanceof ParameterAnnotationAttribute) {
                 visitor.visitParameterAnnotation(bcelVisitor.getMemberInfo(), (ParameterAnnotationAttribute) a);
-            } else if ( a instanceof CustomAttribute ) {
+            } else if (a instanceof CustomAttribute) {
                 visitor.visitCustomAttribute(bcelVisitor.getMemberInfo(), (CustomAttribute) a, bcelVisitor.isCode());
             } else {
                 a.accept(bcelVisitor);
             }
-        }        
+        }
     }
-    
+
 }

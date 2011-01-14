@@ -29,16 +29,15 @@ import java.util.Set;
  *
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  * @author Stefan Hepp <stefan@stefant.org>
- *
  * @param <T> java type of the option
  */
 public abstract class Option<T> {
 
     public static final char SHORT_NONE = ' ';
 
-	protected String  key;
-    protected char    shortKey = SHORT_NONE;
-    protected String  description;
+    protected String key;
+    protected char shortKey = SHORT_NONE;
+    protected String description;
     protected boolean optional;
 
     protected boolean replaceOptions;
@@ -69,29 +68,31 @@ public abstract class Option<T> {
 
     /**
      * Get the default value of this option, or null if not set.
+     *
      * @param options the optiongroup of this option used to get values for keyword replacements.
      * @return the default value or null if none.
      */
     public T getDefaultValue(OptionGroup options) {
         // keyword replacement only used for string option, implemented there.
-		return defaultValue;
-	}
+        return defaultValue;
+    }
 
     /**
      * Get the default value without keyword replacements.
+     *
      * @return the original default value, or null if not set.
      */
     public T getDefaultValue() {
         return defaultValue;
     }
 
-	public String getDescription() {
-		return description;
-	}
+    public String getDescription() {
+        return description;
+    }
 
-	public String getKey() {
-		return key;
-	}
+    public String getKey() {
+        return key;
+    }
 
     public char getShortKey() {
         return shortKey;
@@ -135,13 +136,12 @@ public abstract class Option<T> {
         this.replaceOptions = replaceOptions;
         return this;
     }
-    
-	public T parse(OptionGroup options, String s) throws IllegalArgumentException
-    {
-        if ( replaceOptions ) {
+
+    public T parse(OptionGroup options, String s) throws IllegalArgumentException {
+        if (replaceOptions) {
             HashSet<String> stack = new HashSet<String>();
             stack.add(options.getConfigKey(this));
-            return parse( replacePlaceholders(options.getConfig(), s, stack) );
+            return parse(replacePlaceholders(options.getConfig(), s, stack));
         } else {
             return parse(s);
         }
@@ -173,42 +173,42 @@ public abstract class Option<T> {
         return options.hasValue(this);
     }
 
-	public String toString() {
-		return toString(0, null);
-	}
+    public String toString() {
+        return toString(0, null);
+    }
 
-	public String toString(int lAdjust, OptionGroup options) {
-		StringBuffer s = new StringBuffer("  ");
-        if ( shortKey != SHORT_NONE ) {
+    public String toString(int lAdjust, OptionGroup options) {
+        StringBuffer s = new StringBuffer("  ");
+        if (shortKey != SHORT_NONE) {
             s.append('-');
             s.append(shortKey);
             s.append(",--");
         } else {
             s.append("   --");
-        }        
+        }
         s.append(key);
-        
-		for(int i = key.length(); i < lAdjust; i++) {
-			s.append(' ');
-		}
-		s.append("  ");
-		s.append(descrString(options));
-		return s.toString();
-	}
 
-	public String descrString(OptionGroup options) {
+        for (int i = key.length(); i < lAdjust; i++) {
+            s.append(' ');
+        }
+        s.append("  ");
+        s.append(descrString(options));
+        return s.toString();
+    }
+
+    public String descrString(OptionGroup options) {
 
         String defaultValue = options.getDefaultValueText(this);
 
-		StringBuffer s = new StringBuffer(this.description);
-		s.append(" ");
+        StringBuffer s = new StringBuffer(this.description);
+        s.append(" ");
         s.append(getDefaultsText(defaultValue));
-		return s.toString();
-	}
+        return s.toString();
+    }
 
     protected String getDefaultsText(String defaultValue) {
         StringBuffer s = new StringBuffer();
-        if(defaultValue != null) {
+        if (defaultValue != null) {
             s.append("[default: ").append(defaultValue).append("]");
         } else {
             s.append(this.optional ? "[optional]" : "[mandatory]");
@@ -218,35 +218,35 @@ public abstract class Option<T> {
 
     protected String replacePlaceholders(Config config, String s, Set<String> stack) {
         int p1 = s.indexOf("${");
-        if ( p1 == -1 ) {
+        if (p1 == -1) {
             return s;
         }
 
         StringBuffer buf = new StringBuffer();
         int p2 = -1;
         while (p1 > -1) {
-            buf.append(s.substring(p2+1, p1));
+            buf.append(s.substring(p2 + 1, p1));
 
-            p2 = s.indexOf('}',p1);
-            if ( p2 == -1 ) {
+            p2 = s.indexOf('}', p1);
+            if (p2 == -1) {
                 // if no closing } found, stop and add rest including '$['
-                p2 = p1-1;
+                p2 = p1 - 1;
                 break;
             }
 
             // replace placeholder with value
-            String key = s.substring(p1+2, p2);
+            String key = s.substring(p1 + 2, p2);
 
             // try to use the option if available to get default value from option or environment.
             // We do NOT want to use config.getOption(key) here to avoid infinite recursion
             Option<?> opt = config.getOptions().getOptionSpec(key);
-            String val = config.getValue(key,System.getenv(key));
-            if ( val == null && opt != null ) {
+            String val = config.getValue(key, System.getenv(key));
+            if (val == null && opt != null) {
                 Object o = opt.getDefaultValue();
                 val = o != null ? o.toString() : null;
             }
 
-            if ( val == null || stack.contains(key) ) {
+            if (val == null || stack.contains(key)) {
                 buf.append("");
             } else {
                 stack.add(key);
@@ -256,7 +256,7 @@ public abstract class Option<T> {
 
             p1 = s.indexOf("${", p2);
         }
-        buf.append(s.substring(p2+1));
+        buf.append(s.substring(p2 + 1));
 
         return buf.toString();
     }

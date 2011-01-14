@@ -25,42 +25,42 @@ import org.jgrapht.DirectedGraph;
 import java.util.Collection;
 import java.util.Set;
 
-public abstract class UnmodifiableDirectedGraphAdapter<V,E> implements DirectedGraph<V, E> {
+public abstract class UnmodifiableDirectedGraphAdapter<V, E> implements DirectedGraph<V, E> {
     private static final String UNMODIFIABLE = "this graph is unmodifiable";
 
-	public E addEdge(V arg0, V arg1) {
+    public E addEdge(V arg0, V arg1) {
         throw new UnsupportedOperationException(UNMODIFIABLE);
-	}
+    }
 
-	public boolean addEdge(V arg0, V arg1, E arg2) {
+    public boolean addEdge(V arg0, V arg1, E arg2) {
         throw new UnsupportedOperationException(UNMODIFIABLE);
-	}
+    }
 
-	public boolean addVertex(V arg0) {
+    public boolean addVertex(V arg0) {
         throw new UnsupportedOperationException(UNMODIFIABLE);
-	}
+    }
 
-	public boolean removeAllEdges(Collection<? extends E> arg0) {
+    public boolean removeAllEdges(Collection<? extends E> arg0) {
         throw new UnsupportedOperationException(UNMODIFIABLE);
-	}
+    }
 
-	public Set<E> removeAllEdges(V arg0, V arg1) {
+    public Set<E> removeAllEdges(V arg0, V arg1) {
         throw new UnsupportedOperationException(UNMODIFIABLE);
-	}
+    }
 
-	public boolean removeAllVertices(Collection<? extends V> arg0) {
+    public boolean removeAllVertices(Collection<? extends V> arg0) {
         throw new UnsupportedOperationException(UNMODIFIABLE);
-	}
+    }
 
-	public boolean removeEdge(E arg0) {
+    public boolean removeEdge(E arg0) {
         throw new UnsupportedOperationException(UNMODIFIABLE);
-	}
+    }
 
-	public E removeEdge(V arg0, V arg1) {
+    public E removeEdge(V arg0, V arg1) {
         throw new UnsupportedOperationException(UNMODIFIABLE);
-	}
+    }
 
-	public boolean removeVertex(V arg0) {
+    public boolean removeVertex(V arg0) {
         throw new UnsupportedOperationException(UNMODIFIABLE);
-	}
+    }
 }

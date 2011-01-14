@@ -20,47 +20,47 @@
 package com.jopdesign.dfa.analyses;
 
 public class TypeMapping {
-	public final int stackLoc;
-	public final String heapLoc;
-	public final String type;
-	public final int hash;
-	
-	public TypeMapping(int l, String t) {
-		stackLoc = l;
-		heapLoc = "";
-		type = t;
-		hash = stackLoc+heapLoc.hashCode()+type.hashCode();
-	}
+    public final int stackLoc;
+    public final String heapLoc;
+    public final String type;
+    public final int hash;
 
-	public TypeMapping(String l, String t) {
-		stackLoc = -1;
-		heapLoc = l;
-		type = t;
-		hash = stackLoc+heapLoc.hashCode()+type.hashCode();
-	}
+    public TypeMapping(int l, String t) {
+        stackLoc = l;
+        heapLoc = "";
+        type = t;
+        hash = stackLoc + heapLoc.hashCode() + type.hashCode();
+    }
 
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof TypeMapping)) return false;
+    public TypeMapping(String l, String t) {
+        stackLoc = -1;
+        heapLoc = l;
+        type = t;
+        hash = stackLoc + heapLoc.hashCode() + type.hashCode();
+    }
 
-		TypeMapping m = (TypeMapping)o;
-		
-		return (stackLoc == m.stackLoc)
-			&& heapLoc.equals(m.heapLoc)
-			&& type.equals(m.type);
-	}
-			
-	public int hashCode() {
-		return hash;
-	}
-	
-	public String toString() {
-		if (stackLoc >= 0) {
-			return "<stack["+stackLoc+"], "+type+">";
-		} else {
-			return "<"+heapLoc+", "+type+">";				
-		}
-	}
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof TypeMapping)) return false;
+
+        TypeMapping m = (TypeMapping) o;
+
+        return (stackLoc == m.stackLoc)
+                && heapLoc.equals(m.heapLoc)
+                && type.equals(m.type);
+    }
+
+    public int hashCode() {
+        return hash;
+    }
+
+    public String toString() {
+        if (stackLoc >= 0) {
+            return "<stack[" + stackLoc + "], " + type + ">";
+        } else {
+            return "<" + heapLoc + ", " + type + ">";
+        }
+    }
 }

@@ -27,27 +27,26 @@ import com.jopdesign.common.MethodInfo;
  * instruction/block/etc. is executed, and an optional call string.
  *
  * @author Benedikt Huber <benedikt.huber@gmail.com>
- *
  */
 public class ExecutionContext {
 
-	private final MethodInfo method;
-	private final CallString callString;
+    private final MethodInfo method;
+    private final CallString callString;
 
-	public ExecutionContext(MethodInfo method, CallString callString) {
-		assert (method != null);
-		assert (callString != null);
+    public ExecutionContext(MethodInfo method, CallString callString) {
+        assert (method != null);
+        assert (callString != null);
 
-		this.method = method;
-		this.callString = callString;
-	}
+        this.method = method;
+        this.callString = callString;
+    }
 
-	public ExecutionContext(MethodInfo method) {
-		assert (method != null);
+    public ExecutionContext(MethodInfo method) {
+        assert (method != null);
 
-		this.method = method;
-		this.callString = CallString.EMPTY;
-	}
+        this.method = method;
+        this.callString = CallString.EMPTY;
+    }
 
     public MethodInfo getMethodInfo() {
         return method;
@@ -57,29 +56,29 @@ public class ExecutionContext {
         return callString;
     }
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = callString.hashCode();
-		result = prime * result + method.hashCode();
-		return result;
-	}
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = callString.hashCode();
+        result = prime * result + method.hashCode();
+        return result;
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) return true;
-		if (obj == null) return false;
-		if (getClass() != obj.getClass()) return false;
-		ExecutionContext other = (ExecutionContext) obj;
-		if (!method.equals(other.getMethodInfo())) return false;
-		return callString.equals(other.getCallString());
-	}
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null) return false;
+        if (getClass() != obj.getClass()) return false;
+        ExecutionContext other = (ExecutionContext) obj;
+        if (!method.equals(other.getMethodInfo())) return false;
+        return callString.equals(other.getCallString());
+    }
 
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer("ExecutionContext(");
         sb.append(method.getFQMethodName());
-        if(! callString.isEmpty()) {
+        if (!callString.isEmpty()) {
             sb.append(",");
             sb.append(callString.toString());
         }

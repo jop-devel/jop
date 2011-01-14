@@ -58,49 +58,65 @@ import java.util.Vector;
 
 /**
  * A lightweight basic block class, based on linked lists.<br/>
- *
+ * <p/>
  * See: A more elaborated attempt to add BasicBlocks to BCEL
- *      http://findbugs.sourceforge.net/api/edu/umd/cs/findbugs/ba/BasicBlock.html
+ * http://findbugs.sourceforge.net/api/edu/umd/cs/findbugs/ba/BasicBlock.html
  *
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class BasicBlock  {
+public class BasicBlock {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_CFG + ".BasicBlock");
 
-	/**
-	 * Flow annotations for instructions.
-	 * Should only be used by {@link ControlFlowGraph}
-	 */
-	static class FlowInfo {
-		private boolean alwaysTaken = false;
-		private boolean splitBefore = false;
-		private boolean splitAfter = false;
-		private boolean exit = false;
-		private final List<FlowTarget> targets = new ArrayList<FlowTarget>();
+    /**
+     * Flow annotations for instructions.
+     * Should only be used by {@link ControlFlowGraph}
+     */
+    static class FlowInfo {
+        private boolean alwaysTaken = false;
+        private boolean splitBefore = false;
+        private boolean splitAfter = false;
+        private boolean exit = false;
+        private final List<FlowTarget> targets = new ArrayList<FlowTarget>();
 
-		void addTarget(InstructionHandle ih, ControlFlowGraph.EdgeKind kind) {
-			targets.add(new FlowTarget(ih,kind));
-		}
+        void addTarget(InstructionHandle ih, ControlFlowGraph.EdgeKind kind) {
+            targets.add(new FlowTarget(ih, kind));
+        }
 
-        public boolean isAlwaysTaken() { return alwaysTaken; }
+        public boolean isAlwaysTaken() {
+            return alwaysTaken;
+        }
 
-        public boolean doSplitBefore() { return splitBefore; }
+        public boolean doSplitBefore() {
+            return splitBefore;
+        }
 
-        public boolean doSplitAfter() { return splitAfter; }
+        public boolean doSplitAfter() {
+            return splitAfter;
+        }
 
-        public boolean isExit() { return exit; }
+        public boolean isExit() {
+            return exit;
+        }
 
-        public List<FlowTarget> getTargets() { return targets; }
+        public List<FlowTarget> getTargets() {
+            return targets;
+        }
 
-        public void setAlwaysTaken() { this.alwaysTaken = true; }
+        public void setAlwaysTaken() {
+            this.alwaysTaken = true;
+        }
 
-        public void setSplitBefore() { this.splitBefore = true; }
+        public void setSplitBefore() {
+            this.splitBefore = true;
+        }
 
-        public void setSplitAfter() { this.splitAfter = true; }
+        public void setSplitAfter() {
+            this.splitAfter = true;
+        }
 
         public void setExit() {
             this.exit = true;
@@ -108,437 +124,500 @@ public class BasicBlock  {
         }
     }
 
-	/**
-	 * Represents targets of a control flow instruction
-	 */
-	static class FlowTarget {
-		private InstructionHandle target;
-		private ControlFlowGraph.EdgeKind edgeKind;
+    /**
+     * Represents targets of a control flow instruction
+     */
+    static class FlowTarget {
+        private InstructionHandle target;
+        private ControlFlowGraph.EdgeKind edgeKind;
 
-		FlowTarget(InstructionHandle target, ControlFlowGraph.EdgeKind edgeKind) {
-			this.target = target; this.edgeKind = edgeKind;
-		}
+        FlowTarget(InstructionHandle target, ControlFlowGraph.EdgeKind edgeKind) {
+            this.target = target;
+            this.edgeKind = edgeKind;
+        }
 
-        public InstructionHandle getTarget() { return target; }
+        public InstructionHandle getTarget() {
+            return target;
+        }
 
-        public ControlFlowGraph.EdgeKind getEdgeKind() { return edgeKind; }
+        public ControlFlowGraph.EdgeKind getEdgeKind() {
+            return edgeKind;
+        }
 
-        public void setTarget(InstructionHandle target) { this.target = target; }
+        public void setTarget(InstructionHandle target) {
+            this.target = target;
+        }
 
         public void setEdgeKind(ControlFlowGraph.EdgeKind edgeKind) {
             this.edgeKind = edgeKind;
         }
 
-		@Override public String toString() {
-			return "FlowTarget<"+target.getPosition()+","+edgeKind+">";
-		}
-	}
+        @Override
+        public String toString() {
+            return "FlowTarget<" + target.getPosition() + "," + edgeKind + ">";
+        }
+    }
 
 
-	/** Keys for the custom {@link InstructionHandle} attributes */
-	private enum InstrField { FLOW_INFO, LINE_NUMBER, CFGNODE }
+    /**
+     * Keys for the custom {@link InstructionHandle} attributes
+     */
+    private enum InstrField {
+        FLOW_INFO, LINE_NUMBER, CFGNODE
+    }
 
-	/**
+    /**
      * Get FlowInfo associated with an {@link InstructionHandle}
+     *
      * @param ih
      * @return
      */
-	public static FlowInfo getFlowInfo(InstructionHandle ih) {
-		return (FlowInfo)ih.getAttribute(InstrField.FLOW_INFO);
-	}
+    public static FlowInfo getFlowInfo(InstructionHandle ih) {
+        return (FlowInfo) ih.getAttribute(InstrField.FLOW_INFO);
+    }
 
-	/**
+    /**
      * Get Line number associated with an {@link InstructionHandle}
+     *
      * @param ih
      * @return
      */
-	public static Integer getLineNumber(InstructionHandle ih) {
-		return (Integer)ih.getAttribute(InstrField.LINE_NUMBER);
-	}
+    public static Integer getLineNumber(InstructionHandle ih) {
+        return (Integer) ih.getAttribute(InstrField.LINE_NUMBER);
+    }
 
     // TODO move to CFG class, remove links on dispose()
 
-	// FIXME: [wcet-frontend] Remove the ugly ih.getAttribute() hack for CFG Nodes
-	/** Get the basic block node associated with an instruction handle  */
-	public static BasicBlockNode getHandleNode(InstructionHandle ih) {
-		BasicBlockNode blockNode = (BasicBlockNode)ih.getAttribute(InstrField.CFGNODE);
-		if(blockNode == null) {
-			String errMsg = "No basic block recorded for instruction "+ih.toString(true);
-			// WcetAppInfo.logger.error(errMsg);
-			return null;
-		}
-		return blockNode;
-	}
+    // FIXME: [wcet-frontend] Remove the ugly ih.getAttribute() hack for CFG Nodes
 
-	/** Set a parent link to the basic block node for the given instruction handle */
-	public static void setHandleNode(InstructionHandle ih, BasicBlockNode basicBlockNode) {
-		ih.addAttribute(InstrField.CFGNODE, basicBlockNode);
-	}
+    /**
+     * Get the basic block node associated with an instruction handle
+     */
+    public static BasicBlockNode getHandleNode(InstructionHandle ih) {
+        BasicBlockNode blockNode = (BasicBlockNode) ih.getAttribute(InstrField.CFGNODE);
+        if (blockNode == null) {
+            String errMsg = "No basic block recorded for instruction " + ih.toString(true);
+            // WcetAppInfo.logger.error(errMsg);
+            return null;
+        }
+        return blockNode;
+    }
 
-	private final LinkedList<InstructionHandle> instructions = new LinkedList<InstructionHandle>();
+    /**
+     * Set a parent link to the basic block node for the given instruction handle
+     */
+    public static void setHandleNode(InstructionHandle ih, BasicBlockNode basicBlockNode) {
+        ih.addAttribute(InstrField.CFGNODE, basicBlockNode);
+    }
+
+    private final LinkedList<InstructionHandle> instructions = new LinkedList<InstructionHandle>();
     private final MethodCode methodCode;
 
-	/** Create a basic block
-	 * @param methodCode The method code this basic block belongs to
-	 */
-	public BasicBlock(MethodCode methodCode) {
+    /**
+     * Create a basic block
+     *
+     * @param methodCode The method code this basic block belongs to
+     */
+    public BasicBlock(MethodCode methodCode) {
         this.methodCode = methodCode;
-	}
+    }
 
-	public AppInfo getAppInfo() {
-		return methodCode.getAppInfo();
-	}
+    public AppInfo getAppInfo() {
+        return methodCode.getAppInfo();
+    }
 
-	public ClassInfo getClassInfo() {
-		return methodCode.getClassInfo();
-	}
+    public ClassInfo getClassInfo() {
+        return methodCode.getClassInfo();
+    }
 
-	public MethodInfo getMethodInfo() {
-		return methodCode.getMethodInfo();
-	}
+    public MethodInfo getMethodInfo() {
+        return methodCode.getMethodInfo();
+    }
 
-	/**
+    /**
      * Get the constant pool associated with the method of this basic block
+     *
      * @return the ConstantPoolGen of the ClassInfo
      */
-	public ConstantPoolGen cpg() {
-		return this.getMethodInfo().getClassInfo().getConstantPoolGen();
-	}
+    public ConstantPoolGen cpg() {
+        return this.getMethodInfo().getClassInfo().getConstantPoolGen();
+    }
 
-	/** add an instruction to this basic block */
-	public void addInstruction(InstructionHandle ih) {
-		this.instructions.add(ih);
-	}
+    /**
+     * add an instruction to this basic block
+     */
+    public void addInstruction(InstructionHandle ih) {
+        this.instructions.add(ih);
+    }
 
-	/** Get the first instruction of an basic block
-	 *  (potential target of control flow instruction)
+    /**
+     * Get the first instruction of an basic block
+     * (potential target of control flow instruction)
+     *
      * @return the first instruction in this block.
      */
-	public InstructionHandle getFirstInstruction() {
-		return this.instructions.getFirst();
-	}
+    public InstructionHandle getFirstInstruction() {
+        return this.instructions.getFirst();
+    }
 
-	/** Get the last instruction of an basic block
-	 *  (potential control flow instruction)
-	 * @return the last instruction of this block
-	 */
-	public InstructionHandle getLastInstruction() {
-		return this.instructions.getLast();
-	}
-
-	/**
-	 * Get the invoke instruction of the basic block (which must be
-	 * the only instruction in the basic block)
+    /**
+     * Get the last instruction of an basic block
+     * (potential control flow instruction)
      *
+     * @return the last instruction of this block
+     */
+    public InstructionHandle getLastInstruction() {
+        return this.instructions.getLast();
+    }
+
+    /**
+     * Get the invoke instruction of the basic block (which must be
+     * the only instruction in the basic block)
+     *
+     * @return the invoke instruction, or <code>null</code>, if the basic block doesn't
+     *         contain an invoke instruction or if it is a special invoke.
+     * @throws ControlFlowGraph.ControlFlowError
+     *          if there is more than one invoke instruction in the block.
      * @see ProcessorModel#isSpecialInvoke(MethodInfo, Instruction)
-	 * @return the invoke instruction, or <code>null</code>, if the basic block doesn't
-	 *         contain an invoke instruction or if it is a special invoke.
-	 * @throws ControlFlowGraph.ControlFlowError if there is more than one invoke instruction in the block.
-	 */
-	public InvokeInstruction getTheInvokeInstruction() {
-		InvokeInstruction theInvInstr = null;
-		for(InstructionHandle ih : this.instructions) {
-			if(! (ih.getInstruction() instanceof InvokeInstruction)) continue;
-			InvokeInstruction inv = (InvokeInstruction) ih.getInstruction();
-			if(this.getAppInfo().getProcessorModel().isSpecialInvoke(methodCode.getMethodInfo(), inv)) {
-				continue;
-			}
-			if(theInvInstr != null) {
-				throw new ControlFlowGraph.ControlFlowError("More than one invoke instruction in a basic block");
-			}
-			theInvInstr = inv;
-		}
-		return theInvInstr;
-	}
+     */
+    public InvokeInstruction getTheInvokeInstruction() {
+        InvokeInstruction theInvInstr = null;
+        for (InstructionHandle ih : this.instructions) {
+            if (!(ih.getInstruction() instanceof InvokeInstruction)) continue;
+            InvokeInstruction inv = (InvokeInstruction) ih.getInstruction();
+            if (this.getAppInfo().getProcessorModel().isSpecialInvoke(methodCode.getMethodInfo(), inv)) {
+                continue;
+            }
+            if (theInvInstr != null) {
+                throw new ControlFlowGraph.ControlFlowError("More than one invoke instruction in a basic block");
+            }
+            theInvInstr = inv;
+        }
+        return theInvInstr;
+    }
 
-	/** return the BranchInstruction of the basic block, or {@code null} if there is none. */
-	public BranchInstruction getBranchInstruction() {
-		Instruction last = this.getLastInstruction().getInstruction();
-		return ((last instanceof BranchInstruction) ? ((BranchInstruction) last) : null);
-	}
+    /**
+     * return the BranchInstruction of the basic block, or {@code null} if there is none.
+     */
+    public BranchInstruction getBranchInstruction() {
+        Instruction last = this.getLastInstruction().getInstruction();
+        return ((last instanceof BranchInstruction) ? ((BranchInstruction) last) : null);
+    }
 
-	/** Get the list of {@link InstructionHandle}s, which make up this basic block */
-	public List<InstructionHandle> getInstructions() {
-		return this.instructions;
-	}
+    /**
+     * Get the list of {@link InstructionHandle}s, which make up this basic block
+     */
+    public List<InstructionHandle> getInstructions() {
+        return this.instructions;
+    }
 
-	/** Get number of bytes in this basic block */
-	public int getNumberOfBytes() {
-		int len = 0;
-		for(InstructionHandle ih : this.instructions) {
-			len += getAppInfo().getProcessorModel().getNumberOfBytes(
-					methodCode.getMethodInfo(), ih.getInstruction()
-			);
-		}
-		return len;
-	}
+    /**
+     * Get number of bytes in this basic block
+     */
+    public int getNumberOfBytes() {
+        int len = 0;
+        for (InstructionHandle ih : this.instructions) {
+            len += getAppInfo().getProcessorModel().getNumberOfBytes(
+                    methodCode.getMethodInfo(), ih.getInstruction()
+            );
+        }
+        return len;
+    }
 
-	/*---------------------------------------------------------------------------
-	 *  Control flow graph construction
-	 *---------------------------------------------------------------------------
-	 */
+    /*---------------------------------------------------------------------------
+         *  Control flow graph construction
+         *---------------------------------------------------------------------------
+         */
 
-	/**
-	 * Override this class to get specific basic block partitioning
-	 */
-	public static class InstructionTargetVisitor extends EmptyVisitor {
-		private FlowInfo flowInfo;
-		private HashSet<InstructionHandle> targeted;
-		private MethodCode methodCode;
+    /**
+     * Override this class to get specific basic block partitioning
+     */
+    public static class InstructionTargetVisitor extends EmptyVisitor {
+        private FlowInfo flowInfo;
+        private HashSet<InstructionHandle> targeted;
+        private MethodCode methodCode;
 
         protected InstructionTargetVisitor(MethodCode m) {
             this.targeted = new HashSet<InstructionHandle>();
             this.methodCode = m;
         }
-        
+
         public boolean isTarget(InstructionHandle ih) {
             return targeted.contains(ih);
         }
 
-		public void visitInstruction(InstructionHandle ih) {
-			ih.accept(this);
-			if(methodCode.getAppInfo().getProcessorModel().isImplementedInJava(ih.getInstruction())) {
-				flowInfo.splitBefore = true;
-				flowInfo.splitAfter  = true;
-			}
-		}
+        public void visitInstruction(InstructionHandle ih) {
+            ih.accept(this);
+            if (methodCode.getAppInfo().getProcessorModel().isImplementedInJava(ih.getInstruction())) {
+                flowInfo.splitBefore = true;
+                flowInfo.splitAfter = true;
+            }
+        }
 
-		@Override public void visitBranchInstruction(BranchInstruction obj) {
-			flowInfo.splitAfter=true; /* details follow in goto/if/jsr/select */
-		}
-		@Override public void visitGotoInstruction(GotoInstruction obj) {
-			flowInfo.addTarget(obj.getTarget(), ControlFlowGraph.EdgeKind.GOTO_EDGE);
-			this.targeted.add(obj.getTarget());
-			flowInfo.alwaysTaken = true;
-		}
-		@Override public void visitIfInstruction(IfInstruction obj) {
-			flowInfo.addTarget(obj.getTarget(), ControlFlowGraph.EdgeKind.BRANCH_EDGE);
-			this.targeted.add(obj.getTarget());
-		}
-		@Override public void visitSelect(Select obj) {
-			super.visitSelect(obj);
-			for(InstructionHandle tih : obj.getTargets()) {
-				flowInfo.addTarget(tih, ControlFlowGraph.EdgeKind.SELECT_EDGE);
-				this.targeted.add(tih);
-			}
-		}
-		@Override public void visitJsrInstruction(JsrInstruction obj) {
-			flowInfo.addTarget(obj.getTarget(), ControlFlowGraph.EdgeKind.JSR_EDGE);
-			this.targeted.add(obj.getTarget());
-			flowInfo.alwaysTaken = true;
-		}
+        @Override
+        public void visitBranchInstruction(BranchInstruction obj) {
+            flowInfo.splitAfter = true; /* details follow in goto/if/jsr/select */
+        }
 
-		/** FIXME: Exceptions aren't supported yet, but to avoid
-		 *  early bail out, we assume exceptions terminate execution (for now) */
-		@Override
-		public void visitATHROW(ATHROW obj) {
-			flowInfo.exit = true;
-			flowInfo.splitAfter = true;
-		}
+        @Override
+        public void visitGotoInstruction(GotoInstruction obj) {
+            flowInfo.addTarget(obj.getTarget(), ControlFlowGraph.EdgeKind.GOTO_EDGE);
+            this.targeted.add(obj.getTarget());
+            flowInfo.alwaysTaken = true;
+        }
 
-		// Not neccesarily, but nice for WCET analysis
-		@Override public void visitInvokeInstruction(InvokeInstruction obj) {
-			if(! methodCode.getAppInfo().getProcessorModel().isSpecialInvoke(methodCode.getMethodInfo(), obj)) {
-				flowInfo.splitBefore = true;
-				flowInfo.splitAfter = true;
-			}
-		}
-		@Override public void visitReturnInstruction(ReturnInstruction obj) {
-			flowInfo.splitAfter = true;
-			flowInfo.exit = true;
-		}
+        @Override
+        public void visitIfInstruction(IfInstruction obj) {
+            flowInfo.addTarget(obj.getTarget(), ControlFlowGraph.EdgeKind.BRANCH_EDGE);
+            this.targeted.add(obj.getTarget());
+        }
 
-		public FlowInfo getFlowInfo(InstructionHandle ih) {
-			flowInfo = new FlowInfo();
-			visitInstruction(ih);
-			return flowInfo;
-		}
+        @Override
+        public void visitSelect(Select obj) {
+            super.visitSelect(obj);
+            for (InstructionHandle tih : obj.getTargets()) {
+                flowInfo.addTarget(tih, ControlFlowGraph.EdgeKind.SELECT_EDGE);
+                this.targeted.add(tih);
+            }
+        }
 
-	}
+        @Override
+        public void visitJsrInstruction(JsrInstruction obj) {
+            flowInfo.addTarget(obj.getTarget(), ControlFlowGraph.EdgeKind.JSR_EDGE);
+            this.targeted.add(obj.getTarget());
+            flowInfo.alwaysTaken = true;
+        }
 
-	/**
-	 * Create a vector of basic blocks, annotated with flow information
+        /**
+         * FIXME: Exceptions aren't supported yet, but to avoid
+         * early bail out, we assume exceptions terminate execution (for now)
+         */
+        @Override
+        public void visitATHROW(ATHROW obj) {
+            flowInfo.exit = true;
+            flowInfo.splitAfter = true;
+        }
+
+        // Not neccesarily, but nice for WCET analysis
+
+        @Override
+        public void visitInvokeInstruction(InvokeInstruction obj) {
+            if (!methodCode.getAppInfo().getProcessorModel().isSpecialInvoke(methodCode.getMethodInfo(), obj)) {
+                flowInfo.splitBefore = true;
+                flowInfo.splitAfter = true;
+            }
+        }
+
+        @Override
+        public void visitReturnInstruction(ReturnInstruction obj) {
+            flowInfo.splitAfter = true;
+            flowInfo.exit = true;
+        }
+
+        public FlowInfo getFlowInfo(InstructionHandle ih) {
+            flowInfo = new FlowInfo();
+            visitInstruction(ih);
+            return flowInfo;
+        }
+
+    }
+
+    /**
+     * Create a vector of basic blocks, annotated with flow information
+     *
      * @param methodCode The MethodCode of the method from which basic blocks should be extracted.
-	 * @return A vector of BasicBlocks, which instruction handles annotated with
-	 * flow information.
-	 */
-	static List<BasicBlock> buildBasicBlocks(MethodCode methodCode) {
-		InstructionTargetVisitor itv = new InstructionTargetVisitor(methodCode);
-		List<BasicBlock> basicBlocks = new Vector<BasicBlock>();
-		InstructionList il = methodCode.getInstructionList();
-		il.setPositions(true);
-		LineNumberTable lineNumberTable =
-			methodCode.getLineNumberTable();
+     * @return A vector of BasicBlocks, which instruction handles annotated with
+     *         flow information.
+     */
+    static List<BasicBlock> buildBasicBlocks(MethodCode methodCode) {
+        InstructionTargetVisitor itv = new InstructionTargetVisitor(methodCode);
+        List<BasicBlock> basicBlocks = new Vector<BasicBlock>();
+        InstructionList il = methodCode.getInstructionList();
+        il.setPositions(true);
+        LineNumberTable lineNumberTable =
+                methodCode.getLineNumberTable();
 
-		/* Step 1: compute flow info */
-		for(InstructionHandle ih : il.getInstructionHandles()) {
-			ih.addAttribute(InstrField.FLOW_INFO, itv.getFlowInfo(ih));
-			ih.addAttribute(InstrField.LINE_NUMBER, lineNumberTable.getSourceLine(ih.getPosition()));
-		}
-		/* Step 2: create basic blocks */
-		{
-			BasicBlock bb = new BasicBlock(methodCode);
-			InstructionHandle[] handles = il.getInstructionHandles();
-			for(int i = 0; i < handles.length; i++) {
-				InstructionHandle ih = handles[i];
-				bb.addInstruction(ih);
-				boolean doSplit = getFlowInfo(ih).splitAfter;
-				if(i+1 < handles.length) {
-					doSplit |= itv.isTarget(handles[i+1]);
-					doSplit |= getFlowInfo(handles[i+1]).splitBefore;
-				}
-				if(doSplit) {
-					basicBlocks.add(bb);
-					bb = new BasicBlock(methodCode);
-				}
-			}
-			if(! bb.instructions.isEmpty()) {
-				// be nice to DFA stuff, and ignore NOPs
-				for(int i = bb.instructions.size() - 1; i>=0; --i) {
-					InstructionHandle x = bb.instructions.get(i);
-					if(x.getInstruction().getOpcode() != Constants.NOP) {
-						throw new AssertionError("[INTERNAL ERROR] Last instruction "+x+
-		                 " in code does not change control flow - this is impossible");
-					}
-				}
-			}
-		}
-		return basicBlocks;
-	}
+        /* Step 1: compute flow info */
+        for (InstructionHandle ih : il.getInstructionHandles()) {
+            ih.addAttribute(InstrField.FLOW_INFO, itv.getFlowInfo(ih));
+            ih.addAttribute(InstrField.LINE_NUMBER, lineNumberTable.getSourceLine(ih.getPosition()));
+        }
+        /* Step 2: create basic blocks */
+        {
+            BasicBlock bb = new BasicBlock(methodCode);
+            InstructionHandle[] handles = il.getInstructionHandles();
+            for (int i = 0; i < handles.length; i++) {
+                InstructionHandle ih = handles[i];
+                bb.addInstruction(ih);
+                boolean doSplit = getFlowInfo(ih).splitAfter;
+                if (i + 1 < handles.length) {
+                    doSplit |= itv.isTarget(handles[i + 1]);
+                    doSplit |= getFlowInfo(handles[i + 1]).splitBefore;
+                }
+                if (doSplit) {
+                    basicBlocks.add(bb);
+                    bb = new BasicBlock(methodCode);
+                }
+            }
+            if (!bb.instructions.isEmpty()) {
+                // be nice to DFA stuff, and ignore NOPs
+                for (int i = bb.instructions.size() - 1; i >= 0; --i) {
+                    InstructionHandle x = bb.instructions.get(i);
+                    if (x.getInstruction().getOpcode() != Constants.NOP) {
+                        throw new AssertionError("[INTERNAL ERROR] Last instruction " + x +
+                                " in code does not change control flow - this is impossible");
+                    }
+                }
+            }
+        }
+        return basicBlocks;
+    }
 
-	/**
-	 * Return all source code lines this basic block maps to
-	 * @return
-	 */
-	public TreeSet<Integer> getSourceLineRange() {
-		TreeSet<Integer> lines = new TreeSet<Integer>();
-		LineNumberTable lnt = methodCode.getLineNumberTable();
-		for(InstructionHandle ih : instructions) {
-			int sourceLine = lnt.getSourceLine(ih.getPosition());
-			if(sourceLine >= 0) lines.add(sourceLine);
-		}
-		return lines;
-	}
+    /**
+     * Return all source code lines this basic block maps to
+     *
+     * @return
+     */
+    public TreeSet<Integer> getSourceLineRange() {
+        TreeSet<Integer> lines = new TreeSet<Integer>();
+        LineNumberTable lnt = methodCode.getLineNumberTable();
+        for (InstructionHandle ih : instructions) {
+            int sourceLine = lnt.getSourceLine(ih.getPosition());
+            if (sourceLine >= 0) lines.add(sourceLine);
+        }
+        return lines;
+    }
 
-	/** <p>Compact, human-readable String representation of the basic block.</p>
-	 *
-	 *  <p>Mixed Stack notation, with at most one side-effect statement per line.</p>
-	 *  Example:<br/>
-	 *  {@code local_0 <- sipush[3] sipush[4] dup add add} <br/>
-	 *  {@code local_1 <- load[local_0] load[local_0] mul}
-	 *
+    /**
+     * <p>Compact, human-readable String representation of the basic block.</p>
+     * <p/>
+     * <p>Mixed Stack notation, with at most one side-effect statement per line.</p>
+     * Example:<br/>
+     * {@code local_0 <- sipush[3] sipush[4] dup add add} <br/>
+     * {@code local_1 <- load[local_0] load[local_0] mul}
+     *
      * @return a compact string representation of this block
-     **/
-	public String dump() {
-		StringBuilder sb = new StringBuilder();
-		Iterator<InstructionHandle> ihIter = this.instructions.iterator();
-		InstructionPrettyPrinter ipp = new InstructionPrettyPrinter();
-		while(ihIter.hasNext()) {
-			InstructionHandle ih = ihIter.next();
-			ipp.visitInstruction(ih);
-		}
-		sb.append(ipp.getBuffer());
-		return sb.toString();
-	}
+     */
+    public String dump() {
+        StringBuilder sb = new StringBuilder();
+        Iterator<InstructionHandle> ihIter = this.instructions.iterator();
+        InstructionPrettyPrinter ipp = new InstructionPrettyPrinter();
+        while (ihIter.hasNext()) {
+            InstructionHandle ih = ihIter.next();
+            ipp.visitInstruction(ih);
+        }
+        sb.append(ipp.getBuffer());
+        return sb.toString();
+    }
 
-	/* Prototyping */
-	/* TODO: Refactor into some pretty printing class */
-	private class InstructionPrettyPrinter extends EmptyVisitor {
-		private StringBuilder sb;
-		private StringBuilder lineBuffer;
-		private boolean visited;
-		private LineNumberTable lnt;
-		private int startPos = -1, lastPos = -1;
-		private int currentPos;
-		private Integer address;
-		private ControlFlowGraph cfg;
+    /* Prototyping */
+    /* TODO: Refactor into some pretty printing class */
+
+    private class InstructionPrettyPrinter extends EmptyVisitor {
+        private StringBuilder sb;
+        private StringBuilder lineBuffer;
+        private boolean visited;
+        private LineNumberTable lnt;
+        private int startPos = -1, lastPos = -1;
+        private int currentPos;
+        private Integer address;
+        private ControlFlowGraph cfg;
 
 
-		public InstructionPrettyPrinter() {
-			this.sb = new StringBuilder();
-			this.lnt = methodCode.getLineNumberTable();
-			this.lineBuffer = new StringBuilder();
-			this.cfg = methodCode.getControlFlowGraph();
-		}
-		public StringBuilder getBuffer() {
-			nextLine();
-			return sb;
-		}
-		public void visitInstruction(InstructionHandle ih) {
-			this.visited = false;
-			//this.address = cfg.getConstAddress(ih);
-			currentPos = lnt.getSourceLine(ih.getPosition());
-			ih.accept(this);
-			if(! visited) {
-				String s = ih.getInstruction().toString(cpg().getConstantPool());
-				append(s);
-			}
-		}
-		private void nextLine() {
-			if(lineBuffer.length() > 0) {
-				String start = startPos < 0 ? "?" : (""+startPos);
-				String end = lastPos < 0 ? "?" : (""+lastPos);
-				if(startPos != lastPos) lineBuffer.insert(0,"["+start+"-"+end+"] ");
-				else                    lineBuffer.insert(0,"["+ start +"]  ");
-				sb.append(lineBuffer);
-				sb.append("\n");
-				lineBuffer = new StringBuilder();
-				startPos = currentPos;
-				lastPos  = currentPos;
-			}
-		}
-		@SuppressWarnings({"AssignmentToMethodParameter"})
+        public InstructionPrettyPrinter() {
+            this.sb = new StringBuilder();
+            this.lnt = methodCode.getLineNumberTable();
+            this.lineBuffer = new StringBuilder();
+            this.cfg = methodCode.getControlFlowGraph();
+        }
+
+        public StringBuilder getBuffer() {
+            nextLine();
+            return sb;
+        }
+
+        public void visitInstruction(InstructionHandle ih) {
+            this.visited = false;
+            //this.address = cfg.getConstAddress(ih);
+            currentPos = lnt.getSourceLine(ih.getPosition());
+            ih.accept(this);
+            if (!visited) {
+                String s = ih.getInstruction().toString(cpg().getConstantPool());
+                append(s);
+            }
+        }
+
+        private void nextLine() {
+            if (lineBuffer.length() > 0) {
+                String start = startPos < 0 ? "?" : ("" + startPos);
+                String end = lastPos < 0 ? "?" : ("" + lastPos);
+                if (startPos != lastPos) lineBuffer.insert(0, "[" + start + "-" + end + "] ");
+                else lineBuffer.insert(0, "[" + start + "]  ");
+                sb.append(lineBuffer);
+                sb.append("\n");
+                lineBuffer = new StringBuilder();
+                startPos = currentPos;
+                lastPos = currentPos;
+            }
+        }
+
+        @SuppressWarnings({"AssignmentToMethodParameter"})
         private void append(String stackOp) {
-			if(lineBuffer.length() > 0) {
-				if(lineBuffer.length() < 45) lineBuffer.append(" ");
-				else lineBuffer.append("\n  \\ ");
-			}
-			if(address != null) stackOp = String.format("%s<%d>",stackOp,address);
-			lineBuffer.append(stackOp);
-			markVisited();
-		}
-		@SuppressWarnings({"AssignmentToMethodParameter"})
+            if (lineBuffer.length() > 0) {
+                if (lineBuffer.length() < 45) lineBuffer.append(" ");
+                else lineBuffer.append("\n  \\ ");
+            }
+            if (address != null) stackOp = String.format("%s<%d>", stackOp, address);
+            lineBuffer.append(stackOp);
+            markVisited();
+        }
+
+        @SuppressWarnings({"AssignmentToMethodParameter"})
         private void assign(String lhs) {
-			if(address != null) lhs = String.format("%s<%d>",lhs,address);
-			lineBuffer.insert(0, lhs + "<-");
-			nextLine();
-			markVisited();
-			visited = true;
-		}
-		private void markVisited() {
-			visited = true;
-			if(startPos < 0) startPos = currentPos;
-			lastPos = currentPos;
-		}
+            if (address != null) lhs = String.format("%s<%d>", lhs, address);
+            lineBuffer.insert(0, lhs + "<-");
+            nextLine();
+            markVisited();
+            visited = true;
+        }
 
-		@Override
-		public void visitBranchInstruction(BranchInstruction obj) {
-			nextLine();
-		}
-		@Override
-		public void visitUnconditionalBranch(UnconditionalBranch obj) {
-			nextLine();
-		}
+        private void markVisited() {
+            visited = true;
+            if (startPos < 0) startPos = currentPos;
+            lastPos = currentPos;
+        }
 
-		@Override
-		public void visitStoreInstruction(StoreInstruction obj) {
-			assign("$"+obj.getIndex());
-		}
-		@Override
-		public void visitPUTFIELD(PUTFIELD obj) {
-			assign(obj.getFieldName(cpg()));
-		}
+        @Override
+        public void visitBranchInstruction(BranchInstruction obj) {
+            nextLine();
+        }
 
-		@Override
-		public void visitPUTSTATIC(PUTSTATIC obj) {
-			String fieldName = obj.getFieldName(cpg());
-			assign(fieldName);
-		}
-		@Override
-		public void visitInvokeInstruction(InvokeInstruction obj) {
-			append(obj.toString());
-		}
+        @Override
+        public void visitUnconditionalBranch(UnconditionalBranch obj) {
+            nextLine();
+        }
 
-	}
+        @Override
+        public void visitStoreInstruction(StoreInstruction obj) {
+            assign("$" + obj.getIndex());
+        }
+
+        @Override
+        public void visitPUTFIELD(PUTFIELD obj) {
+            assign(obj.getFieldName(cpg()));
+        }
+
+        @Override
+        public void visitPUTSTATIC(PUTSTATIC obj) {
+            String fieldName = obj.getFieldName(cpg());
+            assign(fieldName);
+        }
+
+        @Override
+        public void visitInvokeInstruction(InvokeInstruction obj) {
+            append(obj.toString());
+        }
+
+    }
 
 }
