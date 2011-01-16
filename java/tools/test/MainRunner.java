@@ -77,7 +77,7 @@ public class MainRunner {
                 argList.addAll( Arrays.asList(Arrays.copyOfRange(args, 1, args.length)) );
                 argList.addAll( Arrays.asList(cmdArgs) );
 
-                String[] mainArgs = argList.toArray(new String[0]);
+                String[] mainArgs = argList.toArray(new String[argList.size()]);
 
                 System.setSecurityManager(new SecurityManager() {
                     @Override

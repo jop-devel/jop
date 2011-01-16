@@ -853,7 +853,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 				new ContextMap<CallString, SymbolicAddressMap>(c, initialMap);
 			tmpresult.put(c.callString, out);
 					
-			InstructionHandle entry = method.getCode().getInstructionList().getStart();
+			InstructionHandle entry = method.getCode().getInstructionList(false).getStart();
 			state.put(entry, join(state.get(entry), tmpresult));
 	
 			if(DEBUG_PRINT) {
@@ -868,7 +868,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			SymbolicAddressMap ctxInfo = retval.get(context.callString);
 
 			// pull out relevant information from call
-			InstructionHandle exit = method.getCode().getInstructionList().getEnd();
+			InstructionHandle exit = method.getCode().getInstructionList(false).getEnd();
 			if(r.get(exit) != null) {
 				SymbolicAddressMap returned = r.get(exit).get(c.callString);
 				if (returned != null) {

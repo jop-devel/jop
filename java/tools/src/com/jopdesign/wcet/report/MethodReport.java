@@ -22,8 +22,8 @@ package com.jopdesign.wcet.report;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.wcet.WCETTool;
-import com.jopdesign.wcet.annotations.LoopBound;
 
 import java.util.Collection;
 import java.util.Set;

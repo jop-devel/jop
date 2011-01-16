@@ -19,6 +19,8 @@
  */
 package com.jopdesign.wcet.annotations;
 
+import com.jopdesign.common.code.LoopBound;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 

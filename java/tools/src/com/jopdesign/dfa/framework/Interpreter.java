@@ -29,24 +29,25 @@ import java.util.Set;
 
 public class Interpreter<K, V> {
 
-	private Analysis<K, V> analysis;
-	private DFATool program;
-	
-	public Interpreter(Analysis<K, V> a, DFATool p) {
-		program = p;
-		analysis = a;
-	}
-	
-	public DFATool getProgram() {
-		return program;
-	}
-	
-	public Map<InstructionHandle, ContextMap<K, V>> interpret(Context context,
-			InstructionHandle entry,
-			Map<InstructionHandle, ContextMap<K, V>> state,
-			boolean start) {
-		
-		LinkedList<FlowEdge> worklist = new LinkedList<FlowEdge>();
+    private Analysis<K, V> analysis;
+    private DFATool program;
+
+    public Interpreter(Analysis<K, V> a, DFATool p) {
+        program = p;
+        analysis = a;
+    }
+
+    public DFATool getProgram() {
+        return program;
+    }
+
+    public Map<InstructionHandle, ContextMap<K, V>> interpret(Context context,
+                                                              InstructionHandle entry,
+                                                              Map<InstructionHandle, ContextMap<K, V>> state,
+                                                              boolean start)
+    {
+
+        LinkedList<FlowEdge> worklist = new LinkedList<FlowEdge>();
 
         for (FlowEdge f : program.getFlow().getOutEdges(entry)) {
             if (entry.equals(f.getTail())) {
@@ -54,34 +55,34 @@ public class Interpreter<K, V> {
             }
         }
 
-		Map<InstructionHandle, ContextMap<K, V>> result = state;
-		
-		if (start) {
+        Map<InstructionHandle, ContextMap<K, V>> result = state;
+
+        if (start) {
             for (InstructionHandle s : program.getStatements()) {
                 result.put(s, analysis.bottom());
             }
-			result.put(entry, analysis.initial(entry));
-		}
-		
-		while(!worklist.isEmpty()) {
-			
-			FlowEdge edge = worklist.removeFirst();
-			//System.out.println("computing: "+edge);
-			InstructionHandle tail = edge.getTail();
-			InstructionHandle head = edge.getHead();
+            result.put(entry, analysis.initial(entry));
+        }
 
-			ContextMap<K, V> tailSet = result.get(tail);
-			tailSet.setContext(edge.getContext()); 
-			ContextMap<K, V> transferred = analysis.transfer(tail, edge, tailSet, this, result);
-			ContextMap<K, V> headSet = result.get(head);
+        while (!worklist.isEmpty()) {
 
-			if (!analysis.compare(transferred, headSet)) {
-				
-				ContextMap<K, V> joinedSet = analysis.join(headSet, transferred);				
-				result.put(head, joinedSet);
-				
-				Set<FlowEdge> outEdges = program.getFlow().getOutEdges(head);
-				if (outEdges != null) {
+            FlowEdge edge = worklist.removeFirst();
+            //System.out.println("computing: "+edge);
+            InstructionHandle tail = edge.getTail();
+            InstructionHandle head = edge.getHead();
+
+            ContextMap<K, V> tailSet = result.get(tail);
+            tailSet.setContext(edge.getContext());
+            ContextMap<K, V> transferred = analysis.transfer(tail, edge, tailSet, this, result);
+            ContextMap<K, V> headSet = result.get(head);
+
+            if (!analysis.compare(transferred, headSet)) {
+
+                ContextMap<K, V> joinedSet = analysis.join(headSet, transferred);
+                result.put(head, joinedSet);
+
+                Set<FlowEdge> outEdges = program.getFlow().getOutEdges(head);
+                if (outEdges != null) {
                     for (FlowEdge outEdge : outEdges) {
                         FlowEdge f = new FlowEdge(outEdge, transferred.getContext());
                         if (worklist.isEmpty() || !worklist.getFirst().equals(f)) {
@@ -89,13 +90,13 @@ public class Interpreter<K, V> {
                             //System.out.println("pushing: "+f);
                         }
                     }
-				}
-			}
-			
-			//System.out.println("worklist: "+worklist);
-		}
+                }
+            }
 
-		return result;
-	}
-	
+            //System.out.println("worklist: "+worklist);
+        }
+
+        return result;
+    }
+
 }

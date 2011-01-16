@@ -22,6 +22,7 @@
 package com.jopdesign.wcet.annotations;
 
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.wcet.WCETTool;
 import org.apache.log4j.Logger;
 
@@ -170,7 +171,7 @@ public class SourceAnnotationReader {
 				logger.warn("Deprecated loop bound notation: X <= loop <= Y");
 				long lb = Long.parseLong(matcher2.group(1));
 				long ub = Long.parseLong(matcher2.group(2));
-				return new LoopBound(lb,ub);	
+				return new LoopBound(lb,ub);
 			}
 			// New loop bound 
 			InputStream is = new ByteArrayInputStream(annotString.getBytes());

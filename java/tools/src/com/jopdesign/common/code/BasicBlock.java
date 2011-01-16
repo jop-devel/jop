@@ -54,7 +54,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.TreeSet;
-import java.util.Vector;
 
 /**
  * A lightweight basic block class, based on linked lists.<br/>
@@ -197,7 +196,7 @@ public class BasicBlock {
         BasicBlockNode blockNode = (BasicBlockNode) ih.getAttribute(InstrField.CFGNODE);
         if (blockNode == null) {
             String errMsg = "No basic block recorded for instruction " + ih.toString(true);
-            // WcetAppInfo.logger.error(errMsg);
+            logger.error(errMsg);
             return null;
         }
         return blockNode;
@@ -325,13 +324,14 @@ public class BasicBlock {
     }
 
     /*---------------------------------------------------------------------------
-         *  Control flow graph construction
-         *---------------------------------------------------------------------------
-         */
+     *  Control flow graph construction
+     *---------------------------------------------------------------------------
+     */
 
     /**
      * Override this class to get specific basic block partitioning
      */
+    @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
     public static class InstructionTargetVisitor extends EmptyVisitor {
         private FlowInfo flowInfo;
         private HashSet<InstructionHandle> targeted;
@@ -431,8 +431,8 @@ public class BasicBlock {
      */
     static List<BasicBlock> buildBasicBlocks(MethodCode methodCode) {
         InstructionTargetVisitor itv = new InstructionTargetVisitor(methodCode);
-        List<BasicBlock> basicBlocks = new Vector<BasicBlock>();
-        InstructionList il = methodCode.getInstructionList();
+        List<BasicBlock> basicBlocks = new LinkedList<BasicBlock>();
+        InstructionList il = methodCode.getInstructionList(true);
         il.setPositions(true);
         LineNumberTable lineNumberTable =
                 methodCode.getLineNumberTable();

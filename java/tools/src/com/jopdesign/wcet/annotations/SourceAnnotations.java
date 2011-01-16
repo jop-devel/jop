@@ -20,6 +20,8 @@
 
 package com.jopdesign.wcet.annotations;
 
+import com.jopdesign.common.code.LoopBound;
+
 import java.util.Collection;
 import java.util.TreeMap;
 

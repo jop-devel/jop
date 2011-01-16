@@ -35,7 +35,6 @@ import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.wcet.annotations.BadAnnotationException;
-import com.jopdesign.wcet.annotations.LoopBound;
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKEVIRTUAL;
@@ -177,8 +176,6 @@ public class ControlFlowGraph {
     public enum DedicatedNodeName {
         ENTRY, EXIT, SPLIT, JOIN
     }
-
-    ;
 
     /**
      * Dedicated flow graph nodes
@@ -445,9 +442,9 @@ public class ControlFlowGraph {
 
     }
     /*
-         * Flow Graph Edges
-         * ----------------
-         */
+     * Flow Graph Edges
+     * ----------------
+     */
 
     /**
      * Type of flow graph edges
@@ -492,9 +489,9 @@ public class ControlFlowGraph {
     }
 
     /*
-         * Fields
-         * ------
-         */
+     * Fields
+     * ------
+     */
     private int idGen = 0;
 
     /* linking to java */
@@ -541,6 +538,7 @@ public class ControlFlowGraph {
                 new DefaultFlowGraph<CFGNode, CFGEdge>(CFGEdge.class, subEntry, subExit);
         this.deadNodes = new HashSet<CFGNode>();
     }
+
     /* worker: create the flow graph */
 
     private void createFlowGraph(MethodInfo method) {
@@ -968,9 +966,7 @@ public class ControlFlowGraph {
         ControlFlowGraph subCFG = new ControlFlowGraph(appInfo);
         subCFG.methodInfo = methodInfo;
         subCFG.blocks = blocks;
-        /* -- TODO comment for commit
-		subCFG.annotations = annotations;
-		-- */
+        subCFG.annotations = annotations;
         FlowGraph<CFGNode, CFGEdge> subGraph = subCFG.graph;
         for (CFGNode n : loopNodes) {
             subGraph.addVertex(n);

@@ -28,7 +28,7 @@ import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
-import com.jopdesign.wcet.annotations.LoopBound;
+import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;

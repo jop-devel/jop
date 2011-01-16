@@ -1387,7 +1387,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			ContextMap<CallString, Map<Location, ValueMapping>> tmpresult = new ContextMap<CallString, Map<Location, ValueMapping>>(c, new HashMap<CallString, Map<Location, ValueMapping>>());
 			tmpresult.put(c.callString, out);
 					
-			InstructionHandle entry = method.getCode().getInstructionList().getStart();
+			InstructionHandle entry = method.getCode().getInstructionList(false).getStart();
 			state.put(entry, join(state.get(entry), tmpresult));
 
 			// interpret method
@@ -1396,7 +1396,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 			//System.out.println(">>>>>>>>");
 			
 			// pull out relevant information from call
-			InstructionHandle exit = method.getCode().getInstructionList().getEnd();
+			InstructionHandle exit = method.getCode().getInstructionList(false).getEnd();
 			if (r.get(exit) != null) {
 				Map<Location, ValueMapping> returned = r.get(exit).get(c.callString);
 				if (returned != null) {

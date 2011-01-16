@@ -36,76 +36,73 @@ import org.apache.bcel.util.InstructionFinder;
 import java.util.Iterator;
 
 /**
- * 
  * Insert bytecodes for synchronizing methods.
- * 
+ *
  * @author Martin Schoeberl, Wolfgang Puffitsch
- * 
  */
 public class InsertSynchronized implements ClassVisitor {
 
-	public InsertSynchronized() {
-	}
+    public InsertSynchronized() {
+    }
 
     @Override
     public boolean visitClass(ClassInfo classInfo) {
 
-		for (MethodInfo method : classInfo.getMethods()) {
-			if(!(method.isAbstract() || method.isNative())
-					&& method.isSynchronized())
-            {
-				synchronize(method);
-			}
-		}
+        for (MethodInfo method : classInfo.getMethods()) {
+            if (!(method.isAbstract() || method.isNative())
+                    && method.isSynchronized()) {
+                synchronize(method);
+            }
+        }
         return true;
-	}
+    }
 
     @Override
     public void finishClass(ClassInfo classInfo) {
     }
 
-	private void synchronize(MethodInfo method) {
+    private void synchronize(MethodInfo method) {
 
-		MethodCode mc  = method.getCode();
-		InstructionList il  = mc.getInstructionList();
-		InstructionFinder f;
+        MethodCode mc = method.getCode();
+        InstructionList il = mc.getInstructionList(true);
+        InstructionFinder f;
 
-		// prepend monitorenter (reversed order of opcodes)
-		il.insert(new MONITORENTER());
-		if (method.isStatic()) {
-			// il.insert(new GET_CURRENT_CLASS());
-			throw new JavaClassFormatError("synchronized on static methods not yet supported");
-		} else {
-			il.insert(new ALOAD(0));
-		}
-		il.setPositions();
+        // prepend monitorenter (reversed order of opcodes)
+        il.insert(new MONITORENTER());
+        if (method.isStatic()) {
+            // il.insert(new GET_CURRENT_CLASS());
+            throw new JavaClassFormatError("synchronized on static methods not yet supported");
+        } else {
+            il.insert(new ALOAD(0));
+        }
+        il.setPositions();
 
-		f = new InstructionFinder(il);
-		// find return instructions and insert monitorexit
-		String retInstr = "ReturnInstruction";
+        f = new InstructionFinder(il);
+        // find return instructions and insert monitorexit
+        String retInstr = "ReturnInstruction";
 
-		for(Iterator iterator = f.search(retInstr); iterator.hasNext(); ) {
-			InstructionHandle[] match = (InstructionHandle[])iterator.next();
-			InstructionHandle   ih = match[0];
-			InstructionHandle   newh; // handle for inserted sequence
+        for (Iterator iterator = f.search(retInstr); iterator.hasNext();) {
+            InstructionHandle[] match = (InstructionHandle[]) iterator.next();
+            InstructionHandle ih = match[0];
+            InstructionHandle newh; // handle for inserted sequence
 
-			if (method.isStatic()) {
-				// il.insert(ih, new GET_CURRENT_CLASS());
-				throw new JavaClassFormatError("synchronized on static methods not yet supported");
-			} else {
-				newh = il.insert(ih, new ALOAD(0));
-			}
-			il.insert(ih, new MONITOREXIT());
+            if (method.isStatic()) {
+                // il.insert(ih, new GET_CURRENT_CLASS());
+                throw new JavaClassFormatError("synchronized on static methods not yet supported");
+            } else {
+                newh = il.insert(ih, new ALOAD(0));
+            }
+            il.insert(ih, new MONITOREXIT());
 
-			// correct jumps
-			InstructionTargeter[] it = ih.getTargeters();
-			for (int i = 0; it != null && i < it.length; i++) {
-				it[i].updateTarget(ih, newh);
-			}
-		}	
-		il.setPositions();
+            // correct jumps
+            InstructionTargeter[] it = ih.getTargeters();
+            for (int i = 0; it != null && i < it.length; i++) {
+                it[i].updateTarget(ih, newh);
+            }
+        }
+        il.setPositions();
 
         method.compile();
-	}
+    }
 
 }

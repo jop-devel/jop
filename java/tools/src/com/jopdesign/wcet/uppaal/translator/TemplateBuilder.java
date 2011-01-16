@@ -20,7 +20,7 @@
 package com.jopdesign.wcet.uppaal.translator;
 
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
-import com.jopdesign.wcet.annotations.LoopBound;
+import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.model.LayoutCFG;
 import com.jopdesign.wcet.uppaal.model.Location;

@@ -24,13 +24,13 @@ import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.CallStringProvider;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.code.SuperGraph;
+import com.jopdesign.common.code.SymbolicMarker;
 import com.jopdesign.common.graphutils.FlowGraph;
 import com.jopdesign.common.graphutils.LoopColoring;
 import com.jopdesign.common.graphutils.Pair;
-import com.jopdesign.wcet.annotations.LoopBound;
-import com.jopdesign.wcet.annotations.SymbolicMarker;
-import com.jopdesign.wcet.annotations.SymbolicMarker.SymbolicMarkerType;
+import com.jopdesign.common.code.SymbolicMarker.SymbolicMarkerType;
 import com.jopdesign.wcet.ipet.IPETBuilder.ExecutionEdge;
 import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
 
@@ -39,7 +39,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.Vector;
 
 /**
  * Purpose: This class provides utility functions to build +IPET models

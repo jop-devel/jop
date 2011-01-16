@@ -24,6 +24,7 @@ import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.logger.LogConfig;
+import com.jopdesign.common.misc.BadGraphError;
 import com.jopdesign.common.misc.BadGraphException;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Code;
@@ -61,7 +62,11 @@ public class MethodCode {
     private final MethodInfo methodInfo;
     private final MethodGen methodGen;
     private ControlFlowGraph cfg;
-    
+
+    // true when the instruction list has lineNrs and exceptions attached to them.
+    private boolean ilTablesLoaded;
+    // true when the table attributes may be out of date.
+    private boolean ilTablesDirty;
 
     /**
      * Only to be used by MethodInfo.
@@ -107,8 +112,7 @@ public class MethodCode {
      * @return the length of the code attribute
      */
     public int getLength() {
-        // TODO if CFG is set, get length from CFG ?
-        compileCFG();
+        prepareInstructionList(false);
         return methodGen.getMethod().getCode().getLength();
     }
 
@@ -185,45 +189,164 @@ public class MethodCode {
     // Line number handling
     //////////////////////////////////////////////////////////////////////////////
 
-
+    /**
+     * Get a table of linenumber entries.
+     * If you want to get the line number of an instruction, use {@link #getLineNumber(InstructionHandle)} instead.
+     *
+     * @return a table of linenumber entries.
+     */
     public LineNumberGen[] getLineNumbers() {
         return methodGen.getLineNumbers();
     }
 
+    /**
+     * Get the linenumber table attribute.
+     * If you want to get the line number of an instruction, use {@link #getLineNumber(InstructionHandle)} instead.
+     *
+     * @return the linenumbers attribute.
+     */
     public LineNumberTable getLineNumberTable() {
         return methodGen.getLineNumberTable(getConstantPoolGen());
     }
 
-    public LineNumberGen addLineNumber(InstructionHandle ih, int src_line) {
-        return methodGen.addLineNumber(ih, src_line);
-    }
-
+    /**
+     * Remove a line number entry. Only use this if you manage the linenumber table yourself, else use
+     * {@link #removeLineNumber(InstructionHandle)}.
+     *
+     * @param l the entry to remove.
+     */
     public void removeLineNumber(LineNumberGen l) {
         methodGen.removeLineNumber(l);
     }
 
+    /**
+     * Remove the linenumber table attribute.
+     * <p>
+     * TODO if rebuildTables or compile() is called, the table might get recreated. Should be prevented
+     * if this is called (?)
+     * </p>
+     */
     public void removeLineNumbers() {
         methodGen.removeLineNumbers();
+    }
+
+    public LineNumberGen setLineNumber(InstructionHandle ih, int src_line) {
+        if (ilTablesLoaded) {
+            // TODO set to IH
+            return null;
+        } else {
+            // TODO check if entry exists
+            return methodGen.addLineNumber(ih, src_line);
+        }
+    }
+
+    public void removeLineNumber(InstructionHandle ih) {
+        // TODO remove from ih or entry from table
+    }
+
+    /**
+     * Get the line number of the instruction. If instruction handle attributes are not used,
+     * the positions of the instruction handles must be uptodate.
+     *
+     * @see #getSourceFileName(InstructionHandle)
+     * @param ih the instruction to check.
+     * @return the line number of the instruction, or 0 if unknown.
+     */
+    public int getLineNumber(InstructionHandle ih) {
+        // TODO check ih attributes
+        return getLineNumberTable().getSourceLine(ih.getPosition());
+    }
+
+    public String getSourceFileName(InstructionHandle ih) {
+        // TODO check ih attributes
+        return methodInfo.getClassInfo().getSourceFileName();
     }
 
     //////////////////////////////////////////////////////////////////////////////
     // Code Access, Instruction Lists and CFG
     //////////////////////////////////////////////////////////////////////////////
 
-    public InstructionList getInstructionList() {
-        compileCFG();
+    /**
+     * Get the instruction list of this code. If {@link #getControlFlowGraph()} has been used before, the CFG
+     * will be compiled and removed first.
+     *
+     * @see #rebuildTables(boolean)
+     * @see #compile()
+     * @param loadAttributes if true, load linenumbers and exceptions attributes to the handles, if they
+     *                       are not loaded already, and a successive call to {@link #compile} will update the
+     *                       tables (if not preceded by {@link #rebuildTables(boolean)}).
+     *                       Use {@code false} if you do not modify the list, if you do not need to keep tables
+     *                       in sync or if you update them yourself.
+     * @return the instruction list of this code.
+     */
+    public InstructionList getInstructionList(boolean loadAttributes) {
+
+        InstructionList list = prepareInstructionList(loadAttributes);
+
         // If one only uses the IList to analyze code but does not modify it, we could keep an existing CFG.
         // Unfortunately, there is no 'const InstructionList' or 'UnmodifiableInstructionList', so we
-        // can never be sure what the user will do with the list..
+        // can never be sure what the user will do with the list, so we kill the CFG to avoid inconsistencies.
         cfg = null;
-        return methodGen.getInstructionList();
+
+        return list;
     }
 
-    public void setInstructionList(InstructionList il) {
+    /**
+     * Set a new instruction list to this code.
+     * @param il the new list
+     * @param hasAttributes if true, use the linenumber and exception attributes set to the handles of the new list.
+     */
+    public void setInstructionList(InstructionList il, boolean hasAttributes) {
         methodGen.setInstructionList(il);
         cfg = null;
+        ilTablesLoaded = hasAttributes;
+        ilTablesDirty = hasAttributes;
     }
 
+    /**
+     * Check if the lineNr and exception table may be outdated and need to be rebuilt from
+     * the instructionhandle attributes. This gets set when {@code getInstructionList(true)}
+     * is called and reset when {@link #rebuildTables(boolean)} or {@link #compile()} gets called.
+     * <p>
+     * Note that this returns false when the instruction list gets modified after
+     * {@link #compile()} has been called and before {@code getInstructionList(true)} has
+     * been called again.
+     * </p>
+     * <p>
+     * TODO We could add an InstructionListObserver to get notified on changes, but this still
+     *      requires the user to call InstructionList.update()!
+     * </p>
+     *
+     * @see #getInstructionList(boolean)
+     * @see #compile()
+     * @return true if the table attributes of this code need to be rebuilt.
+     */
+    public boolean needsRebuildTables() {
+        return ilTablesLoaded && ilTablesDirty;
+    }
+
+    /**
+     * Rebuild the linenumber and exception attributes from CustomValues from the instruction handles.
+     * <p>
+     * This does not check {@link #needsRebuildTables()}. If no values are set to the handles, the tables
+     * will be removed.
+     * </p>
+     * @param clearNeedsRebuild set to false if you do want to
+     */
+    public void rebuildTables(boolean clearNeedsRebuild) {
+        rebuildTables(methodGen.getInstructionList());
+        if (clearNeedsRebuild) {
+            ilTablesDirty = false;
+        }
+    }
+
+    /**
+     * Get the InvokeSite for an instruction handle from the code of this method.
+     * This does not check if the given instruction is an invoke instruction.
+     *
+     * @param ih an instruction handle from this code
+     * @return the InvokeSite associated with this instruction or a new one.
+     */
     public InvokeSite getInvokeSite(InstructionHandle ih) {
         InvokeSite is = (InvokeSite) ih.getAttribute(KEY_IH_INVOKESITE);
         if (is == null) {
@@ -234,8 +357,7 @@ public class MethodCode {
     }
 
     public void removeNOPs() {
-        compileCFG();
-        cfg = null;
+        prepareInstructionList(true);
         methodGen.removeNOPs();
     }
 
@@ -244,8 +366,7 @@ public class MethodCode {
             try {
                 cfg = new ControlFlowGraph(this.getMethodInfo());
             } catch (BadGraphException e) {
-                // TODO handle this!
-                e.printStackTrace();
+                throw new BadGraphError("Unable to create CFG for " + methodInfo, e);
             }
         }
 
@@ -257,10 +378,16 @@ public class MethodCode {
     }
 
     /**
-     * Compile all changes and update maxStack and maxLocals.
+     * Compile all changes, rebuild linenumber and exception tables if needed, and update maxStack and maxLocals.
+     * <p>
+     * Note that {@link #needsRebuildTables()} will return false after this call until
+     * {@code getInstructionList(true)} is called again.
      */
     public void compile() {
-        compileCFG();
+        prepareInstructionList(false);
+        if (needsRebuildTables()) {
+            rebuildTables(true);
+        }
         methodGen.setMaxLocals();
         methodGen.setMaxStack();
     }
@@ -318,10 +445,28 @@ public class MethodCode {
     // Private area. For staff only..
     //////////////////////////////////////////////////////////////////////////////
 
-    private void compileCFG() {
+    private InstructionList prepareInstructionList(boolean loadAttributes) {
         if ( cfg != null ) {
             cfg.compile();
         }
+
+        InstructionList list = methodGen.getInstructionList();
+        if ( loadAttributes && !ilTablesLoaded ) {
+            loadTableAttributes(list);
+            ilTablesLoaded = true;
+        }
+        if ( loadAttributes ) {
+            ilTablesDirty = true;
+        }
+        return list;
+    }
+
+    private void loadTableAttributes(InstructionList il) {
+
+    }
+
+    private void rebuildTables(InstructionList il) {
+
     }
 
     private Object setCustomValue(InstructionHandle ih, KeyManager.CustomKey key, Object value, Object ihKey) {

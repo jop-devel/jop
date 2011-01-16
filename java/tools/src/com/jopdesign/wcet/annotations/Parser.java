@@ -19,6 +19,9 @@
  */
 package com.jopdesign.wcet.annotations;
 
+import com.jopdesign.common.code.LoopBound;
+import com.jopdesign.common.code.SymbolicMarker;
+
 public class Parser {
 	public static final int _EOF = 0;
 	public static final int _ident = 1;
@@ -132,7 +135,7 @@ buildLoopBound(String cmpOp, Long bound, SymbolicMarker marker)
 		return expr;
 	}
 
-	SymbolicMarker  Context() {
+	SymbolicMarker Context() {
 		SymbolicMarker  marker;
 		marker = null; 
 		if (la.kind == 7) {
