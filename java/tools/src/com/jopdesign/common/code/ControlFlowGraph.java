@@ -32,6 +32,7 @@ import com.jopdesign.common.graphutils.LoopColoring;
 import com.jopdesign.common.graphutils.TopOrder;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.BadGraphException;
+import com.jopdesign.common.misc.HashedString;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.wcet.annotations.BadAnnotationException;
@@ -56,7 +57,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Vector;
 
 import static com.jopdesign.common.code.BasicBlock.FlowInfo;
 import static com.jopdesign.common.code.BasicBlock.FlowTarget;
@@ -122,6 +122,7 @@ public class ControlFlowGraph {
 
         /**
          * visit an invoke node. InvokeNode's won't call visitBasicBlockNode.
+         * @param n the visited node
          */
         void visitInvokeNode(InvokeNode n);
 
@@ -136,6 +137,7 @@ public class ControlFlowGraph {
         protected String name;
 
         protected CFGNode(int id, String name) {
+            this.id = id;
             this.name = name;
         }
 
@@ -168,14 +170,15 @@ public class ControlFlowGraph {
         public ControlFlowGraph getControlFlowGraph() {
             return ControlFlowGraph.this;
         }
+
+        protected void dispose() {
+        }
     }
 
     /**
      * Names for dedicated nodes (entry node, exit node)
      */
-    public enum DedicatedNodeName {
-        ENTRY, EXIT, SPLIT, JOIN
-    }
+    public enum DedicatedNodeName { ENTRY, EXIT, SPLIT, JOIN }
 
     /**
      * Dedicated flow graph nodes
@@ -198,40 +201,51 @@ public class ControlFlowGraph {
         }
     }
 
-    private DedicatedNode splitNode() {
-        return new DedicatedNode(DedicatedNodeName.SPLIT);
-    }
+    // FIXME: [wcet-frontend] Remove the ugly ih.getAttribute() hack for CFG Nodes
 
-    private DedicatedNode joinNode() {
-        return new DedicatedNode(DedicatedNodeName.JOIN);
-    }
+    private static final Object KEY_CFGNODE = new HashedString("ControlFlowGraph.CFGNode");
 
+    /**
+     * Get the basic block node associated with an instruction handle
+     */
+    public static BasicBlockNode getHandleNode(InstructionHandle ih) {
+        BasicBlockNode blockNode = (BasicBlockNode) ih.getAttribute(KEY_CFGNODE);
+        if (blockNode == null) {
+            String errMsg = "No basic block recorded for instruction " + ih.toString(true);
+            logger.error(errMsg);
+            return null;
+        }
+        return blockNode;
+    }
 
     /**
      * Flow graph nodes representing basic blocks
      */
     public class BasicBlockNode extends CFGNode {
-        protected int blockIndex;
+        protected BasicBlock block;
 
-        public BasicBlockNode(int blockIndex) {
-            super(idGen++, "basic(" + blockIndex + ")");
-            this.blockIndex = blockIndex;
-            for (InstructionHandle ih : blocks.get(blockIndex).getInstructions()) {
-                BasicBlock.setHandleNode(ih, this);
+        public BasicBlockNode(BasicBlock block) {
+            super(idGen++, "basic(" + blocks.indexOf(block) + ")");
+            this.block = block;
+            for (InstructionHandle ih : block.getInstructions()) {
+                ih.addAttribute(KEY_CFGNODE, this);
+            }
+        }
+
+        @Override
+        protected void dispose() {
+            for (InstructionHandle ih : block.getInstructions()) {
+                ih.removeAttribute(KEY_CFGNODE);
             }
         }
 
         public BasicBlock getBasicBlock() {
-            return blocks.get(blockIndex);
+            return block;
         }
 
         @Override
         public void accept(CfgVisitor v) {
             v.visitBasicBlockNode(this);
-        }
-
-        public int getBlockIndex() {
-            return blockIndex;
         }
     }
 
@@ -244,15 +258,14 @@ public class ControlFlowGraph {
         private InvokeInstruction instr;
         private MethodRef referenced;
         private MethodInfo receiverImpl;
-        private ControlFlowGraph receiverFlowGraph;
         private InvokeNode instantiatedFrom;
 
-        private InvokeNode(int blockIndex) {
-            super(blockIndex);
+        private InvokeNode(BasicBlock block) {
+            super(block);
         }
 
-        public InvokeNode(int blockIndex, InvokeInstruction instr) {
-            super(blockIndex);
+        public InvokeNode(BasicBlock block, InvokeInstruction instr) {
+            super(block);
             this.instr = instr;
             /* -- TODO comment for commit!
            this.referenced = appInfo.getReferenced(methodInfo, instr);
@@ -263,8 +276,8 @@ public class ControlFlowGraph {
                 receiverImpl = null;
             } else {
                 /* -- TODO comment for commit!
-				receiverImpl = appInfo.findStaticImplementation(referenced);
-				-- */
+                receiverImpl = appInfo.findStaticImplementation(referenced);
+                -- */
             }
 
         }
@@ -275,7 +288,7 @@ public class ControlFlowGraph {
         }
 
         public InstructionHandle getInstructionHandle() {
-            return ControlFlowGraph.this.blocks.get(blockIndex).getLastInstruction();
+            return block.getLastInstruction();
         }
 
         /**
@@ -298,14 +311,14 @@ public class ControlFlowGraph {
          */
         public List<MethodInfo> getImplementedMethods(CallString ctx) {
             if (!isVirtual()) {
-                List<MethodInfo> impls = new Vector<MethodInfo>();
+                List<MethodInfo> impls = new ArrayList<MethodInfo>(1);
                 impls.add(getImplementedMethod());
                 return impls;
             } else {
                 /* -- TODO comment for commit!
-				return appInfo.findImplementations(this.invokerFlowGraph().getMethodInfo(),
-                        						   getInstructionHandle(),
-                        						   ctx);
+                return appInfo.findImplementations(this.invokerFlowGraph().getMethodInfo(),
+                                                   getInstructionHandle(),
+                                                   ctx);
                 -- */
                 return null;
             }
@@ -313,13 +326,11 @@ public class ControlFlowGraph {
 
         /**
          * For non-virtual methods, get the implementation of the method
+         * @return the CFG of the implementing receiver or null if unknown.
          */
         public ControlFlowGraph receiverFlowGraph() {
             if (isVirtual()) return null;
-            if (this.receiverFlowGraph == null) {
-                this.receiverFlowGraph = receiverImpl.getCode().getControlFlowGraph();
-            }
-            return this.receiverFlowGraph;
+            return receiverImpl.getCode().getControlFlowGraph();
         }
 
         public ControlFlowGraph invokerFlowGraph() {
@@ -340,8 +351,7 @@ public class ControlFlowGraph {
         /**
          * If this is the implementation of a virtual/interface invoke instruction,
          * return the InvokeNode for the virtual invoke instruction.
-         * TODO: This can be removed, if we ever remove
-         * {@link ControlFlowGraph#resolveVirtualInvokes()}
+         * TODO: This can be removed, if we ever remove {@link ControlFlowGraph#resolveVirtualInvokes()}
          */
         public InvokeNode getVirtualNode() {
             if (this.instantiatedFrom != null) return this.instantiatedFrom;
@@ -353,10 +363,11 @@ public class ControlFlowGraph {
          *
          * @param impl    the implementing method
          * @param virtual invoke node for the virtual method
-         * @return
+         * @return a new nonvirtual invoke node
          */
+        @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
         public InvokeNode createImplNode(MethodInfo impl, InvokeNode virtual) {
-            InvokeNode n = new InvokeNode(this.getBlockIndex());
+            InvokeNode n = new InvokeNode(block);
             n.name = "invoke(" + impl.getFQMethodName() + ")";
             n.instr = this.instr;
             n.referenced = this.referenced;
@@ -374,13 +385,13 @@ public class ControlFlowGraph {
         private MethodInfo receiverImpl;
         private ControlFlowGraph receiverFlowGraph;
 
-        private SpecialInvokeNode(int blockIndex) {
-            super(blockIndex);
+        private SpecialInvokeNode(BasicBlock block) {
+            super(block);
         }
 
-        public SpecialInvokeNode(int blockIndex, MethodInfo javaImpl) {
-            super(blockIndex);
-            this.instr = ControlFlowGraph.this.blocks.get(blockIndex).getLastInstruction();
+        public SpecialInvokeNode(BasicBlock block, MethodInfo javaImpl) {
+            super(block);
+            this.instr = block.getLastInstruction();
             this.name = "jimplBC(" + javaImpl + ")";
             this.receiverImpl = javaImpl;
         }
@@ -461,14 +472,14 @@ public class ControlFlowGraph {
      */
     public static class CFGEdge extends DefaultEdge {
         private static final long serialVersionUID = 1L;
-        EdgeKind kind;
-
-        public EdgeKind getKind() {
-            return kind;
-        }
+        private EdgeKind kind;
 
         public CFGEdge(EdgeKind kind) {
             this.kind = kind;
+        }
+
+        public EdgeKind getKind() {
+            return kind;
         }
 
         public CFGEdge clone() {
@@ -476,15 +487,23 @@ public class ControlFlowGraph {
         }
     }
 
-    CFGEdge entryEdge() {
+    private DedicatedNode splitNode() {
+        return new DedicatedNode(DedicatedNodeName.SPLIT);
+    }
+
+    private DedicatedNode joinNode() {
+        return new DedicatedNode(DedicatedNodeName.JOIN);
+    }
+
+    private CFGEdge entryEdge() {
         return new CFGEdge(EdgeKind.ENTRY_EDGE);
     }
 
-    CFGEdge exitEdge() {
+    private CFGEdge exitEdge() {
         return new CFGEdge(EdgeKind.EXIT_EDGE);
     }
 
-    CFGEdge nextEdge() {
+    private CFGEdge nextEdge() {
         return new CFGEdge(EdgeKind.NEXT_EDGE);
     }
 
@@ -551,21 +570,20 @@ public class ControlFlowGraph {
                 new DedicatedNode(DedicatedNodeName.ENTRY),
                 new DedicatedNode(DedicatedNodeName.EXIT));
         /* Create basic block vertices */
-        for (int i = 0; i < blocks.size(); i++) {
-            BasicBlock bb = blocks.get(i);
+        for (BasicBlock bb : blocks) {
             BasicBlockNode n;
             Instruction lastInstr = bb.getLastInstruction().getInstruction();
             InvokeInstruction theInvoke = bb.getTheInvokeInstruction();
             if (theInvoke != null) {
-                n = new InvokeNode(i, theInvoke);
+                n = new InvokeNode(bb, theInvoke);
             } else if (appInfo.getProcessorModel().isImplementedInJava(lastInstr)) {
                 /* -- TODO comment for commit!
 				MethodInfo javaImpl = appInfo.getJavaImplementation(bb.getMethodInfo(),lastInstr);
 				-- */
                 MethodInfo javaImpl = null;
-                n = new SpecialInvokeNode(i, javaImpl);
+                n = new SpecialInvokeNode(bb, javaImpl);
             } else {
-                n = new BasicBlockNode(i);
+                n = new BasicBlockNode(bb);
             }
             nodeTable.put(bb.getFirstInstruction().getPosition(), n);
             graph.addVertex(n);
@@ -609,6 +627,14 @@ public class ControlFlowGraph {
 
     public void compile() {
         // TODO implement
+    }
+
+    /**
+     * Clean up all known references to the objects of this graph (i.e. InstructionHandle attributes,..)
+     */
+    public void dispose() {
+        // TODO remove BBNode references from InstructionHandles
+
     }
 
     private void internalError(String reason) {
@@ -1156,6 +1182,7 @@ public class ControlFlowGraph {
     }
 
     public void exportDOT(File file) throws IOException {
+        //noinspection unchecked
         exportDOT(file, (Map) null, null);
     }
 

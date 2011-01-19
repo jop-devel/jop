@@ -24,6 +24,7 @@ import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.logger.LogConfig;
+import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.BadGraphError;
 import com.jopdesign.common.misc.BadGraphException;
 import org.apache.bcel.classfile.Attribute;
@@ -56,6 +57,12 @@ public class MethodCode {
     // Keys to attach custom values to InstructionHandles
     private static final Object KEY_INSTRUCTION_VALUE = "KeyManager.InstructionValue";
     private static final Object KEY_BLOCK_VALUE = "KeyManager.BlockValue";
+    // Keys to attach values directly to InstructionHandles, which are not handled by KeyManager
+    private static final Object KEY_LINENUMBER = "MethodCode.LineNumber";
+    private static final Object KEY_SOURCEFILE = "MethodCode.SourceFile";
+    private static final Object KEY_EXCEPTIONS = "MethodCode.Exceptions";
+
+    private static final Object[] MANAGED_KEYS = {KEY_LINENUMBER, KEY_SOURCEFILE, KEY_EXCEPTIONS};
 
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_CODE+".MethodCode");
 
@@ -232,7 +239,8 @@ public class MethodCode {
 
     public LineNumberGen setLineNumber(InstructionHandle ih, int src_line) {
         if (ilTablesLoaded) {
-            // TODO set to IH
+            ih.addAttribute(KEY_LINENUMBER, src_line);
+            ilTablesDirty = true;
             return null;
         } else {
             // TODO check if entry exists
@@ -241,7 +249,12 @@ public class MethodCode {
     }
 
     public void removeLineNumber(InstructionHandle ih) {
-        // TODO remove from ih or entry from table
+        if (ilTablesLoaded) {
+            ih.removeAttribute(KEY_LINENUMBER);
+            ilTablesDirty = true;
+        } else {
+            // TODO remove from LineNumberTable
+        }
     }
 
     /**
@@ -253,12 +266,23 @@ public class MethodCode {
      * @return the line number of the instruction, or 0 if unknown.
      */
     public int getLineNumber(InstructionHandle ih) {
-        // TODO check ih attributes
-        return getLineNumberTable().getSourceLine(ih.getPosition());
+        if (ilTablesLoaded) {
+            return (Integer)ih.getAttribute(KEY_LINENUMBER);
+        } else {
+            return getLineNumberTable().getSourceLine(ih.getPosition());
+        }
+    }
+
+    public void setSourceFileName(InstructionHandle ih, String filename) {
+        ih.addAttribute(KEY_SOURCEFILE, filename);
     }
 
     public String getSourceFileName(InstructionHandle ih) {
-        // TODO check ih attributes
+        // We cannot store SourceFile info in Tables, so we always check the InstructionHandle..
+        String source = (String) ih.getAttribute(KEY_SOURCEFILE);
+        if (source != null) {
+            return source;
+        }
         return methodInfo.getClassInfo().getSourceFileName();
     }
 
@@ -286,7 +310,7 @@ public class MethodCode {
         // If one only uses the IList to analyze code but does not modify it, we could keep an existing CFG.
         // Unfortunately, there is no 'const InstructionList' or 'UnmodifiableInstructionList', so we
         // can never be sure what the user will do with the list, so we kill the CFG to avoid inconsistencies.
-        cfg = null;
+        removeCFG();
 
         return list;
     }
@@ -298,7 +322,7 @@ public class MethodCode {
      */
     public void setInstructionList(InstructionList il, boolean hasAttributes) {
         methodGen.setInstructionList(il);
-        cfg = null;
+        removeCFG();
         ilTablesLoaded = hasAttributes;
         ilTablesDirty = hasAttributes;
     }
@@ -378,6 +402,16 @@ public class MethodCode {
     }
 
     /**
+     * Remove the CFG linked to this MethodCode, dismissing all changes made to it.
+     */
+    public void removeCFG() {
+        if (cfg != null) {
+            cfg.dispose();
+            cfg = null;
+        }
+    }
+
+    /**
      * Compile all changes, rebuild linenumber and exception tables if needed, and update maxStack and maxLocals.
      * <p>
      * Note that {@link #needsRebuildTables()} will return false after this call until
@@ -437,7 +471,15 @@ public class MethodCode {
     }
 
     public void copyCustomValues(InstructionHandle from, InstructionHandle to) {
-        // TODO copy all instruction- and block-values
+        Object value;
+        for (Object key : MANAGED_KEYS) {
+            value = from.getAttribute(key);
+            if (value != null) to.addAttribute(key, value);
+            else to.removeAttribute(key);
+        }
+
+        copyCustomKey(from, to, KEY_BLOCK_VALUE);
+        copyCustomKey(from, to, KEY_INSTRUCTION_VALUE);
     }
 
 
@@ -462,11 +504,20 @@ public class MethodCode {
     }
 
     private void loadTableAttributes(InstructionList il) {
+        LineNumberTable lt = methodGen.getLineNumberTable(getConstantPoolGen());
+        // TODO handle missing linenumbertable, missing entries
+        for (InstructionHandle ih : il.getInstructionHandles()) {
+            int pos = lt.getSourceLine(ih.getPosition());
+            ih.addAttribute(KEY_SOURCEFILE, pos);
+        }
+
+        // TODO load exception ranges
 
     }
 
     private void rebuildTables(InstructionList il) {
-
+        // TODO rebuild Linenumber- and exception table
+        
     }
 
     private Object setCustomValue(InstructionHandle ih, KeyManager.CustomKey key, Object value, Object ihKey) {
@@ -490,12 +541,12 @@ public class MethodCode {
 
     private Object setCustomValue(InstructionHandle ih, KeyManager.CustomKey key, CallString context, Object value, Object ihKey) {
         // TODO implement
-        return null;
+        throw new AppInfoError("Not yet implemented.");
     }
 
     private Object getCustomValue(InstructionHandle ih, KeyManager.CustomKey key, CallString context, boolean checkSuffixes, Object ihKey) {
         // TODO implement
-        return null;
+        throw new AppInfoError("Not yet implemented.");
     }
 
     private Object clearCustomKey(InstructionHandle ih, KeyManager.CustomKey key, Object ihKey) {
@@ -511,5 +562,14 @@ public class MethodCode {
         return value;
     }
 
-
+    private void copyCustomKey(InstructionHandle from, InstructionHandle to, Object ihKey) {
+        @SuppressWarnings({"unchecked"})
+        Map<KeyManager.CustomKey,Object> map = (Map<KeyManager.CustomKey, Object>) from.getAttribute(ihKey);
+        if (map == null) {
+            to.removeAttribute(ihKey);
+            return;
+        }
+        Map<KeyManager.CustomKey,Object> newMap = new HashMap<KeyManager.CustomKey, Object>(map);
+        to.addAttribute(ihKey, newMap);
+    }
 }

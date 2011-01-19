@@ -52,6 +52,9 @@ public class ProjectConfig {
     private static final BooleanOption DO_GENERATE_REPORTS =
             new BooleanOption("report-generation","whether reports should be generated",true);
 
+    public static final BooleanOption WCET_PREPROCESS =
+            new BooleanOption("wcet-preprocess", "Perform bytecode preprocessing (same as running WCETPreprocess first)", false);
+
     public static final BooleanOption DO_DFA =
             new BooleanOption("dataflow-analysis","whether dataflow analysis should be performed",false);
 
@@ -216,6 +219,10 @@ public class ProjectConfig {
         return config.getOption(Config.DEBUG);
     }
 
+    public boolean doPreprocess() {
+        return config.getOption(WCET_PREPROCESS);
+    }
+
     /* Helpers */
 
     public static String splitFQMethod(String s, boolean getClass) {
@@ -241,4 +248,5 @@ public class ProjectConfig {
         }
         return splittedName;
     }
+
 }

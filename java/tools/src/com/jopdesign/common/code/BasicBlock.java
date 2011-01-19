@@ -24,7 +24,6 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import org.apache.bcel.Constants;
@@ -162,7 +161,7 @@ public class BasicBlock {
      * Keys for the custom {@link InstructionHandle} attributes
      */
     private enum InstrField {
-        FLOW_INFO, LINE_NUMBER, CFGNODE
+        FLOW_INFO
     }
 
     /**
@@ -173,40 +172,6 @@ public class BasicBlock {
      */
     public static FlowInfo getFlowInfo(InstructionHandle ih) {
         return (FlowInfo) ih.getAttribute(InstrField.FLOW_INFO);
-    }
-
-    /**
-     * Get Line number associated with an {@link InstructionHandle}
-     *
-     * @param ih
-     * @return
-     */
-    public static Integer getLineNumber(InstructionHandle ih) {
-        return (Integer) ih.getAttribute(InstrField.LINE_NUMBER);
-    }
-
-    // TODO move to CFG class, remove links on dispose()
-
-    // FIXME: [wcet-frontend] Remove the ugly ih.getAttribute() hack for CFG Nodes
-
-    /**
-     * Get the basic block node associated with an instruction handle
-     */
-    public static BasicBlockNode getHandleNode(InstructionHandle ih) {
-        BasicBlockNode blockNode = (BasicBlockNode) ih.getAttribute(InstrField.CFGNODE);
-        if (blockNode == null) {
-            String errMsg = "No basic block recorded for instruction " + ih.toString(true);
-            logger.error(errMsg);
-            return null;
-        }
-        return blockNode;
-    }
-
-    /**
-     * Set a parent link to the basic block node for the given instruction handle
-     */
-    public static void setHandleNode(InstructionHandle ih, BasicBlockNode basicBlockNode) {
-        ih.addAttribute(InstrField.CFGNODE, basicBlockNode);
     }
 
     private final LinkedList<InstructionHandle> instructions = new LinkedList<InstructionHandle>();
@@ -440,7 +405,6 @@ public class BasicBlock {
         /* Step 1: compute flow info */
         for (InstructionHandle ih : il.getInstructionHandles()) {
             ih.addAttribute(InstrField.FLOW_INFO, itv.getFlowInfo(ih));
-            ih.addAttribute(InstrField.LINE_NUMBER, lineNumberTable.getSourceLine(ih.getPosition()));
         }
         /* Step 2: create basic blocks */
         {

@@ -213,10 +213,10 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
         if(projectConfig.doDataflowAnalysis()) {
             appInfo.iterate(new RemoveNops());
-        } else {
+        }
+        if (projectConfig.doPreprocess()) {
             WcetPreprocess.preprocess(appInfo);
         }
-
     }
 
     public AppInfo getAppInfo() {
