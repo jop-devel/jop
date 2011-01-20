@@ -92,7 +92,6 @@ public final class AppInfo {
     private final Set<String> ignoredClasses;
 
     private final List<AppEventHandler> eventHandlers;
-    private CommonEventHandler commonEventHandler;
 
     private ProcessorModel processor;
 
@@ -128,10 +127,6 @@ public final class AppInfo {
         ignoredClasses = new HashSet<String>(1);
 
         eventHandlers = new ArrayList<AppEventHandler>(3);
-
-        // TODO make the common handler optional? (need to move this somewhere else in order to do that)
-        commonEventHandler = new CommonEventHandler();
-        registerEventHandler(commonEventHandler);
     }
 
 
@@ -154,14 +149,6 @@ public final class AppInfo {
      */
     public List<AppEventHandler> getEventHandlers() {
         return Collections.unmodifiableList(eventHandlers);
-    }
-
-    /**
-     * Get the {@link CommonEventHandler} AppEventHandler
-     * @return the eventHandler of the common package.
-     */
-    public CommonEventHandler getCommonEventHandler() {
-        return commonEventHandler;
     }
 
     /**

@@ -113,7 +113,6 @@ public class MainRunner {
                 
                 // cleanup for next invoke
                 AppInfo.getSingleton().clear(true);
-                KeyManager.getSingleton().reset();
                 LogConfig.stopLogger();
             }
 

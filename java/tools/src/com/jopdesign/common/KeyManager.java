@@ -43,7 +43,7 @@ public class KeyManager {
     private static final Object KEY_INSTRUCTION_VALUE = "KeyManager.InstructionValue";
     private static final Object KEY_BLOCK_VALUE = "KeyManager.BlockValue";
 
-
+    // Clearing registeredKeys is not a good idea, since many keys are stored as static field!
     private final Map<String, CustomKey> registeredKeys;
     private int maxStructKeyID;
 
@@ -170,7 +170,10 @@ public class KeyManager {
         // check if exists
         CustomKey k = registeredKeys.get(keyname);
         if ( k != null ) {
-            throw new IllegalArgumentException("CustomKey "+keyname+" already exists!");
+            if (k.getType() != type || k.getManager() != manager) {
+                throw new IllegalArgumentException("CustomKey "+keyname+" already exists but has a different definition!");
+            }
+            return k;
         }
 
         // currently there is no way to unregister a key and storing struct-keys might get replaced by maps for
@@ -185,17 +188,6 @@ public class KeyManager {
 
     public CustomKey getRegisteredKey(String key) {
         return registeredKeys.get(key);
-    }
-
-    /**
-     * Unregister all keys.
-     */
-    public void reset() {
-        if (getAppInfo().getClassInfos().size() > 0) {
-            // TODO before removing, we should clear all custom-keys too
-        }
-        registeredKeys.clear();
-        maxStructKeyID = 0;
     }
 
     //////////////////////////////////////////////////////////////////////////////
