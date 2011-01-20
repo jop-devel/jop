@@ -32,7 +32,7 @@ import java.io.File;
 public class ReportConfig {
     public static final StringOption TEMPLATEDIR =
             new StringOption("templatedir",
-                    "directory with custom templates for report generation", true);
+                    "directory with custom templates for report generation", "java/tools/src");
     public static final StringOption PROGRAM_DOT =
             new StringOption("program-dot", "if graphs should be generated from java, the path to the 'dot' binary", true);
 
