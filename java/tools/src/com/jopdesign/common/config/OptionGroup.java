@@ -70,7 +70,7 @@ public class OptionGroup {
         this.config = config;
         this.prefix = prefix;
         optionList = new LinkedList<Option<?>>();
-        optionSet  = new HashMap<String, Option<?>>();
+        optionSet = new HashMap<String, Option<?>>();
         cmds = new HashMap<String, OptionGroup>();
     }
 
@@ -108,21 +108,21 @@ public class OptionGroup {
     public String selectedCommand() {
         return config.getValue(getConfigKey(CMD_KEY));
     }
-        
-    /*
-     * Setup Options
-     * ~~~~~~~~~~~~~
-     */
 
-	public List<Option<?>> availableOptions() {
-		return optionList;
-	}
+    /*
+    * Setup Options
+    * ~~~~~~~~~~~~~
+    */
+
+    public List<Option<?>> availableOptions() {
+        return optionList;
+    }
 
     public void addOption(Option option) {
-        if ( optionSet.containsKey(option.getKey()) ) {
+        if (optionSet.containsKey(option.getKey())) {
             for (Iterator<Option<?>> it = optionList.iterator(); it.hasNext();) {
                 Option opt = it.next();
-                if ( opt.getKey().equals(option.getKey()) ) {
+                if (opt.getKey().equals(option.getKey())) {
                     it.remove();
                     break;
                 }
@@ -147,7 +147,7 @@ public class OptionGroup {
     }
 
     public Option getShortOptionKey(char shortKey) {
-        if ( shortKey == Option.SHORT_NONE ) {
+        if (shortKey == Option.SHORT_NONE) {
             return null;
         }
         for (Option o : optionList) {
@@ -175,7 +175,7 @@ public class OptionGroup {
     }
 
     public String getConfigKey(String key) {
-        return prefix == null ? key : prefix+'.'+key;
+        return prefix == null ? key : prefix + '.' + key;
     }
 
     /*
@@ -186,10 +186,10 @@ public class OptionGroup {
     /**
      * Check if option has been assigned a value in the config.
      *
-     * @see Option#isEnabled(OptionGroup)
-     * @see #hasValue(Option)
      * @param option the option to check.
      * @return true if option has been explicitly set.
+     * @see Option#isEnabled(OptionGroup)
+     * @see #hasValue(Option)
      */
     public boolean isSet(Option<?> option) {
         return config.isSet(getConfigKey(option));
@@ -199,10 +199,10 @@ public class OptionGroup {
      * Check if we have any value for this option (either set explicitly or some default value).
      * Does not check if the value can be parsed.
      *
-     * @see Option#isEnabled(OptionGroup)
-     * @see #isSet(Option)
      * @param option the option to check.
      * @return true if there is some value available for this option.
+     * @see Option#isEnabled(OptionGroup)
+     * @see #isSet(Option)
      */
     public boolean hasValue(Option<?> option) {
         String val = config.getValue(getConfigKey(option));
@@ -213,12 +213,12 @@ public class OptionGroup {
      * Try to get the value of an option, or its default value.
      * If no value and no default value is available, this returns null, even
      * if the option is not optional.
-     *
+     * <p/>
      * Note that after {@link #checkOptions()} has been called, this method
      * should not throw any errors.
      *
      * @param option the option to query.
-     * @param <T> Type of the option
+     * @param <T>    Type of the option
      * @return The value, the default value, or null if no value is available.
      * @throws IllegalArgumentException if the config-value cannot be parsed or is not valid.
      */
@@ -227,13 +227,13 @@ public class OptionGroup {
         String val;
         // if this optiongroup has a prefix and the option is not defined here, try to
         // look it up in the root group
-        if ( prefix != null && !optionSet.containsKey(option.getKey()) ) {
+        if (prefix != null && !optionSet.containsKey(option.getKey())) {
             val = config.getValue(option.getKey());
         } else {
             val = config.getValue(getConfigKey(option));
         }
 
-        if ( val == null ) {
+        if (val == null) {
             return option.getDefaultValue(this);
         } else {
             return option.parse(this, val);
@@ -244,12 +244,12 @@ public class OptionGroup {
      * Get the parsed default value from the config or from the option if not set.
      *
      * @param option the option to get the default value for.
-     * @param <T> the type of the value
+     * @param <T>    the type of the value
      * @return the default value, or null if no default is set in neither the config nor the option.
      */
     public <T> T getDefaultValue(Option<T> option) {
         String val = config.getDefaultValue(getConfigKey(option));
-        if ( val == null ) {
+        if (val == null) {
             return option.getDefaultValue(this);
         } else {
             return option.parse(this, val);
@@ -265,7 +265,7 @@ public class OptionGroup {
      */
     public String getDefaultValueText(Option option) {
         String val = config.getDefaultValue(getConfigKey(option));
-        if ( val == null ) {
+        if (val == null) {
             Object def = option.getDefaultValue();
             return def != null ? def.toString() : null;
         } else {
@@ -282,12 +282,12 @@ public class OptionGroup {
      * Try to get the value of an option, or return null for optional options with no default value.
      * An exception is thrown if no value (and no default value) is given and the option is not optional,
      * or if the config-value cannot be parsed.
-     *
+     * <p/>
      * Note that after {@link #checkOptions()} has been called, this method
      * should not throw any errors.
      *
      * @param option the option to get the value for.
-     * @param <T> type of the option.
+     * @param <T>    type of the option.
      * @return the option value or null if
      * @throws Config.BadConfigurationError if the config-value cannot be parsed or if the option is null but required.
      */
@@ -296,91 +296,92 @@ public class OptionGroup {
         try {
             opt = tryGetOption(option);
         } catch (IllegalArgumentException e) {
-            throw new Config.BadConfigurationError("Error parsing option '"+getConfigKey(option)+"': "+e.getMessage(), e);
+            throw new Config.BadConfigurationError("Error parsing option '" + getConfigKey(option) + "': " + e.getMessage(), e);
         }
-        if(opt == null && ! option.isOptional()) {
-            throw new Config.BadConfigurationError("Missing required option: "+getConfigKey(option));
+        if (opt == null && !option.isOptional()) {
+            throw new Config.BadConfigurationError("Missing required option: " + getConfigKey(option));
         }
-		return opt;
-	}
+        return opt;
+    }
 
-	public <T> void checkPresent(Option<T> option) throws Config.BadConfigurationException {
-		if(getOption(option) == null) {
-			throw new Config.BadConfigurationException("Missing option: "+getConfigKey(option));
-		}
-	}
+    public <T> void checkPresent(Option<T> option) throws Config.BadConfigurationException {
+        if (getOption(option) == null) {
+            throw new Config.BadConfigurationException("Missing option: " + getConfigKey(option));
+        }
+    }
 
-	public <T> void setOption(Option<T> option, T value) {
-		config.setProperty(getConfigKey(option), value.toString());
-	}
+    public <T> void setOption(Option<T> option, T value) {
+        config.setProperty(getConfigKey(option), value.toString());
+    }
 
     /*
      * Parse, check and dump options
      * ~~~~~~~~~~~~~~~~~~~~~~
      */
 
-	/**
-	 * Consume all command line options and turn them into properties.<br/>
-	 *
-	 * <p>The arguments are processed as follows: If an argument is of the form
-	 * "-option" or "--option", it is considered to be an option.
-	 * If an argument is an option, the next argument is considered to be the parameter,
-	 * unless the option is boolean and the next argument is missing or an option as well.
-	 * We add the pair to our properties, consuming both arguments.
+    /**
+     * Consume all command line options and turn them into properties.<br/>
+     * <p/>
+     * <p>The arguments are processed as follows: If an argument is of the form
+     * "-option" or "--option", it is considered to be an option.
+     * If an argument is an option, the next argument is considered to be the parameter,
+     * unless the option is boolean and the next argument is missing or an option as well.
+     * We add the pair to our properties, consuming both arguments.
      * </p><p>
      * If an argument starts with @, the rest of it is considered as a property file name,
-     * which is then loaded and added to the configuration. 
-	 * The first non-option or the argument string {@code --} terminates the option list.
+     * which is then loaded and added to the configuration.
+     * The first non-option or the argument string {@code --} terminates the option list.
      * </p>
      *
-	 * @param args The argument list
-	 * @return An array of unconsumed arguments
+     * @param args The argument list
+     * @return An array of unconsumed arguments
      * @throws Config.BadConfigurationException if an argument is malformed.
-	 */
-	public String[] consumeOptions(String[] args) throws Config.BadConfigurationException {
-		int i = 0;
+     */
+    public String[] consumeOptions(String[] args) throws Config.BadConfigurationException {
+        int i = 0;
 
-		while (i < args.length) {
+        while (i < args.length) {
 
-            if ( cmds.containsKey(args[i]) ) {
+            if (cmds.containsKey(args[i])) {
                 config.setProperty(getConfigKey(CMD_KEY), args[i]);
                 OptionGroup cmdGroup = cmds.get(args[i]);
 
-                return cmdGroup.consumeOptions(Arrays.copyOfRange(args, i+1, args.length));
+                return cmdGroup.consumeOptions(Arrays.copyOfRange(args, i + 1, args.length));
             }
 
             // handle custom config files
-            if ( args[i].startsWith("@") ) {
+            if (args[i].startsWith("@")) {
                 String filename = args[i].substring(1);
                 try {
                     InputStream is = new BufferedInputStream(new FileInputStream(filename));
                     config.addProperties(is, prefix);
+                    is.close();
                 } catch (FileNotFoundException e) {
-                    throw new Config.BadConfigurationException("Configuration file '"+filename+"' not found!", e);
+                    throw new Config.BadConfigurationException("Configuration file '" + filename + "' not found!", e);
                 } catch (IOException e) {
-                    throw new Config.BadConfigurationException("Error reading file '"+filename+"': "+e.getMessage(), e);
+                    throw new Config.BadConfigurationException("Error reading file '" + filename + "': " + e.getMessage(), e);
                 }
                 i++;
                 continue;
             }
 
             // break if this is not an option argument, return rest
-            if ( !args[i].startsWith("-") ) break;
+            if (!args[i].startsWith("-")) break;
             if ("-".equals(args[i]) || "--".equals(args[i])) {
                 i++;
                 break;
             }
 
-			String key = null;
-			if(args[i].charAt(1) == '-') key = args[i].substring(2);
-			else {
+            String key = null;
+            if (args[i].charAt(1) == '-') key = args[i].substring(2);
+            else {
                 // for something of form '-<char>', try short option,
-                if ( args[i].length() == 2 ) {
+                if (args[i].length() == 2) {
                     Option shortOption = getShortOptionKey(args[i].charAt(1));
-                    if ( shortOption != null ) {
+                    if (shortOption != null) {
                         key = shortOption.getKey();
                     }
-                // for something of form '-<longtext>' try normal key for compatibility
+                    // for something of form '-<longtext>' try normal key for compatibility
                 } else {
                     key = args[i].substring(1);
                 }
@@ -389,38 +390,38 @@ public class OptionGroup {
             Option spec = getOptionSpec(key);
 
             if (spec != null) {
-				String val = null;
-				if (i+1 < args.length) {
-                    if ( spec.isValue(args[i+1])) {
-                        val = args[i+1];
+                String val = null;
+                if (i + 1 < args.length) {
+                    if (spec.isValue(args[i + 1])) {
+                        val = args[i + 1];
                     }
-				}
-				if (spec instanceof BooleanOption && val == null) {
-					val = "true";
-				} else if (val == null){
-					throw new Config.BadConfigurationException("Missing argument for option: "+spec);
-				} else {
-					i++;
-				}
-				config.setProperty(getConfigKey(spec), val);
+                }
+                if (spec instanceof BooleanOption && val == null) {
+                    val = "true";
+                } else if (val == null) {
+                    throw new Config.BadConfigurationException("Missing argument for option: " + spec);
+                } else {
+                    i++;
+                }
+                config.setProperty(getConfigKey(spec), val);
 
             } else if (spec == null) {
 
                 // maybe a boolean option, check for --no-<key>
-                if ( key.startsWith("no-") ) {
+                if (key.startsWith("no-")) {
                     spec = getOptionSpec(key.substring(3));
-                    if ( spec != null && spec instanceof BooleanOption) {
+                    if (spec != null && spec instanceof BooleanOption) {
                         config.setProperty(getConfigKey(spec), "false");
                     }
                 }
-			}
-            if ( spec == null ) {
-				throw new Config.BadConfigurationException("Unknown option: "+key);
-			}
-			i++;
-		}
-		return Arrays.copyOfRange(args, i, args.length);
-	}
+            }
+            if (spec == null) {
+                throw new Config.BadConfigurationException("Unknown option: " + key);
+            }
+            i++;
+        }
+        return Arrays.copyOfRange(args, i, args.length);
+    }
 
     public void checkOptions() throws Config.BadConfigurationException {
 
@@ -433,10 +434,10 @@ public class OptionGroup {
             try {
                 tryGetOption(option);
             } catch (IllegalArgumentException e) {
-                throw new Config.BadConfigurationException("Error parsing option '"+getConfigKey(option)+"': "+e.getMessage(), e);
+                throw new Config.BadConfigurationException("Error parsing option '" + getConfigKey(option) + "': " + e.getMessage(), e);
             }
 
-            if ( option.doSkipChecks() && option.isEnabled(this) ) {
+            if (option.doSkipChecks() && option.isEnabled(this)) {
                 skipCheck = true;
             }
         }
@@ -446,8 +447,8 @@ public class OptionGroup {
 
             // check for required options
             for (Option<?> option : optionList) {
-                if ( !option.isOptional() && !hasValue(option) ) {
-                    throw new Config.BadConfigurationException("Missing required option '"+getConfigKey(option)+'"');
+                if (!option.isOptional() && !hasValue(option)) {
+                    throw new Config.BadConfigurationException("Missing required option '" + getConfigKey(option) + '"');
                 }
             }
 
@@ -458,14 +459,15 @@ public class OptionGroup {
 
     /**
      * Dump configuration of all options for debugging purposes
-     * @param p a writer to print the options to
+     *
+     * @param p      a writer to print the options to
      * @param indent indent used for keys
      * @return a set of all printed keys
      */
     public Collection<String> printOptions(PrintStream p, int indent) {
         Set<String> keys = new HashSet<String>();
 
-        for(Option<?> o : availableOptions()) {
+        for (Option<?> o : availableOptions()) {
             String key = getConfigKey(o);
             Object val = tryGetOption(o);
             keys.add(key);

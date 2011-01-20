@@ -22,20 +22,19 @@ package com.jopdesign.jcopter;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
-import com.jopdesign.common.JopTool;
+import com.jopdesign.common.EmptyTool;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
-
-import java.io.IOException;
-import java.util.Properties;
+import com.jopdesign.dfa.DFATool;
+import com.jopdesign.wcet.WCETTool;
 
 /**
  * User: Stefan Hepp (stefan@stefant.org)
  * Date: 18.05.2010
  */
-public class JCopter implements JopTool<JCopterManager> {
+public class JCopter extends EmptyTool<JCopterManager> {
 
     public static final String VERSION = "0.1";
 
@@ -48,35 +47,22 @@ public class JCopter implements JopTool<JCopterManager> {
     public static final BooleanOption ALLOW_INCOMPLETE_APP =
             new BooleanOption("allow-incomplete", "Ignore missing classes", false);
 
-    public static final BooleanOption USE_DFA =
-            new BooleanOption("useDFA", "run and use results of the DFA tool", true);
-
-    public static final BooleanOption USE_WCET =
-            new BooleanOption("useWCET", "run and use results of the WCET analysis tool", true);
-
 
     private final JCopterManager manager;
+    private DFATool dfaTool;
+    private WCETTool wcetTool;
 
     public JCopter() {
+        super(VERSION);
         manager = new JCopterManager();
-    }
-
-    public String getToolVersion() {
-        return VERSION;
     }
 
     public JCopterManager getEventHandler() {
         return manager;
     }
 
-    public Properties getDefaultProperties() throws IOException {
-        return AppSetup.loadResourceProps(JCopter.class, "defaults.properties");
-    }
-
     public void registerOptions(OptionGroup options) {
         options.addOption( ALLOW_INCOMPLETE_APP );
-        options.addOption( USE_DFA );
-        options.addOption( USE_WCET );
     }
 
     @Override
@@ -90,35 +76,61 @@ public class JCopter implements JopTool<JCopterManager> {
 
     }
 
-    public void run(Config config) {
+    public DFATool getDfaTool() {
+        return dfaTool;
+    }
 
-        if ( config.getOption(USE_DFA) ) {
+    public void setDfaTool(DFATool dfaTool) {
+        this.dfaTool = dfaTool;
+    }
 
-        }
+    public WCETTool getWcetTool() {
+        return wcetTool;
+    }
 
-        if ( config.getOption(USE_WCET) ) {
+    public void setWcetTool(WCETTool wcetTool) {
+        this.wcetTool = wcetTool;
+    }
 
-        }
+    public boolean useDFA() {
+        return dfaTool != null;
+    }
 
-        
+    public boolean useWCET() {
+        return wcetTool != null;
+    }
+
+    public void optimize(Config config) {
+
+
     }
 
 
     public static void main(String[] args) {
 
-        // TODO create and register wcet and dfa tools, pass to JCopter
-        JCopter jcopter = new JCopter();
-
         // setup some defaults
         AppSetup setup = new AppSetup();
         setup.setUsageInfo("jcopter", "A WCET driven Java bytecode optimizer.");
-
-        setup.addStandardOptions(true, true, true);
-        setup.addPackageOptions(true);
-        setup.addWriteOptions(true);
+        setup.setVersionInfo(VERSION);
         setup.setConfigFilename("jcopter.properties");
 
+        DFATool dfaTool = new DFATool();
+        WCETTool wcetTool = new WCETTool();
+        JCopter jcopter = new JCopter();
+
+        setup.registerTool("dfa", dfaTool, true, false);
+        setup.registerTool("wcet", wcetTool, true, true);
         setup.registerTool("jcopter", jcopter);
+
+        AppInfo appInfo = setup.initAndLoad(args, true, true, true);
+
+        if (setup.useTool("dfa")) {
+            wcetTool.setDfaTool(dfaTool);
+            jcopter.setDfaTool(dfaTool);
+        }
+        if (setup.useTool("wcet")) {
+            jcopter.setWcetTool(wcetTool);
+        }
 
         // parse options and config, setup everything, load application classes
         String[] rest = setup.setupConfig(args);
@@ -127,7 +139,7 @@ public class JCopter implements JopTool<JCopterManager> {
         setup.setupAppInfo(rest, true);
 
         // run optimizations
-        jcopter.run(setup.getConfig());
+        jcopter.optimize(setup.getConfig());
 
         // write results
         setup.writeClasses();

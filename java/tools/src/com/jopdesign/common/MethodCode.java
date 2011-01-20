@@ -267,7 +267,9 @@ public class MethodCode {
      */
     public int getLineNumber(InstructionHandle ih) {
         if (ilTablesLoaded) {
-            return (Integer)ih.getAttribute(KEY_LINENUMBER);
+            Object attribute = ih.getAttribute(KEY_LINENUMBER);
+            // TODO return -1 if not set?
+            return attribute != null ? (Integer) attribute : 0;
         } else {
             return getLineNumberTable().getSourceLine(ih.getPosition());
         }

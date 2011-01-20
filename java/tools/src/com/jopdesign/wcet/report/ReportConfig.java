@@ -30,78 +30,82 @@ import com.jopdesign.wcet.WCETTool;
 import java.io.File;
 
 public class ReportConfig {
-	public static final StringOption TEMPLATEDIR =
-		new StringOption("templatedir",
-				"directory with custom templates for report generation",true);	
-	public static final StringOption PROGRAM_DOT = 
-		new StringOption("program-dot","if graphs should be generated from java, the path to the 'dot' binary", true);
-		
-	public static final Option<?>[] reportOptions =
-		{ TEMPLATEDIR, PROGRAM_DOT };	
+    public static final StringOption TEMPLATEDIR =
+            new StringOption("templatedir",
+                    "directory with custom templates for report generation", true);
+    public static final StringOption PROGRAM_DOT =
+            new StringOption("program-dot", "if graphs should be generated from java, the path to the 'dot' binary", true);
 
-	/* dynamic configuration */
-	private Config config;
-	private File reportDir;
+    public static final Option<?>[] reportOptions =
+            {TEMPLATEDIR, PROGRAM_DOT};
 
-	public ReportConfig(WCETTool project) throws BadConfigurationException {
+    /* dynamic configuration */
+    private Config config;
+    private File reportDir;
+
+    public ReportConfig(WCETTool project) throws BadConfigurationException {
         this.config = project.getConfig();
         // TODO we should use a different report dir/subdir for wcet reports
         //      but then we must get the correct relative path for this.get(Error|Info)LogFile()
         //      (relative to the report dir)
-		this.reportDir = new File(config.getOption(Config.REPORTDIR));
-        Config.checkDir(reportDir,true);
-	}	
-    
-	/** get path for templates */
-	public String getTemplatePath() {
-		return config.getOption(TEMPLATEDIR);
-	}
-    
-	/**
-	 * get the directory to create output files in
-	 */
-	public File getReportDir() {
-		return this.reportDir;
-	}
-    
-	public File getReportFile(File file) {
-		return new File(reportDir,file.getPath());
-	}
+        this.reportDir = new File(config.getOption(Config.REPORTDIR));
+        Config.checkDir(reportDir, true);
+    }
 
-	public File getReportFile(String filename) {
-		return new File(reportDir, filename);
-	}
+    /**
+     * get path for templates
+     * @return the template path or null if not set
+     */
+    public String getTemplatePath() {
+        return config.getOption(TEMPLATEDIR);
+    }
 
-	/**
-	 * get the filename for output files
-	 * @param method the method the outputfile should be created for
-	 * @param extension the filename extension (e.g. .xml)
-	 * @return the filename
-	 */
-	public File getOutFile(MethodInfo method, String extension) {
-		return new File(reportDir,
-				        MiscUtils.sanitizeFileName(method.getFQMethodName() + extension));
-	}
+    /**
+     * get the directory to create output files in
+     */
+    public File getReportDir() {
+        return this.reportDir;
+    }
 
-	public String getDotBinary() {
-		return config.getOption(PROGRAM_DOT);
-	}
+    public File getReportFile(File file) {
+        return new File(reportDir, file.getPath());
+    }
 
-	public boolean doInvokeDot() {
-		return (getDotBinary() != null);
-	}
+    public File getReportFile(String filename) {
+        return new File(reportDir, filename);
+    }
 
-	public boolean hasDotBinary() {
-		if (getDotBinary() == null) return false;
-		return new File(getDotBinary()).exists();
-	}
+    /**
+     * get the filename for output files
+     *
+     * @param method    the method the outputfile should be created for
+     * @param extension the filename extension (e.g. .xml)
+     * @return the filename
+     */
+    public File getOutFile(MethodInfo method, String extension) {
+        return new File(reportDir,
+                MiscUtils.sanitizeFileName(method.getFQMethodName() + extension));
+    }
 
-	public File getErrorLogFile() {
-		return new File(getReportDir(),config.getOption(Config.ERROR_LOG_FILE));
-	}
+    public String getDotBinary() {
+        return config.getOption(PROGRAM_DOT);
+    }
 
-	public File getInfoLogFile() {
-		return new File(getReportDir(),config.getOption(Config.INFO_LOG_FILE));
-	}
+    public boolean doInvokeDot() {
+        return (getDotBinary() != null);
+    }
+
+    public boolean hasDotBinary() {
+        if (getDotBinary() == null) return false;
+        return new File(getDotBinary()).exists();
+    }
+
+    public File getErrorLogFile() {
+        return new File(getReportDir(), config.getOption(Config.ERROR_LOG_FILE));
+    }
+
+    public File getInfoLogFile() {
+        return new File(getReportDir(), config.getOption(Config.INFO_LOG_FILE));
+    }
 
 }

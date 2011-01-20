@@ -170,7 +170,7 @@ public class KeyManager {
         // check if exists
         CustomKey k = registeredKeys.get(keyname);
         if ( k != null ) {
-            throw new IllegalArgumentException("CustomKey "+keyname+" already exists but has a different definition.");
+            throw new IllegalArgumentException("CustomKey "+keyname+" already exists!");
         }
 
         // currently there is no way to unregister a key and storing struct-keys might get replaced by maps for

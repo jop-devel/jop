@@ -45,7 +45,6 @@ import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.ipet.LpSolveWrapper;
-import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;
 import com.jopdesign.wcet.uppaal.model.XmlSerializationException;
@@ -117,7 +116,6 @@ public class WCETAnalysis {
         /* Initialize */
         try {
             project.setTopLevelLogger(exec.getExecLogger());
-            Report.initVelocity(config);     /* Initialize velocity engine */
             exec.info("Loading project");
             project.initialize();
             MethodInfo largestMethod = project.getWCETProcessorModel().getMethodCache().checkCache();
@@ -164,7 +162,7 @@ public class WCETAnalysis {
             exec.logException("analysis", e);
             succeed = false;
         }
-        if(! project.doWriteReport()) {
+        if (!project.getProjectConfig().doGenerateReport()) {
             exec.info("Ommiting HTML report");
             return succeed;
         }

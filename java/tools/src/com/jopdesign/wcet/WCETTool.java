@@ -74,7 +74,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -136,7 +135,6 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         options.addOptions(WCETTool.options);
     }
 
-    @SuppressWarnings({"LiteralAsArgToStringEquals"})
     @Override
     public void onSetupConfig(AppSetup setup) throws BadConfigurationException {
         appInfo = setup.getAppInfo();
@@ -146,10 +144,25 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
         if (projectConfig.doGenerateReport()) {
             this.results = new Report(this);
+            try {
+                this.results.initVelocity();
+            } catch (Exception e) {
+                throw new BadConfigurationException("Error initializing Velocity: "+e, e);
+            }
             this.genWCETReport = true;
         } else {
             this.genWCETReport = false;
         }
+    }
+
+    @SuppressWarnings({"LiteralAsArgToStringEquals"})
+    @Override
+    public void onSetupAppInfo(AppSetup setup, AppInfo appInfo) throws BadConfigurationException {
+
+        // We only do setup stuff here, but do not perform any preprocessing (this is done in initialize())
+
+        // We cannot do this in onSetupConfig, since mainMethod is not initialized there
+        this.projectName = projectConfig.getProjectName();
 
         if (projectConfig.getProcessorName().equals("allocObjs")) {
             this.processor = new ObjectAllocationModel(this);
@@ -170,20 +183,17 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         } else {
             throw new BadConfigurationException("Unknown WCET model: " + projectConfig.getProcessorName());
         }
-    }
-
-    public void initialize() throws BadConfigurationException {
-
-        // We cannot do this in onSetupConfig, since AppInfo.getMainMethod is not initialized there
-        this.projectName = projectConfig.getProjectName();
 
         File outDir = projectConfig.getOutDir();
         Config.checkDir(outDir, true);
         File ilpDir = new File(outDir, "ilps");
         Config.checkDir(ilpDir, true);
+    }
+
+    public void initialize() throws BadConfigurationException {
 
         if (projectConfig.saveResults()) {
-            this.resultRecord = new File(getConfig().getOption(ProjectConfig.RESULT_FILE));
+            this.resultRecord = projectConfig.getResultFile();
             if (!projectConfig.appendResults()) {
                 recordMetric("problem", this.getProjectName());
                 recordMetric("date", new Date());
@@ -200,7 +210,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         }
 
         /* run dataflow analysis */
-        if (projectConfig.doDataflowAnalysis()) {
+        if (doDataflowAnalysis()) {
             topLevelLogger.info("Starting DFA analysis");
             dataflowAnalysis();
             topLevelLogger.info("DFA analysis finished");
@@ -218,7 +228,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             e.printStackTrace();
         }
 
-        if (projectConfig.doDataflowAnalysis()) {
+        if (doDataflowAnalysis()) {
             appInfo.iterate(new RemoveNops());
         }
         if (projectConfig.doPreprocess()) {
@@ -294,12 +304,6 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
     public Report getReport() {
         return results;
-    }
-
-    public boolean doWriteReport() {
-        // TODO should be checked if this is really the same ..
-        //return projectConfig.getReportDir() != null;
-        return genWCETReport;
     }
 
     /**
@@ -472,7 +476,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     }
 
     private List<File> getSearchDirs(ClassInfo ci, String path) {
-        List<File> dirs = new LinkedList<File>();
+        List<File> dirs = new ArrayList<File>();
         StringTokenizer st = new StringTokenizer(path, File.pathSeparator);
         while (st.hasMoreTokens()) {
             String sourcePath = st.nextToken();
@@ -500,7 +504,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
          */
 
     public boolean doDataflowAnalysis() {
-        return projectConfig.doDataflowAnalysis();
+        return dfaTool != null;
     }
 
     @SuppressWarnings("unchecked")

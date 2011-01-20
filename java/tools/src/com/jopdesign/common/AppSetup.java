@@ -90,6 +90,7 @@ public class AppSetup {
             throw new IOException("Unable to find resource '"+filename+"' for class '"+rsClass.getCanonicalName()+"'.");
         }
         p.load(new BufferedInputStream(is));
+        is.close();
         return p;
     }
 
@@ -375,6 +376,7 @@ public class AppSetup {
                 try {
                     InputStream is = new BufferedInputStream(new FileInputStream(file));
                     config.addProperties(is);
+                    is.close();
                 } catch (FileNotFoundException e) {
                     // should never happen
                     System.err.println("Configuration file '"+configFilename+"' not found: "+e.getMessage());
@@ -520,6 +522,21 @@ public class AppSetup {
         if (loadTransitiveHull) {
             new AppLoader().loadAll();
             appInfo.reloadClassHierarchy();
+        }
+
+        // let modules process their config options
+        try {
+            for (String tool : tools.keySet()) {
+                if (useTool(tool)) {
+                    tools.get(tool).onSetupAppInfo(this, appInfo);
+                }
+            }
+        } catch (Config.BadConfigurationException e) {
+            System.err.println(e.getMessage());
+            if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
+                System.err.println("Use '--help' to show a usage message.");
+            }
+            System.exit(2);
         }
 
     }

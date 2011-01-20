@@ -55,9 +55,6 @@ public class ProjectConfig {
     public static final BooleanOption WCET_PREPROCESS =
             new BooleanOption("wcet-preprocess", "Perform bytecode preprocessing (same as running WCETPreprocess first)", false);
 
-    public static final BooleanOption DO_DFA =
-            new BooleanOption("dataflow-analysis","whether dataflow analysis should be performed",false);
-
     public static final BooleanOption OBJECT_CACHE_ANALYSIS =
             new BooleanOption("object-cache-analysis","perform experimental object cache analysis",false);
 
@@ -75,9 +72,10 @@ public class ProjectConfig {
             TARGET_METHOD, PROJECT_NAME,
             TARGET_SOURCEPATH, TARGET_BINPATH,
             WCET_MODEL,
-            DO_DFA,
+            WCET_PREPROCESS,
             OBJECT_CACHE_ANALYSIS,
             USE_UPPAAL,
+            DO_GENERATE_REPORTS,
             RESULT_FILE, RESULTS_APPEND,
     };
 
@@ -191,10 +189,6 @@ public class ProjectConfig {
         return config.getOption(DO_GENERATE_REPORTS);
     }
 
-    public boolean doDataflowAnalysis() {
-        return config.getOption(DO_DFA);
-    }
-
     public int callstringLength() {
         return config.getOption(Config.CALLSTRING_LENGTH).intValue();
     }
@@ -215,6 +209,10 @@ public class ProjectConfig {
         return config.getOption(RESULTS_APPEND);
     }
 
+    public File getResultFile() {
+        return new File(getConfig().getOption(ProjectConfig.RESULT_FILE));
+    }
+    
     public boolean isDebugMode() {
         return config.getOption(Config.DEBUG);
     }
