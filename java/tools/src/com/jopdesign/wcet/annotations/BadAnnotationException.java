@@ -23,18 +23,25 @@ package com.jopdesign.wcet.annotations;
 import com.jopdesign.common.code.BasicBlock;
 
 public class BadAnnotationException extends Exception {
-	private static final long serialVersionUID = 1L;
-	private BasicBlock block;
-	public BasicBlock getBlock() {
-		return this.block;
-	}
-	public BadAnnotationException(String reason, BasicBlock block, int codeLineStart, int codeLineEnd) {
-		super(reason+" for " + block.getLastInstruction()+ 
-		      " in class " + block.getClassInfo().getClassName()  + ":" +
-			  codeLineStart + "-" + codeLineEnd);
-		this.block = block;
-	}
-	public BadAnnotationException(String msg) {
-		super(msg);
-	}
+    private static final long serialVersionUID = 1L;
+    
+    private BasicBlock block;
+
+    public BadAnnotationException(String reason, BasicBlock block, int codeLineStart, int codeLineEnd) {
+            super(reason+" for " + block.getLastInstruction()+
+                  " in class " + block.getClassInfo().getClassName()  + ":" +
+                      codeLineStart + "-" + codeLineEnd);
+            this.block = block;
+    }
+    public BadAnnotationException(String msg) {
+            super(msg);
+    }
+
+    public BadAnnotationException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public BasicBlock getBlock() {
+            return this.block;
+    }
 }

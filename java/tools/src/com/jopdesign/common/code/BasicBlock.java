@@ -22,6 +22,9 @@ package com.jopdesign.common.code;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.KeyManager;
+import com.jopdesign.common.KeyManager.CustomKey;
+import com.jopdesign.common.KeyManager.KeyType;
 import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.logger.LogConfig;
@@ -164,6 +167,12 @@ public class BasicBlock {
         FLOW_INFO
     }
 
+    public static final CustomKey KEY_LOOPBOUND;
+
+    static {
+        KEY_LOOPBOUND = KeyManager.getSingleton().registerKey(KeyType.CODE, "BasicBlock.LoopBound");
+    }
+
     /**
      * Get FlowInfo associated with an {@link InstructionHandle}
      *
@@ -207,8 +216,31 @@ public class BasicBlock {
         return this.getMethodInfo().getClassInfo().getConstantPoolGen();
     }
 
+    public void setLoopBound(LoopBound loopBound) {
+        methodCode.setCustomValue(getFirstInstruction(), KEY_LOOPBOUND, loopBound);
+    }
+
+    public LoopBound getLoopBound() {
+        // TODO we might need to handle block copy/split/.. to keep this value attached to the correct handle
+        return (LoopBound) methodCode.getCustomValue(getFirstInstruction(), KEY_LOOPBOUND);
+    }
+
+    /**
+     * Get improved loopbound considering the callcontext
+     */
+    /*
+    public LoopBound getLoopBound(CallString cs) {
+        LoopBound globalBound = getLoopBound();
+        // TODO we can only store and retrieve loopbounds here, but not call the DFA tool!
+        // FIXME move somewhere else
+        //return this.dfaLoopBound(this, cs, globalBound);
+        return globalBound;
+    }
+    */
+
     /**
      * add an instruction to this basic block
+     * @param ih the instruction to add
      */
     public void addInstruction(InstructionHandle ih) {
         this.instructions.add(ih);

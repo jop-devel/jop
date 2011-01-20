@@ -114,11 +114,7 @@ public class KeyManager {
     // Singleton
     //////////////////////////////////////////////////////////////////////////////
 
-    private static final KeyManager singleton;
-
-    static {
-        singleton = new KeyManager();
-    }
+    private static final KeyManager singleton = new KeyManager();
 
     public static KeyManager getSingleton() {
         return singleton;
@@ -237,7 +233,6 @@ public class KeyManager {
                 }
                 for (InstructionHandle ih : il.getInstructionHandles()) {
                     code.clearCustomKey(ih, key);
-                    code.clearCustomBlockKey(ih, key);
                 }
             }
         }

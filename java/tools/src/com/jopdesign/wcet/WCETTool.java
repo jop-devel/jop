@@ -29,8 +29,10 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.DefaultCallgraphConfig;
 import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
@@ -87,15 +89,20 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
     public static final String VERSION = "1.0.1";
 
-    // TODO logger paths should use 'logical' structure instead of packages, similar to common loggers
-    public static final Logger logger = Logger.getLogger(WCETTool.class);
-    private Logger topLevelLogger = Logger.getLogger(WCETTool.class); /* special logger */
+    // root logger for wcet tool
+    public static final String LOG_WCET = "wcet";
+    // logger for project related stuff (main, config, eventhandler,..)
+    public static final String LOG_WCET_PROJECT = "wcet.project";
+
+    public static final Logger logger = Logger.getLogger(LOG_WCET_PROJECT + ".WCETTool");
+    /* special logger */
+    private Logger topLevelLogger = Logger.getLogger(LOG_WCET);
 
     private static final Option<?>[][] options = {
-        ProjectConfig.projectOptions,
-        IPETConfig.ipetOptions,
-        UppAalConfig.uppaalOptions,
-        ReportConfig.reportOptions
+            ProjectConfig.projectOptions,
+            IPETConfig.ipetOptions,
+            UppAalConfig.uppaalOptions,
+            ReportConfig.reportOptions
     };
 
     private WCETEventHandler eventHandler;
@@ -137,7 +144,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
         this.projectConfig = new ProjectConfig(config);
 
-        if(projectConfig.doGenerateReport()) {
+        if (projectConfig.doGenerateReport()) {
             this.results = new Report(this);
             this.genWCETReport = true;
         } else {
@@ -152,16 +159,16 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             this.processor = new HeaderAllocationModel(this);
         } else if (projectConfig.getProcessorName().equals("allocBlocks")) {
             this.processor = new BlockAllocationModel(this);
-        } else if(projectConfig.getProcessorName().equals("jamuth")) {
+        } else if (projectConfig.getProcessorName().equals("jamuth")) {
             this.processor = new JamuthWCETModel(this);
-        } else if(projectConfig.getProcessorName().equals("JOP")) {
+        } else if (projectConfig.getProcessorName().equals("JOP")) {
             try {
                 this.processor = new JOPWcetModel(this);
             } catch (IOException e) {
                 throw new BadConfigurationException("Unable to initialize JopWcetModel: " + e.getMessage(), e);
             }
         } else {
-            throw new BadConfigurationException("Unknown WCET model: "+projectConfig.getProcessorName());
+            throw new BadConfigurationException("Unknown WCET model: " + projectConfig.getProcessorName());
         }
     }
 
@@ -171,15 +178,15 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         this.projectName = projectConfig.getProjectName();
 
         File outDir = projectConfig.getOutDir();
-        Config.checkDir(outDir,true);
-        File ilpDir = new File(outDir,"ilps");
+        Config.checkDir(outDir, true);
+        File ilpDir = new File(outDir, "ilps");
         Config.checkDir(ilpDir, true);
 
-        if(projectConfig.saveResults()) {
+        if (projectConfig.saveResults()) {
             this.resultRecord = new File(getConfig().getOption(ProjectConfig.RESULT_FILE));
-            if(! projectConfig.appendResults()) {
-                recordMetric("problem",this.getProjectName());
-                recordMetric("date",new Date());
+            if (!projectConfig.appendResults()) {
+                recordMetric("problem", this.getProjectName());
+                recordMetric("date", new Date());
             }
         }
 
@@ -193,7 +200,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         }
 
         /* run dataflow analysis */
-        if(projectConfig.doDataflowAnalysis()) {
+        if (projectConfig.doDataflowAnalysis()) {
             topLevelLogger.info("Starting DFA analysis");
             dataflowAnalysis();
             topLevelLogger.info("DFA analysis finished");
@@ -204,14 +211,14 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             // FIXME check if we can use the callgraph built by AppInfo instead (starts at main method!)
             // (replace WCETTool.getCallgraph with AppInfo.getCallGraph()), run AppInfo.buildCallgraph(false) here)
             callGraph = CallGraph.buildCallGraph(this.appInfo,
-                                                 projectConfig.getTargetClass(),
-                                                 projectConfig.getTargetMethod(),
-                                                 new DefaultCallgraphConfig(projectConfig.callstringLength()));
+                    projectConfig.getTargetClass(),
+                    projectConfig.getTargetMethod(),
+                    new DefaultCallgraphConfig(projectConfig.callstringLength()));
         } catch (MethodNotFoundException e) {
             e.printStackTrace();
         }
 
-        if(projectConfig.doDataflowAnalysis()) {
+        if (projectConfig.doDataflowAnalysis()) {
             appInfo.iterate(new RemoveNops());
         }
         if (projectConfig.doPreprocess()) {
@@ -269,7 +276,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             return appInfo.getMethodInfo(projectConfig.getTargetClass(),
                     projectConfig.getTargetMethod());
         } catch (MethodNotFoundException e) {
-            throw new AssertionError("Target method not found: "+e);
+            throw new AssertionError("Target method not found: " + e);
         }
     }
 
@@ -278,7 +285,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     }
 
     public boolean reportGenerationActive() {
-        return this.genWCETReport ;
+        return this.genWCETReport;
     }
 
     public void setGenerateWCETReport(boolean generateReport) {
@@ -297,6 +304,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
     /**
      * Get link info for a given class
+     *
      * @param cli the class
      * @return the linker info
      */
@@ -318,6 +326,16 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         return mi.isAbstract() ? null : mi.getCode().getControlFlowGraph();
     }
 
+    public LoopBound getLoopBound(CFGNode node, CallString cs) {
+        LoopBound globalBound = node.getLoopBound();
+        // TODO move somewhere else?
+        if (node.getBasicBlock() != null) {
+            return this.getEventHandler().dfaLoopBound(node.getBasicBlock(), cs, globalBound);
+        } else {
+            return globalBound;
+        }
+    }
+
     /**
      * Convenience delegator to get the size of the given method
      */
@@ -327,33 +345,34 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
 
     public void writeReport() throws Exception {
-        this.results.addStat( "classpath", getAppInfo().getClassPath());
-        this.results.addStat( "application", projectConfig.getAppClassName());
-        this.results.addStat( "class", projectConfig.getTargetClass());
-        this.results.addStat( "method", projectConfig.getTargetMethod());
+        this.results.addStat("classpath", getAppInfo().getClassPath());
+        this.results.addStat("application", projectConfig.getAppClassName());
+        this.results.addStat("class", projectConfig.getTargetClass());
+        this.results.addStat("method", projectConfig.getTargetMethod());
         this.results.writeReport();
     }
 
     public File getOutDir(String sub) {
         File outDir = projectConfig.getOutDir();
-        File subDir = new File(outDir,sub);
-        if(! subDir.exists()) subDir.mkdir();
+        File subDir = new File(outDir, sub);
+        if (!subDir.exists()) subDir.mkdir();
         return subDir;
     }
 
     public File getOutFile(String file) {
-        return new File(projectConfig.getOutDir(),file);
+        return new File(projectConfig.getOutDir(), file);
     }
 
     /* FIXME: Slow, caching is missing */
+
     public int computeCyclomaticComplexity(MethodInfo m) {
         ControlFlowGraph g = getFlowGraph(m);
         int nLocal = g.getGraph().vertexSet().size();
         int eLocal = g.getGraph().edgeSet().size();
-        int pLocal = g.getLoopBounds().size();
+        int pLocal = 0; 
         int ccLocal = eLocal - nLocal + 2 * pLocal;
         int ccGlobal = 0;
-        for(ExecutionContext n: this.getCallGraph().getReferencedMethods(m)) {
+        for (ExecutionContext n : this.getCallGraph().getReferencedMethods(m)) {
             MethodInfo impl = n.getMethodInfo();
             ccGlobal += 2 + computeCyclomaticComplexity(impl);
         }
@@ -361,23 +380,24 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     }
 
     /* recording for scripted evaluation */
+
     public void recordResult(WcetCost wcet, double timeDiff, double solverTime) {
-        if(resultRecord == null) return;
+        if (resultRecord == null) return;
         Config c = projectConfig.getConfig();
-        recordCVS("wcet","ipet",wcet,timeDiff,solverTime,
-                    c.getOption(JOPConfig.CACHE_IMPL),
-                    c.getOption(JOPConfig.CACHE_SIZE_WORDS),
-                    c.getOption(JOPConfig.CACHE_BLOCKS),
-                    c.getOption(IPETConfig.STATIC_CACHE_APPROX),
-                    c.getOption(IPETConfig.ASSUME_MISS_ONCE_ON_INVOKE));
+        recordCVS("wcet", "ipet", wcet, timeDiff, solverTime,
+                c.getOption(JOPConfig.CACHE_IMPL),
+                c.getOption(JOPConfig.CACHE_SIZE_WORDS),
+                c.getOption(JOPConfig.CACHE_BLOCKS),
+                c.getOption(IPETConfig.STATIC_CACHE_APPROX),
+                c.getOption(IPETConfig.ASSUME_MISS_ONCE_ON_INVOKE));
 
     }
 
     public void recordResultUppaal(WcetCost wcet,
-                                   double timeDiff, double searchtime,double solvertimemax) {
-        if(resultRecord == null) return;
+                                   double timeDiff, double searchtime, double solvertimemax) {
+        if (resultRecord == null) return;
         Config c = projectConfig.getConfig();
-        recordCVS("wcet","uppaal",wcet,timeDiff,searchtime,solvertimemax,
+        recordCVS("wcet", "uppaal", wcet, timeDiff, searchtime, solvertimemax,
                 c.getOption(JOPConfig.CACHE_IMPL),
                 c.getOption(JOPConfig.CACHE_SIZE_WORDS),
                 c.getOption(JOPConfig.CACHE_BLOCKS),
@@ -389,32 +409,32 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
                 c.getOption(UppAalConfig.UPPAAL_PROGRESS_MEASURE),
                 c.getOption(UppAalConfig.UPPAAL_SUPERGRAPH_TEMPLATE),
                 c.getOption(UppAalConfig.UPPAAL_EMPTY_INITIAL_CACHE)
-                );
+        );
     }
 
     public void recordSpecialResult(String metric, WcetCost cost) {
-        if(resultRecord == null) return;
-        if(projectConfig.appendResults()) return;
-        recordCVS("metric",metric,cost);
+        if (resultRecord == null) return;
+        if (projectConfig.appendResults()) return;
+        recordCVS("metric", metric, cost);
     }
 
     public void recordMetric(String metric, Object... params) {
-        if(resultRecord == null) return;
-        if(projectConfig.appendResults()) return;
-        recordCVS("metric",metric,null,params);
+        if (resultRecord == null) return;
+        if (projectConfig.appendResults()) return;
+        recordCVS("metric", metric, null, params);
     }
 
     private void recordCVS(String key, String subkey, WcetCost cost, Object... params) {
-        Object[] fixedCols = { key, subkey };
+        Object[] fixedCols = {key, subkey};
         try {
-            FileWriter fw = new FileWriter(resultRecord,true);
+            FileWriter fw = new FileWriter(resultRecord, true);
             fw.write(MiscUtils.joinStrings(fixedCols, ";"));
-            if(cost != null) {
-                Object[] costCols = { cost.getCost(), cost.getNonCacheCost(),cost.getCacheCost() };
+            if (cost != null) {
+                Object[] costCols = {cost.getCost(), cost.getNonCacheCost(), cost.getCacheCost()};
                 fw.write(";");
                 fw.write(MiscUtils.joinStrings(costCols, ";"));
             }
-            if(params.length > 0) {
+            if (params.length > 0) {
                 fw.write(";");
                 fw.write(MiscUtils.joinStrings(params, ";"));
             }
@@ -428,32 +448,32 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     public File getClassFile(ClassInfo ci) throws FileNotFoundException {
         // TODO maybe move to AppInfo?
         List<File> dirs = getSearchDirs(ci, appInfo.getClassPath().toString());
-        for(File classDir : dirs) {
+        for (File classDir : dirs) {
             String classname = ci.getClassName();
-            classname = classname.substring(classname.lastIndexOf(".")+1);
+            classname = classname.substring(classname.lastIndexOf(".") + 1);
             File classFile = new File(classDir, classname + ".class");
-            if(classFile.exists()) return classFile;
+            if (classFile.exists()) return classFile;
         }
-        for(File classDir : dirs) {
-            File classFile = new File(classDir, ci.getClassName()+".class");
-            System.err.println("Class file not found: "+classFile);
+        for (File classDir : dirs) {
+            File classFile = new File(classDir, ci.getClassName() + ".class");
+            System.err.println("Class file not found: " + classFile);
         }
-        throw new FileNotFoundException("Class file for "+ci.getClassName()+" not found.");
+        throw new FileNotFoundException("Class file for " + ci.getClassName() + " not found.");
     }
 
     public File getSourceFile(ClassInfo ci) throws FileNotFoundException {
         // TODO maybe move to AppInfo?
         List<File> dirs = getSearchDirs(ci, projectConfig.getSourcePath());
-        for(File sourceDir : dirs) {
+        for (File sourceDir : dirs) {
             File sourceFile = new File(sourceDir, ci.getSourceFileName());
-            if(sourceFile.exists()) return sourceFile;
+            if (sourceFile.exists()) return sourceFile;
         }
-        throw new FileNotFoundException("Source for "+ci.getClassName()+" not found in "+dirs);
+        throw new FileNotFoundException("Source for " + ci.getClassName() + " not found in " + dirs);
     }
 
     private List<File> getSearchDirs(ClassInfo ci, String path) {
         List<File> dirs = new LinkedList<File>();
-        StringTokenizer st = new StringTokenizer(path,File.pathSeparator);
+        StringTokenizer st = new StringTokenizer(path, File.pathSeparator);
         while (st.hasMoreTokens()) {
             String sourcePath = st.nextToken();
             String pkgPath = ci.getPackageName().replace('.', File.separatorChar);
@@ -465,6 +485,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
     /**
      * Get flow fact annotations for a class, lazily.
+     *
      * @param cli
      * @return
      * @throws IOException
@@ -474,39 +495,40 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         return eventHandler.getAnnotations(cli);
     }
 
-	/* Data flow analysis
-	 * ------------------
-	 */
-	public boolean doDataflowAnalysis() {
-		return projectConfig.doDataflowAnalysis();
-	}
+    /* Data flow analysis
+         * ------------------
+         */
 
-	@SuppressWarnings("unchecked")
-	public void dataflowAnalysis() {
+    public boolean doDataflowAnalysis() {
+        return projectConfig.doDataflowAnalysis();
+    }
+
+    @SuppressWarnings("unchecked")
+    public void dataflowAnalysis() {
         // TODO move this stuff to DFATool
-		int callstringLength = (int)projectConfig.callstringLength();
-		topLevelLogger.info("Receiver analysis");
-		CallStringReceiverTypes recTys = new CallStringReceiverTypes(callstringLength);
-		Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults =
-			dfaTool.runAnalysis(recTys);
+        int callstringLength = (int) projectConfig.callstringLength();
+        topLevelLogger.info("Receiver analysis");
+        CallStringReceiverTypes recTys = new CallStringReceiverTypes(callstringLength);
+        Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults =
+                dfaTool.runAnalysis(recTys);
 
-		dfaTool.setReceivers(receiverResults);
-		this.receiverAnalysis = receiverResults;
+        dfaTool.setReceivers(receiverResults);
+        this.receiverAnalysis = receiverResults;
 
-		topLevelLogger.info("Loop bound analysis");
-		LoopBounds dfaLoopBounds = new LoopBounds(callstringLength);
-		dfaTool.runAnalysis(dfaLoopBounds);
-		dfaTool.setLoopBounds(dfaLoopBounds);
-		this.hasDfaResults = true;
-	}
+        topLevelLogger.info("Loop bound analysis");
+        LoopBounds dfaLoopBounds = new LoopBounds(callstringLength);
+        dfaTool.runAnalysis(dfaLoopBounds);
+        dfaTool.setLoopBounds(dfaLoopBounds);
+        this.hasDfaResults = true;
+    }
 
-	/**
-	 * Get the loop bounds found by dataflow analysis
-	 */
-	public LoopBounds getDfaLoopBounds() {
-		if(! hasDfaResults) return null;
-		return dfaTool.getLoopBounds();
-	}
+    /**
+     * Get the loop bounds found by dataflow analysis
+     */
+    public LoopBounds getDfaLoopBounds() {
+        if (!hasDfaResults) return null;
+        return dfaTool.getLoopBounds();
+    }
 
     /**
      * Find possible implementations of the given method in the given class
@@ -535,8 +557,9 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     /**
      * Find Implementations of the method called with the given instruction handle
      * Uses receiver type analysis to refine the results
+     *
      * @param invokerM invoking method
-     * @param ih the invoke instruction
+     * @param ih       the invoke instruction
      * @return list of possibly invoked methods
      */
     public Collection<MethodInfo> findImplementations(MethodInfo invokerM, InstructionHandle ih) {
@@ -546,9 +569,10 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     /**
      * Find Implementations of the method called with the given instruction handle
      * Uses receiver type analysis to refine the results
+     *
      * @param invokerM invoking method
-     * @param ih the invoke instruction
-     * @param ctx the call context
+     * @param ih       the invoke instruction
+     * @param ctx      the call context
      * @return list of possibly invoked methods
      */
     public Collection<MethodInfo> findImplementations(MethodInfo invokerM, InstructionHandle ih, CallString ctx) {
@@ -559,27 +583,28 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     }
 
     // TODO: [wcet-app-info] dfaReceivers() is rather slow, for debugging purposes
+
     private Collection<MethodInfo> dfaReceivers(InstructionHandle ih, Collection<MethodInfo> staticImpls, CallString ctx) {
-        if(this.receiverAnalysis != null && receiverAnalysis.containsKey(ih)) {
+        if (this.receiverAnalysis != null && receiverAnalysis.containsKey(ih)) {
             List<MethodInfo> dynImpls = new ArrayList<MethodInfo>();
             Set<String> dynReceivers = new HashSet<String>();
 
             ContextMap<CallString, Set<String>> allReceivers = receiverAnalysis.get(ih);
             for (Entry<CallString, Set<String>> e : allReceivers.entrySet()) {
-                if(e.getKey().hasSuffix(ctx)) {
+                if (e.getKey().hasSuffix(ctx)) {
                     dynReceivers.addAll(e.getValue());
                 }
             }
-            for(MethodInfo impl : staticImpls) {
-                if(dynReceivers.contains(impl.getFQMethodName())) {
+            for (MethodInfo impl : staticImpls) {
+                if (dynReceivers.contains(impl.getFQMethodName())) {
                     dynReceivers.remove(impl.getFQMethodName());
                     dynImpls.add(impl);
                 } else {
-                    logger.info("Static but not dynamic receiver: "+impl);
+                    logger.info("Static but not dynamic receiver: " + impl);
                 }
             }
-            if(! dynReceivers.isEmpty()) {
-                throw new AssertionError("Bad receiver analysis ? Dynamic but not static receivers: "+dynReceivers);
+            if (!dynReceivers.isEmpty()) {
+                throw new AssertionError("Bad receiver analysis ? Dynamic but not static receivers: " + dynReceivers);
             }
             return dynImpls;
         } else {

@@ -58,6 +58,12 @@ public class MainRunner {
 
             BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
+            System.out.print("Arguments: "+clsName);
+            for (int i=1; i<args.length; i++) {
+                System.out.print(" "+args[i]);
+            }
+            System.out.println();
+
             while (true) {
                 System.out.print(clsName +"> ");
 

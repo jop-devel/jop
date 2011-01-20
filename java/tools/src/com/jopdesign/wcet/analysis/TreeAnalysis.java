@@ -37,137 +37,147 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-/** While implementing progress measure, I found that they can be used for tree based
- *  WCET analysis. Why not ?
- *  This can be implemented in almost linear (graph size) time,
- *  but our suboptimal implementation depends the depth of the loop nest tree.
+/**
+ * While implementing progress measure, I found that they can be used for tree based
+ * WCET analysis. Why not ?
+ * This can be implemented in almost linear (graph size) time,
+ * but our suboptimal implementation depends the depth of the loop nest tree.
+ *
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  */
 public class TreeAnalysis {
-	private class LocalCostVisitor extends WcetVisitor {
-		private AnalysisContext ctx;
+    private class LocalCostVisitor extends WcetVisitor {
+        private AnalysisContext ctx;
 
-		public LocalCostVisitor(AnalysisContext c, WCETTool p) {
-			super(p);
-			ctx = c;
-		}
+        public LocalCostVisitor(AnalysisContext c, WCETTool p) {
+            super(p);
+            ctx = c;
+        }
 
-		@Override
-		public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
-			MethodInfo method = n.getImplementedMethod();
-			visitBasicBlockNode(n);
-			cost.addCacheCost(project.getWCETProcessorModel().getInvokeReturnMissCost(
-					n.invokerFlowGraph(),
-					n.receiverFlowGraph()));
-			cost.addNonLocalCost(methodWCET.get(method));
-		}
+        @Override
+        public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
+            MethodInfo method = n.getImplementedMethod();
+            visitBasicBlockNode(n);
+            cost.addCacheCost(project.getWCETProcessorModel().getInvokeReturnMissCost(
+                    n.invokerFlowGraph(),
+                    n.receiverFlowGraph()));
+            cost.addNonLocalCost(methodWCET.get(method));
+        }
 
-		@Override
-		public void visitBasicBlockNode(BasicBlockNode n) {
-			cost.addLocalCost(project.getWCETProcessorModel().basicBlockWCET(ctx.getExecutionContext(n), n.getBasicBlock()));
-		}
-	}
+        @Override
+        public void visitBasicBlockNode(BasicBlockNode n) {
+            cost.addLocalCost(project.getWCETProcessorModel().basicBlockWCET(ctx.getExecutionContext(n), n.getBasicBlock()));
+        }
+    }
 
-	private class ProgressVisitor implements CfgVisitor {
-		private Map<MethodInfo, Long> subProgress;
+    private class ProgressVisitor implements CfgVisitor {
+        private Map<MethodInfo, Long> subProgress;
 
-		public ProgressVisitor(Map<MethodInfo, Long> subProgress) {
-			this.subProgress = subProgress;
-		}
-		private long progress;
-		public void visitBasicBlockNode(BasicBlockNode n) {
-			progress = 1;
-		}
+        public ProgressVisitor(Map<MethodInfo, Long> subProgress) {
+            this.subProgress = subProgress;
+        }
 
-		public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
-			long invokedProgress = subProgress.get(n.getImplementedMethod());
-			progress = 1 + invokedProgress;
-		}
+        private long progress;
 
-		public void visitSpecialNode(ControlFlowGraph.DedicatedNode n) {
-			progress = 1;
-		}
+        public void visitBasicBlockNode(BasicBlockNode n) {
+            progress = 1;
+        }
 
-		public void visitSummaryNode(ControlFlowGraph.SummaryNode n) {
-			progress = 1;
-		}
-		public long getProgress(CFGNode n) {
-			n.accept(this);
-			return progress;
-		}
-	}
-	private WCETTool project;
-	private HashMap<MethodInfo, Long> methodWCET;
-	private Map<MethodInfo,Map<ControlFlowGraph.CFGEdge, RelativeProgress<CFGNode>>> relativeProgress
-		= new HashMap<MethodInfo, Map<ControlFlowGraph.CFGEdge,RelativeProgress<CFGNode>>>();
-	private HashMap<MethodInfo, Long> maxProgress = new HashMap<MethodInfo,Long>();
-	private boolean  filterLeafMethods;
+        public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
+            long invokedProgress = subProgress.get(n.getImplementedMethod());
+            progress = 1 + invokedProgress;
+        }
 
-	public TreeAnalysis(WCETTool p, boolean filterLeafMethods) {
-		this.project = p;
-		this.filterLeafMethods = filterLeafMethods;
-		computeProgress(p.getTargetMethod());
-	}
+        public void visitSpecialNode(ControlFlowGraph.DedicatedNode n) {
+            progress = 1;
+        }
 
-	/* FIXME: filter leaf methods is really a ugly hack,
-	 * but needs some work to play nice with uppaal eliminate-leaf-methods optimizations
-	 */
-	public void computeProgress(MethodInfo targetMethod) {
-		List<MethodInfo> reachable = project.getCallGraph().getImplementedMethods(targetMethod);
-		Collections.reverse(reachable);
-		for(MethodInfo mi: reachable) {
-			ControlFlowGraph cfg = project.getFlowGraph(mi);
-			Map<CFGNode, Long> localProgress = new HashMap<CFGNode,Long>();
-			ProgressVisitor progressVisitor = new ProgressVisitor(maxProgress);
-			for(CFGNode n : cfg.getGraph().vertexSet()) {
-				localProgress.put(n, progressVisitor.getProgress(n));
-			}
-			ProgressMeasure<CFGNode, CFGEdge> pm =
-				new ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge>(cfg.getGraph(),cfg.getLoopColoring(),
-													  extractUBs(cfg.getLoopBounds()) ,localProgress);
-			long progress = pm.getMaxProgress().get(cfg.getExit());
-			/* FIXME: _UGLY_ hack */
-			if(filterLeafMethods && cfg.isLeafMethod()) {
-				maxProgress.put(mi, 0L);
-			} else {
-				maxProgress.put(mi, progress);
-			}
-			relativeProgress.put(mi, pm.computeRelativeProgress());
-		}
-		System.out.println("Progress Measure (max): "+maxProgress.get(targetMethod));
-	}
-	public Map<MethodInfo, Map<ControlFlowGraph.CFGEdge, RelativeProgress<CFGNode>>> getRelativeProgressMap() {
-		return this.relativeProgress;
-	}
-	public Long getMaxProgress(MethodInfo mi) {
-		return this.maxProgress.get(mi);
-	}
+        public void visitSummaryNode(ControlFlowGraph.SummaryNode n) {
+            progress = 1;
+        }
 
-	private Map<CFGNode, Long> extractUBs(Map<CFGNode, LoopBound> loopBounds) {
-		Map<CFGNode, Long> ubMap = new HashMap<CFGNode, Long>();
-		for(Entry<CFGNode, LoopBound> entry : loopBounds.entrySet()) {
-			ubMap.put(entry.getKey(),entry.getValue().getUpperBound());
-		}
-		return ubMap;
-	}
-	public long computeWCET(MethodInfo targetMethod) {
-		this.methodWCET = new HashMap<MethodInfo,Long>();
-		List<MethodInfo> reachable = project.getCallGraph().getImplementedMethods(targetMethod);
-		Collections.reverse(reachable);
-		for(MethodInfo mi: reachable) {
-			ControlFlowGraph cfg = project.getFlowGraph(mi);
-			Map<CFGNode, Long> localCost = new HashMap<CFGNode,Long>();
-			LocalCostVisitor lcv = new LocalCostVisitor(new AnalysisContextSimple(CallString.EMPTY), project);
-			for(CFGNode n : cfg.getGraph().vertexSet()) {
-				localCost.put(n, lcv.computeCost(n).getCost());
-			}
-			ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge> pm =
-				new ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge>(cfg.getGraph(),cfg.getLoopColoring(),
-													  extractUBs(cfg.getLoopBounds()) ,localCost);
-			long wcet = pm.getMaxProgress().get(cfg.getExit());
-			methodWCET.put(mi, wcet);
-		}
-		return methodWCET.get(targetMethod);
-	}
+        public long getProgress(CFGNode n) {
+            n.accept(this);
+            return progress;
+        }
+    }
+
+    private WCETTool project;
+    private HashMap<MethodInfo, Long> methodWCET;
+    private Map<MethodInfo, Map<ControlFlowGraph.CFGEdge, RelativeProgress<CFGNode>>> relativeProgress
+            = new HashMap<MethodInfo, Map<ControlFlowGraph.CFGEdge, RelativeProgress<CFGNode>>>();
+    private HashMap<MethodInfo, Long> maxProgress = new HashMap<MethodInfo, Long>();
+    private boolean filterLeafMethods;
+
+    public TreeAnalysis(WCETTool p, boolean filterLeafMethods) {
+        this.project = p;
+        this.filterLeafMethods = filterLeafMethods;
+        computeProgress(p.getTargetMethod());
+    }
+
+    /* FIXME: filter leaf methods is really a ugly hack,
+         * but needs some work to play nice with uppaal eliminate-leaf-methods optimizations
+         */
+
+    public void computeProgress(MethodInfo targetMethod) {
+        List<MethodInfo> reachable = project.getCallGraph().getImplementedMethods(targetMethod);
+        Collections.reverse(reachable);
+        for (MethodInfo mi : reachable) {
+            ControlFlowGraph cfg = project.getFlowGraph(mi);
+            Map<CFGNode, Long> localProgress = new HashMap<CFGNode, Long>();
+            ProgressVisitor progressVisitor = new ProgressVisitor(maxProgress);
+            for (CFGNode n : cfg.getGraph().vertexSet()) {
+                localProgress.put(n, progressVisitor.getProgress(n));
+            }
+            ProgressMeasure<CFGNode, CFGEdge> pm =
+                    new ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge>(cfg.getGraph(), cfg.getLoopColoring(),
+                            extractUBs(cfg.buildLoopBounds()), localProgress);
+            long progress = pm.getMaxProgress().get(cfg.getExit());
+            /* FIXME: _UGLY_ hack */
+            if (filterLeafMethods && cfg.isLeafMethod()) {
+                maxProgress.put(mi, 0L);
+            } else {
+                maxProgress.put(mi, progress);
+            }
+            relativeProgress.put(mi, pm.computeRelativeProgress());
+        }
+        System.out.println("Progress Measure (max): " + maxProgress.get(targetMethod));
+    }
+
+    public Map<MethodInfo, Map<ControlFlowGraph.CFGEdge, RelativeProgress<CFGNode>>> getRelativeProgressMap() {
+        return this.relativeProgress;
+    }
+
+    public Long getMaxProgress(MethodInfo mi) {
+        return this.maxProgress.get(mi);
+    }
+
+    private Map<CFGNode, Long> extractUBs(Map<CFGNode, LoopBound> loopBounds) {
+        Map<CFGNode, Long> ubMap = new HashMap<CFGNode, Long>();
+        for (Entry<CFGNode, LoopBound> entry : loopBounds.entrySet()) {
+            ubMap.put(entry.getKey(), entry.getValue().getUpperBound());
+        }
+        return ubMap;
+    }
+
+    public long computeWCET(MethodInfo targetMethod) {
+        this.methodWCET = new HashMap<MethodInfo, Long>();
+        List<MethodInfo> reachable = project.getCallGraph().getImplementedMethods(targetMethod);
+        Collections.reverse(reachable);
+        for (MethodInfo mi : reachable) {
+            ControlFlowGraph cfg = project.getFlowGraph(mi);
+            Map<CFGNode, Long> localCost = new HashMap<CFGNode, Long>();
+            LocalCostVisitor lcv = new LocalCostVisitor(new AnalysisContextSimple(CallString.EMPTY), project);
+            for (CFGNode n : cfg.getGraph().vertexSet()) {
+                localCost.put(n, lcv.computeCost(n).getCost());
+            }
+            ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge> pm =
+                    new ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge>(cfg.getGraph(), cfg.getLoopColoring(),
+                            extractUBs(cfg.buildLoopBounds()), localCost);
+            long wcet = pm.getMaxProgress().get(cfg.getExit());
+            methodWCET.put(mi, wcet);
+        }
+        return methodWCET.get(targetMethod);
+    }
 
 }

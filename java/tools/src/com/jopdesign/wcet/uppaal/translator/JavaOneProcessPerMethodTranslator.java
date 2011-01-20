@@ -159,7 +159,7 @@ public class JavaOneProcessPerMethodTranslator extends JavaTranslator {
 	private void recordLoops(MethodInfo mi, TemplateBuilder pb) {
 		ControlFlowGraph cfg = project.getFlowGraph(mi);
 		for(CFGNode hol: cfg.getLoopColoring().getHeadOfLoops()) {
-			LoopBound bound = cfg.getLoopBounds().get(hol);
+			LoopBound bound = hol.getLoopBound();
 			int nesting = cfg.getLoopColoring().getLoopColor(hol).size();
 			pb.addLoop(hol,nesting,bound);
 		}

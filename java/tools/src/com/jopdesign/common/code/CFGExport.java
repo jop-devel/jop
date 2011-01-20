@@ -154,7 +154,7 @@ public class CFGExport {
             nodeInfo.append("{" + codeBlock.getNumberOfBytes() + " By, ");
             addNodeLabel(n, nodeInfo);
             if (loops.getHeadOfLoops().contains(n)) {
-                nodeInfo.append("LOOP " + n.getId() + "/" + flowGraph.getLoopBounds().get(n));
+                nodeInfo.append("LOOP " + n.getId() + "/" + n.getLoopBound());
             }
             nodeInfo.append("}\n");
             nodeInfo.append(codeBlock.dump());

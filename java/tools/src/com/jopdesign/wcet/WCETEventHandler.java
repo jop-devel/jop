@@ -25,16 +25,33 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.EmptyAppEventHandler;
 import com.jopdesign.common.KeyManager.CustomKey;
 import com.jopdesign.common.KeyManager.KeyType;
+import com.jopdesign.common.MethodCode;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.BasicBlock;
+import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.LoopBound;
+import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.wcet.annotations.BadAnnotationException;
 import com.jopdesign.wcet.annotations.SourceAnnotationReader;
 import com.jopdesign.wcet.annotations.SourceAnnotations;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
+import java.util.Collection;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class WCETEventHandler extends EmptyAppEventHandler {
+
+    public static final Logger logger = Logger.getLogger(WCETTool.LOG_WCET_PROJECT+".WCETEventHandler");
+
+    // Using default loop bound will emit critical warning, but useful to
+    // find all unbounded loop bounds
+    public static final Long DEFAULT_LOOP_BOUND = 1024L;
 
     private CustomKey annotationKey;
 
@@ -54,7 +71,14 @@ public class WCETEventHandler extends EmptyAppEventHandler {
 
     @Override
     public void onCreateClass(ClassInfo classInfo, boolean loaded) {
-        // TODO maybe read annotations on class load, to avoid problems with modifications of code??
+        if (loaded) {
+            try {
+                loadAnnotations(classInfo);
+            } catch (BadAnnotationException e) {
+                // TODO maybe do more than just log an error? (halt?)
+                logger.error("Failed to load annotations for class "+classInfo+": "+e.getMessage(), e);
+            }
+        }
     }
 
     public SourceAnnotations getAnnotations(ClassInfo cli) throws BadAnnotationException, IOException {
@@ -66,4 +90,102 @@ public class WCETEventHandler extends EmptyAppEventHandler {
         return annots;
 
     }
+
+    public void loadAnnotations(ClassInfo classInfo) throws BadAnnotationException {
+        for (MethodInfo method : classInfo.getMethods()) {
+            if (method.isAbstract()) continue;
+            loadAnnotations(method.getCode().getControlFlowGraph());
+        }
+    }
+
+    /**
+     * load annotations for the flow graph.
+     *
+     * @param cfg the control flow graph of the method
+     * @throws BadAnnotationException if an annotations is missing
+     */
+    public void loadAnnotations(ControlFlowGraph cfg) throws BadAnnotationException {
+        // TODO move this method into own AnnotationLoader class?
+        SourceAnnotations wcaMap;
+        MethodInfo method = cfg.getMethodInfo();
+        MethodCode code = method.getCode();
+        try {
+            wcaMap = getAnnotations(method.getClassInfo());
+        } catch (IOException e) {
+            throw new BadAnnotationException("IO Error reading annotation: " + e.getMessage(), e);
+        }
+        for (CFGNode n : cfg.getLoopColoring().getHeadOfLoops()) {
+            BasicBlockNode headOfLoop = (BasicBlockNode) n;
+            BasicBlock block = headOfLoop.getBasicBlock();
+            // search for loop annotation in range
+            int sourceRangeStart = code.getLineNumber(block.getFirstInstruction());
+            int sourceRangeStop = code.getLineNumber(block.getLastInstruction());
+            Collection<LoopBound> annots = wcaMap.annotationsForLineRange(sourceRangeStart, sourceRangeStop + 1);
+            if (annots.size() > 1) {
+                String reason = "Ambigous Annotation [" + annots + "]";
+                throw new BadAnnotationException(reason, block, sourceRangeStart, sourceRangeStop);
+            }
+            LoopBound loopAnnot = null;
+            if (annots.size() == 1) {
+                loopAnnot = annots.iterator().next();
+            }
+            // if we have loop bounds from DFA analysis, use them
+            loopAnnot = dfaLoopBound(block, CallString.EMPTY, loopAnnot);
+            if (loopAnnot == null) {
+// 		throw new BadAnnotationException("No loop bound annotation",
+// 						 block,sourceRangeStart,sourceRangeStop);
+                logger.error("No loop bound annotation: " + method + ":" + n +
+                             ".\nApproximating with " + DEFAULT_LOOP_BOUND + ", but result is not safe anymore.");
+                loopAnnot = new LoopBound(0L, DEFAULT_LOOP_BOUND);
+            }
+            block.setLoopBound(loopAnnot);
+        }
+    }
+
+    /**
+     * Get a loop bound from the DFA for a certain loop and call string and
+     * merge it with the annotated value.
+     * @return The loop bound to be used for further computations
+     */
+    public LoopBound dfaLoopBound(BasicBlock headOfLoopBlock, CallString cs, LoopBound annotatedValue) {
+
+        LoopBound dfaBound;
+        LoopBounds lbs = project.getDfaLoopBounds();
+        if(lbs != null) {
+            MethodInfo methodInfo = headOfLoopBlock.getMethodInfo();
+            // Insert a try-catch to deal with failures of the DFA analysis
+            int bound;
+            try {
+                bound = lbs.getBound(project.getDfaTool(), headOfLoopBlock.getLastInstruction(),cs);
+            } catch(NullPointerException ex) {
+                // TODO not elegant ..
+                ex.printStackTrace();
+                bound = -1;
+            }
+            if(bound < 0) {
+                logger.info("No DFA bound for " + methodInfo);
+                dfaBound = annotatedValue;
+            } else if(annotatedValue == null) {
+                logger.info("Only DFA bound for "+methodInfo);
+                dfaBound = LoopBound.boundedAbove(bound);
+            } else {
+                dfaBound = annotatedValue.clone();
+                dfaBound.improveUpperBound(bound); // More testing would be nice
+                long loopUb = annotatedValue.getUpperBound();
+                if(bound < loopUb) {
+                    logger.info("DFA analysis reports a smaller upper bound :"+bound+ " < "+loopUb+
+                                " for "+methodInfo);
+                } else if (bound > loopUb) {
+                    logger.info("DFA analysis reports a larger upper bound: "+bound+ " > "+loopUb+
+                                " for "+methodInfo);
+                } else {
+                    logger.info("DFA and annotated loop bounds match for "+methodInfo);
+                }
+            }
+        } else {
+            dfaBound = annotatedValue;
+        }
+        return dfaBound;
+    }
+
 }

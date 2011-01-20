@@ -35,7 +35,6 @@ import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.HashedString;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.type.MethodRef;
-import com.jopdesign.wcet.annotations.BadAnnotationException;
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKEVIRTUAL;
@@ -87,11 +86,6 @@ import static com.jopdesign.common.code.BasicBlock.FlowTarget;
 public class ControlFlowGraph {
 
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_CFG + ".ControlFlowGraph");
-
-    // Using default loop bound will emit critical warning, but useful to
-    // find all unbounded loop bounds
-    public static final Long DEFAULT_LOOP_BOUND = 1024L;
-
 
     @SuppressWarnings({"UncheckedExceptionClass"})
     public static class ControlFlowError extends Error {
@@ -157,6 +151,21 @@ public class ControlFlowGraph {
             return null;
         }
 
+        /**
+         * This is a helper function to access {@link BasicBlock#getLoopBound()}.
+         * <p>
+         * LoopBounds can only be attached to BasicBlocks, since they are stored with InstructionHandles.
+         * </p> 
+         * @return the LoopBound of the basic block, or null if not set.
+         */
+        public LoopBound getLoopBound() {
+            BasicBlock bb = getBasicBlock();
+            if (bb != null) {
+                return bb.getLoopBound();
+            }
+            return null;
+        }
+        
         public int getId() {
             return id;
         }
@@ -520,8 +529,6 @@ public class ControlFlowGraph {
     /* basic blocks associated with the CFG */
     private List<BasicBlock> blocks;
 
-    private Map<CFGNode, LoopBound> annotations;
-
     /* graph */
     private FlowGraph<CFGNode, CFGEdge> graph;
     private Set<CFGNode> deadNodes;
@@ -665,94 +672,24 @@ public class ControlFlowGraph {
     }
 
     /**
-     * load annotations for the flow graph.
+     * Create a new map of loopbounds for CFG nodes. The map is not cached, try to use 
+     * {@link BasicBlock#getLoopBound()} or {@link CFGNode#getLoopBound()} instead.
      *
-     * @param wcaMap a map from source lines to loop bounds
-     * @throws BadAnnotationException if an annotations is missing
+     * @see CFGNode#getLoopBound()
+     * @see BasicBlock#getLoopBound()  
+     * @return a new mapping of loopbounds to cfg nodes. Contains only nodes which have basic 
+     *         blocks with loopbounds attached.
      */
-    /* -- TODO comment for commit
-	public void loadAnnotations(Project p) throws BadAnnotationException {
-		SourceAnnotations wcaMap;
-		try {
-			wcaMap = p.getAnnotations(this.methodInfo.getCli());
-		} catch (IOException e) {
-			throw new BadAnnotationException("IO Error reading annotation: "+e.getMessage());
-		}
-		this.annotations = new HashMap<CFGNode, LoopBound>();
-		for(CFGNode n : this.getLoopColoring().getHeadOfLoops()) {
-			BasicBlockNode headOfLoop = (BasicBlockNode) n;
-			BasicBlock block = headOfLoop.getBasicBlock();
-			// search for loop annotation in range
-			int sourceRangeStart = BasicBlock.getLineNumber(block.getFirstInstruction());
-			int sourceRangeStop = BasicBlock.getLineNumber(block.getLastInstruction());
-			Collection<LoopBound> annots = wcaMap.annotationsForLineRange(sourceRangeStart, sourceRangeStop+1);
-			if(annots.size() > 1) {
-				String reason = "Ambigous Annotation [" + annots + "]";
-				throw new BadAnnotationException(reason,block,sourceRangeStart,sourceRangeStop);
-			}
-			LoopBound loopAnnot = null;
-			if(annots.size() == 1) {
-				loopAnnot = annots.iterator().next();
-			}
-			// if we have loop bounds from DFA analysis, use them
-			loopAnnot = dfaLoopBound(block, CallString.EMPTY, loopAnnot);
-			if(loopAnnot == null) {
-// 				throw new BadAnnotationException("No loop bound annotation",
-// 												 block,sourceRangeStart,sourceRangeStop);
-				WcetAppInfo.logger.error("No loop bound annotation: "+methodInfo+":"+n+
-										 ".\nApproximating with "+DEFAULT_LOOP_BOUND+", but result is not safe anymore.");
-				loopAnnot = new LoopBound(0L, DEFAULT_LOOP_BOUND);
-			}
-			this.annotations.put(headOfLoop,loopAnnot);
-		}
-	}
-    -- */
-
-    /**
-     * Get a loop bound from the DFA for a certain loop and call string and
-     * merge it with the annotated value.
-     * @return The loop bound to be used for further computations
-     */
-    /* -- TODO comment for commit
-	private LoopBound dfaLoopBound(BasicBlock headOfLoopBlock, CallString cs, LoopBound annotatedValue) {
-		Project p = this.project;
-		LoopBound dfaBound;
-		if(p.getDfaLoopBounds() != null) {
-			LoopBounds lbs = p.getDfaLoopBounds();
-			// Insert a try-catch to deal with failures of the DFA analysis
-			int bound;
-			try {
-				bound = lbs.getBound(p.getDfaProgram(), headOfLoopBlock.getLastInstruction(),cs);
-			} catch(NullPointerException ex) {
-				ex.printStackTrace();
-				bound = -1;
-			}
-			if(bound < 0) {
-				logger.info("No DFA bound for " + methodInfo+":"+this.getMethodInfo());
-				dfaBound = annotatedValue;
-			} else if(annotatedValue == null) {
-				logger.info("Only DFA bound for "+methodInfo+":"+this.getMethodInfo());
-				dfaBound = LoopBound.boundedAbove(bound);
-			} else {
-				dfaBound = annotatedValue.clone();
-				dfaBound.improveUpperBound(bound); // More testing would be nice
-				long loopUb = annotatedValue.getUpperBound();
-				if(bound < loopUb) {
-					logger.info("DFA analysis reports a smaller upper bound :"+bound+ " < "+loopUb+
-							" for "+methodInfo+":"+this.getMethodInfo());
-				} else if (bound > loopUb) {
-					logger.info("DFA analysis reports a larger upper bound: "+bound+ " > "+loopUb+
-							" for "+methodInfo+":"+this.getMethodInfo());
-				} else {
-					logger.info("DFA and annotated loop bounds match for "+methodInfo+":"+this.getMethodInfo());
-				}
-			}
-		} else {
-			dfaBound = annotatedValue;
-		}
-		return dfaBound;
-	}
-	-- */
+    public Map<CFGNode, LoopBound> buildLoopBounds() {
+        Map<CFGNode, LoopBound> map = new HashMap<CFGNode, LoopBound>();
+        for (CFGNode node : graph.vertexSet()) {
+            LoopBound lb = node.getLoopBound();
+            if (lb != null) {
+                map.put(node,lb);
+            }
+        }
+        return map;
+    }
 
     /**
      * Get infeasible edges for certain call string
@@ -992,7 +929,6 @@ public class ControlFlowGraph {
         ControlFlowGraph subCFG = new ControlFlowGraph(appInfo);
         subCFG.methodInfo = methodInfo;
         subCFG.blocks = blocks;
-        subCFG.annotations = annotations;
         FlowGraph<CFGNode, CFGEdge> subGraph = subCFG.graph;
         for (CFGNode n : loopNodes) {
             subGraph.addVertex(n);
@@ -1127,25 +1063,6 @@ public class ControlFlowGraph {
      */
     public FlowGraph<CFGNode, CFGEdge> getGraph() {
         return graph;
-    }
-
-    /**
-     * retrieve the loop bound (annotations)
-     *
-     * @return a map from head-of-loop nodes to their loop bounds
-     */
-    public Map<CFGNode, LoopBound> getLoopBounds() {
-        return this.annotations;
-    }
-
-    /**
-     * Get improved loopbound considering the callcontext
-     */
-    public LoopBound getLoopBound(CFGNode hol, CallString cs) {
-        LoopBound globalBound = this.annotations.get(hol);
-        // FIXME move somewhere else
-        //return this.dfaLoopBound(hol.getBasicBlock(), cs, globalBound);
-        return globalBound;
     }
 
     /**

@@ -41,7 +41,7 @@ public class MethodReport {
 	public MethodReport(WCETTool p, MethodInfo m, String page) {
 		this.info = m;
 		fg = info.getCode().getControlFlowGraph();
-		this.loopBounds = fg.getLoopBounds().values();
+		this.loopBounds = fg.buildLoopBounds().values();
 		this.sizeInWords = fg.getNumberOfWords();		
 		this.referenced = new TreeSet<MethodInfo>();
 		for(ExecutionContext cgn : p.getCallGraph().getReferencedMethods(m)) {

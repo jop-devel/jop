@@ -27,10 +27,12 @@ import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.code.SymbolicMarker;
+import com.jopdesign.common.code.SymbolicMarker.SymbolicMarkerType;
 import com.jopdesign.common.graphutils.FlowGraph;
 import com.jopdesign.common.graphutils.LoopColoring;
 import com.jopdesign.common.graphutils.Pair;
-import com.jopdesign.common.code.SymbolicMarker.SymbolicMarkerType;
+import com.jopdesign.common.misc.AppInfoError;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.ipet.IPETBuilder.ExecutionEdge;
 import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
 
@@ -42,272 +44,286 @@ import java.util.Set;
 
 /**
  * Purpose: This class provides utility functions to build +IPET models
- * 
- * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  *
+ * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  */
 public class IPETUtils {
-	
-	/**
-	 * Top level flow constraints: flow out of entry and flow into exit must be one.
-	 *   <pre>sum (e_Entry_x) = 1</pre>
-	 *   <pre>sum (e_y_Exit) = 1</pre>
-	 */
-	public static<V,E,C extends CallStringProvider>
-	List<LinearConstraint<IPETBuilder.ExecutionEdge>>
-		structuralFlowConstraintsRoot(FlowGraph<V, E> g, IPETBuilder<C> ctx) {
 
-		LinearConstraint<IPETBuilder.ExecutionEdge> entryLhsProto = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
-		entryLhsProto.addLHS(1);
-		LinearConstraint<IPETBuilder.ExecutionEdge> exitRhsProto = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
-		exitRhsProto.addRHS(1);
-		
-		return structuralFlowConstraints(g, entryLhsProto, exitRhsProto, ctx);
-	}
+    /**
+     * Top level flow constraints: flow out of entry and flow into exit must be one.
+     * <pre>sum (e_Entry_x) = 1</pre>
+     * <pre>sum (e_y_Exit) = 1</pre>
+     */
+    public static <V, E, C extends CallStringProvider>
+    List<LinearConstraint<IPETBuilder.ExecutionEdge>>
+    structuralFlowConstraintsRoot(FlowGraph<V, E> g, IPETBuilder<C> ctx) {
 
-	/**
-	 * Structural flow constraints with given input and output edges.
-	 */
-	public static<V,E,C extends CallStringProvider>
-	List<LinearConstraint<IPETBuilder.ExecutionEdge>>
-		structuralFlowConstraints(FlowGraph<V, E> g,
-								  Collection<IPETBuilder.ExecutionEdge> inputEdges,
-								  Collection<IPETBuilder.ExecutionEdge> outputEdges,
-								  IPETBuilder<C> ctx) {
+        LinearConstraint<IPETBuilder.ExecutionEdge> entryLhsProto = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
+        entryLhsProto.addLHS(1);
+        LinearConstraint<IPETBuilder.ExecutionEdge> exitRhsProto = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
+        exitRhsProto.addRHS(1);
 
-		LinearConstraint<IPETBuilder.ExecutionEdge> entryLhsProto = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
-		for(IPETBuilder.ExecutionEdge e : inputEdges) entryLhsProto.addLHS(e);
-		LinearConstraint<IPETBuilder.ExecutionEdge> exitRhsProto = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
-		for(IPETBuilder.ExecutionEdge e : outputEdges) exitRhsProto.addRHS(e);
-		
-		return structuralFlowConstraints(g, entryLhsProto, exitRhsProto, ctx);
-	}
+        return structuralFlowConstraints(g, entryLhsProto, exitRhsProto, ctx);
+    }
 
-	/**
-	 *  Structural Flow Constraints:<ul>
-	 *  <li/> The flow of entry and exit is constrained by the given left-hand resp. right-hand sides
-	 *  <li/> For all other nodes, the incoming flow (left-hand) is equal to the outgoing flow (rhs)
-	 *  </ul>
-	 * @param <V> node type
-	 * @param <E> edge type
-	 * @param <C> context type
-	 * @param graph the flow graph to generate constraints for
-	 * @param entryLhsProto the left-hand side of the constraint for the entry node
-	 * @param exitRhsProto the right-hand side of the constraint for the exit node
-	 * @param ctx the execution context
-	 * @return the set of structural linear constraints
-	 */
-	public static<V,E, C extends CallStringProvider>
-	List<LinearConstraint<IPETBuilder.ExecutionEdge>>
-	    structuralFlowConstraints(FlowGraph<V,E> graph, 
-	    						  LinearConstraint<IPETBuilder.ExecutionEdge> entryLhsProto,
-	    						  LinearConstraint<IPETBuilder.ExecutionEdge> exitRhsProto,
-	    						  IPETBuilder<C> ctx) {
+    /**
+     * Structural flow constraints with given input and output edges.
+     */
+    public static <V, E, C extends CallStringProvider>
+    List<LinearConstraint<IPETBuilder.ExecutionEdge>>
+    structuralFlowConstraints(FlowGraph<V, E> g,
+                              Collection<IPETBuilder.ExecutionEdge> inputEdges,
+                              Collection<IPETBuilder.ExecutionEdge> outputEdges,
+                              IPETBuilder<C> ctx) {
 
-		List<LinearConstraint<IPETBuilder.ExecutionEdge>> constraints = new ArrayList<LinearConstraint<IPETBuilder.ExecutionEdge>>();
+        LinearConstraint<IPETBuilder.ExecutionEdge> entryLhsProto = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
+        for (IPETBuilder.ExecutionEdge e : inputEdges) entryLhsProto.addLHS(e);
+        LinearConstraint<IPETBuilder.ExecutionEdge> exitRhsProto = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
+        for (IPETBuilder.ExecutionEdge e : outputEdges) exitRhsProto.addRHS(e);
 
-		for(V node : graph.vertexSet()) {
-			LinearConstraint<IPETBuilder.ExecutionEdge> flowConstraint;
+        return structuralFlowConstraints(g, entryLhsProto, exitRhsProto, ctx);
+    }
 
-			if(node.equals(graph.getEntry())) {
-				flowConstraint = entryLhsProto.clone();
-			} else if(node.equals(graph.getExit())) {
-				flowConstraint = exitRhsProto.clone();
-			} else {
-				flowConstraint = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);				
-			}
-			for(E ingoing : graph.incomingEdgesOf(node)) {
-				flowConstraint.addLHS(ctx.newEdge(ingoing));
-			}
-			for(E outgoing : graph.outgoingEdgesOf(node)) {
-				flowConstraint.addRHS(ctx.newEdge(outgoing));
-			}
-			constraints.add(flowConstraint);
-		}		
-		return constraints;
-	}
+    /**
+     * Structural Flow Constraints:<ul>
+     * <li/> The flow of entry and exit is constrained by the given left-hand resp. right-hand sides
+     * <li/> For all other nodes, the incoming flow (left-hand) is equal to the outgoing flow (rhs)
+     * </ul>
+     *
+     * @param <V>           node type
+     * @param <E>           edge type
+     * @param <C>           context type
+     * @param graph         the flow graph to generate constraints for
+     * @param entryLhsProto the left-hand side of the constraint for the entry node
+     * @param exitRhsProto  the right-hand side of the constraint for the exit node
+     * @param ctx           the execution context
+     * @return the set of structural linear constraints
+     */
+    public static <V, E, C extends CallStringProvider>
+    List<LinearConstraint<IPETBuilder.ExecutionEdge>>
+    structuralFlowConstraints(FlowGraph<V, E> graph,
+                              LinearConstraint<IPETBuilder.ExecutionEdge> entryLhsProto,
+                              LinearConstraint<IPETBuilder.ExecutionEdge> exitRhsProto,
+                              IPETBuilder<C> ctx) {
 
-	/**
-	 * Compute flow constraints: Loop Bound constraints (Control Flow Graph only)
-	 * @param g the flow graph
-	 * @param ctx the invocation context
-	 * @return A list of flow constraints
-	 */
-	public static<C extends CallStringProvider>
-	List<LinearConstraint<IPETBuilder.ExecutionEdge>>
-		loopBoundConstraints(ControlFlowGraph g, IPETBuilder<C> ctx) {
-		
-		List<LinearConstraint<IPETBuilder.ExecutionEdge>> constraints = new ArrayList<LinearConstraint<IPETBuilder.ExecutionEdge>>();
-		// - for each loop with bound B
-		// -- sum(exit_loop_edges) * B <= sum(continue_loop_edges)
-		LoopColoring<CFGNode,ControlFlowGraph.CFGEdge> loops = g.getLoopColoring();
-		for(CFGNode hol : loops.getHeadOfLoops()) {
-			LoopBound loopBound = g.getLoopBound(hol,ctx.getCallString());
-			if(loopBound == null) {
-				throw new Error("No loop bound record for head of loop: " + hol + " : " + g.getLoopBounds());
-			}
-			for(LinearConstraint<IPETBuilder.ExecutionEdge> loopConstraint : constraintsForLoop(loops, hol,loopBound, ctx))
-			{
-				constraints.add(loopConstraint);
-			}
-		}
-		return constraints;
-	}
+        List<LinearConstraint<IPETBuilder.ExecutionEdge>> constraints = new ArrayList<LinearConstraint<IPETBuilder.ExecutionEdge>>();
 
-	/** Generate Loop Constraints */
-	public static<C extends CallStringProvider>
-	List<LinearConstraint<IPETBuilder.ExecutionEdge>>
-		constraintsForLoop(LoopColoring<CFGNode, ControlFlowGraph.CFGEdge> loops,
-						   CFGNode hol,
-						   LoopBound loopBound,
-						   IPETBuilder<C> ctx) {
-		
-		List<LinearConstraint<IPETBuilder.ExecutionEdge>> loopConstraints = new ArrayList<LinearConstraint<IPETBuilder.ExecutionEdge>>();
-		/* marker loop constraints */
-		for(Entry<SymbolicMarker, Pair<Long, Long>> markerBound: loopBound.getLoopBounds()) {
+        for (V node : graph.vertexSet()) {
+            LinearConstraint<IPETBuilder.ExecutionEdge> flowConstraint;
 
-			/* loop constraint */
-			LinearConstraint<IPETBuilder.ExecutionEdge> loopConstraint = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.GreaterEqual);
-			for(ControlFlowGraph.CFGEdge continueEdge : loops.getBackEdgesTo(hol)) {
-				loopConstraint.addRHS(ctx.newEdge(continueEdge));
-			}
-			/* Multiplicities */
-			long lhsMultiplicity = markerBound.getValue().second();
-			SymbolicMarker marker = markerBound.getKey();
-			if(marker.getMarkerType() == SymbolicMarkerType.OUTER_LOOP_MARKER) {
+            if (node.equals(graph.getEntry())) {
+                flowConstraint = entryLhsProto.clone();
+            } else if (node.equals(graph.getExit())) {
+                flowConstraint = exitRhsProto.clone();
+            } else {
+                flowConstraint = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
+            }
+            for (E ingoing : graph.incomingEdgesOf(node)) {
+                flowConstraint.addLHS(ctx.newEdge(ingoing));
+            }
+            for (E outgoing : graph.outgoingEdgesOf(node)) {
+                flowConstraint.addRHS(ctx.newEdge(outgoing));
+            }
+            constraints.add(flowConstraint);
+        }
+        return constraints;
+    }
 
-				CFGNode outerLoopHol;
-				outerLoopHol = loops.getLoopAncestor(hol, marker.getOuterLoopDistance());
-				if(outerLoopHol == null) {
-					// FIXME: [annotations] This is a user error, not an assertion error
-					throw new AssertionError("Invalid Loop Nest Level"); 
-				}
-				for(ControlFlowGraph.CFGEdge exitEdge : loops.getExitEdgesOf(outerLoopHol)) {
-					loopConstraint.addLHS(ctx.newEdge(exitEdge), lhsMultiplicity);
-				}				
-			} else {
-				assert(marker.getMarkerType() == SymbolicMarkerType.METHOD_MARKER);
-				throw new AssertionError("ILPModelBuilder: method markers not yet supported, sorry");
-			}
-			loopConstraints.add(loopConstraint);
-		}
-		return loopConstraints;
-	}
-	
-	/** Generate constraints for super graph edges */
-	public static<C extends CallStringProvider>
-	LinearConstraint<IPETBuilder.ExecutionEdge> 
-		superEdgeConstraint(SuperGraph.SuperInvokeEdge in, SuperGraph.SuperReturnEdge out, IPETBuilder<C> ctx) {
-		
-		LinearConstraint<IPETBuilder.ExecutionEdge> pairConstraint = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
-		pairConstraint.addLHS(ctx.newEdge(in));
-		pairConstraint.addRHS(ctx.newEdge(out));
-		return pairConstraint;		
-	}
+    /**
+     * Compute flow constraints: Loop Bound constraints (Control Flow Graph only)
+     *
+     * @param g   the flow graph
+     * @param ctx the invocation context
+     * @return A list of flow constraints
+     */
+    public static <C extends CallStringProvider>
+    List<LinearConstraint<IPETBuilder.ExecutionEdge>>
+    loopBoundConstraints(ControlFlowGraph g, IPETBuilder<C> ctx) {
+
+        List<LinearConstraint<IPETBuilder.ExecutionEdge>> constraints = new ArrayList<LinearConstraint<IPETBuilder.ExecutionEdge>>();
+        // - for each loop with bound B
+        // -- sum(exit_loop_edges) * B <= sum(continue_loop_edges)
+        LoopColoring<CFGNode, ControlFlowGraph.CFGEdge> loops = g.getLoopColoring();
+        for (CFGNode hol : loops.getHeadOfLoops()) {
+            //LoopBound loopBound = g.getLoopBound(hol, ctx.getCallString());
+            LoopBound loopBound = ctx.getWCETTool().getLoopBound(hol, ctx.getCallString());
 
 
-	/**
-	 * Compute flow constraints: Infeasible edge constraints
-	 * @param g the flow graph
-	 * @param ctx the invocation context
-	 * @return A list of flow constraints
-	 */
-	public static<C extends CallStringProvider> 
-	List<LinearConstraint<IPETBuilder.ExecutionEdge>>
-		infeasibleEdgeConstraints(ControlFlowGraph g, IPETBuilder<C> ctx) {
-		
-		List<LinearConstraint<IPETBuilder.ExecutionEdge>> constraints = new ArrayList<LinearConstraint<IPETBuilder.ExecutionEdge>>();
-		// - for each infeasible edge
-		// -- edge = 0
-		for(ControlFlowGraph.CFGEdge edge : g.getInfeasibleEdges(ctx.getCallString())) {
-			LinearConstraint<IPETBuilder.ExecutionEdge> infeasibleConstraint = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
-			infeasibleConstraint.addLHS(ctx.newEdge(edge));
-			infeasibleConstraint.addRHS(0);
-			constraints.add(infeasibleConstraint);
-		}
-		return constraints;
-	}
+            if (loopBound == null) {
+                throw new AppInfoError("No loop bound record for head of loop: " + hol + " : " + g.buildLoopBounds());
+            }
+            for (LinearConstraint<IPETBuilder.ExecutionEdge> loopConstraint : constraintsForLoop(loops, hol, loopBound, ctx)) {
+                constraints.add(loopConstraint);
+            }
+        }
+        return constraints;
+    }
 
-	/**
-	 * Compute flow constraints: invoke and return flow have to be equal
-	 * @param call the invoke edge
-	 * @param ret  the return edge
-	 * @param builder the IPET context
-	 * @return the linear constraints ensuring that each flow following the invoke is matched
-	 * 		   by one returning, and that non-local and local invoke flow coincide
-	 */
-	public static<C extends CallStringProvider>
-	List<LinearConstraint<ExecutionEdge>>
-		invokeReturnConstraints(SuperGraph.SuperInvokeEdge call, SuperGraph.SuperReturnEdge ret, IPETBuilder<C> builder) {
+    /**
+     * Generate Loop Constraints
+     */
+    public static <C extends CallStringProvider>
+    List<LinearConstraint<IPETBuilder.ExecutionEdge>>
+    constraintsForLoop(LoopColoring<CFGNode, ControlFlowGraph.CFGEdge> loops,
+                       CFGNode hol,
+                       LoopBound loopBound,
+                       IPETBuilder<C> ctx)
+    {
 
-		
-		ExecutionEdge callEdge = builder.newEdge(call);
-		List<LinearConstraint<ExecutionEdge>> constraints = new ArrayList<LinearConstraint<ExecutionEdge>>();
-		
-		{
-			LinearConstraint<ExecutionEdge> invokeRetCnstr = new LinearConstraint<ExecutionEdge>(ConstraintType.Equal);		
-			invokeRetCnstr.addLHS(callEdge);
-			invokeRetCnstr.addRHS(builder.newEdge(ret));
-			constraints.add(invokeRetCnstr);
-		}
-		
-		{
-			LinearConstraint<ExecutionEdge> invokeLocalCnstr = new LinearConstraint<ExecutionEdge>(ConstraintType.Equal);
-			invokeLocalCnstr.addLHS(builder.newEdge(call));
-			ControlFlowGraph.InvokeNode invokeNode = call.getInvokeNode();
-			Set<ControlFlowGraph.CFGEdge> localInvokeEdge = invokeNode.getControlFlowGraph().getGraph().outgoingEdgesOf(invokeNode);
-			if(localInvokeEdge.size() == 1) {
-				invokeLocalCnstr.addRHS(builder.newEdge(localInvokeEdge.iterator().next()));
-			} else {
-				throw new AssertionError("More than one outgoing local edge from an invoke node");
-			}	
-			constraints.add(invokeLocalCnstr);
-		}
-		
-		return constraints;		
-	}
+        List<LinearConstraint<IPETBuilder.ExecutionEdge>> loopConstraints = new ArrayList<LinearConstraint<IPETBuilder.ExecutionEdge>>();
+        /* marker loop constraints */
+        for (Entry<SymbolicMarker, Pair<Long, Long>> markerBound : loopBound.getLoopBounds()) {
 
-	/**
-	 * Split an execution edge into a list of execution edges modelling low-level hardware decisions
-	 * @param parentEdge the high-level edge to be split
-	 * @param childEdges low-level edges
-	 * @return constraint asserting sum f(childEdges) = f(parentEdge)
-	 */
-	public static LinearConstraint<ExecutionEdge> lowLevelEdgeSplit(ExecutionEdge parentEdge, ExecutionEdge... childEdges) {
-		LinearConstraint<ExecutionEdge> lc = new LinearConstraint<ExecutionEdge>(ConstraintType.Equal);		
-		lc.addLHS(parentEdge);
-		for(ExecutionEdge childEdge : childEdges) {
-			lc.addRHS(childEdge);
-		}
-		return lc;
-	}
-	
-	/**
-	 * Create a max-cost maxflow problem for the given flow graph graph, based on a 
-	 * given node to cost mapping.
-	 * @param problemName a unique identifier for the problem (for reporting)
-	 * @param cs context of the method invocation
-	 * @param cfg the graph
-	 * @param nodeWCET cost of nodes
-	 * @return The max-cost maxflow problem
-	 */
-	public static IPETSolver buildLocalILPModel(String problemName, CallString cs, ControlFlowGraph cfg, CostProvider<CFGNode> nodeWCET,
-			IPETConfig ipetConfig) {
-		
-		IPETSolver ipetSolver = new IPETSolver(problemName, ipetConfig);
-		
-		IPETBuilder<CallString> builder = new IPETBuilder<CallString>(cs);
-		
-		ipetSolver.addConstraints( IPETUtils.structuralFlowConstraintsRoot(cfg.getGraph(), builder));
-		ipetSolver.addConstraints( IPETUtils.loopBoundConstraints(cfg, builder));
-		ipetSolver.addConstraints( IPETUtils.infeasibleEdgeConstraints(cfg, builder));
-				
-		for(CFGNode n : cfg.getGraph().vertexSet()) {
-			long nodeCost = nodeWCET.getCost(n);
-			for(ControlFlowGraph.CFGEdge e : cfg.getGraph().outgoingEdgesOf(n)) {
-				ipetSolver.addEdgeCost(builder.newEdge(e), nodeCost);
-			}
-		}
-		return ipetSolver;
-	}		
+            /* loop constraint */
+            LinearConstraint<IPETBuilder.ExecutionEdge> loopConstraint = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.GreaterEqual);
+            for (ControlFlowGraph.CFGEdge continueEdge : loops.getBackEdgesTo(hol)) {
+                loopConstraint.addRHS(ctx.newEdge(continueEdge));
+            }
+            /* Multiplicities */
+            long lhsMultiplicity = markerBound.getValue().second();
+            SymbolicMarker marker = markerBound.getKey();
+            if (marker.getMarkerType() == SymbolicMarkerType.OUTER_LOOP_MARKER) {
+
+                CFGNode outerLoopHol;
+                outerLoopHol = loops.getLoopAncestor(hol, marker.getOuterLoopDistance());
+                if (outerLoopHol == null) {
+                    // FIXME: [annotations] This is a user error, not an assertion error
+                    throw new AssertionError("Invalid Loop Nest Level");
+                }
+                for (ControlFlowGraph.CFGEdge exitEdge : loops.getExitEdgesOf(outerLoopHol)) {
+                    loopConstraint.addLHS(ctx.newEdge(exitEdge), lhsMultiplicity);
+                }
+            } else {
+                assert (marker.getMarkerType() == SymbolicMarkerType.METHOD_MARKER);
+                throw new AssertionError("ILPModelBuilder: method markers not yet supported, sorry");
+            }
+            loopConstraints.add(loopConstraint);
+        }
+        return loopConstraints;
+    }
+
+    /**
+     * Generate constraints for super graph edges
+     */
+    public static <C extends CallStringProvider>
+    LinearConstraint<IPETBuilder.ExecutionEdge>
+    superEdgeConstraint(SuperGraph.SuperInvokeEdge in, SuperGraph.SuperReturnEdge out, IPETBuilder<C> ctx) {
+
+        LinearConstraint<IPETBuilder.ExecutionEdge> pairConstraint = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
+        pairConstraint.addLHS(ctx.newEdge(in));
+        pairConstraint.addRHS(ctx.newEdge(out));
+        return pairConstraint;
+    }
+
+
+    /**
+     * Compute flow constraints: Infeasible edge constraints
+     *
+     * @param g   the flow graph
+     * @param ctx the invocation context
+     * @return A list of flow constraints
+     */
+    public static <C extends CallStringProvider>
+    List<LinearConstraint<IPETBuilder.ExecutionEdge>>
+    infeasibleEdgeConstraints(ControlFlowGraph g, IPETBuilder<C> ctx) {
+
+        List<LinearConstraint<IPETBuilder.ExecutionEdge>> constraints = new ArrayList<LinearConstraint<IPETBuilder.ExecutionEdge>>();
+        // - for each infeasible edge
+        // -- edge = 0
+        for (ControlFlowGraph.CFGEdge edge : g.getInfeasibleEdges(ctx.getCallString())) {
+            LinearConstraint<IPETBuilder.ExecutionEdge> infeasibleConstraint = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
+            infeasibleConstraint.addLHS(ctx.newEdge(edge));
+            infeasibleConstraint.addRHS(0);
+            constraints.add(infeasibleConstraint);
+        }
+        return constraints;
+    }
+
+    /**
+     * Compute flow constraints: invoke and return flow have to be equal
+     *
+     * @param call    the invoke edge
+     * @param ret     the return edge
+     * @param builder the IPET context
+     * @return the linear constraints ensuring that each flow following the invoke is matched
+     *         by one returning, and that non-local and local invoke flow coincide
+     */
+    public static <C extends CallStringProvider>
+    List<LinearConstraint<ExecutionEdge>>
+    invokeReturnConstraints(SuperGraph.SuperInvokeEdge call, SuperGraph.SuperReturnEdge ret, IPETBuilder<C> builder) {
+
+
+        ExecutionEdge callEdge = builder.newEdge(call);
+        List<LinearConstraint<ExecutionEdge>> constraints = new ArrayList<LinearConstraint<ExecutionEdge>>();
+
+        {
+            LinearConstraint<ExecutionEdge> invokeRetCnstr = new LinearConstraint<ExecutionEdge>(ConstraintType.Equal);
+            invokeRetCnstr.addLHS(callEdge);
+            invokeRetCnstr.addRHS(builder.newEdge(ret));
+            constraints.add(invokeRetCnstr);
+        }
+
+        {
+            LinearConstraint<ExecutionEdge> invokeLocalCnstr = new LinearConstraint<ExecutionEdge>(ConstraintType.Equal);
+            invokeLocalCnstr.addLHS(builder.newEdge(call));
+            ControlFlowGraph.InvokeNode invokeNode = call.getInvokeNode();
+            Set<ControlFlowGraph.CFGEdge> localInvokeEdge = invokeNode.getControlFlowGraph().getGraph().outgoingEdgesOf(invokeNode);
+            if (localInvokeEdge.size() == 1) {
+                invokeLocalCnstr.addRHS(builder.newEdge(localInvokeEdge.iterator().next()));
+            } else {
+                throw new AssertionError("More than one outgoing local edge from an invoke node");
+            }
+            constraints.add(invokeLocalCnstr);
+        }
+
+        return constraints;
+    }
+
+    /**
+     * Split an execution edge into a list of execution edges modelling low-level hardware decisions
+     *
+     * @param parentEdge the high-level edge to be split
+     * @param childEdges low-level edges
+     * @return constraint asserting sum f(childEdges) = f(parentEdge)
+     */
+    public static LinearConstraint<ExecutionEdge> lowLevelEdgeSplit(ExecutionEdge parentEdge, ExecutionEdge... childEdges) {
+        LinearConstraint<ExecutionEdge> lc = new LinearConstraint<ExecutionEdge>(ConstraintType.Equal);
+        lc.addLHS(parentEdge);
+        for (ExecutionEdge childEdge : childEdges) {
+            lc.addRHS(childEdge);
+        }
+        return lc;
+    }
+
+    /**
+     * Create a max-cost maxflow problem for the given flow graph graph, based on a
+     * given node to cost mapping.
+     *
+     * @param wcetTool    A reference to the WCETTool
+     * @param problemName a unique identifier for the problem (for reporting)
+     * @param cs          context of the method invocation
+     * @param cfg         the graph
+     * @param nodeWCET    cost of nodes
+     * @return The max-cost maxflow problem
+     */
+    public static IPETSolver buildLocalILPModel(WCETTool wcetTool, String problemName, CallString cs,
+                                                ControlFlowGraph cfg, CostProvider<CFGNode> nodeWCET,
+                                                IPETConfig ipetConfig) {
+
+        IPETSolver ipetSolver = new IPETSolver(problemName, ipetConfig);
+
+        IPETBuilder<CallString> builder = new IPETBuilder<CallString>(wcetTool, cs);
+
+        ipetSolver.addConstraints(IPETUtils.structuralFlowConstraintsRoot(cfg.getGraph(), builder));
+        ipetSolver.addConstraints(IPETUtils.loopBoundConstraints(cfg, builder));
+        ipetSolver.addConstraints(IPETUtils.infeasibleEdgeConstraints(cfg, builder));
+
+        for (CFGNode n : cfg.getGraph().vertexSet()) {
+            long nodeCost = nodeWCET.getCost(n);
+            for (ControlFlowGraph.CFGEdge e : cfg.getGraph().outgoingEdgesOf(n)) {
+                ipetSolver.addEdgeCost(builder.newEdge(e), nodeCost);
+            }
+        }
+        return ipetSolver;
+    }
 }

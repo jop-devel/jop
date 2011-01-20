@@ -20,6 +20,7 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.KeyManager.CustomKey;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.InvokeSite;
@@ -27,6 +28,7 @@ import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.BadGraphError;
 import com.jopdesign.common.misc.BadGraphException;
+import com.jopdesign.common.misc.HashedString;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Code;
 import org.apache.bcel.classfile.LineNumberTable;
@@ -52,17 +54,15 @@ public class MethodCode {
     /**
      * A key used to attach an {@link InvokeSite} object to an InstructionHandle.
      */
-    public static final Object KEY_IH_INVOKESITE = "MethodInfo.InvokeSite";
-
+    private static final Object KEY_INVOKESITE = new HashedString("MethodInfo.InvokeSite");
     // Keys to attach custom values to InstructionHandles
-    private static final Object KEY_INSTRUCTION_VALUE = "KeyManager.InstructionValue";
-    private static final Object KEY_BLOCK_VALUE = "KeyManager.BlockValue";
+    private static final Object KEY_CUSTOMVALUES = new HashedString("KeyManager.InstructionValue");
     // Keys to attach values directly to InstructionHandles, which are not handled by KeyManager
-    private static final Object KEY_LINENUMBER = "MethodCode.LineNumber";
-    private static final Object KEY_SOURCEFILE = "MethodCode.SourceFile";
-    private static final Object KEY_EXCEPTIONS = "MethodCode.Exceptions";
+    private static final Object KEY_LINENUMBER = new HashedString("MethodCode.LineNumber");
+    private static final Object KEY_SOURCEFILE = new HashedString("MethodCode.SourceFile");
+    private static final Object KEY_EXCEPTIONS = new HashedString("MethodCode.Exceptions");
 
-    private static final Object[] MANAGED_KEYS = {KEY_LINENUMBER, KEY_SOURCEFILE, KEY_EXCEPTIONS};
+    private static final Object[] MANAGED_KEYS = {KEY_INVOKESITE, KEY_LINENUMBER, KEY_SOURCEFILE, KEY_EXCEPTIONS};
 
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_CODE+".MethodCode");
 
@@ -372,10 +372,10 @@ public class MethodCode {
      * @return the InvokeSite associated with this instruction or a new one.
      */
     public InvokeSite getInvokeSite(InstructionHandle ih) {
-        InvokeSite is = (InvokeSite) ih.getAttribute(KEY_IH_INVOKESITE);
+        InvokeSite is = (InvokeSite) ih.getAttribute(KEY_INVOKESITE);
         if (is == null) {
             is = new InvokeSite(ih, this.getMethodInfo());
-            ih.addAttribute(KEY_IH_INVOKESITE, is);
+            ih.addAttribute(KEY_INVOKESITE, is);
         }
         return is;
     }
@@ -430,44 +430,46 @@ public class MethodCode {
     // Get and set CustomValues
     //////////////////////////////////////////////////////////////////////////////
 
-    public Object setCustomValue(InstructionHandle ih, KeyManager.CustomKey key, Object value) {
-        return setCustomValue(ih, key, value, KEY_INSTRUCTION_VALUE);
+    public Object setCustomValue(InstructionHandle ih, CustomKey key, Object value) {
+        @SuppressWarnings({"unchecked"})
+        Map<CustomKey,Object> map = (Map<CustomKey, Object>) ih.getAttribute(KEY_CUSTOMVALUES);
+        if (map == null) {
+            map = new HashMap<CustomKey, Object>(1);
+            ih.addAttribute(KEY_CUSTOMVALUES, map);
+        }
+        return map.put(key, value);
     }
 
-    public Object setCustomBlockValue(InstructionHandle ih, KeyManager.CustomKey key, Object value) {
-        return setCustomValue(ih, key, value, KEY_BLOCK_VALUE);
+    public Object getCustomValue(InstructionHandle ih, CustomKey key) {
+        @SuppressWarnings({"unchecked"})
+        Map<CustomKey,Object> map = (Map<CustomKey, Object>) ih.getAttribute(KEY_CUSTOMVALUES);
+        if (map == null) {
+            return null;
+        }
+        return map.get(key);
     }
 
-    public Object getCustomValue(InstructionHandle ih, KeyManager.CustomKey key) {
-        return getCustomValue(ih, key, KEY_INSTRUCTION_VALUE);
+    public Object setCustomValue(InstructionHandle ih, CustomKey key, CallString context, Object value) {
+        // TODO implement
+        throw new AppInfoError("Not yet implemented.");
     }
 
-    public Object getCustomBlockValue(InstructionHandle ih, KeyManager.CustomKey key) {
-        return getCustomValue(ih, key, KEY_BLOCK_VALUE);
+    public Object getCustomValue(InstructionHandle ih, CustomKey key, CallString context, boolean checkSuffixes) {
+        // TODO implement
+        throw new AppInfoError("Not yet implemented.");
     }
 
-    public Object setCustomValue(InstructionHandle ih, KeyManager.CustomKey key, CallString context, Object value) {
-        return setCustomValue(ih, key, context, value, KEY_INSTRUCTION_VALUE);
-    }
-
-    public Object setCustomBlockValue(InstructionHandle ih, KeyManager.CustomKey key, CallString context, Object value) {
-        return setCustomValue(ih, key, context, value, KEY_BLOCK_VALUE);
-    }
-
-    public Object getCustomValue(InstructionHandle ih, KeyManager.CustomKey key, CallString context, boolean checkSuffixes) {
-        return getCustomValue(ih, key, context, checkSuffixes, KEY_INSTRUCTION_VALUE);
-    }
-
-    public Object getCustomBlockValue(InstructionHandle ih, KeyManager.CustomKey key, CallString context, boolean checkSuffixes) {
-        return getCustomValue(ih, key, context, checkSuffixes, KEY_BLOCK_VALUE);
-    }
-
-    public Object clearCustomKey(InstructionHandle ih, KeyManager.CustomKey key) {
-        return clearCustomKey(ih, key, KEY_INSTRUCTION_VALUE);
-    }
-
-    public Object clearCustomBlockKey(InstructionHandle ih, KeyManager.CustomKey key) {
-        return clearCustomKey(ih, key, KEY_BLOCK_VALUE);
+    public Object clearCustomKey(InstructionHandle ih, CustomKey key) {
+        @SuppressWarnings({"unchecked"})
+        Map<CustomKey,Object> map = (Map<CustomKey, Object>) ih.getAttribute(KEY_CUSTOMVALUES);
+        if (map == null) {
+            return null;
+        }
+        Object value = map.remove(key);
+        if (map.size() == 0) {
+            ih.removeAttribute(KEY_CUSTOMVALUES);
+        }
+        return value;
     }
 
     public void copyCustomValues(InstructionHandle from, InstructionHandle to) {
@@ -478,8 +480,14 @@ public class MethodCode {
             else to.removeAttribute(key);
         }
 
-        copyCustomKey(from, to, KEY_BLOCK_VALUE);
-        copyCustomKey(from, to, KEY_INSTRUCTION_VALUE);
+        @SuppressWarnings({"unchecked"})
+        Map<CustomKey,Object> map = (Map<CustomKey, Object>) from.getAttribute(KEY_CUSTOMVALUES);
+        if (map == null) {
+            to.removeAttribute(KEY_CUSTOMVALUES);
+            return;
+        }
+        Map<CustomKey,Object> newMap = new HashMap<CustomKey, Object>(map);
+        to.addAttribute(KEY_CUSTOMVALUES, newMap);
     }
 
 
@@ -520,56 +528,4 @@ public class MethodCode {
         
     }
 
-    private Object setCustomValue(InstructionHandle ih, KeyManager.CustomKey key, Object value, Object ihKey) {
-        @SuppressWarnings({"unchecked"})
-        Map<KeyManager.CustomKey,Object> map = (Map<KeyManager.CustomKey, Object>) ih.getAttribute(ihKey);
-        if (map == null) {
-            map = new HashMap<KeyManager.CustomKey, Object>(1);
-            ih.addAttribute(ihKey, map);
-        }
-        return map.put(key, value);
-    }
-
-    private Object getCustomValue(InstructionHandle ih, KeyManager.CustomKey key, Object ihKey) {
-        @SuppressWarnings({"unchecked"})
-        Map<KeyManager.CustomKey,Object> map = (Map<KeyManager.CustomKey, Object>) ih.getAttribute(ihKey);
-        if (map == null) {
-            return null;
-        }
-        return map.get(key);
-    }
-
-    private Object setCustomValue(InstructionHandle ih, KeyManager.CustomKey key, CallString context, Object value, Object ihKey) {
-        // TODO implement
-        throw new AppInfoError("Not yet implemented.");
-    }
-
-    private Object getCustomValue(InstructionHandle ih, KeyManager.CustomKey key, CallString context, boolean checkSuffixes, Object ihKey) {
-        // TODO implement
-        throw new AppInfoError("Not yet implemented.");
-    }
-
-    private Object clearCustomKey(InstructionHandle ih, KeyManager.CustomKey key, Object ihKey) {
-        @SuppressWarnings({"unchecked"})
-        Map<KeyManager.CustomKey,Object> map = (Map<KeyManager.CustomKey, Object>) ih.getAttribute(ihKey);
-        if (map == null) {
-            return null;
-        }
-        Object value = map.remove(key);
-        if (map.size() == 0) {
-            ih.removeAttribute(ihKey);
-        }
-        return value;
-    }
-
-    private void copyCustomKey(InstructionHandle from, InstructionHandle to, Object ihKey) {
-        @SuppressWarnings({"unchecked"})
-        Map<KeyManager.CustomKey,Object> map = (Map<KeyManager.CustomKey, Object>) from.getAttribute(ihKey);
-        if (map == null) {
-            to.removeAttribute(ihKey);
-            return;
-        }
-        Map<KeyManager.CustomKey,Object> newMap = new HashMap<KeyManager.CustomKey, Object>(map);
-        to.addAttribute(ihKey, newMap);
-    }
 }

@@ -191,8 +191,8 @@ public class ObjectRefAnalysis {
 			this.scope = scope;
 		}
 		public boolean query(InstructionHandle a) {
-			CFGNode n = BasicBlock.getHandleNode(a);
-			if(n == null) {				
+			CFGNode n = ControlFlowGraph.getHandleNode(a);
+			if(n == null) {
 				Logger.getLogger("Object Cache Analysis").info("No node for instruction "+a);
 				return false;
 			} else {
@@ -391,7 +391,7 @@ public class ObjectRefAnalysis {
 		/* create an ILP graph for all reachable methods */
 		String key = "object_ref_analysis:"+scope.toString();
 		
-		IPETSolver ipet = GlobalAnalysis.buildIpetProblem(key, sg, new IPETConfig(project.getConfig()));
+		IPETSolver ipet = GlobalAnalysis.buildIpetProblem(project, key, sg, new IPETConfig(project.getConfig()));
 
 		throw new AssertionError("TODO");
 //		/* We have to add add split edges for each node, such that {@code e_miss + e_hit = sum e_incoming} */
