@@ -20,6 +20,8 @@
 
 package com.jopdesign.common.config;
 
+import com.jopdesign.common.config.Config.BadConfigurationException;
+
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -58,9 +60,13 @@ public class OptionGroup {
     private Map<String, Option<?>> optionSet;
 
     /**
-     * Map of commands and their OptionGroups.
+     * Map of subgroups and their OptionGroups.
      */
-    private Map<String, OptionGroup> cmds;
+    private Map<String, OptionGroup> subGroups;
+    /**
+     * Set of all subgroup names which are handled as commands
+     */
+    private Set<String> commands;
 
     public OptionGroup(Config config) {
         this(config, null);
@@ -71,7 +77,8 @@ public class OptionGroup {
         this.prefix = prefix;
         optionList = new LinkedList<Option<?>>();
         optionSet = new HashMap<String, Option<?>>();
-        cmds = new HashMap<String, OptionGroup>();
+        subGroups = new HashMap<String, OptionGroup>(1);
+        commands = new HashSet<String>(0);
     }
 
     public Config getConfig() {
@@ -86,23 +93,27 @@ public class OptionGroup {
         this.checker = checker;
     }
 
-
     public String getPrefix() {
         return prefix;
     }
 
-    public Set<String> availableCommands() {
-        return cmds.keySet();
+    public Set<String> availableSubgroups() {
+        return subGroups.keySet();
     }
 
-    public OptionGroup addCommand(String cmd) {
-        OptionGroup grp = new OptionGroup(config, cmd);
-        cmds.put(cmd, grp);
+    public boolean hasCommands() {
+        return commands.size() > 0;
+    }
+
+    public OptionGroup addGroup(String prefix, boolean isCommand) {
+        OptionGroup grp = new OptionGroup(config, prefix);
+        subGroups.put(prefix, grp);
+        if (isCommand) commands.add(prefix);
         return grp;
     }
 
-    public OptionGroup getCommandOptions(String cmd) {
-        return cmds.get(cmd);
+    public OptionGroup getGroup(String group) {
+        return subGroups.get(group);
     }
 
     public String selectedCommand() {
@@ -342,10 +353,9 @@ public class OptionGroup {
 
         while (i < args.length) {
 
-            if (cmds.containsKey(args[i])) {
+            if (commands.contains(args[i])) {
                 config.setProperty(getConfigKey(CMD_KEY), args[i]);
-                OptionGroup cmdGroup = cmds.get(args[i]);
-
+                OptionGroup cmdGroup = subGroups.get(args[i]);
                 return cmdGroup.consumeOptions(Arrays.copyOfRange(args, i + 1, args.length));
             }
 
@@ -387,40 +397,56 @@ public class OptionGroup {
                 }
             }
 
-            Option spec = getOptionSpec(key);
-
-            if (spec != null) {
-                String val = null;
-                if (i + 1 < args.length) {
-                    if (spec.isValue(args[i + 1])) {
-                        val = args[i + 1];
-                    }
-                }
-                if (spec instanceof BooleanOption && val == null) {
-                    val = "true";
-                } else if (val == null) {
-                    throw new Config.BadConfigurationException("Missing argument for option: " + spec);
-                } else {
-                    i++;
-                }
-                config.setProperty(getConfigKey(spec), val);
-
-            } else if (spec == null) {
-
-                // maybe a boolean option, check for --no-<key>
-                if (key.startsWith("no-")) {
-                    spec = getOptionSpec(key.substring(3));
-                    if (spec != null && spec instanceof BooleanOption) {
-                        config.setProperty(getConfigKey(spec), "false");
-                    }
-                }
-            }
-            if (spec == null) {
-                throw new Config.BadConfigurationException("Unknown option: " + key);
-            }
+            i = parseOption(args, key, i);
             i++;
         }
         return Arrays.copyOfRange(args, i, args.length);
+    }
+
+    protected int parseOption(String[] args, String key, int pos) throws BadConfigurationException {
+
+        Option spec = getOptionSpec(key);
+
+        if (spec != null) {
+            String val = null;
+            if (pos + 1 < args.length) {
+                if (spec.isValue(args[pos + 1])) {
+                    val = args[pos + 1];
+                }
+            }
+            int i = pos;
+            if (spec instanceof BooleanOption && val == null) {
+                val = "true";
+            } else if (val == null) {
+                throw new Config.BadConfigurationException("Missing argument for option: " + spec);
+            } else {
+                i++;
+            }
+            config.setProperty(getConfigKey(spec), val);
+
+            return i;
+        }
+
+        // maybe a boolean option, check for --no-<key>
+        if (key.startsWith("no-")) {
+            spec = getOptionSpec(key.substring(3));
+            if (spec != null && spec instanceof BooleanOption) {
+                config.setProperty(getConfigKey(spec), "false");
+            }
+        } else {
+            // or maybe a sub-option
+            int j = key.indexOf('.');
+            OptionGroup group = subGroups.get(key.substring(0,j));
+            if (group != null) {
+                return group.parseOption(args, key.substring(j+1), pos);
+            }
+        }
+
+        if (spec == null) {
+            throw new Config.BadConfigurationException("Unknown option: " + key);
+        }
+
+        return pos;
     }
 
     public void checkOptions() throws Config.BadConfigurationException {
@@ -472,6 +498,10 @@ public class OptionGroup {
             Object val = tryGetOption(o);
             keys.add(key);
             Config.printOption(p, indent, key, val);
+        }
+
+        for (OptionGroup group : subGroups.values()) {
+            keys.addAll(group.printOptions(p, indent));
         }
 
         return keys;

@@ -81,7 +81,9 @@ public class ClassWriter {
             }
 
             BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file));
-            jc.dump(new DataOutputStream(out));
+            DataOutputStream stream = new DataOutputStream(out);
+            jc.dump(stream);
+            stream.close();
         }
 
         if (logger.isInfoEnabled()) {

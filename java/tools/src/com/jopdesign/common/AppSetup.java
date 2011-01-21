@@ -25,6 +25,7 @@ import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationError;
 import com.jopdesign.common.config.Option;
+import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.ClassInfoNotFoundException;
 import com.jopdesign.common.processormodel.AllocationModel;
@@ -267,10 +268,9 @@ public class AppSetup {
             config.addOption(Config.CLASSPATH);
             config.addOption(Config.ROOTS);
             config.addOption(Config.CALLSTRING_LENGTH);
-            config.addOption(Config.PROCESSOR_MODEL);
             config.addOption(Config.MAIN_METHOD_NAME);
 
-            config.addOptions(JOPConfig.jopOptions);
+            addProcessorModelOptions();
         }
 
         if (setupReports) {
@@ -278,6 +278,14 @@ public class AppSetup {
             config.addOption(Config.ERROR_LOG_FILE);
             config.addOption(Config.INFO_LOG_FILE);
         }
+    }
+
+    private void addProcessorModelOptions() {
+        config.addOption(Config.PROCESSOR_MODEL);
+
+        // TODO add JOPConfig options into own OptionGroup, show OptionGroups as separate blocks with --help
+        OptionGroup jopGroup = config.getOptions().addGroup("jop", false);
+        jopGroup.addOptions(JOPConfig.jopOptions);
     }
 
     /**
@@ -454,7 +462,9 @@ public class AppSetup {
         appInfo.setClassPath(new ClassPath(config.getOption(Config.CLASSPATH)));
         appInfo.setExitOnMissingClass(!config.getOption(Config.VERBOSE));
 
-        initProcessorModel(config.getOption(Config.PROCESSOR_MODEL));
+        if ( config.hasOption(Config.PROCESSOR_MODEL) ) {
+            initProcessorModel(config.getOption(Config.PROCESSOR_MODEL));
+        }
 
         // handle class loading options if set
         if ( config.hasOption(Config.LIBRARY_CLASSES) ) {
@@ -585,11 +595,13 @@ public class AppSetup {
 
     public void printUsage() {
         String optionDesc;
+        OptionGroup options = config.getOptions();
+
         if ( optionSyntax != null ) {
             optionDesc = " " + optionSyntax;
         } else {
             optionDesc = " [@<propertyfile>] <options>";
-            if ( config.getOptions().availableCommands().size() > 0 ) {
+            if ( options.hasCommands() ) {
                 optionDesc += " <cmd> <cmd-options>";
             }
             if ( handleAppInfoInit ) {
@@ -606,11 +618,21 @@ public class AppSetup {
         }
 
         System.out.println("Available options:");
-        for (Option<?> option : config.getOptions().availableOptions() ) {
-            System.out.println(option.toString(config.getDefaultIndent(), config.getOptions()));
+        for (Option<?> option : options.availableOptions() ) {
+            System.out.println(option.toString(config.getDefaultIndent(), options));
         }
 
         System.out.println();
+
+        for (String name : options.availableSubgroups()) {
+            System.out.println("Options in group " + name + ":");
+            OptionGroup group = options.getGroup(name);
+
+            for (Option<?> option : group.availableOptions()) {
+                System.out.println(option.toString(config.getDefaultIndent(), group));
+            }
+            System.out.println();
+        }
 
         if ( loadSystemProps && configFilename != null ) {
             System.out.println("Config values can be set in the JVM system properties and in '" + configFilename + "'");

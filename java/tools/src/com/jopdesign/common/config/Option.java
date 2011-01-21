@@ -186,7 +186,7 @@ public abstract class Option<T> {
         } else {
             s.append("   --");
         }
-        s.append(key);
+        s.append(options.getConfigKey(this));
 
         for (int i = key.length(); i < lAdjust; i++) {
             s.append(' ');
