@@ -121,13 +121,13 @@ public class ProjectConfig {
     }
 
     public String getTargetClass() {
-        String measureClass = splitFQMethod(getTargetMethodName(),true);
+        String measureClass = MethodInfo.splitMethodName(getTargetMethodName())[0];
         if(measureClass == null) return getAppClassName();
         else return measureClass;
     }
 
     public String getTargetMethod() {
-        return splitFQMethod(getTargetMethodName(),false);
+        return MethodInfo.splitMethodName(getTargetMethodName())[1];
     }
 
     public MethodInfo getTargetMethodInfo() {
@@ -219,32 +219,6 @@ public class ProjectConfig {
 
     public boolean doPreprocess() {
         return config.getOption(WCET_PREPROCESS);
-    }
-
-    /* Helpers */
-
-    public static String splitFQMethod(String s, boolean getClass) {
-        return splitClassName(s)[getClass ? 0 : 1];
-    }
-
-    public static String[] splitClassName(String s) {
-        int sigIx = s.indexOf('(');
-        String sWithoutSig;
-        if(sigIx > 0) {
-            sWithoutSig = s.substring(0,sigIx);
-        } else {
-            sWithoutSig = s;
-        }
-        int nameIx = sWithoutSig.lastIndexOf('.');
-        String[] splittedName = new String[2];
-        if(nameIx > 0) {
-            splittedName[0] = s.substring(0,nameIx);
-            splittedName[1] = s.substring(nameIx + 1);
-        } else {
-            splittedName[0] = null;
-            splittedName[1] = s;
-        }
-        return splittedName;
     }
 
 }

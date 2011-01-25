@@ -20,7 +20,7 @@
 package com.jopdesign.wcet.jop;
 
 import com.jopdesign.common.ClassInfo;
-import com.jopdesign.wcet.ProjectConfig;
+import com.jopdesign.common.MethodInfo;
 import com.jopdesign.wcet.WCETTool;
 import org.apache.log4j.Logger;
 
@@ -197,7 +197,7 @@ public class LinkerInfo {
 			} else if(key.equals("-field")) {
 				addAddress("FieldOffsets", fieldOffsets, tks[1], Integer.parseInt(tks[2]));
 			} else if (key.equals("-mtab")) {
-				String nameParts[] = ProjectConfig.splitClassName(tks[1]);
+				String nameParts[] = MethodInfo.splitMethodName(tks[1]);
 				int valIx = Integer.parseInt(tks[2]);
 				addAddress("MTabAddresses",mtabAddresses,nameParts[1], valIx);
 			} else {
@@ -247,7 +247,7 @@ public class LinkerInfo {
 				LinkInfo linkInfo;
 				String[] tks = l.split("\\s+");
 				if(tks[0].equals("static") || tks[0].equals("bytecode")) {
-					String[] nameParts = ProjectConfig.splitClassName(tks[1]);
+					String[] nameParts = MethodInfo.splitMethodName(tks[1]);
 					linkInfo = getOrCreateLinkInfo(nameParts[0]);
 					String objectName = nameParts[1];
 					int address = Integer.parseInt(tks[2]);

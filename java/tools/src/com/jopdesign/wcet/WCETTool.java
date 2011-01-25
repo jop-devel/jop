@@ -476,11 +476,13 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     }
 
     private List<File> getSearchDirs(ClassInfo ci, String path) {
-        List<File> dirs = new ArrayList<File>();
+
+    	List<File> dirs = new ArrayList<File>();
+        String pkgPath = ci.getPackageName().replace('.', File.separatorChar);
+        
         StringTokenizer st = new StringTokenizer(path, File.pathSeparator);
         while (st.hasMoreTokens()) {
             String sourcePath = st.nextToken();
-            String pkgPath = ci.getPackageName().replace('.', File.separatorChar);
             sourcePath += File.separator + pkgPath;
             dirs.add(new File(sourcePath));
         }

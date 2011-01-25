@@ -448,15 +448,6 @@ public class AppSetup {
      */
     public void setupAppInfo(String[] args, boolean loadTransitiveHull) {
 
-        // check arguments
-        if (args.length == 0 || "".equals(args[0])) {
-            System.err.println("You need to specify a main class or entry method.");
-            if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
-                System.err.println("Use '--help' to show a usage message.");
-            }
-            System.exit(2);
-        }
-
         CustomAttribute.registerDefaultReader();
 
         appInfo.setClassPath(new ClassPath(config.getOption(Config.CLASSPATH)));
@@ -507,10 +498,23 @@ public class AppSetup {
             }
             appInfo.addRoot(rootInfo);
         }
+        // check arguments
+        String mainClassName = null;        
+        if (args.length > 0 && ! "".equals(args[0])) {
+        	mainClassName = args[0];
+        } else if(config.hasOption(Config.MAIN_METHOD_NAME)){
+        	mainClassName = MethodInfo.splitMethodName(config.getOption(Config.MAIN_METHOD_NAME))[0];
+        } else {
+            System.err.println("You need to specify a main class or entry method.");
+            if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
+                System.err.println("Use '--help' to show a usage message.");
+            }
+            System.exit(2);
+        }
 
         // try to find main entry method
         try {
-            MethodInfo main = getMainMethod(args[0].replaceAll("/","."));
+            MethodInfo main = getMainMethod(mainClassName.replaceAll("/","."));
 
             appInfo.setMainMethod(main);
 
@@ -730,6 +734,9 @@ public class AppSetup {
         String mainName = sMain.getMemberName();
         if ( mainName == null ) {
             mainName = config.getOption(Config.MAIN_METHOD_NAME);
+            if(mainName != null) {
+            	mainName = MethodInfo.splitMethodName(mainName)[1];
+            }
         }
         Collection<MethodInfo> methods = clsInfo.getMethodByName(mainName);
 

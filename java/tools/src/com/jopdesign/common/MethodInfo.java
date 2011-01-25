@@ -27,6 +27,7 @@ import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
+
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.MethodGen;
@@ -405,5 +406,30 @@ public final class MethodInfo extends ClassMemberInfo {
     protected MethodGen getInternalMethodGen() {
         return methodGen;
     }
+
+    
+    //////////////////////////////////////////////////////////////////////////////
+    // Utilities
+    //////////////////////////////////////////////////////////////////////////////
+    /** Split (qualified) method name into class name part and method name + optional signature */
+    public static String[] splitMethodName(String s) {
+	    int sigIx = s.indexOf('(');
+	    String sWithoutSig;
+	    if(sigIx > 0) {
+	        sWithoutSig = s.substring(0,sigIx);
+	    } else {
+	        sWithoutSig = s;
+	    }
+	    int nameIx = sWithoutSig.lastIndexOf('.');
+	    String[] splittedName = new String[2];
+	    if(nameIx > 0) {
+	        splittedName[0] = s.substring(0,nameIx);
+	        splittedName[1] = s.substring(nameIx + 1);
+	    } else {
+	        splittedName[0] = null;
+	        splittedName[1] = s;
+	    }
+	    return splittedName;
+	}
 
 }
