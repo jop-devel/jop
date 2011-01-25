@@ -24,6 +24,7 @@ import com.jopdesign.common.bcel.CustomAttribute;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationError;
+import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.logger.LogConfig;
@@ -448,15 +449,6 @@ public class AppSetup {
      */
     public void setupAppInfo(String[] args, boolean loadTransitiveHull) {
 
-        // check arguments
-        if (args.length == 0 || "".equals(args[0])) {
-            System.err.println("You need to specify a main class or entry method.");
-            if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
-                System.err.println("Use '--help' to show a usage message.");
-            }
-            System.exit(2);
-        }
-
         CustomAttribute.registerDefaultReader();
 
         appInfo.setClassPath(new ClassPath(config.getOption(Config.CLASSPATH)));
@@ -510,7 +502,7 @@ public class AppSetup {
 
         // try to find main entry method
         try {
-            MethodInfo main = getMainMethod(args[0].replaceAll("/","."));
+            MethodInfo main = getMainMethod(args.length > 0 ? args[0].replace('/','.') : null);
 
             appInfo.setMainMethod(main);
 
@@ -605,7 +597,7 @@ public class AppSetup {
                 optionDesc += " <cmd> <cmd-options>";
             }
             if ( handleAppInfoInit ) {
-                optionDesc += " [--] <main-method> [<additional-roots>]";
+                optionDesc += " [--] [<main-method> [<additional-roots>]]";
             }
         }
 
@@ -634,6 +626,12 @@ public class AppSetup {
             System.out.println();
         }
 
+        System.out.println("The @<filename> syntax can be used multiple times. Entries in the properties-file");
+        System.out.println("overwrite previous options and can be overwritten by successive options.");
+        if (config.hasOption(Config.MAIN_METHOD_NAME)) {
+            System.out.println("If '--"+Config.MAIN_METHOD_NAME.getKey()+
+                    "' specifies a fully-qualified method name, <main-method> is optional.");
+        }
         if ( loadSystemProps && configFilename != null ) {
             System.out.println("Config values can be set in the JVM system properties and in '" + configFilename + "'");
             System.out.println("in the working directory.");
@@ -691,36 +689,41 @@ public class AppSetup {
         Signature sMain;
         String clsName;
 
-        try {
-            // try if the signature is a classname
-            clsInfo = appInfo.loadClass(signature, true, false);
-            sMain = new Signature(signature);
-            clsName = signature;
-        } catch (ClassInfoNotFoundException e1) {
+        Signature sMainMethod = Signature.parse(config.getOption(Config.MAIN_METHOD_NAME), true);
 
-            // else try to parse as full signature
-            sMain = Signature.parse(signature, true);
-            clsName = sMain.getClassName();
-
-            if ( clsName == null ) {
-                //noinspection ThrowInsideCatchBlockWhichIgnoresCaughtException
-                throw new Config.BadConfigurationException("You need to specify a classname for the main method.");
-            }
-
-            try {
-                clsInfo = appInfo.loadClass(clsName, true, false);
-            } catch (ClassInfoNotFoundException e) {
-                throw new Config.BadConfigurationException("Class for '"+signature+"' could not be loaded: "
-                        + e1.getMessage() + "; " + e.getMessage(), e);
-            }
+        if (signature == null || "".equals(signature)) {
+            sMain = sMainMethod;
+        } else {
+            // try to parse the signature
+            sMain = Signature.parse(signature);
         }
 
+        clsName = sMain.getClassName();
+        if ( clsName == null ) {
+            throw new BadConfigurationException("You need to specify a classname for the main method.");
+        }
+
+        try {
+            clsInfo = appInfo.loadClass(clsName, true, false);
+        } catch (ClassInfoNotFoundException e) {
+            throw new BadConfigurationException("Class for '"+signature+"' could not be loaded: "
+                    + e.getMessage(), e);
+        }
+
+        // use --mm if only main class has been given
+        if (sMain.getMemberName() == null) {
+            if (!sMainMethod.hasMemberSignature()) {
+                throw new BadConfigurationException("Option '"+Config.MAIN_METHOD_NAME.getKey()
+                        +"' needs to specify a method name.");
+            }
+            sMain = sMainMethod;
+        }
 
         // check if we have a full signature
-        if ( sMain.isMethodSignature() ) {
+        if (sMain.hasMemberSignature()) {
             MethodInfo method = clsInfo.getMethodInfo(sMain.getMemberSignature());
-            if ( method == null ) {
-                throw new Config.BadConfigurationException("Method '"+sMain.getMemberSignature()+"' not found in '"
+            if (method == null) {
+                throw new BadConfigurationException("Method '"+sMain.getMemberSignature()+"' not found in '"
                             +clsName+"'.");
             }
             return method;
@@ -728,13 +731,10 @@ public class AppSetup {
 
         // try to find main method
         String mainName = sMain.getMemberName();
-        if ( mainName == null ) {
-            mainName = config.getOption(Config.MAIN_METHOD_NAME);
-        }
         Collection<MethodInfo> methods = clsInfo.getMethodByName(mainName);
 
         if ( methods.isEmpty() ) {
-            throw new Config.BadConfigurationException("'No method '"+mainName+"' found in '"+clsName+"'.");
+            throw new BadConfigurationException("'No method '"+mainName+"' found in '"+clsName+"'.");
         }
         if ( methods.size() > 1 ) {
             StringBuffer s = new StringBuffer(String.format(
@@ -743,7 +743,7 @@ public class AppSetup {
                 s.append("\n");
                 s.append(m.getSignature());
             }
-            throw new Config.BadConfigurationException(s.toString());
+            throw new BadConfigurationException(s.toString());
         }
 
         return methods.iterator().next();

@@ -84,7 +84,7 @@ public class Config {
             new StringOption("classpath", "classpath of the classes to load", 'c', "java/target/dist/classes");
 
     public static final StringOption MAIN_METHOD_NAME =
-            new StringOption("mm", "method name of the entry method", "main");
+            new StringOption("mm", "method name of the entry method (short name or FQN)", "main");
 
     public static final EnumOption<Model> PROCESSOR_MODEL =
             new EnumOption<Model>("arch", "The processor model to use", Model.JOP);

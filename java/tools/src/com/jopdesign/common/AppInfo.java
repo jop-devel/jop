@@ -292,6 +292,20 @@ public final class AppInfo {
     }
 
     /**
+     * Check if a class exists. Returns true even if it is not loaded or if the class is excluded.
+     *
+     * @param className the FQ classname with '.' separators
+     * @return true if the class can be found in the classpath or has been created (even if it is excluded).
+     */
+    public boolean classExists(String className) {
+        if (classes.containsKey(className)) {
+            return true;
+        }
+
+        return checkClassExists(className);
+    }
+
+    /**
      * Remove a single class and all its nested classes from AppInfo, and update the class hierarchy.
      * <p>
      * To remove several classes or all subclasses of a class, use {@link #removeClasses(Collection)} to
@@ -963,6 +977,14 @@ public final class AppInfo {
         is.close();
 
         return new ClassInfo(new ClassGen(javaClass));
+    }
+
+    private boolean checkClassExists(String className) {
+        try {
+            return classPath.getClassFile(className) != null;
+        } catch (IOException ignored) {
+            return false;
+        }
     }
 
     private ClassInfo createClassInfo(String className, String superClassName, boolean isInterface) {

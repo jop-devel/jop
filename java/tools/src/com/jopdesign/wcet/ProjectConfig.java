@@ -28,6 +28,7 @@ import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.StringOption;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.common.type.Signature;
 
 import java.io.File;
 
@@ -101,8 +102,8 @@ public class ProjectConfig {
     }
 
     /**
-     * Get the name of the application class, unqualified
      * @see #getAppClassName
+     * @return the name of the application class, unqualified
      */
     public String getUnqualifiedAppClassName() {
         String appClassName = getAppClassName();
@@ -113,21 +114,22 @@ public class ProjectConfig {
     }
 
     /**
-     * get the name of the method to be analyzed
-     * @return
+     * @return the name of the method to be analyzed
      */
     public String getTargetMethodName() {
         return config.getOption(ProjectConfig.TARGET_METHOD);
     }
 
     public String getTargetClass() {
-        String measureClass = splitFQMethod(getTargetMethodName(),true);
+        Signature sig = Signature.parse(getTargetMethodName(),true);
+        String measureClass = sig.getClassName();
         if(measureClass == null) return getAppClassName();
         else return measureClass;
     }
 
     public String getTargetMethod() {
-        return splitFQMethod(getTargetMethodName(),false);
+        Signature sig = Signature.parse(getTargetMethodName(),true);
+        return sig.getMemberSignature();
     }
 
     public MethodInfo getTargetMethodInfo() {
@@ -219,32 +221,6 @@ public class ProjectConfig {
 
     public boolean doPreprocess() {
         return config.getOption(WCET_PREPROCESS);
-    }
-
-    /* Helpers */
-
-    public static String splitFQMethod(String s, boolean getClass) {
-        return splitClassName(s)[getClass ? 0 : 1];
-    }
-
-    public static String[] splitClassName(String s) {
-        int sigIx = s.indexOf('(');
-        String sWithoutSig;
-        if(sigIx > 0) {
-            sWithoutSig = s.substring(0,sigIx);
-        } else {
-            sWithoutSig = s;
-        }
-        int nameIx = sWithoutSig.lastIndexOf('.');
-        String[] splittedName = new String[2];
-        if(nameIx > 0) {
-            splittedName[0] = s.substring(0,nameIx);
-            splittedName[1] = s.substring(nameIx + 1);
-        } else {
-            splittedName[0] = null;
-            splittedName[1] = s;
-        }
-        return splittedName;
     }
 
 }
