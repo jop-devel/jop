@@ -405,7 +405,7 @@ public class OptionGroup {
 
     protected int parseOption(String[] args, String key, int pos) throws BadConfigurationException {
 
-        Option spec = getOptionSpec(key);
+        Option<?> spec = getOptionSpec(key);
 
         if (spec != null) {
             String val = null;
@@ -433,7 +433,7 @@ public class OptionGroup {
             if (spec != null && spec instanceof BooleanOption) {
                 config.setProperty(getConfigKey(spec), "false");
             }
-        } else {
+        } else if(key.contains(".")) {
             // or maybe a sub-option
             int j = key.indexOf('.');
             OptionGroup group = subGroups.get(key.substring(0,j));
