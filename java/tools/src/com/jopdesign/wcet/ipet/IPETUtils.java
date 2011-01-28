@@ -23,6 +23,7 @@ package com.jopdesign.wcet.ipet;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.CallStringProvider;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.code.SuperGraph;
@@ -224,14 +225,14 @@ public class IPETUtils {
      * @return A list of flow constraints
      */
     public static <C extends CallStringProvider>
-    List<LinearConstraint<IPETBuilder.ExecutionEdge>>
+    List<LinearConstraint<ExecutionEdge>>
     infeasibleEdgeConstraints(ControlFlowGraph g, IPETBuilder<C> ctx) {
 
-        List<LinearConstraint<IPETBuilder.ExecutionEdge>> constraints = new ArrayList<LinearConstraint<IPETBuilder.ExecutionEdge>>();
+        List<LinearConstraint<ExecutionEdge>> constraints = new ArrayList<LinearConstraint<ExecutionEdge>>();
         // - for each infeasible edge
         // -- edge = 0
-        for (ControlFlowGraph.CFGEdge edge : g.getInfeasibleEdges(ctx.getCallString())) {
-            LinearConstraint<IPETBuilder.ExecutionEdge> infeasibleConstraint = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
+        for (CFGEdge edge : ctx.getWCETTool().getInfeasibleEdges(g, ctx.getCallString())) {
+            LinearConstraint<ExecutionEdge> infeasibleConstraint = new LinearConstraint<ExecutionEdge>(ConstraintType.Equal);
             infeasibleConstraint.addLHS(ctx.newEdge(edge));
             infeasibleConstraint.addRHS(0);
             constraints.add(infeasibleConstraint);

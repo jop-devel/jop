@@ -122,7 +122,7 @@ public class WCETEventHandler extends EmptyAppEventHandler {
             int sourceRangeStop = code.getLineNumber(block.getLastInstruction());
             Collection<LoopBound> annots = wcaMap.annotationsForLineRange(sourceRangeStart, sourceRangeStop + 1);
             if (annots.size() > 1) {
-                String reason = "Ambigous Annotation [" + annots + "]";
+                String reason = "Ambiguous Annotation [" + annots + "]";
                 throw new BadAnnotationException(reason, block, sourceRangeStart, sourceRangeStop);
             }
             LoopBound loopAnnot = null;

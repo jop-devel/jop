@@ -276,17 +276,13 @@ public class ControlFlowGraph {
         public InvokeNode(BasicBlock block, InvokeInstruction instr) {
             super(block);
             this.instr = instr;
-            /* -- TODO comment for commit!
-           this.referenced = appInfo.getReferenced(methodInfo, instr);
-           -- */
+            this.referenced = methodInfo.getReferencedMethod(instr);
             this.name = "invoke(" + this.referenced + ")";
             /* if virtual / interface, this method has to be resolved first */
             if ((instr instanceof INVOKEINTERFACE) || (instr instanceof INVOKEVIRTUAL)) {
                 receiverImpl = null;
             } else {
-                /* -- TODO comment for commit!
-                receiverImpl = appInfo.findStaticImplementation(referenced);
-                -- */
+                receiverImpl = referenced.getMethodInfo();
             }
 
         }
@@ -301,21 +297,22 @@ public class ControlFlowGraph {
         }
 
         /**
-         * For non-virtual methods, get the implementation of the method
+         * @return For non-virtual methods, get the implementation of the method
          */
         public MethodInfo getImplementedMethod() {
             return this.receiverImpl;
         }
 
         /**
-         * Get all possible implementations of the invoked method
+         * @return all possible implementations of the invoked method
          */
         public List<MethodInfo> getImplementedMethods() {
             return getImplementedMethods(CallString.EMPTY);
         }
 
         /**
-         * Get all possible implementations of the invoked method in
+         * @param ctx the callstring of the invocation
+         * @return all possible implementations of the invoked method in
          * the given context
          */
         public List<MethodInfo> getImplementedMethods(CallString ctx) {
@@ -324,12 +321,8 @@ public class ControlFlowGraph {
                 impls.add(getImplementedMethod());
                 return impls;
             } else {
-                /* -- TODO comment for commit!
-                return appInfo.findImplementations(this.invokerFlowGraph().getMethodInfo(),
-                                                   getInstructionHandle(),
-                                                   ctx);
-                -- */
-                return null;
+                InvokeSite invokeSite = getMethodInfo().getCode().getInvokeSite(getInstructionHandle());
+                return appInfo.findImplementations(invokeSite, ctx);
             }
         }
 
@@ -584,10 +577,8 @@ public class ControlFlowGraph {
             if (theInvoke != null) {
                 n = new InvokeNode(bb, theInvoke);
             } else if (appInfo.getProcessorModel().isImplementedInJava(lastInstr)) {
-                /* -- TODO comment for commit!
-				MethodInfo javaImpl = appInfo.getJavaImplementation(bb.getMethodInfo(),lastInstr);
-				-- */
-                MethodInfo javaImpl = null;
+                MethodInfo javaImpl = appInfo.getProcessorModel().getJavaImplementation(appInfo,
+                                            bb.getMethodInfo(),lastInstr);
                 n = new SpecialInvokeNode(bb, javaImpl);
             } else {
                 n = new BasicBlockNode(bb);
@@ -671,6 +662,10 @@ public class ControlFlowGraph {
         }
     }
 
+    public List<BasicBlock> getBlocks() {
+        return blocks;
+    }
+
     /**
      * Create a new map of loopbounds for CFG nodes. The map is not cached, try to use 
      * {@link BasicBlock#getLoopBound()} or {@link CFGNode#getLoopBound()} instead.
@@ -692,46 +687,6 @@ public class ControlFlowGraph {
     }
 
     /**
-     * Get infeasible edges for certain call string
-     *
-     * @return The infeasible edges
-     */
-    public List<CFGEdge> getInfeasibleEdges(CallString cs) {
-        List<CFGEdge> edges = new ArrayList<CFGEdge>();
-        /* --- TODO comment for commit
-		for (BasicBlock b : blocks) {
-			List<CFGEdge> edge = dfaInfeasibleEdge(b, cs);
-			edges.addAll(edge);
-		}
-		*/
-        return edges;
-    }
-
-    /**
-     * Get infeasible edges for certain basic block call string
-     * @return The infeasible edges for this basic block
-     */
-    /* -- TODO comment for commit
-	private List<CFGEdge> dfaInfeasibleEdge(BasicBlock block, CallString cs) {
-		Project p = this.project;
-		List<CFGEdge> retval = new Vector<CFGEdge>();
-		if (p.getDfaLoopBounds() != null) {
-			LoopBounds lbs = p.getDfaLoopBounds();
-			Set<FlowEdge> edges = lbs.getInfeasibleEdges(block.getLastInstruction(), cs);
-			for (FlowEdge e : edges) {
-				BasicBlockNode head = BasicBlock.getHandleNode(e.getHead());
-				BasicBlockNode tail = BasicBlock.getHandleNode(e.getTail());
-				CFGEdge edge = this.graph.getEdge(tail, head);
-				if (edge != null) { // edge does not seem to exist any longer
-					retval.add(edge);
-				}
-			}
-		}
-		return retval;
-	}
-	-- */
-
-    /**
      * resolve all virtual invoke nodes, and replace them by actual implementations
      *
      * @throws BadGraphException If the flow graph analysis (post replacement) fails
@@ -749,11 +704,8 @@ public class ControlFlowGraph {
         }
         /* replace them */
         for (InvokeNode inv : virtualInvokes) {
-            /* -- TODO comment for commit
-			List<MethodInfo> impls =
-				appInfo.findImplementations(this.methodInfo,inv.getInstructionHandle());
-		    -- */
-            List<MethodInfo> impls = null;
+            // TODO resolve with callstring?
+            List<MethodInfo> impls = inv.getImplementedMethods();
             if (impls.size() == 0) internalError("No implementations for " + inv.referenced);
             if (impls.size() == 1) {
                 InvokeNode implNode = inv.createImplNode(impls.get(0), inv);

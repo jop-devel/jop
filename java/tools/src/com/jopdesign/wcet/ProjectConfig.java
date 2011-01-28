@@ -94,8 +94,7 @@ public class ProjectConfig {
     }
 
     /**
-     * Get the name of the application class defining the entry point main()
-     * @return
+     * @return the name of the application class defining the entry point main()
      */
     public String getAppClassName() {
         return appInfo.getMainMethod().getClassName();
@@ -184,8 +183,7 @@ public class ProjectConfig {
         return config.getOption(WCET_MODEL);
     }
     /**
-     * Whether reports should be generated
-     * @return
+     * @return Whether reports should be generated
      */
     public boolean doGenerateReport() {
         return config.getOption(DO_GENERATE_REPORTS);

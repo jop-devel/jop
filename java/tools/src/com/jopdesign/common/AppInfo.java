@@ -23,7 +23,9 @@ package com.jopdesign.common;
 import com.jopdesign.common.bcel.BcelRepositoryWrapper;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallGraph.CallgraphConfig;
+import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.DefaultCallgraphConfig;
+import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
 import com.jopdesign.common.graphutils.ClassVisitor;
@@ -797,6 +799,58 @@ public final class AppInfo {
      */
     public CallGraph getCallGraph() {
         return callGraph;
+    }
+
+    /**
+     * Find all methods which might get invoked for a given invokesite.
+     * This uses the callgraph returned by {@link #getCallGraph()} to lookup possible implementations.
+     * Use callgraph thinning to make the result of this method more precise.
+     * If the callgraph has not yet been built by {@link #buildCallGraph(boolean)}, this method will
+     * be similar to {@link #findImplementations(MethodRef)}.
+     *
+     * @see #findImplementations(InvokeSite, CallString)
+     * @param invokeSite the invokesite to look up
+     * @return a list of possible implementations for the invocation.
+     */
+    public List<MethodInfo> findImplementations(InvokeSite invokeSite) {
+        return findImplementations(invokeSite, CallString.EMPTY);
+    }
+
+    /**
+     * Find all methods which might get invoked for a given invokesite.
+     * This uses the callgraph returned by {@link #getCallGraph()} to lookup possible implementations.
+     * Use callgraph thinning to make the result of this method more precise.
+     * If the callgraph has not yet been built by {@link #buildCallGraph(boolean)}, this method will
+     * be similar to {@link #findImplementations(MethodRef)}.
+     *
+     * @param invokeSite the invokesite to look up
+     * @param cs the callstring up to the method containing the invocation
+     * @return a list of possible implementations for the invocation.
+     */
+    public List<MethodInfo> findImplementations(InvokeSite invokeSite, CallString cs) {
+        if (callGraph == null) {
+            // we do not have a callgraph, so just use typegraph info
+            return findImplementations(invokeSite.getInvokeeRef());
+        }
+
+        // TODO implement!!
+        return null;
+    }
+
+    /**
+     * Find all methods which might get invoked for a given methodRef.
+     * This does not use the callgraph to eliminate methods. If you want a more precise result,
+     * use {@link #findImplementations(InvokeSite, CallString)} and use callgraph thinning first.
+     *
+     * @param invokee the method to resolve.
+     * @return all possible implementations.
+     */
+    public List<MethodInfo> findImplementations(MethodRef invokee) {
+        MethodInfo method = invokee.getMethodInfo();
+
+        // TODO need to handle interface methodRefs! remove methods not under methodref class! 
+
+        return method.getImplementations(true);
     }
 
     //////////////////////////////////////////////////////////////////////////////

@@ -20,9 +20,14 @@
 
 package com.jopdesign.common.code;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.misc.JavaClassFormatError;
+import com.jopdesign.common.type.MethodRef;
+import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InvokeInstruction;
 
 /**
  * A class which represents an invocation.
@@ -58,6 +63,17 @@ public class InvokeSite {
 
     public MethodInfo getMethod() {
         return invoker;
+    }
+
+    /**
+     * @return a method reference to the invokee method.
+     */
+    public MethodRef getInvokeeRef() {
+        Instruction instr = instruction.getInstruction();
+        if (instr instanceof InvokeInstruction) {
+            return AppInfo.getSingleton().getReferencedMethod(invoker, (InvokeInstruction) instr);
+        }
+        throw new JavaClassFormatError("InvokeSite handle does not refer to an invoke instruction: "+toString());
     }
 
     /**

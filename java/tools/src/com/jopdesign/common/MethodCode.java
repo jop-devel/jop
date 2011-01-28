@@ -263,13 +263,12 @@ public class MethodCode {
      *
      * @see #getSourceFileName(InstructionHandle)
      * @param ih the instruction to check.
-     * @return the line number of the instruction, or 0 if unknown.
+     * @return the line number of the instruction, or -1 if unknown.
      */
     public int getLineNumber(InstructionHandle ih) {
         if (ilTablesLoaded) {
             Object attribute = ih.getAttribute(KEY_LINENUMBER);
-            // TODO return -1 if not set?
-            return attribute != null ? (Integer) attribute : 0;
+            return attribute != null ? (Integer) attribute : -1;
         } else {
             return getLineNumberTable().getSourceLine(ih.getPosition());
         }
@@ -518,7 +517,11 @@ public class MethodCode {
         // TODO handle missing linenumbertable, missing entries
         for (InstructionHandle ih : il.getInstructionHandles()) {
             int pos = lt.getSourceLine(ih.getPosition());
-            ih.addAttribute(KEY_SOURCEFILE, pos);
+            if (pos >= 0) {
+                ih.addAttribute(KEY_SOURCEFILE, pos);
+            } else {
+                ih.removeAttribute(KEY_SOURCEFILE);
+            }
         }
 
         // TODO load exception ranges
@@ -526,8 +529,25 @@ public class MethodCode {
     }
 
     private void rebuildTables(InstructionList il) {
-        // TODO rebuild Linenumber- and exception table
-        
+
+        methodGen.removeLineNumbers();
+        int line = -1;
+        for (InstructionHandle ih : il.getInstructionHandles()) {
+            // code is from different sourcefile, do not generate entry
+            if (ih.getAttribute(KEY_SOURCEFILE) != null) continue;
+
+            Object lineNr = ih.getAttribute(KEY_LINENUMBER);
+            if (lineNr == null) continue;
+
+            int l = (Integer)lineNr;
+            if (l == line) continue;
+
+            line = l;
+            methodGen.addLineNumber(ih, line);
+        }
+
+        // TODO rebuild exception table
+
     }
 
 }

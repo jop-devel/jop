@@ -26,9 +26,12 @@ import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.EmptyTool;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
+import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.DefaultCallgraphConfig;
 import com.jopdesign.common.code.ExecutionContext;
@@ -48,6 +51,7 @@ import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.analyses.CallStringReceiverTypes;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.framework.ContextMap;
+import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.wcet.allocation.BlockAllocationModel;
 import com.jopdesign.wcet.allocation.HandleAllocationModel;
 import com.jopdesign.wcet.allocation.HeaderAllocationModel;
@@ -74,6 +78,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -586,6 +591,41 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         Collection<MethodInfo> staticImpls = findImplementations(ref);
         staticImpls = dfaReceivers(ih, staticImpls, ctx);
         return staticImpls;
+    }
+
+    /**
+     * Get infeasible edges for certain call string
+     *
+     * @return The infeasible edges
+     */
+    public List<CFGEdge> getInfeasibleEdges(ControlFlowGraph cfg, CallString cs) {
+        List<CFGEdge> edges = new ArrayList<CFGEdge>();
+        for (BasicBlock b : cfg.getBlocks()) {
+            List<CFGEdge> edge = dfaInfeasibleEdge(cfg, b, cs);
+            edges.addAll(edge);
+        }
+        return edges;
+    }
+
+    /**
+     * Get infeasible edges for certain basic block call string
+     * @return The infeasible edges for this basic block
+     */
+    private List<CFGEdge> dfaInfeasibleEdge(ControlFlowGraph cfg, BasicBlock block, CallString cs) {
+        List<CFGEdge> retval = new LinkedList<CFGEdge>();
+        if (getDfaLoopBounds() != null) {
+            LoopBounds lbs = getDfaLoopBounds();
+            Set<FlowEdge> edges = lbs.getInfeasibleEdges(block.getLastInstruction(), cs);
+            for (FlowEdge e : edges) {
+                BasicBlockNode head = ControlFlowGraph.getHandleNode(e.getHead());
+                BasicBlockNode tail = ControlFlowGraph.getHandleNode(e.getTail());
+                CFGEdge edge = cfg.getGraph().getEdge(tail, head);
+                if (edge != null) { // edge does not seem to exist any longer
+                    retval.add(edge);
+                }
+            }
+        }
+        return retval;
     }
 
     // TODO: [wcet-app-info] dfaReceivers() is rather slow, for debugging purposes

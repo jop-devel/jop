@@ -29,6 +29,7 @@ import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Method;
+import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
@@ -337,7 +338,7 @@ public final class MethodInfo extends ClassMemberInfo {
      *        override this method.
      * @return a collection of all implementations of this method.
      */
-    public Collection<MethodInfo> getImplementations(final boolean checkAccess) {
+    public List<MethodInfo> getImplementations(final boolean checkAccess) {
         final List<MethodInfo> implementations = new LinkedList<MethodInfo>();
 
         if (!isAbstract()) {
@@ -391,6 +392,10 @@ public final class MethodInfo extends ClassMemberInfo {
         }
 
         return classes;
+    }
+
+    public MethodRef getReferencedMethod(InvokeInstruction instr) {
+        return getAppInfo().getReferencedMethod(this, instr);
     }
 
     //////////////////////////////////////////////////////////////////////////////
