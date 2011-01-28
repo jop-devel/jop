@@ -71,7 +71,7 @@ public class WcetAppInfoTest {
                 dotWriter.close();
                 InvokeDot.invokeDot(wcetTool, dotFile, pConfig.getOutFile("typegraph.png"));
             }
-            SuperGraph sg = new SuperGraph(appInfo,pConfig.getTargetMethodInfo().getCode().getControlFlowGraph(), 0);
+            SuperGraph sg = new SuperGraph(appInfo,pConfig.getTargetMethodInfo().getCode().getControlFlowGraph(false), 0);
             {
                 System.out.println("Writing supergraph graph to "+pConfig.getOutFile("supergraph.png"));
                 File dotFile = pConfig.getOutFile("callgraph.dot");

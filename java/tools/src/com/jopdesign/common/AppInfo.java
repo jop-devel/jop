@@ -31,6 +31,7 @@ import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
 import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.ClassInfoNotFoundException;
+import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MissingClassError;
 import com.jopdesign.common.misc.NamingConflictException;
@@ -600,21 +601,6 @@ public final class AppInfo {
      * @return A method reference with or without MethodInfo or ClassInfo.
      */
     public MethodRef getMethodRef(ClassRef classRef, Signature signature) {
-        ClassInfo classInfo = classRef.getClassInfo();
-        if ( classInfo != null ) {
-            MethodInfo method = classInfo.getMethodInfoInherited(signature, true);
-            if ( method == null ) {
-                return new MethodRef(classInfo.getClassRef(), signature.getMemberName(),
-                        signature.getMemberDescriptor());
-            } else if (method.getClassName().equals(classRef.getClassName())) {
-                // method is defined in the given class
-                return method.getMethodRef();
-            } else {
-                // method is defined in a superclass
-                return new MethodRef(classRef, method);
-            }
-        }
-
         return new MethodRef(classRef, signature.getMemberName(), signature.getMemberDescriptor());
     }
 
@@ -834,23 +820,77 @@ public final class AppInfo {
         }
 
         // TODO implement!!
-        return null;
+        
+        return findImplementations(invokeSite.getInvokeeRef());
     }
 
     /**
      * Find all methods which might get invoked for a given methodRef.
      * This does not use the callgraph to eliminate methods. If you want a more precise result,
      * use {@link #findImplementations(InvokeSite, CallString)} and use callgraph thinning first.
+     * <p>
+     * Note that this method is slightly different from {@link MethodInfo#getImplementations(boolean)}, since
+     * it returns only methods for subclasses of the invokee class, not the implementing class.
+     * </p>
      *
      * @param invokee the method to resolve.
      * @return all possible implementations.
      */
-    public List<MethodInfo> findImplementations(MethodRef invokee) {
-        MethodInfo method = invokee.getMethodInfo();
+    public List<MethodInfo> findImplementations(final MethodRef invokee) {
+        final List<MethodInfo> methods = new LinkedList<MethodInfo>();
 
-        // TODO need to handle interface methodRefs! remove methods not under methodref class! 
+        final MethodInfo method = invokee.getMethodInfo();
+        if (method != null && (method.isStatic() || method.isPrivate())) {
+            methods.add(method);
+            return methods;
+        }
 
-        return method.getImplementations(true);
+        final String methodSig = invokee.getMemberSignature();
+        final ClassInfo invokeeClass = invokee.getClassRef().getClassInfo();
+
+        if (invokeeClass == null) {
+            // ok, now, if the target class is unknown, there is not much we can do, so return an empty set
+            logger.warn("Trying to find implementations for unknown method "+invokee.toString());
+            return methods;
+        }
+
+        if (invokeeClass.getMethodInfo(methodSig) == null) {
+            // method is inherited, add to implementations
+            if (method != null && !method.isAbstract()) {
+                methods.add(method);
+            } else if (method == null) {
+                // hm, invoke to an unknown method (maybe excluded or native), what should we do?
+                // .. or maybe the method has not been loaded somehow when the MethodRef was created (check!)
+                throw new JavaClassFormatError("Method implementation not found in superclass: "+invokee.toString());
+            }
+        }
+
+        // now, we have a virtual call on our hands ..
+        ClassVisitor visitor = new ClassVisitor() {
+            public boolean visitClass(ClassInfo classInfo) {
+                MethodInfo m = classInfo.getMethodInfo(methodSig);
+                if ( m != null ) {
+                    if ( m.isPrivate() && !classInfo.equals(invokeeClass)) {
+                        // found an overriding method which is private .. this is interesting..
+                        logger.error("Found private method "+m.getMemberSignature()+" in "+
+                                classInfo.getClassName()+" overriding non-private method in "+
+                                invokee.getClassName());
+                    }
+                    if ( !m.isAbstract() && (method == null || m.overrides(method,false)) ) {
+                        methods.add(m);
+                    }
+                }
+                return true;
+            }
+            public void finishClass(ClassInfo classInfo) {
+            }
+        };
+
+        ClassHierarchyTraverser traverser = new ClassHierarchyTraverser(visitor);
+        traverser.setVisitSubclasses(true, true);
+        traverser.traverseDown(invokeeClass);
+
+        return methods;
     }
 
     //////////////////////////////////////////////////////////////////////////////

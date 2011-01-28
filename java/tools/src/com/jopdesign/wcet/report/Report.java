@@ -205,7 +205,7 @@ public class Report {
                 getClassReport(m.getClassInfo()).addLinePropertyIfNull(ln.getLineNumber(), "color", "lightgreen");
             }
             logger.info("Generating report for method: " + m);
-            ControlFlowGraph flowGraph = m.getCode().getControlFlowGraph();
+            ControlFlowGraph flowGraph = m.getCode().getControlFlowGraph(false);
             Map<String, Object> stats = new TreeMap<String, Object>();
             stats.put("#nodes", flowGraph.getGraph().vertexSet().size() - 2 /* entry+exit */);
             stats.put("number of words", flowGraph.getNumberOfWords());

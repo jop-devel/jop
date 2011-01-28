@@ -512,7 +512,7 @@ public class BasicBlock {
             this.sb = new StringBuilder();
             this.lnt = methodCode.getLineNumberTable();
             this.lineBuffer = new StringBuilder();
-            this.cfg = methodCode.getControlFlowGraph();
+            this.cfg = methodCode.getControlFlowGraph(false);
         }
 
         public StringBuilder getBuffer() {

@@ -131,7 +131,7 @@ public class TreeAnalysis {
             }
             ProgressMeasure<CFGNode, CFGEdge> pm =
                     new ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge>(cfg.getGraph(), cfg.getLoopColoring(),
-                            extractUBs(cfg.buildLoopBounds()), localProgress);
+                            extractUBs(cfg.buildLoopBoundMap()), localProgress);
             long progress = pm.getMaxProgress().get(cfg.getExit());
             /* FIXME: _UGLY_ hack */
             if (filterLeafMethods && cfg.isLeafMethod()) {
@@ -173,7 +173,7 @@ public class TreeAnalysis {
             }
             ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge> pm =
                     new ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge>(cfg.getGraph(), cfg.getLoopColoring(),
-                            extractUBs(cfg.buildLoopBounds()), localCost);
+                            extractUBs(cfg.buildLoopBoundMap()), localCost);
             long wcet = pm.getMaxProgress().get(cfg.getExit());
             methodWCET.put(mi, wcet);
         }

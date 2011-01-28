@@ -30,43 +30,49 @@ import java.util.Set;
 import java.util.TreeSet;
 
 public class MethodReport {
-	private MethodInfo info;
-	private Collection<LoopBound> loopBounds;
-	private Set<MethodInfo> referenced;
-	String page;
-	private int sizeInWords;
-	private ControlFlowGraph fg;
-	private int cacheBlocks;
+    private MethodInfo info;
+    private Collection<LoopBound> loopBounds;
+    private Set<MethodInfo> referenced;
+    String page;
+    private int sizeInWords;
+    private ControlFlowGraph fg;
+    private int cacheBlocks;
 
-	public MethodReport(WCETTool p, MethodInfo m, String page) {
-		this.info = m;
-		fg = info.getCode().getControlFlowGraph();
-		this.loopBounds = fg.buildLoopBounds().values();
-		this.sizeInWords = fg.getNumberOfWords();		
-		this.referenced = new TreeSet<MethodInfo>();
-		for(ExecutionContext cgn : p.getCallGraph().getReferencedMethods(m)) {
-			MethodInfo ref = cgn.getMethodInfo();
-			this.referenced.add(ref);
-		}
-		this.page = page;
-		this.cacheBlocks = p.getWCETProcessorModel().getMethodCache().requiredNumberOfBlocks(fg.getNumberOfWords());
-	}
-	public MethodInfo getInfo() {
-		return info;
-	}
-	public Collection<LoopBound> getLoopBounds() {
-		return loopBounds;
-	}
-	public Set<MethodInfo> getReferenced() {
-		return referenced;
-	}
-	public String getPage() {
-		return page;
-	}
-	public int getSizeInWords() {
-		return this.sizeInWords;
-	}
-	public int getCacheBlocks() {
-		return cacheBlocks;
-	}
+    public MethodReport(WCETTool p, MethodInfo m, String page) {
+        this.info = m;
+        fg = info.getCode().getControlFlowGraph(false);
+        this.loopBounds = fg.buildLoopBoundMap().values();
+        this.sizeInWords = fg.getNumberOfWords();
+        this.referenced = new TreeSet<MethodInfo>();
+        for (ExecutionContext cgn : p.getCallGraph().getReferencedMethods(m)) {
+            MethodInfo ref = cgn.getMethodInfo();
+            this.referenced.add(ref);
+        }
+        this.page = page;
+        this.cacheBlocks = p.getWCETProcessorModel().getMethodCache().requiredNumberOfBlocks(fg.getNumberOfWords());
+    }
+
+    public MethodInfo getInfo() {
+        return info;
+    }
+
+    public Collection<LoopBound> getLoopBounds() {
+        return loopBounds;
+    }
+
+    public Set<MethodInfo> getReferenced() {
+        return referenced;
+    }
+
+    public String getPage() {
+        return page;
+    }
+
+    public int getSizeInWords() {
+        return this.sizeInWords;
+    }
+
+    public int getCacheBlocks() {
+        return cacheBlocks;
+    }
 }

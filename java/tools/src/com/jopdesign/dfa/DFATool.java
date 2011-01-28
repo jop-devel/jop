@@ -303,7 +303,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 		if(results == null) return "n/a";
 		StringBuilder s = new StringBuilder();
 
-        ControlFlowGraph cfg = method.getCode().getControlFlowGraph();
+        ControlFlowGraph cfg = method.getCode().getControlFlowGraph(false);
 		for(CFGNode n: cfg.getGraph().vertexSet()) {
 			if(n.getBasicBlock() == null) continue;
 			ContextMap<List<HashedString>, Pair<ValueMapping,ValueMapping>> r = results.get(n.getBasicBlock().getLastInstruction());

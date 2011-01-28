@@ -57,7 +57,7 @@ public class DefaultCallgraphConfig implements CallGraph.CallgraphConfig {
 
         // TODO save some memory here by using InstructionList instead of CFG if CFG is not set
 
-        ControlFlowGraph currentCFG = method.getCode().getControlFlowGraph();
+        ControlFlowGraph currentCFG = method.getCode().getControlFlowGraph(false);
         List<ExecutionContext> newContexts = new LinkedList<ExecutionContext>();
 
         for(CFGNode node : currentCFG.getGraph().vertexSet()) {

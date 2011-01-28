@@ -570,7 +570,7 @@ public class CallGraph {
         ControlFlowGraph largest = null;
         int maxBytes = 0;
         for(MethodInfo mi : this.getImplementedMethods(this.rootNode.getMethodInfo())) {
-            ControlFlowGraph cfg = mi.getCode().getControlFlowGraph();
+            ControlFlowGraph cfg = mi.getCode().getControlFlowGraph(false);
             int bytes = cfg.getNumberOfBytes();
             if(bytes > maxBytes) {
                 largest = cfg;
@@ -583,7 +583,7 @@ public class CallGraph {
     public int getTotalSizeInBytes() {
         int bytes = 0;
         for (MethodInfo mi : this.getImplementedMethods(this.rootNode.getMethodInfo())) {
-             bytes += mi.getCode().getControlFlowGraph().getNumberOfBytes();
+             bytes += mi.getCode().getControlFlowGraph(false).getNumberOfBytes();
         }
         return bytes;
     }

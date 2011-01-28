@@ -41,6 +41,8 @@ import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.misc.AppInfoError;
+import com.jopdesign.common.misc.BadGraphError;
+import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.processormodel.JOPConfig;
@@ -332,7 +334,17 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
      * @return the CFG for the method.
      */
     public ControlFlowGraph getFlowGraph(MethodInfo mi) {
-        return mi.isAbstract() ? null : mi.getCode().getControlFlowGraph();
+        if (mi.isAbstract()) return null;
+        ControlFlowGraph cfg = mi.getCode().getControlFlowGraph(false);
+        try {
+            cfg.resolveVirtualInvokes();
+            cfg.insertReturnNodes();
+            cfg.insertContinueLoopNodes();
+        } catch (BadGraphException e) {
+            // TODO handle this somehow??
+            throw new BadGraphError(e.getMessage(), e);
+        }
+        return cfg;
     }
 
     public LoopBound getLoopBound(CFGNode node, CallString cs) {

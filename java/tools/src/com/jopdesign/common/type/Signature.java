@@ -179,6 +179,10 @@ public class Signature {
         this.descriptor = descriptor;
     }
 
+    public boolean hasMemberName() {
+        return memberName != null && !"".equals(memberName);
+    }
+
     public boolean hasMemberSignature() {
         return memberName != null && descriptor != null;
     }

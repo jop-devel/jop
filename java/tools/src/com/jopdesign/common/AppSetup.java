@@ -711,8 +711,8 @@ public class AppSetup {
         }
 
         // use --mm if only main class has been given
-        if (sMain.getMemberName() == null) {
-            if (!sMainMethod.hasMemberSignature()) {
+        if (!sMain.hasMemberName()) {
+            if (!sMainMethod.hasMemberName()) {
                 throw new BadConfigurationException("Option '"+Config.MAIN_METHOD_NAME.getKey()
                         +"' needs to specify a method name.");
             }

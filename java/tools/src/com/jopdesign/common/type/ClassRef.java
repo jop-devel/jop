@@ -22,6 +22,7 @@ package com.jopdesign.common.type;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.misc.ClassInfoNotFoundException;
 import com.jopdesign.common.misc.Ternary;
 import org.apache.bcel.generic.ArrayType;
 import org.apache.bcel.generic.ObjectType;
@@ -65,7 +66,11 @@ public class ClassRef {
 
     public ClassInfo getClassInfo() {
         if ( classInfo == null && !arrayClass ) {
-            classInfo = AppInfo.getSingleton().getClassInfo(className);
+            try {
+                classInfo = AppInfo.getSingleton().getClassInfo(className,false);
+            } catch (ClassInfoNotFoundException ignored) {
+                return null;
+            }
         }
         return classInfo;
     }

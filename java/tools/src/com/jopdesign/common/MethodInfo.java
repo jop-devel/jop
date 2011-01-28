@@ -24,6 +24,7 @@ import com.jopdesign.common.bcel.ParameterAnnotationAttribute;
 import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
 import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
+import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
@@ -341,13 +342,11 @@ public final class MethodInfo extends ClassMemberInfo {
     public List<MethodInfo> getImplementations(final boolean checkAccess) {
         final List<MethodInfo> implementations = new LinkedList<MethodInfo>();
 
-        if (!isAbstract()) {
-            implementations.add(this);
-        } else {
-
-        }
-
         if (checkAccess && (isPrivate() || isStatic())) {
+            if (isAbstract()) {
+                throw new JavaClassFormatError("Method is private or static but abstract!: "+toString());
+            }
+            implementations.add(this);
             return implementations;
         }
 

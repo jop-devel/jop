@@ -374,7 +374,7 @@ public class SuperGraph {
                 if (node instanceof ControlFlowGraph.InvokeNode) {
                     ControlFlowGraph.InvokeNode iNode = (ControlFlowGraph.InvokeNode) node;
                     MethodInfo impl = iNode.getImplementedMethod();
-                    ControlFlowGraph invokedCFG = impl.getCode().getControlFlowGraph();
+                    ControlFlowGraph invokedCFG = impl.getCode().getControlFlowGraph(false);
                     CallString invokedCS = currentCS.push(iNode, callstringLength);
                     SuperGraphNode invoked = new SuperGraphNode(invokedCFG, invokedCS);
 

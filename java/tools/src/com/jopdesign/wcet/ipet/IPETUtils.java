@@ -151,7 +151,7 @@ public class IPETUtils {
 
 
             if (loopBound == null) {
-                throw new AppInfoError("No loop bound record for head of loop: " + hol + " : " + g.buildLoopBounds());
+                throw new AppInfoError("No loop bound record for head of loop: " + hol + " : " + g.buildLoopBoundMap());
             }
             for (LinearConstraint<IPETBuilder.ExecutionEdge> loopConstraint : constraintsForLoop(loops, hol, loopBound, ctx)) {
                 constraints.add(loopConstraint);

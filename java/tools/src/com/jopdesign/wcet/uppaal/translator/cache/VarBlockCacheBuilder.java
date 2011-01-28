@@ -31,50 +31,51 @@ import java.util.List;
 import java.util.Set;
 
 public abstract class VarBlockCacheBuilder extends DynamicCacheBuilder {
-	protected WCETTool project;
-	protected VarBlockCache cache;
-	protected Set<MethodInfo> methods;
+    protected WCETTool project;
+    protected VarBlockCache cache;
+    protected Set<MethodInfo> methods;
 
-	public VarBlockCacheBuilder(WCETTool p, VarBlockCache cache, Set<MethodInfo> methods) {
-		this.project = p;
-		this.cache = cache;
-		this.methods = methods;
-	}
+    public VarBlockCacheBuilder(WCETTool p, VarBlockCache cache, Set<MethodInfo> methods) {
+        this.project = p;
+        this.cache = cache;
+        this.methods = methods;
+    }
 
-	protected abstract int numBlocks();
-	protected abstract StringBuilder initCache(String NUM_METHODS);
-	
-	protected int blocksOf(MethodInfo method) {
+    protected abstract int numBlocks();
+
+    protected abstract StringBuilder initCache(String NUM_METHODS);
+
+    protected int blocksOf(MethodInfo method) {
         // FIXME old code used ids instead of MethodInfo, check for correctness
-        ControlFlowGraph cfg = method.getCode().getControlFlowGraph();
-		return project.getWCETProcessorModel().getMethodCache().requiredNumberOfBlocks(cfg.getNumberOfWords());
-	}
+        ControlFlowGraph cfg = project.getFlowGraph(method);
+        return project.getWCETProcessorModel().getMethodCache().requiredNumberOfBlocks(cfg.getNumberOfWords());
+    }
 
-	@Override
-	public void appendDeclarations(NTASystem system,String NUM_METHODS) {
-		system.appendDeclaration(String.format("const int NUM_BLOCKS[%s] = %s;",
-				NUM_METHODS,initNumBlocks()));
-		system.appendDeclaration(String.format("int[0,%s] cache[%d] = %s;",
-				NUM_METHODS,numBlocks(),initCache(NUM_METHODS)));
-		system.appendDeclaration(String.format("bool lastHit;"));
-	}
+    @Override
+    public void appendDeclarations(NTASystem system, String NUM_METHODS) {
+        system.appendDeclaration(String.format("const int NUM_BLOCKS[%s] = %s;",
+                NUM_METHODS, initNumBlocks()));
+        system.appendDeclaration(String.format("int[0,%s] cache[%d] = %s;",
+                NUM_METHODS, numBlocks(), initCache(NUM_METHODS)));
+        system.appendDeclaration(String.format("bool lastHit;"));
+    }
 
-	protected StringBuilder initNumBlocks() {
-		List<Integer> blocksPerMethod = new ArrayList<Integer>();
-		for(MethodInfo method : methods) {
-            if ( method.isAbstract() ) {
+    protected StringBuilder initNumBlocks() {
+        List<Integer> blocksPerMethod = new ArrayList<Integer>();
+        for (MethodInfo method : methods) {
+            if (method.isAbstract()) {
                 continue;
             }
-			int mBlocks = blocksOf(method);
-			if(mBlocks > numBlocks()) {
-				throw new AssertionError("Cache too small for method: "+method+
-									     " which requires at least " + mBlocks + " blocks, but only "+
-									     numBlocks() + " are available in the simulation ");
-			}
-			blocksPerMethod.add(mBlocks);
-		}
-		return SystemBuilder.constArray(blocksPerMethod);
-	}
+            int mBlocks = blocksOf(method);
+            if (mBlocks > numBlocks()) {
+                throw new AssertionError("Cache too small for method: " + method +
+                        " which requires at least " + mBlocks + " blocks, but only " +
+                        numBlocks() + " are available in the simulation ");
+            }
+            blocksPerMethod.add(mBlocks);
+        }
+        return SystemBuilder.constArray(blocksPerMethod);
+    }
 
 
 }

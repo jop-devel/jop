@@ -386,7 +386,16 @@ public class MethodCode {
         methodGen.removeNOPs();
     }
 
-    public ControlFlowGraph getControlFlowGraph() {
+    /**
+     * Get the control flow graph associated with this method code or create a new one.
+     * @param clean if true, compile and recreate the graph if {@link ControlFlowGraph#isClean()} returns false.
+     * @return the CFG for this method.
+     */
+    public ControlFlowGraph getControlFlowGraph(boolean clean) {
+        if ( cfg != null && clean && !cfg.isClean()) {
+            cfg.compile();
+            cfg = null;
+        }
         if ( this.cfg == null ) {
             try {
                 cfg = new ControlFlowGraph(this.getMethodInfo());
