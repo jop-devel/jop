@@ -533,9 +533,13 @@ public class MethodCode {
         for (InstructionHandle ih : il.getInstructionHandles()) {
             int pos = lt.getSourceLine(ih.getPosition());
             if (pos >= 0) {
-                ih.addAttribute(KEY_SOURCEFILE, pos);
-            } else {
+                ih.addAttribute(KEY_LINENUMBER, pos);
                 ih.removeAttribute(KEY_SOURCEFILE);
+            } else {
+                // keep linenumber attributes which refer to different sourcefiles
+                if (ih.getAttribute(KEY_SOURCEFILE) == null) {
+                    ih.removeAttribute(KEY_LINENUMBER);
+                }
             }
         }
 
