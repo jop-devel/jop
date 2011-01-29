@@ -302,7 +302,7 @@ public class ControlFlowGraph {
          * @return For non-virtual methods, get the implementation of the method
          */
         public MethodInfo getImplementedMethod() {
-            return this.receiverImpl;
+            return referenced.getMethodInfo();
         }
 
         /**
@@ -334,7 +334,7 @@ public class ControlFlowGraph {
          */
         public ControlFlowGraph receiverFlowGraph() {
             if (isVirtual()) return null;
-            return receiverImpl.getCode().getControlFlowGraph(false);
+            return getImplementedMethod().getCode().getControlFlowGraph(false);
         }
 
         public ControlFlowGraph invokerFlowGraph() {
@@ -558,7 +558,7 @@ public class ControlFlowGraph {
     /* worker: create the flow graph */
 
     private void createFlowGraph(MethodInfo method) {
-        logger.info("creating flow graph for: " + method);
+        logger.debug("creating flow graph for: " + method);
         blocks = BasicBlock.buildBasicBlocks(method.getCode());
         Map<Integer, BasicBlockNode> nodeTable =
                 new HashMap<Integer, BasicBlockNode>();

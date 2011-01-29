@@ -33,6 +33,13 @@ import com.jopdesign.common.misc.Ternary;
  */
 public class MethodRef {
 
+    // Implementation Notice:
+    // At least one of classRef and methodInfo is not null.
+    // If methodInfo is null, methodName and descriptor must be set.
+    // MethodInfo can be set lazily by getMethodInfo(). If methodInfo should be checked,
+    // if (getMethodInfo()==null) must be used, but if only a check is needed if the other fields
+    // are not null, if (methodInfo==null) is sufficient.
+
     private final ClassRef classRef;
     private MethodInfo methodInfo;
 
@@ -93,14 +100,14 @@ public class MethodRef {
     }
 
     public Ternary isInterfaceMethod() {
-        if ( methodInfo != null ) {
+        if ( getMethodInfo() != null ) {
             return Ternary.valueOf(methodInfo.getClassInfo().isInterface());
         }
         return classRef.isInterface();
     }
 
     public Ternary exists() {
-        if ( methodInfo != null ) return Ternary.TRUE;
+        if ( getMethodInfo() != null ) return Ternary.TRUE;
         if ( classRef.getClassInfo() != null ) {
             return classRef.getClassInfo().getMethodInfo(getMemberSignature()) != null ?
                     Ternary.TRUE : Ternary.FALSE;
@@ -154,4 +161,8 @@ public class MethodRef {
         return getClassName().equals(ref.getClassName()) && getMemberSignature().equals(ref.getMemberSignature());
     }
 
+    @Override
+    public String toString() {
+        return getSignature().toString();
+    }
 }

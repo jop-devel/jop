@@ -338,6 +338,8 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         ControlFlowGraph cfg = mi.getCode().getControlFlowGraph(false);
         try {
             cfg.resolveVirtualInvokes();
+//	    cfg.insertSplitNodes();
+//	    cfg.insertSummaryNodes();
             cfg.insertReturnNodes();
             cfg.insertContinueLoopNodes();
         } catch (BadGraphException e) {

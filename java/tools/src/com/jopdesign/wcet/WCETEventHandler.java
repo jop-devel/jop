@@ -43,6 +43,10 @@ import java.io.IOException;
 import java.util.Collection;
 
 /**
+ * This class provides callback methods for AppInfo and performs the annotation loading.
+ * TODO either rename this class or move the annotation-loading code into a dedicated class
+ *      (which must then also contain dfaLoopBound()..)
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class WCETEventHandler extends EmptyAppEventHandler {
@@ -70,14 +74,12 @@ public class WCETEventHandler extends EmptyAppEventHandler {
     }
 
     @Override
-    public void onCreateClass(ClassInfo classInfo, boolean loaded) {
-        if (loaded) {
-            try {
-                loadAnnotations(classInfo);
-            } catch (BadAnnotationException e) {
-                // TODO maybe do more than just log an error? (halt?)
-                logger.error("Failed to load annotations for class "+classInfo+": "+e.getMessage(), e);
-            }
+    public void onCreateControlFlowGraph(ControlFlowGraph cfg, boolean clean) {
+        try {
+            loadAnnotations(cfg);
+        } catch (BadAnnotationException e) {
+            // TODO maybe do more than just log an error? (halt?)
+            logger.error("Failed to load annotations for method "+cfg.getMethodInfo()+": "+e.getMessage(), e);
         }
     }
 

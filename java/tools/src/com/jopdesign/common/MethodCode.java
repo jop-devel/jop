@@ -292,7 +292,7 @@ public class MethodCode {
     //////////////////////////////////////////////////////////////////////////////
 
     /**
-     * Get the instruction list of this code. If {@link #getControlFlowGraph()} has been used before, the CFG
+     * Get the instruction list of this code. If {@link #getControlFlowGraph(boolean)} has been used before, the CFG
      * will be compiled and removed first.
      *
      * @see #rebuildTables(boolean)
@@ -392,6 +392,9 @@ public class MethodCode {
      * @return the CFG for this method.
      */
     public ControlFlowGraph getControlFlowGraph(boolean clean) {
+
+        // TODO clean/isClean could be made more general (like the CallGraphConfiguration)
+
         if ( cfg != null && clean && !cfg.isClean()) {
             cfg.compile();
             cfg = null;
@@ -399,6 +402,9 @@ public class MethodCode {
         if ( this.cfg == null ) {
             try {
                 cfg = new ControlFlowGraph(this.getMethodInfo());
+                for (AppEventHandler ah : AppInfo.getSingleton().getEventHandlers()) {
+                    ah.onCreateControlFlowGraph(cfg, clean);
+                }
             } catch (BadGraphException e) {
                 throw new BadGraphError("Unable to create CFG for " + methodInfo, e);
             }

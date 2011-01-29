@@ -20,6 +20,8 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.code.ControlFlowGraph;
+
 /**
  * An AppEventHandler is used to access attributes and flow-facts from classes, methods, fields and code.
  * It manages the {@link KeyManager.CustomKey} keys and type casts internally, and provides some callback
@@ -65,6 +67,15 @@ public interface AppEventHandler {
      * @param appInfo the appinfo which will be cleared.
      */
     void onClearAppInfo(AppInfo appInfo);
+
+    /**
+     * Called when {@link MethodCode#getControlFlowGraph(boolean)} creates a new CFG.
+     * Not called when a CFG is created outside the framework. 
+     *
+     * @param cfg the new CFG
+     * @param clean true if a 'clean' graph is requested, i.e. no analyse transformations should be performed.
+     */
+    void onCreateControlFlowGraph(ControlFlowGraph cfg, boolean clean);
 
     /**
      * Called when a method was modified.
