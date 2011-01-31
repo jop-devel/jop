@@ -626,8 +626,10 @@ public class AppSetup {
             System.out.println();
         }
 
-        System.out.println("The @<filename> syntax can be used multiple times. Entries in the properties-file");
+        System.out.println("The @<filename> syntax can be used multiple times. Entries in the property-file");
         System.out.println("overwrite previous options and can be overwritten by successive options.");
+        System.out.println("Every property-file can contain additional log4j configuration options.");
+        System.out.println();
         if (config.hasOption(Config.MAIN_METHOD_NAME)) {
             System.out.println("If '--"+Config.MAIN_METHOD_NAME.getKey()+
                     "' specifies a fully-qualified method name, <main-method> is optional.");
