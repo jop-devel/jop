@@ -3,6 +3,7 @@
  * see <http://www.jopdesign.com/>
  *
  * Copyright (C) 2010, Stefan Hepp (stefan@stefant.org).
+ * Copyright (C) 2008, Wolfgang Puffitsch
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -68,6 +69,7 @@ import java.util.Set;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
+ * @author Wolfgang Puffitsch
  */
 public class DFATool extends EmptyTool<AppEventHandler> {
 
@@ -85,9 +87,9 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     public DFATool() {
         super("head");
         this.appInfo = AppInfo.getSingleton();
-		this.statements = new LinkedList<InstructionHandle>();
-		this.flow = new Flow();
-		this.receivers = null;
+        this.statements = new LinkedList<InstructionHandle>();
+        this.flow = new Flow();
+        this.receivers = null;
     }
 
     public AppInfo getAppInfo() {
@@ -99,7 +101,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     }
 
     @Override
-    public void onSetupConfig(AppSetup setup) throws BadConfigurationException {
+    public void onSetupAppInfo(AppSetup setup, AppInfo appInfo) throws BadConfigurationException {
         load();
     }
 
@@ -142,7 +144,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         for (ClassInfo clinit : clinits) {
             Signature cSig = appInfo.getClinitSignature(clinit.getClassName());
             idx = prologueCP.addMethodref(cSig.getClassName(), cSig.getMemberName(),
-                                          cSig.getMemberDescriptor().toString());
+                    cSig.getMemberDescriptor().toString());
             instr = new INVOKESTATIC(idx);
             prologue.append(instr);
         }
@@ -151,7 +153,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         instr = new ACONST_NULL();
         prologue.append(instr);
         idx = prologueCP.addMethodref(mainMethod.getClassName(), mainMethod.getShortName(),
-                                      mainMethod.getDescriptor().toString());
+                mainMethod.getDescriptor().toString());
         instr = new INVOKESTATIC(idx);
         prologue.append(instr);
 
@@ -168,11 +170,11 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 // 		System.out.println(prologue);
 
         // add prologue to program structure
-        for (Iterator l = prologue.iterator(); l.hasNext(); ) {
-            InstructionHandle handle = (InstructionHandle)l.next();
+        for (Iterator l = prologue.iterator(); l.hasNext();) {
+            InstructionHandle handle = (InstructionHandle) l.next();
             statements.add(handle);
             if (handle.getInstruction() instanceof GOTO) {
-                GOTO g = (GOTO)handle.getInstruction();
+                GOTO g = (GOTO) handle.getInstruction();
                 flow.addEdge(new FlowEdge(handle, g.getTarget(), FlowEdge.NORMAL_EDGE));
             } else if (handle.getNext() != null) {
                 flow.addEdge(new FlowEdge(handle, handle.getNext(), FlowEdge.NORMAL_EDGE));
@@ -192,7 +194,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
         try {
             MethodInfo main = appInfo.getMainMethod();
-            MethodInfo prologue = main.getClassInfo().getMethodInfo(prologueName+prologueSig);
+            MethodInfo prologue = main.getClassInfo().getMethodInfo(prologueName + prologueSig);
 
             Context context = new Context();
             context.stackPtr = 0;
@@ -211,13 +213,13 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         return analysis.getResult();
     }
 
-    public <K,V>
-    Map runLocalAnalysis(Analysis<K,V> analysis, MethodInfo start) {
+    public <K, V>
+    Map runLocalAnalysis(Analysis<K, V> analysis, MethodInfo start) {
 
-        Interpreter<K,V> interpreter = new Interpreter<K,V>(analysis, this);
+        Interpreter<K, V> interpreter = new Interpreter<K, V>(analysis, this);
 
         try {
-            if(start == null) throw new AssertionError("No such method: "+start);
+            if (start == null) throw new AssertionError("No such method: " + start);
             Context context = new Context();
             context.stackPtr = start.getCode().getMaxLocals();
             context.constPool = start.getClassInfo().getConstantPoolGen();
@@ -270,6 +272,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
     /**
      * Helper method to find a method in AppInfo using the full signature.
+     *
      * @param signature the signature of the method.
      * @return the method if found, else null
      */
@@ -279,7 +282,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         try {
             return appInfo.getMethodInfo(s.getClassName(), s.getMemberSignature());
         } catch (MethodNotFoundException e) {
-            throw new JavaClassFormatError("Could not find method "+signature, e);
+            throw new JavaClassFormatError("Could not find method " + signature, e);
         }
     }
 
@@ -294,31 +297,33 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         return field != null ? field.getClassInfo() : null;
     }
 
-	@SuppressWarnings("unchecked")
-	public String dumpDFA(MethodInfo method) {
-	    if(getLoopBounds() == null) return "n/a";
-        if ( method.isAbstract() ) { return "n/a"; }
+    @SuppressWarnings("unchecked")
+    public String dumpDFA(MethodInfo method) {
+        if (getLoopBounds() == null) return "n/a";
+        if (method.isAbstract()) {
+            return "n/a";
+        }
 
-		Map<InstructionHandle, ContextMap<List<HashedString>, Pair<ValueMapping,ValueMapping>>> results = getLoopBounds().getResult();
-		if(results == null) return "n/a";
-		StringBuilder s = new StringBuilder();
+        Map<InstructionHandle, ContextMap<List<HashedString>, Pair<ValueMapping, ValueMapping>>> results = getLoopBounds().getResult();
+        if (results == null) return "n/a";
+        StringBuilder s = new StringBuilder();
 
         ControlFlowGraph cfg = method.getCode().getControlFlowGraph(false);
-		for(CFGNode n: cfg.getGraph().vertexSet()) {
-			if(n.getBasicBlock() == null) continue;
-			ContextMap<List<HashedString>, Pair<ValueMapping,ValueMapping>> r = results.get(n.getBasicBlock().getLastInstruction());
-			if(r != null) {
-				s.append(n);
-				s.append(" :: ");
-				s.append(r);
-				s.append("\n");
-			}
-		}
-		return s.toString();
-	}
+        for (CFGNode n : cfg.getGraph().vertexSet()) {
+            if (n.getBasicBlock() == null) continue;
+            ContextMap<List<HashedString>, Pair<ValueMapping, ValueMapping>> r = results.get(n.getBasicBlock().getLastInstruction());
+            if (r != null) {
+                s.append(n);
+                s.append(" :: ");
+                s.append(r);
+                s.append("\n");
+            }
+        }
+        return s.toString();
+    }
 
     public boolean containsField(String fieldName) {
-            return classForField(fieldName) != null;
+        return classForField(fieldName) != null;
     }
 
 }
