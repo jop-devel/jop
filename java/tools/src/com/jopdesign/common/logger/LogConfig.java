@@ -108,9 +108,9 @@ public class LogConfig {
         Logger.getRootLogger().setLevel(Level.ALL);
 
         PropertyConfigurator.configure(config.getProperties());
-	}
+    }
 
-	@SuppressWarnings({"ResultOfMethodCallIgnored"})
+    @SuppressWarnings({"ResultOfMethodCallIgnored"})
     public void setReportLoggers(File errorLog, File infoLog)
 		throws IOException
     {
