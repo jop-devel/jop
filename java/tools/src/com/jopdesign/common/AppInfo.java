@@ -30,6 +30,7 @@ import com.jopdesign.common.config.Config;
 import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
 import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
+import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.ClassInfoNotFoundException;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.MethodNotFoundException;
@@ -50,9 +51,11 @@ import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.util.ClassPath;
+import org.apache.bcel.util.ClassPath.ClassFile;
 import org.apache.log4j.Logger;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -306,6 +309,16 @@ public final class AppInfo {
         }
 
         return checkClassExists(className);
+    }
+
+    public ClassFile getClassFile(ClassInfo ci) throws FileNotFoundException {
+        try {
+            return classPath.getClassFile(ci.getClassName());
+        } catch (FileNotFoundException e) {
+            throw e;
+        } catch (IOException e) {
+            throw new AppInfoError("Could not get classfile for class "+ci, e);
+        }
     }
 
     /**

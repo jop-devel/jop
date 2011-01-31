@@ -20,6 +20,7 @@
 package com.jopdesign.wcet;
 
 import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
@@ -31,6 +32,8 @@ import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.type.Signature;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ProjectConfig {
     public static final StringOption PROJECT_NAME =
@@ -44,8 +47,11 @@ public class ProjectConfig {
                                              "the name (optional: class,signature) of the method to be analyzed",
                                              "measure");
 
+    public static final StringOption TARGET_LIB_SOURCEPATH =
+            new StringOption("splib","sourcepath of the library code, helper option used in 'sp' option defaultvalue.", "java/target/src/jdk_base;java/target/src/common;java/target/src/jdk16");
+
     public static final StringOption TARGET_SOURCEPATH =
-            new StringOption("sp","the sourcepath",false);
+            new StringOption("sp","the sourcepath","${splib};java/target/src/app");
 
     public static final StringOption TARGET_BINPATH =
             new StringOption("linkinfo-path", "directory holding linker info (.link.txt)","java/target/dist/bin");
@@ -71,7 +77,7 @@ public class ProjectConfig {
     public static final Option<?>[] projectOptions =
     {
             TARGET_METHOD, PROJECT_NAME,
-            TARGET_SOURCEPATH, TARGET_BINPATH,
+            TARGET_LIB_SOURCEPATH, TARGET_SOURCEPATH, TARGET_BINPATH,
             WCET_MODEL,
             WCET_PREPROCESS,
             OBJECT_CACHE_ANALYSIS,
@@ -172,11 +178,22 @@ public class ProjectConfig {
     }
 
     /**
-     * A list of paths (seperated by pathSeparatorChar) used for looking up sources
-     * @return the path to source directories
+     * @return A list of paths used for looking up sources
      */
-    public String getSourcePath() {
-        return config.getOption(TARGET_SOURCEPATH);
+    public String[] getSourcePaths() {
+        return Config.splitPaths(config.getOption(TARGET_SOURCEPATH));
+    }
+
+    public List<File> getSourceSearchDirs(ClassInfo ci) {
+        String[] paths = getSourcePaths();
+        List<File> dirs = new ArrayList<File>();
+        String pkgPath = File.separator + ci.getPackageName().replace('.', File.separatorChar);
+
+        for (String sourcePath : paths) {
+            sourcePath += pkgPath;
+            dirs.add(new File(sourcePath));
+        }
+        return dirs;
     }
 
     public String getProcessorName() {

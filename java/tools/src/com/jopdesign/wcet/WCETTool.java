@@ -85,7 +85,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.StringTokenizer;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -468,44 +467,14 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         }
     }
 
-    public File getClassFile(ClassInfo ci) throws FileNotFoundException {
-        // TODO maybe move to AppInfo?
-        List<File> dirs = getSearchDirs(ci, appInfo.getClassPath().toString());
-        for (File classDir : dirs) {
-            String classname = ci.getClassName();
-            classname = classname.substring(classname.lastIndexOf(".") + 1);
-            File classFile = new File(classDir, classname + ".class");
-            if (classFile.exists()) return classFile;
-        }
-        for (File classDir : dirs) {
-            File classFile = new File(classDir, ci.getClassName() + ".class");
-            System.err.println("Class file not found: " + classFile);
-        }
-        throw new FileNotFoundException("Class file for " + ci.getClassName() + " not found.");
-    }
-
     public File getSourceFile(ClassInfo ci) throws FileNotFoundException {
         // TODO maybe move to AppInfo?
-        List<File> dirs = getSearchDirs(ci, projectConfig.getSourcePath());
+        List<File> dirs = projectConfig.getSourceSearchDirs(ci);
         for (File sourceDir : dirs) {
             File sourceFile = new File(sourceDir, ci.getSourceFileName());
             if (sourceFile.exists()) return sourceFile;
         }
         throw new FileNotFoundException("Source for " + ci.getClassName() + " not found in " + dirs);
-    }
-
-    private List<File> getSearchDirs(ClassInfo ci, String path) {
-
-        List<File> dirs = new ArrayList<File>();
-        String pkgPath = ci.getPackageName().replace('.', File.separatorChar);
-
-        StringTokenizer st = new StringTokenizer(path, File.pathSeparator);
-        while (st.hasMoreTokens()) {
-            String sourcePath = st.nextToken();
-            sourcePath += File.separator + pkgPath;
-            dirs.add(new File(sourcePath));
-        }
-        return dirs;
     }
 
     /**

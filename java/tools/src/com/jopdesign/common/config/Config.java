@@ -51,13 +51,6 @@ public class Config {
     public static final String DEFAULT_CLINIT_NAME = "<clinit>";
     public static final String DEFAULT_CLINIT_DESCRIPTOR = "()V";
 
-    public static final String DEFAULT_NATIVE = "com.jopdesign.sys.Native";
-    public static final String[] JOP_SYSTEM_CLASSES = {
-            "com.jopdesign.sys.JVM",
-            "com.jopdesign.sys.JVMHelp",
-            "com.jopdesign.sys.Startup"
-        };
-
     /* Options which are always present
      * TODO maybe move the class loading and entry-point related options to AppInfo?
      */
@@ -125,6 +118,23 @@ public class Config {
     public static final Option<?>[] standardOptions =
             { SHOW_HELP, SHOW_VERSION, SHOW_CONFIG, DEBUG, QUIET, VERBOSE };
 
+
+    public static String mergePaths(String[] paths) {
+        if (paths.length == 0) return "";
+
+        StringBuffer sb = new StringBuffer(paths[0]);
+        for (int i = 1; i < paths.length; i++) {
+            sb.append(File.pathSeparator);
+            sb.append(paths[i]);
+        }
+        return sb.toString();
+    }
+
+    public static String[] splitPaths(String paths) {
+        if (paths.length() == 0) return new String[0];
+
+        return paths.split(File.pathSeparator);
+    }
 
     /*
     * Exception classes
