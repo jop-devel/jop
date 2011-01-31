@@ -335,10 +335,10 @@ public class JopInstr{
 //	reserved instructions
 //
 		new JopInstr("resCB", 1, IMP_NO, 1),			// 0xCB
-		new JopInstr("jopsys_inval", 1, IMP_ASM, 7),			// 0xCC
+		new JopInstr("jopsys_inval", 1, IMP_ASM, 7),	// 0xCC
 		new JopInstr("resCD", 1, IMP_NO, 1),			// 0xCD
-		new JopInstr("resCE", 1, IMP_NO, 1),			// 0xCE
-		new JopInstr("resCF", 1, IMP_NO, 1),			// 0xCF
+		new JopInstr("jopsys_lock", 1, IMP_ASM, 1),		// 0xCE
+		new JopInstr("jopsys_unlock", 1, IMP_ASM, 1),	// 0xCF
 
 		new JopInstr("jopsys_null", 1, IMP_NO, 1),			// 0xD0
 		new JopInstr("jopsys_rd", 1, IMP_ASM, 3),			// 0xD1
@@ -425,6 +425,10 @@ public class JopInstr{
 			"condMove", "jopsys_cond_move",
 			"condMoveRef", "jopsys_cond_move",
 			"invalidate", "jopsys_inval",
+			"lock", "jopsys_lock",
+			"unlock", "jopsys_unlock",
+			"toLock", "jopsys_nop",
+			"toRtThreadImpl", "jopsys_nop",
 			"memCopy", "jopsys_memcpy",
 			"putStatic", "jopsys_putstatic",
 			"getStatic", "jopsys_getstatic",

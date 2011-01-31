@@ -15,6 +15,7 @@ class Scheduler implements Runnable {
 	// ordered by priority
 	int next[];					// next time to change to state running
 	RtThreadImpl[] ref;			// references to threads
+	int boostIdx;
 
 	final static int NO_EVENT = 0;
 	final static int EV_FIRED = 1;
@@ -32,7 +33,6 @@ class Scheduler implements Runnable {
 		// create scheduler objects for all cores
 		for (int i=0; i<sys.nrCpu; ++i) {
 			new Scheduler(i);
-
 		}
 	}
 	
@@ -40,9 +40,6 @@ class Scheduler implements Runnable {
 		active = 0;			// main thread (or idle thread) is first thread
 		cnt = 0;			// stays 0 till startMission
 
-//		next = new int[1];
-//		ref = new RtThreadImpl[1];
-		
 		sched[core] = this;
 	}
 	
@@ -106,16 +103,19 @@ class Scheduler implements Runnable {
 		// this is now
 		j = Native.rd(Const.IO_US_CNT);
 
-		for (i=cnt-1; i>0; --i) {
-
-			if (event[i] == EV_FIRED) {
-				break;						// a pending event found
-			} else if (event[i] == NO_EVENT) {
-				diff = next[i]-j;			// check only periodic
-				if (diff < TIM_OFF) {
-					break;					// found a ready task
-				} else if (diff < k) {
-					k = diff;				// next interrupt time of higher priority thread
+		if (boostIdx >= 0) {
+			i = boostIdx;
+		} else {
+			for (i=cnt-1; i>0; --i) {
+				if (event[i] == EV_FIRED) {
+					break;						// a pending event found
+				} else if (event[i] == NO_EVENT) {
+					diff = next[i]-j;			// check only periodic
+					if (diff < TIM_OFF) {
+						break;					// found a ready task
+					} else if (diff < k) {
+						k = diff;				// next interrupt time of higher priority thread
+					}
 				}
 			}
 		}
@@ -195,6 +195,7 @@ class Scheduler implements Runnable {
 		ref = new RtThreadImpl[cnt];
 		next = new int[cnt];
 		event = new int[cnt];
+		boostIdx = -1;
 		tmp = cnt-1;
 	}
 

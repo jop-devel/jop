@@ -54,6 +54,10 @@ public class Native {
 	public static native int condMove(int a, int b, boolean cond);
 	public static native Object condMoveRef(Object a, Object b, boolean cond);
 	public static native void invalidate();
+	public static native void lock();
+	public static native void unlock();
+	public static native Lock toLock(int i);
+	public static native RtThreadImpl toRtThreadImpl(int i);
 
 	/**
 	 * 

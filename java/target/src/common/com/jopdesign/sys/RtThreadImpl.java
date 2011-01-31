@@ -116,7 +116,7 @@ public class RtThreadImpl {
 	/**
 	 * The scope that the thread is in. null when in heap context.
 	 */
-	Scope currentArrea;
+	Scope currentArea;
 
 	// linked list of threads in priority order
 	// used only at initialization time to collect the threads
@@ -127,6 +127,9 @@ public class RtThreadImpl {
 	static boolean initDone;
 	static boolean mission;
 
+	// fields for lock implementation
+	int lockLevel;
+	volatile int lockQueue;
 
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 
@@ -165,9 +168,9 @@ public class RtThreadImpl {
 		stack = new int[Const.STACK_SIZE-Const.STACK_OFF];
 		sp = Const.STACK_OFF;	// default empty stack for GC before startMission()
 		
-for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
-	stack[i] = 1234567;
-}
+		for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
+			stack[i] = 1234567;
+		}
 
 		this.rtt = rtt;
 		
@@ -282,17 +285,12 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 */
 	}
 
-//	public void run() {
-//		;							// nothing to do
-//	}
-
 	/**
 	 * Static start time of scheduling used by all cores
 	 */
 	static int startTime;
 
 	public static void startMission() {
-
 
 		int i, j, c;
 		RtThreadImpl th;
@@ -443,7 +441,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 	public void fire() {
 		Scheduler.sched[this.cpuId].event[this.nr] = Scheduler.EV_FIRED;
 		// if prio higher...
-// should not be allowed befor startMission
+		// should not be allowed before startMission
 		// TODO: for cross CPU event fire we need to generate the interrupt
 		// for the other core!
 		genInt();
@@ -491,7 +489,6 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		for (;;) {
 			t2 = Native.rd(Const.IO_US_CNT);
 			t3 = t2-t1;
-//			System.out.println(cnt+" "+t3);
 			t1 = t2;
 			if (t3<MIN_US) {
 				cnt += t3;
@@ -506,7 +503,6 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 //  stack while assembling it. Then some writebarrier should protect the 
 //  references and downgrade the GC state from black to grey?
 
-	// TODO: make it CMP aware
 	static int[] getStack(int num) {
 		return Scheduler.sched[sys.cpuId].ref[num].stack;
 	}
@@ -537,7 +533,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 //		JVMHelp.wr("getCurrent");
 		// we call it only when the mission is already started
 		Scheduler s = Scheduler.sched[sys.cpuId];
-		return s.ref[s.active].currentArrea;
+		return s.ref[s.active].currentArea;
 
 //		RtThreadImpl rtt = null;
 //		if (Scheduler.sched==null) {
@@ -552,7 +548,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 //			// we don't have started the mission
 //			return null;
 //		} else {
-//			return rtt.currentArrea;			
+//			return rtt.currentArea;			
 //		}
 	}
 	
@@ -563,7 +559,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 			int nr = s.active;
 			rtt = s.ref[nr];
 		}
-		rtt.currentArrea = sc;
+		rtt.currentArea = sc;
 	}
 
 	

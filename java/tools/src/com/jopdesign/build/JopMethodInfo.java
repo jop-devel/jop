@@ -199,10 +199,12 @@ public class JopMethodInfo extends MethodInfo implements Serializable {
 		}
 
 		word = getMethod().isSynchronized() ? 1 : 0;
-		word = word << 16 | (exclen & 0xFFFF);
+		word |= getMethod().isStatic() ? 2 : 0;
+		word <<= 16;
+		word |= exclen & 0xFFFF;
 
 		out.println("\t" + word
-				+ ",\t//\tsynchronized?, exception table length");
+				+ ",\t//\tstatic?, sync?, exception table length");
 
 		for (i = 0; i < exclen; i++) {
 			Integer idx = new Integer(exctab[i].getCatchType());
