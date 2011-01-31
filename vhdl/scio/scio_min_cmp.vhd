@@ -20,9 +20,10 @@
 
 
 --
---	scio_dspiomin.vhd
+--	scio_min_cmp.vhd
 --
---	minimal io devices for dspio board
+--	io devices for minimal configuration
+--	only counter, wd and serial line, alle io pins are tri statet
 --
 --
 --	io address mapping:
@@ -31,7 +32,6 @@
 --
 --		0x00 0-3		system clock counter, us counter, timer int, wd bit
 --		0x10 0-1		uart (download)
---		0x20 0-1		USB connection (download)
 --
 --	status word in uarts:
 --		0	uart transmit data register empty
@@ -44,7 +44,6 @@
 --	2003-07-09	created
 --	2005-08-27	ignore ncts on uart
 --	2005-11-30	changed to SimpCon
---	2005-12-20	dspio board
 --	2007-03-17	use records
 --
 --
@@ -81,13 +80,11 @@ port (
 
 	sync_out : in sync_out_type := NO_SYNC;
 	sync_in	 : out sync_in_type;
+	
+-- interface to UART
 
--- serial interface
-
-	txd			: out std_logic;
-	rxd			: in std_logic;
-	ncts		: in std_logic;
-	nrts		: out std_logic;
+	uart_out : out sc_out_type;
+	uart_in : in sc_in_type;
 
 -- watch dog
 
@@ -97,14 +94,10 @@ port (
 	l			: inout std_logic_vector(20 downto 1);
 	r			: inout std_logic_vector(20 downto 1);
 	t			: inout std_logic_vector(6 downto 1);
-	b			: inout std_logic_vector(10 downto 1);
+	b			: inout std_logic_vector(10 downto 1)
 	
 -- remove the comment for RAM access counting
--- ram_cnt 	: in std_logic;
-
--- invalidate cache
-
-	inval       : out std_logic		
+-- ram_cnt 	: in std_logic
 );
 end scio;
 
@@ -138,7 +131,7 @@ begin
 --	unused and input pins tri state
 --
 	l <= (others => 'Z');
-	r(20 downto 14) <= (others => 'Z');
+	r <= (others => 'Z');
 	t <= (others => 'Z');
 	b <= (others => 'Z');
 
@@ -150,8 +143,12 @@ begin
 	sc_io_in.rd_data <= sc_dout(sel_reg);
 	sc_io_in.rdy_cnt <= sc_rdy_cnt(sel_reg);
 
+	-- default for unused USB device
+	sc_dout(2) <= (others => '0');
+	sc_rdy_cnt(2) <= (others => '0');
+
 	--
-	-- Connect SLAVE_CNT simple slaves
+	-- Connect SLAVE_CNT simple test slaves
 	--
 	gsl: for i in 0 to SLAVE_CNT-1 generate
 
@@ -198,62 +195,20 @@ begin
 			sync_out => sync_out,
 			sync_in => sync_in,
 			
-			wd => wd,
+			wd => wd
 			-- remove the comment for RAM access counting
-			-- ram_count => ram_count,
-
-			inval => inval
+			-- ram_count => ram_count
 		);
 		
 	-- remove the comment for RAM access counting
 	-- ram_count <= ram_cnt;
 
-	ua: entity work.sc_uart generic map (
-			addr_bits => SLAVE_ADDR_BITS,
-			clk_freq => clk_freq,
-			baud_rate => 115200,
-			txf_depth => 2,
-			txf_thres => 1,
-			rxf_depth => 2,
-			rxf_thres => 1
-		)
-		port map(
-			clk => clk,
-			reset => reset,
+	-- pass on UART signals
+	uart_out.address <= sc_io_out.address;
+	uart_out.wr_data <= sc_io_out.wr_data;
+	uart_out.rd <= sc_rd(1);
+	uart_out.wr <= sc_wr(1);
+	sc_dout(1) <= uart_in.rd_data;
+	sc_rdy_cnt(1) <= uart_in.rdy_cnt;
 
-			address => sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
-			wr_data => sc_io_out.wr_data,
-			rd => sc_rd(1),
-			wr => sc_wr(1),
-			rd_data => sc_dout(1),
-			rdy_cnt => sc_rdy_cnt(1),
-
-			txd	 => txd,
-			rxd	 => rxd,
-			ncts => '0',
-			nrts => nrts
-	);
-
-	usb: entity work.sc_usb generic map (
-			addr_bits => SLAVE_ADDR_BITS,
-			clk_freq => clk_freq
-		)
-		port map(
-			clk => clk,
-			reset => reset,
-
-			address => sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
-			wr_data => sc_io_out.wr_data,
-			rd => sc_rd(2),
-			wr => sc_wr(2),
-			rd_data => sc_dout(2),
-			rdy_cnt => sc_rdy_cnt(2),
-
-			data => r(8 downto 1),
-			nrxf => r(9),
-			ntxe => r(10),
-			nrd => r(11),
-			ft_wr => r(12),
-			nsi => r(13)
-	);
 end rtl;
