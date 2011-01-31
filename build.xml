@@ -113,7 +113,7 @@
 	<!-- <property name="p3" value="StartLineFollower"/> -->
 	<!-- <property name="p3" value="StartKfl"/> -->
 	<!-- <property name="wcet-method" value="main"/> -->
-	<property name="wcet-method" value="measure"/>
+	<property name="wcet-method" value="foo"/>
 
 	<!-- <property name="p2" value="jdk"/> -->
 	<!-- <property name="p3" value="DoAll"/> -->
@@ -513,7 +513,7 @@
 			<arg line="quartus/${qbt}/jop"/>
 		</exec>
 		
-		<exec executable="quartus_tan" failonerror="true">
+		<exec executable="quartus_sta" failonerror="true">
 			<arg line="quartus/${qbt}/jop"/>
 		</exec>
 
