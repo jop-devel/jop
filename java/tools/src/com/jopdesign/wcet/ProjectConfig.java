@@ -48,7 +48,7 @@ public class ProjectConfig {
                                              "measure");
 
     public static final StringOption TARGET_LIB_SOURCEPATH =
-            new StringOption("splib","sourcepath of the library code, helper option used in 'sp' option defaultvalue.", "java/target/src/common:java/target/src/jdk_base:java/target/src/jdk11:java/target/src/rtapi");
+            new StringOption("splib","sourcepath of the library code, only used in '--sp' value.", "java/target/src/common:java/target/src/jdk_base:java/target/src/jdk11:java/target/src/rtapi");
 
     public static final StringOption TARGET_SOURCEPATH =
             new StringOption("sp","the sourcepath","${splib};java/target/src/app");
