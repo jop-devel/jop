@@ -36,13 +36,14 @@ use ieee.numeric_std.all;
 
 use work.jop_types.all;
 use work.sc_pack.all;
+use work.jop_config_global.all;
 use work.jop_config.all;
 
 
 entity jop is
 
 generic (				
-	ram_cnt		: integer := 3;		-- clock cycles for external ram
+	ram_cnt		: integer := 3;	-- clock cycles for external ram
     --rom_cnt	: integer := 3;		-- clock cycles for external rom OK for 20 MHz
     rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
@@ -56,14 +57,14 @@ port (
 --
 --	LEDs
 --
-	--oLEDR		: out std_logic_vector(17 downto 0);
+	oLEDR		: out std_logic_vector(17 downto 0);
 --	oLEDG		: out std_logic_vector(7 downto 0);
 
 	
 --
 --	Switches
 --
-	--iSW				: in std_logic_vector(17 downto 0);
+	iSW				: in std_logic_vector(17 downto 0);
 	
 --
 --	serial interface
@@ -143,8 +144,6 @@ end component;
 	signal ser_out			: ser_out_type;
 	signal wd_out			: std_logic;
 
-	signal inval			: std_logic;
-
 -- for generation of internal reset
 
 -- memory interface
@@ -221,26 +220,24 @@ end process;
 			ncts => oUART_CTS,
 			nrts => iUART_RTS,
 			
-			--oLEDR => oLEDR,
+			oLEDR => oLEDR,
 --			oLEDG => oLEDG,
-			--iSW => iSW,
+			iSW => iSW,
 			
 			wd => wd_out,
 			--- IO pins
 			l => open,
 			r => open,
 			t => open,
-			b => open,
+			b => open
 			-- remove the comment for RAM access counting
 			-- ram_cnt => ram_count,
-			inval => inval
 		);
 
 	cmp_dcache: entity work.datacache
 		port map (
 			clk		=> clk_int,
 			reset	=> int_res,
-			inval	=> inval,
 			cpu_in	=> sc_dcache_in,
 			cpu_out => sc_dcache_out,
 			mem_in	=> sc_mem_in,

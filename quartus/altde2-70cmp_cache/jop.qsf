@@ -375,7 +375,7 @@ set_location_assignment PIN_E2 -to oLCD_EN
 set_location_assignment PIN_F1 -to oLCD_ON
 set_location_assignment PIN_F2 -to oLCD_RS
 set_location_assignment PIN_F3 -to oLCD_RW
-set_location_assignment PIN_AJ6 -to oLEDR[0]
+#set_location_assignment PIN_AJ6 -to oLEDR[0]
 set_location_assignment PIN_AK5 -to oLEDR[1]
 set_location_assignment PIN_AC13 -to oLEDR[10]
 set_location_assignment PIN_AB13 -to oLEDR[11]
@@ -394,7 +394,7 @@ set_location_assignment PIN_Y27 -to oLEDG[3]
 set_location_assignment PIN_Y24 -to oLEDG[4]
 set_location_assignment PIN_Y23 -to oLEDG[5]
 set_location_assignment PIN_AA27 -to oLEDG[6]
-set_location_assignment PIN_AA24 -to oLEDG[7]
+#set_location_assignment PIN_AA24 -to oLEDG[7]
 set_location_assignment PIN_AJ4 -to oLEDR[3]
 set_location_assignment PIN_AK3 -to oLEDR[4]
 set_location_assignment PIN_AH4 -to oLEDR[5]
@@ -524,7 +524,7 @@ set_location_assignment PIN_AC27 -to iSW[3]
 set_location_assignment PIN_AC26 -to iSW[4]
 set_location_assignment PIN_AC24 -to iSW[5]
 set_location_assignment PIN_AC23 -to iSW[6]
-set_location_assignment PIN_AD25 -to iSW[7]
+#set_location_assignment PIN_AD25 -to iSW[7]
 set_location_assignment PIN_AD24 -to iSW[8]
 set_location_assignment PIN_AE27 -to iSW[9]
 set_location_assignment PIN_G15 -to iTD1_CLK27
@@ -597,6 +597,7 @@ set_location_assignment PIN_AD15 -to clk
 set_location_assignment PIN_AJ6 -to wd
 set_location_assignment PIN_D21 -to ser_rxd
 set_location_assignment PIN_E21 -to ser_txd
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_global.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_de2.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
@@ -636,15 +637,15 @@ set_global_assignment -name VHDL_FILE ../../vhdl/top/jopmul_512x32_cache.vhd
 
 set_global_assignment -name CDF_FILE jop.cdf
 set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING OFF
-set_global_assignment -name STATE_MACHINE_PROCESSING "ONE-HOT"
-set_global_assignment -name MUX_RESTRUCTURE AUTO
+set_global_assignment -name STATE_MACHINE_PROCESSING AUTO
+set_global_assignment -name MUX_RESTRUCTURE OFF
 set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC OFF
 set_global_assignment -name FITTER_EFFORT "AUTO FIT"
 set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION OFF
 set_global_assignment -name ROUTER_TIMING_OPTIMIZATION_LEVEL MAXIMUM
 set_global_assignment -name CYCLONEII_OPTIMIZATION_TECHNIQUE SPEED
-set_global_assignment -name PRE_MAPPING_RESYNTHESIS ON
-set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT EXTRA
+set_global_assignment -name PRE_MAPPING_RESYNTHESIS OFF
+set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT NORMAL
 set_global_assignment -name PLACEMENT_EFFORT_MULTIPLIER 1.0
 set_global_assignment -name REMOVE_DUPLICATE_LOGIC OFF
 set_global_assignment -name AUTO_GLOBAL_MEMORY_CONTROLS ON

@@ -275,7 +275,7 @@ install:
 	@echo nothing to install
 
 # cleanup
-EXTENSIONS=class rbf rpt sof pin summary ttf qdf dat wlf
+EXTENSIONS=class rbf rpt sof pin summary ttf qdf dat wlf done qws
 
 clean:
 	for ext in $(EXTENSIONS); do \
@@ -483,7 +483,7 @@ qsyn:
 	quartus_map quartus/$(QBT)/jop
 	quartus_fit quartus/$(QBT)/jop
 	quartus_asm quartus/$(QBT)/jop
-	quartus_tan quartus/$(QBT)/jop
+#	quartus_tan quartus/$(QBT)/jop
 
 #
 #	Modelsim target
@@ -667,7 +667,7 @@ jop_blink_test:
 		quartus_map $$qp; \
 		quartus_fit $$qp; \
 		quartus_asm $$qp; \
-		quartus_tan $$qp; \
+#		quartus_tan $$qp; \
 		cd quartus/$$target && quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
 	done
 	make config
@@ -685,7 +685,7 @@ jop_testmon:
 		quartus_map $$qp; \
 		quartus_fit $$qp; \
 		quartus_asm $$qp; \
-		quartus_tan $$qp; \
+#		quartus_tan $$qp; \
 		cd quartus/$$target && quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
 	done
 	make config

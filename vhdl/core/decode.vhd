@@ -372,6 +372,12 @@ begin
 					ena_a <= '0';
 			when "0100010000" =>			-- stgs
 					ena_a <= '0';
+			when "0100010001" =>			-- cinval
+					ena_a <= '0';
+			when "0100010010" =>			-- atmstart
+					ena_a <= '0';
+			when "0100010011" =>			-- atmend
+					ena_a <= '0';
 --			when "0110------" =>			-- bz
 --			when "0111------" =>			-- bnz
 --			when "1---------" =>			-- jmp
@@ -453,6 +459,9 @@ begin
 		mem_in.rdc <= '0';
 		mem_in.rdf <= '0';
 		mem_in.copy <= '0';
+		mem_in.cinval <= '0';
+		mem_in.atmstart <= '0';
+		mem_in.atmend <= '0';
 		mul_wr <= '0';
 		wr_dly <= '0';
 
@@ -473,6 +482,9 @@ begin
 		mem_in.rdf <= '0';
 		mem_in.wrf <= '0';
 		mem_in.copy <= '0';
+		mem_in.cinval <= '0';
+		mem_in.atmstart <= '0';
+		mem_in.atmend <= '0';
 		mul_wr <= '0';
 		wr_dly <= '0';
 
@@ -517,9 +529,16 @@ begin
 		if ir(9 downto 4)="010001" then		-- a MMU instruction, no SP change
 			wr_dly <= '1';
 			case ir(MMU_WIDTH-1 downto 0) is
-				-- when STGS =>
-				when others =>
+				when STGS =>
 					mem_in.getstatic <= '1';	-- start getstatic
+				when cinval =>
+					mem_in.cinval <= '1';		-- invalidate data cache
+				when atmstart =>
+					mem_in.atmstart <= '1';		-- start atomic arbiter operation
+				when atmend =>
+					mem_in.atmend <= '1';		-- end atomic arbiter operation
+				when others =>
+					null;
 			end case;
 		end if;
 

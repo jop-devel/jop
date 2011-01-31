@@ -44,13 +44,13 @@ use work.jop_config.all;
 entity jop is
 
 generic (
-	ram_cnt		: integer := 3;		-- clock cycles for external ram
+	ram_cnt		: integer := 3;	-- clock cycles for external ram
 --	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
 	rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 5;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 4		-- number of cpus
+	cpu_cnt		: integer := 8		-- number of cpus
 );
 
 port (
@@ -67,6 +67,19 @@ port (
 --	watchdog
 --
 	wd				: out std_logic;
+
+--
+--	LEDs
+--
+	oLEDR		: out std_logic_vector(17 downto 0);
+--	oLEDG		: out std_logic_vector(7 downto 0);
+
+
+	
+--
+--	Switches
+--
+	iSW				: in std_logic_vector(17 downto 0);
 
 --
 --	only one ram bank
@@ -138,8 +151,6 @@ end component;
 	type wd_out_array is array (0 to cpu_cnt-1) of std_logic;
 	signal wd_out			: wd_out_array;
 	
-	signal inval			: std_logic_vector(0 to cpu_cnt-1);
-
 -- for generation of internal reset
 -- memory interface
 
@@ -229,7 +240,6 @@ end process;
 			port map (
 				clk		=> clk_int,
 				reset	=> int_res,
-				inval   => inval(i),
 				cpu_in	=> sc_dcache_in(i),
 				cpu_out => sc_dcache_out(i),
 				mem_in	=> sc_arb_in(i),
@@ -268,10 +278,9 @@ end process;
 			l => open,
 			r => open,
 			t => open,
-			b => open,
+			b => open
 			-- remove the comment for RAM access counting
 			-- ram_cnt => ram_count
-			inval => inval(0)
 		);
 		
 	-- io for other processors

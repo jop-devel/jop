@@ -273,7 +273,10 @@ begin
 		
 		for i in 0 to CPU_CNT-1 loop
 			-- pass on registered value
-			if rdslot(i) = '1' or wrslot(i) = '1' then
+			if rdslot(i) = '1' and reg_out(i).rd = '1' then
+				mem_out <= reg_out(i);
+			end if;
+			if wrslot(i) = '1' and reg_out(i).wr = '1' then
 				mem_out <= reg_out(i);
 			end if;
 			-- direct pass through

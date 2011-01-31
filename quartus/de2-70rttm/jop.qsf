@@ -599,6 +599,7 @@ set_location_assignment PIN_AJ6 -to wd
 set_location_assignment PIN_D21 -to ser_rxd
 set_location_assignment PIN_E21 -to ser_txd
 
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_global.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_de2.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_rttm_tdma.vhd
 set_global_assignment -name VHDL_FILE "../../vhdl/top/jop_de2-70rttm.vhd"
@@ -629,7 +630,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm_internal_pack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tag.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm_tag.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rttm/write_fifo_buffer.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm_state_machine.vhd

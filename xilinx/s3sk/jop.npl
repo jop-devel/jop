@@ -18,6 +18,7 @@ DEVSIMULATOR Modelsim
 SIMULATORTIME 0
 DEVGENERATEDSIMULATIONMODEL VHDL
 GENERATEDSIMULATIONMODELTIME 0
+SOURCE ../../vhdl/top/jop_config_global.vhd
 SOURCE ../../vhdl/top/jop_config_xs3.vhd
 SOURCE ../../vhdl/core/jop_types.vhd
 SOURCE ../../vhdl/simpcon/sc_pack.vhd

@@ -262,7 +262,7 @@ end process;
 	ocin.chk_gf <= mem_in.getfield and not was_a_stidx;
 	ocin.gf_val <= sc_mem_in.rd_data;
 	ocin.pf_val <= value;
-	ocin.inval <= mem_in.stidx;
+	ocin.inval <= mem_in.stidx or mem_in.cinval;
 
 --
 --	SimpCon connections
@@ -274,6 +274,7 @@ end process;
 	sc_mem_out.rd <= mem_in.rd or mem_in.rdc or mem_in.rdf or mem_in.iaload or state_rd;
 	sc_mem_out.wr <= mem_in.wr or mem_in.wrf or state_wr;
 	sc_mem_out.cache <= ram_dcache;
+	sc_mem_out.cinval <= mem_in.cinval;
 
 --
 --	read data MUX on cache hit
@@ -863,6 +864,13 @@ begin
 			read_ocache<='1';
 		end if;
 
+		-- change arbiter to atomic mode
+		if mem_in.atmstart='1' then
+			sc_mem_out.atomic <= '1';
+		elsif mem_in.atmend='1' then
+			sc_mem_out.atomic <= '0';
+		end if;
+			
 		--
 		-- state machine and registered outputs
 		-- default values
@@ -878,7 +886,6 @@ begin
 		bounds_error <= '0';
 		state_wr <= '0';
 		state_dcache <= bypass;
-		sc_mem_out.atomic <= '0';
 		sc_mem_out.tm_cache <= '1';
 		ocin.wr_gf <= '0';
 		ocin.chk_pf <= '0';
@@ -932,12 +939,10 @@ begin
 				-- first memory read
 				inc_addr_reg <= '1';
 				state_rd <= '1';
-				sc_mem_out.atomic	<= '1';
 				sc_mem_out.tm_cache <= '0';
 
 			when bc_w =>
 				-- wait
-				sc_mem_out.atomic	<= '1';
 				sc_mem_out.tm_cache <= '0';
 
 			when bc_rn =>
@@ -945,17 +950,11 @@ begin
 				inc_addr_reg <= '1';
 				dec_len <= '1';
 				state_rd <= '1';
-				sc_mem_out.atomic	<= '1';
 				sc_mem_out.tm_cache <= '0';
 
 			when bc_wr =>
 				-- BC write
-				bc_wr_ena <= '1';
-				sc_mem_out.atomic	<= '1';
-				
-				if bc_len=to_unsigned(1, jpc_width-3) then
-					sc_mem_out.atomic	<= '0';				
-				end if;
+				bc_wr_ena <= '1';				
 				sc_mem_out.tm_cache <= '0';
 
 			when bc_wl =>
@@ -970,7 +969,6 @@ begin
 				read_ocache<='0';
 				state_bsy <= '1';
 				inc_addr_reg <= '1';
-				sc_mem_out.atomic <= '1';
 				-- read for store cannot happen earlier
 				if state=iast0 then
 					state_rd <= '1';
@@ -978,61 +976,46 @@ begin
 				state_dcache <= full_assoc;
 
 			when iald1 =>
-				sc_mem_out.atomic <= '1';
 
 			when iald2 =>
 				state_rd <= '1';
-				sc_mem_out.atomic <= '1';
 				state_dcache <= full_assoc;
 
 			when iald23 =>
 				state_rd <= '1';
-				sc_mem_out.atomic <= '1';
 				state_dcache <= full_assoc;
 
 			when iald3 =>
-				sc_mem_out.atomic <= '1';
 
 			when iald4 =>
-				sc_mem_out.atomic <= '1';
 
 			when iasrd =>
 				state_rd <= '1';
-				sc_mem_out.atomic <= '1';
 
 			when ialrb =>
-				sc_mem_out.atomic <= '1';
 
 			when iaswb =>
-				sc_mem_out.atomic <= '1';
 
 			when iasrb =>
-				sc_mem_out.atomic <= '1';
 				
 			when iasst =>
 				state_wr <= '1';
-				sc_mem_out.atomic <= '1';
 
 			when gf0 =>
 				read_ocache<='0';
 				state_rd <= '1';
 				state_bsy <= '1';
-				sc_mem_out.atomic <= '1';
 
 			when gf1 =>
-				sc_mem_out.atomic <= '1';
 
 			when gf2 =>
-				sc_mem_out.atomic <= '1';
 
 			when gf3 =>
 				state_rd <= '1';
 				was_a_hwo <= sc_mem_in.rd_data(31);
-				sc_mem_out.atomic <= '1';
 				state_dcache <= full_assoc;
                           
 			when gf4 =>
-				sc_mem_out.atomic <= '1';
 
 			when pf0 =>
 				read_ocache<='0';
@@ -1043,14 +1026,11 @@ begin
 
 			when pf1 =>
 				state_rd <= '1';
-				sc_mem_out.atomic <= '1';
 				state_dcache <= full_assoc;
 
 			when pf2 =>
-				sc_mem_out.atomic <= '1';
 
 			when pf3 =>
-				sc_mem_out.atomic <= '1';
 
 			when pf4 =>
 				-- only on 'normal' putfield (no Native, no I/O)
@@ -1059,32 +1039,25 @@ begin
 					ocin.wr_pf <= '1';
 				end if;
 				state_wr <= '1';
-				sc_mem_out.atomic <= '1';
 				state_dcache <= full_assoc;
                           
 			when cp0 =>
 				read_ocache<='0';
-				sc_mem_out.atomic <= '1';
 				state_bsy <= '1';
 
 			when cp1 =>
 				state_rd <= '1';
-				sc_mem_out.atomic <= '1';
 				
 			when cp2 =>
-				sc_mem_out.atomic <= '1';
 
 			when cp3 =>
-				sc_mem_out.atomic <= '1';
 
 			when cp4 =>
 				state_wr <= '1';
-				sc_mem_out.atomic <= '1';
 
 			when cpstop =>
 
 			when last =>
-				sc_mem_out.atomic <= '1';
 				state_bsy <= '0';
 
 			when npexc =>
