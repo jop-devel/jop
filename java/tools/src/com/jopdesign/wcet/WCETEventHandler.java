@@ -76,7 +76,7 @@ public class WCETEventHandler extends EmptyAppEventHandler {
     @Override
     public void onCreateControlFlowGraph(ControlFlowGraph cfg, boolean clean) {
         try {
-            loadAnnotations(cfg);
+            loadLoopAnnotations(cfg);
         } catch (BadAnnotationException e) {
             // TODO maybe do more than just log an error? (halt?)
             logger.error("Failed to load annotations for method "+cfg.getMethodInfo()+": "+e.getMessage(), e);
@@ -93,10 +93,10 @@ public class WCETEventHandler extends EmptyAppEventHandler {
 
     }
 
-    public void loadAnnotations(ClassInfo classInfo) throws BadAnnotationException {
+    public void loadLoopAnnotations(ClassInfo classInfo) throws BadAnnotationException {
         for (MethodInfo method : classInfo.getMethods()) {
             if (method.isAbstract()) continue;
-            loadAnnotations(method.getCode().getControlFlowGraph(false));
+            loadLoopAnnotations(method.getCode().getControlFlowGraph(false));
         }
     }
 
@@ -106,8 +106,7 @@ public class WCETEventHandler extends EmptyAppEventHandler {
      * @param cfg the control flow graph of the method
      * @throws BadAnnotationException if an annotations is missing
      */
-    public void loadAnnotations(ControlFlowGraph cfg) throws BadAnnotationException {
-        // TODO move this method into own AnnotationLoader class?
+    public void loadLoopAnnotations(ControlFlowGraph cfg) throws BadAnnotationException {
         SourceAnnotations wcaMap;
         MethodInfo method = cfg.getMethodInfo();
         MethodCode code = method.getCode();
@@ -119,6 +118,12 @@ public class WCETEventHandler extends EmptyAppEventHandler {
         for (CFGNode n : cfg.getLoopColoring().getHeadOfLoops()) {
             BasicBlockNode headOfLoop = (BasicBlockNode) n;
             BasicBlock block = headOfLoop.getBasicBlock();
+            // check if loopbound has already been loaded
+            if (block.getLoopBound() != null) {
+                // TODO maybe check if we already loaded annotations for this methodInfo before
+                // or at least check if the source-annotation is tighter than what is currently set?
+                continue;
+            }
             // search for loop annotation in range
             int sourceRangeStart = code.getLineNumber(block.getFirstInstruction());
             int sourceRangeStop = code.getLineNumber(block.getLastInstruction());

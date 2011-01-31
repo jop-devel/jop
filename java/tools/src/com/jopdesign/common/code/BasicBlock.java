@@ -30,7 +30,6 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import org.apache.bcel.Constants;
-import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.generic.ATHROW;
 import org.apache.bcel.generic.BranchInstruction;
 import org.apache.bcel.generic.ConstantPoolGen;
@@ -106,23 +105,6 @@ public class BasicBlock {
         public List<FlowTarget> getTargets() {
             return targets;
         }
-
-        public void setAlwaysTaken() {
-            this.alwaysTaken = true;
-        }
-
-        public void setSplitBefore() {
-            this.splitBefore = true;
-        }
-
-        public void setSplitAfter() {
-            this.splitAfter = true;
-        }
-
-        public void setExit() {
-            this.exit = true;
-            this.splitAfter = true;
-        }
     }
 
     /**
@@ -163,8 +145,14 @@ public class BasicBlock {
     /**
      * Keys for the custom {@link InstructionHandle} attributes
      */
-    private enum InstrField {
-        FLOW_INFO
+    private enum InstrField { FLOW_INFO }
+
+    /**
+     * @param ih the instruction handle to check
+     * @return the flowInfo associated with an {@link InstructionHandle}
+     */
+    private static FlowInfo getFlowInfo(InstructionHandle ih) {
+        return (FlowInfo) ih.getAttribute(InstrField.FLOW_INFO);
     }
 
     public static final CustomKey KEY_LOOPBOUND;
@@ -173,18 +161,9 @@ public class BasicBlock {
         KEY_LOOPBOUND = KeyManager.getSingleton().registerKey(KeyType.CODE, "BasicBlock.LoopBound");
     }
 
-    /**
-     * Get FlowInfo associated with an {@link InstructionHandle}
-     *
-     * @param ih
-     * @return
-     */
-    public static FlowInfo getFlowInfo(InstructionHandle ih) {
-        return (FlowInfo) ih.getAttribute(InstrField.FLOW_INFO);
-    }
-
     private final LinkedList<InstructionHandle> instructions = new LinkedList<InstructionHandle>();
     private final MethodCode methodCode;
+    private FlowInfo exitFlowInfo;
 
     /**
      * Create a basic block
@@ -214,6 +193,15 @@ public class BasicBlock {
      */
     public ConstantPoolGen cpg() {
         return this.getMethodInfo().getClassInfo().getConstantPoolGen();
+    }
+
+    public FlowInfo getExitFlowInfo() {
+        return exitFlowInfo;
+    }
+
+    private void setExitFlowInfo(FlowInfo exitFlowInfo) {
+        // used only by the builder?
+        this.exitFlowInfo = exitFlowInfo;
     }
 
     public void setLoopBound(LoopBound loopBound) {
@@ -281,7 +269,7 @@ public class BasicBlock {
     }
 
     /**
-     * return the BranchInstruction of the basic block, or {@code null} if there is none.
+     * @return the BranchInstruction of the basic block, or {@code null} if there is none.
      */
     public BranchInstruction getBranchInstruction() {
         Instruction last = this.getLastInstruction().getInstruction();
@@ -289,14 +277,14 @@ public class BasicBlock {
     }
 
     /**
-     * Get the list of {@link InstructionHandle}s, which make up this basic block
+     * @return the list of {@link InstructionHandle}s, which make up this basic block
      */
     public List<InstructionHandle> getInstructions() {
         return this.instructions;
     }
 
     /**
-     * Get number of bytes in this basic block
+     * @return number of bytes in this basic block
      */
     public int getNumberOfBytes() {
         int len = 0;
@@ -306,6 +294,18 @@ public class BasicBlock {
             );
         }
         return len;
+    }
+
+    /**
+     * @return all source code lines this basic block maps to
+     */
+    public TreeSet<Integer> getSourceLineRange() {
+        TreeSet<Integer> lines = new TreeSet<Integer>();
+        for (InstructionHandle ih : instructions) {
+            int sourceLine = methodCode.getLineNumber(ih);
+            if (sourceLine >= 0) lines.add(sourceLine);
+        }
+        return lines;
     }
 
     /*---------------------------------------------------------------------------
@@ -419,34 +419,37 @@ public class BasicBlock {
         List<BasicBlock> basicBlocks = new LinkedList<BasicBlock>();
         InstructionList il = methodCode.getInstructionList(true);
         il.setPositions(true);
-        LineNumberTable lineNumberTable =
-                methodCode.getLineNumberTable();
 
         /* Step 1: compute flow info */
         for (InstructionHandle ih : il.getInstructionHandles()) {
             ih.addAttribute(InstrField.FLOW_INFO, itv.getFlowInfo(ih));
         }
+
         /* Step 2: create basic blocks */
         {
             BasicBlock bb = new BasicBlock(methodCode);
             InstructionHandle[] handles = il.getInstructionHandles();
+
             for (int i = 0; i < handles.length; i++) {
                 InstructionHandle ih = handles[i];
                 bb.addInstruction(ih);
-                boolean doSplit = getFlowInfo(ih).splitAfter;
+                boolean doSplit = getFlowInfo(ih).doSplitAfter();
                 if (i + 1 < handles.length) {
                     doSplit |= itv.isTarget(handles[i + 1]);
-                    doSplit |= getFlowInfo(handles[i + 1]).splitBefore;
+                    doSplit |= getFlowInfo(handles[i + 1]).doSplitBefore();
                 }
                 if (doSplit) {
+                    bb.setExitFlowInfo(getFlowInfo(ih));
                     basicBlocks.add(bb);
                     bb = new BasicBlock(methodCode);
                 }
+                ih.removeAttribute(InstrField.FLOW_INFO);
             }
-            if (!bb.instructions.isEmpty()) {
+
+            if (!bb.getInstructions().isEmpty()) {
                 // be nice to DFA stuff, and ignore NOPs
-                for (int i = bb.instructions.size() - 1; i >= 0; --i) {
-                    InstructionHandle x = bb.instructions.get(i);
+                for (int i = bb.getInstructions().size() - 1; i >= 0; --i) {
+                    InstructionHandle x = bb.getInstructions().get(i);
                     if (x.getInstruction().getOpcode() != Constants.NOP) {
                         throw new AssertionError("[INTERNAL ERROR] Last instruction " + x +
                                 " in code does not change control flow - this is impossible");
@@ -457,20 +460,10 @@ public class BasicBlock {
         return basicBlocks;
     }
 
-    /**
-     * Return all source code lines this basic block maps to
-     *
-     * @return
+    /*---------------------------------------------------------------------------
+     *  Dump BasicBlock
+     *---------------------------------------------------------------------------
      */
-    public TreeSet<Integer> getSourceLineRange() {
-        TreeSet<Integer> lines = new TreeSet<Integer>();
-        LineNumberTable lnt = methodCode.getLineNumberTable();
-        for (InstructionHandle ih : instructions) {
-            int sourceLine = lnt.getSourceLine(ih.getPosition());
-            if (sourceLine >= 0) lines.add(sourceLine);
-        }
-        return lines;
-    }
 
     /**
      * <p>Compact, human-readable String representation of the basic block.</p>
@@ -501,18 +494,14 @@ public class BasicBlock {
         private StringBuilder sb;
         private StringBuilder lineBuffer;
         private boolean visited;
-        private LineNumberTable lnt;
         private int startPos = -1, lastPos = -1;
         private int currentPos;
         private Integer address;
-        private ControlFlowGraph cfg;
 
 
         public InstructionPrettyPrinter() {
             this.sb = new StringBuilder();
-            this.lnt = methodCode.getLineNumberTable();
             this.lineBuffer = new StringBuilder();
-            this.cfg = methodCode.getControlFlowGraph(false);
         }
 
         public StringBuilder getBuffer() {
@@ -523,7 +512,7 @@ public class BasicBlock {
         public void visitInstruction(InstructionHandle ih) {
             this.visited = false;
             //this.address = cfg.getConstAddress(ih);
-            currentPos = lnt.getSourceLine(ih.getPosition());
+            currentPos = methodCode.getLineNumber(ih);
             ih.accept(this);
             if (!visited) {
                 String s = ih.getInstruction().toString(cpg().getConstantPool());

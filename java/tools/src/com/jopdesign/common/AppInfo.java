@@ -810,17 +810,36 @@ public final class AppInfo {
      * be similar to {@link #findImplementations(MethodRef)}.
      *
      * @param invokeSite the invokesite to look up
-     * @param cs the callstring up to the method containing the invocation
+     * @param cs the callstring up to the method containing the invocation, excluding the given invokesite
      * @return a list of possible implementations for the invocation.
      */
     public List<MethodInfo> findImplementations(InvokeSite invokeSite, CallString cs) {
+        return findImplementations(cs.push(invokeSite));
+    }
+
+    /**
+     * Find all methods which might get invoked for a given invokesite.
+     * This uses the callgraph returned by {@link #getCallGraph()} to lookup possible implementations.
+     * Use callgraph thinning to make the result of this method more precise.
+     * If the callgraph has not yet been built by {@link #buildCallGraph(boolean)}, this method will
+     * be similar to {@link #findImplementations(MethodRef)}.
+     *
+     * @param cs the callstring to the the invocation, including the given invokesite. Must not be empty.
+     * @return a list of possible implementations for the invocation.
+     */
+    public List<MethodInfo> findImplementations(CallString cs) {
+        if (cs.length() == 0) {
+            throw new AssertionError("findImplementations() called with empty callstring!");
+        }
         if (callGraph == null) {
             // we do not have a callgraph, so just use typegraph info
+            InvokeSite invokeSite = cs.top();
             return findImplementations(invokeSite.getInvokeeRef());
         }
 
         // TODO implement!!
-        
+
+        InvokeSite invokeSite = cs.top();
         return findImplementations(invokeSite.getInvokeeRef());
     }
 

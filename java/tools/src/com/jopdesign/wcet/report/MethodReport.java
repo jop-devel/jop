@@ -32,7 +32,7 @@ import java.util.TreeSet;
 public class MethodReport {
     private MethodInfo info;
     private Collection<LoopBound> loopBounds;
-    private Set<MethodInfo> referenced;
+    private Set<String> referenced;
     String page;
     private int sizeInWords;
     private ControlFlowGraph fg;
@@ -43,10 +43,10 @@ public class MethodReport {
         fg = info.getCode().getControlFlowGraph(false);
         this.loopBounds = fg.buildLoopBoundMap().values();
         this.sizeInWords = fg.getNumberOfWords();
-        this.referenced = new TreeSet<MethodInfo>();
+        this.referenced = new TreeSet<String>();
         for (ExecutionContext cgn : p.getCallGraph().getReferencedMethods(m)) {
             MethodInfo ref = cgn.getMethodInfo();
-            this.referenced.add(ref);
+            this.referenced.add(ref.toString());
         }
         this.page = page;
         this.cacheBlocks = p.getWCETProcessorModel().getMethodCache().requiredNumberOfBlocks(fg.getNumberOfWords());
@@ -60,7 +60,7 @@ public class MethodReport {
         return loopBounds;
     }
 
-    public Set<MethodInfo> getReferenced() {
+    public Set<String> getReferenced() {
         return referenced;
     }
 

@@ -213,11 +213,11 @@ public class ControlFlowGraph {
     }
 
     // FIXME: [wcet-frontend] Remove the ugly ih.getAttribute() hack for CFG Nodes
-
     private static final Object KEY_CFGNODE = new HashedString("ControlFlowGraph.CFGNode");
 
     /**
-     * Get the basic block node associated with an instruction handle
+     * @param ih The instruction handle of a method which has a CFG associated with it
+     * @return The basic block node associated with an instruction handle
      */
     public static BasicBlockNode getHandleNode(InstructionHandle ih) {
         BasicBlockNode blockNode = (BasicBlockNode) ih.getAttribute(KEY_CFGNODE);
@@ -590,7 +590,7 @@ public class ControlFlowGraph {
         /* flow edges */
         for (BasicBlockNode bbNode : nodeTable.values()) {
             BasicBlock bb = bbNode.getBasicBlock();
-            FlowInfo bbf = BasicBlock.getFlowInfo(bb.getLastInstruction());
+            FlowInfo bbf = bb.getExitFlowInfo();
             if (bbf.isExit()) { // exit edge
                 // do not connect exception edges
                 if (bbNode.getBasicBlock().getLastInstruction().getInstruction().getOpcode()
@@ -628,8 +628,9 @@ public class ControlFlowGraph {
      * Clean up all known references to the objects of this graph (i.e. InstructionHandle attributes,..)
      */
     public void dispose() {
-        // TODO remove BBNode references from InstructionHandles
-
+        for (CFGNode node : graph.vertexSet()) {
+            node.dispose();
+        }
     }
 
     public AppInfo getAppInfo() {
