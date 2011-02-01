@@ -35,11 +35,14 @@ public abstract class ClassMemberInfo extends MemberInfo {
 
     private final ClassInfo classInfo;
     private final FieldGenOrMethodGen classMember;
+    private final int hashValue;
 
     public ClassMemberInfo(ClassInfo classInfo, FieldGenOrMethodGen classMember) {
         super(classMember);
         this.classInfo = classInfo;
         this.classMember = classMember;
+        // cache the hash :) speed up things a little, memberSignature is immutable in BCEL anyway
+        hashValue = buildHashValue();
     }
 
     public ClassInfo getClassInfo() {
@@ -88,7 +91,7 @@ public abstract class ClassMemberInfo extends MemberInfo {
 
     @Override
     public int hashCode() {
-        return getMemberSignature().hashCode();
+        return hashValue;
     }
 
     @Override
@@ -100,4 +103,10 @@ public abstract class ClassMemberInfo extends MemberInfo {
                ((ClassMemberInfo)obj).getMemberSignature().equals(getMemberSignature());
     }
 
+    private int buildHashValue() {
+        int hash = classInfo.hashCode();
+        hash = hash * 31 + classMember.getName().hashCode();
+        hash = hash * 31 + classMember.getSignature().hashCode();
+        return hash;
+    }
 }

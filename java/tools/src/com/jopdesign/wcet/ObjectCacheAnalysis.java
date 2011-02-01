@@ -19,6 +19,7 @@
  */
 package com.jopdesign.wcet;
 
+import com.jopdesign.common.code.CallGraph.ContextEdge;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.misc.MiscUtils;
@@ -33,7 +34,6 @@ import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation.OCacheMode;
 import com.jopdesign.wcet.analysis.cache.ObjectRefAnalysis;
 import com.jopdesign.wcet.ipet.LpSolveWrapper;
 import com.jopdesign.wcet.jop.MethodCache;
-import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.io.FileNotFoundException;
@@ -149,7 +149,7 @@ public class ObjectCacheAnalysis {
 		// Object Cache (debugging)
 
 		ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project, false, 1, 65536, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE);
-		TopologicalOrderIterator<ExecutionContext, DefaultEdge> cgIter = this.project.getCallGraph().topDownIterator();
+		TopologicalOrderIterator<ExecutionContext, ContextEdge> cgIter = this.project.getCallGraph().topDownIterator();
 		while(cgIter.hasNext()) {
 			ExecutionContext scope = cgIter.next();
 			Set<SymbolicAddress> addresses = orefAnalysis.getAddressSet(scope);

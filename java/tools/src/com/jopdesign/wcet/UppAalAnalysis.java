@@ -109,7 +109,7 @@ public class UppAalAnalysis {
             return false;
         }
         UppaalAnalysis ua = new UppaalAnalysis(tlLogger, project, uppaalOutDir);
-        List<MethodInfo> methods = project.getCallGraph().getImplementedMethods(project.getTargetMethod());
+        List<MethodInfo> methods = project.getCallGraph().getReachableImplementations(project.getTargetMethod());
         Collections.reverse(methods);
         List<WCETEntry> entries = new ArrayList<WCETEntry>();
         for (MethodInfo m : methods) {

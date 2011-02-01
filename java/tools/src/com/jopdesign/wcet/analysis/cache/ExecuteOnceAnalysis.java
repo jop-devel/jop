@@ -20,11 +20,11 @@
 package com.jopdesign.wcet.analysis.cache;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallGraph.ContextEdge;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.wcet.WCETTool;
-import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.util.HashMap;
@@ -42,63 +42,61 @@ import java.util.logging.Logger;
  * are marked with {@code *}, the others with {@code 1}.
  * </p><p>
  * If we need to know whether a node is executed at most once in a scope, we check
- * whether the containing method is marked with {@code root}, {@code *} or {@code 1}. 
+ * whether the containing method is marked with {@code root}, {@code *} or {@code 1}.
  * In the first case, we check whether the containing basic block is part of a loop.
  * </p>
  * TODO: [scope-analysis] More efficient implementation of ExecuteOnceAnalysis. Currently
- *                        we have 4 nested loops.
- *                        
- * @author Benedikt Huber <benedikt.huber@gmail.com>
+ * we have 4 nested loops.
  *
+ * @author Benedikt Huber <benedikt.huber@gmail.com>
  */
 public class ExecuteOnceAnalysis {
-	private WCETTool project;
-	private Map<ExecutionContext,Set<MethodInfo>> inLoopSet;
+    private WCETTool project;
+    private Map<ExecutionContext, Set<MethodInfo>> inLoopSet;
 
-	public ExecuteOnceAnalysis(WCETTool p) {
-		this.project = p;
-		analyze();
-	}
-	private void analyze() {
-		inLoopSet = new HashMap<ExecutionContext, Set<MethodInfo>>();
-		/* Top Down the Scope Graph */
-		TopologicalOrderIterator<ExecutionContext, DefaultEdge> iter =
-			project.getCallGraph().topDownIterator();
+    public ExecuteOnceAnalysis(WCETTool p) {
+        this.project = p;
+        analyze();
+    }
 
-		while(iter.hasNext()) {
-			ExecutionContext scope = iter.next();
-			scope = new ExecutionContext(scope.getMethodInfo()); /* Remove call string */
-			ControlFlowGraph cfg = project.getFlowGraph(scope.getMethodInfo());
-			Set<MethodInfo> inLoop = new HashSet<MethodInfo>();
-			for(CFGNode node : cfg.getGraph().vertexSet()) {
-				if(! (node instanceof ControlFlowGraph.InvokeNode)) continue;
-				ControlFlowGraph.InvokeNode iNode = (ControlFlowGraph.InvokeNode) node;
-				if(! cfg.getLoopColoring().getLoopColor(node).isEmpty()) {
-					for(MethodInfo impl : iNode.getImplementedMethods()) {
-						inLoop.add(impl);
-						for(MethodInfo rImpl : project.getCallGraph().getImplementationsReachableFromMethod(impl)) {
-							inLoop.add(rImpl);
-						}
-					}
-				}
-			}
-			inLoopSet .put(scope, inLoop);
-		}
-	}
-	
-	public boolean isExecutedOnce(ExecutionContext scope, CFGNode node) {
-		ControlFlowGraph cfg = node.getControlFlowGraph();
-		Set<MethodInfo> inLoopMethods = inLoopSet.get(scope);
-		if(inLoopMethods == null) {
-			Logger.getLogger("Object Cache Analysis").warning("No loop information for " + scope.getMethodInfo().getFQMethodName() + " @ " +
-					scope.getCallString().toString());
-			return false;
-		}
-		if(! inLoopMethods.contains(cfg.getMethodInfo())) {
-			return cfg.getLoopColoring().getLoopColor(node).size() == 0;
-		} else {
-			return false;
-		}
-	}
-	
+    private void analyze() {
+        inLoopSet = new HashMap<ExecutionContext, Set<MethodInfo>>();
+        /* Top Down the Scope Graph */
+        TopologicalOrderIterator<ExecutionContext, ContextEdge> iter =
+                project.getCallGraph().topDownIterator();
+
+        while (iter.hasNext()) {
+            ExecutionContext scope = iter.next();
+            scope = new ExecutionContext(scope.getMethodInfo()); /* Remove call string */
+            ControlFlowGraph cfg = project.getFlowGraph(scope.getMethodInfo());
+            Set<MethodInfo> inLoop = new HashSet<MethodInfo>();
+            for (CFGNode node : cfg.getGraph().vertexSet()) {
+                if (!(node instanceof ControlFlowGraph.InvokeNode)) continue;
+                ControlFlowGraph.InvokeNode iNode = (ControlFlowGraph.InvokeNode) node;
+                if (!cfg.getLoopColoring().getLoopColor(node).isEmpty()) {
+                    for (MethodInfo impl : iNode.getImplementedMethods()) {
+                        inLoop.add(impl);
+                        inLoop.addAll(project.getCallGraph().getReachableImplementationsSet(impl));
+                    }
+                }
+            }
+            inLoopSet.put(scope, inLoop);
+        }
+    }
+
+    public boolean isExecutedOnce(ExecutionContext scope, CFGNode node) {
+        ControlFlowGraph cfg = node.getControlFlowGraph();
+        Set<MethodInfo> inLoopMethods = inLoopSet.get(scope);
+        if (inLoopMethods == null) {
+            Logger.getLogger("Object Cache Analysis").warning("No loop information for " + scope.getMethodInfo().getFQMethodName() + " @ " +
+                    scope.getCallString().toString());
+            return false;
+        }
+        if (!inLoopMethods.contains(cfg.getMethodInfo())) {
+            return cfg.getLoopColoring().getLoopColor(node).size() == 0;
+        } else {
+            return false;
+        }
+    }
+
 }

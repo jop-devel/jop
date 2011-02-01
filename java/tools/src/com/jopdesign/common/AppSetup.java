@@ -642,6 +642,7 @@ public class AppSetup {
         } else if ( loadSystemProps ) {
             System.out.println("Config values can be set in the JVM system properties.");
         }
+        System.out.println();
     }
 
     public void printVersion() {

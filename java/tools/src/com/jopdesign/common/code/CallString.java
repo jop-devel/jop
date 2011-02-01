@@ -168,8 +168,11 @@ public class CallString implements CallStringProvider {
 
     @Override
     public int hashCode() {
-        // TODO we should reimplement this (?)
-        return callString.hashCode();
+        int hash = 0;
+        for (InvokeSite invokeSite : callString) {
+            hash = hash * 31 + invokeSite.hashCode();
+        }
+        return hash;
     }
 
     @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})

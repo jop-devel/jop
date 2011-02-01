@@ -84,7 +84,8 @@ public class TreeAnalysis {
         }
 
         public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
-            long invokedProgress = subProgress.get(n.getImplementedMethod());
+            Long aLong = subProgress.get(n.getImplementedMethod());
+            long invokedProgress = aLong;
             progress = 1 + invokedProgress;
         }
 
@@ -120,7 +121,7 @@ public class TreeAnalysis {
          */
 
     public void computeProgress(MethodInfo targetMethod) {
-        List<MethodInfo> reachable = project.getCallGraph().getImplementedMethods(targetMethod);
+        List<MethodInfo> reachable = project.getCallGraph().getReachableImplementations(targetMethod);
         Collections.reverse(reachable);
         for (MethodInfo mi : reachable) {
             ControlFlowGraph cfg = project.getFlowGraph(mi);
@@ -162,7 +163,7 @@ public class TreeAnalysis {
 
     public long computeWCET(MethodInfo targetMethod) {
         this.methodWCET = new HashMap<MethodInfo, Long>();
-        List<MethodInfo> reachable = project.getCallGraph().getImplementedMethods(targetMethod);
+        List<MethodInfo> reachable = project.getCallGraph().getReachableImplementations(targetMethod);
         Collections.reverse(reachable);
         for (MethodInfo mi : reachable) {
             ControlFlowGraph cfg = project.getFlowGraph(mi);
