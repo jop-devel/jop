@@ -513,6 +513,7 @@ set_global_assignment -name VERILOG_FILE ../../ext/spimaster/spiTxRxData.v
 set_global_assignment -name VERILOG_FILE ../../ext/spimaster/timescale.v
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc2wb.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_pack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_global.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_60.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd

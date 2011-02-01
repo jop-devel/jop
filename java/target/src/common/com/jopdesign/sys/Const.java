@@ -39,7 +39,7 @@ public class Const {
 	 * Size of class header part.
 	 * Difference between class struct and method table.
 	 */
-	static final int CLASS_HEADR = 5;
+	static final int CLASS_HEADR = 8;
 	/**
 	 * Size of instance relative to class struct.
 	 */

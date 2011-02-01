@@ -128,6 +128,9 @@ public class RtThreadImpl {
 	static boolean initDone;
 	static boolean mission;
 
+	// fields for lock implementation
+	int lockLevel;
+	volatile int lockQueue;
 
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 
@@ -289,7 +292,6 @@ public class RtThreadImpl {
 	static int startTime;
 
 	public static void startMission() {
-
 
 		int i, j, c;
 		RtThreadImpl th;
@@ -500,7 +502,6 @@ public class RtThreadImpl {
 //  stack while assembling it. Then some writebarrier should protect the 
 //  references and downgrade the GC state from black to grey?
 
-	// TODO: make it CMP aware
 	static int[] getStack(int num) {
 		return Scheduler.sched[sys.cpuId].ref[num].stack;
 	}

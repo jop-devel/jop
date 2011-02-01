@@ -50,7 +50,7 @@ import java.io.PrintStream;
 public final class Main {
 
 	/** As default we disable floating point for small systems */
-	static final boolean USE_FLOAT = true;
+	static final boolean USE_FLOAT = false;
 
 	// + Static Constants +++++++++++++++++++++++++++++++++++++++++++++++++
 	private static final int BENCH_MICRO = 1;

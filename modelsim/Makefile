@@ -53,6 +53,7 @@ base:
 	$(WINE) vlib grlib
 	$(WINE) vlib gaisler
 	$(WINE) vlib techmap
+	$(WINE) vcom $(OPTIONS) $(JOPDIR)/top/jop_config_global.vhd
 	$(WINE) vcom $(OPTIONS) $(JOPDIR)/simulation/sim_jop_config_100.vhd
 	$(WINE) vcom $(OPTIONS) $(JOPDIR)/core/jop_types.vhd
 	$(WINE) vcom $(OPTIONS) $(JOPDIR)/simpcon/sc_pack.vhd

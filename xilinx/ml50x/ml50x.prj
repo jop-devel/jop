@@ -1,3 +1,4 @@
+vhdl work  ../../vhdl/top/jop_config_global.vhd
 vhdl work  ../../vhdl/top/jop_config_ml50x.vhd
 vhdl work  ../../vhdl/core/jop_types.vhd
 vhdl work  ../../vhdl/simpcon/sc_pack.vhd

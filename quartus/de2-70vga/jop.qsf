@@ -619,6 +619,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/vga_fb/vga_fb_ent.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_fixedpr.vhd
 set_global_assignment -name VHDL_FILE "../../vhdl/top/jop_de2-70vga.vhd"
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_pack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_global.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_50.vhd
 set_global_assignment -name VHDL_FILE "../../vhdl/scio/scio_min_DE2-70.vhd"
 set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram32.vhd

@@ -26,11 +26,14 @@
 --
 --	Tag memory
 --
+--	MS: don't understand why the next line is wired out
+--	of the tag and back again.
+--
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity tag is 
+entity fifo_cache_tag is 
 	generic (
 		addr_width	: integer;		-- address bits of cachable memory
 		index_bits	: integer		-- 2**index_bits is number of entries
@@ -45,9 +48,9 @@ entity tag is
 		line        : out unsigned(index_bits-1 downto 0);
 		newline     : out unsigned(index_bits-1 downto 0)
 		);
-end tag;
+end fifo_cache_tag;
 
-architecture rtl of tag is 
+architecture rtl of fifo_cache_tag is 
 
 	constant line_cnt: integer := 2**index_bits;
 
@@ -203,7 +206,7 @@ architecture rtl of fifo_cache is
 	
 begin
 
-	tag: entity work.tag
+	tag: entity work.fifo_cache_tag
 		generic map(
 			addr_width => mem_bits,
 			index_bits => index_bits

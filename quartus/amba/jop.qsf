@@ -501,6 +501,7 @@ set_global_assignment -name VHDL_FILE ../../ext/gaisler/devices.vhd
 set_global_assignment -name VHDL_FILE ../../ext/gaisler/gencomp.vhd
 set_global_assignment -name VHDL_FILE ../../ext/gaisler/memctrl.vhd
 set_global_assignment -name VHDL_FILE ../../ext/gaisler/srctrl.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_global.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_100.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd

@@ -33,3 +33,4 @@ clean:
 	rm -f *.xml
 	rm -rf xlnx_auto*
 	rm -rf out
+	rm -rf _xmsgs

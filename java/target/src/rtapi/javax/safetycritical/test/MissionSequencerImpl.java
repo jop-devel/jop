@@ -5,28 +5,21 @@ import javax.safetycritical.Mission;
 import javax.safetycritical.MissionSequencer;
 import javax.safetycritical.StorageParameters;
 
+// Contains only a single mission since this is level 1
 public class MissionSequencerImpl extends MissionSequencer<Mission> {
 
-	private Mission[] missions;
-	private int currentMission = 0;
+	private MissionImpl currentMission;
 	
 	public MissionSequencerImpl(PriorityParameters priority,
 			StorageParameters storage) {
 		super(priority, storage);
-		
-		
-		
+		currentMission = new MissionImpl();
+		currentMission.initialize();
 	}
 
 	@Override
-	protected Mission getNextMission() {
-		// TODO Auto-generated method stub
-		currentMission++;
-		if(currentMission > 1)
-		{
-			currentMission = 0;
-		}
-		return missions[currentMission];
+	protected MissionImpl getNextMission() {
+		return currentMission;
 	}
 
 }
