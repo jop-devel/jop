@@ -29,6 +29,7 @@ import com.jopdesign.common.graphutils.AdvancedDOTExporter.DOTNodeLabeller;
 import com.jopdesign.common.graphutils.DefaultFlowGraph;
 import com.jopdesign.common.graphutils.FlowGraph;
 import com.jopdesign.common.graphutils.LoopColoring;
+import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.graphutils.TopOrder;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.BadGraphException;
@@ -40,6 +41,7 @@ import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKEVIRTUAL;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.log4j.Logger;
 import org.jgrapht.graph.DefaultEdge;
@@ -380,10 +382,6 @@ public class ControlFlowGraph {
         private InstructionHandle instr;
         private MethodInfo receiverImpl;
 
-        private SpecialInvokeNode(BasicBlock block) {
-            super(block);
-        }
-
         public SpecialInvokeNode(BasicBlock block, MethodInfo javaImpl) {
             super(block);
             this.instr = block.getLastInstruction();
@@ -441,23 +439,6 @@ public class ControlFlowGraph {
 
     }
 
-    // FIXME: [wcet-frontend] Remove the ugly ih.getAttribute() hack for CFG Nodes
-    private static final Object KEY_CFGNODE = new HashedString("ControlFlowGraph.CFGNode");
-
-    /**
-     * @param ih The instruction handle of a method which has a CFG associated with it
-     * @return The basic block node associated with an instruction handle
-     */
-    public static BasicBlockNode getHandleNode(InstructionHandle ih) {
-        BasicBlockNode blockNode = (BasicBlockNode) ih.getAttribute(KEY_CFGNODE);
-        if (blockNode == null) {
-            String errMsg = "No basic block recorded for instruction " + ih.toString(true);
-            logger.error(errMsg);
-            return null;
-        }
-        return blockNode;
-    }
-
     /*---------------------------------------------------------------------------*
      * CFG edge classes
      *---------------------------------------------------------------------------*/
@@ -496,6 +477,9 @@ public class ControlFlowGraph {
     /*---------------------------------------------------------------------------*
      * Fields
      *---------------------------------------------------------------------------*/
+
+    // FIXME: [wcet-frontend] Remove the ugly ih.getAttribute() hack for CFG Nodes
+    private static final Object KEY_CFGNODE = new HashedString("ControlFlowGraph.CFGNode");
 
     private int idGen = 0;
 
@@ -553,30 +537,21 @@ public class ControlFlowGraph {
 
     private void createFlowGraph(MethodInfo method) {
         logger.debug("creating flow graph for: " + method);
-        blocks = BasicBlock.buildBasicBlocks(method.getCode());
         Map<Integer, BasicBlockNode> nodeTable =
                 new HashMap<Integer, BasicBlockNode>();
         graph = new DefaultFlowGraph<CFGNode, CFGEdge>(
                 CFGEdge.class,
                 new DedicatedNode(DedicatedNodeName.ENTRY),
                 new DedicatedNode(DedicatedNodeName.EXIT));
+        blocks = new ArrayList<BasicBlock>();
+
         /* Create basic block vertices */
-        for (BasicBlock bb : blocks) {
-            BasicBlockNode n;
-            Instruction lastInstr = bb.getLastInstruction().getInstruction();
-            InvokeInstruction theInvoke = bb.getTheInvokeInstruction();
-            if (theInvoke != null) {
-                n = new InvokeNode(bb, theInvoke);
-            } else if (appInfo.getProcessorModel().isImplementedInJava(lastInstr)) {
-                MethodInfo javaImpl = appInfo.getProcessorModel().getJavaImplementation(appInfo,
-                                            bb.getMethodInfo(),lastInstr);
-                n = new SpecialInvokeNode(bb, javaImpl);
-            } else {
-                n = new BasicBlockNode(bb);
-            }
+        int i = 0;
+        for (BasicBlock bb : BasicBlock.buildBasicBlocks(method.getCode())) {
+            BasicBlockNode n = addBasicBlock(i++, bb);
             nodeTable.put(bb.getFirstInstruction().getPosition(), n);
-            graph.addVertex(n);
         }
+
         /* entry edge */
         graph.addEdge(graph.getEntry(),
                 nodeTable.get(blocks.get(0).getFirstInstruction().getPosition()),
@@ -616,11 +591,97 @@ public class ControlFlowGraph {
 
 
     /*---------------------------------------------------------------------------*
-     * CFG compile, dispose
+     * CFG modify, compile, dispose
      *---------------------------------------------------------------------------*/
 
+    /**
+     * Add a basic block to this graph. The instruction list of the block must not be empty.
+     *
+     * @param insertBefore insert the block at this position in the block list.
+     * @param bb block to add
+     * @return the new block node, either an InvokeNode, SpecialInvokeNode or BasicBlockNode, depending on the
+     *   contained instructions.
+     */
+    public BasicBlockNode addBasicBlock(int insertBefore, BasicBlock bb) {
+        BasicBlockNode n;
+        Instruction lastInstr = bb.getLastInstruction().getInstruction();
+        InvokeInstruction theInvoke = bb.getTheInvokeInstruction();
+
+        if (theInvoke != null) {
+            n = new InvokeNode(bb, theInvoke);
+        } else if (appInfo.getProcessorModel().isImplementedInJava(lastInstr)) {
+            MethodInfo javaImpl = appInfo.getProcessorModel().getJavaImplementation(appInfo,
+                                        bb.getMethodInfo(),lastInstr);
+            n = new SpecialInvokeNode(bb, javaImpl);
+        } else {
+            n = new BasicBlockNode(bb);
+        }
+
+        blocks.add(insertBefore, bb);
+        graph.addVertex(n);
+        return n;
+    }
+
+    /**
+     * Create a new basic block and add it to the graph as a node.
+     * @param insertBefore the position to add the block to in the block list.
+     * @return a new BasicBlockNode with an empty basic block.
+     */
+    public BasicBlockNode createBasicBlock(int insertBefore) {
+        BasicBlock bb = new BasicBlock(methodInfo.getCode());
+        blocks.add(insertBefore, bb);
+        BasicBlockNode bbn = new BasicBlockNode(bb);
+        graph.addVertex(bbn);
+        return bbn;
+    }
+
+    /**
+     * Compile the callgraph back into an instruction list and store it in the associated
+     * MethodCode.
+     * <p>
+     * We do not order the blocks here, this is a separate optimization
+     * Also, we do not insert jump instructions if the fallthrough edge of a block does not
+     * link to the next block in the block list. Instead an error is raised.
+     * </p>
+     * TODO create method to insert jump blocks where necessary
+     */
     public void compile() {
-        // TODO implement
+        InstructionList il = new InstructionList();
+
+        Object[] attributes = {KEY_CFGNODE};
+        Map<BasicBlockNode,InstructionHandle> first, last;
+        first = new HashMap<BasicBlockNode, InstructionHandle>(blocks.size());
+        last  = new HashMap<BasicBlockNode, InstructionHandle>(blocks.size());
+
+        for (int i = 0; i < blocks.size(); i++) {
+            BasicBlock bb = blocks.get(i);
+            BasicBlockNode bbn = getHandleNode(bb);
+
+            // TODO uncomment clear()+add() stmt in bb.appendTo() when this method is implemented !!
+            Pair<InstructionHandle, InstructionHandle> ihs = bb.appendTo(il, attributes);
+            first.put(bbn, ihs.first());
+            last.put(bbn, ihs.second());
+
+            for (CFGEdge e : graph.outgoingEdgesOf(bbn)) {
+                if (e.getKind() != EdgeKind.NEXT_EDGE) continue;
+                BasicBlock target = graph.getEdgeTarget(e).getBasicBlock();
+                if (blocks.get(i+1) != target) {
+                    throw new ControlFlowError("Block "+i+" does not fallthrough to the next block in "+methodInfo);
+                }
+            }
+        }
+
+        for (BasicBlockNode bbn : last.keySet()) {
+            InstructionHandle lastIh = last.get(bbn);
+
+            // TODO retarget instructions by following outgoing edges to a basic block (skipping 'virtual' blocks)
+
+
+            // TODO update exception ranges
+
+        }
+
+        //methodInfo.getCode().setInstructionList(il, true);
     }
 
     /**
@@ -671,6 +732,24 @@ public class ControlFlowGraph {
         return graph;
     }    public List<BasicBlock> getBlocks() {
         return blocks;
+    }
+
+    /**
+     * @param ih The instruction handle of a method which has a CFG associated with it
+     * @return The basic block node associated with an instruction handle
+     */
+    public BasicBlockNode getHandleNode(InstructionHandle ih) {
+        BasicBlockNode blockNode = (BasicBlockNode) ih.getAttribute(KEY_CFGNODE);
+        if (blockNode == null) {
+            String errMsg = "No basic block recorded for instruction " + ih.toString(true);
+            logger.error(errMsg);
+            return null;
+        }
+        return blockNode;
+    }
+
+    public BasicBlockNode getHandleNode(BasicBlock bb) {
+        return getHandleNode(bb.getFirstInstruction());
     }
 
     public boolean isLeafMethod() {
@@ -1094,6 +1173,7 @@ public class ControlFlowGraph {
 
     /* flow graph should have been checked before analyseFlowGraph is called */
 
+    @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
     private void analyseFlowGraph() {
         try {
             topOrder = new TopOrder<CFGNode, CFGEdge>(this.graph, this.graph.getEntry());

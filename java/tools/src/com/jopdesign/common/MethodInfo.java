@@ -21,6 +21,7 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.bcel.ParameterAnnotationAttribute;
+import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
 import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
@@ -335,6 +336,9 @@ public final class MethodInfo extends ClassMemberInfo {
 
     /**
      * Get all non-abstract methods (including this method if it is not abstract) overriding this method.
+     * 
+     * @see AppInfo#findImplementations(CallString)
+     * @see AppInfo#findImplementations(MethodRef)
      * @param checkAccess if false, find all non-abstract methods with same signature even if they do not
      *        override this method.
      * @return a collection of all implementations of this method.

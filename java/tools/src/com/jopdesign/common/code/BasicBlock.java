@@ -27,6 +27,7 @@ import com.jopdesign.common.KeyManager.CustomKey;
 import com.jopdesign.common.KeyManager.KeyType;
 import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import org.apache.bcel.Constants;
@@ -309,7 +310,7 @@ public class BasicBlock {
     }
 
     /*---------------------------------------------------------------------------
-     *  Control flow graph construction
+     *  Control flow graph construction, compilation
      *---------------------------------------------------------------------------
      */
 
@@ -458,6 +459,29 @@ public class BasicBlock {
             }
         }
         return basicBlocks;
+    }
+
+    /**
+     * Append the instructions of this block to an instruction list.
+     * @param il the instruction list to append to.
+     * @param attributes a list of attribute keys to copy in addition to those managed by MethodCode and BasicBlock.
+     * @return the new instruction handles for the first and the last instruction of this block.
+     */
+    public Pair<InstructionHandle,InstructionHandle> appendTo(InstructionList il, Object[] attributes) {
+        List<InstructionHandle> old = new ArrayList<InstructionHandle>(instructions);
+        //instructions.clear();
+        for (InstructionHandle ih : old) {
+            InstructionHandle newIh = il.append(ih.getInstruction());
+            // link to new handles, find first and last handle
+            //instructions.add(newIh);
+            // we need to copy all attributes. FlowInfo should not be needed.
+            methodCode.copyCustomValues(ih, newIh);
+            for (Object key : attributes) {
+                Object value = ih.getAttribute(key);
+                if (value != null) newIh.addAttribute(key, value);
+            }
+        }
+        return new Pair<InstructionHandle, InstructionHandle>(instructions.getFirst(), instructions.getLast());
     }
 
     /*---------------------------------------------------------------------------

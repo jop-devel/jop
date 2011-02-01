@@ -40,7 +40,6 @@ import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
-import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.BadGraphError;
 import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.MethodNotFoundException;
@@ -531,27 +530,21 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
      * All subclasses of the receiver class are candidates. If the method isn't implemented
      * in the receiver, the lowest superclass implementing the method is a candidate too.
      * </p>
-     * This is basically a wrapper for {@link MethodInfo#getImplementations(boolean)}. This does not
-     * check any DFA results.
+     * This is basically a wrapper for {@link AppInfo#findImplementations(MethodRef)}. This does not
+     * check any DFA results or the callgraph.
      *
      * @param methodRef the method reference to resolve.
      * @return list of method infos that might be invoked
      */
     public Collection<MethodInfo> findImplementations(MethodRef methodRef) {
-        MethodInfo method = methodRef.getMethodInfo();
-        if (method == null) {
-            // TODO maybe just return an empty set here?
-            throw new AppInfoError("Trying to find implementations from unknown method " + methodRef);
-        }
-        // note that methodRef.getMethodInfo() already returns the super-method if the method is inherited
-        // (since there is no 'inherited methodInfo')
-        return method.getImplementations(true);
+        return appInfo.findImplementations(methodRef);
     }
 
     /**
      * Find Implementations of the method called with the given instruction handle
      * Uses receiver type analysis to refine the results
      *
+     * @see #findImplementations(MethodInfo, InstructionHandle, CallString) 
      * @param invokerM invoking method
      * @param ih       the invoke instruction
      * @return list of possibly invoked methods
@@ -572,6 +565,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     public Collection<MethodInfo> findImplementations(MethodInfo invokerM, InstructionHandle ih, CallString ctx) {
         MethodRef ref = appInfo.getReferencedMethod(invokerM, (InvokeInstruction) ih.getInstruction());
         Collection<MethodInfo> staticImpls = findImplementations(ref);
+        // TODO we should use the DFA to refine the callgraph, and use AppInfo#findImplementations(ctx) here
         staticImpls = dfaReceivers(ih, staticImpls, ctx);
         return staticImpls;
     }
@@ -600,8 +594,8 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             LoopBounds lbs = getDfaLoopBounds();
             Set<FlowEdge> edges = lbs.getInfeasibleEdges(block.getLastInstruction(), cs);
             for (FlowEdge e : edges) {
-                BasicBlockNode head = ControlFlowGraph.getHandleNode(e.getHead());
-                BasicBlockNode tail = ControlFlowGraph.getHandleNode(e.getTail());
+                BasicBlockNode head = cfg.getHandleNode(e.getHead());
+                BasicBlockNode tail = cfg.getHandleNode(e.getTail());
                 CFGEdge edge = cfg.getGraph().getEdge(tail, head);
                 if (edge != null) { // edge does not seem to exist any longer
                     retval.add(edge);
