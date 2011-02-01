@@ -359,9 +359,12 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
     /**
      * Convenience delegator to get the size of the given method
+     * @param mi method to get the size of
+     * @return size of the method in words, or 0 if abstract
      */
     public int getSizeInWords(MethodInfo mi) {
-        return this.getFlowGraph(mi).getNumberOfWords();
+        if (mi.isAbstract()) return 0;
+        return mi.getCode().getNumberOfWords();
     }
 
 

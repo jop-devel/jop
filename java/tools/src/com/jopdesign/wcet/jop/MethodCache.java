@@ -89,7 +89,7 @@ public abstract class MethodCache {
     }
 
     public long missOnceCost(MethodInfo mi, boolean assumeOnInvoke) {
-        int words = project.getFlowGraph(mi).getNumberOfWords();
+        int words = mi.getCode().getNumberOfWords();
         boolean loadOnInvoke = project.getCallGraph().isLeafMethod(mi)
                 || this.isLRU()
                 || assumeOnInvoke;
@@ -185,6 +185,7 @@ public abstract class MethodCache {
      * Get an upper bound for the miss cost involved in invoking a method of length
      * <pre>invokedBytes</pre> and returning to a method of length <pre>invokerBytes</pre>
      *
+     * @param proc
      * @param invoker
      * @param invoked
      * @return the maximal cache miss penalty for the invoke/return

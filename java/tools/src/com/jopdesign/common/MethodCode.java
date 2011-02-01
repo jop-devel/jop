@@ -31,6 +31,8 @@ import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.BadGraphError;
 import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.HashedString;
+import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.common.processormodel.ProcessorModel;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Code;
 import org.apache.bcel.classfile.LineNumberTable;
@@ -327,6 +329,7 @@ public class MethodCode {
      * @param hasAttributes if true, use the linenumber and exception attributes set to the handles of the new list.
      */
     public void setInstructionList(InstructionList il, boolean hasAttributes) {
+        methodGen.getInstructionList().dispose();
         methodGen.setInstructionList(il);
         removeCFG();
         ilTablesLoaded = hasAttributes;
@@ -471,6 +474,34 @@ public class MethodCode {
         }
         methodGen.setMaxLocals();
         methodGen.setMaxStack();
+    }
+
+    public int getNumberOfBytes(InstructionList il) {
+        int sum = 0;
+        ProcessorModel pm = getAppInfo().getProcessorModel();
+
+        for (InstructionHandle ih : il.getInstructionHandles()) {
+            sum += pm.getNumberOfBytes(methodInfo, ih.getInstruction());
+        }
+
+        return sum;
+    }
+
+    /**
+     * Get the length of the implementation
+     *
+     * @return the length in bytes
+     */
+    public int getNumberOfBytes() {
+        if (hasCFG()) {
+            return cfg.getNumberOfBytes();
+        } else {
+            return getNumberOfBytes(methodGen.getInstructionList());
+        }
+    }
+
+    public int getNumberOfWords() {
+        return MiscUtils.bytesToWords(getNumberOfBytes());
     }
 
     //////////////////////////////////////////////////////////////////////////////

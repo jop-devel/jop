@@ -20,7 +20,6 @@
 package com.jopdesign.wcet.uppaal.translator.cache;
 
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.jop.VarBlockCache;
 import com.jopdesign.wcet.uppaal.model.NTASystem;
@@ -46,9 +45,9 @@ public abstract class VarBlockCacheBuilder extends DynamicCacheBuilder {
     protected abstract StringBuilder initCache(String NUM_METHODS);
 
     protected int blocksOf(MethodInfo method) {
-        // FIXME old code used ids instead of MethodInfo, check for correctness
-        ControlFlowGraph cfg = project.getFlowGraph(method);
-        return project.getWCETProcessorModel().getMethodCache().requiredNumberOfBlocks(cfg.getNumberOfWords());
+        // FIXME old code used ids instead of MethodInfo, check for correctness !
+        return project.getWCETProcessorModel().getMethodCache().requiredNumberOfBlocks(
+                            method.getCode().getNumberOfWords() );
     }
 
     @Override
