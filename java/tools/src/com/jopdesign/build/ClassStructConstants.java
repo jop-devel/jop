@@ -35,7 +35,7 @@ public class ClassStructConstants {
 	 * If changed than also change in GC.java and JVM.java
 	 * (checkcast, instanceof). 
 	 */
-	static final int CLS_HEAD = 8;
+	static final int CLS_HEAD = 5;
 	/**
 	 * Size of a method table entry.
 	 */

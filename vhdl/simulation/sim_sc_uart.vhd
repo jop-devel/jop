@@ -63,12 +63,7 @@ port (
 	txd		: out std_logic;
 	rxd		: in std_logic;
 	ncts	: in std_logic;
-	nrts	: out std_logic;
-
--- Signals to aid CMP front-end
-	tf_ready : out std_logic;
-	rf_avail : out std_logic;
-	pa_error : out std_logic
+	nrts	: out std_logic
 );
 end sc_uart;
 
@@ -108,9 +103,6 @@ end process;
 
 	rdrf <= '0';	-- we don't receive characters in the simulation
 	tdre <= '1';	-- the sender is always free in the simulation
-
-	tf_ready <= tdre;
-	rf_avail <= rdrf;
 
 process(clk)
 

@@ -95,11 +95,6 @@ public class GC {
 	 * Denote in which space the object is
 	 */
 	static final int OFF_SPACE = 6;
-
-	/**
-	 * Field that points to the object's lock
-	 */
-	static final int OFF_LOCK = 7;
 		
 	static final int TYPICAL_OBJ_SIZE = 5;
 	static int handle_cnt;
@@ -554,7 +549,6 @@ public class GC {
 		// that's the stop-the-world GC
 		synchronized (mutex) {
 			if (copyPtr+size >= allocPtr) {
-				log("Run out of space in new Object!");
 				gc_alloc();
 				if (copyPtr+size >= allocPtr) {
 					// still not enough memory
@@ -563,7 +557,6 @@ public class GC {
 				}
 			}			
 		}
-
 		synchronized (mutex) {
 			if (freeList==0) {
 				log("Run out of handles in new Object!");
@@ -606,8 +599,6 @@ public class GC {
 			Native.wrMem(IS_OBJ, ref+OFF_TYPE);
 			// pointer to method table in the handle
 			Native.wrMem(cons+Const.CLASS_HEADR, ref+OFF_MTAB_ALEN);
-			// TODO: should not be necessary - now just for sure
-			Native.wrMem(0, ref+OFF_LOCK);
 		}
 
 		return ref;
@@ -697,8 +688,6 @@ public class GC {
 			Native.wrMem(type, ref+OFF_TYPE);
 			// array length in the handle
 			Native.wrMem(arrayLength, ref+OFF_MTAB_ALEN);
-			// TODO: should not be necessary - now just for sure
-			Native.wrMem(0, ref+OFF_LOCK);
 		}
 		return ref;
 		

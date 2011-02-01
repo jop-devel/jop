@@ -791,10 +791,6 @@ public class JopClassInfo extends ClassInfo implements Serializable {
         }
         out.println("\t\t" + iftableAddress
                 + ",\t//\tpointer to interface table");
- 		for (i = 0; i < 2; i++) {
-			out.println("\t\t0,\t//\tdummy");
-		}
-        out.println("\t\t0,\t//\tlock");
 
         if (!clazz.isInterface()) {
             out.println("//");

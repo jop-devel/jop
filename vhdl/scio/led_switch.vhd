@@ -71,8 +71,6 @@ architecture rtl of led_switch is
 
 begin
 
-	sc_rdy_cnt <= "00";
-		
 	-- Anti metastability
 	process(CLK,RESET)
 	begin

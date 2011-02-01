@@ -89,7 +89,7 @@ invokeinterface:
 			ushr
 			stm	b				// offset in method table
 
-			ldsp				// one increment but still one too low ('real' sp is sp+2 because of registers)
+			ldsp				// one increment but still one to low ('real' sp is sp+2 because of registers)
 			ldi	1				// 'real' sp
 			add
 			ldm	a
@@ -116,8 +116,8 @@ interface_pointer_ok:
 			wait
 			ldmrd		 		// vt on TOS
 
-			ldi	4				// pointer to interface table
-			sub					// before method table
+			ldi	1				// pointer to interface table
+			sub					// befor method table
 			stmrac				// read interface table address
 			wait
 			wait
@@ -187,7 +187,7 @@ invokesuper:					// this was invokespecial, replaced in JOPizer when calling sup
 			wait
 			ldmrd		 		// read ext. mem
 
-			ldi	8				// "super" method table is at superclass+8
+			ldi	5				// "super" method table is at superclass+5
 			add
 
 			jmp	invoke_addoffset

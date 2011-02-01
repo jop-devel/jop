@@ -604,10 +604,9 @@ set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc2_pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_cmpuart.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/led_switch.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_DE2-70_cmp.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_min_DE2-70.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/arom.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/aram.vhd
