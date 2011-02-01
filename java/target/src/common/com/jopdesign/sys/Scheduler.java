@@ -29,6 +29,7 @@ class Scheduler implements Runnable {
 
 	int scanThres = -1;			// whether threads scan their own stack
 	SwEvent scanner;
+	GC.STWGCEvent collector;
 	
 	int tmp;					// counter to build the thread list
 	
@@ -54,7 +55,7 @@ class Scheduler implements Runnable {
 	 * TODO: a cross-core SW event is only detected at a scheduler
 	 * invocation due to a thread on this core or at idle tick. 
 	 */
-	final static int IDL_TICK = 1000000;
+	final static int IDL_TICK = 10000;
 
 	// use local memory for two values
 	private final static int TIM_VAL_ADDR = 0x1e;
@@ -190,10 +191,6 @@ class Scheduler implements Runnable {
 	 * the initial main/Runnable
 	 */
 	void allocArrays() {
-
-		// change active if a lower priority
-		// thread is before main
-//		tq.active = tq.ref[0].nr;		// this was our main thread
 
 		// cnt one higher for start thread (main or Runnable)
 		++cnt;

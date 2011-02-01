@@ -133,8 +133,6 @@ public class GC {
 	static int allocPtr;
 	
 	static int freeList;
-	// TODO: useList is only used for a faster handle sweep
-	// do we need it?
 	static int useList;
 	static int grayList;
 	
@@ -143,6 +141,8 @@ public class GC {
 	static Object mutex;
 	
 	static OutOfMemoryError OOMError;
+
+	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 
 	static void init(int mem_size, int addr) {
 		
@@ -217,7 +217,7 @@ public class GC {
 			return;
 		}
 		// does the reference point to a handle start?
-		// TODO: happens in concurrent
+		// happens in concurrent
 		if ((ref&0x7)!=0) {
 			return;
 		}
@@ -226,7 +226,7 @@ public class GC {
 			// Is this handle on the free list?
 			// Is possible when using conservative stack scanning
 			if (Native.rdMem(ref+OFF_PTR)==0) {
-				// TODO: that happens in concurrent!
+				// that happens in concurrent!
 				return;
 			}
 						
@@ -276,24 +276,39 @@ public class GC {
 		int i, j, k, cnt, cpus;
 		
 		if (concurrentGc) {
-			cpus = Scheduler.sched.length;
-			// assuming we run on CPU 0 we fire the scanner event for
-			// CPU 0 last, so we do not delay the start on other CPUs
+			cpus = sys.nrCpu;
 			for (i = cpus-1; i >= 0; --i) {
-				// log("#");
-				if (Scheduler.sched[i].scanner != null) {
+				// we fire the scanner event for this CPU last, so we do
+				// not delay the start on other CPUs
+				if (i == sys.cpuId)
+					continue;
+				if (Scheduler.sched[i].scanner != null) {					
 					cnt = Scheduler.sched[i].ref.length;
 					for (j = 0; j < cnt; j++) {
 						Scheduler.sched[i].ref[j].scan = true;
 					}
 					Scheduler.sched[i].scanner.fire();
 				} else {
-					// TODO: no scanner for this CPU, what should we do?
-					log("!");
+					log("Concurrent GC needs root scanning events");
+					System.exit(1);
 				}
 			}
+
+			// fire event for current CPU
+			i = sys.cpuId;
+			if (Scheduler.sched[i].scanner != null) {					
+				cnt = Scheduler.sched[i].ref.length;
+				for (j = 0; j < cnt; j++) {
+					Scheduler.sched[i].ref[j].scan = true;
+				}
+				Scheduler.sched[i].scanner.fire();
+			} else {
+				log("Concurrent GC needs root scanning events");
+				System.exit(1);
+			}
+			
+			// wait for everyone to finish root scanning
 			for (i = 0; i < cpus; i++) {
-				// log("@");
 				cnt = Scheduler.sched[i].ref.length;
 				for (j = 0; j < cnt; j++) {
 					while (Scheduler.sched[i].ref[j].scan) {
@@ -303,15 +318,12 @@ public class GC {
 			}
 		} else {
 			// add stack of the current thread to the root list
-			// log("own");
 			ScanEvent.getOwnStackRoots();
 
-			// log("others");
- 			cpus = Scheduler.sched.length;
+			// add stacks of all other threads to the root list
+ 			cpus = sys.nrCpu;
  			for (i = 0; i < cpus; i++) {
-				// log("C");
  				if (Scheduler.sched[i].ref != null) {
-					// log("T");
 					cnt = Scheduler.sched[i].ref.length;
 					for (j = 0; j < cnt; j++) {
 						synchronized(mutex) {						
@@ -366,7 +378,7 @@ public class GC {
 			// allready moved
 			// can this happen? - yes, as we do not check it in mark
 			// TODO: no, it's checked in push()
-			// What happens when the actuall scanning object is
+			// What happens when the actually scanned object is
 			// again pushed on the gray stack by the mutator?
 			if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
 				// it happens 
@@ -479,22 +491,52 @@ public class GC {
 		}
 	}
 
-	static void gc_alloc() {
-		log("GC allocation triggered");
+	static void triggerGc() {
+
+		log("GC triggered on CPU", sys.cpuId);
+
+		// scpoes and GC cannot be mixed
 		if (USE_SCOPES) {
 			log("No GC when scopes are used");
 			System.exit(1);
 		}
+
+		// nasty things would happen if we allowed this
 		if (concurrentGc) {
 			// OOMError.fillInStackTrace();
 			throw OOMError;
-		} else {
+		}
+				
+		if (sys.nrCpu <= 1 || sys.signal == 0) {
+			// stop-the world GC on (de facto) uniprocessor
 			gc();
+		} else {
+			// only trigger if not running already
+			if (!gcRunning) {
+				gcRunnerId = sys.cpuId;
+				
+				// start GC events on all CPUs
+				int cpus = sys.nrCpu;
+				for (int i = cpus-1; i >= 0; --i) {
+					if (Scheduler.sched[i].collector != null) {					
+						synchronized(mutex) {
+							log("Fire event on CPU", i);
+						}
+						Scheduler.sched[i].collector.fire();
+					} else if (Startup.cpuStart[i] != null) {
+						log("Stop-the-world GC on CMP needs GC events");
+						System.exit(1);
+					}
+				}
+			}
+			gcRunning = true;
 		}
 	}
 
 	public static void gc() {
 //  		log("GC called - free memory:", freeMemory());
+
+		// log("start GC");
 
   		// log("flip");
 		flip();
@@ -504,6 +546,8 @@ public class GC {
 		sweepHandles();
   		// log("zap");
 		zapSemi();	
+
+		// log("end GC");
 
 //  		log("GC end - free memory:",freeMemory());
 	}
@@ -554,35 +598,23 @@ public class GC {
 
 		// that's the stop-the-world GC
 		synchronized (mutex) {
-			if (copyPtr+size >= allocPtr) {
-				log("Run out of space in new Object!");
-				gc_alloc();
-				if (copyPtr+size >= allocPtr) {
-					// still not enough memory
-					// OOMError.fillInStackTrace();
-					throw OOMError;
-				}
-			}			
-		}
-
-		synchronized (mutex) {
-			if (freeList==0) {
-				log("Run out of handles in new Object!");
-				gc_alloc();
-				if (freeList==0) {
-					// OOMError.fillInStackTrace();
-					throw OOMError;
-				}
+			if (copyPtr+size >= allocPtr || freeList==0) {
+				triggerGc();
 			}			
 		}
 		
-		// JVMHelp.wr('O');
-		// JVMHelp.wrByte(size);
-		// JVMHelp.wr('\n');
+		while (gcRunning) {
+			// wait for the GC to finish
+		}
 
 		int ref;
 		
 		synchronized (mutex) {
+			if (copyPtr+size >= allocPtr || freeList==0) {
+				// make sure we actually freed enough memory
+				// OOMError.fillInStackTrace();
+				throw OOMError;
+			}
 			// we allocate from the upper part
 			allocPtr -= size;
 			// get one from free list
@@ -647,33 +679,26 @@ public class GC {
 			}			
 		}
 
+		// that's the stop-the-world GC
 		synchronized (mutex) {
-			if (copyPtr+size >= allocPtr) {
-				gc_alloc();
-				if (copyPtr+size >= allocPtr) {
-					// still not enough memory
-					// OOMError.fillInStackTrace();
-					throw OOMError;
-				}
-			}			
+			if (copyPtr+size >= allocPtr || freeList==0) {
+				triggerGc();
+			}
 		}
-		synchronized (mutex) {
-			if (freeList==0) {
-				log("Run out of handles in new array!");
-				gc_alloc();
-				if (freeList==0) {
-					// OOMError.fillInStackTrace();
-					throw OOMError;
-				}
-			}			
+		
+		while (gcRunning) {
+			// wait for the GC to finish
 		}
-
-		// JVMHelp.wr('A');
-		// JVMHelp.wrSmall(size);
-		// JVMHelp.wr('\n');
 
 		int ref;
+		
 		synchronized (mutex) {
+			if (copyPtr+size >= allocPtr || freeList==0) {
+				// make sure we actually freed enough memory
+				// OOMError.fillInStackTrace();
+				throw OOMError;
+			}
+
 			// we allocate from the upper part
 			allocPtr -= size;
 			// get one from free list
@@ -736,6 +761,9 @@ public class GC {
 	public static void setConcurrent() {
 		concurrentGc = true;
 	}
+
+	static volatile boolean gcRunning;
+	static volatile int gcRunnerId;
 	
 	public static final class GCThread extends RtThread {
 		
@@ -751,9 +779,64 @@ public class GC {
 		}
 	}
 
-	public static final class ScanEvent extends SwEvent {
+	public static final class STWGCEvent extends SwEvent {
+		
+		volatile boolean handshake;
 
-		static SysDevice sys = IOFactory.getFactory().getSysDevice();
+		public STWGCEvent(int prio, int minTime) {
+			this(prio, minTime, GC.sys.cpuId);
+		}
+
+		public STWGCEvent(int prio, int minTime, int cpu) {
+			super(prio, minTime);
+			setProcessor(cpu);
+		}
+
+		public void handle() {
+			SysDevice sys = IOFactory.getFactory().getSysDevice();
+
+			synchronized(GC.mutex) {
+				GC.log("Handling event on CPU", sys.cpuId);
+			}
+
+			handshake = true;
+			if (GC.sys.cpuId == GC.gcRunnerId) {
+
+				synchronized(GC.mutex) {
+					GC.log("Waiting for handshakes");
+				}
+
+				// wait for handshake
+				int cpus = GC.sys.nrCpu;
+				for (int i = cpus-1; i >= 0; --i) {
+					while (!Scheduler.sched[i].collector.handshake) {
+						/* wait for handshake from other CPUs */
+					}
+				}
+				
+				GC.log("Start STWGC");
+
+				// the real stuff
+				GC.gc();
+
+				GC.log("Finished STWGC");
+
+				// clear handshakes for future
+				for (int i = cpus-1; i >= 0; --i) {
+					Scheduler.sched[i].collector.handshake = false;
+				}
+
+				// let other CPUs continue again
+				GC.gcRunning = false;
+			} else {
+				while (GC.gcRunning) {
+					// wait for the GC to finish
+				}
+			}
+		}
+	}
+
+	public static final class ScanEvent extends SwEvent {
 
 		public static void getOwnStackRoots() {
 			int	i, j;
@@ -761,14 +844,14 @@ public class GC {
 			for (j = Const.STACK_OFF; j <= i; ++j) {
 				push(Native.rdIntMem(j));
 			}
-			Scheduler sched = Scheduler.sched[sys.cpuId];
+			Scheduler sched = Scheduler.sched[GC.sys.cpuId];
 			if (sched.ref != null) {
 				sched.ref[sched.active].scan = false;
 			}
 		}
 
 		public ScanEvent(int prio, int minTime) {
-			this(prio, minTime, sys.cpuId);
+			this(prio, minTime, GC.sys.cpuId);
 		}
 
 		public ScanEvent(int prio, int minTime, int cpu) {
@@ -782,7 +865,10 @@ public class GC {
 		
 			int i, j;
 
-			Scheduler sched = Scheduler.sched[sys.cpuId];
+			SysDevice sys = IOFactory.getFactory().getSysDevice();
+			GC.log("Handling event on CPU", sys.cpuId);
+
+			Scheduler sched = Scheduler.sched[GC.sys.cpuId];
 			int cnt = sched.ref.length;
 
 			for (i = 0; i < cnt; i++) {

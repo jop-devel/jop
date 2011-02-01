@@ -308,7 +308,13 @@ public class RtThreadImpl {
 		Native.wr(0, Const.IO_INT_ENA);
 		Native.wr(0, Const.IO_INTMASK);		
 
-
+		// Do we need STW GC events?
+		if (!GC.concurrentGc && sys.nrCpu > 1) {
+			for (i=0; i<sys.nrCpu; ++i) {
+				int priority = head != null ? head.priority+1 : MAX_PRIORITY+RT_BASE;
+				Scheduler.sched[i].collector = new GC.STWGCEvent(head.priority+1, 0, i);
+			}
+		}
 
 		// if we have int's enabled for Thread scheduling
 		// or using the Scheduler interrupt
@@ -415,8 +421,8 @@ public class RtThreadImpl {
 
 		now = Native.rd(Const.IO_US_CNT);
 		if (nxt-now < 0) {					// missed time!
-			s.next[nr] = now;				// correct next
-//			s.next[nr] = nxt;				// without correction!
+			// s.next[nr] = now;				// correct next
+			s.next[nr] = nxt;				// without correction!
 			Native.wr(1, Const.IO_INT_ENA);
 			return false;
 		} else {
