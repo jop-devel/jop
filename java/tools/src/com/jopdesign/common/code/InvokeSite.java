@@ -70,8 +70,12 @@ public class InvokeSite {
      */
     public MethodRef getInvokeeRef() {
         Instruction instr = instruction.getInstruction();
+        AppInfo appInfo = AppInfo.getSingleton();
         if (instr instanceof InvokeInstruction) {
-            return AppInfo.getSingleton().getReferencedMethod(invoker, (InvokeInstruction) instr);
+            return appInfo.getReferencedMethod(invoker, (InvokeInstruction) instr);
+        }
+        if (appInfo.getProcessorModel().isImplementedInJava(instr)) {
+            return appInfo.getProcessorModel().getJavaImplementation(appInfo, invoker, instr).getMethodRef();
         }
         throw new JavaClassFormatError("InvokeSite handle does not refer to an invoke instruction: "+toString());
     }

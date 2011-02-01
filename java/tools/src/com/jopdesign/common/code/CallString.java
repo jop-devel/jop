@@ -166,6 +166,18 @@ public class CallString implements CallStringProvider {
         return new CallString(cs);
     }
 
+    /**
+     * Check if either this callstring or the given callstring is a suffix of the other one.
+     * @param cs callstring to compare to.
+     * @return true if they are equal or one of them is a suffix of the other.
+     */
+    public boolean matches(CallString cs) {
+        // empty callstring always matches
+        if (length() == 0 || cs.length() == 0) return true;
+        
+        return hasSuffix(cs) || cs.hasSuffix(this);
+    }
+
     @Override
     public int hashCode() {
         int hash = 0;

@@ -212,6 +212,10 @@ public final class MethodInfo extends ClassMemberInfo {
      */
     public boolean overrides(MethodInfo superMethod, boolean checkSignature) {
 
+        if (this.equals(superMethod)) {
+            return true;
+        }
+
         // A static method may hide a static or instance method, but does not override it.
         if ( isStatic() ) {
             return false;
@@ -229,10 +233,6 @@ public final class MethodInfo extends ClassMemberInfo {
             }
         }
         
-        if ( superMethod.equals(this) ) {
-            return true;
-        }
-
         return getClassInfo().canAccess(superMethod);
     }
 

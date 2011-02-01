@@ -36,9 +36,9 @@ import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeSet;
 
 /**
@@ -68,7 +68,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 
 			// FIXME: [Bug #3] Hackish implementation of callgraph pruning
 			if(n.getVirtualNode() != null) {
-				List<MethodInfo> actuallyReachable =
+				Set<MethodInfo> actuallyReachable =
 					n.getVirtualNode().getImplementedMethods(ctx.getCallString());
 				if(! actuallyReachable.contains(n.getImplementedMethod())) return;
 			}

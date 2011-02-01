@@ -25,6 +25,7 @@ import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallGraph.CallgraphConfig;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.DefaultCallgraphConfig;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
@@ -779,8 +780,10 @@ public final class AppInfo {
      * @return the default callgraph
      */
     public CallGraph buildCallGraph(boolean rebuild) {
-        CallgraphConfig config = new DefaultCallgraphConfig(getCallstringLength());
-        callGraph = CallGraph.buildCallGraph(getMainMethod(), config);
+        if (callGraph == null || rebuild) {
+            CallgraphConfig config = new DefaultCallgraphConfig(getCallstringLength());
+            callGraph = CallGraph.buildCallGraph(getMainMethod(), config);
+        }
         return callGraph;
     }
 
@@ -811,7 +814,7 @@ public final class AppInfo {
      * @param invokeSite the invokesite to look up
      * @return a list of possible implementations for the invocation.
      */
-    public List<MethodInfo> findImplementations(InvokeSite invokeSite) {
+    public Set<MethodInfo> findImplementations(InvokeSite invokeSite) {
         return findImplementations(invokeSite, CallString.EMPTY);
     }
 
@@ -826,7 +829,7 @@ public final class AppInfo {
      * @param cs the callstring up to the method containing the invocation, excluding the given invokesite
      * @return a list of possible implementations for the invocation.
      */
-    public List<MethodInfo> findImplementations(InvokeSite invokeSite, CallString cs) {
+    public Set<MethodInfo> findImplementations(InvokeSite invokeSite, CallString cs) {
         return findImplementations(cs.push(invokeSite));
     }
 
@@ -840,7 +843,7 @@ public final class AppInfo {
      * @param cs the callstring to the the invocation, including the given invokesite. Must not be empty.
      * @return a list of possible implementations for the invocation.
      */
-    public List<MethodInfo> findImplementations(CallString cs) {
+    public Set<MethodInfo> findImplementations(CallString cs) {
         if (cs.length() == 0) {
             throw new AssertionError("findImplementations() called with empty callstring!");
         }
@@ -850,10 +853,12 @@ public final class AppInfo {
             return findImplementations(invokeSite.getInvokeeRef());
         }
 
-        // TODO implement!!
-
-        InvokeSite invokeSite = cs.top();
-        return findImplementations(invokeSite.getInvokeeRef());
+        Set<MethodInfo> methods = new HashSet<MethodInfo>();
+        
+        for (ExecutionContext context : callGraph.getImplementations(cs)) {
+            methods.add(context.getMethodInfo());
+        }
+        return methods;
     }
 
     /**
@@ -868,8 +873,8 @@ public final class AppInfo {
      * @param invokee the method to resolve.
      * @return all possible implementations.
      */
-    public List<MethodInfo> findImplementations(final MethodRef invokee) {
-        final List<MethodInfo> methods = new LinkedList<MethodInfo>();
+    public Set<MethodInfo> findImplementations(final MethodRef invokee) {
+        final Set<MethodInfo> methods = new HashSet<MethodInfo>();
 
         final MethodInfo method = invokee.getMethodInfo();
         if (method != null && (method.isStatic() || method.isPrivate())) {

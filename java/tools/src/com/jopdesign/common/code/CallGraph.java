@@ -27,6 +27,7 @@ import com.jopdesign.common.graphutils.AdvancedDOTExporter;
 import com.jopdesign.common.graphutils.DirectedCycleDetector;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.MethodNotFoundException;
+import com.jopdesign.common.type.MethodRef;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.EdgeFactory;
 import org.jgrapht.event.GraphEdgeChangeEvent;
@@ -75,9 +76,9 @@ public class CallGraph {
         List<ExecutionContext> getInvokedMethods(ExecutionContext context);
     }
 
-    /***************************************************************************
+    /*---------------------------------------------------------------------------*
      * Graph node and edge classes
-     ***************************************************************************/
+     *---------------------------------------------------------------------------*/
 
     /**
      * A node representing a methodInfo, and stores references to all
@@ -151,9 +152,9 @@ public class CallGraph {
         }
     }
 
-    /***************************************************************************
+    /*---------------------------------------------------------------------------*
      * Internal classes
-     ***************************************************************************/
+     *---------------------------------------------------------------------------*/
 
     private class GraphUpdateListener implements GraphListener<ExecutionContext, ContextEdge> {
         @Override
@@ -204,9 +205,9 @@ public class CallGraph {
     private ExecutionContext maxCallStackLeaf = null;
     private HashMap<MethodInfo,Boolean> leafNodeCache;
 
-    /***************************************************************************
+    /*---------------------------------------------------------------------------*
      * Constructor methods
-     ***************************************************************************/
+     *---------------------------------------------------------------------------*/
 
     /**
      * Build a callgraph rooted at the given method
@@ -243,9 +244,9 @@ public class CallGraph {
         return cg;
     }
 
-    /***************************************************************************
+    /*---------------------------------------------------------------------------*
      * Init and build callgraph (private)
-     ***************************************************************************/
+     *---------------------------------------------------------------------------*/
 
     /**
      * Initialize a CallGraph object.
@@ -329,9 +330,9 @@ public class CallGraph {
         } /* end while */
     }
 
-    /***************************************************************************
-     * Access to nodes,..
-     ***************************************************************************/
+    /*---------------------------------------------------------------------------*
+     * Various getters, access to nodes
+     *---------------------------------------------------------------------------*/
 
     /**
      * Get node for a method info and call context
@@ -403,9 +404,9 @@ public class CallGraph {
     }
 
 
-    /***************************************************************************
-     * Merged graph, subgraphs
-     ***************************************************************************/
+    /*---------------------------------------------------------------------------*
+     * Merge graph, subgraphs
+     *---------------------------------------------------------------------------*/
 
     /**
      * Build a second graph with a single node per method to get a less precise call graph model.
@@ -433,9 +434,9 @@ public class CallGraph {
         }
     }
 
-    /***************************************************************************
+    /*---------------------------------------------------------------------------*
      * Various lookup methods
-     ***************************************************************************/
+     *---------------------------------------------------------------------------*/
 
     /**
      * Return a top-down (topological) iterator for the callgraph
@@ -547,6 +548,47 @@ public class CallGraph {
         return implemented;
     }
 
+    /**
+     * For a given non-empty callstring, find all implementations which might get called by the last
+     * invocation in the callstring, i.e. find all methods which might appear in the next entry of the
+     * callstring. 
+     *
+     * @param cs callstring of the invocation, must contain at least one invokesite.
+     * @return a list of all methods which might get invoked by the top invocation of the callstring,
+     *         with their callstrings.
+     */
+    public Set<ExecutionContext> getImplementations(CallString cs) {
+
+        InvokeSite invoke = cs.top();
+        Set<ExecutionContext> methods = new HashSet<ExecutionContext>();
+        MethodRef invokee = invoke.getInvokeeRef();
+
+        // find all instances of possible invokers
+        Set<ExecutionContext> invoker = getNodes(invoke.getMethod());
+        for (ExecutionContext invokeNode : invoker) {
+
+            // TODO filter out nodes which do not match the callstring, to speed up things a bit
+
+            for (ContextEdge outEdge : callGraph.outgoingEdgesOf(invokeNode)) {
+                CallString cgString = outEdge.getTarget().getCallString();
+
+                // check if the target callstring matches the given callstring
+                if (cgString.isEmpty()) {
+                    // target has no callstring, must at least override the invoked method
+                    if (outEdge.getTarget().getMethodInfo().overrides(invokee.getMethodInfo(), true)) {
+                        methods.add(outEdge.getTarget());
+                    }
+                } else {
+                    // if one of the callstrings is a suffix of the other, this context is a possible invocation
+                    if (cs.matches(cgString)) {
+                        methods.add(outEdge.getTarget());
+                    }
+                }
+            }
+        }
+
+        return methods;
+    }
 
     /**
      * @param m invoker method
@@ -634,9 +676,9 @@ public class CallGraph {
     }
 
 
-    /***************************************************************************
-     * Private stuff
-     ***************************************************************************/
+    /*---------------------------------------------------------------------------*
+     * Private methods
+     *---------------------------------------------------------------------------*/
 
     /**
      * calculate the depth of each node, the height of the subgraph

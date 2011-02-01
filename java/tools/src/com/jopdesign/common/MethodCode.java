@@ -23,6 +23,8 @@ package com.jopdesign.common;
 import com.jopdesign.common.KeyManager.CustomKey;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ControlFlowGraph.InvokeNode;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.AppInfoError;
@@ -36,6 +38,7 @@ import org.apache.bcel.generic.CodeExceptionGen;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
+import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.LineNumberGen;
 import org.apache.bcel.generic.LocalVariableGen;
 import org.apache.bcel.generic.MethodGen;
@@ -44,7 +47,9 @@ import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -379,6 +384,32 @@ public class MethodCode {
             ih.addAttribute(KEY_INVOKESITE, is);
         }
         return is;
+    }
+
+    /**
+     * Get a list of invoke sites in this method code. This also returns invoke sites for special
+     * instructions implemented in java.
+     *
+     * @return a list of all invoke sites in this code.
+     */
+    public Set<InvokeSite> getInvokeSites() {
+        Set<InvokeSite> invokes = new HashSet<InvokeSite>();
+        if (hasCFG()) {
+            for (CFGNode node : cfg.getGraph().vertexSet()) {
+                if (node instanceof InvokeNode) {
+                    invokes.add( ((InvokeNode)node).getInvokeSite() );
+                }
+            }
+        } else {
+            for (InstructionHandle ih : methodGen.getInstructionList().getInstructionHandles()) {
+                if (ih.getInstruction() instanceof InvokeInstruction) {
+                    invokes.add( getInvokeSite(ih) );
+                } else if (getAppInfo().getProcessorModel().isImplementedInJava(ih.getInstruction())) {
+                    invokes.add( getInvokeSite(ih) );
+                }
+            }
+        }
+        return invokes;
     }
 
     public void removeNOPs() {
