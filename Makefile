@@ -484,6 +484,7 @@ qsyn:
 	quartus_fit quartus/$(QBT)/jop
 	quartus_asm quartus/$(QBT)/jop
 #	quartus_tan quartus/$(QBT)/jop
+	quartus_sta quartus/$(QBT)/jop
 
 #
 #	Modelsim target
@@ -668,6 +669,7 @@ jop_blink_test:
 		quartus_fit $$qp; \
 		quartus_asm $$qp; \
 #		quartus_tan $$qp; \
+		quartus_sta $$qp; \
 		cd quartus/$$target && quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
 	done
 	make config
@@ -686,6 +688,7 @@ jop_testmon:
 		quartus_fit $$qp; \
 		quartus_asm $$qp; \
 #		quartus_tan $$qp; \
+		quartus_sta $$qp; \
 		cd quartus/$$target && quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
 	done
 	make config
