@@ -180,6 +180,7 @@ public class CallString implements CallStringProvider {
 
     @Override
     public int hashCode() {
+        // maybe cache this?
         int hash = 0;
         for (InvokeSite invokeSite : callString) {
             hash = hash * 31 + invokeSite.hashCode();

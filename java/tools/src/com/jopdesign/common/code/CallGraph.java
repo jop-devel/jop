@@ -46,7 +46,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
@@ -150,6 +152,20 @@ public class CallGraph {
         public ExecutionContext getTarget() {
             return target;
         }
+
+        @Override
+        public int hashCode() {
+            return source.hashCode() * 31 + target.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) return true;
+            if (obj == null) return false;
+            if (!(obj instanceof ContextEdge)) return false;
+            ContextEdge other = (ContextEdge) obj;
+            return source.equals(other.getSource()) && target.equals(other.getTarget());
+        }
     }
 
     /*---------------------------------------------------------------------------*
@@ -184,6 +200,45 @@ public class CallGraph {
         }
     }
 
+    @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
+    private class SubgraphUpdateListener implements GraphListener<ExecutionContext, ContextEdge> {
+        
+        private final CallGraph subgraph;
+
+        private SubgraphUpdateListener(CallGraph subgraph) {
+            this.subgraph = subgraph;
+        }
+
+        @Override
+        public void edgeAdded(GraphEdgeChangeEvent<ExecutionContext, ContextEdge> e) {
+            // first we check if the target is already in the subgraph
+            // if no new nodes required, does not change connectivity, simply add edge
+            ExecutionContext target = e.getEdge().getTarget();
+            if (!subgraph.callGraph.containsVertex(target)) {
+                // target must be added first, so we need to clone everything which is reachable from the target
+                subgraph.cloneReachableGraph(target);
+            }
+            subgraph.callGraph.addEdge(e.getEdge().getSource(), target);
+        }
+
+        @Override
+        public void edgeRemoved(GraphEdgeChangeEvent<ExecutionContext, ContextEdge> e) {
+            subgraph.removeEdge(e.getEdge(), true);
+        }
+
+        @Override
+        public void vertexAdded(GraphVertexChangeEvent<ExecutionContext> e) {
+            // No need to do anything yet.. since the vertex was just added, there are no edges to it,
+            // so it is not reachable
+        }
+
+        @Override
+        public void vertexRemoved(GraphVertexChangeEvent<ExecutionContext> e) {
+            // checks if subgraph contains vertex itself, edges to the node are removed automatically
+            subgraph.callGraph.removeVertex(e.getVertex());
+        }
+    }
+    
     //
     // Fields
     // ~~~~~~
@@ -192,18 +247,21 @@ public class CallGraph {
 
     private ListenableDirectedGraph<ExecutionContext, ContextEdge> callGraph;
     private DirectedGraph<MethodNode, InvokeEdge> mergedCallGraph;
+    
+    private Map<ExecutionContext, CallGraph> subgraphs;
+    private CallGraph parent;
 
-    private HashSet<ClassInfo> classInfos;
-    private HashMap<MethodInfo,MethodNode> methodNodes;
+    private Set<ClassInfo> classInfos;
+    private Map<MethodInfo,MethodNode> methodNodes;
 
     //
     // Caching Fields
     // ~~~~~~~~~~~~~~
-    private HashMap<ExecutionContext, Integer> maxDistanceToRoot = null;
-    private HashMap<ExecutionContext, ExecutionContext> maxCallstackDAG = null;
-    private HashMap<ExecutionContext, Integer> subgraphHeight = null;
+    private Map<ExecutionContext, Integer> maxDistanceToRoot = null;
+    private Map<ExecutionContext, ExecutionContext> maxCallstackDAG = null;
+    private Map<ExecutionContext, Integer> subgraphHeight = null;
     private ExecutionContext maxCallStackLeaf = null;
-    private HashMap<MethodInfo,Boolean> leafNodeCache;
+    private Map<MethodInfo,Boolean> leafNodeCache;
 
     /*---------------------------------------------------------------------------*
      * Constructor methods
@@ -239,7 +297,7 @@ public class CallGraph {
      */
     public static CallGraph buildCallGraph(MethodInfo rootMethod, CallgraphConfig config)
     {
-        CallGraph cg = new CallGraph(rootMethod,config);
+        CallGraph cg = new CallGraph(new ExecutionContext(rootMethod, CallString.EMPTY),config);
         cg.build();
         return cg;
     }
@@ -253,9 +311,10 @@ public class CallGraph {
      * @param rootMethod The root method of the callgraph (not abstract).
      * @param config the config class to use to build this graph
      */
-    protected CallGraph(MethodInfo rootMethod, CallgraphConfig config) {
-        this.rootNode = new ExecutionContext(rootMethod, CallString.EMPTY);
+    protected CallGraph(ExecutionContext rootMethod, CallgraphConfig config) {
+        this.rootNode = rootMethod;
         this.config = config;
+        this.subgraphs = new HashMap<ExecutionContext, CallGraph>(1);
 
         // We need a custom ContextEdge here to keep the references to the vertices for the removeEdge listener
         this.callGraph = new ListenableDirectedGraph<ExecutionContext,ContextEdge>(
@@ -266,19 +325,20 @@ public class CallGraph {
                         return new ContextEdge(sourceVertex,targetVertex);
                     }
                 }) );
+        this.methodNodes = new HashMap<MethodInfo, MethodNode>();
+        this.classInfos = new HashSet<ClassInfo>();
     }
 
+    protected CallGraph(CallGraph parent, ExecutionContext rootNode, CallgraphConfig config) {
+        this(rootNode, config);
+        this.parent = parent;
+    }
+    
     /**
      * Build and initialize everything, perform checks
      */
     private void build() {
         this.buildGraph();
-
-        /* Compute set of classes */
-        classInfos = new HashSet<ClassInfo>();
-        for(MethodNode node : methodNodes.values()) {
-                classInfos.add(node.getMethodInfo().getClassInfo());
-        }
 
         /* Check the callgraph is cycle free */
         Pair<List<ExecutionContext>,List<ExecutionContext>> cycle =
@@ -304,30 +364,67 @@ public class CallGraph {
      * <p>NEW: now we also use callstrings to get a more precise call graph model</p>
      */
     private void buildGraph() {
-        /* Initialize DFS data structures and lookup maps */
-        Stack<ExecutionContext> todo = new Stack<ExecutionContext>();
-        todo.push(rootNode);
 
-        methodNodes = new HashMap<MethodInfo, MethodNode>();
-
+        // Note that updating methodNodes and classInfos is now done by the GraphUpdateListener
         callGraph.addGraphListener(new GraphUpdateListener());
 
         callGraph.addVertex(rootNode);
 
-        while(! todo.empty()) {
-            ExecutionContext current = todo.pop();
+        if (parent == null) {
+            /* Initialize DFS data structures and lookup maps */
+            Stack<ExecutionContext> todo = new Stack<ExecutionContext>();
+            todo.push(rootNode);
 
-            List<ExecutionContext> invoked = config.getInvokedMethods(current);
-            for (ExecutionContext cgn : invoked) {
+            while(! todo.empty()) {
+                ExecutionContext current = todo.pop();
 
-            if (!callGraph.containsVertex(cgn)) {
-                callGraph.addVertex(cgn);
-                todo.push(cgn);
+                List<ExecutionContext> invoked = config.getInvokedMethods(current);
+                for (ExecutionContext cgn : invoked) {
+
+                if (!callGraph.containsVertex(cgn)) {
+                    callGraph.addVertex(cgn);
+                    todo.push(cgn);
+                }
+
+                callGraph.addEdge(current, cgn);
+                        }
+            } /* end while */
+        } else {
+            // build the the graph using all reachable nodes from the parent graph
+            cloneReachableGraph(rootNode);
+        }
+    }
+
+    /**
+     * Copy all reachable nodes (and edges) from the parent graph, starting at the root
+     * @param root where to start cloning
+     */
+    @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
+    private void cloneReachableGraph(ExecutionContext root) {
+
+        DepthFirstIterator<ExecutionContext, ContextEdge> dfs =
+                new DepthFirstIterator<ExecutionContext, ContextEdge>(parent.callGraph, root);
+
+        List<ExecutionContext> newNodes = new LinkedList<ExecutionContext>();
+
+        while (dfs.hasNext()) {
+            ExecutionContext ec = dfs.next();
+            if (callGraph.addVertex(ec)) {
+                // TODO if a node is already in the subgraph (ie. reachable), skip its children
+                //      (must all be here already or if it is a circle they will be added later)
+                newNodes.add(ec);
             }
+        }
 
-            callGraph.addEdge(current, cgn);
-                    }
-        } /* end while */
+        // add all edges between new nodes and edges to existing nodes.
+        for (ExecutionContext ec : newNodes) {
+            // all outgoing edges of new nodes are new (we do not care about ingoing edges)
+            for (ContextEdge e : parent.callGraph.outgoingEdgesOf(ec)) {
+                // source and target both must exist now
+                callGraph.addEdge(e.getSource(), e.getTarget());
+            }
+        }
+
     }
 
     /*---------------------------------------------------------------------------*
@@ -379,6 +476,20 @@ public class CallGraph {
     }
 
     /**
+     * Get a list of all nodes which are direct successors of a given node.
+     * @param node the parent node.
+     * @return all its direct successors.
+     */
+    public List<ExecutionContext> getChildren(ExecutionContext node) {
+        Set<ContextEdge> out = callGraph.outgoingEdgesOf(node);
+        List<ExecutionContext> childs = new ArrayList<ExecutionContext>(out.size());
+        for (ContextEdge e : out) {
+            childs.add(e.getTarget());
+        }
+        return childs;
+    }
+    
+    /**
      * Export callgraph as .dot file
      * @param w Write the graph to this writer. To improve performance, to use a buffered writer.
      * @throws IOException if writing fails
@@ -403,6 +514,56 @@ public class CallGraph {
         return classInfos;
     }
 
+    /*---------------------------------------------------------------------------*
+     * Modify the graph
+     *---------------------------------------------------------------------------*/
+
+    /**
+     * Remove an edge from the graph.
+     *
+     * @param source source of the edge
+     * @param target target of the edge
+     * @param removeUnreachable if true, remove all nodes which are no longer reachable from the root
+     * @return true if the edge existed
+     */
+    public boolean removeEdge(ExecutionContext source, ExecutionContext target, boolean removeUnreachable) {
+        ContextEdge edge = callGraph.getEdge(source, target);
+        if (edge == null) return false;
+        return removeEdge(edge, removeUnreachable);
+    }
+
+    /**
+     * Remove an edge from the graph.
+     *
+     * @param edge the edge to remove.
+     * @param removeUnreachable if true, remove all nodes which are no longer reachable from the root
+     * @return true if the edge existed
+     */
+    public boolean removeEdge(ContextEdge edge, boolean removeUnreachable) {
+        // Edge equals is defined over the touching execution contexts, so we can do this here
+        // without worrying about same instances
+        boolean exists = callGraph.removeEdge(edge);
+
+        if (exists && removeUnreachable) {
+            // do we need to worry about loosing connectivity?
+            ExecutionContext target = edge.getTarget();
+            Set<ExecutionContext> queue = new HashSet<ExecutionContext>();
+            queue.add(target);
+
+            while (!queue.isEmpty()) {
+                // take one down ..
+                ExecutionContext ec = queue.iterator().next();
+                queue.remove(ec);
+
+                if (callGraph.incomingEdgesOf(ec).isEmpty()) {
+                    // this node has now become disconnected.. remove it, queue all children
+                    queue.addAll(getChildren(ec));
+                    callGraph.removeVertex(ec);
+                }
+            }
+        }
+        return exists;
+    }
 
     /*---------------------------------------------------------------------------*
      * Merge graph, subgraphs
@@ -432,6 +593,30 @@ public class CallGraph {
         for (ContextEdge edge : callGraph.edgeSet()) {
             onAddCallGraphEdge(edge);
         }
+    }
+
+    /**
+     * Get a subgraph starting at a given node which contains all reachable nodes and edges.
+     * The subgraph is backed by this graph, so any modifications to it will be reflected
+     * in the subgraph (but not the other way round!)
+     *
+     * @param root root node of the graph.
+     * @return a new subgraph, or an existing subgraph which starts at the same root
+     */
+    public CallGraph getSubGraph(ExecutionContext root) {
+        // TODO if we support multiple roots of a callgraph, allow to use a MethodInfo as root, add all instances
+
+        if (root.equals(rootNode)) return this;
+
+        CallGraph subGraph = subgraphs.get(root);
+        if (subGraph != null) {
+            subGraph = new CallGraph(this, root, config);
+            subGraph.build();
+            callGraph.addGraphListener(new SubgraphUpdateListener(subGraph));
+            // TODO maybe add a listener to subgraph which updates the parent graph when it is modified?
+            subgraphs.put(root, subGraph);
+        }
+        return subGraph;
     }
 
     /*---------------------------------------------------------------------------*
@@ -746,6 +931,10 @@ public class CallGraph {
         }
         node.addInstance(context);
 
+        // doing this here will call add(ClassInfo) more often than iterating over all
+        // method nodes, but doing it here it is more robust when the graph is modified
+        classInfos.add(node.getMethodInfo().getClassInfo());
+
         if (mergedCallGraph != null) {
             mergedCallGraph.addVertex(node);
         }
@@ -761,6 +950,8 @@ public class CallGraph {
             if (mergedCallGraph != null) {
                 mergedCallGraph.removeVertex(node);
             }
+
+            // TODO we might need to remove the class of the method from classInfos too!
         }
     }
 
