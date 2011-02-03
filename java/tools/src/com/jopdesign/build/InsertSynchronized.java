@@ -28,7 +28,6 @@ import com.jopdesign.common.misc.JavaClassFormatError;
 import org.apache.bcel.generic.ALOAD;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
-import org.apache.bcel.generic.InstructionTargeter;
 import org.apache.bcel.generic.MONITORENTER;
 import org.apache.bcel.generic.MONITOREXIT;
 import org.apache.bcel.util.InstructionFinder;
@@ -64,7 +63,7 @@ public class InsertSynchronized implements ClassVisitor {
     private void synchronize(MethodInfo method) {
 
         MethodCode mc = method.getCode();
-        InstructionList il = mc.getInstructionList(true);
+        InstructionList il = mc.getInstructionList();
         InstructionFinder f;
 
         // prepend monitorenter (reversed order of opcodes)
@@ -95,10 +94,7 @@ public class InsertSynchronized implements ClassVisitor {
             il.insert(ih, new MONITOREXIT());
 
             // correct jumps
-            InstructionTargeter[] it = ih.getTargeters();
-            for (int i = 0; it != null && i < it.length; i++) {
-                it[i].updateTarget(ih, newh);
-            }
+            method.getCode().retarget(ih, newh);
         }
         il.setPositions();
 

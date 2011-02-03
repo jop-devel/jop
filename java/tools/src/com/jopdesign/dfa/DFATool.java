@@ -204,7 +204,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
             analysis.initialize(main, context);
 
-            InstructionHandle entry = prologue.getCode().getInstructionList(false).getStart();
+            InstructionHandle entry = prologue.getCode().getInstructionList().getStart();
             interpreter.interpret(context, entry, new HashMap(), true);
         } catch (Throwable thr) {
             thr.printStackTrace();
@@ -226,7 +226,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
             context.method = start.getMethodRef();
 
             analysis.initialize(start, context);
-            InstructionHandle entry = start.getCode().getInstructionList(false).getStart();
+            InstructionHandle entry = start.getCode().getInstructionList().getStart();
             interpreter.interpret(context, entry, new HashMap<InstructionHandle, ContextMap<K, V>>(), true);
         } catch (Throwable thr) {
             thr.printStackTrace();

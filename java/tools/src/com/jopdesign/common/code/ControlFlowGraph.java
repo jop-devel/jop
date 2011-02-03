@@ -29,7 +29,6 @@ import com.jopdesign.common.graphutils.AdvancedDOTExporter.DOTNodeLabeller;
 import com.jopdesign.common.graphutils.DefaultFlowGraph;
 import com.jopdesign.common.graphutils.FlowGraph;
 import com.jopdesign.common.graphutils.LoopColoring;
-import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.graphutils.TopOrder;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.BadGraphException;
@@ -649,18 +648,12 @@ public class ControlFlowGraph {
         InstructionList il = new InstructionList();
 
         Object[] attributes = {KEY_CFGNODE};
-        Map<BasicBlockNode,InstructionHandle> first, last;
-        first = new HashMap<BasicBlockNode, InstructionHandle>(blocks.size());
-        last  = new HashMap<BasicBlockNode, InstructionHandle>(blocks.size());
 
         for (int i = 0; i < blocks.size(); i++) {
             BasicBlock bb = blocks.get(i);
             BasicBlockNode bbn = getHandleNode(bb);
 
-            // TODO uncomment clear()+add() stmt in bb.appendTo() when this method is implemented !!
-            Pair<InstructionHandle, InstructionHandle> ihs = bb.appendTo(il, attributes);
-            first.put(bbn, ihs.first());
-            last.put(bbn, ihs.second());
+            bb.appendTo(il, attributes);
 
             for (CFGEdge e : graph.outgoingEdgesOf(bbn)) {
                 if (e.getKind() != EdgeKind.NEXT_EDGE) continue;
@@ -671,17 +664,7 @@ public class ControlFlowGraph {
             }
         }
 
-        for (BasicBlockNode bbn : last.keySet()) {
-            InstructionHandle lastIh = last.get(bbn);
-
-            // TODO retarget instructions by following outgoing edges to a basic block (skipping 'virtual' blocks)
-
-
-            // TODO update exception ranges
-
-        }
-
-        //methodInfo.getCode().setInstructionList(il, true);
+        methodInfo.getCode().setInstructionList(il);
     }
 
     /**

@@ -336,7 +336,6 @@ public final class MethodInfo extends ClassMemberInfo {
 
     /**
      * Get all non-abstract methods (including this method if it is not abstract) overriding this method.
-     * 
      * @see AppInfo#findImplementations(CallString)
      * @see AppInfo#findImplementations(MethodRef)
      * @param checkAccess if false, find all non-abstract methods with same signature even if they do not

@@ -94,7 +94,7 @@ public class ClinitOrder implements ClassVisitor {
         ConstantPoolGen cpoolgen = cli.getConstantPoolGen();
         ConstantPool cpool = cpoolgen.getConstantPool();
 
-        InstructionList il = method.getCode().getInstructionList(false);
+        InstructionList il = method.getCode().getInstructionList();
         InstructionFinder f = new InstructionFinder(il);
 
         // find instructions that access the constant pool

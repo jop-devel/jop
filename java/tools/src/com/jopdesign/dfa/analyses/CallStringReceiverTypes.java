@@ -1118,14 +1118,14 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
             }
         }
 
-		InstructionHandle entry = method.getCode().getInstructionList(false).getStart();
+		InstructionHandle entry = method.getCode().getInstructionList().getStart();
 		state.put(entry, join(state.get(entry), tmpresult));
 		
 		// interpret method
 		Map<InstructionHandle, ContextMap<CallString, Set<TypeMapping>>> r = interpreter.interpret(c, entry, state, false);
 							
 		// pull out relevant information from call
-		InstructionHandle exit = method.getCode().getInstructionList(false).getEnd();
+		InstructionHandle exit = method.getCode().getInstructionList().getEnd();
 		if (r.get(exit) != null) { 
 			Set<TypeMapping> returned = r.get(exit).get(c.callString);
 			if (returned != null) {
@@ -1187,14 +1187,14 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
                 }
             }
 
-			InstructionHandle entry = method.getCode().getInstructionList(false).getStart();
+			InstructionHandle entry = method.getCode().getInstructionList().getStart();
 			state.put(entry, join(state.get(entry), tmpresult));
 
 			// interpret method
 			Map<InstructionHandle, ContextMap<CallString, Set<TypeMapping>>> r = interpreter.interpret(c, entry, state, false);
 
 			// pull out relevant information from call
-			InstructionHandle exit = method.getCode().getInstructionList(false).getEnd();
+			InstructionHandle exit = method.getCode().getInstructionList().getEnd();
 			if (r.get(exit) != null) { 
 				Set<TypeMapping> returned = r.get(exit).get(c.callString);
 				if (returned != null) {
@@ -1220,7 +1220,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
             for (String methodName : threads.keySet()) {
 
                 MethodInfo method = p.getMethod(methodName);
-                InstructionHandle entry = method.getCode().getInstructionList(false).getStart();
+                InstructionHandle entry = method.getCode().getInstructionList().getStart();
                 Context c = state.get(entry).getContext();
 
                 int varPtr = c.stackPtr - MethodHelper.getArgSize(method);
@@ -1241,7 +1241,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
                 Map<InstructionHandle, ContextMap<CallString, Set<TypeMapping>>> r = interpreter.interpret(c, entry, state, false);
 
                 // pull out relevant information from thread
-                InstructionHandle exit = method.getCode().getInstructionList(false).getEnd();
+                InstructionHandle exit = method.getCode().getInstructionList().getEnd();
                 ContextMap<CallString, Set<TypeMapping>> threadResult;
                 if (r.get(exit) != null) {
                     threadResult = new ContextMap<CallString, Set<TypeMapping>>(c, new HashMap<CallString, Set<TypeMapping>>());

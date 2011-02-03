@@ -219,10 +219,7 @@ public class KeyManager {
             }
             if ( fromCode && !method.isAbstract() ) {
                 MethodCode code = method.getCode();
-                InstructionList il = code.getInstructionList(true);
-                if (il == null) {
-                    continue;
-                }
+                InstructionList il = code.getInstructionList();
                 for (InstructionHandle ih : il.getInstructionHandles()) {
                     code.clearCustomKey(ih, key);
                 }
