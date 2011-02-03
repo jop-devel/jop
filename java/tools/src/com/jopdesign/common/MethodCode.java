@@ -49,8 +49,10 @@ import org.apache.bcel.generic.ObjectType;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -308,8 +310,65 @@ public class MethodCode {
     }
 
     public boolean isExceptionRangeStart(InstructionHandle ih) {
-        // TODO implement
-        return false;
+        return !getStartingExceptionRanges(ih).isEmpty();
+    }
+
+    public boolean isExceptionRangeEnd(InstructionHandle ih) {
+        return !getEndingExceptionRanges(ih).isEmpty();
+    }
+
+    public boolean isExceptionRangeTarget(InstructionHandle ih) {
+        return !getTargetingExceptionRanges(ih).isEmpty();
+    }
+
+    /**
+     * Get a list of all exception ranges which start at this instruction.
+     * @param ih the instruction to check
+     * @return a list of all exception ranges with this instruction as start instruction, or an empty list.
+     */
+    public List<CodeExceptionGen> getStartingExceptionRanges(InstructionHandle ih) {
+        List<CodeExceptionGen> list = new ArrayList<CodeExceptionGen>();
+        InstructionTargeter[] targeters = ih.getTargeters();
+        if (targeters == null) return list;
+        for (InstructionTargeter t : targeters) {
+            if (t instanceof CodeExceptionGen) {
+                CodeExceptionGen ceg = (CodeExceptionGen) t;
+                if (ceg.getStartPC().equals(ih)) {
+                    list.add(ceg);
+                }
+            }
+        }
+        return list;
+    }
+
+    public List<CodeExceptionGen> getEndingExceptionRanges(InstructionHandle ih) {
+        List<CodeExceptionGen> list = new ArrayList<CodeExceptionGen>();
+        InstructionTargeter[] targeters = ih.getTargeters();
+        if (targeters == null) return list;
+        for (InstructionTargeter t : targeters) {
+            if (t instanceof CodeExceptionGen) {
+                CodeExceptionGen ceg = (CodeExceptionGen) t;
+                if (ceg.getEndPC().equals(ih)) {
+                    list.add(ceg);
+                }
+            }
+        }
+        return list;
+    }
+
+    public List<CodeExceptionGen> getTargetingExceptionRanges(InstructionHandle ih) {
+        List<CodeExceptionGen> list = new ArrayList<CodeExceptionGen>();
+        InstructionTargeter[] targeters = ih.getTargeters();
+        if (targeters == null) return list;
+        for (InstructionTargeter t : targeters) {
+            if (t instanceof CodeExceptionGen) {
+                CodeExceptionGen ceg = (CodeExceptionGen) t;
+                if (ceg.getHandlerPC().equals(ih)) {
+                    list.add(ceg);
+                }
+            }
+        }
+        return list;
     }
 
     //////////////////////////////////////////////////////////////////////////////
