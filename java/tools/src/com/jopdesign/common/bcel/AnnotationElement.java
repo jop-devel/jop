@@ -67,6 +67,10 @@ public class AnnotationElement {
         this.value = value;
     }
 
+    public void setConstantPool(ConstantPool cp) {
+        this.constantPool = cp;
+    }
+
     public int length() {
         return 2 + value.length();
     }

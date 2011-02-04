@@ -57,6 +57,7 @@ import java.util.Set;
  */
 public class ClinitOrder implements ClassVisitor {
 
+    public static final String clinitName = "<clinit>";
     public static final String clinitSig = "<clinit>()V";
 
     private Map<ClassInfo, Set<ClassInfo>> clinit = new HashMap<ClassInfo, Set<ClassInfo>>();

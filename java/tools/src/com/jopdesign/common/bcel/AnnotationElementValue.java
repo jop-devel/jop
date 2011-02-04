@@ -93,6 +93,11 @@ public class AnnotationElementValue {
         this.constValueIndex = constValueIndex;
     }
 
+    public boolean isConstValue() {
+        return tag == 'B' || tag == 'C' || tag == 'D' || tag == 'F' || tag == 'T' ||
+               tag == 'J' || tag == 'S' || tag == 'Z' || tag == 's';
+    }
+
     public int length() {
         switch (tag) {
             case 'B':

@@ -24,18 +24,65 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.MemberInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.bcel.Annotation;
+import com.jopdesign.common.bcel.AnnotationAttribute;
+import com.jopdesign.common.bcel.AnnotationElement;
+import com.jopdesign.common.bcel.AnnotationElementValue;
 import com.jopdesign.common.bcel.CustomAttribute;
+import com.jopdesign.common.bcel.EnclosingMethod;
+import com.jopdesign.common.bcel.ParameterAnnotationAttribute;
+import com.jopdesign.common.graphutils.ClassElementVisitor;
 import com.jopdesign.common.graphutils.DescendingClassTraverser;
 import com.jopdesign.common.graphutils.EmptyClassElementVisitor;
+import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.type.ClassRef;
+import com.jopdesign.common.type.ConstantFieldInfo;
+import com.jopdesign.common.type.ConstantMethodInfo;
 import com.jopdesign.common.type.ConstantNameAndTypeInfo;
 import com.jopdesign.common.type.Descriptor;
+import com.jopdesign.common.type.FieldRef;
+import com.jopdesign.common.type.MethodRef;
+import com.jopdesign.common.type.Signature;
+import org.apache.bcel.Constants;
+import org.apache.bcel.classfile.Code;
+import org.apache.bcel.classfile.CodeException;
+import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantClass;
+import org.apache.bcel.classfile.ConstantDouble;
+import org.apache.bcel.classfile.ConstantFieldref;
+import org.apache.bcel.classfile.ConstantFloat;
+import org.apache.bcel.classfile.ConstantInteger;
+import org.apache.bcel.classfile.ConstantInterfaceMethodref;
+import org.apache.bcel.classfile.ConstantLong;
+import org.apache.bcel.classfile.ConstantMethodref;
 import org.apache.bcel.classfile.ConstantNameAndType;
+import org.apache.bcel.classfile.ConstantPool;
+import org.apache.bcel.classfile.ConstantString;
 import org.apache.bcel.classfile.ConstantUtf8;
+import org.apache.bcel.classfile.ConstantValue;
+import org.apache.bcel.classfile.ExceptionTable;
+import org.apache.bcel.classfile.Field;
 import org.apache.bcel.classfile.InnerClass;
+import org.apache.bcel.classfile.InnerClasses;
+import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.classfile.LineNumberTable;
+import org.apache.bcel.classfile.LocalVariableTable;
+import org.apache.bcel.classfile.Method;
+import org.apache.bcel.classfile.SourceFile;
+import org.apache.bcel.classfile.StackMap;
+import org.apache.bcel.classfile.StackMapEntry;
+import org.apache.bcel.classfile.StackMapType;
+import org.apache.bcel.classfile.Synthetic;
+import org.apache.bcel.classfile.Unknown;
 import org.apache.bcel.generic.ArrayType;
+import org.apache.bcel.generic.CPInstruction;
+import org.apache.bcel.generic.CodeExceptionGen;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.EmptyVisitor;
+import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.InstructionList;
+import org.apache.bcel.generic.LineNumberGen;
+import org.apache.bcel.generic.LocalVariableGen;
 import org.apache.bcel.generic.ObjectType;
 import org.apache.bcel.generic.Type;
 
@@ -49,6 +96,261 @@ import java.util.Set;
  */
 public class ClassReferenceFinder {
 
+    ////////////////////////////////////////////////////////////////
+    // Helper classes to find something in a class
+    ////////////////////////////////////////////////////////////////
+
+    public abstract static class ConstantPoolVisitor extends EmptyClassElementVisitor {
+
+        @Override
+        public boolean visitMethod(MethodInfo methodInfo) {
+            processDescriptor(methodInfo.getDescriptor());
+            return true;
+        }
+
+        @Override
+        public boolean visitField(FieldInfo fieldInfo) {
+            processDescriptor(fieldInfo.getDescriptor());
+            return true;
+        }
+
+        @Override
+        public void visitConstantClass(ClassInfo classInfo, ConstantClass constant) {
+            processClassRef(classInfo.getConstantInfo(constant).getClassRef());
+        }
+
+        @Override
+        public void visitConstantField(ClassInfo classInfo, ConstantFieldref constant) {
+            ConstantFieldInfo field = (ConstantFieldInfo) classInfo.getConstantInfo(constant);
+            Type classType = field.getClassRef().getType();
+            processFieldRef(field.getValue());
+        }
+
+        @Override
+        public void visitConstantMethod(ClassInfo classInfo, ConstantMethodref constant) {
+            ConstantMethodInfo method = (ConstantMethodInfo) classInfo.getConstantInfo(constant);
+            processMethodRef(method.getValue());
+        }
+
+        @Override
+        public void visitConstantInterfaceMethod(ClassInfo classInfo, ConstantInterfaceMethodref constant) {
+            super.visitConstantInterfaceMethod(classInfo, constant);
+        }
+
+        @Override
+        public void visitConstantNameAndType(ClassInfo classInfo, ConstantNameAndType constant) {
+            ConstantNameAndTypeInfo nat = (ConstantNameAndTypeInfo) classInfo.getConstantInfo(constant);
+            processDescriptor(nat.getValue().getMemberDescriptor());
+        }
+
+        @Override
+        public void visitAnnotation(MemberInfo memberInfo, AnnotationAttribute obj) {
+            visitCustomAttribute(memberInfo, obj, true);
+        }
+
+        @Override
+        public void visitParameterAnnotation(MemberInfo memberInfo, ParameterAnnotationAttribute obj) {
+            visitCustomAttribute(memberInfo, obj, true);
+        }
+
+        @Override
+        public void visitCustomAttribute(MemberInfo memberInfo, CustomAttribute obj, boolean isCodeAttribute) {
+            String[] classes = obj.getReferencedClassNames();
+            if ( classes != null ) {
+                for (String cName : classes) {
+                    processClassName(cName);
+                }
+            }
+        }
+
+        private void processClassRef(ClassRef ref) {
+            processType( ref.getType() );
+        }
+
+        private void processDescriptor(Descriptor d) {
+            Type ret = d.getType();
+            processType(ret);
+
+            if (d.isMethod()) {
+                for (Type t : d.getArgumentTypes()) {
+                    processType(t);
+                }
+            }
+        }
+
+        private void processType(Type  type) {
+
+            if ( type instanceof ArrayType) {
+                processType( ((ArrayType)type).getBasicType() );
+            } else if ( type instanceof ObjectType) {
+                processClassName( ((ObjectType)type).getClassName() );
+            }
+        }
+
+        public abstract void processClassName(String name);
+
+        public abstract void processFieldRef(FieldRef fieldRef);
+
+        public abstract void processMethodRef(MethodRef methodRef);
+    }
+
+    public static class ClassNameVisitor extends ConstantPoolVisitor {
+        private Set<String> names;
+
+        public ClassNameVisitor(Set<String> names) {
+            this.names = names;
+        }
+
+        @Override
+        public void processClassName(String name) {
+            // also called for the classname part of field- and method-refs
+            names.add(name);
+        }
+
+        @Override
+        public void processFieldRef(FieldRef fieldRef) {
+        }
+
+        @Override
+        public void processMethodRef(MethodRef methodRef) {
+        }
+    }
+
+    public static class ClassMemberVisitor extends ConstantPoolVisitor {
+        private Set<String> members;
+
+        public ClassMemberVisitor(Set<String> members) {
+            this.members = members;
+        }
+
+        @Override
+        public void processClassName(String name) {
+            members.add(name);
+        }
+
+        @Override
+        public void processFieldRef(FieldRef fieldRef) {
+            String className = fieldRef.getClassName();
+            members.add(className + Signature.ALT_MEMBER_SEPARATOR + fieldRef.getName());
+        }
+
+        @Override
+        public void processMethodRef(MethodRef methodRef) {
+            String className = methodRef.getClassName();
+            members.add(className + Signature.ALT_MEMBER_SEPARATOR + methodRef.getMemberSignature());
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////
+    // Find/replace references, member names, Pool entries
+    ////////////////////////////////////////////////////////////////
+
+    public static Set<Integer> findPoolReferences(ClassInfo classInfo, boolean checkMembers) {
+
+        JavaClass javaClass = classInfo.compile();
+
+        Set<Integer> ids = findPoolReferences(classInfo, javaClass);
+
+        if (checkMembers) {
+            for (Field field : javaClass.getFields()) {
+                FieldInfo fieldInfo = classInfo.getFieldInfo(field.getName());
+                ids.addAll( findPoolReferences(fieldInfo, field) );
+            }
+            for (Method method : javaClass.getMethods()) {
+                MethodInfo methodInfo = classInfo.getMethodInfo(method.getName()+method.getSignature());
+                ids.addAll( findPoolReferences(methodInfo, method) );
+            }
+        }
+
+        return ids;
+    }
+
+    public static Set<Integer> findPoolReferences(MethodInfo methodInfo) {
+        return findPoolReferences(methodInfo, methodInfo.compile());
+    }
+
+    public static Set<Integer> findPoolReferences(FieldInfo fieldInfo) {
+        return findPoolReferences(fieldInfo, fieldInfo.getField());
+    }
+
+    /**
+     * Get a set of all referenced classes and class members for a method.
+     *
+     * @param methodInfo the method to search.
+     * @return a set of class names and class member signatures found in the method.
+     */
+    public static Set<String> findReferencedMembers(MethodInfo methodInfo) {
+        Set<String> members = new HashSet<String>();
+        ClassMemberVisitor visitor = new ClassMemberVisitor(members);
+
+        Set<Integer> ids = findPoolReferences(methodInfo);
+
+        visitor.visitMethod(methodInfo);
+        visitPoolReferences(methodInfo.getClassInfo(), visitor, ids);
+        
+        return members;
+    }
+
+    /**
+     * Get a set of all referenced classes and class members for a field.
+     *
+     * @param fieldInfo the field to search.
+     * @return a set of class names and class member signatures found in the class.
+     */
+    public static Set<String> findReferencedMembers(FieldInfo fieldInfo) {
+        Set<String> members = new HashSet<String>();
+        ClassMemberVisitor visitor = new ClassMemberVisitor(members);
+
+        Set<Integer> ids = findPoolReferences(fieldInfo);
+
+        visitor.visitField(fieldInfo);
+        visitPoolReferences(fieldInfo.getClassInfo(), visitor, ids);
+
+        return members;
+    }
+
+    /**
+     * Find all referenced members in a class.
+     * @param classInfo the class to search.
+     * @param checkMembers if false, do not check fields and methods. Else check everything.
+     * @return a set of class names and class member signatures found in the class.
+     */
+    public static Set<String> findReferencedMembers(ClassInfo classInfo, boolean checkMembers) {
+
+        if (checkMembers) {
+            // If we want everything, we can just check the constant pool
+            final Set<String> members = new HashSet<String>();
+
+            ClassMemberVisitor visitor = new ClassMemberVisitor(members);
+            new DescendingClassTraverser(visitor).visitClass(classInfo);
+            
+            return members;
+        }
+
+        // Else we need to go into details..
+        Set<String> members = new HashSet<String>();
+        ClassMemberVisitor visitor = new ClassMemberVisitor(members);
+
+        Set<Integer> ids = findPoolReferences(classInfo, checkMembers);
+
+        visitor.visitClass(classInfo);
+        visitPoolReferences(classInfo, visitor, ids);
+
+        return members;
+    }
+
+    /**
+     * @param members a set of member names returned by a findReferencedMembers() method.
+     * @return a set of all classnames found in the given set.
+     */
+    public static Set<String> getClassNames(Set<String> members) {
+        Set<String> classNames = new HashSet<String>();
+        for (String name : members) {
+            classNames.add( Signature.getClassName(name, false) );
+        }
+        return classNames;
+    }
+
     /**
      * Get a set of all classes referenced by the given class, including superclasses, interfaces and
      * references from the code, from parameters and from attributes.
@@ -60,90 +362,393 @@ public class ClassReferenceFinder {
 
         final Set<String> names = new HashSet<String>();
 
-        class ClassNameVisitor extends EmptyClassElementVisitor {
-
-            @Override
-            public boolean visitMethod(MethodInfo methodInfo) {
-                processDescriptor(methodInfo.getDescriptor());
-                return true;
-            }
-
-            @Override
-            public boolean visitField(FieldInfo fieldInfo) {
-                processDescriptor(fieldInfo.getDescriptor());
-                return true;
-            }
-
-            @Override
-            public void visitConstantClass(ClassInfo classInfo, ConstantClass constant) {
-                processClassRef(classInfo.getConstantInfo(constant).getClassRef());
-            }
-
-            @Override
-            public void visitConstantNameAndType(ClassInfo classInfo, ConstantNameAndType constant) {
-                ConstantNameAndTypeInfo nat = (ConstantNameAndTypeInfo) classInfo.getConstantInfo(constant);
-                processDescriptor(nat.getValue().getMemberDescriptor());
-            }
-
-            @Override
-            public void visitCustomAttribute(MemberInfo memberInfo, CustomAttribute obj, boolean isCodeAttribute) {
-                String[] classes = obj.getReferencedClassNames();
-                if ( classes != null ) {
-                    for (String cName : classes) {
-                        processClassName(cName);
-                    }
-                }
-            }
-
-            @Override
-            public void visitInnerClass(ClassInfo classInfo, InnerClass obj) {
-                ConstantPoolGen cpg = classInfo.getConstantPoolGen();
-                processUtf8(cpg, obj.getInnerClassIndex());
-                processUtf8(cpg, obj.getOuterClassIndex());
-            }
-
-            private void processUtf8(ConstantPoolGen cpg, int index) {
-                if (index == 0) {
-                    return;
-                }
-                ConstantUtf8 constant = (ConstantUtf8) cpg.getConstant(index);
-                processClassName(constant.getBytes().replace('/','.'));
-            }
-
-            private void processClassRef(ClassRef ref) {
-                processType( ref.getType() );
-            }
-
-            private void processDescriptor(Descriptor d) {
-                Type ret = d.getType();
-                processType(ret);
-
-                if (d.isMethod()) {
-                    for (Type t : d.getArgumentTypes()) {
-                        processType(t);
-                    }
-                }
-            }
-
-            private void processType(Type  type) {
-
-                if ( type instanceof ArrayType) {
-                    processType( ((ArrayType)type).getBasicType() );
-                } else if ( type instanceof ObjectType) {
-                    processClassName( ((ObjectType)type).getClassName() );
-                }
-            }
-
-            private void processClassName(String name) {
-                names.add(name);
-            }
-        }
-
-        ClassNameVisitor visitor = new ClassNameVisitor();
+        ClassNameVisitor visitor = new ClassNameVisitor(names);
         new DescendingClassTraverser(visitor).visitClass(classInfo);
 
         return names;
     }
 
+    ////////////////////////////////////////////////////////////////
+    // Private methods
+    ////////////////////////////////////////////////////////////////
+
+    private static class IdFinderVisitor extends EmptyVisitor implements ClassElementVisitor {
+        private ClassInfo classInfo;
+        private Set<Integer> ids;
+        private ConstantPool cp;
+
+        public IdFinderVisitor(ClassInfo classInfo, Set<Integer> ids, ConstantPool cp) {
+            this.classInfo = classInfo;
+            this.ids = ids;
+            this.cp = cp;
+        }
+
+        @Override
+        public boolean visitMethod(MethodInfo methodInfo) {
+            // ignored, handled in findPoolReferences(Method)
+            return true;
+        }
+
+        @Override
+        public void finishMethod(MethodInfo methodInfo) {
+            // nothing to do
+        }
+
+        @Override
+        public boolean visitField(FieldInfo fieldInfo) {
+            // ignored, handled in findPoolReferences(Field)
+            return true;
+        }
+
+        @Override
+        public void finishField(FieldInfo fieldInfo) {
+            // nothing to do
+        }
+
+        @Override
+        public boolean visitConstantPoolGen(ClassInfo classInfo, ConstantPoolGen cpg) {
+            // ignored
+            return true;
+        }
+
+        @Override
+        public void finishConstantPoolGen(ClassInfo classInfo, ConstantPoolGen cpg) {
+            // nothing to do
+        }
+
+        @Override
+        public void visitConstantClass(ClassInfo classInfo, ConstantClass constant) {
+            visitConstantUtf8(constant.getNameIndex());
+        }
+
+        @Override
+        public void visitConstantDouble(ClassInfo classInfo, ConstantDouble constant) {
+            // no indices here
+        }
+
+        @Override
+        public void visitConstantField(ClassInfo classInfo, ConstantFieldref constant) {
+            visitConstantClass(constant.getClassIndex());
+            visitConstantNameAndType(constant.getNameAndTypeIndex());
+        }
+
+        @Override
+        public void visitConstantFloat(ClassInfo classInfo, ConstantFloat constant) {
+            // no indices here
+        }
+
+        @Override
+        public void visitConstantInteger(ClassInfo classInfo, ConstantInteger constant) {
+            // no indices here
+        }
+
+        @Override
+        public void visitConstantLong(ClassInfo classInfo, ConstantLong constant) {
+            // no indices here
+        }
+
+        @Override
+        public void visitConstantMethod(ClassInfo classInfo, ConstantMethodref constant) {
+            visitConstantClass(constant.getClassIndex());
+            visitConstantNameAndType(constant.getNameAndTypeIndex());
+        }
+
+        @Override
+        public void visitConstantInterfaceMethod(ClassInfo classInfo, ConstantInterfaceMethodref constant) {
+            visitConstantClass(constant.getClassIndex());
+            visitConstantNameAndType(constant.getNameAndTypeIndex());
+        }
+
+        @Override
+        public void visitConstantNameAndType(ClassInfo classInfo, ConstantNameAndType constant) {
+            visitConstantUtf8(constant.getNameIndex());
+            visitConstantUtf8(constant.getSignatureIndex());
+        }
+
+        @Override
+        public void visitConstantString(ClassInfo classInfo, ConstantString constant) {
+            visitConstantUtf8(constant.getStringIndex());
+        }
+
+        @Override
+        public void visitConstantUtf8(ClassInfo classInfo, ConstantUtf8 constant) {
+            // no indices here
+        }
+
+        @Override
+        public void visitInnerClasses(ClassInfo classInfo, InnerClasses obj) {
+            visitConstantUtf8(obj.getNameIndex());
+            for (InnerClass ic : obj.getInnerClasses()) {
+                visitConstantClass(ic.getInnerClassIndex());
+                visitConstantClass(ic.getOuterClassIndex());
+                visitConstantUtf8(ic.getInnerNameIndex());
+            }
+        }
+
+        @Override
+        public void visitSourceFile(ClassInfo classInfo, SourceFile obj) {
+            visitConstantUtf8(obj.getNameIndex());
+            visitConstantUtf8(obj.getSourceFileIndex());
+        }
+
+        @Override
+        public void visitEnclosingMethod(ClassInfo classInfo, EnclosingMethod obj) {
+            visitConstantUtf8(obj.getNameIndex());
+            visitConstantClass(obj.getClassIndex());
+            visitConstantNameAndType(obj.getMethodIndex());
+        }
+
+        @Override
+        public void visitConstantValue(FieldInfo fieldInfo, ConstantValue obj) {
+            visitConstantUtf8(obj.getNameIndex());
+            int index = obj.getConstantValueIndex();
+            Constant c = cp.getConstant(index);
+            if (c instanceof ConstantString) {
+                visitConstantString(index);
+            }
+        }
+
+        @Override
+        public void visitCodeException(MethodInfo methodInfo, CodeExceptionGen obj) {
+            throw new AssertionError("Not visiting MethodGen, but found CodeExceptionGen");
+        }
+
+        @Override
+        public void visitLineNumber(MethodInfo methodInfo, LineNumberGen obj) {
+            throw new AssertionError("Not visiting MethodGen, but found LineNumberGen");
+        }
+
+        @Override
+        public void visitLocalVariable(MethodInfo methodInfo, LocalVariableGen obj) {
+            throw new AssertionError("Not visiting MethodGen, but found LocalVariableGen");
+        }
+
+        @Override
+        public void visitStackMap(MethodInfo methodInfo, StackMap obj) {
+            visitConstantUtf8(obj.getNameIndex());
+
+            for (StackMapEntry e : obj.getStackMap()) {
+                for (StackMapType t : e.getTypesOfLocals()) {
+                    visitStackType(t);
+                }
+                for (StackMapType t : e.getTypesOfStackItems()) {
+                    visitStackType(t);
+                }
+            }
+        }
+
+        @Override
+        public void visitSignature(MemberInfo memberInfo, org.apache.bcel.classfile.Signature obj) {
+            visitConstantUtf8(obj.getNameIndex());
+            visitConstantUtf8(obj.getSignatureIndex());
+        }
+
+        @Override
+        public void visitDeprecated(MemberInfo memberInfo, org.apache.bcel.classfile.Deprecated obj) {
+            visitConstantUtf8(obj.getNameIndex());
+        }
+
+        @Override
+        public void visitSynthetic(MemberInfo memberInfo, Synthetic obj) {
+            visitConstantUtf8(obj.getNameIndex());
+        }
+
+        @Override
+        public void visitAnnotation(MemberInfo memberInfo, AnnotationAttribute obj) {
+            visitConstantUtf8(obj.getNameIndex());
+            for (Annotation a : obj.getAnnotations()) {
+                visitAnnotation(memberInfo.getClassInfo(), a);
+            }
+        }
+
+        @Override
+        public void visitParameterAnnotation(MemberInfo memberInfo, ParameterAnnotationAttribute obj) {
+            visitConstantUtf8(obj.getNameIndex());
+            for (int i = 0; i < obj.getNumParameters(); i++) {
+                for (Annotation a : obj.getAnnotations(i)) {
+                    visitAnnotation(memberInfo.getClassInfo(), a);
+                }
+            }
+        }
+
+        @Override
+        public void visitUnknown(MemberInfo memberInfo, Unknown obj, boolean isCodeAttribute) {
+            throw new JavaClassFormatError("Unknown Attribute found, not supported!");
+        }
+
+        @Override
+        public void visitCustomAttribute(MemberInfo memberInfo, CustomAttribute obj, boolean isCodeAttribute) {
+            throw new JavaClassFormatError("CustomAttribute found, not supported!");
+        }
+
+        @Override
+        public void visitCode(MethodInfo methodInfo, Code code) {
+            visitConstantUtf8(code.getNameIndex());
+
+            InstructionList il = new InstructionList(code.getCode());
+            visitInstructionList(il);
+            il.dispose();
+
+            for (CodeException ce : code.getExceptionTable()) {
+                visitConstantClass(ce.getCatchType());
+            }
+
+            new DescendingClassTraverser(this).visitAttributes(methodInfo, code.getAttributes());
+        }
+
+        @Override
+        public void visitExceptionTable(MethodInfo methodInfo, ExceptionTable table) {
+            visitConstantUtf8(table.getNameIndex());
+            for (int index : table.getExceptionIndexTable()) {
+                visitConstantClass(index);
+            }
+        }
+
+        @Override
+        public void visitLineNumberTable(MethodInfo methodInfo, LineNumberTable table) {
+            visitConstantUtf8(table.getNameIndex());
+
+        }
+
+        @Override
+        public void visitLocalVariableTable(MethodInfo methodInfo, LocalVariableTable table) {
+            visitConstantUtf8(table.getNameIndex());
+
+        }
+
+        @Override
+        public boolean visitClass(ClassInfo classInfo) {
+            // handled in findPoolReferences(JavaClass)
+            return true;
+        }
+
+        @Override
+        public void finishClass(ClassInfo classInfo) {
+            // nothing to do
+        }
+
+        //////// Instruction visitor /////////
+
+        private void visitInstructionList(InstructionList il) {
+            for (Instruction i : il.getInstructions()) {
+                i.accept(this);
+            }
+        }
+
+        @Override
+        public void visitCPInstruction(CPInstruction obj) {
+            visitConstant(obj.getIndex());
+        }
+
+        ///////// End Instruction visitor /////////
+
+        private void visitStackType(StackMapType type) {
+            if (type.getType() == Constants.ITEM_Object && type.getIndex() != -1) {
+                visitConstantClass(type.getIndex());
+            }
+        }
+
+        private void visitAnnotation(ClassInfo classInfo, Annotation annotation) {
+            visitConstantUtf8(annotation.getTypeIndex());
+
+            for (AnnotationElement e : annotation.getElements()) {
+                visitConstantUtf8(e.getNameIndex());
+
+                AnnotationElementValue v = e.getValue();
+                if (v.isConstValue()) {
+                    visitConstant(v.getConstValueIndex());
+                } else {
+                    throw new JavaClassFormatError("Unsupported annotation type "+v.getTag());
+                }
+            }
+        }
+
+        private void visitConstant(int index) {
+            ids.add(index);
+            new DescendingClassTraverser(this).visitConstant(classInfo, index);
+        }
+
+        private void visitConstantClass(int index) {
+            ids.add(index);
+            ConstantClass c = (ConstantClass) cp.getConstant(index);
+            visitConstantClass(classInfo, c);
+        }
+
+        private void visitConstantNameAndType(int index) {
+            ids.add(index);
+            ConstantNameAndType c = (ConstantNameAndType) cp.getConstant(index);
+            visitConstantNameAndType(classInfo, c);
+        }
+
+        private void visitConstantString(int index) {
+            ids.add(index);
+            ConstantString c = (ConstantString) cp.getConstant(index);
+            visitConstantString(classInfo, c);
+        }
+
+        private void visitConstantUtf8(int index) {
+            ids.add(index);
+        }
+    }
+
+    private static void visitPoolReferences(ClassInfo classInfo, ClassElementVisitor visitor, Set<Integer> ids) {
+        DescendingClassTraverser traverser = new DescendingClassTraverser(visitor);
+        ConstantPoolGen cpg = classInfo.getConstantPoolGen();
+        // iterate over the given pool entries, call the visitor
+        for (Integer id : ids) {
+            traverser.visitConstant(classInfo, cpg.getConstant(id));
+        }
+    }
+
+    private static Set<Integer> findPoolReferences(ClassInfo classInfo, JavaClass javaClass) {
+        Set<Integer> ids = new HashSet<Integer>();
+        ConstantPool cp = javaClass.getConstantPool();
+
+        IdFinderVisitor visitor = new IdFinderVisitor(classInfo, ids, javaClass.getConstantPool());
+        DescendingClassTraverser traverser = new DescendingClassTraverser(visitor);
+
+        // now, find *every* constantpool index in the class, except for methods and fields
+        traverser.visitConstant(classInfo, javaClass.getClassNameIndex());
+        traverser.visitConstant(classInfo, javaClass.getSuperclassNameIndex());
+        for (int index : javaClass.getInterfaceIndices()) {
+            traverser.visitConstant(classInfo, index);
+        }
+
+        traverser.visitAttributes(classInfo, javaClass.getAttributes());
+
+        return ids;
+    }
+
+    private static Set<Integer> findPoolReferences(MethodInfo methodInfo, Method method) {
+        Set<Integer> ids = new HashSet<Integer>();
+
+        ClassInfo classInfo = methodInfo.getClassInfo();
+        IdFinderVisitor visitor = new IdFinderVisitor(classInfo, ids, method.getConstantPool());
+        DescendingClassTraverser traverser = new DescendingClassTraverser(visitor);
+
+        traverser.visitConstant(classInfo, method.getNameIndex());
+        traverser.visitConstant(classInfo, method.getSignatureIndex());
+
+        traverser.visitAttributes(methodInfo, method.getAttributes());
+
+        return ids;
+    }
+
+    private static Set<Integer> findPoolReferences(FieldInfo fieldInfo, Field field) {
+        Set<Integer> ids = new HashSet<Integer>();
+
+        ClassInfo classInfo = fieldInfo.getClassInfo();
+        IdFinderVisitor visitor = new IdFinderVisitor(classInfo, ids, field.getConstantPool());
+        DescendingClassTraverser traverser = new DescendingClassTraverser(visitor);
+
+        traverser.visitConstant(classInfo, field.getNameIndex());
+        traverser.visitConstant(classInfo, field.getSignatureIndex());
+
+        traverser.visitAttributes(fieldInfo, field.getAttributes());
+
+        return ids;
+    }
 
 }
+
+

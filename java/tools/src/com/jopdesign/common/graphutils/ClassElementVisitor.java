@@ -28,6 +28,7 @@ import com.jopdesign.common.bcel.AnnotationAttribute;
 import com.jopdesign.common.bcel.CustomAttribute;
 import com.jopdesign.common.bcel.EnclosingMethod;
 import com.jopdesign.common.bcel.ParameterAnnotationAttribute;
+import org.apache.bcel.classfile.Code;
 import org.apache.bcel.classfile.ConstantClass;
 import org.apache.bcel.classfile.ConstantDouble;
 import org.apache.bcel.classfile.ConstantFieldref;
@@ -41,12 +42,13 @@ import org.apache.bcel.classfile.ConstantString;
 import org.apache.bcel.classfile.ConstantUtf8;
 import org.apache.bcel.classfile.ConstantValue;
 import org.apache.bcel.classfile.Deprecated;
-import org.apache.bcel.classfile.InnerClass;
+import org.apache.bcel.classfile.ExceptionTable;
 import org.apache.bcel.classfile.InnerClasses;
+import org.apache.bcel.classfile.LineNumberTable;
+import org.apache.bcel.classfile.LocalVariableTable;
 import org.apache.bcel.classfile.Signature;
 import org.apache.bcel.classfile.SourceFile;
 import org.apache.bcel.classfile.StackMap;
-import org.apache.bcel.classfile.StackMapEntry;
 import org.apache.bcel.classfile.Synthetic;
 import org.apache.bcel.classfile.Unknown;
 import org.apache.bcel.generic.CodeExceptionGen;
@@ -99,8 +101,6 @@ public interface ClassElementVisitor extends ClassVisitor {
     void visitConstantUtf8(ClassInfo classInfo, ConstantUtf8 constant);
 
 
-    void visitInnerClass(ClassInfo classInfo, InnerClass obj );
-
     void visitInnerClasses(ClassInfo classInfo, InnerClasses obj );
 
     void visitSourceFile(ClassInfo classInfo, SourceFile obj );
@@ -117,8 +117,6 @@ public interface ClassElementVisitor extends ClassVisitor {
 
     void visitStackMap(MethodInfo methodInfo, StackMap obj );
 
-    void visitStackMapEntry(MethodInfo methodInfo, StackMapEntry obj );
-
     void visitSignature(MemberInfo memberInfo, Signature obj );
 
     void visitDeprecated(MemberInfo memberInfo, Deprecated obj );
@@ -133,4 +131,13 @@ public interface ClassElementVisitor extends ClassVisitor {
 
     void visitCustomAttribute(MemberInfo memberInfo, CustomAttribute obj, boolean isCodeAttribute );
 
+
+    void visitCode(MethodInfo methodInfo, Code code);
+
+    void visitExceptionTable(MethodInfo methodInfo, ExceptionTable table);
+
+    void visitLineNumberTable(MethodInfo methodInfo, LineNumberTable table);
+
+    void visitLocalVariableTable(MethodInfo methodInfo, LocalVariableTable table);
+    
 }

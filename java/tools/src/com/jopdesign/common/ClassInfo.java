@@ -25,6 +25,7 @@ import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.Ternary;
+import com.jopdesign.common.tools.ClassReferenceFinder;
 import com.jopdesign.common.tools.ConstantPoolRebuilder;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.ConstantInfo;
@@ -995,18 +996,20 @@ public final class ClassInfo extends MemberInfo {
     public void rebuildConstantPool() {
 
         ConstantPoolGen newPool = new ConstantPoolGen();
-        ConstantPoolRebuilder rebuilder = new ConstantPoolRebuilder(cpg, newPool);
+        ConstantPoolRebuilder rebuilder = new ConstantPoolRebuilder(cpg);
+
+        // this will compile the classInfo
+        Set<Integer> usedIndices = ClassReferenceFinder.findPoolReferences(this, true);
+        rebuilder.createNewConstantPool(usedIndices);
 
         rebuilder.updateClassGen(classGen);
 
         for (MethodInfo m : methods.values()) {
-            rebuilder.updateMethodGen(m.getInternalMethodGen());
+            rebuilder.updateMethodGen(m, m.getInternalMethodGen());
         }
         for (FieldInfo f : fields.values()) {
-            rebuilder.updateFieldGen(f.getInternalFieldGen());
+            rebuilder.updateFieldGen(f, f.getInternalFieldGen());
         }
-
-        // TODO update all attributes, call eventbroker
 
         cpg = newPool;
     }
