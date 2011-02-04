@@ -1002,7 +1002,7 @@ public final class ClassInfo extends MemberInfo {
         Set<Integer> usedIndices = ClassReferenceFinder.findPoolReferences(this, true);
         rebuilder.createNewConstantPool(usedIndices);
 
-        rebuilder.updateClassGen(classGen);
+        rebuilder.updateClassGen(this, classGen);
 
         for (MethodInfo m : methods.values()) {
             rebuilder.updateMethodGen(m, m.getInternalMethodGen());
