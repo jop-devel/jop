@@ -487,6 +487,7 @@ set_global_assignment -name TCO_REQUIREMENT "10 ns"
 # end ENTITY(jop)
 # ---------------
 
+set_global_assignment -name SDC_FILE jop.sdc
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_global.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_80.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd

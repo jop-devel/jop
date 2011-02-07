@@ -109,7 +109,9 @@ component pll is
 generic (multiply_by : natural; divide_by : natural);
 port (
 	inclk0		: in std_logic;
-	c0			: out std_logic
+	c0			: out std_logic;
+	c1			: out std_logic;
+	locked		: out std_logic
 );
 end component;
 
@@ -118,6 +120,8 @@ end component;
 --	Signals
 --
 	signal clk_int			: std_logic;
+	signal clk_int_inv		: std_logic;
+	signal pll_lock			: std_logic;
 
 	signal int_res			: std_logic;
 	signal res_cnt			: unsigned(2 downto 0) := "000";	-- for the simulation
@@ -181,6 +185,7 @@ begin
 --	no extern reset, epm7064 has too less pins
 --
 
+-- should also use PLL lock signal
 process(clk_int)
 begin
 	if rising_edge(clk_int) then
@@ -201,7 +206,9 @@ end process;
 	)
 	port map (
 		inclk0	 => clk,
-		c0	 => clk_int
+		c0	 => clk_int,
+		c1	=> clk_int_inv,
+		locked => pll_lock
 	);
 -- clk_int <= clk;
 
@@ -305,6 +312,7 @@ end process;
 			addr_bits => 19
 		)
 		port map (clk_int, int_res,
+			clk_int_inv,
 			sc_mem_out, sc_mem_in,
 
 			ram_addr => ram_addr,

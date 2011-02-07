@@ -53,6 +53,7 @@ generic (ram_ws : integer; addr_bits : integer);
 port (
 
 	clk, reset	: in std_logic;
+	clk2		: in std_logic;	-- an inverted clock
 
 --
 --	SimpCon memory interface
@@ -134,14 +135,19 @@ begin
 end process;
 
 -- inverted clock to have some setup time
-ram_clk <= not clk;
+-- ram_clk <= not clk;
 
-process(clk, reset)
+ram_clk <= clk2;
+
+process(clk2, reset)
 begin
-	-- latch input data on negative edge to help hold time
+	-- latch input data on negative edge to help hold time (WP)
+	-- MS: at least use the generated PLL clock that is 180 phase shifted
+	-- MS: I'm still unsure if this is the best way to do it
 	if reset='1' then
 		ram_din_reg <= (others => '0');
-	elsif falling_edge(clk) then
+--	elsif falling_edge(clk) then
+	elsif rising_edge(clk2) then
 		ram_din_reg <= ram_din;
 	end if;
 end process;
