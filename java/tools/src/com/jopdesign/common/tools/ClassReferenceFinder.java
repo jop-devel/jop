@@ -31,6 +31,7 @@ import com.jopdesign.common.bcel.AnnotationElementValue;
 import com.jopdesign.common.bcel.CustomAttribute;
 import com.jopdesign.common.bcel.EnclosingMethod;
 import com.jopdesign.common.bcel.ParameterAnnotationAttribute;
+import com.jopdesign.common.bcel.StackMapTable;
 import com.jopdesign.common.graphutils.ClassElementVisitor;
 import com.jopdesign.common.graphutils.DescendingClassTraverser;
 import com.jopdesign.common.graphutils.EmptyClassElementVisitor;
@@ -86,6 +87,7 @@ import org.apache.bcel.generic.LocalVariableGen;
 import org.apache.bcel.generic.ObjectType;
 import org.apache.bcel.generic.Type;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -285,7 +287,9 @@ public class ClassReferenceFinder {
 
         Set<Integer> ids = findPoolReferences(methodInfo);
 
+        // fill the members list with info from the method descriptor
         visitor.visitMethod(methodInfo);
+        // fill the members list with all found constantpool references
         visitPoolReferences(methodInfo.getClassInfo(), visitor, ids);
         
         return members;
@@ -303,7 +307,9 @@ public class ClassReferenceFinder {
 
         Set<Integer> ids = findPoolReferences(fieldInfo);
 
+        // fill the members list with info from the type descriptor
         visitor.visitField(fieldInfo);
+        // fill the members list with all found constantpool references
         visitPoolReferences(fieldInfo.getClassInfo(), visitor, ids);
 
         return members;
@@ -318,7 +324,7 @@ public class ClassReferenceFinder {
     public static Set<String> findReferencedMembers(ClassInfo classInfo, boolean checkMembers) {
 
         if (checkMembers) {
-            // If we want everything, we can just check the constant pool
+            // If we want everything, we can just check the constant pool, and visit all members
             final Set<String> members = new HashSet<String>();
 
             ClassMemberVisitor visitor = new ClassMemberVisitor(members);
@@ -333,6 +339,7 @@ public class ClassReferenceFinder {
 
         Set<Integer> ids = findPoolReferences(classInfo, checkMembers);
 
+        // fill the members list with all found constantpool references
         visitor.visitClass(classInfo);
         visitPoolReferences(classInfo, visitor, ids);
 
@@ -495,7 +502,10 @@ public class ClassReferenceFinder {
         public void visitEnclosingMethod(ClassInfo classInfo, EnclosingMethod obj) {
             visitConstantUtf8(obj.getNameIndex());
             visitConstantClass(obj.getClassIndex());
-            visitConstantNameAndType(obj.getMethodIndex());
+            int index = obj.getMethodIndex();
+            if (index != 0) {
+                visitConstantNameAndType(index);
+            }
         }
 
         @Override
@@ -538,6 +548,11 @@ public class ClassReferenceFinder {
         }
 
         @Override
+        public void visitStackMapTable(MethodInfo methodInfo, StackMapTable obj) {
+            visitCustomAttribute(methodInfo, obj, true);
+        }
+
+        @Override
         public void visitSignature(MemberInfo memberInfo, org.apache.bcel.classfile.Signature obj) {
             visitConstantUtf8(obj.getNameIndex());
             visitConstantUtf8(obj.getSignatureIndex());
@@ -573,12 +588,18 @@ public class ClassReferenceFinder {
 
         @Override
         public void visitUnknown(MemberInfo memberInfo, Unknown obj, boolean isCodeAttribute) {
-            throw new JavaClassFormatError("Unknown Attribute found, not supported!");
+            throw new JavaClassFormatError("Unknown Attribute "+obj.getName()+" in "+memberInfo+" found, not supported!");
         }
 
         @Override
         public void visitCustomAttribute(MemberInfo memberInfo, CustomAttribute obj, boolean isCodeAttribute) {
-            throw new JavaClassFormatError("CustomAttribute found, not supported!");
+            Collection<Integer> ids = obj.getConstantPoolIDs();
+            if (ids == null) {
+                throw new JavaClassFormatError("CustomAttribute "+obj.getName()+" in "+memberInfo+" not supported!");
+            }
+            for (Integer i : ids) {
+                visitConstant(i);
+            }
         }
 
         @Override

@@ -652,6 +652,10 @@ public final class ClassInfo extends MemberInfo {
     // Access to fields and methods, lookups
     //////////////////////////////////////////////////////////////////////////////
 
+    public FieldInfo getFieldInfo(Signature signature) {
+        return getFieldInfo(signature.getMemberName());
+    }
+
     public FieldInfo getFieldInfo(String name) {
         return fields.get(name);
     }
@@ -992,15 +996,16 @@ public final class ClassInfo extends MemberInfo {
      *
      * <p>This updates the indices of all references in the code of all methods of this class,
      * therefore do not call this method while modifying the code.</p>
+     *
+     * @param rebuilder the builder to use to rebuild the pool
      */
-    public void rebuildConstantPool() {
+    public void rebuildConstantPool(ConstantPoolRebuilder rebuilder) {
 
         ConstantPoolGen newPool = new ConstantPoolGen();
-        ConstantPoolRebuilder rebuilder = new ConstantPoolRebuilder(cpg);
 
         // this will compile the classInfo
         Set<Integer> usedIndices = ClassReferenceFinder.findPoolReferences(this, true);
-        rebuilder.createNewConstantPool(usedIndices);
+        rebuilder.createNewConstantPool(cpg, usedIndices);
 
         rebuilder.updateClassGen(this, classGen);
 
@@ -1030,11 +1035,11 @@ public final class ClassInfo extends MemberInfo {
     /**
      * Commit all modifications to this ClassInfo and return a BCEL JavaClass for this ClassInfo.
      * <p>
-     * You may want to call {@link #rebuildConstantPool()} and {@link #rebuildInnerClasses()} first if needed.
+     * You may want to call {@link #rebuildConstantPool(ConstantPoolRebuilder)} and {@link #rebuildInnerClasses()} first if needed.
      * </p>
      * @see MethodInfo#compile()
      * @see #rebuildInnerClasses()
-     * @see #rebuildConstantPool()
+     * @see #rebuildConstantPool(ConstantPoolRebuilder) 
      * @see #getJavaClass()
      * @return a JavaClass representing this ClassInfo.
      */

@@ -522,8 +522,7 @@ public class AppSetup {
 
         // load and initialize all app classes
         if (loadTransitiveHull) {
-            new AppLoader().loadAll();
-            appInfo.reloadClassHierarchy();
+            loadClassInfos();
         }
 
         // let modules process their config options
@@ -541,25 +540,6 @@ public class AppSetup {
             System.exit(2);
         }
 
-    }
-
-    private void initProcessorModel(Model model) {
-        ProcessorModel pm;
-        switch (model) {
-            case JOP:
-                pm = new JOPModel(config);
-                break;
-            case jamuth:
-                pm = new JamuthModel(config);
-                break;
-            case allocation:
-                pm = new AllocationModel(config);
-                break;
-            default:
-                throw new BadConfigurationError("Unknown processor model " + model);
-        }
-
-        appInfo.setProcessorModel(pm);
     }
 
     /**
@@ -677,6 +657,31 @@ public class AppSetup {
         }
     }
 
+
+    private void loadClassInfos() {
+        // We could use UsedCodeFinder here to load only reachable code, once it supports loading classes on the fly
+        new AppLoader().loadAll(true);
+        appInfo.reloadClassHierarchy();
+    }
+
+    private void initProcessorModel(Model model) {
+        ProcessorModel pm;
+        switch (model) {
+            case JOP:
+                pm = new JOPModel(config);
+                break;
+            case jamuth:
+                pm = new JamuthModel(config);
+                break;
+            case allocation:
+                pm = new AllocationModel(config);
+                break;
+            default:
+                throw new BadConfigurationError("Unknown processor model " + model);
+        }
+
+        appInfo.setProcessorModel(pm);
+    }
 
     private File findConfigFile(String configFile) {
         if ( configFile == null || "".equals(configFile) ) {

@@ -28,6 +28,7 @@ import com.jopdesign.common.bcel.AnnotationAttribute;
 import com.jopdesign.common.bcel.CustomAttribute;
 import com.jopdesign.common.bcel.EnclosingMethod;
 import com.jopdesign.common.bcel.ParameterAnnotationAttribute;
+import com.jopdesign.common.bcel.StackMapTable;
 import org.apache.bcel.classfile.Code;
 import org.apache.bcel.classfile.ConstantClass;
 import org.apache.bcel.classfile.ConstantDouble;
@@ -116,6 +117,8 @@ public interface ClassElementVisitor extends ClassVisitor {
     void visitLocalVariable(MethodInfo methodInfo, LocalVariableGen obj );
 
     void visitStackMap(MethodInfo methodInfo, StackMap obj );
+
+    void visitStackMapTable(MethodInfo methodInfo, StackMapTable obj );
 
     void visitSignature(MemberInfo memberInfo, Signature obj );
 

@@ -31,6 +31,7 @@ import com.jopdesign.common.bcel.AnnotationElementValue;
 import com.jopdesign.common.bcel.CustomAttribute;
 import com.jopdesign.common.bcel.EnclosingMethod;
 import com.jopdesign.common.bcel.ParameterAnnotationAttribute;
+import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.graphutils.DescendingClassTraverser;
 import com.jopdesign.common.graphutils.EmptyClassElementVisitor;
 import com.jopdesign.common.misc.JavaClassFormatError;
@@ -80,7 +81,7 @@ import java.util.Set;
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantPoolRebuilder {
+public class ConstantPoolRebuilder implements ClassVisitor {
 
     public static Constant copyConstant(Map<Integer,Integer> idMap, Constant c) {
         if (c instanceof ConstantClass) {
@@ -251,16 +252,24 @@ public class ConstantPoolRebuilder {
         }
     }
 
-    private final ConstantPoolGen oldPool;
     private ConstantPoolGen newPool;
     private final Map<Integer, Integer> idMap;
 
-    public ConstantPoolRebuilder(ConstantPoolGen oldPool) {
-        this.oldPool = oldPool;
+    public ConstantPoolRebuilder() {
         idMap = new HashMap<Integer, Integer>();
     }
 
-    public ConstantPoolGen createNewConstantPool(Set<Integer> usedIndices) {
+    @Override
+    public boolean visitClass(ClassInfo classInfo) {
+        classInfo.rebuildConstantPool(this);
+        return true;
+    }
+
+    @Override
+    public void finishClass(ClassInfo classInfo) {
+    }
+
+    public ConstantPoolGen createNewConstantPool(ConstantPoolGen oldPool, Set<Integer> usedIndices) {
 
         // We add all used entries to the new pool in the same order as in the old pool
         // to avoid indices getting larger than before

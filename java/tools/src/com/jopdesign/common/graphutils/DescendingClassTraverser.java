@@ -29,6 +29,7 @@ import com.jopdesign.common.bcel.AnnotationAttribute;
 import com.jopdesign.common.bcel.CustomAttribute;
 import com.jopdesign.common.bcel.EnclosingMethod;
 import com.jopdesign.common.bcel.ParameterAnnotationAttribute;
+import com.jopdesign.common.bcel.StackMapTable;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import org.apache.bcel.classfile.Attribute;
@@ -431,6 +432,8 @@ public class DescendingClassTraverser implements ClassVisitor {
                 visitor.visitAnnotation(bcelVisitor.getMemberInfo(), (AnnotationAttribute) a);
             } else if (a instanceof ParameterAnnotationAttribute) {
                 visitor.visitParameterAnnotation(bcelVisitor.getMemberInfo(), (ParameterAnnotationAttribute) a);
+            } else if (a instanceof StackMapTable) {
+                visitor.visitStackMapTable(bcelVisitor.getMethodInfo(), (StackMapTable) a);
             } else if (a instanceof CustomAttribute) {
                 visitor.visitCustomAttribute(bcelVisitor.getMemberInfo(), (CustomAttribute) a, bcelVisitor.isCode());
             } else {

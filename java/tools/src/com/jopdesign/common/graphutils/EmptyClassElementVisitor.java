@@ -28,6 +28,7 @@ import com.jopdesign.common.bcel.AnnotationAttribute;
 import com.jopdesign.common.bcel.CustomAttribute;
 import com.jopdesign.common.bcel.EnclosingMethod;
 import com.jopdesign.common.bcel.ParameterAnnotationAttribute;
+import com.jopdesign.common.bcel.StackMapTable;
 import org.apache.bcel.classfile.Code;
 import org.apache.bcel.classfile.ConstantClass;
 import org.apache.bcel.classfile.ConstantDouble;
@@ -161,6 +162,10 @@ public class EmptyClassElementVisitor implements ClassElementVisitor {
 
     @Override
     public void visitStackMap(MethodInfo methodInfo, StackMap obj) {
+    }
+
+    @Override
+    public void visitStackMapTable(MethodInfo methodInfo, StackMapTable obj) {
     }
 
     @Override

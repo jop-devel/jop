@@ -36,13 +36,13 @@ import java.util.List;
  */
 public class Annotation {
 
-    private short typeIndex;
+    private int typeIndex;
     private ConstantPool constantPool;
     private final List<AnnotationElement> elements;
 
     public static Annotation createAnnotation(DataInputStream in, ConstantPool cp) throws IOException {
-        short typeIndex = in.readShort();
-        short numElements = in.readShort();
+        int typeIndex = in.readUnsignedShort();
+        int numElements = in.readUnsignedShort();
         Annotation a = new Annotation(typeIndex, cp, numElements);
         for (int i = 0; i < numElements; i++) {
             a.addElement(AnnotationElement.createElement(in, cp));
@@ -50,7 +50,7 @@ public class Annotation {
         return a;
     }
 
-    public Annotation(short typeIndex, ConstantPool constantPool, int initialElements) {
+    public Annotation(int typeIndex, ConstantPool constantPool, int initialElements) {
         this.typeIndex = typeIndex;
         this.constantPool = constantPool;
         elements = new ArrayList<AnnotationElement>(initialElements);
@@ -67,7 +67,7 @@ public class Annotation {
     /**
      * @return index of a ConstantUtf8 entry.
      */
-    public short getTypeIndex() {
+    public int getTypeIndex() {
         return typeIndex;
     }
 

@@ -79,6 +79,7 @@ import java.util.Set;
 public final class AppInfo {
 
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT + ".AppInfo");
+    private static final Logger loadLogger = Logger.getLogger(LogConfig.LOG_LOADING + ".AppInfo");
 
     private ClassPath classPath;
     private final Map<String,ClassInfo> classes;
@@ -244,7 +245,7 @@ public final class AppInfo {
      * Try to load a classInfo.
      * If the class is already loaded, return the existing classInfo.
      * If the class is excluded, return null.
-     * If the class does not exist but should be loaded, throw an {@link MissingClassError}.
+     * If the class could not be loaded but is not excluded, throw an {@link MissingClassError} or abort.
      *
      * @see #loadClass(String, boolean, boolean)
      * @param className the fully qualified name of the class.
@@ -1102,6 +1103,8 @@ public final class AppInfo {
     }
 
     private ClassInfo tryLoadClass(String className) throws IOException {
+
+        loadLogger.info("Loading class "+className);
 
         InputStream is = classPath.getInputStream(className);
         JavaClass javaClass = new ClassParser(is, className).parse();

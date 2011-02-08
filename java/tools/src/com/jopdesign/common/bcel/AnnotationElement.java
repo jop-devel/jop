@@ -32,22 +32,22 @@ import java.io.IOException;
  */
 public class AnnotationElement {
 
-    private short nameIndex;
+    private int nameIndex;
     private AnnotationElementValue value;
     private ConstantPool constantPool;
 
     public static AnnotationElement createElement(DataInputStream in, ConstantPool cp) throws IOException {
-        short nameIndex = in.readShort();
+        int nameIndex = in.readUnsignedShort();
         return new AnnotationElement(nameIndex, AnnotationElementValue.createValue(in, cp), cp);
     }
 
-    public AnnotationElement(short nameIndex, AnnotationElementValue value, ConstantPool constantPool) {
+    public AnnotationElement(int nameIndex, AnnotationElementValue value, ConstantPool constantPool) {
         this.nameIndex = nameIndex;
         this.value = value;
         this.constantPool = constantPool;
     }
 
-    public short getNameIndex() {
+    public int getNameIndex() {
         return nameIndex;
     }
 

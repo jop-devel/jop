@@ -38,7 +38,7 @@ public class ParameterAnnotationAttribute extends CustomAttribute {
     private List<Annotation>[] parameterAnnotations;
 
     public ParameterAnnotationAttribute(int name_index, int length, ConstantPool constant_pool,
-                                        boolean visible, byte numParameters)
+                                        boolean visible, int numParameters)
     {
         super(Constants.ATTR_UNKNOWN, name_index, length, constant_pool);
         this.visible = visible;
@@ -53,8 +53,8 @@ public class ParameterAnnotationAttribute extends CustomAttribute {
         return visible;
     }
 
-    public byte getNumParameters() {
-        return (byte) parameterAnnotations.length;
+    public int getNumParameters() {
+        return parameterAnnotations.length;
     }
 
     public List<Annotation> getAnnotations(int parameter) {

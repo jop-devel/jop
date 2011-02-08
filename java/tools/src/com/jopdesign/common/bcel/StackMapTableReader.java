@@ -2,7 +2,7 @@
  * This file is part of JOP, the Java Optimized Processor
  *   see <http://www.jopdesign.com/>
  *
- * Copyright (C) 2010, Stefan Hepp (stefan@stefant.org).
+ * Copyright (C) 2011, Stefan Hepp (stefan@stefant.org).
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,23 +32,18 @@ import java.io.IOException;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class EnclosingMethodReader implements AttributeReader {
+public class StackMapTableReader implements AttributeReader {
 
-    public static final String ATTRIBUTE_NAME = "EnclosingMethod";
+    private static final Logger logger = Logger.getLogger(LogConfig.LOG_LOADING+".StackMapTableReader");
 
-    private static final Logger logger = Logger.getLogger(LogConfig.LOG_LOADING+".EnclosingMethodReader");
+    public static final String ATTRIBUTE_NAME = "StackMapTable";
 
+    @Override
     public Attribute createAttribute(int name_index, int length, DataInputStream file, ConstantPool constant_pool) {
-        if ( length != 4 ) {
-            logger.error("Length of EnclosingMethod attribute of "+length+" is not correct.");
-            return null;
-        }
         try {
-            int classIndex = file.readUnsignedShort();
-            int methodIndex = file.readUnsignedShort();
-            return new EnclosingMethod(name_index, constant_pool, classIndex, methodIndex);
+            return new StackMapTable(name_index, length, file, constant_pool);
         } catch (IOException e) {
-            logger.error("Error reading EnclosingMethod attribute: "+e.getMessage(), e);
+            logger.error("Error reading StackMapTable attribute: "+e.getMessage(), e);
             return null;
         }
     }
