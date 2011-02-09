@@ -962,7 +962,9 @@ public final class ClassInfo extends MemberInfo {
         }
         classGen.removeField(classGen.getFields()[i]);
 
-        // TODO call manager eventhandler
+        for (AppEventHandler e : getAppInfo().getEventHandlers()) {
+            e.onRemoveField(fieldInfo);
+        }
 
         return fieldInfo;
     }
@@ -981,7 +983,9 @@ public final class ClassInfo extends MemberInfo {
         }
         classGen.removeMethod(classGen.getMethodAt(i));
 
-        // TODO call manager eventhandler
+        for (AppEventHandler e : getAppInfo().getEventHandlers()) {
+            e.onRemoveMethod(methodInfo);
+        }
 
         return methodInfo;
     }
@@ -996,8 +1000,12 @@ public final class ClassInfo extends MemberInfo {
      *
      * <p>This updates the indices of all references in the code of all methods of this class,
      * therefore do not call this method while modifying the code.</p>
+     * <p>
+     * Note that the ConstantPoolRebuilder implements ClassVisitor, so you can also use
+     * {@link AppInfo#iterate(ClassVisitor)} to apply it to all classes.
+     * </p>
      *
-     * @param rebuilder the builder to use to rebuild the pool
+     * @param rebuilder the builder to use to rebuild the pool.
      */
     public void rebuildConstantPool(ConstantPoolRebuilder rebuilder) {
 

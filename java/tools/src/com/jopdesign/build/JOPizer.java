@@ -105,6 +105,7 @@ public class JOPizer extends OldAppInfo implements Serializable {
 		dumpMgci = System.getProperty("mgci", "false").equals("true");
 
 		if (USE_RTTM) {
+                    // This will be done by AppSetup
                     CustomAttribute.registerDefaultReader();
 		}
 

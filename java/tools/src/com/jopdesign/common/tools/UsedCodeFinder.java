@@ -47,7 +47,7 @@ import java.util.Set;
  */
 public class UsedCodeFinder {
 
-    private static final Logger logger = Logger.getLogger(LogConfig.LOG_LOADING + ".UsedCodeFinder");
+    private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT + ".UsedCodeFinder");
 
     private static KeyManager.CustomKey keyUsed;
     
@@ -79,7 +79,7 @@ public class UsedCodeFinder {
     /**
      * Reset all loaded classes and their members to 'unused'.
      */
-    public void reset() {
+    public void resetMarks() {
         KeyManager km = KeyManager.getSingleton();
         km.clearAllValues(getUseMarker());
         ignoredClasses.clear();
@@ -121,7 +121,7 @@ public class UsedCodeFinder {
      * @see #markUsedMembers(FieldInfo)
      */
     public void markUsedMembers() {
-        reset();
+        resetMarks();
 
         MethodInfo main = appInfo.getMainMethod();
         markUsedMembers(main);
@@ -185,9 +185,13 @@ public class UsedCodeFinder {
         List<FieldInfo> unusedFields = new LinkedList<FieldInfo>();
         List<MethodInfo> unusedMethods = new LinkedList<MethodInfo>();
 
+        int fields = 0;
+        int methods = 0;
+
         for (ClassInfo cls : appInfo.getClassInfos()) {
             if (!isUsed(cls)) {
                 unusedClasses.add(cls);
+                logger.debug("Removing unused class " +cls);
                 continue;
             }
 
@@ -197,11 +201,15 @@ public class UsedCodeFinder {
             for (FieldInfo f : cls.getFields()) {
                 if (!isUsed(f)) {
                     unusedFields.add(f);
+                    logger.debug("Removing unused field "+f);
+                    fields++;
                 }
             }
             for (MethodInfo m : cls.getMethods()) {
                 if (!isUsed(m)) {
                     unusedMethods.add(m);
+                    logger.debug("Removing unused method "+m);
+                    methods++;
                 }
             }
 
@@ -214,6 +222,11 @@ public class UsedCodeFinder {
         }
 
         appInfo.removeClasses(unusedClasses);
+
+        int classes = unusedClasses.size();
+        logger.info("Removed " + classes + (classes == 1 ? " class, " : " classes, ") +
+                                 fields + (fields == 1 ? " field, " : " fields, ") +
+                                 methods + (methods == 1 ? " method" : " methods"));
     }
     
     private void visitReferences(Set<String> refs) {        

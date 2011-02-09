@@ -62,6 +62,10 @@ public interface AppEventHandler {
      */
     void onRemoveClass(ClassInfo classInfo);
 
+    void onRemoveField(FieldInfo field);
+
+    void onRemoveMethod(MethodInfo method);
+
     /**
      * Called before all classes are removed from AppInfo.
      * @param appInfo the appinfo which will be cleared.

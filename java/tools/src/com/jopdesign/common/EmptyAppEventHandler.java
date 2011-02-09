@@ -39,6 +39,14 @@ public abstract class EmptyAppEventHandler implements AppEventHandler {
     }
 
     @Override
+    public void onRemoveField(FieldInfo field) {
+    }
+
+    @Override
+    public void onRemoveMethod(MethodInfo method) {
+    }
+
+    @Override
     public void onClearAppInfo(AppInfo appInfo) {
     }
 

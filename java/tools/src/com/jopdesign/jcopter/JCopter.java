@@ -40,7 +40,9 @@ public class JCopter extends EmptyTool<JCopterManager> {
 
 
     private final JCopterManager manager;
-    private AppInfo appInfo;
+    private final AppInfo appInfo;
+    private final PhaseExecutor executor;
+
     private JCopterConfig config;
     private DFATool dfaTool;
     private WCETTool wcetTool;
@@ -49,9 +51,11 @@ public class JCopter extends EmptyTool<JCopterManager> {
         super(VERSION);
         manager = new JCopterManager();
         appInfo = AppInfo.getSingleton();
+        executor = new PhaseExecutor(this);
 
         // TODO add options/profiles/.. to this constructor so that only a subset of
-        //      optimizations/analyses are initialized
+        //      optimizations/analyses are initialized ? Overwrite PhaseExecutor for this?
+        //      Or user simply uses phaseExecutor directly
     }
 
     @Override
@@ -62,6 +66,7 @@ public class JCopter extends EmptyTool<JCopterManager> {
     @Override
     public void registerOptions(OptionGroup options) {
         options.addOptions( JCopterConfig.options );
+        executor.registerOptions(options);
     }
 
     @Override
@@ -77,6 +82,10 @@ public class JCopter extends EmptyTool<JCopterManager> {
 
     public JCopterConfig getConfig() {
         return config;
+    }
+
+    public PhaseExecutor getExecutor() {
+        return executor;
     }
 
     public DFATool getDfaTool() {
@@ -110,7 +119,7 @@ public class JCopter extends EmptyTool<JCopterManager> {
 
         // - callgraph thinning, various analyses
         appInfo.buildCallGraph(false);
-
+        executor.reduceCallGraph();
 
         // - (optional) perform DFA: reduce callgraph even more/make callstrings more precise,
         //   maybe eliminate some nullpointer-checks
@@ -121,6 +130,7 @@ public class JCopter extends EmptyTool<JCopterManager> {
         // - devirtualize, mark methods which can be inlined (and what actions need to be taken in order to inline,
         //   i.e. rename methods/make public/..), calculate and store overhead for inlining for later analyses,
         //   which invokes have constant parameters, which invokes need nullpointer checks,..
+        executor.markInlineCandidates();
 
     }
 
@@ -132,7 +142,8 @@ public class JCopter extends EmptyTool<JCopterManager> {
 
         // - perform simple, guaranteed optimizations (everything to reduce code size!)
         //   (inline 2/3 byte methods, load/store eliminate, peephole, dead-code elimination, constant folding, ..)
-
+        executor.performSimpleInline();
+        executor.cleanupMethodCode();
 
         // - perform WCET analysis, select methods for inlining
         if (useWCET()) {
@@ -145,13 +156,14 @@ public class JCopter extends EmptyTool<JCopterManager> {
 
         // - perform inlining (check previous analysis results to avoid creating nullpointer checks),
         //   duplicate/rename/.. methods, perform method extraction/splitting too?
-
+        executor.performInline();
 
         // - perform code cleanup optimizations (load/store/param-passing, constantpool cleanup,
         //   remove unused members, constant folding, dead-code elimination (remove some more NP-checks,..),
         //   remove NOPs, ... )
+        executor.removeUnusedMembers();
 
-
+        executor.cleanupConstantPool();
     }
 
 
@@ -195,7 +207,6 @@ public class JCopter extends EmptyTool<JCopterManager> {
 
         // write results
         setup.writeClasses();
-
     }
 
 }
