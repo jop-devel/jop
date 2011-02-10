@@ -894,7 +894,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
                     ClassInfo staticClass = (ClassInfo) p.getAppInfo().getClassInfo(constClassName);
                     ClassInfo dynamicClass = (ClassInfo) p.getAppInfo().getClassInfo(m.type.split("@")[0]);
 //					System.out.println("CHECKCAST: "+context.callString.asList()+"/"+context.method+": "+stmt+": "+constClassName+" vs "+m.type);
-                    if (dynamicClass.isInstanceOf(staticClass)) {
+                    if (dynamicClass.isSubclassOf(staticClass)) {
                         result.add(m);
 //							System.out.println("yay!");
                     }
@@ -941,7 +941,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
                     }
 
                     if ((instr instanceof INVOKEVIRTUAL
-                            && dynamicClass.isInstanceOf(constClass))
+                            && dynamicClass.isSubclassOf(constClass))
                             || (instr instanceof INVOKEINTERFACE
                             && dynamicClass.isImplementationOf(constClass))) {
                         receivers.add(clName);
@@ -1088,7 +1088,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 		
 		boolean threaded = false;	
 		
-        if (p.getAppInfo().getClassInfo(receiver).isInstanceOf(p.getAppInfo().getClassInfo("joprt.RtThread")) &&
+        if (p.getAppInfo().getClassInfo(receiver).isSubclassOf(p.getAppInfo().getClassInfo("joprt.RtThread")) &&
                 "run()V".equals(method.getMemberSignature())) {
             c.createThread();
             threaded = true;
@@ -1112,7 +1112,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
                 // add "this"
                 ClassInfo staticClass = (ClassInfo) p.getAppInfo().getClassInfo(receiver);
                 ClassInfo dynamicClass = (ClassInfo) p.getAppInfo().getClassInfo(m.type.split("@")[0]);
-                if (dynamicClass.isInstanceOf(staticClass)) {
+                if (dynamicClass.isSubclassOf(staticClass)) {
                     out.add(new TypeMapping(0, m.type));
                 }
             }

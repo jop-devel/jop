@@ -399,7 +399,7 @@ public abstract class MemberInfo {
             case ACC_PUBLIC:
                 return true;
             case ACC_PROTECTED:
-                if ( getClassInfo().isInstanceOf(cls) ) {
+                if ( getClassInfo().isSubclassOf(cls) ) {
                     return true;
                 }
                 // fallthrough

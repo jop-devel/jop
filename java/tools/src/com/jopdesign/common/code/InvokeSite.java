@@ -21,10 +21,14 @@
 package com.jopdesign.common.code;
 
 import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.type.MethodRef;
+import org.apache.bcel.generic.INVOKESPECIAL;
+import org.apache.bcel.generic.INVOKESTATIC;
+import org.apache.bcel.generic.INVOKEVIRTUAL;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
@@ -65,7 +69,67 @@ public class InvokeSite {
         return invoker;
     }
 
+    public boolean isInvokeSpecial() {
+        return instruction.getInstruction() instanceof INVOKESPECIAL;
+    }
+
     /**
+     * Check if this invoke is an invokespecial instruction and the method to invoke is not
+     * the referenced method, but a method found in a superclass of the invoker method.
+     *
+     * @return true if this invoke should invoke a super method.
+     */
+    public boolean isInvokeSuper() {
+        if (!isInvokeSpecial()) return false;
+
+        ClassInfo cls = invoker.getClassInfo();
+        MethodRef invokee = getInvokeeRef();
+
+        if (!cls.hasSuperFlag()) return false;
+        if ("<init>".equals(invokee.getName())) return false;
+
+        MethodInfo method = invokee.getMethodInfo();
+        if (method == null) {
+            if (invokee.getClassRef().getClassInfo() != null) {
+                // class exists, but method does not exists, either an error or superclasses are missing
+                throw new JavaClassFormatError("Invokespecial tries to call "+invokee+
+                        " but this method has not been found");
+            }
+            if (cls.getSuperClassName().equals(invokee.getClassName())) {
+                // invoke refers to the superclass of the invoker, is definitely a super call, even
+                // if we do not have the class
+                return true;
+            }
+            // invokespecial to an unknown class, we cannot handle this safely
+            throw new JavaClassFormatError("Could not determine if invokespecial is a super invoke for "+invokee);
+        }
+
+        return cls.isSubclassOf(method.getClassInfo());
+    }
+
+    public boolean isInvokeStatic() {
+        return instruction.getInstruction() instanceof INVOKESTATIC;
+    }
+
+    public boolean isInvokeVirtual() {
+        return instruction.getInstruction() instanceof INVOKEVIRTUAL;
+    }
+
+    public InvokeInstruction getInvokeInstruction() {
+        if (instruction.getInstruction() instanceof InvokeInstruction) {
+            return (InvokeInstruction) instruction.getInstruction();
+        }
+        return null;
+    }
+
+    /**
+     * Get the MethodRef to the referenced method.
+     *
+     * <p>Note that this does not resolve to the super  method or does not find all
+     * implementations. Use {@link AppInfo#findImplementations(InvokeSite)} if you want to
+     * find the possible implementing methods of this call.</p>
+     *
+     * @see AppInfo#getReferencedMethod(MethodInfo, InvokeInstruction)
      * @return a method reference to the invokee method.
      */
     public MethodRef getInvokeeRef() {

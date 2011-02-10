@@ -26,8 +26,10 @@ import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.KeyManager;
 import com.jopdesign.common.MemberInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.JavaClassFormatError;
+import com.jopdesign.common.tools.ClassReferenceFinder.ReferenceResult;
 import com.jopdesign.common.type.ArrayTypeInfo;
 import com.jopdesign.common.type.FieldRef;
 import com.jopdesign.common.type.MethodRef;
@@ -145,15 +147,13 @@ public class UsedCodeFinder {
         if (setUsed(rootClass)) return;
 
         // visit superclass and interfaces, attributes, but not methods or fields
-        Set<String> found = ClassReferenceFinder.findReferencedMembers(rootClass, visitMembers);
+        ReferenceResult found = ClassReferenceFinder.findReferencedMembers(rootClass, visitMembers);
         visitReferences(found);
 
-        if (!visitMembers) {
-            // if we do not check the members, at least we need to visit the static initializer 
-            MethodInfo clinit = rootClass.getMethodInfo(ClinitOrder.clinitSig);
-            if (clinit != null) {
-                markUsedMembers(clinit);
-            }
+        // at least we need to visit the static initializer
+        MethodInfo clinit = rootClass.getMethodInfo(ClinitOrder.clinitSig);
+        if (clinit != null) {
+            markUsedMembers(clinit);
         }
 
     }
@@ -163,7 +163,7 @@ public class UsedCodeFinder {
         if (setUsed(rootField)) return;
 
         // visit type info, attributes, constantValue
-        Set<String> found = ClassReferenceFinder.findReferencedMembers(rootField);
+        ReferenceResult found = ClassReferenceFinder.findReferencedMembers(rootField);
         visitReferences(found);        
     }
 
@@ -172,7 +172,7 @@ public class UsedCodeFinder {
         if (setUsed(rootMethod)) return;
 
         // visit parameters, attributes, instructions, tables, ..
-        Set<String> found = ClassReferenceFinder.findReferencedMembers(rootMethod);
+        ReferenceResult found = ClassReferenceFinder.findReferencedMembers(rootMethod);
         visitReferences(found);        
     }
 
@@ -235,8 +235,8 @@ public class UsedCodeFinder {
                                  methods + (methods == 1 ? " method" : " methods"));
     }
     
-    private void visitReferences(Set<String> refs) {        
-        for (String signature : refs) {
+    private void visitReferences(ReferenceResult refs) {
+        for (String signature : refs.getMembers()) {
             // The signatures returned by the reference finder use an alternative syntax which is 
             // always unique, so if in doubt, we need to interpret it as a classname, not a fieldname
             Signature sig = Signature.parse(signature, false);
@@ -253,10 +253,20 @@ public class UsedCodeFinder {
             
             // check if this signature specifies a class member (or just a class, in this case we are done)
             if (sig.isMethodSignature()) {
-                // It's a method! Find all possible invocations
+                // It's a method! mark the method as used (implementations are marked later)
                 MethodRef ref = appInfo.getMethodRef(sig);
+                MethodInfo method = ref.getMethodInfo();
 
-                for (MethodInfo method : findMethods(ref)) {
+                // We mark the referenced class as used..
+                ClassInfo refCls = ref.getClassRef().getClassInfo();
+                if (refCls != null) {
+                    markUsedMembers(refCls, false);
+                }
+
+                // Hm, in fact, we might not need to do this, since all possible implementations will
+                // be marked later, and this might find some unused code, but we may want to keep the
+                // referenced method so that we keep the declarations.
+                if (method != null) {
                     markUsedMembers(method);
                 }
 
@@ -269,7 +279,14 @@ public class UsedCodeFinder {
                 }
                 markUsedMembers(field);
             }            
-        }        
+        }
+
+        for (InvokeSite invokeSite : refs.getInvokeSites()) {
+            // find all implementations for each invoke, mark them as used.
+            for (MethodInfo method : findMethods(invokeSite)) {
+                markUsedMembers(method);
+            }
+        }
     }
 
     private void ignoreClass(String className) {
@@ -298,7 +315,7 @@ public class UsedCodeFinder {
         return classInfo;
     }
 
-    private Collection<MethodInfo> findMethods(MethodRef method) {
+    private Collection<MethodInfo> findMethods(InvokeSite invoke) {
         // this checks the callgraph, if available, else the type graph
 
         // TODO we could load classes on the fly here instead of checking the callgraph, basically
@@ -307,6 +324,6 @@ public class UsedCodeFinder {
         //  - visit all known subclasses, mark this method as used
         //  - when a class is loaded, visit all methods which are used in the superclasses
 
-        return appInfo.findImplementations(method);
+        return appInfo.findImplementations(invoke);
     }
 }

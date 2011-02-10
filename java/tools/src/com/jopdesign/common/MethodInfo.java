@@ -229,7 +229,7 @@ public final class MethodInfo extends ClassMemberInfo {
             if ( !getMemberSignature().equals(superMethod.getMemberSignature()) ) {
                 return false;
             }
-            if ( !getClassInfo().isInstanceOf(superMethod.getClassInfo()) ) {
+            if ( !getClassInfo().isSubclassOf(superMethod.getClassInfo()) ) {
                 return false;
             }
         }

@@ -24,8 +24,7 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 
 import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -46,19 +45,19 @@ public class DefaultCallgraphConfig implements CallGraph.CallgraphConfig {
     }
 
     @Override
-    public List<ExecutionContext> getInvokedMethods(ExecutionContext context) {
+    public Set<ExecutionContext> getInvokedMethods(ExecutionContext context) {
 
         CallString callstring = context.getCallString();
         MethodInfo method = context.getMethodInfo();
 
         if (method.isAbstract()) {
             //noinspection unchecked
-            return (List<ExecutionContext>) Collections.EMPTY_LIST;
+            return (Set<ExecutionContext>) Collections.EMPTY_SET;
         }
 
         // TODO use only callstring length 1, split nodes only if required using DFA/.. later on?
 
-        List<ExecutionContext> newContexts = new LinkedList<ExecutionContext>();
+        Set<ExecutionContext> newContexts = new HashSet<ExecutionContext>();
 
         for(InvokeSite invokeSite : method.getCode().getInvokeSites()) {
 
@@ -77,8 +76,10 @@ public class DefaultCallgraphConfig implements CallGraph.CallgraphConfig {
     }
 
     protected Set<MethodInfo> getInvokedMethods(ExecutionContext context, InvokeSite invokeSite) {
-        // TODO use context here somehow without falling back to callgraph?
-        return AppInfo.getSingleton().findImplementations(invokeSite.getInvokeeRef());
+        // This uses either the existing default callgraph to construct a new one (which has
+        // the advantage that the new callgraph is derived from an existing one), or looks up
+        // in the type graph if no default callgraph exists
+        return AppInfo.getSingleton().findImplementations(invokeSite, context.getCallString());
     }
 
 }

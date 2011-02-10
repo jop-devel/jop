@@ -79,7 +79,7 @@ public class CallGraph {
      * Interface for a callgraph construction.
      */
     public interface CallgraphConfig {
-        List<ExecutionContext> getInvokedMethods(ExecutionContext context);
+        Set<ExecutionContext> getInvokedMethods(ExecutionContext context);
     }
 
     /*---------------------------------------------------------------------------*
@@ -388,7 +388,7 @@ public class CallGraph {
             while(! todo.empty()) {
                 ExecutionContext current = todo.pop();
 
-                List<ExecutionContext> invoked = config.getInvokedMethods(current);
+                Set<ExecutionContext> invoked = config.getInvokedMethods(current);
                 for (ExecutionContext cgn : invoked) {
 
                 if (!callGraph.containsVertex(cgn)) {
@@ -746,7 +746,11 @@ public class CallGraph {
     /**
      * For a given non-empty callstring, find all implementations which might get called by the last
      * invocation in the callstring, i.e. find all methods which might appear in the next entry of the
-     * callstring. 
+     * callstring.
+     * <p>
+     * This does not check if the invocation is a special invoke, so if callstring length of the callgraph
+     * is zero, the results are not correct, instead use {@link AppInfo#findImplementations(CallString)}.
+     * </p>
      *
      * @param cs callstring of the invocation, must contain at least one invokesite.
      * @return a list of all methods which might get invoked by the top invocation of the callstring,

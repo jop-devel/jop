@@ -51,6 +51,8 @@ import org.apache.bcel.generic.ClassGen;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.InvokeInstruction;
+import org.apache.bcel.generic.ObjectType;
+import org.apache.bcel.generic.ReferenceType;
 import org.apache.bcel.generic.Type;
 import org.apache.bcel.util.ClassPath;
 import org.apache.bcel.util.ClassPath.ClassFile;
@@ -700,8 +702,16 @@ public final class AppInfo {
 
     public MethodRef getReferencedMethod(ClassInfo invokerClass, InvokeInstruction instr) {
         ConstantPoolGen cpg = invokerClass.getConstantPoolGen();
-        // TODO use getReferencedType() here, eliminated deprecated call
-        String classname = instr.getClassName(cpg);
+
+        ReferenceType refType = instr.getReferenceType(cpg);
+        String classname;
+        if (refType instanceof ObjectType) {
+            classname = ((ObjectType)refType).getClassName();
+        } else {
+            // TODO need to call array.<method>, which class should we use? java.lang.Object?
+            throw new JavaClassFormatError("Calling a method for an array, this is not yet supported.");
+        }
+        
         String methodname = instr.getMethodName(cpg);
         boolean isInterface = (instr instanceof INVOKEINTERFACE);
         return getMethodRef(new Signature(classname, methodname, instr.getSignature(cpg)),
@@ -785,8 +795,13 @@ public final class AppInfo {
      * @return the default callgraph
      */
     public CallGraph buildCallGraph(boolean rebuild) {
-        if (callGraph == null || rebuild) {
+        if (rebuild) {
+            // we set the callgraph null first, so that rebuilding it does not use the old graph
+            callGraph = null;
+        }
+        if (callGraph == null) {
             CallgraphConfig config = new DefaultCallgraphConfig(getCallstringLength());
+            // we only set the callgraph after building it, so it will not be used while constructing it.
             callGraph = CallGraph.buildCallGraph(getMainMethod(), config);
         }
         return callGraph;
@@ -812,12 +827,12 @@ public final class AppInfo {
      * Find all methods which might get invoked for a given invokesite.
      * This uses the callgraph returned by {@link #getCallGraph()} to lookup possible implementations.
      * Use callgraph thinning to make the result of this method more precise.
-     * If the callgraph has not yet been built by {@link #buildCallGraph(boolean)}, this method will
-     * be similar to {@link #findImplementations(MethodRef)}.
+     * If the callgraph has not yet been built by {@link #buildCallGraph(boolean)}, this uses
+     * {@link #findImplementations(MethodRef)} to resolve virtual invocations.
      *
      * @see #findImplementations(InvokeSite, CallString)
      * @param invokeSite the invokesite to look up
-     * @return a list of possible implementations for the invocation.
+     * @return a list of possible implementations for the invocation, or an empty set if resolution fails or is not safe.
      */
     public Set<MethodInfo> findImplementations(InvokeSite invokeSite) {
         return findImplementations(invokeSite, CallString.EMPTY);
@@ -827,12 +842,12 @@ public final class AppInfo {
      * Find all methods which might get invoked for a given invokesite.
      * This uses the callgraph returned by {@link #getCallGraph()} to lookup possible implementations.
      * Use callgraph thinning to make the result of this method more precise.
-     * If the callgraph has not yet been built by {@link #buildCallGraph(boolean)}, this method will
-     * be similar to {@link #findImplementations(MethodRef)}.
+     * If the callgraph has not yet been built by {@link #buildCallGraph(boolean)}, this uses
+     * {@link #findImplementations(MethodRef)} to resolve virtual invocations.
      *
      * @param invokeSite the invokesite to look up
      * @param cs the callstring up to the method containing the invocation, excluding the given invokesite
-     * @return a list of possible implementations for the invocation.
+     * @return a list of possible implementations for the invocation, or an empty set if resolution fails or is not safe.
      */
     public Set<MethodInfo> findImplementations(InvokeSite invokeSite, CallString cs) {
         return findImplementations(cs.push(invokeSite));
@@ -842,24 +857,60 @@ public final class AppInfo {
      * Find all methods which might get invoked for a given invokesite.
      * This uses the callgraph returned by {@link #getCallGraph()} to lookup possible implementations.
      * Use callgraph thinning to make the result of this method more precise.
-     * If the callgraph has not yet been built by {@link #buildCallGraph(boolean)}, this method will
-     * be similar to {@link #findImplementations(MethodRef)}.
+     * If the callgraph has not yet been built by {@link #buildCallGraph(boolean)}, this uses
+     * {@link #findImplementations(MethodRef)} to resolve virtual invocations.
      *
      * @param cs the callstring to the the invocation, including the given invokesite. Must not be empty.
-     * @return a list of possible implementations for the invocation.
+     * @return a list of possible implementations for the invocation, or an empty set if resolution fails or is not safe.
      */
     public Set<MethodInfo> findImplementations(CallString cs) {
         if (cs.length() == 0) {
             throw new AssertionError("findImplementations() called with empty callstring!");
         }
+        
+        Set<MethodInfo> methods = new HashSet<MethodInfo>();
+
+        InvokeSite invokeSite = cs.top();
+
+        // Handle special invokes
+        // We could use the callgraph to check them too, but only if the callstring length of the
+        // callgraph is at least one, else we will get incorrect results
+        if (invokeSite.isInvokeSuper()) {
+            Signature sig = invokeSite.getInvokeeRef().getSignature();
+            ClassInfo superClass = invokeSite.getMethod().getClassInfo().getSuperClassInfo();
+            if (superClass == null) {
+                // unknown super class, return empty set
+                return methods;
+            }
+            MethodInfo superMethod = superClass.getMethodInfoInherited(sig, true);
+            if (superMethod == null) {
+                throw new JavaClassFormatError("Super method not found for "+sig);
+            }
+            if (superMethod.isAbstract()) {
+                throw new JavaClassFormatError("Call to abstract super method of "+sig);
+            }
+
+            methods.add(superMethod);
+            return methods;
+        }
+        if (invokeSite.isInvokeSpecial()) {
+            MethodInfo method = invokeSite.getInvokeeRef().getMethodInfo();
+            if (method == null) {
+                return methods;
+            }
+            if (method.isAbstract()) {
+                throw new JavaClassFormatError("Invokespecial calls abstract method "+invokeSite.getInvokeeRef());
+            }
+
+            methods.add(method);
+            return methods;
+        }
+
         if (callGraph == null) {
             // we do not have a callgraph, so just use typegraph info
-            InvokeSite invokeSite = cs.top();
             return findImplementations(invokeSite.getInvokeeRef());
         }
 
-        Set<MethodInfo> methods = new HashSet<MethodInfo>();
-        
         for (ExecutionContext context : callGraph.getImplementations(cs)) {
             methods.add(context.getMethodInfo());
         }
@@ -872,9 +923,12 @@ public final class AppInfo {
      * use {@link #findImplementations(InvokeSite, CallString)} and use callgraph thinning first.
      * <p>
      * Note that this method is slightly different from {@link MethodInfo#getImplementations(boolean)}, since
-     * it returns only methods for subclasses of the invokee class, not the implementing class.
+     * it returns only methods for subclasses of the invokee class, not of the implementing class.
      * </p>
+     * <p>To handle invocations of super-methods correctly, use {@link #findImplementations(InvokeSite)}
+     * instead.</p>
      *
+     * @see #findImplementations(InvokeSite)
      * @param invokee the method to resolve.
      * @return all possible implementations.
      */
