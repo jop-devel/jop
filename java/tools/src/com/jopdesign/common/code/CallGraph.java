@@ -352,7 +352,7 @@ public class CallGraph {
                 System.err.println(""+src+" --> "+target);
             }
             */
-            throw new AssertionError(cyclicCallGraphMsg(cycle));
+            //throw new AssertionError(cyclicCallGraphMsg(cycle));
         }
 
         invalidate();

@@ -487,8 +487,12 @@ public class ClassReferenceFinder {
             visitConstantUtf8(obj.getNameIndex());
             for (InnerClass ic : obj.getInnerClasses()) {
                 visitConstantClass(ic.getInnerClassIndex());
-                visitConstantClass(ic.getOuterClassIndex());
-                visitConstantUtf8(ic.getInnerNameIndex());
+                if (ic.getOuterClassIndex() != 0) {
+                    visitConstantClass(ic.getOuterClassIndex());
+                }
+                if (ic.getInnerNameIndex() != 0) {
+                    visitConstantUtf8(ic.getInnerNameIndex());
+                }
             }
         }
 
@@ -588,6 +592,10 @@ public class ClassReferenceFinder {
 
         @Override
         public void visitUnknown(MemberInfo memberInfo, Unknown obj, boolean isCodeAttribute) {
+            if ("LocalVariableTypeTable".equals(obj.getName())) {
+                // TODO quick workaround, just ignore this attribute for now
+                return;
+            }
             throw new JavaClassFormatError("Unknown Attribute "+obj.getName()+" in "+memberInfo+" found, not supported!");
         }
 
@@ -611,7 +619,9 @@ public class ClassReferenceFinder {
             il.dispose();
 
             for (CodeException ce : code.getExceptionTable()) {
-                visitConstantClass(ce.getCatchType());
+                if (ce.getCatchType() != 0) {
+                    visitConstantClass(ce.getCatchType());
+                }
             }
 
             new DescendingClassTraverser(this).visitAttributes(methodInfo, code.getAttributes());

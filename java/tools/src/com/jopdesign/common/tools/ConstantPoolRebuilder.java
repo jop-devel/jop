@@ -65,7 +65,7 @@ import org.apache.bcel.generic.ClassGen;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.EmptyVisitor;
 import org.apache.bcel.generic.FieldGen;
-import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.MethodGen;
 
@@ -340,8 +340,8 @@ public class ConstantPoolRebuilder implements ClassVisitor {
 
             InstructionVisitor iv = new InstructionVisitor();
 
-            for (Instruction i : il.getInstructions()) {
-                i.accept(iv);
+            for (InstructionHandle ih : il.getInstructionHandles()) {
+                ih.getInstruction().accept(iv);
             }
         }
 

@@ -51,6 +51,7 @@ import org.apache.bcel.generic.ClassGen;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.InvokeInstruction;
+import org.apache.bcel.generic.Type;
 import org.apache.bcel.util.ClassPath;
 import org.apache.bcel.util.ClassPath.ClassFile;
 import org.apache.log4j.Logger;
@@ -648,8 +649,11 @@ public final class AppInfo {
         if ( cls != null ) {
             FieldInfo field = cls.getFieldInfo(signature.getMemberName());
             if ( field == null ) {
-                return new FieldRef(cls.getClassRef(), signature.getMemberName(),
-                        signature.getMemberDescriptor().getType() );
+                Type type = null;
+                if (signature.hasMemberSignature()) {
+                    type = signature.getMemberDescriptor().getType();
+                }
+                return new FieldRef(cls.getClassRef(), signature.getMemberName(), type);
             } else {
                 return field.getFieldRef();
             }
