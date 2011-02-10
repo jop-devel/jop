@@ -500,7 +500,7 @@ public final class ClassInfo extends MemberInfo {
 
             ClassInfo superClass = cls.getSuperClassInfo();
             if ( superClass != null && !sc.contains(superClass) ) {
-                queue.add(cls);
+                queue.add(superClass);
             }
             for (ClassInfo i : cls.getInterfaces()) {
                 if ( !sc.contains(i) ) {

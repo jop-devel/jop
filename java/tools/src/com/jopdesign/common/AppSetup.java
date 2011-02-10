@@ -454,10 +454,6 @@ public class AppSetup {
         appInfo.setClassPath(new ClassPath(config.getOption(Config.CLASSPATH)));
         appInfo.setExitOnMissingClass(!config.getOption(Config.VERBOSE));
 
-        if ( config.hasOption(Config.PROCESSOR_MODEL) ) {
-            initProcessorModel(config.getOption(Config.PROCESSOR_MODEL));
-        }
-
         // handle class loading options if set
         if ( config.hasOption(Config.LIBRARY_CLASSES) ) {
             String[] libs = Config.splitStringList(config.getOption(Config.LIBRARY_CLASSES));
@@ -487,6 +483,10 @@ public class AppSetup {
                     appInfo.registerEventHandler(handler);
                 }
             }
+        }
+
+        if ( config.hasOption(Config.PROCESSOR_MODEL) ) {
+            initProcessorModel(config.getOption(Config.PROCESSOR_MODEL));
         }
 
         // add system classes as roots
@@ -681,6 +681,26 @@ public class AppSetup {
         }
 
         appInfo.setProcessorModel(pm);
+
+        // load referenced classes as roots
+        for (String jvmClass : pm.getJVMClasses()) {
+            ClassInfo rootInfo = appInfo.loadClass(jvmClass.replaceAll("/","."));
+            if ( rootInfo == null ) {
+                System.err.println("Error loading JVM class '"+jvmClass+"'.");
+                System.exit(4);
+            }
+            appInfo.addRoot(rootInfo);
+        }
+        if (appInfo.doLoadNatives()) {
+            for (String nativeClass : pm.getNativeClasses()) {
+                ClassInfo rootInfo = appInfo.loadClass(nativeClass.replaceAll("/","."));
+                if ( rootInfo == null ) {
+                    System.err.println("Error loading Native class '"+nativeClass+"'.");
+                    System.exit(4);
+                }
+                appInfo.addRoot(rootInfo);
+            }
+        }
     }
 
     private File findConfigFile(String configFile) {

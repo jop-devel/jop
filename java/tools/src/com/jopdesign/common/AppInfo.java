@@ -888,9 +888,11 @@ public final class AppInfo {
 
         if (invokeeClass == null) {
             // ok, now, if the target class is unknown, there is not much we can do, so return an empty set
-            logger.warn("Trying to find implementations for unknown method "+invokee.toString());
+            logger.debug("Trying to find implementations of unknown method "+invokee.toString());
             return methods;
         }
+
+        boolean undefinedBaseMethod = false;
 
         if (invokeeClass.getMethodInfo(methodSig) == null) {
             // method is inherited, add to implementations
@@ -898,8 +900,16 @@ public final class AppInfo {
                 methods.add(method);
             } else if (method == null) {
                 // hm, invoke to an unknown method (maybe excluded or native), what should we do?
-                // .. or maybe the method has not been loaded somehow when the MethodRef was created (check!)
-                throw new JavaClassFormatError("Method implementation not found in superclass: "+invokee.toString());
+                if (invokeeClass.isFullyKnown(true)) {
+                    // .. or maybe the method has not been loaded somehow when the MethodRef was created (check!)
+                    throw new JavaClassFormatError("Method implementation not found in superclass: "+invokee.toString());
+                } else {
+                    // maybe defined in excluded superclass, but we do not know for sure..
+                    // We *must* return an empty set, but lets try to continue for now and
+                    // handle it like an excluded class, and abort only if we find overriding methods
+                    logger.debug("Method implementation not found in incomplete superclass: "+invokee.toString());
+                    undefinedBaseMethod = true;
+                }
             }
         }
 
@@ -927,6 +937,12 @@ public final class AppInfo {
         ClassHierarchyTraverser traverser = new ClassHierarchyTraverser(visitor);
         traverser.setVisitSubclasses(true, true);
         traverser.traverseDown(invokeeClass);
+
+        if (undefinedBaseMethod && methods.size() > 0) {
+            // now this is a problem: base implementation is unknown but we have some
+            // overriding methods, this we cannot handle for now
+            throw new JavaClassFormatError("Found overriding methods for "+invokee+" but superclasses are undefined!");
+        }
 
         return methods;
     }
@@ -1135,11 +1151,13 @@ public final class AppInfo {
     }
 
     private void handleClassLoadFailure(String message, Exception cause) {
+        // Nah, just throw an error anyway, so that we have a stacktrace
+        /*
         if ( exitOnMissingClass ) {
             logger.error(message, cause);
             System.exit(4);
-        } else {
-            throw new MissingClassError(message, cause);
         }
+        */
+        throw new MissingClassError(message, cause);
     }
 }

@@ -195,12 +195,6 @@ public class JCopter extends EmptyTool<JCopterManager> {
             jcopter.setWcetTool(wcetTool);
         }
 
-        // parse options and config, setup everything, load application classes
-        String[] rest = setup.setupConfig(args);
-
-        setup.setupLogger(true);
-        setup.setupAppInfo(rest, true);
-
         // run optimizations
         jcopter.prepare();
         jcopter.optimize();

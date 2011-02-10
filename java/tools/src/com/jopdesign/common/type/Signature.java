@@ -127,6 +127,7 @@ public class Signature {
 
         if ( p1 == -1 ) {
             if ( p2 == -1 ) {
+                // TODO we might want to handle array signatures too here 
                 // no descriptor, either not alternative syntax or no classname
                 if ( isClassMember || (checkExists && !AppInfo.getSingleton().classExists(signature)) ) {
                     // is a class member with or without class name
@@ -190,6 +191,10 @@ public class Signature {
         this.className = null;
         this.memberName = memberName;
         this.descriptor = descriptor;
+    }
+
+    public boolean isArraySignature() {
+        return className.startsWith("[");
     }
 
     public boolean hasMemberName() {

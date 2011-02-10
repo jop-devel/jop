@@ -237,9 +237,9 @@ public class InnerClassesInfo {
 
         String name = getOuterClassName();
         if ( name == null ) {
-            MethodRef ref = getEnclosingMethodRef();
-            if (ref != null) {
-                return ref.getClassName();
+            EnclosingMethod m = getEnclosingMethod();
+            if (m != null) {
+                return m.getClassName();
             } else {
                 throw new JavaClassFormatError("Could not find enclosing class name for nested class " +getClassName());
             }
@@ -339,13 +339,18 @@ public class InnerClassesInfo {
         return null;
     }
 
-    public MethodRef getEnclosingMethodRef() {
+    public EnclosingMethod getEnclosingMethod() {
         for (Attribute a : classInfo.getAttributes()) {
             if ( a instanceof EnclosingMethod) {
-                return ((EnclosingMethod)a).getMethodRef();
+                return ((EnclosingMethod)a);
             }
         }
         return null;
+    }
+
+    public MethodRef getEnclosingMethodRef() {
+        EnclosingMethod m = getEnclosingMethod();
+        return m == null ? null : m.getMethodRef();
     }
 
     /*

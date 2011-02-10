@@ -28,8 +28,10 @@ import com.jopdesign.common.MemberInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.JavaClassFormatError;
+import com.jopdesign.common.type.ArrayTypeInfo;
 import com.jopdesign.common.type.FieldRef;
 import com.jopdesign.common.type.MethodRef;
+import com.jopdesign.common.type.ObjectTypeInfo;
 import com.jopdesign.common.type.Signature;
 import org.apache.log4j.Logger;
 
@@ -236,10 +238,9 @@ public class UsedCodeFinder {
             Signature sig = Signature.parse(signature, false);
             
             // find/load the corresponding classInfo
-            ClassInfo cls = getClassInfo(sig.getClassName());
-            // class has been excluded from loading, handle it and skip this class
+            ClassInfo cls = getClassInfo(sig);
+            // class has been excluded from loading, skip this class
             if (cls == null) {
-                ignoreClass(sig.getClassName());
                 continue;
             }
                     
@@ -272,8 +273,25 @@ public class UsedCodeFinder {
         ignoredClasses.add(className);
     }
 
-    private ClassInfo getClassInfo(String className) {
-        return appInfo.getClassInfo(className);
+    private ClassInfo getClassInfo(Signature sig) {
+        String className;
+
+        if (sig.isArraySignature()) {
+            ArrayTypeInfo at = ArrayTypeInfo.parse(sig.getClassName());
+            if (at.getElementType() instanceof ObjectTypeInfo) {
+                className = ((ObjectTypeInfo)at.getElementType()).getClassRef().getClassName();
+            } else {
+                return null;
+            }
+        } else {
+            className = sig.getClassName();
+        }
+
+        ClassInfo classInfo = appInfo.getClassInfo(className);
+        if (classInfo == null) {
+            ignoreClass(className);
+        }
+        return classInfo;
     }
 
     private Collection<MethodInfo> findMethods(MethodRef method) {

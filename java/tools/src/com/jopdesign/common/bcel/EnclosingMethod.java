@@ -76,14 +76,22 @@ public class EnclosingMethod extends CustomAttribute {
     }
 
     public Signature getSignature() {
-        ConstantClass cls = (ConstantClass) constant_pool.getConstant(classIndex);
+        if (methodIndex == 0) {
+            // not directly enclosed by a method
+            return new Signature(getClassName());
+        }
         ConstantNameAndType nat = (ConstantNameAndType) constant_pool.getConstant(methodIndex);
-        return new Signature(cls.getBytes(constant_pool).replace('/','.'), nat.getName(constant_pool), 
+        return new Signature(getClassName(), nat.getName(constant_pool),
                 Descriptor.parse(nat.getSignature(constant_pool)));
     }
 
+    public String getClassName() {
+        ConstantClass cls = (ConstantClass) constant_pool.getConstant(classIndex);
+        return cls.getBytes(constant_pool).replace('/','.');
+    }
+
     public MethodRef getMethodRef() {
-        return AppInfo.getSingleton().getMethodRef(getSignature());
+        return methodIndex == 0 ? null : AppInfo.getSingleton().getMethodRef(getSignature());
     }
 
     @Override

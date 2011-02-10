@@ -102,7 +102,7 @@ public class LayoutCFG {
 		while(! locStack.empty()) {
 			Location loc = locStack.pop();
 			/* check if all predecessors have been processed, ignoring cycle transitions */
-			Vector<Location> todoPreds = new Stack<Location>();
+			List<Location> todoPreds = new Stack<Location>();
 			int maxPred = -1;
 			for(Transition tPred : loc.getPredecessors()) {
 				if(cycleTransitions.contains(tPred)) continue;				
@@ -266,7 +266,7 @@ public class LayoutCFG {
 			Location p1 = maxPred.get(l1);
 			Location p2 = maxPred.get(l2);
 			return compareInt(p1.getCoords().x, p2.getCoords().x);
-		};
+		}
 	};
 	
 
