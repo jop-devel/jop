@@ -24,6 +24,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.config.Config.BadConfigurationException;
+import com.jopdesign.common.graphutils.InvokeDot;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.timing.WCETInstruction;
 import com.jopdesign.wcet.WCETTool;

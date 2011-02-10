@@ -22,6 +22,7 @@
 package com.jopdesign.common.config;
 
 import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.processormodel.ProcessorModel.Model;
 
 import java.io.ByteArrayOutputStream;
@@ -114,6 +115,14 @@ public class Config {
 
     public static final StringOption INFO_LOG_FILE =
         new StringOption("info-log","the info log file, placed in the report dir","info.log.html");
+
+    //
+    // Some common options, which are not added by default, but can be added by other programs
+    //
+    public static final StringOption PROGRAM_DOT =
+            new StringOption("program-dot", "if graphs should be generated from java, the path to the 'dot' binary", true);
+
+    
 
     public static final Option<?>[] standardOptions =
             { SHOW_HELP, SHOW_VERSION, SHOW_CONFIG, DEBUG, QUIET, VERBOSE };
@@ -220,6 +229,40 @@ public class Config {
         }
     }
 
+    /**
+     * @return the directory configured by {@link Config#WRITE_PATH}
+     */
+    public File getOutDir() {
+        return new File(getOption(Config.WRITE_PATH));
+    }
+
+    /**
+     * Get a subdirectory under the write path configured by {@link Config#WRITE_PATH} and create it
+     * if it does not exist.
+     *
+     * @param sub name of a subdirectory
+     * @return a file representing the directory.
+     */
+    public File getOutDir(String sub) {
+        File outDir = getOutDir();
+        File subDir = new File(outDir, sub);
+        if (!subDir.exists()) {
+            if (!subDir.mkdirs()) {
+                throw new AppInfoError("Failed to create subdirectory "+sub+" in outdir");
+            }
+        }
+        return subDir;
+    }
+
+    public File getOutFile(String file) {
+        return new File(getOutDir(), file);
+    }
+
+    public File getOutDir(StringOption option) throws BadConfigurationException {
+        File outDir = new File(getOption(option));
+        checkDir(outDir, true);
+        return outDir;
+    }
 
     public OptionGroup getOptions() {
         return options;

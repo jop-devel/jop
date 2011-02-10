@@ -32,9 +32,6 @@ public class JCopterConfig {
     public static final BooleanOption ALLOW_INCOMPLETE_APP =
             new BooleanOption("allow-incomplete", "Ignore missing classes", false);
 
-    public static final BooleanOption REMOVE_UNUSED_MEMBERS =
-            new BooleanOption("remove-unused-members", "Remove unreachable code", false);
-
     public static final Option[] options =
             { ALLOW_INCOMPLETE_APP };
 

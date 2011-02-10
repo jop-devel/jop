@@ -26,8 +26,8 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.config.Config;
+import com.jopdesign.common.graphutils.InvokeDot;
 import com.jopdesign.common.graphutils.TypeGraph;
-import com.jopdesign.wcet.report.InvokeDot;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -69,7 +69,7 @@ public class WcetAppInfoTest {
                 TypeGraph typeGraph = new TypeGraph();
                 typeGraph.exportDOT(dotWriter,rootPkg);
                 dotWriter.close();
-                InvokeDot.invokeDot(wcetTool, dotFile, pConfig.getOutFile("typegraph.png"));
+                InvokeDot.invokeDot(wcetTool.getConfig(), dotFile, pConfig.getOutFile("typegraph.png"));
             }
             SuperGraph sg = new SuperGraph(appInfo,pConfig.getTargetMethodInfo().getCode().getControlFlowGraph(false), 0);
             {
@@ -78,7 +78,7 @@ public class WcetAppInfoTest {
                 FileWriter dotWriter = new FileWriter(dotFile);
                 sg.exportDOT(dotWriter);			
                 dotWriter.close();			
-                InvokeDot.invokeDot(wcetTool, dotFile, pConfig.getOutFile("supergraph.png"));
+                InvokeDot.invokeDot(wcetTool.getConfig(), dotFile, pConfig.getOutFile("supergraph.png"));
             }
             CallGraph cg = appInfo.buildCallGraph(false);
             {
@@ -87,7 +87,7 @@ public class WcetAppInfoTest {
                 FileWriter dotWriter = new FileWriter(dotFile);
                 cg.exportDOT(dotWriter);			
                 dotWriter.close();			
-                InvokeDot.invokeDot(wcetTool, dotFile, pConfig.getOutFile("callgraph.png"));
+                InvokeDot.invokeDot(wcetTool.getConfig(), dotFile, pConfig.getOutFile("callgraph.png"));
             }
                     
         } catch (IOException e) {

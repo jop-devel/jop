@@ -122,6 +122,7 @@ public class JCopter extends EmptyTool<JCopterManager> {
         // - callgraph thinning, various analyses
         appInfo.buildCallGraph(false);
         executor.reduceCallGraph();
+        executor.dumpCallgraph("callgraph");
 
         // - (optional) perform DFA: reduce callgraph even more/make callstrings more precise,
         //   maybe eliminate some nullpointer-checks

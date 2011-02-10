@@ -21,10 +21,22 @@
 package com.jopdesign.jcopter;
 
 import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.config.BooleanOption;
+import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.Config.BadConfigurationError;
+import com.jopdesign.common.config.Config.BadConfigurationException;
+import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
+import com.jopdesign.common.config.StringOption;
+import com.jopdesign.common.graphutils.InvokeDot;
+import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.tools.ConstantPoolRebuilder;
 import com.jopdesign.common.tools.UsedCodeFinder;
 import org.apache.log4j.Logger;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 
 /**
  * This is just a helper class to execute various optimizations and analyses.
@@ -35,6 +47,21 @@ public class PhaseExecutor {
 
     public static final Logger logger = Logger.getLogger(JCopter.LOG_ROOT + ".PhaseExecutor");
 
+    public static final BooleanOption REMOVE_UNUSED_MEMBERS =
+            new BooleanOption("remove-unused-members", "Remove unreachable code", true);
+
+    public static final BooleanOption DUMP_CALLGRAPH =
+            new BooleanOption("dump-callgraph", "Dump the callgraph", false);
+
+    public static final StringOption CALLGRAPH_DIR =
+            new StringOption("cgdir", "Directory to put the callgraph files into", "${outdir}/callgraph");
+
+
+    public static final Option[] options = {
+            REMOVE_UNUSED_MEMBERS,
+            DUMP_CALLGRAPH, CALLGRAPH_DIR
+            };
+
     private final JCopter jcopter;
     private final AppInfo appInfo;
 
@@ -43,8 +70,32 @@ public class PhaseExecutor {
         appInfo = AppInfo.getSingleton();
     }
 
-    public void registerOptions(OptionGroup options) {
+    public Config getConfig() {
+        return jcopter.getConfig().getConfig();
+    }
 
+    @SuppressWarnings({"AccessStaticViaInstance"})
+    public void registerOptions(OptionGroup options) {
+        options.addOptions(this.options);
+    }
+
+    public void dumpCallgraph(String graphName) {
+        if (!getConfig().getOption(DUMP_CALLGRAPH)) return;
+        
+        try {
+            File outDir = getConfig().getOutDir(CALLGRAPH_DIR);
+            File dotFile = new File(outDir, graphName+".dot");
+            File pngFile = new File(outDir, graphName+".png");
+            FileWriter writer = new FileWriter(dotFile);
+
+            appInfo.getCallGraph().exportDOT(writer);
+            InvokeDot.invokeDot(getConfig(), dotFile, pngFile);
+
+        } catch (BadConfigurationException e) {
+            throw new BadConfigurationError("Could not create output dir "+getConfig().getOption(CALLGRAPH_DIR), e);
+        } catch (IOException e) {
+            throw new AppInfoError("Unable to export to .dot file", e);
+        }
     }
 
     /**
