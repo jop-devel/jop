@@ -1124,7 +1124,7 @@ public final class AppInfo {
 
     private ClassInfo tryLoadClass(String className) throws IOException {
 
-        loadLogger.info("Loading class "+className);
+        loadLogger.debug("Loading class "+className);
 
         InputStream is = classPath.getInputStream(className);
         JavaClass javaClass = new ClassParser(is, className).parse();

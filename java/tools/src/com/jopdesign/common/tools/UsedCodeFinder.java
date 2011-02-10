@@ -134,6 +134,10 @@ public class UsedCodeFinder {
                 markUsedMembers(root,true);
             }
         }
+        if (ignoredClasses.size() > 0 ) {
+            int num = ignoredClasses.size();
+            logger.info("Ignored " + num + " referenced "+ (num == 1 ? "class: " : "classes: ") + ignoredClasses);
+        }
     }
 
     public void markUsedMembers(ClassInfo rootClass, boolean visitMembers) {
@@ -269,7 +273,7 @@ public class UsedCodeFinder {
     }
 
     private void ignoreClass(String className) {
-        logger.info("Ignored referenced class " +className);
+        logger.debug("Ignored referenced class " +className);
         ignoredClasses.add(className);
     }
 

@@ -26,8 +26,10 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.graphutils.AdvancedDOTExporter;
 import com.jopdesign.common.graphutils.DirectedCycleDetector;
 import com.jopdesign.common.graphutils.Pair;
+import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.type.MethodRef;
+import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.EdgeFactory;
 import org.jgrapht.event.GraphEdgeChangeEvent;
@@ -70,6 +72,8 @@ import java.util.Stack;
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class CallGraph {
+
+    public static final Logger logger = Logger.getLogger(LogConfig.LOG_CODE + ".CallGraph");
 
     /**
      * Interface for a callgraph construction.
@@ -338,7 +342,11 @@ public class CallGraph {
      * Build and initialize everything, perform checks
      */
     private void build() {
+        logger.info("Starting construction of callgraph with root " + rootNode);
+
         this.buildGraph();
+
+        logger.info("Finished constructing callgraph, checking for loops..");
 
         /* Check the callgraph is cycle free */
         Pair<List<ExecutionContext>,List<ExecutionContext>> cycle =
@@ -352,8 +360,10 @@ public class CallGraph {
                 System.err.println(""+src+" --> "+target);
             }
             */
-            //throw new AssertionError(cyclicCallGraphMsg(cycle));
+            throw new AssertionError(cyclicCallGraphMsg(cycle));
         }
+
+        logger.info("No loops found in callgraph starting at "+rootNode);
 
         invalidate();
     }

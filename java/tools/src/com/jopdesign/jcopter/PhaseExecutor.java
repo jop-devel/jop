@@ -24,6 +24,7 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.tools.ConstantPoolRebuilder;
 import com.jopdesign.common.tools.UsedCodeFinder;
+import org.apache.log4j.Logger;
 
 /**
  * This is just a helper class to execute various optimizations and analyses.
@@ -31,6 +32,8 @@ import com.jopdesign.common.tools.UsedCodeFinder;
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class PhaseExecutor {
+
+    public static final Logger logger = Logger.getLogger(JCopter.LOG_ROOT + ".PhaseExecutor");
 
     private final JCopter jcopter;
     private final AppInfo appInfo;
@@ -50,6 +53,9 @@ public class PhaseExecutor {
      */
     public void reduceCallGraph() {
         // TODO perform callgraph thinning analysis
+        // logger.info("Starting callgraph reduction");
+
+        // logger.info("Finished callgraph reduction");
     }
 
     /**
@@ -88,16 +94,24 @@ public class PhaseExecutor {
      * Find and remove unused classes, methods and fields
      */
     public void removeUnusedMembers() {
+        logger.info("Starting removal of unused members");
+
         UsedCodeFinder ucf = new UsedCodeFinder();
         ucf.resetMarks();
         ucf.markUsedMembers();
         ucf.removeUnusedMembers();
+
+        logger.info("Finished removal of unused members");
     }
 
     /**
      * Rebuild all constant pools.
      */
     public void cleanupConstantPool() {
+        logger.info("Starting cleanup of constant pools");
+
         appInfo.iterate(new ConstantPoolRebuilder());
+
+        logger.info("Finished cleanup of constant pools");
     }
 }
