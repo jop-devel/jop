@@ -938,7 +938,7 @@ public final class AppInfo {
         }
         if (!callGraph.hasMethod(invokeSite.getMethod())) {
             logger.info("Could not find method "+invokeSite.getMethod()+" in the callgraph, falling back to typegraph");
-            //return findImplementations(invokeSite.getInvokeeRef());
+            return findImplementations(invokeSite.getInvokeeRef());
         }
 
         for (ExecutionContext context : callGraph.getImplementations(cs)) {
