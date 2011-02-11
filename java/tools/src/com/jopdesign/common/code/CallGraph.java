@@ -28,6 +28,7 @@ import com.jopdesign.common.graphutils.DirectedCycleDetector;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.MethodNotFoundException;
+import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.type.MethodRef;
 import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
@@ -45,6 +46,7 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -62,11 +64,10 @@ import java.util.Stack;
  * to {@code m2}.</p>
  *
  * <p>Note that this callgraph only contains MethodInfos, not MethodRefs, so invocations of unknown methods
- * are not represented in this graph.</p>
+ * are not represented in this graph. </p>
  *
  * TODO allow multiple roots, additionally initialize from AppInfo directly (use AppInfo.getRoots(),
  *      use all methods in root-classes as root; provide method find all 'real' roots)
- * TODO support for callgraph thinning (ie. remove edges/methods/...)
  *
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  * @author Stefan Hepp (stefan@stefant.org)
@@ -79,6 +80,15 @@ public class CallGraph {
      * Interface for a callgraph construction.
      */
     public interface CallgraphConfig {
+        /**
+         * Get a set of all execution contexts possibly invoked by a given context.
+         * To be consistent with {@link AppInfo#findImplementations(InvokeSite)} and to detect
+         * incomplete classes, this must return an empty set if only some of the possible implementations
+         * are found (e.g. superclasses are missing).
+         *
+         * @param context the calling context
+         * @return a set of all possible invoked implementations or an empty set if unknown
+         */
         Set<ExecutionContext> getInvokedMethods(ExecutionContext context);
     }
 
@@ -176,6 +186,10 @@ public class CallGraph {
      * Internal classes
      *---------------------------------------------------------------------------*/
 
+    /**
+     * This listener is attached to the (sub-)callgraph, and updates the methodNodes and mergedGraph
+     * structures.
+     */
     private class GraphUpdateListener implements GraphListener<ExecutionContext, ContextEdge> {
         @Override
         public void edgeAdded(GraphEdgeChangeEvent<ExecutionContext, ContextEdge> e) {
@@ -204,6 +218,10 @@ public class CallGraph {
         }
     }
 
+    /**
+     * This graph is attached to the main full callgraph for every subgraph, and propagates
+     * changes to the main graph to the given subgraph.
+     */
     @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
     private class SubgraphUpdateListener implements GraphListener<ExecutionContext, ContextEdge> {
         
@@ -220,7 +238,7 @@ public class CallGraph {
             ExecutionContext target = e.getEdge().getTarget();
             if (!subgraph.callGraph.containsVertex(target)) {
                 // target must be added first, so we need to clone everything which is reachable from the target
-                subgraph.cloneReachableGraph(target);
+                subgraph.cloneReachableGraph(Collections.singleton(target));
             }
             subgraph.callGraph.addEdge(e.getEdge().getSource(), target);
         }
@@ -246,7 +264,7 @@ public class CallGraph {
     //
     // Fields
     // ~~~~~~
-    private final ExecutionContext rootNode;
+    private final Set<ExecutionContext> rootNodes;
     private final CallgraphConfig config;
 
     private ListenableDirectedGraph<ExecutionContext, ContextEdge> callGraph;
@@ -257,6 +275,7 @@ public class CallGraph {
 
     private Set<ClassInfo> classInfos;
     private Map<MethodInfo,MethodNode> methodNodes;
+    private boolean loopFree = false;
 
     //
     // Caching Fields
@@ -280,7 +299,7 @@ public class CallGraph {
      * @param methodSig The root method of the call graph. Either a plain method name
      *                   (e.g. "measure"), if unique, or a method with signature (e.g. "measure()Z")
      * @param config the config class to use to build this graph
-     * @return a freshly built callgraph.
+     * @return a freshly constructed callgraph.
      * @throws MethodNotFoundException if the referenced main method was not found
      */
     public static CallGraph buildCallGraph(AppInfo appInfo, String className, String methodSig,
@@ -297,11 +316,40 @@ public class CallGraph {
      * @see AppInfo#getMethodInfo(String, String)
      * @param rootMethod The root method of the callgraph
      * @param config the config class to use to build this graph
-     * @return a freshly built callgraph.
+     * @return a freshly constructed callgraph.
      */
     public static CallGraph buildCallGraph(MethodInfo rootMethod, CallgraphConfig config)
     {
-        CallGraph cg = new CallGraph(new ExecutionContext(rootMethod, CallString.EMPTY),config);
+        ExecutionContext root = new ExecutionContext(rootMethod);
+        CallGraph cg = new CallGraph(Collections.singleton(root),config);
+        cg.build();
+        return cg;
+    }
+
+    /**
+     * Build a callgraph with all root methods of AppInfo.
+     * This also adds all static initializers of all classes to the callgraph.
+     *
+     * @see AppInfo#getRootMethods()
+     * @param appInfo the AppInfo to use
+     * @param config the config class to use to build this graph
+     * @return a freshly constructed callgraph.
+     */
+    public static CallGraph buildCallGraph(AppInfo appInfo, CallgraphConfig config) {
+        Collection<MethodInfo> rootMethods = appInfo.getRootMethods();
+        Set<ExecutionContext> roots = new HashSet<ExecutionContext>(rootMethods.size());
+
+        for (MethodInfo m : rootMethods) {
+            roots.add(new ExecutionContext(m));
+        }
+        for (ClassInfo cls : appInfo.getClassInfos()) {
+            MethodInfo clinit = cls.getMethodInfo(ClinitOrder.clinitSig);
+            if (clinit != null) {
+                roots.add(new ExecutionContext(clinit));
+            }
+        }
+
+        CallGraph cg = new CallGraph(roots, config);
         cg.build();
         return cg;
     }
@@ -312,11 +360,11 @@ public class CallGraph {
 
     /**
      * Initialize a CallGraph object.
-     * @param rootMethod The root method of the callgraph (not abstract).
+     * @param rootMethods The root methods of the callgraph (not abstract).
      * @param config the config class to use to build this graph
      */
-    protected CallGraph(ExecutionContext rootMethod, CallgraphConfig config) {
-        this.rootNode = rootMethod;
+    protected CallGraph(Collection<ExecutionContext> rootMethods, CallgraphConfig config) {
+        this.rootNodes = new HashSet<ExecutionContext>(rootMethods);
         this.config = config;
         this.subgraphs = new HashMap<ExecutionContext, CallGraph>(1);
 
@@ -334,7 +382,7 @@ public class CallGraph {
     }
 
     protected CallGraph(CallGraph parent, ExecutionContext rootNode, CallgraphConfig config) {
-        this(rootNode, config);
+        this(Collections.singleton(rootNode), config);
         this.parent = parent;
     }
     
@@ -342,32 +390,39 @@ public class CallGraph {
      * Build and initialize everything, perform checks
      */
     private void build() {
-        logger.info("Starting construction of callgraph with root " + rootNode);
+        logger.info("Starting construction of callgraph with roots " + rootNodes);
 
         this.buildGraph();
 
-        logger.info("Finished constructing callgraph, checking for loops..");
-
-        /* Check the callgraph is cycle free */
-        Pair<List<ExecutionContext>,List<ExecutionContext>> cycle =
-            DirectedCycleDetector.findCycle(callGraph,rootNode);
-        if(cycle != null) {
-            // maybe make dumping the whole graph optional :)
-            /*
-            for(DefaultEdge e : callGraph.edgeSet()) {
-                ExecutionContext src = callGraph.getEdgeSource(e);
-                ExecutionContext target = callGraph.getEdgeTarget(e);
-                System.err.println(""+src+" --> "+target);
-            }
-            */
-            throw new AssertionError(cyclicCallGraphMsg(cycle));
-        }
-
-        logger.info("No loops found in callgraph starting at "+rootNode);
+        logger.info("Finished constructing callgraph");
 
         invalidate();
     }
-	
+
+    public void checkAcyclicity() {
+        /* Check the callgraph is cycle free */
+        for (ExecutionContext rootNode : rootNodes) {
+
+            logger.info("Checking for loops in callgraph starting at "+rootNode);
+
+            Pair<List<ExecutionContext>,List<ExecutionContext>> cycle =
+                DirectedCycleDetector.findCycle(callGraph,rootNode);
+            if(cycle != null) {
+                // maybe make dumping the whole graph optional :)
+                /*
+                for(DefaultEdge e : callGraph.edgeSet()) {
+                    ExecutionContext src = callGraph.getEdgeSource(e);
+                    ExecutionContext target = callGraph.getEdgeTarget(e);
+                    System.err.println(""+src+" --> "+target);
+                }
+                */
+                throw new AssertionError(cyclicCallGraphMsg(cycle));
+            }
+        }
+        loopFree = true;
+        logger.info("No loops found in callgraph");
+    }
+
     /**
      * Build the callgraph.
      *
@@ -378,51 +433,59 @@ public class CallGraph {
         // Note that updating methodNodes and classInfos is now done by the GraphUpdateListener
         callGraph.addGraphListener(new GraphUpdateListener());
 
-        callGraph.addVertex(rootNode);
+        for (ExecutionContext rootNode : rootNodes) {
+            callGraph.addVertex(rootNode);
+        }
 
         if (parent == null) {
             /* Initialize DFS data structures and lookup maps */
             Stack<ExecutionContext> todo = new Stack<ExecutionContext>();
-            todo.push(rootNode);
+            for (ExecutionContext rootNode : rootNodes) {
+                todo.push(rootNode);
+            }
 
             while(! todo.empty()) {
                 ExecutionContext current = todo.pop();
 
+                logger.debug("Processing " +current);
+
                 Set<ExecutionContext> invoked = config.getInvokedMethods(current);
                 for (ExecutionContext cgn : invoked) {
 
-                if (!callGraph.containsVertex(cgn)) {
-                    callGraph.addVertex(cgn);
-                    todo.push(cgn);
+                    if (!callGraph.containsVertex(cgn)) {
+                        callGraph.addVertex(cgn);
+                        todo.push(cgn);
+                    }
+                    logger.debug(" - found invoke of " +cgn);
+                    callGraph.addEdge(current, cgn);
                 }
-
-                callGraph.addEdge(current, cgn);
-                        }
             } /* end while */
         } else {
             // build the the graph using all reachable nodes from the parent graph
-            cloneReachableGraph(rootNode);
+            cloneReachableGraph(rootNodes);
         }
     }
 
     /**
      * Copy all reachable nodes (and edges) from the parent graph, starting at the root
-     * @param root where to start cloning
+     * @param roots where to start cloning
      */
     @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
-    private void cloneReachableGraph(ExecutionContext root) {
-
-        DepthFirstIterator<ExecutionContext, ContextEdge> dfs =
-                new DepthFirstIterator<ExecutionContext, ContextEdge>(parent.callGraph, root);
+    private void cloneReachableGraph(Collection<ExecutionContext> roots) {
 
         List<ExecutionContext> newNodes = new LinkedList<ExecutionContext>();
 
-        while (dfs.hasNext()) {
-            ExecutionContext ec = dfs.next();
-            if (callGraph.addVertex(ec)) {
-                // TODO if a node is already in the subgraph (ie. reachable), skip its children
-                //      (must all be here already or if it is a circle they will be added later)
-                newNodes.add(ec);
+        for (ExecutionContext root : roots) {
+            DepthFirstIterator<ExecutionContext, ContextEdge> dfs =
+                    new DepthFirstIterator<ExecutionContext, ContextEdge>(parent.callGraph, root);
+
+            while (dfs.hasNext()) {
+                ExecutionContext ec = dfs.next();
+                if (callGraph.addVertex(ec)) {
+                    // TODO if a node is already in the subgraph (ie. reachable), skip its children
+                    //      (must all be here already or if it is a circle they will be added later)
+                    newNodes.add(ec);
+                }
             }
         }
 
@@ -460,7 +523,11 @@ public class CallGraph {
     public boolean hasNode(MethodInfo m, CallString cs) {
         return callGraph.containsVertex(new ExecutionContext(m,cs == null ? CallString.EMPTY : cs));
     }
-	
+
+    public boolean hasMethod(MethodInfo m) {
+        return methodNodes.containsKey(m);
+    }
+
     /**
      * Get all nodes matching the given method info.
      *
@@ -508,16 +575,40 @@ public class CallGraph {
         new AdvancedDOTExporter<ExecutionContext, ContextEdge>().exportDOT(w, this.callGraph);
     }
 
-    public ClassInfo getRootClass() {
-        return rootNode.getMethodInfo().getClassInfo();
+    public Set<ClassInfo> getRootClass() {
+        Set<ClassInfo> classes = new HashSet<ClassInfo>(2);
+        for (ExecutionContext root : rootNodes) {
+            classes.add(root.getMethodInfo().getClassInfo());
+        }
+        return classes;
     }
 
-    public MethodInfo getRootMethod() {
-        return rootNode.getMethodInfo();
+    /**
+     * Get a set of all root methods which were used to construct the callgraph.
+     * Note that a root method does not necessarily need to be a root of the graph, even
+     * if it is acyclic, and there might be nodes in the graph for this method which are not
+     * root nodes.
+     *
+     * @see #getRootNodes()
+     * @return The methods of all root nodes.
+     */
+    public Set<MethodInfo> getRootMethods() {
+        Set<MethodInfo> methods = new HashSet<MethodInfo>();
+        for (ExecutionContext root : rootNodes) {
+            methods.add(root.getMethodInfo());
+        }
+        return methods;
     }
 
-    public ExecutionContext getRootNode() {
-        return rootNode;
+    /**
+     * Get a set of all root nodes which were used to construct the callgraph.
+     * Note that a root node does not necessarily need to be a root of the graph, even
+     * if it is acyclic!
+     *
+     * @return All (initial) roots of the callgraph.
+     */
+    public Set<ExecutionContext> getRootNodes() {
+        return Collections.unmodifiableSet(rootNodes);
     }
 
     public Set<ClassInfo> getClassInfos() {
@@ -568,11 +659,37 @@ public class CallGraph {
                 if (callGraph.incomingEdgesOf(ec).isEmpty()) {
                     // this node has now become disconnected.. remove it, queue all children
                     queue.addAll(getChildren(ec));
+                    // Note that we do not need to worry about any onRemove methods, they are called by the listeners
                     callGraph.removeVertex(ec);
                 }
             }
         }
         return exists;
+    }
+
+    public boolean removeNode(ExecutionContext context, boolean removeUnreachable) {
+        if (removeUnreachable) {
+            // we only need to do this if we want to remove reachable nodes, since removing a vertex
+            // also removes its edges
+            for (ContextEdge e : callGraph.outgoingEdgesOf(context)) {
+                removeEdge(e, removeUnreachable);
+            }
+        }
+        // Note that we do not need to worry about any onRemove methods, they are called by the listeners
+        return callGraph.removeVertex(context);
+    }
+
+    public boolean removeMethod(MethodInfo method, boolean removeUnreachable) {
+        MethodNode node = methodNodes.get(method);
+        if (node == null) return false;
+
+        // need to copy the list here, since it will be modified when we remove the nodes
+        List<ExecutionContext> contexts = new ArrayList<ExecutionContext>(node.getInstances());
+        for (ExecutionContext c : contexts) {
+            // simply remove all nodes, the rest will be updated by the listeners
+            removeNode(c, removeUnreachable);
+        }
+        return true;
     }
 
     /*---------------------------------------------------------------------------*
@@ -614,16 +731,14 @@ public class CallGraph {
      * @return a new subgraph, or an existing subgraph which starts at the same root
      */
     public CallGraph getSubGraph(ExecutionContext root) {
-        // TODO if we support multiple roots of a callgraph, allow to use a MethodInfo as root, add all instances
-
-        if (root.equals(rootNode)) return this;
+        // TODO allow to use a MethodInfo as root of a subgraph, add all instances
 
         CallGraph subGraph = subgraphs.get(root);
         if (subGraph != null) {
             subGraph = new CallGraph(this, root, config);
             subGraph.build();
             callGraph.addGraphListener(new SubgraphUpdateListener(subGraph));
-            // TODO maybe add a listener to subgraph which updates the parent graph when it is modified?
+            // TODO maybe add a listener to subgraph which updates the parent graph when it is modified too?
             subgraphs.put(root, subGraph);
         }
         return subGraph;
@@ -760,7 +875,14 @@ public class CallGraph {
 
         InvokeSite invoke = cs.top();
         Set<ExecutionContext> methods = new HashSet<ExecutionContext>();
-        MethodRef invokee = invoke.getInvokeeRef();
+
+        MethodRef invokeeRef = invoke.getInvokeeRef();
+        MethodInfo invokee = invokeeRef.getMethodInfo();
+        if (invokee == null) {
+            // The target of the invoke is unknown .. we wont find any implementations here 
+            logger.debug("Tried to find implementations of unknown method "+invokeeRef);
+            return methods;
+        }
 
         // find all instances of possible invokers
         Set<ExecutionContext> invoker = getNodes(invoke.getMethod());
@@ -774,7 +896,7 @@ public class CallGraph {
                 // check if the target callstring matches the given callstring
                 if (cgString.isEmpty()) {
                     // target has no callstring, must at least override the invoked method
-                    if (outEdge.getTarget().getMethodInfo().overrides(invokee.getMethodInfo(), true)) {
+                    if (outEdge.getTarget().getMethodInfo().overrides(invokee, true)) {
                         methods.add(outEdge.getTarget());
                     }
                 } else {
@@ -849,17 +971,23 @@ public class CallGraph {
 
     public int getMaxHeight() {
         calculateDepthAndHeight();
-        return this.subgraphHeight.get(this.rootNode);
+        int maxHeight = 0;
+        for (ExecutionContext rootNode : rootNodes) {
+            maxHeight = Math.max(maxHeight, this.subgraphHeight.get(rootNode));
+        }
+        return maxHeight;
     }
 
     public ControlFlowGraph getLargestMethod() {
         ControlFlowGraph largest = null;
         int maxBytes = 0;
-        for(MethodInfo mi : this.getReachableImplementationsSet(this.rootNode.getMethodInfo())) {
-            int bytes = mi.getCode().getNumberOfBytes();
-            if(bytes > maxBytes) {
-                largest = mi.getCode().getControlFlowGraph(false);
-                maxBytes = bytes;
+        for (ExecutionContext rootNode : rootNodes) {
+            for(MethodInfo mi : this.getReachableImplementationsSet(rootNode.getMethodInfo())) {
+                int bytes = mi.getCode().getNumberOfBytes();
+                if(bytes > maxBytes) {
+                    largest = mi.getCode().getControlFlowGraph(false);
+                    maxBytes = bytes;
+                }
             }
         }
         return largest;
@@ -867,8 +995,10 @@ public class CallGraph {
 
     public int getTotalSizeInBytes() {
         int bytes = 0;
-        for (MethodInfo mi : this.getReachableImplementationsSet(this.rootNode.getMethodInfo())) {
-             bytes += mi.getCode().getNumberOfBytes();
+        for (ExecutionContext rootNode : rootNodes) {
+            for (MethodInfo mi : this.getReachableImplementationsSet(rootNode.getMethodInfo())) {
+                 bytes += mi.getCode().getNumberOfBytes();
+            }
         }
         return bytes;
     }
@@ -884,8 +1014,21 @@ public class CallGraph {
      */
     private void calculateDepthAndHeight() {
         if(this.maxDistanceToRoot != null) return; // caching
+
+        if (!loopFree) {
+            throw new AssertionError("Callgraph needs to be checked for acyclicity first.");
+        }
+        if (rootNodes.size() != 1) {
+            // TODO The problem here is the calculation of maxDistanceToRoot and maxCallStack
+            //      The algorithms to calculate them need to be checked/updated to work with multiple roots
+            //      The various getters above should already work for multiple roots
+            //      Also, it may be nice to know the root of the max callstack...
+            throw new AssertionError("Calculating max stack for callgraphs with multiple roots is not supported!");
+        }
+        ExecutionContext rootNode = rootNodes.iterator().next();
+
         this.maxDistanceToRoot = new HashMap<ExecutionContext,Integer>();
-        this.maxCallStackLeaf = this.getRootNode();
+        this.maxCallStackLeaf = rootNode;
         this.maxCallstackDAG  = new HashMap<ExecutionContext,ExecutionContext>();
         this.subgraphHeight = new HashMap<ExecutionContext, Integer>();
 
@@ -967,6 +1110,8 @@ public class CallGraph {
 
             // TODO we might need to remove the class of the method from classInfos too!
         }
+
+        rootNodes.remove(context);
     }
 
     private void onAddCallGraphEdge(ContextEdge edge) {
@@ -981,6 +1126,9 @@ public class CallGraph {
         if (edge.getTarget().getCallString().length() > 0) {
             invoke.addInvokeSite(edge.getTarget().getCallString().top());
         }
+
+        // graph may not be acyclic anymore, need to check again
+        loopFree = false;
     }
 
     private void onRemoveCallGraphEdge(ContextEdge edge) {

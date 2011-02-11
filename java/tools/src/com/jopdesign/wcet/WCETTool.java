@@ -228,6 +228,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
                     projectConfig.getTargetClass(),
                     projectConfig.getTargetMethod(),
                     new DefaultCallgraphConfig(projectConfig.callstringLength()));
+            callGraph.checkAcyclicity();
         } catch (MethodNotFoundException e) {
             e.printStackTrace();
         }

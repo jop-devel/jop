@@ -127,14 +127,9 @@ public class UsedCodeFinder {
     public void markUsedMembers() {
         resetMarks();
 
-        MethodInfo main = appInfo.getMainMethod();
-        markUsedMembers(main);
-
-        for (ClassInfo root : appInfo.getRootClasses()) {
-            // Hmm, should we follow all methods in the main class, or only the main method??
-            if (!root.equals(main.getClassInfo())) {
-                markUsedMembers(root,true);
-            }
+        for (MethodInfo root : appInfo.getRootMethods()) {
+            // this also marks the containing class as used, and includes the main method
+            markUsedMembers(root);
         }
         if (ignoredClasses.size() > 0 ) {
             int num = ignoredClasses.size();
@@ -147,6 +142,7 @@ public class UsedCodeFinder {
         if (setUsed(rootClass)) return;
 
         // visit superclass and interfaces, attributes, but not methods or fields
+        logger.debug("Visiting references of "+rootClass);
         ReferenceResult found = ClassReferenceFinder.findReferencedMembers(rootClass, visitMembers);
         visitReferences(found);
 
@@ -163,8 +159,9 @@ public class UsedCodeFinder {
         if (setUsed(rootField)) return;
 
         // visit type info, attributes, constantValue
+        logger.debug("Visiting references of "+rootField);
         ReferenceResult found = ClassReferenceFinder.findReferencedMembers(rootField);
-        visitReferences(found);        
+        visitReferences(found);
     }
 
     public void markUsedMembers(MethodInfo rootMethod) {
@@ -172,8 +169,9 @@ public class UsedCodeFinder {
         if (setUsed(rootMethod)) return;
 
         // visit parameters, attributes, instructions, tables, ..
+        logger.debug("Visiting references of "+rootMethod);
         ReferenceResult found = ClassReferenceFinder.findReferencedMembers(rootMethod);
-        visitReferences(found);        
+        visitReferences(found);
     }
 
     /**
@@ -323,7 +321,6 @@ public class UsedCodeFinder {
         //  - load and visit all superclasses, mark implementation in superclass as used if inherited
         //  - visit all known subclasses, mark this method as used
         //  - when a class is loaded, visit all methods which are used in the superclasses
-
         return appInfo.findImplementations(invoke);
     }
 }

@@ -359,8 +359,8 @@ public final class ClassInfo extends MemberInfo {
     }
 
     /**
-     * Get the ClassInfo of the superClass if it is known, else return null.
-     * @return the superclass ClassInfo or null if not loaded.
+     * Get the ClassInfo of the superClass if it is known and if this is not java.lang.Object, else return null.
+     * @return the superclass ClassInfo or null if not loaded or if this class is java.lang.Object.
      */
     public ClassInfo getSuperClassInfo() {
         return superClass;

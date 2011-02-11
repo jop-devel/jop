@@ -27,7 +27,6 @@ import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.DefaultCallgraphConfig;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
-import com.jopdesign.common.config.Config;
 import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
 import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
@@ -38,6 +37,7 @@ import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MissingClassError;
 import com.jopdesign.common.misc.NamingConflictException;
 import com.jopdesign.common.processormodel.ProcessorModel;
+import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.FieldRef;
 import com.jopdesign.common.type.MethodRef;
@@ -734,21 +734,47 @@ public final class AppInfo {
         roots.add(methodInfo);
     }
 
+    /**
+     * @return a set of all classinfos of all roots. 
+     */
     public Collection<ClassInfo> getRootClasses() {
-        Map<String,ClassInfo> rootClasses = new HashMap<String, ClassInfo>();
+        Set<ClassInfo> rootClasses = new HashSet<ClassInfo>();
         for (MemberInfo root : roots) {
-            rootClasses.put(root.getClassInfo().getClassName(), root.getClassInfo());
+            rootClasses.add(root.getClassInfo());
         }
-        return rootClasses.values();
+        return rootClasses;
     }
 
+    /**
+     * Get a set of all root methods, i.e. all root methods and all methods in all root classes.
+     * @return a set of all root methods.
+     */
+    public Collection<MethodInfo> getRootMethods() {
+        Set<MethodInfo> methods = new HashSet<MethodInfo>();
+        for (MemberInfo root : roots) {
+            if (root instanceof MethodInfo) {
+                methods.add((MethodInfo) root);
+            } else if (root instanceof ClassInfo) {
+                for (MethodInfo m : ((ClassInfo)root).getMethods()) {
+                    methods.add(m);
+                }
+            } else {
+                throw new AppInfoError("Found fieldinfo "+root+" in roots, which is not allowed");
+            }
+        }
+        return methods;
+    }
+    
+    /**
+     * @return an unmodifiable set of all root methods and root classes.
+     */
     public Set<MemberInfo> getRoots() {
         return Collections.unmodifiableSet( roots );
     }
 
     public void setMainMethod(MethodInfo main) {
         if ( main != null ) {
-            addRoot(main.getClassInfo());
+            addRoot(main);
         }
         mainMethod = main;
     }
@@ -762,7 +788,7 @@ public final class AppInfo {
     }
 
     public Signature getClinitSignature(String className) {
-        return new Signature(className, Config.DEFAULT_CLINIT_NAME, Config.DEFAULT_CLINIT_DESCRIPTOR);
+        return new Signature(className, ClinitOrder.clinitName, ClinitOrder.clinitDesc);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -802,7 +828,7 @@ public final class AppInfo {
         if (callGraph == null) {
             CallgraphConfig config = new DefaultCallgraphConfig(getCallstringLength());
             // we only set the callgraph after building it, so it will not be used while constructing it.
-            callGraph = CallGraph.buildCallGraph(getMainMethod(), config);
+            callGraph = CallGraph.buildCallGraph(this, config);
         }
         return callGraph;
     }
@@ -909,6 +935,10 @@ public final class AppInfo {
         if (callGraph == null) {
             // we do not have a callgraph, so just use typegraph info
             return findImplementations(invokeSite.getInvokeeRef());
+        }
+        if (!callGraph.hasMethod(invokeSite.getMethod())) {
+            logger.info("Could not find method "+invokeSite.getMethod()+" in the callgraph, falling back to typegraph");
+            //return findImplementations(invokeSite.getInvokeeRef());
         }
 
         for (ExecutionContext context : callGraph.getImplementations(cs)) {

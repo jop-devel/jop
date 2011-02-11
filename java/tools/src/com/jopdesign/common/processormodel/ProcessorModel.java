@@ -80,8 +80,9 @@ public interface ProcessorModel {
     int getNumberOfBytes(MethodInfo context, Instruction instruction);
 
     /**
-     * Get classes, which contain methods invoked by the JVM.
-     * Used for Java implemented bytecodes, exceptions.
+     * Get all classes, which contain methods invoked by the JVM.
+     * Used for Java implemented bytecodes, exceptions. The classes returned here
+     * will be added as roots so that no method in those classes is removed. 
      *
      * @return a list of fully qualified class names used by the JVM or an empty list
      */

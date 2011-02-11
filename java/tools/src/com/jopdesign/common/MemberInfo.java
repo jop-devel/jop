@@ -411,6 +411,11 @@ public abstract class MemberInfo {
         return false;
     }
 
+    @Override
+    public String toString() {
+        return getSignature().toString();
+    }
+    
 
 
     private Synthetic findSynthetic() {

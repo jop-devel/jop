@@ -81,6 +81,7 @@ public class AppLoader {
     public void loadAll(boolean startFromRootsOnly) {
         AppInfo appInfo = AppInfo.getSingleton();
         if ( startFromRootsOnly ) {
+            // we only work on classes, not methods, so starting with root classes is sufficient here
             enqueue( appInfo.getRootClasses() );
         } else {
             enqueue( appInfo.getClassInfos() );

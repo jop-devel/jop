@@ -194,11 +194,6 @@ public final class MethodInfo extends ClassMemberInfo {
         return new Signature(getClassInfo().getClassName(), getShortName(), getDescriptor());
     }
 
-    @Override
-    public String toString() {
-        return getSignature().toString();
-    }
-
     //////////////////////////////////////////////////////////////////////////////
     // Helper methods to find implementations and super methods
     //////////////////////////////////////////////////////////////////////////////
@@ -221,9 +216,6 @@ public final class MethodInfo extends ClassMemberInfo {
         if ( isStatic() ) {
             return false;
         }
-        if ( superMethod.isStatic() ) {
-            logger.warn("Instance method " +getSignature()+" overrides static method "+superMethod.getSignature());
-        }
 
         if (checkSignature) {
             if ( !getMemberSignature().equals(superMethod.getMemberSignature()) ) {
@@ -232,6 +224,10 @@ public final class MethodInfo extends ClassMemberInfo {
             if ( !getClassInfo().isSubclassOf(superMethod.getClassInfo()) ) {
                 return false;
             }
+        }
+        
+        if ( superMethod.isStatic() ) {
+            logger.warn("Instance method " +getSignature()+" overrides static method "+superMethod.getSignature());
         }
         
         return getClassInfo().canAccess(superMethod);

@@ -46,12 +46,6 @@ import java.util.Set;
  */
 public class Config {
 
-    /**
-     * This is the default value; use {@link AppInfo#getClinitSignature(String)}.
-     */
-    public static final String DEFAULT_CLINIT_NAME = "<clinit>";
-    public static final String DEFAULT_CLINIT_DESCRIPTOR = "()V";
-
     /* Options which are always present
      * TODO maybe move the class loading and entry-point related options to AppInfo?
      */

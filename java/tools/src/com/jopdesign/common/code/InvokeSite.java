@@ -88,6 +88,22 @@ public class InvokeSite {
         if (!cls.hasSuperFlag()) return false;
         if ("<init>".equals(invokee.getName())) return false;
 
+        // just to handle some special cases of unknown superclasses gracefully, without requiring a classInfo
+        if (cls.getClassName().equals(invokee.getClassName())) {
+            // this is an invoke within the same class, no super here
+            return false;
+        }
+        if (cls.getSuperClassName().equals(invokee.getClassName())) {
+            // invoke refers to the superclass of the invoker, is definitely a super call, even
+            // if we do not have the class
+            return true;
+        }
+
+        if ("java.lang.Object".equals(cls.getClassName())) {
+            // trying to call a super-method of Object? Not likely, dude ..
+            return false;
+        }
+
         MethodInfo method = invokee.getMethodInfo();
         if (method == null) {
             if (invokee.getClassRef().getClassInfo() != null) {
@@ -95,16 +111,17 @@ public class InvokeSite {
                 throw new JavaClassFormatError("Invokespecial tries to call "+invokee+
                         " but this method has not been found");
             }
-            if (cls.getSuperClassName().equals(invokee.getClassName())) {
-                // invoke refers to the superclass of the invoker, is definitely a super call, even
-                // if we do not have the class
-                return true;
-            }
             // invokespecial to an unknown class, we cannot handle this safely
             throw new JavaClassFormatError("Could not determine if invokespecial is a super invoke for "+invokee);
         }
 
-        return cls.isSubclassOf(method.getClassInfo());
+        // check if this invokes a method of a superclass of the invoker
+        ClassInfo superClass = cls.getSuperClassInfo();
+        if (superClass == null) {
+            throw new JavaClassFormatError("Superclass of invoker not known, cannot check if this is a super invoke");
+        }
+
+        return superClass.isSubclassOf(method.getClassInfo());
     }
 
     public boolean isInvokeStatic() {
