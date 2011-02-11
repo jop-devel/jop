@@ -21,6 +21,8 @@
 package com.jopdesign.jcopter;
 
 import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.code.CallGraph;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationError;
@@ -30,6 +32,7 @@ import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
 import com.jopdesign.common.graphutils.InvokeDot;
 import com.jopdesign.common.misc.AppInfoError;
+import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.tools.ConstantPoolRebuilder;
 import com.jopdesign.common.tools.UsedCodeFinder;
 import org.apache.log4j.Logger;
@@ -37,6 +40,8 @@ import org.apache.log4j.Logger;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * This is just a helper class to execute various optimizations and analyses.
@@ -79,17 +84,40 @@ public class PhaseExecutor {
         options.addOptions(this.options);
     }
 
+    /////////////////////////////////////////////////////////////////////////////////////
+    // Dump Callgraph
+    /////////////////////////////////////////////////////////////////////////////////////
+
     public void dumpCallgraph(String graphName) {
         if (!getConfig().getOption(DUMP_CALLGRAPH)) return;
-        
+
         try {
             File outDir = getConfig().getOutDir(CALLGRAPH_DIR);
-            File dotFile = new File(outDir, graphName+".dot");
-            File pngFile = new File(outDir, graphName+".png");
-            FileWriter writer = new FileWriter(dotFile);
 
-            appInfo.getCallGraph().exportDOT(writer);
-            InvokeDot.invokeDot(getConfig(), dotFile, pngFile);
+            // Dumping the full graph is a bit much, we split it into several graphs
+            Set<ExecutionContext> appRoots = new HashSet<ExecutionContext>();
+            Set<ExecutionContext> jvmRoots = new HashSet<ExecutionContext>();
+            Set<ExecutionContext> clinitRoots = new HashSet<ExecutionContext>();
+
+            Set<String> jvmClasses = new HashSet<String>();
+            if (appInfo.getProcessorModel() != null) {
+                jvmClasses.addAll( appInfo.getProcessorModel().getJVMClasses() );
+                jvmClasses.addAll( appInfo.getProcessorModel().getNativeClasses() );
+            }
+
+            for (ExecutionContext ctx : appInfo.getCallGraph().getRootNodes()) {
+                if (ctx.getMethodInfo().getMemberSignature().equals(ClinitOrder.clinitSig)) {
+                    clinitRoots.add(ctx);
+                } else if (jvmClasses.contains(ctx.getMethodInfo().getClassName())) {
+                    jvmRoots.add(ctx);
+                } else {
+                    appRoots.add(ctx);
+                }
+            }
+
+            dumpCallgraph(outDir, graphName, "app", appRoots);
+            dumpCallgraph(outDir, graphName, "jvm", jvmRoots);
+            dumpCallgraph(outDir, graphName, "clinit", clinitRoots);
 
         } catch (BadConfigurationException e) {
             throw new BadConfigurationError("Could not create output dir "+getConfig().getOption(CALLGRAPH_DIR), e);
@@ -97,6 +125,30 @@ public class PhaseExecutor {
             throw new AppInfoError("Unable to export to .dot file", e);
         }
     }
+
+    private void dumpCallgraph(File outDir, String graphName, String suffix, Set<ExecutionContext> roots)
+            throws IOException
+    {
+        if (roots.isEmpty()) return;
+
+        File dotFile = new File(outDir, graphName+"-"+suffix+".dot");
+        File pngFile = new File(outDir, graphName+"-"+suffix+".png");
+
+        logger.info("Dumping "+suffix+" callgraph to "+dotFile);
+
+        FileWriter writer = new FileWriter(dotFile);
+
+        CallGraph subGraph = appInfo.getCallGraph().getSubGraph(roots);
+        subGraph.exportDOT(writer, false, true);
+        appInfo.getCallGraph().removeSubGraph(subGraph);
+
+        InvokeDot.invokeDot(getConfig(), dotFile, pngFile);
+    }
+
+
+    /////////////////////////////////////////////////////////////////////////////////////
+    // Perform analyses
+    /////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Reduce the callgraph stored with AppInfo.
@@ -117,6 +169,11 @@ public class PhaseExecutor {
     public void markInlineCandidates() {
         // TODO call invoke candidate finder
     }
+
+
+    /////////////////////////////////////////////////////////////////////////////////////
+    // Perform optimizations
+    /////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Inline all methods which do not increase the code size.

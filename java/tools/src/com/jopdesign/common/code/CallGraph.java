@@ -28,7 +28,6 @@ import com.jopdesign.common.graphutils.DirectedCycleDetector;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.MethodNotFoundException;
-import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.type.MethodRef;
 import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
@@ -39,7 +38,9 @@ import org.jgrapht.event.GraphVertexChangeEvent;
 import org.jgrapht.event.TraversalListenerAdapter;
 import org.jgrapht.event.VertexTraversalEvent;
 import org.jgrapht.graph.DefaultDirectedGraph;
+import org.jgrapht.graph.DirectedMaskSubgraph;
 import org.jgrapht.graph.ListenableDirectedGraph;
+import org.jgrapht.graph.MaskFunctor;
 import org.jgrapht.traverse.DepthFirstIterator;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
@@ -270,7 +271,7 @@ public class CallGraph {
     private ListenableDirectedGraph<ExecutionContext, ContextEdge> callGraph;
     private DirectedGraph<MethodNode, InvokeEdge> mergedCallGraph;
     
-    private Map<ExecutionContext, CallGraph> subgraphs;
+    private Map<CallGraph, SubgraphUpdateListener> subgraphs;
     private CallGraph parent;
 
     private Set<ClassInfo> classInfos;
@@ -342,11 +343,8 @@ public class CallGraph {
         for (MethodInfo m : rootMethods) {
             roots.add(new ExecutionContext(m));
         }
-        for (ClassInfo cls : appInfo.getClassInfos()) {
-            MethodInfo clinit = cls.getMethodInfo(ClinitOrder.clinitSig);
-            if (clinit != null) {
-                roots.add(new ExecutionContext(clinit));
-            }
+        for (MethodInfo m : appInfo.getClinitMethods()) {
+            roots.add(new ExecutionContext(m));
         }
 
         CallGraph cg = new CallGraph(roots, config);
@@ -366,7 +364,7 @@ public class CallGraph {
     protected CallGraph(Collection<ExecutionContext> rootMethods, CallgraphConfig config) {
         this.rootNodes = new HashSet<ExecutionContext>(rootMethods);
         this.config = config;
-        this.subgraphs = new HashMap<ExecutionContext, CallGraph>(1);
+        this.subgraphs = new HashMap<CallGraph,SubgraphUpdateListener>(1);
 
         // We need a custom ContextEdge here to keep the references to the vertices for the removeEdge listener
         this.callGraph = new ListenableDirectedGraph<ExecutionContext,ContextEdge>(
@@ -381,8 +379,8 @@ public class CallGraph {
         this.classInfos = new HashSet<ClassInfo>();
     }
 
-    protected CallGraph(CallGraph parent, ExecutionContext rootNode, CallgraphConfig config) {
-        this(Collections.singleton(rootNode), config);
+    protected CallGraph(CallGraph parent, Collection<ExecutionContext> rootNodes, CallgraphConfig config) {
+        this(rootNodes, config);
         this.parent = parent;
     }
     
@@ -433,14 +431,11 @@ public class CallGraph {
         // Note that updating methodNodes and classInfos is now done by the GraphUpdateListener
         callGraph.addGraphListener(new GraphUpdateListener());
 
-        for (ExecutionContext rootNode : rootNodes) {
-            callGraph.addVertex(rootNode);
-        }
-
         if (parent == null) {
             /* Initialize DFS data structures and lookup maps */
             Stack<ExecutionContext> todo = new Stack<ExecutionContext>();
             for (ExecutionContext rootNode : rootNodes) {
+                callGraph.addVertex(rootNode);
                 todo.push(rootNode);
             }
 
@@ -567,12 +562,56 @@ public class CallGraph {
     }
     
     /**
-     * Export callgraph as .dot file
-     * @param w Write the graph to this writer. To improve performance, to use a buffered writer.
+     * Export the complete callgraph as .dot file
+     * @param w Write the graph to this writer. To improve performance, use a buffered writer.
      * @throws IOException if writing fails
      */
     public void exportDOT(Writer w) throws IOException {
-        new AdvancedDOTExporter<ExecutionContext, ContextEdge>().exportDOT(w, this.callGraph);
+        exportDOT(w, false, false);
+    }
+
+    /**
+     * Export the callgraph as a .dot file.
+     * @param w Write the graph to this writer. To improve performance, use a buffered writer.
+     * @param skipIsolated if true, do not export isolated nodes.
+     * @param skipNoImp if true, do not export roots with only one edge to com.jopdesign.sys.JVMHelp.noim().
+     * @throws IOException if writing fails.
+     */
+    public void exportDOT(Writer w, final boolean skipIsolated, final boolean skipNoImp) throws IOException {
+        AdvancedDOTExporter<ExecutionContext, ContextEdge> exporter = new AdvancedDOTExporter<ExecutionContext, ContextEdge>();
+        exporter.setGraphAttribute("rankdir", "LR");
+        DirectedGraph<ExecutionContext,ContextEdge> graph = callGraph;
+
+        if (skipIsolated || skipNoImp) {
+            // TODO make this stuff more .. nice. Especially the hardcoded-JVMHelp-method part..
+            graph = new DirectedMaskSubgraph<ExecutionContext,ContextEdge>(callGraph,
+                    new MaskFunctor<ExecutionContext,ContextEdge>() {
+                        @Override
+                        public boolean isEdgeMasked(ContextEdge edge) {
+                            // Edges from masked nodes are masked automatically
+                            return false;
+                        }
+
+                        @Override
+                        public boolean isVertexMasked(ExecutionContext vertex) {
+                            if (skipIsolated && callGraph.inDegreeOf(vertex) == 0
+                                             && callGraph.outDegreeOf(vertex) == 0) {
+                                return true;
+                            }
+                            if (skipNoImp && callGraph.inDegreeOf(vertex) == 0
+                                          && callGraph.outDegreeOf(vertex) == 1) {
+                                ExecutionContext target = callGraph.outgoingEdgesOf(vertex).iterator().next().getTarget();
+                                if ("com.jopdesign.sys.JVMHelp".equals(target.getMethodInfo().getClassName()) &&
+                                    "noim".equals(target.getMethodInfo().getShortName())) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        }
+                    });
+        }
+
+        exporter.exportDOT(w, graph);
     }
 
     public Set<ClassInfo> getRootClass() {
@@ -722,26 +761,43 @@ public class CallGraph {
         }
     }
 
+    public CallGraph getSubGraph(MethodInfo rootMethod) {
+        MethodNode node = getMethodNode(rootMethod);
+        return getSubGraph(node.getInstances());
+    }
+
     /**
      * Get a subgraph starting at a given node which contains all reachable nodes and edges.
      * The subgraph is backed by this graph, so any modifications to it will be reflected
      * in the subgraph (but not the other way round!)
      *
-     * @param root root node of the graph.
+     * @param roots root nodes of the new graph.
      * @return a new subgraph, or an existing subgraph which starts at the same root
      */
-    public CallGraph getSubGraph(ExecutionContext root) {
-        // TODO allow to use a MethodInfo as root of a subgraph, add all instances
+    public CallGraph getSubGraph(Set<ExecutionContext> roots) {
 
-        CallGraph subGraph = subgraphs.get(root);
-        if (subGraph != null) {
-            subGraph = new CallGraph(this, root, config);
-            subGraph.build();
-            callGraph.addGraphListener(new SubgraphUpdateListener(subGraph));
-            // TODO maybe add a listener to subgraph which updates the parent graph when it is modified too?
-            subgraphs.put(root, subGraph);
+        // first check if we already have this graph..
+        for (CallGraph subgraph : subgraphs.keySet()) {
+            if (subgraph.getRootNodes().equals(roots)) {
+                return subgraph;
+            }
         }
+
+        CallGraph subGraph = new CallGraph(this, roots, config);
+        subGraph.build();
+        SubgraphUpdateListener listener = new SubgraphUpdateListener(subGraph);
+        callGraph.addGraphListener(listener);
+        // we use a map here to keep the listener, needed for remove
+        // TODO maybe add a listener to subgraph which updates the parent graph when it is modified too?
+        subgraphs.put(subGraph,listener);
+
         return subGraph;
+    }
+
+    public void removeSubGraph(CallGraph subgraph) {
+        SubgraphUpdateListener listener = subgraphs.get(subgraph);
+        callGraph.removeGraphListener(listener);
+        subgraphs.remove(subgraph);
     }
 
     /*---------------------------------------------------------------------------*

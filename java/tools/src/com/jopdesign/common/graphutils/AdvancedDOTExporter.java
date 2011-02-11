@@ -121,7 +121,7 @@ public class AdvancedDOTExporter<V, E> {
      * Provides the ID and sets label and other attributes of a <code>DOT</code> node based
      * on the provided node.
      *
-     * @param <T> node tpye
+     * @param <T> node type
      */
     public interface DOTNodeLabeller<T> extends DOTLabeller<T> {
         /**

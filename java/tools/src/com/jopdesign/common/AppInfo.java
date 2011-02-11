@@ -749,18 +749,10 @@ public final class AppInfo {
      * Get a set of all root methods, i.e. all root methods and all methods in all root classes.
      * @return a set of all root methods.
      */
-    public Collection<MethodInfo> getRootMethods() {
+    public Set<MethodInfo> getRootMethods() {
         Set<MethodInfo> methods = new HashSet<MethodInfo>();
         for (MemberInfo root : roots) {
-            if (root instanceof MethodInfo) {
-                methods.add((MethodInfo) root);
-            } else if (root instanceof ClassInfo) {
-                for (MethodInfo m : ((ClassInfo)root).getMethods()) {
-                    methods.add(m);
-                }
-            } else {
-                throw new AppInfoError("Found fieldinfo "+root+" in roots, which is not allowed");
-            }
+            addRootMethods(methods, root);
         }
         return methods;
     }
@@ -770,6 +762,68 @@ public final class AppInfo {
      */
     public Set<MemberInfo> getRoots() {
         return Collections.unmodifiableSet( roots );
+    }
+
+    /**
+     * This find all non JVM related root methods.
+     * @return a set of all application root methods.
+     */
+    public Set<MethodInfo> getAppRootMethods() {
+        Set<MethodInfo> methods = new HashSet<MethodInfo>();
+        if (processor == null) {
+            return getRootMethods();
+        }
+        List<String> jvmClasses = processor.getJVMClasses();
+        List<String> nativeClasses = processor.getNativeClasses();
+
+        for (MemberInfo root : roots) {
+            if (nativeClasses.contains(root.getClassName()) ||
+                jvmClasses.contains(root.getClassName())) {
+                continue;
+            }
+            addRootMethods(methods, root);
+        }
+        return methods;
+    }
+
+    public Set<MethodInfo> getJvmRootMethods() {
+        Set<MethodInfo> methods = new HashSet<MethodInfo>();
+        if (processor == null) {
+            return methods;
+        }
+        List<String> jvmClasses = processor.getJVMClasses();
+        List<String> nativeClasses = processor.getNativeClasses();
+
+        for (MemberInfo root : roots) {
+            if (nativeClasses.contains(root.getClassName()) ||
+                jvmClasses.contains(root.getClassName())) {
+                addRootMethods(methods, root);
+            }
+        }
+        return methods;
+    }
+
+    public Collection<MethodInfo> getClinitMethods() {
+        List<MethodInfo> methods = new ArrayList<MethodInfo>();
+        for (ClassInfo cls : classes.values()) {
+            MethodInfo clinit = cls.getMethodInfo(ClinitOrder.clinitSig);
+            if (clinit != null) {
+                methods.add(clinit);
+            }
+        }
+        return methods;
+    }
+
+    private void addRootMethods(Set<MethodInfo> methods, MemberInfo root) {
+        if (root instanceof MethodInfo) {
+            methods.add((MethodInfo) root);
+        } else if (root instanceof ClassInfo) {
+            for (MethodInfo m : ((ClassInfo)root).getMethods()) {
+                methods.add(m);
+            }
+        } else {
+            throw new AppInfoError("Found fieldinfo "+root+" in roots, which is not allowed");
+        }
     }
 
     public void setMainMethod(MethodInfo main) {
