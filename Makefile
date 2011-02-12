@@ -23,7 +23,7 @@
 #
 #	Set USB to true for an FTDI chip based board (dspio, usbmin, lego)
 #
-USB=false
+USB=true
 
 #
 #	com1 is the usual serial port
@@ -120,9 +120,9 @@ P3=HelloWorld
 #P2=oebb
 #P3=Main
 
-#P2=wcet
-#P3=Loop
-WCET_METHOD=foo
+P2=wcet
+P3=StartKfl
+WCET_METHOD=measure
 
 #P1=.
 #P2=dsvmmcp
@@ -309,52 +309,16 @@ tools:
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/org/apache/bcel/util/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/build/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/tools/*.java
-#	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wca_rup/*.java
-#	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/dfa/*.java
-#	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wcet/*.java
-#	cp $(TOOLS)/src/com/jopdesign/wcet/report/*.vm $(TOOLS)/dist/classes/com/jopdesign/wcet/report
-# Build libgraph and joptimizer
-#	make joptimizer -e TOOLS_JFLAGS="$(TOOLS_JFLAGS)" TOOLS="$(TOOLS)"
+	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/dfa/*.java
+	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/jcopter/*.java
+	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wcet/*.java
+	cp $(TOOLS)/src/com/jopdesign/wcet/report/*.vm $(TOOLS)/dist/classes/com/jopdesign/wcet/report
 # quick hack to get the tools with the debugger ok
 # the build.xml from the debugger contains the correct info
 # but also some more (old?) stuff
 # does not work as some Sun classes for JDWP are missing
 #	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/debug/jdwp/*.java
 	cd $(TOOLS)/dist/classes && jar cf ../lib/jop-tools.jar *
-
-#
-#	Build joptimizer and libgraph
-#	JAR must contain the filename of the jar tool of the JDK.
-#
-ifneq ($(JAVA_HOME),)
-    JAR="$(JAVA_HOME)/bin/jar"
-else
-    JAR=jar
-endif
-
-joptimizer:
-	make compile_java -e JAVAC_FLAGS="$(TOOLS_JFLAGS)" JAVA_DIR=$(TOOLS)/src/com/jopdesign/libgraph
-	make compile_java -e JAVAC_FLAGS="$(TOOLS_JFLAGS)" JAVA_DIR=$(TOOLS)/src/joptimizer
-	#cd $(TOOLS)/dist/classes && jar cfm ../lib/joptimizer.jar ../../src/joptimizer/MANIFEST.MF \
-	cd $(TOOLS)/dist/classes && $(JAR) cf ../lib/joptimizer.jar \
-		joptimizer com/jopdesign/libgraph \
-		-C ../../src/joptimizer log4j.properties \
-		-C ../../src/joptimizer jop.conf
-	cd $(TOOLS)/dist/classes && $(JAR) uf ../lib/joptimizer.jar \
-		-C ../../src joptimizer/config/jop-arch.properties \
-		-C ../../src joptimizer/config/jvm-arch.properties
-
-#
-#	A helper target to compile all java files in a directory and all subdirs
-#	Dont know how to 'find' on windows, so going the long way..
-#
-ifneq ($(JAVA_DIR),)
-  jdirs := $(subst :,,$(shell ls -R $(JAVA_DIR) | grep ":"))
-  jfiles := $(foreach dir,$(jdirs),$(wildcard $(dir)/*.java))
-endif
-compile_java:
-	@echo "Compiling files in $(JAVA_DIR) .."
-	@javac $(JAVAC_FLAGS) $(jfiles)
 
 
 # we moved the pc stuff to it's own target to be
@@ -397,8 +361,16 @@ ifeq ($(USE_RTTM),yes)
 	javac $(TARGET_JFLAGS) $(TARGET)/src/common/rttm/internal/Utils.java
 endif
 	javac $(TARGET_JFLAGS) $(TARGET_APP)
+	# WCETPreprocess, overwrite existing class files 
+	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.wcet.WcetPreprocess \
+           -c $(TARGET)/dist/classes -o $(TARGET)/dist $(MAIN_CLASS)
+        # JOPizer	
+ifeq ($(USE_JCOPTER),yes)
+
+	cd $(TARGET)/dist/classes.opt && jar cf ../lib/classes.zip *
+else
 	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
-#	$(OPTIMIZE)
+endif 
 # use SymbolManager for Paulo's version of JOPizer instead
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
@@ -697,32 +669,10 @@ jop_testmon:
 udp_dbg:
 	java -cp java/pc/dist/lib/jop-pc.jar udp.UDPDbg
 
-#
-#	Rasmus's WCET analyser (start)
-#	use
-#		-Dlatex=true
-#	to getv LaTeX friendly table output.
-#
-# WCETAnalyser options
-# latex: it will output latex formatting in the tables (afterwards 
-# replace ">" with "$>$ and "_" with "\_")
-# dot:   it will generate directed graphs of basic blocks in dot format 
-# (see: http://www.graphviz.org/)
-# jline: it will insert Java source code into the bytecode tables
-wca_rup:
-	-rm -rf $(TARGET)/wcet
-	-mkdir $(TARGET)/wcet
-	-mkdir $(TARGET)/tmp
-	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
-		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
-	java -Xss16M $(TOOLS_CP) -Dlatex=true -Ddot=true -Djline=false -Dlatex=true -Ddfa=false -Dls=true com.jopdesign.wca_rup.WCETAnalyser \
-		-mm $(WCET_METHOD) \
-		-cp $(TARGET)/tmp -o $(TARGET)/wcet/$(P3)wcet.txt -sp $(TARGET_SOURCE) $(MAIN_CLASS)
-	-rm -rf $(TARGET)/tmp
 
 # WCET help
 wcet_help:
-	java $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis -help
+	java $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis --help
 
 # set library path to current directory for the Mac
 DYLD_FALLBACK_LIBRARY_PATH:=.:$(DYLD_FALLBACK_LIBRARY_PATH)
@@ -746,18 +696,15 @@ WCET_DFA?=no
 WCET_UPPAAL?=no
 WCET_VERIFYTA?=verifyta	 # only needed if WCET_UPPAAL=yes
 wcet:
-	-mkdir $(TARGET)/tmp
-	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
-		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
 	-mkdir -p $(TARGET)/wcet
 	java -Xss16M -Xmx512M $(JAVA_OPT) \
 	  $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis \
-		-cp $(TARGET)/tmp -sp $(TARGET_SOURCE) \
-		-app-class $(MAIN_CLASS) -target-method $(WCET_METHOD) \
-		-outdir $(TARGET)/wcet \
-		-dataflow-analysis $(WCET_DFA) \
-		-uppaal $(WCET_UPPAAL) -uppaal-verifier $(WCET_VERIFYTA) \
-		$(WCET_OPTIONS)	
+		--classpath $(TARGET)/dist/lib/classes.zip --sp $(TARGET_SOURCE) \
+		--target-method $(WCET_METHOD) \
+		-o $(TARGET)/wcet \
+		--use-dfa $(WCET_DFA) \
+		--uppaal $(WCET_UPPAAL) --uppaal-verifier $(WCET_VERIFYTA) \
+		$(WCET_OPTIONS) $(MAIN_CLASS)	
 	-rm -rf $(TARGET)/tmp
 
 

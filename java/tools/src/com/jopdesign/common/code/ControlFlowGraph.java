@@ -721,7 +721,7 @@ public class ControlFlowGraph {
      * @param ih The instruction handle of a method which has a CFG associated with it
      * @return The basic block node associated with an instruction handle
      */
-    public BasicBlockNode getHandleNode(InstructionHandle ih) {
+    public static BasicBlockNode getHandleNode(InstructionHandle ih) {
         BasicBlockNode blockNode = (BasicBlockNode) ih.getAttribute(KEY_CFGNODE);
         if (blockNode == null) {
             String errMsg = "No basic block recorded for instruction " + ih.toString(true);

@@ -580,8 +580,8 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             LoopBounds lbs = getDfaLoopBounds();
             Set<FlowEdge> edges = lbs.getInfeasibleEdges(block.getLastInstruction(), cs);
             for (FlowEdge e : edges) {
-                BasicBlockNode head = cfg.getHandleNode(e.getHead());
-                BasicBlockNode tail = cfg.getHandleNode(e.getTail());
+                BasicBlockNode head = ControlFlowGraph.getHandleNode(e.getHead());
+                BasicBlockNode tail = ControlFlowGraph.getHandleNode(e.getTail());
                 CFGEdge edge = cfg.getGraph().getEdge(tail, head);
                 if (edge != null) { // edge does not seem to exist any longer
                     retval.add(edge);
