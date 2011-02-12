@@ -475,6 +475,8 @@ public class AppSetup {
             appInfo.setLoadNatives(config.getOption(Config.LOAD_NATIVES));
         }        
 
+        appInfo.setCallstringLength(config.getOption(Config.CALLSTRING_LENGTH).intValue());
+
         // register handler
         for (String toolName : tools.keySet()) {
             if (useTool(toolName)) {

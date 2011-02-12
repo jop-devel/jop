@@ -27,6 +27,7 @@ import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationError;
 import com.jopdesign.common.config.Config.BadConfigurationException;
+import com.jopdesign.common.config.EnumOption;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
@@ -50,13 +51,21 @@ import java.util.Set;
  */
 public class PhaseExecutor {
 
+    public enum DUMPTYPE { off, full, merged, both }
+
     public static final Logger logger = Logger.getLogger(JCopter.LOG_ROOT + ".PhaseExecutor");
 
     public static final BooleanOption REMOVE_UNUSED_MEMBERS =
             new BooleanOption("remove-unused-members", "Remove unreachable code", true);
 
-    public static final BooleanOption DUMP_CALLGRAPH =
-            new BooleanOption("dump-callgraph", "Dump the callgraph", false);
+    public static final EnumOption<DUMPTYPE> DUMP_CALLGRAPH =
+            new EnumOption<DUMPTYPE>("dump-callgraph", "Dump the app callgraph (with or without callstrings)", DUMPTYPE.merged);
+
+    public static final EnumOption<DUMPTYPE> DUMP_JVM_CALLGRAPH =
+            new EnumOption<DUMPTYPE>("dump-jvm-callgraph", "Dump the jvm callgraph (with or without callstrings)", DUMPTYPE.off);
+
+    public static final BooleanOption DUMP_NOIM_CALLS =
+            new BooleanOption("dump-noim-calls", "Include calls to JVMHelp.noim() in the jvm callgraph dump", false);
 
     public static final StringOption CALLGRAPH_DIR =
             new StringOption("cgdir", "Directory to put the callgraph files into", "${outdir}/callgraph");
@@ -64,7 +73,7 @@ public class PhaseExecutor {
 
     public static final Option[] options = {
             REMOVE_UNUSED_MEMBERS,
-            DUMP_CALLGRAPH, CALLGRAPH_DIR
+            DUMP_CALLGRAPH, DUMP_JVM_CALLGRAPH, CALLGRAPH_DIR
             };
 
     private final JCopter jcopter;
@@ -89,7 +98,11 @@ public class PhaseExecutor {
     /////////////////////////////////////////////////////////////////////////////////////
 
     public void dumpCallgraph(String graphName) {
-        if (!getConfig().getOption(DUMP_CALLGRAPH)) return;
+        if (getConfig().getOption(DUMP_CALLGRAPH) == DUMPTYPE.off &&
+            getConfig().getOption(DUMP_JVM_CALLGRAPH) == DUMPTYPE.off)
+        {
+            return;
+        }
 
         try {
             File outDir = getConfig().getOutDir(CALLGRAPH_DIR);
@@ -115,9 +128,10 @@ public class PhaseExecutor {
                 }
             }
 
-            dumpCallgraph(outDir, graphName, "app", appRoots);
-            dumpCallgraph(outDir, graphName, "jvm", jvmRoots);
-            dumpCallgraph(outDir, graphName, "clinit", clinitRoots);
+            dumpCallgraph(outDir, graphName, "app", appRoots, getConfig().getOption(DUMP_CALLGRAPH), false);
+            dumpCallgraph(outDir, graphName, "clinit", clinitRoots, getConfig().getOption(DUMP_CALLGRAPH), false);
+            dumpCallgraph(outDir, graphName, "jvm", jvmRoots, getConfig().getOption(DUMP_JVM_CALLGRAPH),
+                                                              !getConfig().getOption(DUMP_NOIM_CALLS));
 
         } catch (BadConfigurationException e) {
             throw new BadConfigurationError("Could not create output dir "+getConfig().getOption(CALLGRAPH_DIR), e);
@@ -126,11 +140,29 @@ public class PhaseExecutor {
         }
     }
 
-    private void dumpCallgraph(File outDir, String graphName, String suffix, Set<ExecutionContext> roots)
+    private void dumpCallgraph(File outDir, String graphName, String suffix, Set<ExecutionContext> roots,
+                               DUMPTYPE type, boolean skipNoim)
             throws IOException
     {
         if (roots.isEmpty()) return;
 
+        CallGraph subGraph = appInfo.getCallGraph().getSubGraph(roots);
+        
+        if (type == DUMPTYPE.merged || type == DUMPTYPE.both) {
+            dumpCallgraph(outDir, graphName, suffix, subGraph, true, skipNoim);
+        }
+        if (type == DUMPTYPE.full || type == DUMPTYPE.both) {
+            dumpCallgraph(outDir, graphName, suffix, subGraph, false, skipNoim);
+        }
+        
+        appInfo.getCallGraph().removeSubGraph(subGraph);
+    }
+
+    private void dumpCallgraph(File outDir, String graphName, String type, CallGraph graph, 
+                               boolean merged, boolean skipNoim) throws IOException 
+    {
+        String suffix = (merged) ? type+"-merged" : type+"-full";
+        
         File dotFile = new File(outDir, graphName+"-"+suffix+".dot");
         File pngFile = new File(outDir, graphName+"-"+suffix+".png");
 
@@ -138,13 +170,10 @@ public class PhaseExecutor {
 
         FileWriter writer = new FileWriter(dotFile);
 
-        CallGraph subGraph = appInfo.getCallGraph().getSubGraph(roots);
-        subGraph.exportDOT(writer, false, true);
-        appInfo.getCallGraph().removeSubGraph(subGraph);
+        graph.exportDOT(writer, merged, false, skipNoim);
 
         InvokeDot.invokeDot(getConfig(), dotFile, pngFile);
     }
-
 
     /////////////////////////////////////////////////////////////////////////////////////
     // Perform analyses

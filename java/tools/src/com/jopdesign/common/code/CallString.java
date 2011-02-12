@@ -226,6 +226,7 @@ public class CallString implements CallStringProvider {
         return callString.length == 0;
     }
 
+    @Override
     public String toString() {
         if (this.isEmpty()) return "CallString.EMPTY";
         long hash = hashCode();
@@ -233,14 +234,15 @@ public class CallString implements CallStringProvider {
         return String.format("CallString[|%d|%x]", callString.length, hash);
     }
 
-    public String toStringVerbose() {
+    public String toStringVerbose(boolean newlines) {
         if (this.isEmpty()) return "CallString.EMPTY";
         StringBuffer sb = new StringBuffer("CallString{");
         boolean first = true;
-        for (InvokeSite is : callString) {
+        for (int i = callString.length-1; i >= 0; i--) {
             if (first) first = false;
+            else if (newlines) sb.append("\n           ");
             else sb.append(";");
-            sb.append(is.toString());
+            sb.append(callString[i].toString());
         }
         sb.append("}");
         return sb.toString();

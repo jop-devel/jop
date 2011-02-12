@@ -51,6 +51,7 @@ public class AdvancedDOTExporter<V, E> {
     public static String escapedToString(String s, MultiLineAlignment mla) {
         StringBuffer sb = new StringBuffer();
         boolean quote = false;
+        boolean hasBreak = false;
         String lineBreak = null;
         switch (mla) {
             case ML_ALIGN_LEFT:
@@ -69,6 +70,7 @@ public class AdvancedDOTExporter<V, E> {
             switch (c) {
                 case '\n':
                     sb.append(lineBreak);
+                    hasBreak = true;
                     break;
                 case '\r':
                     break;
@@ -84,6 +86,8 @@ public class AdvancedDOTExporter<V, E> {
             }
             if (!Character.isLetterOrDigit(c)) quote = true;
         }
+        // needed to justify the last line
+        if (hasBreak) sb.append(lineBreak);
         if (quote || sb.length() == 0) {
             sb.insert(0, '"');
             sb.append('"');

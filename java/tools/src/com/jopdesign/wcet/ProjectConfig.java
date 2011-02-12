@@ -207,7 +207,7 @@ public class ProjectConfig {
     }
 
     public int callstringLength() {
-        return config.getOption(Config.CALLSTRING_LENGTH).intValue();
+        return appInfo.getCallstringLength();
     }
 
     public boolean doObjectCacheAnalysis() {

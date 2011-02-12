@@ -470,6 +470,8 @@ public final class AppInfo {
                 classes.put(root.getClassInfo().getClassName(), root.getClassInfo());
             }
         }
+
+        callGraph = null;
     }
 
     /**

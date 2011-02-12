@@ -28,6 +28,7 @@ import com.jopdesign.common.graphutils.DirectedCycleDetector;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.MethodNotFoundException;
+import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.type.MethodRef;
 import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
@@ -101,7 +102,7 @@ public class CallGraph {
      * A node representing a methodInfo, and stores references to all
      * execution contexts of this method in the callgraph.
      */
-    public static class MethodNode {
+    public static class MethodNode implements MethodContainer {
         private final MethodInfo methodInfo;
         private final Set<ExecutionContext> instances;
 
@@ -116,6 +117,12 @@ public class CallGraph {
 
         public Set<ExecutionContext> getInstances() {
             return instances;
+        }
+
+        @Override
+        public String toString() {
+            String txt = (instances.size() == 1 ? "1 instance" : instances.size() + " instances");
+            return methodInfo.toString() + " (" + txt + ")";
         }
 
         protected void addInstance(ExecutionContext context) {
@@ -140,6 +147,11 @@ public class CallGraph {
 
         public Set<InvokeSite> getInvokeSites() {
             return invokeSites;
+        }
+
+        @Override
+        public String toString() {
+            return (invokeSites.size() == 1) ? "1 invokesite" : invokeSites.size() + " invokesites";
         }
 
         protected void addInvokeSite(InvokeSite site) {
@@ -225,13 +237,11 @@ public class CallGraph {
      */
     @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
     private class SubgraphUpdateListener implements GraphListener<ExecutionContext, ContextEdge> {
-        
         private final CallGraph subgraph;
 
         private SubgraphUpdateListener(CallGraph subgraph) {
             this.subgraph = subgraph;
         }
-
         @Override
         public void edgeAdded(GraphEdgeChangeEvent<ExecutionContext, ContextEdge> e) {
             // first we check if the target is already in the subgraph
@@ -243,25 +253,88 @@ public class CallGraph {
             }
             subgraph.callGraph.addEdge(e.getEdge().getSource(), target);
         }
-
         @Override
         public void edgeRemoved(GraphEdgeChangeEvent<ExecutionContext, ContextEdge> e) {
             subgraph.removeEdge(e.getEdge(), true);
         }
-
         @Override
         public void vertexAdded(GraphVertexChangeEvent<ExecutionContext> e) {
             // No need to do anything yet.. since the vertex was just added, there are no edges to it,
             // so it is not reachable
         }
-
         @Override
         public void vertexRemoved(GraphVertexChangeEvent<ExecutionContext> e) {
             // checks if subgraph contains vertex itself, edges to the node are removed automatically
             subgraph.callGraph.removeVertex(e.getVertex());
         }
     }
-    
+
+    private class ContextFilter implements MaskFunctor<ExecutionContext,ContextEdge> {
+        private boolean skipIsolated;
+        private boolean skipNoim;
+
+        private ContextFilter(boolean skipIsolated, boolean skipNoim) {
+            this.skipIsolated = skipIsolated;
+            this.skipNoim = skipNoim;
+        }
+        @Override
+        public boolean isEdgeMasked(ContextEdge edge) {
+            // Edges from masked nodes are masked automatically
+            return false;
+        }
+        @Override
+        public boolean isVertexMasked(ExecutionContext vertex) {
+            if (skipIsolated && callGraph.inDegreeOf(vertex) == 0
+                             && callGraph.outDegreeOf(vertex) == 0) {
+                return true;
+            }
+            if (skipNoim && callGraph.inDegreeOf(vertex) == 0
+                         && callGraph.outDegreeOf(vertex) == 1) {
+                ExecutionContext target = callGraph.outgoingEdgesOf(vertex).iterator().next().getTarget();
+                if ("com.jopdesign.sys.JVMHelp".equals(target.getMethodInfo().getClassName()) &&
+                    "noim".equals(target.getMethodInfo().getShortName())) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    private class MethodFilter implements MaskFunctor<MethodContainer,Object> {
+        private final DirectedGraph<MethodContainer, Object> graph;
+        private boolean skipIsolated;
+        private boolean skipNoim;
+
+        private MethodFilter(DirectedGraph<MethodContainer,Object> graph, boolean skipIsolated, boolean skipNoim) {
+            this.graph = graph;
+            this.skipIsolated = skipIsolated;
+            this.skipNoim = skipNoim;
+        }
+        @Override
+        public boolean isEdgeMasked(Object edge) {
+            // Edges from masked nodes are masked automatically
+            return false;
+        }
+        @Override
+        public boolean isVertexMasked(MethodContainer vertex) {
+            if (skipIsolated && graph.inDegreeOf(vertex) == 0
+                             && graph.outDegreeOf(vertex) == 0) {
+                return true;
+            }
+            if (skipNoim && graph.inDegreeOf(vertex) == 0
+                         && graph.outDegreeOf(vertex) == 1) {
+                Object edge = graph.outgoingEdgesOf(vertex).iterator().next();
+                MethodContainer target = graph.getEdgeTarget(edge);
+                // TODO make this check less .. hardcoded
+                if ("com.jopdesign.sys.JVMHelp".equals(target.getMethodInfo().getClassName()) &&
+                    "noim".equals(target.getMethodInfo().getShortName())) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
     //
     // Fields
     // ~~~~~~
@@ -388,7 +461,8 @@ public class CallGraph {
      * Build and initialize everything, perform checks
      */
     private void build() {
-        logger.info("Starting construction of callgraph with roots " + rootNodes);
+
+        logger.info("Starting construction of callgraph with roots " + MiscUtils.toString(rootNodes, 3));
 
         this.buildGraph();
 
@@ -567,48 +641,34 @@ public class CallGraph {
      * @throws IOException if writing fails
      */
     public void exportDOT(Writer w) throws IOException {
-        exportDOT(w, false, false);
+        exportDOT(w, false, false, false);
     }
 
     /**
      * Export the callgraph as a .dot file.
+     *
      * @param w Write the graph to this writer. To improve performance, use a buffered writer.
+     * @param merged if true, export the merged callgraph instead of the full graph.
      * @param skipIsolated if true, do not export isolated nodes.
      * @param skipNoImp if true, do not export roots with only one edge to com.jopdesign.sys.JVMHelp.noim().
      * @throws IOException if writing fails.
      */
-    public void exportDOT(Writer w, final boolean skipIsolated, final boolean skipNoImp) throws IOException {
-        AdvancedDOTExporter<ExecutionContext, ContextEdge> exporter = new AdvancedDOTExporter<ExecutionContext, ContextEdge>();
+    public void exportDOT(Writer w, boolean merged, final boolean skipIsolated, final boolean skipNoImp) throws IOException {
+        AdvancedDOTExporter<MethodContainer, Object> exporter = new AdvancedDOTExporter<MethodContainer, Object>();
         exporter.setGraphAttribute("rankdir", "LR");
-        DirectedGraph<ExecutionContext,ContextEdge> graph = callGraph;
+
+        if (merged && mergedCallGraph == null) {
+            buildMergedGraph();
+        }
+
+        // Why is this an unchecked statement??
+        @SuppressWarnings({"unchecked"})
+        DirectedGraph<MethodContainer, Object> graph =
+                (DirectedGraph<MethodContainer,Object>) (merged ? mergedCallGraph : callGraph);
 
         if (skipIsolated || skipNoImp) {
-            // TODO make this stuff more .. nice. Especially the hardcoded-JVMHelp-method part..
-            graph = new DirectedMaskSubgraph<ExecutionContext,ContextEdge>(callGraph,
-                    new MaskFunctor<ExecutionContext,ContextEdge>() {
-                        @Override
-                        public boolean isEdgeMasked(ContextEdge edge) {
-                            // Edges from masked nodes are masked automatically
-                            return false;
-                        }
-
-                        @Override
-                        public boolean isVertexMasked(ExecutionContext vertex) {
-                            if (skipIsolated && callGraph.inDegreeOf(vertex) == 0
-                                             && callGraph.outDegreeOf(vertex) == 0) {
-                                return true;
-                            }
-                            if (skipNoImp && callGraph.inDegreeOf(vertex) == 0
-                                          && callGraph.outDegreeOf(vertex) == 1) {
-                                ExecutionContext target = callGraph.outgoingEdgesOf(vertex).iterator().next().getTarget();
-                                if ("com.jopdesign.sys.JVMHelp".equals(target.getMethodInfo().getClassName()) &&
-                                    "noim".equals(target.getMethodInfo().getShortName())) {
-                                    return true;
-                                }
-                            }
-                            return false;
-                        }
-                    });
+            graph = new DirectedMaskSubgraph<MethodContainer, Object>(graph,
+                            new MethodFilter(graph, skipIsolated, skipNoImp));
         }
 
         exporter.exportDOT(w, graph);

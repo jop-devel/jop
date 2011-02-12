@@ -28,7 +28,7 @@ import com.jopdesign.common.MethodInfo;
  *
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  */
-public class ExecutionContext {
+public class ExecutionContext implements MethodContainer {
 
     private final MethodInfo method;
     private final CallString callString;
@@ -79,8 +79,8 @@ public class ExecutionContext {
         StringBuffer sb = new StringBuffer("ExecutionContext(");
         sb.append(method.getFQMethodName());
         if (!callString.isEmpty()) {
-            sb.append(",");
-            sb.append(callString.toString());
+            sb.append(",\n");
+            sb.append(callString.toStringVerbose(true));
         }
         sb.append(")");
         return sb.toString();
