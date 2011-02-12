@@ -23,6 +23,7 @@ package com.jopdesign.common.graphutils;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.MemberInfo;
+import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.bcel.AnnotationAttribute;
 import com.jopdesign.common.bcel.CustomAttribute;
@@ -68,6 +69,8 @@ public interface ClassElementVisitor extends ClassVisitor {
     boolean visitMethod(MethodInfo methodInfo);
 
     void    finishMethod(MethodInfo methodInfo);
+
+    void    visitMethodCode(MethodCode methodCode);
 
     boolean visitField(FieldInfo fieldInfo);
 

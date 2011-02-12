@@ -419,13 +419,15 @@ public class ClassReferenceFinder {
         private final boolean addInvokeSites;
         private final Set<Integer> ids;
         private final ConstantPool cp;
+        private final ConstantPoolGen cpg;
         private final List<InvokeSite> invokeSites;
 
-        public IdFinderVisitor(ClassInfo classInfo, ConstantPool cp, boolean addInvokeSites) {
+        public IdFinderVisitor(ClassInfo classInfo, ConstantPoolGen cpg, boolean addInvokeSites) {
             this.classInfo = classInfo;
             this.addInvokeSites = addInvokeSites;
             this.ids = new HashSet<Integer>();
-            this.cp = cp;
+            this.cpg = cpg;
+            this.cp = cpg.getConstantPool();
             this.invokeSites = new LinkedList<InvokeSite>();
         }
 
@@ -446,6 +448,12 @@ public class ClassReferenceFinder {
         @Override
         public void finishMethod(MethodInfo methodInfo) {
             // nothing to do
+        }
+
+        @Override
+        public void visitMethodCode(MethodCode methodCode) {
+            // we do not know the attribute name index, so we try to look it up
+            visitConstantUtf8(cpg.addUtf8("Code"));
         }
 
         @Override
@@ -571,17 +579,27 @@ public class ClassReferenceFinder {
 
         @Override
         public void visitCodeException(MethodInfo methodInfo, CodeExceptionGen obj) {
-            throw new AssertionError("Not visiting MethodGen, but found CodeExceptionGen");
+            ObjectType type = obj.getCatchType();
+            if (type != null) {
+                // we do not have an index here, we need to find it
+                visitConstantClass(cpg.addClass(type));
+            }
         }
 
         @Override
         public void visitLineNumber(MethodInfo methodInfo, LineNumberGen obj) {
-            throw new AssertionError("Not visiting MethodGen, but found LineNumberGen");
+            // is redundant, but we do it anyway: add the name of the linenr table attribute
+            visitConstantUtf8(cpg.addUtf8("LineNumberTable"));
+            // No other constantpool references here
         }
 
         @Override
         public void visitLocalVariable(MethodInfo methodInfo, LocalVariableGen obj) {
-            throw new AssertionError("Not visiting MethodGen, but found LocalVariableGen");
+            // is redundant, but we do it anyway: add the name of the linenumber table attribute
+            visitConstantUtf8(cpg.addUtf8("LocalVariableTable"));
+            // we do not know the indices, so we need to find them
+            visitConstantUtf8(cpg.addUtf8(obj.getName()));
+            visitConstantUtf8(cpg.addUtf8(obj.getType().getSignature()));
         }
 
         @Override
@@ -783,7 +801,7 @@ public class ClassReferenceFinder {
     private static IdFinderVisitor findPoolReferences(ClassInfo classInfo, JavaClass javaClass) {
 
         // we do not need to handle invoke sites here specially, since we do not visit code here
-        IdFinderVisitor visitor = new IdFinderVisitor(classInfo, javaClass.getConstantPool(), false);
+        IdFinderVisitor visitor = new IdFinderVisitor(classInfo, classInfo.getConstantPoolGen(), false);
         DescendingClassTraverser traverser = new DescendingClassTraverser(visitor);
 
         // now, find *every* constantpool index in the class, except for methods and fields
@@ -801,11 +819,13 @@ public class ClassReferenceFinder {
     private static IdFinderVisitor findPoolReferences(MethodInfo methodInfo, Method method, boolean addInvokeSites) {
         ClassInfo classInfo = methodInfo.getClassInfo();
 
-        IdFinderVisitor visitor = new IdFinderVisitor(classInfo, method.getConstantPool(), addInvokeSites);
+        IdFinderVisitor visitor = new IdFinderVisitor(classInfo, classInfo.getConstantPoolGen(), addInvokeSites);
         DescendingClassTraverser traverser = new DescendingClassTraverser(visitor);
 
         traverser.visitConstant(classInfo, method.getNameIndex());
         traverser.visitConstant(classInfo, method.getSignatureIndex());
+
+        traverser.visitMethodCode(methodInfo);
 
         traverser.visitAttributes(methodInfo, method.getAttributes());
 
@@ -816,7 +836,7 @@ public class ClassReferenceFinder {
         ClassInfo classInfo = fieldInfo.getClassInfo();
 
         // we do not need to handle invoke sites here specially, since we do not visit code here
-        IdFinderVisitor visitor = new IdFinderVisitor(classInfo, field.getConstantPool(), false);
+        IdFinderVisitor visitor = new IdFinderVisitor(classInfo, classInfo.getConstantPoolGen(), false);
         DescendingClassTraverser traverser = new DescendingClassTraverser(visitor);
 
         traverser.visitConstant(classInfo, field.getNameIndex());

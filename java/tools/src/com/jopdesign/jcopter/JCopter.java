@@ -143,6 +143,9 @@ public class JCopter extends EmptyTool<JCopterManager> {
      */
     public void optimize() {
 
+        // - Kill'em all, since we do not use them and we do not update them so they will get out-of-date
+        executor.removeDebugAttributes();
+
         // - perform simple, guaranteed optimizations (everything to reduce code size!)
         //   (inline 2/3 byte methods, load/store eliminate, peephole, dead-code elimination, constant folding, ..)
         executor.performSimpleInline();

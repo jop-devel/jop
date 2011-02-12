@@ -398,6 +398,8 @@ public class DescendingClassTraverser implements ClassVisitor {
 
             MethodCode code = methodInfo.getCode();
 
+            visitor.visitMethodCode(code);
+
             for (CodeExceptionGen ex : code.getExceptionHandlers()) {
                 visitor.visitCodeException(methodInfo, ex);
             }

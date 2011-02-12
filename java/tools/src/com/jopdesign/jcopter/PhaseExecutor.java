@@ -21,6 +21,7 @@
 package com.jopdesign.jcopter;
 
 import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.config.BooleanOption;
@@ -32,6 +33,8 @@ import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
 import com.jopdesign.common.graphutils.InvokeDot;
+import com.jopdesign.common.graphutils.MethodTraverser;
+import com.jopdesign.common.graphutils.MethodTraverser.MethodVisitor;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.tools.ConstantPoolRebuilder;
@@ -73,7 +76,7 @@ public class PhaseExecutor {
 
     public static final Option[] options = {
             REMOVE_UNUSED_MEMBERS,
-            DUMP_CALLGRAPH, DUMP_JVM_CALLGRAPH, CALLGRAPH_DIR
+            DUMP_CALLGRAPH, DUMP_JVM_CALLGRAPH, DUMP_NOIM_CALLS, CALLGRAPH_DIR
             };
 
     private final JCopter jcopter;
@@ -227,10 +230,25 @@ public class PhaseExecutor {
         //  go into another method..)
     }
 
+    public void removeDebugAttributes() {
+        logger.info("Starting removal of debug attributes");
+
+        MethodVisitor visitor = new MethodVisitor() {
+            @Override
+            public void visitMethod(MethodInfo method) {
+                method.getCode().removeDebugAttributes();
+            }
+        };
+        appInfo.iterate(new MethodTraverser(visitor, true));
+
+        logger.info("Finished removal of debug attributes");
+    }
+
     /**
      * Find and remove unused classes, methods and fields
      */
     public void removeUnusedMembers() {
+
         logger.info("Starting removal of unused members");
 
         UsedCodeFinder ucf = new UsedCodeFinder();

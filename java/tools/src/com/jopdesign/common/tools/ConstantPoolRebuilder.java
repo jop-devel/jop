@@ -328,6 +328,7 @@ public class ConstantPoolRebuilder implements ClassVisitor {
         methodGen.setConstantPool(newPool);
 
         if (!methodInfo.isAbstract()) {
+            
             // update all instructions
             InstructionList il = methodInfo.getCode().getInstructionList();
 
@@ -343,10 +344,11 @@ public class ConstantPoolRebuilder implements ClassVisitor {
             for (InstructionHandle ih : il.getInstructionHandles()) {
                 ih.getInstruction().accept(iv);
             }
+
+            updateAttributes(methodInfo, methodGen.getCodeAttributes());
         }
 
         updateAttributes(methodInfo, methodGen.getAttributes());
-        updateAttributes(methodInfo, methodGen.getCodeAttributes());
     }
 
     public void updateFieldGen(FieldInfo fieldInfo, FieldGen fieldGen) {

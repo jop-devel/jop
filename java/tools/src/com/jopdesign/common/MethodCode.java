@@ -21,6 +21,7 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.KeyManager.CustomKey;
+import com.jopdesign.common.bcel.StackMapTable;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
@@ -36,6 +37,7 @@ import com.jopdesign.common.processormodel.ProcessorModel;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Code;
 import org.apache.bcel.classfile.LineNumberTable;
+import org.apache.bcel.classfile.StackMap;
 import org.apache.bcel.generic.CodeExceptionGen;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.InstructionHandle;
@@ -468,6 +470,21 @@ public class MethodCode {
     public void removeNOPs() {
         prepareInstructionList();
         methodGen.removeNOPs();
+    }
+
+    /**
+     * Remove attributes related to debugging (e.g. variable name mappings, stack maps, ..)
+     * except the linenumber table.
+     */
+    public void removeDebugAttributes() {
+        removeLocalVariables();
+        for (Attribute a : getAttributes()) {
+            if (a instanceof StackMapTable ||
+                a instanceof StackMap)
+            {
+                removeAttribute(a);
+            }
+        }
     }
 
     /**

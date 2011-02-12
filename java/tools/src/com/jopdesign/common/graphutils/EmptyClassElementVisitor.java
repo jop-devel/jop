@@ -23,6 +23,7 @@ package com.jopdesign.common.graphutils;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.MemberInfo;
+import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.bcel.AnnotationAttribute;
 import com.jopdesign.common.bcel.CustomAttribute;
@@ -68,6 +69,10 @@ public class EmptyClassElementVisitor implements ClassElementVisitor {
 
     @Override
     public void finishMethod(MethodInfo methodInfo) {
+    }
+
+    @Override
+    public void visitMethodCode(MethodCode methodCode) {
     }
 
     @Override
