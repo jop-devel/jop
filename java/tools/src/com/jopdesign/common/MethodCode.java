@@ -36,6 +36,7 @@ import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Code;
+import org.apache.bcel.classfile.ConstantUtf8;
 import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.classfile.StackMap;
 import org.apache.bcel.generic.CodeExceptionGen;
@@ -477,13 +478,22 @@ public class MethodCode {
      * except the linenumber table.
      */
     public void removeDebugAttributes() {
+
         removeLocalVariables();
+
         for (Attribute a : getAttributes()) {
             if (a instanceof StackMapTable ||
                 a instanceof StackMap)
             {
                 removeAttribute(a);
+                continue;
             }
+            // Quick hack, just remove it (not yet supported by framework, we have no type for this attribute)
+            ConstantUtf8 name = (ConstantUtf8) getConstantPoolGen().getConstant(a.getNameIndex());
+            if ("LocalVariableTypeTable".equals(name.getBytes())) {
+                removeAttribute(a);
+            }
+            // TODO also remove stuff like Annotations,..?
         }
     }
 

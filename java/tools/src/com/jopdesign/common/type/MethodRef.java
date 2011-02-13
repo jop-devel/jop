@@ -66,6 +66,8 @@ public class MethodRef {
 
     public MethodInfo getMethodInfo() {
         if (methodInfo == null) {
+            // We could cache somehow if lookup fails, so we do not need to try again, but then how do we
+            // know when to try again (e.g. after AppInfo has been updated)
             ClassInfo classInfo = classRef.getClassInfo();
             if ( classInfo != null ) {
                 methodInfo = classInfo.getMethodInfoInherited(new Signature(methodName, descriptor), true);

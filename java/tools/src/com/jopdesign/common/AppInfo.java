@@ -48,11 +48,6 @@ import org.apache.bcel.classfile.ClassFormatException;
 import org.apache.bcel.classfile.ClassParser;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.generic.ClassGen;
-import org.apache.bcel.generic.ConstantPoolGen;
-import org.apache.bcel.generic.INVOKEINTERFACE;
-import org.apache.bcel.generic.InvokeInstruction;
-import org.apache.bcel.generic.ObjectType;
-import org.apache.bcel.generic.ReferenceType;
 import org.apache.bcel.generic.Type;
 import org.apache.bcel.util.ClassPath;
 import org.apache.bcel.util.ClassPath.ClassFile;
@@ -702,28 +697,6 @@ public final class AppInfo {
         return getMethodInfo(signature.getClassName(), signature.getMemberSignature());
     }
 
-    public MethodRef getReferencedMethod(ClassInfo invokerClass, InvokeInstruction instr) {
-        ConstantPoolGen cpg = invokerClass.getConstantPoolGen();
-
-        ReferenceType refType = instr.getReferenceType(cpg);
-        String classname;
-        if (refType instanceof ObjectType) {
-            classname = ((ObjectType)refType).getClassName();
-        } else {
-            // TODO need to call array.<method>, which class should we use? java.lang.Object?
-            throw new JavaClassFormatError("Calling a method for an array, this is not yet supported.");
-        }
-        
-        String methodname = instr.getMethodName(cpg);
-        boolean isInterface = (instr instanceof INVOKEINTERFACE);
-        return getMethodRef(new Signature(classname, methodname, instr.getSignature(cpg)),
-                            isInterface);
-    }
-
-    public MethodRef getReferencedMethod(MethodInfo invoker, InvokeInstruction instruction) {
-        return getReferencedMethod(invoker.getClassInfo(), instruction);
-    }
-
     //////////////////////////////////////////////////////////////////////////////
     // Roots
     //////////////////////////////////////////////////////////////////////////////
@@ -954,28 +927,10 @@ public final class AppInfo {
 
         InvokeSite invokeSite = cs.top();
 
-        // Handle special invokes
+        // Handle special/static invokes
         // We could use the callgraph to check them too, but only if the callstring length of the
         // callgraph is at least one, else we will get incorrect results
-        if (invokeSite.isInvokeSuper()) {
-            Signature sig = invokeSite.getInvokeeRef().getSignature();
-            ClassInfo superClass = invokeSite.getMethod().getClassInfo().getSuperClassInfo();
-            if (superClass == null) {
-                // unknown super class, return empty set
-                return methods;
-            }
-            MethodInfo superMethod = superClass.getMethodInfoInherited(sig, true);
-            if (superMethod == null) {
-                throw new JavaClassFormatError("Super method not found for "+sig);
-            }
-            if (superMethod.isAbstract()) {
-                throw new JavaClassFormatError("Call to abstract super method of "+sig);
-            }
-
-            methods.add(superMethod);
-            return methods;
-        }
-        if (invokeSite.isInvokeSpecial()) {
+        if (!invokeSite.isVirtual()) {
             MethodInfo method = invokeSite.getInvokeeRef().getMethodInfo();
             if (method == null) {
                 return methods;

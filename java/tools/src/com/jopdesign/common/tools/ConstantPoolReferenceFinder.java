@@ -102,13 +102,17 @@ import java.util.Set;
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ClassReferenceFinder {
+public class ConstantPoolReferenceFinder {
 
     ////////////////////////////////////////////////////////////////
     // Helper classes to find something in a class
     ////////////////////////////////////////////////////////////////
 
-    public abstract static class ConstantPoolVisitor extends EmptyClassElementVisitor {
+    /**
+     * Applying this visitor to a method, field, class or constantpool entries collects all
+     * found member references.
+     */
+    public abstract static class ConstantPoolMemberVisitor extends EmptyClassElementVisitor {
 
         @Override
         public boolean visitMethod(MethodInfo methodInfo) {
@@ -202,7 +206,10 @@ public class ClassReferenceFinder {
         public abstract void processMethodRef(MethodRef methodRef);
     }
 
-    public static class ClassNameVisitor extends ConstantPoolVisitor {
+    /**
+     * Collect only class names
+     */
+    public static class ClassNameVisitor extends ConstantPoolMemberVisitor {
         private Set<String> names;
 
         public ClassNameVisitor(Set<String> names) {
@@ -224,7 +231,10 @@ public class ClassReferenceFinder {
         }
     }
 
-    public static class ClassMemberVisitor extends ConstantPoolVisitor {
+    /**
+     * Collect all member references, using an alternative syntax which is always unambiguous
+     */
+    public static class ClassMemberVisitor extends ConstantPoolMemberVisitor {
         private Set<String> members;
 
         public ClassMemberVisitor(Set<String> members) {
@@ -249,24 +259,6 @@ public class ClassReferenceFinder {
         }
     }
 
-    public static class ReferenceResult {
-        private final Set<String> members;
-        private final List<InvokeSite> invokeSites;
-
-        public ReferenceResult(Set<String> members, List<InvokeSite> invokeSites) {
-            this.members = members;
-            this.invokeSites = invokeSites;
-        }
-
-        public Set<String> getMembers() {
-            return members;
-        }
-
-        public List<InvokeSite> getInvokeSites() {
-            return invokeSites;
-        }
-    }
-
     ////////////////////////////////////////////////////////////////
     // Find/replace references, member names, Pool entries
     ////////////////////////////////////////////////////////////////
@@ -275,16 +267,16 @@ public class ClassReferenceFinder {
 
         JavaClass javaClass = classInfo.compile();
 
-        Set<Integer> ids = findPoolReferences(classInfo, javaClass).getIds();
+        Set<Integer> ids = findPoolReferences(classInfo, javaClass);
 
         if (checkMembers) {
             for (Field field : javaClass.getFields()) {
                 FieldInfo fieldInfo = classInfo.getFieldInfo(field.getName());
-                ids.addAll( findPoolReferences(fieldInfo, field).getIds() );
+                ids.addAll( findPoolReferences(fieldInfo, field) );
             }
             for (Method method : javaClass.getMethods()) {
                 MethodInfo methodInfo = classInfo.getMethodInfo(method.getName()+method.getSignature());
-                ids.addAll( findPoolReferences(methodInfo, method, false).getIds() );
+                ids.addAll( findPoolReferences(methodInfo, method, false) );
             }
         }
 
@@ -292,31 +284,31 @@ public class ClassReferenceFinder {
     }
 
     public static Set<Integer> findPoolReferences(MethodInfo methodInfo) {
-        return findPoolReferences(methodInfo, methodInfo.compile(), false).getIds();
+        return findPoolReferences(methodInfo, methodInfo.compile(), false);
     }
 
     public static Set<Integer> findPoolReferences(FieldInfo fieldInfo) {
-        return findPoolReferences(fieldInfo, fieldInfo.getField()).getIds();
+        return findPoolReferences(fieldInfo, fieldInfo.getField());
     }
 
     /**
      * Get a set of all referenced classes and class members for a method.
      *
      * @param methodInfo the method to search.
-     * @return a set of class names and class member signatures found in the method, as well as all invoke sites.
+     * @return a set of class names and class member signatures found in the method.
      */
-    public static ReferenceResult findReferencedMembers(MethodInfo methodInfo) {
+    public static Set<String> findReferencedMembers(MethodInfo methodInfo) {
         Set<String> members = new HashSet<String>();
         ClassMemberVisitor visitor = new ClassMemberVisitor(members);
 
-        IdFinderVisitor finder = findPoolReferences(methodInfo, methodInfo.compile(), true);
+        Set<Integer> ids = findPoolReferences(methodInfo, methodInfo.compile(), true);
 
         // fill the members list with info from the method descriptor
         visitor.visitMethod(methodInfo);
         // fill the members list with all found constantpool references
-        visitPoolReferences(methodInfo.getClassInfo(), visitor, finder.getIds());
+        visitPoolReferences(methodInfo.getClassInfo(), visitor, ids);
         
-        return new ReferenceResult(members, finder.getInvokeSites());
+        return members;
     }
 
     /**
@@ -325,7 +317,7 @@ public class ClassReferenceFinder {
      * @param fieldInfo the field to search.
      * @return a set of class names and class member signatures found in the field.
      */
-    public static ReferenceResult findReferencedMembers(FieldInfo fieldInfo) {
+    public static Set<String> findReferencedMembers(FieldInfo fieldInfo) {
         Set<String> members = new HashSet<String>();
         ClassMemberVisitor visitor = new ClassMemberVisitor(members);
 
@@ -336,7 +328,7 @@ public class ClassReferenceFinder {
         // fill the members list with all found constantpool references
         visitPoolReferences(fieldInfo.getClassInfo(), visitor, ids);
 
-        return new ReferenceResult(members, new ArrayList<InvokeSite>(0));
+        return members;
     }
 
     /**
@@ -345,14 +337,14 @@ public class ClassReferenceFinder {
      * @param checkMembers if false, do not check fields and methods. Else check everything.
      * @return a set of class names and class member signatures found in the class.
      */
-    public static ReferenceResult findReferencedMembers(ClassInfo classInfo, boolean checkMembers) {
+    public static Set<String> findReferencedMembers(ClassInfo classInfo, boolean checkMembers) {
 
         // Else we need to go into details..
         Set<String> members = new HashSet<String>();
         ClassMemberVisitor visitor = new ClassMemberVisitor(members);
 
         JavaClass javaClass = classInfo.compile();
-        Set<Integer> ids = findPoolReferences(classInfo, javaClass).getIds();
+        Set<Integer> ids = findPoolReferences(classInfo, javaClass);
         List<InvokeSite> invokes = new ArrayList<InvokeSite>();
 
         if (checkMembers) {
@@ -361,16 +353,14 @@ public class ClassReferenceFinder {
                 // add members found in the field
                 visitor.visitField(fieldInfo);
                 // there are no invokesites in a field, only add found ids
-                ids.addAll( findPoolReferences(fieldInfo, field).getIds() );
+                ids.addAll( findPoolReferences(fieldInfo, field) );
             }
             for (Method method : javaClass.getMethods()) {
                 MethodInfo methodInfo = classInfo.getMethodInfo(method.getName()+method.getSignature());
                 // add members found in the method
                 visitor.visitMethod(methodInfo);
                 // add all ids for checking, add all invoke sites
-                IdFinderVisitor finder = findPoolReferences(methodInfo, method, true);
-                ids.addAll( finder.getIds() );
-                invokes.addAll( finder.getInvokeSites() );
+                ids.addAll( findPoolReferences(methodInfo, method, true) );
             }
         }
 
@@ -378,7 +368,7 @@ public class ClassReferenceFinder {
         visitor.visitClass(classInfo);
         visitPoolReferences(classInfo, visitor, ids);
 
-        return new ReferenceResult(members,invokes);
+        return members;
     }
 
     /**
@@ -414,6 +404,20 @@ public class ClassReferenceFinder {
     // Private methods
     ////////////////////////////////////////////////////////////////
 
+    /**
+     * This is a helper visitor to find all constant pool references in classes / methods / fields.
+     *
+     * TODO this is nasty and 'fine-tuned' stuff, reduce number of indirections and make this code more robust
+     *
+     * This is supposed to work the following way:
+     * - findPoolReferences() applies this visitor to all indices found directly, then visits the attributes
+     * - IdFinderVisitor.visitConstant*(int) adds the index to the set, recurses down referenced constants using:
+     * - IdFinderVisitor.visitConstant*(Constant) visits all indices in the constant using above
+     * - A DescendingClassTraverser is used to
+     *   - Visit various attributes
+     *      - visitor-methods recurse down using visitConstant(int)
+     *   - Visit referenced constants with unknown type, using the visitConstant(int) method
+     */
     private static class IdFinderVisitor implements ClassElementVisitor {
         private final ClassInfo classInfo;
         private final boolean addInvokeSites;
@@ -423,11 +427,17 @@ public class ClassReferenceFinder {
         private final List<InvokeSite> invokeSites;
         private final DescendingClassTraverser classTraverser;
 
-        public IdFinderVisitor(ClassInfo classInfo, ConstantPoolGen cpg, boolean addInvokeSites) {
+        /**
+         * Create a new visitor.
+         *
+         * @param classInfo the classinfo which will be visited.
+         * @param addInvokeSites if true, also remember all visited invocations (as well as the referenced index).
+         */
+        public IdFinderVisitor(ClassInfo classInfo, boolean addInvokeSites) {
             this.classInfo = classInfo;
             this.addInvokeSites = addInvokeSites;
             this.ids = new HashSet<Integer>();
-            this.cpg = cpg;
+            this.cpg = classInfo.getConstantPoolGen();
             this.cp = cpg.getConstantPool();
             this.invokeSites = new LinkedList<InvokeSite>();
             // A helper traverser to visit parts of classes/methods/..
@@ -797,6 +807,12 @@ public class ClassReferenceFinder {
         }
     }
 
+    /**
+     * Helper method which applies a visitor to all constants given by a set of ids.
+     * @param classInfo the class containing the constant pool
+     * @param visitor the visitor to apply
+     * @param ids a set of ids of pool entries to visit
+     */
     private static void visitPoolReferences(ClassInfo classInfo, ClassElementVisitor visitor, Set<Integer> ids) {
         DescendingClassTraverser traverser = new DescendingClassTraverser(visitor);
         ConstantPoolGen cpg = classInfo.getConstantPoolGen();
@@ -806,12 +822,12 @@ public class ClassReferenceFinder {
         }
     }
 
-    private static IdFinderVisitor findPoolReferences(ClassInfo classInfo, JavaClass javaClass) {
+    private static Set<Integer> findPoolReferences(ClassInfo classInfo, JavaClass javaClass) {
 
         // we do not need to handle invoke sites here specially, since we do not visit code here
-        IdFinderVisitor visitor = new IdFinderVisitor(classInfo, classInfo.getConstantPoolGen(), false);
+        IdFinderVisitor visitor = new IdFinderVisitor(classInfo, false);
 
-        // now, find *every* constantpool index in the class, except for methods and fields
+        // now, find *every* used constantpool index in the class, except for methods and fields
         visitor.visitConstantClass(javaClass.getClassNameIndex());
         visitor.visitConstantClass(javaClass.getSuperclassNameIndex());
         for (int index : javaClass.getInterfaceIndices()) {
@@ -821,13 +837,13 @@ public class ClassReferenceFinder {
         DescendingClassTraverser traverser = new DescendingClassTraverser(visitor);
         traverser.visitAttributes(classInfo, javaClass.getAttributes());
 
-        return visitor;
+        return visitor.getIds();
     }
 
-    private static IdFinderVisitor findPoolReferences(MethodInfo methodInfo, Method method, boolean addInvokeSites) {
+    private static Set<Integer> findPoolReferences(MethodInfo methodInfo, Method method, boolean addInvokeSites) {
         ClassInfo classInfo = methodInfo.getClassInfo();
 
-        IdFinderVisitor visitor = new IdFinderVisitor(classInfo, classInfo.getConstantPoolGen(), addInvokeSites);
+        IdFinderVisitor visitor = new IdFinderVisitor(classInfo, addInvokeSites);
 
         visitor.visitConstantUtf8(method.getNameIndex());
         visitor.visitConstantUtf8(method.getSignatureIndex());
@@ -836,14 +852,14 @@ public class ClassReferenceFinder {
         traverser.visitMethodCode(methodInfo);
         traverser.visitAttributes(methodInfo, method.getAttributes());
 
-        return visitor;
+        return visitor.getIds();
     }
 
-    private static IdFinderVisitor findPoolReferences(FieldInfo fieldInfo, Field field) {
+    private static Set<Integer> findPoolReferences(FieldInfo fieldInfo, Field field) {
         ClassInfo classInfo = fieldInfo.getClassInfo();
 
         // we do not need to handle invoke sites here specially, since we do not visit code here
-        IdFinderVisitor visitor = new IdFinderVisitor(classInfo, classInfo.getConstantPoolGen(), false);
+        IdFinderVisitor visitor = new IdFinderVisitor(classInfo, false);
 
         visitor.visitConstantUtf8(field.getNameIndex());
         visitor.visitConstantUtf8(field.getSignatureIndex());
@@ -851,7 +867,7 @@ public class ClassReferenceFinder {
         DescendingClassTraverser traverser = new DescendingClassTraverser(visitor);
         traverser.visitAttributes(fieldInfo, field.getAttributes());
 
-        return visitor;
+        return visitor.getIds();
     }
 
 }

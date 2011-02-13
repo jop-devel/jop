@@ -25,7 +25,7 @@ import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.Ternary;
-import com.jopdesign.common.tools.ClassReferenceFinder;
+import com.jopdesign.common.tools.ConstantPoolReferenceFinder;
 import com.jopdesign.common.tools.ConstantPoolRebuilder;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.ConstantInfo;
@@ -1021,7 +1021,7 @@ public final class ClassInfo extends MemberInfo {
         ConstantPoolGen newPool = new ConstantPoolGen();
 
         // this will compile the classInfo
-        Set<Integer> usedIndices = ClassReferenceFinder.findPoolReferences(this, true);
+        Set<Integer> usedIndices = ConstantPoolReferenceFinder.findPoolReferences(this, true);
         rebuilder.createNewConstantPool(cpg, usedIndices);
 
         rebuilder.updateClassGen(this, classGen);

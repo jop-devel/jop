@@ -36,8 +36,6 @@ import com.jopdesign.common.misc.HashedString;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.type.MethodRef;
 import org.apache.bcel.Constants;
-import org.apache.bcel.generic.INVOKEINTERFACE;
-import org.apache.bcel.generic.INVOKEVIRTUAL;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
@@ -266,18 +264,19 @@ public class ControlFlowGraph {
             super(block);
         }
 
-        public InvokeNode(BasicBlock block, InvokeInstruction instr) {
+        public InvokeNode(BasicBlock block, InstructionHandle instr) {
             super(block);
-            this.instr = instr;
-            this.referenced = methodInfo.getReferencedMethod(instr);
-            this.name = "invoke(" + this.referenced + ")";
+            this.instr = (InvokeInstruction) instr.getInstruction();
+            // TODO keep the InvokeSite instead of instr+referenced .. 
+            InvokeSite invokeSite = methodInfo.getCode().getInvokeSite(instr);
+            this.referenced = invokeSite.getInvokeeRef();
             /* if virtual / interface, this method has to be resolved first */
-            if ((instr instanceof INVOKEINTERFACE) || (instr instanceof INVOKEVIRTUAL)) {
+            if (invokeSite.isVirtual()) {
                 receiverImpl = null;
             } else {
                 receiverImpl = referenced.getMethodInfo();
             }
-
+            this.name = "invoke(" + this.referenced + ")";
         }
 
         @Override
@@ -604,7 +603,7 @@ public class ControlFlowGraph {
     public BasicBlockNode addBasicBlock(int insertBefore, BasicBlock bb) {
         BasicBlockNode n;
         Instruction lastInstr = bb.getLastInstruction().getInstruction();
-        InvokeInstruction theInvoke = bb.getTheInvokeInstruction();
+        InstructionHandle theInvoke = bb.getTheInvokeInstruction();
 
         if (theInvoke != null) {
             n = new InvokeNode(bb, theInvoke);

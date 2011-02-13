@@ -979,8 +979,10 @@ public class CallGraph {
      * invocation in the callstring, i.e. find all methods which might appear in the next entry of the
      * callstring.
      * <p>
-     * This does not check if the invocation is a special invoke, so if callstring length of the callgraph
-     * is zero, the results are not correct, instead use {@link AppInfo#findImplementations(CallString)}.
+     * This is only a lookup in the callgraph, and does not check if the invocation is a special invoke,
+     * so if callstring length of the callgraph is zero, the results are not correct. Instead use
+     * {@link AppInfo#findImplementations(CallString)} which handles all special cases and falls back
+     * to the default callgraph.
      * </p>
      *
      * @param cs callstring of the invocation, must contain at least one invokesite.
@@ -999,6 +1001,14 @@ public class CallGraph {
             logger.debug("Tried to find implementations of unknown method "+invokeeRef);
             return methods;
         }
+
+        // TODO discuss :)
+        // if the invoke is not virtual, should we look it up in the graph anyway?
+        // We could just return new ExecutionContext(invokee, cs);
+        // But that's what AppInfo#findImplementations() is for, here we only lookup the callgraph,
+        // but then we cannot have different callgraphs and perform precise lookups on all of them,
+        // since that method only looks into the default callgraph (but why would we want multiple
+        // graphs anyway?)
 
         // find all instances of possible invokers
         Set<ExecutionContext> invoker = getNodes(invoke.getMethod());

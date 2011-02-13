@@ -23,7 +23,7 @@ package com.jopdesign.common;
 import com.jopdesign.common.bcel.EnclosingMethod;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.JavaClassFormatError;
-import com.jopdesign.common.tools.ClassReferenceFinder;
+import com.jopdesign.common.tools.ConstantPoolReferenceFinder;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.ConstantClassInfo;
 import com.jopdesign.common.type.MethodRef;
@@ -411,7 +411,7 @@ public class InnerClassesInfo {
 
         // check+update InnerClasses attribute (and add referenced nested classes)
         List<ClassRef> referencedClasses = new LinkedList<ClassRef>();
-        for (String name : ClassReferenceFinder.findReferencedClasses(classInfo)) {
+        for (String name : ConstantPoolReferenceFinder.findReferencedClasses(classInfo)) {
             referencedClasses.add(classInfo.getAppInfo().getClassRef(name));
         }
 

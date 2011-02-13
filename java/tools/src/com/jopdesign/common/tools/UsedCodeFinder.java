@@ -25,16 +25,18 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.KeyManager;
 import com.jopdesign.common.MemberInfo;
+import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.logger.LogConfig;
-import com.jopdesign.common.misc.JavaClassFormatError;
-import com.jopdesign.common.tools.ClassReferenceFinder.ReferenceResult;
 import com.jopdesign.common.type.ArrayTypeInfo;
 import com.jopdesign.common.type.FieldRef;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.ObjectTypeInfo;
 import com.jopdesign.common.type.Signature;
+import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InstructionList;
+import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.log4j.Logger;
 
 import java.util.Collection;
@@ -143,13 +145,22 @@ public class UsedCodeFinder {
 
         // visit superclass and interfaces, attributes, but not methods or fields
         logger.debug("Visiting references of "+rootClass);
-        ReferenceResult found = ClassReferenceFinder.findReferencedMembers(rootClass, visitMembers);
+        Set<String> found = ConstantPoolReferenceFinder.findReferencedMembers(rootClass, false);
         visitReferences(found);
 
-        // at least we need to visit the static initializer
-        MethodInfo clinit = rootClass.getMethodInfo(ClinitOrder.clinitSig);
-        if (clinit != null) {
-            markUsedMembers(clinit);
+        if (visitMembers) {
+            for (FieldInfo field : rootClass.getFields()) {
+                markUsedMembers(field);
+            }
+            for (MethodInfo method : rootClass.getMethods()) {
+                markUsedMembers(method);
+            }
+        } else {
+            // at least we need to visit the static initializer
+            MethodInfo clinit = rootClass.getMethodInfo(ClinitOrder.clinitSig);
+            if (clinit != null) {
+                markUsedMembers(clinit);
+            }
         }
 
     }
@@ -160,7 +171,7 @@ public class UsedCodeFinder {
 
         // visit type info, attributes, constantValue
         logger.debug("Visiting references of "+rootField);
-        ReferenceResult found = ClassReferenceFinder.findReferencedMembers(rootField);
+        Set<String> found = ConstantPoolReferenceFinder.findReferencedMembers(rootField);
         visitReferences(found);
     }
 
@@ -170,8 +181,12 @@ public class UsedCodeFinder {
 
         // visit parameters, attributes, instructions, tables, ..
         logger.debug("Visiting references of "+rootMethod);
-        ReferenceResult found = ClassReferenceFinder.findReferencedMembers(rootMethod);
+        Set<String> found = ConstantPoolReferenceFinder.findReferencedMembers(rootMethod);
         visitReferences(found);
+
+        if (!rootMethod.isAbstract()) {
+            visitInvokeSites(rootMethod.getCode());
+        }
     }
 
     /**
@@ -233,8 +248,8 @@ public class UsedCodeFinder {
                                  methods + (methods == 1 ? " method" : " methods"));
     }
     
-    private void visitReferences(ReferenceResult refs) {
-        for (String signature : refs.getMembers()) {
+    private void visitReferences(Set<String> refs) {
+        for (String signature : refs) {
             // The signatures returned by the reference finder use an alternative syntax which is
             // always unique, so if in doubt, we need to interpret it as a classname, not a fieldname
             Signature sig = Signature.parse(signature, false);
@@ -272,14 +287,22 @@ public class UsedCodeFinder {
                 // It's a field! No need to look in subclasses, fields are not virtual
                 FieldRef ref = appInfo.getFieldRef(sig);
                 FieldInfo field = ref.getFieldInfo();
-                if (field == null) {
-                    throw new JavaClassFormatError("Referenced field " + signature +" not found in the class!");
+                if (field != null) {
+                    markUsedMembers(field);
                 }
-                markUsedMembers(field);
-            }            
+            }
         }
+    }
 
-        for (InvokeSite invokeSite : refs.getInvokeSites()) {
+    private void visitInvokeSites(MethodCode code) {
+        InstructionList il = code.getInstructionList();
+        for (InstructionHandle ih : il.getInstructionHandles()) {
+            if (!(ih.getInstruction() instanceof InvokeInstruction)) {
+                continue;
+            }
+
+            InvokeSite invokeSite = code.getInvokeSite(ih);
+
             // find all implementations for each invoke, mark them as used.
             for (MethodInfo method : findMethods(invokeSite)) {
                 markUsedMembers(method);

@@ -31,7 +31,6 @@ import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Method;
-import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
@@ -390,10 +389,6 @@ public final class MethodInfo extends ClassMemberInfo {
         }
 
         return classes;
-    }
-
-    public MethodRef getReferencedMethod(InvokeInstruction instr) {
-        return getAppInfo().getReferencedMethod(this, instr);
     }
 
     //////////////////////////////////////////////////////////////////////////////

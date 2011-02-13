@@ -65,6 +65,7 @@ public class ClassRef {
     }
 
     public ClassInfo getClassInfo() {
+        // TODO what shall we do with array classes? Ignore for now ..
         if ( classInfo == null && !arrayClass ) {
             try {
                 classInfo = AppInfo.getSingleton().getClassInfo(className,false);

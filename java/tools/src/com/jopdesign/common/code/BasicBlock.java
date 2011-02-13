@@ -252,8 +252,8 @@ public class BasicBlock {
      *          if there is more than one invoke instruction in the block.
      * @see ProcessorModel#isSpecialInvoke(MethodInfo, Instruction)
      */
-    public InvokeInstruction getTheInvokeInstruction() {
-        InvokeInstruction theInvInstr = null;
+    public InstructionHandle getTheInvokeInstruction() {
+        InstructionHandle theInvInstr = null;
         for (InstructionHandle ih : this.instructions) {
             if (!(ih.getInstruction() instanceof InvokeInstruction)) continue;
             InvokeInstruction inv = (InvokeInstruction) ih.getInstruction();
@@ -263,7 +263,7 @@ public class BasicBlock {
             if (theInvInstr != null) {
                 throw new ControlFlowGraph.ControlFlowError("More than one invoke instruction in a basic block");
             }
-            theInvInstr = inv;
+            theInvInstr = ih;
         }
         return theInvInstr;
     }
