@@ -233,13 +233,10 @@ DEBUG_JOPSIM=
 #OPTIMIZE=mv java/target/dist/lib/classes.zip java/target/dist/lib/in.zip; java -jar java/lib/proguard.jar @optimize.pro
 
 #
-#	application optimization with JOPtimizer
-#	uncomment the following lines to use it
+#	application optimization with JCopter
 #
-OPTIMIZE=java $(TOOLS_CP)$(S)$(TOOLS)/dist/lib/joptimizer.jar joptimizer.JOPtimizerRunner \
-	 -config jar:file:$(TOOLS)/dist/lib/joptimizer.jar!/jop.conf $(MAIN_CLASS) && \
-	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
-
+USE_JCOPTER?=yes
+JCOPTER_OPT?=--dump-callgraph both --dump-jvm-callgraph merged --callstring-length 2 
 
 
 # build everything from scratch
@@ -362,11 +359,13 @@ ifeq ($(USE_RTTM),yes)
 endif
 	javac $(TARGET_JFLAGS) $(TARGET_APP)
 	# WCETPreprocess, overwrite existing class files 
-	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.wcet.WcetPreprocess \
+	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.wcet.WcetPreprocess \
            -c $(TARGET)/dist/classes -o $(TARGET)/dist $(MAIN_CLASS)
-        # JOPizer	
 ifeq ($(USE_JCOPTER),yes)
-
+	# JOPizer	
+	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter \
+	   -c $(TARGET)/dist/classes -o $(TARGET)/dist --classdir $(TARGET)/dist/classes.opt \
+	   $(JCOPTER_OPT) $(MAIN_CLASS)
 	cd $(TARGET)/dist/classes.opt && jar cf ../lib/classes.zip *
 else
 	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *

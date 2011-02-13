@@ -235,7 +235,7 @@ public class UsedCodeFinder {
     
     private void visitReferences(ReferenceResult refs) {
         for (String signature : refs.getMembers()) {
-            // The signatures returned by the reference finder use an alternative syntax which is 
+            // The signatures returned by the reference finder use an alternative syntax which is
             // always unique, so if in doubt, we need to interpret it as a classname, not a fieldname
             Signature sig = Signature.parse(signature, false);
             

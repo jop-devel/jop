@@ -421,6 +421,7 @@ public class ClassReferenceFinder {
         private final ConstantPool cp;
         private final ConstantPoolGen cpg;
         private final List<InvokeSite> invokeSites;
+        private final DescendingClassTraverser classTraverser;
 
         public IdFinderVisitor(ClassInfo classInfo, ConstantPoolGen cpg, boolean addInvokeSites) {
             this.classInfo = classInfo;
@@ -429,6 +430,8 @@ public class ClassReferenceFinder {
             this.cpg = cpg;
             this.cp = cpg.getConstantPool();
             this.invokeSites = new LinkedList<InvokeSite>();
+            // A helper traverser to visit parts of classes/methods/..
+            this.classTraverser = new DescendingClassTraverser(this);
         }
 
         public Set<Integer> getIds() {
@@ -762,29 +765,34 @@ public class ClassReferenceFinder {
         }
 
         private void visitConstant(int index) {
+            if (index == 0) return;
             ids.add(index);
-            new DescendingClassTraverser(this).visitConstant(classInfo, index);
+            classTraverser.visitConstant(classInfo, index);
         }
 
         private void visitConstantClass(int index) {
+            if (index == 0) return;
             ids.add(index);
             ConstantClass c = (ConstantClass) cp.getConstant(index);
             visitConstantClass(classInfo, c);
         }
 
         private void visitConstantNameAndType(int index) {
+            if (index == 0) return;
             ids.add(index);
             ConstantNameAndType c = (ConstantNameAndType) cp.getConstant(index);
             visitConstantNameAndType(classInfo, c);
         }
 
         private void visitConstantString(int index) {
+            if (index == 0) return;
             ids.add(index);
             ConstantString c = (ConstantString) cp.getConstant(index);
             visitConstantString(classInfo, c);
         }
 
         private void visitConstantUtf8(int index) {
+            if (index == 0) return;
             ids.add(index);
         }
     }
@@ -802,15 +810,15 @@ public class ClassReferenceFinder {
 
         // we do not need to handle invoke sites here specially, since we do not visit code here
         IdFinderVisitor visitor = new IdFinderVisitor(classInfo, classInfo.getConstantPoolGen(), false);
-        DescendingClassTraverser traverser = new DescendingClassTraverser(visitor);
 
         // now, find *every* constantpool index in the class, except for methods and fields
-        traverser.visitConstant(classInfo, javaClass.getClassNameIndex());
-        traverser.visitConstant(classInfo, javaClass.getSuperclassNameIndex());
+        visitor.visitConstantClass(javaClass.getClassNameIndex());
+        visitor.visitConstantClass(javaClass.getSuperclassNameIndex());
         for (int index : javaClass.getInterfaceIndices()) {
-            traverser.visitConstant(classInfo, index);
+            visitor.visitConstantClass(index);
         }
 
+        DescendingClassTraverser traverser = new DescendingClassTraverser(visitor);
         traverser.visitAttributes(classInfo, javaClass.getAttributes());
 
         return visitor;
@@ -820,13 +828,12 @@ public class ClassReferenceFinder {
         ClassInfo classInfo = methodInfo.getClassInfo();
 
         IdFinderVisitor visitor = new IdFinderVisitor(classInfo, classInfo.getConstantPoolGen(), addInvokeSites);
+
+        visitor.visitConstantUtf8(method.getNameIndex());
+        visitor.visitConstantUtf8(method.getSignatureIndex());
+
         DescendingClassTraverser traverser = new DescendingClassTraverser(visitor);
-
-        traverser.visitConstant(classInfo, method.getNameIndex());
-        traverser.visitConstant(classInfo, method.getSignatureIndex());
-
         traverser.visitMethodCode(methodInfo);
-
         traverser.visitAttributes(methodInfo, method.getAttributes());
 
         return visitor;
@@ -837,11 +844,11 @@ public class ClassReferenceFinder {
 
         // we do not need to handle invoke sites here specially, since we do not visit code here
         IdFinderVisitor visitor = new IdFinderVisitor(classInfo, classInfo.getConstantPoolGen(), false);
+
+        visitor.visitConstantUtf8(field.getNameIndex());
+        visitor.visitConstantUtf8(field.getSignatureIndex());
+
         DescendingClassTraverser traverser = new DescendingClassTraverser(visitor);
-
-        traverser.visitConstant(classInfo, field.getNameIndex());
-        traverser.visitConstant(classInfo, field.getSignatureIndex());
-
         traverser.visitAttributes(fieldInfo, field.getAttributes());
 
         return visitor;
