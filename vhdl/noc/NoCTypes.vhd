@@ -26,6 +26,7 @@ package NoCTypes is
 
   constant NOCNODES : integer := 3;
   constant NOCADDRBITS			: integer := 3;
+  constant NOCPACKETBITS : integer := 2*NOCADDRBITS+2+32;
   
 type NoCPacketType is (PTNil, PTData, PTEoD, PTAck);
 subtype NoCAddr is std_logic_vector(NOCADDRBITS-1 downto 0);
@@ -48,6 +49,10 @@ type sc_io_type is array(0 to NOCNODES-1) of NoCPacket;
 
 --  function <function_name>  (signal <signal_name> : in <type_declaration>) return <type_declaration>;
 function tob (arg : boolean) return std_ulogic;
+function to_std_logic_vector(pT:NoCPacketType) return std_logic_vector;
+function to_NoCPacketType(v:std_logic_vector(1 downto 0)) return NoCPacketType;
+function to_std_logic_vector(L: NoCPacket) return std_logic_vector;
+function to_NoCPacket(v:std_logic_vector(NOCPACKETBITS-1 downto 0)) return NoCPacket;
 --  procedure <procedure_name>	(<type_declaration> <constant_name>	: in <type_declaration>);
 
 end NoCTypes;
@@ -73,6 +78,49 @@ return '0';
 end if;
 end function tob;
 
+function to_std_logic_vector(pT:NoCPacketType) return std_logic_vector is
+variable RetVal: std_logic_vector(1 downto 0);
+begin
+case pT is
+ when PTNil => RetVal := "00";
+ when PTData => RetVal := "01";
+ when PTEoD => RetVal := "10";
+ when PTAck => RetVal := "11";
+-- when others => <output> <= "00";
+end case;
+return(RetVal);
+end function to_std_logic_vector;
+
+
+function to_NoCPacketType(v:std_logic_vector(1 downto 0)) return NoCPacketType is
+begin
+	case v is
+		when "00" => return PTNil;
+		when "01" => return PTData;
+		when "10" => return PTEoD;
+		when "11" => return PTAck;
+		when others => return PTNil;
+	end case;
+end function to_NoCPacketType;
+
+
+function to_std_logic_vector(L: NoCPacket) return std_logic_vector is
+variable RetVal: std_logic_vector(NOCPACKETBITS-1 downto 0);
+begin
+RetVal := L.Src & L.Dst & to_std_logic_vector(L.pType) & L.Load;
+return(RetVal);
+end function to_std_logic_vector;
+
+function to_NoCPacket(v:std_logic_vector(NOCPACKETBITS-1 downto 0)) return NoCPacket is
+variable ret: NoCPacket;
+begin
+
+ret.Src := v(NOCPACKETBITS-1 downto 34+NOCADDRBITS);
+ret.Dst := v(34+NOCADDRBITS-1 downto 34);
+ret.pType := to_NoCPacketType(v(33 downto 32));
+ret.Load := v(31 downto 0);
+return ret;
+end function to_NoCPacket;
 
 --
 ---- Example 2
