@@ -366,6 +366,7 @@ public class ConstantPoolRebuilder implements ClassVisitor {
     }
 
     private int mapIndex(int oldIndex) {
+        if (oldIndex == 0) return 0;
         // we could also lookup the old constant in the old pool and try add it to the new one
         // to get the index, if we do not want idMap to be a field
         //Constant c = oldPool.getConstant(oldIndex);

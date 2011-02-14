@@ -276,9 +276,10 @@ public class UsedCodeFinder {
                     markUsedMembers(refCls, false);
                 }
 
-                // Hm, in fact, we might not need to do this, since all possible implementations will
-                // be marked later, and this might find some unused code, but we may want to keep the
-                // referenced method so that we keep the declarations.
+                // We might not need to do this, since all possible implementations will be marked later,
+                // and we might find some unused code, but we may want to keep the referenced method so that
+                // we keep the declarations. We could mark it without following it, but then it will not be followed
+                // when it is used as implementation (we would need a third 'gray' marked state).
                 if (method != null) {
                     markUsedMembers(method);
                 }

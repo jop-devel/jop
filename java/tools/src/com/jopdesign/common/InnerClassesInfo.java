@@ -327,7 +327,7 @@ public class InnerClassesInfo {
         }
         ClassInfo outer = enclosingClass;
         while (outer != null) {
-            if (outer.isSubclassOf(classInfo)) {
+            if (classInfo.isSubclassOf(outer)) {
                 return outer;
             }
             if ( membersOnly && outer.isLocalInnerClass() ) {

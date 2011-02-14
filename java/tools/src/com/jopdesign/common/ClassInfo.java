@@ -601,9 +601,9 @@ public final class ClassInfo extends MemberInfo {
         }
         // classInfo is an interface ..
         if ( isInterface() ) {
-            return classInfo.isExtensionOf(this);
+            return this.isExtensionOf(classInfo);
         } else {
-            return classInfo.isImplementationOf(this);
+            return this.isImplementationOf(classInfo);
         }
     }
 
