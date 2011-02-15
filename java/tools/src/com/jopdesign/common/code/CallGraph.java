@@ -525,7 +525,7 @@ public class CallGraph {
                         callGraph.addVertex(cgn);
                         todo.push(cgn);
                     }
-                    logger.debug(" - found invoke of " +cgn);
+                    logger.trace(" - found invoke of " +cgn);
                     callGraph.addEdge(current, cgn);
                 }
             } /* end while */

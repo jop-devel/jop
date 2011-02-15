@@ -49,6 +49,12 @@ import java.util.Set;
  * This class can be used to mark all used class members, to load missing classes (following only used code)
  * and to remove unused classes and class members.
  *
+ * TODO If option is enabled: Mark methods visited by constantpool reference as 'grey' and do not follow,
+ *      if a gray method is visited by findImplementations, follow and mark
+ *      In a second pass, visit all gray methods, try to make abstract, or if making abstract is not possible,
+ *      mark used and visit
+ *      Then remove all unused 
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class UsedCodeFinder {
