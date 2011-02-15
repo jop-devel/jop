@@ -39,6 +39,7 @@ import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.tools.ConstantPoolRebuilder;
 import com.jopdesign.common.tools.UsedCodeFinder;
+import com.jopdesign.jcopter.optimize.RelinkInvokesuper;
 import org.apache.log4j.Logger;
 
 import java.io.File;
@@ -206,6 +207,10 @@ public class PhaseExecutor {
     /////////////////////////////////////////////////////////////////////////////////////
     // Perform optimizations
     /////////////////////////////////////////////////////////////////////////////////////
+
+    public void relinkInvokesuper() {
+        appInfo.iterate(new RelinkInvokesuper());
+    }
 
     /**
      * Inline all methods which do not increase the code size.

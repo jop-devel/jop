@@ -132,7 +132,6 @@ public class ConstantPoolReferenceFinder {
         @Override
         public void visitConstantField(ClassInfo classInfo, ConstantFieldref constant) {
             ConstantFieldInfo field = (ConstantFieldInfo) classInfo.getConstantInfo(constant);
-            Type classType = field.getClassRef().getType();
             processFieldRef(field.getValue());
         }
 

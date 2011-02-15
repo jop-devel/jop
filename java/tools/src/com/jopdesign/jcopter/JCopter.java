@@ -169,6 +169,8 @@ public class JCopter extends EmptyTool<JCopterManager> {
         //   remove NOPs, ... )
         executor.removeUnusedMembers();
 
+        executor.relinkInvokesuper();
+
         executor.cleanupConstantPool();
     }
 

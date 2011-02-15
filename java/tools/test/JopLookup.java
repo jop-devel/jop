@@ -131,15 +131,16 @@ public class JopLookup {
     }
 
     private static void readLinkFile(File linkFile) {
+        BufferedReader reader = null;
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(linkFile));
+            reader = new BufferedReader(new FileReader(linkFile));
 
             ClassEntry current = null;
 
             while (true) {
                 String entry = reader.readLine();
                 if (entry == null) {
-                    return;
+                    break;
                 }
                 String[] tab = entry.trim().split(" ");
                 if (entry.startsWith("static ")) {
@@ -172,12 +173,22 @@ public class JopLookup {
             throw new AppInfoError(e);
         } catch (IOException e) {
             throw new AppInfoError(e);
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    //noinspection ThrowFromFinallyBlock
+                    throw new AppInfoError(e);
+                }
+            }
         }
     }
 
     private static void readTxtFile(File txtFile) {
+        BufferedReader reader = null;
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(txtFile));
+            reader = new BufferedReader(new FileReader(txtFile));
 
             String lastline = null;
             MethodEntry current = null;
@@ -185,7 +196,7 @@ public class JopLookup {
             while (true) {
                 String entry = reader.readLine();
                 if (entry == null) {
-                    return;
+                    break;
                 }
 
                 if (entry.isEmpty()) {
@@ -213,6 +224,15 @@ public class JopLookup {
             throw new AppInfoError(e);
         } catch (IOException e) {
             throw new AppInfoError(e);
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    //noinspection ThrowFromFinallyBlock
+                    throw new AppInfoError(e);
+                }
+            }
         }
     }
 

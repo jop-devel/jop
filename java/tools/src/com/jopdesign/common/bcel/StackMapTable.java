@@ -34,6 +34,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
+ * Attribute defined in JSR202
+ * 
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class StackMapTable extends CustomAttribute {

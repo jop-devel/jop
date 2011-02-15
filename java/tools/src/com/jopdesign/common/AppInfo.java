@@ -646,19 +646,18 @@ public final class AppInfo {
     public FieldRef getFieldRef(ClassRef classRef, Signature signature) {
         ClassInfo cls = classRef.getClassInfo();
         if ( cls != null ) {
+            // We do not check for inherited fields here, this is done in FieldRef
             FieldInfo field = cls.getFieldInfo(signature.getMemberName());
-            if ( field == null ) {
-                Type type = null;
-                if (signature.hasMemberSignature()) {
-                    type = signature.getMemberDescriptor().getType();
-                }
-                return new FieldRef(cls.getClassRef(), signature.getMemberName(), type);
-            } else {
+            if ( field != null ) {
                 return field.getFieldRef();
             }
         }
 
-        return new FieldRef(classRef, signature.getMemberName(), signature.getMemberDescriptor().getType());
+        Type type = null;
+        if (signature.hasMemberSignature()) {
+            type = signature.getMemberDescriptor().getType();
+        }
+        return new FieldRef(classRef, signature.getMemberName(), type);
     }
 
     /**
