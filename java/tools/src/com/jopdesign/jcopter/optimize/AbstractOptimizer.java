@@ -20,6 +20,7 @@
 
 package com.jopdesign.jcopter.optimize;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.graphutils.ClassVisitor;
@@ -27,14 +28,19 @@ import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.JCopterConfig;
 
 /**
+ * This is the root class for optimizations, which provides some basic checks
+ * if classes and methods should be optimized and iterates over all non-abstract methods.
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public abstract class AbstractOptimizer implements ClassVisitor {
 
-    JCopter jcopter;
+    private final JCopter jcopter;
+    private final AppInfo appInfo;
 
     public AbstractOptimizer(JCopter jcopter) {
         this.jcopter = jcopter;
+        this.appInfo = AppInfo.getSingleton();
     }
 
     public JCopter getJCopter() {
@@ -47,6 +53,10 @@ public abstract class AbstractOptimizer implements ClassVisitor {
 
     @Override
     public boolean visitClass(ClassInfo classInfo) {
+        if (appInfo.isHwObject(classInfo)) {
+            // Do not optimize Hardware Objects, leave them alone!
+            return false;
+        }
         for (MethodInfo method : classInfo.getMethods()) {
             if (!method.isAbstract()) {
                 optimizeMethod(method);

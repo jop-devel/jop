@@ -21,7 +21,6 @@
 
 package com.jopdesign.common.config;
 
-import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.processormodel.ProcessorModel.Model;
 
@@ -76,6 +75,9 @@ public class Config {
 
     public static final EnumOption<Model> PROCESSOR_MODEL =
             new EnumOption<Model>("arch", "The processor model to use", Model.JOP);
+
+    public static final StringOption HW_OBJECTS =
+            new StringOption("hw-objects", "comma-separated list of hardware (super-) classes and packages", "com.jopdesign.io.HardwareObject");
 
     public static final StringOption LIBRARY_CLASSES =
             new StringOption("libraries", "comma-separated list of library classes and packages", "");

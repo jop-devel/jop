@@ -26,6 +26,7 @@ import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.JavaClassFormatError;
+import com.jopdesign.common.misc.Ternary;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.generic.ArrayType;
@@ -294,19 +295,15 @@ public class InvokeSite {
             // this is an invoke within the same class, no super here
             return false;
         }
-        if (cls.getSuperClassName().equals(invokee.getClassName())) {
-            // invoke refers to the superclass of the invoker, is definitely a super call, even
-            // if we do not have the class
-            return true;
-        }
-
-        if ("java.lang.Object".equals(cls.getClassName())) {
+        if (cls.isRootClass()) {
             // trying to call a super-method of Object? Not likely, dude ..
             return false;
         }
 
-        MethodInfo method = invokee.getMethodInfo();
-        if (method == null) {
+        // do not need to check interfaces, since invokespecial must not call interface methods
+        Ternary rs = cls.hasSuperClass(invokee.getClassName(), false);
+
+        if (rs == Ternary.UNKNOWN) {
             if (invokee.getClassRef().getClassInfo() != null) {
                 // class exists, but method does not exists, either an error or superclasses are missing
                 throw new JavaClassFormatError("Invokespecial tries to call "+invokee+
@@ -316,13 +313,7 @@ public class InvokeSite {
             throw new JavaClassFormatError("Could not determine if invokespecial is a super invoke for "+invokee);
         }
 
-        // check if this invokes a method of a superclass of the invoker
-        ClassInfo superClass = cls.getSuperClassInfo();
-        if (superClass == null) {
-            throw new JavaClassFormatError("Superclass of invoker not known, cannot check if this is a super invoke");
-        }
-
-        return superClass.isSubclassOf(method.getClassInfo());
+        return rs == Ternary.TRUE;
     }
 
     /**

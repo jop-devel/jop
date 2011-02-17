@@ -25,8 +25,8 @@ import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.Ternary;
-import com.jopdesign.common.tools.ConstantPoolReferenceFinder;
 import com.jopdesign.common.tools.ConstantPoolRebuilder;
+import com.jopdesign.common.tools.ConstantPoolReferenceFinder;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.ConstantInfo;
 import com.jopdesign.common.type.Descriptor;
@@ -56,6 +56,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static com.jopdesign.common.misc.MiscUtils.inArray;
 
 /**
  * 
@@ -354,6 +356,13 @@ public final class ClassInfo extends MemberInfo {
     // Superclass and Interfaces
     //////////////////////////////////////////////////////////////////////////////
 
+    /**
+     * @return true if this class represents java.lang.Object
+     */
+    public boolean isRootClass() {
+        return "java.lang.Object".equals(getClassName());
+    }
+
     public String getSuperClassName() {
         return classGen.getSuperclassName();
     }
@@ -364,6 +373,57 @@ public final class ClassInfo extends MemberInfo {
      */
     public ClassInfo getSuperClassInfo() {
         return superClass;
+    }
+
+    /**
+     * check if a given class is a superclass of this class. This check does not require the given
+     * superclass to exist in AppInfo. If the given classname is the name of this class, this method
+     * returns false.
+     *
+     * @param className the name of the superclass.
+     * @param checkInterfaces if true, check the interfaces of this class too.
+     * @return true if a superclass by this name is found, false if all superclasses have been checked
+     *         and no superclass has been found by that name, or unknown if the full superclass hierarchy is
+     *         not known.
+     */
+    public Ternary hasSuperClass(String className, boolean checkInterfaces) {
+        // some simple special cases, to get them out of the way..
+        if (getClassName().equals(className)) return Ternary.FALSE;
+        if (this.isRootClass()) return Ternary.FALSE;
+
+        LinkedList<ClassInfo> list = new LinkedList<ClassInfo>();
+        list.add(this);
+        boolean unsafe = false;
+        while (!list.isEmpty()) {
+            ClassInfo cls = list.removeFirst();
+
+            // check if we find a superclass name match
+            if (cls.getSuperClassName().equals(className)) return Ternary.TRUE;
+            if (checkInterfaces) {
+                if ( inArray(cls.getInterfaceNames(), className) ) return Ternary.TRUE;
+            }
+
+            // push all superclasses to the queue, if they exist
+            // no need to visit Object, if it did not match, we will not find a matching superclass of Object..
+            if (!"java.lang.Object".equals(cls.getSuperClassName())) {
+                ClassInfo superClass = cls.getSuperClassInfo();
+                // cls never is java.lang.Object, since we checked this at the beginning, so
+                // if superclass is null (and not Object) we might have an unsafe result
+                if (superClass == null) {
+                    unsafe = true;
+                } else {
+                    list.add(superClass);
+                }
+            }
+            if (checkInterfaces) {
+                Set<ClassInfo> ifs = cls.getInterfaces();
+                if (ifs.size() != cls.getInterfaceNames().length) {
+                    unsafe = true;
+                }
+                list.addAll(ifs);
+            }
+        }
+        return unsafe ? Ternary.UNKNOWN : Ternary.FALSE;
     }
 
     public boolean isInterface() {
@@ -1138,7 +1198,7 @@ public final class ClassInfo extends MemberInfo {
     protected void updateClassHierarchy() {
         AppInfo appInfo = AppInfo.getSingleton();
 
-        if ( "java.lang.Object".equals(getClassName()) ) {
+        if ( isRootClass() ) {
             superClass = null;
         } else {
             superClass = appInfo.getClassInfo(classGen.getSuperclassName());
@@ -1179,7 +1239,7 @@ public final class ClassInfo extends MemberInfo {
             }
 
         } else if ( superClass == null ) {
-            fullyKnown = Ternary.valueOf("java.lang.Object".equals(getClassName()));
+            fullyKnown = Ternary.valueOf(isRootClass());
         } else {
             // if superclass is unknown, update recursively first
             if ( superClass.fullyKnown == Ternary.UNKNOWN ) {

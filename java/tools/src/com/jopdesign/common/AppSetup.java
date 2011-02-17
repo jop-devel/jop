@@ -270,6 +270,7 @@ public class AppSetup {
             config.addOption(Config.ROOTS);
             config.addOption(Config.CALLSTRING_LENGTH);
             config.addOption(Config.MAIN_METHOD_NAME);
+            config.addOption(Config.HW_OBJECTS);
 
             addProcessorModelOptions();
         }
@@ -476,6 +477,10 @@ public class AppSetup {
         }        
 
         appInfo.setCallstringLength(config.getOption(Config.CALLSTRING_LENGTH).intValue());
+
+        for (String hwObject : Config.splitStringList(config.getOption(Config.HW_OBJECTS))) {
+            appInfo.addHwObjectName(hwObject);
+        }
 
         // register handler
         for (String toolName : tools.keySet()) {

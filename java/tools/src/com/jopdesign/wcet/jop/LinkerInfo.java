@@ -176,7 +176,7 @@ public class LinkerInfo {
 			LinkInfo superLinkInfo;
 			try {
 				superLinkInfo = getOrCreateLinkInfo(klass.getSuperClassName());
-			} catch (ClassNotFoundException e) {
+			} catch (ClassNotFoundException ignored) {
 				throw new AssertionError("Superclass not found: "+klass.getSuperClassName());
 			}
 			superClassFields = superLinkInfo.getFieldOffsets();

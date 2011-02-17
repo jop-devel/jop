@@ -45,7 +45,6 @@ import java.util.List;
 
 public abstract class AllocationWcetModel implements WCETProcessorModel {
 
-	public static final String JOP_NATIVE = "com.jopdesign.sys.Native";
 	private final MethodCache NO_METHOD_CACHE;
 	protected WCETTool project;
 
@@ -130,7 +129,7 @@ public abstract class AllocationWcetModel implements WCETProcessorModel {
 			}
 		} catch (Exception exc) {
 			// TODO: anything else to do?
-			WCETTool.logger.warn("Problem reading annotated bound for array at " + context + ":" + srcLine);
+			WCETTool.logger.warn("Problem reading annotated bound for array at " + context + ":" + srcLine, exc);
 		}
 
 		// get analyzed size

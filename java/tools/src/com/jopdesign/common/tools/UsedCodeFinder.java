@@ -220,6 +220,13 @@ public class UsedCodeFinder {
                 continue;
             }
 
+            if (appInfo.isHwObject(cls)) {
+                // Do not remove anything from hardware objects, else the mapping gets broken and
+                // chaos takes over!
+                logger.debug("Skipping used hardware object " +cls);
+                continue;
+            }
+
             unusedFields.clear();
             unusedMethods.clear();
 

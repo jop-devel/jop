@@ -36,6 +36,7 @@ import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MissingClassError;
 import com.jopdesign.common.misc.NamingConflictException;
+import com.jopdesign.common.misc.Ternary;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.type.ClassRef;
@@ -94,6 +95,7 @@ public final class AppInfo {
 
     private boolean exitOnMissingClass;
 
+    private final Set<String> hwObjectClasses;
     private final Set<String> libraryClasses;
     private final Set<String> ignoredClasses;
 
@@ -129,6 +131,7 @@ public final class AppInfo {
 
         classes = new HashMap<String, ClassInfo>();
         roots = new HashSet<MemberInfo>();
+        hwObjectClasses = new HashSet<String>();
         libraryClasses = new HashSet<String>(1);
         ignoredClasses = new HashSet<String>(1);
 
@@ -1144,30 +1147,15 @@ public final class AppInfo {
     }
 
     public boolean isNative(String className) {
-        for (String s : processor.getNativeClasses()) {
-            if (className.equals(s) || className.startsWith(s + ".")) {
-                return true;
-            }
-        }
-        return false;
+        return matchClassName(className, processor.getNativeClasses(), false);
     }
 
     public boolean isLibrary(String className) {
-        for (String s : libraryClasses) {
-            if (className.equals(s) || className.startsWith(s + ".")) {
-                return true;
-            }
-        }
-        return false;
+        return matchClassName(className, libraryClasses, false);
     }
 
     public boolean isIgnored(String className) {
-        for (String s : ignoredClasses) {
-            if (className.equals(s) || className.startsWith(s + ".")) {
-                return true;
-            }
-        }
-        return false;
+        return matchClassName(className, ignoredClasses, false);
     }
 
     /**
@@ -1188,10 +1176,51 @@ public final class AppInfo {
         return isIgnored(className);
     }
 
+    /**
+     * @param hwObject the fully qualified class name of a hardware class, the superclass of a hardware
+     * class, or a package name which contains hardware objects.
+     */
+    public void addHwObjectName(String hwObject) {
+        hwObjectClasses.add(hwObject);
+    }
+
+    public boolean isHwObject(ClassInfo classInfo) {
+        return isHwObject(classInfo.getClassName());
+    }
+
+    /**
+     * Check if a class is a hardware object, i.e. it represents a hardware interface
+     * and must not be modified.
+     *
+     * @param className the full class name
+     * @return true if the class is a hardware interface.
+     */
+    public boolean isHwObject(String className) {
+        return matchClassName(className, hwObjectClasses, true);
+    }
 
     //////////////////////////////////////////////////////////////////////////////
     // Internal Affairs
     //////////////////////////////////////////////////////////////////////////////
+
+    private boolean matchClassName(String className, Collection<String> list, boolean matchSuper) {
+        ClassInfo cls = null;
+        if (matchSuper) {
+            cls = classes.get(className);
+        }
+        for (String s : list) {
+            if (className.equals(s) || className.startsWith(s + ".")) {
+                return true;
+            }
+            if (cls != null) {
+                Ternary rs = cls.hasSuperClass(s, true);
+                // Hmm, what to do if the superclass check is not safe (ie result is UNKNOWN)?
+                // We just do not match for now ..
+                if (rs == Ternary.TRUE) return true;
+            }
+        }
+        return false;
+    }
 
     private ClassInfo performLoadClass(String className, boolean required) throws ClassInfoNotFoundException {
 

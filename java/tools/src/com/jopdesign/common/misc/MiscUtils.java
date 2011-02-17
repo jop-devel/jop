@@ -320,4 +320,15 @@ public class MiscUtils {
         sb.append("]");
         return sb.toString();
     }
+
+    public static <T> boolean inArray(T[] array, T element) {
+        for (T i : array) {
+            if (i == null) {
+                if (element == null) return true;
+            } else if (i.equals(element)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
