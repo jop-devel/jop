@@ -62,7 +62,14 @@ public class UsedCodeFinder {
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT + ".UsedCodeFinder");
 
     private static KeyManager.CustomKey keyUsed;
-    
+
+    /**
+     * Marker used by this class: UNUSED if a member is not marked,
+     * MARKED if a member is referred to by the code but it has not been visited recursively,
+     * USED if a member is used and has been visited recursively.
+     */
+    public enum Mark { UNUSED, MARKED, USED }
+
     private final AppInfo appInfo;
     private Set<String> ignoredClasses;
 
@@ -102,12 +109,12 @@ public class UsedCodeFinder {
      * If a member has not been marked, we assume it is unused.
      *
      * @param member the member to check.
-     * @return true if it has been marked used, else false.
+     * @return the marker value.
      */
-    public boolean isUsed(MemberInfo member) {
-        Boolean used = (Boolean) member.getCustomValue(getUseMarker());
+    public Mark getMark(MemberInfo member) {
+        Mark mark = (Mark) member.getCustomValue(getUseMarker());
         // if it hasn't been marked, assume unused
-        return used != null && used;
+        return mark != null ? mark : Mark.UNUSED;
     }
 
     /**
@@ -117,11 +124,16 @@ public class UsedCodeFinder {
      * @see #markUsedMembers(MethodInfo)
      * @see #markUsedMembers(FieldInfo)
      * @param member the member to mark as used.
+     * @param markUsed if true, mark as USED, not as MARKED.
      * @return the old marker value.
      */
-    public boolean setUsed(MemberInfo member) {
-        Boolean used = (Boolean) member.setCustomValue(getUseMarker(), true);
-        return used != null && used;
+    public Mark setMark(MemberInfo member, boolean markUsed) {
+        if (!markUsed) {
+            // If the member is already marked used, do not mark it as 'not visited'
+            if (getMark(member) == Mark.USED) return Mark.USED;
+        }
+        Mark mark = (Mark) member.setCustomValue(getUseMarker(), markUsed ? Mark.USED : Mark.MARKED);
+        return mark != null ? mark : Mark.UNUSED;
     }
 
     /**
@@ -147,7 +159,7 @@ public class UsedCodeFinder {
 
     public void markUsedMembers(ClassInfo rootClass, boolean visitMembers) {
         // has already been visited before, do not recurse down again.
-        if (setUsed(rootClass)) return;
+        if (setMark(rootClass,true)==Mark.USED) return;
 
         // visit superclass and interfaces, attributes, but not methods or fields
         logger.debug("Visiting references of "+rootClass);
@@ -173,7 +185,11 @@ public class UsedCodeFinder {
 
     public void markUsedMembers(FieldInfo rootField) {
         // has already been visited before, do not recurse down again.
-        if (setUsed(rootField)) return;
+        if (setMark(rootField,true)==Mark.USED) return;
+
+        // mark the class containing this method, so we do not need to worry about
+        // marking the class when marking root fields.
+        markUsedMembers(rootField.getClassInfo(), false);
 
         // visit type info, attributes, constantValue
         logger.debug("Visiting references of "+rootField);
@@ -183,7 +199,11 @@ public class UsedCodeFinder {
 
     public void markUsedMembers(MethodInfo rootMethod) {
         // has already been visited before, do not recurse down again.
-        if (setUsed(rootMethod)) return;
+        if (setMark(rootMethod,true)==Mark.USED) return;
+
+        // mark the class containing this method, so we do not need to worry about
+        // marking the class when marking root methods.
+        markUsedMembers(rootMethod.getClassInfo(), false);
 
         // visit parameters, attributes, instructions, tables, ..
         logger.debug("Visiting references of "+rootMethod);
@@ -214,7 +234,7 @@ public class UsedCodeFinder {
         int methods = 0;
 
         for (ClassInfo cls : appInfo.getClassInfos()) {
-            if (!isUsed(cls)) {
+            if (getMark(cls)==Mark.UNUSED) {
                 unusedClasses.add(cls);
                 logger.debug("Removing unused class " +cls);
                 continue;
@@ -231,17 +251,22 @@ public class UsedCodeFinder {
             unusedMethods.clear();
 
             for (FieldInfo f : cls.getFields()) {
-                if (!isUsed(f)) {
+                if (getMark(f)==Mark.UNUSED) {
                     unusedFields.add(f);
                     logger.debug("Removing unused field "+f);
                     fields++;
                 }
             }
             for (MethodInfo m : cls.getMethods()) {
-                if (!isUsed(m)) {
+                Mark mark = getMark(m);
+                if (mark == Mark.UNUSED) {
                     unusedMethods.add(m);
                     logger.debug("Removing unused method "+m);
                     methods++;
+                }
+                if (mark == Mark.MARKED && !m.isNative()) {
+                    logger.info("Making unused method "+m+" abstract");
+                    m.setAbstract(true);
                 }
             }
 
@@ -274,7 +299,8 @@ public class UsedCodeFinder {
                 continue;
             }
                     
-            // class is used, visit it if it has not yet been visited, but skip its class members
+            // referenced class is used, visit it if it has not yet been visited, but skip its class members
+            // Note that this class might be different than the class containing the class member
             markUsedMembers(cls,false);
             
             // check if this signature specifies a class member (or just a class, in this case we are done)
@@ -283,24 +309,18 @@ public class UsedCodeFinder {
                 MethodRef ref = appInfo.getMethodRef(sig);
                 MethodInfo method = ref.getMethodInfo();
 
-                // We mark the referenced class as used..
-                ClassInfo refCls = ref.getClassRef().getClassInfo();
-                if (refCls != null) {
-                    markUsedMembers(refCls, false);
-                }
-
-                // We might not need to do this, since all possible implementations will be marked later,
-                // and we might find some unused code, but we may want to keep the referenced method so that
-                // we keep the declarations. We could mark it without following it, but then it will not be followed
-                // when it is used as implementation (we would need a third 'gray' marked state).
+                // We need not go down recursively here, since all possible implementations will be marked later,
+                // and we might find some unused code. But we may want to keep the referenced method so that
+                // we keep the declarations. We mark it without following it and make it abstract later.
                 if (method != null) {
-                    markUsedMembers(method);
+                    setMark(method, false);
                 }
 
             } else if (sig.hasMemberName()) {
                 // It's a field! No need to look in subclasses, fields are not virtual
                 FieldRef ref = appInfo.getFieldRef(sig);
                 FieldInfo field = ref.getFieldInfo();
+
                 if (field != null) {
                     markUsedMembers(field);
                 }
@@ -352,6 +372,9 @@ public class UsedCodeFinder {
 
     private Collection<MethodInfo> findMethods(InvokeSite invoke) {
         // this checks the callgraph, if available, else the type graph
+
+        // We do not need to use callstrings here: If a method can be reached over any callstring
+        // we need to keep it anyway.
 
         // We could load classes on the fly here instead of checking the callgraph, basically
         //  - use loadClass in getClassInfo()
