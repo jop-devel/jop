@@ -264,7 +264,7 @@ public class UsedCodeFinder {
                     logger.debug("Removing unused method "+m);
                     methods++;
                 }
-                if (mark == Mark.MARKED && !m.isNative()) {
+                if (mark == Mark.MARKED && !m.isNative() && !m.isAbstract()) {
                     logger.info("Making unused method "+m+" abstract");
                     m.setAbstract(true);
                 }
