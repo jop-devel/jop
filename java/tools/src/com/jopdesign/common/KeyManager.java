@@ -217,7 +217,7 @@ public class KeyManager {
             if ( fromStruct ) {
                 method.removeCustomValue(key);
             }
-            if ( fromCode && !method.isAbstract() ) {
+            if ( fromCode && method.hasCode() ) {
                 MethodCode code = method.getCode();
                 InstructionList il = code.getInstructionList();
                 for (InstructionHandle ih : il.getInstructionHandles()) {

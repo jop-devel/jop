@@ -68,9 +68,6 @@ import java.util.Stack;
  * <p>Note that this callgraph only contains MethodInfos, not MethodRefs, so invocations of unknown methods
  * are not represented in this graph. </p>
  *
- * TODO allow multiple roots, additionally initialize from AppInfo directly (use AppInfo.getRoots(),
- *      use all methods in root-classes as root; provide method find all 'real' roots)
- *
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  * @author Stefan Hepp (stefan@stefant.org)
  */
@@ -1002,7 +999,6 @@ public class CallGraph {
             return methods;
         }
 
-        // TODO discuss :)
         // if the invoke is not virtual, should we look it up in the graph anyway?
         // We could just return new ExecutionContext(invokee, cs);
         // But that's what AppInfo#findImplementations() is for, here we only lookup the callgraph,

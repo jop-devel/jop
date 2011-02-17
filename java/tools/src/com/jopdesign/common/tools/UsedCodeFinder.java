@@ -190,7 +190,7 @@ public class UsedCodeFinder {
         Set<String> found = ConstantPoolReferenceFinder.findReferencedMembers(rootMethod);
         visitReferences(found);
 
-        if (!rootMethod.isAbstract()) {
+        if (rootMethod.hasCode()) {
             visitInvokeSites(rootMethod.getCode());
         }
     }
@@ -353,7 +353,7 @@ public class UsedCodeFinder {
     private Collection<MethodInfo> findMethods(InvokeSite invoke) {
         // this checks the callgraph, if available, else the type graph
 
-        // TODO we could load classes on the fly here instead of checking the callgraph, basically
+        // We could load classes on the fly here instead of checking the callgraph, basically
         //  - use loadClass in getClassInfo()
         //  - load and visit all superclasses, mark implementation in superclass as used if inherited
         //  - visit all known subclasses, mark this method as used

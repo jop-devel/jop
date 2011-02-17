@@ -332,7 +332,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
      * @return the CFG for the method.
      */
     public ControlFlowGraph getFlowGraph(MethodInfo mi) {
-        if (mi.isAbstract()) return null;
+        if (!mi.hasCode()) return null;
         ControlFlowGraph cfg = mi.getCode().getControlFlowGraph(false);
         try {
             cfg.resolveVirtualInvokes();
@@ -363,7 +363,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
      * @return size of the method in words, or 0 if abstract
      */
     public int getSizeInWords(MethodInfo mi) {
-        if (mi.isAbstract()) return 0;
+        if (!mi.hasCode()) return 0;
         return mi.getCode().getNumberOfWords();
     }
 

@@ -50,7 +50,7 @@ public class DefaultCallgraphConfig implements CallGraph.CallgraphConfig {
         CallString callstring = context.getCallString();
         MethodInfo method = context.getMethodInfo();
 
-        if (method.isAbstract()) {
+        if (!method.hasCode()) {
             //noinspection unchecked
             return (Set<ExecutionContext>) Collections.EMPTY_SET;
         }

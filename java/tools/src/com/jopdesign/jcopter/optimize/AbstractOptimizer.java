@@ -58,7 +58,7 @@ public abstract class AbstractOptimizer implements ClassVisitor {
             return false;
         }
         for (MethodInfo method : classInfo.getMethods()) {
-            if (!method.isAbstract()) {
+            if (method.hasCode()) {
                 optimizeMethod(method);
             }
         }

@@ -95,7 +95,7 @@ public class WCETEventHandler extends EmptyAppEventHandler {
 
     public void loadLoopAnnotations(ClassInfo classInfo) throws BadAnnotationException {
         for (MethodInfo method : classInfo.getMethods()) {
-            if (method.isAbstract()) continue;
+            if (!method.hasCode()) continue;
             loadLoopAnnotations(method.getCode().getControlFlowGraph(false));
         }
     }

@@ -327,7 +327,7 @@ public class ConstantPoolRebuilder implements ClassVisitor {
 
         methodGen.setConstantPool(newPool);
 
-        if (!methodInfo.isAbstract()) {
+        if (methodInfo.hasCode()) {
             
             // update all instructions
             InstructionList il = methodInfo.getCode().getInstructionList();

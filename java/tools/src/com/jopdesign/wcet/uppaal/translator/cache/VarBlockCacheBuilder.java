@@ -63,6 +63,7 @@ public abstract class VarBlockCacheBuilder extends DynamicCacheBuilder {
         List<Integer> blocksPerMethod = new ArrayList<Integer>();
         for (MethodInfo method : methods) {
             if (method.isAbstract()) {
+                // TODO should we skip if the method is native too?
                 continue;
             }
             int mBlocks = blocksOf(method);

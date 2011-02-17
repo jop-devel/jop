@@ -37,21 +37,21 @@ public class MethodTraverser implements ClassVisitor {
     }
 
     private final MethodVisitor visitor;
-    private final boolean skipAbstract;
+    private final boolean skipNoCode;
 
     /**
      * @param visitor the visitor to apply to all methods
-     * @param skipAbstract if true, do not visit abstract methods
+     * @param skipNoCode if true, do not visit abstract or native methods
      */
-    public MethodTraverser(MethodVisitor visitor, boolean skipAbstract) {
+    public MethodTraverser(MethodVisitor visitor, boolean skipNoCode) {
         this.visitor = visitor;
-        this.skipAbstract = skipAbstract;
+        this.skipNoCode = skipNoCode;
     }
 
     @Override
     public boolean visitClass(ClassInfo classInfo) {
         for (MethodInfo m : classInfo.getMethods()) {
-            if (skipAbstract && m.isAbstract()) continue;
+            if (skipNoCode && !m.hasCode()) continue;
             visitor.visitMethod(m);
         }
         return true;

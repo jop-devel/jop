@@ -393,7 +393,7 @@ public class DescendingClassTraverser implements ClassVisitor {
     }
 
     public void visitMethodCode(MethodInfo methodInfo) {
-        if (!methodInfo.isAbstract()) {
+        if (methodInfo.hasCode()) {
             bcelVisitor.setCode(true);
 
             MethodCode code = methodInfo.getCode();

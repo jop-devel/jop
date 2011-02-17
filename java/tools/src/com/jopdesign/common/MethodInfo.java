@@ -31,6 +31,7 @@ import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Method;
+import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
@@ -54,10 +55,8 @@ public final class MethodInfo extends ClassMemberInfo {
         super(classInfo, methodGen);
         this.methodGen = methodGen;
         descriptor = Descriptor.parse(methodGen.getSignature());
-        
-        if (!isAbstract()) {
-            methodCode = new MethodCode(this);
-        }
+
+        updateMethodCode();
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -71,6 +70,7 @@ public final class MethodInfo extends ClassMemberInfo {
 
     public void setAbstract(boolean val) {
         methodGen.isAbstract(val);
+        updateMethodCode();
     }
 
     public boolean isSynchronized() {
@@ -87,6 +87,7 @@ public final class MethodInfo extends ClassMemberInfo {
 
     public void setNative(boolean val) {
         methodGen.isNative(val);
+        updateMethodCode();
     }
 
     public boolean isStrictFP() {
@@ -132,6 +133,13 @@ public final class MethodInfo extends ClassMemberInfo {
     // Code access and Control Flow Graph stuff
     //////////////////////////////////////////////////////////////////////////////
 
+    /**
+     * @return true if this method is neither abstract nor native.
+     */
+    public boolean hasCode() {
+        return methodCode != null;
+    }
+
     public MethodCode getCode() {
         return methodCode;
     }
@@ -145,7 +153,7 @@ public final class MethodInfo extends ClassMemberInfo {
      * @return a new BCEL method class containing all changes to the code.
      */
     public Method compile() {
-        if (!isAbstract()) {
+        if (hasCode()) {
             methodCode.compile();
         }
         // TODO: to reduce memory consumption, dispose instruction handlers and compile to Method instead of MethodGen?
@@ -402,6 +410,26 @@ public final class MethodInfo extends ClassMemberInfo {
      */
     protected MethodGen getInternalMethodGen() {
         return methodGen;
+    }
+
+    private void updateMethodCode() {
+        if (!isAbstract() && !isNative()) {
+            if (methodCode == null) {
+                if (methodGen.getInstructionList() == null) {
+                    methodGen.setInstructionList(new InstructionList());
+                }
+                methodCode = new MethodCode(this);
+            }
+        } else {
+            if (methodCode != null) {
+                methodGen.setInstructionList(null);
+                methodGen.removeCodeAttributes();
+                methodGen.removeLineNumbers();
+                methodGen.removeExceptionHandlers();
+                methodGen.removeLocalVariables();
+                methodCode = null;
+            }
+        }
     }
 
 }

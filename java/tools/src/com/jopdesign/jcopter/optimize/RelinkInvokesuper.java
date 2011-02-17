@@ -49,7 +49,7 @@ public class RelinkInvokesuper implements ClassVisitor {
     public boolean visitClass(ClassInfo classInfo) {
         // We do not extend AbstractOptimizer, so this can be used easier in other tools
         for (MethodInfo method : classInfo.getMethods()) {
-            if (!method.isAbstract()) {
+            if (method.hasCode()) {
                 visitCode(method.getCode());
             }
         }
