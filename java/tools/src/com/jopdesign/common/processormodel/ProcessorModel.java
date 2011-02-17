@@ -28,7 +28,7 @@ import java.util.List;
 public interface ProcessorModel {
 
     enum Model {
-        JOP, jamuth, allocation
+        JOP, jamuth, allocation, JVM
     }
 
     /**

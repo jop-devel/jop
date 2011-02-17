@@ -32,6 +32,7 @@ import com.jopdesign.common.misc.ClassInfoNotFoundException;
 import com.jopdesign.common.processormodel.AllocationModel;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.common.processormodel.JOPModel;
+import com.jopdesign.common.processormodel.JVMModel;
 import com.jopdesign.common.processormodel.JamuthModel;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.common.processormodel.ProcessorModel.Model;
@@ -682,6 +683,9 @@ public class AppSetup {
                 break;
             case allocation:
                 pm = new AllocationModel(config);
+                break;
+            case JVM:
+                pm = new JVMModel();
                 break;
             default:
                 throw new BadConfigurationError("Unknown processor model " + model);

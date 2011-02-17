@@ -34,7 +34,7 @@ import org.apache.bcel.generic.Type;
  * Holds either a ClassInfo object or a classname with some infos if the
  * classInfo has not been loaded for some reason.
  *
- * @author Stefan Hepp (stefan@stefant.org)
+ * @author Sitefan Hepp (stefan@stefant.org)
  */
 public class ClassRef {
 
