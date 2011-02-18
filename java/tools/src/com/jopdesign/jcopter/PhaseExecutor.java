@@ -39,6 +39,7 @@ import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.tools.ConstantPoolRebuilder;
 import com.jopdesign.common.tools.UsedCodeFinder;
+import com.jopdesign.jcopter.optimize.PeepholeOptimizer;
 import com.jopdesign.jcopter.optimize.RelinkInvokesuper;
 import org.apache.log4j.Logger;
 
@@ -231,7 +232,10 @@ public class PhaseExecutor {
      */
     public void cleanupMethodCode() {
         // TODO optimize load/store
-        // TODO perform some simple peephole optimizations
+
+        // perform some simple and safe peephole optimizations
+        new PeepholeOptimizer(jcopter).optimize();
+        
         // (more complex optimizations (dead-code elimination, constant-folding,..) should
         //  go into another method..)
     }

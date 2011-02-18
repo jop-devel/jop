@@ -25,7 +25,6 @@ import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallGraph.CallgraphConfig;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.DefaultCallgraphConfig;
-import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
 import com.jopdesign.common.graphutils.ClassVisitor;
@@ -944,14 +943,14 @@ public final class AppInfo {
             throw new AssertionError("findImplementations() called with empty callstring!");
         }
         
-        Set<MethodInfo> methods = new HashSet<MethodInfo>();
-
         InvokeSite invokeSite = cs.top();
 
         // Handle special/static invokes
         // We could use the callgraph to check them too, but only if the callstring length of the
         // callgraph is at least one, else we will get incorrect results
         if (!invokeSite.isVirtual()) {
+            Set<MethodInfo> methods = new HashSet<MethodInfo>();
+
             MethodInfo method = invokeSite.getInvokeeRef().getMethodInfo();
             if (method == null) {
                 return methods;
@@ -973,10 +972,7 @@ public final class AppInfo {
             return findImplementations(invokeSite.getInvokeeRef());
         }
 
-        for (ExecutionContext context : callGraph.getImplementations(cs)) {
-            methods.add(context.getMethodInfo());
-        }
-        return methods;
+        return callGraph.findImplementingMethods(cs);
     }
 
     /**

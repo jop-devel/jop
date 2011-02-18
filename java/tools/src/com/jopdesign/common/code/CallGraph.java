@@ -975,6 +975,25 @@ public class CallGraph {
     }
 
     /**
+     * Find all implementing methods for a given non-empty callstring.
+     * This method is similar to {@link AppInfo#findImplementations(CallString)}, but is based
+     * solemnly on this callgraph, even for non-virtual invokes.
+     *
+     * @see AppInfo#findImplementations(CallString)
+     * @see #getImplementations(CallString) 
+     * @param cs the non-empty callstring, top element represents the invocation.
+     * @return a set of implementing methods of the invokee.
+     */
+    public Set<MethodInfo> findImplementingMethods(CallString cs) {
+        Collection<ExecutionContext> nodes = getImplementations(cs);
+        Set<MethodInfo> methods = new HashSet<MethodInfo>(nodes.size());
+        for (ExecutionContext node : nodes) {
+            methods.add(node.getMethodInfo());
+        }
+        return methods;
+    }
+
+    /**
      * For a given non-empty callstring, find all implementations which might get called by the last
      * invocation in the callstring, i.e. find all methods which might appear in the next entry of the
      * callstring.
@@ -990,6 +1009,9 @@ public class CallGraph {
      *         with their callstrings.
      */
     public Set<ExecutionContext> getImplementations(CallString cs) {
+        if (cs.length() == 0) {
+            throw new AssertionError("Callstring must not be empty!");
+        }
 
         InvokeSite invoke = cs.top();
         Set<ExecutionContext> methods = new HashSet<ExecutionContext>();
