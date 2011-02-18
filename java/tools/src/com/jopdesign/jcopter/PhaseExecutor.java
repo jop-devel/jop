@@ -128,6 +128,7 @@ public class PhaseExecutor {
                 } else if (jvmClasses.contains(ctx.getMethodInfo().getClassName())) {
                     jvmRoots.add(ctx);
                 } else {
+                    // Should we dump Runnable.run() into another graph?
                     appRoots.add(ctx);
                 }
             }

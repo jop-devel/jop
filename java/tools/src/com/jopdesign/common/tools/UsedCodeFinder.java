@@ -147,10 +147,17 @@ public class UsedCodeFinder {
     public void markUsedMembers() {
         resetMarks();
 
+        // This contains all application and JVM root methods and -classes
         for (MethodInfo root : appInfo.getRootMethods()) {
             // this also marks the containing class as used, and includes the main method
             markUsedMembers(root);
         }
+        // We do not need to visit all <clinit>, they are marked when the classes are visited
+        // but we need to add all Runnable.run() methods as root methods
+        for (MethodInfo run : appInfo.getThreadRootMethods()) {
+            markUsedMembers(run);
+        }
+
         if (ignoredClasses.size() > 0 ) {
             int num = ignoredClasses.size();
             logger.info("Ignored " + num + " referenced "+ (num == 1 ? "class: " : "classes: ") + ignoredClasses);

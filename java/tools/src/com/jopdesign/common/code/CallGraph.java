@@ -416,6 +416,9 @@ public class CallGraph {
         for (MethodInfo m : appInfo.getClinitMethods()) {
             roots.add(new ExecutionContext(m));
         }
+        for (MethodInfo m : appInfo.getThreadRootMethods()) {
+            roots.add(new ExecutionContext(m));
+        }
 
         CallGraph cg = new CallGraph(roots, config);
         cg.build();

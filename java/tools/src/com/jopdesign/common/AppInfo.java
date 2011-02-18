@@ -791,6 +791,25 @@ public final class AppInfo {
         return methods;
     }
 
+    public Collection<MethodInfo> getThreadRootMethods() {
+        List<MethodInfo> methods = new ArrayList<MethodInfo>();
+        for (ClassInfo cls : classes.values()) {
+            Ternary isRunnable = cls.hasSuperClass("java.lang.Runnable", true);
+            if (isRunnable == Ternary.UNKNOWN) {
+                // what if unsafe? We ignore for now, must be added as root manually; should we log?
+                continue;
+            }
+            if (isRunnable == Ternary.TRUE) {
+                MethodInfo run = cls.getMethodInfo("run()V");
+                if (run != null) {
+                    methods.add(run);
+                }
+                // TODO any other methods we might need to add?
+            }
+        }
+        return methods;
+    }
+
     private void addRootMethods(Set<MethodInfo> methods, MemberInfo root) {
         if (root instanceof MethodInfo) {
             methods.add((MethodInfo) root);
