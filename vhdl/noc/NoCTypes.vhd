@@ -24,7 +24,7 @@ use IEEE.STD_LOGIC_1164.all;
 
 package NoCTypes is
 
-  constant NOCNODES : integer := 3;
+--  constant NOCNODES : integer := 3;
   constant NOCADDRBITS			: integer := 3;
   constant NOCPACKETBITS : integer := 2*NOCADDRBITS+2+32;
   
@@ -41,11 +41,11 @@ type NoCPacket is record
 end record;
 
 -- for SimpCon
-type sc_addr_type is array(0 to NOCNODES-1) of STD_LOGIC_VECTOR (1 downto 0);
-type sc_rdy_cnt_type is array(0 to NOCNODES-1) of STD_LOGIC_VECTOR (1 downto 0);
-type sc_bit_type is array(0 to NOCNODES-1) of STD_LOGIC;
-type sc_word_type is array(0 to NOCNODES-1) of STD_LOGIC_VECTOR (31 downto 0);
-type sc_io_type is array(0 to NOCNODES-1) of NoCPacket;
+type sc_addr_type is array(natural RANGE <>) of STD_LOGIC_VECTOR (1 downto 0);
+type sc_rdy_cnt_type is array(natural RANGE <>) of STD_LOGIC_VECTOR (1 downto 0);
+type sc_bit_type is array(natural RANGE <>) of STD_LOGIC;
+type sc_word_type is array(natural RANGE <>) of STD_LOGIC_VECTOR (31 downto 0);
+type sc_io_type is array(natural RANGE <>) of NoCPacket;
 
 --  function <function_name>  (signal <signal_name> : in <type_declaration>) return <type_declaration>;
 function tob (arg : boolean) return std_ulogic;

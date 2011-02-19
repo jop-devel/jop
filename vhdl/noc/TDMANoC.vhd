@@ -28,19 +28,19 @@ use work.NoCTypes.ALL;
 
 entity TDMANoC is
 	 Generic (
-				-- Nodes: integer := 4; -- defined in NoCTypes
+				Nodes: integer := 4;
 	 			BufferSize: integer := 4;
 			   BufferAddrBits: integer := 2
 	 );
     Port ( Clk : in  STD_LOGIC;
            Rst : in  STD_LOGIC;
 			  -- arrays of signals for SimpCon
-			  Addr : in sc_addr_type;
-           wr : in sc_bit_type;
-           wr_data : in sc_word_type;
-           rd : in sc_bit_type;
-           rd_data : out sc_word_type;
-           rdy_cnt : out sc_rdy_cnt_type
+			  Addr : in sc_addr_type(0 to Nodes-1);
+           wr : in sc_bit_type(0 to Nodes-1);
+           wr_data : in sc_word_type(0 to Nodes-1);
+           rd : in sc_bit_type(0 to Nodes-1);
+           rd_data : out sc_word_type(0 to Nodes-1);
+           rdy_cnt : out sc_rdy_cnt_type(0 to Nodes-1)
 	 );
 end TDMANoC;
 
@@ -68,16 +68,16 @@ component TDMANode is
 	);
 end component;
 
-signal nReg : sc_io_type; 
+signal nReg : sc_io_type(0 to Nodes-1); 
 
 begin
 
 
- AllNodes: for i in 0 to NOCNODES-1 generate
+ AllNodes: for i in 0 to Nodes-1 generate
  
    node: entity work.TDMANode 
 		generic map ( CONV_STD_LOGIC_VECTOR(i,NOCADDRBITS), 4, 2)
-		port map (Clk, Rst, Addr(i), wr(i), wr_data(i), rd(i), rd_data(i), rdy_cnt(i), nReg(i), nReg( (i+1) mod NOCNODES));
+		port map (Clk, Rst, Addr(i), wr(i), wr_data(i), rd(i), rd_data(i), rdy_cnt(i), nReg(i), nReg( (i+1) mod Nodes));
  
  end generate;
 

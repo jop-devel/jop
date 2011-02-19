@@ -54,14 +54,13 @@ use work.NoCTypes.ALL;
 entity jop is
 
 generic (
---	ram_cnt		: integer := 2;		-- clock cycles for external ram
-	ram_cnt		: integer := 10;		-- clock cycles for external ram
+	ram_cnt		: integer := 2;		-- clock cycles for external ram
 --	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
 	rom_cnt		: integer := 10;	-- clock cycles for external rom for 100 MHz
-	jpc_width	: integer := 11; -- was 10;	-- address bits of java bytecode pc = cache size
+	jpc_width	: integer := 10;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 2;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 8;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 3		-- number of cpus
+	cpu_cnt		: integer := 8		-- number of cpus
 );
 
 port (
@@ -69,47 +68,20 @@ port (
 --
 --	serial interface
 --
-
---	ser_txd			: out std_logic;
---	ser_rxd			: in std_logic;
-	RsRx       : in    std_logic; 
-	RsTx       : inout std_logic; 
-
-	
---	ser_ncts		: in std_logic;
---	ser_nrts		: out std_logic;
+	ser_txd			: out std_logic;
+	ser_rxd			: in std_logic;
+	ser_ncts		: in std_logic;
+	ser_nrts		: out std_logic;
 
 --
 --	watchdog
 --
--- led(0) : wd		: out std_logic; 
+	wd		: out std_logic;
 	freeio	: out std_logic;
-
-
---------------------------------------
--- from Nexys2
---------------------------------------
-
-	led        : out   std_logic_vector (7 downto 0); 
-	FlashCS    : out   std_logic; 
-	MemAdr     : out   std_logic_vector (23 downto 1); 
-	MemDB      : inout std_logic_vector (15 downto 0); 
-	RamWait    : in    std_logic; 
-	MemOe      : out   std_logic; 
-	MemWr      : out   std_logic; 
-	RamAdv     : out   std_logic; 
-	RamClk     : out   std_logic; 
-	RamCre     : out   std_logic; 
-	RamCS      : out   std_logic; 
-	RamLB      : out   std_logic; 
-	RamUB      : out   std_logic;
-
---------------------------------------
 
 --
 --	two ram banks
 --
-
 	rama_a		: out std_logic_vector(17 downto 0);
 	rama_d		: inout std_logic_vector(15 downto 0);
 	rama_ncs	: out std_logic;
@@ -128,13 +100,13 @@ port (
 --
 --	config/program flash and big nand flash
 --
---	fl_a	: out std_logic_vector(18 downto 0);
---	fl_d	: inout std_logic_vector(7 downto 0);
---	fl_ncs	: out std_logic;
---	fl_ncsb	: out std_logic;
---	fl_noe	: out std_logic;
---	fl_nwe	: out std_logic;
---	fl_rdy	: in std_logic;
+	fl_a	: out std_logic_vector(18 downto 0);
+	fl_d	: inout std_logic_vector(7 downto 0);
+	fl_ncs	: out std_logic;
+	fl_ncsb	: out std_logic;
+	fl_noe	: out std_logic;
+	fl_nwe	: out std_logic;
+	fl_rdy	: in std_logic;
 
 --
 --	I/O pins of board
@@ -153,19 +125,35 @@ architecture rtl of jop is
 --	components:
 --
 
---component pll is
---generic (multiply_by : natural; divide_by : natural);
---port (
---	inclk0		: in std_logic;
---	c0			: out std_logic
---);
---end component;
+component pll is
+generic (multiply_by : natural; divide_by : natural);
+port (
+	inclk0		: in std_logic;
+	c0			: out std_logic
+);
+end component;
 
-    COMPONENT TDMANoC
-	 Generic (
-				Nodes: integer
-	 );
-    PORT(
+--    COMPONENT TDMANoC
+--    PORT(
+--        Clk : IN  std_logic;
+--         Rst : IN  std_logic;
+--         Addr : IN  sc_addr_type;
+--         wr : IN  sc_bit_type;
+--         wr_data : IN  sc_word_type;
+--         rd : IN  sc_bit_type;
+--         rd_data : OUT  sc_word_type;
+--         rdy_cnt : OUT  sc_rdy_cnt_type
+--        );
+--    END COMPONENT;
+
+	COMPONENT NoCOpenRing
+	GENERIC (
+				Nodes: integer;
+				FirstNodeAddress: integer;
+	 			BufferSize: integer;
+			   BufferAddrBits: integer
+	);
+	PORT (
          Clk : IN  std_logic;
          Rst : IN  std_logic;
          Addr : IN  sc_addr_type;
@@ -173,11 +161,31 @@ architecture rtl of jop is
          wr_data : IN  sc_word_type;
          rd : IN  sc_bit_type;
          rd_data : OUT  sc_word_type;
-         rdy_cnt : OUT  sc_rdy_cnt_type
-        );
-    END COMPONENT;
-
-
+         rdy_cnt : OUT  sc_rdy_cnt_type;
+			nocIn : in  NoCPacket;
+         nocOut : out  NoCPacket
+	);
+   END COMPONENT;
+	
+	COMPONENT NoCSwitchV2
+	GENERIC (
+			  NoCMask: NoCAddr;
+			  NoCAID: NoCAddr;
+			  NoCBID: NoCAddr;
+			  BufferSize: integer; -- 2
+			  BufferAddrBits: integer -- 1
+	 );
+	 PORT ( ClkA : in  STD_LOGIC;
+		     ClkB : in STD_LOGIC;
+           Rst : in  STD_LOGIC;
+	 -- NoCA IO
+           nocAIn : in  NoCPacket;
+           nocAOut : out  NoCPacket;	
+	 -- NoCB IO
+           nocBIn : in  NoCPacket;
+           nocBOut : out  NoCPacket
+	 );
+	 END COMPONENT;
 --
 --	Signals
 --
@@ -208,14 +216,17 @@ architecture rtl of jop is
 	signal noc_in		: sc_out_array_type(0 to cpu_cnt-1);
 	signal noc_out			: sc_in_array_type(0 to cpu_cnt-1);
 	
-	signal noc_addr : sc_addr_type(0 to cpu_cnt-1);
-	signal noc_wr : sc_bit_type(0 to cpu_cnt-1);
-	signal noc_wr_data : sc_word_type(0 to cpu_cnt-1);
-	signal noc_rd : sc_bit_type(0 to cpu_cnt-1);
+	signal noc_addr : sc_addr_type;
+	signal noc_wr : sc_bit_type;
+	signal noc_wr_data : sc_word_type;
+	signal noc_rd : sc_bit_type;
 
  	--Outputs
-   signal noc_rd_data : sc_word_type(0 to cpu_cnt-1);
-   signal noc_rdy_cnt : sc_rdy_cnt_type(0 to cpu_cnt-1);
+   signal noc_rd_data : sc_word_type;
+   signal noc_rdy_cnt : sc_rdy_cnt_type;
+
+	-- signals for the switch
+	signal ring0in, ring0out, ring1in, ring1out: NoCPacket;
 
 --
 --	IO interface
@@ -229,15 +240,13 @@ architecture rtl of jop is
 
 -- memory interface
 
---	signal ram_addr			: std_logic_vector(17 downto 0);
-----	signal ram_dout			: std_logic_vector(31 downto 0);
-----	signal ram_din			: std_logic_vector(31 downto 0);
-	signal ram_dout			: std_logic_vector(15 downto 0);
-	signal ram_din			: std_logic_vector(15 downto 0);
+	signal ram_addr			: std_logic_vector(17 downto 0);
+	signal ram_dout			: std_logic_vector(31 downto 0);
+	signal ram_din			: std_logic_vector(31 downto 0);
 	signal ram_dout_en	: std_logic;
---	signal ram_ncs			: std_logic;
---	signal ram_noe			: std_logic;
---	signal ram_nwe			: std_logic;
+	signal ram_ncs			: std_logic;
+	signal ram_noe			: std_logic;
+	signal ram_nwe			: std_logic;
 
 -- cmpsync
 
@@ -246,19 +255,10 @@ architecture rtl of jop is
 	
 -- remove the comment for RAM access counting
 -- signal ram_count		: std_logic;
-
--- not available at this board:
-	signal ser_ncts			: std_logic;
-	signal ser_nrts			: std_logic;	
+	
 	
 begin
--- similar to the uniprocessor Nexys2
 
-	FlashCS <= '1';
-	led(7 downto 1) <= "1111000";	-- just some pattern
-
-	ser_ncts <= '0';	
-	
 --
 --	intern reset
 --	no extern reset, epm7064 has too few pins
@@ -278,15 +278,15 @@ end process;
 --
 --	components of jop
 --
---	pll_inst : pll generic map(
---		multiply_by => pll_mult,
---		divide_by => pll_div
---	)
---	port map (
---		inclk0	 => clk,
---		c0	 => clk_int
---	);
- clk_int <= clk;
+	pll_inst : pll generic map(
+		multiply_by => pll_mult,
+		divide_by => pll_div
+	)
+	port map (
+		inclk0	 => clk,
+		c0	 => clk_int
+	);
+-- clk_int <= clk;
 	
 -- process(wd_out)
 -- variable wd_help : std_logic;
@@ -298,7 +298,7 @@ end process;
 -- 		wd <= wd_help;
 -- end process;
 
-	led(0) <= wd_out(0);
+	wd <= wd_out(0);
 	
 	gen_cpu: for i in 0 to cpu_cnt-1 generate
 		cpu: entity work.jopcpu
@@ -328,45 +328,97 @@ end process;
 	scm: entity work.sc_mem_if
 		generic map (
 			ram_ws => ram_cnt-1,
-  -- 		rom_ws => rom_cnt-1
-			addr_bits => 21
+			rom_ws => rom_cnt-1
 		)
 		port map (clk_int, int_res,
 			sc_mem_out, sc_mem_in,
 
-			ram_addr => MemAdr(21 downto 1),
+			ram_addr => ram_addr,
 			ram_dout => ram_dout,
 			ram_din => ram_din,
 			ram_dout_en	=> ram_dout_en,
-			ram_ncs => RamCS,
-			ram_noe => MemOE,
-			ram_nwe => MemWr
+			ram_ncs => ram_ncs,
+			ram_noe => ram_noe,
+			ram_nwe => ram_nwe,
 
---			fl_a => fl_a,
---			fl_d => fl_d,
---			fl_ncs => fl_ncs,
---			fl_ncsb => fl_ncsb,
---			fl_noe => fl_noe,
---			fl_nwe => fl_nwe,
---			fl_rdy => fl_rdy
+			fl_a => fl_a,
+			fl_d => fl_d,
+			fl_ncs => fl_ncs,
+			fl_ncsb => fl_ncsb,
+			fl_noe => fl_noe,
+			fl_nwe => fl_nwe,
+			fl_rdy => fl_rdy
 
 		);
 		
-	   noc: TDMANoC GENERIC MAP (
-				Nodes => 3
+--	   noc: TDMANoC PORT MAP (
+--          Clk => clk_int,
+--          Rst => int_res,
+--          Addr => noc_addr,
+--          wr => noc_wr,
+--          wr_data => noc_wr_data,
+--          rd => noc_rd,
+--          rd_data => noc_rd_data,
+--          rdy_cnt => noc_rdy_cnt
+--        );
+        
+ 	   ring0: NoCOpenRing GENERIC MAP (
+				Nodes => 4,
+				FirstNodeAddress => 0,
+				BufferSize => 4,
+				BufferAddrBits => 2
 			  )
 		PORT MAP (
           Clk => clk_int,
           Rst => int_res,
-          Addr => noc_addr,
-          wr => noc_wr,
-          wr_data => noc_wr_data,
-          rd => noc_rd,
-          rd_data => noc_rd_data,
-          rdy_cnt => noc_rdy_cnt
+          Addr => noc_addr(0 to 3),
+          wr => noc_wr(0 to 3),
+          wr_data => noc_wr_data(0 to 3),
+          rd => noc_rd(0 to 3),
+          rd_data => noc_rd_data(0 to 3),
+          rdy_cnt => noc_rdy_cnt(0 to 3),
+			 nocIn => ring0in,
+			 nocOut => ring0out		 
         );
+
+	   ring1: NoCOpenRing GENERIC MAP (
+				Nodes => 4,
+				FirstNodeAddress => 4,
+				BufferSize => 4,
+				BufferAddrBits => 2
+			  )
+		PORT MAP (
+          Clk => clk_int,
+          Rst => int_res,
+          Addr => noc_addr(4 to 7),
+          wr => noc_wr(4 to 7),
+          wr_data => noc_wr_data(4 to 7),
+          rd => noc_rd(4 to 7),
+          rd_data => noc_rd_data(4 to 7),
+          rdy_cnt => noc_rdy_cnt(4 to 7),
+			 nocIn => ring1in,
+			 nocOut => ring1out		 
+        );        
         
-        
+		 switch100: NoCSwitchV2 GENERIC MAP (
+			  NoCMask => "100",
+			  NoCAID => "000",
+			  NoCBID => "100",
+			  BufferSize => 2,
+			  BufferAddrBits => 1
+	 )
+	 PORT MAP ( 
+				ClkA => clk_int,
+		      ClkB => clk_int,
+            Rst => int_res,
+	 -- NoCA IO
+           nocAIn => ring0out,
+           nocAOut => ring0in,	
+	 -- NoCB IO
+           nocBIn => ring1out,
+           nocBOut => ring1in
+	 );
+       
 	gen_noc_con: for i in 0 to cpu_cnt-1 generate
 		noc_addr(i) <= noc_in(i).address(1 downto 0);
 		noc_wr(i) <= noc_in(i).wr;
@@ -402,8 +454,8 @@ end process;
 			noc_in => noc_in(0),
 			noc_out => noc_out(0),
 
-			txd => RsTx,
-			rxd => RsRx,
+			txd => ser_txd,
+			rxd => ser_rxd,
 			ncts => ser_ncts,
 			nrts => ser_nrts,
 			wd => wd_out(0),
@@ -450,15 +502,15 @@ end process;
 	process(ram_dout_en, ram_dout)
 	begin
 		if ram_dout_en='1' then
-			MemDB <= ram_dout(15 downto 0);
---			ramb_d <= ram_dout(31 downto 16);
+			rama_d <= ram_dout(15 downto 0);
+			ramb_d <= ram_dout(31 downto 16);
 		else
-			MemDB <= (others => 'Z');
---			ramb_d <= (others => 'Z');
+			rama_d <= (others => 'Z');
+			ramb_d <= (others => 'Z');
 		end if;
 	end process;
 
-	ram_din <= MemDB; --ramb_d & rama_d;
+	ram_din <= ramb_d & rama_d;
 	
 	-- remove the comment for RAM access counting
 	-- ram_count <= ram_ncs;
@@ -467,26 +519,19 @@ end process;
 --	To put this RAM address in an output register
 --	we have to make an assignment (FAST_OUTPUT_REGISTER)
 --
-	MemAdr(23 downto 22) <= "00";
-   RamAdv <= '0';
-	RamClk <= '0';
-	RamCre <= '0';
-	RamLB <= '0';
-	RamUB <= '0';
+	rama_a <= ram_addr;
+	rama_ncs <= ram_ncs;
+	rama_noe <= ram_noe;
+	rama_nwe <= ram_nwe;
+	rama_nlb <= '0';
+	rama_nub <= '0';
 
---	rama_a <= ram_addr;
---	rama_ncs <= ram_ncs;
---	rama_noe <= ram_noe;
---	rama_nwe <= ram_nwe;
---	rama_nlb <= '0';
---	rama_nub <= '0';
---
---	ramb_a <= ram_addr;
---	ramb_ncs <= ram_ncs;
---	ramb_noe <= ram_noe;
---	ramb_nwe <= ram_nwe;
---	ramb_nlb <= '0';
---	ramb_nub <= '0';
+	ramb_a <= ram_addr;
+	ramb_ncs <= ram_ncs;
+	ramb_noe <= ram_noe;
+	ramb_nwe <= ram_nwe;
+	ramb_nlb <= '0';
+	ramb_nub <= '0';
 
 	freeio <= 'Z';
 

@@ -51,7 +51,7 @@ use work.sc_arbiter_pack.all;
 use work.jop_config.all;
 use work.NoCTypes.ALL;
 
-entity jop is
+entity jopCSP4plus4 is
 
 generic (
 --	ram_cnt		: integer := 2;		-- clock cycles for external ram
@@ -61,7 +61,7 @@ generic (
 	jpc_width	: integer := 11; -- was 10;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 2;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 8;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 3		-- number of cpus
+	cpu_cnt		: integer := 8		-- number of cpus
 );
 
 port (
@@ -145,9 +145,9 @@ port (
 	io_t	: inout std_logic_vector(6 downto 1)
 	
 );
-end jop;
+end jopCSP4plus4;
 
-architecture rtl of jop is
+architecture rtl of jopCSP4plus4 is
 
 --
 --	components:
@@ -161,11 +161,29 @@ architecture rtl of jop is
 --);
 --end component;
 
-    COMPONENT TDMANoC
-	 Generic (
-				Nodes: integer
-	 );
-    PORT(
+--    COMPONENT TDMANoC
+--	 Generic (
+--				Nodes: integer
+--	 );
+--    PORT(
+--         Clk : IN  std_logic;
+--         Rst : IN  std_logic;
+--         Addr : IN  sc_addr_type;
+--         wr : IN  sc_bit_type;
+--         wr_data : IN  sc_word_type;
+--         rd : IN  sc_bit_type;
+--         rd_data : OUT  sc_word_type;
+--         rdy_cnt : OUT  sc_rdy_cnt_type
+--        );
+--    END COMPONENT;
+	COMPONENT NoCOpenRing
+	GENERIC (
+				Nodes: integer;
+				FirstNodeAddress: integer;
+	 			BufferSize: integer;
+			   BufferAddrBits: integer
+	);
+	PORT (
          Clk : IN  std_logic;
          Rst : IN  std_logic;
          Addr : IN  sc_addr_type;
@@ -173,11 +191,31 @@ architecture rtl of jop is
          wr_data : IN  sc_word_type;
          rd : IN  sc_bit_type;
          rd_data : OUT  sc_word_type;
-         rdy_cnt : OUT  sc_rdy_cnt_type
-        );
-    END COMPONENT;
-
-
+         rdy_cnt : OUT  sc_rdy_cnt_type;
+			nocIn : in  NoCPacket;
+         nocOut : out  NoCPacket
+	);
+   END COMPONENT;
+	
+	COMPONENT NoCSwitchV2
+	GENERIC (
+			  NoCMask: NoCAddr;
+			  NoCAID: NoCAddr;
+			  NoCBID: NoCAddr;
+			  BufferSize: integer; -- 2
+			  BufferAddrBits: integer -- 1
+	 );
+	 PORT ( ClkA : in  STD_LOGIC;
+		     ClkB : in STD_LOGIC;
+           Rst : in  STD_LOGIC;
+	 -- NoCA IO
+           nocAIn : in  NoCPacket;
+           nocAOut : out  NoCPacket;	
+	 -- NoCB IO
+           nocBIn : in  NoCPacket;
+           nocBOut : out  NoCPacket
+	 );
+	 END COMPONENT;
 --
 --	Signals
 --
@@ -216,6 +254,9 @@ architecture rtl of jop is
  	--Outputs
    signal noc_rd_data : sc_word_type(0 to cpu_cnt-1);
    signal noc_rdy_cnt : sc_rdy_cnt_type(0 to cpu_cnt-1);
+	
+	-- signals for the switch
+	signal ring0in, ring0out, ring1in, ring1out: NoCPacket;
 
 --
 --	IO interface
@@ -352,21 +393,64 @@ end process;
 
 		);
 		
-	   noc: TDMANoC GENERIC MAP (
-				Nodes => 3
+	   ring0: NoCOpenRing GENERIC MAP (
+				Nodes => 4,
+				FirstNodeAddress => 0,
+				BufferSize => 4,
+				BufferAddrBits => 2
 			  )
 		PORT MAP (
           Clk => clk_int,
           Rst => int_res,
-          Addr => noc_addr,
-          wr => noc_wr,
-          wr_data => noc_wr_data,
-          rd => noc_rd,
-          rd_data => noc_rd_data,
-          rdy_cnt => noc_rdy_cnt
+          Addr => noc_addr(0 to 3),
+          wr => noc_wr(0 to 3),
+          wr_data => noc_wr_data(0 to 3),
+          rd => noc_rd(0 to 3),
+          rd_data => noc_rd_data(0 to 3),
+          rdy_cnt => noc_rdy_cnt(0 to 3),
+			 nocIn => ring0in,
+			 nocOut => ring0out		 
         );
+
+	   ring1: NoCOpenRing GENERIC MAP (
+				Nodes => 4,
+				FirstNodeAddress => 4,
+				BufferSize => 4,
+				BufferAddrBits => 2
+			  )
+		PORT MAP (
+          Clk => clk_int,
+          Rst => int_res,
+          Addr => noc_addr(4 to 7),
+          wr => noc_wr(4 to 7),
+          wr_data => noc_wr_data(4 to 7),
+          rd => noc_rd(4 to 7),
+          rd_data => noc_rd_data(4 to 7),
+          rdy_cnt => noc_rdy_cnt(4 to 7),
+			 nocIn => ring1in,
+			 nocOut => ring1out		 
+        );        
         
-        
+		 switch100: NoCSwitchV2 GENERIC MAP (
+			  NoCMask => "100",
+			  NoCAID => "000",
+			  NoCBID => "100",
+			  BufferSize => 2,
+			  BufferAddrBits => 1
+	 )
+	 PORT MAP ( 
+				ClkA => clk_int,
+		      ClkB => clk_int,
+            Rst => int_res,
+	 -- NoCA IO
+           nocAIn => ring0out,
+           nocAOut => ring0in,	
+	 -- NoCB IO
+           nocBIn => ring1out,
+           nocBOut => ring1in
+	 );
+		  
+		  
 	gen_noc_con: for i in 0 to cpu_cnt-1 generate
 		noc_addr(i) <= noc_in(i).address(1 downto 0);
 		noc_wr(i) <= noc_in(i).wr;
