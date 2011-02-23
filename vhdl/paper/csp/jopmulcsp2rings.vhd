@@ -60,7 +60,9 @@ generic (
 	jpc_width	: integer := 10;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 2;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 8;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 8		-- number of cpus
+--	cpu_cnt		: integer := 8;		-- number of cpus
+	ring0_cpus	: integer := 4;		-- change these to 4 and 4 if you want to test a double ring of 4+4
+	ring1_cpus	: integer := 4
 );
 
 port (
@@ -186,6 +188,8 @@ end component;
            nocBOut : out  NoCPacket
 	 );
 	 END COMPONENT;
+
+	constant cpu_cnt : integer := ring0_cpus + ring1_cpus;
 --
 --	Signals
 --
@@ -216,15 +220,15 @@ end component;
 	signal noc_in		: sc_out_array_type(0 to cpu_cnt-1);
 	signal noc_out			: sc_in_array_type(0 to cpu_cnt-1);
 	
-	signal noc_addr : sc_addr_type;
-	signal noc_wr : sc_bit_type;
-	signal noc_wr_data : sc_word_type;
-	signal noc_rd : sc_bit_type;
+	signal noc_addr : sc_addr_type(0 to cpu_cnt-1);
+	signal noc_wr : sc_bit_type(0 to cpu_cnt-1);
+	signal noc_wr_data : sc_word_type(0 to cpu_cnt-1);
+	signal noc_rd : sc_bit_type(0 to cpu_cnt-1);
 
  	--Outputs
-   signal noc_rd_data : sc_word_type;
-   signal noc_rdy_cnt : sc_rdy_cnt_type;
-
+   signal noc_rd_data : sc_word_type(0 to cpu_cnt-1);
+   signal noc_rdy_cnt : sc_rdy_cnt_type(0 to cpu_cnt-1);
+	
 	-- signals for the switch
 	signal ring0in, ring0out, ring1in, ring1out: NoCPacket;
 
@@ -361,9 +365,8 @@ end process;
 --          rd_data => noc_rd_data,
 --          rdy_cnt => noc_rdy_cnt
 --        );
-        
- 	   ring0: NoCOpenRing GENERIC MAP (
-				Nodes => 4,
+	   ring0: NoCOpenRing GENERIC MAP (
+				Nodes => ring0_cpus,
 				FirstNodeAddress => 0,
 				BufferSize => 4,
 				BufferAddrBits => 2
@@ -371,18 +374,18 @@ end process;
 		PORT MAP (
           Clk => clk_int,
           Rst => int_res,
-          Addr => noc_addr(0 to 3),
-          wr => noc_wr(0 to 3),
-          wr_data => noc_wr_data(0 to 3),
-          rd => noc_rd(0 to 3),
-          rd_data => noc_rd_data(0 to 3),
-          rdy_cnt => noc_rdy_cnt(0 to 3),
+          Addr => noc_addr(0 to ring0_cpus-1),
+          wr => noc_wr(0 to ring0_cpus-1),
+          wr_data => noc_wr_data(0 to ring0_cpus-1),
+          rd => noc_rd(0 to ring0_cpus-1),
+          rd_data => noc_rd_data(0 to ring0_cpus-1),
+          rdy_cnt => noc_rdy_cnt(0 to ring0_cpus-1),
 			 nocIn => ring0in,
 			 nocOut => ring0out		 
         );
 
 	   ring1: NoCOpenRing GENERIC MAP (
-				Nodes => 4,
+				Nodes => ring1_cpus,
 				FirstNodeAddress => 4,
 				BufferSize => 4,
 				BufferAddrBits => 2
@@ -390,12 +393,12 @@ end process;
 		PORT MAP (
           Clk => clk_int,
           Rst => int_res,
-          Addr => noc_addr(4 to 7),
-          wr => noc_wr(4 to 7),
-          wr_data => noc_wr_data(4 to 7),
-          rd => noc_rd(4 to 7),
-          rd_data => noc_rd_data(4 to 7),
-          rdy_cnt => noc_rdy_cnt(4 to 7),
+          Addr => noc_addr(ring0_cpus to cpu_cnt-1),
+          wr => noc_wr(ring0_cpus to cpu_cnt-1),
+          wr_data => noc_wr_data(ring0_cpus to cpu_cnt-1),
+          rd => noc_rd(ring0_cpus to cpu_cnt-1),
+          rd_data => noc_rd_data(ring0_cpus to cpu_cnt-1),
+          rdy_cnt => noc_rdy_cnt(ring0_cpus to cpu_cnt-1),
 			 nocIn => ring1in,
 			 nocOut => ring1out		 
         );        
@@ -418,7 +421,7 @@ end process;
            nocBIn => ring1out,
            nocBOut => ring1in
 	 );
-       
+		         
 	gen_noc_con: for i in 0 to cpu_cnt-1 generate
 		noc_addr(i) <= noc_in(i).address(1 downto 0);
 		noc_wr(i) <= noc_in(i).wr;

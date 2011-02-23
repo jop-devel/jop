@@ -96,9 +96,9 @@ architecture rtl of arbiter is
 --               write_gap <= 2; read_gap <= 1;
 --               minimal slot_length <= 3;
 
-	constant write_gap : integer := 2;
-	constant read_gap  : integer := 2;
-	constant slot_length : integer := 3;
+	constant write_gap : integer := 24;
+	constant read_gap  : integer := 24;
+	constant slot_length : integer := 32;
 	constant period : integer := CPU_CNT*slot_length;
 
 -- counter

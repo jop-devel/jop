@@ -66,16 +66,16 @@ begin
 
 SYNC: process (Clk)
 begin
-	if (Clk'event and Clk = '1') then
-      if (Rst = '1') then
- 			crts <= WaitForA2B;
-			regA2B <= (Src => NoCBID, Dst => NoCBID, pType => PTNil, Load => (others =>'0'));
-			regReplyA2B <= (Src => NoCBID, Dst => NoCBID, pType => PTNil, Load => (others =>'0'));			
+	if rising_edge(Clk) then
+		if (Rst = '1') then
+			crts <= WaitForA2B;
+			regA2B <= (Src => NoCAID, Dst => NoCAID, pType => PTNil, Load => (others =>'0'));
+			regReplyA2B <= (Src => NoCAID, Dst => NoCAID, pType => PTNil, Load => (others =>'0'));			
 		else
 			crts <= nxts;
 			regA2B <= nxt_regA2B;
 			regReplyA2B <= nxt_regReplyA2B;
-      end if;
+		end if;
    end if;	
 end process;
 
@@ -90,8 +90,10 @@ begin
  case(crts) is
 		when WaitForA2B =>
 			-- this is when we detect an attempt of sending something from
-			-- NoC A to B
-			if((nocAIn.Dst AND NoCMask) = NoCBID) then
+			-- NoC A to B, type of data
+			if(((nocAIn.Dst AND NoCMask) = NoCBID) AND 
+				((nocAIn.Src AND NoCMask) = NoCAID) AND 
+				((nocAIn.pType = PTData) OR (nocAIn.pType = PTEoD))) then
 				nxt_regA2B <= nocAIn;
 				nxts <= WaitForASlotInB;
 			end if;
@@ -102,8 +104,8 @@ begin
 				nxts <= WaitForReplyFromB;
 			end if;
 		when WaitForReplyFromB =>
-			-- here we should detect that the sent frame returns (with Ack or not)
-			if((nocBIn.Src = regA2B.Src) AND (nocBIn.Dst = regA2B.Dst)) then
+			-- here we should detect that the sent frame returns (with Ack!)
+			if((nocBIn.Src = regA2B.Src) AND (nocBIn.Dst = regA2B.Dst) AND (nocBIn.pType = PTAck)) then
 				-- store the reply
 				nxt_regReplyA2B <= nocBIn;
 				nxts <= WaitForASlotInA;

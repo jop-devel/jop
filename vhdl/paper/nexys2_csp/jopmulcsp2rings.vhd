@@ -39,7 +39,7 @@
 --	2005-08-15	sp_ov can be used to show a stoack overflow on the wd pin
 --	2005-11-30	SimpCon for IO devices
 --	2007-03-17	Use jopcpu and change component interface to records
-
+-- 2011-02-23  a NoC of two rings, configurable - just to test the switch.
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -51,7 +51,7 @@ use work.sc_arbiter_pack.all;
 use work.jop_config.all;
 use work.NoCTypes.ALL;
 
-entity jopCSP4plus4 is
+entity jop is
 
 generic (
 --	ram_cnt		: integer := 2;		-- clock cycles for external ram
@@ -61,7 +61,9 @@ generic (
 	jpc_width	: integer := 11; -- was 10;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 2;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 8;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 8		-- number of cpus
+--	cpu_cnt		: integer := 3;		-- number of cpus
+	ring0_cpus	: integer := 4;		-- change these to 4 and 4 if you want to test a double ring of 4+4
+	ring1_cpus	: integer := 4
 );
 
 port (
@@ -145,9 +147,9 @@ port (
 	io_t	: inout std_logic_vector(6 downto 1)
 	
 );
-end jopCSP4plus4;
+end jop;
 
-architecture rtl of jopCSP4plus4 is
+architecture dualringrtl of jop is
 
 --
 --	components:
@@ -216,6 +218,8 @@ architecture rtl of jopCSP4plus4 is
            nocBOut : out  NoCPacket
 	 );
 	 END COMPONENT;
+	 
+	constant cpu_cnt : integer := ring0_cpus + ring1_cpus;
 --
 --	Signals
 --
@@ -394,7 +398,7 @@ end process;
 		);
 		
 	   ring0: NoCOpenRing GENERIC MAP (
-				Nodes => 4,
+				Nodes => ring0_cpus,
 				FirstNodeAddress => 0,
 				BufferSize => 4,
 				BufferAddrBits => 2
@@ -402,18 +406,18 @@ end process;
 		PORT MAP (
           Clk => clk_int,
           Rst => int_res,
-          Addr => noc_addr(0 to 3),
-          wr => noc_wr(0 to 3),
-          wr_data => noc_wr_data(0 to 3),
-          rd => noc_rd(0 to 3),
-          rd_data => noc_rd_data(0 to 3),
-          rdy_cnt => noc_rdy_cnt(0 to 3),
+          Addr => noc_addr(0 to ring0_cpus-1),
+          wr => noc_wr(0 to ring0_cpus-1),
+          wr_data => noc_wr_data(0 to ring0_cpus-1),
+          rd => noc_rd(0 to ring0_cpus-1),
+          rd_data => noc_rd_data(0 to ring0_cpus-1),
+          rdy_cnt => noc_rdy_cnt(0 to ring0_cpus-1),
 			 nocIn => ring0in,
 			 nocOut => ring0out		 
         );
 
 	   ring1: NoCOpenRing GENERIC MAP (
-				Nodes => 4,
+				Nodes => ring1_cpus,
 				FirstNodeAddress => 4,
 				BufferSize => 4,
 				BufferAddrBits => 2
@@ -421,12 +425,12 @@ end process;
 		PORT MAP (
           Clk => clk_int,
           Rst => int_res,
-          Addr => noc_addr(4 to 7),
-          wr => noc_wr(4 to 7),
-          wr_data => noc_wr_data(4 to 7),
-          rd => noc_rd(4 to 7),
-          rd_data => noc_rd_data(4 to 7),
-          rdy_cnt => noc_rdy_cnt(4 to 7),
+          Addr => noc_addr(ring0_cpus to cpu_cnt-1),
+          wr => noc_wr(ring0_cpus to cpu_cnt-1),
+          wr_data => noc_wr_data(ring0_cpus to cpu_cnt-1),
+          rd => noc_rd(ring0_cpus to cpu_cnt-1),
+          rd_data => noc_rd_data(ring0_cpus to cpu_cnt-1),
+          rdy_cnt => noc_rdy_cnt(ring0_cpus to cpu_cnt-1),
 			 nocIn => ring1in,
 			 nocOut => ring1out		 
         );        
@@ -574,4 +578,4 @@ end process;
 
 	freeio <= 'Z';
 
-end rtl;
+end dualringrtl;

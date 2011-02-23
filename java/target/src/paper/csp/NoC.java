@@ -16,7 +16,9 @@ public class NoC {
 	static final int NOC_MASK_RCVFULL = 0x8000;
 	// registers read
 	static final int NOC_REG_STATUS = Const.NOC_ADDR;
-	static final int NOC_REG_RCVCNT = Const.NOC_ADDR | 0x01;
+//  deprecated
+//	static final int NOC_REG_RCVCNT = Const.NOC_ADDR | 0x01;
+	static final int NOC_REG_RCVSLOTS = Const.NOC_ADDR | 0x01;
 	static final int NOC_REG_RCVSRC = Const.NOC_ADDR | 0x02;
 	static final int NOC_REG_RCVDATA = Const.NOC_ADDR | 0x03;
 	// registers write
@@ -26,16 +28,19 @@ public class NoC {
 	static final int NOC_REG_SNDDATA = Const.NOC_ADDR | 0x03;
 	
 	// this node's address, must be initialized
-	private static int myAddress = -1;
+//	private static int myAddress = -1;
 	
 	// just take the current node address for later use
+/*
 	public static void initialize() {
 		myAddress = Native.rd(NOC_REG_STATUS) & NOC_MASK_ADDR;
 	}
-	
-	public static int thisAddress() {
-		throw new Error("Static fields are shared for all cores!");
+*/	
+	public static int thisAddress() {		
+//		throw new Error("Static fields are shared for all cores!");
+// bummer
 //		return myAddress;
+		return Native.rd(NOC_REG_STATUS) & NOC_MASK_ADDR;
 	}
 	
 	// some flag accesses
@@ -71,6 +76,13 @@ public class NoC {
 	public static int getSourceAddress() {
 		return Native.rd(NOC_REG_RCVSRC);
 	}
+	
+	// shows the slots containing data as a bit map
+	// 1 means data present, 0 means not Data or EoD
+	// use to implement ALT or PRI ALT
+	public static int getDataSlots() {
+		return Native.rd(NOC_REG_RCVSLOTS);
+	}
 		
 	public static boolean sendIfFree(
 				int dstAddr, int header, int cnt, int buf[]) {
@@ -97,6 +109,13 @@ public class NoC {
 		Native.wr(0, NOC_REG_RCVRESET);
 	}
 
+	// same as writeReset, but with the possibility to ignore slots
+	// 1 on position K means ignore slots from node K
+	// 0 means receive, to be backward compatible
+	public static void writeResetMask(int bitmap) {
+		Native.wr(bitmap, NOC_REG_RCVRESET);
+	}
+
 	
 	// Single word send and receive.
 	// Params:
@@ -110,15 +129,6 @@ public class NoC {
 		Native.wr(1, NOC_REG_SNDCNT);
 		Native.wr(d, NOC_REG_SNDDATA);
 	}
-
-	// waits until the previous send completes
-	public static void b_send1(int dstAddr, int d) {
-		while(isSending());
-		Native.wr(dstAddr, NOC_REG_SNDDST);
-		Native.wr(1, NOC_REG_SNDCNT);
-		Native.wr(d, NOC_REG_SNDDATA);
-	}
-	
 	
 	// receives from any source
 	// check NoC.getSourceAddress() for the NoC node address of the

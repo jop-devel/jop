@@ -36,8 +36,8 @@ use work.NoCTypes.ALL;
 entity NoCSwitchV2 is
 	 Generic (
 			  NoCMask: NoCAddr := "100";
-			  NoCAID: NoCAddr := "100";
-			  NoCBID: NoCAddr := "000";
+			  NoCAID: NoCAddr := "000";
+			  NoCBID: NoCAddr := "100";
 			  BufferSize: integer := 2;
 			  BufferAddrBits: integer := 1
 	 );
@@ -59,9 +59,9 @@ architecture Behavioral of NoCSwitchV2 is
 
 component NoCOneWaySwitchV2 is
 	 Generic (
-			  NoCMask: NoCAddr := "100";
-			  NoCAID: NoCAddr := "100";
-			  NoCBID: NoCAddr := "000";
+			  NoCMask: NoCAddr;
+			  NoCAID: NoCAddr;
+			  NoCBID: NoCAddr;
 			  BufferSize: integer := 2;
 			  BufferAddrBits: integer := 1
 	 );
@@ -117,32 +117,30 @@ port map (
 
 process (ClkB)
 begin
-	if (ClkB'event and ClkB = '1') then
-      if (Rst = '1') then
- 			inocBOut <= (Src => NoCAID, Dst => NoCAID, pType => PTNil, Load => (others =>'0'));		
-		else
-		   if((nocBIn.Src AND NoCMask) = NoCAID) then
+	if rising_edge(ClkB) then
+		if (Rst = '1') then
+			inocBOut <= (Src => NoCAID, Dst => NoCAID, pType => PTNil, Load => (others =>'0'));		
+		else if((nocBIn.Src AND NoCMask) = NoCAID) then
 				inocBOut <= nocBOutA2B;
 			else
 				inocBOut <= nocBOutB2A;
 			end if;
-     end if;
+		end if;
    end if;	
 end process;
 
 
 process (ClkA)
 begin
-	if (ClkA'event and ClkA = '1') then
-      if (Rst = '1') then
- 			inocAOut <= (Src => NoCBID, Dst => NoCBID, pType => PTNil, Load => (others =>'0'));		
-		else
-		   if((nocAIn.Src AND NoCMask) = NoCBID) then
+	if rising_edge(ClkA) then
+		if (Rst = '1') then
+			inocAOut <= (Src => NoCBID, Dst => NoCBID, pType => PTNil, Load => (others =>'0'));		
+		else if((nocAIn.Src AND NoCMask) = NoCBID) then
 				inocAOut <= nocAOutB2A;
 			else
 				inocAOut <= nocAOutA2B;
-			end if;				
-     end if;
+			end if;
+		end if;
    end if;	
 end process;
 

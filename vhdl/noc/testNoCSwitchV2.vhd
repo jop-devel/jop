@@ -43,7 +43,14 @@ ARCHITECTURE behavior OF testNoCSwitchV2 IS
     -- Component Declaration for the Unit Under Test (UUT)
  
     COMPONENT NoCSwitchV2
-    PORT(
+    GENERIC (
+			  NoCMask: NoCAddr;
+			  NoCAID: NoCAddr;
+			  NoCBID: NoCAddr;
+			  BufferSize: integer; -- 2
+			  BufferAddrBits: integer -- 1
+	 );
+	 PORT(
          ClkA : IN  std_logic;
          ClkB : IN  std_logic;
          Rst : IN  std_logic;
@@ -59,8 +66,8 @@ ARCHITECTURE behavior OF testNoCSwitchV2 IS
    signal ClkA : std_logic := '0';
    signal ClkB : std_logic := '0';
    signal Rst : std_logic := '0';
-   signal nocAIn : NoCPacket := (Src => "111", Dst => (others => '1'), pType => PTNil, Load => (others =>'0'));
-   signal nocBIn : NoCPacket := (Src => "000", Dst => (others => '0'), pType => PTNil, Load => (others =>'0'));
+   signal nocBIn : NoCPacket := (Src => "111", Dst => (others => '1'), pType => PTNil, Load => (others =>'0'));
+   signal nocAIn : NoCPacket := (Src => "000", Dst => (others => '0'), pType => PTNil, Load => (others =>'0'));
 
  	--Outputs
    signal nocAOut : NoCPacket;
@@ -73,7 +80,13 @@ ARCHITECTURE behavior OF testNoCSwitchV2 IS
 BEGIN
  
 	-- Instantiate the Unit Under Test (UUT)
-   uut: NoCSwitchV2 PORT MAP (
+   uut: NoCSwitchV2 GENERIC MAP (
+			  NoCMask => "100",
+			  NoCAID => "000",
+			  NoCBID => "100",
+			  BufferSize => 2,
+			  BufferAddrBits => 1
+	 ) PORT MAP (
           ClkA => ClkA,
           ClkB => ClkB,
           Rst => Rst,
@@ -111,34 +124,34 @@ BEGIN
 		
       wait for ClkA_period*10;
 
-	   nocAIn <=(Src => "100", Dst => "101", pType => PTEoD, Load => X"DEADBEEF");
-	   nocBIn <=(Src => "001", Dst => "010", pType => PTData, Load => X"CAFEBABE");
+	   nocAIn <=(Src => "000", Dst => "001", pType => PTEoD, Load => X"DEADBEEF");
+	   nocBIn <=(Src => "101", Dst => "110", pType => PTData, Load => X"CAFEBABE");
 	
 		wait for ClkA_period;
 		
-	   nocAIn <=(Src => "101", Dst => "000", pType => PTEoD, Load => X"FEEDFACE");
-	   nocBIn <=(Src => "000", Dst => "010", pType => PTNil, Load => (others => '0'));
+	   nocAIn <=(Src => "000", Dst => "010", pType => PTNil, Load => (others => '0'));
+	   nocBIn <=(Src => "101", Dst => "000", pType => PTEoD, Load => X"FEEDFACE");
 		
 		wait for ClkA_period;
 		
-	   nocAIn <=(Src => "110", Dst => "100", pType => PTNil, Load => (others => '0'));
-	   nocBIn <=(Src => "011", Dst => "110", pType => PTEoD, Load => (others => '0'));
+	   nocAIn <=(Src => "011", Dst => "110", pType => PTEoD, Load => (others => '0'));
+	   nocBIn <=(Src => "110", Dst => "100", pType => PTNil, Load => (others => '0'));
 
 		wait for ClkA_period;
 		
-	   nocAIn <=(Src => "010", Dst => "100", pType => PTEoD, Load => X"CAFEBABE");
-	   nocBIn <=(Src => "100", Dst => "011", pType => PTAck, Load => (others => '0'));
+	   nocAIn <=(Src => "100", Dst => "011", pType => PTAck, Load => (others => '0'));
+	   nocBIn <=(Src => "010", Dst => "100", pType => PTEoD, Load => X"CAFEBABE");
 		
 		wait for 5*ClkA_period;
 		
-	   nocAIn <=(Src => "011", Dst => "110", pType => PTAck, Load => X"CAFEBABE");
-	   nocBIn <=(Src => "010", Dst => "000", pType => PTNil, Load => (others => '0'));
+	   nocAIn <=(Src => "010", Dst => "000", pType => PTNil, Load => (others => '0'));
+	   nocBIn <=(Src => "011", Dst => "110", pType => PTAck, Load => X"CAFEBABE");
 
       -- insert stimulus here
 		wait for ClkA_period;
 		
---	   nocAIn <=(Src => "010", Dst => "100", pType => PTEoD, Load => X"CAFEBABE");
-	   nocBIn <=(Src => "011", Dst => "000", pType => PTNil, Load => (others => '0'));
+--	   nocBIn <=(Src => "010", Dst => "100", pType => PTEoD, Load => X"CAFEBABE");
+	   nocAIn <=(Src => "011", Dst => "000", pType => PTNil, Load => (others => '0'));
 		
       wait;
   end process;

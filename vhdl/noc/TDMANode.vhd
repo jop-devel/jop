@@ -183,18 +183,18 @@ rcvEnq <= tob(brcvEnq);
 bresetRcv <= resetRcv = '1';
 
 
-process (Clk)
+process (Clk, Rst)
 begin
-	if (Clk'event and Clk = '1') then
-      if (Rst = '1') then
- 			inocOut <= (Src => myAddr, Dst => (others => '0'), pType => PTNil, Load => (others =>'0'));		
+	if rising_edge(Clk) then
+	   if (Rst = '1') then
+ 			inocOut <= (Src => myAddr, Dst => myAddr, pType => PTNil, Load => (others =>'0'));		
 		else
 			if(nocIn.src = myAddr) then
 				inocOut <= nocOutSND;	
 			else  -- can only emit in my slot
 				inocOut <= nocOutRCV; -- i can receive in all others
 			end if;
-      end if;
+		end if;
    end if;	
 end process;
 

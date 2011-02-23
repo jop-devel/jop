@@ -75,13 +75,21 @@ public class BenchCsp implements Runnable {
 
 		// receive n words via CSP, 1-word packets
 		start = sys.cntInt;
+
+		// Native.wr(2, NoC.NOC_REG_SNDDST);
+		// Native.wr(1, NoC.NOC_REG_SNDCNT);
+		// Native.wr(0xcafebabe, NoC.NOC_REG_SNDDATA);
+
 		for (int i = 0; i < CNT; ++i) {
 			while (!((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_RCV) != 0))
 				;
 			int val = Native.rd(NoC.NOC_REG_RCVDATA);
+			//int src = Native.rd(NoC.NOC_REG_RCVSRC);
 			Native.wr(0, NoC.NOC_REG_RCVRESET); // aka writeReset();
-			// System.out.print(" Received ");
-			// System.out.print(val);
+			//System.out.print(" Received ");
+			//System.out.print(val);
+			//System.out.print(" from ");
+			//System.out.print(src);
 		}
 		end = sys.cntInt;
 		System.out.println("Communication via HW CSP, many 1-word packets");
@@ -127,6 +135,10 @@ public class BenchCsp implements Runnable {
 	}
 
 	public void run() {
+
+		// Native.wr(0, NoC.NOC_REG_SNDDST);
+		// Native.wr(1, NoC.NOC_REG_SNDCNT);
+		// Native.wr(0xdeadbeef, NoC.NOC_REG_SNDDATA);
 
 		// 1 word packets send
 
