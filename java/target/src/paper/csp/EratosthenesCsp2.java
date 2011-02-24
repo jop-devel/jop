@@ -48,6 +48,14 @@ public class EratosthenesCsp2 implements Runnable {
 			primes = new int[PRIMECNT];
 		}
 
+		public static int cpuIndex2NoCAddress(int i) {
+		// this is when I use two rings, with the other ring starting at Addr 4 
+			if(i==2) return 4;
+			else return i;
+		// this is with a single ring!
+		// return i;
+		}
+
 		/**
 		 * @param args
 		 */
@@ -61,11 +69,13 @@ public class EratosthenesCsp2 implements Runnable {
 			
 			SysDevice sys = IOFactory.getFactory().getSysDevice();
 
+// ni must be translated from proc index to NoC address!
+
 			for (int i=1; i<sys.nrCpu; i++) {
 				int ni = i+1;
 				if(ni==sys.nrCpu) ni = 0;
-				System.out.println(ni);
-				Runnable r = new EratosthenesCsp2(i, ni);
+				System.out.println(cpuIndex2NoCAddress(ni));
+				Runnable r = new EratosthenesCsp2(i, cpuIndex2NoCAddress(ni));
 				Startup.setRunnable(r, i-1);
 			}
 			EratosthenesCsp2 r = new EratosthenesCsp2(0,1); 

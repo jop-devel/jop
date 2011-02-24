@@ -16,7 +16,7 @@ public class InPort {
 	protected int[] noAck_receive() {
 		int m[] = null;
 		do {
-			globalList.print("rec list");
+			//globalList.print("rec list");
 			m = globalList.receive(localID);
 		} while(m == null);
 		return m;
