@@ -124,7 +124,7 @@ public final class AppInfo {
         this.classPath = new ClassPath(".");
 
         ignoreMissingClasses = false;
-        loadNatives = false;
+        loadNatives = true;
         loadLibraries = true;
         exitOnMissingClass = false;
 
