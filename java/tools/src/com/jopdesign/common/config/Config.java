@@ -89,7 +89,7 @@ public class Config {
             new BooleanOption("exclude-libs", "do not load library classes", false);
 
     public static final BooleanOption EXCLUDE_NATIVES =
-            new BooleanOption("exclude-natives", "skip loading of native classes", false);
+            new BooleanOption("exclude-natives", "do not load native classes", false);
 
     public static final StringOption ROOTS =
             new StringOption("roots", "comma-separated list of additional root classes", "");
