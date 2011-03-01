@@ -23,7 +23,7 @@ package com.jopdesign.common;
 import com.jopdesign.common.bcel.EnclosingMethod;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.JavaClassFormatError;
-import com.jopdesign.common.tools.ClassReferenceFinder;
+import com.jopdesign.common.tools.ConstantPoolReferenceFinder;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.ConstantClassInfo;
 import com.jopdesign.common.type.MethodRef;
@@ -237,9 +237,9 @@ public class InnerClassesInfo {
 
         String name = getOuterClassName();
         if ( name == null ) {
-            MethodRef ref = getEnclosingMethodRef();
-            if (ref != null) {
-                return ref.getClassName();
+            EnclosingMethod m = getEnclosingMethod();
+            if (m != null) {
+                return m.getClassName();
             } else {
                 throw new JavaClassFormatError("Could not find enclosing class name for nested class " +getClassName());
             }
@@ -327,7 +327,7 @@ public class InnerClassesInfo {
         }
         ClassInfo outer = enclosingClass;
         while (outer != null) {
-            if (outer.isInstanceOf(classInfo)) {
+            if (classInfo.isSubclassOf(outer)) {
                 return outer;
             }
             if ( membersOnly && outer.isLocalInnerClass() ) {
@@ -339,13 +339,18 @@ public class InnerClassesInfo {
         return null;
     }
 
-    public MethodRef getEnclosingMethodRef() {
+    public EnclosingMethod getEnclosingMethod() {
         for (Attribute a : classInfo.getAttributes()) {
             if ( a instanceof EnclosingMethod) {
-                return ((EnclosingMethod)a).getMethodRef();
+                return ((EnclosingMethod)a);
             }
         }
         return null;
+    }
+
+    public MethodRef getEnclosingMethodRef() {
+        EnclosingMethod m = getEnclosingMethod();
+        return m == null ? null : m.getMethodRef();
     }
 
     /*
@@ -406,7 +411,7 @@ public class InnerClassesInfo {
 
         // check+update InnerClasses attribute (and add referenced nested classes)
         List<ClassRef> referencedClasses = new LinkedList<ClassRef>();
-        for (String name : ClassReferenceFinder.findReferencedClasses(classInfo)) {
+        for (String name : ConstantPoolReferenceFinder.findReferencedClasses(classInfo)) {
             referencedClasses.add(classInfo.getAppInfo().getClassRef(name));
         }
 

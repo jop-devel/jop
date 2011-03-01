@@ -49,7 +49,7 @@ public class HashTest {
 
         MethodCode code = mainMethod.getCode();
 
-        InstructionHandle[] ih = code.getInstructionList(false).getInstructionHandles();
+        InstructionHandle[] ih = code.getInstructionList().getInstructionHandles();
 
         InvokeSite i1 = code.getInvokeSite(ih[1]);
         InvokeSite i2 = code.getInvokeSite(ih[2]);
@@ -74,7 +74,7 @@ public class HashTest {
 
 
         // modify instruction list, check if everything still works
-        InstructionList il = code.getInstructionList(false);
+        InstructionList il = code.getInstructionList();
         il.insert(new ILOAD(0));
         il.insert(ih[2], new ILOAD(1));
 

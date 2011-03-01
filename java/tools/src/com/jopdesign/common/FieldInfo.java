@@ -23,6 +23,8 @@ package com.jopdesign.common;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.FieldRef;
 import com.jopdesign.common.type.Signature;
+import org.apache.bcel.classfile.Attribute;
+import org.apache.bcel.classfile.ConstantValue;
 import org.apache.bcel.classfile.Field;
 import org.apache.bcel.generic.FieldGen;
 
@@ -65,7 +67,15 @@ public final class FieldInfo extends ClassMemberInfo {
     }
 
     public Field getField() {
-        return fieldGen.getField();
+        Field field = fieldGen.getField();
+        // Workaround for BCEL bug: ConstantValue attribute gets attached to create a field, but is not removed,
+        // so for every getField() call, there will be an additional ConstantValue attribute.. not good
+        for (Attribute a : fieldGen.getAttributes()) {
+            if (a instanceof ConstantValue) {
+                fieldGen.removeAttribute(a);
+            }
+        }
+        return field;
     }
 
     @Override

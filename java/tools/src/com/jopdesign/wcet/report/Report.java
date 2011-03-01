@@ -24,6 +24,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.config.Config.BadConfigurationException;
+import com.jopdesign.common.graphutils.InvokeDot;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.timing.WCETInstruction;
 import com.jopdesign.wcet.WCETTool;
@@ -193,19 +194,19 @@ public class Report {
      */
     public void generateInfoPages() throws IOException {
         this.addStat("#classes", project.getCallGraph().getClassInfos().size());
-        this.addStat("#methods", project.getCallGraph().getImplementedMethods(project.getTargetMethod()).size());
+        this.addStat("#methods", project.getCallGraph().getReachableImplementationsSet(project.getTargetMethod()).size());
         this.addStat("max call stack ", project.getCallGraph().getMaximalCallStack());
         this.addStat("largest method size (in bytes)", project.getCallGraph().getLargestMethod().getNumberOfBytes());
         this.addStat("largest method size (in words)", project.getCallGraph().getLargestMethod().getNumberOfWords());
         this.addStat("total size of task (in bytes)", project.getCallGraph().getTotalSizeInBytes());
         generateInputOverview();
         this.addPage("details", null);
-        for (MethodInfo m : project.getCallGraph().getImplementedMethods(project.getTargetMethod())) {
+        for (MethodInfo m : project.getCallGraph().getReachableImplementations(project.getTargetMethod())) {
             for (LineNumber ln : m.getCode().getLineNumberTable().getLineNumberTable()) {
                 getClassReport(m.getClassInfo()).addLinePropertyIfNull(ln.getLineNumber(), "color", "lightgreen");
             }
             logger.info("Generating report for method: " + m);
-            ControlFlowGraph flowGraph = m.getCode().getControlFlowGraph();
+            ControlFlowGraph flowGraph = m.getCode().getControlFlowGraph(false);
             Map<String, Object> stats = new TreeMap<String, Object>();
             stats.put("#nodes", flowGraph.getGraph().vertexSet().size() - 2 /* entry+exit */);
             stats.put("number of words", flowGraph.getNumberOfWords());
@@ -253,7 +254,7 @@ public class Report {
         ctx.put("callgraph", "callgraph.png");
 
         List<MethodReport> mrv = new Vector<MethodReport>();
-        for (MethodInfo m : project.getCallGraph().getImplementedMethods(project.getTargetMethod())) {
+        for (MethodInfo m : project.getCallGraph().getReachableImplementations(project.getTargetMethod())) {
             mrv.add(new MethodReport(project, m, pageOf(m)));
         }
         ctx.put("methods", mrv);

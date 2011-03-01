@@ -20,6 +20,7 @@
 package com.jopdesign.wcet.analysis.cache;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallGraph.ContextEdge;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.graphutils.Pair;
@@ -34,7 +35,6 @@ import com.jopdesign.wcet.ipet.LinearConstraint;
 import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
 import com.jopdesign.wcet.jop.MethodCache;
 import org.apache.log4j.Logger;
-import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.util.HashMap;
@@ -157,7 +157,7 @@ public class MethodCacheAnalysis {
         blocksNeeded = new HashMap<ExecutionContext, Long>();
 
         /* iterate top down the scope graph (currently: the call graph) */
-        TopologicalOrderIterator<ExecutionContext, DefaultEdge> iter =
+        TopologicalOrderIterator<ExecutionContext, ContextEdge> iter =
                 project.getCallGraph().topDownIterator();
 
         while (iter.hasNext()) {

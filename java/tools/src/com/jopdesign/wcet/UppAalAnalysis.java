@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Properties;
 
 public class UppAalAnalysis {
-    private static final String CONFIG_FILE_PROP = "config";
+    private static final String CONFIG_FILE_PROP = "wcetanalysis.properties";
     private static final Logger tlLogger = Logger.getLogger(UppAalAnalysis.class);
     private static final int ECC_TRESHOLD = 400;
 
@@ -64,7 +64,9 @@ public class UppAalAnalysis {
 
         AppSetup setup = new AppSetup(defaultProps, false);
         setup.setVersionInfo("1.0 [deprecated]");
-        setup.setConfigFilename(CONFIG_FILE_PROP);
+        // We do not load a config file automatically, user has to specify it explicitly to avoid
+        // unintentional misconfiguration
+        //setup.setConfigFilename(CONFIG_FILE_NAME);
         setup.setUsageInfo("UppAllAnalysis", "UppAll WCET Analysis");
 
         WCETTool wcetTool = new WCETTool();
@@ -107,7 +109,7 @@ public class UppAalAnalysis {
             return false;
         }
         UppaalAnalysis ua = new UppaalAnalysis(tlLogger, project, uppaalOutDir);
-        List<MethodInfo> methods = project.getCallGraph().getImplementedMethods(project.getTargetMethod());
+        List<MethodInfo> methods = project.getCallGraph().getReachableImplementations(project.getTargetMethod());
         Collections.reverse(methods);
         List<WCETEntry> entries = new ArrayList<WCETEntry>();
         for (MethodInfo m : methods) {

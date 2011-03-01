@@ -26,28 +26,33 @@ import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.EmptyTool;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
+import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.DefaultCallgraphConfig;
 import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
-import com.jopdesign.common.misc.AppInfoError;
+import com.jopdesign.common.misc.BadGraphError;
+import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.common.tools.RemoveNops;
-import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.analyses.CallStringReceiverTypes;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.framework.ContextMap;
+import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.wcet.allocation.BlockAllocationModel;
 import com.jopdesign.wcet.allocation.HandleAllocationModel;
 import com.jopdesign.wcet.allocation.HeaderAllocationModel;
@@ -63,7 +68,6 @@ import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.report.ReportConfig;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import org.apache.bcel.generic.InstructionHandle;
-import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.log4j.Logger;
 
 import java.io.File;
@@ -74,11 +78,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.StringTokenizer;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -224,6 +228,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
                     projectConfig.getTargetClass(),
                     projectConfig.getTargetMethod(),
                     new DefaultCallgraphConfig(projectConfig.callstringLength()));
+            callGraph.checkAcyclicity();
         } catch (MethodNotFoundException e) {
             e.printStackTrace();
         }
@@ -327,7 +332,19 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
      * @return the CFG for the method.
      */
     public ControlFlowGraph getFlowGraph(MethodInfo mi) {
-        return mi.isAbstract() ? null : mi.getCode().getControlFlowGraph();
+        if (!mi.hasCode()) return null;
+        ControlFlowGraph cfg = mi.getCode().getControlFlowGraph(false);
+        try {
+            cfg.resolveVirtualInvokes();
+//	    cfg.insertSplitNodes();
+//	    cfg.insertSummaryNodes();
+            cfg.insertReturnNodes();
+            cfg.insertContinueLoopNodes();
+        } catch (BadGraphException e) {
+            // TODO handle this somehow??
+            throw new BadGraphError(e.getMessage(), e);
+        }
+        return cfg;
     }
 
     public LoopBound getLoopBound(CFGNode node, CallString cs) {
@@ -342,9 +359,12 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
     /**
      * Convenience delegator to get the size of the given method
+     * @param mi method to get the size of
+     * @return size of the method in words, or 0 if abstract
      */
     public int getSizeInWords(MethodInfo mi) {
-        return this.getFlowGraph(mi).getNumberOfWords();
+        if (!mi.hasCode()) return 0;
+        return mi.getCode().getNumberOfWords();
     }
 
 
@@ -449,25 +469,9 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         }
     }
 
-    public File getClassFile(ClassInfo ci) throws FileNotFoundException {
-        // TODO maybe move to AppInfo?
-        List<File> dirs = getSearchDirs(ci, appInfo.getClassPath().toString());
-        for (File classDir : dirs) {
-            String classname = ci.getClassName();
-            classname = classname.substring(classname.lastIndexOf(".") + 1);
-            File classFile = new File(classDir, classname + ".class");
-            if (classFile.exists()) return classFile;
-        }
-        for (File classDir : dirs) {
-            File classFile = new File(classDir, ci.getClassName() + ".class");
-            System.err.println("Class file not found: " + classFile);
-        }
-        throw new FileNotFoundException("Class file for " + ci.getClassName() + " not found.");
-    }
-
     public File getSourceFile(ClassInfo ci) throws FileNotFoundException {
         // TODO maybe move to AppInfo?
-        List<File> dirs = getSearchDirs(ci, projectConfig.getSourcePath());
+        List<File> dirs = projectConfig.getSourceSearchDirs(ci);
         for (File sourceDir : dirs) {
             File sourceFile = new File(sourceDir, ci.getSourceFileName());
             if (sourceFile.exists()) return sourceFile;
@@ -537,33 +541,10 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     }
 
     /**
-     * Find possible implementations of the given method in the given class
-     * <p>
-     * For all candidates, check whether they implement the method.
-     * All subclasses of the receiver class are candidates. If the method isn't implemented
-     * in the receiver, the lowest superclass implementing the method is a candidate too.
-     * </p>
-     * This is basically a wrapper for {@link MethodInfo#getImplementations(boolean)}. This does not
-     * check any DFA results.
-     *
-     * @param methodRef the method reference to resolve.
-     * @return list of method infos that might be invoked
-     */
-    public Collection<MethodInfo> findImplementations(MethodRef methodRef) {
-        MethodInfo method = methodRef.getMethodInfo();
-        if (method == null) {
-            // TODO maybe just return an empty set here?
-            throw new AppInfoError("Trying to find implementations from unknown method " + methodRef);
-        }
-        // note that methodRef.getMethodInfo() already returns the super-method if the method is inherited
-        // (since there is no 'inherited methodInfo')
-        return method.getImplementations(true);
-    }
-
-    /**
      * Find Implementations of the method called with the given instruction handle
      * Uses receiver type analysis to refine the results
      *
+     * @see #findImplementations(MethodInfo, InstructionHandle, CallString) 
      * @param invokerM invoking method
      * @param ih       the invoke instruction
      * @return list of possibly invoked methods
@@ -582,10 +563,46 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
      * @return list of possibly invoked methods
      */
     public Collection<MethodInfo> findImplementations(MethodInfo invokerM, InstructionHandle ih, CallString ctx) {
-        MethodRef ref = appInfo.getReferencedMethod(invokerM, (InvokeInstruction) ih.getInstruction());
-        Collection<MethodInfo> staticImpls = findImplementations(ref);
+        InvokeSite is = invokerM.getCode().getInvokeSite(ih);
+        Collection<MethodInfo> staticImpls = appInfo.findImplementations(is);        
+        // TODO we should use the DFA to refine the callgraph, and use AppInfo#findImplementations(is,ctx) here
         staticImpls = dfaReceivers(ih, staticImpls, ctx);
         return staticImpls;
+    }
+
+    /**
+     * Get infeasible edges for certain call string
+     *
+     * @return The infeasible edges
+     */
+    public List<CFGEdge> getInfeasibleEdges(ControlFlowGraph cfg, CallString cs) {
+        List<CFGEdge> edges = new ArrayList<CFGEdge>();
+        for (BasicBlock b : cfg.getBlocks()) {
+            List<CFGEdge> edge = dfaInfeasibleEdge(cfg, b, cs);
+            edges.addAll(edge);
+        }
+        return edges;
+    }
+
+    /**
+     * Get infeasible edges for certain basic block call string
+     * @return The infeasible edges for this basic block
+     */
+    private List<CFGEdge> dfaInfeasibleEdge(ControlFlowGraph cfg, BasicBlock block, CallString cs) {
+        List<CFGEdge> retval = new LinkedList<CFGEdge>();
+        if (getDfaLoopBounds() != null) {
+            LoopBounds lbs = getDfaLoopBounds();
+            Set<FlowEdge> edges = lbs.getInfeasibleEdges(block.getLastInstruction(), cs);
+            for (FlowEdge e : edges) {
+                BasicBlockNode head = ControlFlowGraph.getHandleNode(e.getHead());
+                BasicBlockNode tail = ControlFlowGraph.getHandleNode(e.getTail());
+                CFGEdge edge = cfg.getGraph().getEdge(tail, head);
+                if (edge != null) { // edge does not seem to exist any longer
+                    retval.add(edge);
+                }
+            }
+        }
+        return retval;
     }
 
     // TODO: [wcet-app-info] dfaReceivers() is rather slow, for debugging purposes

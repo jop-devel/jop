@@ -81,6 +81,7 @@ public class AppLoader {
     public void loadAll(boolean startFromRootsOnly) {
         AppInfo appInfo = AppInfo.getSingleton();
         if ( startFromRootsOnly ) {
+            // we only work on classes, not methods, so starting with root classes is sufficient here
             enqueue( appInfo.getRootClasses() );
         } else {
             enqueue( appInfo.getClassInfos() );
@@ -117,7 +118,7 @@ public class AppLoader {
             }
 
             int found = 0;
-            for (String name : ClassReferenceFinder.findReferencedClasses(next)) {
+            for (String name : ConstantPoolReferenceFinder.findReferencedClasses(next)) {
                 found += processClassName(name);
             }
 

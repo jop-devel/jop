@@ -203,7 +203,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 		}
 		for(MethodInfo m : methodInfos) {
 			ControlFlowGraph cfg = project.getFlowGraph(m);
-			for( Entry<CFGNode, LoopBound> entry : cfg.buildLoopBounds().entrySet()) {
+			for( Entry<CFGNode, LoopBound> entry : cfg.buildLoopBoundMap().entrySet()) {
 				CFGNode hol = entry.getKey();
 				LoopBound lb = entry.getValue();
 				int nesting = cfg.getLoopColoring().getLoopColor(hol).size();

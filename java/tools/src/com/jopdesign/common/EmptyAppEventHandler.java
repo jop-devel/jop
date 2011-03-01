@@ -20,6 +20,8 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.code.ControlFlowGraph;
+
 /**
  * An empty class which implements all callback handlers of AppEventHandler, so you
  * don't need to.
@@ -37,7 +39,19 @@ public abstract class EmptyAppEventHandler implements AppEventHandler {
     }
 
     @Override
+    public void onRemoveField(FieldInfo field) {
+    }
+
+    @Override
+    public void onRemoveMethod(MethodInfo method) {
+    }
+
+    @Override
     public void onClearAppInfo(AppInfo appInfo) {
+    }
+
+    @Override
+    public void onCreateControlFlowGraph(ControlFlowGraph cfg, boolean clear) {
     }
 
     @Override

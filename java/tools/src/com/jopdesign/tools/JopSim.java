@@ -32,11 +32,12 @@
 
 package com.jopdesign.tools;
 
-import java.io.*;
-
-
-import com.jopdesign.sys.*;
+import com.jopdesign.sys.Const;
 import com.jopdesign.timing.WCETInstruction;
+
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.StreamTokenizer;
 
 public class JopSim {
 

@@ -20,20 +20,43 @@
 
 package com.jopdesign.common.code;
 
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.logger.LogConfig;
+import com.jopdesign.common.misc.JavaClassFormatError;
+import com.jopdesign.common.misc.Ternary;
+import com.jopdesign.common.type.MethodRef;
+import com.jopdesign.common.type.Signature;
+import org.apache.bcel.generic.ArrayType;
+import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.INVOKEINTERFACE;
+import org.apache.bcel.generic.INVOKESPECIAL;
+import org.apache.bcel.generic.INVOKESTATIC;
+import org.apache.bcel.generic.INVOKEVIRTUAL;
+import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InvokeInstruction;
+import org.apache.bcel.generic.ObjectType;
+import org.apache.bcel.generic.ReferenceType;
+import org.apache.log4j.Logger;
 
 /**
  * A class which represents an invocation.
  *
  * <p>Two invoke-sites are considered equal if the invoker methodInfo are {@link MethodInfo#equals(Object) equal},
  * and if they point to the same InstructionHandle.</p>
+ * <p>
+ * This class handles all the special cases of invocation target resolution. To find all implementations for 
+ * virtual calls, see {@link AppInfo#findImplementations(InvokeSite)}
  *
  * @see MethodCode#getInvokeSite(InstructionHandle)
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class InvokeSite {
+
+    public static final Logger logger = Logger.getLogger(LogConfig.LOG_CODE + ".InvokeSite");
 
     private final InstructionHandle instruction;
     private final MethodInfo invoker;
@@ -58,6 +81,120 @@ public class InvokeSite {
 
     public MethodInfo getMethod() {
         return invoker;
+    }
+
+    /**
+     * @return true if this is a virtual invocation, i.e. either an invokevirtual or invokeinterface.
+     */
+    public boolean isVirtual() {
+        return isInvokeVirtual() || isInvokeInterface();
+    }
+
+    public boolean isInvokeSpecial() {
+        return instruction.getInstruction() instanceof INVOKESPECIAL;
+    }
+
+    /**
+     * Check if this invoke is an invokespecial instruction and the method to invoke is not
+     * the referenced method, but a method found in a superclass of the class where the invoker
+     * method is defined (and the invocation does not call a constructor and the ACC_SUPER flag is set).
+     * <p>
+     * If this is the case method resolution works differently, i.e. the invoked method is not necessarily the
+     * referenced method, but the method inherited to the superclass if the class where the invoker method is
+     * defined (which might not be the class of the object for which the invoker is executed).
+     * </p>
+     * <p>Explanation can be found here:
+     * http://weblog.ikvm.net/PermaLink.aspx?guid=99fcff6c-8ab7-4358-9467-ddf71dd20acd
+     * </p>
+     * <p>Imagine the following
+     * <pre>
+     * class A { public void method(){} }
+     * class B extends A { }
+     * class C extends B {
+     *   public method(){
+     *     super.method(); // refers to A.method()
+     *   }
+     * }
+     * </pre>
+     * If you replace class B with a class which defines method() without recompiling C,
+     * from Java 1.1 on invokespecial in C.method() is defined to call B.method() now although it still refers
+     * to A.method() (lookup starts in the superclass of the class which contains the invokespecial instruction).
+     * </p> 
+     *
+     * @return true if this invoke should invoke a super method.
+     */
+    public boolean isInvokeSuper() {
+        if (!isInvokeSpecial()) return false;
+        InvokeInstruction i = (InvokeInstruction) instruction.getInstruction();
+        return isSuperMethod(getReferencedMethod(i));
+    }
+
+    public boolean isInvokeStatic() {
+        return instruction.getInstruction() instanceof INVOKESTATIC;
+    }
+
+    public boolean isInvokeVirtual() {
+        return instruction.getInstruction() instanceof INVOKEVIRTUAL;
+    }
+
+    public boolean isInvokeInterface() {
+        return instruction.getInstruction() instanceof INVOKEINTERFACE;
+    }
+
+    public InvokeInstruction getInvokeInstruction() {
+        if (instruction.getInstruction() instanceof InvokeInstruction) {
+            return (InvokeInstruction) instruction.getInstruction();
+        }
+        return null;
+    }
+
+    /**
+     * Get a reference to the invoked method (for nonvirtual invokes) or to the referenced
+     * method (for virtual invokes). If the instruction is handled in java, return a reference
+     * to the method which implements the instruction.
+     *
+     * @see #getInvokeeRef(boolean)
+     * @see AppInfo#findImplementations(InvokeSite)
+     * @return a reference to the actually referenced method (might be different from the method
+     *         referenced by the instruction).
+     */
+    public MethodRef getInvokeeRef() {
+        return getInvokeeRef(true);
+    }
+
+    /**
+     * Get the MethodRef to the referenced method. If the instruction is handled in java, return a reference
+     * to the method which implements the instruction.
+     * <p>
+     * The MethodRef refers to the actual reference. {@link MethodRef#getMethodInfo()} resolves the actual
+     * MethodInfo, which might be defined in a super class of the referenced method, if the method is inherited.
+     * For invokespecial, the implementing method might even be defined in a subclass of the referenced method,
+     * if resolveSuper is set to false, see {@link #isInvokeSuper()} for details.
+     * </p>
+     * <p>To find all possible implementations if the invocation is a virtual invoke (see {@link #isVirtual()}),
+     * use {@link AppInfo#findImplementations(InvokeSite)}.</p>
+     *
+     * @see #isInvokeSuper()
+     * @see AppInfo#findImplementations(InvokeSite)
+     * @param resolveSuper if true, try to resolve the super method reference (see {@link #isInvokeSuper()}),
+     *                     else return a reference to the method as it is defined by the instruction.
+     * @return a method reference to the invokee method.
+     */
+    public MethodRef getInvokeeRef(boolean resolveSuper) {
+        Instruction instr = instruction.getInstruction();
+        AppInfo appInfo = AppInfo.getSingleton();
+        if (instr instanceof InvokeInstruction) {
+            MethodRef ref = getReferencedMethod((InvokeInstruction) instr);
+            // need to check isInvokeSpecial here, since it is not checked by isSuperMethod!
+            if (resolveSuper && isInvokeSpecial() && isSuperMethod(ref)) {
+                ref = resolveInvokeSuper(ref);
+            }
+            return ref;
+        }
+        if (appInfo.getProcessorModel().isImplementedInJava(instr)) {
+            return appInfo.getProcessorModel().getJavaImplementation(appInfo, invoker, instr).getMethodRef();
+        }
+        throw new JavaClassFormatError("InvokeSite handle does not refer to an invoke instruction: "+toString());
     }
 
     /**
@@ -92,5 +229,114 @@ public class InvokeSite {
         // Beware! we cannot use .getPosition() here since its value can and will change
         result = 31 * result + instruction.hashCode();
         return result;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // Private methods
+    ////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Get a MethodRef for the referenced method in a given invoke instruction in the invoker method.
+     * This does not resolve any super methods or devirtualize the call.
+     * <p>
+     * If you call {@link MethodRef#getMethodInfo()}, the method found in the referenced class
+     * or in its superclasses will be returned. For InvokeSpecial, this might not be correct,
+     * so use {@link #getInvokeeRef()} or {@link AppInfo#findImplementations(InvokeSite)} instead.</p>
+     * <p>
+     * Note: Since this could easily be used incorrectly, this method has been moved here from MethodInfo and
+     * made private in favor of getInvokeeRef()
+     * </p>
+     *
+     * @param instr the instruction to resolve
+     * @return a method reference representing the invoke reference.
+     */
+    private MethodRef getReferencedMethod(InvokeInstruction instr) {
+        ClassInfo invokerClass = invoker.getClassInfo();
+        ConstantPoolGen cpg = invokerClass.getConstantPoolGen();
+
+        ReferenceType refType = instr.getReferenceType(cpg);
+        String methodname = instr.getMethodName(cpg);
+        String classname;
+        if (refType instanceof ObjectType) {
+            classname = ((ObjectType)refType).getClassName();
+        } else if (refType instanceof ArrayType) {
+            // need to call array.<method>, which class should we use? Let's decide later..
+            String msg = "Calling a method for an array: " +
+                    refType.getSignature()+"#"+methodname + " in "+invokerClass;
+            logger.debug(msg);
+            classname = refType.getSignature();
+        } else {
+            // Hu??
+            throw new JavaClassFormatError("Unknown reference type " +refType);
+        }
+
+        boolean isInterface = (instr instanceof INVOKEINTERFACE);
+        return AppInfo.getSingleton().getMethodRef(new Signature(classname, methodname, instr.getSignature(cpg)),
+                            isInterface);
+    }
+
+    /**
+     * Check if this invokespecial is a super invoke. Does NOT check if the instruction is indeed an
+     * special invoke, check this first!
+     * See #isInvokeSuper() for more details.
+     *
+     * @param invokee the method referenced by the instruction.
+     * @return true if this references to a super method
+     */
+    private boolean isSuperMethod(MethodRef invokee) {
+        // This is the class where the invoker method is defined (not the class of the object instance!)
+        ClassInfo cls = invoker.getClassInfo();
+
+        if (!cls.hasSuperFlag()) return false;
+        if ("<init>".equals(invokee.getName())) return false;
+
+        // just to handle some special cases of unknown superclasses gracefully, without requiring a classInfo
+        if (cls.getClassName().equals(invokee.getClassName())) {
+            // this is an invoke within the same class, no super here
+            return false;
+        }
+        if (cls.isRootClass()) {
+            // trying to call a super-method of Object? Not likely, dude ..
+            return false;
+        }
+
+        // do not need to check interfaces, since invokespecial must not call interface methods
+        Ternary rs = cls.hasSuperClass(invokee.getClassName(), false);
+
+        if (rs == Ternary.UNKNOWN) {
+            if (invokee.getClassRef().getClassInfo() != null) {
+                // class exists, but method does not exists, either an error or superclasses are missing
+                throw new JavaClassFormatError("Invokespecial tries to call "+invokee+
+                        " but this method has not been found");
+            }
+            // invokespecial to an unknown class, we cannot handle this safely
+            throw new JavaClassFormatError("Could not determine if invokespecial is a super invoke for "+invokee);
+        }
+
+        return rs == Ternary.TRUE;
+    }
+
+    /**
+     * Resolve the reference to the super method.
+     * See #isInvokeSuper() for more details.
+     *
+     * @param ref the method referenced by the instruction
+     * @return the reference to the method to invoke
+     */
+    private MethodRef resolveInvokeSuper(MethodRef ref) {
+        String superClass = invoker.getClassInfo().getSuperClassName();
+        // Restart the lookup in the super class of the invoker class
+        Signature superSig = new Signature(superClass, ref.getName(), ref.getDescriptor());
+        // invokespecial is never used for interface invokes
+        MethodRef superRef = AppInfo.getSingleton().getMethodRef(superSig,false);
+
+        if (ref.getMethodInfo() != null && !ref.getMethodInfo().equals(superRef.getMethodInfo())) {
+            // Just give a warning, just in case there is some code out there which handles this incorrectly..
+            // Warning level might be changed to debug someday..
+            logger.warn("InvokeSpecial in "+invoker+" calls super method "+superRef+" but refers to "+
+                         ref+" which is valid, but you might want to know that..");
+        }
+
+        return superRef;
     }
 }

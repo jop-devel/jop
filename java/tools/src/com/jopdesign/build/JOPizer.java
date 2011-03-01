@@ -21,8 +21,7 @@
 
 package com.jopdesign.build;
 
-import boxpeeking.instrument.bcel.AnnotationReader;
-import org.apache.bcel.classfile.Attribute;
+import com.jopdesign.common.bcel.CustomAttribute;
 
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
@@ -106,7 +105,8 @@ public class JOPizer extends OldAppInfo implements Serializable {
 		dumpMgci = System.getProperty("mgci", "false").equals("true");
 
 		if (USE_RTTM) {
-			Attribute.addAttributeReader("RuntimeInvisibleAnnotations", new AnnotationReader());
+                    // This will be done by AppSetup
+                    CustomAttribute.registerDefaultReader();
 		}
 
 

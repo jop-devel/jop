@@ -72,7 +72,9 @@ public class WCETAnalysis {
 
         AppSetup setup = new AppSetup(defaultProps, false);
         setup.setVersionInfo("1.0.1");
-        setup.setConfigFilename(CONFIG_FILE_NAME);
+        // We do not load a config file automatically, user has to specify it explicitly to avoid
+        // unintentional misconfiguration
+        //setup.setConfigFilename(CONFIG_FILE_NAME);
         setup.setUsageInfo("WCETAnalysis", "WCET Analysis tool");
 
         WCETTool wcetTool = new WCETTool();

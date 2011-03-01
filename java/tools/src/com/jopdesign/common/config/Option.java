@@ -20,6 +20,9 @@
  */
 package com.jopdesign.common.config;
 
+import com.jopdesign.common.logger.LogConfig;
+import org.apache.log4j.Logger;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -32,6 +35,8 @@ import java.util.Set;
  * @param <T> java type of the option
  */
 public abstract class Option<T> {
+
+    public static final Logger logger = Logger.getLogger(LogConfig.LOG_CONFIG+".Option");
 
     public static final char SHORT_NONE = ' ';
 
@@ -217,6 +222,12 @@ public abstract class Option<T> {
     }
 
     protected String replacePlaceholders(Config config, String s, Set<String> stack) {
+        // just some sanity checks..
+        if (s.indexOf("$(") != -1) {
+            // TODO we need to setup a standard logger setup before parsing options so this can be seen before
+            //      LogConfig gets initialized
+            logger.warn("Found '$(' in value of option "+getKey()+", are you sure you did not mean '${..}' instead?");
+        }
         int p1 = s.indexOf("${");
         if (p1 == -1) {
             return s;

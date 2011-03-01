@@ -24,6 +24,8 @@ import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.ConstantPool;
 import org.apache.bcel.classfile.Visitor;
 
+import java.util.Collection;
+
 /**
  * This class should be the base class for all additional BCEL attribute classes, so
  * that they can be visited by a ClassElementVisitor.
@@ -39,6 +41,8 @@ public abstract class CustomAttribute extends Attribute {
             Attribute.addAttributeReader(name, new AnnotationReader(name));
         }
 
+        Attribute.addAttributeReader(StackMapTableReader.ATTRIBUTE_NAME, new StackMapTableReader());
+
         // SourceDebugExtension and LocalVariableTypeTable is not handled..
     }
 
@@ -50,6 +54,10 @@ public abstract class CustomAttribute extends Attribute {
     public void accept(Visitor v) {
     }
 
+    public String getName() {
+        return constant_pool.getConstant(name_index).toString();
+    }
+
     /**
      * If this attribute references any classes they must be returned here.
      * @return a list of classnames this attribute references.
@@ -58,4 +66,7 @@ public abstract class CustomAttribute extends Attribute {
         return null;
     }
 
+    public Collection<Integer> getConstantPoolIDs() {
+        return null;
+    }
 }

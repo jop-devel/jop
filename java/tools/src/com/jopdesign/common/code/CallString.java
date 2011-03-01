@@ -69,6 +69,10 @@ public class CallString implements CallStringProvider {
         return this;
     }
 
+    public CallString push(InvokeSite invokeSite) {
+        return push(invokeSite, length()+1);
+    }
+
     /**
      * Return a new callstring, extended by the given invoke site.
      * <p>Let {@code n(1)} be the id of the given invoke site, and
@@ -90,10 +94,10 @@ public class CallString implements CallStringProvider {
      * <p>Let {@code n(1)} be the id of the given invoke site, and
      *    {@code n(2),...,n(k)} be the callstring represented by {@code this}
      * <ol><li/>If k &lt;= maxDepth, the resulting callstring is {@code n(1),n(2),...,n(k)}
-     *     <li/>If k &gt;=   maxDepth, the resulting callstring is {@code n(1),n(2),...,n(maxDepth)}
+     *     <li/>If k &gt;= maxDepth, the resulting callstring is {@code n(1),n(2),...,n(maxDepth)}
      *  </ol>
      *
-     * TODO: Code duplication with DFA/LoopBounds.java
+     * TODO: Code duplication with DFA/LoopBounds.java ?
      *
      * @param method the method containing the invocation
      * @param invoke the invocation instruction
@@ -123,7 +127,8 @@ public class CallString implements CallStringProvider {
 
         // shallow clone
         int k = Math.min(callString.length + 1, maxLen);
-        InvokeSite[] cs = Arrays.copyOf(callString, k);
+        int end = callString.length + 1;
+        InvokeSite[] cs = Arrays.copyOfRange(callString, end - k, end);
         cs[k - 1] = is;
 
         return new CallString(cs);
@@ -144,22 +149,43 @@ public class CallString implements CallStringProvider {
             return null;
         }
     }
-    
+
+    /**
+     * @param length must be between 0 and {@link #length()} inclusive.
+     * @return return a callstring with the given length containing the {@code length} most recently pushed items.
+     */
     public CallString getSuffix(int length) {
         if (length == 0) return EMPTY;
         if (length > callString.length) {
             throw new IllegalArgumentException("Trying to get suffix with length "+length+
                     " greater than callstring length "+callString.length);
         }
+        if (length == callString.length) return this;
 
         InvokeSite[] cs = Arrays.copyOfRange(callString, callString.length - length, callString.length);
         return new CallString(cs);
     }
 
+    /**
+     * Check if either this callstring or the given callstring is a suffix of the other one.
+     * @param cs callstring to compare to.
+     * @return true if they are equal or one of them is a suffix of the other.
+     */
+    public boolean matches(CallString cs) {
+        // empty callstring always matches
+        if (length() == 0 || cs.length() == 0) return true;
+        
+        return hasSuffix(cs) || cs.hasSuffix(this);
+    }
+
     @Override
     public int hashCode() {
-        // TODO we should reimplement this (?)
-        return callString.hashCode();
+        // maybe cache this?
+        int hash = 0;
+        for (InvokeSite invokeSite : callString) {
+            hash = hash * 31 + invokeSite.hashCode();
+        }
+        return hash;
     }
 
     @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
@@ -170,7 +196,6 @@ public class CallString implements CallStringProvider {
         if (getClass() != obj.getClass()) return false;
         CallString other = (CallString) obj;
         return Arrays.equals(callString, other.callString);
-
     }
 
     /**
@@ -201,6 +226,7 @@ public class CallString implements CallStringProvider {
         return callString.length == 0;
     }
 
+    @Override
     public String toString() {
         if (this.isEmpty()) return "CallString.EMPTY";
         long hash = hashCode();
@@ -208,14 +234,15 @@ public class CallString implements CallStringProvider {
         return String.format("CallString[|%d|%x]", callString.length, hash);
     }
 
-    public String toStringVerbose() {
+    public String toStringVerbose(boolean newlines) {
         if (this.isEmpty()) return "CallString.EMPTY";
         StringBuffer sb = new StringBuffer("CallString{");
         boolean first = true;
-        for (InvokeSite is : callString) {
+        for (int i = callString.length-1; i >= 0; i--) {
             if (first) first = false;
+            else if (newlines) sb.append("\n           ");
             else sb.append(";");
-            sb.append(is.toString());
+            sb.append(callString[i].toString());
         }
         sb.append("}");
         return sb.toString();

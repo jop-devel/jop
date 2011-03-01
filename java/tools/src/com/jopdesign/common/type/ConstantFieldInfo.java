@@ -45,6 +45,10 @@ public class ConstantFieldInfo extends ConstantInfo<FieldRef, Type> {
         return getValue().getType();
     }
 
+    public String getName() {
+        return getValue().getName();
+    }
+
     @Override
     public Constant createConstant(ConstantPoolGen cpg) {
         FieldRef fieldRef = getValue();

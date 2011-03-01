@@ -300,4 +300,35 @@ public class MiscUtils {
         }
         return sb.toString();
     }
+
+    /**
+     * @param entries a collection of things
+     * @param max maximum number of entries to print
+     * @return a string representation of this collection with up to max entries. 
+     */
+    public static String toString(Collection entries, int max) {
+        StringBuffer sb = new StringBuffer("[");
+        int cnt = Math.min(entries.size(), max);
+        Iterator it = entries.iterator();
+        for (int i = 0; i < cnt; i++) {
+            if (i > 0) sb.append(",");
+            sb.append(it.next().toString());
+        }
+        if (cnt < entries.size()) {
+            sb.append(",...");
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
+    public static <T> boolean inArray(T[] array, T element) {
+        for (T i : array) {
+            if (i == null) {
+                if (element == null) return true;
+            } else if (i.equals(element)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

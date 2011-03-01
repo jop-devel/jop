@@ -21,21 +21,30 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.KeyManager.CustomKey;
+import com.jopdesign.common.bcel.StackMapTable;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ControlFlowGraph.InvokeNode;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.BadGraphError;
 import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.HashedString;
+import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.common.processormodel.ProcessorModel;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Code;
+import org.apache.bcel.classfile.ConstantUtf8;
 import org.apache.bcel.classfile.LineNumberTable;
+import org.apache.bcel.classfile.StackMap;
 import org.apache.bcel.generic.CodeExceptionGen;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
+import org.apache.bcel.generic.InstructionTargeter;
+import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.LineNumberGen;
 import org.apache.bcel.generic.LocalVariableGen;
 import org.apache.bcel.generic.MethodGen;
@@ -43,8 +52,12 @@ import org.apache.bcel.generic.ObjectType;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -60,20 +73,14 @@ public class MethodCode {
     // Keys to attach values directly to InstructionHandles, which are not handled by KeyManager
     private static final Object KEY_LINENUMBER = new HashedString("MethodCode.LineNumber");
     private static final Object KEY_SOURCEFILE = new HashedString("MethodCode.SourceFile");
-    private static final Object KEY_EXCEPTIONS = new HashedString("MethodCode.Exceptions");
 
-    private static final Object[] MANAGED_KEYS = {KEY_INVOKESITE, KEY_LINENUMBER, KEY_SOURCEFILE, KEY_EXCEPTIONS};
+    private static final Object[] MANAGED_KEYS = {KEY_INVOKESITE, KEY_LINENUMBER, KEY_SOURCEFILE};
 
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_CODE+".MethodCode");
 
     private final MethodInfo methodInfo;
     private final MethodGen methodGen;
     private ControlFlowGraph cfg;
-
-    // true when the instruction list has lineNrs and exceptions attached to them.
-    private boolean ilTablesLoaded;
-    // true when the table attributes may be out of date.
-    private boolean ilTablesDirty;
 
     /**
      * Only to be used by MethodInfo.
@@ -119,7 +126,7 @@ public class MethodCode {
      * @return the length of the code attribute
      */
     public int getLength() {
-        prepareInstructionList(false);
+        prepareInstructionList();
         return methodGen.getMethod().getCode().getLength();
     }
 
@@ -141,38 +148,6 @@ public class MethodCode {
 
     public LocalVariableGen[] getLocalVariables() {
         return methodGen.getLocalVariables();
-    }
-
-    public CodeExceptionGen[] getExceptionHandlers() {
-        return methodGen.getExceptionHandlers();
-    }
-
-    public CodeExceptionGen addExceptionHandler(InstructionHandle start_pc, InstructionHandle end_pc, InstructionHandle handler_pc, ObjectType catch_type) {
-        return methodGen.addExceptionHandler(start_pc, end_pc, handler_pc, catch_type);
-    }
-
-    public void removeExceptionHandler(CodeExceptionGen c) {
-        methodGen.removeExceptionHandler(c);
-    }
-
-    public void removeExceptionHandlers() {
-        methodGen.removeExceptionHandlers();
-    }
-
-    public void addException(String class_name) {
-        methodGen.addException(class_name);
-    }
-
-    public void removeException(String c) {
-        methodGen.removeException(c);
-    }
-
-    public void removeExceptions() {
-        methodGen.removeExceptions();
-    }
-
-    public String[] getExceptions() {
-        return methodGen.getExceptions();
     }
 
     public Attribute[] getAttributes() {
@@ -217,9 +192,7 @@ public class MethodCode {
     }
 
     /**
-     * Remove a line number entry. Only use this if you manage the linenumber table yourself, else use
-     * {@link #removeLineNumber(InstructionHandle)}.
-     *
+     * Remove a line number entry.
      * @param l the entry to remove.
      */
     public void removeLineNumber(LineNumberGen l) {
@@ -227,34 +200,41 @@ public class MethodCode {
     }
 
     /**
-     * Remove the linenumber table attribute.
-     * <p>
-     * TODO if rebuildTables or compile() is called, the table might get recreated. Should be prevented
-     * if this is called (?)
-     * </p>
+     * Remove all line numbers.
      */
     public void removeLineNumbers() {
         methodGen.removeLineNumbers();
     }
 
     public LineNumberGen setLineNumber(InstructionHandle ih, int src_line) {
-        if (ilTablesLoaded) {
-            ih.addAttribute(KEY_LINENUMBER, src_line);
-            ilTablesDirty = true;
-            return null;
-        } else {
-            // TODO check if entry exists
-            return methodGen.addLineNumber(ih, src_line);
+        LineNumberGen lg = getLineNumberEntry(ih, false);
+        if (lg != null) {
+            lg.setSourceLine(src_line);
+            return lg;
         }
+        return methodGen.addLineNumber(ih, src_line);
     }
 
-    public void removeLineNumber(InstructionHandle ih) {
-        if (ilTablesLoaded) {
-            ih.removeAttribute(KEY_LINENUMBER);
-            ilTablesDirty = true;
-        } else {
-            // TODO remove from LineNumberTable
+    public LineNumberGen getLineNumberEntry(InstructionHandle ih, boolean checkPrevious) {
+        InstructionHandle prev = ih.getPrev();
+        while (prev != null) {
+            InstructionTargeter[] targeter = ih.getTargeters();
+            if (targeter != null) {
+                for (InstructionTargeter t : targeter) {
+                    if (t instanceof LineNumberGen) {
+                        // found a linenumber attached to this
+                        return (LineNumberGen) t;
+                    }
+                }
+            }
+            // no match found
+            if (checkPrevious) {
+                prev = prev.getPrev();
+            } else {
+                break;
+            }
         }
+        return null;
     }
 
     /**
@@ -263,16 +243,10 @@ public class MethodCode {
      *
      * @see #getSourceFileName(InstructionHandle)
      * @param ih the instruction to check.
-     * @return the line number of the instruction, or 0 if unknown.
+     * @return the line number of the instruction, or -1 if unknown.
      */
     public int getLineNumber(InstructionHandle ih) {
-        if (ilTablesLoaded) {
-            Object attribute = ih.getAttribute(KEY_LINENUMBER);
-            // TODO return -1 if not set?
-            return attribute != null ? (Integer) attribute : 0;
-        } else {
-            return getLineNumberTable().getSourceLine(ih.getPosition());
-        }
+        return getLineNumberTable().getSourceLine(ih.getPosition());
     }
 
     public void setSourceFileName(InstructionHandle ih, String filename) {
@@ -289,25 +263,131 @@ public class MethodCode {
     }
 
     //////////////////////////////////////////////////////////////////////////////
+    // Exception handling
+    //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Add an exception which can be thrown by this method
+     * @param class_name classname of the exception
+     */
+    public void addException(String class_name) {
+        methodGen.addException(class_name);
+    }
+
+    /**
+     * Remove an exception which is no longer thrown by this method.
+     * @param c classname of the exception to remove
+     */
+    public void removeException(String c) {
+        methodGen.removeException(c);
+    }
+
+    /**
+     * This method does not throw any exceptions anymore, remove all exceptions which are thrown from this method.
+     */
+    public void removeExceptions() {
+        methodGen.removeExceptions();
+    }
+
+    /**
+     * @return a list of classnames of all exceptions which this method can throw
+     */
+    public String[] getExceptions() {
+        return methodGen.getExceptions();
+    }
+
+    public CodeExceptionGen[] getExceptionHandlers() {
+        return methodGen.getExceptionHandlers();
+    }
+
+    public CodeExceptionGen addExceptionHandler(InstructionHandle start_pc, InstructionHandle end_pc, InstructionHandle handler_pc, ObjectType catch_type) {
+        return methodGen.addExceptionHandler(start_pc, end_pc, handler_pc, catch_type);
+    }
+
+    public void removeExceptionHandler(CodeExceptionGen c) {
+        methodGen.removeExceptionHandler(c);
+    }
+
+    public void removeExceptionHandlers() {
+        methodGen.removeExceptionHandlers();
+    }
+
+    public boolean isExceptionRangeStart(InstructionHandle ih) {
+        return !getStartingExceptionRanges(ih).isEmpty();
+    }
+
+    public boolean isExceptionRangeEnd(InstructionHandle ih) {
+        return !getEndingExceptionRanges(ih).isEmpty();
+    }
+
+    public boolean isExceptionRangeTarget(InstructionHandle ih) {
+        return !getTargetingExceptionRanges(ih).isEmpty();
+    }
+
+    /**
+     * Get a list of all exception ranges which start at this instruction.
+     * @param ih the instruction to check
+     * @return a list of all exception ranges with this instruction as start instruction, or an empty list.
+     */
+    public List<CodeExceptionGen> getStartingExceptionRanges(InstructionHandle ih) {
+        List<CodeExceptionGen> list = new ArrayList<CodeExceptionGen>();
+        InstructionTargeter[] targeters = ih.getTargeters();
+        if (targeters == null) return list;
+        for (InstructionTargeter t : targeters) {
+            if (t instanceof CodeExceptionGen) {
+                CodeExceptionGen ceg = (CodeExceptionGen) t;
+                if (ceg.getStartPC().equals(ih)) {
+                    list.add(ceg);
+                }
+            }
+        }
+        return list;
+    }
+
+    public List<CodeExceptionGen> getEndingExceptionRanges(InstructionHandle ih) {
+        List<CodeExceptionGen> list = new ArrayList<CodeExceptionGen>();
+        InstructionTargeter[] targeters = ih.getTargeters();
+        if (targeters == null) return list;
+        for (InstructionTargeter t : targeters) {
+            if (t instanceof CodeExceptionGen) {
+                CodeExceptionGen ceg = (CodeExceptionGen) t;
+                if (ceg.getEndPC().equals(ih)) {
+                    list.add(ceg);
+                }
+            }
+        }
+        return list;
+    }
+
+    public List<CodeExceptionGen> getTargetingExceptionRanges(InstructionHandle ih) {
+        List<CodeExceptionGen> list = new ArrayList<CodeExceptionGen>();
+        InstructionTargeter[] targeters = ih.getTargeters();
+        if (targeters == null) return list;
+        for (InstructionTargeter t : targeters) {
+            if (t instanceof CodeExceptionGen) {
+                CodeExceptionGen ceg = (CodeExceptionGen) t;
+                if (ceg.getHandlerPC().equals(ih)) {
+                    list.add(ceg);
+                }
+            }
+        }
+        return list;
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
     // Code Access, Instruction Lists and CFG
     //////////////////////////////////////////////////////////////////////////////
 
     /**
-     * Get the instruction list of this code. If {@link #getControlFlowGraph()} has been used before, the CFG
+     * Get the instruction list of this code. If {@link #getControlFlowGraph(boolean)} has been used before, the CFG
      * will be compiled and removed first.
      *
-     * @see #rebuildTables(boolean)
      * @see #compile()
-     * @param loadAttributes if true, load linenumbers and exceptions attributes to the handles, if they
-     *                       are not loaded already, and a successive call to {@link #compile} will update the
-     *                       tables (if not preceded by {@link #rebuildTables(boolean)}).
-     *                       Use {@code false} if you do not modify the list, if you do not need to keep tables
-     *                       in sync or if you update them yourself.
      * @return the instruction list of this code.
      */
-    public InstructionList getInstructionList(boolean loadAttributes) {
+    public InstructionList getInstructionList() {
 
-        InstructionList list = prepareInstructionList(loadAttributes);
+        InstructionList list = prepareInstructionList();
 
         // If one only uses the IList to analyze code but does not modify it, we could keep an existing CFG.
         // Unfortunately, there is no 'const InstructionList' or 'UnmodifiableInstructionList', so we
@@ -319,50 +399,30 @@ public class MethodCode {
 
     /**
      * Set a new instruction list to this code.
+     * <p>
+     * IMPORTANT: If you use this method, make sure to update all targeters using
+     * {@link #retarget(InstructionHandle, InstructionHandle)} first, else the various tables will link
+     * to invalid handlers.
+     * </p>
+     * @see #getInstructionList()
      * @param il the new list
-     * @param hasAttributes if true, use the linenumber and exception attributes set to the handles of the new list.
      */
-    public void setInstructionList(InstructionList il, boolean hasAttributes) {
+    public void setInstructionList(InstructionList il) {
+        methodGen.getInstructionList().dispose();
         methodGen.setInstructionList(il);
         removeCFG();
-        ilTablesLoaded = hasAttributes;
-        ilTablesDirty = hasAttributes;
     }
 
     /**
-     * Check if the lineNr and exception table may be outdated and need to be rebuilt from
-     * the instructionhandle attributes. This gets set when {@code getInstructionList(true)}
-     * is called and reset when {@link #rebuildTables(boolean)} or {@link #compile()} gets called.
-     * <p>
-     * Note that this returns false when the instruction list gets modified after
-     * {@link #compile()} has been called and before {@code getInstructionList(true)} has
-     * been called again.
-     * </p>
-     * <p>
-     * TODO We could add an InstructionListObserver to get notified on changes, but this still
-     *      requires the user to call InstructionList.update()!
-     * </p>
-     *
-     * @see #getInstructionList(boolean)
-     * @see #compile()
-     * @return true if the table attributes of this code need to be rebuilt.
+     * Retarget all targeters (jumps, branches, exception ranges, linenumbers,..) of a handle to a new handle.
+     * @param oldHandle the old target
+     * @param newHandle the new target
      */
-    public boolean needsRebuildTables() {
-        return ilTablesLoaded && ilTablesDirty;
-    }
-
-    /**
-     * Rebuild the linenumber and exception attributes from CustomValues from the instruction handles.
-     * <p>
-     * This does not check {@link #needsRebuildTables()}. If no values are set to the handles, the tables
-     * will be removed.
-     * </p>
-     * @param clearNeedsRebuild set to false if you do want to
-     */
-    public void rebuildTables(boolean clearNeedsRebuild) {
-        rebuildTables(methodGen.getInstructionList());
-        if (clearNeedsRebuild) {
-            ilTablesDirty = false;
+    public void retarget(InstructionHandle oldHandle, InstructionHandle newHandle) {
+        InstructionTargeter[] it = oldHandle.getTargeters();
+        if (it == null) return;
+        for (InstructionTargeter targeter : it) {
+            targeter.updateTarget(oldHandle, newHandle);
         }
     }
 
@@ -382,15 +442,80 @@ public class MethodCode {
         return is;
     }
 
+    /**
+     * Get a list of invoke sites in this method code. This also returns invoke sites for special
+     * instructions implemented in java.
+     *
+     * @return a list of all invoke sites in this code.
+     */
+    public Set<InvokeSite> getInvokeSites() {
+        Set<InvokeSite> invokes = new HashSet<InvokeSite>();
+        if (hasCFG()) {
+            for (CFGNode node : cfg.getGraph().vertexSet()) {
+                if (node instanceof InvokeNode) {
+                    invokes.add( ((InvokeNode)node).getInvokeSite() );
+                }
+            }
+        } else {
+            for (InstructionHandle ih : methodGen.getInstructionList().getInstructionHandles()) {
+                if (ih.getInstruction() instanceof InvokeInstruction) {
+                    invokes.add( getInvokeSite(ih) );
+                } else if (getAppInfo().getProcessorModel().isImplementedInJava(ih.getInstruction())) {
+                    invokes.add( getInvokeSite(ih) );
+                }
+            }
+        }
+        return invokes;
+    }
+
     public void removeNOPs() {
-        prepareInstructionList(true);
+        prepareInstructionList();
         methodGen.removeNOPs();
     }
 
-    public ControlFlowGraph getControlFlowGraph() {
+    /**
+     * Remove attributes related to debugging (e.g. variable name mappings, stack maps, ..)
+     * except the linenumber table.
+     */
+    public void removeDebugAttributes() {
+
+        removeLocalVariables();
+
+        for (Attribute a : getAttributes()) {
+            if (a instanceof StackMapTable ||
+                a instanceof StackMap)
+            {
+                removeAttribute(a);
+                continue;
+            }
+            // Quick hack, just remove it (not yet supported by framework, we have no type for this attribute)
+            ConstantUtf8 name = (ConstantUtf8) getConstantPoolGen().getConstant(a.getNameIndex());
+            if ("LocalVariableTypeTable".equals(name.getBytes())) {
+                removeAttribute(a);
+            }
+            // TODO also remove stuff like Annotations,..?
+        }
+    }
+
+    /**
+     * Get the control flow graph associated with this method code or create a new one.
+     * @param clean if true, compile and recreate the graph if {@link ControlFlowGraph#isClean()} returns false.
+     * @return the CFG for this method.
+     */
+    public ControlFlowGraph getControlFlowGraph(boolean clean) {
+
+        // clean/isClean could be made more general (like the CallGraphConfiguration)
+
+        if ( cfg != null && clean && !cfg.isClean()) {
+            cfg.compile();
+            cfg = null;
+        }
         if ( this.cfg == null ) {
             try {
                 cfg = new ControlFlowGraph(this.getMethodInfo());
+                for (AppEventHandler ah : AppInfo.getSingleton().getEventHandlers()) {
+                    ah.onCreateControlFlowGraph(cfg, clean);
+                }
             } catch (BadGraphException e) {
                 throw new BadGraphError("Unable to create CFG for " + methodInfo, e);
             }
@@ -414,18 +539,40 @@ public class MethodCode {
     }
 
     /**
-     * Compile all changes, rebuild linenumber and exception tables if needed, and update maxStack and maxLocals.
-     * <p>
-     * Note that {@link #needsRebuildTables()} will return false after this call until
-     * {@code getInstructionList(true)} is called again.
+     * Compile all changes, and update maxStack and maxLocals.
      */
     public void compile() {
-        prepareInstructionList(false);
-        if (needsRebuildTables()) {
-            rebuildTables(true);
-        }
+        prepareInstructionList();
         methodGen.setMaxLocals();
         methodGen.setMaxStack();
+    }
+
+    public int getNumberOfBytes(InstructionList il) {
+        int sum = 0;
+        ProcessorModel pm = getAppInfo().getProcessorModel();
+
+        for (InstructionHandle ih : il.getInstructionHandles()) {
+            sum += pm.getNumberOfBytes(methodInfo, ih.getInstruction());
+        }
+
+        return sum;
+    }
+
+    /**
+     * Get the length of the implementation
+     *
+     * @return the length in bytes
+     */
+    public int getNumberOfBytes() {
+        if (hasCFG()) {
+            return cfg.getNumberOfBytes();
+        } else {
+            return getNumberOfBytes(methodGen.getInstructionList());
+        }
+    }
+
+    public int getNumberOfWords() {
+        return MiscUtils.bytesToWords(getNumberOfBytes());
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -497,37 +644,10 @@ public class MethodCode {
     // Private area. For staff only..
     //////////////////////////////////////////////////////////////////////////////
 
-    private InstructionList prepareInstructionList(boolean loadAttributes) {
+    private InstructionList prepareInstructionList() {
         if ( cfg != null ) {
             cfg.compile();
         }
-
-        InstructionList list = methodGen.getInstructionList();
-        if ( loadAttributes && !ilTablesLoaded ) {
-            loadTableAttributes(list);
-            ilTablesLoaded = true;
-        }
-        if ( loadAttributes ) {
-            ilTablesDirty = true;
-        }
-        return list;
+        return methodGen.getInstructionList();
     }
-
-    private void loadTableAttributes(InstructionList il) {
-        LineNumberTable lt = methodGen.getLineNumberTable(getConstantPoolGen());
-        // TODO handle missing linenumbertable, missing entries
-        for (InstructionHandle ih : il.getInstructionHandles()) {
-            int pos = lt.getSourceLine(ih.getPosition());
-            ih.addAttribute(KEY_SOURCEFILE, pos);
-        }
-
-        // TODO load exception ranges
-
-    }
-
-    private void rebuildTables(InstructionList il) {
-        // TODO rebuild Linenumber- and exception table
-        
-    }
-
 }

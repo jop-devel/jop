@@ -36,10 +36,9 @@ import com.jopdesign.common.misc.HashedString;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.type.MethodRef;
 import org.apache.bcel.Constants;
-import org.apache.bcel.generic.INVOKEINTERFACE;
-import org.apache.bcel.generic.INVOKEVIRTUAL;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.log4j.Logger;
 import org.jgrapht.graph.DefaultEdge;
@@ -51,6 +50,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -95,16 +95,22 @@ public class ControlFlowGraph {
         public ControlFlowError(String msg) {
             super("Error in Control Flow Graph: " + msg);
         }
-
         public ControlFlowError(String msg, ControlFlowGraph cfg) {
             this(msg);
             this.cfg = cfg;
+        }
+        public ControlFlowError(String message, Throwable cause) {
+            super("Error in Control Flow Graph: "+message, cause);
         }
 
         public ControlFlowGraph getAffectedCFG() {
             return cfg;
         }
     }
+
+    /*---------------------------------------------------------------------------*
+     * CFG Node classes
+     *---------------------------------------------------------------------------*/
 
     /**
      * Visitor for flow graph nodes
@@ -210,22 +216,9 @@ public class ControlFlowGraph {
         }
     }
 
-    // FIXME: [wcet-frontend] Remove the ugly ih.getAttribute() hack for CFG Nodes
-
-    private static final Object KEY_CFGNODE = new HashedString("ControlFlowGraph.CFGNode");
-
-    /**
-     * Get the basic block node associated with an instruction handle
-     */
-    public static BasicBlockNode getHandleNode(InstructionHandle ih) {
-        BasicBlockNode blockNode = (BasicBlockNode) ih.getAttribute(KEY_CFGNODE);
-        if (blockNode == null) {
-            String errMsg = "No basic block recorded for instruction " + ih.toString(true);
-            logger.error(errMsg);
-            return null;
-        }
-        return blockNode;
-    }
+    /*---------------------------------------------------------------------------*
+     * CFG BasicBlock node classes
+     *---------------------------------------------------------------------------*/
 
     /**
      * Flow graph nodes representing basic blocks
@@ -258,8 +251,6 @@ public class ControlFlowGraph {
         }
     }
 
-    /* IDEA: summary nodes (sub flowgraphs) */
-
     /**
      * Invoke nodes (Basic block with exactly one invoke instruction).
      */
@@ -273,22 +264,19 @@ public class ControlFlowGraph {
             super(block);
         }
 
-        public InvokeNode(BasicBlock block, InvokeInstruction instr) {
+        public InvokeNode(BasicBlock block, InstructionHandle instr) {
             super(block);
-            this.instr = instr;
-            /* -- TODO comment for commit!
-           this.referenced = appInfo.getReferenced(methodInfo, instr);
-           -- */
-            this.name = "invoke(" + this.referenced + ")";
+            this.instr = (InvokeInstruction) instr.getInstruction();
+            // TODO keep the InvokeSite instead of instr+referenced .. 
+            InvokeSite invokeSite = methodInfo.getCode().getInvokeSite(instr);
+            this.referenced = invokeSite.getInvokeeRef();
             /* if virtual / interface, this method has to be resolved first */
-            if ((instr instanceof INVOKEINTERFACE) || (instr instanceof INVOKEVIRTUAL)) {
+            if (invokeSite.isVirtual()) {
                 receiverImpl = null;
             } else {
-                /* -- TODO comment for commit!
-                receiverImpl = appInfo.findStaticImplementation(referenced);
-                -- */
+                receiverImpl = referenced.getMethodInfo();
             }
-
+            this.name = "invoke(" + this.referenced + ")";
         }
 
         @Override
@@ -301,35 +289,33 @@ public class ControlFlowGraph {
         }
 
         /**
-         * For non-virtual methods, get the implementation of the method
+         * @return For non-virtual methods, get the implementation of the method
          */
         public MethodInfo getImplementedMethod() {
-            return this.receiverImpl;
+            return referenced.getMethodInfo();
         }
 
         /**
-         * Get all possible implementations of the invoked method
+         * @return all possible implementations of the invoked method
          */
-        public List<MethodInfo> getImplementedMethods() {
+        public Set<MethodInfo> getImplementedMethods() {
             return getImplementedMethods(CallString.EMPTY);
         }
 
+        public InvokeSite getInvokeSite() {
+            return getMethodInfo().getCode().getInvokeSite(getInstructionHandle());
+        }
+
         /**
-         * Get all possible implementations of the invoked method in
+         * @param ctx the callstring of the invocation
+         * @return all possible implementations of the invoked method in
          * the given context
          */
-        public List<MethodInfo> getImplementedMethods(CallString ctx) {
+        public Set<MethodInfo> getImplementedMethods(CallString ctx) {
             if (!isVirtual()) {
-                List<MethodInfo> impls = new ArrayList<MethodInfo>(1);
-                impls.add(getImplementedMethod());
-                return impls;
+                return Collections.singleton(getImplementedMethod());
             } else {
-                /* -- TODO comment for commit!
-                return appInfo.findImplementations(this.invokerFlowGraph().getMethodInfo(),
-                                                   getInstructionHandle(),
-                                                   ctx);
-                -- */
-                return null;
+                return appInfo.findImplementations(getInvokeSite(), ctx);
             }
         }
 
@@ -339,7 +325,7 @@ public class ControlFlowGraph {
          */
         public ControlFlowGraph receiverFlowGraph() {
             if (isVirtual()) return null;
-            return receiverImpl.getCode().getControlFlowGraph();
+            return getImplementedMethod().getCode().getControlFlowGraph(false);
         }
 
         public ControlFlowGraph invokerFlowGraph() {
@@ -361,6 +347,7 @@ public class ControlFlowGraph {
          * If this is the implementation of a virtual/interface invoke instruction,
          * return the InvokeNode for the virtual invoke instruction.
          * TODO: This can be removed, if we ever remove {@link ControlFlowGraph#resolveVirtualInvokes()}
+         * @return the node representing the virtual invoke or null if not instanciated from a virtual invoke.
          */
         public InvokeNode getVirtualNode() {
             if (this.instantiatedFrom != null) return this.instantiatedFrom;
@@ -392,11 +379,6 @@ public class ControlFlowGraph {
     public class SpecialInvokeNode extends InvokeNode {
         private InstructionHandle instr;
         private MethodInfo receiverImpl;
-        private ControlFlowGraph receiverFlowGraph;
-
-        private SpecialInvokeNode(BasicBlock block) {
-            super(block);
-        }
 
         public SpecialInvokeNode(BasicBlock block, MethodInfo javaImpl) {
             super(block);
@@ -418,15 +400,8 @@ public class ControlFlowGraph {
             return this.receiverImpl;
         }
 
-        public ControlFlowGraph invokerFlowGraph() {
-            return ControlFlowGraph.this;
-        }
-
         public ControlFlowGraph receiverFlowGraph() {
-            if (this.receiverFlowGraph == null) {
-                this.receiverFlowGraph = receiverImpl.getCode().getControlFlowGraph();
-            }
-            return this.receiverFlowGraph;
+            return receiverImpl.getCode().getControlFlowGraph(false);
         }
 
         /**
@@ -461,10 +436,10 @@ public class ControlFlowGraph {
         }
 
     }
-    /*
-     * Flow Graph Edges
-     * ----------------
-     */
+
+    /*---------------------------------------------------------------------------*
+     * CFG edge classes
+     *---------------------------------------------------------------------------*/
 
     /**
      * Type of flow graph edges
@@ -491,35 +466,19 @@ public class ControlFlowGraph {
             return kind;
         }
 
+        @SuppressWarnings({"CloneDoesntCallSuperClone"})
         public CFGEdge clone() {
             return new CFGEdge(kind);
         }
     }
 
-    private DedicatedNode splitNode() {
-        return new DedicatedNode(DedicatedNodeName.SPLIT);
-    }
-
-    private DedicatedNode joinNode() {
-        return new DedicatedNode(DedicatedNodeName.JOIN);
-    }
-
-    private CFGEdge entryEdge() {
-        return new CFGEdge(EdgeKind.ENTRY_EDGE);
-    }
-
-    private CFGEdge exitEdge() {
-        return new CFGEdge(EdgeKind.EXIT_EDGE);
-    }
-
-    private CFGEdge nextEdge() {
-        return new CFGEdge(EdgeKind.NEXT_EDGE);
-    }
-
-    /*
+    /*---------------------------------------------------------------------------*
      * Fields
-     * ------
-     */
+     *---------------------------------------------------------------------------*/
+
+    // FIXME: [wcet-frontend] Remove the ugly ih.getAttribute() hack for CFG Nodes
+    private static final Object KEY_CFGNODE = new HashedString("ControlFlowGraph.CFGNode");
+
     private int idGen = 0;
 
     /* linking to java */
@@ -538,10 +497,17 @@ public class ControlFlowGraph {
     private LoopColoring<CFGNode, CFGEdge> loopColoring = null;
     private Boolean isLeafMethod = null;
 
-    public boolean isLeafMethod() {
-        return isLeafMethod;
-    }
+    private boolean clean = false;
+    private boolean virtualInvokesResolved = false;
+    private boolean hasReturnNodes = false;
+    private boolean hasContinueLoopNodes = false;
+    private boolean hasSplitNodes = false;
+    private boolean hasSummaryNodes = false;
 
+
+    /*---------------------------------------------------------------------------*
+     * CFG Creation
+     *---------------------------------------------------------------------------*/
 
     /**
      * Build a new flow graph for the given method
@@ -568,33 +534,22 @@ public class ControlFlowGraph {
     /* worker: create the flow graph */
 
     private void createFlowGraph(MethodInfo method) {
-        logger.info("creating flow graph for: " + method);
-        blocks = BasicBlock.buildBasicBlocks(method.getCode());
+        logger.debug("creating flow graph for: " + method);
         Map<Integer, BasicBlockNode> nodeTable =
                 new HashMap<Integer, BasicBlockNode>();
         graph = new DefaultFlowGraph<CFGNode, CFGEdge>(
                 CFGEdge.class,
                 new DedicatedNode(DedicatedNodeName.ENTRY),
                 new DedicatedNode(DedicatedNodeName.EXIT));
+        blocks = new ArrayList<BasicBlock>();
+
         /* Create basic block vertices */
-        for (BasicBlock bb : blocks) {
-            BasicBlockNode n;
-            Instruction lastInstr = bb.getLastInstruction().getInstruction();
-            InvokeInstruction theInvoke = bb.getTheInvokeInstruction();
-            if (theInvoke != null) {
-                n = new InvokeNode(bb, theInvoke);
-            } else if (appInfo.getProcessorModel().isImplementedInJava(lastInstr)) {
-                /* -- TODO comment for commit!
-				MethodInfo javaImpl = appInfo.getJavaImplementation(bb.getMethodInfo(),lastInstr);
-				-- */
-                MethodInfo javaImpl = null;
-                n = new SpecialInvokeNode(bb, javaImpl);
-            } else {
-                n = new BasicBlockNode(bb);
-            }
+        int i = 0;
+        for (BasicBlock bb : BasicBlock.buildBasicBlocks(method.getCode())) {
+            BasicBlockNode n = addBasicBlock(i++, bb);
             nodeTable.put(bb.getFirstInstruction().getPosition(), n);
-            graph.addVertex(n);
         }
+
         /* entry edge */
         graph.addEdge(graph.getEntry(),
                 nodeTable.get(blocks.get(0).getFirstInstruction().getPosition()),
@@ -602,7 +557,7 @@ public class ControlFlowGraph {
         /* flow edges */
         for (BasicBlockNode bbNode : nodeTable.values()) {
             BasicBlock bb = bbNode.getBasicBlock();
-            FlowInfo bbf = BasicBlock.getFlowInfo(bb.getLastInstruction());
+            FlowInfo bbf = bb.getExitFlowInfo();
             if (bbf.isExit()) { // exit edge
                 // do not connect exception edges
                 if (bbNode.getBasicBlock().getLastInstruction().getInstruction().getOpcode()
@@ -632,111 +587,183 @@ public class ControlFlowGraph {
         this.graph.addEdge(graph.getEntry(), graph.getExit(), exitEdge());
     }
 
+
+    /*---------------------------------------------------------------------------*
+     * CFG modify, compile, dispose
+     *---------------------------------------------------------------------------*/
+
+    /**
+     * Add a basic block to this graph. The instruction list of the block must not be empty.
+     *
+     * @param insertBefore insert the block at this position in the block list.
+     * @param bb block to add
+     * @return the new block node, either an InvokeNode, SpecialInvokeNode or BasicBlockNode, depending on the
+     *   contained instructions.
+     */
+    public BasicBlockNode addBasicBlock(int insertBefore, BasicBlock bb) {
+        BasicBlockNode n;
+        Instruction lastInstr = bb.getLastInstruction().getInstruction();
+        InstructionHandle theInvoke = bb.getTheInvokeInstruction();
+
+        if (theInvoke != null) {
+            n = new InvokeNode(bb, theInvoke);
+        } else if (appInfo.getProcessorModel().isImplementedInJava(lastInstr)) {
+            MethodInfo javaImpl = appInfo.getProcessorModel().getJavaImplementation(appInfo,
+                                        bb.getMethodInfo(),lastInstr);
+            n = new SpecialInvokeNode(bb, javaImpl);
+        } else {
+            n = new BasicBlockNode(bb);
+        }
+
+        blocks.add(insertBefore, bb);
+        graph.addVertex(n);
+        return n;
+    }
+
+    /**
+     * Create a new basic block and add it to the graph as a node.
+     * @param insertBefore the position to add the block to in the block list.
+     * @return a new BasicBlockNode with an empty basic block.
+     */
+    public BasicBlockNode createBasicBlock(int insertBefore) {
+        BasicBlock bb = new BasicBlock(methodInfo.getCode());
+        blocks.add(insertBefore, bb);
+        BasicBlockNode bbn = new BasicBlockNode(bb);
+        graph.addVertex(bbn);
+        return bbn;
+    }
+
+    /**
+     * Compile the callgraph back into an instruction list and store it in the associated
+     * MethodCode.
+     * <p>
+     * We do not order the blocks here, this is a separate optimization
+     * Also, we do not insert jump instructions if the fallthrough edge of a block does not
+     * link to the next block in the block list. Instead an error is raised.
+     * </p>
+     * TODO create method to insert jump blocks where necessary
+     */
     public void compile() {
-        // TODO implement
+        InstructionList il = new InstructionList();
+
+        Object[] attributes = {KEY_CFGNODE};
+
+        for (int i = 0; i < blocks.size(); i++) {
+            BasicBlock bb = blocks.get(i);
+            BasicBlockNode bbn = getHandleNode(bb);
+
+            bb.appendTo(il, attributes);
+
+            for (CFGEdge e : graph.outgoingEdgesOf(bbn)) {
+                if (e.getKind() != EdgeKind.NEXT_EDGE) continue;
+                BasicBlock target = graph.getEdgeTarget(e).getBasicBlock();
+                if (blocks.get(i+1) != target) {
+                    throw new ControlFlowError("Block "+i+" does not fallthrough to the next block in "+methodInfo);
+                }
+            }
+        }
+
+        methodInfo.getCode().setInstructionList(il);
     }
 
     /**
      * Clean up all known references to the objects of this graph (i.e. InstructionHandle attributes,..)
      */
     public void dispose() {
-        // TODO remove BBNode references from InstructionHandles
-
-    }
-
-    private void internalError(String reason) {
-        logger.error("[INTERNAL ERROR] " + reason);
-        logger.error("CFG of " + this.getMethodInfo().getFQMethodName() + "\n");
-        // TODO check this!
-        logger.error(this.getMethodInfo().getMethod(false).getCode().toString(true));
-        throw new AssertionError(reason);
-    }
-
-    private void debugDumpGraph() {
-        try {
-            File tmpFile = File.createTempFile("cfg-dump", ".dot");
-            FileWriter fw = new FileWriter(tmpFile);
-            new AdvancedDOTExporter<CFGNode, CFGEdge>(new AdvancedDOTExporter.DefaultNodeLabeller<CFGNode>() {
-                @Override
-                public String getLabel(CFGNode node) {
-                    String s = node.toString();
-                    if (node.getBasicBlock() != null) s += "\n" + node.getBasicBlock().dump();
-                    return s;
-                }
-            }, null).exportDOT(fw, graph);
-            fw.close();
-            logger.error("[CFG DUMP] Dumped graph to '" + tmpFile + "'");
-        } catch (IOException e) {
-            logger.error("[CFG DUMP] Dumping graph failed: " + e);
-        }
-    }
-
-    /**
-     * Create a new map of loopbounds for CFG nodes. The map is not cached, try to use 
-     * {@link BasicBlock#getLoopBound()} or {@link CFGNode#getLoopBound()} instead.
-     *
-     * @see CFGNode#getLoopBound()
-     * @see BasicBlock#getLoopBound()  
-     * @return a new mapping of loopbounds to cfg nodes. Contains only nodes which have basic 
-     *         blocks with loopbounds attached.
-     */
-    public Map<CFGNode, LoopBound> buildLoopBounds() {
-        Map<CFGNode, LoopBound> map = new HashMap<CFGNode, LoopBound>();
         for (CFGNode node : graph.vertexSet()) {
-            LoopBound lb = node.getLoopBound();
-            if (lb != null) {
-                map.put(node,lb);
-            }
+            node.dispose();
         }
-        return map;
+    }
+
+
+    /*---------------------------------------------------------------------------*
+     * Standard getter
+     *---------------------------------------------------------------------------*/
+
+    public AppInfo getAppInfo() {
+        return this.appInfo;
     }
 
     /**
-     * Get infeasible edges for certain call string
+     * get the method this flow graph models
      *
-     * @return The infeasible edges
+     * @return the MethodInfo the flow graph was build from
      */
-    public List<CFGEdge> getInfeasibleEdges(CallString cs) {
-        List<CFGEdge> edges = new ArrayList<CFGEdge>();
-        /* --- TODO comment for commit
-		for (BasicBlock b : blocks) {
-			List<CFGEdge> edge = dfaInfeasibleEdge(b, cs);
-			edges.addAll(edge);
-		}
-		*/
-        return edges;
+    public MethodInfo getMethodInfo() {
+        return this.methodInfo;
     }
 
     /**
-     * Get infeasible edges for certain basic block call string
-     * @return The infeasible edges for this basic block
+     * @return the (dedicated) entry node of the flow graph
      */
-    /* -- TODO comment for commit
-	private List<CFGEdge> dfaInfeasibleEdge(BasicBlock block, CallString cs) {
-		Project p = this.project;
-		List<CFGEdge> retval = new Vector<CFGEdge>();
-		if (p.getDfaLoopBounds() != null) {
-			LoopBounds lbs = p.getDfaLoopBounds();
-			Set<FlowEdge> edges = lbs.getInfeasibleEdges(block.getLastInstruction(), cs);
-			for (FlowEdge e : edges) {
-				BasicBlockNode head = BasicBlock.getHandleNode(e.getHead());
-				BasicBlockNode tail = BasicBlock.getHandleNode(e.getTail());
-				CFGEdge edge = this.graph.getEdge(tail, head);
-				if (edge != null) { // edge does not seem to exist any longer
-					retval.add(edge);
-				}
-			}
-		}
-		return retval;
-	}
-	-- */
+    public CFGNode getEntry() {
+        return graph.getEntry();
+    }
+
+    /**
+     * @return the (dedicated) exit node of the flow graph
+     */
+    public CFGNode getExit() {
+        return graph.getExit();
+    }
+
+    /**
+     * @return Get the actual flow graph
+     */
+    public FlowGraph<CFGNode, CFGEdge> getGraph() {
+        return graph;
+    }    public List<BasicBlock> getBlocks() {
+        return blocks;
+    }
+
+    /**
+     * @param ih The instruction handle of a method which has a CFG associated with it
+     * @return The basic block node associated with an instruction handle
+     */
+    public static BasicBlockNode getHandleNode(InstructionHandle ih) {
+        BasicBlockNode blockNode = (BasicBlockNode) ih.getAttribute(KEY_CFGNODE);
+        if (blockNode == null) {
+            String errMsg = "No basic block recorded for instruction " + ih.toString(true);
+            logger.error(errMsg);
+            return null;
+        }
+        return blockNode;
+    }
+
+    public BasicBlockNode getHandleNode(BasicBlock bb) {
+        return getHandleNode(bb.getFirstInstruction());
+    }
+
+    public boolean isLeafMethod() {
+        return isLeafMethod;
+    }
+
+
+    /*---------------------------------------------------------------------------*
+     * Resolve invokes, insert analysis nodes, makes the graph "dirty"
+     *---------------------------------------------------------------------------*/
+
+    /**
+     * @return returns false after additional nodes for analyses have been inserted using any of the
+     *  insert* methods or after resolving the invoke nodes.
+     */
+    public boolean isClean() {
+        return clean;
+    }
 
     /**
      * resolve all virtual invoke nodes, and replace them by actual implementations
      *
      * @throws BadGraphException If the flow graph analysis (post replacement) fails
      */
+    @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
     public void resolveVirtualInvokes() throws BadGraphException {
+
+        // Hack to make this optional
+        if (virtualInvokesResolved) return;
+        virtualInvokesResolved = true;
+        clean = false;
+
         List<InvokeNode> virtualInvokes = new ArrayList<InvokeNode>();
         /* find virtual invokes */
         for (CFGNode n : this.graph.vertexSet()) {
@@ -749,14 +776,11 @@ public class ControlFlowGraph {
         }
         /* replace them */
         for (InvokeNode inv : virtualInvokes) {
-            /* -- TODO comment for commit
-			List<MethodInfo> impls =
-				appInfo.findImplementations(this.methodInfo,inv.getInstructionHandle());
-		    -- */
-            List<MethodInfo> impls = null;
+            // TODO resolve with callstring?
+            Set<MethodInfo> impls = inv.getImplementedMethods();
             if (impls.size() == 0) internalError("No implementations for " + inv.referenced);
             if (impls.size() == 1) {
-                InvokeNode implNode = inv.createImplNode(impls.get(0), inv);
+                InvokeNode implNode = inv.createImplNode(impls.iterator().next(), inv);
                 graph.addVertex(implNode);
                 for (CFGEdge inEdge : graph.incomingEdgesOf(inv)) {
                     graph.addEdge(graph.getEdgeSource(inEdge), implNode, new CFGEdge(inEdge.kind));
@@ -794,9 +818,14 @@ public class ControlFlowGraph {
      * add a split node, s.t. after this transformation all basic block nodes
      * have a single outgoing edge.
      *
-     * @throws BadGraphException
+     * @throws BadGraphException if the graph check after the transformation fails
      */
     public void insertSplitNodes() throws BadGraphException {
+
+        if (hasSplitNodes) return;
+        hasSplitNodes = true;
+        clean = false;
+
         List<CFGNode> trav = this.getTopOrder().getTopologicalTraversal();
         for (CFGNode n : trav) {
             if (n instanceof BasicBlockNode && graph.outDegreeOf(n) > 1) {
@@ -820,9 +849,14 @@ public class ControlFlowGraph {
     /**
      * Insert dedicates return nodes after invoke
      *
-     * @throws BadGraphException
+     * @throws BadGraphException if the graph check after the transformation fails
      */
     public void insertReturnNodes() throws BadGraphException {
+
+        if (hasReturnNodes) return;
+        hasReturnNodes = true;
+        clean = false;
+
         List<CFGNode> trav = this.getTopOrder().getTopologicalTraversal();
         for (CFGNode n : trav) {
             if (n instanceof InvokeNode) {
@@ -848,9 +882,14 @@ public class ControlFlowGraph {
      * If the head of loop has more than one incoming 'continue' edge,
      * an redirect the continue edges.
      *
-     * @throws BadGraphException
+     * @throws BadGraphException if the graph check after the transformation fails
      */
     public void insertContinueLoopNodes() throws BadGraphException {
+
+        if (hasContinueLoopNodes) return;
+        hasContinueLoopNodes = true;
+        clean = false;
+
         List<CFGNode> trav = this.getTopOrder().getTopologicalTraversal();
         for (CFGNode n : trav) {
             if (getLoopColoring().getHeadOfLoops().contains(n)) {
@@ -877,9 +916,14 @@ public class ControlFlowGraph {
      * Prototype: Insert summary nodes to speed up UPPAAL search
      * Currently only for loops which do not contain invoke() and have a single exit
      *
-     * @throws BadGraphException
+     * @throws BadGraphException if the graph check after the transformation fails
      */
     public void insertSummaryNodes() throws BadGraphException {
+
+        if (hasSummaryNodes) return;
+        hasSummaryNodes = true;
+        clean = false;
+
         SimpleDirectedGraph<CFGNode, DefaultEdge> loopNestForest =
                 this.getLoopColoring().getLoopNestDAG();
         TopologicalOrderIterator<CFGNode, DefaultEdge> lnfIter =
@@ -922,6 +966,7 @@ public class ControlFlowGraph {
         this.analyseFlowGraph();
     }
 
+    @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
     private void insertSummaryNode(CFGNode hol, Collection<CFGEdge> exitEdges,
                                    Set<CFGNode> loopNodes) {
         /* summary subgraph */
@@ -973,97 +1018,32 @@ public class ControlFlowGraph {
 
     }
 
-    /* Check that the graph is connectet, with entry and exit dominating resp. postdominating all nodes */
 
-    private void check() throws BadGraphException {
-        /* Remove unreachable and stuck code */
-        deadNodes = TopOrder.findDeadNodes(graph, getEntry());
-        if (!deadNodes.isEmpty()) logger.error("Found dead code (Exceptions ?): " + deadNodes);
-        Set<CFGNode> stucks = TopOrder.findStuckNodes(graph, getExit());
-        if (!stucks.isEmpty()) logger.error("Found stuck code (Exceptions ?): " + stucks);
-        deadNodes.addAll(stucks);
-        if (!deadNodes.isEmpty()) {
-            graph.removeAllVertices(deadNodes);
-            this.invalidate();
-        }
-        /* now checks should succeed */
-        try {
-            TopOrder.checkIsFlowGraph(graph, getEntry(), getExit());
-        } catch (BadGraphException ex) {
-            debugDumpGraph();
-            throw ex;
-        }
-    }
+    /*---------------------------------------------------------------------------*
+     * Various CFG analyses
+     *---------------------------------------------------------------------------*/
 
-    private void invalidate() {
-        this.topOrder = null;
-        this.loopColoring = null;
-        this.isLeafMethod = null;
-    }
-
-    /* flow graph should have been checked before analyseFlowGraph is called */
-
-    private void analyseFlowGraph() {
-        try {
-            topOrder = new TopOrder<CFGNode, CFGEdge>(this.graph, this.graph.getEntry());
-            idGen = 0;
-            this.isLeafMethod = true;
-            for (CFGNode vertex : topOrder.getTopologicalTraversal()) {
-                if (vertex instanceof InvokeNode) this.isLeafMethod = false;
-                vertex.id = idGen++;
+    /**
+     * Create a new map of loopbounds for CFG nodes. The map is not cached, try to use
+     * {@link BasicBlock#getLoopBound()} or {@link CFGNode#getLoopBound()} instead.
+     *
+     * @see CFGNode#getLoopBound()
+     * @see BasicBlock#getLoopBound()
+     * @return a new mapping of loopbounds to cfg nodes. Contains only nodes which have basic
+     *         blocks with loopbounds attached.
+     */
+    public Map<CFGNode, LoopBound> buildLoopBoundMap() {
+        Map<CFGNode, LoopBound> map = new HashMap<CFGNode, LoopBound>();
+        for (CFGNode node : graph.vertexSet()) {
+            LoopBound lb = node.getLoopBound();
+            if (lb != null) {
+                map.put(node,lb);
             }
-            for (CFGNode vertex : TopOrder.findDeadNodes(graph, this.graph.getEntry())) vertex.id = idGen++;
-            loopColoring = new LoopColoring<CFGNode, CFGEdge>(this.graph, topOrder, graph.getExit());
-        } catch (BadGraphException e) {
-            logger.error("Bad flow graph: " + getGraph().toString());
-            throw new Error("[FATAL] Analyse flow graph failed ", e);
         }
+        return map;
     }
 
-    /**
-     * get link to application
-     *
-     * @return
-     */
-    public AppInfo getAppInfo() {
-        return this.appInfo;
-    }
-
-    /**
-     * get the method this flow graph models
-     *
-     * @return the MethodInfo the flow graph was build from
-     */
-    public MethodInfo getMethodInfo() {
-        return this.methodInfo;
-    }
-
-    /**
-     * the (dedicated) entry node of the flow graph
-     *
-     * @return
-     */
-    public CFGNode getEntry() {
-        return graph.getEntry();
-    }
-
-    /**
-     * the (dedicated) exit node of the flow graph
-     *
-     * @return
-     */
-    public CFGNode getExit() {
-        return graph.getExit();
-    }
-
-    /**
-     * Get the actual flow graph
-     *
-     * @return
-     */
-    public FlowGraph<CFGNode, CFGEdge> getGraph() {
-        return graph;
-    }
+    /* Check that the graph is connectet, with entry and exit dominating resp. postdominating all nodes */
 
     /**
      * Calculate (cached) the "loop coloring" of the flow graph.
@@ -1098,6 +1078,26 @@ public class ControlFlowGraph {
         return MiscUtils.bytesToWords(getNumberOfBytes());
     }
 
+//  /**
+//   * get single entry single exit sets
+//   * @return
+//   */
+//  public Collection<Set<CFGNode>> getSESESets() {
+//  	DominanceFrontiers<CFGNode, CFGEdge> df =
+//  		new DominanceFrontiers<CFGNode, CFGEdge>(this.graph,graph.getEntry(),graph.getExit());
+//  	return df.getSingleEntrySingleExitSets();
+//  }
+//
+//  public Map<CFGNode, Set<CFGEdge>> getControlDependencies() {
+//  	DominanceFrontiers<CFGNode, CFGEdge> df =
+//  		new DominanceFrontiers<CFGNode, CFGEdge>(this.graph,graph.getEntry(),graph.getExit());
+//  	return df.getControlDependencies();
+//  }
+
+    /*---------------------------------------------------------------------------*
+     * Export graph
+     *---------------------------------------------------------------------------*/
+
     public void exportDOT(File file) throws IOException {
         //noinspection unchecked
         exportDOT(file, (Map) null, null);
@@ -1122,18 +1122,102 @@ public class ControlFlowGraph {
         return super.toString() + this.methodInfo.getFQMethodName();
     }
 
-//	/**
-//	 * get single entry single exit sets
-//	 * @return
-//	 */
-//	public Collection<Set<CFGNode>> getSESESets() {
-//		DominanceFrontiers<CFGNode, CFGEdge> df =
-//			new DominanceFrontiers<CFGNode, CFGEdge>(this.graph,graph.getEntry(),graph.getExit());
-//		return df.getSingleEntrySingleExitSets();
-//	}
-//	public Map<CFGNode, Set<CFGEdge>> getControlDependencies() {
-//		DominanceFrontiers<CFGNode, CFGEdge> df =
-//			new DominanceFrontiers<CFGNode, CFGEdge>(this.graph,graph.getEntry(),graph.getExit());
-//		return df.getControlDependencies();
-//	}
+
+    /*---------------------------------------------------------------------------*
+     * Private methods
+     *---------------------------------------------------------------------------*/
+
+    private void check() throws BadGraphException {
+        /* Remove unreachable and stuck code */
+        deadNodes = TopOrder.findDeadNodes(graph, getEntry());
+        if (!deadNodes.isEmpty()) logger.error("Found dead code (Exceptions ?): " + deadNodes);
+        Set<CFGNode> stucks = TopOrder.findStuckNodes(graph, getExit());
+        if (!stucks.isEmpty()) logger.error("Found stuck code (Exceptions ?): " + stucks);
+        deadNodes.addAll(stucks);
+        if (!deadNodes.isEmpty()) {
+            graph.removeAllVertices(deadNodes);
+            this.invalidate();
+        }
+        /* now checks should succeed */
+        try {
+            TopOrder.checkIsFlowGraph(graph, getEntry(), getExit());
+        } catch (BadGraphException ex) {
+            debugDumpGraph();
+            throw ex;
+        }
+    }
+
+    private void invalidate() {
+        this.topOrder = null;
+        this.loopColoring = null;
+        this.isLeafMethod = null;
+    }
+
+    /* flow graph should have been checked before analyseFlowGraph is called */
+
+    @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
+    private void analyseFlowGraph() {
+        try {
+            topOrder = new TopOrder<CFGNode, CFGEdge>(this.graph, this.graph.getEntry());
+            idGen = 0;
+            this.isLeafMethod = true;
+            for (CFGNode vertex : topOrder.getTopologicalTraversal()) {
+                if (vertex instanceof InvokeNode) this.isLeafMethod = false;
+                vertex.id = idGen++;
+            }
+            for (CFGNode vertex : TopOrder.findDeadNodes(graph, this.graph.getEntry())) vertex.id = idGen++;
+            loopColoring = new LoopColoring<CFGNode, CFGEdge>(this.graph, topOrder, graph.getExit());
+        } catch (BadGraphException e) {
+            logger.error("Bad flow graph: " + getGraph().toString());
+            throw new ControlFlowError("[FATAL] Analyse flow graph failed ", e);
+        }
+    }
+
+    private void internalError(String reason) {
+        logger.error("[INTERNAL ERROR] " + reason);
+        logger.error("CFG of " + this.getMethodInfo().getFQMethodName() + "\n");
+        // TODO check this!
+        logger.error(this.getMethodInfo().getMethod(false).getCode().toString(true));
+        throw new AssertionError(reason);
+    }
+
+    private void debugDumpGraph() {
+        try {
+            File tmpFile = File.createTempFile("cfg-dump", ".dot");
+            FileWriter fw = new FileWriter(tmpFile);
+            new AdvancedDOTExporter<CFGNode, CFGEdge>(new AdvancedDOTExporter.DefaultNodeLabeller<CFGNode>() {
+                @Override
+                public String getLabel(CFGNode node) {
+                    String s = node.toString();
+                    if (node.getBasicBlock() != null) s += "\n" + node.getBasicBlock().dump();
+                    return s;
+                }
+            }, null).exportDOT(fw, graph);
+            fw.close();
+            logger.error("[CFG DUMP] Dumped graph to '" + tmpFile + "'");
+        } catch (IOException e) {
+            logger.error("[CFG DUMP] Dumping graph failed: " + e);
+        }
+    }
+
+    private DedicatedNode splitNode() {
+        return new DedicatedNode(DedicatedNodeName.SPLIT);
+    }
+
+    private DedicatedNode joinNode() {
+        return new DedicatedNode(DedicatedNodeName.JOIN);
+    }
+
+    private CFGEdge entryEdge() {
+        return new CFGEdge(EdgeKind.ENTRY_EDGE);
+    }
+
+    private CFGEdge exitEdge() {
+        return new CFGEdge(EdgeKind.EXIT_EDGE);
+    }
+
+    private CFGEdge nextEdge() {
+        return new CFGEdge(EdgeKind.NEXT_EDGE);
+    }
+
 }

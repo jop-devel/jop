@@ -34,7 +34,7 @@ public class RemoveNops implements ClassVisitor {
     public boolean visitClass(ClassInfo classInfo) {
 
         for (MethodInfo method : classInfo.getMethods()) {
-            if (!method.isAbstract()) {
+            if (method.hasCode()) {
                 method.getCode().removeNOPs();
             }
         }

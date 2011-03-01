@@ -45,6 +45,7 @@ import java.util.Set;
 public class JOPModel implements ProcessorModel {
 
     public static final String JVM_CLASS = "com.jopdesign.sys.JVM";
+    public static final String STARTUP_CLASS = "com.jopdesign.sys.Startup";
     public static final String JOP_NATIVE = "com.jopdesign.sys.Native";
 
     private final String identifier;
@@ -128,6 +129,7 @@ public class JOPModel implements ProcessorModel {
     public List<String> getJVMClasses() {
         List<String> jvmClasses = new ArrayList<String>(1);
         jvmClasses.add(JVM_CLASS);
+        jvmClasses.add(STARTUP_CLASS);
         return jvmClasses;
     }
 

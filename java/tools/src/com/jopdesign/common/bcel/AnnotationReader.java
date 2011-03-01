@@ -79,7 +79,7 @@ public class AnnotationReader implements AttributeReader {
     }
 
     private Attribute createAnnotation(int name_index, int length, DataInputStream in, ConstantPool cp) throws IOException {
-        short numAnnotations = in.readShort();
+        int numAnnotations = in.readUnsignedShort();
 
         AnnotationAttribute attribute = new AnnotationAttribute(name_index,
                 length, cp, isVisible(), numAnnotations);
@@ -92,13 +92,13 @@ public class AnnotationReader implements AttributeReader {
     }
 
     private Attribute createParameterAnnotation(int name_index, int length, DataInputStream in, ConstantPool cp) throws IOException {
-        byte numParameters = in.readByte();
+        int numParameters = in.readUnsignedByte();
 
         ParameterAnnotationAttribute attribute = new ParameterAnnotationAttribute(name_index, length, cp,
                 isVisible(), numParameters);
 
         for (int i = 0; i < numParameters; i++) {
-            short numAnnotations = in.readShort();
+            int numAnnotations = in.readUnsignedShort();
             for (int j = 0; j < numAnnotations; i++) {
                 attribute.addAnnotation(i, Annotation.createAnnotation(in, cp));
             }

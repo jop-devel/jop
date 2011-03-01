@@ -21,15 +21,18 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.bcel.ParameterAnnotationAttribute;
+import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
 import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
+import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Method;
+import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
@@ -53,10 +56,8 @@ public final class MethodInfo extends ClassMemberInfo {
         super(classInfo, methodGen);
         this.methodGen = methodGen;
         descriptor = Descriptor.parse(methodGen.getSignature());
-        
-        if (!isAbstract()) {
-            methodCode = new MethodCode(this);
-        }
+
+        updateMethodCode();
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -70,6 +71,7 @@ public final class MethodInfo extends ClassMemberInfo {
 
     public void setAbstract(boolean val) {
         methodGen.isAbstract(val);
+        updateMethodCode();
     }
 
     public boolean isSynchronized() {
@@ -86,6 +88,7 @@ public final class MethodInfo extends ClassMemberInfo {
 
     public void setNative(boolean val) {
         methodGen.isNative(val);
+        updateMethodCode();
     }
 
     public boolean isStrictFP() {
@@ -131,6 +134,13 @@ public final class MethodInfo extends ClassMemberInfo {
     // Code access and Control Flow Graph stuff
     //////////////////////////////////////////////////////////////////////////////
 
+    /**
+     * @return true if this method is neither abstract nor native.
+     */
+    public boolean hasCode() {
+        return methodCode != null;
+    }
+
     public MethodCode getCode() {
         return methodCode;
     }
@@ -144,7 +154,7 @@ public final class MethodInfo extends ClassMemberInfo {
      * @return a new BCEL method class containing all changes to the code.
      */
     public Method compile() {
-        if (!isAbstract()) {
+        if (hasCode()) {
             methodCode.compile();
         }
         // TODO: to reduce memory consumption, dispose instruction handlers and compile to Method instead of MethodGen?
@@ -192,11 +202,6 @@ public final class MethodInfo extends ClassMemberInfo {
         return new Signature(getClassInfo().getClassName(), getShortName(), getDescriptor());
     }
 
-    @Override
-    public String toString() {
-        return getSignature().toString();
-    }
-
     //////////////////////////////////////////////////////////////////////////////
     // Helper methods to find implementations and super methods
     //////////////////////////////////////////////////////////////////////////////
@@ -211,27 +216,28 @@ public final class MethodInfo extends ClassMemberInfo {
      */
     public boolean overrides(MethodInfo superMethod, boolean checkSignature) {
 
+        if (this.equals(superMethod)) {
+            return true;
+        }
+
         // A static method may hide a static or instance method, but does not override it.
         if ( isStatic() ) {
             return false;
-        }
-        if ( superMethod.isStatic() ) {
-            logger.warn("Instance method " +getSignature()+" overrides static method "+superMethod.getSignature());
         }
 
         if (checkSignature) {
             if ( !getMemberSignature().equals(superMethod.getMemberSignature()) ) {
                 return false;
             }
-            if ( !getClassInfo().isInstanceOf(superMethod.getClassInfo()) ) {
+            if ( !getClassInfo().isSubclassOf(superMethod.getClassInfo()) ) {
                 return false;
             }
         }
         
-        if ( superMethod.equals(this) ) {
-            return true;
+        if ( superMethod.isStatic() ) {
+            logger.warn("Instance method " +getSignature()+" overrides static method "+superMethod.getSignature());
         }
-
+        
         return getClassInfo().canAccess(superMethod);
     }
 
@@ -334,20 +340,20 @@ public final class MethodInfo extends ClassMemberInfo {
 
     /**
      * Get all non-abstract methods (including this method if it is not abstract) overriding this method.
+     * @see AppInfo#findImplementations(CallString)
+     * @see AppInfo#findImplementations(MethodRef)
      * @param checkAccess if false, find all non-abstract methods with same signature even if they do not
      *        override this method.
      * @return a collection of all implementations of this method.
      */
-    public Collection<MethodInfo> getImplementations(final boolean checkAccess) {
+    public List<MethodInfo> getImplementations(final boolean checkAccess) {
         final List<MethodInfo> implementations = new LinkedList<MethodInfo>();
 
-        if (!isAbstract()) {
-            implementations.add(this);
-        } else {
-
-        }
-
         if (checkAccess && (isPrivate() || isStatic())) {
+            if (isAbstract()) {
+                throw new JavaClassFormatError("Method is private or static but abstract!: "+toString());
+            }
+            implementations.add(this);
             return implementations;
         }
 
@@ -407,29 +413,24 @@ public final class MethodInfo extends ClassMemberInfo {
         return methodGen;
     }
 
-    
-    //////////////////////////////////////////////////////////////////////////////
-    // Utilities
-    //////////////////////////////////////////////////////////////////////////////
-    /** Split (qualified) method name into class name part and method name + optional signature */
-    public static String[] splitMethodName(String s) {
-	    int sigIx = s.indexOf('(');
-	    String sWithoutSig;
-	    if(sigIx > 0) {
-	        sWithoutSig = s.substring(0,sigIx);
-	    } else {
-	        sWithoutSig = s;
-	    }
-	    int nameIx = sWithoutSig.lastIndexOf('.');
-	    String[] splittedName = new String[2];
-	    if(nameIx > 0) {
-	        splittedName[0] = s.substring(0,nameIx);
-	        splittedName[1] = s.substring(nameIx + 1);
-	    } else {
-	        splittedName[0] = null;
-	        splittedName[1] = s;
-	    }
-	    return splittedName;
-	}
+    private void updateMethodCode() {
+        if (!isAbstract() && !isNative()) {
+            if (methodCode == null) {
+                if (methodGen.getInstructionList() == null) {
+                    methodGen.setInstructionList(new InstructionList());
+                }
+                methodCode = new MethodCode(this);
+            }
+        } else {
+            if (methodCode != null) {
+                methodGen.setInstructionList(null);
+                methodGen.removeCodeAttributes();
+                methodGen.removeLineNumbers();
+                methodGen.removeExceptionHandlers();
+                methodGen.removeLocalVariables();
+                methodCode = null;
+            }
+        }
+    }
 
 }

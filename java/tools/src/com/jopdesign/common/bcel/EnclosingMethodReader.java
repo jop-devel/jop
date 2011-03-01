@@ -36,7 +36,7 @@ public class EnclosingMethodReader implements AttributeReader {
 
     public static final String ATTRIBUTE_NAME = "EnclosingMethod";
 
-    private static final Logger logger = Logger.getLogger(LogConfig.LOG_LOADING+".AnnotationReader");
+    private static final Logger logger = Logger.getLogger(LogConfig.LOG_LOADING+".EnclosingMethodReader");
 
     public Attribute createAttribute(int name_index, int length, DataInputStream file, ConstantPool constant_pool) {
         if ( length != 4 ) {
@@ -44,8 +44,8 @@ public class EnclosingMethodReader implements AttributeReader {
             return null;
         }
         try {
-            short classIndex = file.readShort();
-            short methodIndex = file.readShort();
+            int classIndex = file.readUnsignedShort();
+            int methodIndex = file.readUnsignedShort();
             return new EnclosingMethod(name_index, constant_pool, classIndex, methodIndex);
         } catch (IOException e) {
             logger.error("Error reading EnclosingMethod attribute: "+e.getMessage(), e);

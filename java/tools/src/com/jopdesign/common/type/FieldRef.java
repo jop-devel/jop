@@ -20,6 +20,7 @@
 
 package com.jopdesign.common.type;
 
+import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.FieldInfo;
 import org.apache.bcel.generic.Type;
 
@@ -56,8 +57,21 @@ public class FieldRef {
         return classRef.getClassName();
     }
 
+    public ClassInfo getClassInfo() {
+        if (classRef == null) {
+            return fieldInfo.getClassInfo();
+        }
+        return classRef.getClassInfo();
+    }
+
     public FieldInfo getFieldInfo() {
-        // TODO if null, try loading using AppInfo
+        if (fieldInfo == null) {
+            ClassInfo cls = classRef.getClassInfo();
+            if (cls != null) {
+                // try to find the field info in the class or its superclasses
+                fieldInfo = cls.getFieldInfoInherited(name, true);
+            }
+        }
         return fieldInfo;
     }
 

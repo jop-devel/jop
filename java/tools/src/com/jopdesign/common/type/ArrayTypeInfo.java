@@ -21,6 +21,7 @@
 package com.jopdesign.common.type;
 
 import org.apache.bcel.generic.ArrayType;
+import org.apache.bcel.generic.Type;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -28,6 +29,14 @@ import org.apache.bcel.generic.ArrayType;
 public class ArrayTypeInfo extends ReferenceTypeInfo<ArrayType> {
 
     private final TypeInfo elementType;
+
+    public static ArrayTypeInfo parse(String arraySignature) {
+        Type type = Type.getType(arraySignature);
+        if (type instanceof ArrayType) {
+            return new ArrayTypeInfo((ArrayType) type);
+        }
+        return null;
+    }
 
     public ArrayTypeInfo(TypeInfo elementType, int dimensions) {
         super(new ArrayType(elementType.getType(), dimensions));

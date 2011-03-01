@@ -23,10 +23,8 @@ package com.jopdesign.jcopter;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.EmptyTool;
-import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.OptionGroup;
-import com.jopdesign.common.config.StringOption;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.wcet.WCETTool;
 
@@ -38,42 +36,58 @@ public class JCopter extends EmptyTool<JCopterManager> {
 
     public static final String VERSION = "0.1";
 
-    public static final StringOption LIBRARY_CLASSES =
-            new StringOption("libraries", "comma-separated list of library classes and packages", "");
+    public static final String CONFIG_FILE_NAME = "jcopter.properties";
 
-    public static final StringOption IGNORE_CLASSES =
-            new StringOption("ignore", "comma-separated list of classes and packages to ignore", "");
-
-    public static final BooleanOption ALLOW_INCOMPLETE_APP =
-            new BooleanOption("allow-incomplete", "Ignore missing classes", false);
-
+    public static final String LOG_ROOT = "jcopter";
+    public static final String LOG_OPTIMIZER = "jcopter.optimizer";
 
     private final JCopterManager manager;
+    private final AppInfo appInfo;
+    private final PhaseExecutor executor;
+
+    private JCopterConfig config;
     private DFATool dfaTool;
     private WCETTool wcetTool;
 
     public JCopter() {
         super(VERSION);
         manager = new JCopterManager();
+        appInfo = AppInfo.getSingleton();
+        executor = new PhaseExecutor(this);
+
+        // TODO add options/profiles/.. to this constructor so that only a subset of
+        //      optimizations/analyses are initialized ? Overwrite PhaseExecutor for this?
+        //      Or user simply uses phaseExecutor directly
     }
 
+    @Override
     public JCopterManager getEventHandler() {
         return manager;
     }
 
+    @Override
     public void registerOptions(OptionGroup options) {
-        options.addOption( ALLOW_INCOMPLETE_APP );
+        options.addOptions( JCopterConfig.options );
+        executor.registerOptions(options);
     }
 
     @Override
     public void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException {
-        Config config = setup.getConfig();
-        AppInfo appInfo = AppInfo.getSingleton();
 
-        if ( config.getOption(ALLOW_INCOMPLETE_APP) ) {
+        config = new JCopterConfig(setup.getConfig());
+
+        if ( config.doAllowIncompleteApp() ) {
             appInfo.setIgnoreMissingClasses(true);
         }
 
+    }
+
+    public JCopterConfig getConfig() {
+        return config;
+    }
+
+    public PhaseExecutor getExecutor() {
+        return executor;
     }
 
     public DFATool getDfaTool() {
@@ -100,9 +114,64 @@ public class JCopter extends EmptyTool<JCopterManager> {
         return wcetTool != null;
     }
 
-    public void optimize(Config config) {
+    /**
+     * Run various analyses to prepare for optimizations.
+     */
+    public void prepare() {
 
+        // - callgraph thinning, various analyses
+        appInfo.buildCallGraph(false);
+        executor.reduceCallGraph();
+        executor.dumpCallgraph("callgraph");
 
+        // - (optional) perform DFA: reduce callgraph even more/make callstrings more precise,
+        //   maybe eliminate some nullpointer-checks
+        if (useDFA()) {
+            // TODO do some analysing
+        }
+
+        // - devirtualize, mark methods which can be inlined (and what actions need to be taken in order to inline,
+        //   i.e. rename methods/make public/..), calculate and store overhead for inlining for later analyses,
+        //   which invokes have constant parameters, which invokes need nullpointer checks,..
+        executor.markInlineCandidates();
+
+    }
+
+    /**
+     * Run all configured optimizations.
+     * @see #prepare()
+     */
+    public void optimize() {
+
+        // - Kill'em all, since we do not use them and we do not update them so they will get out-of-date
+        executor.removeDebugAttributes();
+
+        // - perform simple, guaranteed optimizations (everything to reduce code size!)
+        //   (inline 2/3 byte methods, load/store eliminate, peephole, dead-code elimination, constant folding, ..)
+        executor.performSimpleInline();
+        executor.cleanupMethodCode();
+
+        // - perform WCET analysis, select methods for inlining
+        if (useWCET()) {
+            // TODO call WCET analysis, use WCET-oriented inline selector
+
+        } else {
+            // use non-WCET-based inline selector
+
+        }
+
+        // - perform inlining (check previous analysis results to avoid creating nullpointer checks),
+        //   duplicate/rename/.. methods, perform method extraction/splitting too?
+        executor.performInline();
+
+        // - perform code cleanup optimizations (load/store/param-passing, constantpool cleanup,
+        //   remove unused members, constant folding, dead-code elimination (remove some more NP-checks,..),
+        //   remove NOPs, ... )
+        executor.removeUnusedMembers();
+
+        executor.relinkInvokesuper();
+
+        executor.cleanupConstantPool();
     }
 
 
@@ -112,7 +181,9 @@ public class JCopter extends EmptyTool<JCopterManager> {
         AppSetup setup = new AppSetup();
         setup.setUsageInfo("jcopter", "A WCET driven Java bytecode optimizer.");
         setup.setVersionInfo(VERSION);
-        setup.setConfigFilename("jcopter.properties");
+        // We do not load a config file automatically, user has to specify it explicitly to avoid
+        // unintentional misconfiguration
+        //setup.setConfigFilename(CONFIG_FILE_NAME);
 
         DFATool dfaTool = new DFATool();
         WCETTool wcetTool = new WCETTool();
@@ -122,7 +193,7 @@ public class JCopter extends EmptyTool<JCopterManager> {
         setup.registerTool("wcet", wcetTool, true, true);
         setup.registerTool("jcopter", jcopter);
 
-        AppInfo appInfo = setup.initAndLoad(args, true, true, true);
+        setup.initAndLoad(args, true, true, true);
 
         if (setup.useTool("dfa")) {
             wcetTool.setDfaTool(dfaTool);
@@ -132,18 +203,12 @@ public class JCopter extends EmptyTool<JCopterManager> {
             jcopter.setWcetTool(wcetTool);
         }
 
-        // parse options and config, setup everything, load application classes
-        String[] rest = setup.setupConfig(args);
-
-        setup.setupLogger(true);
-        setup.setupAppInfo(rest, true);
-
         // run optimizations
-        jcopter.optimize(setup.getConfig());
+        jcopter.prepare();
+        jcopter.optimize();
 
         // write results
         setup.writeClasses();
-
     }
 
 }

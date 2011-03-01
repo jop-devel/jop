@@ -20,6 +20,7 @@
 
 package com.jopdesign.common.type;
 
+import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.misc.Ternary;
 
@@ -32,8 +33,15 @@ import com.jopdesign.common.misc.Ternary;
  */
 public class MethodRef {
 
+    // Implementation Notice:
+    // At least one of classRef and methodInfo is not null.
+    // If methodInfo is null, methodName and descriptor must be set.
+    // MethodInfo can be set lazily by getMethodInfo(). If methodInfo should be checked,
+    // if (getMethodInfo()==null) must be used, but if only a check is needed if the other fields
+    // are not null, if (methodInfo==null) is sufficient.
+
     private final ClassRef classRef;
-    private final MethodInfo methodInfo;
+    private MethodInfo methodInfo;
 
     private String methodName;
     private Descriptor descriptor;
@@ -57,12 +65,26 @@ public class MethodRef {
     }
 
     public MethodInfo getMethodInfo() {
-        // TODO if null, try getting from AppInfo
+        if (methodInfo == null) {
+            // We could cache somehow if lookup fails, so we do not need to try again, but then how do we
+            // know when to try again (e.g. after AppInfo has been updated)
+            ClassInfo classInfo = classRef.getClassInfo();
+            if ( classInfo != null ) {
+                methodInfo = classInfo.getMethodInfoInherited(new Signature(methodName, descriptor), true);
+                /*
+                if ( methodInfo != null && methodInfo.getClassName().equals(classRef.getClassName())) {
+                    // method is defined in the given class
+                    classRef = null;
+                }
+                */
+            }
+
+        }
         return methodInfo;
     }
 
     public ClassRef getClassRef() {
-        return methodInfo != null ? methodInfo.getClassInfo().getClassRef() : classRef;
+        return classRef != null ? classRef : methodInfo.getClassInfo().getClassRef();
     }
 
     public Descriptor getDescriptor() {
@@ -70,19 +92,24 @@ public class MethodRef {
     }
 
     public Signature getSignature() {
+        if (classRef != null && methodInfo != null && !classRef.getClassName().equals(methodInfo.getClassName())) {
+            // we have a MethodRef to a method which is inherited
+            return new Signature(classRef.getClassName(), methodInfo.getShortName(), methodInfo.getDescriptor());
+        }
+        //noinspection ConstantConditions
         return methodInfo != null ? methodInfo.getSignature()
                 : new Signature(classRef.getClassName(), methodName, descriptor);
     }
 
     public Ternary isInterfaceMethod() {
-        if ( methodInfo != null ) {
+        if ( getMethodInfo() != null ) {
             return Ternary.valueOf(methodInfo.getClassInfo().isInterface());
         }
         return classRef.isInterface();
     }
 
     public Ternary exists() {
-        if ( methodInfo != null ) return Ternary.TRUE;
+        if ( getMethodInfo() != null ) return Ternary.TRUE;
         if ( classRef.getClassInfo() != null ) {
             return classRef.getClassInfo().getMethodInfo(getMemberSignature()) != null ?
                     Ternary.TRUE : Ternary.FALSE;
@@ -95,7 +122,7 @@ public class MethodRef {
     }
 
     public String getClassName() {
-        return methodInfo != null ? methodInfo.getClassInfo().getClassName() : classRef.getClassName();
+        return classRef != null ? classRef.getClassName() : methodInfo.getClassInfo().getClassName();
     }
 
     public String getMemberSignature() {
@@ -136,4 +163,8 @@ public class MethodRef {
         return getClassName().equals(ref.getClassName()) && getMemberSignature().equals(ref.getMemberSignature());
     }
 
+    @Override
+    public String toString() {
+        return getSignature().toString();
+    }
 }

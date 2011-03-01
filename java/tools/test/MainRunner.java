@@ -19,12 +19,10 @@
  */
 
 import com.jopdesign.common.AppInfo;
-import com.jopdesign.common.KeyManager;
 import com.jopdesign.common.logger.LogConfig;
+import com.jopdesign.common.misc.Cmdline;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.security.Permission;
 import java.util.ArrayList;
@@ -56,7 +54,7 @@ public class MainRunner {
             Class cls = Class.forName(args[0]);
             Method main = cls.getMethod("main", new Class[] {String[].class});
 
-            BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+            Cmdline cmdline = new Cmdline(clsName);
 
             System.out.print("Arguments: "+clsName);
             for (int i=1; i<args.length; i++) {
@@ -65,19 +63,11 @@ public class MainRunner {
             System.out.println();
 
             while (true) {
-                System.out.print(clsName +"> ");
 
-                String s = br.readLine();
-                if ( s == null ) {
+                String[] cmdArgs = cmdline.readInput();
+                if (cmdline.isExit(cmdArgs)) {
                     return;
                 }
-                String cmd = s.trim();
-                if( "exit".equals(cmd) ) {
-                    return;
-                }
-
-                // TODO quoted arguments are not supported
-                String[] cmdArgs = cmd.split(" ");
 
                 List<String> argList = new ArrayList<String>(args.length);
                 argList.addAll( Arrays.asList(Arrays.copyOfRange(args, 1, args.length)) );
@@ -122,9 +112,6 @@ public class MainRunner {
         } catch (NoSuchMethodException e) {
             System.out.println("Main method in class '"+args[0]+"' not found: "+e.getMessage());
             System.exit(1);            
-        } catch (IOException e) {
-            System.out.println("Could not read stdin: " + e.getMessage());
-            System.exit(1);
         }
 
     }

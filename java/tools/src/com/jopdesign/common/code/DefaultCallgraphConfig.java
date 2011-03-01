@@ -20,12 +20,12 @@
 
 package com.jopdesign.common.code;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 
 import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Provide config options and callback methods to setup and build the callgraph.
@@ -45,42 +45,41 @@ public class DefaultCallgraphConfig implements CallGraph.CallgraphConfig {
     }
 
     @Override
-    public List<ExecutionContext> getInvokedMethods(ExecutionContext context) {
+    public Set<ExecutionContext> getInvokedMethods(ExecutionContext context) {
 
         CallString callstring = context.getCallString();
         MethodInfo method = context.getMethodInfo();
 
-        if (method.isAbstract()) {
+        if (!method.hasCode()) {
             //noinspection unchecked
-            return (List<ExecutionContext>) Collections.EMPTY_LIST;
+            return (Set<ExecutionContext>) Collections.EMPTY_SET;
         }
 
-        // TODO save some memory here by using InstructionList instead of CFG if CFG is not set
+        // TODO use only callstring length 1, split nodes only if required using DFA/.. later on?
 
-        ControlFlowGraph currentCFG = method.getCode().getControlFlowGraph();
-        List<ExecutionContext> newContexts = new LinkedList<ExecutionContext>();
+        Set<ExecutionContext> newContexts = new HashSet<ExecutionContext>();
 
-        for(CFGNode node : currentCFG.getGraph().vertexSet()) {
-            if(node instanceof ControlFlowGraph.InvokeNode) {
-                ControlFlowGraph.InvokeNode iNode = (ControlFlowGraph.InvokeNode) node;
+        for(InvokeSite invokeSite : method.getCode().getInvokeSites()) {
 
-                List<MethodInfo> methods = getInvokedMethods(context, iNode);
+            Set<MethodInfo> methods = getInvokedMethods(context, invokeSite);
 
-                for(MethodInfo impl : methods) {
-                    //System.out.println("Implemented Methods: "+impl+" from "+iNode.getBasicBlock().getMethodInfo().methodId+" in context "+callstring.toStringVerbose());
+            for(MethodInfo impl : methods) {
+                //System.out.println("Implemented Methods: "+impl+" from "+iNode.getBasicBlock().getMethodInfo().methodId+" in context "+callstring.toStringVerbose());
 
-                    CallString newCallString = callstring.push(iNode, callstringLength);
+                CallString newCallString = callstring.push(invokeSite, callstringLength);
 
-                    newContexts.add(new ExecutionContext(impl, newCallString));
-                }
+                newContexts.add(new ExecutionContext(impl, newCallString));
             }
         }
 
         return newContexts;
     }
 
-    protected List<MethodInfo> getInvokedMethods(ExecutionContext context, ControlFlowGraph.InvokeNode iNode) {
-        return iNode.getVirtualNode().getImplementedMethods(context.getCallString());
+    protected Set<MethodInfo> getInvokedMethods(ExecutionContext context, InvokeSite invokeSite) {
+        // This uses either the existing default callgraph to construct a new one (which has
+        // the advantage that the new callgraph is derived from an existing one), or looks up
+        // in the type graph if no default callgraph exists
+        return AppInfo.getSingleton().findImplementations(invokeSite, context.getCallString());
     }
 
 }

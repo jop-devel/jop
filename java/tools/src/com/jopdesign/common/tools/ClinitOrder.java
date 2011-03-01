@@ -57,6 +57,10 @@ import java.util.Set;
  */
 public class ClinitOrder implements ClassVisitor {
 
+    // TODO maybe do this the other way round? (define clinitName,.. in Config or something,
+    //      use Config.clinitName... in ClinitOrder; but this way it is easier to remember ..)    
+    public static final String clinitName = "<clinit>";
+    public static final String clinitDesc = "()V";
     public static final String clinitSig = "<clinit>()V";
 
     private Map<ClassInfo, Set<ClassInfo>> clinit = new HashMap<ClassInfo, Set<ClassInfo>>();
@@ -94,7 +98,7 @@ public class ClinitOrder implements ClassVisitor {
         ConstantPoolGen cpoolgen = cli.getConstantPoolGen();
         ConstantPool cpool = cpoolgen.getConstantPool();
 
-        InstructionList il = method.getCode().getInstructionList(false);
+        InstructionList il = method.getCode().getInstructionList();
         InstructionFinder f = new InstructionFinder(il);
 
         // find instructions that access the constant pool

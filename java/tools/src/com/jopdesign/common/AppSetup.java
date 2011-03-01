@@ -24,6 +24,7 @@ import com.jopdesign.common.bcel.CustomAttribute;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationError;
+import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.logger.LogConfig;
@@ -31,6 +32,7 @@ import com.jopdesign.common.misc.ClassInfoNotFoundException;
 import com.jopdesign.common.processormodel.AllocationModel;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.common.processormodel.JOPModel;
+import com.jopdesign.common.processormodel.JVMModel;
 import com.jopdesign.common.processormodel.JamuthModel;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.common.processormodel.ProcessorModel.Model;
@@ -269,6 +271,7 @@ public class AppSetup {
             config.addOption(Config.ROOTS);
             config.addOption(Config.CALLSTRING_LENGTH);
             config.addOption(Config.MAIN_METHOD_NAME);
+            config.addOption(Config.HW_OBJECTS);
 
             addProcessorModelOptions();
         }
@@ -453,10 +456,6 @@ public class AppSetup {
         appInfo.setClassPath(new ClassPath(config.getOption(Config.CLASSPATH)));
         appInfo.setExitOnMissingClass(!config.getOption(Config.VERBOSE));
 
-        if ( config.hasOption(Config.PROCESSOR_MODEL) ) {
-            initProcessorModel(config.getOption(Config.PROCESSOR_MODEL));
-        }
-
         // handle class loading options if set
         if ( config.hasOption(Config.LIBRARY_CLASSES) ) {
             String[] libs = Config.splitStringList(config.getOption(Config.LIBRARY_CLASSES));
@@ -478,6 +477,12 @@ public class AppSetup {
             appInfo.setLoadNatives(config.getOption(Config.LOAD_NATIVES));
         }        
 
+        appInfo.setCallstringLength(config.getOption(Config.CALLSTRING_LENGTH).intValue());
+
+        for (String hwObject : Config.splitStringList(config.getOption(Config.HW_OBJECTS))) {
+            appInfo.addHwObjectName(hwObject);
+        }
+
         // register handler
         for (String toolName : tools.keySet()) {
             if (useTool(toolName)) {
@@ -486,6 +491,10 @@ public class AppSetup {
                     appInfo.registerEventHandler(handler);
                 }
             }
+        }
+
+        if ( config.hasOption(Config.PROCESSOR_MODEL) ) {
+            initProcessorModel(config.getOption(Config.PROCESSOR_MODEL));
         }
 
         // add system classes as roots
@@ -534,8 +543,7 @@ public class AppSetup {
 
         // load and initialize all app classes
         if (loadTransitiveHull) {
-            new AppLoader().loadAll();
-            appInfo.reloadClassHierarchy();
+            loadClassInfos();
         }
 
         // let modules process their config options
@@ -553,25 +561,6 @@ public class AppSetup {
             System.exit(2);
         }
 
-    }
-
-    private void initProcessorModel(Model model) {
-        ProcessorModel pm;
-        switch (model) {
-            case JOP:
-                pm = new JOPModel(config);
-                break;
-            case jamuth:
-                pm = new JamuthModel(config);
-                break;
-            case allocation:
-                pm = new AllocationModel(config);
-                break;
-            default:
-                throw new BadConfigurationError("Unknown processor model " + model);
-        }
-
-        appInfo.setProcessorModel(pm);
     }
 
     /**
@@ -609,7 +598,7 @@ public class AppSetup {
                 optionDesc += " <cmd> <cmd-options>";
             }
             if ( handleAppInfoInit ) {
-                optionDesc += " [--] <main-method> [<additional-roots>]";
+                optionDesc += " [--] [<main-method> [<additional-roots>]]";
             }
         }
 
@@ -638,6 +627,14 @@ public class AppSetup {
             System.out.println();
         }
 
+        System.out.println("The @<filename> syntax can be used multiple times. Entries in the property-file");
+        System.out.println("overwrite previous options and can be overwritten by successive options.");
+        System.out.println("Every property-file can contain additional log4j configuration options.");
+        System.out.println();
+        if (config.hasOption(Config.MAIN_METHOD_NAME)) {
+            System.out.println("If '--"+Config.MAIN_METHOD_NAME.getKey()+
+                    "' specifies a fully-qualified method name, <main-method> is optional.");
+        }
         if ( loadSystemProps && configFilename != null ) {
             System.out.println("Config values can be set in the JVM system properties and in '" + configFilename + "'");
             System.out.println("in the working directory.");
@@ -646,6 +643,7 @@ public class AppSetup {
         } else if ( loadSystemProps ) {
             System.out.println("Config values can be set in the JVM system properties.");
         }
+        System.out.println();
     }
 
     public void printVersion() {
@@ -681,6 +679,54 @@ public class AppSetup {
     }
 
 
+    private void loadClassInfos() {
+        // We could use UsedCodeFinder here to load only reachable code, once it supports loading classes on the fly
+        new AppLoader().loadAll(true);
+        appInfo.reloadClassHierarchy();
+    }
+
+    private void initProcessorModel(Model model) {
+        ProcessorModel pm;
+        switch (model) {
+            case JOP:
+                pm = new JOPModel(config);
+                break;
+            case jamuth:
+                pm = new JamuthModel(config);
+                break;
+            case allocation:
+                pm = new AllocationModel(config);
+                break;
+            case JVM:
+                pm = new JVMModel();
+                break;
+            default:
+                throw new BadConfigurationError("Unknown processor model " + model);
+        }
+
+        appInfo.setProcessorModel(pm);
+
+        // load referenced classes as roots
+        for (String jvmClass : pm.getJVMClasses()) {
+            ClassInfo rootInfo = appInfo.loadClass(jvmClass.replaceAll("/","."));
+            if ( rootInfo == null ) {
+                System.err.println("Error loading JVM class '"+jvmClass+"'.");
+                System.exit(4);
+            }
+            appInfo.addRoot(rootInfo);
+        }
+        if (appInfo.doLoadNatives()) {
+            for (String nativeClass : pm.getNativeClasses()) {
+                ClassInfo rootInfo = appInfo.loadClass(nativeClass.replaceAll("/","."));
+                if ( rootInfo == null ) {
+                    System.err.println("Error loading Native class '"+nativeClass+"'.");
+                    System.exit(4);
+                }
+                appInfo.addRoot(rootInfo);
+            }
+        }
+    }
+
     private File findConfigFile(String configFile) {
         if ( configFile == null || "".equals(configFile) ) {
             return null;
@@ -695,36 +741,41 @@ public class AppSetup {
         Signature sMain;
         String clsName;
 
-        try {
-            // try if the signature is a classname
-            clsInfo = appInfo.loadClass(signature, true, false);
-            sMain = new Signature(signature);
-            clsName = signature;
-        } catch (ClassInfoNotFoundException e1) {
+        Signature sMainMethod = Signature.parse(config.getOption(Config.MAIN_METHOD_NAME), true);
 
-            // else try to parse as full signature
-            sMain = Signature.parse(signature, true);
-            clsName = sMain.getClassName();
-
-            if ( clsName == null ) {
-                //noinspection ThrowInsideCatchBlockWhichIgnoresCaughtException
-                throw new Config.BadConfigurationException("You need to specify a classname for the main method.");
-            }
-
-            try {
-                clsInfo = appInfo.loadClass(clsName, true, false);
-            } catch (ClassInfoNotFoundException e) {
-                throw new Config.BadConfigurationException("Class for '"+signature+"' could not be loaded: "
-                        + e1.getMessage() + "; " + e.getMessage(), e);
-            }
+        if (signature == null || "".equals(signature)) {
+            sMain = sMainMethod;
+        } else {
+            // try to parse the signature
+            sMain = Signature.parse(signature);
         }
 
+        clsName = sMain.getClassName();
+        if ( clsName == null ) {
+            throw new BadConfigurationException("You need to specify a classname for the main method.");
+        }
+
+        try {
+            clsInfo = appInfo.loadClass(clsName, true, false);
+        } catch (ClassInfoNotFoundException e) {
+            throw new BadConfigurationException("Class for '"+signature+"' could not be loaded: "
+                    + e.getMessage(), e);
+        }
+
+        // use --mm if only main class has been given
+        if (!sMain.hasMemberName()) {
+            if (!sMainMethod.hasMemberName()) {
+                throw new BadConfigurationException("Option '"+Config.MAIN_METHOD_NAME.getKey()
+                        +"' needs to specify a method name.");
+            }
+            sMain = sMainMethod;
+        }
 
         // check if we have a full signature
-        if ( sMain.isMethodSignature() ) {
+        if (sMain.hasMemberSignature()) {
             MethodInfo method = clsInfo.getMethodInfo(sMain.getMemberSignature());
-            if ( method == null ) {
-                throw new Config.BadConfigurationException("Method '"+sMain.getMemberSignature()+"' not found in '"
+            if (method == null) {
+                throw new BadConfigurationException("Method '"+sMain.getMemberSignature()+"' not found in '"
                             +clsName+"'.");
             }
             return method;
@@ -738,10 +789,11 @@ public class AppSetup {
             	mainName = MethodInfo.splitMethodName(mainName)[1];
             }
         }
+
         Collection<MethodInfo> methods = clsInfo.getMethodByName(mainName);
 
         if ( methods.isEmpty() ) {
-            throw new Config.BadConfigurationException("'No method '"+mainName+"' found in '"+clsName+"'.");
+            throw new BadConfigurationException("'No method '"+mainName+"' found in '"+clsName+"'.");
         }
         if ( methods.size() > 1 ) {
             StringBuffer s = new StringBuffer(String.format(
@@ -750,7 +802,7 @@ public class AppSetup {
                 s.append("\n");
                 s.append(m.getSignature());
             }
-            throw new Config.BadConfigurationException(s.toString());
+            throw new BadConfigurationException(s.toString());
         }
 
         return methods.iterator().next();

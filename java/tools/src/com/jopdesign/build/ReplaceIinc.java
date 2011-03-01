@@ -68,7 +68,7 @@ public class ReplaceIinc implements ClassVisitor {
     private void replace(MethodInfo method) {
 
         MethodCode mc = method.getCode();
-        InstructionList il = mc.getInstructionList(true);
+        InstructionList il = mc.getInstructionList();
         InstructionFinder f = new InstructionFinder(il);
 
         for (Iterator i = f.search("IINC"); i.hasNext();) {

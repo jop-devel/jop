@@ -22,6 +22,7 @@ package com.jopdesign.common.type;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.misc.ClassInfoNotFoundException;
 import com.jopdesign.common.misc.Ternary;
 import org.apache.bcel.generic.ArrayType;
 import org.apache.bcel.generic.ObjectType;
@@ -33,7 +34,7 @@ import org.apache.bcel.generic.Type;
  * Holds either a ClassInfo object or a classname with some infos if the
  * classInfo has not been loaded for some reason.
  *
- * @author Stefan Hepp (stefan@stefant.org)
+ * @author Sitefan Hepp (stefan@stefant.org)
  */
 public class ClassRef {
 
@@ -64,8 +65,13 @@ public class ClassRef {
     }
 
     public ClassInfo getClassInfo() {
+        // TODO what shall we do with array classes? Ignore for now ..
         if ( classInfo == null && !arrayClass ) {
-            classInfo = AppInfo.getSingleton().getClassInfo(className);
+            try {
+                classInfo = AppInfo.getSingleton().getClassInfo(className,false);
+            } catch (ClassInfoNotFoundException ignored) {
+                return null;
+            }
         }
         return classInfo;
     }

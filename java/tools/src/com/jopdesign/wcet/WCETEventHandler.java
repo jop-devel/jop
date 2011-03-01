@@ -43,6 +43,10 @@ import java.io.IOException;
 import java.util.Collection;
 
 /**
+ * This class provides callback methods for AppInfo and performs the annotation loading.
+ * TODO either rename this class or move the annotation-loading code into a dedicated class
+ *      (which must then also contain dfaLoopBound()..)
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class WCETEventHandler extends EmptyAppEventHandler {
@@ -70,14 +74,12 @@ public class WCETEventHandler extends EmptyAppEventHandler {
     }
 
     @Override
-    public void onCreateClass(ClassInfo classInfo, boolean loaded) {
-        if (loaded) {
-            try {
-                loadAnnotations(classInfo);
-            } catch (BadAnnotationException e) {
-                // TODO maybe do more than just log an error? (halt?)
-                logger.error("Failed to load annotations for class "+classInfo+": "+e.getMessage(), e);
-            }
+    public void onCreateControlFlowGraph(ControlFlowGraph cfg, boolean clean) {
+        try {
+            loadLoopAnnotations(cfg);
+        } catch (BadAnnotationException e) {
+            // TODO maybe do more than just log an error? (halt?)
+            logger.error("Failed to load annotations for method "+cfg.getMethodInfo()+": "+e.getMessage(), e);
         }
     }
 
@@ -91,10 +93,10 @@ public class WCETEventHandler extends EmptyAppEventHandler {
 
     }
 
-    public void loadAnnotations(ClassInfo classInfo) throws BadAnnotationException {
+    public void loadLoopAnnotations(ClassInfo classInfo) throws BadAnnotationException {
         for (MethodInfo method : classInfo.getMethods()) {
-            if (method.isAbstract()) continue;
-            loadAnnotations(method.getCode().getControlFlowGraph());
+            if (!method.hasCode()) continue;
+            loadLoopAnnotations(method.getCode().getControlFlowGraph(false));
         }
     }
 
@@ -104,8 +106,7 @@ public class WCETEventHandler extends EmptyAppEventHandler {
      * @param cfg the control flow graph of the method
      * @throws BadAnnotationException if an annotations is missing
      */
-    public void loadAnnotations(ControlFlowGraph cfg) throws BadAnnotationException {
-        // TODO move this method into own AnnotationLoader class?
+    public void loadLoopAnnotations(ControlFlowGraph cfg) throws BadAnnotationException {
         SourceAnnotations wcaMap;
         MethodInfo method = cfg.getMethodInfo();
         MethodCode code = method.getCode();
@@ -117,12 +118,18 @@ public class WCETEventHandler extends EmptyAppEventHandler {
         for (CFGNode n : cfg.getLoopColoring().getHeadOfLoops()) {
             BasicBlockNode headOfLoop = (BasicBlockNode) n;
             BasicBlock block = headOfLoop.getBasicBlock();
+            // check if loopbound has already been loaded
+            if (block.getLoopBound() != null) {
+                // TODO maybe check if we already loaded annotations for this methodInfo before
+                // or at least check if the source-annotation is tighter than what is currently set?
+                continue;
+            }
             // search for loop annotation in range
             int sourceRangeStart = code.getLineNumber(block.getFirstInstruction());
             int sourceRangeStop = code.getLineNumber(block.getLastInstruction());
             Collection<LoopBound> annots = wcaMap.annotationsForLineRange(sourceRangeStart, sourceRangeStop + 1);
             if (annots.size() > 1) {
-                String reason = "Ambigous Annotation [" + annots + "]";
+                String reason = "Ambiguous Annotation [" + annots + "]";
                 throw new BadAnnotationException(reason, block, sourceRangeStart, sourceRangeStop);
             }
             LoopBound loopAnnot = null;

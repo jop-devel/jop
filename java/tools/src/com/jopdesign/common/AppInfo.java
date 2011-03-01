@@ -23,16 +23,22 @@ package com.jopdesign.common;
 import com.jopdesign.common.bcel.BcelRepositoryWrapper;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallGraph.CallgraphConfig;
+import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.DefaultCallgraphConfig;
-import com.jopdesign.common.config.Config;
+import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
 import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
+import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.ClassInfoNotFoundException;
+import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MissingClassError;
 import com.jopdesign.common.misc.NamingConflictException;
+import com.jopdesign.common.misc.Ternary;
 import com.jopdesign.common.processormodel.ProcessorModel;
+import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.FieldRef;
 import com.jopdesign.common.type.MethodRef;
@@ -43,13 +49,13 @@ import org.apache.bcel.classfile.ClassFormatException;
 import org.apache.bcel.classfile.ClassParser;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.generic.ClassGen;
-import org.apache.bcel.generic.ConstantPoolGen;
-import org.apache.bcel.generic.INVOKEINTERFACE;
-import org.apache.bcel.generic.InvokeInstruction;
+import org.apache.bcel.generic.Type;
 import org.apache.bcel.util.ClassPath;
+import org.apache.bcel.util.ClassPath.ClassFile;
 import org.apache.log4j.Logger;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -72,6 +78,7 @@ import java.util.Set;
 public final class AppInfo {
 
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT + ".AppInfo");
+    private static final Logger loadLogger = Logger.getLogger(LogConfig.LOG_LOADING + ".AppInfo");
 
     private ClassPath classPath;
     private final Map<String,ClassInfo> classes;
@@ -88,6 +95,7 @@ public final class AppInfo {
 
     private boolean exitOnMissingClass;
 
+    private final Set<String> hwObjectClasses;
     private final Set<String> libraryClasses;
     private final Set<String> ignoredClasses;
 
@@ -123,6 +131,7 @@ public final class AppInfo {
 
         classes = new HashMap<String, ClassInfo>();
         roots = new HashSet<MemberInfo>();
+        hwObjectClasses = new HashSet<String>();
         libraryClasses = new HashSet<String>(1);
         ignoredClasses = new HashSet<String>(1);
 
@@ -237,7 +246,7 @@ public final class AppInfo {
      * Try to load a classInfo.
      * If the class is already loaded, return the existing classInfo.
      * If the class is excluded, return null.
-     * If the class does not exist but should be loaded, throw an {@link MissingClassError}.
+     * If the class could not be loaded but is not excluded, throw an {@link MissingClassError} or abort.
      *
      * @see #loadClass(String, boolean, boolean)
      * @param className the fully qualified name of the class.
@@ -289,6 +298,30 @@ public final class AppInfo {
         }
 
         return performLoadClass(className, required);
+    }
+
+    /**
+     * Check if a class exists. Returns true even if it is not loaded or if the class is excluded.
+     *
+     * @param className the FQ classname with '.' separators
+     * @return true if the class can be found in the classpath or has been created (even if it is excluded).
+     */
+    public boolean classExists(String className) {
+        if (classes.containsKey(className)) {
+            return true;
+        }
+
+        return checkClassExists(className);
+    }
+
+    public ClassFile getClassFile(ClassInfo ci) throws FileNotFoundException {
+        try {
+            return classPath.getClassFile(ci.getClassName());
+        } catch (FileNotFoundException e) {
+            throw e;
+        } catch (IOException e) {
+            throw new AppInfoError("Could not get classfile for class "+ci, e);
+        }
     }
 
     /**
@@ -435,6 +468,8 @@ public final class AppInfo {
                 classes.put(root.getClassInfo().getClassName(), root.getClassInfo());
             }
         }
+
+        callGraph = null;
     }
 
     /**
@@ -584,21 +619,6 @@ public final class AppInfo {
      * @return A method reference with or without MethodInfo or ClassInfo.
      */
     public MethodRef getMethodRef(ClassRef classRef, Signature signature) {
-        ClassInfo classInfo = classRef.getClassInfo();
-        if ( classInfo != null ) {
-            MethodInfo method = classInfo.getMethodInfoInherited(signature, true);
-            if ( method == null ) {
-                return new MethodRef(classInfo.getClassRef(), signature.getMemberName(),
-                        signature.getMemberDescriptor());
-            } else if (method.getClassName().equals(classRef.getClassName())) {
-                // method is defined in the given class
-                return method.getMethodRef();
-            } else {
-                // method is defined in a superclass
-                return new MethodRef(classRef, method);
-            }
-        }
-
         return new MethodRef(classRef, signature.getMemberName(), signature.getMemberDescriptor());
     }
 
@@ -629,16 +649,18 @@ public final class AppInfo {
     public FieldRef getFieldRef(ClassRef classRef, Signature signature) {
         ClassInfo cls = classRef.getClassInfo();
         if ( cls != null ) {
+            // We do not check for inherited fields here, this is done in FieldRef
             FieldInfo field = cls.getFieldInfo(signature.getMemberName());
-            if ( field == null ) {
-                return new FieldRef(cls.getClassRef(), signature.getMemberName(),
-                        signature.getMemberDescriptor().getType() );
-            } else {
+            if ( field != null ) {
                 return field.getFieldRef();
             }
         }
 
-        return new FieldRef(classRef, signature.getMemberName(), signature.getMemberDescriptor().getType());
+        Type type = null;
+        if (signature.hasMemberSignature()) {
+            type = signature.getMemberDescriptor().getType();
+        }
+        return new FieldRef(classRef, signature.getMemberName(), type);
     }
 
     /**
@@ -677,20 +699,6 @@ public final class AppInfo {
         return getMethodInfo(signature.getClassName(), signature.getMemberSignature());
     }
 
-    public MethodRef getReferencedMethod(ClassInfo invokerClass, InvokeInstruction instr) {
-        ConstantPoolGen cpg = invokerClass.getConstantPoolGen();
-        // TODO use getReferencedType() here, eliminated deprecated call
-        String classname = instr.getClassName(cpg);
-        String methodname = instr.getMethodName(cpg);
-        boolean isInterface = (instr instanceof INVOKEINTERFACE);
-        return getMethodRef(new Signature(classname, methodname, instr.getSignature(cpg)),
-                            isInterface);
-    }
-
-    public MethodRef getReferencedMethod(MethodInfo invoker, InvokeInstruction instruction) {
-        return getReferencedMethod(invoker.getClassInfo(), instruction);
-    }
-
     //////////////////////////////////////////////////////////////////////////////
     // Roots
     //////////////////////////////////////////////////////////////////////////////
@@ -703,21 +711,120 @@ public final class AppInfo {
         roots.add(methodInfo);
     }
 
+    /**
+     * @return a set of all classinfos of all roots. 
+     */
     public Collection<ClassInfo> getRootClasses() {
-        Map<String,ClassInfo> rootClasses = new HashMap<String, ClassInfo>();
+        Set<ClassInfo> rootClasses = new HashSet<ClassInfo>();
         for (MemberInfo root : roots) {
-            rootClasses.put(root.getClassInfo().getClassName(), root.getClassInfo());
+            rootClasses.add(root.getClassInfo());
         }
-        return rootClasses.values();
+        return rootClasses;
     }
 
+    /**
+     * Get a set of all root methods, i.e. all root methods and all methods in all root classes.
+     * @return a set of all root methods.
+     */
+    public Set<MethodInfo> getRootMethods() {
+        Set<MethodInfo> methods = new HashSet<MethodInfo>();
+        for (MemberInfo root : roots) {
+            addRootMethods(methods, root);
+        }
+        return methods;
+    }
+    
+    /**
+     * @return an unmodifiable set of all root methods and root classes.
+     */
     public Set<MemberInfo> getRoots() {
         return Collections.unmodifiableSet( roots );
     }
 
+    /**
+     * This find all non JVM related root methods.
+     * @return a set of all application root methods.
+     */
+    public Set<MethodInfo> getAppRootMethods() {
+        Set<MethodInfo> methods = new HashSet<MethodInfo>();
+        if (processor == null) {
+            return getRootMethods();
+        }
+        List<String> jvmClasses = processor.getJVMClasses();
+        List<String> nativeClasses = processor.getNativeClasses();
+
+        for (MemberInfo root : roots) {
+            if (nativeClasses.contains(root.getClassName()) ||
+                jvmClasses.contains(root.getClassName())) {
+                continue;
+            }
+            addRootMethods(methods, root);
+        }
+        return methods;
+    }
+
+    public Set<MethodInfo> getJvmRootMethods() {
+        Set<MethodInfo> methods = new HashSet<MethodInfo>();
+        if (processor == null) {
+            return methods;
+        }
+        List<String> jvmClasses = processor.getJVMClasses();
+        List<String> nativeClasses = processor.getNativeClasses();
+
+        for (MemberInfo root : roots) {
+            if (nativeClasses.contains(root.getClassName()) ||
+                jvmClasses.contains(root.getClassName())) {
+                addRootMethods(methods, root);
+            }
+        }
+        return methods;
+    }
+
+    public Collection<MethodInfo> getClinitMethods() {
+        List<MethodInfo> methods = new ArrayList<MethodInfo>();
+        for (ClassInfo cls : classes.values()) {
+            MethodInfo clinit = cls.getMethodInfo(ClinitOrder.clinitSig);
+            if (clinit != null) {
+                methods.add(clinit);
+            }
+        }
+        return methods;
+    }
+
+    public Collection<MethodInfo> getThreadRootMethods() {
+        List<MethodInfo> methods = new ArrayList<MethodInfo>();
+        for (ClassInfo cls : classes.values()) {
+            Ternary isRunnable = cls.hasSuperClass("java.lang.Runnable", true);
+            if (isRunnable == Ternary.UNKNOWN) {
+                // what if unsafe? We ignore for now, must be added as root manually; should we log?
+                continue;
+            }
+            if (isRunnable == Ternary.TRUE) {
+                MethodInfo run = cls.getMethodInfo("run()V");
+                if (run != null) {
+                    methods.add(run);
+                }
+                // TODO any other methods we might need to add?
+            }
+        }
+        return methods;
+    }
+
+    private void addRootMethods(Set<MethodInfo> methods, MemberInfo root) {
+        if (root instanceof MethodInfo) {
+            methods.add((MethodInfo) root);
+        } else if (root instanceof ClassInfo) {
+            for (MethodInfo m : ((ClassInfo)root).getMethods()) {
+                methods.add(m);
+            }
+        } else {
+            throw new AppInfoError("Found fieldinfo "+root+" in roots, which is not allowed");
+        }
+    }
+
     public void setMainMethod(MethodInfo main) {
         if ( main != null ) {
-            addRoot(main.getClassInfo());
+            addRoot(main);
         }
         mainMethod = main;
     }
@@ -731,7 +838,7 @@ public final class AppInfo {
     }
 
     public Signature getClinitSignature(String className) {
-        return new Signature(className, Config.DEFAULT_CLINIT_NAME, Config.DEFAULT_CLINIT_DESCRIPTOR);
+        return new Signature(className, ClinitOrder.clinitName, ClinitOrder.clinitDesc);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -764,8 +871,15 @@ public final class AppInfo {
      * @return the default callgraph
      */
     public CallGraph buildCallGraph(boolean rebuild) {
-        CallgraphConfig config = new DefaultCallgraphConfig(getCallstringLength());
-        callGraph = CallGraph.buildCallGraph(getMainMethod(), config);
+        if (rebuild) {
+            // we set the callgraph null first, so that rebuilding it does not use the old graph
+            callGraph = null;
+        }
+        if (callGraph == null) {
+            CallgraphConfig config = new DefaultCallgraphConfig(getCallstringLength());
+            // we only set the callgraph after building it, so it will not be used while constructing it.
+            callGraph = CallGraph.buildCallGraph(this, config);
+        }
         return callGraph;
     }
 
@@ -783,6 +897,174 @@ public final class AppInfo {
      */
     public CallGraph getCallGraph() {
         return callGraph;
+    }
+
+    /**
+     * Find all methods which might get invoked for a given invokesite.
+     * This uses the callgraph returned by {@link #getCallGraph()} to lookup possible implementations.
+     * Use callgraph thinning to make the result of this method more precise.
+     * If the callgraph has not yet been built by {@link #buildCallGraph(boolean)}, this uses
+     * {@link #findImplementations(MethodRef)} to resolve virtual invocations.
+     *
+     * @see #findImplementations(InvokeSite, CallString)
+     * @param invokeSite the invokesite to look up
+     * @return a list of possible implementations for the invocation, or an empty set if resolution fails or is not safe.
+     */
+    public Set<MethodInfo> findImplementations(InvokeSite invokeSite) {
+        return findImplementations(invokeSite, CallString.EMPTY);
+    }
+
+    /**
+     * Find all methods which might get invoked for a given invokesite.
+     * This uses the callgraph returned by {@link #getCallGraph()} to lookup possible implementations.
+     * Use callgraph thinning to make the result of this method more precise.
+     * If the callgraph has not yet been built by {@link #buildCallGraph(boolean)}, this uses
+     * {@link #findImplementations(MethodRef)} to resolve virtual invocations.
+     *
+     * @param invokeSite the invokesite to look up
+     * @param cs the callstring up to the method containing the invocation, excluding the given invokesite
+     * @return a list of possible implementations for the invocation, or an empty set if resolution fails or is not safe.
+     */
+    public Set<MethodInfo> findImplementations(InvokeSite invokeSite, CallString cs) {
+        return findImplementations(cs.push(invokeSite));
+    }
+
+    /**
+     * Find all methods which might get invoked for a given invokesite.
+     * This uses the callgraph returned by {@link #getCallGraph()} to lookup possible implementations.
+     * Use callgraph thinning to make the result of this method more precise.
+     * If the callgraph has not yet been built by {@link #buildCallGraph(boolean)}, this uses
+     * {@link #findImplementations(MethodRef)} to resolve virtual invocations.
+     *
+     * @param cs the callstring to the the invocation, including the given invokesite. Must not be empty.
+     * @return a list of possible implementations for the invocation, or an empty set if resolution fails or is not safe.
+     */
+    public Set<MethodInfo> findImplementations(CallString cs) {
+        if (cs.length() == 0) {
+            throw new AssertionError("findImplementations() called with empty callstring!");
+        }
+        
+        Set<MethodInfo> methods = new HashSet<MethodInfo>();
+
+        InvokeSite invokeSite = cs.top();
+
+        // Handle special/static invokes
+        // We could use the callgraph to check them too, but only if the callstring length of the
+        // callgraph is at least one, else we will get incorrect results
+        if (!invokeSite.isVirtual()) {
+            MethodInfo method = invokeSite.getInvokeeRef().getMethodInfo();
+            if (method == null) {
+                return methods;
+            }
+            if (method.isAbstract()) {
+                throw new JavaClassFormatError("Invokespecial calls abstract method "+invokeSite.getInvokeeRef());
+            }
+
+            methods.add(method);
+            return methods;
+        }
+
+        if (callGraph == null) {
+            // we do not have a callgraph, so just use typegraph info
+            return findImplementations(invokeSite.getInvokeeRef());
+        }
+        if (!callGraph.hasMethod(invokeSite.getMethod())) {
+            logger.info("Could not find method "+invokeSite.getMethod()+" in the callgraph, falling back to typegraph");
+            return findImplementations(invokeSite.getInvokeeRef());
+        }
+
+        for (ExecutionContext context : callGraph.getImplementations(cs)) {
+            methods.add(context.getMethodInfo());
+        }
+        return methods;
+    }
+
+    /**
+     * Find all methods which might get invoked for a given methodRef.
+     * This does not use the callgraph to eliminate methods. If you want a more precise result,
+     * use {@link #findImplementations(InvokeSite, CallString)} and use callgraph thinning first.
+     * <p>
+     * Note that this method is slightly different from {@link MethodInfo#getImplementations(boolean)}, since
+     * it returns only methods for subclasses of the invokee class, not of the implementing class.
+     * </p>
+     * <p>To handle invocations of super-methods correctly, use {@link #findImplementations(InvokeSite)}
+     * instead.</p>
+     *
+     * @see #findImplementations(InvokeSite)
+     * @param invokee the method to resolve.
+     * @return all possible implementations.
+     */
+    public Set<MethodInfo> findImplementations(final MethodRef invokee) {
+        final Set<MethodInfo> methods = new HashSet<MethodInfo>();
+
+        final MethodInfo method = invokee.getMethodInfo();
+        if (method != null && (method.isStatic() || method.isPrivate())) {
+            methods.add(method);
+            return methods;
+        }
+
+        final String methodSig = invokee.getMemberSignature();
+        final ClassInfo invokeeClass = invokee.getClassRef().getClassInfo();
+
+        if (invokeeClass == null) {
+            // ok, now, if the target class is unknown, there is not much we can do, so return an empty set
+            logger.debug("Trying to find implementations of unknown method "+invokee.toString());
+            return methods;
+        }
+
+        boolean undefinedBaseMethod = false;
+
+        if (invokeeClass.getMethodInfo(methodSig) == null) {
+            // method is inherited, add to implementations
+            if (method != null && !method.isAbstract()) {
+                methods.add(method);
+            } else if (method == null) {
+                // hm, invoke to an unknown method (maybe excluded or native), what should we do?
+                if (invokeeClass.isFullyKnown(true)) {
+                    // .. or maybe the method has not been loaded somehow when the MethodRef was created (check!)
+                    throw new JavaClassFormatError("Method implementation not found in superclass: "+invokee.toString());
+                } else {
+                    // maybe defined in excluded superclass, but we do not know for sure..
+                    // We *must* return an empty set, but lets try to continue for now and
+                    // handle it like an excluded class, and abort only if we find overriding methods
+                    logger.debug("Method implementation not found in incomplete superclass: "+invokee.toString());
+                    undefinedBaseMethod = true;
+                }
+            }
+        }
+
+        // now, we have a virtual call on our hands ..
+        ClassVisitor visitor = new ClassVisitor() {
+            public boolean visitClass(ClassInfo classInfo) {
+                MethodInfo m = classInfo.getMethodInfo(methodSig);
+                if ( m != null ) {
+                    if ( m.isPrivate() && !classInfo.equals(invokeeClass)) {
+                        // found an overriding method which is private .. this is interesting..
+                        logger.error("Found private method "+m.getMemberSignature()+" in "+
+                                classInfo.getClassName()+" overriding non-private method in "+
+                                invokee.getClassName());
+                    }
+                    if ( !m.isAbstract() && (method == null || m.overrides(method,false)) ) {
+                        methods.add(m);
+                    }
+                }
+                return true;
+            }
+            public void finishClass(ClassInfo classInfo) {
+            }
+        };
+
+        ClassHierarchyTraverser traverser = new ClassHierarchyTraverser(visitor);
+        traverser.setVisitSubclasses(true, true);
+        traverser.traverseDown(invokeeClass);
+
+        if (undefinedBaseMethod && methods.size() > 0) {
+            // now this is a problem: base implementation is unknown but we have some
+            // overriding methods, this we cannot handle for now
+            throw new JavaClassFormatError("Found overriding methods for "+invokee+" but superclasses are undefined!");
+        }
+
+        return methods;
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -884,30 +1166,15 @@ public final class AppInfo {
     }
 
     public boolean isNative(String className) {
-        for (String s : processor.getNativeClasses()) {
-            if (className.equals(s) || className.startsWith(s + ".")) {
-                return true;
-            }
-        }
-        return false;
+        return matchClassName(className, processor.getNativeClasses(), false);
     }
 
     public boolean isLibrary(String className) {
-        for (String s : libraryClasses) {
-            if (className.equals(s) || className.startsWith(s + ".")) {
-                return true;
-            }
-        }
-        return false;
+        return matchClassName(className, libraryClasses, false);
     }
 
     public boolean isIgnored(String className) {
-        for (String s : ignoredClasses) {
-            if (className.equals(s) || className.startsWith(s + ".")) {
-                return true;
-            }
-        }
-        return false;
+        return matchClassName(className, ignoredClasses, false);
     }
 
     /**
@@ -928,10 +1195,51 @@ public final class AppInfo {
         return isIgnored(className);
     }
 
+    /**
+     * @param hwObject the fully qualified class name of a hardware class, the superclass of a hardware
+     * class, or a package name which contains hardware objects.
+     */
+    public void addHwObjectName(String hwObject) {
+        hwObjectClasses.add(hwObject);
+    }
+
+    public boolean isHwObject(ClassInfo classInfo) {
+        return isHwObject(classInfo.getClassName());
+    }
+
+    /**
+     * Check if a class is a hardware object, i.e. it represents a hardware interface
+     * and must not be modified.
+     *
+     * @param className the full class name
+     * @return true if the class is a hardware interface.
+     */
+    public boolean isHwObject(String className) {
+        return matchClassName(className, hwObjectClasses, true);
+    }
 
     //////////////////////////////////////////////////////////////////////////////
     // Internal Affairs
     //////////////////////////////////////////////////////////////////////////////
+
+    private boolean matchClassName(String className, Collection<String> list, boolean matchSuper) {
+        ClassInfo cls = null;
+        if (matchSuper) {
+            cls = classes.get(className);
+        }
+        for (String s : list) {
+            if (className.equals(s) || className.startsWith(s + ".")) {
+                return true;
+            }
+            if (cls != null) {
+                Ternary rs = cls.hasSuperClass(s, true);
+                // Hmm, what to do if the superclass check is not safe (ie result is UNKNOWN)?
+                // We just do not match for now ..
+                if (rs == Ternary.TRUE) return true;
+            }
+        }
+        return false;
+    }
 
     private ClassInfo performLoadClass(String className, boolean required) throws ClassInfoNotFoundException {
 
@@ -958,11 +1266,21 @@ public final class AppInfo {
 
     private ClassInfo tryLoadClass(String className) throws IOException {
 
+        loadLogger.debug("Loading class "+className);
+
         InputStream is = classPath.getInputStream(className);
         JavaClass javaClass = new ClassParser(is, className).parse();
         is.close();
 
         return new ClassInfo(new ClassGen(javaClass));
+    }
+
+    private boolean checkClassExists(String className) {
+        try {
+            return classPath.getClassFile(className) != null;
+        } catch (IOException ignored) {
+            return false;
+        }
     }
 
     private ClassInfo createClassInfo(String className, String superClassName, boolean isInterface) {
@@ -979,11 +1297,13 @@ public final class AppInfo {
     }
 
     private void handleClassLoadFailure(String message, Exception cause) {
+        // Nah, just throw an error anyway, so that we have a stacktrace
+        /*
         if ( exitOnMissingClass ) {
             logger.error(message, cause);
             System.exit(4);
-        } else {
-            throw new MissingClassError(message, cause);
         }
+        */
+        throw new MissingClassError(message, cause);
     }
 }

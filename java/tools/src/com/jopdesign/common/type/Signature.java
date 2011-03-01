@@ -40,7 +40,15 @@ public class Signature {
     private final String memberName;
     private final Descriptor descriptor;
 
-    public static String getClassName(String signature) {
+    /**
+     * Parse a signature, with or without classname, with or without descriptor.
+     *
+     * @param signature the signature to parse.
+     * @param isClassMember If the signature is ambiguous, if true always assume that the last simple member
+     *                      name is a method or field, else assume it is a class name.
+     * @return the classname part of the signature.
+     */
+    public static String getClassName(String signature, boolean isClassMember) {
         int pos = signature.indexOf(ALT_MEMBER_SEPARATOR);
         // uses alternative separator, easy
         if (pos != -1) return signature.substring(0, pos);
@@ -52,9 +60,14 @@ public class Signature {
             return pos != -1 ? signature.substring(0, pos) : "";
         }
 
-        // field or class name, cannot decide, assume it is a field
-        pos = signature.lastIndexOf('.');
-        return pos != -1 ? signature.substring(0, pos) : "";
+        if (isClassMember) {
+            // field or class name, cannot decide, assume it is a field
+            pos = signature.lastIndexOf('.');
+            return pos != -1 ? signature.substring(0, pos) : "";
+        } else {
+            // assume it is a class name
+            return signature;
+        }
     }
 
     public static String getSignature(String className, String memberName) {
@@ -71,12 +84,40 @@ public class Signature {
 
     /**
      * Parse a signature, with or without classname, with or without descriptor.
+     * If the signature is ambiguous, first check if a class by that name exists, and
+     * if not assume that the signature refers to a class member.
      *
      * @param signature the signature to parse.
-     * @param isClassMember if true, assume that the last simple member name is a class member.
+     * @return a new signature object.
+     */
+    public static Signature parse(String signature) {
+        return parse(signature, false, true);
+    }
+
+    /**
+     * Parse a signature, with or without classname, with or without descriptor.
+     *
+     * @param signature the signature to parse.
+     * @param isClassMember If the signature is ambiguous, if true always assume that the last simple member
+     *                      name is a method or field, else assume it is a class name.
      * @return a new signature object.
      */
     public static Signature parse(String signature, boolean isClassMember) {
+        return parse(signature, isClassMember, false);
+    }
+
+    /**
+     * Parse a signature, with or without classname, with or without descriptor.
+     *
+     * @param signature the signature to parse.
+     * @param isClassMember If true, always assume that the last simple member
+     *                      name is a class member, if the signature is ambiguous.
+     * @param checkExists If true and the signature is ambiguous, first check if a class by that name exists, and
+     *                    if not assume that the signature refers to a class member. Only has an effect if
+     *                    {@code isClassMember} is {@code false}.
+     * @return a new signature object.
+     */
+    public static Signature parse(String signature, boolean isClassMember, boolean checkExists) {
         int p1 = signature.indexOf(ALT_MEMBER_SEPARATOR);
         int p2 = signature.indexOf("(");
 
@@ -86,8 +127,9 @@ public class Signature {
 
         if ( p1 == -1 ) {
             if ( p2 == -1 ) {
+                // TODO we might want to handle array signatures too here 
                 // no descriptor, either not alternative syntax or no classname
-                if ( isClassMember ) {
+                if ( isClassMember || (checkExists && !AppInfo.getSingleton().classExists(signature)) ) {
                     // is a class member with or without class name
                     p1 = signature.lastIndexOf('.');
                     className  = p1 != -1 ? signature.substring(0, p1) : null;
@@ -151,6 +193,14 @@ public class Signature {
         this.descriptor = descriptor;
     }
 
+    public boolean isArraySignature() {
+        return className.startsWith("[");
+    }
+
+    public boolean hasMemberName() {
+        return memberName != null && !"".equals(memberName);
+    }
+
     public boolean hasMemberSignature() {
         return memberName != null && descriptor != null;
     }
@@ -167,8 +217,11 @@ public class Signature {
         return className;
     }
 
+    /**
+     * @return the member name and descriptor, if set.
+     */
     public String getMemberSignature() {
-        return memberName+descriptor;
+        return (memberName!=null ? memberName : "") + (descriptor!=null ? descriptor : "");
     }
 
     public String getMemberName() {

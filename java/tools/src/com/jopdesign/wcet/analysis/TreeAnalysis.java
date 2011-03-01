@@ -84,7 +84,8 @@ public class TreeAnalysis {
         }
 
         public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
-            long invokedProgress = subProgress.get(n.getImplementedMethod());
+            Long aLong = subProgress.get(n.getImplementedMethod());
+            long invokedProgress = aLong;
             progress = 1 + invokedProgress;
         }
 
@@ -120,7 +121,7 @@ public class TreeAnalysis {
          */
 
     public void computeProgress(MethodInfo targetMethod) {
-        List<MethodInfo> reachable = project.getCallGraph().getImplementedMethods(targetMethod);
+        List<MethodInfo> reachable = project.getCallGraph().getReachableImplementations(targetMethod);
         Collections.reverse(reachable);
         for (MethodInfo mi : reachable) {
             ControlFlowGraph cfg = project.getFlowGraph(mi);
@@ -131,7 +132,7 @@ public class TreeAnalysis {
             }
             ProgressMeasure<CFGNode, CFGEdge> pm =
                     new ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge>(cfg.getGraph(), cfg.getLoopColoring(),
-                            extractUBs(cfg.buildLoopBounds()), localProgress);
+                            extractUBs(cfg.buildLoopBoundMap()), localProgress);
             long progress = pm.getMaxProgress().get(cfg.getExit());
             /* FIXME: _UGLY_ hack */
             if (filterLeafMethods && cfg.isLeafMethod()) {
@@ -162,7 +163,7 @@ public class TreeAnalysis {
 
     public long computeWCET(MethodInfo targetMethod) {
         this.methodWCET = new HashMap<MethodInfo, Long>();
-        List<MethodInfo> reachable = project.getCallGraph().getImplementedMethods(targetMethod);
+        List<MethodInfo> reachable = project.getCallGraph().getReachableImplementations(targetMethod);
         Collections.reverse(reachable);
         for (MethodInfo mi : reachable) {
             ControlFlowGraph cfg = project.getFlowGraph(mi);
@@ -173,7 +174,7 @@ public class TreeAnalysis {
             }
             ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge> pm =
                     new ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge>(cfg.getGraph(), cfg.getLoopColoring(),
-                            extractUBs(cfg.buildLoopBounds()), localCost);
+                            extractUBs(cfg.buildLoopBoundMap()), localCost);
             long wcet = pm.getMaxProgress().get(cfg.getExit());
             methodWCET.put(mi, wcet);
         }

@@ -21,7 +21,7 @@
 
 package com.jopdesign.common.config;
 
-import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.processormodel.ProcessorModel.Model;
 
 import java.io.ByteArrayOutputStream;
@@ -44,19 +44,6 @@ import java.util.Set;
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class Config {
-
-    /**
-     * This is the default value; use {@link AppInfo#getClinitSignature(String)}.
-     */
-    public static final String DEFAULT_CLINIT_NAME = "<clinit>";
-    public static final String DEFAULT_CLINIT_DESCRIPTOR = "()V";
-
-    public static final String DEFAULT_NATIVE = "com.jopdesign.sys.Native";
-    public static final String[] JOP_SYSTEM_CLASSES = {
-            "com.jopdesign.sys.JVM",
-            "com.jopdesign.sys.JVMHelp",
-            "com.jopdesign.sys.Startup"
-        };
 
     /* Options which are always present
      * TODO maybe move the class loading and entry-point related options to AppInfo?
@@ -84,10 +71,13 @@ public class Config {
             new StringOption("classpath", "classpath of the classes to load", 'c', "java/target/dist/classes");
 
     public static final StringOption MAIN_METHOD_NAME =
-            new StringOption("mm", "method name of the entry method", "main");
+            new StringOption("mm", "method name of the entry method (short name or FQN)", "main");
 
     public static final EnumOption<Model> PROCESSOR_MODEL =
             new EnumOption<Model>("arch", "The processor model to use", Model.JOP);
+
+    public static final StringOption HW_OBJECTS =
+            new StringOption("hw-objects", "comma-separated list of hardware (super-) classes and packages", "com.jopdesign.io.HardwareObject");
 
     public static final StringOption LIBRARY_CLASSES =
             new StringOption("libraries", "comma-separated list of library classes and packages", "");
@@ -122,9 +112,34 @@ public class Config {
     public static final StringOption INFO_LOG_FILE =
         new StringOption("info-log","the info log file, placed in the report dir","info.log.html");
 
+    //
+    // Some common options, which are not added by default, but can be added by other programs
+    //
+    public static final StringOption PROGRAM_DOT =
+            new StringOption("program-dot", "if graphs should be generated from java, the path to the 'dot' binary", true);
+
+    
+
     public static final Option<?>[] standardOptions =
             { SHOW_HELP, SHOW_VERSION, SHOW_CONFIG, DEBUG, QUIET, VERBOSE };
 
+
+    public static String mergePaths(String[] paths) {
+        if (paths.length == 0) return "";
+
+        StringBuffer sb = new StringBuffer(paths[0]);
+        for (int i = 1; i < paths.length; i++) {
+            sb.append(File.pathSeparator);
+            sb.append(paths[i]);
+        }
+        return sb.toString();
+    }
+
+    public static String[] splitPaths(String paths) {
+        if (paths.length() == 0) return new String[0];
+
+        return paths.split(File.pathSeparator);
+    }
 
     /*
     * Exception classes
@@ -210,6 +225,40 @@ public class Config {
         }
     }
 
+    /**
+     * @return the directory configured by {@link Config#WRITE_PATH}
+     */
+    public File getOutDir() {
+        return new File(getOption(Config.WRITE_PATH));
+    }
+
+    /**
+     * Get a subdirectory under the write path configured by {@link Config#WRITE_PATH} and create it
+     * if it does not exist.
+     *
+     * @param sub name of a subdirectory
+     * @return a file representing the directory.
+     */
+    public File getOutDir(String sub) {
+        File outDir = getOutDir();
+        File subDir = new File(outDir, sub);
+        if (!subDir.exists()) {
+            if (!subDir.mkdirs()) {
+                throw new AppInfoError("Failed to create subdirectory "+sub+" in outdir");
+            }
+        }
+        return subDir;
+    }
+
+    public File getOutFile(String file) {
+        return new File(getOutDir(), file);
+    }
+
+    public File getOutDir(StringOption option) throws BadConfigurationException {
+        File outDir = new File(getOption(option));
+        checkDir(outDir, true);
+        return outDir;
+    }
 
     public OptionGroup getOptions() {
         return options;
