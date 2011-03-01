@@ -304,7 +304,7 @@ public class AppSetup {
         if ( addExcludeOptions ) {
             config.addOption(Config.IGNORE_CLASSES);            
             config.addOption(Config.EXCLUDE_LIBRARIES);
-            config.addOption(Config.LOAD_NATIVES);
+            config.addOption(Config.EXCLUDE_NATIVES);
         }
     }
 
@@ -473,8 +473,8 @@ public class AppSetup {
         if ( config.hasOption(Config.EXCLUDE_LIBRARIES) ) {
             appInfo.setLoadLibraries(!config.getOption(Config.EXCLUDE_LIBRARIES));
         }
-        if ( config.hasOption(Config.LOAD_NATIVES) ) {
-            appInfo.setLoadNatives(config.getOption(Config.LOAD_NATIVES));
+        if ( config.hasOption(Config.EXCLUDE_NATIVES) ) {
+            appInfo.setLoadNatives(!config.getOption(Config.EXCLUDE_NATIVES));
         }        
 
         appInfo.setCallstringLength(config.getOption(Config.CALLSTRING_LENGTH).intValue());
