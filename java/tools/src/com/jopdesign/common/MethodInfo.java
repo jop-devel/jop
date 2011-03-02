@@ -180,7 +180,7 @@ public final class MethodInfo extends ClassMemberInfo {
     //////////////////////////////////////////////////////////////////////////////
 
     public String getFQMethodName() {
-        return getClassInfo().getClassName() + "." + getShortName();
+        return getClassInfo().getClassName() + "." + getMemberSignature();
     }
 
     @Override
