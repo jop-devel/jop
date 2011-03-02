@@ -31,10 +31,9 @@ import com.jopdesign.common.MemberInfo;
  * @see Descriptor
  * @author Stefan Hepp (stefan@stefant.org)
  * 
- * TODO: (bh) Terminology is confusing here. In the literature,
- *            a signature is the unique (fully-qualified) name of a method.
- *            The term 'descriptor' also seems slightly to general; it is just
- *            the type of a member, as far as I can see.
+ * TODO:  Terminology is a little bit confusing here (for newcomers). In the literature,
+ *        a signature is the unique (fully-qualified) name of a method, not including
+ *        the class name. Should be clarified in the documentation.
  */
 public class Signature {
 
@@ -262,13 +261,25 @@ public class Signature {
     }
 
     public String toString() {
+    	return toString(true);
+    }
+    
+    /**
+     * String representation of the signature. Will include the
+     * class name, if present.
+     * <p>TODO: Maybe this method should be more general, allowing to specify whether
+     * the signature should include the class name? </p>
+     * @param altMemberSep Whether to use '#' to separate class name and member signature
+     * @return the signature string
+     */
+    public String toString(boolean altMemberSep) {
         StringBuffer s = new StringBuffer();
         if ( className != null ) {
             s.append(className);
         }
         if (memberName != null) {
-            if ( className != null ) {
-                s.append(ALT_MEMBER_SEPARATOR);
+            if ( className != null ) {            	
+                s.append(altMemberSep ? ALT_MEMBER_SEPARATOR : '.');
             }
             s.append(memberName);
         }
