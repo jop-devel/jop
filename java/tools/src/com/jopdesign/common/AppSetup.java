@@ -512,7 +512,7 @@ public class AppSetup {
         if (args.length > 0 && ! "".equals(args[0])) {
         	mainClassName = args[0];
         } else if(config.hasOption(Config.MAIN_METHOD_NAME)){
-        	mainClassName = MethodInfo.splitMethodName(config.getOption(Config.MAIN_METHOD_NAME))[0];
+        	mainClassName = Signature.parse(config.getOption(Config.MAIN_METHOD_NAME)).getClassName();
         } else {
             System.err.println("You need to specify a main class or entry method.");
             if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
@@ -786,7 +786,7 @@ public class AppSetup {
         if ( mainName == null ) {
             mainName = config.getOption(Config.MAIN_METHOD_NAME);
             if(mainName != null) {
-            	mainName = MethodInfo.splitMethodName(mainName)[1];
+            	mainName = Signature.parse(mainName).getMemberSignature();
             }
         }
 

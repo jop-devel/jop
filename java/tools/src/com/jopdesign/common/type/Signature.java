@@ -30,6 +30,11 @@ import com.jopdesign.common.MemberInfo;
  *
  * @see Descriptor
  * @author Stefan Hepp (stefan@stefant.org)
+ * 
+ * TODO: (bh) Terminology is confusing here. In the literature,
+ *            a signature is the unique (fully-qualified) name of a method.
+ *            The term 'descriptor' also seems slightly to general; it is just
+ *            the type of a member, as far as I can see.
  */
 public class Signature {
 
@@ -163,6 +168,20 @@ public class Signature {
         return new Signature(className, memberName, descriptor);
     }
 
+    /**
+     * Name of a Java class, field or method. Consists of the class name, the member's name and a
+     * description of the member (i.e., its type).
+     * It is permissible to leave out either the class name or the member name.
+     * @param className name of the Java class. May be {@code null}, if class name is unknown.
+     * @param memberName name of the class member. If {@code null}, the instance represents a class name.
+     * @param descriptor type of the class member. Must be {@code null}, if the member's name is not given
+     */
+    public Signature(String className, String memberName, Descriptor descriptor) {
+        this.className = className;
+        this.memberName = memberName;
+        this.descriptor = descriptor;
+    }
+
     public Signature(String className) {
         this.className = className;
         this.memberName = null;
@@ -173,12 +192,6 @@ public class Signature {
         this.className = className;
         this.memberName = memberName;
         this.descriptor = Descriptor.parse(descriptor);
-    }
-
-    public Signature(String className, String memberName, Descriptor descriptor) {
-        this.className = className;
-        this.memberName = memberName;
-        this.descriptor = descriptor;
     }
 
     public Signature(String memberName, String descriptor) {
