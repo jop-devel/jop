@@ -49,6 +49,7 @@ import org.apache.bcel.generic.PUTSTATIC;
 import org.apache.bcel.generic.ReferenceType;
 import org.apache.bcel.generic.StoreInstruction;
 import org.apache.bcel.generic.Type;
+import org.apache.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -1430,7 +1431,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                                                                       Map<CallString, Map<Location, ValueMapping>> input,
                                                                       Map<CallString, Map<Location, ValueMapping>> result) {
 
-        String methodId = method.getSignature().toString();
+        String methodId = method.getSignature().toString(false);
 
         Map<Location, ValueMapping> in = input.get(context.callString);
         Map<Location, ValueMapping> out = new HashMap<Location, ValueMapping>();
@@ -1495,8 +1496,9 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                 }
             }
         } else {
-            System.err.println("Unknown native method: " + methodId);
-            System.exit(-1);
+        	RuntimeException ex = new RuntimeException("Unknown native method: " + methodId);
+        	Logger.getLogger(this.getClass()).error(ex);
+        	throw ex;
         }
 
         result.put(context.callString, out);

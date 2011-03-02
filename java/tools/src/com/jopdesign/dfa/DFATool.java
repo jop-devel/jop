@@ -27,6 +27,7 @@ import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.EmptyTool;
 import com.jopdesign.common.FieldInfo;
+import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MemberInfo.AccessType;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
@@ -39,7 +40,9 @@ import com.jopdesign.common.misc.HashedString;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.tools.ClinitOrder;
+import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.Descriptor;
+import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.ValueMapping;
@@ -50,6 +53,7 @@ import com.jopdesign.dfa.framework.Flow;
 import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.dfa.framework.Interpreter;
 import org.apache.bcel.generic.ACONST_NULL;
+import org.apache.bcel.generic.BranchInstruction;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.GOTO;
 import org.apache.bcel.generic.ICONST;
@@ -58,6 +62,10 @@ import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.NOP;
+import org.apache.bcel.generic.ReturnInstruction;
+import org.apache.bcel.generic.Select;
+import org.apache.bcel.generic.UnconditionalBranch;
+import org.apache.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -67,10 +75,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * @author Stefan Hepp (stefan@stefant.org)
- * @author Wolfgang Puffitsch
- */
+/** Tool for dataflow analysis */
 public class DFATool extends EmptyTool<AppEventHandler> {
 
     private static final String prologueName = "<prologue>";
@@ -117,6 +122,66 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
         // create prologue
         buildPrologue(mainClass, statements, flow, order);
+        
+        // Now we need to process all classes (for DFA's internal flow graph)
+        for(ClassInfo ci : appInfo.getClassInfos()) {
+        	for(MethodInfo mi : ci.getMethods()) {
+        		if(mi.hasCode()) {
+        			loadMethod(mi);
+        		}
+        	}
+        }
+    }
+
+    private void loadMethod(MethodInfo method) {
+
+    	MethodCode mcode = method.getCode();
+    	InstructionList exit = new InstructionList(new NOP());
+    	this.getStatements().add(exit.getStart());
+    	for (Iterator<?> l = mcode.getInstructionList().iterator(); l.hasNext();) {
+    		InstructionHandle handle = (InstructionHandle) l.next();
+    		this.getStatements().add(handle);
+
+    		Instruction instr = handle.getInstruction();
+    		if (instr instanceof BranchInstruction) {
+    			if (instr instanceof Select) {
+    				Select s = (Select) instr;
+    				InstructionHandle[] target = s.getTargets();
+    				for (int j = 0; j < target.length; j++) {
+    					this.getFlow().addEdge(new FlowEdge(handle, target[j],
+    							FlowEdge.TRUE_EDGE));
+    				}
+    				this.getFlow().addEdge(new FlowEdge(handle, s.getTarget(),
+    						FlowEdge.FALSE_EDGE));
+    			} else {
+    				BranchInstruction b = (BranchInstruction) instr;
+    				this.getFlow().addEdge(new FlowEdge(handle, b.getTarget(),
+    						FlowEdge.TRUE_EDGE));
+    			}
+    		}
+    		if (handle.getNext() != null
+    				&& !(instr instanceof UnconditionalBranch
+    						|| instr instanceof Select || instr instanceof ReturnInstruction)) {
+    			if (instr instanceof BranchInstruction) {
+    				this.getFlow().addEdge(new FlowEdge(handle, handle.getNext(),
+    						FlowEdge.FALSE_EDGE));
+    			} else {
+    				this.getFlow().addEdge(new FlowEdge(handle, handle.getNext(),
+    						FlowEdge.NORMAL_EDGE));
+    			}
+    		}
+    		if (instr instanceof ReturnInstruction) {
+    			this.getFlow().addEdge(new FlowEdge(handle, exit.getStart(),
+    					FlowEdge.NORMAL_EDGE));
+    		}
+    	}
+
+    	// We do not really want to modify the REAL instruction list and append exit
+    	// FIXME: is this necessary???
+
+    	// InstructionList list = method.getInstructionList();
+    	// list.append(exit);
+    	// list.setPositions();
     }
 
     private void buildPrologue(MethodInfo mainMethod, List<InstructionHandle> statements, Flow flow, List<ClassInfo> clinits) {
@@ -136,9 +201,11 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         idx = prologueCP.addMethodref("com.jopdesign.sys.GC", "init", "(II)V");
         instr = new INVOKESTATIC(idx);
         prologue.append(instr);
-        idx = prologueCP.addMethodref("java.lang.System", "init", "()V");
-        instr = new INVOKESTATIC(idx);
-        prologue.append(instr);
+
+        // Not in prologue anymore
+        //        idx = prologueCP.addMethodref("java.lang.System", "<init>", "()V");
+        //        instr = new INVOKESTATIC(idx);
+        //        prologue.append(instr);
 
         // add class initializers
         for (ClassInfo clinit : clinits) {
@@ -271,23 +338,39 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     }
 
     /**
-     * Helper method to find a method in AppInfo using the full signature.
+     * Helper method to find the actually invoked method given the
+     * dynamic type and the method signature
      *
-     * @param signature the signature of the method.
-     * @return the method if found, else null
+     * @param recvStr the dynamic type of the receiver
+     * @param sigstr the signature (without class) of the method.
+     * @return the actually invoked method, or {@code null} if not found
      */
-    public MethodInfo getMethod(String signature) {
-        // TODO this method should be removed (?), remove this try/catch ?
-        Signature s = Signature.parse(signature, true);
-        try {
-            return appInfo.getMethodInfo(s.getClassName(), s.getMemberSignature());
-        } catch (MethodNotFoundException e) {
-            throw new JavaClassFormatError("Could not find method " + signature, e);
-        }
+    public MethodInfo getMethod(String recvStr, String sigStr) {
+    	ClassInfo receiver = appInfo.getClassInfo(recvStr);
+    	Signature methodSig = Signature.parse(sigStr, true);
+    	return receiver.getMethodInfoInherited(methodSig, true);
     }
 
+	/**
+     * Helper method to find the actually invoked method given the
+     * dynamic type and the method signature
+     * 
+	 * @param signature FQ signature of the method
+	 * @return the invoked method, or {@code null} if not found
+	 */
+	public MethodInfo getMethod(String signature) {
+		Signature sig = Signature.parse(signature);
+    	ClassInfo receiver = appInfo.getClassInfo(sig.getClassName());
+    	return receiver.getMethodInfoInherited(sig, true);
+	}
+	
     public ClassInfo classForField(String fieldName) {
         Signature s = Signature.parse(fieldName, true);
+        if(! getAppInfo().hasClassInfo(s.getClassName())) {
+        	Logger.getLogger(this.getClass()).debug("Unknown class as potential receiver for putfield operation " + s.toString(true));
+        	return null;
+        }
+
         ClassInfo cls = getAppInfo().getClassInfo(s.getClassName());
         if (cls == null) {
             return null;
@@ -325,5 +408,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     public boolean containsField(String fieldName) {
         return classForField(fieldName) != null;
     }
+
+
 
 }

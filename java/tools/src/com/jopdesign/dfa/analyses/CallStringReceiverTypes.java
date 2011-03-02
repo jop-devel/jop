@@ -23,6 +23,7 @@ package com.jopdesign.dfa.analyses;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.misc.MissingClassError;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.framework.Analysis;
 import com.jopdesign.dfa.framework.Context;
@@ -50,7 +51,9 @@ import org.apache.bcel.generic.PUTSTATIC;
 import org.apache.bcel.generic.ReferenceType;
 import org.apache.bcel.generic.StoreInstruction;
 import org.apache.bcel.generic.Type;
+import org.apache.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -932,12 +935,13 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
             for (TypeMapping m : in) {
                 if (m.stackLoc == context.stackPtr - argSize) {
                     String clName = m.type.split("@")[0];
-
+                    ClassInfo dynamicClass;
                     // check whether this class can possibly be a receiver
-                    ClassInfo dynamicClass = (ClassInfo) p.getAppInfo().getClassInfo(clName);
-                    if (dynamicClass == null) { // no such class
-                        System.out.println("no such class: " + clName);
-                        continue;
+                    try {
+                    	dynamicClass = (ClassInfo) p.getAppInfo().getClassInfo(clName);
+                    } catch(MissingClassError ex) {
+                    	Logger.getLogger(this.getClass()).error("TRANSFER/" + instr + ": " + ex);
+                    	continue;
                     }
 
                     if ((instr instanceof INVOKEVIRTUAL
@@ -946,19 +950,23 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
                             && dynamicClass.isImplementationOf(constClass))) {
                         receivers.add(clName);
                     } else {
-                        System.out.println(context.method + ": class " + constClassName + " is not a superclass of " + clName);
+                    	Logger.getLogger(this.getClass()).debug(context.method + ": class " + constClassName + " is not a superclass of " + clName);
                     }
                 }
             }
 
+            /* Get the actual set of invoked methods */
+            ArrayList<MethodInfo> invokeCandidates = new ArrayList<MethodInfo>();
             for (String receiver : receivers) {
                 // find receiving method
                 String signature = instr.getMethodName(context.constPool) + instr.getSignature(context.constPool);
-                String methodName = receiver + "." + signature;
-
-                doInvokeVirtual(methodName, receiver, stmt, context, input, interpreter, state, retval);
+                MethodInfo impl  = interpreter.getProgram().getMethod(receiver, signature);
+                if(impl == null) {
+                	throw new RuntimeException("Could not find implementation for: " + receiver + "#" + signature);
+                }
+                doInvokeVirtual(receiver, impl, stmt, context, input, interpreter, state, retval);            	
             }
-			
+            
 			// add relevant information to result
 			filterSet(in, result, context.stackPtr-argSize);
 		}
@@ -972,13 +980,13 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 
 			String receiver = instr.getClassName(context.constPool);
 			String signature = instr.getMethodName(context.constPool)+instr.getSignature(context.constPool);
-			String methodName = receiver+"."+signature;
-			
-			if (interpreter.getProgram().getMethod(methodName).isPrivate()
-					&& !interpreter.getProgram().getMethod(methodName).isStatic()) {
-				doInvokeVirtual(methodName, receiver, stmt, context, input, interpreter, state, retval);
+            MethodInfo impl  = interpreter.getProgram().getMethod(receiver, signature);				
+            if (impl == null) {
+            	throw new RuntimeException("Cannot find implementation of " + receiver + "." + signature);
+            } else if (impl.isPrivate() && ! impl.isStatic()) {
+				doInvokeVirtual(receiver, impl, stmt, context, input, interpreter, state, retval);
 			} else {
-				doInvokeStatic(methodName, stmt, context, input, interpreter, state, retval);
+				doInvokeStatic(impl.getSignature().toString(), stmt, context, input, interpreter, state, retval);
 			}
 			
 			// add relevant information to result
@@ -1054,22 +1062,16 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 		}
 	}
 	
-	private void doInvokeVirtual(String methodName, String receiver,
+	private void doInvokeVirtual(String receiver, MethodInfo method,
 			InstructionHandle stmt, Context context,
 			ContextMap<CallString, Set<TypeMapping>> input,
 			Interpreter<CallString, Set<TypeMapping>> interpreter,
 			Map<InstructionHandle, ContextMap<CallString, Set<TypeMapping>>> state,
 			ContextMap<CallString, Set<TypeMapping>> result) {
 		
-		DFATool p = interpreter.getProgram();
-		if (p.getMethod(methodName) == null) {
-			System.out.println(context.method+": "+stmt+" unknown method: "+methodName);
-			return;					
-		}
-		MethodInfo method = p.getMethod(methodName);
-		methodName = method.getClassName()+"."+method.getMemberSignature();
+		String methodImplName = method.getClassName()+"."+method.getMemberSignature();
 				
-		recordReceiver(stmt, context, methodName);
+		recordReceiver(stmt, context, methodImplName);
 		
 //		LineNumberTable lines = p.getMethods().get(context.method).getLineNumberTable(context.constPool);
 //		int sourceLine = lines.getSourceLine(stmt.getPosition());
@@ -1088,6 +1090,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 		
 		boolean threaded = false;	
 		
+		DFATool p = interpreter.getProgram();
         if (p.getAppInfo().getClassInfo(receiver).isSubclassOf(p.getAppInfo().getClassInfo("joprt.RtThread")) &&
                 "run()V".equals(method.getMemberSignature())) {
             c.createThread();
@@ -1110,9 +1113,14 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
             }
             if (m.stackLoc == varPtr) {
                 // add "this"
-                ClassInfo staticClass = (ClassInfo) p.getAppInfo().getClassInfo(receiver);
-                ClassInfo dynamicClass = (ClassInfo) p.getAppInfo().getClassInfo(m.type.split("@")[0]);
-                if (dynamicClass.isSubclassOf(staticClass)) {
+                ClassInfo staticClass = p.getAppInfo().getClassInfo(receiver);
+                ClassInfo dynamicClass = null;
+                try {
+                	p.getAppInfo().getClassInfo(m.type.split("@")[0]);
+                } catch(MissingClassError ex) {
+                	Logger.getLogger(this.getClass()).error("doInvokeVirtual - trying to improve type of " + staticClass + ": " + ex);
+                }
+                if (dynamicClass != null && dynamicClass.isSubclassOf(staticClass)) {
                     out.add(new TypeMapping(0, m.type));
                 }
             }
@@ -1135,7 +1143,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 
 		// update all threads
 		if (threaded) {
-			threads.put(methodName, new ContextMap<CallString, Set<TypeMapping>>(c, result));
+			threads.put(methodImplName, new ContextMap<CallString, Set<TypeMapping>>(c, result));
 			updateThreads(result, interpreter, state); 
 		}
 	}
@@ -1150,6 +1158,9 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 
 		DFATool p = interpreter.getProgram();
 		MethodInfo method = p.getMethod(methodName);
+		if(method == null) {
+			throw new RuntimeException("DFA: cannot find static method " + methodName);
+		}
 		methodName = method.getClassName()+"."+method.getMemberSignature();
 
 		recordReceiver(stmt, context, methodName);
@@ -1268,7 +1279,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
     private Map<CallString, Set<TypeMapping>> handleNative(MethodInfo method, Context context,
 			Map<CallString, Set<TypeMapping>> input, Map<CallString, Set<TypeMapping>> result) {
 		
-		String methodId = method.getClassName()+"."+method.getMemberSignature();
+		String methodId = method.getSignature().toString(false);
 		
 		Set<TypeMapping> in = input.get(context.callString);
 		Set<TypeMapping> out = new HashSet<TypeMapping>();
@@ -1310,9 +1321,10 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 				|| methodId.equals("com.jopdesign.sys.Native.condMoveRef(Ljava/lang/Object;Ljava/lang/Object;Z)Ljava/lang/Object;")) {
 			filterSet(in, out, context.stackPtr-3);
 		} else {
-			System.err.println("Unknown native method: "+methodId);
-			System.exit(-1);
-		}
+        	RuntimeException ex = new RuntimeException("Unknown native method: " + methodId);
+        	Logger.getLogger(this.getClass()).error(ex);
+        	throw ex;
+        }
 		
 		result.put(context.callString, out);
 		

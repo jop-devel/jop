@@ -935,8 +935,9 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			out.putStack(context.stackPtr-3, joined);
 		} else {
 			out = null;
-			System.err.println("SymbolicPointsTo: Unknown native method: "+methodId);
-			System.exit(-1);
+        	RuntimeException ex = new RuntimeException("Unknown native method: " + methodId);
+        	Logger.getLogger(this.getClass()).error(ex);
+        	throw ex;
 		}
 		
 		retval.put(context.callString, out);
