@@ -153,7 +153,11 @@ public class JCopter extends EmptyTool<JCopterManager> {
 
         // - perform WCET analysis, select methods for inlining
         if (useWCET()) {
+            // First, rebuild the WCET-Tool callgraph, since we modified the appInfo graph already
+            wcetTool.rebuildCallGraph();
+
             // TODO call WCET analysis, use WCET-oriented inline selector
+
 
         } else {
             // use non-WCET-based inline selector

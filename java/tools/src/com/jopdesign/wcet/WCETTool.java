@@ -220,18 +220,8 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             topLevelLogger.info("DFA analysis finished");
         }
 
-        /* build callgraph */
-        try {
-            // FIXME check if we can use the callgraph built by AppInfo instead (starts at main method!)
-            // (replace WCETTool.getCallgraph with AppInfo.getCallGraph()), run AppInfo.buildCallgraph(false) here)
-            callGraph = CallGraph.buildCallGraph(this.appInfo,
-                    projectConfig.getTargetClass(),
-                    projectConfig.getTargetMethod(),
-                    new DefaultCallgraphConfig(projectConfig.callstringLength()));
-            callGraph.checkAcyclicity();
-        } catch (MethodNotFoundException e) {
-            e.printStackTrace();
-        }
+        /* build callgraph for target method */
+        rebuildCallGraph();
 
         if (doDataflowAnalysis()) {
             appInfo.iterate(new RemoveNops());
@@ -259,6 +249,19 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
     public Config getConfig() {
         return projectConfig.getConfig();
+    }
+
+    /**
+     * Rebuild the WCET callgraph, starting at the target method.
+     * The new callgraph will be based on (but not backed by) the AppInfo callgraph, if available.
+     *
+     * @return the new callgraph.
+     */
+    public CallGraph rebuildCallGraph() {
+        callGraph = CallGraph.buildCallGraph(projectConfig.getTargetMethodInfo(),
+                              new DefaultCallgraphConfig(projectConfig.callstringLength()));
+        callGraph.checkAcyclicity();
+        return callGraph;
     }
 
     public CallGraph getCallGraph() {
@@ -519,7 +522,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     }
 
     /**
-     * Get the loop bounds found by dataflow analysis
+     * @return the loop bounds found by dataflow analysis
      */
     public LoopBounds getDfaLoopBounds() {
         if (!hasDfaResults) return null;
@@ -550,8 +553,12 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
      */
     public Collection<MethodInfo> findImplementations(MethodInfo invokerM, InstructionHandle ih, CallString ctx) {
         InvokeSite is = invokerM.getCode().getInvokeSite(ih);
-        Collection<MethodInfo> staticImpls = appInfo.findImplementations(is);        
-        // TODO we should use the DFA to refine the callgraph, and use AppInfo#findImplementations(is,ctx) here
+        // We do not use appInfo.findImplementations here so that the result is always consistent with the callgraph
+        Collection<MethodInfo> staticImpls = callGraph.findImplementingMethods(ctx.push(is));
+
+        // TODO we should use the DFA to refine the callgraph of AppInfo (or this.callgraph) after constructing the graph
+        // - Either construct AppInfo callgraph first, optimize it using DFA/.., then call WCETTool.rebuildCallgraph()
+        // - Or just optimize both AppInfo callgraph and this.callgraph using DFA/.. separately
         staticImpls = dfaReceivers(ih, staticImpls, ctx);
         return staticImpls;
     }

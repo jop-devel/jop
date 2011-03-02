@@ -51,6 +51,12 @@ public abstract class AbstractOptimizer implements ClassVisitor {
         return jcopter.getConfig();
     }
 
+    public void optimize() {
+        initialize();
+        appInfo.iterate(this);
+        printStatistics();
+    }
+
     @Override
     public boolean visitClass(ClassInfo classInfo) {
         if (appInfo.isHwObject(classInfo)) {
@@ -69,5 +75,9 @@ public abstract class AbstractOptimizer implements ClassVisitor {
     public void finishClass(ClassInfo classInfo) {
     }
 
+    public abstract void initialize();
+
     public abstract void optimizeMethod(MethodInfo method);
+
+    public abstract void printStatistics();
 }
