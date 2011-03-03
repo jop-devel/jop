@@ -35,7 +35,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 
 public class Translator {
-	private static final Logger logger = Logger.getLogger(Translator.class);
+	private static final Logger logger = Logger.getLogger(WCETTool.LOG_WCET_UPPAAL+".Translator");
 
 	private WCETTool project;
 	private SystemBuilder sys;

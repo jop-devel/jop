@@ -59,7 +59,7 @@ public class Config {
             new BooleanOption("showconfig", "print current configuration values", Option.SHORT_NONE, true);
 
     public static final BooleanOption DEBUG =
-            new BooleanOption("debug", "show debug level messages", 'd', false);
+            new BooleanOption("debug", "show debug level messages and write trace messages to info log", 'd', false);
 
     public static final BooleanOption QUIET =
             new BooleanOption("quiet", "only show warnings and errors. Overruled by '-d'", 'q', false);
@@ -397,6 +397,10 @@ public class Config {
 
     public String setProperty(String key, String value) {
         return setProperty(key, value, false);
+    }
+
+    public String setDefaultProperty(String key, String value) {
+        return setProperty(key, value, true);
     }
 
     /**

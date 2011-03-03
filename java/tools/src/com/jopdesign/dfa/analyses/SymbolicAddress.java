@@ -20,9 +20,9 @@
 
 package com.jopdesign.dfa.analyses;
 
-import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 import com.jopdesign.common.misc.HashedString;
 import com.jopdesign.dfa.framework.BoundedSetFactory;
+import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 import org.apache.log4j.Logger;
 
 import java.util.HashMap;

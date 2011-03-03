@@ -56,7 +56,7 @@ import java.util.Vector;
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  */
 public class Report {
-    static final Logger logger = Logger.getLogger(Report.class);
+    static final Logger logger = Logger.getLogger(WCETTool.LOG_WCET_REPORT+".Report");
 
     private ReportConfig config;
     private InvokeDot dotInvoker = null;

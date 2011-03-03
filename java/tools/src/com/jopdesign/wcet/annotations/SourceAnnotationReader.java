@@ -70,7 +70,7 @@ import java.util.regex.Pattern;
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  */
 public class SourceAnnotationReader {
-    private static final Logger logger = Logger.getLogger(SourceAnnotationReader.class);
+    private static final Logger logger = Logger.getLogger(WCETTool.LOG_WCET_ANNOTATIONS+".SourceAnnotationReader");
 
     private WCETTool project;
 
@@ -103,7 +103,7 @@ public class SourceAnnotationReader {
             }
             LoopBound loopBound = SourceAnnotationReader.extractAnnotation(line);
             if (loopBound != null) {
-                Logger.getLogger(this.getClass()).info("Adding loop bound @ " + sourceLineNr + ": " + loopBound);
+                logger.info("Adding loop bound @ " + sourceLineNr + ": " + loopBound);
                 flowFacts.addLoopBound(sourceLineNr, loopBound);
             }
             lineNr++;

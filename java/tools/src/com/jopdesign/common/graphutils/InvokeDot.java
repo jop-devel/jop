@@ -20,6 +20,7 @@
 package com.jopdesign.common.graphutils;
 
 import com.jopdesign.common.config.Config;
+import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.AppInfoError;
 import org.apache.log4j.Logger;
 
@@ -41,7 +42,7 @@ import java.util.Arrays;
  */
 public class InvokeDot {
 
-    private static final Logger logger = Logger.getLogger(InvokeDot.class);
+    private static final Logger logger = Logger.getLogger(LogConfig.LOG_GRAPH+".InvokeDot");
     private static final String DEFAULT_CACHE_DIR = "dot-cache";
 
     public File getCacheFile(String filename) {
@@ -92,7 +93,7 @@ public class InvokeDot {
     private void runDot(File dotFile, File imageFile, String fmt) throws IOException {
         String[] cmd = {dotBinary, dotFile.getPath(), "-T" + fmt, "-o", imageFile.getPath()};
         Process p;
-        logger.info("Invoking dot: " + Arrays.toString(cmd));
+        logger.debug("Invoking dot: " + Arrays.toString(cmd));
         p = Runtime.getRuntime().exec(cmd);
         int exitCode = -1;
         try {

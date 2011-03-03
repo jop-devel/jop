@@ -176,7 +176,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		}
 	}
 
-	static final Logger logger = Logger.getLogger(RecursiveWcetAnalysis.class);
+	static final Logger logger = Logger.getLogger(WCETTool.LOG_WCET_ANALYSIS+".RecursiveWcetAnalysis");
 	private AppInfo appInfo;
 	private WCETProcessorModel processor;
 	private RecursiveAnalysis.RecursiveStrategy<Context, WcetCost> recursiveWCET;

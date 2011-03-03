@@ -20,6 +20,7 @@
 package com.jopdesign.wcet.uppaal;
 
 import com.jopdesign.common.config.Config;
+import com.jopdesign.wcet.WCETTool;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
@@ -41,7 +42,7 @@ import java.util.List;
 public class WcetSearch {
 	private File modelFile;
 	private File queryFile;
-	private Logger logger = Logger.getLogger(WcetSearch.class);
+	private Logger logger = Logger.getLogger(WCETTool.LOG_WCET_UPPAAL+".WcetSearch");
 	private double maxSolverTime = 0.0;
 	private Config config;
 	public double getMaxSolverTime() {

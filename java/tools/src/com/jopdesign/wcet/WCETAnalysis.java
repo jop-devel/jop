@@ -89,7 +89,7 @@ public class WCETAnalysis {
             wcetTool.setDfaTool(dfaTool);
         }
 
-        ExecHelper exec = new ExecHelper(setup.getConfig(), Logger.getLogger(WCETAnalysis.class));
+        ExecHelper exec = new ExecHelper(setup.getConfig(), Logger.getLogger(WCETTool.LOG_WCET+".WCETAnalysis"));
         exec.dumpConfig();           /* Load config */
         exec.checkLibs();                /* check environment */
 

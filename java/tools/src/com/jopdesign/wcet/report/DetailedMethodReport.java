@@ -39,7 +39,7 @@ public class DetailedMethodReport {
     private WCETTool project;
     private ReportConfig config;
 
-    private static final Logger logger = Logger.getLogger(DetailedMethodReport.class);
+    private static final Logger logger = Logger.getLogger(WCETTool.LOG_WCET_REPORT+".DetailedMethodReport");
 
     public DetailedMethodReport(ReportConfig c,
                                 WCETTool p, MethodInfo m,

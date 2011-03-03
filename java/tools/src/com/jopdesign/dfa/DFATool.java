@@ -81,6 +81,10 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     private static final String prologueName = "<prologue>";
     private static final String prologueSig = "()V";
 
+    // Root logger
+    public static final String LOG_DFA = "dfa";
+    public static final String LOG_DFA_ANALYSES = "dfa.analyses";
+
     private AppInfo appInfo;
 
     private List<InstructionHandle> statements;

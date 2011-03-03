@@ -23,7 +23,6 @@ package com.jopdesign.common.logger;
 
 import com.jopdesign.common.config.Config;
 import org.apache.log4j.Appender;
-import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.HTMLLayout;
 import org.apache.log4j.Level;
@@ -74,6 +73,8 @@ public class LogConfig {
      */
     public static final String LOG_CFG = "common.appinfo.code.cfg";
 
+    public static final String LOG_GRAPH = "common.graph";
+
     /**
      * Setup the logger using configuration options.
      * You may want to call {@link #setReportLoggers(File, File)}
@@ -87,24 +88,25 @@ public class LogConfig {
         boolean debug = config.getOption(Config.DEBUG);
         boolean quiet = config.getOption(Config.QUIET);
 
-        ConsoleAppender defaultAppender;
-
-        if (verbose) {
-            defaultAppender = new ConsoleAppender(new PatternLayout("%5r %-5p [%c] %m\n"), "System.err");
-        } else {
-            defaultAppender = new ConsoleAppender(new ConsoleLayout("%5r %-5p [%c{1}] %m\n"), "System.err");
-        }
-        defaultAppender.setName("ACONSOLE");
-
         Level defaultLevel = Level.INFO;
-
         if (debug) {
-			defaultLevel = Level.DEBUG;
+	    defaultLevel = Level.DEBUG;
         } else if ( quiet ) {
             defaultLevel = Level.WARN;
-		}
+	}
+
+        FilteredConsoleAppender defaultAppender;
+
+        if (verbose) {
+            defaultAppender = new FilteredConsoleAppender(new PatternLayout("%5r %-5p [%c] %m\n"), "System.err");
+        } else {
+            defaultAppender = new FilteredConsoleAppender(new ConsoleLayout("%5r %-5p [%c{1}] %m\n"), "System.err");
+        }
+        defaultAppender.setName("ACONSOLE");
         defaultAppender.setThreshold(defaultLevel);
-		Logger.getRootLogger().addAppender(defaultAppender);
+        defaultAppender.setConfig(config);
+        
+	Logger.getRootLogger().addAppender(defaultAppender);
         Logger.getRootLogger().setLevel(Level.ALL);
 
         PropertyConfigurator.configure(config.getProperties());
@@ -128,6 +130,7 @@ public class LogConfig {
             // TODO maybe make level of info logger configurable (one of INFO, DEBUG, ALL)?
             iapp.setThreshold(Level.ALL);
             iapp.setName("AINFO");
+            
             Logger.getRootLogger().addAppender(iapp);
         }
     }

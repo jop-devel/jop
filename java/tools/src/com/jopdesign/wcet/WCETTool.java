@@ -96,6 +96,12 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     public static final String LOG_WCET = "wcet";
     // logger for project related stuff (main, config, eventhandler,..)
     public static final String LOG_WCET_PROJECT = "wcet.project";
+    // logger for various sub-packages
+    public static final String LOG_WCET_ANALYSIS = "wcet.analysis";
+    public static final String LOG_WCET_ANNOTATIONS = "wcet.annotations";
+    public static final String LOG_WCET_REPORT = "wcet.report";
+    public static final String LOG_WCET_IPET = "wcet.ipet";
+    public static final String LOG_WCET_UPPAAL = "wcet.uppaal";
 
     public static final Logger logger = Logger.getLogger(LOG_WCET_PROJECT + ".WCETTool");
     /* special logger */
