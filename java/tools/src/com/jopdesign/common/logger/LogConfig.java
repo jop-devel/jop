@@ -89,8 +89,10 @@ public class LogConfig {
         boolean quiet = config.getOption(Config.QUIET);
 
         Level defaultLevel = Level.INFO;
+        Level rootLevel = Level.DEBUG;
         if (debug) {
 	    defaultLevel = Level.DEBUG;
+            rootLevel = Level.ALL;
         } else if ( quiet ) {
             defaultLevel = Level.WARN;
 	}
@@ -107,7 +109,7 @@ public class LogConfig {
         defaultAppender.setConfig(config);
         
 	Logger.getRootLogger().addAppender(defaultAppender);
-        Logger.getRootLogger().setLevel(Level.ALL);
+        Logger.getRootLogger().setLevel(rootLevel);
 
         PropertyConfigurator.configure(config.getProperties());
     }
