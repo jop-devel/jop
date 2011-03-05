@@ -605,6 +605,9 @@ public class ControlFlowGraph {
         Instruction lastInstr = bb.getLastInstruction().getInstruction();
         InstructionHandle theInvoke = bb.getTheInvokeInstruction();
 
+        // This needs to be done before creating the Node, else blocks.indexOf returns -1
+        blocks.add(insertBefore, bb);
+
         if (theInvoke != null) {
             n = new InvokeNode(bb, theInvoke);
         } else if (appInfo.getProcessorModel().isImplementedInJava(lastInstr)) {
@@ -615,7 +618,6 @@ public class ControlFlowGraph {
             n = new BasicBlockNode(bb);
         }
 
-        blocks.add(insertBefore, bb);
         graph.addVertex(n);
         return n;
     }
