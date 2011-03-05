@@ -53,21 +53,19 @@ public class BoundedSetFactory<V> {
 		return top;
 	}
 	
-	public static interface BoundedSet<V>  {
-		public BoundedSet<V> newBoundedSet();
+	public interface BoundedSet<V>  {
+		BoundedSet<V> newBoundedSet();
 		
-		public void add(V el);
-		public void addAll(BoundedSet<V> other);
-		public BoundedSet<V> join(BoundedSet<V> other);
-		public boolean isSaturated();
+		void add(V el);
+		void addAll(BoundedSet<V> other);
+		BoundedSet<V> join(BoundedSet<V> other);
+		boolean isSaturated();
 		/** precondition: not (isTop()) */
-		public Set<V> getSet();
-		public int getSize();
-		public boolean isSubset(BoundedSet<V> otherEntry);
-		/**
-		 * @return
-		 */
-		public int getLimit();
+                Set<V> getSet();
+		int getSize();
+		boolean isSubset(BoundedSet<V> otherEntry);
+
+                int getLimit();
 	}
 	
 	/** 

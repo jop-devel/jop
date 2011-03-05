@@ -21,52 +21,52 @@
 package com.jopdesign.dfa.analyses;
 
 public class Location {
-	
-	public final int stackLoc;
-	public final String heapLoc;
-	private final int hash;
-	
-	public Location(int loc) {
-		if(loc < 0) throw new AssertionError("Invalid stack ptr: "+loc);
-		stackLoc = loc;
-		heapLoc = "";
-		hash = stackLoc+31*heapLoc.hashCode();
-	}
 
-	public Location(String loc) {
-		stackLoc = -1;
-		heapLoc = loc;
-		hash = stackLoc+31*heapLoc.hashCode();
-	}
+    public final int stackLoc;
+    public final String heapLoc;
+    private final int hash;
 
-	@SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
+    public Location(int loc) {
+        if (loc < 0) throw new AssertionError("Invalid stack ptr: " + loc);
+        stackLoc = loc;
+        heapLoc = "";
+        hash = stackLoc + 31 * heapLoc.hashCode();
+    }
+
+    public Location(String loc) {
+        stackLoc = -1;
+        heapLoc = loc;
+        hash = stackLoc + 31 * heapLoc.hashCode();
+    }
+
+    @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
     public Location(Location loc) {
-		stackLoc = loc.stackLoc;
-		heapLoc = loc.heapLoc;
-		hash = loc.hash;
-	}
-	
-	public boolean equals(Object o) {
-        if (!(o instanceof Location)) return false;
-		Location loc = (Location) o;
-		return (stackLoc == loc.stackLoc)
-			&& heapLoc.equals(loc.heapLoc);
-	}
-			
-	public int hashCode() {
-		return hash;
-	}
-	
-	public String toString() {
-		if (! isHeapLoc()) {
-			return "stack["+stackLoc+"]";
-		} else {
-			return heapLoc;				
-		}
-	}
+        stackLoc = loc.stackLoc;
+        heapLoc = loc.heapLoc;
+        hash = loc.hash;
+    }
 
-	public boolean isHeapLoc() {
-		return stackLoc < 0;
-	}
+    public boolean equals(Object o) {
+        if (!(o instanceof Location)) return false;
+        Location loc = (Location) o;
+        return (stackLoc == loc.stackLoc)
+                && heapLoc.equals(loc.heapLoc);
+    }
+
+    public int hashCode() {
+        return hash;
+    }
+
+    public String toString() {
+        if (!isHeapLoc()) {
+            return "stack[" + stackLoc + "]";
+        } else {
+            return heapLoc;
+        }
+    }
+
+    public boolean isHeapLoc() {
+        return stackLoc < 0;
+    }
 
 }

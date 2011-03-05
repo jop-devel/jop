@@ -369,7 +369,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 ////				System.exit(1);
 //			}
 			
-			DFATool p = interpreter.getProgram();
+			DFATool p = interpreter.getDFATool();
 
             for (String receiver : receivers) {
                 String heapLoc = receiver + "." + instr.getFieldName(context.constPool);
@@ -408,7 +408,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 ////				System.exit(-1);
 //			}
 			
-			DFATool p = interpreter.getProgram();
+			DFATool p = interpreter.getDFATool();
 
             for (String receiver : receivers) {
                 String heapLoc = receiver + "." + instr.getFieldName(context.constPool);
@@ -438,7 +438,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 			
 			GETSTATIC instr = (GETSTATIC)instruction;
 			
-			DFATool p = interpreter.getProgram();
+			DFATool p = interpreter.getDFATool();
 			String heapLoc = instr.getClassName(context.constPool)+"."+instr.getFieldName(context.constPool);
             ClassInfo classInfo = p.classForField(heapLoc);
 
@@ -465,7 +465,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 			
 			PUTSTATIC instr = (PUTSTATIC)instruction;
 			
-			DFATool p = interpreter.getProgram();
+			DFATool p = interpreter.getDFATool();
 			String heapLoc = instr.getClassName(context.constPool)+"."+instr.getFieldName(context.constPool);			
             ClassInfo classInfo = p.classForField(heapLoc);
 
@@ -884,7 +884,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 
 		case Constants.CHECKCAST: {
 
-			DFATool p = interpreter.getProgram();
+			DFATool p = interpreter.getDFATool();
 			CHECKCAST instr = (CHECKCAST)instruction;
 
             for (TypeMapping m : in) {
@@ -926,7 +926,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 			InvokeInstruction instr = (InvokeInstruction)instruction;
 			int argSize = MethodHelper.getArgSize(instr, context.constPool);
 
-			DFATool p = interpreter.getProgram();
+			DFATool p = interpreter.getDFATool();
 			String constClassName = instr.getClassName(context.constPool);
 			ClassInfo constClass = p.getAppInfo().getClassInfo(constClassName);
 			
@@ -960,7 +960,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
             for (String receiver : receivers) {
                 // find receiving method
                 String signature = instr.getMethodName(context.constPool) + instr.getSignature(context.constPool);
-                MethodInfo impl  = interpreter.getProgram().getMethod(receiver, signature);
+                MethodInfo impl  = interpreter.getDFATool().getMethod(receiver, signature);
                 if(impl == null) {
                 	throw new RuntimeException("Could not find implementation for: " + receiver + "#" + signature);
                 }
@@ -980,7 +980,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 
 			String receiver = instr.getClassName(context.constPool);
 			String signature = instr.getMethodName(context.constPool)+instr.getSignature(context.constPool);
-            MethodInfo impl  = interpreter.getProgram().getMethod(receiver, signature);				
+            MethodInfo impl  = interpreter.getDFATool().getMethod(receiver, signature);
             if (impl == null) {
             	throw new RuntimeException("Cannot find implementation of " + receiver + "." + signature);
             } else if (impl.isPrivate() && ! impl.isStatic()) {
@@ -1090,7 +1090,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 		
 		boolean threaded = false;	
 		
-		DFATool p = interpreter.getProgram();
+		DFATool p = interpreter.getDFATool();
         if (p.getAppInfo().getClassInfo(receiver).isSubclassOf(p.getAppInfo().getClassInfo("joprt.RtThread")) &&
                 "run()V".equals(method.getMemberSignature())) {
             c.createThread();
@@ -1156,7 +1156,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 			Map<InstructionHandle, ContextMap<CallString, Set<TypeMapping>>> state,
 			ContextMap<CallString, Set<TypeMapping>> result) {
 
-		DFATool p = interpreter.getProgram();
+		DFATool p = interpreter.getDFATool();
 		MethodInfo method = p.getMethod(methodName);
 		if(method == null) {
 			throw new RuntimeException("DFA: cannot find static method " + methodName);
@@ -1220,7 +1220,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 			Interpreter<CallString, Set<TypeMapping>> interpreter,
 			Map<InstructionHandle, ContextMap<CallString, Set<TypeMapping>>> state) {
 		
-		DFATool p = interpreter.getProgram();
+		DFATool p = interpreter.getDFATool();
 		
 		boolean modified = true;
 		while (modified) {

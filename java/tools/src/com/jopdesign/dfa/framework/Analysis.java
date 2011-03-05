@@ -28,35 +28,37 @@ import java.util.Map;
 
 public interface Analysis<K, V> {
 
-	ContextMap<K, V> bottom();
+    ContextMap<K, V> bottom();
 
-	ContextMap<K, V>	initial(InstructionHandle stmt);
+    ContextMap<K, V> initial(InstructionHandle stmt);
 
-	/**
-	 * Initialize the analysis
-	 * @param entry The entry method (main)
-	 * @param context The initial context
-	 */
-    void				initialize(MethodInfo entry, Context context);
-	
-	ContextMap<K, V> transfer(InstructionHandle stmt,
+    /**
+     * Initialize the analysis
+     *
+     * @param entry   The entry method (main)
+     * @param context The initial context
+     */
+    void initialize(MethodInfo entry, Context context);
+
+    ContextMap<K, V> transfer(InstructionHandle stmt,
                               FlowEdge edge,
                               ContextMap<K, V> input,
                               Interpreter<K, V> interpreter,
                               Map<InstructionHandle, ContextMap<K, V>> state);
-	/**
-	 * {@code compare(s1,s2)} returns {@code true} if and only if both s1 and s2 have the same context
-	 * and s1 \subseteq s2 (s1 `join` s2 = s2)
-	 *
+
+    /**
+     * {@code compare(s1,s2)} returns {@code true} if and only if both s1 and s2 have the same context
+     * and s1 \subseteq s2 (s1 `join` s2 = s2)
+     *
      * @param s1
      * @param s2
      * @return
      */
-    boolean		 	compare(ContextMap<K, V> s1, ContextMap<K, V> s2);
+    boolean compare(ContextMap<K, V> s1, ContextMap<K, V> s2);
 
-	ContextMap<K, V> join(ContextMap<K, V> s1, ContextMap<K, V> s2);
-	
-	Map			 	getResult();
+    ContextMap<K, V> join(ContextMap<K, V> s1, ContextMap<K, V> s2);
 
-	void		    printResult(DFATool program);
+    Map getResult();
+
+    void printResult(DFATool program);
 }

@@ -28,28 +28,28 @@ import org.apache.bcel.generic.Type;
 
 public class MethodHelper {
 
-	public static int getArgSize(InvokeInstruction m, ConstantPoolGen cp) {
-		int retval = 0;
-		if (!(m instanceof INVOKESTATIC)) {
-			retval += 1;
-		}
+    public static int getArgSize(InvokeInstruction m, ConstantPoolGen cp) {
+        int retval = 0;
+        if (!(m instanceof INVOKESTATIC)) {
+            retval += 1;
+        }
         Type[] at = m.getArgumentTypes(cp);
         for (Type type : at) {
             retval += type.getSize();
         }
         return retval;
-	}
+    }
 
-	public static int getArgSize(MethodInfo m) {
-		int retval = 0;
-		if (!m.isStatic()) {
-			retval += 1;
-		}	
+    public static int getArgSize(MethodInfo m) {
+        int retval = 0;
+        if (!m.isStatic()) {
+            retval += 1;
+        }
         Type[] at = m.getArgumentTypes();
         for (Type type : at) {
             retval += type.getSize();
         }
         return retval;
-	}
+    }
 
 }

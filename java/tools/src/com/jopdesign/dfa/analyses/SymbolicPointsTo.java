@@ -460,7 +460,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
 			BoundedSet<SymbolicAddress> objectMapping = in.getStack(context.stackPtr-2);
 			BoundedSet<SymbolicAddress> newMapping;
-			LoopBounds bounds = interpreter.getProgram().getLoopBounds();
+			LoopBounds bounds = interpreter.getDFATool().getLoopBounds();
 			if(executedOnce.query(stmt)) {
 				newMapping = bsFactory.singleton(SymbolicAddress.newName());
 			} else if(objectMapping.isSaturated() || bounds == null) {
@@ -481,7 +481,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			}
 				
 //				Doesn't work, but is probably stupid anyway :(
-//  			LoopBounds bounds = interpreter.getProgram().getLoopBounds();
+//  			LoopBounds bounds = interpreter.getDFATool().getLoopBounds();
 //              bounds.getArraySizes().get(stmt).get(context.callString);
 //			    newMapping = bsFactory.empty();
 //				Interval[] sizeBounds = { new Interval(2,3) }; 
@@ -714,7 +714,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.INVOKESTATIC:
 		case Constants.INVOKESPECIAL: {
 			
-			DFATool p = interpreter.getProgram();
+			DFATool p = interpreter.getDFATool();
 			Set<String> receivers = p.getReceivers(stmt, context.callString);
 			retval.put(context.callString, new SymbolicAddressMap(bsFactory));
 			
@@ -820,7 +820,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			Map<InstructionHandle, ContextMap<CallString, SymbolicAddressMap>> state,
 			ContextMap<CallString, SymbolicAddressMap> retval) {
 
-		DFATool p = interpreter.getProgram();
+		DFATool p = interpreter.getDFATool();
 		MethodInfo method = p.getMethod(methodName);
 		//methodName = method.getSignature().toString();
 

@@ -30,15 +30,15 @@ import java.util.Set;
 public class Interpreter<K, V> {
 
     private Analysis<K, V> analysis;
-    private DFATool program;
+    private DFATool dfaTool;
 
     public Interpreter(Analysis<K, V> a, DFATool p) {
-        program = p;
+        dfaTool = p;
         analysis = a;
     }
 
-    public DFATool getProgram() {
-        return program;
+    public DFATool getDFATool() {
+        return dfaTool;
     }
 
     public Map<InstructionHandle, ContextMap<K, V>> interpret(Context context,
@@ -49,7 +49,7 @@ public class Interpreter<K, V> {
 
         LinkedList<FlowEdge> worklist = new LinkedList<FlowEdge>();
 
-        for (FlowEdge f : program.getFlow().getOutEdges(entry)) {
+        for (FlowEdge f : dfaTool.getFlow().getOutEdges(entry)) {
             if (entry.equals(f.getTail())) {
                 worklist.add(new FlowEdge(f, context));
             }
@@ -58,7 +58,7 @@ public class Interpreter<K, V> {
         Map<InstructionHandle, ContextMap<K, V>> result = state;
 
         if (start) {
-            for (InstructionHandle s : program.getStatements()) {
+            for (InstructionHandle s : dfaTool.getStatements()) {
                 result.put(s, analysis.bottom());
             }
             result.put(entry, analysis.initial(entry));
@@ -81,7 +81,7 @@ public class Interpreter<K, V> {
                 ContextMap<K, V> joinedSet = analysis.join(headSet, transferred);
                 result.put(head, joinedSet);
 
-                Set<FlowEdge> outEdges = program.getFlow().getOutEdges(head);
+                Set<FlowEdge> outEdges = dfaTool.getFlow().getOutEdges(head);
                 if (outEdges != null) {
                     for (FlowEdge outEdge : outEdges) {
                         FlowEdge f = new FlowEdge(outEdge, transferred.getContext());

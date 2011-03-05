@@ -29,27 +29,27 @@ import java.util.Set;
 
 public class Flow {
 
-	private Map<InstructionHandle, Set<FlowEdge>> flow;
-	
-	public Flow() {
-		flow = new LinkedHashMap<InstructionHandle, Set<FlowEdge>>();
-	}
-	
-	public void addEdge(FlowEdge f) {
-		Set<FlowEdge> set = flow.get(f.getTail());
-		if (set == null) {
-			set = new LinkedHashSet<FlowEdge>();
-			flow.put(f.getTail(), set);	
-		}
-		set.add(f);
-	}
-	
-	public Set<FlowEdge> getOutEdges(InstructionHandle h) {
-		return flow.get(h);
-	}
-	
-	public String toString() {
-		return flow.toString();
-	}
-	
+    private Map<InstructionHandle, Set<FlowEdge>> flow;
+
+    public Flow() {
+        flow = new LinkedHashMap<InstructionHandle, Set<FlowEdge>>();
+    }
+
+    public void addEdge(FlowEdge f) {
+        Set<FlowEdge> set = flow.get(f.getTail());
+        if (set == null) {
+            set = new LinkedHashSet<FlowEdge>();
+            flow.put(f.getTail(), set);
+        }
+        set.add(f);
+    }
+
+    public Set<FlowEdge> getOutEdges(InstructionHandle h) {
+        return flow.get(h);
+    }
+
+    public String toString() {
+        return flow.toString();
+    }
+
 }

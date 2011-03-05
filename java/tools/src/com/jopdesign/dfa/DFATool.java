@@ -27,8 +27,8 @@ import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.EmptyTool;
 import com.jopdesign.common.FieldInfo;
-import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MemberInfo.AccessType;
+import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
@@ -37,12 +37,8 @@ import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.HashedString;
-import com.jopdesign.common.misc.JavaClassFormatError;
-import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.tools.ClinitOrder;
-import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.Descriptor;
-import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.ValueMapping;
@@ -228,17 +224,17 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         instr = new INVOKESTATIC(idx);
         prologue.append(instr);
 
-//		// invoke startMission() to ensure analysis of threads
-//		idx = prologueCP.addMethodref("joprt.RtThread", "startMission", "()V");
-//		instr = new INVOKESTATIC(idx);
-//		prologue.append(instr);
+//      // invoke startMission() to ensure analysis of threads
+//      idx = prologueCP.addMethodref("joprt.RtThread", "startMission", "()V");
+//      instr = new INVOKESTATIC(idx);
+//      prologue.append(instr);
 
         instr = new NOP();
         prologue.append(instr);
 
         prologue.setPositions(true);
 
-// 		System.out.println(prologue);
+//      System.out.println(prologue);
 
         // add prologue to program structure
         for (Iterator l = prologue.iterator(); l.hasNext();) {
@@ -346,7 +342,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
      * dynamic type and the method signature
      *
      * @param recvStr the dynamic type of the receiver
-     * @param sigstr the signature (without class) of the method.
+     * @param sigStr the signature (without class) of the method.
      * @return the actually invoked method, or {@code null} if not found
      */
     public MethodInfo getMethod(String recvStr, String sigStr) {
@@ -355,18 +351,18 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     	return receiver.getMethodInfoInherited(methodSig, true);
     }
 
-	/**
+    /**
      * Helper method to find the actually invoked method given the
      * dynamic type and the method signature
      * 
-	 * @param signature FQ signature of the method
-	 * @return the invoked method, or {@code null} if not found
-	 */
-	public MethodInfo getMethod(String signature) {
-		Signature sig = Signature.parse(signature);
-    	ClassInfo receiver = appInfo.getClassInfo(sig.getClassName());
+     * @param signature FQ signature of the method
+     * @return the invoked method, or {@code null} if not found
+     */
+    public MethodInfo getMethod(String signature) {
+        Signature sig = Signature.parse(signature);
+        ClassInfo receiver = appInfo.getClassInfo(sig.getClassName());
     	return receiver.getMethodInfoInherited(sig, true);
-	}
+    }
 	
     public ClassInfo classForField(String fieldName) {
         Signature s = Signature.parse(fieldName, true);

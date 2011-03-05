@@ -26,53 +26,54 @@ import org.apache.bcel.generic.ConstantPoolGen;
 
 public class Context {
 
-	public int stackPtr;
-	public int syncLevel;
-	public boolean threaded;
+    public int stackPtr;
+    public int syncLevel;
+    public boolean threaded;
     // TODO maybe should be removed, use method.getMethodInfo().getConstantPoolGen() instead?
-	public ConstantPoolGen constPool;
-	public MethodRef method;
-	public CallString callString;
-	
-	public Context() {
-		stackPtr = -1;
-		syncLevel = -1;
-		threaded = _threaded;
-		constPool = new ConstantPoolGen();
-		method = null;
-		callString = CallString.EMPTY;
-	}
+    public ConstantPoolGen constPool;
+    public MethodRef method;
+    public CallString callString;
 
-	public Context(Context c) {
-		stackPtr = c.stackPtr;
-		syncLevel = c.syncLevel;
-		threaded = c.threaded;
-		constPool = c.constPool;
-		method = c.method;
-		callString = c.callString;
-	}
-	
-	private static boolean _threaded = false;
-	public void createThread() {
-		_threaded = true;
-		threaded = true;
-	}
-	
-	public static boolean isThreaded() {
-		return _threaded;
-	}
+    public Context() {
+        stackPtr = -1;
+        syncLevel = -1;
+        threaded = _threaded;
+        constPool = new ConstantPoolGen();
+        method = null;
+        callString = CallString.EMPTY;
+    }
 
-	public int hashCode() {
-		return 1+31*stackPtr;
-	}
-	
-	public boolean equals(Object o) {
+    public Context(Context c) {
+        stackPtr = c.stackPtr;
+        syncLevel = c.syncLevel;
+        threaded = c.threaded;
+        constPool = c.constPool;
+        method = c.method;
+        callString = c.callString;
+    }
+
+    private static boolean _threaded = false;
+
+    public void createThread() {
+        _threaded = true;
+        threaded = true;
+    }
+
+    public static boolean isThreaded() {
+        return _threaded;
+    }
+
+    public int hashCode() {
+        return 1 + 31 * stackPtr;
+    }
+
+    public boolean equals(Object o) {
         if (!(o instanceof Context)) return false;
-		final Context c = (Context)o;
-		if ((stackPtr == c.stackPtr || stackPtr < 0 || c.stackPtr < 0)) {
-			return true;
-		}		
-		return false;
-	}
-	
+        final Context c = (Context) o;
+        if ((stackPtr == c.stackPtr || stackPtr < 0 || c.stackPtr < 0)) {
+            return true;
+        }
+        return false;
+    }
+
 }

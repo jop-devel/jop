@@ -355,7 +355,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
             case Constants.ARRAYLENGTH: {
                 filterSet(in, result, context.stackPtr - 1);
 
-                DFATool p = interpreter.getProgram();
+                DFATool p = interpreter.getDFATool();
                 Set<String> receivers = p.getReceivers(stmt, context.callString);
                 Location location = new Location(context.stackPtr - 1);
                 boolean valid = false;
@@ -390,7 +390,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
 //			System.out.println(context.stackPtr+","+fieldSize+": "+result);
 
-                DFATool p = interpreter.getProgram();
+                DFATool p = interpreter.getDFATool();
                 Set<String> receivers = p.getReceivers(stmt, context.callString);
                 if (receivers == null) {
                     System.out.println("no receivers at: " + context.callString.toStringList() + context.method + stmt);
@@ -427,7 +427,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
                 filterSet(in, result, context.stackPtr - 1);
 
-                DFATool p = interpreter.getProgram();
+                DFATool p = interpreter.getDFATool();
                 Set<String> receivers = p.getReceivers(stmt, context.callString);
 
                 Location location = new Location(context.stackPtr - 1);
@@ -474,7 +474,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                     }
                 }
 
-                DFATool p = interpreter.getProgram();
+                DFATool p = interpreter.getDFATool();
                 Set<String> receivers = p.getReceivers(stmt, context.callString);
                 for (String fieldName : receivers) {
                     if (p.containsField(fieldName)) {
@@ -497,7 +497,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                 result = new HashMap<Location, ValueMapping>(in);
                 retval.put(context.callString, result);
 
-                DFATool p = interpreter.getProgram();
+                DFATool p = interpreter.getDFATool();
                 Set<String> receivers = p.getReceivers(stmt, context.callString);
                 Location location = new Location(context.stackPtr);
                 boolean valid = false;
@@ -530,7 +530,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                     }
                 }
 
-                DFATool p = interpreter.getProgram();
+                DFATool p = interpreter.getDFATool();
                 Set<String> receivers = p.getReceivers(stmt, context.callString);
                 if (receivers == null) {
                     System.out.println("no receivers at: " + context.callString.toStringList() + context.method + stmt);
@@ -561,7 +561,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
                 filterSet(in, result, context.stackPtr - 2);
 
-                DFATool p = interpreter.getProgram();
+                DFATool p = interpreter.getDFATool();
                 Location location = new Location(context.stackPtr - 2);
                 boolean valid = false;
                 Set<String> receivers = p.getReceivers(stmt, context.callString);
@@ -1045,7 +1045,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
             case Constants.INVOKEINTERFACE:
             case Constants.INVOKESTATIC:
             case Constants.INVOKESPECIAL: {
-                DFATool p = interpreter.getProgram();
+                DFATool p = interpreter.getDFATool();
                 Set<String> receivers = p.getReceivers(stmt, context.callString);
                 if (receivers == null) {
                     System.out.println(context.method + ": invoke " + instruction.toString(context.constPool.getConstantPool()) + "(" + stmt.toString(true) + ")" + " unknown receivers");
@@ -1350,7 +1350,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                           Map<InstructionHandle, ContextMap<CallString, Map<Location, ValueMapping>>> state,
                           Map<CallString, Map<Location, ValueMapping>> result) {
 
-        DFATool p = interpreter.getProgram();
+        DFATool p = interpreter.getDFATool();
         MethodInfo method = p.getMethod(methodName);
         //methodName = method.getSignature().toString();
 

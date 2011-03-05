@@ -24,31 +24,31 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ContextMap<K, V> extends HashMap<K, V> {
-	
-	private static final long serialVersionUID = 1L;
-	
-	private Context context;
-	
-	public ContextMap(Context context, Map<K, V> map) {
-		super(map);
-		this.context = context;
-	}
 
-	public ContextMap(ContextMap<K, V> map) {
-		super(map);
-		this.context = map.context;
-	}
+    private static final long serialVersionUID = 1L;
 
-	public Context getContext() {
-		return context;
-	}
+    private Context context;
 
-	public void setContext(Context context) {
-		this.context = context;
-	}
+    public ContextMap(Context context, Map<K, V> map) {
+        super(map);
+        this.context = context;
+    }
 
-	@SuppressWarnings("unchecked")
-	public void add(Object elem) {
-		put((K)elem, (V)elem);
-	}
+    public ContextMap(ContextMap<K, V> map) {
+        super(map);
+        this.context = map.context;
+    }
+
+    public Context getContext() {
+        return context;
+    }
+
+    public void setContext(Context context) {
+        this.context = context;
+    }
+
+    @SuppressWarnings("unchecked")
+    public void add(Object elem) {
+        put((K) elem, (V) elem);
+    }
 }

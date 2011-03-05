@@ -24,89 +24,91 @@ import org.apache.bcel.generic.InstructionHandle;
 
 public class FlowEdge {
 
-	public static final int NORMAL_EDGE = 0;
-	public static final int TRUE_EDGE = 1;
-	public static final int FALSE_EDGE = 2;	
-	
-	private final InstructionHandle tail;
-	private final InstructionHandle head;
-	private final Context context;
-	private final int type;
-	
-	public FlowEdge(InstructionHandle tail, InstructionHandle head, int type) {
-		this.tail = tail;
-		this.head = head;
-		this.context = null;
-		this.type = type;
-	}
+    public static final int NORMAL_EDGE = 0;
+    public static final int TRUE_EDGE = 1;
+    public static final int FALSE_EDGE = 2;
 
-	public FlowEdge(FlowEdge f, Context c) {
-		this.tail = f.tail;
-		this.head = f.head;
-		this.context = c;
-		this.type = f.type;
-	}
+    private final InstructionHandle tail;
+    private final InstructionHandle head;
+    private final Context context;
+    private final int type;
 
-	public InstructionHandle getHead() {
-		return head;
-	}
+    public FlowEdge(InstructionHandle tail, InstructionHandle head, int type) {
+        this.tail = tail;
+        this.head = head;
+        this.context = null;
+        this.type = type;
+    }
 
-	public InstructionHandle getTail() {
-		return tail;
-	}
+    @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
+    public FlowEdge(FlowEdge f, Context c) {
+        this.tail = f.tail;
+        this.head = f.head;
+        this.context = c;
+        this.type = f.type;
+    }
 
-	public Context getContext() {
-		return context;
-	}
+    public InstructionHandle getHead() {
+        return head;
+    }
 
-	public int getType() {
-		return type;
-	}
-	
-	public String toString() {
-		return tail.toString(false)+" -> "+head.toString(false);
-	}
+    public InstructionHandle getTail() {
+        return tail;
+    }
 
-	@Override
-	public int hashCode() {
-		final int PRIME = 31;
-		int result = 1;
-		result = PRIME * result + ((context == null) ? 0 : context.hashCode());
-		result = PRIME * result + ((head == null) ? 0 : head.getInstruction().hashCode());
-		result = PRIME * result + ((head == null) ? 0 : head.getPosition());
-		result = PRIME * result + ((tail == null) ? 0 : tail.getInstruction().hashCode());
-		result = PRIME * result + ((tail == null) ? 0 : tail.getPosition());
-		result = PRIME * result + type;
-		return result;
-	}
+    public Context getContext() {
+        return context;
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		final FlowEdge other = (FlowEdge) obj;
-		if (context == null) {
-			if (other.context != null)
-				return false;
-		} else if (!context.equals(other.context))
-			return false;
-		if (head == null) {
-			if (other.head != null)
-				return false;
-		} else if (!head.equals(other.head))
-			return false;
-		if (tail == null) {
-			if (other.tail != null)
-				return false;
-		} else if (!tail.equals(other.tail))
-			return false;
-		if (type != other.type)
-			return false;
-		return true;
-	}
+    public int getType() {
+        return type;
+    }
+
+    public String toString() {
+        return tail.toString(false) + " -> " + head.toString(false);
+    }
+
+    @Override
+    public int hashCode() {
+        final int PRIME = 31;
+        int result = 1;
+        result = PRIME * result + ((context == null) ? 0 : context.hashCode());
+        result = PRIME * result + ((head == null) ? 0 : head.getInstruction().hashCode());
+        result = PRIME * result + ((head == null) ? 0 : head.getPosition());
+        result = PRIME * result + ((tail == null) ? 0 : tail.getInstruction().hashCode());
+        result = PRIME * result + ((tail == null) ? 0 : tail.getPosition());
+        result = PRIME * result + type;
+        return result;
+    }
+
+    @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        final FlowEdge other = (FlowEdge) obj;
+        if (context == null) {
+            if (other.context != null)
+                return false;
+        } else if (!context.equals(other.context))
+            return false;
+        if (head == null) {
+            if (other.head != null)
+                return false;
+        } else if (!head.equals(other.head))
+            return false;
+        if (tail == null) {
+            if (other.tail != null)
+                return false;
+        } else if (!tail.equals(other.tail))
+            return false;
+        if (type != other.type)
+            return false;
+        return true;
+    }
 
 }
