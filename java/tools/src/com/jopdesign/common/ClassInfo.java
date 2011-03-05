@@ -97,7 +97,7 @@ public final class ClassInfo extends MemberInfo {
         // we create all FieldInfos and MethodInfos now and save a lot of trouble later
         for (Method m : cgMethods) {
             MethodInfo method = new MethodInfo(this, new MethodGen(m, classGen.getClassName(), cpg));
-            methods.put(method.getMemberSignature(), method);
+            methods.put(method.getMethodSignature(), method);
         }
         for (Field f : cgFields) {
             FieldInfo field = new FieldInfo(this, new FieldGen(f, cpg));
@@ -730,7 +730,7 @@ public final class ClassInfo extends MemberInfo {
     }
 
     public MethodInfo getMethodInfo(Signature signature) {
-        return getMethodInfo(signature.getMemberSignature());
+        return getMethodInfo(signature.getMethodSignature());
     }
 
     /**
@@ -844,7 +844,7 @@ public final class ClassInfo extends MemberInfo {
         Method[] methods = classGen.getMethods();
         for (int i = 0; i < methods.length; i++) {
             Method m = methods[i];
-            String s = Signature.getMemberSignature(m.getName(), m.getSignature());
+            String s = Signature.getMethodSignature(m.getName(), m.getSignature());
             if ( s.equals(memberSignature) ) {
                 return i;
             }
@@ -917,18 +917,18 @@ public final class ClassInfo extends MemberInfo {
      * @return the new method or an existing method with that signature.
      */
     public MethodInfo createMethod(Signature signature, String[] argNames, InstructionList code) {
-        MethodInfo method = methods.get(signature.getMemberSignature());
+        MethodInfo method = methods.get(signature.getMethodSignature());
         if ( method != null ) {
             return method;
         }
 
-        Descriptor desc = signature.getMemberDescriptor();
+        Descriptor desc = signature.getDescriptor();
         int flags = (code == null) ? Constants.ACC_ABSTRACT : 0;
 
         method = new MethodInfo(this, new MethodGen(flags, desc.getType(), desc.getArgumentTypes(), argNames,
                 signature.getMemberName(), classGen.getClassName(), code, cpg));
 
-        methods.put(signature.getMemberSignature(), method);
+        methods.put(signature.getMethodSignature(), method);
         classGen.addMethod(method.getMethod(false));
 
         // TODO call manager eventhandler
@@ -948,7 +948,7 @@ public final class ClassInfo extends MemberInfo {
 
         // TODO copy all the attribute stuff, call manager eventhandler
 
-        methods.put(newMethod.getMemberSignature(), newMethod);
+        methods.put(newMethod.getMethodSignature(), newMethod);
         classGen.addMethod(newMethod.getMethod(false));
 
         return newMethod;
@@ -979,7 +979,7 @@ public final class ClassInfo extends MemberInfo {
         }
         method.getInternalMethodGen().setName(newName);
 
-        methods.put(method.getMemberSignature(), method);
+        methods.put(method.getMethodSignature(), method);
         int i = lookupMethodInfo(memberSignature);
         if ( i == -1 ) {
             // This should never happen
@@ -1143,7 +1143,7 @@ public final class ClassInfo extends MemberInfo {
                     " differs from number of MethodInfos!");
         }
         for (int i = 0; i < mList.length; i++) {
-            MethodInfo method = methods.get(Signature.getMemberSignature(mList[i].getName(),
+            MethodInfo method = methods.get(Signature.getMethodSignature(mList[i].getName(),
                                                                          mList[i].getSignature()));
             classGen.setMethodAt(method.compile(), i);
         }

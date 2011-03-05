@@ -150,7 +150,7 @@ public class ConstantPoolReferenceFinder {
         @Override
         public void visitConstantNameAndType(ClassInfo classInfo, ConstantNameAndType constant) {
             ConstantNameAndTypeInfo nat = (ConstantNameAndTypeInfo) classInfo.getConstantInfo(constant);
-            processDescriptor(nat.getValue().getMemberDescriptor());
+            processDescriptor(nat.getValue().getDescriptor());
         }
 
         @Override

@@ -23,9 +23,11 @@ package com.jopdesign.common.type;
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.Type;
 
+import java.util.Arrays;
+
 /**
  * A helper class for parsing, generating and other descriptor related tasks (type descriptors
- * without a name or class text). For signatures containing a member name or class name, see {@link Signature}. 
+ * without a name or class text). For signatures containing a member name or class name, see {@link Signature}.
  *
  * @see Signature
  * @author Stefan Hepp (stefan@stefant.org)
@@ -91,6 +93,30 @@ public class Descriptor {
 
     public Type getType() {
         return type;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = type.hashCode();
+        if (arguments != null) {
+            for (Type t : arguments) {
+                hash = 31 * hash + t.hashCode();
+            }
+        }
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof Descriptor)) {
+            return false;
+        }
+        Descriptor d = (Descriptor) o;
+        return d.getType().equals(type) && this.equalArguments(d);
+    }
+
+    public boolean equalArguments(Descriptor d) {
+        return Arrays.equals(arguments, d.getArgumentTypes());
     }
 
     public String toString() {

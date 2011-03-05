@@ -179,8 +179,12 @@ public final class MethodInfo extends ClassMemberInfo {
     // Interface implementations, name and signature
     //////////////////////////////////////////////////////////////////////////////
 
+    /**
+     * This is the same as {@link #getSignature()}.toString().
+     * @return classname and method signature of this method.
+     */
     public String getFQMethodName() {
-        return getClassInfo().getClassName() + "." + getMemberSignature();
+        return getClassInfo().getClassName() + "." + getMethodSignature();
     }
 
     @Override
@@ -192,8 +196,11 @@ public final class MethodInfo extends ClassMemberInfo {
         return new MethodRef(this);
     }
 
-    @Override
-    public String getMemberSignature() {
+    /**
+     * Get the signature of this method (i.e. its simple name and the descriptor).
+     * @return the signature of this method without the class part.
+     */
+    public String getMethodSignature() {
         return methodGen.getName() + methodGen.getSignature();
     }
 
@@ -226,7 +233,7 @@ public final class MethodInfo extends ClassMemberInfo {
         }
 
         if (checkSignature) {
-            if ( !getMemberSignature().equals(superMethod.getMemberSignature()) ) {
+            if ( !getMethodSignature().equals(superMethod.getMethodSignature()) ) {
                 return false;
             }
             if ( !getClassInfo().isSubclassOf(superMethod.getClassInfo()) ) {
@@ -277,7 +284,7 @@ public final class MethodInfo extends ClassMemberInfo {
                 if ( !classInfo.isInterface() ) {
                     return false;
                 }
-                MethodInfo ifMethod = classInfo.getMethodInfo(getMemberSignature());
+                MethodInfo ifMethod = classInfo.getMethodInfo(getMethodSignature());
                 if ( ifMethod != null ) {
                     ifMethods.add(ifMethod);
                 }
@@ -311,11 +318,11 @@ public final class MethodInfo extends ClassMemberInfo {
         ClassVisitor visitor = new ClassVisitor() {
 
             public boolean visitClass(ClassInfo classInfo) {
-                MethodInfo overrider = classInfo.getMethodInfo(getMemberSignature());
+                MethodInfo overrider = classInfo.getMethodInfo(getMethodSignature());
                 if ( overrider != null ) {
                     if ( overrider.isPrivate() ) {
                         // found an overriding method which is private .. this is interesting..
-                        logger.error("Found private method "+overrider.getMemberSignature()+" in "+
+                        logger.error("Found private method "+overrider.getMethodSignature()+" in "+
                                 classInfo.getClassName()+" overriding non-private method in "+
                                 getClassInfo().getClassName());
                     }
@@ -360,11 +367,11 @@ public final class MethodInfo extends ClassMemberInfo {
         ClassVisitor visitor = new ClassVisitor() {
 
             public boolean visitClass(ClassInfo classInfo) {
-                MethodInfo m = classInfo.getMethodInfo(getMemberSignature());
+                MethodInfo m = classInfo.getMethodInfo(getMethodSignature());
                 if ( m != null ) {
                     if ( m.isPrivate() && !isPrivate() ) {
                         // found an overriding method which is private .. this is interesting..
-                        logger.error("Found private method "+m.getMemberSignature()+" in "+
+                        logger.error("Found private method "+m.getMethodSignature()+" in "+
                                 classInfo.getClassName()+" overriding non-private method in "+
                                 getClassInfo().getClassName());
                     }

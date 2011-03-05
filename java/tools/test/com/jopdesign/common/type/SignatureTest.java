@@ -31,7 +31,7 @@ public class SignatureTest {
         Signature sig = Signature.parse(signature, isClassMember);
 
         System.out.println("  => [" + sig.getClassName() + "|" + sig.getMemberName() + "|" +
-                sig.getMemberDescriptor().toString() + "]");
+                sig.getDescriptor().toString() + "]");
     }
 
     public static void main(String[] args) {

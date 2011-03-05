@@ -281,7 +281,7 @@ public class UsedCodeFinder {
                 cls.removeField(f.getShortName());
             }
             for (MethodInfo m : unusedMethods) {
-                cls.removeMethod(m.getMemberSignature());
+                cls.removeMethod(m.getMethodSignature());
             }
         }
 
@@ -311,7 +311,7 @@ public class UsedCodeFinder {
             markUsedMembers(cls,false);
             
             // check if this signature specifies a class member (or just a class, in this case we are done)
-            if (sig.isMethodSignature()) {
+            if (sig.hasMethodSignature()) {
                 // It's a method! mark the method as used (implementations are marked later)
                 MethodRef ref = appInfo.getMethodRef(sig);
                 MethodInfo method = ref.getMethodInfo();
@@ -359,7 +359,7 @@ public class UsedCodeFinder {
     private ClassInfo getClassInfo(Signature sig) {
         String className;
 
-        if (sig.isArraySignature()) {
+        if (sig.isArrayClass()) {
             ArrayTypeInfo at = ArrayTypeInfo.parse(sig.getClassName());
             if (at.getElementType() instanceof ObjectTypeInfo) {
                 className = ((ObjectTypeInfo)at.getElementType()).getClassRef().getClassName();

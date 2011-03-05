@@ -30,7 +30,7 @@ import com.jopdesign.common.MemberInfo;
  *
  * @see Descriptor
  * @author Stefan Hepp (stefan@stefant.org)
- * 
+ *
  * TODO:  Terminology is a little bit confusing here (for newcomers). In the literature,
  *        a signature is the unique (fully-qualified) name of a method, not including
  *        the class name. Should be clarified in the documentation.
@@ -82,7 +82,7 @@ public class Signature {
         return className + "." +  memberName + descriptor;
     }
 
-    public static String getMemberSignature(String memberName, String descriptor) {
+    public static String getMethodSignature(String memberName, String descriptor) {
         return memberName + descriptor;
     }
 
@@ -205,24 +205,24 @@ public class Signature {
         this.descriptor = descriptor;
     }
 
-    public boolean isArraySignature() {
-        return className.startsWith("[");
-    }
-
-    public boolean hasMemberName() {
-        return memberName != null && !"".equals(memberName);
-    }
-
-    public boolean hasMemberSignature() {
-        return memberName != null && descriptor != null;
+    public boolean isArrayClass() {
+        return className != null && className.startsWith("[");
     }
 
     public boolean hasClassName() {
         return className != null;
     }
 
-    public boolean isMethodSignature() {
-        return hasMemberSignature() && descriptor.isMethod();
+    public boolean hasMemberName() {
+        return memberName != null && !"".equals(memberName);
+    }
+
+    public boolean hasDescriptor() {
+        return descriptor != null;
+    }
+
+    public boolean hasMethodSignature() {
+        return memberName != null && descriptor != null && descriptor.isMethod();
     }
 
     public String getClassName() {
@@ -232,7 +232,7 @@ public class Signature {
     /**
      * @return the member name and descriptor, if set.
      */
-    public String getMemberSignature() {
+    public String getMethodSignature() {
         return (memberName!=null ? memberName : "") + (descriptor!=null ? descriptor : "");
     }
 
@@ -240,21 +240,21 @@ public class Signature {
         return memberName;
     }
 
-    public Descriptor getMemberDescriptor() {
+    public Descriptor getDescriptor() {
         return descriptor;
     }
 
-    public MemberInfo findInfo(AppInfo appInfo) {
+    public MemberInfo findMemberInfo(AppInfo appInfo) {
         if ( className == null ) {
             return null;
         }
         ClassInfo cls = appInfo.getClassInfo(className);
-        if ( cls == null || !hasMemberSignature() ) {
+        if ( cls == null || !hasMemberName() ) {
             return cls;
         }
 
-        if ( isMethodSignature() ) {
-            return cls.getMethodInfo(getMemberSignature());
+        if ( hasMethodSignature() ) {
+            return cls.getMethodInfo(getMethodSignature());
         } else {
             return cls.getFieldInfo(memberName);
         }

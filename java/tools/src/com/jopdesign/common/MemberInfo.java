@@ -73,7 +73,7 @@ public abstract class MemberInfo {
      * Get only the last part of the name (i.e. the class name without package or the field/method name
      * without class prefix and descriptor).
      *
-     * @return the short name of this member without prefix or descriptor.
+     * @return the short name of this member without package- or class prefix and without descriptor.
      */
     public abstract String getShortName();
 

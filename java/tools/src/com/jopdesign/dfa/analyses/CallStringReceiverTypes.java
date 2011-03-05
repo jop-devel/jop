@@ -1069,7 +1069,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 			Map<InstructionHandle, ContextMap<CallString, Set<TypeMapping>>> state,
 			ContextMap<CallString, Set<TypeMapping>> result) {
 		
-		String methodImplName = method.getClassName()+"."+method.getMemberSignature();
+		String methodImplName = method.getClassName()+"."+method.getMethodSignature();
 				
 		recordReceiver(stmt, context, methodImplName);
 		
@@ -1092,7 +1092,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 		
 		DFATool p = interpreter.getDFATool();
         if (p.getAppInfo().getClassInfo(receiver).isSubclassOf(p.getAppInfo().getClassInfo("joprt.RtThread")) &&
-                "run()V".equals(method.getMemberSignature())) {
+                "run()V".equals(method.getMethodSignature())) {
             c.createThread();
             threaded = true;
         }
@@ -1161,7 +1161,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 		if(method == null) {
 			throw new RuntimeException("DFA: cannot find static method " + methodName);
 		}
-		methodName = method.getClassName()+"."+method.getMemberSignature();
+		methodName = method.getClassName()+"."+method.getMethodSignature();
 
 		recordReceiver(stmt, context, methodName);
 

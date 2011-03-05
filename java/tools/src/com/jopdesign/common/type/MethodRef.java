@@ -127,7 +127,7 @@ public class MethodRef {
 
     public String getMemberSignature() {
         if ( methodInfo != null ) {
-            return methodInfo.getMemberSignature();
+            return methodInfo.getMethodSignature();
         }
         return methodName + descriptor;
     }

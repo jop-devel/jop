@@ -199,7 +199,7 @@ public class LinkerInfo {
 			} else if (key.equals("-mtab")) {
 				Signature nameParts = Signature.parse(tks[1], true);
 				int valIx = Integer.parseInt(tks[2]);
-				addAddress("MTabAddresses",mtabAddresses,nameParts.getMemberSignature(), valIx);
+				addAddress("MTabAddresses",mtabAddresses,nameParts.getMethodSignature(), valIx);
 			} else {
 				throw new AssertionError("Bad format for class info (Unknown key: '" + key + "')" + Arrays.toString(tks));
 		    }
@@ -249,7 +249,7 @@ public class LinkerInfo {
 				if(tks[0].equals("static") || tks[0].equals("bytecode")) {
 					Signature nameParts = Signature.parse(tks[1],true);
 					linkInfo = getOrCreateLinkInfo(nameParts.getClassName());
-					String objectName = nameParts.getMemberSignature();
+					String objectName = nameParts.getMethodSignature();
 					int address = Integer.parseInt(tks[2]);
 					if(tks[0].equals("bytecode")) {
 						linkInfo.setCodeAddress(objectName, address);

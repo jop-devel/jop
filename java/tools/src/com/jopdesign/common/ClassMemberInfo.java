@@ -68,12 +68,6 @@ public abstract class ClassMemberInfo extends MemberInfo {
 
     public abstract Descriptor getDescriptor();
 
-    /**
-     * Get the signature of this member (i.e. its simple name and its descriptor for methods).
-     * @return the signature of this member without the class part.
-     */
-    public abstract String getMemberSignature();
-
     @Override
     public Attribute[] getAttributes() {
         return classMember.getAttributes();
@@ -100,7 +94,8 @@ public abstract class ClassMemberInfo extends MemberInfo {
             return false;
         }
         return ((ClassMemberInfo)obj).getClassInfo().equals(getClassInfo()) &&
-               ((ClassMemberInfo)obj).getMemberSignature().equals(getMemberSignature());
+               ((ClassMemberInfo)obj).getShortName().equals(getShortName()) &&
+               ((ClassMemberInfo)obj).getDescriptor().equalArguments(getDescriptor());
     }
 
     private int buildHashValue() {

@@ -42,26 +42,26 @@ public class ConstantNameAndTypeInfo extends ConstantInfo<Signature, Type> {
 
     @Override
     public Type getType() {
-        return getValue().getMemberDescriptor().getType();
+        return getValue().getDescriptor().getType();
     }
 
     @Override
     public Constant createConstant(ConstantPoolGen cpg) {
         int n = cpg.addUtf8(getValue().getMemberName());
-        int s = cpg.addUtf8(getValue().getMemberDescriptor().toString());
+        int s = cpg.addUtf8(getValue().getDescriptor().toString());
         return new ConstantNameAndType(n, s);
     }
 
     @Override
     public int addConstant(ConstantPoolGen cpg) {
         Signature sig = getValue();
-        return cpg.addNameAndType(sig.getMemberName(), sig.getMemberDescriptor().toString());
+        return cpg.addNameAndType(sig.getMemberName(), sig.getDescriptor().toString());
     }
 
     @Override
     public int lookupConstant(ConstantPoolGen cpg) {
         Signature sig = getValue();
-        return cpg.lookupNameAndType(sig.getMemberName(), sig.getMemberDescriptor().toString());
+        return cpg.lookupNameAndType(sig.getMemberName(), sig.getDescriptor().toString());
     }
 
 }

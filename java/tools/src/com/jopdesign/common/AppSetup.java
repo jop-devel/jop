@@ -772,10 +772,10 @@ public class AppSetup {
         }
 
         // check if we have a full signature
-        if (sMain.hasMemberSignature()) {
-            MethodInfo method = clsInfo.getMethodInfo(sMain.getMemberSignature());
+        if (sMain.hasMethodSignature()) {
+            MethodInfo method = clsInfo.getMethodInfo(sMain.getMethodSignature());
             if (method == null) {
-                throw new BadConfigurationException("Method '"+sMain.getMemberSignature()+"' not found in '"
+                throw new BadConfigurationException("Method '"+sMain.getMethodSignature()+"' not found in '"
                             +clsName+"'.");
             }
             return method;
@@ -786,7 +786,7 @@ public class AppSetup {
         if ( mainName == null ) {
             mainName = config.getOption(Config.MAIN_METHOD_NAME);
             if(mainName != null) {
-            	mainName = Signature.parse(mainName).getMemberSignature();
+            	mainName = Signature.parse(mainName).getMethodSignature();
             }
         }
 

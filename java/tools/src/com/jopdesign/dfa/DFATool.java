@@ -211,7 +211,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         for (ClassInfo clinit : clinits) {
             Signature cSig = appInfo.getClinitSignature(clinit.getClassName());
             idx = prologueCP.addMethodref(cSig.getClassName(), cSig.getMemberName(),
-                    cSig.getMemberDescriptor().toString());
+                    cSig.getDescriptor().toString());
             instr = new INVOKESTATIC(idx);
             prologue.append(instr);
         }

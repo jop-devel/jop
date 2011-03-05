@@ -125,7 +125,7 @@ public class PhaseExecutor {
             }
 
             for (ExecutionContext ctx : appInfo.getCallGraph().getRootNodes()) {
-                if (ctx.getMethodInfo().getMemberSignature().equals(ClinitOrder.clinitSig)) {
+                if (ctx.getMethodInfo().getMethodSignature().equals(ClinitOrder.clinitSig)) {
                     clinitRoots.add(ctx);
                 } else if (jvmClasses.contains(ctx.getMethodInfo().getClassName())) {
                     jvmRoots.add(ctx);

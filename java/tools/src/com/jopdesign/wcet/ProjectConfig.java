@@ -136,7 +136,7 @@ public class ProjectConfig {
     public String getTargetMethod() {
 
         Signature sig = Signature.parse(getTargetMethodName(),true);
-        return sig.getMemberSignature();
+        return sig.getMethodSignature();
     }
 
     public MethodInfo getTargetMethodInfo() {

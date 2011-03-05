@@ -499,7 +499,7 @@ public final class AppInfo {
                 throw new ClassInfoNotFoundException("Could not find main class.");
             }
 
-            mainMethod = mainClass.getMethodInfo(mainMethod.getSignature().getMemberSignature());
+            mainMethod = mainClass.getMethodInfo(mainMethod.getSignature().getMethodSignature());
             if (mainMethod == null) {
                 throw new ClassInfoNotFoundException("Could not find main method in main class");
             }
@@ -618,7 +618,7 @@ public final class AppInfo {
      * @return A method reference with or without MethodInfo or ClassInfo.
      */
     public MethodRef getMethodRef(ClassRef classRef, Signature signature) {
-        return new MethodRef(classRef, signature.getMemberName(), signature.getMemberDescriptor());
+        return new MethodRef(classRef, signature.getMemberName(), signature.getDescriptor());
     }
 
     /**
@@ -656,8 +656,8 @@ public final class AppInfo {
         }
 
         Type type = null;
-        if (signature.hasMemberSignature()) {
-            type = signature.getMemberDescriptor().getType();
+        if (signature.hasDescriptor()) {
+            type = signature.getDescriptor().getType();
         }
         return new FieldRef(classRef, signature.getMemberName(), type);
     }
@@ -695,7 +695,7 @@ public final class AppInfo {
     }
 
     public MethodInfo getMethodInfo(Signature signature) throws MethodNotFoundException {
-        return getMethodInfo(signature.getClassName(), signature.getMemberSignature());
+        return getMethodInfo(signature.getClassName(), signature.getMethodSignature());
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -1036,7 +1036,7 @@ public final class AppInfo {
                 if ( m != null ) {
                     if ( m.isPrivate() && !classInfo.equals(invokeeClass)) {
                         // found an overriding method which is private .. this is interesting..
-                        logger.error("Found private method "+m.getMemberSignature()+" in "+
+                        logger.error("Found private method "+m.getMethodSignature()+" in "+
                                 classInfo.getClassName()+" overriding non-private method in "+
                                 invokee.getClassName());
                     }
