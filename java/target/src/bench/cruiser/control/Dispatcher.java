@@ -44,8 +44,8 @@ public class Dispatcher implements Runnable {
 	private void dispatch(String msg) {
 
 		if (!WireMessage.checkMessage(msg)) {
-			System.err.print("?");
-			System.err.println(msg);
+			// System.err.print("?");
+			// System.err.println(msg);
 			return;
 		}
 
@@ -113,7 +113,7 @@ public class Dispatcher implements Runnable {
 		StringBuilder msgBuffer = new StringBuilder(WireMessage.MAX_LENGTH);
 
 		for (;;) {
-			
+		
 			// wait here so we can use continue
 			RtThread.currentRtThread().waitForNextPeriod();
 

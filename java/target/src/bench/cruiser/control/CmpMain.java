@@ -39,7 +39,7 @@ public class CmpMain {
 
 		Controller control = new Controller(manager);
 		RtThread ctrlThread = new RtThread(control, 4, 10*1000);
-		ctrlThread.setProcessor(0);
+		ctrlThread.setProcessor(3%sys.nrCpu);
 
 		System.out.println("created Controller");
 
@@ -66,20 +66,10 @@ public class CmpMain {
 											 frontRightFilter,
 											 rearLeftFilter,
 											 rearRightFilter);
-		RtThread dThread = new RtThread(dispatch, 8, 1000);
+		RtThread dThread = new RtThread(dispatch, 8, 1*1000);
 		dThread.setProcessor(0);
 
 		System.out.println("created Dispatcher");
-
-		for (int i = 0; i < sys.nrCpu; i++) {
-			SwEvent scanner = new GC.ScanEvent(7, 100*1000, i);
-		}
-		System.out.println("created ScanEvents");
-
-		RtThread gcThread = new GC.GCThread(3, 200*1000);
-		GC.setConcurrent();
-
-		System.out.println("created GCThread");
 
 		RtThread.startMission();
 

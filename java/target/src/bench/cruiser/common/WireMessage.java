@@ -95,24 +95,20 @@ public abstract class WireMessage {
 
 		// check message start
 		if (msg.charAt(0) != ':') {
-			// System.err.print("^");
 			return false;
 		}
 		// check type
 		Type t = parseType(msg);
 		if (t == null) {
-			// System.err.print("T");
 			return false;
 		}
 		// check length of payload
 		int len = parseLength(msg);
 		if (len < 0 || len != t.length) {
-			// System.err.print("L");
 			return false;
 		}
 		// check length of overall message
 		if (msg.length() != len+OVERHEAD_LENGTH) {
-			// System.err.print("S");
 			return false;
 		}
 		// checking checksum
@@ -122,16 +118,13 @@ public abstract class WireMessage {
 			chk ^= hexNum(msg.charAt(i));
 		}
 		if (hexDigit(chk) != msg.charAt(chkpos)) {
-			// System.err.print("C");
 			return false;
 		}
 		// check message end
 		if (msg.charAt(msg.length()-2) != '\r') {
-			// System.err.print("R");
 			return false;
 		}
 		if (msg.charAt(msg.length()-1) != '\n') {
-			// System.err.print("N");
 			return false;
 		}		
 		return true;
