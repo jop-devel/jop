@@ -61,11 +61,12 @@ public class RtThreadImpl {
 			for (int i=0; i<s.cnt; ++i) {
 				s.ref[i].startThread();
 			}
+
 			// add scheduler for the core s
 			JVMHelp.addInterruptHandler(sys.cpuId, 0, s);
 
 			started = true;
-
+			
 			// clear all pending interrupts (e.g. timer after reset)
 			Native.wr(1, Const.IO_INTCLEARALL);
 			// schedule timer in 10 ms
@@ -129,6 +130,7 @@ public class RtThreadImpl {
 	static boolean mission;
 
 	// fields for lock implementation
+	static volatile boolean useLocks;
 	int lockLevel;
 	volatile int lockQueue;
 
@@ -350,6 +352,8 @@ public class RtThreadImpl {
 			Scheduler.sched[i].addMain();
 		}
 
+		useLocks = true;
+
 		// running threads (state!=CREATED)
 		// are not started
 		// TODO: where are 'normal' Threads placed?
@@ -358,8 +362,15 @@ public class RtThreadImpl {
 			s.ref[i].startThread();
 		}
 
-		// wait 10 ms for the real start if the mission
-		startTime = Native.rd(Const.IO_US_CNT)+10000;		
+		CMPStart cmps[] = new CMPStart[sys.nrCpu-1];
+		// add the Runnables to start the other CPUs
+		for (i=0; i<sys.nrCpu-1; ++i) {
+			cmps[i] = new RtThreadImpl.CMPStart();
+			Startup.setRunnable(cmps[i], i);
+		}
+		
+		// wait 10 ms for the real start of the mission
+		startTime = Native.rd(Const.IO_US_CNT)+20000;
 		for (i=0; i<sys.nrCpu; ++i) {
 			s = Scheduler.sched[i];
 			for (j=0; j<s.cnt; ++j) {
@@ -370,15 +381,6 @@ public class RtThreadImpl {
 		// add scheduler for the first core
 		JVMHelp.addInterruptHandler(0, 0, Scheduler.sched[0]);
 
-
-		CMPStart cmps[] = new CMPStart[sys.nrCpu-1];
-		// add the Runnables to start the other CPUs
-		for (i=0; i<sys.nrCpu-1; ++i) {
-			cmps[i] = new RtThreadImpl.CMPStart();
-			Startup.setRunnable(cmps[i], i);
-			
-		}
-		
 		// start the other CPUs
 		sys.signal = 1;
 
@@ -421,8 +423,8 @@ public class RtThreadImpl {
 
 		now = Native.rd(Const.IO_US_CNT);
 		if (nxt-now < 0) {					// missed time!
-			// s.next[nr] = now;				// correct next
-			s.next[nr] = nxt;				// without correction!
+			s.next[nr] = now;				// correct next
+			// s.next[nr] = nxt;				// without correction!
 			Native.wr(1, Const.IO_INT_ENA);
 			return false;
 		} else {

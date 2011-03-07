@@ -7,7 +7,7 @@ import joprt.SwEvent;
 
 /**
  * Represent the scheduler and thread queue for one CPU.
- * Created and set in startMisison()
+ * Created and set in startMissison()
  * 
  * @author martin
  *
@@ -17,7 +17,6 @@ class Scheduler implements Runnable {
 	// ordered by priority
 	int next[];					// next time to change to state running
 	RtThreadImpl[] ref;			// references to threads
-	int boostIdx;
 
 	final static int NO_EVENT = 0;
 	final static int EV_FIRED = 1;
@@ -27,10 +26,13 @@ class Scheduler implements Runnable {
 	int cnt;					// number of threads
 	int active;					// active thread number
 
+	int boostIdx;               // thread runs at top priority when entered lock
+	int boostGcIdx;             // thread runs at top priority when entered GC mutex
+
 	int scanThres = -1;			// whether threads scan their own stack
 	SwEvent scanner;
 	GC.STWGCEvent collector;
-	
+
 	int tmp;					// counter to build the thread list
 	
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
@@ -55,7 +57,7 @@ class Scheduler implements Runnable {
 	 * TODO: a cross-core SW event is only detected at a scheduler
 	 * invocation due to a thread on this core or at idle tick. 
 	 */
-	final static int IDL_TICK = 10000;
+	final static int IDL_TICK = 100000;
 
 	// use local memory for two values
 	private final static int TIM_VAL_ADDR = 0x1e;
@@ -64,8 +66,8 @@ class Scheduler implements Runnable {
 	// timer offset to ensure that no timer interrupt happens just
 	// after monitorexit in this method and the new thread
 	// has a minimum time to run.
-// 	private final static int TIM_OFF = 200;
-	private final static int TIM_OFF = 20;
+ 	private final static int TIM_OFF = 200;
+//	private final static int TIM_OFF = 20;
 //	private final static int TIM_OFF = 2; // for 100 MHz version 20 or even lower
 										 // 2 is minimum
 	/**
@@ -95,6 +97,8 @@ class Scheduler implements Runnable {
 		// take care to NOT invoke a method with monitorexit
 		// can happen on the write barrier on reference assignment
 
+		Native.lock();
+
 		// save stack
 		i = Native.getSP();
 		th = ref[active];
@@ -109,7 +113,12 @@ class Scheduler implements Runnable {
 		// this is now
 		j = Native.rd(Const.IO_US_CNT);
 
-		if (boostIdx >= 0) {
+		if (boostGcIdx >= 0) {             // run at utmost priority when holding GC mutex
+			i = boostGcIdx;
+		} else if (!GC.concurrentGc && Native.rd(Const.IO_CPUCNT) > 1
+			&& event[cnt-1] == EV_FIRED) { // STWGC beats everything else
+			i = cnt-1;
+		} else if (boostIdx >= 0) {        // boosted threads come next
 			i = boostIdx;
 		} else {
 			for (i=cnt-1; i>0; --i) {
@@ -125,6 +134,7 @@ class Scheduler implements Runnable {
 				}
 			}
 		}
+
 		// i is next ready thread (index into the list)
 		// If none is ready i points to idle task or main thread (fist in the list)
 		active = i;
@@ -183,7 +193,9 @@ class Scheduler implements Runnable {
 		// disable and enable INT 'manual'
 		// and DON'T call a method with synchronized
 		// it would enable the INT on monitorexit
-		Native.wr(1, Const.IO_INT_ENA);
+
+		// unlock enables also interrupts again
+		Native.unlock();
 	}
 
 	/**
@@ -198,6 +210,7 @@ class Scheduler implements Runnable {
 		next = new int[cnt];
 		event = new int[cnt];
 		boostIdx = -1;
+		boostGcIdx = -1;
 		tmp = cnt-1;
 	}
 

@@ -104,6 +104,11 @@ public class GC {
 	 * Field that points to the object's lock
 	 */
 	static final int OFF_LOCK = 7;
+
+	/**
+	 * Trigger GC when free memory is below this margin
+	 */
+	static final int GC_MARGIN = 256;
 		
 	static final int TYPICAL_OBJ_SIZE = 5;
 	static int handle_cnt;
@@ -183,6 +188,7 @@ public class GC {
 			freeList = ref;
 			Native.wrMem(0, ref+OFF_GREY);
 			Native.wrMem(0, ref+OFF_SPACE);
+			Native.wrMem(0, ref+OFF_LOCK);
 		}
 		// clean the heap
 		int end = heapStartA+2*semi_size;
@@ -206,7 +212,7 @@ public class GC {
 	 * @param ref
 	 */
 	static void push(int ref) {
-		
+
 		// null pointer check is in the following handle check
 		
 		// Only objects that are referenced by a handle in the
@@ -365,6 +371,7 @@ public class GC {
 		getStaticRoots();
  		// log("trace");
 		for (;;) {
+
 			// pop one object from the gray list
 			synchronized (mutex) {
 				ref = grayList;
@@ -375,7 +382,7 @@ public class GC {
 				Native.wrMem(0, ref+OFF_GREY);		// mark as not in list
 			}
 
-			// allready moved
+			// already moved
 			// can this happen? - yes, as we do not check it in mark
 			// TODO: no, it's checked in push()
 			// What happens when the actually scanned object is
@@ -385,7 +392,7 @@ public class GC {
 				continue;
 			}
 			
-			// push all childs
+			// push all children
 				
 			// get pointer to object
 			int addr = Native.rdMem(ref);
@@ -422,22 +429,24 @@ public class GC {
 
 				// set it BLACK
 				Native.wrMem(toSpace, ref+OFF_SPACE);
-			}
 
-			if (size>0) {
-				// copy it
-				for (i=0; i<size; i++) {
-  					Native.wrMem(Native.rdMem(addr+i), dest+i);
-  					// Native.memCopy(dest, addr, i);					
+				Native.lock();
+				if (size>0) {
+					// copy it
+					for (i=0; i<size; i++) {
+						Native.wrMem(Native.rdMem(addr+i), dest+i);
+						// Native.memCopy(dest, addr, i);					
+					}
 				}
-			}
 
-			// update object pointer to the new location
-			Native.wrMem(dest, ref+OFF_PTR);
-			// // wait until everybody uses the new location
-			// for (i = 0; i < 10; i++);
-			// // turn off address translation
-			// Native.memCopy(dest, dest, -1);		
+				// update object pointer to the new location
+				Native.wrMem(dest, ref+OFF_PTR);
+				// // wait until everybody uses the new location
+				// for (i = 0; i < 10; i++);
+				// // turn off address translation
+				// Native.memCopy(dest, dest, -1);
+				Native.unlock();
+			}
 		}
 	}
 	
@@ -475,7 +484,6 @@ public class GC {
 			}
 			ref = next;
 		}
-		
 	}
 
 	/**
@@ -493,7 +501,7 @@ public class GC {
 
 	static void triggerGc() {
 
-		log("GC triggered on CPU", sys.cpuId);
+		// log("GC triggered on CPU", sys.cpuId);
 
 		// scpoes and GC cannot be mixed
 		if (USE_SCOPES) {
@@ -513,15 +521,14 @@ public class GC {
 		} else {
 			// only trigger if not running already
 			if (!gcRunning) {
+				gcRunning = true;
 				gcRunnerId = sys.cpuId;
 				
 				// start GC events on all CPUs
 				int cpus = sys.nrCpu;
 				for (int i = cpus-1; i >= 0; --i) {
 					if (Scheduler.sched[i].collector != null) {					
-						synchronized(mutex) {
-							log("Fire event on CPU", i);
-						}
+						// log("Fire event on CPU", i);
 						Scheduler.sched[i].collector.fire();
 					} else if (Startup.cpuStart[i] != null) {
 						log("Stop-the-world GC on CMP needs GC events");
@@ -529,7 +536,6 @@ public class GC {
 					}
 				}
 			}
-			gcRunning = true;
 		}
 	}
 
@@ -538,13 +544,13 @@ public class GC {
 
 		// log("start GC");
 
-  		// log("flip");
+		// log("flip");
 		flip();
-  		// log("m&c");
+		// log("m&c");
 		markAndCopy();
-  		// log("sweep");
+		// log("sweep");
 		sweepHandles();
-  		// log("zap");
+		// log("zap");
 		zapSemi();	
 
 		// log("end GC");
@@ -598,7 +604,8 @@ public class GC {
 
 		// that's the stop-the-world GC
 		synchronized (mutex) {
-			if (copyPtr+size >= allocPtr || freeList==0) {
+			if (copyPtr+size+GC_MARGIN >= allocPtr || freeList==0) {
+				log("Run out of memory on CPU", sys.cpuId);
 				triggerGc();
 			}			
 		}
@@ -638,7 +645,7 @@ public class GC {
 			// pointer to method table in the handle
 			Native.wrMem(cons+Const.CLASS_HEADR, ref+OFF_MTAB_ALEN);
 			// TODO: should not be necessary - now just for sure
-			Native.wrMem(0, ref+OFF_LOCK);
+			// Native.wrMem(0, ref+OFF_LOCK);
 		}
 
 		return ref;
@@ -679,13 +686,15 @@ public class GC {
 			}			
 		}
 
+
 		// that's the stop-the-world GC
 		synchronized (mutex) {
-			if (copyPtr+size >= allocPtr || freeList==0) {
+			if (copyPtr+size+GC_MARGIN >= allocPtr || freeList==0) {
+				log("Run out of memory on CPU", sys.cpuId);
 				triggerGc();
-			}
+			}			
 		}
-		
+
 		while (gcRunning) {
 			// wait for the GC to finish
 		}
@@ -720,7 +729,7 @@ public class GC {
 			// array length in the handle
 			Native.wrMem(arrayLength, ref+OFF_MTAB_ALEN);
 			// TODO: should not be necessary - now just for sure
-			Native.wrMem(0, ref+OFF_LOCK);
+			// Native.wrMem(0, ref+OFF_LOCK);
 		}
 		return ref;
 		
@@ -795,16 +804,16 @@ public class GC {
 		public void handle() {
 			SysDevice sys = IOFactory.getFactory().getSysDevice();
 
-			synchronized(GC.mutex) {
-				GC.log("Handling event on CPU", sys.cpuId);
-			}
+			// synchronized(GC.mutex) {
+			//  	GC.log("Handling GC event on CPU", sys.cpuId);
+			// }
 
 			handshake = true;
 			if (GC.sys.cpuId == GC.gcRunnerId) {
 
-				synchronized(GC.mutex) {
-					GC.log("Waiting for handshakes");
-				}
+				// synchronized(GC.mutex) {
+				//  	GC.log("Waiting for handshakes");
+				// }
 
 				// wait for handshake
 				int cpus = GC.sys.nrCpu;
@@ -813,13 +822,17 @@ public class GC {
 						/* wait for handshake from other CPUs */
 					}
 				}
-				
-				GC.log("Start STWGC");
+
+				synchronized(GC.mutex) {				
+					GC.log("Start STWGC");
+				}
 
 				// the real stuff
 				GC.gc();
 
-				GC.log("Finished STWGC");
+				synchronized(GC.mutex) {				
+					GC.log("Finished STWGC");
+				}
 
 				// clear handshakes for future
 				for (int i = cpus-1; i >= 0; --i) {
@@ -832,6 +845,9 @@ public class GC {
 				while (GC.gcRunning) {
 					// wait for the GC to finish
 				}
+				// synchronized(GC.mutex) {
+				// 	GC.log("Seen GC finish on CPU", sys.cpuId);
+				// }
 			}
 		}
 	}
@@ -866,7 +882,7 @@ public class GC {
 			int i, j;
 
 			SysDevice sys = IOFactory.getFactory().getSysDevice();
-			GC.log("Handling event on CPU", sys.cpuId);
+			GC.log("Handling scan event on CPU", sys.cpuId);
 
 			Scheduler sched = Scheduler.sched[GC.sys.cpuId];
 			int cnt = sched.ref.length;

@@ -809,6 +809,8 @@ class JVM {
 
 	private static Throwable f_athrow(Throwable t) {
 		
+		Native.lock();
+
 		if (Const.USE_RTTM) {
 			// abort transaction on any exception 
 			Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
@@ -861,6 +863,7 @@ class JVM {
 
 						// return with faked frame
 						Native.setSP(fp+4);
+						Native.unlock();
 						return t;
 					}
 				}
@@ -887,6 +890,7 @@ class JVM {
 		JVMHelp.wr("\n");
 		JVMHelp.trace(Native.getSP());
 
+		// Native.unlock(); // No need to unlock if we're about to crash anyway
 		System.exit(1);
 		return t;
 	}
@@ -967,7 +971,7 @@ class JVM {
 	private static void f_monitorenter(int objAddr) {
 
 		// we cannot do real locking during startup
-		if (!RtThreadImpl.mission || objAddr == 0) {
+		if (!RtThreadImpl.useLocks || objAddr == 0) {
 			Native.lock();
 			return;
 		}
@@ -1011,9 +1015,18 @@ class JVM {
 				}
 				q.lockQueue = Native.toInt(c);
 			}
+
+			// boost for GC mutex
+			if (objAddr == Native.toInt(GC.mutex)) {
+				s.boostGcIdx = s.active;
+			}
+
 			// boost priority
-			s.boostIdx = s.active;
+			if (s.boostIdx < 0) {
+				s.boostIdx = s.active;
+			}
 		}
+
 		Native.unlock();
 
 		// wait until lock is free
@@ -1033,13 +1046,14 @@ class JVM {
 		l.holder = Native.toInt(c);
 		++l.level;		
 		++c.lockLevel;
+
 		Native.unlock();
 	}
 
 	private static void f_monitorexit(int objAddr) {
 
 		// we cannot do real locking during startup
-		if (!RtThreadImpl.mission || objAddr == 0) {
+		if (!RtThreadImpl.useLocks || objAddr == 0) {
 			Native.unlock();
 			return;
 		}
@@ -1065,9 +1079,16 @@ class JVM {
 		}
 
 		--c.lockLevel;
-		// unboost priority
+		// unboost priority, if we are boosted
 		if (c.lockLevel == 0) {
-			s.boostIdx = -1;
+			if (s.boostIdx == s.active) {
+				s.boostIdx = -1;
+			}
+		}
+
+		// unboost for GC mutex
+		if (objAddr == Native.toInt(GC.mutex) && l.level == 0) {
+			s.boostGcIdx = -1;
 		}
 
 		Native.unlock();
