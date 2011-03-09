@@ -27,7 +27,7 @@ import com.jopdesign.tools.DataMemory.DataMemoryStats;
 
 public class DataCacheStats implements DataMemoryStats {	
 	
-	public enum StatTy { ReadCount, HitCount, BypassCount, WriteCount, InvalidateCount };
+	public enum StatTy { ReadCount, HitCount, BypassCount, WriteCount, WriteCheckCount, WriteCheckHitCount, InvalidateCount };
 	
 	private long stats[] = new long[StatTy.values().length];
 	private String name;
@@ -66,6 +66,12 @@ public class DataCacheStats implements DataMemoryStats {
 	}
 	public void write() {
 		incr(StatTy.WriteCount);
+	}
+	/* write check: checks whether tag is in the cache, resolves it,
+	 * but does not update the cache */
+	public void writeCheck(boolean hit) {
+		// FIXME: We count these as reads, to simplify the evaluation
+		read(hit);
 	}
 	public void invalidate() {
 		incr(StatTy.InvalidateCount);

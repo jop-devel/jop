@@ -186,7 +186,6 @@ public class JopSim {
 			System.err.println("Failed to setup measurement triggers: "+e);
 		}
 		
-		objectCacheSim = ObjectCacheSim.configureFromEnv();
 		io = ioSim;
 		
 	}
@@ -332,7 +331,6 @@ System.out.println(mp+" "+pc);
 	int copy_dest = 0;
 	int copy_pos = 0;
 	
-	ObjectCacheSim objectCacheSim;
 
 	/**
 	 * a plain memory read

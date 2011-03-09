@@ -5,6 +5,7 @@ import java.util.Vector;
 
 import com.jopdesign.tools.DataMemory;
 import com.jopdesign.tools.Cache.ReplacementStrategy;
+import com.jopdesign.tools.DataMemory.Access;
 import com.jopdesign.tools.splitcache.ObjectCache.FieldIndexMode;
 
 /**
@@ -200,41 +201,114 @@ public class SplitCacheSim extends DataMemory {
 		splitCache.addCache(new UncachedDataMemory(backingMem, handledArrayBypass), handledArrayBypass);
 		this.caches.add(splitCache);
 
-		// // One sample split cache configuration
-		for (int ways = 1; ways <= 32; ways *= 2) { 
-			for (int bpo = 1; bpo <= 32; bpo *= 2) {
+		// evaluation for minor revision ofCC:P&E paper: standard 2Kb Cache
+		SetAssociativeCache stdCache;
+		Access handledStd[] = { Access.CLINFO, Access.CONST, Access.IFTAB, Access.MTAB, Access.STATIC, Access.FIELD, Access.MVB, Access.HANDLE };
+		splitCache = new SplitCache("cc-p&e std 2Kb: 4 x 32 x 4 const,static+object", backingMem);
+		stdCache = new SetAssociativeCache(4,32,4,ReplacementStrategy.LRU,false,false,backingMem,handledStd);
+		splitCache.addCache(stdCache, handledStd);
+		splitCache.addCache(new UncachedDataMemory(backingMem, handledMem), handledMem);
+		this.caches.add(splitCache);
+		
+		// evaluation for minor revision of CC:P&E paper: split cache with object cache, 2Kb
+		splitCache = new SplitCache("cc-p&e o$ 2Kb: const-1-64-4 + static-1-32-4 + object$-8-4-4-LRU + RAM", backingMem);
+		constCache = new SetAssociativeCache(1,64,4,ReplacementStrategy.LRU,false,false,backingMem,handledConst);
+		splitCache.addCache(constCache, handledConst);
+		staticCache = new SetAssociativeCache(1,32,4,ReplacementStrategy.LRU,true,false,backingMem,handledStatic);
+		splitCache.addCache(staticCache, handledStatic);
+		objectCache = new ObjectCache(8,4,4,FieldIndexMode.Bypass,ReplacementStrategy.LRU, false, backingMem, backingMem, handledOCache);
+		splitCache.addCache(objectCache, handledOCache);
+		splitCache.addCache(new UncachedDataMemory(backingMem, handledMem), handledMem);
+		this.caches.add(splitCache);
 
-				splitCache = new SplitCache("const-1-256-1 + static-1-256-1 + object$-"+ways+"-"+bpo+"-1-LRU + RAM", backingMem);
-				constCache = new SetAssociativeCache(1,256,1,ReplacementStrategy.LRU,false,false,backingMem,handledConst);
-				splitCache.addCache(constCache, handledConst);
-				staticCache = new SetAssociativeCache(1,256,1,ReplacementStrategy.LRU,true,false,backingMem,handledStatic);
-				splitCache.addCache(staticCache, handledStatic);
-				objectCache = new ObjectCache(ways,bpo,1,FieldIndexMode.Bypass,ReplacementStrategy.LRU, false, backingMem, backingMem, handledOCache);
-				splitCache.addCache(objectCache, handledOCache);
-				splitCache.addCache(new UncachedDataMemory(backingMem, handledMem), handledMem);
-				this.caches.add(splitCache);
-
-				splitCache = new SplitCache("const-1-64-4 + static-1-64-4 + object$-"+ways+"-"+bpo+"-4-LRU + RAM", backingMem);
-				constCache = new SetAssociativeCache(1,64,4,ReplacementStrategy.LRU,false,false,backingMem,handledConst);
-				splitCache.addCache(constCache, handledConst);
-				staticCache = new SetAssociativeCache(1,64,4,ReplacementStrategy.LRU,true,false,backingMem,handledStatic);
-				splitCache.addCache(staticCache, handledStatic);
-				objectCache = new ObjectCache(ways,bpo,4,FieldIndexMode.Bypass,ReplacementStrategy.LRU, false, backingMem, backingMem, handledOCache);
-				splitCache.addCache(objectCache, handledOCache);
-				splitCache.addCache(new UncachedDataMemory(backingMem, handledMem), handledMem);
-				this.caches.add(splitCache);
-
-				splitCache = new SplitCache("const-1-64-4 + static-1-64-4 + object$-"+ways+"-1-"+bpo+"-LRU + RAM", backingMem);
-				constCache = new SetAssociativeCache(1,64,4,ReplacementStrategy.LRU,false,false,backingMem,handledConst);
-				splitCache.addCache(constCache, handledConst);
-				staticCache = new SetAssociativeCache(1,64,4,ReplacementStrategy.LRU,true,false,backingMem,handledStatic);
-				splitCache.addCache(staticCache, handledStatic);
-				objectCache = new ObjectCache(ways,1,bpo,FieldIndexMode.Bypass,ReplacementStrategy.LRU, false, backingMem, backingMem, handledOCache);
-				splitCache.addCache(objectCache, handledOCache);
-				splitCache.addCache(new UncachedDataMemory(backingMem, handledMem), handledMem);
-				this.caches.add(splitCache);
-			}
+		// verification of results for minor revision of CC:P&E paper
+		// ==> splitcache with standard cache (not O$).
+		splitCache = new SplitCache("cc-p&e split3 2Kb: const-1-64-4 + static-1-32-4 + static-1-32-4 + RAM", backingMem);
+		constCache = new SetAssociativeCache(1,64,4,ReplacementStrategy.LRU,false,false,backingMem,handledConst);
+		splitCache.addCache(constCache, handledConst);
+		staticCache = new SetAssociativeCache(1,32,4,ReplacementStrategy.LRU,true,false,backingMem,handledStatic);
+		splitCache.addCache(staticCache, handledStatic);
+		{ 
+			SetAssociativeCache cacheForObjects = new SetAssociativeCache(1,32,4,ReplacementStrategy.LRU,true,false,backingMem,handledOCache);
+			splitCache.addCache(cacheForObjects, handledOCache);
 		}
+		splitCache.addCache(new UncachedDataMemory(backingMem, handledMem), handledMem);
+		this.caches.add(splitCache);
+
+		// verification of results for minor revision of CC:P&E paper
+		// ==> splitcache with 4 standard caches
+		splitCache = new SplitCache("cc-p&e split4 2Kb: const-1-32-4 + static-1-32-4 + handle/mvb-1-32-4 + field-1-32-4 + RAM", backingMem);
+		constCache = new SetAssociativeCache(1,64,4,ReplacementStrategy.LRU,false,false,backingMem,handledConst);
+		splitCache.addCache(constCache, handledConst);
+		staticCache = new SetAssociativeCache(1,32,4,ReplacementStrategy.LRU,true,false,backingMem,handledStatic);
+		splitCache.addCache(staticCache, handledStatic);
+		{ 
+			Access[] handledHandleCache = { Access.HANDLE, Access.MVB };
+			SetAssociativeCache cacheForHandles = new SetAssociativeCache(1,64,2,ReplacementStrategy.LRU,true,false,backingMem,handledHandleCache);
+			splitCache.addCache(cacheForHandles, handledHandleCache);
+			Access[] handledFieldCache = { Access.FIELD };
+			SetAssociativeCache cacheForObjects = new SetAssociativeCache(1,32,4,ReplacementStrategy.LRU,true,false,backingMem,handledFieldCache);
+			splitCache.addCache(cacheForObjects, handledFieldCache);
+		}
+		splitCache.addCache(new UncachedDataMemory(backingMem, handledMem), handledMem);
+		this.caches.add(splitCache);
+
+		// verification of results for minor revision of CC:P&E paper
+		// ==> splitcache with 5 standard caches
+		splitCache = new SplitCache("cc-p&e split5 2.5Kb: const-1-32-4 + static-1-32-4 + handle-1-32-4 + mvb-132-4 + field-1-32-4 + RAM", backingMem);
+		constCache = new SetAssociativeCache(1,64,4,ReplacementStrategy.LRU,false,false,backingMem,handledConst);
+		splitCache.addCache(constCache, handledConst);
+		staticCache = new SetAssociativeCache(1,32,4,ReplacementStrategy.LRU,true,false,backingMem,handledStatic);
+		splitCache.addCache(staticCache, handledStatic);
+		{ 
+			Access[] handledHandleCache = { Access.HANDLE };
+			SetAssociativeCache cacheForHandles = new SetAssociativeCache(1,64,2,ReplacementStrategy.LRU,true,false,backingMem,handledHandleCache);
+			splitCache.addCache(cacheForHandles, handledHandleCache);
+			Access[] handledMvbCache = { Access.MVB};
+			SetAssociativeCache cacheForMVBs = new SetAssociativeCache(1,64,2,ReplacementStrategy.LRU,true,false,backingMem,handledMvbCache);
+			splitCache.addCache(cacheForMVBs, handledMvbCache);
+			Access[] handledFieldCache = { Access.FIELD };
+			SetAssociativeCache cacheForObjects = new SetAssociativeCache(1,32,4,ReplacementStrategy.LRU,true,false,backingMem,handledFieldCache);
+			splitCache.addCache(cacheForObjects, handledFieldCache);
+		}
+		splitCache.addCache(new UncachedDataMemory(backingMem, handledMem), handledMem);
+		this.caches.add(splitCache);
+
+		// // One sample split cache configuration
+//		for (int ways = 1; ways <= 32; ways *= 2) { 
+//			for (int bpo = 1; bpo <= 32; bpo *= 2) {
+//
+//				splitCache = new SplitCache("const-1-256-1 + static-1-256-1 + object$-"+ways+"-"+bpo+"-1-LRU + RAM", backingMem);
+//				constCache = new SetAssociativeCache(1,256,1,ReplacementStrategy.LRU,false,false,backingMem,handledConst);
+//				splitCache.addCache(constCache, handledConst);
+//				staticCache = new SetAssociativeCache(1,256,1,ReplacementStrategy.LRU,true,false,backingMem,handledStatic);
+//				splitCache.addCache(staticCache, handledStatic);
+//				objectCache = new ObjectCache(ways,bpo,1,FieldIndexMode.Bypass,ReplacementStrategy.LRU, false, backingMem, backingMem, handledOCache);
+//				splitCache.addCache(objectCache, handledOCache);
+//				splitCache.addCache(new UncachedDataMemory(backingMem, handledMem), handledMem);
+//				this.caches.add(splitCache);
+//
+//				splitCache = new SplitCache("const-1-64-4 + static-1-64-4 + object$-"+ways+"-"+bpo+"-4-LRU + RAM", backingMem);
+//				constCache = new SetAssociativeCache(1,64,4,ReplacementStrategy.LRU,false,false,backingMem,handledConst);
+//				splitCache.addCache(constCache, handledConst);
+//				staticCache = new SetAssociativeCache(1,64,4,ReplacementStrategy.LRU,true,false,backingMem,handledStatic);
+//				splitCache.addCache(staticCache, handledStatic);
+//				objectCache = new ObjectCache(ways,bpo,4,FieldIndexMode.Bypass,ReplacementStrategy.LRU, false, backingMem, backingMem, handledOCache);
+//				splitCache.addCache(objectCache, handledOCache);
+//				splitCache.addCache(new UncachedDataMemory(backingMem, handledMem), handledMem);
+//				this.caches.add(splitCache);
+//
+//				splitCache = new SplitCache("const-1-64-4 + static-1-64-4 + object$-"+ways+"-1-"+bpo+"-LRU + RAM", backingMem);
+//				constCache = new SetAssociativeCache(1,64,4,ReplacementStrategy.LRU,false,false,backingMem,handledConst);
+//				splitCache.addCache(constCache, handledConst);
+//				staticCache = new SetAssociativeCache(1,64,4,ReplacementStrategy.LRU,true,false,backingMem,handledStatic);
+//				splitCache.addCache(staticCache, handledStatic);
+//				objectCache = new ObjectCache(ways,1,bpo,FieldIndexMode.Bypass,ReplacementStrategy.LRU, false, backingMem, backingMem, handledOCache);
+//				splitCache.addCache(objectCache, handledOCache);
+//				splitCache.addCache(new UncachedDataMemory(backingMem, handledMem), handledMem);
+//				this.caches.add(splitCache);
+//			}
+//		}
 	}
 
 

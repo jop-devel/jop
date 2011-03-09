@@ -138,6 +138,11 @@ public class ObjectCache extends DataMemory {
 			public CacheBlock getBlock(int blockIndex) {
 				return cacheBlocks[blockIndex];
 			}
+			
+			public int getAddress() {
+				if(! this.hasValidAddress()) throw new AssertionError("getAddress(): no valid metadata");
+				return this.objectAddress;
+			}
 
 			public int getMVB() {
 				if(this.isArray) throw new AssertionError("getMVB(): Array, not Object");
@@ -185,7 +190,7 @@ public class ObjectCache extends DataMemory {
 		private DataMemory handleMemory;
 		protected DataMemory nextLevelMemory;
 
-		private ObjectCacheEntry[] objectEntry;
+		private ObjectCacheEntry[] objectEntries;
 
 		private DataCacheStats stats, objectStats;
 		private Set<Access> handledAccessTypes;
@@ -213,9 +218,9 @@ public class ObjectCache extends DataMemory {
 				blockBits++;
 			}
 			
-			objectEntry = new ObjectCacheEntry[ways];
+			objectEntries = new ObjectCacheEntry[ways];
 			for(int i = 0; i < ways; i++) {
-				objectEntry[i] = new ObjectCacheEntry();
+				objectEntries[i] = new ObjectCacheEntry();
 			}
 
 			this.handleMemory = handleMemory; /* next level handle memory */
@@ -227,10 +232,10 @@ public class ObjectCache extends DataMemory {
 		@Override
 		public void  invalidateCache() {
 			for(int i = 0; i < ways; i++) {
-				objectEntry[i].invalidate();
+				objectEntries[i].invalidate();
 			}
 			this.handleMemory.invalidateHandles();
-			for(ObjectCacheEntry entry: this.objectEntry) {
+			for(ObjectCacheEntry entry: this.objectEntries) {
 				entry.invalidateMetaData();
 			}
 			nextLevelMemory.invalidateData();
@@ -242,7 +247,7 @@ public class ObjectCache extends DataMemory {
 		@Override
 		public void  invalidateData() {			
 			for(int i = 0; i < ways; i++) {
-				objectEntry[i].invalidate();
+				objectEntries[i].invalidate();
 			}
 			objectStats.invalidate();
 			stats.invalidate();
@@ -253,7 +258,7 @@ public class ObjectCache extends DataMemory {
 		public void invalidateHandles() {
 			this.handleMemory.invalidateHandles();
 			objectStats.invalidate();
-			for(ObjectCacheEntry entry: this.objectEntry) {
+			for(ObjectCacheEntry entry: this.objectEntries) {
 				entry.invalidateMetaData();
 			}
 		}
@@ -312,20 +317,25 @@ public class ObjectCache extends DataMemory {
 					                 + " write in object cache at address "+address); 
 		}
 
-		// TODO: use ObjectCacheLookupResult
+		// write through cache
+		// FIXME: probably still broken for wrap-around cache (which has not been used so far)
 		@Override
 		public void writeField(int handle, int offset, int data, Access type) {
-			// Write through
-			nextLevelMemory.writeField(handle, offset, data, type);
 			if(allocateOnWrite) {
-				getOrLoadObjectEntry(handle, null).modifyData(getBlockIndex(offset), getBlockOffset(offset), data);
+				ObjectCacheLookupResult r = new ObjectCacheLookupResult();
+				ObjectCacheEntry objectEntry = getOrLoadObjectEntry(handle, r);
+				objectEntry.modifyData(getBlockIndex(offset), getBlockOffset(offset), data);
+				// Statistics
+				objectStats.read(r.hitObject);
+				stats.write();
+				// Write through
+				int oaddr = objectEntry.getAddress();
+				nextLevelMemory.write(oaddr + offset, data, type);
 			} else {
-				if(fieldIndexMode == FieldIndexMode.Wrap || offset < wordsPerObject()) {
-					// we need to update the entry if it is in the cache
-					// FIXME: probably still broken for wrap-around, but works now for bypassing
-					int way = lookupObject(handle);
-					objectStats.read(isValidWay(way));
-					if(! isValidWay(way)) return;
+				int way = lookupObject(handle);
+				objectStats.writeCheck(isValidWay(way));
+				// we need to update the entry if it is in the cache
+				if(isValidWay(way) && (fieldIndexMode == FieldIndexMode.Wrap || offset < wordsPerObject())) {
 					getObjectCacheEntry(way).updateIfValid(offset, data);
 					stats.write();
 				}
@@ -362,7 +372,7 @@ public class ObjectCache extends DataMemory {
 		
 		private int lookupObject(int handle) {
 			for(int way = 0; way < ways; way++) {
-				if(objectEntry[way].valid && objectEntry[way].handle == handle) return way;
+				if(objectEntries[way].valid && objectEntries[way].handle == handle) return way;
 			}
 			return -1;
 		}
@@ -385,7 +395,7 @@ public class ObjectCache extends DataMemory {
 		 */
 		private ObjectCacheEntry getObjectCacheEntry(int way) {
 			if(! isValidWay(way)) throw new AssertionError("getObjectCacheEntry: invalid index");
-			return this.objectEntry[way];
+			return this.objectEntries[way];
 		}
 		
 		private void readBypassed(ObjectCacheEntry block, int offset, ObjectCacheLookupResult r) {
@@ -431,8 +441,8 @@ public class ObjectCache extends DataMemory {
 		/** Simulate an access to the object cache entry in the specified 'way' table */
 		private void updateCache(int way, ObjectCacheEntry ob) {
 			switch(replacement) {
-			case FIFO: 			replaceFifo(objectEntry,  ob, way, ways);
-			case LRU:			replaceLRU(objectEntry,  ob, way, ways);
+			case FIFO: 			replaceFifo(objectEntries,  ob, way, ways);
+			case LRU:			replaceLRU(objectEntries,  ob, way, ways);
 			}
 		}		
 
@@ -479,9 +489,9 @@ public class ObjectCache extends DataMemory {
 			long totalAccesses = objStats.get(StatTy.ReadCount);
 			long cmcSRAM = cmc(objStats,fieldStats,0,2);
 			long cmcSDRAM = cmc(objStats,fieldStats,10,2);
-			out.println("Cache Miss Cycles (SRAM): "+cmcSRAM+" / "+totalAccesses+" = "+
+			out.println("  Cache Miss Cycles (SRAM): "+cmcSRAM+" / "+totalAccesses+" = "+
 					    (cmcSRAM / (double)objStats.get(StatTy.ReadCount)));
-			out.println("Cache Miss Cycles (SDRAM): "+cmcSDRAM+" / "+totalAccesses+" = "+
+			out.println("  Cache Miss Cycles (SDRAM): "+cmcSDRAM+" / "+totalAccesses+" = "+
 				    (cmcSDRAM / (double)objStats.get(StatTy.ReadCount)));
 		}
 		

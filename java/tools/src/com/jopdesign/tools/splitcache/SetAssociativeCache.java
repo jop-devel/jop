@@ -6,6 +6,7 @@ import java.util.Stack;
 
 import com.jopdesign.tools.DataMemory;
 import com.jopdesign.tools.Cache.ReplacementStrategy;
+import com.jopdesign.tools.DataMemory.Access;
 
 /**
  * A generalized set-associative cache, with configurable number of ways (N),
@@ -36,7 +37,9 @@ public class SetAssociativeCache extends DataMemory {
 	private boolean needsHandleInvalidation;
 
 	protected DataCacheStats stats;
+
 	private Access[] handledAccessTypes;
+	private boolean cachesHandles; // whether handles are handled
 
 	public int getSizeInWords() {
 		return ways*sets*blockSize;
@@ -54,7 +57,13 @@ public class SetAssociativeCache extends DataMemory {
 	public SetAssociativeCache(int ways, int setsPerWay, int wordsPerBlock, ReplacementStrategy replacementStrategy,
 			                   boolean needsDataInvalidation, boolean needsHandleInvalidation,
 			                   DataMemory nextLevelCache, Access handled[]) {
+
 		this.handledAccessTypes = handled;
+		this.cachesHandles = false;
+		for(Access at : handled) {
+			if(at == Access.HANDLE) this.cachesHandles = true;
+		}
+		
 		this.ways = ways;
 		this.sets = setsPerWay;
 		this.blockSize = wordsPerBlock;
@@ -75,7 +84,11 @@ public class SetAssociativeCache extends DataMemory {
 		this.needsHandleInvalidation = needsHandleInvalidation;
 		this.stats = new DataCacheStats(getName());
 	}
-		
+	
+	private boolean doesCacheHandles() {
+		return cachesHandles;
+	}
+
 	@Override
 	public void invalidateCache() {
 		for(int i = 0; i < ways; i++)
@@ -131,7 +144,7 @@ public class SetAssociativeCache extends DataMemory {
 	}	
 	
 
-
+	/* write through */
 	@Override
 	public void write(int addr, int value, Access type) {
 		int way = lookupTag(tagOfAddress(addr), setOfAddress(addr));
@@ -144,12 +157,20 @@ public class SetAssociativeCache extends DataMemory {
 	}
 	
 	public int readField(int handle, int offset, Access type) {
-		int addr = read(handle, Access.HANDLE);
-		return read(addr+offset, type);
+		if(this.doesCacheHandles()) {
+			int addr = read(handle, Access.HANDLE);
+			return read(addr+offset, type);
+		} else {
+			throw new AccessTypeUnsupported("handle accesses unsupported by this set associative cache");
+		}
 	}
 	public void writeField(int handle, int offset, int value, Access type) {
-		int addr = read(handle, Access.HANDLE);
-		write(addr+offset, value, type);		
+		if(this.doesCacheHandles()) {
+			int addr = read(handle, Access.HANDLE);
+			write(addr+offset, value, type);		
+		} else {
+			throw new AccessTypeUnsupported("handle accesses unsupported by this set associative cache");
+		}
 	}
 
 	
@@ -157,7 +178,7 @@ public class SetAssociativeCache extends DataMemory {
 		return blockSize - 1;
 	}
 	
-
+	/* returns ways if the tag is not in the set */
 	private int lookupTag(int tag, int set) {
 		
 		int way = 0;
@@ -260,7 +281,7 @@ public class SetAssociativeCache extends DataMemory {
 			BlockType activeBlock = cacheData[w][set];
 			cacheData[w][set] = movedBlock;
 			movedBlock = activeBlock;
-		}		
+		}
 	}
 
 	public static<BlockType> void updateFIFO(BlockType accessedElement, int oldBlockPos, BlockType[][] cacheData, int set) {
