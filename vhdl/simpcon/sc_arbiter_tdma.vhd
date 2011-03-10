@@ -51,10 +51,28 @@ use work.sc_pack.all;
 use work.sc_arbiter_pack.all;
 use work.jop_types.all;
 
+-- read and write gaps
+
+-- Constants for read_gap, write_gap, slot_length:
+-- DE2 board:    6 cycle memory write, 4 cycle memory read
+--               write_gap <= 5; read_gap <= 3;
+--               minimal slot_length <= 6;
+-- DE2-70 board: 3 cycle memory write, 3 cycle memory read
+--               write_gap <= 2; read_gap <= 2;
+--               minimal slot_length <= 3;
+-- cyc12 board:  3 cycle memory write, 2 cycle memory read
+--               write_gap <= 2; read_gap <= 1;
+--               minimal slot_length <= 3;
+-- Nexys2: 24, 24, 32 (number assigned by Flavius)
+
 entity arbiter is
 	generic(
 		addr_bits : integer;
-		CPU_CNT	: integer);		-- number of masters for the arbiter
+		CPU_CNT	: integer;
+		write_gap : integer := 24;
+		read_gap  : integer := 24;
+		slot_length : integer := 32
+		);		-- number of masters for the arbiter
 	port (
 		clk, reset	: in std_logic;			
 		arb_out			: in arb_out_type(0 to CPU_CNT-1);
@@ -83,22 +101,6 @@ architecture rtl of arbiter is
 	type waitstate_array is array (0 to CPU_CNT-1) of waitstate_type;
 	signal waitstate, next_waitstate : waitstate_array;
 
--- read and write gaps
-
--- Constants for read_gap, write_gap, slot_length:
--- DE2 board:    6 cycle memory write, 4 cycle memory read
---               write_gap <= 5; read_gap <= 3;
---               minimal slot_length <= 6;
--- DE2-70 board: 3 cycle memory write, 3 cycle memory read
---               write_gap <= 2; read_gap <= 2;
---               minimal slot_length <= 3;
--- cyc12 board:  3 cycle memory write, 2 cycle memory read
---               write_gap <= 2; read_gap <= 1;
---               minimal slot_length <= 3;
-
-	constant write_gap : integer := 24;
-	constant read_gap  : integer := 24;
-	constant slot_length : integer := 32;
 	constant period : integer := CPU_CNT*slot_length;
 
 -- counter
