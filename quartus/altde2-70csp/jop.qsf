@@ -28,7 +28,7 @@ set_global_assignment -name DEVICE EP2C70F896C6
 set_global_assignment -name TOP_LEVEL_ENTITY jop
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION "6.0 SP1"
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "20:32:02  AUGUST 07, 2006"
-set_global_assignment -name LAST_QUARTUS_VERSION 9.1
+set_global_assignment -name LAST_QUARTUS_VERSION 10.1
 set_global_assignment -name DEVICE_FILTER_PIN_COUNT 896
 
 # Pin & Location Assignments
@@ -599,7 +599,7 @@ set_location_assignment PIN_D21 -to ser_rxd
 set_location_assignment PIN_E21 -to ser_txd
 set_global_assignment -name SDC_FILE jop.sdc
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_global.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_de2.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_de2_slow.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc2_pll.vhd
@@ -635,9 +635,11 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_tdma.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/paper/csp/jopde2-70csp.vhd
+set_global_assignment -name VHDL_FILE "../../vhdl/paper/csp/jopde2-70csp.vhd"
 
 set_global_assignment -name CDF_FILE jop.cdf
 
 set_global_assignment -name USE_CONFIGURATION_DEVICE ON
 set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
+
+set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS OUTPUT DRIVING AN UNSPECIFIED SIGNAL"

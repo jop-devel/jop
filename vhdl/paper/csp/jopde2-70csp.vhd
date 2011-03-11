@@ -49,8 +49,8 @@ generic (
 	rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 5;		-- 2*block_bits is number of cache blocks
-	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 4		-- number of cpus
+	spm_width	: integer := 8;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
+	cpu_cnt		: integer := 8		-- number of cpus
 );
 
 port (
