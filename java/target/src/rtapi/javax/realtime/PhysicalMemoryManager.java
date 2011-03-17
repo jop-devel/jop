@@ -4,6 +4,9 @@ import static javax.safetycritical.annotate.Level.LEVEL_1;
 
 @SCJAllowed(LEVEL_1)
 public final class PhysicalMemoryManager {
+	
+	public static final Object ON_CHIP_PRIVATE = new Object();
+
   /*
    *
    */
