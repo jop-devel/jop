@@ -236,7 +236,7 @@ DEBUG_JOPSIM=
 #	application optimization with JCopter
 #
 USE_JCOPTER?=yes
-JCOPTER_OPT?=--dump-callgraph both --dump-jvm-callgraph merged --callstring-length 2 
+JCOPTER_OPT?=--dump-callgraph merged --dump-jvm-callgraph merged --callstring-length 2 --target-method $(WCET_METHOD)
 
 
 # build everything from scratch
@@ -700,11 +700,10 @@ wcet:
 	  $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis \
 		--classpath $(TARGET)/dist/lib/classes.zip --sp $(TARGET_SOURCE) \
 		--target-method $(WCET_METHOD) \
-		-o $(TARGET)/wcet \
+		-o "$(TARGET)/wcet/\$${projectname}" \
 		--use-dfa $(WCET_DFA) \
 		--uppaal $(WCET_UPPAAL) --uppaal-verifier $(WCET_VERIFYTA) \
 		$(WCET_OPTIONS) $(MAIN_CLASS)	
-	-rm -rf $(TARGET)/tmp
 
 
 # dotgraph works for wcet.WCETAnalyser
