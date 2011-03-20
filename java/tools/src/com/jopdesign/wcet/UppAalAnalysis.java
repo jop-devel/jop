@@ -60,7 +60,7 @@ public class UppAalAnalysis {
         // Note that WCETTool could also override defaults, but we do not want to change the
         // default value of outdir if WCETTool is invoked from another tool
         Properties defaultProps = new Properties();
-        defaultProps.put("outdir", "java/target/wcet");
+        defaultProps.put("outdir", "java/target/wcet/${projectname}");
 
         AppSetup setup = new AppSetup(defaultProps, false);
         setup.setVersionInfo("1.0 [deprecated]");

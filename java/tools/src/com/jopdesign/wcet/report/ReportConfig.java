@@ -24,6 +24,7 @@ import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.StringOption;
+import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.wcet.WCETTool;
 
@@ -34,19 +35,21 @@ public class ReportConfig {
             new StringOption("templatedir",
                     "directory with custom templates for report generation", "java/tools/src");
 
+    public static final StringOption WCET_REPORTDIR =
+            new StringOption("wcet-reportdir", "directory to write wcet reports to", "${reportdir}");
+
     public static final Option<?>[] reportOptions =
-            {TEMPLATEDIR, Config.PROGRAM_DOT};
+            {TEMPLATEDIR, WCET_REPORTDIR, Config.PROGRAM_DOT};
 
     /* dynamic configuration */
     private Config config;
     private File reportDir;
+    private final LogConfig logConfig;
 
-    public ReportConfig(WCETTool project) throws BadConfigurationException {
+    public ReportConfig(WCETTool project, LogConfig logConfig) throws BadConfigurationException {
+        this.logConfig = logConfig;
         this.config = project.getConfig();
-        // TODO we should use a different report dir/subdir for wcet reports
-        //      but then we must get the correct relative path for this.get(Error|Info)LogFile()
-        //      (relative to the report dir)
-        this.reportDir = new File(config.getOption(Config.REPORTDIR));
+        this.reportDir = new File(config.getOption(WCET_REPORTDIR));
         Config.checkDir(reportDir, true);
     }
 
@@ -59,7 +62,7 @@ public class ReportConfig {
     }
 
     /**
-     * get the directory to create output files in
+     * @return the directory to create output files in
      */
     public File getReportDir() {
         return this.reportDir;
@@ -90,7 +93,7 @@ public class ReportConfig {
     }
 
     public boolean doInvokeDot() {
-        return (getDotBinary() != null);
+        return (getDotBinary() != null) && !"".equals(getDotBinary());
     }
 
     public boolean hasDotBinary() {
@@ -99,11 +102,11 @@ public class ReportConfig {
     }
 
     public File getErrorLogFile() {
-        return new File(getReportDir(), config.getOption(Config.ERROR_LOG_FILE));
+        return MiscUtils.getRelativeFile(logConfig.getErrorLogFile(), getReportDir());
     }
 
     public File getInfoLogFile() {
-        return new File(getReportDir(), config.getOption(Config.INFO_LOG_FILE));
+        return MiscUtils.getRelativeFile(logConfig.getInfoLogFile(), getReportDir());
     }
 
 }

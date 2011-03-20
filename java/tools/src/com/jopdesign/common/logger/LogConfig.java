@@ -74,6 +74,11 @@ public class LogConfig {
     public static final String LOG_CFG = "common.appinfo.code.cfg";
 
     public static final String LOG_GRAPH = "common.graph";
+    private File errorLog;
+    private File infoLog;
+
+    public LogConfig() {
+    }
 
     /**
      * Setup the logger using configuration options.
@@ -118,6 +123,9 @@ public class LogConfig {
     public void setReportLoggers(File errorLog, File infoLog)
 		throws IOException
     {
+        this.errorLog = errorLog;
+        this.infoLog = infoLog;
+
         if ( errorLog != null ) {
             errorLog.delete();
             FileAppender eapp = new FileAppender(new HTMLLayout(), errorLog.getPath());
@@ -149,5 +157,13 @@ public class LogConfig {
             app.close();
             Logger.getRootLogger().removeAppender(app);
         }
+    }
+
+    public File getErrorLogFile() {
+        return errorLog;
+    }
+
+    public File getInfoLogFile() {
+        return infoLog;
     }
 }

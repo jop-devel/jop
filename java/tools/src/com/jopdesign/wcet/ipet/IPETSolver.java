@@ -73,7 +73,7 @@ public class IPETSolver {
      */
     public IPETSolver(String problemName, IPETConfig config) {
         this.problemName = problemName;
-        outDir = config.getOutDir();
+        outDir = config.doDumpIlp() ? config.getOutDir() : null;
     }
 
     public void addConstraint(LinearConstraint<ExecutionEdge> lc) {

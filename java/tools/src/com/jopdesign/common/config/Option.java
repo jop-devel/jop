@@ -179,7 +179,7 @@ public abstract class Option<T> {
     }
 
     public String toString() {
-        return toString(0, null);
+        return key;
     }
 
     public String toString(int lAdjust, OptionGroup options) {

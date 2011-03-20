@@ -61,8 +61,6 @@ import java.util.TreeMap;
  */
 public class AppSetup {
 
-    private boolean loadSystemProps;
-
     /**
      * Helper to load a property file in the package of a given class.
      *
@@ -101,11 +99,14 @@ public class AppSetup {
     private LogConfig logConfig;
     private AppInfo appInfo;
     private boolean handleAppInfoInit;
+    private boolean loadSystemProps;
     private String programName;
     private String usageDescription;
     private String optionSyntax;
     private String versionInfo;
     private String configFilename;
+
+    private Signature mainSignature;
 
     private Map<String, JopTool> tools;
     private Map<String, BooleanOption> optionalTools;
@@ -188,6 +189,17 @@ public class AppSetup {
 
     public AppInfo getAppInfo() {
         return appInfo;
+    }
+
+    /**
+     * Get the main method signature, recognized by parsing commandline and config options.
+     * This is available after {@link #setupConfig(String[])}, but does not check if the main
+     * class exists.
+     *
+     * @return the signature of the main method, as set by the options.
+     */
+    public Signature getMainSignature() {
+        return mainSignature;
     }
 
     /**
@@ -403,6 +415,10 @@ public class AppSetup {
             rest = config.parseArguments(args);
             // TODO options of non-enabled tools should not be required (but checked if present?)
             config.checkOptions();
+
+            // we parse the main method signature here, so it is available to the tools before
+            // AppInfo is initialized
+            mainSignature = getMainSignature(rest.length > 0 ? rest[0] : null);
         } catch (Config.BadConfigurationException e) {
             System.err.println(e.getMessage());
             if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
@@ -420,10 +436,6 @@ public class AppSetup {
             printVersion();
             System.exit(0);
         }
-        if ( config.getOption(Config.SHOW_CONFIG) ) {
-            config.printConfiguration(config.getDefaultIndent());
-            System.exit(0);
-        }
 
         // let modules process their config options
         try {
@@ -438,6 +450,12 @@ public class AppSetup {
                 System.err.println("Use '--help' to show a usage message.");
             }
             System.exit(2);            
+        }
+
+        // Dump the config only after we let the tools initialize the config first
+        if ( config.getOption(Config.SHOW_CONFIG) ) {
+            config.printConfiguration(config.getDefaultIndent());
+            System.exit(0);
         }
 
         return rest;
@@ -541,6 +559,21 @@ public class AppSetup {
             appInfo.addRoot(clsInfo);
         }
 
+        // notify the tools about the root classes
+        try {
+            for (String tool : tools.keySet()) {
+                if (useTool(tool)) {
+                    tools.get(tool).onSetupRoots(this, appInfo);
+                }
+            }
+        } catch (Config.BadConfigurationException e) {
+            System.err.println(e.getMessage());
+            if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
+                System.err.println("Use '--help' to show a usage message.");
+            }
+            System.exit(2);
+        }
+
         // load and initialize all app classes
         if (loadTransitiveHull) {
             loadClassInfos();
@@ -560,7 +593,6 @@ public class AppSetup {
             }
             System.exit(2);
         }
-
     }
 
     /**
@@ -735,11 +767,8 @@ public class AppSetup {
         return new File(configFile);
     }
 
-    private MethodInfo getMainMethod(String signature) throws Config.BadConfigurationException {
-
-        ClassInfo clsInfo;
+    private Signature getMainSignature(String signature) throws BadConfigurationException {
         Signature sMain;
-        String clsName;
 
         Signature sMainMethod = Signature.parse(config.getOption(Config.MAIN_METHOD_NAME), true);
 
@@ -748,7 +777,28 @@ public class AppSetup {
         } else {
             // try to parse the signature
             sMain = Signature.parse(signature);
+
+            // use --mm if only main class has been given
+            if (!sMain.hasMemberName()) {
+                if (!sMainMethod.hasMemberName()) {
+                    throw new BadConfigurationException("Option '"+Config.MAIN_METHOD_NAME.getKey()
+                            +"' needs to specify a method name.");
+                }
+
+                sMain = new Signature(sMain.getClassName(), sMainMethod.getMemberName(),
+                                                            sMainMethod.getDescriptor());
+            }
         }
+
+        return sMain;
+    }
+
+    private MethodInfo getMainMethod(String signature) throws Config.BadConfigurationException {
+
+        ClassInfo clsInfo;
+        String clsName;
+
+        Signature sMain = getMainSignature(signature);
 
         clsName = sMain.getClassName();
         if ( clsName == null ) {
@@ -760,15 +810,6 @@ public class AppSetup {
         } catch (ClassInfoNotFoundException e) {
             throw new BadConfigurationException("Class for '"+signature+"' could not be loaded: "
                     + e.getMessage(), e);
-        }
-
-        // use --mm if only main class has been given
-        if (!sMain.hasMemberName()) {
-            if (!sMainMethod.hasMemberName()) {
-                throw new BadConfigurationException("Option '"+Config.MAIN_METHOD_NAME.getKey()
-                        +"' needs to specify a method name.");
-            }
-            sMain = sMainMethod;
         }
 
         // check if we have a full signature

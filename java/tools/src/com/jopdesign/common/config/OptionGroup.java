@@ -325,6 +325,10 @@ public class OptionGroup {
         config.setProperty(getConfigKey(option), value.toString());
     }
 
+    public <T> void setDefaultValue(Option<T> option, T value) {
+        config.setDefaultProperty(getConfigKey(option), value.toString());        
+    }
+
     /*
      * Parse, check and dump options
      * ~~~~~~~~~~~~~~~~~~~~~~
@@ -410,8 +414,17 @@ public class OptionGroup {
         if (spec != null) {
             String val = null;
             if (pos + 1 < args.length) {
-                if (spec.isValue(args[pos + 1])) {
-                    val = args[pos + 1];
+                String newVal = args[pos +1];
+
+                // allow to set to empty string
+                if ("''".equals(newVal) || "\"\"".equals(newVal)) {
+                    newVal = "";
+                }
+
+                // TODO handle quoted arguments 
+
+                if (spec.isValue(newVal)) {
+                    val = newVal;
                 }
             }
             int i = pos;
@@ -432,7 +445,11 @@ public class OptionGroup {
             spec = getOptionSpec(key.substring(3));
             if (spec != null && spec instanceof BooleanOption) {
                 config.setProperty(getConfigKey(spec), "false");
+            } else if (spec != null) {
+                // unset it
+                config.setProperty(getConfigKey(spec), null);
             }
+            // else spec == null;
         } else if(key.contains(".")) {
             // or maybe a sub-option
             int j = key.indexOf('.');

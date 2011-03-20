@@ -150,10 +150,13 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         appInfo = setup.getAppInfo();
         Config config = setup.getConfig();
 
-        this.projectConfig = new ProjectConfig(config);
+        projectConfig = new ProjectConfig(config);
+        projectConfig.initConfig(setup.getMainSignature());
+
+        this.projectName = projectConfig.getProjectName();
 
         if (projectConfig.doGenerateReport()) {
-            this.results = new Report(this);
+            this.results = new Report(this, setup.getLoggerConfig());
             try {
                 this.results.initVelocity();
             } catch (Exception e) {
@@ -170,9 +173,6 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     public void onSetupAppInfo(AppSetup setup, AppInfo appInfo) throws BadConfigurationException {
 
         // We only do setup stuff here, but do not perform any preprocessing (this is done in initialize())
-
-        // We cannot do this in onSetupConfig, since mainMethod is not initialized there
-        this.projectName = projectConfig.getProjectName();
 
         if (projectConfig.getProcessorName().equals("allocObjs")) {
             this.processor = new ObjectAllocationModel(this);
@@ -194,10 +194,9 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             throw new BadConfigurationException("Unknown WCET model: " + projectConfig.getProcessorName());
         }
 
+        // create output dir only after initialization is successful
         File outDir = projectConfig.getOutDir();
         Config.checkDir(outDir, true);
-        File ilpDir = new File(outDir, "ilps");
-        Config.checkDir(ilpDir, true);
     }
 
     public void initialize() throws BadConfigurationException {
@@ -572,6 +571,8 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     /**
      * Get infeasible edges for certain call string
      *
+     * @param cfg the controlflowgraph of the method
+     * @param cs the callstring of the method
      * @return The infeasible edges
      */
     public List<CFGEdge> getInfeasibleEdges(ControlFlowGraph cfg, CallString cs) {
@@ -585,6 +586,9 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
     /**
      * Get infeasible edges for certain basic block call string
+     * @param cfg the CFG containing the block
+     * @param block get infeasible outgoing edges for the block
+     * @param cs the callstring
      * @return The infeasible edges for this basic block
      */
     private List<CFGEdge> dfaInfeasibleEdge(ControlFlowGraph cfg, BasicBlock block, CallString cs) {

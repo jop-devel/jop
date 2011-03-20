@@ -21,6 +21,7 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.OptionGroup;
 
 import java.io.IOException;
@@ -91,11 +92,21 @@ public interface JopTool<T extends AppEventHandler> {
     void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException;
 
     /**
+     * Called by {@link AppSetup#setupAppInfo(String[], boolean)} after the AppInfo roots and main
+     * method have been set, but before the rest of the app is loaded.
+     *
+     * @param setup the AppSetup used to initialize this tool
+     * @param appInfo the AppInfo with root classes but no other application classes.
+     * @throws BadConfigurationException if anything bad happens due to config errors.
+     */
+    void onSetupRoots(AppSetup setup, AppInfo appInfo) throws BadConfigurationException;
+
+    /**
      * Initialize the tool after AppInfo has been initialized and all classes have been loaded.
      * <p>
      * All setup tasks which affect class loading (like initializing
-     * {@link AppEventHandler#onCreateClass(ClassInfo, boolean)}) must be done in {@link #onSetupConfig(AppSetup)},
-     * but note that AppInfo is not available there.
+     * {@link AppEventHandler#onCreateClass(ClassInfo, boolean)}) must be done in {@link #onSetupConfig(AppSetup)}
+     * or {@link #onSetupRoots(AppSetup, AppInfo)}, but note that AppInfo is not available in the first method.
      * </p>
      *
      * @param setup the AppSetup used to initialize this tool

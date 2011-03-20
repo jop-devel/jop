@@ -39,6 +39,11 @@ public class ProjectConfig {
     public static final StringOption PROJECT_NAME =
             new StringOption("projectname","name of the 'project', used when generating reports",true);
 
+    /* not used, should we use it?
+    public static final StringOption WCET_OUT =
+            new StringOption("wcet-out", "output base path for wcet results", "${outdir}");
+    */
+
     public static final StringOption WCET_MODEL =
             new StringOption("wcet-model","which java processor to use (jamuth, JOP, allocObjs, allocHandles, allocHeaders, allocBlocks)","${arch}");
 
@@ -100,6 +105,18 @@ public class ProjectConfig {
     }
 
     /**
+     * This function initializes configuration defaults, like the project name.
+     * Must be called before any option is accessed which may refer to options whose defaults are
+     * initialized here.
+     *
+     * @param mainSignature the main method signature
+     */
+    public void initConfig(Signature mainSignature) {
+        String projectName = MiscUtils.sanitizeFileName(mainSignature.getClassName() + "_" + getTargetMethodName());
+        config.setDefaultValue(PROJECT_NAME, projectName);
+    }
+
+    /**
      * @return the name of the application class defining the entry point main()
      */
     public String getAppClassName() {
@@ -148,8 +165,7 @@ public class ProjectConfig {
     }
 
     public String getProjectName() {
-        return config.getOption(PROJECT_NAME,
-                        MiscUtils.sanitizeFileName(getAppClassName() + "_" + getTargetMethodName()));
+        return config.getOption(PROJECT_NAME);
     }
 
     public File getLinkInfoFile() {
@@ -157,7 +173,8 @@ public class ProjectConfig {
     }
 
     public File getOutDir() {
-        return new File(config.getOption(Config.WRITE_PATH),getProjectName());
+        //return new File(config.getOption(WCET_OUT));
+        return config.getOutDir();
     }
 
     /**

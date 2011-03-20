@@ -25,6 +25,7 @@ import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.graphutils.InvokeDot;
+import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.timing.WCETInstruction;
 import com.jopdesign.wcet.WCETTool;
@@ -71,9 +72,9 @@ public class Report {
     private ReportEntry rootReportEntry = ReportEntry.rootReportEntry("summary.html");
     private HashMap<File, File> dotJobs = new HashMap<File, File>();
 
-    public Report(WCETTool p) throws BadConfigurationException {
+    public Report(WCETTool p, LogConfig logConfig) throws BadConfigurationException {
         this.project = p;
-        this.config = new ReportConfig(p);
+        this.config = new ReportConfig(p, logConfig);
         if (config.doInvokeDot()) {
             this.dotInvoker = new InvokeDot(config.getDotBinary(), config.getReportDir());
         }
@@ -123,8 +124,8 @@ public class Report {
      * @throws Exception
      */
     public void writeReport() throws Exception {
-        this.addPage("logs/error.log", config.getErrorLogFile().getName());
-        this.addPage("logs/info.log", config.getInfoLogFile().getName());
+        this.addPage("logs/error.log", config.getErrorLogFile().toString());
+        this.addPage("logs/info.log", config.getInfoLogFile().toString());
         generateBytecodeTable();
         generateIndex();
         generateSummary();

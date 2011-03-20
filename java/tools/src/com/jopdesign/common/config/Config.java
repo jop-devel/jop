@@ -381,16 +381,24 @@ public class Config {
      * Set a new value for a key.
      *
      * @param key        the key to of the value to set.
-     * @param value      the new value to set.
+     * @param value      the new value to set, or null to unset it
      * @param setDefault if true, set the default value instead of the value.
      * @return the old value or old default value.
      */
     public String setProperty(String key, String value, boolean setDefault) {
         Object val;
         if (setDefault) {
-            val = defaultProps.setProperty(key, value);
+            if (value != null) {
+                val = defaultProps.setProperty(key, value);
+            } else {
+                val = defaultProps.remove(key);
+            }
         } else {
-            val = props.setProperty(key, value);
+            if (value != null) {
+                val = props.setProperty(key, value);
+            } else {
+                val = props.remove(key);
+            }
         }
         return val != null ? val.toString() : null;
     }
@@ -521,6 +529,10 @@ public class Config {
 
     public <T> void setOption(Option<T> option, T value) {
         options.setOption(option, value);
+    }
+
+    public <T> void setDefaultValue(Option<T> option, T defaultValue) {
+        options.setDefaultValue(option, defaultValue);
     }
 
     /**
