@@ -714,7 +714,9 @@ public class ControlFlowGraph {
      */
     public FlowGraph<CFGNode, CFGEdge> getGraph() {
         return graph;
-    }    public List<BasicBlock> getBlocks() {
+    }
+
+    public List<BasicBlock> getBlocks() {
         return blocks;
     }
 

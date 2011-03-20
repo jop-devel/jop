@@ -35,6 +35,7 @@ import java.util.Set;
 public class DefaultCallgraphConfig implements CallGraph.CallgraphConfig {
 
     private final int callstringLength;
+    private boolean skipNatives = false;
 
     public DefaultCallgraphConfig(int callstringLength) {
         this.callstringLength = callstringLength;
@@ -42,6 +43,14 @@ public class DefaultCallgraphConfig implements CallGraph.CallgraphConfig {
 
     public int getCallstringLength() {
         return callstringLength;
+    }
+
+    public boolean doSkipNatives() {
+        return skipNatives;
+    }
+
+    public void setSkipNatives(boolean skipNatives) {
+        this.skipNatives = skipNatives;
     }
 
     @Override
@@ -79,7 +88,18 @@ public class DefaultCallgraphConfig implements CallGraph.CallgraphConfig {
         // This uses either the existing default callgraph to construct a new one (which has
         // the advantage that the new callgraph is derived from an existing one), or looks up
         // in the type graph if no default callgraph exists
-        return AppInfo.getSingleton().findImplementations(invokeSite, context.getCallString());
+        Set<MethodInfo> methods = AppInfo.getSingleton().findImplementations(invokeSite, context.getCallString());
+        if (skipNatives) {
+            for (MethodInfo method : methods) {
+                // we do not want to have native methods in the callgraph
+                // we do not return any method even if only some of them are native, to indicate that
+                // the candidates are not completely represented!
+                if (method.isNative()) {
+                    return new HashSet<MethodInfo>(0);
+                }
+            }
+        }
+        return methods;
     }
 
 }

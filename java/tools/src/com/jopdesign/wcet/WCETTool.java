@@ -263,8 +263,11 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
      * @return the new callgraph.
      */
     public CallGraph rebuildCallGraph() {
+        DefaultCallgraphConfig config = new DefaultCallgraphConfig(projectConfig.callstringLength());
+        // we do not want to have native methods in the callgraph
+        config.setSkipNatives(true);
         callGraph = CallGraph.buildCallGraph(projectConfig.getTargetMethodInfo(),
-                              new DefaultCallgraphConfig(projectConfig.callstringLength()));
+                config);
         callGraph.checkAcyclicity();
         return callGraph;
     }
