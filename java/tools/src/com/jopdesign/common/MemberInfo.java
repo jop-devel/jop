@@ -295,7 +295,14 @@ public abstract class MemberInfo {
     /**
      * Check if this class or class member can access the given class.
      * Note that only methods are able to access local classes.
+     * <p>
+     * A member of a class can be accessible due to inheritance, even if the class where it is
+     * defined is not accessible, i.e. if {@code this.canAccess(member)} is true then
+     * {@code this.canAccess(member.getClassInfo())} can be false if
+     * {@code this.getClassInfo().isSubclassOf(member.getClassInfo())}.
+     * </p>
      *
+     * @see #canAccess(ClassInfo, AccessType)
      * @param classInfo the class to access.
      * @return true if this member is able to access the class.
      */
@@ -304,7 +311,7 @@ public abstract class MemberInfo {
         ClassInfo thisClass = getClassInfo();
 
         if (!classInfo.isNestedClass()) {
-            // Toplevel classes can only be public or package visible
+            // Toplevel classes can only be public or package visible, easy to check..
             switch (classInfo.getAccessType()) {
                 case ACC_PUBLIC: return true;
                 case ACC_PACKAGE: return thisClass.hasSamePackage(classInfo);
@@ -314,58 +321,18 @@ public abstract class MemberInfo {
             }
         }
 
-        // this is where the fun begins .. check nested class access
-
-        // check if we inherit from an enclosing class
-        ClassInfo superClass = classInfo.getInnerClassesInfo().getEnclosingSuperClassOf(thisClass, false);
-        ClassInfo enclosing = classInfo;
-
-        while (enclosing != null) {
-
-            if ( enclosing.isLocalInnerClass() ) {
-                // we can only access (the nested member classes of) a local class if we are the
-                // direct enclosing method of the local class
-                MethodRef methodRef = enclosing.getEnclosingMethodRef();
-                return methodRef != null && this.equals(methodRef.getMethodInfo());
-            }
-
-            switch (enclosing.getAccessType()) {
-                case ACC_PUBLIC: break;
-                case ACC_PROTECTED:
-                    // if we inherit from an enclosing class, we can access protected nested classes
-                    if ( superClass != null ) { break; }
-                    // else we have only package access
-                case ACC_PACKAGE:
-                    if (!thisClass.hasSamePackage(enclosing)) {
-                        return false;
-                    }
-                    break;
-                case ACC_PRIVATE:
-                    // Can only access private nested classes if this class encloses it
-                    if ( superClass == null || !superClass.equals(this) ) {
-                        return false;
-                    }
-                    break;
-                default:
-                    throw new JavaClassFormatError("Invalid access type "+classInfo.getAccessType()
-                            +" of class "+thisClass.getClassName());
-            }
-
-            enclosing = enclosing.getEnclosingClassInfo();
-
-            if ( superClass != null && superClass.equals(enclosing) ) {
-                // we inherit from this enclosing class, and have been able to access
-                // all 'nested enclosing classes of the class to test, so we are done!
-                return true;
-            }
+        // Inner classes (classes within methods) can only be accessed from the same method
+        if ( classInfo.isLocalInnerClass() ) {
+            // we can only access a local class if we are the
+            // direct enclosing method of the local class
+            MethodRef methodRef = classInfo.getEnclosingMethodRef();
+            return methodRef != null && this.equals(methodRef.getMethodInfo());
         }
-        if ( superClass != null ) {
-            // now this is funny .. we somehow missed the superClass. Should never happen
-            throw new JavaClassFormatError("Reached toplevel class of "+classInfo.getClassName()
-                    +" but we never encountered the expected enclosing class " +superClass.getClassName());
-        }
-        // successfully tested every enclosing class
-        return true;
+
+        // Access to a member class.. we need to check if we
+        // - can access the enclosing class
+        // - can access the member class in the enclosing class
+        return canAccess(classInfo.getEnclosingClassInfo(), classInfo.getAccessType());
     }
 
     /**
@@ -389,8 +356,12 @@ public abstract class MemberInfo {
      * @return true if this class is allowed to access members of the given accessType of the given class.
      */
     public boolean canAccess(ClassInfo cls, AccessType accessType) {
-        // first, check if we can access the class itself
-        if ( !canAccess(cls) ) {
+
+        boolean isSubclass = getClassInfo().isSubclassOf(cls);
+
+        // first, check if we can access the class itself. If we might inherit the member, we do not
+        // need access to the class of the member itself. If we inherit, depends on the modifiers of the member.
+        if (!isSubclass && !canAccess(cls)) {
             return false;
         }
 
@@ -399,14 +370,12 @@ public abstract class MemberInfo {
             case ACC_PUBLIC:
                 return true;
             case ACC_PROTECTED:
-                if ( getClassInfo().isSubclassOf(cls) ) {
-                    return true;
-                }
+                if ( isSubclass ) { return true; }
                 // fallthrough
             case ACC_PACKAGE:
                 return getClassInfo().hasSamePackage(cls);
             case ACC_PRIVATE:
-                return this.equals(cls) || cls.getInnerClassesInfo().isNestedClassOf(getClassInfo(), true);
+                return cls.getTopLevelClass().equals(getClassInfo().getTopLevelClass());
         }
         return false;
     }

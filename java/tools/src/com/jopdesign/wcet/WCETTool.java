@@ -204,8 +204,12 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         if (projectConfig.saveResults()) {
             this.resultRecord = projectConfig.getResultFile();
             if (!projectConfig.appendResults()) {
+                // TODO remove existing file if we do not append?
+                //resultRecord.delete();
                 recordMetric("problem", this.getProjectName());
-                recordMetric("date", new Date());
+                if (projectConfig.addPerformanceResults()) {
+                    recordMetric("date", new Date());
+                }
             }
         }
 
@@ -419,12 +423,21 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     public void recordResult(WcetCost wcet, double timeDiff, double solverTime) {
         if (resultRecord == null) return;
         Config c = projectConfig.getConfig();
-        recordCVS("wcet", "ipet", wcet, timeDiff, solverTime,
-                c.getOption(JOPConfig.CACHE_IMPL),
-                c.getOption(JOPConfig.CACHE_SIZE_WORDS),
-                c.getOption(JOPConfig.CACHE_BLOCKS),
-                c.getOption(IPETConfig.STATIC_CACHE_APPROX),
-                c.getOption(IPETConfig.ASSUME_MISS_ONCE_ON_INVOKE));
+        if (projectConfig.addPerformanceResults()) {
+            recordCVS("wcet", "ipet", wcet, timeDiff, solverTime,
+                    c.getOption(JOPConfig.CACHE_IMPL),
+                    c.getOption(JOPConfig.CACHE_SIZE_WORDS),
+                    c.getOption(JOPConfig.CACHE_BLOCKS),
+                    c.getOption(IPETConfig.STATIC_CACHE_APPROX),
+                    c.getOption(IPETConfig.ASSUME_MISS_ONCE_ON_INVOKE));
+        } else {
+            recordCVS("wcet", "ipet", wcet,
+                    c.getOption(JOPConfig.CACHE_IMPL),
+                    c.getOption(JOPConfig.CACHE_SIZE_WORDS),
+                    c.getOption(JOPConfig.CACHE_BLOCKS),
+                    c.getOption(IPETConfig.STATIC_CACHE_APPROX),
+                    c.getOption(IPETConfig.ASSUME_MISS_ONCE_ON_INVOKE));
+        }
 
     }
 
@@ -432,19 +445,35 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
                                    double timeDiff, double searchtime, double solvertimemax) {
         if (resultRecord == null) return;
         Config c = projectConfig.getConfig();
-        recordCVS("wcet", "uppaal", wcet, timeDiff, searchtime, solvertimemax,
-                c.getOption(JOPConfig.CACHE_IMPL),
-                c.getOption(JOPConfig.CACHE_SIZE_WORDS),
-                c.getOption(JOPConfig.CACHE_BLOCKS),
-                c.getOption(UppAalConfig.UPPAAL_CACHE_APPROX),
-                c.getOption(UppAalConfig.UPPAAL_COMPLEXITY_TRESHOLD),
-                c.getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES),
-                c.getOption(UppAalConfig.UPPAAL_CONVEX_HULL),
-                c.getOption(UppAalConfig.UPPAAL_TIGHT_BOUNDS),
-                c.getOption(UppAalConfig.UPPAAL_PROGRESS_MEASURE),
-                c.getOption(UppAalConfig.UPPAAL_SUPERGRAPH_TEMPLATE),
-                c.getOption(UppAalConfig.UPPAAL_EMPTY_INITIAL_CACHE)
-        );
+        if (projectConfig.addPerformanceResults()) {
+            recordCVS("wcet", "uppaal", wcet, timeDiff, searchtime, solvertimemax,
+                    c.getOption(JOPConfig.CACHE_IMPL),
+                    c.getOption(JOPConfig.CACHE_SIZE_WORDS),
+                    c.getOption(JOPConfig.CACHE_BLOCKS),
+                    c.getOption(UppAalConfig.UPPAAL_CACHE_APPROX),
+                    c.getOption(UppAalConfig.UPPAAL_COMPLEXITY_TRESHOLD),
+                    c.getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES),
+                    c.getOption(UppAalConfig.UPPAAL_CONVEX_HULL),
+                    c.getOption(UppAalConfig.UPPAAL_TIGHT_BOUNDS),
+                    c.getOption(UppAalConfig.UPPAAL_PROGRESS_MEASURE),
+                    c.getOption(UppAalConfig.UPPAAL_SUPERGRAPH_TEMPLATE),
+                    c.getOption(UppAalConfig.UPPAAL_EMPTY_INITIAL_CACHE)
+            );
+        } else {
+            recordCVS("wcet", "uppaal", wcet,
+                    c.getOption(JOPConfig.CACHE_IMPL),
+                    c.getOption(JOPConfig.CACHE_SIZE_WORDS),
+                    c.getOption(JOPConfig.CACHE_BLOCKS),
+                    c.getOption(UppAalConfig.UPPAAL_CACHE_APPROX),
+                    c.getOption(UppAalConfig.UPPAAL_COMPLEXITY_TRESHOLD),
+                    c.getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES),
+                    c.getOption(UppAalConfig.UPPAAL_CONVEX_HULL),
+                    c.getOption(UppAalConfig.UPPAAL_TIGHT_BOUNDS),
+                    c.getOption(UppAalConfig.UPPAAL_PROGRESS_MEASURE),
+                    c.getOption(UppAalConfig.UPPAAL_SUPERGRAPH_TEMPLATE),
+                    c.getOption(UppAalConfig.UPPAAL_EMPTY_INITIAL_CACHE)
+            );
+        }
     }
 
     public void recordSpecialResult(String metric, WcetCost cost) {

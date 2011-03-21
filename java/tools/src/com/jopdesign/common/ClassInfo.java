@@ -279,6 +279,14 @@ public final class ClassInfo extends MemberInfo {
     }
 
     /**
+     * @see InnerClassesInfo#getTopLevelClass()
+     * @return the top level class enclosing this class or this class if this is a top level class.
+     */
+    public ClassInfo getTopLevelClass() {
+        return innerClasses.getTopLevelClass();
+    }
+
+    /**
      * Check if this class is defined within a method.
      * @see InnerClassesInfo#isLocalInnerClass()
      * @return true if this class is not a member of the class.

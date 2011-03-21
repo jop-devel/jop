@@ -74,10 +74,13 @@ public class ProjectConfig {
             new BooleanOption("uppaal","perform uppaal-based WCET analysis",false);
 
     public static final StringOption RESULT_FILE =
-            new StringOption("result-file","save analysis results to the given file (CVS)",true);
+            new StringOption("result-file","save analysis results to the given file (CSV)",true);
 
     public static final BooleanOption RESULTS_APPEND =
             new BooleanOption("results-append","append analysis results to the result file",false);
+
+    public static final BooleanOption RESULTS_PERFORMANCE =
+            new BooleanOption("results-performance", "Include target-app unrelated results such as solver times in the CSV file", true);
 
     public static final Option<?>[] projectOptions =
     {
@@ -88,7 +91,7 @@ public class ProjectConfig {
             OBJECT_CACHE_ANALYSIS,
             USE_UPPAAL,
             DO_GENERATE_REPORTS,
-            RESULT_FILE, RESULTS_APPEND,
+            RESULT_FILE, RESULTS_APPEND, RESULTS_PERFORMANCE
     };
 
 
@@ -245,10 +248,14 @@ public class ProjectConfig {
         return config.getOption(RESULTS_APPEND);
     }
 
+    public boolean addPerformanceResults() {
+        return config.getOption(RESULTS_PERFORMANCE);
+    }
+
     public File getResultFile() {
         return new File(getConfig().getOption(ProjectConfig.RESULT_FILE));
     }
-    
+
     public boolean isDebugMode() {
         return config.getOption(Config.DEBUG);
     }

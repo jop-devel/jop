@@ -70,8 +70,10 @@ CSLENGTH?=0
 
 # TODO use .asm file from newtools for both tests 
 
-WCETNEW_OPTIONS="--callstring-length $(CSLENGTH) --result-file java/target/wcet/test/report.csv --projectname test -q"
-WCETOLD_OPTIONS="-callstring-length $(CSLENGTH) -result-file java/target/wcet/test/report.csv -projectname test"
+WCETNEW_OPTIONS="--callstring-length $(CSLENGTH) --result-file java/target/wcet/test/report.csv \
+		 --projectname test -q"
+WCETOLD_OPTIONS="-callstring-length $(CSLENGTH) -result-file java/target/wcet/test/report.csv \
+		 -projectname test"
 
 
 .PHONY: do_newwcet do_oldwcet	
@@ -83,7 +85,10 @@ else
 endif
 
 do_newwcet: resultdir:=$(OUTDIR)/new/$(result)
+do_newwcet: csvdir   :=$(OUTDIR)/new/csv
 do_oldwcet: resultdir:=$(OUTDIR)/old/$(result)
+do_oldwcet: csvdir   :=$(OUTDIR)/old/csv
+
 
 do_newwcet: 
 	-rm -rf $(NEWTOOLS_ROOT)/java/target/wcet/test
@@ -92,8 +97,9 @@ do_newwcet:
 		WCET_DFA=$(WCET_DFA) WCET_OPTIONS=$(WCETNEW_OPTIONS)
 	-rm -rf $(resultdir)
 	-mkdir -p $(resultdir)
+	-mkdir -p $(csvdir)
 	cp -a $(NEWTOOLS_ROOT)/java/target/wcet/test/report $(resultdir)/
-	cp -a $(NEWTOOLS_ROOT)/java/target/wcet/test/report.csv $(resultdir)/report.csv
+	cp -a $(NEWTOOLS_ROOT)/java/target/wcet/test/report.csv $(csvdir)/$(result).csv
 
 do_oldwcet:
 	-rm -rf $(OLDTOOLS_ROOT)/java/target/wcet
@@ -102,6 +108,7 @@ do_oldwcet:
 		WCET_DFA=$(WCET_DFA) WCET_OPTIONS=$(WCETOLD_OPTIONS)
 	-rm -rf $(resultdir)
 	-mkdir -p $(resultdir)
+	-mkdir -p $(csvdir)
 	cp -a $(OLDTOOLS_ROOT)/java/target/wcet/test/report $(resultdir)/
-	cp -a $(OLDTOOLS_ROOT)/java/target/wcet/test/report.csv $(resultdir)/report.csv
+	cp -a $(OLDTOOLS_ROOT)/java/target/wcet/test/report.csv $(csvdir)/$(result).csv
 	

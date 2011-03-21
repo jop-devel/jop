@@ -269,6 +269,19 @@ public class InnerClassesInfo {
     }
 
     /**
+     * Get the top level enclosing class, or this class itself if this class is a top level class.
+     *
+     * @return the top level class for this class.
+     */
+    public ClassInfo getTopLevelClass() {
+        ClassInfo top = classInfo;
+        while (top.isNestedClass()) {
+            top = top.getEnclosingClassInfo();
+        }
+        return top;
+    }
+
+    /**
      * Get the name of the outer class of this class if this is a nested member class.
      *
      * @see #getEnclosingClassName()
