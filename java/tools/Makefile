@@ -13,7 +13,7 @@ OLDTOOLS_ROOT=../../../wcmem
 OUTDIR=out
 
 
-all: wcet_test
+all: wcet_test cleanup compare
 
 ### Targets to prepare checkouts for building
 
@@ -37,10 +37,34 @@ clean:
  
 # Target to generate WCET results for a number of test programs
 wcet_test:
-	$(MAKE) testall -e P1=test P2=wcet P3=Loop     WCET_METHOD=foo
-	$(MAKE) testall -e P1=test P2=wcet P3=StartKfl WCET_METHOD=measure  
-	$(MAKE) testall -e P1=test P2=wcet P3=Dispatch WCET_METHOD=measure
+	$(MAKE) testall -e P1=test P2=wcet P3=Loop                 WCET_METHOD=foo
+	$(MAKE) testall -e P1=test P2=wcet P3=LoopBoundTest        WCET_METHOD=measure
+	$(MAKE) testall -e P1=test P2=wcet P3=Dispatch             WCET_METHOD=measure
+	$(MAKE) testall -e P1=test P2=wcet P3=DispatchI            WCET_METHOD=measure
+	$(MAKE) testall -e P1=test P2=wcet P3=DispatchViaException WCET_METHOD=measure
+	$(MAKE) testall -e P1=test P2=wcet P3=StartKfl             WCET_METHOD=measure  
+	$(MAKE) testall -e P1=test P2=wcet P3=StartBenchUdpIp      WCET_METHOD=measure  
+	$(MAKE) testall -e P1=test P2=wcet P3=StartLift            WCET_METHOD=measure  
+	$(MAKE) testall -e P1=test P2=wcet P3=StartEjipCmp         WCET_METHOD=measure  
+	$(MAKE) testall -e P1=test P2=wcet P3=StartDSVM            WCET_METHOD=measure  
+	# Cycles in callgraph
+	#$(MAKE) testall -e P1=test P2=wcet P3=Delegator            WCET_METHOD=measure
 
+# Target to compare old and new results
+.PHONY: cleanup compare
+
+cleanup:
+	for i in `ls $(OUTDIR)/new/csv/*.csv`; do \
+	  cp $$i $(OUTDIR)/tmp.csv; \
+	  grep -v "metric;date" $(OUTDIR)/tmp.csv | \
+	    sed "s/wcet;ipet;\([0-9]*\);\([0-9]*\);\([0-9]*\);\([.0-9]*\);\([.0-9]*\);\(.*\)/wcet;ipet;\1;\2;\3;\6/" > $$i; done	
+	for i in `ls $(OUTDIR)/old/csv/*.csv`; do \
+	  cp $$i $(OUTDIR)/tmp.csv; \
+	  grep -v "metric;date" $(OUTDIR)/tmp.csv | \
+	    sed "s/wcet;ipet;\([0-9]*\);\([0-9]*\);\([0-9]*\);\([.0-9]*\);\([.0-9]*\);\(.*\)/wcet;ipet;\1;\2;\3;\6/" > $$i; done	
+
+compare:
+	diff -ry $(OUTDIR)/old/csv $(OUTDIR)/new/csv > $(OUTDIR)/csv.diff
 
 ### Targets to run a tests for a single app
 

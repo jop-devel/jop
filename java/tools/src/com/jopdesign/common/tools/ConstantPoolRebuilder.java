@@ -151,7 +151,7 @@ public class ConstantPoolRebuilder implements ClassVisitor {
         public void visitEnclosingMethod(ClassInfo classInfo, EnclosingMethod obj) {
             obj.setConstantPool(cp);
             obj.setNameIndex(mapIndex(obj.getNameIndex()));
-
+            obj.setClassIndex(mapIndex(obj.getClassIndex()));
         }
 
         @Override
