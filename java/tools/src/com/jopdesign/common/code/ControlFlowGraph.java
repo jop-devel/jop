@@ -292,7 +292,7 @@ public class ControlFlowGraph {
          * @return For non-virtual methods, get the implementation of the method
          */
         public MethodInfo getImplementedMethod() {
-            return referenced.getMethodInfo();
+            return receiverImpl;
         }
 
         /**
