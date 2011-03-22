@@ -53,10 +53,10 @@ public class EratosthenesCsp3 extends RtThread {
 
 		public static int cpuIndex2NoCAddress(int i) {
 		// this is when I use two rings, with the other ring starting at Addr 4 
-			if(i==2) return 4;
-			else return i;
+		//	if(i==2) return 4;
+		//	else return i;
 		// this is with a single ring!
-		// return i;
+		 return i;
 		}
 
 		/**
