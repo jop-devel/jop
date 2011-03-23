@@ -93,7 +93,7 @@ public class AES {
 	}
 
 	public String toString() {
-		return "AESSPM";
+		return "AES";
 	}
 
 	protected Runnable[] getWorkers() {
@@ -178,7 +178,6 @@ public class AES {
 					q2.enq(ciph);
 					ciph = block;
 					++cnt;
-					System.out.println(cnt);
 				}
 			}
 		}

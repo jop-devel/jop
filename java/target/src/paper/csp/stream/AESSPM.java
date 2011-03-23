@@ -28,11 +28,9 @@ import org.bouncycastle.crypto.CipherParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.engines.AESLightEngine;
 
-import com.jopdesign.io.IOFactory;
-import com.jopdesign.io.SysDevice;
-import com.jopdesign.sys.Startup;
-
 import java.util.Random;
+
+import joprt.RtThread;
 
 /**
  * Streaming benchmark with four processing stages:
@@ -53,7 +51,7 @@ import java.util.Random;
 public class AESSPM {
 	final static int BLOCK_SIZE = 128; // This MUST be a multiple of 16.
 	final static int POOL_LENGTH = 8;
-
+	
 	final BufferQueue q1, q2, q3, free;
 	final Source source;
 	final Encrypt enc;
@@ -62,7 +60,7 @@ public class AESSPM {
 	final Runnable[] runners;
 
 	private int blockCnt;
-	private volatile boolean finished;
+	static volatile boolean finished;
 
 	public AESSPM() {
 
@@ -106,11 +104,6 @@ public class AESSPM {
 
 	protected void reset(int cnt) {
 		finished = false;
-
-		source.reset();
-		enc.reset();
-		dec.reset();
-
 		blockCnt = cnt;
 	}
 
@@ -120,98 +113,95 @@ public class AESSPM {
 
 	private class Source implements Runnable {
 
-		private final Random rnd;
-		private int cnt;
-
-		public Source() {
-			rnd = new Random();
-		}
-
-		public void reset() {
-			rnd.setSeed(127);
-			cnt = 0;
-		}
-
 		public void run() {
-			while (cnt < blockCnt) {
-				if (!free.empty() && !q1.full()) {
-					final byte[] block = free.deq();
-					for (int i = 0; i < block.length; i++) {
-						block[i] = (byte) rnd.nextInt();
+			PrivateScope scope = new PrivateScope(1000);
+			Runnable r = new Runnable() {
+				public void run() {
+					Random rnd = new Random();
+					rnd.setSeed(127);
+					int cnt = 0;
+					while (cnt < blockCnt) {
+						if (!free.empty() && !q1.full()) {
+							final byte[] block = free.deq();
+							for (int i = 0; i < block.length; i++) {
+								block[i] = (byte) rnd.nextInt();
+							}
+							q1.enq(block);
+							++cnt;
+						}
 					}
-					q1.enq(block);
-					++cnt;
 				}
-			}
+			};
+			scope.enter(r);
 		}
 	}
 
 	private class Encrypt implements Runnable {
 
 		private final BlockCipher crypt;
-		private int cnt;
-		private byte[] ciph;
+		byte[] ciph = new byte[BLOCK_SIZE];
 
 		public Encrypt(CipherParameters params) {
 			crypt = new AESLightEngine();
 			crypt.init(true, params);
-			ciph = new byte[BLOCK_SIZE];
-			reset();
-		}
-
-		public void reset() {
-			cnt = 0;
 		}
 
 		public void run() {
-			while (cnt < blockCnt) {
-				if (!q1.empty() && !q2.full()) {
-					final byte[] block = q1.deq();
-					int ofs = BLOCK_SIZE;
-					do {
-						ofs -= crypt.getBlockSize();
-						crypt.processBlock(block, ofs, ciph, ofs);
-					} while (ofs > 0);
-					q2.enq(ciph);
-					ciph = block;
-					++cnt;
-					System.out.println(cnt);
+			PrivateScope scope = new PrivateScope(1000);
+			Runnable r = new Runnable() {
+				public void run() {
+					int cnt = 0;
+					while (cnt < blockCnt) {
+						if (!q1.empty() && !q2.full()) {
+							final byte[] block = q1.deq();
+							int ofs = BLOCK_SIZE;
+							do {
+								ofs -= crypt.getBlockSize();
+								crypt.processBlock(block, ofs, ciph, ofs);
+							} while (ofs > 0);
+							q2.enq(ciph);
+							ciph = block;
+							++cnt;
+						}
+					}
 				}
-			}
+			};
+			scope.enter(r);
 		}
 	}
 
 	private class Decrypt implements Runnable {
 
 		private final BlockCipher decrypt;
-		private int cnt;
-		private byte[] deciph;
+		byte[] deciph = new byte[BLOCK_SIZE];
 
 		public Decrypt(CipherParameters params) {
 			decrypt = new AESLightEngine();
 			decrypt.init(false, params);
-			deciph = new byte[BLOCK_SIZE];
-			reset();
-		}
-
-		public void reset() {
-			cnt = 0;
 		}
 
 		public void run() {
-			while (cnt < blockCnt) {
-				if (!q2.empty() && !q3.full()) {
-					final byte[] block = q2.deq();
-					int ofs = BLOCK_SIZE;
-					do {
-						ofs -= decrypt.getBlockSize();
-						decrypt.processBlock(block, ofs, deciph, ofs);
-					} while (ofs > 0);
-					q3.enq(deciph);
-					deciph = block;
-					++cnt;
+			
+			PrivateScope scope = new PrivateScope(1000);
+			Runnable r = new Runnable() {
+				public void run() {
+					int cnt = 0;
+					while (cnt < blockCnt) {
+						if (!q2.empty() && !q3.full()) {
+							final byte[] block = q2.deq();
+							int ofs = BLOCK_SIZE;
+							do {
+								ofs -= decrypt.getBlockSize();
+								decrypt.processBlock(block, ofs, deciph, ofs);
+							} while (ofs > 0);
+							q3.enq(deciph);
+							deciph = block;
+							++cnt;
+						}
+					}
 				}
-			}
+			};
+			scope.enter(r);
 		}
 	}
 
@@ -241,14 +231,13 @@ public class AESSPM {
 					
 				}
 			};
-			// scope.enter(r);
-			r.run();
+			scope.enter(r);
+			finished = true;
 		}
 	}
 
 	public static void main(String[] args) {
 
-		SysDevice sys = IOFactory.getFactory().getSysDevice();
 		AESSPM aes = new AESSPM();
 		// Initialization for benchmarking
 		int start = 0;
@@ -258,24 +247,28 @@ public class AESSPM {
 		System.out.println("AES Benchmark with SPM");
 
 		int nrCpu = Runtime.getRuntime().availableProcessors();
-		if (nrCpu < 4) {
+		if (nrCpu < 5) {
 			throw new Error("Not enogh CPUs");
 		}
 
 		// ni must be translated from proc index to NoC address!
-		Startup.setRunnable(aes.source, 0);
-		Startup.setRunnable(aes.enc, 1);
-		Startup.setRunnable(aes.dec, 2);
-		
+		new RtThread(aes.source, 1, 1000).setProcessor(1);
+		new RtThread(aes.enc, 1, 1000).setProcessor(2);
+		new RtThread(aes.dec, 1, 1000).setProcessor(3);
+		new RtThread(aes.sink, 1, 1000).setProcessor(4);
+
+
 		aes.reset(100);
 
 		// start the other CPUs
 		System.out.println("starting cpus.");
-		sys.signal = 1;
+		RtThread.startMission();
 
 		start = (int) System.currentTimeMillis();
 
-		aes.sink.run();
+		while (!finished) {
+			;
+		}
 		// End of measurement
 		stop = (int) System.currentTimeMillis();
 
@@ -283,6 +276,7 @@ public class AESSPM {
 		System.out.println("StopTime: " + stop);
 		time = stop - start;
 		System.out.println("TimeSpent: " + time);
+		System.out.println("Result = "+aes.sink.ok);
 
 	}
 }
