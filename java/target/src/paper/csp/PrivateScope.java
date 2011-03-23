@@ -9,23 +9,25 @@ public class PrivateScope extends LTPhysicalMemory {
 	
 	static RuntimeException notOwner = new RuntimeException("Not the current owner");
 
+	// MS: omit RtThread owner check so we can use it with
+	// a plain Runnable
 //	private RealtimeThread owner;
-	private RtThread owner;
+//	private RtThread owner;
 
 	public PrivateScope(long size) {
 		super(PhysicalMemoryManager.ON_CHIP_PRIVATE, size);
-		owner = RtThread.currentRtThread();
+//		owner = RtThread.currentRtThread();
 //		this.owner = RealtimeThread.currentRealtimeThread();
 	}
 
 	public void enter(Runnable R) {
 //		if (RealtimeThread.currentRealtimeThread() != owner) {
-		if (RtThread.currentRtThread() != owner) {
+//		if (RtThread.currentRtThread() != owner) {
 			// the calling thread doesn't own this scope
-			throw notOwner;
-		} else {
+//			throw notOwner;
+//		} else {
 			super.enter(R);
-		}
+//		}
 	}
 
 	// similarly for executeInArea, newArray and
