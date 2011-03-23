@@ -165,13 +165,12 @@ public class EratosthenesCsp3 extends RtThread {
 			
 	
 			if(id == 0) {
-				if(NoC.isReceiving()) {
+				if(((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_RCV) != 0)) { // if(NoC.isReceiving()) {
 //					System.out.println("<");
 					// something to process
 /////////////////////// receive a two word message instead ////////////////
-//					while(!NoC.isReceiving());
 					lvl = Native.rd(NoC.NOC_REG_RCVDATA);
-					while(NoC.isReceiveBufferEmpty());
+//					while(NoC.isReceiveBufferEmpty());
 					candidate = Native.rd(NoC.NOC_REG_RCVDATA);
 					Native.wr(0, NoC.NOC_REG_RCVRESET);
 ///////////////////////////////////////////////////////////////////////////
@@ -182,9 +181,9 @@ public class EratosthenesCsp3 extends RtThread {
 				}			
 			} else {
 /////////////////////// receive a two word message instead ////////////////
-			while(!NoC.isReceiving());
+			while((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_RCV) == 0); // while(!NoC.isReceiving());
 			lvl = Native.rd(NoC.NOC_REG_RCVDATA);
-			while(NoC.isReceiveBufferEmpty());
+//			while(NoC.isReceiveBufferEmpty());
 			candidate = Native.rd(NoC.NOC_REG_RCVDATA);
 			Native.wr(0, NoC.NOC_REG_RCVRESET);
 ///////////////////////////////////////////////////////////////////////////
@@ -200,7 +199,7 @@ public class EratosthenesCsp3 extends RtThread {
 				if(candidate % primes[lvl] != 0) {
 					// may be prime, send it further!
 ////////////////// send a two word message instead ///////////////////////////
-					while(NoC.isSending());
+					while((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_SND) != 0); // while(NoC.isSending());
 					Native.wr(nid, NoC.NOC_REG_SNDDST);
 					Native.wr(2, NoC.NOC_REG_SNDCNT);
 					Native.wr(lvl, NoC.NOC_REG_SNDDATA);
