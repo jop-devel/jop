@@ -22,9 +22,12 @@ package com.jopdesign.wcet;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallGraph;
+import com.jopdesign.common.code.CallGraph.DUMPTYPE;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationError;
+import com.jopdesign.common.config.EnumOption;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.StringOption;
 import com.jopdesign.common.misc.MethodNotFoundException;
@@ -53,7 +56,13 @@ public class ProjectConfig {
                                              "measure");
 
     public static final StringOption TARGET_LIB_SOURCEPATH =
-            new StringOption("splib","sourcepath of the library code, only used in '--sp' value.", "java/target/src/common:java/target/src/jdk_base:java/target/src/jdk11:java/target/src/rtapi");
+            new StringOption("splib","sourcepath of the library code, only used in '--sp' value.",
+                    Config.mergePaths(new String[]{
+                            "java/target/src/common",
+                            "java/target/src/jdk_base",
+                            "java/target/src/jdk11",
+                            "java/target/src/rtapi"
+                    }));
 
     public static final StringOption TARGET_SOURCEPATH =
             new StringOption("sp","the sourcepath","${splib};java/target/src/app");
@@ -82,6 +91,9 @@ public class ProjectConfig {
     public static final BooleanOption RESULTS_PERFORMANCE =
             new BooleanOption("results-performance", "Include target-app unrelated results such as solver times in the CSV file", true);
 
+    public static final EnumOption<DUMPTYPE> DUMP_TARGET_CALLGRAPH =
+            new EnumOption<DUMPTYPE>("dump-target-callgraph", "Dump the target method callgraph (with or without callstrings)", CallGraph.DUMPTYPE.off);
+
     public static final Option<?>[] projectOptions =
     {
             TARGET_METHOD, PROJECT_NAME,
@@ -91,7 +103,8 @@ public class ProjectConfig {
             OBJECT_CACHE_ANALYSIS,
             USE_UPPAAL,
             DO_GENERATE_REPORTS,
-            RESULT_FILE, RESULTS_APPEND, RESULTS_PERFORMANCE
+            RESULT_FILE, RESULTS_APPEND, RESULTS_PERFORMANCE,
+            DUMP_TARGET_CALLGRAPH
     };
 
 

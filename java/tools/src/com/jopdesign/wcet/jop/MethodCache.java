@@ -146,7 +146,9 @@ public abstract class MethodCache {
         for (MethodInfo mi : project.getCallGraph().getReachableImplementations(project.getTargetMethod())) {
             MethodCode code = mi.getCode();
             if (code == null) continue;
-            int size = code.getNumberOfBytes();
+            // FIXME: using getNumberOfBytes(false) here to be compatible to old behaviour.
+            //        should probably be getNumberOfBytes()
+            int size = code.getNumberOfBytes(false);
             int words = MiscUtils.bytesToWords(size);
             if (!this.fitsInCache(words)) {
                 throw new AppInfoException("Cache to small for target method: " + mi.getFQMethodName() + " / " + words + " words");

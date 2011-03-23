@@ -25,6 +25,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.tools.JopInstr;
 import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.VariableLengthInstruction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,8 +69,15 @@ public class JamuthModel implements ProcessorModel {
 
     public int getNumberOfBytes(MethodInfo context, Instruction instruction) {
         int opCode = getNativeOpCode(context, instruction);
-        // FIXME jamuth specific instructions ?
-        if (opCode >= 0) return JopInstr.len(opCode);
+        if (opCode >= 0) {
+            // To correctly support TableSwitch,..
+            // TODO move this into JopInstr.len()?
+            if (instruction instanceof VariableLengthInstruction) {
+                return instruction.getLength();
+            }
+            // FIXME jamuth specific instructions ?
+            return JopInstr.len(opCode);
+        }
         else throw new AssertionError("Invalid opcode: " + context + " : " + instruction);
     }
 

@@ -121,7 +121,9 @@ public class WCETAnalysis {
             exec.info("Loading project");
             project.initialize();
             MethodInfo largestMethod = project.getWCETProcessorModel().getMethodCache().checkCache();
-            int minWords = MiscUtils.bytesToWords(largestMethod.getCode().getNumberOfBytes());
+            // FIXME: using getNumberOfBytes(false) here to be compatible to old behaviour.
+            //        should probably be getNumberOfBytes()
+            int minWords = MiscUtils.bytesToWords(largestMethod.getCode().getNumberOfBytes(false));
             reportMetric("min-cache-size",largestMethod.getFQMethodName(),minWords);
         } catch (Exception e) {
             exec.logException("Loading project", e);

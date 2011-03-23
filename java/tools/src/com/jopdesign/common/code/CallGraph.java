@@ -23,8 +23,13 @@ package com.jopdesign.common.code;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.Config.BadConfigurationError;
+import com.jopdesign.common.config.Config.BadConfigurationException;
+import com.jopdesign.common.config.StringOption;
 import com.jopdesign.common.graphutils.AdvancedDOTExporter;
 import com.jopdesign.common.graphutils.DirectedCycleDetector;
+import com.jopdesign.common.graphutils.InvokeDot;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.MethodNotFoundException;
@@ -45,6 +50,8 @@ import org.jgrapht.graph.MaskFunctor;
 import org.jgrapht.traverse.DepthFirstIterator;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
@@ -74,6 +81,11 @@ import java.util.Stack;
 public class CallGraph {
 
     public static final Logger logger = Logger.getLogger(LogConfig.LOG_CODE + ".CallGraph");
+
+    public enum DUMPTYPE { off, full, merged, both }
+
+    public static final StringOption CALLGRAPH_DIR =
+            new StringOption("cgdir", "Directory to put the callgraph files into", "${outdir}/callgraph");
 
     /**
      * Interface for a callgraph construction.
@@ -204,14 +216,16 @@ public class CallGraph {
         @Override
         public void edgeAdded(GraphEdgeChangeEvent<ExecutionContext, ContextEdge> e) {
             if (mergedCallGraph != null) {
-                onAddCallGraphEdge(e.getEdge());
+                addMergedGraphEdge(e.getEdge());
             }
+            // graph may not be acyclic anymore, need to check again
+            loopFree = false;
         }
 
         @Override
         public void edgeRemoved(GraphEdgeChangeEvent<ExecutionContext, ContextEdge> e) {
             if (mergedCallGraph != null) {
-                onRemoveCallGraphEdge(e.getEdge());
+                removeMergedGraphEdge(e.getEdge());
             }
         }
 
@@ -635,45 +649,6 @@ public class CallGraph {
         return childs;
     }
     
-    /**
-     * Export the complete callgraph as .dot file
-     * @param w Write the graph to this writer. To improve performance, use a buffered writer.
-     * @throws IOException if writing fails
-     */
-    public void exportDOT(Writer w) throws IOException {
-        exportDOT(w, false, false, false);
-    }
-
-    /**
-     * Export the callgraph as a .dot file.
-     *
-     * @param w Write the graph to this writer. To improve performance, use a buffered writer.
-     * @param merged if true, export the merged callgraph instead of the full graph.
-     * @param skipIsolated if true, do not export isolated nodes.
-     * @param skipNoImp if true, do not export roots with only one edge to com.jopdesign.sys.JVMHelp.noim().
-     * @throws IOException if writing fails.
-     */
-    public void exportDOT(Writer w, boolean merged, final boolean skipIsolated, final boolean skipNoImp) throws IOException {
-        AdvancedDOTExporter<MethodContainer, Object> exporter = new AdvancedDOTExporter<MethodContainer, Object>();
-        exporter.setGraphAttribute("rankdir", "LR");
-
-        if (merged && mergedCallGraph == null) {
-            buildMergedGraph();
-        }
-
-        // Why is this an unchecked statement??
-        @SuppressWarnings({"unchecked"})
-        DirectedGraph<MethodContainer, Object> graph =
-                (DirectedGraph<MethodContainer,Object>) (merged ? mergedCallGraph : callGraph);
-
-        if (skipIsolated || skipNoImp) {
-            graph = new DirectedMaskSubgraph<MethodContainer, Object>(graph,
-                            new MethodFilter(graph, skipIsolated, skipNoImp));
-        }
-
-        exporter.exportDOT(w, graph);
-    }
-
     public Set<ClassInfo> getRootClass() {
         Set<ClassInfo> classes = new HashSet<ClassInfo>(2);
         for (ExecutionContext root : rootNodes) {
@@ -817,7 +792,7 @@ public class CallGraph {
 
         // for all edges in callGraph, add or update the edge in this graph
         for (ContextEdge edge : callGraph.edgeSet()) {
-            onAddCallGraphEdge(edge);
+            addMergedGraphEdge(edge);
         }
     }
 
@@ -1152,8 +1127,110 @@ public class CallGraph {
 
 
     /*---------------------------------------------------------------------------*
+     * Export methods
+     *---------------------------------------------------------------------------*/
+
+    /**
+     * Dump this callgraph or a subgraph to a file and create a png image.
+     * If you use this method, add {@link #CALLGRAPH_DIR} to the options.
+     *
+     * @param config the config containing options for InvokeDot and {@link #CALLGRAPH_DIR}
+     * @param graphName the name of the graph, will be used to construct the file name.
+     * @param suffix a suffix for the graph name, e.g. to distinguish between various subgraphs
+     * @param roots The roots of the subgraph to dump. If null, dump the whole graph. If roots is empty, do nothing.
+     * @param type dump the complete graph, dump only the merged graph, or dump both or nothing.
+     * @param skipNoim if true, do not include methods which have a single edge to the JVM.noim method.
+     * @throws IOException if exporting the file fails.
+     */
+    public void dumpCallgraph(Config config, String graphName, String suffix, Set<ExecutionContext> roots,
+                               DUMPTYPE type, boolean skipNoim)
+            throws IOException
+    {
+        if (roots != null && roots.isEmpty()) return;
+
+        File outDir;
+        try {
+            outDir = config.getOutDir(CallGraph.CALLGRAPH_DIR);
+        } catch (BadConfigurationException e) {
+            throw new BadConfigurationError("Could not create output dir "+
+                        config.getOption(CallGraph.CALLGRAPH_DIR), e);
+        }
+
+        CallGraph subGraph = roots == null ? this : getSubGraph(roots);
+
+        if (type == CallGraph.DUMPTYPE.merged || type == CallGraph.DUMPTYPE.both) {
+            dumpCallgraph(config, outDir, graphName, suffix, subGraph, true, skipNoim);
+        }
+        if (type == CallGraph.DUMPTYPE.full || type == CallGraph.DUMPTYPE.both) {
+            dumpCallgraph(config, outDir, graphName, suffix, subGraph, false, skipNoim);
+        }
+
+        if (roots != null) {
+            removeSubGraph(subGraph);
+        }
+    }
+
+    /**
+     * Export the complete callgraph as .dot file
+     * @param w Write the graph to this writer. To improve performance, use a buffered writer.
+     * @throws IOException if writing fails
+     */
+    public void exportDOT(Writer w) throws IOException {
+        exportDOT(w, false, false, false);
+    }
+
+    /**
+     * Export the callgraph as a .dot file.
+     *
+     * @param w Write the graph to this writer. To improve performance, use a buffered writer.
+     * @param merged if true, export the merged callgraph instead of the full graph.
+     * @param skipIsolated if true, do not export isolated nodes.
+     * @param skipNoImp if true, do not export roots with only one edge to com.jopdesign.sys.JVMHelp.noim().
+     * @throws IOException if writing fails.
+     */
+    public void exportDOT(Writer w, boolean merged, final boolean skipIsolated, final boolean skipNoImp) throws IOException {
+        AdvancedDOTExporter<MethodContainer, Object> exporter = new AdvancedDOTExporter<MethodContainer, Object>();
+        exporter.setGraphAttribute("rankdir", "LR");
+
+        if (merged && mergedCallGraph == null) {
+            buildMergedGraph();
+        }
+
+        // Why is this an unchecked statement??
+        @SuppressWarnings({"unchecked"})
+        DirectedGraph<MethodContainer, Object> graph =
+                (DirectedGraph<MethodContainer,Object>) (merged ? mergedCallGraph : callGraph);
+
+        if (skipIsolated || skipNoImp) {
+            graph = new DirectedMaskSubgraph<MethodContainer, Object>(graph,
+                            new MethodFilter(graph, skipIsolated, skipNoImp));
+        }
+
+        exporter.exportDOT(w, graph);
+    }
+
+    /*---------------------------------------------------------------------------*
      * Private methods
      *---------------------------------------------------------------------------*/
+
+    private void dumpCallgraph(Config config, File outDir, String graphName, String type, CallGraph graph,
+                               boolean merged, boolean skipNoim) throws IOException
+    {
+        String suffix = (merged) ? type+"-merged" : type+"-full";
+
+        File dotFile = new File(outDir, graphName+"-"+suffix+".dot");
+        File pngFile = new File(outDir, graphName+"-"+suffix+".png");
+
+        logger.info("Dumping "+suffix+" callgraph to "+dotFile);
+
+        FileWriter writer = new FileWriter(dotFile);
+
+        graph.exportDOT(writer, merged, false, skipNoim);
+
+        writer.close();
+
+        InvokeDot.invokeDot(config, dotFile, pngFile);
+    }
 
     /**
      * calculate the depth of each node, the height of the subgraph
@@ -1261,7 +1338,7 @@ public class CallGraph {
         rootNodes.remove(context);
     }
 
-    private void onAddCallGraphEdge(ContextEdge edge) {
+    private void addMergedGraphEdge(ContextEdge edge) {
         MethodNode invoker = methodNodes.get(edge.getSource().getMethodInfo());
         MethodNode invokee = methodNodes.get(edge.getTarget().getMethodInfo());
 
@@ -1273,12 +1350,9 @@ public class CallGraph {
         if (edge.getTarget().getCallString().length() > 0) {
             invoke.addInvokeSite(edge.getTarget().getCallString().top());
         }
-
-        // graph may not be acyclic anymore, need to check again
-        loopFree = false;
     }
 
-    private void onRemoveCallGraphEdge(ContextEdge edge) {
+    private void removeMergedGraphEdge(ContextEdge edge) {
         MethodNode invoker = methodNodes.get(edge.getSource().getMethodInfo());
         MethodNode invokee = methodNodes.get(edge.getTarget().getMethodInfo());
 

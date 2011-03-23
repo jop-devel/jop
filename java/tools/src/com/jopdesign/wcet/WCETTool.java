@@ -238,6 +238,8 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         if (projectConfig.doPreprocess()) {
             WcetPreprocess.preprocess(appInfo);
         }
+
+        dumpCallGraph("callgraph");        
     }
 
     public AppInfo getAppInfo() {
@@ -274,6 +276,19 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
                 config);
         callGraph.checkAcyclicity();
         return callGraph;
+    }
+
+    public void dumpCallGraph(String graphName) {
+        if (callGraph == null) return;
+
+        Config config = projectConfig.getConfig();
+
+        try {
+            callGraph.dumpCallgraph(config, graphName, "target", null,
+                    config.getOption(ProjectConfig.DUMP_TARGET_CALLGRAPH), false);
+        } catch (IOException e) {
+            logger.warn("Unable to dump the target method callgraph", e);
+        }
     }
 
     public CallGraph getCallGraph() {

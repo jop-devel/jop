@@ -34,6 +34,7 @@ import org.apache.bcel.generic.NEW;
 import org.apache.bcel.generic.NEWARRAY;
 import org.apache.bcel.generic.ObjectType;
 import org.apache.bcel.generic.ReferenceType;
+import org.apache.bcel.generic.VariableLengthInstruction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -111,7 +112,14 @@ public class JOPModel implements ProcessorModel {
 
     public int getNumberOfBytes(MethodInfo context, Instruction instruction) {
         int opCode = getNativeOpCode(context, instruction);
-        if(opCode >= 0) return JopInstr.len(opCode);
+        if(opCode >= 0) {
+            // To correctly support TableSwitch,..
+            // TODO move this into JopInstr.len()?
+            if (instruction instanceof VariableLengthInstruction) {
+                return instruction.getLength();
+            }
+            return JopInstr.len(opCode);
+        }
         else throw new AssertionError("Invalid opcode: "+context+" : "+instruction);
     }
 
