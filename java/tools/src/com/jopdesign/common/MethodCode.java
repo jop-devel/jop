@@ -41,6 +41,7 @@ import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.classfile.StackMap;
 import org.apache.bcel.generic.CodeExceptionGen;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.InstructionTargeter;
@@ -118,16 +119,6 @@ public class MethodCode {
 
     public int getMaxLocals() {
         return methodGen.getMaxLocals();
-    }
-
-    /**
-     * Get the length of the code attribute. This needs to compile the CFG first.
-     * @see Code#length
-     * @return the length of the code attribute
-     */
-    public int getLength() {
-        prepareInstructionList();
-        return methodGen.getMethod().getCode().getLength();
     }
 
     public LocalVariableGen addLocalVariable(String name, Type type, int slot, InstructionHandle start, InstructionHandle end) {
@@ -547,6 +538,11 @@ public class MethodCode {
         methodGen.setMaxStack();
     }
 
+    /**
+     * @see ProcessorModel#getNumberOfBytes(MethodInfo, Instruction) 
+     * @param il the instruction list to get the size for
+     * @return the number of bytes for a given instruction list on the target.
+     */
     public int getNumberOfBytes(InstructionList il) {
         int sum = 0;
         ProcessorModel pm = getAppInfo().getProcessorModel();
@@ -559,15 +555,33 @@ public class MethodCode {
     }
 
     /**
-     * Get the length of the implementation
-     *
-     * @return the length in bytes
+     * Get the number of bytes of the code for the target architecture.
+     * @see #getNumberOfBytes(boolean)
+     * @see ControlFlowGraph#getNumberOfBytes()
+     * @return the number of bytes of the code.
      */
     public int getNumberOfBytes() {
-        if (hasCFG()) {
-            return cfg.getNumberOfBytes();
+        return getNumberOfBytes(true);
+    }
+
+    /**
+     * Get the length of the code attribute. This needs to compile the CFG first.
+     * @see Code#length
+     * @see ControlFlowGraph#getNumberOfBytes()
+     * @param targetSize if true, use the processor model to get the code size. If false, the
+     *        control flow graph needs to be compiled first.
+     * @return the number of bytes of the code
+     */
+    public int getNumberOfBytes(boolean targetSize) {
+        if (cfg == null || !targetSize) {
+            InstructionList il = prepareInstructionList();
+            if (!targetSize) {
+                return methodGen.getMethod().getCode().getCode().length;
+            } else {
+                return getNumberOfBytes(il);
+            }
         } else {
-            return getNumberOfBytes(methodGen.getInstructionList());
+            return cfg.getNumberOfBytes();
         }
     }
 

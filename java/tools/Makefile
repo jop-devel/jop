@@ -45,10 +45,10 @@ wcet_test:
 	$(MAKE) testall -e P1=test P2=wcet P3=StartKfl             WCET_METHOD=measure  
 	$(MAKE) testall -e P1=test P2=wcet P3=StartBenchUdpIp      WCET_METHOD=measure  
 	$(MAKE) testall -e P1=test P2=wcet P3=StartLift            WCET_METHOD=measure  
-	$(MAKE) testall -e P1=test P2=wcet P3=StartEjipCmp         WCET_METHOD=measure  
 	$(MAKE) testall -e P1=test P2=wcet P3=StartDSVM            WCET_METHOD=measure  
 	# Cycles in callgraph
 	#$(MAKE) testall -e P1=test P2=wcet P3=Delegator            WCET_METHOD=measure
+	#$(MAKE) testall -e P1=test P2=wcet P3=StartEjipCmp         WCET_METHOD=measure  
 
 # Target to compare old and new results
 .PHONY: cleanup compare
@@ -64,7 +64,7 @@ cleanup:
 	    sed "s/wcet;ipet;\([0-9]*\);\([0-9]*\);\([0-9]*\);\([.0-9]*\);\([.0-9]*\);\(.*\)/wcet;ipet;\1;\2;\3;\6/" > $$i; done	
 
 compare:
-	diff -ry $(OUTDIR)/old/csv $(OUTDIR)/new/csv > $(OUTDIR)/csv.diff
+	-diff -r $(OUTDIR)/old/csv $(OUTDIR)/new/csv > $(OUTDIR)/csv.diff
 
 ### Targets to run a tests for a single app
 

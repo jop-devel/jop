@@ -142,10 +142,11 @@ public abstract class MethodCache {
         int maxWords = 0;
         MethodInfo largestMethod = null;
         // It is inconvenient for testing to take all methods into account
+        // for (ClassInfo ci : project.getAppInfo().getClassInfos()) {
         for (MethodInfo mi : project.getCallGraph().getReachableImplementations(project.getTargetMethod())) {
             MethodCode code = mi.getCode();
             if (code == null) continue;
-            int size = code.getLength();
+            int size = code.getNumberOfBytes();
             int words = MiscUtils.bytesToWords(size);
             if (!this.fitsInCache(words)) {
                 throw new AppInfoException("Cache to small for target method: " + mi.getFQMethodName() + " / " + words + " words");
@@ -156,22 +157,6 @@ public abstract class MethodCache {
             }
         }
 
-// It is inconvenient for testing to take all methods into account
-//		for(ClassInfo ci : project.getAppInfo().getCliMap().values()) {
-//			for(MethodInfo mi : ci.getMethodInfoMap().values()) {
-//				Code code = mi.getCode();
-//				if(code == null) continue;
-//				int size = code.getLength();
-//				int words = MiscUtils.bytesToWords(size);
-//				if(! this.fitsInCache(words)) {
-//					System.err.println("Warning: does not fit into cache: "+mi.getFQMethodName()+" / "+words+" words");
-//				}
-//				if(words >= maxWords) {
-//					largestMethod = mi;
-//					maxWords = words;
-//				}
-//			}
-//		}
         return largestMethod;
     }
 
