@@ -71,7 +71,7 @@ entity arbiter is
 		CPU_CNT	: integer;
 		write_gap : integer := 24;
 		read_gap  : integer := 24;
-		slot_length : integer := 32
+		slot_length : integer := 25
 		);		-- number of masters for the arbiter
 	port (
 		clk, reset	: in std_logic;			

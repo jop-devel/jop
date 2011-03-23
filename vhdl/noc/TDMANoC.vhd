@@ -76,7 +76,7 @@ begin
  AllNodes: for i in 0 to Nodes-1 generate
  
    node: entity work.TDMANode 
-		generic map ( CONV_STD_LOGIC_VECTOR(i,NOCADDRBITS), 4, 2)
+		generic map ( CONV_STD_LOGIC_VECTOR(i,NOCADDRBITS), BufferSize, BufferAddrBits)
 		port map (Clk, Rst, Addr(i), wr(i), wr_data(i), rd(i), rd_data(i), rdy_cnt(i), nReg(i), nReg( (i+1) mod Nodes));
  
  end generate;

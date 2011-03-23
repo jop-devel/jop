@@ -24,12 +24,19 @@ import util.Timer;
 import joprt.RtThread;
 
 import com.jopdesign.sys.Native;
-
+import com.jopdesign.io.IOFactory;
+import com.jopdesign.io.SysDevice;
 
 /**
  * @author flavius
  *
  */
+
+
+// Note: This program finishes on the main processor, when PRIMECNT primes were detected
+//       The rest of the processors may continue to wait for further input!
+//	 Thus the time is for computing nrCpu*(PRIMECNT-1) + 1 primes.
+ 
 public class EratosthenesCsp3 extends RtThread {
 	
 		final static int PRIMECNT = 20;
@@ -53,10 +60,10 @@ public class EratosthenesCsp3 extends RtThread {
 
 		public static int cpuIndex2NoCAddress(int i) {
 		// this is when I use two rings, with the other ring starting at Addr 4 
-			if(i==2) return 4;
-			else return i;
+		//	if(i==2) return 4;
+		//	else return i;
 		// this is with a single ring!
-		// return i;
+			return i;
 		}
 
 		/**
@@ -70,6 +77,7 @@ public class EratosthenesCsp3 extends RtThread {
 			int time = 0;
 			
 			System.out.println("Eratosthenes Sieve, v3, SPM");
+			SysDevice sys = IOFactory.getFactory().getSysDevice();
 
 			int nrCpu = Runtime.getRuntime().availableProcessors();
 
@@ -88,23 +96,23 @@ public class EratosthenesCsp3 extends RtThread {
 			RtThread.startMission();
 		
 			// give threads time to setup their memory
-			RtThread.sleepMs(100);
+			// RtThread.sleepMs(100);
 			
-			start = (int) System.currentTimeMillis();
+			// using clock cycles instead
+			start = sys.cntInt; // (int) System.currentTimeMillis();
 			// let them run
 			go = true;
 
 			// wait for finish
 			while (true) {
 			synchronized (lock) {
-				if (endCalculation == nrCpu)
+				if (endCalculation == 1) // nrCpu) // just the first needs to finish!
 					break;
 				}
-			System.out.print(" "+endCalculation);
 			}
 
 			// End of measurement
-			stop = (int) System.currentTimeMillis();
+			stop = sys.cntInt; // (int) System.currentTimeMillis();
 
 			System.out.println("StartTime: " + start);
 			System.out.println("StopTime: " + stop);
@@ -148,12 +156,12 @@ public class EratosthenesCsp3 extends RtThread {
 
 		    while(crtlvl < PRIMECNT) {
 			// receive a level and a candidate
-			int lvl, candidate;
+			// int lvl, candidate;
 			
-			// proc 0
+		   	// proc 0
 			
-			lvl = 0;
-			candidate = i;
+		    	int	lvl = 0;
+	            	int candidate = i;
 			
 	
 			if(id == 0) {

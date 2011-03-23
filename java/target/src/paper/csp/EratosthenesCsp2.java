@@ -50,10 +50,10 @@ public class EratosthenesCsp2 implements Runnable {
 
 		public static int cpuIndex2NoCAddress(int i) {
 		// this is when I use two rings, with the other ring starting at Addr 4 
-			if(i==2) return 4;
-			else return i;
+		//	if(i==2) return 4;
+		//	else return i;
 		// this is with a single ring!
-		// return i;
+		 return i;
 		}
 
 		/**
@@ -74,7 +74,7 @@ public class EratosthenesCsp2 implements Runnable {
 			for (int i=1; i<sys.nrCpu; i++) {
 				int ni = i+1;
 				if(ni==sys.nrCpu) ni = 0;
-				System.out.println(cpuIndex2NoCAddress(ni));
+				System.out.println(i+" -> "+cpuIndex2NoCAddress(ni));
 				Runnable r = new EratosthenesCsp2(i, cpuIndex2NoCAddress(ni));
 				Startup.setRunnable(r, i-1);
 			}
@@ -116,7 +116,7 @@ public class EratosthenesCsp2 implements Runnable {
 //				System.out.print(lvl);
 				
 				if(r.sendAlong(lvl, candidate)) {
-//					System.out.println("->");
+					System.out.println("->");
 ////////////////// send a two word message instead ///////////////////////////
 					while(NoC.isSending());
 					Native.wr(1, NoC.NOC_REG_SNDDST);

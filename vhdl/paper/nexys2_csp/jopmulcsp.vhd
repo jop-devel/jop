@@ -55,9 +55,9 @@ entity jop is
 
 generic (
 --	ram_cnt		: integer := 2;		-- clock cycles for external ram
-	ram_cnt		: integer := 10;		-- clock cycles for external ram
+	ram_cnt		: integer := 4;		-- 10; -- clock cycles for external ram
 --	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
-	rom_cnt		: integer := 10;	-- clock cycles for external rom for 100 MHz
+	rom_cnt		: integer := 4;	-- clock cycles for external rom for 100 MHz
 	jpc_width	: integer := 11; -- was 10;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 2;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 8;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
@@ -163,7 +163,9 @@ architecture rtl of jop is
 
     COMPONENT TDMANoC
 	 Generic (
-				Nodes: integer
+				Nodes: integer;
+				BufferSize: integer := 4;
+			   BufferAddrBits: integer := 2
 	 );
     PORT(
          Clk : IN  std_logic;
@@ -317,9 +319,9 @@ end process;
 		generic map(
 			addr_bits => SC_ADDR_SIZE,
 			cpu_cnt => cpu_cnt,
-			write_gap => 24,
-			read_gap => 24,
-			slot_length => 32
+			write_gap => 10,
+			read_gap => 10,
+			slot_length => 11
 			
 		)
 		port map(clk_int, int_res,
@@ -357,7 +359,9 @@ end process;
 		);
 		
 	   noc: TDMANoC GENERIC MAP (
-				Nodes => 3
+				Nodes => 3,
+				BufferSize => 4,
+				BufferAddrBits => 2
 			  )
 		PORT MAP (
           Clk => clk_int,
