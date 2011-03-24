@@ -32,16 +32,18 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
+use work.sc_pack.all;
+
 package jop_config_global is
 
 	-- on-chip memory size (stack plus JVM vaiables and constants)
 	constant STACK_SIZE_GLOBAL : integer := 8; -- # of address bits of internal ram (sp,...)
 	
-	-- enable or diable the object cache
+	-- enable or disable the object cache
 	constant USE_OCACHE : std_logic := '0';
 	
-	-- depends on main memry size (sc_pack)
-	constant OCACHE_ADDR_BITS : integer := 23; -- TODO: align with other memory parameters
+	-- depends on main memory size (sc_pack)
+	constant OCACHE_ADDR_BITS : integer := SC_ADDR_SIZE;
 	constant OCACHE_WAY_BITS : integer := 4;
 	-- current field index is 8 bit, but JOPizer allows only 32 fields
 	-- assume that the number of maximum fields per object will not

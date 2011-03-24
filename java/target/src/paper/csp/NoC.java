@@ -5,27 +5,27 @@ import com.jopdesign.sys.Const;
 // it should allow sending and receiving at the same time!!
 public class NoC {
 	// hardcoded, could be put in Const
-	static final int NOC_MASK_ADDR = 0x00FF; // LS byte
-	static final int NOC_MASK_BUSY = 0x0100;
-	static final int NOC_MASK_SND = 0x0200;
-	static final int NOC_MASK_RCV = 0x0400;
-	static final int NOC_MASK_EOD = 0x0800;
-	static final int NOC_MASK_SNDEMPTY = 0x1000;
-	static final int NOC_MASK_SNDFULL = 0x2000;
-	static final int NOC_MASK_RCVEMPTY = 0x4000;
-	static final int NOC_MASK_RCVFULL = 0x8000;
+	public static final int NOC_MASK_ADDR = 0x00FF; // LS byte
+	public static final int NOC_MASK_BUSY = 0x0100;
+	public static final int NOC_MASK_SND = 0x0200;
+	public static final int NOC_MASK_RCV = 0x0400;
+	public static final int NOC_MASK_EOD = 0x0800;
+	public static final int NOC_MASK_SNDEMPTY = 0x1000;
+	public static final int NOC_MASK_SNDFULL = 0x2000;
+	public static final int NOC_MASK_RCVEMPTY = 0x4000;
+	public static final int NOC_MASK_RCVFULL = 0x8000;
 	// registers read
-	static final int NOC_REG_STATUS = Const.NOC_ADDR;
+	public static final int NOC_REG_STATUS = Const.NOC_ADDR;
 //  deprecated
 //	static final int NOC_REG_RCVCNT = Const.NOC_ADDR | 0x01;
-	static final int NOC_REG_RCVSLOTS = Const.NOC_ADDR | 0x01;
-	static final int NOC_REG_RCVSRC = Const.NOC_ADDR | 0x02;
-	static final int NOC_REG_RCVDATA = Const.NOC_ADDR | 0x03;
+	public static final int NOC_REG_RCVSLOTS = Const.NOC_ADDR | 0x01;
+	public static final int NOC_REG_RCVSRC = Const.NOC_ADDR | 0x02;
+	public static final int NOC_REG_RCVDATA = Const.NOC_ADDR | 0x03;
 	// registers write
-	static final int NOC_REG_RCVRESET = Const.NOC_ADDR;
-	static final int NOC_REG_SNDCNT = Const.NOC_ADDR | 0x01;
-	static final int NOC_REG_SNDDST = Const.NOC_ADDR | 0x02;
-	static final int NOC_REG_SNDDATA = Const.NOC_ADDR | 0x03;
+	public static final int NOC_REG_RCVRESET = Const.NOC_ADDR;
+	public static final int NOC_REG_SNDCNT = Const.NOC_ADDR | 0x01;
+	public static final int NOC_REG_SNDDST = Const.NOC_ADDR | 0x02;
+	public static final int NOC_REG_SNDDATA = Const.NOC_ADDR | 0x03;
 	
 	// this node's address, must be initialized
 //	private static int myAddress = -1;
