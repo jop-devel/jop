@@ -2,7 +2,7 @@
 #
 # Targets:
 #  prepare	Build tools
-#  wcet_test	Run all wcet analyses (Set TEST=testnew to rerun tests with newtools only)
+#  wcet_test	Run all wcet analyses (Use -e TEST=testnew to rerun tests with newtools only)
 #
 
 # Paths relative to this makefile
@@ -44,14 +44,17 @@ TEST?=testall
 wcet_test:
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=Loop                 WCET_METHOD=foo
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=LoopBoundTest        WCET_METHOD=measure
+	$(MAKE) $(TEST) -e P1=test P2=wcet P3=FUCAMethod           WCET_METHOD=measure
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=Dispatch             WCET_METHOD=measure
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=DispatchI            WCET_METHOD=measure
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=DispatchViaException WCET_METHOD=measure
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartKfl             WCET_METHOD=measure  
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartBenchUdpIp      WCET_METHOD=measure  
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartLift            WCET_METHOD=measure  
-	$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartDSVM            WCET_METHOD=measure  
+	$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartDSVM            WCET_METHOD=measure
+	$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartLineFollower    WCET_METHOD=measure  
 	# Cycles in callgraph
+	#$(MAKE) $(TEST) -e P1=test P2=wcet P3=BytecodeVerification WCET_METHOD=measure
 	#$(MAKE) $(TEST) -e P1=test P2=wcet P3=Delegator            WCET_METHOD=measure
 	#$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartEjipCmp         WCET_METHOD=measure  
 

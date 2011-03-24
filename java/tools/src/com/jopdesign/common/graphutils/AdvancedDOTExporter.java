@@ -65,8 +65,9 @@ public class AdvancedDOTExporter<V, E> {
                 break;
         }
 
+        char c = 0;
         for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
+            c = s.charAt(i);
             switch (c) {
                 case '\n':
                     sb.append(lineBreak);
@@ -87,7 +88,7 @@ public class AdvancedDOTExporter<V, E> {
             if (!Character.isLetterOrDigit(c)) quote = true;
         }
         // needed to justify the last line
-        if (hasBreak) sb.append(lineBreak);
+        if (hasBreak && c != '\n') sb.append(lineBreak);
         if (quote || sb.length() == 0) {
             sb.insert(0, '"');
             sb.append('"');

@@ -121,7 +121,7 @@ P3=HelloWorld
 #P3=Main
 
 P2=wcet
-P3=StartKfl
+P3=Dispatch
 WCET_METHOD=measure
 
 #P1=.
@@ -143,26 +143,27 @@ EXT_CP=java/lib/bcel-5.2.jar$(S)java/lib/jakarta-regexp-1.3.jar$(S)java/lib/RXTX
 #EXT_CP=java/jopeclipse/com.jopdesign.jopeclipse/lib/bcel-5.2.jar$(S)java/lib/jakarta-regexp-1.3.jar$(S)java/lib/RXTXcomm.jar$(S)java/lib/lpsolve55j.jar
 #EXT_CP=java/lib/recompiled_bcel-5.2.jar$(S)java/lib/jakarta-regexp-1.3.jar$(S)java/lib/RXTXcomm.jar$(S)java/lib/lpsolve55j.jar
 
-#TOOLS_JFLAGS=-d $(TOOLS)/dist/classes -classpath $(EXT_CP) -sourcepath $(TOOLS)/src$(S)$(TARGET)/src/common
-TOOLS_JFLAGS=-g -d $(TOOLS)/dist/classes -classpath $(EXT_CP) -sourcepath $(TOOLS)/src$(S)$(TARGET)/src/common -encoding Latin1
+#TOOLS_JFLAGS=-d $(TOOLS)/dist/classes -classpath $(EXT_CP) -sourcepath $(TOOLS)/src$(S)$(TARGET_SRC_PATH)/common
+TOOLS_JFLAGS=-g -d $(TOOLS)/dist/classes -classpath $(EXT_CP) -sourcepath $(TOOLS)/src$(S)$(TARGET_SRC_PATH)/common -encoding Latin1
 
 PCTOOLS=java/pc
 PCTOOLS_JFLAGS=-g -d $(PCTOOLS)/dist/classes -sourcepath $(PCTOOLS)/src -encoding Latin1
 
 
 TARGET=java/target
+TARGET_SRC_PATH=$(TARGET)/src
 
 # changed to add another class to the tool chain
 #TOOLS_CP=-classpath $(EXT_CP)$(S)$(TOOLS)/dist/lib/jop-tools.jar
 TOOLS_CP=-classpath $(TOOLS)/dist/lib/jop-tools.jar$(S)$(TOOLS)/dist/lib/JopDebugger.jar$(S)$(EXT_CP)
 
 ifeq ($(CLDC11),true)
-	TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/cldc11/cldc_orig$(S)$(TARGET)/src/cldc11/cldc_mod$(S)$(TARGET)/src/cldc11/jdk_base_orig$(S)$(TARGET)/src/cldc11/jdk_base_mod$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
+	TARGET_SOURCE=$(TARGET_SRC_PATH)/common$(S)$(TARGET_SRC_PATH)/cldc11/cldc_orig$(S)$(TARGET_SRC_PATH)/cldc11/cldc_mod$(S)$(TARGET_SRC_PATH)/cldc11/jdk_base_orig$(S)$(TARGET_SRC_PATH)/cldc11/jdk_base_mod$(S)$(TARGET_SRC_PATH)/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
 else
 ifeq ($(JDK16),true)
-	TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/jdk_base$(S)$(TARGET)/src/jdk16$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
+	TARGET_SOURCE=$(TARGET_SRC_PATH)/common$(S)$(TARGET_SRC_PATH)/jdk_base$(S)$(TARGET_SRC_PATH)/jdk16$(S)$(TARGET_SRC_PATH)/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
 else
-	TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/jdk_base$(S)$(TARGET)/src/jdk11$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
+	TARGET_SOURCE=$(TARGET_SRC_PATH)/common$(S)$(TARGET_SRC_PATH)/jdk_base$(S)$(TARGET_SRC_PATH)/jdk11$(S)$(TARGET_SRC_PATH)/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
 endif
 endif
 TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5
@@ -189,7 +190,7 @@ endif
 #
 #	MAIN_CLASS is the class that contains the Main method with package names
 #
-TARGET_APP_PATH=$(TARGET)/src/$(P1)
+TARGET_APP_PATH=$(TARGET_SRC_PATH)/$(P1)
 MAIN_CLASS=$(P2)/$(P3)
 
 # here an example how to define an application outside
@@ -200,7 +201,7 @@ MAIN_CLASS=$(P2)/$(P3)
 
 #	add more directoies here when needed
 #		(and use \; to escape the ';' when using a list!)
-TARGET_APP_SOURCE_PATH=$(TARGET_APP_PATH)$(S)$(TARGET)/src/bench$(S)$(TARGET)/src/app
+TARGET_APP_SOURCE_PATH=$(TARGET_APP_PATH)$(S)$(TARGET_SRC_PATH)/bench$(S)$(TARGET_SRC_PATH)/app
 TARGET_APP=$(TARGET_APP_PATH)/$(MAIN_CLASS).java
 
 
@@ -350,12 +351,12 @@ java_app:
 	-mkdir $(TARGET)/dist/classes
 	-mkdir $(TARGET)/dist/lib
 	-mkdir $(TARGET)/dist/bin
-	javac $(TARGET_JFLAGS) $(TARGET)/src/common/com/jopdesign/sys/*.java
+	javac $(TARGET_JFLAGS) $(TARGET_SRC_PATH)/common/com/jopdesign/sys/*.java
 ifeq ($(CLDC11),false)
-	javac $(TARGET_JFLAGS) $(TARGET)/src/jdk_base/java/lang/annotation/*.java	# oh new Java 1.5 world!
+	javac $(TARGET_JFLAGS) $(TARGET_SRC_PATH)/jdk_base/java/lang/annotation/*.java	# oh new Java 1.5 world!
 endif
 ifeq ($(USE_RTTM),yes)	
-	javac $(TARGET_JFLAGS) $(TARGET)/src/common/rttm/internal/Utils.java
+	javac $(TARGET_JFLAGS) $(TARGET_SRC_PATH)/common/rttm/internal/Utils.java
 endif
 	javac $(TARGET_JFLAGS) $(TARGET_APP)
 	# WCETPreprocess, overwrite existing class files 
