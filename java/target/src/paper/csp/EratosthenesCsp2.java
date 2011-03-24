@@ -39,13 +39,15 @@ public class EratosthenesCsp2 implements Runnable {
 		int id;
                 int nid; // next processor id
 		int crtlvl;
-		int[] primes;		
+		int[] primes;
+		int[] mulprimes;		
 
 		public EratosthenesCsp2(int i, int ni) {
 			id = i;
 			nid = ni;
 			crtlvl = 0;
 			primes = new int[PRIMECNT];
+			mulprimes = new int[PRIMECNT];
 		}
 
 		public static int cpuIndex2NoCAddress(int i) {
@@ -171,13 +173,21 @@ public class EratosthenesCsp2 implements Runnable {
 			if(lvl==crtlvl) {
 				// this is a new prime, so store it
 				primes[crtlvl] = candidate;
+				// next number to check is..
+				mulprimes[crtlvl] = candidate; // + candidate;
 				crtlvl++;
 				return false;  // do not send further
 			} else {
 				// check whether is divisible with the current prime
-				if(candidate % primes[lvl] == 0)
+				// if(candidate % primes[lvl] == 0)
+
+				// must bring the current multiple up to the candidate size
+				while(mulprimes[lvl] < candidate)
+					mulprimes[lvl] = mulprimes[lvl] +  primes[lvl];
+
+				if(candidate == mulprimes[lvl])
 					// not prime, discard
-					return false;
+					 return false;
 				else
 					// might still be prime	
 					return true;

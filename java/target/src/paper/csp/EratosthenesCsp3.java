@@ -150,6 +150,7 @@ public class EratosthenesCsp3 extends RtThread {
 
 		    int crtlvl = 0;
 		    int[] primes = new int[PRIMECNT];
+		    int[] mulprimes = new int[PRIMECNT];
 
 		    // proc 0
 		    int i = 2;
@@ -192,11 +193,20 @@ public class EratosthenesCsp3 extends RtThread {
 			if(lvl==crtlvl) {
 				// this is a new prime, so store it
 				primes[crtlvl] = candidate;
+				// next number to check is..
+				mulprimes[crtlvl] = candidate; // + candidate;
 				crtlvl++;
 				// do not send it further
 			} else {
 				// check whether is divisible with the current prime
-				if(candidate % primes[lvl] != 0) {
+				// % was way too slow
+				// if(candidate % primes[lvl] != 0) {
+
+				// must bring the current multiple up to the candidate size
+				while(mulprimes[lvl] < candidate)
+					mulprimes[lvl] = mulprimes[lvl] +  primes[lvl];
+
+				if(candidate != mulprimes[lvl]) {
 					// may be prime, send it further!
 ////////////////// send a two word message instead ///////////////////////////
 					while((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_SND) != 0); // while(NoC.isSending());
@@ -206,7 +216,12 @@ public class EratosthenesCsp3 extends RtThread {
 //					while(NoC.isSendBufferFull());
 					Native.wr(candidate, NoC.NOC_REG_SNDDATA);
 //////////////////////////////////////////////////////////////////////////////
-					}
+				} else {
+					// this number should be discarded
+					// must update the multiples to check against
+					// may not need this with the adjustment
+					// mulprimes[lvl] = candidate + primes[lvl];
+				}
 			
 			}	
 		   }
