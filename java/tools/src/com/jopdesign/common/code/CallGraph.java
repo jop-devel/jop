@@ -1078,14 +1078,14 @@ public class CallGraph {
      * is the maximum height of its children + 1. <p>
      * @return the maximum call stack
      */
-    public List<ExecutionContext> getMaximalCallStack() {
+    public List<MethodInfo> getMaximalCallStack() {
         if(maxCallStackLeaf == null) calculateDepthAndHeight();
         ExecutionContext n = this.maxCallStackLeaf;
-        List<ExecutionContext> maxCallStack = new ArrayList<ExecutionContext>();
-        maxCallStack.add(n);
+        List<MethodInfo> maxCallStack = new ArrayList<MethodInfo>();
+        maxCallStack.add(n.getMethodInfo());
         while(maxCallstackDAG.containsKey(n)) {
             n = maxCallstackDAG.get(n);
-            maxCallStack.add(n);
+            maxCallStack.add(n.getMethodInfo());
         }
         Collections.reverse(maxCallStack);
         return maxCallStack;

@@ -770,13 +770,15 @@ public class AppSetup {
     private Signature getMainSignature(String signature) throws BadConfigurationException {
         Signature sMain;
 
-        Signature sMainMethod = Signature.parse(config.getOption(Config.MAIN_METHOD_NAME), true);
+        ClassPath path = new ClassPath(config.getOption(Config.CLASSPATH));
+
+        Signature sMainMethod = Signature.parse(config.getOption(Config.MAIN_METHOD_NAME), path);
 
         if (signature == null || "".equals(signature)) {
             sMain = sMainMethod;
         } else {
             // try to parse the signature
-            sMain = Signature.parse(signature);
+            sMain = Signature.parse(signature, path);
 
             // use --mm if only main class has been given
             if (!sMain.hasMemberName()) {

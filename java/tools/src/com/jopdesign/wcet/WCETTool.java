@@ -423,7 +423,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         ControlFlowGraph g = getFlowGraph(m);
         int nLocal = g.getGraph().vertexSet().size();
         int eLocal = g.getGraph().edgeSet().size();
-        int pLocal = 0; 
+        int pLocal = g.buildLoopBoundMap().size();
         int ccLocal = eLocal - nLocal + 2 * pLocal;
         int ccGlobal = 0;
         for (ExecutionContext n : this.getCallGraph().getReferencedMethods(m)) {

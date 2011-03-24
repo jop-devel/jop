@@ -40,13 +40,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.TreeMap;
-import java.util.Vector;
 
 /**
  * Analysis reports, using HTML framesets.
@@ -66,8 +67,8 @@ public class Report {
 
     private HashMap<ClassInfo, ClassReport> classReports =
             new HashMap<ClassInfo, ClassReport>();
-    private HashMap<MethodInfo, Vector<DetailedMethodReport>> detailedReports =
-            new HashMap<MethodInfo, Vector<DetailedMethodReport>>();
+    private HashMap<MethodInfo, List<DetailedMethodReport>> detailedReports =
+            new HashMap<MethodInfo, List<DetailedMethodReport>>();
     private HashMap<String, Object> stats = new HashMap<String, Object>();
     private ReportEntry rootReportEntry = ReportEntry.rootReportEntry("summary.html");
     private HashMap<File, File> dotJobs = new HashMap<File, File>();
@@ -180,7 +181,7 @@ public class Report {
         Template template;
         try {
             template = Velocity.getTemplate(templateName);
-        } catch (ResourceNotFoundException e) {
+        } catch (ResourceNotFoundException ignored) {
             template = Velocity.getTemplate("com/jopdesign/wcet/report/" + templateName);
         }
         FileWriter fw = new FileWriter(outFile);
@@ -202,7 +203,7 @@ public class Report {
         this.addStat("total size of task (in bytes)", project.getCallGraph().getTotalSizeInBytes());
         generateInputOverview();
         this.addPage("details", null);
-        for (MethodInfo m : project.getCallGraph().getReachableImplementations(project.getTargetMethod())) {
+        for (MethodInfo m : project.getCallGraph().getReachableImplementationsSet(project.getTargetMethod())) {
             for (LineNumber ln : m.getCode().getLineNumberTable().getLineNumberTable()) {
                 getClassReport(m.getClassInfo()).addLinePropertyIfNull(ln.getLineNumber(), "color", "lightgreen");
             }
@@ -254,8 +255,8 @@ public class Report {
         recordDot(cgdot, cgimg);
         ctx.put("callgraph", "callgraph.png");
 
-        List<MethodReport> mrv = new Vector<MethodReport>();
-        for (MethodInfo m : project.getCallGraph().getReachableImplementations(project.getTargetMethod())) {
+        List<MethodReport> mrv = new ArrayList<MethodReport>();
+        for (MethodInfo m : project.getCallGraph().getReachableImplementationsSet(project.getTargetMethod())) {
             mrv.add(new MethodReport(project, m, pageOf(m)));
         }
         ctx.put("methods", mrv);
@@ -282,12 +283,12 @@ public class Report {
     }
 
     protected void addDetailedReport(MethodInfo m, DetailedMethodReport e, boolean prepend) {
-        Vector<DetailedMethodReport> reports = this.detailedReports.get(m);
+        List<DetailedMethodReport> reports = this.detailedReports.get(m);
         if (reports == null) {
-            reports = new Vector<DetailedMethodReport>();
+            reports = new LinkedList<DetailedMethodReport>();
             this.detailedReports.put(m, reports);
         }
-        if (prepend) reports.insertElementAt(e, 0);
+        if (prepend) reports.add(0, e);
         else reports.add(e);
     }
 
@@ -314,7 +315,7 @@ public class Report {
         }
         this.addPage("details/" +
                 method.getClassInfo().getClassName() + "/" +
-                sanitizePageKey(method.getSignature().toString()),
+                sanitizePageKey(method.getSignature().getMethodSignature()),
                 page);
     }
 

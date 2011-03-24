@@ -23,6 +23,9 @@ package com.jopdesign.common.type;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MemberInfo;
+import org.apache.bcel.util.ClassPath;
+
+import java.io.IOException;
 
 /**
  * This is a (immutable) class to handle parsing, generating, lookups and other signature related tasks
@@ -95,7 +98,7 @@ public class Signature {
      * @return a new signature object.
      */
     public static Signature parse(String signature) {
-        return parse(signature, false, true);
+        return parse(signature, false, AppInfo.getSingleton().getClassPath());
     }
 
     /**
@@ -107,7 +110,19 @@ public class Signature {
      * @return a new signature object.
      */
     public static Signature parse(String signature, boolean isClassMember) {
-        return parse(signature, isClassMember, false);
+        return parse(signature, isClassMember, null);
+    }
+
+    /**
+     * Parse a signature.
+     *
+     * @param signature the signature to parse.
+     * @param classPath if the signature is ambiguous, first check if a class by that name exists in AppInfo or
+     *                  in this classPath.
+     * @return a new signature object.
+     */
+    public static Signature parse(String signature, ClassPath classPath) {
+        return parse(signature, false, classPath);
     }
 
     /**
@@ -116,12 +131,12 @@ public class Signature {
      * @param signature the signature to parse.
      * @param isClassMember If true, always assume that the last simple member
      *                      name is a class member, if the signature is ambiguous.
-     * @param checkExists If true and the signature is ambiguous, first check if a class by that name exists, and
-     *                    if not assume that the signature refers to a class member. Only has an effect if
-     *                    {@code isClassMember} is {@code false}.
+     * @param classPath If not null and the signature is ambiguous, first check if a class by that name exists, and
+     *                  if not assume that the signature refers to a class member. Only has an effect if
+     *                  {@code isClassMember} is {@code false}.
      * @return a new signature object.
      */
-    public static Signature parse(String signature, boolean isClassMember, boolean checkExists) {
+    private static Signature parse(String signature, boolean isClassMember, ClassPath classPath) {
         int p1 = signature.indexOf(ALT_MEMBER_SEPARATOR);
         int p2 = signature.indexOf("(");
 
@@ -131,9 +146,9 @@ public class Signature {
 
         if ( p1 == -1 ) {
             if ( p2 == -1 ) {
-                // TODO we might want to handle array signatures too here 
+                // TODO we might want to handle array signatures too here
                 // no descriptor, either not alternative syntax or no classname
-                if ( isClassMember || (checkExists && !AppInfo.getSingleton().classExists(signature)) ) {
+                if ( isClassMember || (classPath != null && !classExists(signature, classPath)) ) {
                     // is a class member with or without class name
                     p1 = signature.lastIndexOf('.');
                     className  = p1 != -1 ? signature.substring(0, p1) : null;
@@ -166,6 +181,17 @@ public class Signature {
 
         return new Signature(className, memberName, descriptor);
     }
+
+    private static boolean classExists(String signature, ClassPath classPath) {
+        if (AppInfo.getSingleton().hasClassInfo(signature)) return true;
+        try {
+            classPath.getClassFile(signature);
+            return true;
+        } catch (IOException ignored) {
+            return false;
+        }
+    }
+
 
     /**
      * Name of a Java class, field or method. Consists of the class name, the member's name and a
