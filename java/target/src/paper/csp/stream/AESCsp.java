@@ -129,28 +129,18 @@ public class AESCsp {
 							block[i] = (byte) rnd.nextInt();
 						}
 						++cnt;
-						while (NoC.isSending()) {
-							// wait
+						while ((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_SND) != 0) {
+							// nop
 						}
 						Native.wr(2, NoC.NOC_REG_SNDDST);
-						// there is no send function in NoC :-(
 						Native.wr(BLOCK_SIZE, NoC.NOC_REG_SNDCNT);
+
 						for (int i = 0; i < BLOCK_SIZE; ++i) {
-							Native.wr(i, NoC.NOC_REG_SNDDATA);
+							Native.wr(block[i], NoC.NOC_REG_SNDDATA);
 						}
-//						while ((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_SND) != 0) {
-//							// nop
-//						}
-//						Native.wr(2, NoC.NOC_REG_SNDDST);
-//						Native.wr(BLOCK_SIZE, NoC.NOC_REG_SNDCNT);
-//
-//						for (int i = 0; i < BLOCK_SIZE; ++i) {
-//							Native.wr(block[i], NoC.NOC_REG_SNDDATA);
-//						}
 					}
 				}
 			};
-			// r.run();
 			scope.enter(r);
 		}
 	}
@@ -158,8 +148,6 @@ public class AESCsp {
 	private class Encrypt implements Runnable {
 
 		private final BlockCipher crypt;
-		byte[] ciph = new byte[BLOCK_SIZE];
-		byte[] block = new byte[BLOCK_SIZE];
 
 		public Encrypt(CipherParameters params) {
 			crypt = new AESLightEngine();
@@ -171,39 +159,32 @@ public class AESCsp {
 			Runnable r = new Runnable() {
 				public void run() {
 					int cnt = 0;
+					byte[] ciph = new byte[BLOCK_SIZE];
+					byte[] block = new byte[BLOCK_SIZE];
 					while (cnt < blockCnt) {
 
-						while (!NoC.isReceiving()) {
-							// wait
+						// if (!free.empty() && !q2.full()) {
+						// receive one block
+						while (!((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_RCV) != 0))
+							;
+						for (int i = 0; i < BLOCK_SIZE; ++i) {
+							block[i] = (byte) Native.rd(NoC.NOC_REG_RCVDATA);
 						}
-						for (int i = 0; i < BLOCK_SIZE; ++i) {					
-							int val = Native.rd(NoC.NOC_REG_RCVDATA);
-						}
-						NoC.writeReset();
-						
-//						if (!free.empty() && !q2.full()) {
-//							while (!((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_RCV) != 0))
-//								;
-//							for (int i = 0; i < BLOCK_SIZE; ++i) {
-//
-//								block[i] = (byte) Native.rd(NoC.NOC_REG_RCVDATA);
-//							}
-//							Native.wr(1, NoC.NOC_REG_RCVRESET); // aka writeReset();
+						Native.wr(1, NoC.NOC_REG_RCVRESET); // aka writeReset();
 
-//							int ofs = BLOCK_SIZE;
-//							do {
-//								ofs -= crypt.getBlockSize();
-//								crypt.processBlock(block, ofs, ciph, ofs);
-//							} while (ofs > 0);
-//							q2.enq(ciph);
-//							ciph = free.deq();
-							++cnt;
-//						}
+						int ofs = BLOCK_SIZE;
+						do {
+							ofs -= crypt.getBlockSize();
+							crypt.processBlock(block, ofs, ciph, ofs);
+						} while (ofs > 0);
+						// q2.enq(ciph);
+						// ciph = free.deq();
+						++cnt;
+						// }
 					}
 				}
 			};
-//			scope.enter(r);
-			r.run();
+			scope.enter(r);
 			finished = true;
 
 		}
@@ -293,10 +274,10 @@ public class AESCsp {
 		// ni must be translated from proc index to NoC address!
 		new RtThread(aes.source, 1, 1000).setProcessor(1);
 		new RtThread(aes.enc, 1, 1000).setProcessor(2);
-//		new RtThread(aes.dec, 1, 1000).setProcessor(3);
-//		new RtThread(aes.sink, 1, 1000).setProcessor(4);
+		// new RtThread(aes.dec, 1, 1000).setProcessor(3);
+		// new RtThread(aes.sink, 1, 1000).setProcessor(4);
 
-		aes.reset(100);
+		aes.reset(10);
 
 		// start the other CPUs
 		System.out.println("starting cpus.");

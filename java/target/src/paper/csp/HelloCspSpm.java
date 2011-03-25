@@ -59,6 +59,10 @@ public class HelloCspSpm {
 				PrivateScope scope = new PrivateScope(1000);
 				Runnable r = new Runnable() {
 					public void run() {
+						int buffer[] = new int[CNT];
+						for (int i=0; i<CNT; ++i) {
+							buffer[i] = i;
+						}
 						while (NoC.isSending()) {
 							// wait
 						}
@@ -66,7 +70,7 @@ public class HelloCspSpm {
 						// there is no send function in NoC :-(
 						Native.wr(CNT, NoC.NOC_REG_SNDCNT);
 						for (int i = 0; i < CNT; ++i) {
-							Native.wr(i, NoC.NOC_REG_SNDDATA);
+							Native.wr(buffer[i], NoC.NOC_REG_SNDDATA);
 						}
 					}	
 				};

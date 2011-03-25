@@ -134,6 +134,9 @@ port (
 end component;
 
     COMPONENT TDMANoC
+	 Generic (
+				Nodes: integer
+	 );
     PORT(
          Clk : IN  std_logic;
          Rst : IN  std_logic;
@@ -177,14 +180,14 @@ end component;
 	signal noc_in		: sc_out_array_type(0 to cpu_cnt-1);
 	signal noc_out			: sc_in_array_type(0 to cpu_cnt-1);
 	
-	signal noc_addr : sc_addr_type;
-	signal noc_wr : sc_bit_type;
-	signal noc_wr_data : sc_word_type;
-	signal noc_rd : sc_bit_type;
+	signal noc_addr : sc_addr_type(0 to cpu_cnt-1);
+	signal noc_wr : sc_bit_type(0 to cpu_cnt-1);
+	signal noc_wr_data : sc_word_type(0 to cpu_cnt-1);
+	signal noc_rd : sc_bit_type(0 to cpu_cnt-1);
 
  	--Outputs
-   signal noc_rd_data : sc_word_type;
-   signal noc_rdy_cnt : sc_rdy_cnt_type;
+   signal noc_rd_data : sc_word_type(0 to cpu_cnt-1);
+   signal noc_rdy_cnt : sc_rdy_cnt_type(0 to cpu_cnt-1);
 
 --
 --	IO interface
@@ -274,7 +277,10 @@ end process;
 	arbiter: entity work.arbiter
 		generic map(
 			addr_bits => SC_ADDR_SIZE,
-			cpu_cnt => cpu_cnt
+			cpu_cnt => cpu_cnt,
+			write_gap => 2,
+			read_gap => 1,
+			slot_length => 3
 		)
 		port map(clk_int, int_res,
 			sc_arb_out, sc_arb_in,
@@ -309,7 +315,10 @@ end process;
 
 		);
 		
-	   noc: TDMANoC PORT MAP (
+	   noc: TDMANoC GENERIC MAP (
+				Nodes => cpu_cnt
+			  )
+	   PORT MAP (
           Clk => clk_int,
           Rst => int_res,
           Addr => noc_addr,

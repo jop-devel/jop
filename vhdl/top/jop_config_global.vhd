@@ -43,7 +43,9 @@ package jop_config_global is
 	constant USE_OCACHE : std_logic := '0';
 	
 	-- depends on main memory size (sc_pack)
-	constant OCACHE_ADDR_BITS : integer := SC_ADDR_SIZE;
+	-- should be SC_ADDR_SIZE, but the file order would
+	-- need to be changed
+	constant OCACHE_ADDR_BITS : integer := SC_ADDR_SIZE; -- 23;
 	constant OCACHE_WAY_BITS : integer := 4;
 	-- current field index is 8 bit, but JOPizer allows only 32 fields
 	-- assume that the number of maximum fields per object will not

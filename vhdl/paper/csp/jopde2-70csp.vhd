@@ -269,7 +269,10 @@ end process;
 	arbiter: entity work.arbiter
 		generic map(
 			addr_bits => SC_ADDR_SIZE,
-			cpu_cnt => cpu_cnt
+			cpu_cnt => cpu_cnt,
+			write_gap => 2,
+			read_gap => 2,
+			slot_length => 3			
 		)
 		port map(clk_int, int_res,
 			sc_arb_out, sc_arb_in,

@@ -236,6 +236,9 @@ begin
 	--	Select for the read mux
 	--
 	--	TODO: this mux selection works ONLY for two cycle pipelining!
+	--	25.3.2011: should now be ok - at least the bug with
+	--	SPM, NoC IO, and TDMA arbiter disappeared
+	--	TODO: should check more configurations
 	--
 
 process(clk, reset)
@@ -247,18 +250,21 @@ begin
 	elsif rising_edge(clk) then
 
 		if sc_ctrl_mem_out.rd='1' or sc_ctrl_mem_out.wr='1' then
+--		if sc_ctrl_mem_out.rd='1' then
 			-- highest address bits decides between IO, memory, and on-chip memory
 			-- save the mux selection on read or write
 			next_mux_mem <= sc_ctrl_mem_out.address(SC_ADDR_SIZE-1 downto SC_ADDR_SIZE-2);
 			-- a read or write with rdy_cnt of 1 means pipelining
-			if sc_ctrl_mem_in.rdy_cnt(1) = '0' then
+			if sc_ctrl_mem_in.rdy_cnt = "01" then
 				is_pipelined <= '1';
 			end if;
-		end if;
-		-- delayed mux selection for pipelined access
-		if sc_ctrl_mem_in.rdy_cnt(1) = '0' then
+			-- remeber for the next mux selection in case of pipelining
 			dly_mux_mem <= next_mux_mem;
 		end if;
+-- 		-- delayed mux selection for pipelined access
+-- 		if sc_ctrl_mem_in.rdy_cnt(1) = '0' then
+-- 			dly_mux_mem <= next_mux_mem;
+-- 		end if;
 		-- pipelining is over
 		if sc_ctrl_mem_in.rdy_cnt = "00" then
 			is_pipelined <= '0';

@@ -94,7 +94,7 @@ public class BenchCsp implements Runnable {
 		end = sys.cntInt;
 		System.out.println("Communication via HW CSP, many 1-word packets");
 		System.out.println(CNT + " words received in " + (end - start - off)
-				+ " micro seconds");
+				+ " cycles");
 
 
 		// receive n words via CSP, n-word packet
@@ -111,7 +111,7 @@ public class BenchCsp implements Runnable {
 		end = sys.cntInt;
 		System.out.println("Communication via HW CSP, one N-word packet");
 		System.out.println(CNT + " words received in " + (end - start - off)
-				+ " micro seconds");
+				+ " cycles");
 
 
 
@@ -130,7 +130,7 @@ public class BenchCsp implements Runnable {
 		end = sys.cntInt;
 		System.out.println("Communication via shared memory");
 		System.out.println(CNT + " words received in " + (end - start - off)
-				+ " micro seconds");
+				+ " cycles");
 
 	}
 

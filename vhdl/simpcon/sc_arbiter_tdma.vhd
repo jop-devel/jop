@@ -69,9 +69,9 @@ entity arbiter is
 	generic(
 		addr_bits : integer;
 		CPU_CNT	: integer;
-		write_gap : integer := 24;
-		read_gap  : integer := 24;
-		slot_length : integer := 25
+		write_gap : integer; -- remove defaults, each project shall
+		read_gap  : integer; -- set the correct numbers in the top level
+		slot_length : integer
 		);		-- number of masters for the arbiter
 	port (
 		clk, reset	: in std_logic;			
