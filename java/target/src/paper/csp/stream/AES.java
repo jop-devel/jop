@@ -269,7 +269,7 @@ public class AES {
 		Startup.setRunnable(aes.enc, 1);
 		Startup.setRunnable(aes.dec, 2);
 		
-		aes.reset(100);
+		aes.reset(1000);
 
 		// start the other CPUs
 		System.out.println("starting cpus.");
@@ -285,6 +285,7 @@ public class AES {
 		System.out.println("StopTime: " + stop);
 		time = stop - start;
 		System.out.println("TimeSpent: " + time);
+		System.out.println("Result = " + aes.sink.ok);
 
 	}
 }

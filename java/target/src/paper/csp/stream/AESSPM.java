@@ -138,12 +138,9 @@ public class AESSPM {
 
 	private class Encrypt implements Runnable {
 
-		private final BlockCipher crypt;
 		byte[] ciph = new byte[BLOCK_SIZE];
 
 		public Encrypt(CipherParameters params) {
-			crypt = new AESLightEngine();
-			crypt.init(true, params);
 		}
 
 		public void run() {
@@ -151,6 +148,17 @@ public class AESSPM {
 			Runnable r = new Runnable() {
 				public void run() {
 					int cnt = 0;
+
+					final byte[] key = new byte[16];
+					final Random rnd = new Random(127);
+					for (int i = key.length; i > 0; key[--i] = (byte) rnd.nextInt())
+						;
+					CipherParameters p = new KeyParameter(key);
+
+					final BlockCipher crypt;
+					crypt = new AESLightEngine();
+					crypt.init(true, p);
+
 					while (cnt < blockCnt) {
 						if (!q1.empty() && !q2.full()) {
 							final byte[] block = q1.deq();
@@ -172,12 +180,9 @@ public class AESSPM {
 
 	private class Decrypt implements Runnable {
 
-		private final BlockCipher decrypt;
 		byte[] deciph = new byte[BLOCK_SIZE];
 
 		public Decrypt(CipherParameters params) {
-			decrypt = new AESLightEngine();
-			decrypt.init(false, params);
 		}
 
 		public void run() {
@@ -186,6 +191,17 @@ public class AESSPM {
 			Runnable r = new Runnable() {
 				public void run() {
 					int cnt = 0;
+					
+					final byte[] key = new byte[16];
+					final Random rnd = new Random(127);
+					for (int i = key.length; i > 0; key[--i] = (byte) rnd.nextInt())
+						;
+					CipherParameters p = new KeyParameter(key);
+
+					final BlockCipher decrypt;
+					decrypt = new AESLightEngine();
+					decrypt.init(false, p);
+
 					while (cnt < blockCnt) {
 						if (!q2.empty() && !q3.full()) {
 							final byte[] block = q2.deq();
@@ -258,7 +274,7 @@ public class AESSPM {
 		new RtThread(aes.sink, 1, 1000).setProcessor(4);
 
 
-		aes.reset(100);
+		aes.reset(1000);
 
 		// start the other CPUs
 		System.out.println("starting cpus.");

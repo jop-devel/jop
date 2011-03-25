@@ -53,29 +53,18 @@ import joprt.RtThread;
  */
 public class AESCsp {
 	final static int BLOCK_SIZE = 128; // This MUST be a multiple of 16.
-	final static int POOL_LENGTH = 8;
 
-	final BufferQueue q1, q2, q3, free;
 	final Source source;
 	final Encrypt enc;
 	final Decrypt dec;
 	final Sink sink;
-	final Runnable[] runners;
 
 	private int blockCnt;
 	static volatile boolean finished;
 
 	public AESCsp() {
 
-		// Pool of Data Blocks
-		q1 = new BufferQueue(POOL_LENGTH);
-		q2 = new BufferQueue(POOL_LENGTH);
-		q3 = new BufferQueue(POOL_LENGTH);
-		free = new BufferQueue(POOL_LENGTH);
-		for (int i = 0; i < POOL_LENGTH; ++i) {
-			final byte[] block = new byte[BLOCK_SIZE];
-			free.checkedEnq(block);
-		}
+		// unused stuff should be removed - not queue with CSP
 
 		final CipherParameters params;
 		{ // Encryption Parameters
@@ -90,28 +79,15 @@ public class AESCsp {
 		enc = new Encrypt(params);
 		dec = new Decrypt(params);
 		sink = new Sink();
-		runners = new Runnable[] { source, enc, dec, sink };
 	}
 
 	public String toString() {
 		return "AESSPM";
 	}
 
-	protected Runnable[] getWorkers() {
-		return runners;
-	}
-
-	protected int getDepth() {
-		return 4;
-	}
-
 	protected void reset(int cnt) {
 		finished = false;
 		blockCnt = cnt;
-	}
-
-	protected boolean isFinished() {
-		return finished;
 	}
 
 	private class Source implements Runnable {
@@ -129,6 +105,7 @@ public class AESCsp {
 							block[i] = (byte) rnd.nextInt();
 						}
 						++cnt;
+						// send data
 						while ((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_SND) != 0) {
 							// nop
 						}
@@ -147,11 +124,10 @@ public class AESCsp {
 
 	private class Encrypt implements Runnable {
 
-		private final BlockCipher crypt;
+		CipherParameters p;
 
 		public Encrypt(CipherParameters params) {
-			crypt = new AESLightEngine();
-			crypt.init(true, params);
+			p = params;
 		}
 
 		public void run() {
@@ -161,9 +137,19 @@ public class AESCsp {
 					int cnt = 0;
 					byte[] ciph = new byte[BLOCK_SIZE];
 					byte[] block = new byte[BLOCK_SIZE];
-					while (cnt < blockCnt) {
 
-						// if (!free.empty() && !q2.full()) {
+					final byte[] key = new byte[16];
+					final Random rnd = new Random(127);
+					for (int i = key.length; i > 0; key[--i] = (byte) rnd.nextInt())
+						;
+					CipherParameters p = new KeyParameter(key);
+
+					final BlockCipher crypt;
+					crypt = new AESLightEngine();
+					crypt.init(true, p);
+					
+					
+					while (cnt < blockCnt) {
 						// receive one block
 						while (!((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_RCV) != 0))
 							;
@@ -177,27 +163,31 @@ public class AESCsp {
 							ofs -= crypt.getBlockSize();
 							crypt.processBlock(block, ofs, ciph, ofs);
 						} while (ofs > 0);
-						// q2.enq(ciph);
-						// ciph = free.deq();
+						// send data
+						while ((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_SND) != 0) {
+							// nop
+						}
+						Native.wr(3, NoC.NOC_REG_SNDDST);
+						Native.wr(BLOCK_SIZE, NoC.NOC_REG_SNDCNT);
+
+						for (int i = 0; i < BLOCK_SIZE; ++i) {
+							Native.wr(ciph[i], NoC.NOC_REG_SNDDATA);
+						}
 						++cnt;
-						// }
 					}
 				}
 			};
 			scope.enter(r);
-			finished = true;
 
 		}
 	}
 
 	private class Decrypt implements Runnable {
 
-		private final BlockCipher decrypt;
-		byte[] deciph = new byte[BLOCK_SIZE];
+		CipherParameters p;
 
 		public Decrypt(CipherParameters params) {
-			decrypt = new AESLightEngine();
-			decrypt.init(false, params);
+			p = params;
 		}
 
 		public void run() {
@@ -205,19 +195,46 @@ public class AESCsp {
 			PrivateScope scope = new PrivateScope(1000);
 			Runnable r = new Runnable() {
 				public void run() {
+					byte[] block = new byte[BLOCK_SIZE];
+					byte[] deciph = new byte[BLOCK_SIZE];
 					int cnt = 0;
+					
+					final byte[] key = new byte[16];
+					final Random rnd = new Random(127);
+					for (int i = key.length; i > 0; key[--i] = (byte) rnd.nextInt())
+						;
+					CipherParameters p = new KeyParameter(key);
+
+					final BlockCipher decrypt;
+					decrypt = new AESLightEngine();
+					decrypt.init(false, p);
+					
 					while (cnt < blockCnt) {
-						if (!q2.empty() && !q3.full()) {
-							final byte[] block = q2.deq();
-							int ofs = BLOCK_SIZE;
-							do {
-								ofs -= decrypt.getBlockSize();
-								decrypt.processBlock(block, ofs, deciph, ofs);
-							} while (ofs > 0);
-							q3.enq(deciph);
-							deciph = block;
-							++cnt;
+						// receive one block
+						while (!((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_RCV) != 0))
+							;
+						for (int i = 0; i < BLOCK_SIZE; ++i) {
+							block[i] = (byte) Native.rd(NoC.NOC_REG_RCVDATA);
 						}
+						Native.wr(1, NoC.NOC_REG_RCVRESET); // aka writeReset();
+
+						int ofs = BLOCK_SIZE;
+						do {
+							ofs -= decrypt.getBlockSize();
+							decrypt.processBlock(block, ofs, deciph, ofs);
+						} while (ofs > 0);
+						
+						// send data
+						while ((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_SND) != 0) {
+							// nop
+						}
+						Native.wr(4, NoC.NOC_REG_SNDDST);
+						Native.wr(BLOCK_SIZE, NoC.NOC_REG_SNDCNT);
+
+						for (int i = 0; i < BLOCK_SIZE; ++i) {
+							Native.wr(deciph[i], NoC.NOC_REG_SNDDATA);
+						}
+						++cnt;
 					}
 				}
 			};
@@ -234,19 +251,23 @@ public class AESCsp {
 			PrivateScope scope = new PrivateScope(1000);
 			Runnable r = new Runnable() {
 				public void run() {
+					byte[] block = new byte[BLOCK_SIZE];
 					Random rnd = new Random();
 					rnd.setSeed(127);
 					int cnt = 0;
 					while (cnt < blockCnt) {
-						if (!q3.empty() && !free.full()) {
-							final byte[] block = q3.deq();
-							for (int i = 0; i < block.length; i++) {
-								if (block[i] != (byte) rnd.nextInt())
-									ok = false;
-							}
-							free.enq(block);
-							++cnt;
+						// receive one block
+						while (!((Native.rd(NoC.NOC_REG_STATUS) & NoC.NOC_MASK_RCV) != 0))
+							;
+						for (int i = 0; i < BLOCK_SIZE; ++i) {
+							block[i] = (byte) Native.rd(NoC.NOC_REG_RCVDATA);
 						}
+						Native.wr(1, NoC.NOC_REG_RCVRESET); // aka writeReset();
+						for (int i = 0; i < block.length; i++) {
+							if (block[i] != (byte) rnd.nextInt())
+								ok = false;
+						}
+						++cnt;
 					}
 
 				}
@@ -274,10 +295,10 @@ public class AESCsp {
 		// ni must be translated from proc index to NoC address!
 		new RtThread(aes.source, 1, 1000).setProcessor(1);
 		new RtThread(aes.enc, 1, 1000).setProcessor(2);
-		// new RtThread(aes.dec, 1, 1000).setProcessor(3);
-		// new RtThread(aes.sink, 1, 1000).setProcessor(4);
+		new RtThread(aes.dec, 1, 1000).setProcessor(3);
+		new RtThread(aes.sink, 1, 1000).setProcessor(4);
 
-		aes.reset(10);
+		aes.reset(1000);
 
 		// start the other CPUs
 		System.out.println("starting cpus.");
