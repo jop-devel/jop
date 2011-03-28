@@ -98,6 +98,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     public static final String LOG_WCET_PROJECT = "wcet.project";
     // logger for various sub-packages
     public static final String LOG_WCET_ANALYSIS = "wcet.analysis";
+    public static final String LOG_WCET_CACHE = "wcet.analysis.cache";
     public static final String LOG_WCET_ANNOTATIONS = "wcet.annotations";
     public static final String LOG_WCET_REPORT = "wcet.report";
     public static final String LOG_WCET_IPET = "wcet.ipet";

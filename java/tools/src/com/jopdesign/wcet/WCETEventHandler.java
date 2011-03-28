@@ -165,7 +165,7 @@ public class WCETEventHandler extends EmptyAppEventHandler {
             try {
                 bound = lbs.getBound(project.getDfaTool(), headOfLoopBlock.getLastInstruction(),cs);
             } catch(NullPointerException ex) {
-                // TODO not elegant ..
+                // TODO not cool ..
                 ex.printStackTrace();
                 bound = -1;
             }
@@ -186,7 +186,9 @@ public class WCETEventHandler extends EmptyAppEventHandler {
                     logger.info("DFA analysis reports a larger upper bound: "+bound+ " > "+loopUb+
                                 " for "+methodInfo);
                 } else {
-                    logger.info("DFA and annotated loop bounds match for "+methodInfo);
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("DFA and annotated loop bounds match for "+methodInfo);
+                    }
                 }
             }
         } else {

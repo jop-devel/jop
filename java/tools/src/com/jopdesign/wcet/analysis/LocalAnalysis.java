@@ -27,11 +27,14 @@ import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.jop.MethodCache;
+import org.apache.log4j.Logger;
 
 public class LocalAnalysis 
 implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 	private boolean assumeMissOnceOnInvoke;
 	private int maxCallstringLength;
+
+        private static final Logger logger = Logger.getLogger(WCETTool.LOG_WCET_ANALYSIS+".LocalAnalysis");
 
 	public LocalAnalysis(WCETTool p, IPETConfig ipetConfig) {
 		this.assumeMissOnceOnInvoke = ipetConfig.doAssumeMissOnceOnInvoke();
@@ -96,7 +99,7 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 		WcetCost cost = new WcetCost();
 		cost.addNonLocalCost(nonLocalExecCost);
 		cost.addCacheCost(cacheCost);
-		RecursiveWcetAnalysis.logger.info("Recursive WCET computation: " + invoked +
+		logger.debug("Recursive WCET computation: " + invoked +
 				". invoke return cache cost: " + invokeReturnCost+
 				". non-local cache cost: "    + nonLocalCacheCost+
 				". cummulative cache cost: "+cacheCost+

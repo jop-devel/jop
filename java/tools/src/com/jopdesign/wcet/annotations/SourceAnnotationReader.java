@@ -103,7 +103,7 @@ public class SourceAnnotationReader {
             }
             LoopBound loopBound = SourceAnnotationReader.extractAnnotation(line);
             if (loopBound != null) {
-                logger.info("Adding loop bound @ " + sourceLineNr + ": " + loopBound);
+                logger.debug("Adding loop bound @ " + sourceLineNr + ": " + loopBound);
                 flowFacts.addLoopBound(sourceLineNr, loopBound);
             }
             lineNr++;

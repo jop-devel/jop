@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -66,6 +67,12 @@ public class Config {
 
     public static final BooleanOption VERBOSE =
             new BooleanOption("verbose", "use a more detailed log format and show stacktraces. Can be used with '-d' or '-q'", 'v', false);
+
+    public static final StringOption SHOW_WARN_ONLY =
+            new StringOption("show-warn-only", "Comma-separated list of logger names for which only warn or higher will be printed", true);
+
+    public static final StringOption SHOW_INFO_ONLY =
+            new StringOption("show-info-only", "Comma-separated list of logger names for which only info or higher will be printed", true);
 
     public static final StringOption CLASSPATH =
             new StringOption("classpath", "classpath of the classes to load", 'c', "java/target/dist/classes");
@@ -121,7 +128,8 @@ public class Config {
     
 
     public static final Option<?>[] standardOptions =
-            { SHOW_HELP, SHOW_VERSION, SHOW_CONFIG, DEBUG, QUIET, VERBOSE };
+            { SHOW_HELP, SHOW_VERSION, SHOW_CONFIG, DEBUG, QUIET, VERBOSE,
+              SHOW_WARN_ONLY, SHOW_INFO_ONLY };
 
 
     public static String mergePaths(String[] paths) {
@@ -190,7 +198,8 @@ public class Config {
      * @param list a comma-separated list.
      * @return trimmed entries of list.
      */
-    public static String[] splitStringList(String list) {
+    public static List<String> splitStringList(String list) {
+        if (list == null) return new ArrayList<String>(0);
         String[] parts = list.split(",");
         List<String> newList = new LinkedList<String>();
         for (String part : parts) {
@@ -200,7 +209,7 @@ public class Config {
             }
             newList.add(part);
         }
-        return newList.toArray(new String[newList.size()]);
+        return newList;
     }
 
     /**

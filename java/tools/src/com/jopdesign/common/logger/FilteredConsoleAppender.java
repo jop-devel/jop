@@ -27,7 +27,6 @@ import org.apache.log4j.Level;
 import org.apache.log4j.spi.Filter;
 import org.apache.log4j.spi.LoggingEvent;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -44,11 +43,22 @@ public class FilteredConsoleAppender extends ConsoleAppender {
             if (event.getLevel().isGreaterOrEqual(Level.WARN)) {
                 return NEUTRAL;
             }
+            // level is INFO,DEBUG,TRACE; deny all warn-only
             for (String s : warnOnly) {
                 if (matches(s, event.getLoggerName())) {
                     return Filter.DENY;
                 }
             }
+            if (event.getLevel().isGreaterOrEqual(Level.INFO)) {
+                return NEUTRAL;
+            }
+            // level is DEBUG,TRACE; deny all info-only
+            for (String s : infoOnly) {
+                if (matches(s, event.getLoggerName())) {
+                    return Filter.DENY;
+                }
+            }
+
             return NEUTRAL;
         }
 
@@ -58,6 +68,7 @@ public class FilteredConsoleAppender extends ConsoleAppender {
     }
 
     private Set<String> warnOnly = new HashSet<String>();
+    private Set<String> infoOnly = new HashSet<String>();
 
     public FilteredConsoleAppender() {
         addFilter(new MyFilter());
@@ -80,6 +91,8 @@ public class FilteredConsoleAppender extends ConsoleAppender {
         if (config != null) {
             String prefix = getName() + ".warnOnly";
             loadWarnOnly(prefix, config.getProperties());
+            prefix = getName() + ".infoOnly";
+            loadInfoOnly(prefix, config.getProperties());
         }
     }
 
@@ -95,11 +108,19 @@ public class FilteredConsoleAppender extends ConsoleAppender {
      *
      * @param value comma separated list of logger names
      */
-    public void setWarnOnly(String value) {
-        warnOnly.clear();
-        warnOnly.addAll(Arrays.asList(value.split(",")));
+    public void addWarnOnly(String value) {
+        warnOnly.addAll(Config.splitStringList(value));
     }
 
+    /**
+     * Set a comma-separated list of logger packages for which only infos, warnings and errors will be printed.
+     * Replaces the existing per-instance configuration.
+     *
+     * @param value comma separated list of logger names
+     */
+    public void addInfoOnly(String value) {
+        infoOnly.addAll(Config.splitStringList(value));
+    }
 
     private void loadWarnOnly(String prefix, Properties props) {
         for (String key : props.stringPropertyNames()) {
@@ -111,6 +132,19 @@ public class FilteredConsoleAppender extends ConsoleAppender {
             String logger = key.substring(prefix.length()+1);
 
             warnOnly.add(logger);
+        }
+    }
+
+    private void loadInfoOnly(String prefix, Properties props) {
+        for (String key : props.stringPropertyNames()) {
+            // does not has the correct prefix
+            if (!key.startsWith(prefix+".")) continue;
+            // is disabled
+            if (!Boolean.valueOf(props.getProperty(key))) continue;
+            // strip prefix
+            String logger = key.substring(prefix.length()+1);
+
+            infoOnly.add(logger);
         }
     }
 }

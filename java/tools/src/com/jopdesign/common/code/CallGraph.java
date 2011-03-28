@@ -476,11 +476,11 @@ public class CallGraph {
      */
     private void build() {
 
-        logger.info("Starting construction of callgraph with roots " + MiscUtils.toString(rootNodes, 3));
+        logger.debug("Starting construction of callgraph with roots " + MiscUtils.toString(rootNodes, 3));
 
         this.buildGraph();
 
-        logger.info("Finished constructing callgraph");
+        logger.debug("Finished constructing callgraph");
 
         invalidate();
     }
@@ -489,7 +489,7 @@ public class CallGraph {
         /* Check the callgraph is cycle free */
         for (ExecutionContext rootNode : rootNodes) {
 
-            logger.info("Checking for loops in callgraph starting at "+rootNode);
+            logger.debug("Checking for loops in callgraph starting at "+rootNode);
 
             Pair<List<ExecutionContext>,List<ExecutionContext>> cycle =
                 DirectedCycleDetector.findCycle(callGraph,rootNode);
@@ -506,7 +506,7 @@ public class CallGraph {
             }
         }
         loopFree = true;
-        logger.info("No loops found in callgraph");
+        logger.debug("No loops found in callgraph");
     }
 
     /**

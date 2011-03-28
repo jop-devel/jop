@@ -213,7 +213,9 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		recordCost(key, sol.getCost());
 		/* Logging and Report */
 		if(getWCETTool().reportGenerationActive()) {
-			logger.info("Report generation active: "+m+" in context "+ctx);
+			if (logger.isDebugEnabled()) {
+                            logger.debug("Report generation active: "+m+" in context "+ctx);
+                        }
 			updateReport(key, sol);
 		}
 		return sol.getTotalCost();
@@ -248,14 +250,14 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 				if(basicBlock != null) {
 					TreeSet<Integer> lineRange = basicBlock.getSourceLineRange();
 					if(lineRange.isEmpty()) {
-						WCETTool.logger.error("No source code lines associated with basic block ! ");
+						logger.error("No source code lines associated with basic block ! ");
 					}
 					ClassInfo cli = basicBlock.getClassInfo();
 					ClassReport cr = getWCETTool().getReport().getClassReport(cli);
 					Long oldCost = (Long) cr.getLineProperty(lineRange.first(), "cost");
 					if(oldCost == null) oldCost = 0L;
 					long newCost = sol.getNodeFlow(n)*nodeCosts.get(n).getCost();
-					WCETTool.logger.debug("Attaching cost "+oldCost + " + "+newCost+" to line "+lineRange.first());
+					logger.trace("Attaching cost "+oldCost + " + "+newCost+" to line "+lineRange.first());
 					cr.addLineProperty(lineRange.first(), "cost", oldCost + newCost);
 					for(int i : lineRange) {
 						cr.addLineProperty(i, "color", "red");
@@ -265,7 +267,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 				nodeFlowCostDescrs.put(n, ""+nodeCosts.get(n).getCost());
 			}
 		}
-		logger.info("WCET for " + key + ": "+sol.getCost());
+		logger.debug("WCET for " + key + ": "+sol.getCost());
 		Map<String,Object> stats = new HashMap<String, Object>();
 		stats.put("WCET",sol.getCost());
 		stats.put("mode",key.ctx);

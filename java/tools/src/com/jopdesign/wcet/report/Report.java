@@ -207,7 +207,9 @@ public class Report {
             for (LineNumber ln : m.getCode().getLineNumberTable().getLineNumberTable()) {
                 getClassReport(m.getClassInfo()).addLinePropertyIfNull(ln.getLineNumber(), "color", "lightgreen");
             }
-            logger.info("Generating report for method: " + m);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Generating report for method: " + m);
+            }
             ControlFlowGraph flowGraph = m.getCode().getControlFlowGraph(false);
             Map<String, Object> stats = new TreeMap<String, Object>();
             stats.put("#nodes", flowGraph.getGraph().vertexSet().size() - 2 /* entry+exit */);

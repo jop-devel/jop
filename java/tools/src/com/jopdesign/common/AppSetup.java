@@ -49,6 +49,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
@@ -476,14 +477,14 @@ public class AppSetup {
 
         // handle class loading options if set
         if ( config.hasOption(Config.LIBRARY_CLASSES) ) {
-            String[] libs = Config.splitStringList(config.getOption(Config.LIBRARY_CLASSES));
+            List<String> libs = Config.splitStringList(config.getOption(Config.LIBRARY_CLASSES));
             for (String lib : libs) {
                 appInfo.addLibrary(lib.replaceAll("/", "."));
             }
         }
 
         if ( config.hasOption(Config.IGNORE_CLASSES) ) {
-            String[] ignore = Config.splitStringList(config.getOption(Config.IGNORE_CLASSES));
+            List<String> ignore = Config.splitStringList(config.getOption(Config.IGNORE_CLASSES));
             for (String cls : ignore) {
                 appInfo.addLibrary(cls.replaceAll("/", "."));
             }
@@ -516,7 +517,7 @@ public class AppSetup {
         }
 
         // add system classes as roots
-        String[] roots = Config.splitStringList(config.getOption(Config.ROOTS));
+        List<String> roots = Config.splitStringList(config.getOption(Config.ROOTS));
         for (String root : roots) {
             ClassInfo rootInfo = appInfo.loadClass(root.replaceAll("/","."));
             if ( rootInfo == null ) {

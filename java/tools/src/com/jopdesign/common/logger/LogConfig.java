@@ -112,7 +112,9 @@ public class LogConfig {
         defaultAppender.setName("ACONSOLE");
         defaultAppender.setThreshold(defaultLevel);
         defaultAppender.setConfig(config);
-        
+        defaultAppender.addWarnOnly(config.getOption(Config.SHOW_WARN_ONLY));
+        defaultAppender.addInfoOnly(config.getOption(Config.SHOW_INFO_ONLY));
+
 	Logger.getRootLogger().addAppender(defaultAppender);
         Logger.getRootLogger().setLevel(rootLevel);
 

@@ -20,6 +20,8 @@ public abstract class MethodCache {
     protected WCETTool project;
     protected int cacheSizeWords;
 
+    public static final Logger logger = Logger.getLogger(WCETTool.LOG_WCET_CACHE+".MethodCache");
+
     public MethodCache(WCETTool p, int cacheSizeWords) {
         this.project = p;
         this.cacheSizeWords = cacheSizeWords;
@@ -94,7 +96,9 @@ public abstract class MethodCache {
                 || this.isLRU()
                 || assumeOnInvoke;
         long thisMiss = project.getWCETProcessorModel().getMethodCacheMissPenalty(words, loadOnInvoke);
-        WCETTool.logger.info("Cache miss penalty to cumulative cache cost: " + mi + ": " + thisMiss);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Cache miss penalty to cumulative cache cost: " + mi + ": " + thisMiss);
+        }
         return thisMiss;
     }
 
