@@ -377,13 +377,33 @@ public class MethodCode {
      * @return the instruction list of this code.
      */
     public InstructionList getInstructionList() {
+        return getInstructionList(true, true);
+    }
 
-        InstructionList list = prepareInstructionList();
+    /**
+     * Get the instruction list of this code.
+     *
+     * @see #compile()
+     * @see #removeCFG()
+     * @param compileCFG if true, compile an existing CFG first, else ignore any changes made to CFG.
+     * @param removeCFG if true, dispose the CFG of this method. If you want to modify the instruction list,
+     *        you should set this to true to avoid inconsistencies. 
+     * @return the instruction list of this code.
+     */
+    public InstructionList getInstructionList(boolean compileCFG, boolean removeCFG) {
+        InstructionList list;
+        if (compileCFG) {
+            list = prepareInstructionList();
+        } else {
+            list = methodGen.getInstructionList();
+        }
 
-        // If one only uses the IList to analyze code but does not modify it, we could keep an existing CFG.
-        // Unfortunately, there is no 'const InstructionList' or 'UnmodifiableInstructionList', so we
-        // can never be sure what the user will do with the list, so we kill the CFG to avoid inconsistencies.
-        removeCFG();
+        if (removeCFG) {
+            // If one only uses the IList to analyze code but does not modify it, we could keep an existing CFG.
+            // Unfortunately, there is no 'const InstructionList' or 'UnmodifiableInstructionList', so we
+            // can never be sure what the user will do with the list, so we kill the CFG to avoid inconsistencies.
+            removeCFG();
+        }
 
         return list;
     }

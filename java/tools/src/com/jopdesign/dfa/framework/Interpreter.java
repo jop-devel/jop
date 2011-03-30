@@ -47,7 +47,7 @@ public class Interpreter<K, V> {
                                                               boolean start)
     {
 
-        LinkedList<FlowEdge> worklist = new LinkedList<FlowEdge>();
+         LinkedList<FlowEdge> worklist = new LinkedList<FlowEdge>();
 
         for (FlowEdge f : dfaTool.getFlow().getOutEdges(entry)) {
             if (entry.equals(f.getTail())) {

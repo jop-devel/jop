@@ -622,6 +622,19 @@ public final class AppInfo {
     }
 
     /**
+     * Get a reference to a method using the given signature.
+     * If the method is defined only in a (known) superclass and is inherited by this class,
+     * get a methodRef which contains a ClassRef to the given class but a MethodInfo from the superclass.
+     *
+     * @param className The fully qualified name of the class or interface of the method.
+     * @param methodSignature The signature of the method.
+     * @return A method reference with or without MethodInfo or ClassInfo.
+     */
+    public MethodRef getMethodRef(String className, String methodSignature) {
+        return getMethodRef(getClassRef(className), Signature.parse(methodSignature, true));
+    }
+
+    /**
      * Get a reference to a field using the given signature.
      *
      * @param signature The signature of the field.
@@ -666,6 +679,7 @@ public final class AppInfo {
      * Find a MethodInfo using a class name and the given signature or name of a method.
      * This does not check superclasses for inherited methods.
      *
+     * @see #getMethodInfoInherited(String, String)
      * @param className the fully qualified name of the class
      * @param methodSignature either the name of the method if unique, or the method signature.
      * @return the method
@@ -696,6 +710,36 @@ public final class AppInfo {
 
     public MethodInfo getMethodInfo(Signature signature) throws MethodNotFoundException {
         return getMethodInfo(signature.getClassName(), signature.getMethodSignature());
+    }
+
+    /**
+     * Find a MethodInfo using a class name and the given signature of a method.
+     * Only methods which are are accessible (i.e. inherited) by the class are returned.
+     *
+     * @see ClassInfo#getMethodInfoInherited(Signature, boolean)
+     * @param className the fully qualified name of the class
+     * @param methodSignature the method signature with name and descriptor.
+     * @return the method, or null if not found.
+     */
+    public MethodInfo getMethodInfoInherited(String className, String methodSignature) {
+        ClassInfo classInfo = getClassInfo(className);
+        if (classInfo == null) return null;
+        Signature signature = Signature.parse(methodSignature, true);
+        return classInfo.getMethodInfoInherited(signature, true);
+    }
+
+    /**
+     * Find a MethodInfo using a class name and the given signature of a method.
+     * Only methods which are are accessible (i.e. inherited) by the class are returned.
+     *
+     * @see ClassInfo#getMethodInfoInherited(Signature, boolean)
+     * @param signature the full signature with classname and method name and descriptor.
+     * @return the method, or null if not found.
+     */
+    public MethodInfo getMethodInfoInherited(Signature signature) {
+        ClassInfo classInfo = getClassInfo(signature.getClassName());
+        if (classInfo == null) return null;
+        return classInfo.getMethodInfoInherited(signature, true);
     }
 
     //////////////////////////////////////////////////////////////////////////////

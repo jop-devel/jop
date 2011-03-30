@@ -27,6 +27,8 @@ import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.EmptyTool;
 import com.jopdesign.common.FieldInfo;
+import com.jopdesign.common.KeyManager.CustomKey;
+import com.jopdesign.common.KeyManager.KeyType;
 import com.jopdesign.common.MemberInfo.AccessType;
 import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
@@ -36,7 +38,6 @@ import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.graphutils.Pair;
-import com.jopdesign.common.misc.HashedString;
 import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.Signature;
@@ -71,7 +72,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Tool for dataflow analysis */
+/**
+ * Tool for dataflow analysis
+ */
 public class DFATool extends EmptyTool<AppEventHandler> {
 
     private static final String prologueName = "<prologue>";
@@ -88,6 +91,12 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     private Map<InstructionHandle, ContextMap<CallString, Set<String>>> receivers;
 
     private LoopBounds loopBounds;
+
+    /**
+     * This key is used to attach a NOP instruction handle to each method which is used as handle for
+     * the result state of a method.
+     */
+    private CustomKey KEY_NOP; 
 
     public DFATool() {
         super("head");
@@ -107,9 +116,16 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
     @Override
     public void onSetupAppInfo(AppSetup setup, AppInfo appInfo) throws BadConfigurationException {
-        load();
+        // We do not call load() here, because some other tool might want to modify the code before
+        // running the DFA the first tool..
+        KEY_NOP = appInfo.getKeyManager().registerKey(KeyType.STRUCT, "dfa.nop");
     }
 
+    /**
+     * Load the methods into the internal DFA structures and initialize the DFA tool for a new analysis.
+     * You need to call this method before starting the first analysis and before starting an analysis after
+     * the code has been modified.
+     */
     public void load() {
 
         // find ordering for class initializers
@@ -122,66 +138,86 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
         // create prologue
         buildPrologue(mainClass, statements, flow, order);
-        
+
         // Now we need to process all classes (for DFA's internal flow graph)
-        for(ClassInfo ci : appInfo.getClassInfos()) {
-        	for(MethodInfo mi : ci.getMethods()) {
-        		if(mi.hasCode()) {
-        			loadMethod(mi);
-        		}
-        	}
+        for (ClassInfo ci : appInfo.getClassInfos()) {
+            for (MethodInfo mi : ci.getMethods()) {
+                if (mi.hasCode()) {
+                    loadMethod(mi);
+                }
+            }
         }
+    }
+
+    /**
+     * Remove all helper objects. You need to run {@link #load()} again before performing a new analysis.
+     */
+    public void cleanup() {
+        appInfo.getKeyManager().clearAllValues(KEY_NOP);
     }
 
     private void loadMethod(MethodInfo method) {
 
-    	MethodCode mcode = method.getCode();
-    	InstructionList exit = new InstructionList(new NOP());
-    	this.getStatements().add(exit.getStart());
-    	for (Iterator<?> l = mcode.getInstructionList().iterator(); l.hasNext();) {
-    		InstructionHandle handle = (InstructionHandle) l.next();
-    		this.getStatements().add(handle);
+        MethodCode mcode = method.getCode();
+        // TODO is there a better way to get an instruction handle? Do we need to keep the list somehow?
+        InstructionHandle exit = new InstructionList(new NOP()).getStart();
+        this.getStatements().add(exit);
 
-    		Instruction instr = handle.getInstruction();
-    		if (instr instanceof BranchInstruction) {
-    			if (instr instanceof Select) {
-    				Select s = (Select) instr;
-    				InstructionHandle[] target = s.getTargets();
-    				for (int j = 0; j < target.length; j++) {
-    					this.getFlow().addEdge(new FlowEdge(handle, target[j],
-    							FlowEdge.TRUE_EDGE));
-    				}
-    				this.getFlow().addEdge(new FlowEdge(handle, s.getTarget(),
-    						FlowEdge.FALSE_EDGE));
-    			} else {
-    				BranchInstruction b = (BranchInstruction) instr;
-    				this.getFlow().addEdge(new FlowEdge(handle, b.getTarget(),
-    						FlowEdge.TRUE_EDGE));
-    			}
-    		}
-    		if (handle.getNext() != null
-    				&& !(instr instanceof UnconditionalBranch
-    						|| instr instanceof Select || instr instanceof ReturnInstruction)) {
-    			if (instr instanceof BranchInstruction) {
-    				this.getFlow().addEdge(new FlowEdge(handle, handle.getNext(),
-    						FlowEdge.FALSE_EDGE));
-    			} else {
-    				this.getFlow().addEdge(new FlowEdge(handle, handle.getNext(),
-    						FlowEdge.NORMAL_EDGE));
-    			}
-    		}
-    		if (instr instanceof ReturnInstruction) {
-    			this.getFlow().addEdge(new FlowEdge(handle, exit.getStart(),
-    					FlowEdge.NORMAL_EDGE));
-    		}
-    	}
+        // We do not modify the code, so we leave existing CFGs alone, just make sure the instruction list is uptodate
+        for (Iterator<?> l = mcode.getInstructionList(true, false).iterator(); l.hasNext();) {
+            InstructionHandle handle = (InstructionHandle) l.next();
+            this.getStatements().add(handle);
 
-    	// We do not really want to modify the REAL instruction list and append exit
-    	// FIXME: is this necessary???
+            Instruction instr = handle.getInstruction();
+            if (instr instanceof BranchInstruction) {
+                if (instr instanceof Select) {
+                    Select s = (Select) instr;
+                    InstructionHandle[] target = s.getTargets();
+                    for (InstructionHandle aTarget : target) {
+                        this.getFlow().addEdge(new FlowEdge(handle, aTarget,
+                            FlowEdge.TRUE_EDGE));
+                    }
+                    this.getFlow().addEdge(new FlowEdge(handle, s.getTarget(),
+                            FlowEdge.FALSE_EDGE));
+                } else {
+                    BranchInstruction b = (BranchInstruction) instr;
+                    this.getFlow().addEdge(new FlowEdge(handle, b.getTarget(),
+                            FlowEdge.TRUE_EDGE));
+                }
+            }
+            if (handle.getNext() != null
+                    && !(instr instanceof UnconditionalBranch
+                    || instr instanceof Select || instr instanceof ReturnInstruction)) {
+                if (instr instanceof BranchInstruction) {
+                    this.getFlow().addEdge(new FlowEdge(handle, handle.getNext(),
+                            FlowEdge.FALSE_EDGE));
+                } else {
+                    this.getFlow().addEdge(new FlowEdge(handle, handle.getNext(),
+                            FlowEdge.NORMAL_EDGE));
+                }
+            }
+            if (instr instanceof ReturnInstruction) {
+                this.getFlow().addEdge(new FlowEdge(handle, exit,
+                            FlowEdge.NORMAL_EDGE));
+            }
+        }
 
-    	// InstructionList list = method.getInstructionList();
-    	// list.append(exit);
-    	// list.setPositions();
+        // We do not really want to modify the REAL instruction list and append exit
+        // (SH) Fixed:) Yep, we need the NOP somewhere, else doInvoke() will collect the wrong result state.
+        //      But we can eliminate the MOP by adding the instruction not to the list, but instead to the
+        //      MethodInfo, and also retrieve it from there.
+        method.setCustomValue(KEY_NOP, exit);
+    }
+
+    public InstructionHandle getEntryHandle(MethodInfo method) {
+        // for symmetry, lets also provide a getter for the first instruction ..
+        MethodCode mCode = method.getCode();
+        // since we already compiled any existing CFG in load(), there is no need to do it again here
+        return mCode.getInstructionList(false, false).getStart();
+    }
+
+    public InstructionHandle getExitHandle(MethodInfo method) {
+        return (InstructionHandle) method.getCustomValue(KEY_NOP); 
     }
 
     private void buildPrologue(MethodInfo mainMethod, List<InstructionHandle> statements, Flow flow, List<ClassInfo> clinits) {
@@ -259,23 +295,19 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
         Interpreter interpreter = new Interpreter(analysis, this);
 
-        try {
-            MethodInfo main = appInfo.getMainMethod();
-            MethodInfo prologue = main.getClassInfo().getMethodInfo(prologueName + prologueSig);
+        MethodInfo main = appInfo.getMainMethod();
+        MethodInfo prologue = main.getClassInfo().getMethodInfo(prologueName + prologueSig);
 
-            Context context = new Context();
-            context.stackPtr = 0;
-            context.syncLevel = 0;
-            context.constPool = prologue.getConstantPoolGen();
-            context.method = prologue.getMethodRef();
+        Context context = new Context();
+        context.stackPtr = 0;
+        context.syncLevel = 0;
+        context.constPool = prologue.getConstantPoolGen();
+        context.method = prologue.getMethodRef();
 
-            analysis.initialize(main, context);
+        analysis.initialize(main, context);
 
-            InstructionHandle entry = prologue.getCode().getInstructionList().getStart();
-            interpreter.interpret(context, entry, new HashMap(), true);
-        } catch (Throwable thr) {
-            thr.printStackTrace();
-        }
+        InstructionHandle entry = prologue.getCode().getInstructionList().getStart();
+        interpreter.interpret(context, entry, new HashMap(), true);
 
         return analysis.getResult();
     }
@@ -342,33 +374,29 @@ public class DFATool extends EmptyTool<AppEventHandler> {
      * dynamic type and the method signature
      *
      * @param recvStr the dynamic type of the receiver
-     * @param sigStr the signature (without class) of the method.
+     * @param sigStr  the signature (without class) of the method.
      * @return the actually invoked method, or {@code null} if not found
      */
     public MethodInfo getMethod(String recvStr, String sigStr) {
-    	ClassInfo receiver = appInfo.getClassInfo(recvStr);
-    	Signature methodSig = Signature.parse(sigStr, true);
-    	return receiver.getMethodInfoInherited(methodSig, true);
+        return appInfo.getMethodInfoInherited(recvStr, sigStr);
     }
 
     /**
      * Helper method to find the actually invoked method given the
      * dynamic type and the method signature
-     * 
+     *
      * @param signature FQ signature of the method
      * @return the invoked method, or {@code null} if not found
      */
     public MethodInfo getMethod(String signature) {
-        Signature sig = Signature.parse(signature);
-        ClassInfo receiver = appInfo.getClassInfo(sig.getClassName());
-    	return receiver.getMethodInfoInherited(sig, true);
+        return appInfo.getMethodInfoInherited(Signature.parse(signature, true));
     }
-	
+
     public ClassInfo classForField(String fieldName) {
         Signature s = Signature.parse(fieldName, true);
-        if(! getAppInfo().hasClassInfo(s.getClassName())) {
-        	Logger.getLogger(this.getClass()).debug("Unknown class as potential receiver for putfield operation " + s.toString(true));
-        	return null;
+        if (!getAppInfo().hasClassInfo(s.getClassName())) {
+            Logger.getLogger(this.getClass()).debug("Unknown class as potential receiver for putfield operation " + s.toString(true));
+            return null;
         }
 
         ClassInfo cls = getAppInfo().getClassInfo(s.getClassName());
@@ -380,21 +408,20 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         return field != null ? field.getClassInfo() : null;
     }
 
-    @SuppressWarnings("unchecked")
     public String dumpDFA(MethodInfo method) {
         if (getLoopBounds() == null) return "n/a";
         if (method.isAbstract()) {
             return "n/a";
         }
 
-        Map<InstructionHandle, ContextMap<List<HashedString>, Pair<ValueMapping, ValueMapping>>> results = getLoopBounds().getResult();
+        Map<InstructionHandle, ContextMap<CallString, Pair<ValueMapping, ValueMapping>>> results = getLoopBounds().getResult();
         if (results == null) return "n/a";
         StringBuilder s = new StringBuilder();
 
         ControlFlowGraph cfg = method.getCode().getControlFlowGraph(false);
         for (CFGNode n : cfg.getGraph().vertexSet()) {
             if (n.getBasicBlock() == null) continue;
-            ContextMap<List<HashedString>, Pair<ValueMapping, ValueMapping>> r = results.get(n.getBasicBlock().getLastInstruction());
+            ContextMap<CallString, Pair<ValueMapping, ValueMapping>> r = results.get(n.getBasicBlock().getLastInstruction());
             if (r != null) {
                 s.append(n);
                 s.append(" :: ");
@@ -408,7 +435,6 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     public boolean containsField(String fieldName) {
         return classForField(fieldName) != null;
     }
-
 
 
 }

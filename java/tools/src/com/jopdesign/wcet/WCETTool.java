@@ -47,7 +47,6 @@ import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.common.processormodel.ProcessorModel;
-import com.jopdesign.common.tools.RemoveNops;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.analyses.CallStringReceiverTypes;
 import com.jopdesign.dfa.analyses.LoopBounds;
@@ -233,9 +232,6 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         /* build callgraph for target method */
         rebuildCallGraph();
 
-        if (doDataflowAnalysis()) {
-            appInfo.iterate(new RemoveNops());
-        }
         if (projectConfig.doPreprocess()) {
             WcetPreprocess.preprocess(appInfo);
         }
@@ -557,8 +553,11 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
     @SuppressWarnings("unchecked")
     public void dataflowAnalysis() {
-        // TODO move this stuff to DFATool
         int callstringLength = (int) projectConfig.callstringLength();
+
+        // TODO move this stuff to DFATool
+        topLevelLogger.info("Preparing analysis");
+        dfaTool.load();
         topLevelLogger.info("Receiver analysis");
         CallStringReceiverTypes recTys = new CallStringReceiverTypes(callstringLength);
         Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults =

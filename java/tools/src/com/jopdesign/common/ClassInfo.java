@@ -784,12 +784,16 @@ public final class ClassInfo extends MemberInfo {
     /**
      * Find a method of this class or in the superclasses of this class.
      * If no such method is found, look in the interfaces too and return the first found method.
+     * This method therefore always returns an inherited non-abstract method if it exists, even if the method
+     * is also defined in an implemented interface.
      * 
      * @param signature the signature of the method to find. The classname in the signature is ignored.
      * @param checkAccess if false, also return non-accessible or static methods in superclasses.
      * @return the MethodInfo with the given signature in this class or its extended classes, or null if not found.
      */
     public MethodInfo getMethodInfoInherited(Signature signature, boolean checkAccess) {
+        // first, lets look at all superclasses, so that we find the implementation first if the method
+        // is also defined in an interface
         ClassInfo cls = this;
         while ( cls != null ) {
             MethodInfo m = cls.getMethodInfo(signature);
@@ -807,6 +811,8 @@ public final class ClassInfo extends MemberInfo {
 
         // not very nice, but works: get all ancestors, look in interfaces
         for (ClassInfo i : getAncestors()) {
+            if (!i.isInterface()) continue;
+
             MethodInfo m = i.getMethodInfo(signature);
             if ( m != null ) {
                 // we always inherit from interfaces, no need to check
