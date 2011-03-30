@@ -42,8 +42,8 @@ public class MessageList {
 		
 	}
 	
-	MessageEntry first;
-	MessageEntry last;
+	volatile MessageEntry first;
+	volatile MessageEntry last;
 	
 	public MessageList() {
 		first = last = new MessageEntry();

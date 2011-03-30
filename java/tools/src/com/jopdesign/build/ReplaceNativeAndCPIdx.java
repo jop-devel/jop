@@ -218,7 +218,9 @@ public class ReplaceNativeAndCPIdx extends JOPizerVisitor {
 					}
 				} else if (fi instanceof PUTSTATIC) {
 					if (isRef) {
-						ih.setInstruction(new PUTSTATIC_REF((short) new_index));
+						if (!com.jopdesign.build.JOPizer.USE_RTTM) {
+							ih.setInstruction(new PUTSTATIC_REF((short) new_index));
+						}
 					} else if (isLong) {
 						ih.setInstruction(new PUTSTATIC_LONG((short) new_index));
 					}
@@ -230,7 +232,9 @@ public class ReplaceNativeAndCPIdx extends JOPizerVisitor {
 					}
 				} else if (fi instanceof PUTFIELD) {
 					if (isRef) {
-						ih.setInstruction(new PUTFIELD_REF((short) new_index));
+						if (!com.jopdesign.build.JOPizer.USE_RTTM) {
+							ih.setInstruction(new PUTFIELD_REF((short) new_index));
+						}
 					} else if (isLong) {
 						ih.setInstruction(new PUTFIELD_LONG((short) new_index));
 					}

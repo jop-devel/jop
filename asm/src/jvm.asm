@@ -127,13 +127,13 @@
 //	2008-06-11	Remove offtbl adjustment nops
 //	2008-06-24	moncnt starts with 0, new CMP scheduler
 //	2008-06-25	WP: bug fix in cache controller
-//  2008-07-03	WP: Fixed null pointer handling of invokexxx instructions
+//	2008-07-03	WP: Fixed null pointer handling of invokexxx instructions
 //	2008-07-13	MS: mapping of Native.put/getfield to jopsys version
 //	2008-08-21	MS: Corrected data out enable in SRAM/Flash interface
 //	2008-12-10	MS: static field access uses index as address
 //	... no comments ...
 //	2009-06-17	MS: Enable conditional move again
-//  2009-06-26  WP: fixed invokesuper
+//	2009-06-26	WP: fixed invokesuper
 //	2009-08-23	MS: start with typed memory access for data caches
 //	2009-08-24	MS: use I/O port for null pointer and array exception
 //	2009-09-05	MS: new unconditional jmp instruction
@@ -141,6 +141,14 @@
 //	2009-11-23	MS: put/getstatic support in mmu (bc operand as address)
 //	2009-11-28	MS: pufield one cycle longer for object cache hit detection, first
 //				working object cache with a single entry
+//	2010-04-24	Peter Hilber: use microcode version of aastore for RTTM
+//	2010-06-18	WP: lcmp is now in microcode
+//	2010-06-22	WP: added typed memory instructions (for split cache):
+//				stmrac	load a constant
+//				stmraf	load through fully assoc. cache
+//				stmwdf	store through fully assoc. cache
+//	2010-10-28	MS: cinval, atmstart, atmend added
+//	2011-01-07	MS: O$ with multiple objects and fields
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -150,7 +158,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhd files
 //
-version		= 20091128
+version		= 20110107
 
 //
 //	start of stack area in the on-chip RAM
@@ -171,7 +179,6 @@ io_cnt		=	-128
 io_wd		=	-125
 io_exc		=	-124
 io_int_ena	=	-128
-io_inval    =   -113
 io_status	=	-112
 io_uart		=	-111
 
@@ -605,7 +612,7 @@ instanceof:
 			ld_opd_16u
 			add
 
-			stmra				// read ext. mem, mem_bsy comes one cycle later
+			stmrac				// read ext. mem, mem_bsy comes one cycle later
 			wait
 			wait
 			ldmrd		 		// read ext. mem
@@ -784,7 +791,7 @@ sipush:		nop opd
 ldc:		ldm	cp opd
 			ld_opd_8u
 			add
-			stmra				// read ext. mem, mem_bsy comes one cycle later
+			stmrac				// read ext. mem, mem_bsy comes one cycle later
 			wait
 			wait
 			ldmrd		 nxt	// read ext. mem
@@ -794,7 +801,7 @@ ldc_w:
 			nop	opd
 			ld_opd_16u
 			add
-			stmra				// read ext. mem, mem_bsy comes one cycle later
+			stmrac				// read ext. mem, mem_bsy comes one cycle later
 			wait
 			wait
 			ldmrd		 nxt	// read ext. mem
@@ -1345,13 +1352,17 @@ arraylength:
 
 			ldi	1
 			add					// arrayref+1 (in handle)
-			stmra				// read ext. mem, mem_bsy comes one cycle later
+			stmraf				// read ext. mem, mem_bsy comes one cycle later
 			wait
 			wait
 			ldmrd		 nxt	// read ext. mem
 
 
+#ifndef RTTM
 //aastore: is now in JVM.java for the write barrier
+#else
+aastore:
+#endif
 bastore:
 castore:
 fastore:
@@ -1388,6 +1399,7 @@ monitorenter:
 			add
 			wait
 			wait
+			cinval				// invalidate earlier, just in case
 			stm	moncnt
 			// request the global lock
 			ldi	io_lock
@@ -1635,11 +1647,12 @@ jopsys_cond_move:
 			ldm		c nxt
 false_path:	ldm		b nxt
 
+// invalidate cache coherent data cache
+// if we would do it in a single cycle, would the
+// invalidate signal come to late for the hit detection
+// earlier in the pipeline?
 jopsys_inval:
-			ldi io_inval
-			stmwa
-			ldi 0
-		    stmwd
-			wait
-			wait
+			cinval
+			nop
+			nop
 			nop nxt

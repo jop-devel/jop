@@ -38,12 +38,12 @@ architecture test of tb_arbiter is
 			clk, reset	: in std_logic;			
 			arb_out	: in arb_out_type(0 to cpu_cnt-1);
 			arb_in	: out arb_in_type(0 to cpu_cnt-1);
-			mem_out	: out sc_mem_out_type;
+			mem_out	: out sc_out_type;
 			mem_in	: in sc_in_type
 	);
   end component;
 	
-	signal addr_bits : integer := 21;
+	signal addr_bits : integer := SC_ADDR_SIZE;
 	signal cpu_cnt : integer := 3;
 	
 	-- Stimulus Signals
@@ -82,14 +82,17 @@ architecture test of tb_arbiter is
 	signal r_wr_data_mem	: std_logic_vector(31 downto 0);
 	signal r_rd_mem			: std_logic;
 	signal r_wr_mem			: std_logic;
-
-
+	signal r_atomic		: std_logic;
+	signal r_cache		: sc_cache_type;
+	signal r_tm_cache	: std_logic;
+	signal r_tm_broadcast: std_logic;
+	signal r_cinval : std_logic;
 
 begin
 	
 	arbiter1: arbiter 
 	generic map (
-		addr_bits => 21,
+		addr_bits => SC_ADDR_SIZE,
 		cpu_cnt => 3)
 	port map(
 		clk => s_clk,
@@ -99,15 +102,29 @@ begin
 		arb_out(0).wr_data => s_wr_data_m0,
 		arb_out(0).rd => s_rd_m0,
 		arb_out(0).wr => s_wr_m0,
+		arb_out(0).atomic => '0',
+		arb_out(0).cache => bypass,
+		arb_out(0).tm_cache => '0',
+		arb_out(0).tm_broadcast => '0',
+		arb_out(0).cinval => '0',
 		arb_out(1).address => s_address_m1,
 		arb_out(1).wr_data => s_wr_data_m1,
 		arb_out(1).rd => s_rd_m1,
 		arb_out(1).wr => s_wr_m1,
+	   arb_out(1).atomic => '0',
+		arb_out(1).cache => bypass,
+		arb_out(1).tm_cache => '0',
+		arb_out(1).tm_broadcast => '0',
+		arb_out(1).cinval => '0',
 		arb_out(2).address => s_address_m2,
 		arb_out(2).wr_data => s_wr_data_m2,
 		arb_out(2).rd => s_rd_m2,
 		arb_out(2).wr => s_wr_m2,
-			
+		arb_out(2).atomic => '0',
+		arb_out(2).cache => bypass,
+		arb_out(2).tm_cache => '0',
+		arb_out(2).tm_broadcast => '0',
+		arb_out(2).cinval => '0',		
 		arb_in(0).rd_data => r_rd_data_m0,
 		arb_in(0).rdy_cnt => r_rdy_cnt_m0, 
 		arb_in(1).rd_data => r_rd_data_m1,
@@ -119,6 +136,11 @@ begin
 		mem_out.wr_data => r_wr_data_mem,
 		mem_out.rd => r_rd_mem,
 		mem_out.wr => r_wr_mem,
+		mem_out.atomic => r_atomic,
+		mem_out.cache => r_cache,
+		mem_out.tm_cache => r_tm_cache,
+		mem_out.tm_broadcast => r_tm_broadcast,
+		mem_out.cinval => r_cinval,
 		mem_in.rd_data => s_rd_data_mem,
 		mem_in.rdy_cnt => s_rdy_cnt_mem
     );
@@ -136,7 +158,7 @@ begin
 		wait for 5 ns;
 		s_rdy_cnt_mem <= "00";
 		s_rd_m0 <= '1';
-		s_address_m0 <= "001001111111111111111"; -- 4ffff
+		s_address_m0 <= "00001001111111111111111"; -- 4ffff
 		wait for 10 ns;
 		s_rdy_cnt_mem <= "10";
 		s_rd_m0 <= '0';
@@ -146,7 +168,7 @@ begin
 		s_rdy_cnt_mem <= "00";
 		s_rd_data_mem <= "10101010101010101010101010101010";
 		s_rd_m0 <= '1';
-		s_address_m0 <= "001001111111111111110"; -- 4fffe
+		s_address_m0 <= "00001001111111111111110"; -- 4fffe
 		wait for 10 ns;
 		s_rdy_cnt_mem <= "10";
 		s_rd_m0 <= '0';
@@ -160,7 +182,7 @@ begin
  --Zugriff nacheinander von JOP1
 		
 		s_rd_m1 <= '1';
-		s_address_m1 <= "001001111111111111111"; -- 4ffff
+		s_address_m1 <= "00001001111111111111111"; -- 4ffff
 		wait for 10 ns;
 		s_rdy_cnt_mem <= "10";
 		s_rd_m1 <= '0';
@@ -170,7 +192,7 @@ begin
 		s_rdy_cnt_mem <= "00";
 		s_rd_data_mem <= "10101010101010101010101010101010";
 		s_rd_m1 <= '1';
-		s_address_m1 <= "001001111111111111110"; -- 4fffe
+		s_address_m1 <= "00001001111111111111110"; -- 4fffe
 		wait for 10 ns;
 		s_rdy_cnt_mem <= "10";
 		s_rd_m1 <= '0';
@@ -184,7 +206,7 @@ begin
  --Zugriff nacheinander von JOP2
 		
 		s_rd_m2 <= '1';
-		s_address_m2 <= "001001111111111111111"; -- 4ffff
+		s_address_m2 <= "00001001111111111111111"; -- 4ffff
 		wait for 10 ns;
 		s_rdy_cnt_mem <= "10";
 		s_rd_m2 <= '0';
@@ -194,7 +216,7 @@ begin
 		s_rdy_cnt_mem <= "00";
 		s_rd_data_mem <= "10101010101010101010101010101010";
 		s_rd_m2 <= '1';
-		s_address_m2 <= "001001111111111111110"; -- 4fffe
+		s_address_m2 <= "00001001111111111111110"; -- 4fffe
 		wait for 10 ns;
 		s_rdy_cnt_mem <= "10";
 		s_rd_m2 <= '0';
@@ -208,14 +230,14 @@ begin
 	-- pipelined JOP0 read
 
 	  s_rd_m0 <= '1';
-	  s_address_m0 <= "001001111111111111111"; -- 4ffff
+	  s_address_m0 <= "00001001111111111111111"; -- 4ffff
 	  wait for 10 ns;
 	  s_rdy_cnt_mem <= "10";
 	  s_rd_m0 <= '0';
 	  wait for 10 ns;
 	  s_rdy_cnt_mem <= "01";
 	  s_rd_m0 <= '1';
-	  s_address_m0 <= "001010000000000000000"; -- 50000
+	  s_address_m0 <= "00001010000000000000000"; -- 50000
 	  wait for 10 ns;
 	  s_rd_m0 <= '0';
 	  s_rdy_cnt_mem <= "10";
@@ -223,7 +245,7 @@ begin
 	  wait for 10 ns;
 	  s_rdy_cnt_mem <= "01";
 	  s_rd_m0 <= '1';
-	  s_address_m0 <= "001001111111111111111"; -- 4ffff
+	  s_address_m0 <= "00001001111111111111111"; -- 4ffff
 	  wait for 10 ns;
 	  s_rd_m0 <= '0';
 	  s_rdy_cnt_mem <= "10";
@@ -231,7 +253,7 @@ begin
 	  wait for 10 ns;
 	  s_rdy_cnt_mem <= "01";
 	  s_rd_m0 <= '1';
-	  s_address_m0 <= "001000000000000000000"; -- 40000
+	  s_address_m0 <= "00001000000000000000000"; -- 40000
 	  wait for 10 ns;
 	  s_rd_m0 <= '0';
 	  s_rdy_cnt_mem <= "10";
@@ -246,7 +268,7 @@ begin
  -- read and write JOP0
 
 		s_rd_m0 <= '1';
-		s_address_m0 <= "001001111111111111111"; -- 4ffff
+		s_address_m0 <= "00001001111111111111111"; -- 4ffff
 		wait for 10 ns;
 		s_rd_m0 <= '0';
 		s_rdy_cnt_mem <= "10";
@@ -257,7 +279,7 @@ begin
 		s_rd_data_mem <= "10101010101010101010101010101010";	  
 		s_wr_m0 <= '1';
 		s_wr_data_m0 <= "01010101010101010101010101010101";  -- 5555555
-		s_address_m0 <= "001001111111111111110"; -- 4fffe 
+		s_address_m0 <= "00001001111111111111110"; -- 4fffe 
 		wait for 10 ns;
 		s_wr_m0 <= '0';
 		s_rdy_cnt_mem <= "10";
@@ -266,7 +288,7 @@ begin
 		wait for 10 ns;
 		s_rdy_cnt_mem <= "00";   
 		s_rd_m0 <= '1';
-		s_address_m0 <= "001001111111111111111"; -- 4ffff
+		s_address_m0 <= "00001001111111111111111"; -- 4ffff
 		wait for 10 ns;
 		s_rd_m0 <= '0';
 		s_rdy_cnt_mem <= "10";
@@ -282,7 +304,7 @@ begin
    s_rdy_cnt_mem <= "00";
    s_rd_m0 <= '1';
    s_rd_m1 <= '0';
-   s_address_m0 <= "001001111111111111111"; -- 4ffff
+   s_address_m0 <= "00001001111111111111111"; -- 4ffff
    wait for 10 ns;
    s_rdy_cnt_mem <= "10";
    s_rd_m0 <= '0';
@@ -290,7 +312,7 @@ begin
    wait for 10 ns;
    s_rdy_cnt_mem <= "01";
    s_rd_m1 <= '1';
-   s_address_m1 <= "001010000000000000000"; -- 50000
+   s_address_m1 <= "00001010000000000000000"; -- 50000
    wait for 10 ns;
    s_rd_m1 <= '0';
    s_rdy_cnt_mem <= "00";
@@ -298,7 +320,7 @@ begin
    
    
    s_rd_m0 <= '1';
-   s_address_m0 <= "111111111111111111111"; -- fffff
+   s_address_m0 <= "00111111111111111111111"; -- fffff
    wait for 10 ns;
    s_rdy_cnt_mem <= "10";
    s_rd_m0 <= '0';
@@ -325,7 +347,7 @@ begin
    s_rdy_cnt_mem <= "00";
    s_rd_data_mem <= "11111111111111111111111111111110"; 
    s_rd_m1 <= '1';
-   s_address_m1 <= "001000000000000000000"; -- 40000
+   s_address_m1 <= "00001000000000000000000"; -- 40000
    wait for 10 ns;
    s_rd_m1 <= '0';
    s_rdy_cnt_mem <= "10";
@@ -338,12 +360,12 @@ begin
    
   
    s_rd_m0 <= '1';
-   s_address_m0 <= "001001111111111111111"; -- 4ffff
+   s_address_m0 <= "00001001111111111111111"; -- 4ffff
    wait for 10 ns;
    s_rdy_cnt_mem <= "10";
    s_rd_m0 <= '0';
    s_rd_m1 <= '1';
-   s_address_m1 <= "001010000000000000000"; -- 50000
+   s_address_m1 <= "00001010000000000000000"; -- 50000
    wait for 10 ns;
    s_rd_m1 <= '0';
    s_rdy_cnt_mem <= "01";
@@ -361,7 +383,7 @@ begin
    
    wait for 20 ns;
    s_wr_m0 <= '1';
-   s_address_m0 <= "011001111111100011111"; -- 0CFF1F
+   s_address_m0 <= "00011001111111100011111"; -- 0CFF1F
    s_wr_data_m0 <= "11111111111111111111110000000000"; -- FFFFC00
    wait for 10 ns;
    s_wr_m0 <= '0';
@@ -371,14 +393,14 @@ begin
    wait for 10 ns;
    s_rd_m1 <= '1';                                
    s_rdy_cnt_mem <= "00";                         
-   s_address_m1 <= "011010000110000011100"; --    
+   s_address_m1 <= "00011010000110000011100"; --    
    wait for 10 ns;
    s_rd_m1 <= '0';
    s_rdy_cnt_mem <= "10";
    wait for 10 ns;
    s_rdy_cnt_mem <= "01";
    s_rd_m1 <= '1';
-   s_address_m1 <= "001010000000000000000"; -- 50000	
+   s_address_m1 <= "00001010000000000000000"; -- 50000	
    wait for 10 ns;
    s_rd_m1 <= '0';
    s_rdy_cnt_mem <= "10";
@@ -396,9 +418,9 @@ begin
 		s_rd_m0 <= '1';                                   
 		s_rd_m1 <= '1';                                   
 		s_rd_m2 <= '1'; 
-		s_address_m0 <= "001001111111111111111"; -- 4ffff 
-		s_address_m1 <= "001010000000000000000"; -- 50000 
-		s_address_m2 <= "111111111111111111111"; -- fffff 
+		s_address_m0 <= "00001001111111111111111"; -- 4ffff 
+		s_address_m1 <= "00001010000000000000000"; -- 50000 
+		s_address_m2 <= "00111111111111111111111"; -- fffff 
 		wait for 10 ns;                                    
 		s_rdy_cnt_mem <= "10";                             
 		s_rd_m0 <= '0';                                   
@@ -407,7 +429,7 @@ begin
 		wait for 10 ns;                                    
 		s_rdy_cnt_mem <= "01";
 		s_rd_m1 <= '1';
-		s_address_m1 <= "001000000000000000000"; -- 40000
+		s_address_m1 <= "00001000000000000000000"; -- 40000
 		wait for 10 ns;  
 		s_rd_m1 <= '0';
 		s_rdy_cnt_mem <= "10";        
@@ -425,7 +447,7 @@ begin
 		s_rdy_cnt_mem <= "00";
 		s_rd_data_mem <= "11110000111100001111000011110000"; -- F0F..	
 		s_rd_m1 <= '1';
-		s_address_m1 <= "000100010001000100010"; -- 02222   
+		s_address_m1 <= "00000100010001000100010"; -- 02222   
 		wait for 10 ns;	
 		s_rd_m1 <= '0';
 		s_rdy_cnt_mem <= "10";                                         
@@ -447,8 +469,8 @@ begin
 		
 		s_rd_m0 <= '1';                                   
 		s_rd_m1 <= '1';                                   
-		s_address_m0 <= "000011110000111100001"; 
-		s_address_m1 <= "111111111111111111111";  -- FFFFF                                                  
+		s_address_m0 <= "00000011110000111100001"; 
+		s_address_m1 <= "00111111111111111111111";  -- FFFFF                                                  
 		wait for 10 ns; 
 		s_rd_m0 <= '0';                                   
 		s_rd_m1 <= '0';                 
@@ -467,8 +489,8 @@ begin
 		s_rd_data_mem <= "00110011001100110011001100110011"; -- 333..
 		s_rd_m0 <= '1';                                   
 		s_rd_m1 <= '1';                                   
-		s_address_m0 <= "000100010001000100011";
-		s_address_m1 <= "010101010101010101010";     
+		s_address_m0 <= "00000100010001000100011";
+		s_address_m1 <= "00010101010101010101010";     
 		wait for 10 ns;                                    
 		s_rd_m0 <= '0';                                   
 		s_rd_m1 <= '0';                 
@@ -495,8 +517,8 @@ begin
 		s_rd_m0 <= '0';                                   
 		s_rd_m1 <= '1';                                   
 		s_rd_m2 <= '1';  
-		s_address_m1 <= "001010000000000000000"; -- 50000 
-		s_address_m2 <= "111111111111111111111"; -- fffff 
+		s_address_m1 <= "00001010000000000000000"; -- 50000 
+		s_address_m2 <= "00111111111111111111111"; -- fffff 
 		wait for 10 ns;                                    
 		s_rdy_cnt_mem <= "10";                             
 		s_rd_m0 <= '0';                                   
@@ -522,8 +544,8 @@ begin
 		s_rd_m0 <= '1';                                   
 		s_rd_m1 <= '0';                                   
 		s_rd_m2 <= '1';  
-		s_address_m0 <= "001010000000000000000"; -- 50000 
-		s_address_m2 <= "111111111111111111111"; -- fffff 
+		s_address_m0 <= "00001010000000000000000"; -- 50000 
+		s_address_m2 <= "00111111111111111111111"; -- fffff 
 		wait for 10 ns;                                    
 		s_rdy_cnt_mem <= "10";                             
 		s_rd_m0 <= '0';                                   
@@ -550,8 +572,8 @@ begin
 		s_rd_m0 <= '1';                                   
 		s_rd_m1 <= '1';                                   
 		s_rd_m2 <= '0';  
-		s_address_m0 <= "001010000000000000000"; -- 50000 
-		s_address_m1 <= "111111111111111111111"; -- fffff 
+		s_address_m0 <= "00001010000000000000000"; -- 50000 
+		s_address_m1 <= "00111111111111111111111"; -- fffff 
 		wait for 10 ns;                                    
 		s_rdy_cnt_mem <= "10";                             
 		s_rd_m0 <= '0';                                   
@@ -579,12 +601,12 @@ begin
 		s_rd_m0 <= '0';                                   
 		s_rd_m1 <= '1';                                   
 		s_rd_m2 <= '1';  
-		s_address_m1 <= "001010000000000000000"; -- 50000 
-		s_address_m2 <= "111111111111111111111"; -- fffff 
+		s_address_m1 <= "00001010000000000000000"; -- 50000 
+		s_address_m2 <= "00111111111111111111111"; -- fffff 
 		wait for 10 ns;                                    
 		s_rdy_cnt_mem <= "10";                             
 		s_rd_m0 <= '1';
-		s_address_m0 <= "001000000000000000000"; -- 40000                                       
+		s_address_m0 <= "00001000000000000000000"; -- 40000                                       
 		s_rd_m1 <= '0';                             
 		s_rd_m2 <= '0';                                         
 		wait for 10 ns;                                    
@@ -616,8 +638,8 @@ begin
 		s_rd_m0 <= '0';                                   
 		s_rd_m1 <= '1';                                   
 		s_rd_m2 <= '1';  
-		s_address_m1 <= "001010000000000000000"; -- 50000 
-		s_address_m2 <= "111111111111111111111"; -- fffff 
+		s_address_m1 <= "00001010000000000000000"; -- 50000 
+		s_address_m2 <= "00111111111111111111111"; -- fffff 
 		wait for 10 ns;                                    
 		s_rdy_cnt_mem <= "10";                             
 		s_rd_m0 <= '0';                                   
@@ -625,7 +647,7 @@ begin
 		s_rd_m2 <= '0';                                         
 		wait for 10 ns;                                    
 		s_rd_m0 <= '1';
-		s_address_m0 <= "001000000000000000000"; -- 40000                                  
+		s_address_m0 <= "00001000000000000000000"; -- 40000                                  
 		s_rdy_cnt_mem <= "01";
 		wait for 10 ns;
 		s_rd_m0 <= '0';                                         
@@ -656,8 +678,8 @@ begin
 		s_rd_m0 <= '0';                                   
 		s_rd_m1 <= '1';                                   
 		s_rd_m2 <= '1';  
-		s_address_m1 <= "001010000000000000000"; -- 50000 
-		s_address_m2 <= "111111111111111111111"; -- fffff 
+		s_address_m1 <= "00001010000000000000000"; -- 50000 
+		s_address_m2 <= "00111111111111111111111"; -- fffff 
 		wait for 10 ns;                                    
 		s_rdy_cnt_mem <= "10";                             
 		s_rd_m0 <= '0';                                   
@@ -667,7 +689,7 @@ begin
 		s_rdy_cnt_mem <= "01";
 		wait for 10 ns;
 		s_rd_m0 <= '1';
-		s_address_m0 <= "001000000000000000000"; -- 40000                                            
+		s_address_m0 <= "00001000000000000000000"; -- 40000                                            
 		s_rdy_cnt_mem <= "00";
 		s_rd_data_mem <= "01110000011100000111000001110000"; -- 707..                    
 		wait for 10 ns;
@@ -696,8 +718,8 @@ begin
 		s_rd_m0 <= '0';                                   
 		s_rd_m1 <= '1';                                   
 		s_rd_m2 <= '1';  
-		s_address_m1 <= "001010000000000000000"; -- 50000 
-		s_address_m2 <= "111111111111111111111"; -- fffff 
+		s_address_m1 <= "00001010000000000000000"; -- 50000 
+		s_address_m2 <= "00111111111111111111111"; -- fffff 
 		wait for 10 ns;                                    
 		s_rdy_cnt_mem <= "10";                             
 		s_rd_m0 <= '0';                                   
@@ -710,7 +732,7 @@ begin
 		s_rd_data_mem <= "01110000011100000111000001110000"; -- 707..                    
 		wait for 10 ns;
 		s_rd_m0 <= '1';
-		s_address_m0 <= "001000000000000000000"; -- 40000           
+		s_address_m0 <= "00001000000000000000000"; -- 40000           
 		s_rdy_cnt_mem <= "10";                             
 		wait for 10 ns;  
 		s_rd_m0 <= '0';              
@@ -733,8 +755,8 @@ begin
 		s_rd_m0 <= '1';                                   
 		s_rd_m1 <= '1';                                   
 		s_rd_m2 <= '0';  
-		s_address_m1 <= "001010000000000000000"; -- 50000 
-		s_address_m2 <= "111111111111111111111"; -- fffff 
+		s_address_m1 <= "00001010000000000000000"; -- 50000 
+		s_address_m2 <= "00111111111111111111111"; -- fffff 
 		wait for 10 ns;                                    
 		s_rdy_cnt_mem <= "10";                                                                  
 		s_rd_m1 <= '0';                             
@@ -743,7 +765,7 @@ begin
 		s_rdy_cnt_mem <= "01";
 		wait for 10 ns;
 		s_rd_m2 <= '1';
-		s_address_m2 <= "001000000000000000000"; -- 40000                                           
+		s_address_m2 <= "00001000000000000000000"; -- 40000                                           
 		s_rdy_cnt_mem <= "00";
 		s_rd_data_mem <= "01110000011100000111000001110000"; -- 707..                    
 		wait for 10 ns;           
@@ -765,7 +787,7 @@ begin
 
 
 		s_rd_m1 <= '1';
-		s_address_m1 <= "000100010001000100010"; -- 02222   
+		s_address_m1 <= "00000100010001000100010"; -- 02222   
 		wait for 10 ns;	
 		s_rd_m1 <= '0';
 		s_rdy_cnt_mem <= "10";                                         

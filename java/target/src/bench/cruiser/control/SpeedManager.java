@@ -24,10 +24,10 @@ import joprt.RtThread;
 
 public class SpeedManager implements Runnable {
 
-	public final SpeedState frontLeftSpeed = new SpeedState();
-	public final SpeedState frontRightSpeed = new SpeedState();
-	public final SpeedState rearLeftSpeed = new SpeedState();
-	public final SpeedState rearRightSpeed = new SpeedState();
+	final SpeedState frontLeftSpeed = new SpeedState();
+	final SpeedState frontRightSpeed = new SpeedState();
+	final SpeedState rearLeftSpeed = new SpeedState();
+	final SpeedState rearRightSpeed = new SpeedState();
 
 	private final SpeedState [] speedState = new SpeedState[4];
 

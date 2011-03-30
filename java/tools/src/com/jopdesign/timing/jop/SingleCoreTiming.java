@@ -204,8 +204,8 @@ public class SingleCoreTiming extends JOPTimingTable {
 		.addColumn("timing path", Alignment.ALIGN_LEFT)
 		.addColumn("(1,2,H)",Alignment.ALIGN_RIGHT)
 		.addColumn("(1,2,32)",Alignment.ALIGN_RIGHT)
-		.addColumn("(3,5,H)",Alignment.ALIGN_RIGHT)
-		.addColumn("(3,5,32)",Alignment.ALIGN_RIGHT);
+		.addColumn("(2,2,H)",Alignment.ALIGN_RIGHT)
+		.addColumn("(2,2,32)",Alignment.ALIGN_RIGHT);
 		for(int i = 0; i < 256; i++) {
 			int opcode = i;
 			if(JopInstr.isReserved(opcode)) continue;
@@ -221,7 +221,7 @@ public class SingleCoreTiming extends JOPTimingTable {
 				tt.configureWaitStates(1, 2);
 				long exampleTiming1 = tt.getCycles(opcode, true, 0);
 				long exampleTiming2 = tt.getCycles(opcode, false, 32);
-				tt.configureWaitStates(3, 5);
+				tt.configureWaitStates(2, 2);
 				long exampleTiming3 = tt.getCycles(opcode, true, 0);
 				long exampleTiming4 = tt.getCycles(opcode, false, 32);
 				row.addCell(timingPath)

@@ -1,0 +1,8 @@
+TARGET=tb_tm_coordinator
+
+SRC= \
+	$(JOPDIR)/top/jop_config_60.vhd \
+	$(JOPDIR)/simpcon/sc_pack.vhd \
+	../../tm_pack.vhd \
+	../../tm_coordinator.vhd \
+	$(TARGET).vhd

@@ -61,7 +61,7 @@ public abstract class WireMessage {
 	private static final int OVERHEAD_LENGTH = 7;
 	public static final int MAX_LENGTH = 15+OVERHEAD_LENGTH;
 
-	public static String buildMessage(Type type, long data) {
+	static String buildMessage(Type type, long data) {
 		char[] buffer = new char[OVERHEAD_LENGTH+type.length];
 		
 		int pos = 0;

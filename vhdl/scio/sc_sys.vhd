@@ -47,6 +47,10 @@
 --	2007-12-03	prioritized interrupt processing
 --  2007-12-07  global lock redesign
 --	2009-06-18	add port for deadline instruction
+--	2010-04-24	add support for RTTM
+--	          	(no need to make RTTM-specific functionality conditional,
+--				since exc_req.rollback='0' if RTTM unused) 
+--	          	handle 1 cycle delay of sync_out.halted signal
 
 
 --
@@ -136,12 +140,10 @@ port (
 	sync_out : in sync_out_type := NO_SYNC;
 	sync_in	 : out sync_in_type;
 	
-	wd				: out std_logic;
+	wd				: out std_logic
 	
 	-- remove the comment for RAM access counting
 	-- ram_count	: in std_logic;
-
-	inval		: out std_logic
 
 );
 end sc_sys ;
@@ -180,6 +182,9 @@ architecture rtl of sc_sys is
 	signal irq_gate		: std_logic;
 	signal irq_dly		: std_logic;
 	signal exc_dly		: std_logic;
+	
+	-- '0' unless RTTM is used
+	signal tm_ignore_zombie_exc	: std_logic;
 
 --
 --	signals for interrupt source state machines
@@ -197,11 +202,16 @@ architecture rtl of sc_sys is
 	-- delay instruction
 	signal dly_timeout	: std_logic_vector(31 downto 0);
 	signal dly_block	: std_logic;
+	
+	signal lock_reqest_dly: std_logic;
 
 begin
 
 	cpu_identity <= std_logic_vector(to_unsigned(cpu_id,32));
-	rdy_cnt <= "11" when (sync_out.halted='1' and lock_reqest='1') or dly_block='1' else "00";
+	rdy_cnt <= "11" when 
+		(sync_out.halted='1' and lock_reqest='1') or
+		(lock_reqest='1' and lock_reqest_dly='0') or 
+		dly_block='1' else "00";
 	
 --
 --	read cnt values
@@ -262,8 +272,10 @@ end process;
 process(clk, reset) begin
 	if reset='1' then
 		timer_dly <= '0';
+		lock_reqest_dly <= '0'; -- TODO
 	elsif rising_edge(clk) then
 		timer_dly <= timer_equ;
+		lock_reqest_dly <= lock_reqest;
 	end if;
 end process;
 
@@ -388,30 +400,48 @@ begin
 
 		dly_block <= '0';
 		dly_timeout <= (others => '0');
+		tm_ignore_zombie_exc <= '0';
 
 	elsif rising_edge(clk) then
 
 		exc_pend <= '0';
 		swreq <= (others => '0');
 		clearall <= '0';
-		inval <= '0';
 
 		-- disable interrupts on a taken interrupt or excption
 		if irq_out.ack_irq='1' or irq_out.ack_exc='1' then
 			int_ena <= '0';
 		end if;
+		
+		-- RTTM specific
+		if rd='1' and address(3 downto 0) = "0100" then
+			-- HACK:
+			-- exception handling code is running => zombie bytecode ended
+			tm_ignore_zombie_exc <= '0';
+		end if;
 
-		-- exceptions from core or memory
+		-- exceptions from core, memory or RTTM
 		if exc_req.spov='1' then
 			exc_type(2 downto 0) <= EXC_SPOV;
 			exc_pend <= '1';
 		end if;
-		if exc_req.np='1' then
-			exc_type(2 downto 0) <= EXC_NP;
-			exc_pend <= '1';
+		-- always true unless RTTM is used
+		if tm_ignore_zombie_exc = '0' then 
+			if exc_req.np='1' then
+				exc_type(2 downto 0) <= EXC_NP;
+				exc_pend <= '1';
+			end if;
+			if exc_req.ab='1' then
+				exc_type(2 downto 0) <= EXC_AB;
+				exc_pend <= '1';
+			end if;
 		end if;
-		if exc_req.ab='1' then
-			exc_type(2 downto 0) <= EXC_AB;
+		-- exc_req.rollback='0' if RTTM unused
+		if exc_req.rollback='1' then			
+			-- prevent zombie bytecode from masking detected conflict
+			tm_ignore_zombie_exc <= '1';
+			
+			exc_type(2 downto 0) <= EXC_ROLLBACK;
 			exc_pend <= '1';
 		end if;
 
@@ -431,8 +461,6 @@ begin
 				when "0101" =>
 					sync_in.lock_req <= wr_data(0);	
 					lock_reqest <= wr_data(0);
-					-- implicit cache invalidation on monitorenter
-					inval <= wr_data(0);
 				when "0110" =>
 					-- nothing, processor id is read only
 				when "0111" =>
@@ -444,10 +472,8 @@ begin
 				when "1010" =>		-- dely 'instruction'
 					dly_timeout <= wr_data;
 					dly_block <= '1';
-				when "1111" =>
-					-- explicit cache invalidation
-					inval <= '1';
 				when others =>
+					null;
 			end case;
 		end if;
 		

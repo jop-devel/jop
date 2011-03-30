@@ -484,7 +484,7 @@ public class GC {
 			System.exit(1);
 		}
 		if (concurrentGc) {
-			OOMError.fillInStackTrace();
+			// OOMError.fillInStackTrace();
 			throw OOMError;
 		} else {
 			gc();
@@ -533,7 +533,7 @@ public class GC {
 			if (sc!=null) {
 				int rem = sc.backingStore.length - sc.allocPtr;
 				if (size+2 > rem) {
-					OOMError.fillInStackTrace();
+					// OOMError.fillInStackTrace();
 					throw OOMError;
 				}
 				int ref = sc.allocPtr;
@@ -553,7 +553,7 @@ public class GC {
 				gc_alloc();
 				if (copyPtr+size >= allocPtr) {
 					// still not enough memory
-					OOMError.fillInStackTrace();
+					// OOMError.fillInStackTrace();
 					throw OOMError;
 				}
 			}			
@@ -563,7 +563,7 @@ public class GC {
 				log("Run out of handles in new Object!");
 				gc_alloc();
 				if (freeList==0) {
-					OOMError.fillInStackTrace();
+					// OOMError.fillInStackTrace();
 					throw OOMError;
 				}
 			}			
@@ -626,7 +626,7 @@ public class GC {
 			if (sc!=null) {
 				int rem = sc.backingStore.length - sc.allocPtr;
 				if (size+2 > rem) {
-					OOMError.fillInStackTrace();
+					// OOMError.fillInStackTrace();
 					throw OOMError;
 				}
 				int ref = sc.allocPtr;
@@ -645,7 +645,7 @@ public class GC {
 				gc_alloc();
 				if (copyPtr+size >= allocPtr) {
 					// still not enough memory
-					OOMError.fillInStackTrace();
+					// OOMError.fillInStackTrace();
 					throw OOMError;
 				}
 			}			
@@ -655,7 +655,7 @@ public class GC {
 				log("Run out of handles in new array!");
 				gc_alloc();
 				if (freeList==0) {
-					OOMError.fillInStackTrace();
+					// OOMError.fillInStackTrace();
 					throw OOMError;
 				}
 			}			

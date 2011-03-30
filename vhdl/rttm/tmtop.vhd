@@ -22,6 +22,7 @@
 --
 --
 --	Test top level for the RTTM
+--	TODO: broken
 --
 
 library ieee;
@@ -62,7 +63,7 @@ begin
 		c0	 => clk_int
 	);
 
-	cmp_tm: entity work.tm
+	tm: entity work.tm
 		generic map(
 			addr_width => SC_ADDR_SIZE,
 			way_bits => 8
@@ -72,7 +73,9 @@ begin
 			reset => reset,
 			
 			from_cpu => from_cpu,
-			to_cpu => to_cpu
+			to_cpu => to_cpu,
+		read_tag_of => open,
+		write_buffer_of => open
 		);
 		
 		

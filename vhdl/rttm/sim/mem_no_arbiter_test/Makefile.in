@@ -1,0 +1,10 @@
+TARGET=tb_mem_no_arbiter_test
+
+SRC= \
+	$(JOPDIR)/simpcon/sc_pack.vhd \
+	$(JOPDIR)/simpcon/sc_arbiter_pack.vhd \
+	$(JOPDIR)/core/jop_types.vhd \
+	$(JOPDIR)/memory/sc_sram32_flash.vhd \
+	../sim_memory.vhd \
+	../mem_no_arbiter.vhd \
+	$(TARGET).vhd

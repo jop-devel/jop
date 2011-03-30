@@ -121,6 +121,12 @@ public class Instruction implements Serializable {
 			new Instruction("stidx", 0x040 + 0xa, 0, JmpType.NOP, StackType.POP),
 			// putstatic
 			new Instruction("stps", 0x040 + 0xb, 0, JmpType.NOP, StackType.POP),
+			// read constants through cache
+			new Instruction("stmrac", 0x040 + 0xc, 0, JmpType.NOP, StackType.POP),
+			// read through fully associative cache
+			new Instruction("stmraf", 0x040 + 0xd, 0, JmpType.NOP, StackType.POP),
+			// write through fully associative cache
+			new Instruction("stmwdf", 0x040 + 0xe, 0, JmpType.NOP, StackType.POP),
 
 			//
 			// 'push' instructions
@@ -167,8 +173,11 @@ public class Instruction implements Serializable {
 			// no SP change instructions for MMU
 			// 4 bit subfield selects function (pop type)
 
-			// getstatic
+			// getstatic, data cache invalidation, atomic start and end
 			new Instruction("stgs", 0x110 + 0x0, 0, JmpType.NOP, StackType.NOP),
+			new Instruction("cinval", 0x110 + 0x1, 0, JmpType.NOP, StackType.NOP),
+			new Instruction("atmstart", 0x110 + 0x2, 0, JmpType.NOP, StackType.NOP),
+			new Instruction("atmend", 0x110 + 0x3, 0, JmpType.NOP, StackType.NOP),
 
 
 			// branches

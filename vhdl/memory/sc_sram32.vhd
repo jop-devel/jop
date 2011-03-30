@@ -98,6 +98,9 @@ begin
 
 	assert SC_ADDR_SIZE>=addr_bits report "Too less address bits";
 	ram_dout_en <= dout_ena;
+	
+	-- just keep it selected
+	ram_ncs <= '0';
 
 	sc_mem_in.rdy_cnt <= cnt;
 
@@ -182,6 +185,18 @@ begin
 		-- last write state
 		when wr2 =>
 			next_state <= idl;
+			-- This should do to give us a pipeline
+			-- level of 2 for write
+			if sc_mem_out.rd='1' then
+				if ram_ws=0 then
+					-- then we omit state rd1!
+					next_state <= rd2;
+				else
+					next_state <= rd1;
+				end if;
+			elsif sc_mem_out.wr='1' then
+				next_state <= wr1;
+			end if;
 
 	end case;
 				
@@ -197,7 +212,6 @@ begin
 	if (reset='1') then
 		state <= idl;
 		dout_ena <= '0';
-		ram_ncs <= '1';
 		ram_noe <= '1';
 		rd_data_ena <= '0';
 		ram_nwe <= '1';
@@ -206,7 +220,6 @@ begin
 
 		state <= next_state;
 		dout_ena <= '0';
-		ram_ncs <= '1';
 		ram_noe <= '1';
 		rd_data_ena <= '0';
 		ram_nwe <= '1';
@@ -217,12 +230,10 @@ begin
 
 			-- the wait state
 			when rd1 =>
-				ram_ncs <= '0';
 				ram_noe <= '0';
 
 			-- last read state
 			when rd2 =>
-				ram_ncs <= '0';
 				ram_noe <= '0';
 				rd_data_ena <= '1';
 				
@@ -230,12 +241,10 @@ begin
 			when wr1 =>
 				ram_nwe <= '0';
 				dout_ena <= '1';
-				ram_ncs <= '0';
 			
 			-- last write state	
 			when wr2 =>
 				dout_ena <= '1';
-				ram_ncs <= '0';
 
 		end case;
 					

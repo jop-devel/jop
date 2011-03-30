@@ -104,7 +104,7 @@ public class JavaDown {
 
 	}
 
-	static final int CNTMOD = 64;
+	static final int CNTMOD = 4;
 
 	static public boolean downLoad(String fname) {
 		FileReader fileIn = null;

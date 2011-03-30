@@ -4,22 +4,20 @@ use IEEE.numeric_std.all;
 
 use work.sc_pack.all;
 
-entity directmapped is
+entity directmapped_const is
 generic (
 	index_bits : integer := 8);
 port (
 	clk, reset:	    in std_logic;
-
-	inval:			in std_logic;
 
 	cpu_out:		in sc_out_type;
 	cpu_in:			out sc_in_type;
 
 	mem_out:		out sc_out_type;
 	mem_in:			in sc_in_type);
-end directmapped;
+end directmapped_const;
 
-architecture rtl of directmapped is
+architecture rtl of directmapped_const is
 
 	constant mem_bits : integer := SC_ADDR_SIZE-3;
 	constant line_cnt : integer := 2**index_bits;
@@ -56,7 +54,7 @@ architecture rtl of directmapped is
 	
 begin
 
-	int_reset <= reset or inval;
+	int_reset <= reset or cpu_out.cinval;
 	
 	ram_din_raw(32+mem_bits-index_bits downto mem_bits-index_bits+1) <= ram_din.data;
 	ram_din_raw(mem_bits-index_bits downto 1) <= ram_din.tag;
@@ -85,7 +83,7 @@ begin
 	begin  -- process sync
 		if int_reset = '1' then  -- asynchronous reset (active low)
 			
-			cpu_out_reg <= ((others => '0'), (others => '0'), '0', '0', '0', bypass);
+			cpu_out_reg <= ((others => '0'), (others => '0'), '0', '0', '0', bypass, '0', '0', '0');
 			rddata_reg <= (others => '0');
 			fetchtag_reg <= (others => '0');
 			fetch_reg <= '0';
@@ -194,10 +192,10 @@ begin
 				next_cpu_out <= cpu_out;
 			end if;
 
-			if cpu_out.rd = '1' and cpu_out.cache = direct_mapped then
+			if cpu_out.rd = '1' and cpu_out.cache = direct_mapped_const then
 				next_state <= rd0;
 			end if;
-			if cpu_out.wr = '1' and cpu_out.cache = direct_mapped then
+			if cpu_out.wr = '1' and cpu_out.cache = direct_mapped_const then
 				next_state <= wr0;
 			end if;
 

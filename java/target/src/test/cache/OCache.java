@@ -26,13 +26,20 @@ package cache;
 
 import com.jopdesign.sys.Native;
 
+import jembench.application.BenchLift;
+import jembench.micro.*;
+import jvm.obj.*;
+
+
 /**
  * @author Martin Schoeberl (martin@jopdesign.com)
  *
  */
 public class OCache {
 	
-	int a, b;
+	public int a;
+	int b;
+	int c;
 	static int s;
 
 	/**
@@ -41,9 +48,12 @@ public class OCache {
 	public static void main(String[] args) {
 		
 		OCache oc = new OCache();
+		OCache oc2 = new OCache();
 		int i, j;
 		com.jopdesign.io.SysDevice sys = com.jopdesign.io.IOFactory.getFactory().getSysDevice();
 
+		oc.b = 15;
+		oc.c = 255;
 		// a marker for the ModelSim simulation
 		sys.wd = 1;
 		s = 15;
@@ -51,13 +61,37 @@ public class OCache {
 		oc.a = 1;
 		i = oc.a;
 		j = oc.a;
+		i = oc.b;
+		j = oc.b;
+		i = oc.c;
+		j = oc.c;
+		oc.b = 64;
+		i = oc.b;
+		oc.a = 7;
+		j = oc.a;
 		int ref = Native.toInt(oc);
-		Native.putField(ref, 0, 2);
+//		Native.putField(ref, 0, 2);
+		i = Native.getField(ref, 0);
 		i = oc.a;
-		// test caching of I/O devices
-		i = sys.cntInt;
-		j = sys.cntInt;
+//		// test caching of I/O devices
+//		i = sys.cntInt;
+//		j = sys.cntInt;
 		sys.wd = 0;
+		oc2.a = 3;
+		i = oc.a;
+		i = oc2.a;
+		j = oc.a;
+		j = oc2.a;
+		sys.wd = 1;
+//		GetField gf = new GetField();
+//		BenchLift bl = new BenchLift();
+		Basic btest = new Basic();
+		sys.wd = 0;
+//		gf.perform(10);
+//		bl.perform(10);
+		boolean result = btest.test();
+		sys.wd = 1;
+		System.out.println(result);
 	}
 
 }
