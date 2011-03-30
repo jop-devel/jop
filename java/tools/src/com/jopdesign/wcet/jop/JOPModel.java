@@ -150,16 +150,14 @@ public class JOPModel implements ProcessorModel {
 		MethodInfo mctx = context.getMethodInfo();
 		int jopcode = this.getNativeOpCode(mctx ,i);
 		long cycles = timing.getLocalCycles(jopcode);
-		if(cycles < 0) {
-			if(isUnboundedBytecode(i)){
-				Project.logger.error("[HACK] Unsupported (unbounded) bytecode: "+i.getName()+
-									" in " + mctx.getFQMethodName()+
-									".\nApproximating with 2000 cycles, but result is not safe anymore.");
-				return 2000L;
-			} else {
-				throw new AssertionError("Requesting #cycles of non-implemented opcode: "+
-						i+"(opcode "+jopcode+") used in context: "+context);
-			}
+		if(isUnboundedBytecode(i)){
+			Project.logger.error("[FATAL] Unsupported (unbounded) bytecode: "+i.getName()+
+					             " in " + mctx.getFQMethodName()+
+				                 ". Approximating with 2000 cycles, but result is not safe anymore!");
+			return 2000;
+		} else if(cycles < 0) {
+			throw new AssertionError("Requesting #cycles of non-implemented opcode: "+
+					i+"(opcode "+jopcode+") used in context: "+context);
 		} else {
 			return (int) cycles;
 		}
