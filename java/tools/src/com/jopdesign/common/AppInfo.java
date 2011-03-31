@@ -641,21 +641,30 @@ public final class AppInfo {
      * @return A field reference with or without FieldInfo or ClassInfo.
      */
     public FieldRef getFieldRef(Signature signature) {
-        ClassInfo cls = classes.get(signature.getClassName());
+        return getFieldRef(signature.getClassName(), signature.getMemberName());
+    }
+
+    public FieldRef getFieldRef(String className, String fieldName) {
+        ClassInfo cls = classes.get(className);
         ClassRef clsRef;
         if ( cls != null ) {
+            FieldInfo field = cls.getFieldInfo(fieldName);
+            if (field != null) {
+                return field.getFieldRef();
+            }
             clsRef = cls.getClassRef();
         } else {
-            clsRef = new ClassRef(signature.getClassName());
+            clsRef = new ClassRef(className);
         }
-        return getFieldRef(clsRef, signature);
+        return new FieldRef(clsRef, fieldName, null);
     }
 
     /**
      * Get a reference to a field using the given signature.
      *
      * @param classRef The class which contains the field.
-     * @param signature The signature of the field. Only memberName and memberDescriptor are used.
+     * @param signature The signature of the field. Only memberName and memberDescriptor are used. The descriptor
+     *        defines the type of the field, if the field is unknown.
      * @return A field reference with or without FieldInfo or ClassInfo.
      */
     public FieldRef getFieldRef(ClassRef classRef, Signature signature) {
@@ -724,8 +733,7 @@ public final class AppInfo {
     public MethodInfo getMethodInfoInherited(String className, String methodSignature) {
         ClassInfo classInfo = getClassInfo(className);
         if (classInfo == null) return null;
-        Signature signature = Signature.parse(methodSignature, true);
-        return classInfo.getMethodInfoInherited(signature, true);
+        return classInfo.getMethodInfoInherited(methodSignature, true);
     }
 
     /**
@@ -1043,7 +1051,7 @@ public final class AppInfo {
             return methods;
         }
 
-        final String methodSig = invokee.getMemberSignature();
+        final String methodSig = invokee.getMethodSignature();
         final ClassInfo invokeeClass = invokee.getClassRef().getClassInfo();
 
         if (invokeeClass == null) {

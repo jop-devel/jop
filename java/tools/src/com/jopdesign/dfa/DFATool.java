@@ -84,6 +84,8 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     public static final String LOG_DFA = "dfa";
     public static final String LOG_DFA_ANALYSES = "dfa.analyses";
 
+    private static final Logger logger = Logger.getLogger(LOG_DFA+".DFATool");
+
     private AppInfo appInfo;
 
     private List<InstructionHandle> statements;
@@ -301,8 +303,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         Context context = new Context();
         context.stackPtr = 0;
         context.syncLevel = 0;
-        context.constPool = prologue.getConstantPoolGen();
-        context.method = prologue.getMethodRef();
+        context.setMethodInfo(prologue);
 
         analysis.initialize(main, context);
 
@@ -317,19 +318,14 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
         Interpreter<K, V> interpreter = new Interpreter<K, V>(analysis, this);
 
-        try {
-            if (start == null) throw new AssertionError("No such method: " + start);
-            Context context = new Context();
-            context.stackPtr = start.getCode().getMaxLocals();
-            context.constPool = start.getClassInfo().getConstantPoolGen();
-            context.method = start.getMethodRef();
+        if (start == null) throw new AssertionError("No such method: " + start);
+        Context context = new Context();
+        context.stackPtr = start.getCode().getMaxLocals();
+        context.setMethodInfo(start);
 
-            analysis.initialize(start, context);
-            InstructionHandle entry = start.getCode().getInstructionList().getStart();
-            interpreter.interpret(context, entry, new HashMap<InstructionHandle, ContextMap<K, V>>(), true);
-        } catch (Throwable thr) {
-            thr.printStackTrace();
-        }
+        analysis.initialize(start, context);
+        InstructionHandle entry = start.getCode().getInstructionList().getStart();
+        interpreter.interpret(context, entry, new HashMap<InstructionHandle, ContextMap<K, V>>(), true);
 
         return analysis.getResult();
     }
@@ -392,19 +388,19 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         return appInfo.getMethodInfoInherited(Signature.parse(signature, true));
     }
 
-    public ClassInfo classForField(String fieldName) {
+    public boolean containsField(String fieldName) {
         Signature s = Signature.parse(fieldName, true);
-        if (!getAppInfo().hasClassInfo(s.getClassName())) {
-            Logger.getLogger(this.getClass()).debug("Unknown class as potential receiver for putfield operation " + s.toString(true));
-            return null;
-        }
+        return classForField(s.getClassName(), s.getMemberName()) != null;
+    }
 
-        ClassInfo cls = getAppInfo().getClassInfo(s.getClassName());
+    public ClassInfo classForField(String className, String fieldName) {
+        ClassInfo cls = getAppInfo().getClassInfo(className);
         if (cls == null) {
+            logger.info("Unknown class as potential receiver of field access" + className);
             return null;
         }
         // TODO maybe we *do* want to check access here...
-        FieldInfo field = cls.getFieldInfoInherited(s.getMemberName(), false);
+        FieldInfo field = cls.getFieldInfoInherited(fieldName, false);
         return field != null ? field.getClassInfo() : null;
     }
 
@@ -431,10 +427,5 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         }
         return s.toString();
     }
-
-    public boolean containsField(String fieldName) {
-        return classForField(fieldName) != null;
-    }
-
 
 }

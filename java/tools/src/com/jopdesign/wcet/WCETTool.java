@@ -556,7 +556,6 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         int callstringLength = (int) projectConfig.callstringLength();
 
         // TODO move this stuff to DFATool
-        topLevelLogger.info("Preparing analysis");
         dfaTool.load();
         topLevelLogger.info("Receiver analysis");
         CallStringReceiverTypes recTys = new CallStringReceiverTypes(callstringLength);

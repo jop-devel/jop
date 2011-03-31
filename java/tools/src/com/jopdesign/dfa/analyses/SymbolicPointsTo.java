@@ -67,7 +67,9 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 	//private static final boolean ASSUME_NO_ALIASING = true;
 	// Set this to true to see how good one could get
 	private static final boolean ASSUME_NO_CONC = true;
-	
+
+    private static final Logger logger = Logger.getLogger(DFATool.LOG_DFA_ANALYSES+".SymbolicPointsTo");
+
 	private BoundedSetFactory<SymbolicAddress> bsFactory;
 	private final int callStringLength;
 	private MethodInfo entryMethod;
@@ -193,7 +195,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		Context context = new Context(input.getContext());
 		
 		if(DEBUG_PRINT) {
-			System.out.println("[S] "+context.callString.toStringList()+": "+context.method+" / "+stmt);
+			System.out.println("[S] "+context.callString.toStringList()+": "+context.method()+" / "+stmt);
 		}
 		
 		SymbolicAddressMap in = input.get(context.callString);
@@ -202,8 +204,8 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		Instruction instruction = stmt.getInstruction();
 		int newStackPtr =
 			  context.stackPtr 
-			+ instruction.produceStack(context.constPool) 
-			- instruction.consumeStack(context.constPool);
+			+ instruction.produceStack(context.constPool())
+			- instruction.consumeStack(context.constPool());
 		int opcode = instruction.getOpcode();
 		switch (opcode) {
 
@@ -247,11 +249,11 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.LDC:
 		case Constants.LDC_W: {
 			LDC ldc = (LDC) instruction;
-			Type t = ldc.getType(context.constPool);
+			Type t = ldc.getType(context.constPool());
 			if(t instanceof ReferenceType) {
 				SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
 				/* FIXME: This is overly conservative, but class pointer not available here */
-				String classContext = context.method.getSignature().toString();
+				String classContext = context.getMethodInfo().getSignature().toString();
 				SymbolicAddress addr = SymbolicAddress.stringLiteral(classContext,ldc.getIndex());
 				result.putStack(newStackPtr-1, bsFactory.singleton(addr ));
 				retval.put(context.callString, result);		
@@ -361,11 +363,11 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		// Access Object Handle, second on stack
 		case Constants.PUTFIELD: {
 			PUTFIELD instr = (PUTFIELD)instruction;
-			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-1-instr.getType(context.constPool).getSize()));
+			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-1-instr.getType(context.constPool()).getSize()));
 			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
 			// Change alias information
-			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
-				String ty = instr.getFieldType(context.constPool).getSignature();
+			if(instr.getFieldType(context.constPool()) instanceof ReferenceType) {
+				String ty = instr.getFieldType(context.constPool()).getSignature();
 				result.addAlias(ty, in.getStack(context.stackPtr-1));
 			}
 			retval.put(context.callString, result);		
@@ -378,12 +380,12 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			putResult(stmt, context, input.get(context.callString).getStack(context.stackPtr-1));
 			GETFIELD instr = (GETFIELD)instruction;
 			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
-			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
+			if(instr.getFieldType(context.constPool()) instanceof ReferenceType) {
 				BoundedSet<SymbolicAddress> newMapping =
 					SymbolicAddress.fieldAccess(bsFactory,
 												in.getStack(context.stackPtr-1),
-							                    instr.getFieldName(context.constPool));
-				newMapping.addAll(in.getAliases(instr.getFieldType(context.constPool).getSignature()));
+							                    instr.getFieldName(context.constPool()));
+				newMapping.addAll(in.getAliases(instr.getFieldType(context.constPool()).getSignature()));
 				result.putStack(context.stackPtr-1, newMapping);
 			}
 			retval.put(context.callString, result);
@@ -394,7 +396,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.PUTSTATIC: {			
 			PUTSTATIC instr = (PUTSTATIC)instruction;
 			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
-			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
+			if(instr.getFieldType(context.constPool()) instanceof ReferenceType) {
 				BoundedSet<SymbolicAddress> pointers = in.getStack(context.stackPtr - 1);
 				result.putHeap(fieldSignature(context, instr), pointers);
 			}
@@ -406,7 +408,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.GETSTATIC: {			
 			GETSTATIC instr = (GETSTATIC)instruction;
 			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
-			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
+			if(instr.getFieldType(context.constPool()) instanceof ReferenceType) {
 				result.putStack(context.stackPtr, in.getHeap(fieldSignature(context, instr)));
 			}
 			retval.put(context.callString, result);		
@@ -433,8 +435,8 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			AASTORE instr = (AASTORE) stmt.getInstruction();
 			SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
 			// Change alias information
-			if(instr.getType(context.constPool) instanceof ReferenceType) {
-				String ty = instr.getType(context.constPool).getSignature();
+			if(instr.getType(context.constPool()) instanceof ReferenceType) {
+				String ty = instr.getType(context.constPool()).getSignature();
 				result.addAlias(ty, in.getStack(context.stackPtr-1));
 			}
 			retval.put(context.callString, result);		
@@ -720,15 +722,15 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			
 			if (receivers == null || receivers.size() == 0) {
 				String errMsg = String.format("%s : invoke %s: %s receivers",
-				  context.method, instruction.toString(context.constPool.getConstantPool()),
+				  context.method(), instruction.toString(context.constPool().getConstantPool()),
 				  (receivers == null ? "Unknown" : "No"));
 				// Get static receivers (FIXME: this just workarounds DFA bugs)
 				if(opcode == Constants.INVOKESTATIC) {
 					receivers = new HashSet<String>();
 					InvokeInstruction invInstruction = (InvokeInstruction) instruction;					
-					String klass = invInstruction.getClassName(context.constPool);
-					String name = invInstruction.getMethodName(context.constPool);
-					String sig = invInstruction.getSignature(context.constPool);
+					String klass = invInstruction.getClassName(context.constPool());
+					String name = invInstruction.getMethodName(context.constPool());
+					String sig = invInstruction.getSignature(context.constPool());
 					String recv = klass+"."+name+sig;
 					Logger.getLogger(this.getClass()).info("Using static receiver: "+recv);
 					receivers.add(recv);
@@ -777,7 +779,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		break;						
 
 		default:
-			System.err.println("unknown instruction: "+stmt+" in method "+context.method);
+			System.err.println("unknown instruction: "+stmt+" in method "+context.method());
 			retval.put(context.callString, in.cloneFilterStack(newStackPtr));						
 			break;
 		}
@@ -785,7 +787,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		
 		// DEBUGGING
 		if(DEBUG_PRINT) {
-			System.out.println("[F] "+context.method+" / "+stmt);
+			System.out.println("[F] "+context.method()+" / "+stmt);
 			System.out.println("  Stackptr: "+context.stackPtr + " -> "+newStackPtr);
 			System.out.println("  Before: ");
 			input.get(context.callString).print(System.out, 4);		
@@ -798,7 +800,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 	}
 	
 	private String fieldSignature(Context context, FieldInstruction instr) {
-		return instr.getClassName(context.constPool) + instr.getFieldName(context.constPool);
+		return instr.getClassName(context.constPool()) + instr.getFieldName(context.constPool());
 	}
 
 	/** Save used object handle */
@@ -836,11 +838,10 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			int varPtr = context.stackPtr - MethodHelper.getArgSize(method);
 			Context c = new Context(context);
 			c.stackPtr = method.getCode().getMaxLocals();
-			c.constPool = method.getClassInfo().getConstantPoolGen();
 			if (method.isSynchronized()) {
 				c.syncLevel = context.syncLevel+1;
 			}
-			c.method = method.getMethodRef();
+			c.setMethodInfo(method);
 			c.callString = c.callString.push(method, stmt, callStringLength);
 			
 			// carry only minimal information with call
@@ -951,15 +952,15 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			
 			ContextMap<CallString, BoundedSet<SymbolicAddress>> r = usedRefs.get(instr);
 			Context c = r.getContext();
-			MethodInfo method = c.method.getMethodInfo();
+			MethodInfo method = c.getMethodInfo();
 			if(method == null) {
-				throw new AssertionError("Internal Error: No method '"+c.method+"'");
+				throw new AssertionError("Internal Error: No method '"+c.method()+"'");
 			}
 			LineNumberTable lines = method.getCode().getLineNumberTable();
 			int sourceLine = lines.getSourceLine(instr.getPosition());
 
             for (CallString callString : r.keySet()) {
-                System.out.println(c.method + ":" + sourceLine + ":" + callString + ": " + instr);
+                System.out.println(c.method() + ":" + sourceLine + ":" + callString + ": " + instr);
                 BoundedSet<SymbolicAddress> symAddr = r.get(callString);
 
                 String infoStr;
@@ -967,8 +968,8 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
                     GETFIELD gfInstr = (GETFIELD) instr.getInstruction();
                     infoStr = String.format("GETFIELD %s %s %s",
                             symAddr.toString(),
-                            gfInstr.getFieldName(c.constPool),
-                            gfInstr.getFieldType(c.constPool));
+                            gfInstr.getFieldName(c.constPool()),
+                            gfInstr.getFieldType(c.constPool()));
                 } else if (instr.getInstruction() instanceof ARRAYLENGTH) {
                     infoStr = String.format("ARRAYLENGTH %s",
                             symAddr.toString());
@@ -977,13 +978,13 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
                     infoStr = String.format("%s %s %s[]",
                             aInstr.getName().toUpperCase(),
                             symAddr.toString(),
-                            aInstr.getType(c.constPool));
+                            aInstr.getType(c.constPool()));
                 } else {
                     infoStr = String.format("%s %s", instr.getInstruction().getName().toUpperCase(),
                             symAddr.toString());
                 }
                 if (infoStr != null) {
-                    String infoKey = String.format("%s:%04d:%s", c.method, sourceLine, callString);
+                    String infoKey = String.format("%s:%04d:%s", c.method(), sourceLine, callString);
                     while (getFields.containsKey(infoKey)) infoKey += "'";
                     getFields.put(infoKey, infoStr);
                 }

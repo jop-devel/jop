@@ -87,6 +87,10 @@ public class MethodRef {
         return classRef != null ? classRef : methodInfo.getClassInfo().getClassRef();
     }
 
+    public ClassInfo getClassInfo() {
+        return classRef != null ? classRef.getClassInfo() : methodInfo.getClassInfo();
+    }
+
     public Descriptor getDescriptor() {
         return methodInfo != null ? methodInfo.getDescriptor() : descriptor;
     }
@@ -111,7 +115,7 @@ public class MethodRef {
     public Ternary exists() {
         if ( getMethodInfo() != null ) return Ternary.TRUE;
         if ( classRef.getClassInfo() != null ) {
-            return classRef.getClassInfo().getMethodInfo(getMemberSignature()) != null ?
+            return classRef.getClassInfo().getMethodInfo(getMethodSignature()) != null ?
                     Ternary.TRUE : Ternary.FALSE;
         }
         return Ternary.UNKNOWN;
@@ -125,7 +129,7 @@ public class MethodRef {
         return classRef != null ? classRef.getClassName() : methodInfo.getClassInfo().getClassName();
     }
 
-    public String getMemberSignature() {
+    public String getMethodSignature() {
         if ( methodInfo != null ) {
             return methodInfo.getMethodSignature();
         }
@@ -139,7 +143,7 @@ public class MethodRef {
     @Override
     public int hashCode() {
         int hash = getClassName().hashCode();
-        hash = 31 * hash + getMemberSignature().hashCode();
+        hash = 31 * hash + getMethodSignature().hashCode();
         return hash;
     }
 
@@ -160,7 +164,7 @@ public class MethodRef {
             return false;
         }
         MethodRef ref = (MethodRef) obj;
-        return getClassName().equals(ref.getClassName()) && getMemberSignature().equals(ref.getMemberSignature());
+        return getClassName().equals(ref.getClassName()) && getMethodSignature().equals(ref.getMethodSignature());
     }
 
     @Override

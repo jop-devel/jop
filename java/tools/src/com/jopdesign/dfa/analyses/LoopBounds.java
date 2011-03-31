@@ -62,6 +62,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
     private final int callStringLength;
 
+    private static final Logger logger = Logger.getLogger(DFATool.LOG_DFA_ANALYSES + ".LoopBounds");
+
     public LoopBounds(int callStringLength) {
         this.callStringLength = callStringLength;
     }
@@ -213,7 +215,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
         // shortcut for infeasible paths
         if (in == null) {
-            context.stackPtr += instruction.produceStack(context.constPool) - instruction.consumeStack(context.constPool);
+            context.stackPtr += instruction.produceStack(context.constPool()) - instruction.consumeStack(context.constPool());
             return retval;
         }
 
@@ -265,14 +267,14 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                 LDC instr = (LDC) instruction;
                 result = new HashMap<Location, ValueMapping>(in);
                 retval.put(context.callString, result);
-                Type type = instr.getType(context.constPool);
+                Type type = instr.getType(context.constPool());
                 if (type.equals(Type.INT)) {
-                    Integer value = (Integer) instr.getValue(context.constPool);
+                    Integer value = (Integer) instr.getValue(context.constPool());
                     result.put(new Location(context.stackPtr), new ValueMapping(value));
                 } else if (type.equals(Type.STRING)) {
-                    String value = (String) instr.getValue(context.constPool);
+                    String value = (String) instr.getValue(context.constPool());
                     String name = "char[]";
-                    name += "@" + context.method + ":" + stmt.getPosition();
+                    name += "@" + context.method() + ":" + stmt.getPosition();
                     result.put(new Location(name + ".length"), new ValueMapping(value.length()));
 //				System.out.println(name+": \""+value+"\"");				
                 }
@@ -360,7 +362,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                 Location location = new Location(context.stackPtr - 1);
                 boolean valid = false;
                 if (receivers == null) {
-                    System.out.println("no receivers at: " + context.callString.toStringList() + context.method + stmt);
+                    System.out.println("no receivers at: " + context.callString.toStringList() + context.method() + stmt);
                 } else {
                     for (String arrayName : receivers) {
                         ValueMapping m = in.get(new Location(arrayName + ".length"));
@@ -380,7 +382,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
             case Constants.PUTFIELD: {
                 PUTFIELD instr = (PUTFIELD) instruction;
-                int fieldSize = instr.getFieldType(context.constPool).getSize();
+                int fieldSize = instr.getFieldType(context.constPool()).getSize();
 
                 for (Location l : in.keySet()) {
                     if (l.stackLoc >= 0 && l.stackLoc < context.stackPtr - 1 - fieldSize) {
@@ -393,7 +395,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                 DFATool p = interpreter.getDFATool();
                 Set<String> receivers = p.getReceivers(stmt, context.callString);
                 if (receivers == null) {
-                    System.out.println("no receivers at: " + context.callString.toStringList() + context.method + stmt);
+                    logger.warn("no receivers at: " + context.callString.toStringList() + context.method() + stmt);
                 } else {
                     for (String fieldName : receivers) {
 
@@ -433,7 +435,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                 Location location = new Location(context.stackPtr - 1);
                 boolean valid = false;
                 if (receivers == null) {
-                    System.out.println("no receivers at: " + context.callString.toStringList() + context.method + stmt);
+                    logger.warn("no receivers at: " + context.callString.toStringList() + context.method() + stmt);
                 } else {
                     for (String fieldName : receivers) {
                         String f = fieldName.substring(fieldName.lastIndexOf("."), fieldName.length());
@@ -458,7 +460,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                         }
                     }
                 }
-                if (!valid && !(instr.getFieldType(context.constPool) instanceof ReferenceType)) {
+                if (!valid && !(instr.getFieldType(context.constPool()) instanceof ReferenceType)) {
                     result.put(new Location(context.stackPtr - 1), new ValueMapping());
                 }
             }
@@ -466,7 +468,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
             case Constants.PUTSTATIC: {
                 PUTSTATIC instr = (PUTSTATIC) instruction;
-                int fieldSize = instr.getFieldType(context.constPool).getSize();
+                int fieldSize = instr.getFieldType(context.constPool()).getSize();
 
                 for (Location l : in.keySet()) {
                     if (l.stackLoc >= 0 && l.stackLoc < context.stackPtr - fieldSize) {
@@ -513,7 +515,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                         }
                     }
                 }
-                if (!valid && !(instr.getFieldType(context.constPool) instanceof ReferenceType)) {
+                if (!valid && !(instr.getFieldType(context.constPool()) instanceof ReferenceType)) {
                     result.put(new Location(context.stackPtr), new ValueMapping());
                 }
             }
@@ -533,7 +535,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                 DFATool p = interpreter.getDFATool();
                 Set<String> receivers = p.getReceivers(stmt, context.callString);
                 if (receivers == null) {
-                    System.out.println("no receivers at: " + context.callString.toStringList() + context.method + stmt);
+                    logger.warn("no receivers at: " + context.callString.toStringList() + context.method() + stmt);
                     break;
                 }
                 for (String name : receivers) {
@@ -584,7 +586,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
             case Constants.AALOAD: {
                 ValueMapping v = in.get(new Location(context.stackPtr - 1));
                 if (v == null) {
-                    System.out.println("no value at: " + context.callString.toStringList() + context.method + stmt);
+                    logger.warn("no value at: " + context.callString.toStringList() + context.method() + stmt);
                 } else {
                     recordArrayIndex(stmt, context, v.assigned);
                 }
@@ -909,7 +911,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                 NEWARRAY instr = (NEWARRAY) instruction;
 
                 String name = instr.getType().toString();
-                name += "@" + context.method + ":" + stmt.getPosition();
+                name += "@" + context.method() + ":" + stmt.getPosition();
 
                 filterSet(in, result, context.stackPtr - 1);
 
@@ -932,8 +934,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
             case Constants.ANEWARRAY: {
                 ANEWARRAY instr = (ANEWARRAY) instruction;
 
-                String name = instr.getType(context.constPool).toString() + "[]";
-                name += "@" + context.method + ":" + stmt.getPosition();
+                String name = instr.getType(context.constPool()).toString() + "[]";
+                name += "@" + context.method() + ":" + stmt.getPosition();
                 //System.out.println("NEW ARRAY: "+name);
 
                 filterSet(in, result, context.stackPtr - 1);
@@ -959,7 +961,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
                 filterSet(in, result, context.stackPtr - dim);
 
-                String type = instr.getType(context.constPool).toString();
+                String type = instr.getType(context.constPool()).toString();
                 type = type.substring(0, type.indexOf("["));
 
                 Interval[] size = new Interval[dim];
@@ -969,7 +971,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                     for (int k = 0; k < i; k++) {
                         name += "[]";
                     }
-                    name += "@" + context.method + ":" + stmt.getPosition();
+                    name += "@" + context.method() + ":" + stmt.getPosition();
 
                     boolean valid = false;
                     for (Location l : in.keySet()) {
@@ -1048,7 +1050,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                 DFATool p = interpreter.getDFATool();
                 Set<String> receivers = p.getReceivers(stmt, context.callString);
                 if (receivers == null) {
-                    System.out.println(context.method + ": invoke " + instruction.toString(context.constPool.getConstantPool()) + "(" + stmt.toString(true) + ")" + " unknown receivers");
+                    logger.warn(context.method() + ": invoke " + instruction.toString(context.constPool().getConstantPool()) + "(" + stmt.toString(true) + ")" + " unknown receivers");
                     result = in;
                     break;
                 }
@@ -1091,7 +1093,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 //		}
 //		System.out.println("}");
 
-        context.stackPtr += instruction.produceStack(context.constPool) - instruction.consumeStack(context.constPool);
+        context.stackPtr += instruction.produceStack(context.constPool()) - instruction.consumeStack(context.constPool());
         return retval;
     }
 
@@ -1366,11 +1368,10 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
             int varPtr = context.stackPtr - MethodHelper.getArgSize(method);
             Context c = new Context(context);
             c.stackPtr = method.getCode().getMaxLocals();
-            c.constPool = method.getClassInfo().getConstantPoolGen();
             if (method.isSynchronized()) {
                 c.syncLevel = context.syncLevel + 1;
             }
-            c.method = method.getMethodRef();
+            c.setMethodInfo(method);
             c.callString = c.callString.push(method, stmt, callStringLength);
 
             // carry only minimal information with call
@@ -1593,7 +1594,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
             ContextMap<CallString, Pair<ValueMapping, ValueMapping>> r = bounds.get(instr);
             Context c = r.getContext();
 
-            LineNumberTable lines = c.method.getMethodInfo().getCode().getLineNumberTable();
+            LineNumberTable lines = c.getMethodInfo().getCode().getLineNumberTable();
             int sourceLine = lines.getSourceLine(instr.getPosition());
 
             for (CallString callString : r.keySet()) {
@@ -1602,7 +1603,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                 ValueMapping first = bounds.first();
                 ValueMapping second = bounds.second();
 
-                System.out.println(c.method + ":" + sourceLine + ":\t" + callString.toStringList() + "\t$" + scopes.get(instr) + ": ");
+                System.out.println(c.method() + ":" + sourceLine + ":\t" + callString.toStringList() + "\t$" + scopes.get(instr) + ": ");
 
                 System.out.print("\t\ttrue:\t");
                 System.out.println(first);
@@ -1648,13 +1649,13 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
             ContextMap<CallString, Interval[]> r = sizes.get(instr);
             Context c = r.getContext();
 
-            LineNumberTable lines = c.method.getMethodInfo().getCode().getLineNumberTable();
+            LineNumberTable lines = c.getMethodInfo().getCode().getLineNumberTable();
             int sourceLine = lines.getSourceLine(instr.getPosition());
 
             for (CallString callString : r.keySet()) {
                 Interval[] bounds = r.get(callString);
 
-                System.out.println(c.method + ":" + sourceLine + ":\t" + callString.toStringList() + ": ");
+                System.out.println(c.method() + ":" + sourceLine + ":\t" + callString.toStringList() + ": ");
                 System.out.println(Arrays.asList(bounds));
             }
         }

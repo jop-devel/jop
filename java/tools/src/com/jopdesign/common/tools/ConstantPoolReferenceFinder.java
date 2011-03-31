@@ -253,7 +253,7 @@ public class ConstantPoolReferenceFinder {
         @Override
         public void processMethodRef(MethodRef methodRef) {
             String className = methodRef.getClassName();
-            members.add(className + Signature.ALT_MEMBER_SEPARATOR + methodRef.getMemberSignature());
+            members.add(className + Signature.ALT_MEMBER_SEPARATOR + methodRef.getMethodSignature());
         }
     }
 

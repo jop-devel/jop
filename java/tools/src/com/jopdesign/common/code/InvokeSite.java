@@ -29,7 +29,6 @@ import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.Ternary;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.Signature;
-import org.apache.bcel.generic.ArrayType;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKESPECIAL;
@@ -38,8 +37,6 @@ import org.apache.bcel.generic.INVOKEVIRTUAL;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
-import org.apache.bcel.generic.ObjectType;
-import org.apache.bcel.generic.ReferenceType;
 import org.apache.log4j.Logger;
 
 /**
@@ -126,7 +123,7 @@ public class InvokeSite {
     public boolean isInvokeSuper() {
         if (!isInvokeSpecial()) return false;
         InvokeInstruction i = (InvokeInstruction) instruction.getInstruction();
-        return isSuperMethod(getReferencedMethod(i));
+        return isSuperMethod(getReferencedMethod(invoker, i));
     }
 
     public boolean isInvokeStatic() {
@@ -184,7 +181,7 @@ public class InvokeSite {
         Instruction instr = instruction.getInstruction();
         AppInfo appInfo = AppInfo.getSingleton();
         if (instr instanceof InvokeInstruction) {
-            MethodRef ref = getReferencedMethod((InvokeInstruction) instr);
+            MethodRef ref = getReferencedMethod(invoker, (InvokeInstruction) instr);
             // need to check isInvokeSpecial here, since it is not checked by isSuperMethod!
             if (resolveSuper && isInvokeSpecial() && isSuperMethod(ref)) {
                 ref = resolveInvokeSuper(ref);
@@ -247,28 +244,15 @@ public class InvokeSite {
      * made private in favor of getInvokeeRef()
      * </p>
      *
+     * @param invoker the method containing the instruction, used to resolve constantpool references.
      * @param instr the instruction to resolve
      * @return a method reference representing the invoke reference.
      */
-    private MethodRef getReferencedMethod(InvokeInstruction instr) {
-        ClassInfo invokerClass = invoker.getClassInfo();
-        ConstantPoolGen cpg = invokerClass.getConstantPoolGen();
+    private static MethodRef getReferencedMethod(MethodInfo invoker, InvokeInstruction instr) {
+        ConstantPoolGen cpg = invoker.getConstantPoolGen();
 
-        ReferenceType refType = instr.getReferenceType(cpg);
         String methodname = instr.getMethodName(cpg);
-        String classname;
-        if (refType instanceof ObjectType) {
-            classname = ((ObjectType)refType).getClassName();
-        } else if (refType instanceof ArrayType) {
-            // need to call array.<method>, which class should we use? Let's decide later..
-            String msg = "Calling a method for an array: " +
-                    refType.getSignature()+"#"+methodname + " in "+invokerClass;
-            logger.debug(msg);
-            classname = refType.getSignature();
-        } else {
-            // Hu??
-            throw new JavaClassFormatError("Unknown reference type " +refType);
-        }
+        String classname = invoker.getCode().getReferencedClassName(instr);
 
         boolean isInterface = (instr instanceof INVOKEINTERFACE);
         return AppInfo.getSingleton().getMethodRef(new Signature(classname, methodname, instr.getSignature(cpg)),

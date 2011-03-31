@@ -20,8 +20,8 @@
 
 package com.jopdesign.dfa.framework;
 
+import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.type.MethodRef;
 import org.apache.bcel.generic.ConstantPoolGen;
 
 public class Context {
@@ -29,16 +29,16 @@ public class Context {
     public int stackPtr;
     public int syncLevel;
     public boolean threaded;
-    // TODO maybe should be removed, use method.getMethodInfo().getConstantPoolGen() instead?
-    public ConstantPoolGen constPool;
-    public MethodRef method;
     public CallString callString;
+
+    private MethodInfo method;
+    private ConstantPoolGen cpg;
+    private String methodName;
 
     public Context() {
         stackPtr = -1;
         syncLevel = -1;
         threaded = _threaded;
-        constPool = new ConstantPoolGen();
         method = null;
         callString = CallString.EMPTY;
     }
@@ -47,13 +47,31 @@ public class Context {
         stackPtr = c.stackPtr;
         syncLevel = c.syncLevel;
         threaded = c.threaded;
-        constPool = c.constPool;
-        method = c.method;
         callString = c.callString;
+        setMethodInfo(c.getMethodInfo());
+    }
+
+    public void setMethodInfo(MethodInfo method) {
+        this.method = method;
+        cpg = method.getConstantPoolGen();
+        methodName = method.toString();
+    }
+
+    public MethodInfo getMethodInfo() {
+        return method;
+    }
+
+    public ConstantPoolGen constPool() {
+        return cpg;
+    }
+
+    public String method() {
+        return methodName;
     }
 
     private static boolean _threaded = false;
 
+    @SuppressWarnings({"AssignmentToStaticFieldFromInstanceMethod"})
     public void createThread() {
         _threaded = true;
         threaded = true;

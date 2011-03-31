@@ -32,15 +32,21 @@ import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.BadGraphError;
 import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.HashedString;
+import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.processormodel.ProcessorModel;
+import com.jopdesign.common.type.FieldRef;
+import com.jopdesign.common.type.MethodRef;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Code;
 import org.apache.bcel.classfile.ConstantUtf8;
 import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.classfile.StackMap;
+import org.apache.bcel.generic.ArrayType;
 import org.apache.bcel.generic.CodeExceptionGen;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.FieldInstruction;
+import org.apache.bcel.generic.FieldOrMethod;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
@@ -50,6 +56,7 @@ import org.apache.bcel.generic.LineNumberGen;
 import org.apache.bcel.generic.LocalVariableGen;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.ObjectType;
+import org.apache.bcel.generic.ReferenceType;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
@@ -478,6 +485,49 @@ public class MethodCode {
         }
         return invokes;
     }
+
+    public MethodRef getInvokeeRef(InstructionHandle ih) {
+        return getInvokeSite(ih).getInvokeeRef();
+    }
+    
+    public FieldRef getFieldRef(InstructionHandle ih) {
+        return getFieldRef((FieldInstruction) ih.getInstruction());
+    }
+    
+    public FieldRef getFieldRef(FieldInstruction instr) {
+        ConstantPoolGen cpg = getConstantPoolGen();
+
+        String classname = getReferencedClassName(instr);
+
+        return getAppInfo().getFieldRef(classname, instr.getFieldName(cpg));
+    }
+
+    /**
+     * Get the classname or array-type name referenced by an invoke- or field instruction in this code.
+     *
+     * @param instr the instruction to check, using this methods constantpool.
+     * @return the referenced classname or array-typename, to be used for a ClassRef or AppInfo getter. 
+     */
+    public String getReferencedClassName(FieldOrMethod instr) {
+        ConstantPoolGen cpg = getConstantPoolGen();
+
+        ReferenceType refType = instr.getReferenceType(cpg);
+        String classname;
+        if (refType instanceof ObjectType) {
+            classname = ((ObjectType)refType).getClassName();
+        } else if (refType instanceof ArrayType) {
+            // need to call array.<method>, which class should we use? Let's decide later..
+            String msg = "Calling a method of an array: " +
+                    refType.getSignature()+"#"+ instr.getName(cpg) + " in "+methodInfo;
+            logger.debug(msg);
+            classname = refType.getSignature();
+        } else {
+            // Hu??
+            throw new JavaClassFormatError("Unknown reference type " +refType);
+        }
+        return classname;
+    }
+
 
     public void removeNOPs() {
         prepareInstructionList();
