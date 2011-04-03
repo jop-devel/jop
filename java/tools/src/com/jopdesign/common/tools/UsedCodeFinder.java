@@ -31,9 +31,9 @@ import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.type.ArrayTypeInfo;
 import com.jopdesign.common.type.FieldRef;
+import com.jopdesign.common.type.MemberID;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.common.type.ObjectTypeInfo;
-import com.jopdesign.common.type.Signature;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.InvokeInstruction;
@@ -294,10 +294,10 @@ public class UsedCodeFinder {
     }
     
     private void visitReferences(Set<String> refs) {
-        for (String signature : refs) {
-            // The signatures returned by the reference finder use an alternative syntax which is
+        for (String id : refs) {
+            // The member IDs returned by the reference finder use a syntax which is
             // always unique, so if in doubt, we need to interpret it as a classname, not a fieldname
-            Signature sig = Signature.parse(signature, false);
+            MemberID sig = MemberID.parse(id, false);
             
             // find/load the corresponding classInfo
             ClassInfo cls = getClassInfo(sig);
@@ -310,7 +310,7 @@ public class UsedCodeFinder {
             // Note that this class might be different than the class containing the class member
             markUsedMembers(cls,false);
             
-            // check if this signature specifies a class member (or just a class, in this case we are done)
+            // check if this id specifies a class member (or just a class, in this case we are done)
             if (sig.hasMethodSignature()) {
                 // It's a method! mark the method as used (implementations are marked later)
                 MethodRef ref = appInfo.getMethodRef(sig);
@@ -356,7 +356,7 @@ public class UsedCodeFinder {
         ignoredClasses.add(className);
     }
 
-    private ClassInfo getClassInfo(Signature sig) {
+    private ClassInfo getClassInfo(MemberID sig) {
         String className;
 
         if (sig.isArrayClass()) {

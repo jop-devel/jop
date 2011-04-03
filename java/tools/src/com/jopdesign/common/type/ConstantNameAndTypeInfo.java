@@ -29,9 +29,9 @@ import org.apache.bcel.generic.Type;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ConstantNameAndTypeInfo extends ConstantInfo<Signature, Type> {
+public class ConstantNameAndTypeInfo extends ConstantInfo<MemberID, Type> {
     
-    public ConstantNameAndTypeInfo(Signature value) {
+    public ConstantNameAndTypeInfo(MemberID value) {
         super(Constants.CONSTANT_NameAndType, value);
     }
 
@@ -54,13 +54,13 @@ public class ConstantNameAndTypeInfo extends ConstantInfo<Signature, Type> {
 
     @Override
     public int addConstant(ConstantPoolGen cpg) {
-        Signature sig = getValue();
+        MemberID sig = getValue();
         return cpg.addNameAndType(sig.getMemberName(), sig.getDescriptor().toString());
     }
 
     @Override
     public int lookupConstant(ConstantPoolGen cpg) {
-        Signature sig = getValue();
+        MemberID sig = getValue();
         return cpg.lookupNameAndType(sig.getMemberName(), sig.getDescriptor().toString());
     }
 

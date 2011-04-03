@@ -26,10 +26,8 @@ import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
 import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.JavaClassFormatError;
-import com.jopdesign.common.type.Descriptor;
+import com.jopdesign.common.type.MemberID;
 import com.jopdesign.common.type.MethodRef;
-import com.jopdesign.common.type.Signature;
-
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.InstructionList;
@@ -47,16 +45,15 @@ import java.util.List;
 public final class MethodInfo extends ClassMemberInfo {
 
     private final MethodGen methodGen;
-    private final Descriptor descriptor;
     private MethodCode methodCode;
 
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT+".MethodInfo");
 
     public MethodInfo(ClassInfo classInfo, MethodGen methodGen) {
-        super(classInfo, methodGen);
+        super(classInfo,
+              new MemberID(classInfo.getClassName(), methodGen.getName(), methodGen.getSignature()),
+              methodGen);
         this.methodGen = methodGen;
-        descriptor = Descriptor.parse(methodGen.getSignature());
-
         updateMethodCode();
     }
 
@@ -180,16 +177,11 @@ public final class MethodInfo extends ClassMemberInfo {
     //////////////////////////////////////////////////////////////////////////////
 
     /**
-     * This is the same as {@link #getSignature()}.toString().
+     * This is the same as {@link #getMemberID()}.toString().
      * @return classname and method signature of this method.
      */
     public String getFQMethodName() {
         return getClassInfo().getClassName() + "." + getMethodSignature();
-    }
-
-    @Override
-    public Descriptor getDescriptor() {
-        return descriptor;
     }
 
     public MethodRef getMethodRef() {
@@ -202,11 +194,6 @@ public final class MethodInfo extends ClassMemberInfo {
      */
     public String getMethodSignature() {
         return methodGen.getName() + methodGen.getSignature();
-    }
-
-    @Override
-    public Signature getSignature() {
-        return new Signature(getClassInfo().getClassName(), getShortName(), getDescriptor());
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -242,7 +229,7 @@ public final class MethodInfo extends ClassMemberInfo {
         }
         
         if ( superMethod.isStatic() ) {
-            logger.warn("Instance method " +getSignature()+" overrides static method "+superMethod.getSignature());
+            logger.warn("Instance method " + getMemberID()+" overrides static method "+superMethod.getMemberID());
         }
         
         return getClassInfo().canAccess(superMethod);
@@ -263,7 +250,7 @@ public final class MethodInfo extends ClassMemberInfo {
 
         ClassInfo superClass = getClassInfo().getSuperClassInfo();
         if ( superClass != null ) {
-            MethodInfo inherited = superClass.getMethodInfoInherited(getSignature(), checkAccess);
+            MethodInfo inherited = superClass.getMethodInfoInherited(getMemberID(), checkAccess);
             return checkAccess || overrides(inherited, false) ? inherited : null;
         } else {
             return null;

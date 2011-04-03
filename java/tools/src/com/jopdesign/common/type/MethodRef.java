@@ -70,7 +70,7 @@ public class MethodRef {
             // know when to try again (e.g. after AppInfo has been updated)
             ClassInfo classInfo = classRef.getClassInfo();
             if ( classInfo != null ) {
-                methodInfo = classInfo.getMethodInfoInherited(new Signature(methodName, descriptor), true);
+                methodInfo = classInfo.getMethodInfoInherited(new MemberID(methodName, descriptor), true);
                 /*
                 if ( methodInfo != null && methodInfo.getClassName().equals(classRef.getClassName())) {
                     // method is defined in the given class
@@ -95,14 +95,14 @@ public class MethodRef {
         return methodInfo != null ? methodInfo.getDescriptor() : descriptor;
     }
 
-    public Signature getSignature() {
+    public MemberID getSignature() {
         if (classRef != null && methodInfo != null && !classRef.getClassName().equals(methodInfo.getClassName())) {
             // we have a MethodRef to a method which is inherited
-            return new Signature(classRef.getClassName(), methodInfo.getShortName(), methodInfo.getDescriptor());
+            return new MemberID(classRef.getClassName(), methodInfo.getShortName(), methodInfo.getDescriptor());
         }
         //noinspection ConstantConditions
-        return methodInfo != null ? methodInfo.getSignature()
-                : new Signature(classRef.getClassName(), methodName, descriptor);
+        return methodInfo != null ? methodInfo.getMemberID()
+                : new MemberID(classRef.getClassName(), methodName, descriptor);
     }
 
     public Ternary isInterfaceMethod() {

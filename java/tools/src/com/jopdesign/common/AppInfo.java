@@ -40,8 +40,8 @@ import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.FieldRef;
+import com.jopdesign.common.type.MemberID;
 import com.jopdesign.common.type.MethodRef;
-import com.jopdesign.common.type.Signature;
 import org.apache.bcel.Constants;
 import org.apache.bcel.Repository;
 import org.apache.bcel.classfile.ClassFormatException;
@@ -499,7 +499,7 @@ public final class AppInfo {
                 throw new ClassInfoNotFoundException("Could not find main class.");
             }
 
-            mainMethod = mainClass.getMethodInfo(mainMethod.getSignature().getMethodSignature());
+            mainMethod = mainClass.getMethodInfo(mainMethod.getMemberID().getMethodSignature());
             if (mainMethod == null) {
                 throw new ClassInfoNotFoundException("Could not find main method in main class");
             }
@@ -571,31 +571,31 @@ public final class AppInfo {
         return new ClassRef(className, isInterface);
     }
 
-    public MethodRef getMethodRef(Signature signature) {
-        ClassInfo cls = classes.get(signature.getClassName());
+    public MethodRef getMethodRef(MemberID memberID) {
+        ClassInfo cls = classes.get(memberID.getClassName());
         ClassRef clsRef;
         if ( cls != null ) {
             clsRef = cls.getClassRef();
         } else {
-            clsRef = new ClassRef(signature.getClassName());
+            clsRef = new ClassRef(memberID.getClassName());
         }
-        return getMethodRef(clsRef, signature);
+        return getMethodRef(clsRef, memberID);
     }
 
     /**
-     * Get a reference to a method using the given signature.
+     * Get a reference to a method using the given memberID.
      * If the method is defined only in a (known) superclass and is inherited by this class,
      * get a methodRef which contains a ClassRef to the given class but a MethodInfo from the superclass.
      * <p>
-     * If you already have a classRef, use {@link #getMethodRef(ClassRef, Signature)}
+     * If you already have a classRef, use {@link #getMethodRef(ClassRef, MemberID)}
      * instead.
      * </p>
-     * @param signature the signature of the method
+     * @param memberID the memberID of the method
      * @param isInterfaceMethod true if the class is an interface.
      * @return a method reference with or without MethodInfo or ClassInfo.
      */
-    public MethodRef getMethodRef(Signature signature, boolean isInterfaceMethod) {
-        ClassInfo cls = classes.get(signature.getClassName());
+    public MethodRef getMethodRef(MemberID memberID, boolean isInterfaceMethod) {
+        ClassInfo cls = classes.get(memberID.getClassName());
         ClassRef clsRef;
         if ( cls != null ) {
             if ( cls.isInterface() != isInterfaceMethod ) {
@@ -603,22 +603,22 @@ public final class AppInfo {
             }
             clsRef = cls.getClassRef();
         } else {
-            clsRef = new ClassRef(signature.getClassName(),isInterfaceMethod);
+            clsRef = new ClassRef(memberID.getClassName(),isInterfaceMethod);
         }
-        return getMethodRef(clsRef, signature);
+        return getMethodRef(clsRef, memberID);
     }
 
     /**
-     * Get a reference to a method using the given signature.
+     * Get a reference to a method using the given memberID.
      * If the method is defined only in a (known) superclass and is inherited by this class,
      * get a methodRef which contains a ClassRef to the given class but a MethodInfo from the superclass.
      *
      * @param classRef The reference to the class or interface of the method.
-     * @param signature The signature of the method. Only memberName and memberDescriptor are used.
+     * @param memberID The memberID of the method. Only memberName and memberDescriptor are used.
      * @return A method reference with or without MethodInfo or ClassInfo.
      */
-    public MethodRef getMethodRef(ClassRef classRef, Signature signature) {
-        return new MethodRef(classRef, signature.getMemberName(), signature.getDescriptor());
+    public MethodRef getMethodRef(ClassRef classRef, MemberID memberID) {
+        return new MethodRef(classRef, memberID.getMemberName(), memberID.getDescriptor());
     }
 
     /**
@@ -631,17 +631,17 @@ public final class AppInfo {
      * @return A method reference with or without MethodInfo or ClassInfo.
      */
     public MethodRef getMethodRef(String className, String methodSignature) {
-        return getMethodRef(getClassRef(className), Signature.parse(methodSignature, true));
+        return getMethodRef(getClassRef(className), MemberID.parse(methodSignature, true));
     }
 
     /**
-     * Get a reference to a field using the given signature.
+     * Get a reference to a field using the given memberID.
      *
-     * @param signature The signature of the field.
+     * @param memberID The memberID of the field.
      * @return A field reference with or without FieldInfo or ClassInfo.
      */
-    public FieldRef getFieldRef(Signature signature) {
-        return getFieldRef(signature.getClassName(), signature.getMemberName());
+    public FieldRef getFieldRef(MemberID memberID) {
+        return getFieldRef(memberID.getClassName(), memberID.getMemberName());
     }
 
     public FieldRef getFieldRef(String className, String fieldName) {
@@ -660,28 +660,28 @@ public final class AppInfo {
     }
 
     /**
-     * Get a reference to a field using the given signature.
+     * Get a reference to a field using the given memberID.
      *
      * @param classRef The class which contains the field.
-     * @param signature The signature of the field. Only memberName and memberDescriptor are used. The descriptor
+     * @param memberID The memberID of the field. Only memberName and memberDescriptor are used. The descriptor
      *        defines the type of the field, if the field is unknown.
      * @return A field reference with or without FieldInfo or ClassInfo.
      */
-    public FieldRef getFieldRef(ClassRef classRef, Signature signature) {
+    public FieldRef getFieldRef(ClassRef classRef, MemberID memberID) {
         ClassInfo cls = classRef.getClassInfo();
         if ( cls != null ) {
             // We do not check for inherited fields here, this is done in FieldRef
-            FieldInfo field = cls.getFieldInfo(signature.getMemberName());
+            FieldInfo field = cls.getFieldInfo(memberID.getMemberName());
             if ( field != null ) {
                 return field.getFieldRef();
             }
         }
 
         Type type = null;
-        if (signature.hasDescriptor()) {
-            type = signature.getDescriptor().getType();
+        if (memberID.hasDescriptor()) {
+            type = memberID.getDescriptor().getType();
         }
-        return new FieldRef(classRef, signature.getMemberName(), type);
+        return new FieldRef(classRef, memberID.getMemberName(), type);
     }
 
     /**
@@ -717,15 +717,15 @@ public final class AppInfo {
         return method;
     }
 
-    public MethodInfo getMethodInfo(Signature signature) throws MethodNotFoundException {
-        return getMethodInfo(signature.getClassName(), signature.getMethodSignature());
+    public MethodInfo getMethodInfo(MemberID memberID) throws MethodNotFoundException {
+        return getMethodInfo(memberID.getClassName(), memberID.getMethodSignature());
     }
 
     /**
      * Find a MethodInfo using a class name and the given signature of a method.
      * Only methods which are are accessible (i.e. inherited) by the class are returned.
      *
-     * @see ClassInfo#getMethodInfoInherited(Signature, boolean)
+     * @see ClassInfo#getMethodInfoInherited(MemberID , boolean)
      * @param className the fully qualified name of the class
      * @param methodSignature the method signature with name and descriptor.
      * @return the method, or null if not found.
@@ -737,17 +737,17 @@ public final class AppInfo {
     }
 
     /**
-     * Find a MethodInfo using a class name and the given signature of a method.
+     * Find a MethodInfo using a class name and the given memberID of a method.
      * Only methods which are are accessible (i.e. inherited) by the class are returned.
      *
-     * @see ClassInfo#getMethodInfoInherited(Signature, boolean)
-     * @param signature the full signature with classname and method name and descriptor.
+     * @see ClassInfo#getMethodInfoInherited(MemberID , boolean)
+     * @param memberID the full memberID with classname and method name and descriptor.
      * @return the method, or null if not found.
      */
-    public MethodInfo getMethodInfoInherited(Signature signature) {
-        ClassInfo classInfo = getClassInfo(signature.getClassName());
+    public MethodInfo getMethodInfoInherited(MemberID memberID) {
+        ClassInfo classInfo = getClassInfo(memberID.getClassName());
         if (classInfo == null) return null;
-        return classInfo.getMethodInfoInherited(signature, true);
+        return classInfo.getMethodInfoInherited(memberID, true);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -884,12 +884,12 @@ public final class AppInfo {
         return mainMethod;
     }
 
-    public Signature getMainSignature() {
-        return mainMethod.getSignature();
+    public MemberID getMainSignature() {
+        return mainMethod.getMemberID();
     }
 
-    public Signature getClinitSignature(String className) {
-        return new Signature(className, ClinitOrder.clinitName, ClinitOrder.clinitDesc);
+    public MemberID getClinitSignature(String className) {
+        return new MemberID(className, ClinitOrder.clinitName, ClinitOrder.clinitDesc);
     }
 
     //////////////////////////////////////////////////////////////////////////////

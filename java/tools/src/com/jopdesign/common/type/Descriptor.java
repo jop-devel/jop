@@ -27,9 +27,9 @@ import java.util.Arrays;
 
 /**
  * A helper class for parsing, generating and other descriptor related tasks (type descriptors
- * without a name or class text). For signatures containing a member name or class name, see {@link Signature}.
+ * without a name or class text). For signatures containing a member name or class name, see {@link MemberID}.
  *
- * @see Signature
+ * @see MemberID
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class Descriptor {
@@ -40,7 +40,7 @@ public class Descriptor {
 
     /**
      * Constructor used by parse() method.
-     * Using Descriptor.parse() instead of new Descriptor(String) to be similar to Signature,
+     * Using Descriptor.parse() instead of new Descriptor(String) to be similar to MemberID,
      * and to indicate that there is more workload to it than a simple assignments.
      *
      * @param descriptor the parsed descriptor

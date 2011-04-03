@@ -317,7 +317,7 @@ public class Report {
         }
         this.addPage("details/" +
                 method.getClassInfo().getClassName() + "/" +
-                sanitizePageKey(method.getSignature().getMethodSignature()),
+                sanitizePageKey(method.getMemberID().getMethodSignature()),
                 page);
     }
 

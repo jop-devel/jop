@@ -40,7 +40,7 @@ import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.type.Descriptor;
-import com.jopdesign.common.type.Signature;
+import com.jopdesign.common.type.MemberID;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.ValueMapping;
 import com.jopdesign.dfa.framework.Analysis;
@@ -247,7 +247,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
         // add class initializers
         for (ClassInfo clinit : clinits) {
-            Signature cSig = appInfo.getClinitSignature(clinit.getClassName());
+            MemberID cSig = appInfo.getClinitSignature(clinit.getClassName());
             idx = prologueCP.addMethodref(cSig.getClassName(), cSig.getMemberName(),
                     cSig.getDescriptor().toString());
             instr = new INVOKESTATIC(idx);
@@ -286,7 +286,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
             }
         }
 
-        Signature pSig = new Signature(prologueName, Descriptor.parse(prologueSig));
+        MemberID pSig = new MemberID(prologueName, Descriptor.parse(prologueSig));
         MethodInfo mi = mainMethod.getClassInfo().createMethod(pSig, null, prologue);
 
         mi.setAccessType(AccessType.ACC_PRIVATE);
@@ -385,11 +385,11 @@ public class DFATool extends EmptyTool<AppEventHandler> {
      * @return the invoked method, or {@code null} if not found
      */
     public MethodInfo getMethod(String signature) {
-        return appInfo.getMethodInfoInherited(Signature.parse(signature, true));
+        return appInfo.getMethodInfoInherited(MemberID.parse(signature, true));
     }
 
     public boolean containsField(String fieldName) {
-        Signature s = Signature.parse(fieldName, true);
+        MemberID s = MemberID.parse(fieldName, true);
         return classForField(s.getClassName(), s.getMemberName()) != null;
     }
 

@@ -33,12 +33,8 @@ import java.io.IOException;
  *
  * @see Descriptor
  * @author Stefan Hepp (stefan@stefant.org)
- *
- * TODO:  Terminology is a little bit confusing here (for newcomers). In the literature,
- *        a signature is the unique (fully-qualified) name of a method, not including
- *        the class name. Should be clarified in the documentation.
  */
-public class Signature {
+public class MemberID {
 
     // alternative member separator
     public static final char ALT_MEMBER_SEPARATOR = '#';
@@ -46,6 +42,8 @@ public class Signature {
     private final String className;
     private final String memberName;
     private final Descriptor descriptor;
+
+    private String stringRep = null;
 
     /**
      * Parse a signature, with or without classname, with or without descriptor.
@@ -97,7 +95,7 @@ public class Signature {
      * @param signature the signature to parse.
      * @return a new signature object.
      */
-    public static Signature parse(String signature) {
+    public static MemberID parse(String signature) {
         return parse(signature, false, AppInfo.getSingleton().getClassPath());
     }
 
@@ -109,7 +107,7 @@ public class Signature {
      *                      name is a method or field, else assume it is a class name.
      * @return a new signature object.
      */
-    public static Signature parse(String signature, boolean isClassMember) {
+    public static MemberID parse(String signature, boolean isClassMember) {
         return parse(signature, isClassMember, null);
     }
 
@@ -121,7 +119,7 @@ public class Signature {
      *                  in this classPath.
      * @return a new signature object.
      */
-    public static Signature parse(String signature, ClassPath classPath) {
+    public static MemberID parse(String signature, ClassPath classPath) {
         return parse(signature, false, classPath);
     }
 
@@ -136,7 +134,7 @@ public class Signature {
      *                  {@code isClassMember} is {@code false}.
      * @return a new signature object.
      */
-    private static Signature parse(String signature, boolean isClassMember, ClassPath classPath) {
+    private static MemberID parse(String signature, boolean isClassMember, ClassPath classPath) {
         int p1 = signature.indexOf(ALT_MEMBER_SEPARATOR);
         int p2 = signature.indexOf("(");
 
@@ -179,7 +177,7 @@ public class Signature {
             }
         }
 
-        return new Signature(className, memberName, descriptor);
+        return new MemberID(className, memberName, descriptor);
     }
 
     private static boolean classExists(String signature, ClassPath classPath) {
@@ -201,31 +199,31 @@ public class Signature {
      * @param memberName name of the class member. If {@code null}, the instance represents a class name.
      * @param descriptor type of the class member. Must be {@code null}, if the member's name is not given
      */
-    public Signature(String className, String memberName, Descriptor descriptor) {
+    public MemberID(String className, String memberName, Descriptor descriptor) {
         this.className = className;
         this.memberName = memberName;
         this.descriptor = descriptor;
     }
 
-    public Signature(String className) {
+    public MemberID(String className) {
         this.className = className;
         this.memberName = null;
         this.descriptor = null;
     }
 
-    public Signature(String className, String memberName, String descriptor) {
+    public MemberID(String className, String memberName, String descriptor) {
         this.className = className;
         this.memberName = memberName;
         this.descriptor = Descriptor.parse(descriptor);
     }
 
-    public Signature(String memberName, String descriptor) {
+    public MemberID(String memberName, String descriptor) {
         this.className = null;
         this.memberName = memberName;
         this.descriptor = Descriptor.parse(descriptor);
     }
 
-    public Signature(String memberName, Descriptor descriptor) {
+    public MemberID(String memberName, Descriptor descriptor) {
         this.className = null;
         this.memberName = memberName;
         this.descriptor = descriptor;
@@ -286,17 +284,47 @@ public class Signature {
         }
     }
 
+    @Override
+    public int hashCode() {
+        return toString().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null) return false;
+        if (!this.getClass().equals(obj.getClass())) return false;
+        
+        // TODO do we want to check for equality of the type of fields too?
+        return this.toString().equals(obj.toString());
+    }
+
+    /**
+     * Get a string representation of this member, using the '#' separator for
+     * class members. This only includes the descriptor for methods, so that
+     * the ID of a field does not include its type.
+     *
+     * @see #toString(boolean)
+     * @return a unique representation of this member ID.
+     */
+    @Override
     public String toString() {
-    	return toString(true);
+        if (stringRep == null) {
+            stringRep = toString(true);
+        }
+    	return stringRep;
     }
     
     /**
-     * String representation of the signature. Will include the
-     * class name, if present.
+     * String representation of the member ID. Will include the
+     * class name, if present. The descriptor is only appended for methods or if it
+     * is the only component of this ID.
+     *
      * <p>TODO: Maybe this method should be more general, allowing to specify whether
      * the signature should include the class name? </p>
+     * 
      * @param altMemberSep Whether to use '#' to separate class name and member signature
-     * @return the signature string
+     * @return the ID string
      */
     public String toString(boolean altMemberSep) {
         StringBuffer s = new StringBuffer();
@@ -309,7 +337,9 @@ public class Signature {
             }
             s.append(memberName);
         }
-        if ( descriptor != null && (className == null || memberName != null) ) {
+        if ( descriptor != null && ((className == null && memberName == null) ||
+                                    (descriptor.isMethod() && memberName != null) ) )
+        {
             s.append(descriptor);
         }
         return s.toString();

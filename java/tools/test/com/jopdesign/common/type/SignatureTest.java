@@ -26,9 +26,9 @@ package com.jopdesign.common.type;
 public class SignatureTest {
     public static void testSig(String signature, boolean isClassMember) {
 
-        System.out.println("Signature: "+signature);
+        System.out.println("MemberID: "+signature);
 
-        Signature sig = Signature.parse(signature, isClassMember);
+        MemberID sig = MemberID.parse(signature, isClassMember);
 
         System.out.println("  => [" + sig.getClassName() + "|" + sig.getMemberName() + "|" +
                 sig.getDescriptor().toString() + "]");

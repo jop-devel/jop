@@ -45,7 +45,7 @@ import com.jopdesign.common.type.ConstantNameAndTypeInfo;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.FieldRef;
 import com.jopdesign.common.type.MethodRef;
-import com.jopdesign.common.type.Signature;
+import com.jopdesign.common.type.MemberID;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Code;
 import org.apache.bcel.classfile.CodeException;
@@ -230,7 +230,7 @@ public class ConstantPoolReferenceFinder {
     }
 
     /**
-     * Collect all member references, using an alternative syntax which is always unambiguous
+     * Collect all member references, using a syntax which is always unambiguous
      */
     public static class ClassMemberVisitor extends ConstantPoolMemberVisitor {
         private Set<String> members;
@@ -247,13 +247,13 @@ public class ConstantPoolReferenceFinder {
         @Override
         public void processFieldRef(FieldRef fieldRef) {
             String className = fieldRef.getClassName();
-            members.add(className + Signature.ALT_MEMBER_SEPARATOR + fieldRef.getName());
+            members.add(className + MemberID.ALT_MEMBER_SEPARATOR + fieldRef.getName());
         }
 
         @Override
         public void processMethodRef(MethodRef methodRef) {
             String className = methodRef.getClassName();
-            members.add(className + Signature.ALT_MEMBER_SEPARATOR + methodRef.getMethodSignature());
+            members.add(className + MemberID.ALT_MEMBER_SEPARATOR + methodRef.getMethodSignature());
         }
     }
 
@@ -293,7 +293,7 @@ public class ConstantPoolReferenceFinder {
      * Get a set of all referenced classes and class members for a method.
      *
      * @param methodInfo the method to search.
-     * @return a set of class names and class member signatures found in the method.
+     * @return a set of class names and class member IDs found in the method.
      */
     public static Set<String> findReferencedMembers(MethodInfo methodInfo) {
         Set<String> members = new HashSet<String>();
@@ -313,7 +313,7 @@ public class ConstantPoolReferenceFinder {
      * Get a set of all referenced classes and class members for a field.
      *
      * @param fieldInfo the field to search.
-     * @return a set of class names and class member signatures found in the field.
+     * @return a set of class names and class member IDs found in the field.
      */
     public static Set<String> findReferencedMembers(FieldInfo fieldInfo) {
         Set<String> members = new HashSet<String>();
@@ -376,7 +376,7 @@ public class ConstantPoolReferenceFinder {
     public static Set<String> getClassNames(Set<String> members) {
         Set<String> classNames = new HashSet<String>();
         for (String name : members) {
-            classNames.add( Signature.getClassName(name, false) );
+            classNames.add( MemberID.getClassName(name, false) );
         }
         return classNames;
     }

@@ -999,7 +999,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
                 } else if (impl.isPrivate() && !impl.isStatic()) {
                     doInvokeVirtual(ref.getClassName(), impl, stmt, context, input, interpreter, state, retval);
                 } else {
-                    doInvokeStatic(impl.getSignature().toString(), stmt, context, input, interpreter, state, retval);
+                    doInvokeStatic(impl.getMemberID().toString(), stmt, context, input, interpreter, state, retval);
                 }
 
                 // add relevant information to result
@@ -1292,50 +1292,50 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
     private Map<CallString, Set<TypeMapping>> handleNative(MethodInfo method, Context context,
                                                            Map<CallString, Set<TypeMapping>> input, Map<CallString, Set<TypeMapping>> result) {
 
-        String methodId = method.getSignature().toString(false);
+        String methodId = method.getMemberID().toString();
 
         Set<TypeMapping> in = input.get(context.callString);
         Set<TypeMapping> out = new HashSet<TypeMapping>();
 
-        if (methodId.equals("com.jopdesign.sys.Native.rd(I)I")
-                || methodId.equals("com.jopdesign.sys.Native.rdMem(I)I")
-                || methodId.equals("com.jopdesign.sys.Native.rdIntMem(I)I")
-                || methodId.equals("com.jopdesign.sys.Native.getStatic(I)I")
-                || methodId.equals("com.jopdesign.sys.Native.toInt(F)I")) {
+        if (methodId.equals("com.jopdesign.sys.Native#rd(I)I")
+                || methodId.equals("com.jopdesign.sys.Native#rdMem(I)I")
+                || methodId.equals("com.jopdesign.sys.Native#rdIntMem(I)I")
+                || methodId.equals("com.jopdesign.sys.Native#getStatic(I)I")
+                || methodId.equals("com.jopdesign.sys.Native#toInt(F)I")) {
             filterSet(in, out, context.stackPtr - 1);
-        } else if (methodId.equals("com.jopdesign.sys.Native.wr(II)V")
-                || methodId.equals("com.jopdesign.sys.Native.wrMem(II)V")
-                || methodId.equals("com.jopdesign.sys.Native.wrIntMem(II)V")
-                || methodId.equals("com.jopdesign.sys.Native.putStatic(II)V")) {
+        } else if (methodId.equals("com.jopdesign.sys.Native#wr(II)V")
+                || methodId.equals("com.jopdesign.sys.Native#wrMem(II)V")
+                || methodId.equals("com.jopdesign.sys.Native#wrIntMem(II)V")
+                || methodId.equals("com.jopdesign.sys.Native#putStatic(II)V")) {
             filterSet(in, out, context.stackPtr - 2);
-        } else if (methodId.equals("com.jopdesign.sys.Native.getSP()I")) {
+        } else if (methodId.equals("com.jopdesign.sys.Native#getSP()I")) {
             filterSet(in, out, context.stackPtr);
-        } else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")
-                || methodId.equals("com.jopdesign.sys.Native.toObject(I)Ljava/lang/Object;")) {
+        } else if (methodId.equals("com.jopdesign.sys.Native#toInt(Ljava/lang/Object;)I")
+                || methodId.equals("com.jopdesign.sys.Native#toObject(I)Ljava/lang/Object;")) {
             filterSet(in, out, context.stackPtr - 1);
-        } else if (methodId.equals("com.jopdesign.sys.Native.toIntArray(I)[I")) {
+        } else if (methodId.equals("com.jopdesign.sys.Native#toIntArray(I)[I")) {
             filterSet(in, out, context.stackPtr - 1);
             String name = "int[]@" + context.method() + ":0";
             TypeMapping map = new TypeMapping(context.stackPtr - 1, name);
             out.add(map);
-        } else if (methodId.equals("com.jopdesign.sys.Native.makeLong(II)J")) {
+        } else if (methodId.equals("com.jopdesign.sys.Native#makeLong(II)J")) {
             filterSet(in, out, context.stackPtr - 2);
-        } else if (methodId.equals("com.jopdesign.sys.Native.memCopy(III)V")) {
+        } else if (methodId.equals("com.jopdesign.sys.Native#memCopy(III)V")) {
             filterSet(in, out, context.stackPtr - 3);
-        } else if (methodId.equals("com.jopdesign.sys.Native.getField(II)I")
-                || methodId.equals("com.jopdesign.sys.Native.arrayLoad(II)I")
-                || methodId.equals("com.jopdesign.sys.Native.toLong(D)J")
-                || methodId.equals("com.jopdesign.sys.Native.toDouble(J)D")) {
+        } else if (methodId.equals("com.jopdesign.sys.Native#getField(II)I")
+                || methodId.equals("com.jopdesign.sys.Native#arrayLoad(II)I")
+                || methodId.equals("com.jopdesign.sys.Native#toLong(D)J")
+                || methodId.equals("com.jopdesign.sys.Native#toDouble(J)D")) {
             filterSet(in, out, context.stackPtr - 2);
-        } else if (methodId.equals("com.jopdesign.sys.Native.putField(III)V")
-                || methodId.equals("com.jopdesign.sys.Native.arrayStore(III)V")) {
+        } else if (methodId.equals("com.jopdesign.sys.Native#putField(III)V")
+                || methodId.equals("com.jopdesign.sys.Native#arrayStore(III)V")) {
             filterSet(in, out, context.stackPtr - 3);
-        } else if (methodId.equals("com.jopdesign.sys.Native.condMove(IIZ)I")
-                || methodId.equals("com.jopdesign.sys.Native.condMoveRef(Ljava/lang/Object;Ljava/lang/Object;Z)Ljava/lang/Object;")) {
+        } else if (methodId.equals("com.jopdesign.sys.Native#condMove(IIZ)I")
+                || methodId.equals("com.jopdesign.sys.Native#condMoveRef(Ljava/lang/Object;Ljava/lang/Object;Z)Ljava/lang/Object;")) {
             filterSet(in, out, context.stackPtr - 3);
         } else {
             AppInfoError ex = new AppInfoError("Unknown native method: " + methodId);
-            Logger.getLogger(this.getClass()).error(ex);
+            logger.error(ex);
             throw ex;
         }
 

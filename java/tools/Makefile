@@ -51,8 +51,8 @@ wcet_test:
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartKfl             WCET_METHOD=measure  
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartBenchUdpIp      WCET_METHOD=measure  
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartLift            WCET_METHOD=measure  
-	$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartDSVM            WCET_METHOD=measure
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartLineFollower    WCET_METHOD=measure  
+	$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartDSVM            WCET_METHOD=measure
 	# Cycles in callgraph
 	#$(MAKE) $(TEST) -e P1=test P2=wcet P3=BytecodeVerification WCET_METHOD=measure
 	#$(MAKE) $(TEST) -e P1=test P2=wcet P3=Delegator            WCET_METHOD=measure
@@ -103,7 +103,7 @@ CSLENGTH?=0
 # TODO use .asm file from newtools for both tests 
 
 WCETNEW_OPTIONS="--callstring-length $(CSLENGTH) --result-file java/target/wcet/test/report.csv \
-		 --projectname test -q"
+		 --projectname test"
 WCETOLD_OPTIONS="-callstring-length $(CSLENGTH) -result-file java/target/wcet/test/report.csv \
 		 -projectname test"
 

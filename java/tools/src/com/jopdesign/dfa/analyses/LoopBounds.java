@@ -23,6 +23,7 @@ package com.jopdesign.dfa.analyses;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.graphutils.Pair;
+import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.framework.Analysis;
 import com.jopdesign.dfa.framework.Context;
@@ -1354,7 +1355,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
         DFATool p = interpreter.getDFATool();
         MethodInfo method = p.getMethod(methodName);
-        //methodName = method.getSignature().toString();
+        //methodName = method.getMemberID().toString();
 
 //		System.out.println(context.callString.asList()+"/"+context.method+": "+stmt+" invokes method: "+methodName);				
 
@@ -1432,73 +1433,73 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                                                                       Map<CallString, Map<Location, ValueMapping>> input,
                                                                       Map<CallString, Map<Location, ValueMapping>> result) {
 
-        String methodId = method.getSignature().toString(false);
+        String methodId = method.getMemberID().toString();
 
         Map<Location, ValueMapping> in = input.get(context.callString);
         Map<Location, ValueMapping> out = new HashMap<Location, ValueMapping>();
 
-        if (methodId.equals("com.jopdesign.sys.Native.rd(I)I")
-                || methodId.equals("com.jopdesign.sys.Native.rdMem(I)I")
-                || methodId.equals("com.jopdesign.sys.Native.rdIntMem(I)I")
-                || methodId.equals("com.jopdesign.sys.Native.getStatic(I)I")) {
+        if (methodId.equals("com.jopdesign.sys.Native#rd(I)I")
+                || methodId.equals("com.jopdesign.sys.Native#rdMem(I)I")
+                || methodId.equals("com.jopdesign.sys.Native#rdIntMem(I)I")
+                || methodId.equals("com.jopdesign.sys.Native#getStatic(I)I")) {
             for (Location l : in.keySet()) {
                 if (l.stackLoc < context.stackPtr - 1) {
                     out.put(l, in.get(l));
                 }
             }
             out.put(new Location(context.stackPtr - 1), new ValueMapping());
-        } else if (methodId.equals("com.jopdesign.sys.Native.wr(II)V")
-                || methodId.equals("com.jopdesign.sys.Native.wrMem(II)V")
-                || methodId.equals("com.jopdesign.sys.Native.wrIntMem(II)V")
-                || methodId.equals("com.jopdesign.sys.Native.putStatic(II)V")
-                || methodId.equals("com.jopdesign.sys.Native.toLong(D)J")
-                || methodId.equals("com.jopdesign.sys.Native.toDouble(J)D")) {
+        } else if (methodId.equals("com.jopdesign.sys.Native#wr(II)V")
+                || methodId.equals("com.jopdesign.sys.Native#wrMem(II)V")
+                || methodId.equals("com.jopdesign.sys.Native#wrIntMem(II)V")
+                || methodId.equals("com.jopdesign.sys.Native#putStatic(II)V")
+                || methodId.equals("com.jopdesign.sys.Native#toLong(D)J")
+                || methodId.equals("com.jopdesign.sys.Native#toDouble(J)D")) {
             for (Location l : in.keySet()) {
                 if (l.stackLoc < context.stackPtr - 2) {
                     out.put(l, in.get(l));
                 }
             }
-        } else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")
-                || methodId.equals("com.jopdesign.sys.Native.toInt(F)I")) {
+        } else if (methodId.equals("com.jopdesign.sys.Native#toInt(Ljava/lang/Object;)I")
+                || methodId.equals("com.jopdesign.sys.Native#toInt(F)I")) {
             for (Location l : in.keySet()) {
                 if (l.stackLoc < context.stackPtr - 1) {
                     out.put(l, in.get(l));
                 }
             }
             out.put(new Location(context.stackPtr - 1), new ValueMapping());
-        } else if (methodId.equals("com.jopdesign.sys.Native.toObject(I)Ljava/lang/Object;")
-                || methodId.equals("com.jopdesign.sys.Native.toIntArray(I)[I")
-                || methodId.equals("com.jopdesign.sys.Native.toFloat(I)F")) {
+        } else if (methodId.equals("com.jopdesign.sys.Native#toObject(I)Ljava/lang/Object;")
+                || methodId.equals("com.jopdesign.sys.Native#toIntArray(I)[I")
+                || methodId.equals("com.jopdesign.sys.Native#toFloat(I)F")) {
             for (Location l : in.keySet()) {
                 if (l.stackLoc < context.stackPtr - 1) {
                     out.put(l, in.get(l));
                 }
             }
-        } else if (methodId.equals("com.jopdesign.sys.Native.getSP()I")) {
+        } else if (methodId.equals("com.jopdesign.sys.Native#getSP()I")) {
             for (Location l : in.keySet()) {
                 if (l.stackLoc < context.stackPtr) {
                     out.put(l, in.get(l));
                 }
             }
             out.put(new Location(context.stackPtr), new ValueMapping());
-        } else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")) {
+        } else if (methodId.equals("com.jopdesign.sys.Native#toInt(Ljava/lang/Object;)I")) {
             for (Location l : in.keySet()) {
                 if (l.stackLoc < context.stackPtr - 1) {
                     out.put(l, in.get(l));
                 }
             }
             out.put(new Location(context.stackPtr - 1), new ValueMapping());
-        } else if (methodId.equals("com.jopdesign.sys.Native.condMove(IIZ)I")
-                || methodId.equals("com.jopdesign.sys.Native.condMoveRef(Ljava/lang/Object;Ljava/lang/Object;Z)Ljava/lang/Object;")
-                || methodId.equals("com.jopdesign.sys.Native.memCopy(III)V")) {
+        } else if (methodId.equals("com.jopdesign.sys.Native#condMove(IIZ)I")
+                || methodId.equals("com.jopdesign.sys.Native#condMoveRef(Ljava/lang/Object;Ljava/lang/Object;Z)Ljava/lang/Object;")
+                || methodId.equals("com.jopdesign.sys.Native#memCopy(III)V")) {
             for (Location l : in.keySet()) {
                 if (l.stackLoc < context.stackPtr - 3) {
                     out.put(l, in.get(l));
                 }
             }
         } else {
-        	RuntimeException ex = new RuntimeException("Unknown native method: " + methodId);
-        	Logger.getLogger(this.getClass()).error(ex);
+        	AppInfoError ex = new AppInfoError("Unknown native method: " + methodId);
+        	logger.error(ex);
         	throw ex;
         }
 

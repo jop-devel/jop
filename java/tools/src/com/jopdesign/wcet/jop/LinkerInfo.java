@@ -20,7 +20,7 @@
 package com.jopdesign.wcet.jop;
 
 import com.jopdesign.common.ClassInfo;
-import com.jopdesign.common.type.Signature;
+import com.jopdesign.common.type.MemberID;
 import com.jopdesign.wcet.WCETTool;
 import org.apache.log4j.Logger;
 
@@ -197,7 +197,7 @@ public class LinkerInfo {
 			} else if(key.equals("-field")) {
 				addAddress("FieldOffsets", fieldOffsets, tks[1], Integer.parseInt(tks[2]));
 			} else if (key.equals("-mtab")) {
-				Signature nameParts = Signature.parse(tks[1], true);
+				MemberID nameParts = MemberID.parse(tks[1], true);
 				int valIx = Integer.parseInt(tks[2]);
 				addAddress("MTabAddresses",mtabAddresses,nameParts.getMethodSignature(), valIx);
 			} else {
@@ -247,7 +247,7 @@ public class LinkerInfo {
 				LinkInfo linkInfo;
 				String[] tks = l.split("\\s+");
 				if(tks[0].equals("static") || tks[0].equals("bytecode")) {
-					Signature nameParts = Signature.parse(tks[1],true);
+					MemberID nameParts = MemberID.parse(tks[1],true);
 					linkInfo = getOrCreateLinkInfo(nameParts.getClassName());
 					String objectName = nameParts.getMethodSignature();
 					int address = Integer.parseInt(tks[2]);

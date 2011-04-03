@@ -32,7 +32,7 @@ import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.StringOption;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
-import com.jopdesign.common.type.Signature;
+import com.jopdesign.common.type.MemberID;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -125,10 +125,10 @@ public class ProjectConfig {
      * Must be called before any option is accessed which may refer to options whose defaults are
      * initialized here.
      *
-     * @param mainSignature the main method signature
+     * @param mainMethodID the main method signature
      */
-    public void initConfig(Signature mainSignature) {
-        String projectName = MiscUtils.sanitizeFileName(mainSignature.getClassName() + "_" + getTargetMethodName());
+    public void initConfig(MemberID mainMethodID) {
+        String projectName = MiscUtils.sanitizeFileName(mainMethodID.getClassName() + "_" + getTargetMethodName());
         config.setDefaultValue(PROJECT_NAME, projectName);
     }
 
@@ -159,7 +159,7 @@ public class ProjectConfig {
     }
 
     public String getTargetClass() {
-        Signature sig = Signature.parse(getTargetMethodName(),true);
+        MemberID sig = MemberID.parse(getTargetMethodName(),true);
         String measureClass = sig.getClassName();
 
         if(measureClass == null) return getAppClassName();
@@ -168,7 +168,7 @@ public class ProjectConfig {
 
     public String getTargetMethod() {
 
-        Signature sig = Signature.parse(getTargetMethodName(),true);
+        MemberID sig = MemberID.parse(getTargetMethodName(),true);
         return sig.getMethodSignature();
     }
 

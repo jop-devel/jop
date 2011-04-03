@@ -27,8 +27,8 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.misc.Ternary;
+import com.jopdesign.common.type.MemberID;
 import com.jopdesign.common.type.MethodRef;
-import com.jopdesign.common.type.Signature;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKESPECIAL;
@@ -57,6 +57,7 @@ public class InvokeSite {
 
     private final InstructionHandle instruction;
     private final MethodInfo invoker;
+    private final int hash;
 
     /**
      * Create a new invoke site.
@@ -70,6 +71,8 @@ public class InvokeSite {
     public InvokeSite(InstructionHandle instruction, MethodInfo invoker) {
         this.instruction = instruction;
         this.invoker = invoker;
+        // Beware! we cannot use .getPosition() here since its value can and will change
+        this.hash = 31 * invoker.hashCode() + instruction.hashCode();
     }
 
     public InstructionHandle getInstruction() {
@@ -216,16 +219,15 @@ public class InvokeSite {
         if (this == obj) return true;
         if (!(obj instanceof InvokeSite))    return false;
         InvokeSite is = (InvokeSite) obj;
-        if (!invoker.equals(is.getMethod())) return false;
-        return instruction.equals(is.getInstruction());
+        if (!instruction.equals(is.getInstruction())) return false;
+        // TODO performance optimization: if we assume that invokesites in different methods
+        //      never share the same instruction handle, we could simply return true
+        return invoker.equals(is.getMethod());
     }
 
     @Override
     public int hashCode() {
-        int result = invoker.hashCode();
-        // Beware! we cannot use .getPosition() here since its value can and will change
-        result = 31 * result + instruction.hashCode();
-        return result;
+        return hash;
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -255,7 +257,7 @@ public class InvokeSite {
         String classname = invoker.getCode().getReferencedClassName(instr);
 
         boolean isInterface = (instr instanceof INVOKEINTERFACE);
-        return AppInfo.getSingleton().getMethodRef(new Signature(classname, methodname, instr.getSignature(cpg)),
+        return AppInfo.getSingleton().getMethodRef(new MemberID(classname, methodname, instr.getSignature(cpg)),
                             isInterface);
     }
 
@@ -310,9 +312,9 @@ public class InvokeSite {
     private MethodRef resolveInvokeSuper(MethodRef ref) {
         String superClass = invoker.getClassInfo().getSuperClassName();
         // Restart the lookup in the super class of the invoker class
-        Signature superSig = new Signature(superClass, ref.getName(), ref.getDescriptor());
+        MemberID superId = new MemberID(superClass, ref.getName(), ref.getDescriptor());
         // invokespecial is never used for interface invokes
-        MethodRef superRef = AppInfo.getSingleton().getMethodRef(superSig,false);
+        MethodRef superRef = AppInfo.getSingleton().getMethodRef(superId,false);
 
         if (ref.getMethodInfo() != null && !ref.getMethodInfo().equals(superRef.getMethodInfo())) {
             // Just give a warning, just in case there is some code out there which handles this incorrectly..

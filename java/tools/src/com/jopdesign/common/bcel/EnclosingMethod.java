@@ -22,8 +22,8 @@ package com.jopdesign.common.bcel;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.type.Descriptor;
+import com.jopdesign.common.type.MemberID;
 import com.jopdesign.common.type.MethodRef;
-import com.jopdesign.common.type.Signature;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.ConstantClass;
@@ -75,13 +75,13 @@ public class EnclosingMethod extends CustomAttribute {
         this.methodIndex = methodIndex;
     }
 
-    public Signature getSignature() {
+    public MemberID getMemberID() {
         if (methodIndex == 0) {
             // not directly enclosed by a method
-            return new Signature(getClassName());
+            return new MemberID(getClassName());
         }
         ConstantNameAndType nat = (ConstantNameAndType) constant_pool.getConstant(methodIndex);
-        return new Signature(getClassName(), nat.getName(constant_pool),
+        return new MemberID(getClassName(), nat.getName(constant_pool),
                 Descriptor.parse(nat.getSignature(constant_pool)));
     }
 
@@ -91,7 +91,7 @@ public class EnclosingMethod extends CustomAttribute {
     }
 
     public MethodRef getMethodRef() {
-        return methodIndex == 0 ? null : AppInfo.getSingleton().getMethodRef(getSignature());
+        return methodIndex == 0 ? null : AppInfo.getSingleton().getMethodRef(getMemberID());
     }
 
     @Override
@@ -108,6 +108,6 @@ public class EnclosingMethod extends CustomAttribute {
 
     @Override
     public String toString() {
-        return "EnclosingMethod "+getSignature();
+        return "EnclosingMethod "+ getMemberID();
     }
 }

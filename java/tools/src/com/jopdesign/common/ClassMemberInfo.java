@@ -21,6 +21,7 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.type.Descriptor;
+import com.jopdesign.common.type.MemberID;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.FieldGenOrMethodGen;
@@ -35,14 +36,11 @@ public abstract class ClassMemberInfo extends MemberInfo {
 
     private final ClassInfo classInfo;
     private final FieldGenOrMethodGen classMember;
-    private final int hashValue;
 
-    public ClassMemberInfo(ClassInfo classInfo, FieldGenOrMethodGen classMember) {
-        super(classMember);
+    public ClassMemberInfo(ClassInfo classInfo, MemberID memberId, FieldGenOrMethodGen classMember) {
+        super(classMember, memberId);
         this.classInfo = classInfo;
         this.classMember = classMember;
-        // cache the hash :) speed up things a little, memberSignature is immutable in BCEL anyway
-        hashValue = buildHashValue();
     }
 
     public ClassInfo getClassInfo() {
@@ -66,7 +64,9 @@ public abstract class ClassMemberInfo extends MemberInfo {
         return classMember.getType();
     }
 
-    public abstract Descriptor getDescriptor();
+    public Descriptor getDescriptor() {
+        return getMemberID().getDescriptor();
+    }
 
     @Override
     public Attribute[] getAttributes() {
@@ -83,25 +83,4 @@ public abstract class ClassMemberInfo extends MemberInfo {
         classMember.removeAttribute(a);
     }
 
-    @Override
-    public int hashCode() {
-        return hashValue;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if ( !(obj instanceof ClassMemberInfo) ) {
-            return false;
-        }
-        return ((ClassMemberInfo)obj).getClassInfo().equals(getClassInfo()) &&
-               ((ClassMemberInfo)obj).getShortName().equals(getShortName()) &&
-               ((ClassMemberInfo)obj).getDescriptor().equalArguments(getDescriptor());
-    }
-
-    private int buildHashValue() {
-        int hash = classInfo.hashCode();
-        hash = hash * 31 + classMember.getName().hashCode();
-        hash = hash * 31 + classMember.getSignature().hashCode();
-        return hash;
-    }
 }

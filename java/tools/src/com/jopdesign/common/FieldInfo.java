@@ -22,7 +22,7 @@ package com.jopdesign.common;
 
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.FieldRef;
-import com.jopdesign.common.type.Signature;
+import com.jopdesign.common.type.MemberID;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.ConstantValue;
 import org.apache.bcel.classfile.Field;
@@ -38,7 +38,9 @@ public final class FieldInfo extends ClassMemberInfo {
     private final FieldGen fieldGen;
 
     public FieldInfo(ClassInfo classInfo, FieldGen fieldGen) {
-        super(classInfo, fieldGen);
+        super(classInfo,
+              new MemberID(classInfo.getClassName(), fieldGen.getName(), new Descriptor(fieldGen.getType())),
+              fieldGen);
         this.fieldGen = fieldGen;
     }
 
@@ -76,16 +78,6 @@ public final class FieldInfo extends ClassMemberInfo {
             }
         }
         return field;
-    }
-
-    @Override
-    public Signature getSignature() {
-        return new Signature(getClassInfo().getClassName(), fieldGen.getName(), getDescriptor());
-    }
-
-    @Override
-    public Descriptor getDescriptor() {
-        return new Descriptor(getType());
     }
 
     public FieldRef getFieldRef() {

@@ -328,7 +328,7 @@ public class GlobalAnalysis {
                 cost.addCacheCost(recCost.getCacheCost() + invokeReturnCost);
                 cost.addNonLocalCost(recCost.getCost() - recCost.getCacheCost());
             }
-            WCETTool.logger.info("Recursive WCET computation [GLOBAL IPET]: " + invoked +
+            WCETTool.logger.debug("Recursive WCET computation [GLOBAL IPET]: " + invoked +
                     ". cummulative cache cost: " + cost.getCacheCost() +
                     ", execution cost: " + cost.getNonCacheCost());
             return cost;

@@ -105,6 +105,8 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
     public static final Logger logger = Logger.getLogger(LOG_WCET_PROJECT + ".WCETTool");
     /* special logger */
+    // TODO we could set this to something like 'console.wcet', and setup the console logger to
+    //      print INFO for 'console.*' and WARN/ERROR only for the rest if '-q' and '-d' are not given 
     private Logger topLevelLogger = Logger.getLogger(LOG_WCET);
 
     private static final Option<?>[][] options = {

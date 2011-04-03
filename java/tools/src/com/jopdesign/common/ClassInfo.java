@@ -30,8 +30,8 @@ import com.jopdesign.common.tools.ConstantPoolReferenceFinder;
 import com.jopdesign.common.type.ClassRef;
 import com.jopdesign.common.type.ConstantInfo;
 import com.jopdesign.common.type.Descriptor;
+import com.jopdesign.common.type.MemberID;
 import com.jopdesign.common.type.MethodRef;
-import com.jopdesign.common.type.Signature;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Attribute;
 import org.apache.bcel.classfile.Constant;
@@ -79,7 +79,7 @@ public final class ClassInfo extends MemberInfo {
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT + ".ClassInfo");
 
     public ClassInfo(ClassGen classGen) {
-        super(classGen);
+        super(classGen, new MemberID(classGen.getClassName()));
         this.classGen = classGen;
         cpg = classGen.getConstantPool();
 
@@ -112,11 +112,6 @@ public final class ClassInfo extends MemberInfo {
     @Override
     public ClassInfo getClassInfo() {
         return this;
-    }
-
-    @Override
-    public Signature getSignature() {
-        return new Signature(classGen.getClassName());
     }
 
     @Override
@@ -729,16 +724,16 @@ public final class ClassInfo extends MemberInfo {
     // Access to fields and methods, lookups
     //////////////////////////////////////////////////////////////////////////////
 
-    public FieldInfo getFieldInfo(Signature signature) {
-        return getFieldInfo(signature.getMemberName());
+    public FieldInfo getFieldInfo(MemberID memberID) {
+        return getFieldInfo(memberID.getMemberName());
     }
 
     public FieldInfo getFieldInfo(String name) {
         return fields.get(name);
     }
 
-    public MethodInfo getMethodInfo(Signature signature) {
-        return getMethodInfo(signature.getMethodSignature());
+    public MethodInfo getMethodInfo(MemberID memberID) {
+        return getMethodInfo(memberID.getMethodSignature());
     }
 
     /**
@@ -787,12 +782,12 @@ public final class ClassInfo extends MemberInfo {
      * This method therefore always returns an inherited non-abstract method if it exists, even if the method
      * is also defined in an implemented interface.
      * 
-     * @param signature the signature of the method to find. The classname in the signature is ignored.
+     * @param memberID the memberID of the method to find. The classname in the memberID is ignored.
      * @param checkAccess if false, also return non-accessible or static methods in superclasses.
-     * @return the MethodInfo with the given signature in this class or its extended classes, or null if not found.
+     * @return the MethodInfo with the given memberID in this class or its extended classes, or null if not found.
      */
-    public MethodInfo getMethodInfoInherited(Signature signature, boolean checkAccess) {
-        return getMethodInfoInherited(signature.getMethodSignature(), checkAccess);
+    public MethodInfo getMethodInfoInherited(MemberID memberID, boolean checkAccess) {
+        return getMethodInfoInherited(memberID.getMethodSignature(), checkAccess);
     }
 
     /**
@@ -872,7 +867,7 @@ public final class ClassInfo extends MemberInfo {
         Method[] methods = classGen.getMethods();
         for (int i = 0; i < methods.length; i++) {
             Method m = methods[i];
-            String s = Signature.getMethodSignature(m.getName(), m.getSignature());
+            String s = MemberID.getMethodSignature(m.getName(), m.getSignature());
             if ( s.equals(memberSignature) ) {
                 return i;
             }
@@ -928,35 +923,35 @@ public final class ClassInfo extends MemberInfo {
     /**
      * Create a new non-static, abstract, package-visible method with the given name and descriptor.
      *
-     * @param signature the membername and descriptor of the method (classname is ignored).
+     * @param memberID the membername and descriptor of the method (classname is ignored).
      * @param argNames the names of the parameters
-     * @return the new method or an existing method with that signature.
+     * @return the new method or an existing method with that memberID.
      */
-    public MethodInfo createMethod(Signature signature, String[] argNames) {
-        return createMethod(signature, argNames, null);
+    public MethodInfo createMethod(MemberID memberID, String[] argNames) {
+        return createMethod(memberID, argNames, null);
     }
 
     /**
      * Create a new non-static, package-visible method with the given name and descriptor.
      *
-     * @param signature the membername and descriptor of the method (classname is ignored).
+     * @param memberID the membername and descriptor of the method (classname is ignored).
      * @param argNames the names of the parameters
      * @param code an InstructionList to set to the method as code, or if null, create an abstract method.
-     * @return the new method or an existing method with that signature.
+     * @return the new method or an existing method with that memberID.
      */
-    public MethodInfo createMethod(Signature signature, String[] argNames, InstructionList code) {
-        MethodInfo method = methods.get(signature.getMethodSignature());
+    public MethodInfo createMethod(MemberID memberID, String[] argNames, InstructionList code) {
+        MethodInfo method = methods.get(memberID.getMethodSignature());
         if ( method != null ) {
             return method;
         }
 
-        Descriptor desc = signature.getDescriptor();
+        Descriptor desc = memberID.getDescriptor();
         int flags = (code == null) ? Constants.ACC_ABSTRACT : 0;
 
         method = new MethodInfo(this, new MethodGen(flags, desc.getType(), desc.getArgumentTypes(), argNames,
-                signature.getMemberName(), classGen.getClassName(), code, cpg));
+                memberID.getMemberName(), classGen.getClassName(), code, cpg));
 
-        methods.put(signature.getMethodSignature(), method);
+        methods.put(memberID.getMethodSignature(), method);
         classGen.addMethod(method.getMethod(false));
 
         // TODO call manager eventhandler
@@ -1171,7 +1166,7 @@ public final class ClassInfo extends MemberInfo {
                     " differs from number of MethodInfos!");
         }
         for (int i = 0; i < mList.length; i++) {
-            MethodInfo method = methods.get(Signature.getMethodSignature(mList[i].getName(),
+            MethodInfo method = methods.get(MemberID.getMethodSignature(mList[i].getName(),
                                                                          mList[i].getSignature()));
             classGen.setMethodAt(method.compile(), i);
         }

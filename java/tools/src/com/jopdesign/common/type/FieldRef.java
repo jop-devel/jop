@@ -84,6 +84,6 @@ public class FieldRef {
     }
 
     public String toString() {
-        return Signature.getSignature(getClassName(),getName());
+        return MemberID.getSignature(getClassName(),getName());
     }
 }

@@ -23,8 +23,8 @@ package com.jopdesign.common;
 import com.jopdesign.common.bcel.AnnotationAttribute;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.misc.JavaClassFormatError;
+import com.jopdesign.common.type.MemberID;
 import com.jopdesign.common.type.MethodRef;
-import com.jopdesign.common.type.Signature;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.AccessFlags;
 import org.apache.bcel.classfile.Attribute;
@@ -41,12 +41,17 @@ public abstract class MemberInfo {
     public enum AccessType { ACC_PUBLIC, ACC_PACKAGE, ACC_PRIVATE, ACC_PROTECTED }
 
     private final AccessFlags accessFlags;
+    private final MemberID memberId;
+    private final int hashValue;
 
     private Object[] customValues;
 
-    public MemberInfo(AccessFlags flags) {
-        accessFlags = flags;
+    public MemberInfo(AccessFlags flags, MemberID memberId) {
+        this.accessFlags = flags;
+        this.memberId = memberId;
         customValues = null;
+        // cache the hash :) speed up things a little, memberSignature is immutable in BCEL anyway
+        hashValue = memberId.hashCode();
     }
 
     /**
@@ -60,12 +65,6 @@ public abstract class MemberInfo {
     public abstract ClassInfo getClassInfo();
 
     public abstract String getClassName();
-
-    /**
-     * Get the signature object which identifies this member.
-     * @return a fully qualified signature of this member.
-     */
-    public abstract Signature getSignature();
 
     public abstract ConstantPoolGen getConstantPoolGen();
 
@@ -380,11 +379,31 @@ public abstract class MemberInfo {
         return false;
     }
 
+    /**
+     * Get the memberID object which identifies this member.
+     * @return a fully qualified ID of this member.
+     */
+    public MemberID getMemberID() {
+        return memberId;
+    }
+
+    @Override
+    public int hashCode() {
+        return hashValue;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if ( !(obj instanceof MemberInfo) ) {
+            return false;
+        }
+        return memberId.equals( ((MemberInfo)obj).getMemberID() );
+    }
+
     @Override
     public String toString() {
-        return getSignature().toString();
+        return memberId.toString();
     }
-    
 
 
     private Synthetic findSynthetic() {

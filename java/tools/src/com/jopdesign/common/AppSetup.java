@@ -38,7 +38,7 @@ import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.common.processormodel.ProcessorModel.Model;
 import com.jopdesign.common.tools.AppLoader;
 import com.jopdesign.common.tools.ClassWriter;
-import com.jopdesign.common.type.Signature;
+import com.jopdesign.common.type.MemberID;
 import org.apache.bcel.util.ClassPath;
 
 import java.io.BufferedInputStream;
@@ -107,7 +107,7 @@ public class AppSetup {
     private String versionInfo;
     private String configFilename;
 
-    private Signature mainSignature;
+    private MemberID mainMethodID;
 
     private Map<String, JopTool> tools;
     private Map<String, BooleanOption> optionalTools;
@@ -199,8 +199,8 @@ public class AppSetup {
      *
      * @return the signature of the main method, as set by the options.
      */
-    public Signature getMainSignature() {
-        return mainSignature;
+    public MemberID getMainSignature() {
+        return mainMethodID;
     }
 
     /**
@@ -419,7 +419,7 @@ public class AppSetup {
 
             // we parse the main method signature here, so it is available to the tools before
             // AppInfo is initialized
-            mainSignature = getMainSignature(rest.length > 0 ? rest[0] : null);
+            mainMethodID = getMainSignature(rest.length > 0 ? rest[0] : null);
         } catch (Config.BadConfigurationException e) {
             System.err.println(e.getMessage());
             if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
@@ -531,7 +531,7 @@ public class AppSetup {
         if (args.length > 0 && ! "".equals(args[0])) {
         	mainClassName = args[0];
         } else if(config.hasOption(Config.MAIN_METHOD_NAME)){
-        	mainClassName = Signature.parse(config.getOption(Config.MAIN_METHOD_NAME)).getClassName();
+        	mainClassName = MemberID.parse(config.getOption(Config.MAIN_METHOD_NAME)).getClassName();
         } else {
             System.err.println("You need to specify a main class or entry method.");
             if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
@@ -768,18 +768,18 @@ public class AppSetup {
         return new File(configFile);
     }
 
-    private Signature getMainSignature(String signature) throws BadConfigurationException {
-        Signature sMain;
+    private MemberID getMainSignature(String signature) throws BadConfigurationException {
+        MemberID sMain;
 
         ClassPath path = new ClassPath(config.getOption(Config.CLASSPATH));
 
-        Signature sMainMethod = Signature.parse(config.getOption(Config.MAIN_METHOD_NAME), path);
+        MemberID sMainMethod = MemberID.parse(config.getOption(Config.MAIN_METHOD_NAME), path);
 
         if (signature == null || "".equals(signature)) {
             sMain = sMainMethod;
         } else {
             // try to parse the signature
-            sMain = Signature.parse(signature, path);
+            sMain = MemberID.parse(signature, path);
 
             // use --mm if only main class has been given
             if (!sMain.hasMemberName()) {
@@ -788,7 +788,7 @@ public class AppSetup {
                             +"' needs to specify a method name.");
                 }
 
-                sMain = new Signature(sMain.getClassName(), sMainMethod.getMemberName(),
+                sMain = new MemberID(sMain.getClassName(), sMainMethod.getMemberName(),
                                                             sMainMethod.getDescriptor());
             }
         }
@@ -801,7 +801,7 @@ public class AppSetup {
         ClassInfo clsInfo;
         String clsName;
 
-        Signature sMain = getMainSignature(signature);
+        MemberID sMain = getMainSignature(signature);
 
         clsName = sMain.getClassName();
         if ( clsName == null ) {
@@ -830,7 +830,7 @@ public class AppSetup {
         if ( mainName == null ) {
             mainName = config.getOption(Config.MAIN_METHOD_NAME);
             if(mainName != null) {
-            	mainName = Signature.parse(mainName).getMethodSignature();
+            	mainName = MemberID.parse(mainName).getMethodSignature();
             }
         }
 
@@ -844,7 +844,7 @@ public class AppSetup {
                     "Multiple candidates for '%s' in '%s', please specify with a signature: ", mainName, clsName) );
             for (MethodInfo m : methods) {
                 s.append("\n");
-                s.append(m.getSignature());
+                s.append(m.getMemberID());
             }
             throw new BadConfigurationException(s.toString());
         }

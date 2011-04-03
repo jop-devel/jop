@@ -39,8 +39,9 @@ import java.util.List;
 public class CallString implements CallStringProvider {
 
     private final InvokeSite[] callString;
+    private final int hash;
 
-	public static final CallString EMPTY = new CallString() {
+    public static final CallString EMPTY = new CallString() {
         @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass"})
         public boolean equals(Object obj) { return obj == this; }
         public int hashCode() { return 1; }
@@ -54,15 +55,22 @@ public class CallString implements CallStringProvider {
      */
     public CallString(InvokeSite site) {
         callString = new InvokeSite[]{site};
-	}
+        hash = site.hashCode(); 
+    }
 
     private CallString() {
         callString = new InvokeSite[]{};
+        hash = 1;
     }
 
     private CallString(InvokeSite[] cs) {
         assert cs != null;
         callString = cs;
+        int hash = 0;
+        for (InvokeSite invokeSite : callString) {
+            hash = hash * 31 + invokeSite.hashCode();
+        }
+        this.hash = hash;
     }
 
     public CallString getCallString() {
@@ -180,11 +188,6 @@ public class CallString implements CallStringProvider {
 
     @Override
     public int hashCode() {
-        // maybe cache this?
-        int hash = 0;
-        for (InvokeSite invokeSite : callString) {
-            hash = hash * 31 + invokeSite.hashCode();
-        }
         return hash;
     }
 
@@ -194,8 +197,16 @@ public class CallString implements CallStringProvider {
         if (this == obj) return true;
         if (obj == null) return false;
         if (getClass() != obj.getClass()) return false;
-        CallString other = (CallString) obj;
-        return Arrays.equals(callString, other.callString);
+        InvokeSite[] other = ((CallString) obj).callString;
+
+        // This is slightly faster than Arrays.equals()
+        int len = callString.length;
+        if (len != other.length) return false;
+        
+        for (int i = 0; i < len; i++) {
+            if (!callString[i].equals(other[i])) return false;
+        }
+        return true;
     }
 
     /**

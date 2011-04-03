@@ -253,7 +253,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			if(t instanceof ReferenceType) {
 				SymbolicAddressMap result = in.cloneFilterStack(newStackPtr);
 				/* FIXME: This is overly conservative, but class pointer not available here */
-				String classContext = context.getMethodInfo().getSignature().toString();
+				String classContext = context.getMethodInfo().getMemberID().toString();
 				SymbolicAddress addr = SymbolicAddress.stringLiteral(classContext,ldc.getIndex());
 				result.putStack(newStackPtr-1, bsFactory.singleton(addr ));
 				retval.put(context.callString, result);		
@@ -824,7 +824,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 
 		DFATool p = interpreter.getDFATool();
 		MethodInfo method = p.getMethod(methodName);
-		//methodName = method.getSignature().toString();
+		//methodName = method.getMemberID().toString();
 
 //		System.out.println(stmt+" invokes method: "+methodName);				
 
@@ -858,7 +858,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			state.put(entry, join(state.get(entry), tmpresult));
 	
 			if(DEBUG_PRINT) {
-				System.out.println("[I] Invoke: "+method.getSignature());
+				System.out.println("[I] Invoke: "+method.getMemberID());
 				System.out.println(String.format("  StackPtr: %d, framePtr: %d, args: %d",
 						context.stackPtr, varPtr, MethodHelper.getArgSize(method)));
 			}
@@ -884,7 +884,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			// add relevant information to result
 			ctxInfo.addStackUpto(in, context.stackPtr - MethodHelper.getArgSize(method));
 			if(DEBUG_PRINT) {
-				System.out.println("[R] Invoke: "+method.getSignature());
+				System.out.println("[R] Invoke: "+method.getMemberID());
 				System.out.println(String.format("  StackPtr: %d, framePtr: %d, args: %d",
 						context.stackPtr, varPtr, MethodHelper.getArgSize(method)));
 			}
@@ -896,7 +896,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			ContextMap<CallString,SymbolicAddressMap> input,
 			ContextMap<CallString,SymbolicAddressMap> retval) {
 		
-		String methodId = method.getSignature().toString();
+		String methodId = method.getMemberID().toString();
 
 		SymbolicAddressMap in = input.get(context.callString);
 		SymbolicAddressMap out;
