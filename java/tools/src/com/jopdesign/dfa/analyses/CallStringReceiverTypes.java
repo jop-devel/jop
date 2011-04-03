@@ -1128,9 +1128,10 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
                 ClassInfo staticClass = p.getAppInfo().getClassInfo(receiver);
                 ClassInfo dynamicClass = null;
                 try {
-                    p.getAppInfo().getClassInfo(m.type.split("@")[0]);
+                    dynamicClass = p.getAppInfo().getClassInfo(m.type.split("@")[0]);
                 } catch (MissingClassError ex) {
-                    Logger.getLogger(this.getClass()).error("doInvokeVirtual - trying to improve type of " + staticClass + ": " + ex);
+                    logger.error("doInvokeVirtual - trying to improve type of " + staticClass + ": " + ex);
+                    // TODO: maybe we should throw an exception/error instead?
                 }
                 if (dynamicClass != null && dynamicClass.isSubclassOf(staticClass)) {
                     out.add(new TypeMapping(0, m.type));
