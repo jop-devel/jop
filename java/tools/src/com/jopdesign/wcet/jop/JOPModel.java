@@ -13,7 +13,7 @@ import org.apache.bcel.generic.NEW;
 import org.apache.bcel.generic.NEWARRAY;
 import org.apache.bcel.generic.ObjectType;
 import org.apache.bcel.generic.ReferenceType;
-
+import org.apache.bcel.Constants;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.timing.jop.JOPCmpTimingTable;
@@ -93,8 +93,18 @@ public class JOPModel implements ProcessorModel {
 	}
 	public int getNumberOfBytes(MethodInfo context, Instruction instruction) {
 		int opCode = getNativeOpCode(context, instruction);
-		if(opCode >= 0) return JopInstr.len(opCode);
-		else throw new AssertionError("Invalid opcode: "+context+" : "+instruction);
+		if(opCode < 0) throw new AssertionError("Invalid opcode: "+context+" : "+instruction);
+		int len = JopInstr.len(opCode);
+		if(len == 0) { /* dynamic length, depends on parameters */
+			if(opCode == Constants.LOOKUPSWITCH ||
+			   opCode == Constants.TABLESWITCH ||
+			   opCode == Constants.WIDE) {
+				len = instruction.getLength();
+			} else {
+				throw new AssertionError("Unknonw length of opcode: opcode="+opCode);
+			}
+		}
+		return len;
 	}
 	/* performance hot spot */
 	public int getNativeOpCode(MethodInfo context, Instruction instr) {
