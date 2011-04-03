@@ -89,18 +89,17 @@ public class JOPWcetModel implements WCETProcessorModel {
         MethodInfo mctx = context.getMethodInfo();
         int jopcode = processorModel.getNativeOpCode(mctx, i);
         long cycles = timing.getLocalCycles(jopcode);
-        if(cycles < 0) {
-            if(isUnboundedBytecode(i)){
-                WCETTool.logger.error("[HACK] Unsupported (unbounded) bytecode: "+i.getName()+
-                                    " in " + mctx.getFQMethodName()+
-                                    ".\nApproximating with 2000 cycles, but result is not safe anymore.");
-                return 2000L;
-            } else {
-                throw new AssertionError("Requesting #cycles of non-implemented opcode: "+
-                        i+"(opcode "+jopcode+") used in context: "+context);
-            }
+
+        if(isUnboundedBytecode(i)){
+               WCETTool.logger.error("[FATAL] Unsupported (unbounded) bytecode: "+i.getName()+
+                                            " in " + mctx.getFQMethodName()+
+                                        ". Approximating with 2000 cycles, but result is not safe anymore!");
+               return 2000L;
+        } else if(cycles < 0) {
+               throw new AssertionError("Requesting #cycles of non-implemented opcode: "+
+                               i+"(opcode "+jopcode+") used in context: "+context);
         } else {
-            return (int) cycles;
+                return (int) cycles;
         }
     }
 
