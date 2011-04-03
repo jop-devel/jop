@@ -121,9 +121,10 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 		idx = prologueCP.addMethodref("com.jopdesign.sys.GC", "init", "(II)V");
 		instr = new INVOKESTATIC(idx);
 		prologue.append(instr);
-		idx = prologueCP.addMethodref("java.lang.System", "init", "()V");
-		instr = new INVOKESTATIC(idx);
-		prologue.append(instr);
+		// Not part of the prologue anymore (backported from newtools)
+        // idx = prologueCP.addMethodref("java.lang.System", "init", "()V");
+        // instr = new INVOKESTATIC(idx);
+        // prologue.append(instr);
 
 		// add class initializers
 		for (Iterator<String> i = clinits.iterator(); i.hasNext(); ) {	
