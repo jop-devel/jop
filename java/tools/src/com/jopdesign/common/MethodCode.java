@@ -379,6 +379,9 @@ public class MethodCode {
     /**
      * Get the instruction list of this code. If {@link #getControlFlowGraph(boolean)} has been used before, the CFG
      * will be compiled and removed first.
+     * <p>
+     * Do not call {@code dispose()} for the returned instruction list, or you will remove the instructions.
+     * </p>
      *
      * @see #compile()
      * @return the instruction list of this code.
