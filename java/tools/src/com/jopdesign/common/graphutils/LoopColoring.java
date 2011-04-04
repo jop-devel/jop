@@ -2,7 +2,7 @@
  * This file is part of JOP, the Java Optimized Processor
  *   see <http://www.jopdesign.com/>
  *
- * Copyright (C) 2008, Benedikt Huber (benedikt.huber@gmail.com)
+ * Copyright (C) 2008-2011, Benedikt Huber (benedikt.huber@gmail.com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -177,15 +177,42 @@ public class LoopColoring<V, E> {
         return loopNestForest;
     }
 
+	/** 
+	 * @param hol the loop of which to compute the ancestor
+	 * @param dist the distance n
+	 * @return the n-th outer loop
+	 * <p>Given all predecessors of the loop hol in the loop nest forest, we want the one
+	 * where {@code |successors \cap loopcolor(hol)| = dist}.</p>
+	 * <p>Example: Assume hol = loop 4, and the following loop nest DAG<pre>
+     *     1->2,3,4,5,6       for(1: )
+     *     2->3,4,5,6           for(2: )
+     *     3->4,5,6               for(3: )
+     *     4->5                     for(4: )
+     *                                for(5: )
+     *     colors(4) = {1,2,4,5}    for(6:)
+     * </pre>
+     * For 3, we have {@code |{4,5,6} \cap {1,2,3,4}| = 1}, so 3 is the ancestor with distance 1
+     * For 1, we have {@code |{2,3,4,5,6} \cap {1,2,3,4}| = 3}, so 1 is the ancestor with distance 3 */
     public V getLoopAncestor(V hol, int dist) {
+        if(dist == 0) return hol;
+        V ancestor = null;
+        Set<V> holColors = loopColors.get(hol);
         SimpleDirectedGraph<V, DefaultEdge> loopNestForest = getLoopNestDAG();
-        V ancestor = hol;
-        for (int i = 0; i < dist; i++) {
-            Set<DefaultEdge> incomingEdges = loopNestForest.incomingEdgesOf(ancestor);
-            if (incomingEdges.size() == 0) return null;
-            else if (incomingEdges.size() > 1) throw new AssertionError("getLoopAncestor: A loop has two ancestors");
-            DefaultEdge incomingEdge = incomingEdges.iterator().next();
-            ancestor = loopNestForest.getEdgeSource(incomingEdge);
+        for(DefaultEdge incoming : loopNestForest.incomingEdgesOf(hol)) {
+        	V pred = loopNestForest.getEdgeSource(incoming);
+        	loopNestForest.outgoingEdgesOf(pred);
+        	int intersectSize = 0;
+        	for(DefaultEdge predOutgoing : loopNestForest.outgoingEdgesOf(pred)) {
+        		V predSucc = loopNestForest.getEdgeTarget(predOutgoing);
+        		if(holColors.contains(predSucc)) intersectSize+=1;
+        	}
+        	if(intersectSize == dist) {
+        		if(ancestor != null) {
+        			throw new AssertionError("malformed loop nest DAG: more than one direct ancestor");
+        		} else {
+        			ancestor = pred;
+        		}
+        	}
         }
         return ancestor;
     }
