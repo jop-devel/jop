@@ -77,10 +77,4 @@ public abstract class SerialBenchmark extends Benchmark {
 	 * @return
 	 */
 	public abstract int perform(int cnt);
-
-	// TODO: remove as we will not use it.
-	public final long accept(Executor exec, int complexity) {
-		return exec.execute(this, complexity);
-	}
-
 }

@@ -47,7 +47,7 @@ use work.jop_types.all;
 -- 2**jpc_width is the caches size in bytes
 -- 2**block_bits is the number of blocks
 
-entity cache is
+entity mcache is
 generic (jpc_width : integer; block_bits : integer; tag_width : integer := 18);
 
 port (
@@ -67,9 +67,9 @@ port (
 	in_cache	: out std_logic							-- method is in cache
 
 );
-end cache;
+end mcache;
 
-architecture rtl of cache is
+architecture rtl of mcache is
 
 --
 --	signals for mem interface
@@ -98,6 +98,8 @@ architecture rtl of cache is
 
 begin
 
+	assert jpc_width>=11 report "Minimum M$ size is 2KB";
+	
 	bcstart <= block_addr & std_logic_vector(to_unsigned(0, jpc_width-2-block_bits));
 	use_addr <= bc_addr(tag_width-1 downto 0);
 

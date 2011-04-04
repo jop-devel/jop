@@ -1267,7 +1267,7 @@ public class WCETInstruction {
 			break;
 		// MONITORENTER = 194
 		case org.apache.bcel.Constants.MONITORENTER:
-			wcet = 19;
+			wcet = 20;
 			break;
 		// MONITOREXIT = 195
 		case org.apache.bcel.Constants.MONITOREXIT:
@@ -1431,6 +1431,7 @@ public class WCETInstruction {
 
 		// JOPSYS_GETFIELD = 233
 		case JOPSYS_GETFIELD:
+			// FIXME: perhaps it is 9 + 2r?
 			wcet = 8 + 2*r;
 			if (CMP_WCET==true)
 				wcet = -1;
@@ -1464,7 +1465,7 @@ public class WCETInstruction {
 		
 		// JOPSYS_INVAL = 204
 		case JOPSYS_INVAL:
-			wcet = 7;
+			wcet = 4;
 			break;
 
 		default:

@@ -16,19 +16,23 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 package jembench;
 
 /**
  * Base class of all StreamBenchmarks.
- *
+ * 
  * @author Thomas B. Preusser <thomas.preusser@tu-dresden.de>
  * @author Martin Schoeberl (martin@jopdesign.com)
  */
 public abstract class StreamBenchmark extends Benchmark {
 
-  protected StreamBenchmark() {}
+	ParallelExecutor pe;
+
+	protected StreamBenchmark() {
+		pe = ParallelExecutor.getExecutor();
+	}
 
 	public int measure() {
 
@@ -37,31 +41,23 @@ public abstract class StreamBenchmark extends Benchmark {
 		cnt = 1;
 		time = 0;
 
+		Runnable[] workers = Runner.distributeWorklist(getWorkers(), Util.getNrOfCores());
+		pe.start();
+
 		while (time < MIN_EXECUTE) {
 			cnt <<= 1;
 			if (cnt < 0) {
 				break;
 			}
-			
-			// a quick hack with the Executor - should be changed
-			final ThreadPool pool = Executor.getExecutor().getPool();
-		    pool.ensure(getDepth()-1);
-
 		    start = Util.getTimeMillis();
-			for (int i = 0; i < cnt; ++i) {
-								
-			      // Start Workers
-			      final Runnable[]  workers = getWorkers();
-			      for(int  j = workers.length; --j > 0; pool.pushTask(workers[j]));
-			      workers[0].run();
-
-			      // Join Threads
-			      pool.waitForAll();
-
-			}
-			time = Util.getTimeMillis() - start;
+			reset(cnt);
+			Runner.reset();
+			pe.executeParallel(workers);			
+		    time = Util.getTimeMillis() - start;
 		}
 
+		// let the worker threads terminate
+		pe.stop();
 		// save raw values
 		setRawResult(cnt, time);
 
@@ -70,11 +66,22 @@ public abstract class StreamBenchmark extends Benchmark {
 
 	}
 
-  public final long accept(Executor exec, int complexity) {
-    return  exec.execute(this, complexity);
-  }
+	/**
+	 * MS: what is this for?
+	 * @return
+	 */
+	protected abstract int getDepth();
 
-  protected abstract int        getDepth();
-  protected abstract Runnable[] getWorkers();
+	protected abstract Runnable[] getWorkers();
+
+	/**
+	 * Reset the benchmark for a new run with cnt iterations.
+	 */
+	protected abstract void reset(int cnt);
+	
+	/**
+	 * MS: what for are we using this?
+	 * @return
+	 */
+	protected abstract boolean isFinished(); 
 }
-

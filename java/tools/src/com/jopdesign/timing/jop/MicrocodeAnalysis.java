@@ -366,6 +366,9 @@ public class MicrocodeAnalysis {
 			case MicrocodeConstants.STMWA:
 			case MicrocodeConstants.STMRA:
 			case MicrocodeConstants.STMWD:
+			case MicrocodeConstants.STMRAC:
+			case MicrocodeConstants.STMRAF:
+			case MicrocodeConstants.STMWDF:
 				current.st.stackPop();break;
 			// array instructions
 			case MicrocodeConstants.STALD:

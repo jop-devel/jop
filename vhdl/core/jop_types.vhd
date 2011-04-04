@@ -28,6 +28,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
+use work.jop_config_global.all;
+
 package jop_types is
 
 	constant MMU_WIDTH : integer := 4;
@@ -48,6 +50,9 @@ package jop_types is
 	constant STBCR	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1001"; 
 	constant STIDX	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1010"; 
 	constant STPS	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1011"; 
+	constant STMRAC	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1100"; 
+	constant STMRAF	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1101"; 
+	constant STMWDF	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1110"; 
 
 	-- PUSH type
 	constant LDMRD	   : std_logic_vector(MMU_WIDTH-1 downto 0) := "0000"; 
@@ -55,12 +60,15 @@ package jop_types is
 	constant LDBCSTART : std_logic_vector(MMU_WIDTH-1 downto 0) := "0010"; 
 
 	-- no stack change
-	constant STGS	   : std_logic_vector(MMU_WIDTH-1 downto 0) := "0000"; 
+	constant STGS	   	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0000"; 
+	constant CINVAL	   	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0001"; 
+	constant ATMSTART	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0010"; 
+	constant ATMEND		: std_logic_vector(MMU_WIDTH-1 downto 0) := "0011"; 
 
 	type mem_in_type is record
 		bcopd		: std_logic_vector(15 downto 0);
-		rd			: std_logic;
-		wr			: std_logic;
+		rd			: std_logic;	-- uncached read
+		wr			: std_logic;	-- uncached write
 		addr_wr	    : std_logic;
 		bc_rd       : std_logic;
 		iaload      : std_logic;
@@ -70,7 +78,13 @@ package jop_types is
 		putfield    : std_logic;
 		getstatic   : std_logic;
 		putstatic   : std_logic;
+		rdc         : std_logic;	-- read with possible constant cache
+		rdf         : std_logic;	-- read with coherent cache (fully assoc)
+		wrf         : std_logic;	-- write into coherente cache
 		copy        : std_logic;
+		cinval		: std_logic;	-- invalidate the data cache
+		atmstart	: std_logic;	-- start atomic section
+		atmend		: std_logic;	-- end atomic section
 	end record;
 
 	type mem_out_type is record
@@ -145,17 +159,11 @@ package jop_types is
 	-- changes here require also the object layout to be changed
 	constant METHOD_SIZE_BITS : integer := 10;
 
-	-- object cache constants and types
-	-- depends on main memry size (sc_pack)
-
-	-- tag width, in words
-	constant CACHE_ADDR_SIZE : integer := 23;
-	-- maximum number of cached fields
-	constant MAX_OBJECT_SIZE : integer := 16;
+	-- object cache types
 
 	type ocache_in_type is record
-		handle	: std_logic_vector(CACHE_ADDR_SIZE-1 downto 0);
-		index	: std_logic_vector(MAX_OBJECT_SIZE-1 downto 0);
+		handle	: std_logic_vector(OCACHE_ADDR_BITS-1 downto 0);
+		index	: std_logic_vector(OCACHE_MAX_INDEX_BITS-1 downto 0);
 		gf_val	: std_logic_vector(31 downto 0);
 		pf_val	: std_logic_vector(31 downto 0);
 		chk_gf	: std_logic;

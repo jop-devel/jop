@@ -17,164 +17,236 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 package jembench.stream;
 
 import jembench.StreamBenchmark;
+import jembench.Runner;
 
-import  org.bouncycastle.crypto.BlockCipher;
-import  org.bouncycastle.crypto.CipherParameters;
-import  org.bouncycastle.crypto.params.KeyParameter;
-import  org.bouncycastle.crypto.engines.AESLightEngine;
+import org.bouncycastle.crypto.BlockCipher;
+import org.bouncycastle.crypto.CipherParameters;
+import org.bouncycastle.crypto.params.KeyParameter;
+import org.bouncycastle.crypto.engines.AESLightEngine;
 
-import  java.util.Random;
+import java.util.Random;
 
+/**
+ * Streaming benchmark with four processing stages:
+ * 
+ *   1. Data Generation
+ *   2. Encryption
+ *   3. Decryption
+ *   4. Verification
+ * 
+ * This benchmark can, by its nature, not scale beyond 4 independent Threads.
+ * The measured performance will typically scale even less due to
+ * platform-dependent imbalances of the computational complexities of the
+ * individual stages. Moreso, the serialized version running within a single
+ * Thread may even perform best on platforms with significant cache memory
+ * due to the improved locality. Thus, this benchmark also evaluates the
+ * performance of the inter-Thread communication.
+ *
+ * @author Thomas B. Preusser <thomas.preusser@tu-dresden.de>
+ * @author Martin Schoeberl   <martin@jopdesign.com>
+ */
 public class AES extends StreamBenchmark {
-  private final static int  BLOCK_SIZE  = 512;
-  private final static int  BLOCK_COUNT =  47;
+	private final static int  BLOCK_SIZE  = 128; // This MUST be a multiple of 16.
+	private final static int  POOL_LENGTH = 8;
 
-  private int  result;
+	private final BufferQueue q1, q2, q3, free;
+	private final Source      source;
+	private final Encrypt     enc;
+	private final Decrypt     dec;
+	private final Sink        sink;
+	private final Runnable[]  runners;
 
-  public AES() {}
+	private          int      blockCnt;
+	private volatile boolean  finished;
 
-  public String toString() {
-    return "AES";
-  }
+	public AES() {
 
-  protected int        getDepth() {
-    return  4;
-  }
+		// Pool of Data Blocks
+		q1   = new BufferQueue(POOL_LENGTH);
+		q2   = new BufferQueue(POOL_LENGTH);
+		q3   = new BufferQueue(POOL_LENGTH);
+		free = new BufferQueue(POOL_LENGTH);
+		for (int i = 0; i < POOL_LENGTH; ++i) {
+			final byte[]  block = new byte[BLOCK_SIZE];
+			free.checkedEnq(block);
+		}
 
-  protected Runnable[] getWorkers() {
-    class BlockFifo {
-      private final byte[][]  queue;
-      private int  rdPtr;
-      private int  wrPtr;
+		final CipherParameters params; { // Encryption Parameters
+		  final byte[]  key = new byte[16];
+		  final Random  rnd = new Random(127);
+		  for (int i = key.length; i > 0; key[--i] = (byte) rnd.nextInt());
+		  params = new KeyParameter(key);
+		}
 
-      public BlockFifo() {
-	queue = new byte[4][];
-	reset();
-      }
-
-      public synchronized byte[] getBlock() {
-
-	// Wait until !empty
-	while(rdPtr < 0) {
-	  if(rdPtr < -1)  return  null;
-	  try { wait(); } catch(InterruptedException e) {}
-	}
-	final byte[]  res = queue[rdPtr];
-
-	// Was full?
-	if(rdPtr == wrPtr)  notifyAll();
-	rdPtr = (rdPtr+1)&3;
-	if(rdPtr == wrPtr) {
-	  rdPtr = -1;
-	  notifyAll();
+		source  = new Source();
+		enc     = new Encrypt(params);
+		dec     = new Decrypt(params);
+		sink    = new Sink();
+		runners = new Runnable[] { source, enc, dec, sink };
 	}
 
-	return  res;
-      }
-      public synchronized void putBlock(final byte[]  block) {
-
-	// Wait until !full
-	while(rdPtr == wrPtr) {
-	  try { wait(); } catch(InterruptedException e) {}
+	public String toString() {
+		return "AES";
 	}
-	queue[wrPtr] = block;
 
-	// Was empty?
-	if(rdPtr < 0) {
-	  rdPtr = wrPtr;
-	  notifyAll();
+	protected Runnable[] getWorkers() {
+		return runners;
 	}
-	wrPtr = (wrPtr+1)&3;
-      }
-      public synchronized void close() {
 
-	while(rdPtr >= 0) {
-	  try { wait(); } catch(InterruptedException e) {}
+	protected int getDepth() {
+		return 4;
 	}
-	rdPtr = -2;
-	notifyAll();
-      }
-      public synchronized void reset() {
-	rdPtr = -1;
-      }
-    }
 
-    final CipherParameters  params; {
-      final byte[]  key = new byte[16];
-      final Random  rnd = new Random(127);
-      for(int i = key.length; i > 0; key[--i] = (byte)rnd.nextInt());
-      params = new KeyParameter(key);
-    }
-    final BlockFifo  f1 = new BlockFifo();
-    final BlockFifo  f2 = new BlockFifo();
-    final BlockFifo  f3 = new BlockFifo();
+	protected void reset(int cnt) {
+		finished = false;
 
-    return  new Runnable[] {
-      new Runnable() {
-	public void run() {
-	  final Random  rnd = new Random(1L);
-	  
-	  for(int  c = BLOCK_COUNT; --c >= 0;) {
-	    final byte[]  block = new byte[BLOCK_SIZE];
-	    for(int  i = BLOCK_SIZE; --i >= 0; block[i] = (byte)rnd.nextInt());
-	    f1.putBlock(block);
-	  }
-	  f1.close();
+		source.reset();
+		enc   .reset();
+		dec   .reset();
+		sink  .reset();
+
+		blockCnt = cnt;
 	}
-      },
-      new Runnable() {
-	public void run() {
-	  final BlockCipher  crypt = new AESLightEngine();
-	  crypt.init(true,  params);
 
-	  byte[]  block;
-	  while((block = f1.getBlock()) != null) {
-	    final byte[]  ciph = new byte[block.length];
-	    crypt.processBlock(block, 0, ciph, 0);
-	    f2.putBlock(ciph);
-	  }
-	  f2.close();
+	protected boolean isFinished() {
+		return finished;
 	}
-      },
-      new Runnable() {
-	public void run() {
-	  int  c = 0;
-	  final BlockCipher  decrypt = new AESLightEngine();
-	  decrypt.init(false,  params);
 
-	  byte[]  block;
-	  while((block = f2.getBlock()) != null) {
-	    final byte[]  deciph = new byte[block.length];
-	    decrypt.processBlock(block, 0, deciph, 0);
-	    f3.putBlock(deciph);
-	  }
-	  f3.close();
+	private class Source implements Runnable {
+
+		private final Random  rnd;
+		private int  cnt;
+
+		public Source() {
+			rnd = new Random();
+		}
+
+		public void reset() {
+			rnd.setSeed(127);
+			cnt = 0;
+		}
+
+		public void run() {
+			if (cnt < blockCnt) {
+				if (!free.empty() && !q1.full()) {
+					final byte[]  block = free.deq();
+					for (int  i = 0; i < block.length; i++) {
+						block[i] = (byte)rnd.nextInt();
+					}
+					q1.enq(block);
+					++cnt;
+				}
+			}
+		}
 	}
-      },
-      new Runnable() {
-	public void run() {
-	  int  c = 0;
-	  int  check = 0;
 
-	  byte[]  block;
-	  while((block = f3.getBlock()) != null) {
-	    for(int  i = block.length; --i >= 0;) {
-	      check += block[i];
-	      if(check < 0)  check = (check >>> 1) + (check & 1);
-	    }
-	  }
-	  result = check;
+	private class Encrypt implements Runnable {
+
+		private final BlockCipher  crypt;
+		private int     cnt;
+		private byte[]  ciph;
+
+		public Encrypt(CipherParameters  params) {
+			crypt = new AESLightEngine();
+			crypt.init(true, params);
+			ciph = new byte[BLOCK_SIZE];
+		}
+
+		public void reset() {
+			crypt.reset();
+			cnt = 0;
+		}
+
+		public void run() {
+			if (cnt < blockCnt) {
+				if (!q1.empty() && !q2.full()) {
+					final byte[]  block = q1.deq();
+					int  ofs = BLOCK_SIZE;
+					do {
+					  ofs -= crypt.getBlockSize();
+					  crypt.processBlock(block, ofs, ciph, ofs);
+					}
+					while(ofs > 0);
+					q2.enq(ciph);
+					ciph = block;
+					++cnt;
+				}
+			}
+		}
 	}
-      }
-    };
-  }
 
-  public int getCheckSum() {
-    return  result;
-  }
+	private class Decrypt implements Runnable {
+
+		private final BlockCipher decrypt;
+		private int     cnt;
+		private byte[]  deciph;
+
+		public Decrypt(CipherParameters  params) {
+			decrypt = new AESLightEngine();
+			decrypt.init(false, params);
+			deciph = new byte[BLOCK_SIZE];
+		}
+
+		public void reset() {
+			decrypt.reset();
+			cnt = 0;
+		}
+
+		public void run() {
+			if (cnt < blockCnt) {
+				if (!q2.empty() && !q3.full()) {
+					final byte[]  block = q2.deq();
+					int  ofs = BLOCK_SIZE;
+					do {
+					  ofs -= decrypt.getBlockSize();
+					  decrypt.processBlock(block, ofs, deciph, ofs);
+					}
+					while(ofs > 0);
+					q3.enq(deciph);
+					deciph = block;
+					++cnt;
+				}
+			}
+		}
+	}
+
+	private class Sink implements Runnable {
+
+		private final Random   rnd;
+		private int      cnt;
+		private boolean  ok;
+
+		public Sink() {
+			rnd = new Random();
+		}
+
+		public void reset() {
+			rnd.setSeed(127);
+			cnt = 0;
+			ok  = true;
+		}
+
+		public void run() {
+			if (cnt < blockCnt) {
+				if (!q3.empty() && !free.full()) {
+					final byte[]  block = q3.deq();
+					for (int i = 0; i < block.length; i++) {
+						if(block[i] != (byte)rnd.nextInt())  ok = false;
+					}
+					free.enq(block);
+					++cnt;
+				}
+			} else {
+				finished = true;
+				Runner.stop();
+				if(!ok)  System.err.println("AES failed.");
+			}
+		}
+	}
+
 }

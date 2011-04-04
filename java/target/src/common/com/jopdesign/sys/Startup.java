@@ -372,6 +372,7 @@ public class Startup {
 				case 177 :		// return
 					return;
 				case 178 :		// getstatic
+			    case 224 :      // getstatic_ref
 					getstatic();
 					break;
 				case 179 :		// putstatic
@@ -395,6 +396,9 @@ public class Startup {
 					break;
 				case 189 :		// anewarray
 					anewarray();
+					break;
+			    case 190 :      // arraylength
+					arraylength();
 					break;
 				case 221 :		// jopsys_nop
 					break;
@@ -508,5 +512,12 @@ public class Startup {
 		int val = stack[sp];			// count from stack
 		stack[sp] = JVM.f_anewarray(val, cons);
 		
+	}
+
+	static void arraylength() {
+		
+		int ref = stack[sp];
+
+		stack[sp] = Native.arrayLength(ref);
 	}
 }

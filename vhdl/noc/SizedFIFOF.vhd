@@ -27,13 +27,14 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 entity SizedFIFOF is
 	 Generic (
 		SIZE: integer := 4;
-		ADDRBITS: integer := 2
+		ADDRBITS: integer := 2;
+		DATABITS: integer := 32
 	 );
     Port ( Clk : in  STD_LOGIC;
 			  Rst : in STD_LOGIC;
-			  DataIn : in  STD_LOGIC_VECTOR (31 downto 0);
+			  DataIn : in  STD_LOGIC_VECTOR (DATABITS-1 downto 0);
            Enq : in  STD_LOGIC;
-           First : out  STD_LOGIC_VECTOR (31 downto 0);
+           First : out  STD_LOGIC_VECTOR (DATABITS-1 downto 0);
            Deq : in  STD_LOGIC;
            Full : out  STD_LOGIC;
            Empty : out  STD_LOGIC);
@@ -42,7 +43,7 @@ end SizedFIFOF;
 
 architecture Behavioral of SizedFIFOF is
 
-type RegFileType is array (SIZE-1 downto 0) of STD_LOGIC_VECTOR (31 downto 0);
+type RegFileType is array (SIZE-1 downto 0) of STD_LOGIC_VECTOR (DATABITS-1 downto 0);
 signal Stack: RegFileType;
 signal PushAdr: STD_LOGIC_VECTOR(ADDRBITS-1 downto 0);
 signal PopAdr: STD_LOGIC_VECTOR(ADDRBITS-1 downto 0);

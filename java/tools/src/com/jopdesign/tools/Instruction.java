@@ -173,8 +173,11 @@ public class Instruction implements Serializable {
 			// no SP change instructions for MMU
 			// 4 bit subfield selects function (pop type)
 
-			// getstatic
+			// getstatic, data cache invalidation, atomic start and end
 			new Instruction("stgs", 0x110 + 0x0, 0, JmpType.NOP, StackType.NOP),
+			new Instruction("cinval", 0x110 + 0x1, 0, JmpType.NOP, StackType.NOP),
+			new Instruction("atmstart", 0x110 + 0x2, 0, JmpType.NOP, StackType.NOP),
+			new Instruction("atmend", 0x110 + 0x3, 0, JmpType.NOP, StackType.NOP),
 
 
 			// branches

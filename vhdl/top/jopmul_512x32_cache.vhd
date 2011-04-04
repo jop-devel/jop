@@ -20,12 +20,13 @@
 
 
 --
---	jop_256x16.vhd
+--	jopmul_512x32_cache.vhd
 --
---	top level for a 256x16 SRMA board (e.g. Altera DE2 board)
+--	top level for a 512x32 SSRAM board (e.g. Altera DE2-70 board)
 --
 --	2006-08-06	adapted from jopcyc.vhd
 --	2007-06-04	Use jopcpu and change component interface to records
+--  2010-06-25  Working version with SSRAM
 --
 --
 
@@ -43,11 +44,11 @@ use work.jop_config.all;
 entity jop is
 
 generic (
-	ram_cnt		: integer := 3;		-- clock cycles for external ram
+	ram_cnt		: integer := 3;	-- clock cycles for external ram
 --	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
 	rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
-	jpc_width	: integer := 11;	-- address bits of java bytecode pc = cache size
-	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
+	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
+	block_bits	: integer := 5;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
 	cpu_cnt		: integer := 8		-- number of cpus
 );
@@ -66,6 +67,19 @@ port (
 --	watchdog
 --
 	wd				: out std_logic;
+
+--
+--	LEDs
+--
+	oLEDR		: out std_logic_vector(17 downto 0);
+--	oLEDG		: out std_logic_vector(7 downto 0);
+
+
+	
+--
+--	Switches
+--
+	iSW				: in std_logic_vector(17 downto 0);
 
 --
 --	only one ram bank
@@ -137,15 +151,15 @@ end component;
 	type wd_out_array is array (0 to cpu_cnt-1) of std_logic;
 	signal wd_out			: wd_out_array;
 	
-	signal inval			: std_logic_vector(0 to cpu_cnt-1);
-
 -- for generation of internal reset
 -- memory interface
 
 	signal ram_addr			: std_logic_vector(18 downto 0);
 	signal ram_dout			: std_logic_vector(31 downto 0);
 	signal ram_din			: std_logic_vector(31 downto 0);
-	signal ram_dout_en	: std_logic;
+	signal ram_dout_en		: std_logic;
+	signal ram_clk			: std_logic;
+	signal ram_nsc			: std_logic;
 	signal ram_ncs			: std_logic;
 	signal ram_noe			: std_logic;
 	signal ram_nwe			: std_logic;
@@ -222,7 +236,6 @@ end process;
 			port map (
 				clk		=> clk_int,
 				reset	=> int_res,
-				inval   => inval(i),
 				cpu_in	=> sc_dcache_in(i),
 				cpu_out => sc_dcache_out(i),
 				mem_in	=> sc_arb_in(i),
@@ -254,14 +267,18 @@ end process;
 			rxd => ser_rxd,
 			ncts => oUART_CTS,
 			nrts => iUART_RTS,
+
+			oLEDR => oLEDR,
+--			oLEDG => oLEDG,
+			iSW => iSW,
+				  
 			wd => wd_out(0),
 			l => open,
 			r => open,
 			t => open,
-			b => open,
+			b => open
 			-- remove the comment for RAM access counting
 			-- ram_cnt => ram_count
-			inval => inval(0)
 		);
 		
 	-- io for processors with only sc_sys
@@ -288,10 +305,9 @@ end process;
 			
 			sync_out => sync_out_array(i),
 			sync_in => sync_in_array(i),
-			wd => wd_out(i),
+			wd => wd_out(i)
 			-- remove the comment for RAM access counting
 			-- ram_count => ram_count
-			inval => inval(i)
 		);
 	end generate;
 
@@ -307,6 +323,8 @@ end process;
 			ram_dout => ram_dout,
 			ram_din => ram_din,
 			ram_dout_en	=> ram_dout_en,
+			ram_clk => ram_clk,
+			ram_nsc => ram_nsc,
 			ram_ncs => ram_ncs,
 			ram_noe => ram_noe,
 			ram_nwe => ram_nwe
@@ -349,13 +367,13 @@ end process;
 	oSRAM_WE_N <= ram_nwe;
 	oSRAM_BE_N <= (others => '0');
 	oSRAM_GW_N <= '1';
-	oSRAM_CLK <= clk_int;
+	oSRAM_CLK <= ram_clk;
 	
-	oSRAM_ADSC_N <= ram_ncs;
+	oSRAM_ADSC_N <= ram_nsc;
 	oSRAM_ADSP_N <= '1';
 	oSRAM_ADV_N	<= '1';
 	
-	oSRAM_CE2 <= not(ram_ncs);	
+	oSRAM_CE2 <= not ram_ncs;	
     oSRAM_CE3_N <= ram_ncs;
 
 end rtl;

@@ -20,13 +20,13 @@
 
 
 --
---	jop_256x16.vhd
+--	jopmul_512x32.vhd
 --
---	top level for a 256x16 SRMA board (e.g. Altera DE2 board)
+--	top level for a 512x32 SSRAM board (e.g. Altera DE2-70 board)
 --
 --	2006-08-06	adapted from jopcyc.vhd
 --	2007-06-04	Use jopcpu and change component interface to records
---
+--  2010-06-25  Working version with SSRAM
 --
 
 
@@ -46,10 +46,10 @@ generic (
 	ram_cnt		: integer := 3;		-- clock cycles for external ram
 --	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
 	rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
-	jpc_width	: integer := 11;	-- address bits of java bytecode pc = cache size
-	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
+	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
+	block_bits	: integer := 5;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 4		-- number of cpus
+	cpu_cnt		: integer := 8		-- number of cpus
 );
 
 port (
@@ -109,7 +109,9 @@ component pll is
 generic (multiply_by : natural; divide_by : natural);
 port (
 	inclk0		: in std_logic;
-	c0			: out std_logic
+	c0			: out std_logic;
+	c1			: out std_logic;
+	locked		: out std_logic
 );
 end component;
 
@@ -118,6 +120,8 @@ end component;
 --	Signals
 --
 	signal clk_int			: std_logic;
+	signal clk_int_inv		: std_logic;
+	signal pll_lock			: std_logic;
 
 	signal int_res			: std_logic;
 	signal res_cnt			: unsigned(2 downto 0) := "000";	-- for the simulation
@@ -155,6 +159,8 @@ end component;
 	signal ram_dout			: std_logic_vector(31 downto 0);
 	signal ram_din			: std_logic_vector(31 downto 0);
 	signal ram_dout_en	: std_logic;
+	signal ram_clk			: std_logic;
+	signal ram_nsc			: std_logic;
 	signal ram_ncs			: std_logic;
 	signal ram_noe			: std_logic;
 	signal ram_nwe			: std_logic;
@@ -179,6 +185,7 @@ begin
 --	no extern reset, epm7064 has too less pins
 --
 
+-- should also use PLL lock signal
 process(clk_int)
 begin
 	if rising_edge(clk_int) then
@@ -199,7 +206,9 @@ end process;
 	)
 	port map (
 		inclk0	 => clk,
-		c0	 => clk_int
+		c0	 => clk_int,
+		c1	=> clk_int_inv,
+		locked => pll_lock
 	);
 -- clk_int <= clk;
 
@@ -303,12 +312,15 @@ end process;
 			addr_bits => 19
 		)
 		port map (clk_int, int_res,
+			clk_int_inv,
 			sc_mem_out, sc_mem_in,
 
 			ram_addr => ram_addr,
 			ram_dout => ram_dout,
 			ram_din => ram_din,
 			ram_dout_en	=> ram_dout_en,
+			ram_clk => ram_clk,
+			ram_nsc => ram_nsc,
 			ram_ncs => ram_ncs,
 			ram_noe => ram_noe,
 			ram_nwe => ram_nwe
@@ -351,13 +363,13 @@ end process;
 	oSRAM_WE_N <= ram_nwe;
 	oSRAM_BE_N <= (others => '0');
 	oSRAM_GW_N <= '1';
-	oSRAM_CLK <= clk_int;
+	oSRAM_CLK <= ram_clk;
 	
-	oSRAM_ADSC_N <= ram_ncs;
+	oSRAM_ADSC_N <= ram_nsc;
 	oSRAM_ADSP_N <= '1';
 	oSRAM_ADV_N	<= '1';
 	
-	oSRAM_CE2 <= not(ram_ncs);	
+	oSRAM_CE2 <= not ram_ncs;	
     oSRAM_CE3_N <= ram_ncs;
 
 end rtl;

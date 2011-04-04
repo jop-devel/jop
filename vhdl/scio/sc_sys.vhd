@@ -140,12 +140,10 @@ port (
 	sync_out : in sync_out_type := NO_SYNC;
 	sync_in	 : out sync_in_type;
 	
-	wd				: out std_logic;
+	wd				: out std_logic
 	
 	-- remove the comment for RAM access counting
 	-- ram_count	: in std_logic;
-
-	inval		: out std_logic
 
 );
 end sc_sys ;
@@ -409,7 +407,6 @@ begin
 		exc_pend <= '0';
 		swreq <= (others => '0');
 		clearall <= '0';
-		inval <= '0';
 
 		-- disable interrupts on a taken interrupt or excption
 		if irq_out.ack_irq='1' or irq_out.ack_exc='1' then
@@ -464,8 +461,6 @@ begin
 				when "0101" =>
 					sync_in.lock_req <= wr_data(0);	
 					lock_reqest <= wr_data(0);
-					-- implicit cache invalidation on monitorenter
-					inval <= wr_data(0);
 				when "0110" =>
 					-- nothing, processor id is read only
 				when "0111" =>
@@ -477,10 +472,8 @@ begin
 				when "1010" =>		-- dely 'instruction'
 					dly_timeout <= wr_data;
 					dly_block <= '1';
-				when "1111" =>
-					-- explicit cache invalidation
-					inval <= '1';
 				when others =>
+					null;
 			end case;
 		end if;
 		

@@ -1,34 +1,26 @@
-/*
-  This file is part of JOP, the Java Optimized Processor
-    see <http://www.jopdesign.com/>
-
-  Copyright (C) 2008, Martin Schoeberl (martin@jopdesign.com)
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-
-/**
- * 
- */
 package javax.realtime;
 
-/**
- * This class is empty - just mark SCJ RTSJ compatible.
- * @author Martin Schoeberl
- *
- */
-public class BoundAsyncEventHandler extends AsyncEventHandler {
+import javax.safetycritical.annotate.SCJAllowed;
+import javax.safetycritical.annotate.SCJProtected;
+
+
+@SCJAllowed
+public class BoundAsyncEventHandler extends AsyncEventHandler
+{
+  /** Note: since this is only used by infrastructure, we don't
+   * specify the MemoryAreaEncloses relationships.
+   *
+
+  public BoundAsyncEventHandler(SchedulingParameters scheduling,
+                                ReleaseParameters release,
+                                MemoryParameters memory,
+                                MemoryArea area,
+                                ProcessingGroupParameters group,
+                                boolean noheap,
+                                Runnable logic)
+  {
+    super(scheduling, release, memory, area, group, noheap, logic);
+  }
+   */
 
 }

@@ -123,7 +123,7 @@ begin
 			end if;
       when RCVRunning =>
          -- follow my slot now
-			if(nocIn.Src = rcvSlot) then
+			if(nocIn.Src = rcvSlot and aux_PisData) then
 			-- do the receive
 				if(not rcvBufferFull) then
 					-- store the word

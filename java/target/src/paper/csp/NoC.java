@@ -5,37 +5,42 @@ import com.jopdesign.sys.Const;
 // it should allow sending and receiving at the same time!!
 public class NoC {
 	// hardcoded, could be put in Const
-	static final int NOC_MASK_ADDR = 0x00FF; // LS byte
-	static final int NOC_MASK_BUSY = 0x0100;
-	static final int NOC_MASK_SND = 0x0200;
-	static final int NOC_MASK_RCV = 0x0400;
-	static final int NOC_MASK_EOD = 0x0800;
-	static final int NOC_MASK_SNDEMPTY = 0x1000;
-	static final int NOC_MASK_SNDFULL = 0x2000;
-	static final int NOC_MASK_RCVEMPTY = 0x4000;
-	static final int NOC_MASK_RCVFULL = 0x8000;
+	public static final int NOC_MASK_ADDR = 0x00FF; // LS byte
+	public static final int NOC_MASK_BUSY = 0x0100;
+	public static final int NOC_MASK_SND = 0x0200;
+	public static final int NOC_MASK_RCV = 0x0400;
+	public static final int NOC_MASK_EOD = 0x0800;
+	public static final int NOC_MASK_SNDEMPTY = 0x1000;
+	public static final int NOC_MASK_SNDFULL = 0x2000;
+	public static final int NOC_MASK_RCVEMPTY = 0x4000;
+	public static final int NOC_MASK_RCVFULL = 0x8000;
 	// registers read
-	static final int NOC_REG_STATUS = Const.NOC_ADDR;
-	static final int NOC_REG_RCVCNT = Const.NOC_ADDR | 0x01;
-	static final int NOC_REG_RCVSRC = Const.NOC_ADDR | 0x02;
-	static final int NOC_REG_RCVDATA = Const.NOC_ADDR | 0x03;
+	public static final int NOC_REG_STATUS = Const.NOC_ADDR;
+//  deprecated
+//	static final int NOC_REG_RCVCNT = Const.NOC_ADDR | 0x01;
+	public static final int NOC_REG_RCVSLOTS = Const.NOC_ADDR | 0x01;
+	public static final int NOC_REG_RCVSRC = Const.NOC_ADDR | 0x02;
+	public static final int NOC_REG_RCVDATA = Const.NOC_ADDR | 0x03;
 	// registers write
-	static final int NOC_REG_RCVRESET = Const.NOC_ADDR;
-	static final int NOC_REG_SNDCNT = Const.NOC_ADDR | 0x01;
-	static final int NOC_REG_SNDDST = Const.NOC_ADDR | 0x02;
-	static final int NOC_REG_SNDDATA = Const.NOC_ADDR | 0x03;
+	public static final int NOC_REG_RCVRESET = Const.NOC_ADDR;
+	public static final int NOC_REG_SNDCNT = Const.NOC_ADDR | 0x01;
+	public static final int NOC_REG_SNDDST = Const.NOC_ADDR | 0x02;
+	public static final int NOC_REG_SNDDATA = Const.NOC_ADDR | 0x03;
 	
 	// this node's address, must be initialized
-	private static int myAddress = -1;
+//	private static int myAddress = -1;
 	
 	// just take the current node address for later use
+/*
 	public static void initialize() {
 		myAddress = Native.rd(NOC_REG_STATUS) & NOC_MASK_ADDR;
 	}
-	
-	public static int thisAddress() {
-		throw new Error("Static fields are shared for all cores!");
+*/	
+	public static int thisAddress() {		
+//		throw new Error("Static fields are shared for all cores!");
+// bummer
 //		return myAddress;
+		return Native.rd(NOC_REG_STATUS) & NOC_MASK_ADDR;
 	}
 	
 	// some flag accesses
@@ -71,6 +76,13 @@ public class NoC {
 	public static int getSourceAddress() {
 		return Native.rd(NOC_REG_RCVSRC);
 	}
+	
+	// shows the slots containing data as a bit map
+	// 1 means data present, 0 means not Data or EoD
+	// use to implement ALT or PRI ALT
+	public static int getDataSlots() {
+		return Native.rd(NOC_REG_RCVSLOTS);
+	}
 		
 	public static boolean sendIfFree(
 				int dstAddr, int header, int cnt, int buf[]) {
@@ -95,6 +107,13 @@ public class NoC {
 	// call this to reset EoD flag and allow more receive!
 	public static void writeReset() {
 		Native.wr(0, NOC_REG_RCVRESET);
+	}
+
+	// same as writeReset, but with the possibility to ignore slots
+	// 1 on position K means ignore slots from node K
+	// 0 means receive, to be backward compatible
+	public static void writeResetMask(int bitmap) {
+		Native.wr(bitmap, NOC_REG_RCVRESET);
 	}
 
 	

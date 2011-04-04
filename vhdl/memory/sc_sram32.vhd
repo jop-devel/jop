@@ -185,6 +185,18 @@ begin
 		-- last write state
 		when wr2 =>
 			next_state <= idl;
+			-- This should do to give us a pipeline
+			-- level of 2 for write
+			if sc_mem_out.rd='1' then
+				if ram_ws=0 then
+					-- then we omit state rd1!
+					next_state <= rd2;
+				else
+					next_state <= rd1;
+				end if;
+			elsif sc_mem_out.wr='1' then
+				next_state <= wr1;
+			end if;
 
 	end case;
 				

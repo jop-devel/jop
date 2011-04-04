@@ -131,9 +131,12 @@ public class MicropathTiming {
             accessAddress = l.getTOS(); /* Deal with OP addresses here */
             break;
             case MicrocodeConstants.STMRA:
+            case MicrocodeConstants.STMRAC:
+            case MicrocodeConstants.STMRAF:
             accessAddress = l.getTOS();
             /* fallthrough */
             case MicrocodeConstants.STMWD:
+            case MicrocodeConstants.STMWDF:
             case MicrocodeConstants.STBCRD:
             case MicrocodeConstants.STGF:
             case MicrocodeConstants.STPF:
@@ -184,8 +187,20 @@ public class MicropathTiming {
                         /* wait(2+w) */
                         timing.add(new TimingExpression(2,0,1,passed-1));
                         break;
+                    case MicrocodeConstants.STMRAC:
+                        timing.add(TimingExpression.read(passed - 2));
+                        break;
+                    case MicrocodeConstants.STMRAF:
+                        timing.add(TimingExpression.read(passed - 2));
+                        break;
+                    case MicrocodeConstants.STMWDF:
+                        /* wait(2+w) */
+                        timing.add(new TimingExpression(2,0,1,passed-1));
+                        break;
                     case MicrocodeConstants.STGF:
                         /* wait(5+2r) */
+                    	// TODO: MS don't know if this is ok after
+                    	// changes by WP and changes back by MS?
                         timing.add(new TimingExpression(5,2,0,passed-1));
                         break;
                     case MicrocodeConstants.STPF:
@@ -194,7 +209,7 @@ public class MicropathTiming {
                         break;
                     case MicrocodeConstants.STALD:
                         /* wait (TODO) */
-                        timing.add(new TimingExpression(2,3,0,passed - 3));
+                        timing.add(new TimingExpression(1,3,0,passed - 3));
                         break;
                     case MicrocodeConstants.STAST:
                         /* wait (TODO) */

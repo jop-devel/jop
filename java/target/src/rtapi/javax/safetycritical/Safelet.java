@@ -1,71 +1,56 @@
-/*
-  This file is part of JOP, the Java Optimized Processor
-    see <http://www.jopdesign.com/>
-
-  Copyright (C) 2008, Martin Schoeberl (martin@jopdesign.com)
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-
-/**
- * 
- */
 package javax.safetycritical;
 
-/*
-Here follows an issue list:
-	jx.rt.PeriodicParameter cannot return the start and period parameters.
-	There is no way (except JNI) to transfer those parameters in a safe way
-	from jx.scj.PeriodicParameters as we are crossing package boundaries.
-	
-	BAEH is useless on MissionSequencer on an implementation that does
-	not run on top of the RTSJ. We also see the public method
-	handleAsyncEvent, which is not so good as an application can
-	invoke it. Would that trigger another start of a mission?
-	
-	In level 0 and 1 the priority of the sequencer has no meaning as
-	the sequencer is passive. SCJAllow(2)?
+import javax.safetycritical.annotate.SCJAllowed;
+import javax.safetycritical.annotate.SCJRestricted;
 
-Questions:
-	Is it useful to have a start time that is longer than a period?
-	
-	Why is the handleEvent in AEH abstract, but PAEH does not define a
-	new one (it is inherited from jx.rt.AEH in PAEH).
-	
-	We could provide a default implementation of getNextMission that
-	returns null. Makes the Hello World shorter.
+import static javax.safetycritical.annotate.Level.SUPPORT;
 
- */
+import static javax.safetycritical.annotate.Phase.CLEANUP;
+import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 
 /**
- * The interface that represents the SCJ application.
- * 
- * @author Martin Schoeberl
- *
+ * A safety-critical application consists of one or more missions,
+ * executed concurrently or in sequence.  Every safety-critical
+ * application is represented by an implementation of Safelet which
+ * identifies the outer-most MissionSequencer.  This outer-most
+ * MissionSequencer takes responsibility for running the sequence of
+ * Missions that comprise this safety-critical application. 
+ * <p>
+ * The mechanism used to identify the Safelet to a particular SCJ
+ * environment is implementation defined.
+ * <p>
+ * Given the implementation s of Safelet that represents a particular
+ * SCJ application, the SCJ infrastructure invokes
+ * in sequence s.setUp() followed by s.getSequencer().
+ * For the MissionSequencer q returned from s.getSequencer(), the SCJ
+ * infrastructure arranges for an independent thread to begin
+ * executing the code forthat sequencer and then waits for that thread
+ * to terminate its execution.  Upon termination of the
+ * MissionSequencer's thread, the SCJ infrastructure invokes
+ * s.tearDown(). 
  */
-public interface Safelet {
-	
-	final static int LEVEL_0 = 0;
-	final static int LEVEL_1 = 1;
-	final static int LEVEL_2 = 2;
-
-	/**
-	 * The SCJ level. Here an integer instead of the enum.
-	 * @return
-	 */
-	public int getLevel();
-	
-	public MissionSequencer getSequencer();
+@SCJAllowed
+public interface Safelet<MissionLevel extends Mission>
+{
+  /**
+   * @return the MissionSequencer that oversees execution of Missions
+   * for this application.
+   */
+  @SCJAllowed(SUPPORT)
+  @SCJRestricted(phase = INITIALIZATION)
+  public MissionSequencer<MissionLevel> getSequencer();
+  
+  /**
+   * Code to execute before the sequencer starts.
+   */
+  @SCJAllowed(SUPPORT)
+  @SCJRestricted(phase = INITIALIZATION)
+  public void setUp();
+  
+  /**
+   * Code to execute after the sequencer ends.
+   */
+  @SCJAllowed(SUPPORT)
+  @SCJRestricted(phase = CLEANUP)
+  public void tearDown();
 }

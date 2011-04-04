@@ -341,6 +341,9 @@ begin
 			when "0001001001" =>			-- stbcrd
 			when "0001001010" =>			-- stidx
 			when "0001001011" =>			-- stps
+			when "0001001100" =>			-- stmrac
+			when "0001001101" =>			-- stmraf
+			when "0001001110" =>			-- stmwdf
 --			when "00101-----" =>			-- ldm
 --			when "00110-----" =>			-- ldi
 			when "0011100000" =>			-- ldmrd
@@ -368,6 +371,12 @@ begin
 			when "0100000010" =>			-- jbr
 					ena_a <= '0';
 			when "0100010000" =>			-- stgs
+					ena_a <= '0';
+			when "0100010001" =>			-- cinval
+					ena_a <= '0';
+			when "0100010010" =>			-- atmstart
+					ena_a <= '0';
+			when "0100010011" =>			-- atmend
 					ena_a <= '0';
 --			when "0110------" =>			-- bz
 --			when "0111------" =>			-- bnz
@@ -447,7 +456,12 @@ begin
 		mem_in.putfield <= '0';
 		mem_in.getstatic <= '0';
 		mem_in.putstatic <= '0';
+		mem_in.rdc <= '0';
+		mem_in.rdf <= '0';
 		mem_in.copy <= '0';
+		mem_in.cinval <= '0';
+		mem_in.atmstart <= '0';
+		mem_in.atmend <= '0';
 		mul_wr <= '0';
 		wr_dly <= '0';
 
@@ -464,7 +478,13 @@ begin
 		mem_in.putfield <= '0';
 		mem_in.getstatic <= '0';
 		mem_in.putstatic <= '0';
+		mem_in.rdc <= '0';
+		mem_in.rdf <= '0';
+		mem_in.wrf <= '0';
 		mem_in.copy <= '0';
+		mem_in.cinval <= '0';
+		mem_in.atmstart <= '0';
+		mem_in.atmend <= '0';
 		mul_wr <= '0';
 		wr_dly <= '0';
 
@@ -493,18 +513,32 @@ begin
 					mem_in.bc_rd <= '1';	-- start bytecode read
 				when STIDX =>
 					mem_in.stidx <= '1';	-- store index
-				-- when STPS =>
-				when others =>
+				when STPS =>
 					mem_in.putstatic <= '1';	-- start putstatic
+				when STMRAC =>
+					mem_in.rdc <= '1';		-- start memory constant read
+				when STMRAF =>
+					mem_in.rdf <= '1';		-- start memory read through full assoc. cache
+				when STMWDF =>
+					mem_in.wrf <= '1';		-- start memory write through full assoc. cache
+				when others =>
+					null;
 			end case;
 		end if;
 
 		if ir(9 downto 4)="010001" then		-- a MMU instruction, no SP change
 			wr_dly <= '1';
 			case ir(MMU_WIDTH-1 downto 0) is
-				-- when STGS =>
-				when others =>
+				when STGS =>
 					mem_in.getstatic <= '1';	-- start getstatic
+				when cinval =>
+					mem_in.cinval <= '1';		-- invalidate data cache
+				when atmstart =>
+					mem_in.atmstart <= '1';		-- start atomic arbiter operation
+				when atmend =>
+					mem_in.atmend <= '1';		-- end atomic arbiter operation
+				when others =>
+					null;
 			end case;
 		end if;
 
