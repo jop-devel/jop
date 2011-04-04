@@ -86,7 +86,10 @@ public class Interpreter<K, V> {
                     for (FlowEdge outEdge : outEdges) {
                         FlowEdge f = new FlowEdge(outEdge, transferred.getContext());
                         if (worklist.isEmpty() || !worklist.getFirst().equals(f)) {
-                            worklist.addFirst(f);
+                            if (outEdges.size() > 1)
+                                worklist.addLast(f);
+                            else
+                                worklist.addFirst(f);
                             //System.out.println("pushing: "+f);
                         }
                     }
