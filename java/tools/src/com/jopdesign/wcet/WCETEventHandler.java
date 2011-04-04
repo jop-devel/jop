@@ -30,11 +30,13 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.SymbolicMarker;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.wcet.annotations.BadAnnotationException;
+import com.jopdesign.wcet.annotations.LoopBoundExpr;
 import com.jopdesign.wcet.annotations.SourceAnnotationReader;
 import com.jopdesign.wcet.annotations.SourceAnnotations;
 import org.apache.log4j.Logger;
@@ -143,7 +145,7 @@ public class WCETEventHandler extends EmptyAppEventHandler {
 // 						 block,sourceRangeStart,sourceRangeStop);
                 logger.error("No loop bound annotation: " + method + ":" + n +
                              ".\nApproximating with " + DEFAULT_LOOP_BOUND + ", but result is not safe anymore.");
-                loopAnnot = new LoopBound(0L, DEFAULT_LOOP_BOUND);
+                loopAnnot = LoopBound.boundedAbove(DEFAULT_LOOP_BOUND);
             }
             block.setLoopBound(loopAnnot);
         }
@@ -177,8 +179,9 @@ public class WCETEventHandler extends EmptyAppEventHandler {
                 dfaBound = LoopBound.boundedAbove(bound);
             } else {
                 dfaBound = annotatedValue.clone();
-                dfaBound.improveUpperBound(bound); // More testing would be nice
-                long loopUb = annotatedValue.getUpperBound();
+                // More testing would be nice
+                dfaBound.addBound(LoopBoundExpr.numUpperBound(bound), SymbolicMarker.LOOP_ENTRY); 
+                long loopUb = annotatedValue.getSimpleLoopBound().upperBound();
                 if(bound < loopUb) {
                     logger.info("DFA analysis reports a smaller upper bound :"+bound+ " < "+loopUb+
                                 " for "+methodInfo);

@@ -170,9 +170,9 @@ public class SourceAnnotationReader {
             Matcher matcher2 = pattern2.matcher(annotString);
             if (matcher2.matches()) {
                 logger.warn("Deprecated loop bound notation: X <= loop <= Y");
-                long lb = Long.parseLong(matcher2.group(1));
-                long ub = Long.parseLong(matcher2.group(2));
-                return new LoopBound(lb, ub);
+                LoopBoundExpr expr =
+                	LoopBoundExpr.numericBound(matcher2.group(1),matcher2.group(2));
+                return LoopBound.simpleBound(expr);
             }
             // New loop bound
             InputStream is = new ByteArrayInputStream(annotString.getBytes());

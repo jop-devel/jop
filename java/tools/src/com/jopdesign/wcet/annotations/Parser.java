@@ -1,26 +1,8 @@
-/*
- * This file is part of JOP, the Java Optimized Processor
- * see <http://www.jopdesign.com/>
- *
- * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 package com.jopdesign.wcet.annotations;
 
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.code.SymbolicMarker;
+import com.jopdesign.wcet.annotations.LoopBoundExpr.BinOp;
 
 public class Parser {
 	public static final int _EOF = 0;
@@ -29,7 +11,7 @@ public class Parser {
 	public static final int _string = 3;
 	public static final int _char = 4;
 	public static final int _cmpop = 5;
-	public static final int maxT = 11;
+	public static final int maxT = 14;
 
 	static final boolean T = true;
 	static final boolean x = false;
@@ -48,13 +30,11 @@ public LoopBound getResult()
 	return result;
 }
 LoopBound
-buildLoopBound(String cmpOp, Long bound, SymbolicMarker marker)
+buildLoopBound(String cmpop, LoopBoundExpr bound, SymbolicMarker marker)
 {
-	long lb = 0,
-	     ub = bound;
-	if(cmpOp.equals("=")) lb = ub;
-	if(marker == null) return new LoopBound(lb,ub);
-	else               return LoopBound.markerBound(lb,ub,marker);
+	if(cmpop.equals("<=")) bound = bound.relaxLowerBound(0);
+	if(marker == null) return LoopBound.simpleBound(bound);
+	else               return LoopBound.markerBound(bound, marker);
 }
 /*--------------------------------------------------------------------*/
 
@@ -119,48 +99,85 @@ buildLoopBound(String cmpOp, Long bound, SymbolicMarker marker)
 	}
 	
 	void Annotation() {
-		Long expr; SymbolicMarker marker; 
+		String cmpop; LoopBoundExpr expr; SymbolicMarker marker; 
 		Expect(6);
 		Expect(5);
-		String compareOperator = t.val; 
+		cmpop = t.val; 
 		expr = Expression();
 		marker = Context();
-		result = buildLoopBound(compareOperator, expr, marker); 
+		result = buildLoopBound(cmpop, expr, marker); 
 	}
 
-	Long  Expression() {
-		Long  expr;
-		Expect(2);
-		expr = Long.parseLong(t.val); 
+	LoopBoundExpr  Expression() {
+		LoopBoundExpr  expr;
+		LoopBoundExpr e2; 
+		expr = Expression2();
+		while (la.kind == 7 || la.kind == 8) {
+			if (la.kind == 7) {
+				Get();
+				e2 = Expression2();
+				expr = LoopBoundExpr.binOp(BinOp.ADD, expr,e2); 
+			} else {
+				Get();
+				e2 = Expression2();
+				expr = LoopBoundExpr.binOp(BinOp.SUB, expr,e2); 
+			}
+		}
 		return expr;
 	}
 
-	SymbolicMarker Context() {
+	SymbolicMarker  Context() {
 		SymbolicMarker  marker;
 		marker = null; 
-		if (la.kind == 7) {
+		if (la.kind == 12) {
 			Get();
 			int outerLoop = 1; 
-			if (la.kind == 8) {
+			if (la.kind == 10) {
 				Get();
 				Expect(2);
 				outerLoop = Integer.parseInt(t.val); 
-				Expect(9);
+				Expect(11);
 			}
 			marker = SymbolicMarker.outerLoopMarker(outerLoop); 
-		} else if (la.kind == 10) {
+		} else if (la.kind == 13) {
 			Get();
 			String markerMethod = null; 
-			if (la.kind == 8) {
+			if (la.kind == 10) {
 				Get();
 				Expect(3);
 				markerMethod = t.val; 
-				Expect(9);
+				Expect(11);
 			}
 			marker = SymbolicMarker.methodMarker(markerMethod); 
 		} else if (la.kind == 0) {
-		} else SynErr(12);
+		} else SynErr(15);
 		return marker;
+	}
+
+	LoopBoundExpr  Expression2() {
+		LoopBoundExpr  expr;
+		LoopBoundExpr e2; 
+		expr = Expression3();
+		while (la.kind == 9) {
+			Get();
+			e2 = Expression3();
+			expr = LoopBoundExpr.binOp(BinOp.MUL, expr, e2); 
+		}
+		return expr;
+	}
+
+	LoopBoundExpr  Expression3() {
+		LoopBoundExpr  expr;
+		expr = null; 
+		if (la.kind == 2) {
+			Get();
+			expr = LoopBoundExpr.numericBound(t.val, t.val); 
+		} else if (la.kind == 10) {
+			Get();
+			expr = Expression();
+			Expect(11);
+		} else SynErr(16);
+		return expr;
 	}
 
 
@@ -175,7 +192,7 @@ buildLoopBound(String cmpOp, Long bound, SymbolicMarker marker)
 	}
 
 	private static final boolean[][] set = {
-		{T,x,x,x, x,x,x,x, x,x,x,x, x}
+		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x}
 
 	};
 } // end Parser
@@ -207,12 +224,16 @@ class Errors {
 			case 4: s = "char expected"; break;
 			case 5: s = "cmpop expected"; break;
 			case 6: s = "\"loop\" expected"; break;
-			case 7: s = "\"outer\" expected"; break;
-			case 8: s = "\"(\" expected"; break;
-			case 9: s = "\")\" expected"; break;
-			case 10: s = "\"method\" expected"; break;
-			case 11: s = "??? expected"; break;
-			case 12: s = "invalid Context"; break;
+			case 7: s = "\"+\" expected"; break;
+			case 8: s = "\"-\" expected"; break;
+			case 9: s = "\"*\" expected"; break;
+			case 10: s = "\"(\" expected"; break;
+			case 11: s = "\")\" expected"; break;
+			case 12: s = "\"outer\" expected"; break;
+			case 13: s = "\"method\" expected"; break;
+			case 14: s = "??? expected"; break;
+			case 15: s = "invalid Context"; break;
+			case 16: s = "invalid Expression3"; break;
 			default: s = "error " + n; break;
 		}
 		printMsg(line, col, s);

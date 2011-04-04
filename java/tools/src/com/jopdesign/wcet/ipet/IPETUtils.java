@@ -34,6 +34,7 @@ import com.jopdesign.common.graphutils.LoopColoring;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.wcet.WCETTool;
+import com.jopdesign.wcet.annotations.LoopBoundExpr;
 import com.jopdesign.wcet.ipet.IPETBuilder.ExecutionEdge;
 import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
 
@@ -173,7 +174,7 @@ public class IPETUtils {
 
         List<LinearConstraint<IPETBuilder.ExecutionEdge>> loopConstraints = new ArrayList<LinearConstraint<IPETBuilder.ExecutionEdge>>();
         /* marker loop constraints */
-        for (Entry<SymbolicMarker, Pair<Long, Long>> markerBound : loopBound.getLoopBounds()) {
+        for (Entry<SymbolicMarker, LoopBoundExpr> markerBound : loopBound.getLoopBounds()) {
 
             /* loop constraint */
             LinearConstraint<IPETBuilder.ExecutionEdge> loopConstraint = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.GreaterEqual);
@@ -181,7 +182,7 @@ public class IPETUtils {
                 loopConstraint.addRHS(ctx.newEdge(continueEdge));
             }
             /* Multiplicities */
-            long lhsMultiplicity = markerBound.getValue().second();
+            long lhsMultiplicity = markerBound.getValue().upperBound();
             SymbolicMarker marker = markerBound.getKey();
             if (marker.getMarkerType() == SymbolicMarkerType.OUTER_LOOP_MARKER) {
 

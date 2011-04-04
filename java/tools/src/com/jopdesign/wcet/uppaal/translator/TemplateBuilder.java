@@ -124,10 +124,10 @@ public class TemplateBuilder {
 			loopVarBounds.add(0L);
 		}
 		if(loopVarBounds.size() <= nestingDepth) {
-			loopVarBounds.add(lb.getUpperBound());
+			loopVarBounds.add(lb.getUpperBound().longValue());
 		} else {
-			if(lb.getUpperBound() > loopVarBounds.get(nestingDepth)) {
-				loopVarBounds.set(nestingDepth,lb.getUpperBound());
+			if(lb.getUpperBound().longValue() > loopVarBounds.get(nestingDepth)) {
+				loopVarBounds.set(nestingDepth,lb.getUpperBound().longValue());
 			}
 		}
 		this.loopBounds.put(hol, varKey);

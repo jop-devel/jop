@@ -1,4 +1,7 @@
 /* imports */
+import com.jopdesign.common.code.LoopBound;
+import com.jopdesign.common.code.SymbolicMarker;
+import com.jopdesign.wcet.annotations.LoopBoundExpr.BinOp;
 
 COMPILER Annotation
 
@@ -9,13 +12,11 @@ public LoopBound getResult()
 	return result;
 }
 LoopBound
-buildLoopBound(String cmpOp, Long bound, SymbolicMarker marker)
+buildLoopBound(String cmpop, LoopBoundExpr bound, SymbolicMarker marker)
 {
-	long lb = 0,
-	     ub = bound;
-	if(cmpOp.equals("=")) lb = ub;
-	if(marker == null) return new LoopBound(lb,ub);
-	else               return LoopBound.markerBound(lb,ub,marker);
+	if(cmpop.equals("<=")) bound = bound.relaxLowerBound(0);
+	if(marker == null) return LoopBound.simpleBound(bound);
+	else               return LoopBound.markerBound(bound, marker);
 }
 /*--------------------------------------------------------------------*/
 
@@ -47,18 +48,36 @@ PRODUCTIONS
 
 Annotation
 = 
-  (. Long expr; SymbolicMarker marker; .)
+  (. String cmpop; LoopBoundExpr expr; SymbolicMarker marker; .)
   "loop"
-    cmpop (. String compareOperator = t.val; .)
+    cmpop (. cmpop = t.val; .)
     Expression<out expr>
     Context<out marker>        
-  (. result = buildLoopBound(compareOperator, expr, marker); .)
+  (. result = buildLoopBound(cmpop, expr, marker); .)
 .
 
-Expression<out Long expr>
-=
-  number   (. expr = Long.parseLong(t.val); .)
+
+Expression<out LoopBoundExpr expr>
+= (. LoopBoundExpr e2; .)
+  Expression2<out expr>
+  {   "+" Expression2<out e2> (. expr = LoopBoundExpr.binOp(BinOp.ADD, expr,e2); .)
+    | "-" Expression2<out e2> (. expr = LoopBoundExpr.binOp(BinOp.SUB, expr,e2); .)
+  } 
 .
+
+Expression2<out LoopBoundExpr expr>
+= (. LoopBoundExpr e2; .)
+  Expression3<out expr>
+  {   "*" Expression3<out e2> (. expr = LoopBoundExpr.binOp(BinOp.MUL, expr, e2); .)
+  } 
+.
+
+Expression3<out LoopBoundExpr expr> (. expr = null; .)
+=   
+    number   (. expr = LoopBoundExpr.numericBound(t.val, t.val); .)
+  | "(" Expression<out expr> ")"
+.
+
 Context<out SymbolicMarker marker> (. marker = null; .) 
 =   
    "outer"      (. int outerLoop = 1; .)

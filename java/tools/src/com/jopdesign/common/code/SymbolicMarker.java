@@ -32,7 +32,8 @@ public class SymbolicMarker {
     }
 
     public static final SymbolicMarker LOOP_ENTRY = SymbolicMarker.outerLoopMarker(0);
-
+    public static final SymbolicMarker METHOD_ENTRY = SymbolicMarker.methodMarker(null);
+    
     private int outerLoopIndex;
     private String methodName;
     private SymbolicMarkerType markerType;
@@ -65,6 +66,20 @@ public class SymbolicMarker {
     public String getMethodName() {
         if (markerType == SymbolicMarkerType.METHOD_MARKER) return methodName;
         throw new AssertionError("getMethodName: Not a method marker");
+    }
+	public boolean inSameMethod() {
+		return this.markerType == SymbolicMarkerType.OUTER_LOOP_MARKER ||
+		       methodName == null;
+	}
+
+    @Override
+    public String toString() {
+    	if (markerType == SymbolicMarkerType.OUTER_LOOP_MARKER) {
+    		if(outerLoopIndex == 0) return "LOOP-ENTRY";
+    		else return "OUTER-LOOP-"+outerLoopIndex+"-ENTRY";
+    	} else {
+    		return "METHOD"+(methodName != null ? "-"+methodName : "")+"-ENTRY";
+    	}
     }
 
     @Override
@@ -101,5 +116,6 @@ public class SymbolicMarker {
         }
         throw new AssertionError("equals: Inconsistent representation of SymbolicMarker");
     }
+
 
 }

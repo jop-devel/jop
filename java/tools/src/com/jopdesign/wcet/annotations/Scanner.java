@@ -1,22 +1,3 @@
-/*
- * This file is part of JOP, the Java Optimized Processor
- * see <http://www.jopdesign.com/>
- *
- * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 package com.jopdesign.wcet.annotations;
 
 import java.io.InputStream;
@@ -258,8 +239,8 @@ class StartStates {
 public class Scanner {
 	static final char EOL = '\n';
 	static final int  eofSym = 0;
-	static final int maxT = 11;
-	static final int noSym = 11;
+	static final int maxT = 14;
+	static final int noSym = 14;
 
 
 	public Buffer buffer; // scanner buffer
@@ -288,12 +269,15 @@ public class Scanner {
 		start.set(39, 6); 
 		start.set(61, 12); 
 		start.set(60, 11); 
-		start.set(40, 13); 
-		start.set(41, 14); 
+		start.set(43, 13); 
+		start.set(45, 14); 
+		start.set(42, 15); 
+		start.set(40, 16); 
+		start.set(41, 17); 
 		start.set(Buffer.EOF, -1);
 		literals.put("loop", new Integer(6));
-		literals.put("outer", new Integer(7));
-		literals.put("method", new Integer(10));
+		literals.put("outer", new Integer(12));
+		literals.put("method", new Integer(13));
 
 	}
 	
@@ -456,9 +440,15 @@ public class Scanner {
 				case 12:
 					{t.kind = 5; done = true; break;}
 				case 13:
-					{t.kind = 8; done = true; break;}
+					{t.kind = 7; done = true; break;}
 				case 14:
+					{t.kind = 8; done = true; break;}
+				case 15:
 					{t.kind = 9; done = true; break;}
+				case 16:
+					{t.kind = 10; done = true; break;}
+				case 17:
+					{t.kind = 11; done = true; break;}
 
 			}
 		}

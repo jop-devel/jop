@@ -34,15 +34,15 @@ public class SourceAnnotations {
 	private TreeMap<Integer, LoopBound> loopBounds = new TreeMap<Integer,LoopBound>();
 
 	/**
-	 * @param lineNr source code line number
-	 * @param lb     the annotations at this line number
+	 * @param lineNr     source code line number
+	 * @param annotatedBound the annotations at this line number
 	 */
-	public void addLoopBound(int lineNr, LoopBound lb) {
-		LoopBound oldLb = this.loopBounds.get(lineNr);
-		if(oldLb == null) {
-			this.loopBounds.put(lineNr, lb);
+	public void addLoopBound(int lineNr, LoopBound annotatedBound) {
+		LoopBound oldBounds = this.loopBounds.get(lineNr);
+		if(oldBounds == null) {
+			this.loopBounds.put(lineNr, annotatedBound);
 		} else {
-			oldLb.merge(lb);
+			oldBounds.addBound(annotatedBound);
 		}
 	}
 

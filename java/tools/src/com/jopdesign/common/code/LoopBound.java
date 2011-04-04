@@ -20,8 +20,8 @@
 
 package com.jopdesign.common.code;
 
-import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.code.SymbolicMarker.SymbolicMarkerType;
+import com.jopdesign.wcet.annotations.LoopBoundExpr;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,103 +39,96 @@ import java.util.Set;
 public class LoopBound {
     private static final long serialVersionUID = 1L;
 
-    /* Invariant: There is always an entry for the marker outer(0) */
-    private Map<SymbolicMarker, Pair<Long, Long>> markerBounds;
+    /* Invariant: There is always an entry for the marker LOOP_ENTRY */
+    private Map<SymbolicMarker, LoopBoundExpr> markerBounds;
 
-    private LoopBound(Map<SymbolicMarker, Pair<Long, Long>> other) {
-        markerBounds = new HashMap<SymbolicMarker, Pair<Long, Long>>(other);
+    private LoopBound(Map<SymbolicMarker, LoopBoundExpr> other) {
+        markerBounds = new HashMap<SymbolicMarker, LoopBoundExpr>(other);
     }
+
+    public static LoopBound boundedAbove(long ub) {
+    	return new LoopBound(LoopBoundExpr.numUpperBound(ub));
+    }
+    
+	public static LoopBound simpleBound(LoopBoundExpr bound) {
+		if(bound == null) throw new AssertionError("loop bound expr: null");
+		return new LoopBound(bound);
+	}
+	/** Create a loop bound relative to the marker. If the marker is an outer loop,
+	 *  or the enclosing method, the loop bound is also a valid basic bound
+	 */
+	public static LoopBound markerBound(LoopBoundExpr bound, SymbolicMarker marker) {
+		LoopBoundExpr basicBound;
+		if(marker.inSameMethod()) {
+			basicBound = bound;
+		} else {
+			basicBound = LoopBoundExpr.ANY;
+		}
+		return markerBound(basicBound, bound, marker);
+	}
+
+	public static LoopBound markerBound(
+			LoopBoundExpr  basicBound,
+			LoopBoundExpr  markerBound,
+			SymbolicMarker marker) {
+		if(basicBound == null) throw new AssertionError("loop bound expr: null");
+		if(markerBound == null) throw new AssertionError("loop bound expr: null");
+		LoopBound bound = new LoopBound(basicBound);
+		bound.addBound(markerBound, marker);
+		return bound;
+	}
+
+
+//    public static LoopBound markerBound(LoopBoundExpr bound, SymbolicMarker marker) {
+//        LoopBound loopBound = new LoopBound(bound);
+//        loopBound.setBoundMarker(bound, marker);
+//        return loopBound;
+//    }
 
     public LoopBound clone() {
         return new LoopBound(markerBounds);
     }
 
-    public void merge(LoopBound other) {
-        for (Entry<SymbolicMarker, Pair<Long, Long>> entry : other.markerBounds.entrySet()) {
+    private LoopBound(LoopBoundExpr loopBoundRelativeToEntry) {
+        markerBounds = new HashMap<SymbolicMarker, LoopBoundExpr>();
+        markerBounds.put(SymbolicMarker.LOOP_ENTRY, loopBoundRelativeToEntry);
+    }
+
+    public void addBound(LoopBound other) {
+        for (Entry<SymbolicMarker, LoopBoundExpr> entry : other.markerBounds.entrySet()) {
             SymbolicMarker marker = entry.getKey();
-            markerBounds.put(marker, mergeBounds(this.markerBounds.get(marker), entry.getValue()));
+            markerBounds.put(marker, entry.getValue().intersect(markerBounds.get(marker)));
         }
     }
 
-    private LoopBound(Pair<Long, Long> simpleBound) {
-        markerBounds = new HashMap<SymbolicMarker, Pair<Long, Long>>();
-        markerBounds.put(SymbolicMarker.LOOP_ENTRY, simpleBound);
-    }
-
-    public LoopBound(Long lb, Long ub) {
-        this(new Pair<Long, Long>(lb, ub));
-    }
-
-    public Pair<Long, Long> getSimpleBound() {
+    public LoopBoundExpr getSimpleLoopBound() {
         return markerBounds.get(SymbolicMarker.LOOP_ENTRY);
     }
+    
+	public Long getLowerBound() {
+		return getSimpleLoopBound().lowerBound();
+	}
 
-    public long getLowerBound() {
-        return getSimpleBound().first();
-    }
-
-    public long getUpperBound() {
-        return getSimpleBound().second();
-    }
-
-    public static LoopBound boundedAbove(long ub) {
-        return new LoopBound(0L, ub);
-    }
-
-    public static LoopBound markerBound(long lb, long ub, SymbolicMarker marker) {
-        LoopBound loopBound = new LoopBound(0L, ub);
-        loopBound.setBoundMarker(lb, ub, marker);
-        return loopBound;
-    }
-
-    public void improveUpperBound(long newUb) {
-        improveSimpleBound(0L, newUb);
-    }
-
-    public void improveSimpleBound(long newLb, long newUb) {
-        SymbolicMarker loopMarker = SymbolicMarker.LOOP_ENTRY;
-        markerBounds.put(loopMarker, mergeBounds(markerBounds.get(loopMarker),
-                newLb, newUb));
-    }
-
-    public void setUpperBoundMarker(long ub, SymbolicMarker marker) {
-        setBoundMarker(0L, ub, marker);
-    }
-
-    public void setBoundMarker(long lb, long ub, SymbolicMarker marker) {
-        markerBounds.put(marker, mergeBounds(markerBounds.get(marker), lb, ub));
-        improveSimpleBound(lb, ub);
-    }
-
-    private static Pair<Long, Long>
-    mergeBounds(Pair<Long, Long> oldBound, long newLb, long newUb) {
-        if (oldBound == null) return new Pair<Long, Long>(newLb, newUb);
-        return new Pair<Long, Long>(Math.max(oldBound.first(), newLb),
-                Math.min(oldBound.second(), newUb));
-    }
-
-    private Pair<Long, Long> mergeBounds(
-            Pair<Long, Long> oldBound,
-            Pair<Long, Long> newBound) {
-        return mergeBounds(oldBound, newBound.first(), newBound.second());
+	public Long getUpperBound() {
+		return getSimpleLoopBound().upperBound();
+	}
+	
+    public void addBound(LoopBoundExpr boundExpr, SymbolicMarker marker) {
+        markerBounds.put(marker, boundExpr.intersect(markerBounds.get(marker)));
     }
 
     public String toString() {
         StringBuffer sb = new StringBuffer();
-        for (Entry<SymbolicMarker, Pair<Long, Long>> lbEntry : markerBounds.entrySet()) {
+        for (Entry<SymbolicMarker, LoopBoundExpr> lbEntry : markerBounds.entrySet()) {
             sb.append("; ");
             boundToString(sb, lbEntry.getValue(), lbEntry.getKey());
         }
         return sb.toString();
     }
 
-    private static void boundToString(StringBuffer sb, Pair<Long, Long> bound,
+    private static void boundToString(StringBuffer sb, LoopBoundExpr bound,
                                       SymbolicMarker marker) {
-        sb.append("[");
-        sb.append(bound.first());
-        sb.append(",");
-        sb.append(bound.second());
-        sb.append("] ");
+        sb.append(bound.toString());
         if (marker != null) {
             if (marker.getMarkerType() == SymbolicMarkerType.OUTER_LOOP_MARKER) {
                 if (marker.getOuterLoopDistance() != 0) {
@@ -151,7 +144,9 @@ public class LoopBound {
         }
     }
 
-    public Set<Entry<SymbolicMarker, Pair<Long, Long>>> getLoopBounds() {
+    public Set<Entry<SymbolicMarker, LoopBoundExpr>> getLoopBounds() {
         return this.markerBounds.entrySet();
     }
+
+
 }
