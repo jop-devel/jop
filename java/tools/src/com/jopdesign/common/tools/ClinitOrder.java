@@ -29,14 +29,10 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.JavaClassFormatError;
+import com.jopdesign.common.type.ClassRef;
+import com.jopdesign.common.type.ConstantMethodInfo;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
-import org.apache.bcel.classfile.ConstantClass;
-import org.apache.bcel.classfile.ConstantFieldref;
-import org.apache.bcel.classfile.ConstantInterfaceMethodref;
-import org.apache.bcel.classfile.ConstantMethodref;
-import org.apache.bcel.classfile.ConstantNameAndType;
-import org.apache.bcel.classfile.ConstantPool;
 import org.apache.bcel.generic.CPInstruction;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.InstructionHandle;
@@ -101,8 +97,8 @@ public class ClinitOrder implements ClassVisitor {
             return depends;
         }
 
+        ClassInfo classInfo = method.getClassInfo();
         ConstantPoolGen cpoolgen = method.getConstantPoolGen();
-        ConstantPool cpool = cpoolgen.getConstantPool();
 
         InstructionList il = method.getCode().getInstructionList();
         InstructionFinder f = new InstructionFinder(il);
@@ -123,17 +119,16 @@ public class ClinitOrder implements ClassVisitor {
             int idx = ii.getIndex();
 
             Constant co = cpoolgen.getConstant(idx);
-            ConstantClass cocl = null;
+            ClassRef classRef = null;
             Set addDepends = null;
-            String clname;
             ClassInfo clinfo;
             MethodInfo minfo;
 
             switch (co.getTag()) {
                 case Constants.CONSTANT_Class:
-                    cocl = (ConstantClass) co;
-                    clname = cocl.getBytes(cpool).replace('/', '.');
-                    clinfo = method.getAppInfo().getClassInfo(clname);
+                    classRef = classInfo.getConstantInfo(co).getClassRef();
+
+                    clinfo = classRef.getClassInfo();
 
                     if (clinfo != null) {
                         minfo = clinfo.getMethodInfo("<init>()V");
@@ -155,22 +150,18 @@ public class ClinitOrder implements ClassVisitor {
 //				}
 
                     break;
+                case Constants.CONSTANT_Fieldref:
                 case Constants.CONSTANT_InterfaceMethodref:
-                    cocl = (ConstantClass) cpoolgen.getConstant(((ConstantInterfaceMethodref) co).getClassIndex());
+                    classRef = classInfo.getConstantInfo(co).getClassRef();
                     break;
                 case Constants.CONSTANT_Methodref:
-                    cocl = (ConstantClass) cpoolgen.getConstant(((ConstantMethodref) co).getClassIndex());
-                    clname = cocl.getBytes(cpool).replace('/', '.');
-                    clinfo = method.getAppInfo().getClassInfo(clname);
+                    ConstantMethodInfo mref = (ConstantMethodInfo) classInfo.getConstantInfo(co);
 
-                    int sigidx = ((ConstantMethodref) co).getNameAndTypeIndex();
-                    ConstantNameAndType signt = (ConstantNameAndType) cpool.getConstant(sigidx);
-                    String sigstr = signt.getName(cpool) + signt.getSignature(cpool);
-                    if (clinfo != null) {
-                        minfo = clinfo.getMethodInfo(sigstr);
-                        if (minfo != null) {
-                            addDepends = findDependencies(minfo, true);
-                        }
+                    classRef = mref.getClassRef();
+                    minfo = mref.getMethodRef().getMethodInfo();
+
+                    if (minfo != null) {
+                        addDepends = findDependencies(minfo, true);
                     }
                     // check for all sub classes when no going up the hierarchy
 //				if (!inRec) {
@@ -186,13 +177,9 @@ public class ClinitOrder implements ClassVisitor {
 //				}
 
                     break;
-                case Constants.CONSTANT_Fieldref:
-                    cocl = (ConstantClass) cpool.getConstant(((ConstantFieldref) co).getClassIndex());
-                    break;
             }
-            if (cocl != null) {
-                clname = cocl.getBytes(cpool).replace('/', '.');
-                ClassInfo clinf = method.getAppInfo().getClassInfo(clname);
+            if (classRef != null) {
+                ClassInfo clinf = classRef.getClassInfo();
                 if (clinf != null) {
                     if (clinf.getMethodInfo(clinitSig) != null) {
                         // don't add myself as dependency

@@ -42,6 +42,10 @@ public class ConstantMethodInfo extends ConstantInfo<MethodRef, Type> {
         return getTag() == Constants.CONSTANT_InterfaceMethodref;
     }
 
+    public MethodRef getMethodRef() {
+        return getValue();
+    }
+
     @Override
     public ClassRef getClassRef() {
         return getValue().getClassRef();
