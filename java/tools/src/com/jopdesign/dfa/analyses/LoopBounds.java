@@ -65,6 +65,10 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
     private static final Logger logger = Logger.getLogger(DFATool.LOG_DFA_ANALYSES + ".LoopBounds");
 
+    // used to print messages only once if trace is not enabled
+    private Set<String> noReceiverWarnings = new HashSet<String>();
+    private Set<String> unknownReceiverWarnings = new HashSet<String>();
+
     public LoopBounds(int callStringLength) {
         this.callStringLength = callStringLength;
     }
@@ -396,7 +400,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                 DFATool p = interpreter.getDFATool();
                 Set<String> receivers = p.getReceivers(stmt, context.callString);
                 if (receivers == null) {
-                    logger.warn("no receivers at: " + context.callString.toStringList() + context.method() + stmt);
+                    warnNoReceiver(context, stmt);
                 } else {
                     for (String fieldName : receivers) {
 
@@ -436,7 +440,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                 Location location = new Location(context.stackPtr - 1);
                 boolean valid = false;
                 if (receivers == null) {
-                    logger.warn("no receivers at: " + context.callString.toStringList() + context.method() + stmt);
+                    warnNoReceiver(context, stmt);
                 } else {
                     for (String fieldName : receivers) {
                         String f = fieldName.substring(fieldName.lastIndexOf("."), fieldName.length());
@@ -536,7 +540,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                 DFATool p = interpreter.getDFATool();
                 Set<String> receivers = p.getReceivers(stmt, context.callString);
                 if (receivers == null) {
-                    logger.warn("no receivers at: " + context.callString.toStringList() + context.method() + stmt);
+                    warnNoReceiver(context, stmt);
                     break;
                 }
                 for (String name : receivers) {
@@ -1051,7 +1055,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                 DFATool p = interpreter.getDFATool();
                 Set<String> receivers = p.getReceivers(stmt, context.callString);
                 if (receivers == null) {
-                    logger.warn(context.method() + ": invoke " + instruction.toString(context.constPool().getConstantPool()) + "(" + stmt.toString(true) + ")" + " unknown receivers");
+                    warnUnknownReceivers(context, stmt);
                     result = in;
                     break;
                 }
@@ -1096,6 +1100,28 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
         context.stackPtr += instruction.produceStack(context.constPool()) - instruction.consumeStack(context.constPool());
         return retval;
+    }
+
+    private void warnUnknownReceivers(Context context, InstructionHandle stmt) {
+        Instruction instruction = stmt.getInstruction();
+        String loc = context.method() + ": invoke " + instruction.toString(context.constPool().getConstantPool()) +
+                "(" + stmt.toString(true) + ")";
+        if (logger.isTraceEnabled()) {
+            logger.trace(loc + " unknown receivers");
+        }
+        if (unknownReceiverWarnings.add(loc)) {
+            logger.warn(loc + " unknown receivers");
+        }
+    }
+
+    private void warnNoReceiver(Context context, InstructionHandle stmt) {
+        String loc = context.callString.toStringList() + context.method() + stmt;
+        if (logger.isTraceEnabled()) {
+            logger.trace("no receivers at: " + loc);
+        }
+        if (noReceiverWarnings.add(loc)) {
+            logger.warn("no receivers at: " + loc);
+        }
     }
 
     private void recordArrayIndex(InstructionHandle stmt, Context context, Interval assigned) {
