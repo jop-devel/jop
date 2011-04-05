@@ -20,6 +20,7 @@
 package com.jopdesign.wcet.uppaal.translator;
 
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.model.LayoutCFG;
@@ -112,22 +113,24 @@ public class TemplateBuilder {
 			String.format("clock %s; ", clock));
 	}
 	public int addLoop(CFGNode hol, int nestingDepth, LoopBound lb) {
+		
+		ExecutionContext eCtx = new ExecutionContext(hol.getControlFlowGraph().getMethodInfo());
 		nestingDepth = nestingDepth - 1;
 		int varKey = loopBounds.size();
 		getTemplate().appendDeclaration(
 				String.format("const int %s = %d;", 
-							  loopBoundConst(varKey), lb.getUpperBound()));
+							  loopBoundConst(varKey), lb.getUpperBound(eCtx)));
 		getTemplate().appendDeclaration(
 				String.format("const int %s = %d;", 
-							  loopLowerBoundConst(varKey), lb.getLowerBound()));
+							  loopLowerBoundConst(varKey), lb.getLowerBound(eCtx)));
 		while(loopVarBounds.size() < nestingDepth) {
 			loopVarBounds.add(0L);
 		}
 		if(loopVarBounds.size() <= nestingDepth) {
-			loopVarBounds.add(lb.getUpperBound().longValue());
+			loopVarBounds.add(lb.getUpperBound(eCtx).longValue());
 		} else {
-			if(lb.getUpperBound().longValue() > loopVarBounds.get(nestingDepth)) {
-				loopVarBounds.set(nestingDepth,lb.getUpperBound().longValue());
+			if(lb.getUpperBound(eCtx).longValue() > loopVarBounds.get(nestingDepth)) {
+				loopVarBounds.set(nestingDepth,lb.getUpperBound(eCtx).longValue());
 			}
 		}
 		this.loopBounds.put(hol, varKey);

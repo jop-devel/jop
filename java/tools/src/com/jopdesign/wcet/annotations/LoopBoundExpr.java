@@ -4,13 +4,32 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.bcel.Constants;
+import org.apache.bcel.classfile.Constant;
+import org.apache.bcel.classfile.ConstantDouble;
+import org.apache.bcel.classfile.ConstantFloat;
+import org.apache.bcel.classfile.ConstantInteger;
+import org.apache.bcel.classfile.ConstantLong;
+import org.apache.bcel.classfile.ConstantPool;
+import org.apache.bcel.classfile.ConstantString;
+import org.apache.bcel.classfile.ConstantUtf8;
+import org.apache.bcel.classfile.ConstantValue;
+import org.apache.bcel.classfile.Utility;
+import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.log4j.Logger;
+
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.FieldInfo;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.graphutils.Pair;
 
 @SuppressWarnings("unchecked")
 public abstract class LoopBoundExpr {
-	public static enum ExprType { LITERAL, CONST_REF, ARG_REF, UN_OP, BIN_OP };
+	public static enum ExprType { LITERAL, CONST_REF, ARG_REF, PRIM_OP };
 
-	public static enum BinOp    { MIN, MAX, INTERSECT, UNION, ADD, SUB, MUL };
+	public static enum PrimOp    { BIT_LENGTH, /* bit scan reverse (index of most-significant 1 bit) */
+		                           INTERSECT, UNION, ADD, SUB, MUL };
 
 	public static class LInteger extends Number {
 		private static final long serialVersionUID = 1L;
@@ -83,32 +102,39 @@ public abstract class LoopBoundExpr {
 			if(isInfinite()) return "inf";
 			return repr.toString(10);
 		}
+		public LInteger bitLength() {
+			if(isInfinite()) return this;
+			return new LInteger(repr.bitLength());
+		}
 	}
 
 	public static final LInteger ZERO     = new LInteger(0);
-
 	public static final LInteger INFINITY = new LInteger((BigInteger)null);
 
-	public static final LoopBoundExpr ANY = new IntervalExpr(ZERO, INFINITY);
+    public static final LoopBoundExpr ANY = new IntervalExpr(ZERO, INFINITY);
+    public static final Pair<LInteger,LInteger> ANY_VALUE = ANY.constValue(null);
 
-	protected ExprType type;
+    protected ExprType type;
 
-	/** Calculate the value of the given expression in the given context */
-	public abstract Pair<LInteger, LInteger> evaluate();
+	/** Value of an expression, or ANY if no constant interval for the expression 
+	 *  can be calculated.
+	 *  @param ctx If the loop bound refers to the source code (e.g., constant fields)
+	 *  or results from the value analysis (e.g., the interval of an argument),
+	 *  the context is needed to calculate a constant bound. Is allowed to be null
+	 *  if no context is available */
+	public abstract Pair<LInteger, LInteger> constValue(ExecutionContext ctx);
 
-	/** Value of a constant expression, or ANY if the expression is not constant */
-	public abstract Pair<LInteger, LInteger> constValue();
-
+	
 	/** Constant loop upper bound, or null if no (independent) constant upper bound is known */
-	public Long upperBound() {
-		Pair<LInteger, LInteger> cv = constValue();
+	public Long upperBound(ExecutionContext ctx) {
+		Pair<LInteger, LInteger> cv = constValue(ctx);
 		if(cv == null) return null;
 		return cv.second().longValue();
 	}
 
 	/** Constant loop lower bound */
-	public Long lowerBound() {
-		Pair<LInteger, LInteger> cv = constValue();
+	public Long lowerBound(ExecutionContext ctx) {
+		Pair<LInteger, LInteger> cv = constValue(ctx);
 		if(cv == null) return 0L;
 		return cv.first().longValue();
 	}
@@ -133,11 +159,26 @@ public abstract class LoopBoundExpr {
 	}
 
 	static LoopBoundExpr builtInFunction(String ident, List<LoopBoundExpr> args) {
-		throw new AssertionError("Unimplemented: LoopBoundExpr#BuiltInFunction");
+		if(ident.equals("bitlength")) {
+			return new PrimOpExpr(PrimOp.BIT_LENGTH, args, 1) {
+				@Override protected Pair evaluatePrimOp(List<Pair<LInteger, LInteger>> args) {
+					/* Minimum number of bits in minimal two-bit complement representation */
+					/* For positive numbers, this is bitwidth(x) - clz(x) */
+					Pair<LInteger, LInteger> n = args.get(0);
+					if(n.first().compareTo(ZERO) < 0) {
+						throw new ArithmeticException("bit-length of negative number");
+					}
+					return new Pair<LInteger,LInteger>(n.first().bitLength(),
+							                           n.second().bitLength());
+				}
+				
+			};
+		}
+		throw new ArithmeticException("Unsupported prim-op: "+ident);
 	}
 	
-	static LoopBoundExpr memberRef(ArrayList<String> memberIDs) {
-		throw new AssertionError("Unimplemented: LoopBoundExpr#BuiltInFunction");
+	static LoopBoundExpr constRef(ArrayList<String> memberIDs) {
+		return new ConstRefExpr(memberIDs);
 	}
 
 	static LoopBoundExpr argRef(String arg, ArrayList<String> memberIDs) {
@@ -149,52 +190,62 @@ public abstract class LoopBoundExpr {
 	}
 
 	public LoopBoundExpr add(LoopBoundExpr other) {
-		return new BinOpExpr(BinOp.ADD, this, other) {
-			protected Pair evalInterval(LInteger lb1, LInteger lb2, LInteger ub1, LInteger ub2) {
-				return new Pair(lb1.add(lb2),
-								ub1.add(ub2));
+		return new PrimOpExpr(PrimOp.ADD, this, other) {
+			protected Pair evaluatePrimOp(List<Pair<LInteger,LInteger>> args) {
+				Pair<LInteger, LInteger> n1 = args.get(0);
+				Pair<LInteger, LInteger> n2 = args.get(1);
+					return new Pair(n1.first().add(n2.first()),
+							        n1.second().add(n2.second()));
 			}			
 		};
 	}
 
 	public LoopBoundExpr subtract(LoopBoundExpr other) {
-		return new BinOpExpr(BinOp.SUB, this, other) {
-			protected Pair evalInterval(LInteger lb1, LInteger lb2, LInteger ub1, LInteger ub2) {
-				return new Pair(lb1.subtract(ub2),
-								ub1.subtract(lb2));
+		return new PrimOpExpr(PrimOp.SUB, this, other) {
+			protected Pair evaluatePrimOp(List<Pair<LInteger,LInteger>> args) {
+				Pair<LInteger, LInteger> n1 = args.get(0);
+				Pair<LInteger, LInteger> n2 = args.get(1);
+					return new Pair(n1.first().subtract(n2.second()),
+							        n1.second().subtract(n2.first()));
 			}			
 		};
 	}
 
 	public LoopBoundExpr mul(LoopBoundExpr other) {
-		return new BinOpExpr(BinOp.MUL, this, other) {
-			protected Pair evalInterval(LInteger lb1, LInteger lb2, LInteger ub1, LInteger ub2) {
-				if(lb1.isNegative()) throw new AssertionError("Multiplication with negative number");
-				if(lb2.isNegative()) throw new AssertionError("Multiplication with negative number");
-				return new Pair(lb1.multiply(lb2),
-								ub1.multiply(ub2));
+		return new PrimOpExpr(PrimOp.MUL, this, other) {
+			protected Pair evaluatePrimOp(List<Pair<LInteger,LInteger>> args) {
+				Pair<LInteger, LInteger> n1 = args.get(0);
+				Pair<LInteger, LInteger> n2 = args.get(1);
+				if(n1.first().isNegative()) throw new AssertionError("Multiplication with negative number");
+				if(n2.first().isNegative()) throw new AssertionError("Multiplication with negative number");
+				return new Pair(n1.first().multiply(n2.first()),
+							    n1.second().multiply(n2.second()));
 			}			
 		};
 	}
 	
 	public LoopBoundExpr intersect(LoopBoundExpr other) {
 		if(other == null) return this;
-		return new BinOpExpr(BinOp.INTERSECT, this, other) {
-			protected Pair evalInterval(LInteger lb1, LInteger lb2, LInteger ub1, LInteger ub2) {
-				if(ub1.compareTo(lb1) < 0 && ub2.compareTo(lb2) < 0) {
+		return new PrimOpExpr(PrimOp.INTERSECT, this, other) {
+			protected Pair evaluatePrimOp(List<Pair<LInteger,LInteger>> args) {
+				Pair<LInteger, LInteger> n1 = args.get(0);
+				Pair<LInteger, LInteger> n2 = args.get(1);
+				if(n2.second().compareTo(n1.first()) < 0 && n2.second().compareTo(n2.first()) < 0) {
 					throw new AssertionError("Empty Interval-Intersection (probably a bug)");
 				}
-				return new Pair(lb1.max(lb2),
-								ub1.min(ub2));
+				return new Pair(n1.first().max(n2.first()),
+						n1.second().min(n2.second()));
 			}			
 		};
 	}
 
 	public LoopBoundExpr union(LoopBoundExpr other) {
-		return new BinOpExpr(BinOp.UNION, this, other) {
-			protected Pair evalInterval(LInteger lb1, LInteger lb2, LInteger ub1, LInteger ub2) {
-				return new Pair(lb1.min(lb2),
-								ub1.max(ub2));
+		return new PrimOpExpr(PrimOp.UNION, this, other) {
+			protected Pair evaluatePrimOp(List<Pair<LInteger,LInteger>> args) {
+				Pair<LInteger, LInteger> n1 = args.get(0);
+				Pair<LInteger, LInteger> n2 = args.get(1);
+				return new Pair(n1.first().min(n2.first()),
+						n1.second().max(n2.second()));
 			}			
 		};
 	}
@@ -207,12 +258,8 @@ public abstract class LoopBoundExpr {
 			this.ub = ub;
 		}
 
-		/* Calculate the value of the given expression in the given context */
-		public Pair<LInteger, LInteger> evaluate() {
-			return constValue();
-		}
 		/* Value of a constant expression, or null if the expression is not constant */
-		public Pair<LInteger, LInteger> constValue() {
+		public Pair<LInteger, LInteger> constValue(ExecutionContext _) {
 			return new Pair<LInteger, LInteger>(lb,ub);
 		}
 		@Override public String toString() {
@@ -222,53 +269,126 @@ public abstract class LoopBoundExpr {
 	}
 
 
-	public abstract static class BinOpExpr extends LoopBoundExpr {
-		private BinOp op;
-		private LoopBoundExpr m1,m2;
-		private BinOpExpr(BinOp op, LoopBoundExpr m1, LoopBoundExpr m2) {
-			super(ExprType.BIN_OP);
+	public abstract static class PrimOpExpr extends LoopBoundExpr {
+		private PrimOp op;
+		private List<LoopBoundExpr> args;
+		private PrimOpExpr(PrimOp op) {
+			super(ExprType.PRIM_OP);		
 			this.op = op;
-			this.m1 = m1;
-			this.m2 = m2;
+			this.args = new ArrayList<LoopBoundExpr>();
 		}
-		@Override
-		public Pair<LInteger, LInteger> evaluate() {
-			return constValue();
+		private PrimOpExpr(PrimOp binOp, LoopBoundExpr m1, LoopBoundExpr m2) {
+			this(binOp);
+			args.add(m1);
+			args.add(m2);
 		}
+		private PrimOpExpr(PrimOp op, List<LoopBoundExpr> args, int expectedArgs) {
+			super(ExprType.PRIM_OP);
+			if(args.size() != expectedArgs) {
+				throw new ArithmeticException("Bad number of operands for "+op);
+			}
+			this.op = op;
+			this.args = new ArrayList<LoopBoundExpr>(args);
+		}
+
 		/* Value of a constant expression, or null if the expression is not constant */
 		@Override
-		public Pair<LInteger, LInteger> constValue() {			
-			Pair<LInteger, LInteger> n1 = m1.constValue();
-			Pair<LInteger, LInteger> n2 = m2.constValue();
-			if(n1 == null) n1 = ANY.constValue();
-			if(n2 == null) n2 = ANY.constValue();
-			return evalInterval(n1,n2);
+		public Pair<LInteger, LInteger> constValue(ExecutionContext ctx) {	
+			List<Pair<LInteger,LInteger>> constArgs =
+				new ArrayList<Pair<LInteger,LInteger>>();
+			for(LoopBoundExpr a : args) {
+				Pair<LInteger, LInteger> n = a.constValue(ctx);
+				if(n == null) n = ANY_VALUE;
+				constArgs.add(n);
+			}
+			return evalInterval(constArgs);
 		}
-		public Pair<LInteger, LInteger> evalInterval(Pair<LInteger, LInteger> n1, 
-				Pair<LInteger, LInteger> n2) {
-			LInteger lb1 = n1.first(), lb2 = n2.first();
-			LInteger ub1 = n1.second(), ub2 = n2.second();
-			Pair<LInteger,LInteger> r = evalInterval(lb1,lb2,ub1,ub2);
+		public Pair<LInteger, LInteger> evalInterval(List<Pair<LInteger, LInteger>> args) {			
+			Pair<LInteger,LInteger> r = evaluatePrimOp(args);
 			if(r.first().compareTo(r.second()) > 0) throw new AssertionError("Interval Arithmetic: lb > ub ?");
 			return r;
 		}
 
-		protected abstract Pair<LInteger, LInteger> evalInterval(
-				LInteger lb1, LInteger lb2, LInteger ub1, LInteger ub2);
+		protected abstract Pair<LInteger, LInteger> evaluatePrimOp(List<Pair<LInteger,LInteger>> args);
 
 		@Override public String toString() {
-			return this.op+"("+m1.toString()+", "+m2.toString()+")";
+			StringBuffer sb = new StringBuffer(""+op+"(");
+			boolean first = true;
+			for(LoopBoundExpr a : args) {
+				if(!first) sb.append(", "); 
+				sb.append(a.toString());
+				first = false;
+			}
+			sb.append(")");
+			return sb.toString();
+		}
+	}
+	
+	public static class ConstRefExpr extends LoopBoundExpr {
+		private String className;
+		private String fieldName;
+		
+		public ConstRefExpr(ArrayList<String> memberIdentParts) {
+			super(ExprType.CONST_REF);
+			int i;
+			StringBuffer className = new StringBuffer();
+			for(i = 0; i < memberIdentParts.size() - 1; i++) {
+				if(i!=0) className.append(".");
+				className.append(memberIdentParts.get(i));
+			}
+			this.className = className.toString();
+			this.fieldName = memberIdentParts.get(memberIdentParts.size()-1);
+		}
+
+		@Override
+		public Pair<LInteger, LInteger> constValue(ExecutionContext ctx) {			
+			ClassInfo ci;
+			if(className.equals("")) {
+				ci = ctx.getMethodInfo().getClassInfo();				
+			} else {
+				ci = ctx.getMethodInfo().getAppInfo().getClassInfo(className);
+			}
+			ConstantValue cv = ci.getFieldInfo(fieldName).getField().getConstantValue();
+			if(cv == null) {
+				Logger.getLogger(this.getClass()).error("Loop Bound Expression: Cannot find information on constant value "+toString());
+				return ANY_VALUE;
+			}
+			Long value = getLongConstant(cv);
+			if(value == null) {
+				Logger.getLogger(this.getClass()).error("Loop Bound Expression: Bad constant value (not an integer): "+toString());
+				return ANY_VALUE;				
+			}
+			return new Pair<LInteger,LInteger>(new LInteger(value), new LInteger(value));
+		}
+		
+		/** Get constant value as long. Adapted from BCEL's ConstantValue#toString() */
+		private Long getLongConstant(ConstantValue cv) {
+			ConstantPool cp = cv.getConstantPool();
+			int cpix = cv.getConstantValueIndex();
+	        Constant c = cp.getConstant(cpix);
+	        switch (c.getTag()) {
+	        	case Constants.CONSTANT_Integer:
+	        		return new Long(((ConstantInteger) c).getBytes());
+	            case Constants.CONSTANT_Long:
+	            	return ((ConstantLong) c).getBytes();
+	            default:
+	            	return null;
+	        }
+		}
+
+		@Override public String toString() {
+			return (className.length() > 0 ? (this.className+".") : "")+this.fieldName;
 		}
 	}
 
 }
 //			case MAX:
 //				/* [a,b] `max` [c,d] = [a `max` c, b `max` d] */
-//				lb = lb1.max(lb2);
-//				ub = ub1.max(ub2);
+//				lb = n1.first().max(n2.first());
+//				ub = ub1.max(n2.second());
 //				break;
 //			case MIN:
 //				/* [a,b] `min` [c,d] = [a `min` c, b `min` d] */
-//				lb = lb1.min(lb2);
-//				ub = ub1.min(ub2);
+//				lb = n1.first().min(n2.first());
+//				ub = ub1.min(n2.second());
 //				break;

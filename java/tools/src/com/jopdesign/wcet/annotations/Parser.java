@@ -5,7 +5,6 @@ import java.util.ArrayList;
 
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.code.SymbolicMarker;
-import com.jopdesign.wcet.annotations.LoopBoundExpr.BinOp;
 
 public class Parser {
 	public static final int _EOF = 0;
@@ -36,6 +35,7 @@ public LoopBound getResult()
 LoopBound
 buildLoopBound(String cmpop, LoopBoundExpr bound, SymbolicMarker marker)
 {
+    if(bound == null) return null;
 	if(cmpop.equals("<=")) bound = bound.relaxLowerBound(0);
 	if(marker == null) return LoopBound.simpleBound(bound);
 	else               return LoopBound.markerBound(bound, marker);
@@ -208,7 +208,7 @@ buildLoopBound(String cmpop, LoopBoundExpr bound, SymbolicMarker marker)
 				Expect(1);
 				members.add(t.val); 
 			}
-			expr = LoopBoundExpr.memberRef(members); 
+			expr = LoopBoundExpr.constRef(members); 
 		} else SynErr(20);
 		return expr;
 	}

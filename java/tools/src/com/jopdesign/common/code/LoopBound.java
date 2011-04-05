@@ -105,12 +105,12 @@ public class LoopBound {
         return markerBounds.get(SymbolicMarker.LOOP_ENTRY);
     }
     
-	public Long getLowerBound() {
-		return getSimpleLoopBound().lowerBound();
+	public Long getLowerBound(ExecutionContext ctx) {
+		return getSimpleLoopBound().lowerBound(ctx);
 	}
 
-	public Long getUpperBound() {
-		return getSimpleLoopBound().upperBound();
+	public Long getUpperBound(ExecutionContext ctx) {
+		return getSimpleLoopBound().upperBound(ctx);
 	}
 	
     public void addBound(LoopBoundExpr boundExpr, SymbolicMarker marker) {

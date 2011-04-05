@@ -117,6 +117,7 @@ public abstract class AllocationWcetModel implements WCETProcessorModel {
 	}
 
 	private long getArrayBound(ExecutionContext context, InstructionHandle ih, int index) {
+
 		int srcLine = context.getMethodInfo().getCode().getLineNumberTable().getSourceLine(ih.getPosition());
 
 		// get annotated size
@@ -150,22 +151,22 @@ public abstract class AllocationWcetModel implements WCETProcessorModel {
 		// compute which bound to use
 		if (analyzed != null && analyzed.hasUb()) {
 			if (annotated != null) {
-				if (annotated.getUpperBound() > analyzed.getUb()) {
+				if (annotated.getUpperBound(context) > analyzed.getUb()) {
 					WCETTool.logger.warn("DFA bound smaller than annotated bound for array at " + context + ":" + srcLine);
 				}
-				if (annotated.getUpperBound() < analyzed.getUb()) {
+				if (annotated.getUpperBound(context) < analyzed.getUb()) {
 					WCETTool.logger.warn("DFA bound larger than annotated bound for array at " + context + ":" + srcLine);
 				}
-				if (annotated.getUpperBound() == analyzed.getUb()) {
+				if (annotated.getUpperBound(context) == analyzed.getUb()) {
 					WCETTool.logger.info("DFA bound equals annotated bound for array at " + context + ":" + srcLine);
 				}
-				return Math.max(annotated.getUpperBound(), analyzed.getUb());
+				return Math.max(annotated.getUpperBound(context), analyzed.getUb());
 			} else {
 				return analyzed.getUb();
 			}
 		} else {
 			if (annotated != null) {
-				return annotated.getUpperBound();
+				return annotated.getUpperBound(context);
 			} else {
 				WCETTool.logger.error("Cannot determine cost of unbounded array " +
 						             context.getMethodInfo().getFQMethodName() +

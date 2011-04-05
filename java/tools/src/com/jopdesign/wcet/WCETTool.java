@@ -377,10 +377,12 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     }
 
     public LoopBound getLoopBound(CFGNode node, CallString cs) {
-        LoopBound globalBound = node.getLoopBound();
-        // TODO move somewhere else?
+
+    	LoopBound globalBound = node.getLoopBound();
+        ExecutionContext eCtx = new ExecutionContext(node.getControlFlowGraph().getMethodInfo(), cs);
+    	// TODO move somewhere else?
         if (node.getBasicBlock() != null) {
-            return this.getEventHandler().dfaLoopBound(node.getBasicBlock(), cs, globalBound);
+            return this.getEventHandler().dfaLoopBound(node.getBasicBlock(), eCtx, globalBound);
         } else {
             return globalBound;
         }

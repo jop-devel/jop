@@ -177,6 +177,7 @@ public class SourceAnnotationReader {
             // New loop bound
             InputStream is = new ByteArrayInputStream(annotString.getBytes());
             Parser parser = new Parser(new Scanner(is));
+            
             parser.Parse();
             if (parser.errors.count > 0) {
                 throw new BadAnnotationException("Parse Error in Annotation: " + annotString);

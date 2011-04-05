@@ -278,7 +278,9 @@ public class UsedCodeFinder {
             }
 
             for (FieldInfo f : unusedFields) {
-                cls.removeField(f.getShortName());
+                /* DO NOT remove static, final fields, as they are useful to the WCET analysis */
+            	if(f.isStatic() && f.isFinal()) continue;
+            	cls.removeField(f.getShortName());
             }
             for (MethodInfo m : unusedMethods) {
                 cls.removeMethod(m.getMethodSignature());

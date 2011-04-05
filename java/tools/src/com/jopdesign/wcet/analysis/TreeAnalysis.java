@@ -22,6 +22,7 @@ package com.jopdesign.wcet.analysis;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
@@ -154,9 +155,14 @@ public class TreeAnalysis {
     }
 
     private Map<CFGNode, Long> extractUBs(Map<CFGNode, LoopBound> loopBounds) {
-        Map<CFGNode, Long> ubMap = new HashMap<CFGNode, Long>();
-        for (Entry<CFGNode, LoopBound> entry : loopBounds.entrySet()) {
-            ubMap.put(entry.getKey(), entry.getValue().getUpperBound());
+
+    	Map<CFGNode, Long> ubMap = new HashMap<CFGNode, Long>();
+    	
+    	for (Entry<CFGNode, LoopBound> entry : loopBounds.entrySet()) {
+    		
+    		MethodInfo mi = entry.getKey().getControlFlowGraph().getMethodInfo();
+            ExecutionContext eCtx = new ExecutionContext(mi);
+            ubMap.put(entry.getKey(), entry.getValue().getUpperBound(eCtx));
         }
         return ubMap;
     }

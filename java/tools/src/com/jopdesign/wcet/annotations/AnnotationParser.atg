@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.code.SymbolicMarker;
-import com.jopdesign.wcet.annotations.LoopBoundExpr.BinOp;
 
 COMPILER Annotation
 
@@ -17,6 +16,7 @@ public LoopBound getResult()
 LoopBound
 buildLoopBound(String cmpop, LoopBoundExpr bound, SymbolicMarker marker)
 {
+    if(bound == null) return null;
 	if(cmpop.equals("<=")) bound = bound.relaxLowerBound(0);
 	if(marker == null) return LoopBound.simpleBound(bound);
 	else               return LoopBound.markerBound(bound, marker);
@@ -88,7 +88,7 @@ IdentExpression<out LoopBoundExpr expr, String ident> (. expr = null; .)
 =   (. ArrayList<LoopBoundExpr> args = new ArrayList<LoopBoundExpr>(); .)
     "(" ExpressionList<args> ")" (. expr = LoopBoundExpr.builtInFunction(ident, args); .)
   | (. ArrayList<String> members = new ArrayList<String>(); members.add(ident); .)
-    { "." ident (. members.add(t.val); .) } (. expr = LoopBoundExpr.memberRef(members); .)
+    { "." ident (. members.add(t.val); .) } (. expr = LoopBoundExpr.constRef(members); .)
 .
 
 ArgExpression<out LoopBoundExpr expr, String index>

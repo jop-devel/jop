@@ -28,8 +28,8 @@ import com.jopdesign.common.KeyManager.KeyType;
 import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
-import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.SymbolicMarker;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
@@ -39,6 +39,7 @@ import com.jopdesign.wcet.annotations.BadAnnotationException;
 import com.jopdesign.wcet.annotations.LoopBoundExpr;
 import com.jopdesign.wcet.annotations.SourceAnnotationReader;
 import com.jopdesign.wcet.annotations.SourceAnnotations;
+
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -109,14 +110,18 @@ public class WCETEventHandler extends EmptyAppEventHandler {
      * @throws BadAnnotationException if an annotations is missing
      */
     public void loadLoopAnnotations(ControlFlowGraph cfg) throws BadAnnotationException {
-        SourceAnnotations wcaMap;
+
+    	SourceAnnotations wcaMap;
         MethodInfo method = cfg.getMethodInfo();
         MethodCode code = method.getCode();
+        ExecutionContext eCtx = new ExecutionContext(cfg.getMethodInfo());
+        
         try {
             wcaMap = getAnnotations(method.getClassInfo());
         } catch (IOException e) {
             throw new BadAnnotationException("IO Error reading annotation: " + e.getMessage(), e);
         }
+        
         for (CFGNode n : cfg.getLoopColoring().getHeadOfLoops()) {
             BasicBlockNode headOfLoop = (BasicBlockNode) n;
             BasicBlock block = headOfLoop.getBasicBlock();
@@ -139,7 +144,7 @@ public class WCETEventHandler extends EmptyAppEventHandler {
                 loopAnnot = annots.iterator().next();
             }
             // if we have loop bounds from DFA analysis, use them
-            loopAnnot = dfaLoopBound(block, CallString.EMPTY, loopAnnot);
+            loopAnnot = dfaLoopBound(block, eCtx, loopAnnot);
             if (loopAnnot == null) {
 // 		throw new BadAnnotationException("No loop bound annotation",
 // 						 block,sourceRangeStart,sourceRangeStop);
@@ -156,16 +161,16 @@ public class WCETEventHandler extends EmptyAppEventHandler {
      * merge it with the annotated value.
      * @return The loop bound to be used for further computations
      */
-    public LoopBound dfaLoopBound(BasicBlock headOfLoopBlock, CallString cs, LoopBound annotatedValue) {
-
-        LoopBound dfaBound;
+    public LoopBound dfaLoopBound(BasicBlock headOfLoopBlock, ExecutionContext eCtx, LoopBound annotatedValue) {
+    	
+    	LoopBound dfaBound;
         LoopBounds lbs = project.getDfaLoopBounds();
         if(lbs != null) {
             MethodInfo methodInfo = headOfLoopBlock.getMethodInfo();
             // Insert a try-catch to deal with failures of the DFA analysis
             int bound;
             try {
-                bound = lbs.getBound(project.getDfaTool(), headOfLoopBlock.getLastInstruction(),cs);
+                bound = lbs.getBound(project.getDfaTool(), headOfLoopBlock.getLastInstruction(),eCtx.getCallString());
             } catch(NullPointerException ex) {
                 // TODO not cool ..
                 ex.printStackTrace();
@@ -181,7 +186,7 @@ public class WCETEventHandler extends EmptyAppEventHandler {
                 dfaBound = annotatedValue.clone();
                 // More testing would be nice
                 dfaBound.addBound(LoopBoundExpr.numUpperBound(bound), SymbolicMarker.LOOP_ENTRY); 
-                long loopUb = annotatedValue.getSimpleLoopBound().upperBound();
+                long loopUb = annotatedValue.getSimpleLoopBound().upperBound(eCtx);
                 if(bound < loopUb) {
                     logger.info("DFA analysis reports a smaller upper bound :"+bound+ " < "+loopUb+
                                 " for "+methodInfo);

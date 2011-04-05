@@ -20,9 +20,11 @@
 
 package com.jopdesign.wcet.ipet;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.CallStringProvider;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.LoopBound;
@@ -142,7 +144,7 @@ public class IPETUtils {
     List<LinearConstraint<IPETBuilder.ExecutionEdge>>
     loopBoundConstraints(ControlFlowGraph g, IPETBuilder<C> ctx) {
 
-        List<LinearConstraint<IPETBuilder.ExecutionEdge>> constraints = new ArrayList<LinearConstraint<IPETBuilder.ExecutionEdge>>();
+    	List<LinearConstraint<IPETBuilder.ExecutionEdge>> constraints = new ArrayList<LinearConstraint<IPETBuilder.ExecutionEdge>>();
         // - for each loop with bound B
         // -- sum(exit_loop_edges) * B <= sum(continue_loop_edges)
         LoopColoring<CFGNode, ControlFlowGraph.CFGEdge> loops = g.getLoopColoring();
@@ -154,8 +156,9 @@ public class IPETUtils {
             if (loopBound == null) {
                 throw new AppInfoError("No loop bound record for head of loop: " + hol + " : " + g.buildLoopBoundMap());
             }
-            for (LinearConstraint<IPETBuilder.ExecutionEdge> loopConstraint : constraintsForLoop(loops, hol, loopBound, ctx)) {
-                constraints.add(loopConstraint);
+            for (LinearConstraint<IPETBuilder.ExecutionEdge> loopConstraint : 
+            		constraintsForLoop(loops, hol, loopBound, ctx)) {        	
+            	constraints.add(loopConstraint);
             }
         }
         return constraints;
@@ -171,7 +174,8 @@ public class IPETUtils {
                        LoopBound loopBound,
                        IPETBuilder<C> ctx)
     {
-
+    	
+    	ExecutionContext eCtx = new ExecutionContext(hol.getControlFlowGraph().getMethodInfo(), ctx.getCallString());
         List<LinearConstraint<IPETBuilder.ExecutionEdge>> loopConstraints = new ArrayList<LinearConstraint<IPETBuilder.ExecutionEdge>>();
         /* marker loop constraints */
         for (Entry<SymbolicMarker, LoopBoundExpr> markerBound : loopBound.getLoopBounds()) {
@@ -182,7 +186,8 @@ public class IPETUtils {
                 loopConstraint.addRHS(ctx.newEdge(continueEdge));
             }
             /* Multiplicities */
-            long lhsMultiplicity = markerBound.getValue().upperBound();
+            long lhsMultiplicity = markerBound.getValue().upperBound(eCtx);
+
             SymbolicMarker marker = markerBound.getKey();
             if (marker.getMarkerType() == SymbolicMarkerType.OUTER_LOOP_MARKER) {
 
