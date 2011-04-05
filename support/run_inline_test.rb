@@ -43,7 +43,6 @@ File.readlines(ARGV[0]).each do |l|
     expect = $2.strip
     postctx = ($3||"$")[1..-1].strip
     context = Regexp.new(Regexp.escape(prectx)+"(.*)"+Regexp.escape(postctx))
-    puts "re: #{context.inspect}"
     while line = stdout.gets
       (actual = $1 ; break) if context =~ line.strip
     end

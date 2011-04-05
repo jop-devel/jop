@@ -9,7 +9,7 @@ package wcet.devel;
  * All tests take roughly 144 * 10K cycles to execute
  *
  * $test$> make jsim P1=test P2=wcet/devel P3=AnnotLang1
- * $grep$> wcet[DfaLoopBound1#measure]: ^ 1431236
+ * $grep$> wcet[AnnotLang1]: ^ 1431236
  *
  * Test constant expressions takes ~ 24 * 10K
  *
@@ -26,6 +26,11 @@ package wcet.devel;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
+/**
+ * Testing new annotation language features (1)
+ * @author Benedikt Huber <benedikt.huber@gmail.com>
+ *
+ */
 public class AnnotLang1 {
 	int x;
 	
@@ -74,7 +79,7 @@ public class AnnotLang1 {
 		invoke();
 		if (MEASURE) {
 			int dt = te-ts-to;
-			System.out.print("wcet[DfaLoopBound1#measure]:");
+			System.out.print("wcet[AnnotLang1]:");
             System.out.println(dt);
         }
 	}
