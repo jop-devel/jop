@@ -1,4 +1,7 @@
 /* imports */
+import java.util.List;
+import java.util.ArrayList;
+
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.code.SymbolicMarker;
 import com.jopdesign.wcet.annotations.LoopBoundExpr.BinOp;
@@ -21,7 +24,7 @@ buildLoopBound(String cmpop, LoopBoundExpr bound, SymbolicMarker marker)
 /*--------------------------------------------------------------------*/
 
 CHARACTERS
-  letter    = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".
+  letter    = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_".
   digit     = "0123456789".
   cr        = '\r'.
   lf        = '\n'.
@@ -33,6 +36,7 @@ CHARACTERS
 
 TOKENS
   ident     = letter { letter | digit }.
+  vident    = '$' letter { letter | digit }.
   number    = digit { digit }.
   string    = '"' { stringCh | '\\' printable } '"'.
   char      = '\'' ( charCh | '\\' printable { hex } ) '\''.
@@ -60,15 +64,15 @@ Annotation
 Expression<out LoopBoundExpr expr>
 = (. LoopBoundExpr e2; .)
   Expression2<out expr>
-  {   "+" Expression2<out e2> (. expr = LoopBoundExpr.binOp(BinOp.ADD, expr,e2); .)
-    | "-" Expression2<out e2> (. expr = LoopBoundExpr.binOp(BinOp.SUB, expr,e2); .)
+  {   "+" Expression2<out e2> (. expr = expr.add(e2); .)
+    | "-" Expression2<out e2> (. expr = expr.subtract(e2); .)
   } 
 .
 
 Expression2<out LoopBoundExpr expr>
 = (. LoopBoundExpr e2; .)
   Expression3<out expr>
-  {   "*" Expression3<out e2> (. expr = LoopBoundExpr.binOp(BinOp.MUL, expr, e2); .)
+  {   "*" Expression3<out e2> (. expr = expr.mul(e2); .)
   } 
 .
 
@@ -76,6 +80,27 @@ Expression3<out LoopBoundExpr expr> (. expr = null; .)
 =   
     number   (. expr = LoopBoundExpr.numericBound(t.val, t.val); .)
   | "(" Expression<out expr> ")"
+  | ident  (. String ident = t.val; .)  IdentExpression<out expr, ident>
+  | vident (. String ident = t.val; .)  ArgExpression<out expr, ident>
+.
+
+IdentExpression<out LoopBoundExpr expr, String ident> (. expr = null; .)
+=   (. ArrayList<LoopBoundExpr> args = new ArrayList<LoopBoundExpr>(); .)
+    "(" ExpressionList<args> ")" (. expr = LoopBoundExpr.builtInFunction(ident, args); .)
+  | (. ArrayList<String> members = new ArrayList<String>(); members.add(ident); .)
+    { "." ident (. members.add(t.val); .) } (. expr = LoopBoundExpr.memberRef(members); .)
+.
+
+ArgExpression<out LoopBoundExpr expr, String index>
+=  (. ArrayList<String> members = new ArrayList<String>(); .)
+   { "." ident (. members.add(t.val); .) } (. expr = LoopBoundExpr.argRef(index, members); .)
+.
+
+ExpressionList<List args>
+=  (. LoopBoundExpr expr; .)
+   Expression<out expr> (. args.add(expr); .)
+   { "," Expression<out expr> (. args.add(expr); .) }
+ | 
 .
 
 Context<out SymbolicMarker marker> (. marker = null; .) 
