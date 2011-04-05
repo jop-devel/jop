@@ -60,8 +60,8 @@ public class SimpleScope {
 	 */
 	public static void main(String[] args) {
 
-		final ScopedMemory scope = new LTMemory(0, 20000L);
-		final ScopedMemory inner = new LTMemory(0, 10000L);
+		final ScopedMemory scope = new LTMemory(20000L);
+		final ScopedMemory inner = new LTMemory(10000L);
 		final Runnable run = new Runnable() {
 			public void run() {
 				MyRunner r = new MyRunner();

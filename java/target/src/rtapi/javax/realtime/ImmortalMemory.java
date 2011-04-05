@@ -6,7 +6,13 @@ import javax.safetycritical.annotate.SCJRestricted;
 @SCJAllowed
 public final class ImmortalMemory extends MemoryArea
 {
-  @SCJAllowed
+	
+  public ImmortalMemory(long size) {
+		super(size);
+		// TODO Auto-generated constructor stub
+	}
+
+@SCJAllowed
   @SCJRestricted(maySelfSuspend = false)
   public static ImmortalMemory instance()
   {

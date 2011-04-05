@@ -25,7 +25,7 @@ class MissionMemory extends ManagedMemory
   /**
    * @param size is the amount of memory that this area can hold.
    */
-  MissionMemory(SizeEstimator estimator) { super(estimator); }
+//  MissionMemory(SizeEstimator estimator) { super(estimator); }
 
   /**
    * @return the manager for this memory area.
@@ -41,16 +41,16 @@ class MissionMemory extends ManagedMemory
    * TBD: is this comment correct?  looks like a cut-and-paste error
    * from setPortal().
    */
-  @Override
-  @SCJAllowed(LEVEL_1)
-  public synchronized Object getPortal() { return null; }
-  
-  /**
-   * Override the portal getter so that the portal object can be shared.
-   */
-  @Override
-  @SCJAllowed(LEVEL_1)
-  public synchronized void setPortal(Object value) {}
+//  @Override
+//  @SCJAllowed(LEVEL_1)
+//  public synchronized Object getPortal() { return null; }
+//  
+//  /**
+//   * Override the portal getter so that the portal object can be shared.
+//   */
+//  @Override
+//  @SCJAllowed(LEVEL_1)
+//  public synchronized void setPortal(Object value) {}
   
   /**
    * run is the main routine that performs initialization, starting of the

@@ -36,6 +36,7 @@ public class PeriodicParameters extends javax.realtime.PeriodicParameters {
 	RelativeTime period;
 	
 	public PeriodicParameters(RelativeTime start, RelativeTime period) {
+		super(start, period); // dummy as we don't want to use it...
 		this.start = start;
 		this.period = period;
 	}

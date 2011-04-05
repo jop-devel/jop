@@ -30,7 +30,7 @@ public abstract class ManagedMemory extends LTMemory
 {
   ManagedMemory(long size) { super(size); }
   
-  ManagedMemory(SizeEstimator estimator) { super(estimator); }
+//  ManagedMemory(SizeEstimator estimator) { super(estimator); }
   
   /**
    * @return

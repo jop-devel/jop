@@ -33,6 +33,7 @@ import javax.safetycritical.PeriodicEventHandler;
 import javax.safetycritical.PeriodicParameters;
 import javax.safetycritical.Safelet;
 import javax.safetycritical.SingleMissionSequencer;
+import javax.safetycritical.StorageParameters;
 import javax.safetycritical.Terminal;
 import javax.safetycritical.ThreadConfiguration;
 
@@ -49,7 +50,7 @@ public class HelloSCJ extends MissionDescriptor implements Safelet {
 		PeriodicEventHandler peh = new PeriodicEventHandler(
 				new PriorityParameters(11),
 				new PeriodicParameters(new RelativeTime(0,0), new RelativeTime(1000,0)),
-				new ThreadConfiguration()
+				new StorageParameters(0, 0, 0)
 			) {
 			public void handleAsyncEvent() {
 				Terminal.getTerminal().writeln("Ping ");
@@ -76,6 +77,18 @@ public class HelloSCJ extends MissionDescriptor implements Safelet {
 	public static void main(String[] args) {
 		Terminal.getTerminal().writeln("Hello SCJ World!");
 		JopSystem.startMission(new HelloSCJ());
+	}
+
+	@Override
+	public void setUp() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void tearDown() {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

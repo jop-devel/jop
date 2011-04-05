@@ -18,7 +18,7 @@ public class LTMemory extends ScopedMemory
   public LTMemory(long size) { super(size); }
 
   @SCJProtected
-  public LTMemory(SizeEstimator estimator) { super(estimator); }
+//  public LTMemory(SizeEstimator estimator) { super(estimator); }
 
   /**
    * In vanilla RTSJ, enter() is not necessarily block-free because
@@ -55,11 +55,11 @@ public class LTMemory extends ScopedMemory
   /**
    * @see javax.realtime.ScopedAllocationContext#resize(long)
    */
-  @Override
-  @SCJAllowed
-  @SCJRestricted(maySelfSuspend = false)
-  public void resize(long size)
-    throws IllegalStateException
-  {
-  }
+//  @Override
+//  @SCJAllowed
+//  @SCJRestricted(maySelfSuspend = false)
+//  public void resize(long size)
+//    throws IllegalStateException
+//  {
+//  }
 }

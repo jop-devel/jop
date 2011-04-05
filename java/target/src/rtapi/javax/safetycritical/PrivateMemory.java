@@ -9,6 +9,6 @@ public class PrivateMemory extends ManagedMemory
 {
   public PrivateMemory(long size) { super(size); }
 
-  public PrivateMemory(SizeEstimator estimator) { super(estimator); }
+//  public PrivateMemory(SizeEstimator estimator) { super(estimator); }
 
 }

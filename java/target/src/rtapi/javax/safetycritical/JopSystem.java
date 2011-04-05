@@ -34,7 +34,12 @@ public class JopSystem {
 	
 	public static void startMission(Safelet scj) {
 		MissionSequencer ms = scj.getSequencer();
-		MissionDescriptor md = ms.getInitialMission();
+//		MissionDescriptor md = ms.getInitialMission();
+		// TODO: there is some chaos on mission and the classes
+		// for it -- needs a reread on current spec
+		// and a fix
+//		MissionDescriptor md = ms.getNextMission();
+		MissionDescriptor md = null;
 		md.initialize();
 		Terminal.getTerminal().writeln("SCJ Start mission on JOP");
 		RtThread.startMission();

@@ -35,7 +35,7 @@ public class SingleMissionSequencer extends MissionSequencer {
 	private MissionDescriptor mission;
 
 	public SingleMissionSequencer(PriorityParameters priority, MissionDescriptor md) {
-		super(priority);
+		super(priority, null, "Hans");
 		mission = md;
 	}
 
@@ -47,7 +47,7 @@ public class SingleMissionSequencer extends MissionSequencer {
 	 * This is a single mission so we return null for the
 	 * next mission.
 	 */
-	public MissionDescriptor getNextMission() {
+	public Mission getNextMission() {
 		return null;
 	}
 }
