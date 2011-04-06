@@ -49,6 +49,9 @@ public class ParameterAnnotationAttribute extends CustomAttribute {
         }
     }
 
+    /**
+     * @return true if this attribute is a {@value AnnotationReader#VISIBLE_PARAMETER_ANNOTATION_NAME} attribute
+     */
     public boolean isVisible() {
         return visible;
     }

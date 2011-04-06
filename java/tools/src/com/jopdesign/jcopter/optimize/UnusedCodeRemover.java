@@ -142,7 +142,7 @@ public class UnusedCodeRemover {
             logger.debug("Not removing unused static final "+f);
 
             // Instead, mark it as unused
-            
+            f.setUnusedAnnotation();
 
             return 0;
         } else {
