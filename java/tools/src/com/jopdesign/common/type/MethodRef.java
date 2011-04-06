@@ -106,7 +106,9 @@ public class MethodRef {
     }
 
     public Ternary isInterfaceMethod() {
-        if ( getMethodInfo() != null ) {
+        // We do not use getMethodInfo() here, else we would run into problems because this method
+        // is needed during classloading, and resolving the method does not work until classloading is completed.
+        if ( methodInfo != null ) {
             return Ternary.valueOf(methodInfo.getClassInfo().isInterface());
         }
         return classRef.isInterface();
