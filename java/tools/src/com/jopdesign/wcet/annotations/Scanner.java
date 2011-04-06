@@ -239,8 +239,8 @@ class StartStates {
 public class Scanner {
 	static final char EOL = '\n';
 	static final int  eofSym = 0;
-	static final int maxT = 17;
-	static final int noSym = 17;
+	static final int maxT = 18;
+	static final int noSym = 18;
 
 
 	public Buffer buffer; // scanner buffer
@@ -274,14 +274,15 @@ public class Scanner {
 		start.set(43, 15); 
 		start.set(45, 16); 
 		start.set(42, 17); 
-		start.set(40, 18); 
-		start.set(41, 19); 
-		start.set(46, 20); 
-		start.set(44, 21); 
+		start.set(47, 18); 
+		start.set(40, 19); 
+		start.set(41, 20); 
+		start.set(46, 21); 
+		start.set(44, 22); 
 		start.set(Buffer.EOF, -1);
 		literals.put("loop", new Integer(7));
-		literals.put("outer", new Integer(15));
-		literals.put("method", new Integer(16));
+		literals.put("outer", new Integer(16));
+		literals.put("method", new Integer(17));
 
 	}
 	
@@ -463,6 +464,8 @@ public class Scanner {
 					{t.kind = 13; done = true; break;}
 				case 21:
 					{t.kind = 14; done = true; break;}
+				case 22:
+					{t.kind = 15; done = true; break;}
 
 			}
 		}

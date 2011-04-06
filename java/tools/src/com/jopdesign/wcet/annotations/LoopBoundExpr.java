@@ -6,21 +6,13 @@ import java.util.List;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
-import org.apache.bcel.classfile.ConstantDouble;
-import org.apache.bcel.classfile.ConstantFloat;
 import org.apache.bcel.classfile.ConstantInteger;
 import org.apache.bcel.classfile.ConstantLong;
 import org.apache.bcel.classfile.ConstantPool;
-import org.apache.bcel.classfile.ConstantString;
-import org.apache.bcel.classfile.ConstantUtf8;
 import org.apache.bcel.classfile.ConstantValue;
-import org.apache.bcel.classfile.Utility;
-import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.log4j.Logger;
 
-import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
-import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.graphutils.Pair;
 
@@ -29,7 +21,8 @@ public abstract class LoopBoundExpr {
 	public static enum ExprType { LITERAL, CONST_REF, ARG_REF, PRIM_OP };
 
 	public static enum PrimOp    { BIT_LENGTH, /* bit scan reverse (index of most-significant 1 bit) */
-		                           INTERSECT, UNION, ADD, SUB, MUL };
+		                           INTERSECT, UNION, 
+		                           ADD, SUB, MUL, IDIV };
 
 	public static class LInteger extends Number {
 		private static final long serialVersionUID = 1L;
@@ -78,6 +71,12 @@ public abstract class LoopBoundExpr {
 		public LInteger multiply(LInteger other) {
 			if(this.isInfinite() || other.isInfinite()) return INFINITY;
 			return new LInteger(repr.multiply(other.repr));
+		}
+		public LInteger divide(LInteger other) {
+			if(other.isInfinite()) throw new ArithmeticException("division by infinity");
+			if(other.repr.intValue() == 0) throw new ArithmeticException("division by zero");
+			if(this.isInfinite()) return INFINITY;
+			return new LInteger(repr.divide(other.repr));
 		}
 		public LInteger min(LInteger other) {
 			if(other.isInfinite()) return this;
@@ -223,7 +222,20 @@ public abstract class LoopBoundExpr {
 			}			
 		};
 	}
-	
+
+	public LoopBoundExpr idiv(LoopBoundExpr other) {
+		return new PrimOpExpr(PrimOp.MUL, this, other) {
+			protected Pair evaluatePrimOp(List<Pair<LInteger,LInteger>> args) {
+				Pair<LInteger, LInteger> n1 = args.get(0);
+				Pair<LInteger, LInteger> n2 = args.get(1);
+				if(n1.first().isNegative()) throw new AssertionError("Integer Division with negative number");
+				if(n2.first().isNegative()) throw new AssertionError("Integer Division with negative number");
+				return new Pair(n1.first().divide(n2.second()),
+							    n1.second().divide(n2.first()));
+			}			
+		};
+	}
+
 	public LoopBoundExpr intersect(LoopBoundExpr other) {
 		if(other == null) return this;
 		return new PrimOpExpr(PrimOp.INTERSECT, this, other) {

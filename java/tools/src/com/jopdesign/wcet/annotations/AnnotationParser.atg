@@ -73,6 +73,7 @@ Expression2<out LoopBoundExpr expr>
 = (. LoopBoundExpr e2; .)
   Expression3<out expr>
   {   "*" Expression3<out e2> (. expr = expr.mul(e2); .)
+    | "/" Expression3<out e2> (. expr = expr.idiv(e2); .)
   } 
 .
 

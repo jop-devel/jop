@@ -40,7 +40,7 @@ public class AnnotLang1 {
 			compute1();
 		for(int i = 0; i < 8; ++i) // @WCA loop <= (2+2)*2
 			compute1();
-		for(int i = 0; i < 8; ++i) // @WCA loop <= (3-1)*5-2
+		for(int i = 0; i < 8; ++i) // @WCA loop <= ((3-1)*10-4)/2
 			compute1();
 	}
 

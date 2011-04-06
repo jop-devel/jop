@@ -14,7 +14,7 @@ public class Parser {
 	public static final int _string = 4;
 	public static final int _char = 5;
 	public static final int _cmpop = 6;
-	public static final int maxT = 17;
+	public static final int maxT = 18;
 
 	static final boolean T = true;
 	static final boolean x = false;
@@ -133,28 +133,28 @@ buildLoopBound(String cmpop, LoopBoundExpr bound, SymbolicMarker marker)
 	SymbolicMarker  Context() {
 		SymbolicMarker  marker;
 		marker = null; 
-		if (la.kind == 15) {
+		if (la.kind == 16) {
 			Get();
 			int outerLoop = 1; 
-			if (la.kind == 11) {
+			if (la.kind == 12) {
 				Get();
 				Expect(3);
 				outerLoop = Integer.parseInt(t.val); 
-				Expect(12);
+				Expect(13);
 			}
 			marker = SymbolicMarker.outerLoopMarker(outerLoop); 
-		} else if (la.kind == 16) {
+		} else if (la.kind == 17) {
 			Get();
 			String markerMethod = null; 
-			if (la.kind == 11) {
+			if (la.kind == 12) {
 				Get();
 				Expect(4);
 				markerMethod = t.val; 
-				Expect(12);
+				Expect(13);
 			}
 			marker = SymbolicMarker.methodMarker(markerMethod); 
 		} else if (la.kind == 0) {
-		} else SynErr(18);
+		} else SynErr(19);
 		return marker;
 	}
 
@@ -162,10 +162,16 @@ buildLoopBound(String cmpop, LoopBoundExpr bound, SymbolicMarker marker)
 		LoopBoundExpr  expr;
 		LoopBoundExpr e2; 
 		expr = Expression3();
-		while (la.kind == 10) {
-			Get();
-			e2 = Expression3();
-			expr = expr.mul(e2); 
+		while (la.kind == 10 || la.kind == 11) {
+			if (la.kind == 10) {
+				Get();
+				e2 = Expression3();
+				expr = expr.mul(e2); 
+			} else {
+				Get();
+				e2 = Expression3();
+				expr = expr.idiv(e2); 
+			}
 		}
 		return expr;
 	}
@@ -176,10 +182,10 @@ buildLoopBound(String cmpop, LoopBoundExpr bound, SymbolicMarker marker)
 		if (la.kind == 3) {
 			Get();
 			expr = LoopBoundExpr.numericBound(t.val, t.val); 
-		} else if (la.kind == 11) {
+		} else if (la.kind == 12) {
 			Get();
 			expr = Expression();
-			Expect(12);
+			Expect(13);
 		} else if (la.kind == 1) {
 			Get();
 			String ident = t.val; 
@@ -188,35 +194,35 @@ buildLoopBound(String cmpop, LoopBoundExpr bound, SymbolicMarker marker)
 			Get();
 			String ident = t.val; 
 			expr = ArgExpression(ident);
-		} else SynErr(19);
+		} else SynErr(20);
 		return expr;
 	}
 
 	LoopBoundExpr  IdentExpression(String ident) {
 		LoopBoundExpr  expr;
 		expr = null; 
-		if (la.kind == 11) {
+		if (la.kind == 12) {
 			ArrayList<LoopBoundExpr> args = new ArrayList<LoopBoundExpr>(); 
 			Get();
 			ExpressionList(args);
-			Expect(12);
+			Expect(13);
 			expr = LoopBoundExpr.builtInFunction(ident, args); 
 		} else if (StartOf(1)) {
 			ArrayList<String> members = new ArrayList<String>(); members.add(ident); 
-			while (la.kind == 13) {
+			while (la.kind == 14) {
 				Get();
 				Expect(1);
 				members.add(t.val); 
 			}
 			expr = LoopBoundExpr.constRef(members); 
-		} else SynErr(20);
+		} else SynErr(21);
 		return expr;
 	}
 
 	LoopBoundExpr  ArgExpression(String index) {
 		LoopBoundExpr  expr;
 		ArrayList<String> members = new ArrayList<String>(); 
-		while (la.kind == 13) {
+		while (la.kind == 14) {
 			Get();
 			Expect(1);
 			members.add(t.val); 
@@ -230,13 +236,13 @@ buildLoopBound(String cmpop, LoopBoundExpr bound, SymbolicMarker marker)
 			LoopBoundExpr expr; 
 			expr = Expression();
 			args.add(expr); 
-			while (la.kind == 14) {
+			while (la.kind == 15) {
 				Get();
 				expr = Expression();
 				args.add(expr); 
 			}
-		} else if (la.kind == 12) {
-		} else SynErr(21);
+		} else if (la.kind == 13) {
+		} else SynErr(22);
 	}
 
 
@@ -251,9 +257,9 @@ buildLoopBound(String cmpop, LoopBoundExpr bound, SymbolicMarker marker)
 	}
 
 	private static final boolean[][] set = {
-		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
-		{T,x,x,x, x,x,x,x, T,T,T,x, T,T,T,T, T,x,x},
-		{x,T,T,T, x,x,x,x, x,x,x,T, x,x,x,x, x,x,x}
+		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
+		{T,x,x,x, x,x,x,x, T,T,T,T, x,T,T,T, T,T,x,x},
+		{x,T,T,T, x,x,x,x, x,x,x,x, T,x,x,x, x,x,x,x}
 
 	};
 } // end Parser
@@ -289,17 +295,18 @@ class Errors {
 			case 8: s = "\"+\" expected"; break;
 			case 9: s = "\"-\" expected"; break;
 			case 10: s = "\"*\" expected"; break;
-			case 11: s = "\"(\" expected"; break;
-			case 12: s = "\")\" expected"; break;
-			case 13: s = "\".\" expected"; break;
-			case 14: s = "\",\" expected"; break;
-			case 15: s = "\"outer\" expected"; break;
-			case 16: s = "\"method\" expected"; break;
-			case 17: s = "??? expected"; break;
-			case 18: s = "invalid Context"; break;
-			case 19: s = "invalid Expression3"; break;
-			case 20: s = "invalid IdentExpression"; break;
-			case 21: s = "invalid ExpressionList"; break;
+			case 11: s = "\"/\" expected"; break;
+			case 12: s = "\"(\" expected"; break;
+			case 13: s = "\")\" expected"; break;
+			case 14: s = "\".\" expected"; break;
+			case 15: s = "\",\" expected"; break;
+			case 16: s = "\"outer\" expected"; break;
+			case 17: s = "\"method\" expected"; break;
+			case 18: s = "??? expected"; break;
+			case 19: s = "invalid Context"; break;
+			case 20: s = "invalid Expression3"; break;
+			case 21: s = "invalid IdentExpression"; break;
+			case 22: s = "invalid ExpressionList"; break;
 			default: s = "error " + n; break;
 		}
 		printMsg(line, col, s);
