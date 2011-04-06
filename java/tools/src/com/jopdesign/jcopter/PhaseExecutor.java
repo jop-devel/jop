@@ -67,20 +67,23 @@ public class PhaseExecutor {
             new BooleanOption("dump-noim-calls", "Include calls to JVMHelp.noim() in the jvm callgraph dump", false);
 
 
-    public static final Option[] optionList = {
+    public static final Option[] phaseOptions = {
             DUMP_CALLGRAPH, DUMP_JVM_CALLGRAPH, DUMP_NOIM_CALLS, CallGraph.CALLGRAPH_DIR,
+        };
+    public static final Option[] optimizeOptions = {
             REMOVE_UNUSED_MEMBERS
-            };
+        };
 
     public static final String GROUP_OPTIMIZE = "opt";
-    public static final String GROUP_INLINE = "inline";
+    public static final String GROUP_INLINE   = "inline";
 
     public static void registerOptions(OptionGroup options) {
         // Add phase options
-        options.addOptions(PhaseExecutor.optionList);
+        options.addOptions(phaseOptions);
 
         // Add options of all used optimizations
         OptionGroup opt = options.getGroup(GROUP_OPTIMIZE);
+        opt.addOptions(optimizeOptions);
         opt.addOptions(UnusedCodeRemover.optionList);
 
     }
