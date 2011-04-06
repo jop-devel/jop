@@ -43,9 +43,9 @@ public class JCopter extends EmptyTool<JCopterManager> {
 
     private final JCopterManager manager;
     private final AppInfo appInfo;
-    private final PhaseExecutor executor;
 
     private JCopterConfig config;
+    private PhaseExecutor executor;
     private DFATool dfaTool;
     private WCETTool wcetTool;
 
@@ -53,11 +53,6 @@ public class JCopter extends EmptyTool<JCopterManager> {
         super(VERSION);
         manager = new JCopterManager();
         appInfo = AppInfo.getSingleton();
-        executor = new PhaseExecutor(this);
-
-        // TODO add options/profiles/.. to this constructor so that only a subset of
-        //      optimizations/analyses are initialized ? Overwrite PhaseExecutor for this?
-        //      Or user simply uses phaseExecutor directly
     }
 
     @Override
@@ -66,15 +61,22 @@ public class JCopter extends EmptyTool<JCopterManager> {
     }
 
     @Override
-    public void registerOptions(OptionGroup options) {
-        options.addOptions( JCopterConfig.options );
-        executor.registerOptions(options);
+    public void registerOptions(Config config) {
+        OptionGroup options = config.getOptions();
+        JCopterConfig.registerOptions(options);
+        // TODO add options/profiles/.. to this so that only a subset of
+        //      optimizations/analyses are initialized ? Overwrite PhaseExecutor for this?
+        //      Or user simply uses phaseExecutor directly
+        PhaseExecutor.registerOptions(options);
     }
 
     @Override
     public void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException {
 
-        config = new JCopterConfig(setup.getConfig());
+        OptionGroup options = setup.getConfig().getOptions();
+        
+        config = new JCopterConfig(options);
+        executor = new PhaseExecutor(this, options);
 
         if ( config.doAllowIncompleteApp() ) {
             appInfo.setIgnoreMissingClasses(true);
@@ -82,7 +84,7 @@ public class JCopter extends EmptyTool<JCopterManager> {
 
     }
 
-    public JCopterConfig getConfig() {
+    public JCopterConfig getJConfig() {
         return config;
     }
 

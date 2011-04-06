@@ -20,7 +20,9 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.bcel.Annotation;
 import com.jopdesign.common.bcel.AnnotationAttribute;
+import com.jopdesign.common.bcel.AnnotationReader;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.common.type.MemberID;
@@ -46,7 +48,7 @@ public abstract class MemberInfo {
 
     private Object[] customValues;
 
-    public MemberInfo(AccessFlags flags, MemberID memberId) {
+    protected MemberInfo(AccessFlags flags, MemberID memberId) {
         this.accessFlags = flags;
         this.memberId = memberId;
         customValues = null;
@@ -54,6 +56,10 @@ public abstract class MemberInfo {
         hashValue = memberId.hashCode();
     }
 
+    ////////////////////////////////////////////////////////////////////////////
+    // References to ClassInfo and AppInfo
+    ////////////////////////////////////////////////////////////////////////////
+            
     /**
      * Just a convenience method to get the AppInfo instance.
      * @return the AppInfo singleton.
@@ -68,6 +74,10 @@ public abstract class MemberInfo {
 
     public abstract ConstantPoolGen getConstantPoolGen();
 
+    ////////////////////////////////////////////////////////////////////////////
+    // Standard getter and setter, delegates to BCEL
+    ////////////////////////////////////////////////////////////////////////////
+        
     /**
      * Get only the last part of the name (i.e. the class name without package or the field/method name
      * without class prefix and descriptor).
@@ -166,6 +176,10 @@ public abstract class MemberInfo {
         return out.toString();
     }
 
+    ////////////////////////////////////////////////////////////////////////////
+    // Custom Values
+    ////////////////////////////////////////////////////////////////////////////
+        
     public Object removeCustomValue(KeyManager.CustomKey key) {
         return setCustomValue(key, null);
     }
@@ -223,6 +237,9 @@ public abstract class MemberInfo {
         // TODO implement
     }
 
+    ////////////////////////////////////////////////////////////////////////////
+    // Attribute access and helpers for custom attributes
+    ////////////////////////////////////////////////////////////////////////////    
 
     public void setSynthetic(boolean flag) {
         // from major version 49 on, ACC_SYNTHETIC is supported
@@ -274,7 +291,13 @@ public abstract class MemberInfo {
         return findDeprecated() != null;
     }
 
-    public AnnotationAttribute getAnnotation(boolean visible) {
+    /**
+     * Get the annotation attribute of this member
+     * @param visible whether to the the visible or invisible annotation attribute (see {@link AnnotationAttribute#isVisible()}
+     * @param create if true, create the attribute if it does not exist
+     * @return the annotation attribute or null if it does not exist and {@code create} is false
+     */
+    public AnnotationAttribute getAnnotation(boolean visible, boolean create) {
         for (Attribute a : getAttributes()) {
             if ( a instanceof AnnotationAttribute ) {
                 if ( ((AnnotationAttribute)a).isVisible() == visible ) {
@@ -282,15 +305,61 @@ public abstract class MemberInfo {
                 }
             }
         }
+        if (create) {
+            ConstantPoolGen cpg = getClassInfo().getConstantPoolGen();
+            String name = visible ? AnnotationReader.VISIBLE_ANNOTATION_NAME : AnnotationReader.INVISIBLE_ANNOTATION_NAME; 
+            AnnotationAttribute a = new AnnotationAttribute(cpg.addUtf8(name), 0, cpg.getConstantPool(), visible, 0);
+            a.updateLength();
+            addAttribute(a);
+            return a;
+        }
         return null;
     }
 
+    public boolean hasAtomicAnnotation() {
+        AnnotationAttribute a = getAnnotation(true, false);
+        // TODO move a.hasAtomicAnnotation implementation here, once JOPizer is ported to the new framework
+        return a != null && a.hasAtomicAnnotation();
+    }
+    
+    public boolean hasUnusedAnnotation() {
+        AnnotationAttribute a = getAnnotation(false, false);
+        if (a == null) return false;
+        
+        return a.findAnnotation(AnnotationAttribute.UNUSED_TAG_NAME) != null;
+    }
+    
+    public void setUnusedAnnotation() {
+        AnnotationAttribute a = getAnnotation(false, true);
+        if (a.findAnnotation(AnnotationAttribute.UNUSED_TAG_NAME) != null) return;
+        
+        ConstantPoolGen cpg = getConstantPoolGen();
+        int nameIdx = cpg.addUtf8(AnnotationAttribute.UNUSED_TAG_NAME);
+        Annotation an = new Annotation(nameIdx, cpg.getConstantPool(), 0);
+        
+        a.addAnnotation(an);
+    }
+    
+    public void removeUnusedAnnotation() {
+        AnnotationAttribute a = getAnnotation(false, false);
+        if (a == null) return;
+        
+        Annotation an = a.findAnnotation(AnnotationAttribute.UNUSED_TAG_NAME);
+        if (an != null) {
+            a.removeAnnotation(an);
+        }
+    }
+    
     public abstract Attribute[] getAttributes();
 
     public abstract void addAttribute(Attribute a);
 
     public abstract void removeAttribute(Attribute a);
 
+    ////////////////////////////////////////////////////////////////////////////
+    // Access checks
+    ////////////////////////////////////////////////////////////////////////////
+        
     /**
      * Check if this class or class member can access the given class.
      * Note that only methods are able to access local classes.
@@ -379,6 +448,10 @@ public abstract class MemberInfo {
         return false;
     }
 
+    ////////////////////////////////////////////////////////////////////////////
+    // equals, hashCode, MemberId, toString 
+    ////////////////////////////////////////////////////////////////////////////
+    
     /**
      * Get the memberID object which identifies this member.
      * @return a fully qualified ID of this member.
@@ -405,7 +478,10 @@ public abstract class MemberInfo {
         return memberId.toString();
     }
 
-
+    ////////////////////////////////////////////////////////////////////////////
+    // Private methods
+    ////////////////////////////////////////////////////////////////////////////
+    
     private Synthetic findSynthetic() {
         for (Attribute a : getAttributes()) {
             if ( a instanceof Synthetic ) {

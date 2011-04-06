@@ -23,8 +23,14 @@ package com.jopdesign.jcopter;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Option;
+import com.jopdesign.common.config.OptionGroup;
 
 /**
+ * This class contains all generic options for JCopter.
+ *
+ * Options of optimizations are defined in their respective classes and are added to the config
+ * by the PhaseExecutor.
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class JCopterConfig {
@@ -32,21 +38,24 @@ public class JCopterConfig {
     public static final BooleanOption ALLOW_INCOMPLETE_APP =
             new BooleanOption("allow-incomplete", "Ignore missing classes", false);
 
-    public static final Option[] options =
+    private static final Option[] optionList =
             { ALLOW_INCOMPLETE_APP };
 
+    public static void registerOptions(OptionGroup options) {
+        options.addOptions(JCopterConfig.optionList);
+    }
 
-    private final Config config;
+    private final OptionGroup options;
 
-    public JCopterConfig(Config config) {
-        this.config = config;
+    public JCopterConfig(OptionGroup options) {
+        this.options = options;
     }
 
     public Config getConfig() {
-        return config;
+        return options.getConfig();
     }
 
     public boolean doAllowIncompleteApp() {
-        return config.getOption(ALLOW_INCOMPLETE_APP);
+        return options.getOption(ALLOW_INCOMPLETE_APP);
     }
 }

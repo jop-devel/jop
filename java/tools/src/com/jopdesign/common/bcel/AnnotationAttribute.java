@@ -39,7 +39,15 @@ import java.util.List;
  */
 public class AnnotationAttribute extends CustomAttribute {
 
+    /**
+     * Annotation Type Tag for RTTM Atomic annotation
+     */
     public static final String ATOMIC_TAG_NAME = "Lrttm/atomic;";
+
+    /**
+     * Annotation Type Tag for Unused Member flag
+     */
+    public static final String UNUSED_TAG_NAME = "Lcom/jopdesign/unused;";
 
     private boolean visible;
     private List<Annotation> annotations;
@@ -52,15 +60,22 @@ public class AnnotationAttribute extends CustomAttribute {
         annotations = new ArrayList<Annotation>(initialNumAnnotations);
     }
 
+    //////////////////////////////////////////////////////////////////////////////
+    // Custom annotations support
+    // TODO maybe move this to a separate class/to MemberInfo/MethodInfo ??
+    //////////////////////////////////////////////////////////////////////////////
+
     public boolean hasAtomicAnnotation() {
-        for (Annotation a : annotations) {
-            if ( ATOMIC_TAG_NAME.equals(a.getTypeName()) ) {
-                return true;
-            }
-        }
-        return false;
+        return findAnnotation(ATOMIC_TAG_NAME) != null;
     }
 
+    //////////////////////////////////////////////////////////////////////////////
+    // Generic annotations methods
+    //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @return true if this attribute is a {@value AnnotationReader#VISIBLE_ANNOTATION_NAME} attribute
+     */
     public boolean isVisible() {
         return visible;
     }
@@ -80,6 +95,19 @@ public class AnnotationAttribute extends CustomAttribute {
     public void removeAnnotation(Annotation a) {
         annotations.remove(a);
     }
+
+    public Annotation findAnnotation(String typeName) {
+        for (Annotation a : annotations) {
+            if (typeName.equals(a.getTypeName())) {
+                return a;
+            }
+        }
+        return null;
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Common attribute methods
+    //////////////////////////////////////////////////////////////////////////////
 
     @Override
     public void dump(DataOutputStream file) throws IOException {

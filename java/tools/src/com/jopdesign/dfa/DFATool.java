@@ -35,8 +35,8 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
-import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.type.Descriptor;
@@ -113,7 +113,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     }
 
     @Override
-    public void registerOptions(OptionGroup options) {
+    public void registerOptions(Config config) {
     }
 
     @Override

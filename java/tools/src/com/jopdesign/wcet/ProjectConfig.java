@@ -190,7 +190,7 @@ public class ProjectConfig {
 
     public File getOutDir() {
         //return new File(config.getOption(WCET_OUT));
-        return config.getOutDir();
+        return getConfig().getOutDir();
     }
 
     /**

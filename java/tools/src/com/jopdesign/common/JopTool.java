@@ -22,7 +22,6 @@ package com.jopdesign.common;
 
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
-import com.jopdesign.common.config.OptionGroup;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -72,9 +71,13 @@ public interface JopTool<T extends AppEventHandler> {
 
     /**
      * Register the options of this tool to the given optiongroup.
-     * @param options the optiongroup where this tool is expected to add its options.
+     * <p>
+     * If this tool is supposed to be executed several times with different options, the tool must
+     * support this itself (e.g. by creating and using separate OptionGroups for different phases).
+     * </p>
+     * @param config the Config where this tool is expected to add its options.
      */
-    void registerOptions(OptionGroup options);
+    void registerOptions(Config config);
 
     /**
      * Called by {@link AppSetup#setupConfig(String[])} after the configuration has been loaded.

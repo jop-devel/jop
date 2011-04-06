@@ -112,8 +112,17 @@ public class OptionGroup {
         return grp;
     }
 
+    /**
+     * Get an existing group, or if it does not exist, create a new one.
+     * @param group the name of the subgroup
+     * @return a subgroup by that name.
+     */
     public OptionGroup getGroup(String group) {
-        return subGroups.get(group);
+        OptionGroup og = subGroups.get(group);
+        if (og == null) {
+            og = addGroup(group, false);
+        }
+        return og;
     }
 
     public String selectedCommand() {

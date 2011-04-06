@@ -251,7 +251,7 @@ public class AppSetup {
         }
 
         // setup options
-        jopTool.registerOptions(config.getOptions());
+        jopTool.registerOptions(config);
     }
 
     /**

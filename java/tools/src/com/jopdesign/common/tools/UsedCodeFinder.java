@@ -139,7 +139,6 @@ public class UsedCodeFinder {
     /**
      * Mark all used members, starting at all AppInfo roots.
      *
-     * @see #removeUnusedMembers()
      * @see #markUsedMembers(ClassInfo,boolean)
      * @see #markUsedMembers(MethodInfo)
      * @see #markUsedMembers(FieldInfo)
@@ -222,79 +221,6 @@ public class UsedCodeFinder {
         }
     }
 
-    /**
-     * Remove all unused classes, methods and fields.
-     * <p>
-     * Make sure you mark the used methods before, else everything will be removed!</p>
-     *
-     * @see #markUsedMembers()
-     */
-    public void removeUnusedMembers() {
-        AppInfo appInfo = AppInfo.getSingleton();
-
-        // we cannot modify the lists while iterating through it
-        List<ClassInfo> unusedClasses = new LinkedList<ClassInfo>();
-        List<FieldInfo> unusedFields = new LinkedList<FieldInfo>();
-        List<MethodInfo> unusedMethods = new LinkedList<MethodInfo>();
-
-        int fields = 0;
-        int methods = 0;
-
-        for (ClassInfo cls : appInfo.getClassInfos()) {
-            if (getMark(cls)==Mark.UNUSED) {
-                unusedClasses.add(cls);
-                logger.debug("Removing unused class " +cls);
-                continue;
-            }
-
-            if (appInfo.isHwObject(cls)) {
-                // Do not remove anything from hardware objects, else the mapping gets broken and
-                // chaos takes over!
-                logger.debug("Skipping used hardware object " +cls);
-                continue;
-            }
-
-            unusedFields.clear();
-            unusedMethods.clear();
-
-            for (FieldInfo f : cls.getFields()) {
-                if (getMark(f)==Mark.UNUSED) {
-                    unusedFields.add(f);
-                    logger.debug("Removing unused field "+f);
-                    fields++;
-                }
-            }
-            for (MethodInfo m : cls.getMethods()) {
-                Mark mark = getMark(m);
-                if (mark == Mark.UNUSED) {
-                    unusedMethods.add(m);
-                    logger.debug("Removing unused method "+m);
-                    methods++;
-                }
-                if (mark == Mark.MARKED && !m.isNative() && !m.isAbstract()) {
-                    logger.info("Making unused method "+m+" abstract");
-                    m.setAbstract(true);
-                }
-            }
-
-            for (FieldInfo f : unusedFields) {
-                /* DO NOT remove static, final fields, as they are useful to the WCET analysis */
-            	if(f.isStatic() && f.isFinal()) continue;
-            	cls.removeField(f.getShortName());
-            }
-            for (MethodInfo m : unusedMethods) {
-                cls.removeMethod(m.getMethodSignature());
-            }
-        }
-
-        appInfo.removeClasses(unusedClasses);
-
-        int classes = unusedClasses.size();
-        logger.info("Removed " + classes + (classes == 1 ? " class, " : " classes, ") +
-                                 fields + (fields == 1 ? " field, " : " fields, ") +
-                                 methods + (methods == 1 ? " method" : " methods"));
-    }
-    
     private void visitReferences(Set<String> refs) {
         for (String id : refs) {
             // The member IDs returned by the reference finder use a syntax which is

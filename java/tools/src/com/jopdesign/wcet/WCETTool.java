@@ -40,7 +40,6 @@ import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
-import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.misc.BadGraphError;
 import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.MethodNotFoundException;
@@ -109,7 +108,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     //      print INFO for 'console.*' and WARN/ERROR only for the rest if '-q' and '-d' are not given 
     private Logger topLevelLogger = Logger.getLogger(LOG_WCET);
 
-    private static final Option<?>[][] options = {
+    private static final Option<?>[][] optionList = {
             ProjectConfig.projectOptions,
             IPETConfig.ipetOptions,
             UppAalConfig.uppaalOptions,
@@ -143,8 +142,9 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     }
 
     @Override
-    public void registerOptions(OptionGroup options) {
-        options.addOptions(WCETTool.options);
+    public void registerOptions(Config config) {
+        // TODO maybe put some of the options into OptionGroups to make '--help' a bit clearer
+        config.addOptions(WCETTool.optionList);
     }
 
     @Override

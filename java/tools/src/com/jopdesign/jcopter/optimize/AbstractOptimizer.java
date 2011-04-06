@@ -47,8 +47,8 @@ public abstract class AbstractOptimizer implements ClassVisitor {
         return jcopter;
     }
 
-    public JCopterConfig getConfig() {
-        return jcopter.getConfig();
+    public JCopterConfig getJConfig() {
+        return jcopter.getJConfig();
     }
 
     public void optimize() {

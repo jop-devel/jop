@@ -27,7 +27,6 @@ import com.jopdesign.common.EmptyTool;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.IntegerOption;
-import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.misc.NamingConflictException;
 
 /**
@@ -51,9 +50,9 @@ public class ExampleTool extends EmptyTool<ExampleManager> {
     }
 
     @Override
-    public void registerOptions(OptionGroup options) {
-        options.addOption( new BooleanOption("flag", "switch some stuff on or off") );
-        options.addOption( new IntegerOption("new", "create n new classes", 2).setMinMax(0,10) );
+    public void registerOptions(Config config) {
+        config.addOption( new BooleanOption("flag", "switch some stuff on or off") );
+        config.addOption( new IntegerOption("new", "create n new classes", 2).setMinMax(0,10) );
     }
 
     @Override

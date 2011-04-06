@@ -498,6 +498,16 @@ public class Config {
     }
 
     /**
+     * This is a shortcut to add a list of options to the main option group.
+     *
+     * @param options the options to add.
+     * @see OptionGroup#addOptions(Option[][])
+     */
+    public void addOptions(Option<?>[][] options) {
+        this.options.addOptions(options);
+    }
+
+    /**
      * Check if the given option has been added (e.g. by using {@link #addOption}).
      *
      * @param option the option to check

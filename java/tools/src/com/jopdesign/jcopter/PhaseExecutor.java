@@ -35,10 +35,10 @@ import com.jopdesign.common.graphutils.MethodTraverser.MethodVisitor;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.tools.ConstantPoolRebuilder;
-import com.jopdesign.common.tools.UsedCodeFinder;
 import com.jopdesign.jcopter.optimize.LoadStoreOptimizer;
 import com.jopdesign.jcopter.optimize.PeepholeOptimizer;
 import com.jopdesign.jcopter.optimize.RelinkInvokesuper;
+import com.jopdesign.jcopter.optimize.UnusedCodeRemover;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -46,7 +46,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * This is just a helper class to execute various optimizations and analyses.
+ * This class executes various optimizations and analyses in the appropriate order, depending on the configuration.
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
@@ -67,26 +67,48 @@ public class PhaseExecutor {
             new BooleanOption("dump-noim-calls", "Include calls to JVMHelp.noim() in the jvm callgraph dump", false);
 
 
-    public static final Option[] options = {
-            REMOVE_UNUSED_MEMBERS,
-            DUMP_CALLGRAPH, DUMP_JVM_CALLGRAPH, DUMP_NOIM_CALLS, CallGraph.CALLGRAPH_DIR
+    public static final Option[] optionList = {
+            DUMP_CALLGRAPH, DUMP_JVM_CALLGRAPH, DUMP_NOIM_CALLS, CallGraph.CALLGRAPH_DIR,
+            REMOVE_UNUSED_MEMBERS
             };
 
+    public static final String GROUP_OPTIMIZE = "opt";
+    public static final String GROUP_INLINE = "inline";
+
+    public static void registerOptions(OptionGroup options) {
+        // Add phase options
+        options.addOptions(PhaseExecutor.optionList);
+
+        // Add options of all used optimizations
+        OptionGroup opt = options.getGroup(GROUP_OPTIMIZE);
+        opt.addOptions(UnusedCodeRemover.optionList);
+
+    }
+
     private final JCopter jcopter;
+    private final OptionGroup options;
     private final AppInfo appInfo;
 
-    public PhaseExecutor(JCopter jcopter) {
+    public PhaseExecutor(JCopter jcopter, OptionGroup options) {
         this.jcopter = jcopter;
+        this.options = options;
         appInfo = AppInfo.getSingleton();
     }
 
     public Config getConfig() {
-        return jcopter.getConfig().getConfig();
+        return options.getConfig();
     }
 
-    @SuppressWarnings({"AccessStaticViaInstance"})
-    public void registerOptions(OptionGroup options) {
-        options.addOptions(this.options);
+    public OptionGroup getPhaseOptions() {
+        return options;
+    }
+
+    public OptionGroup getOptimizeOptions() {
+        return options.getGroup(GROUP_OPTIMIZE);
+    }
+
+    public OptionGroup getInlineOptions() {
+        return options.getGroup(GROUP_INLINE);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
@@ -220,12 +242,13 @@ public class PhaseExecutor {
      */
     public void removeUnusedMembers() {
 
+        if (!getPhaseOptions().getOption(REMOVE_UNUSED_MEMBERS)) {
+            return;
+        }
+
         logger.info("Starting removal of unused members");
 
-        UsedCodeFinder ucf = new UsedCodeFinder();
-        ucf.resetMarks();
-        ucf.markUsedMembers();
-        ucf.removeUnusedMembers();
+        new UnusedCodeRemover(jcopter, getOptimizeOptions()).execute();
 
         logger.info("Finished removal of unused members");
     }
