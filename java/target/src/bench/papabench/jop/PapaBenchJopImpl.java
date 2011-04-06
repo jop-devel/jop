@@ -26,6 +26,7 @@ package papabench.jop;
 //import java.util.concurrent.ScheduledExecutorService;
 //import java.util.concurrent.TimeUnit;
 
+import joprt.RtThread;
 import papabench.core.autopilot.conf.PapaBenchAutopilotConf.AltitudeControlTaskConf;
 import papabench.core.autopilot.conf.PapaBenchAutopilotConf.ClimbControlTaskConf;
 import papabench.core.autopilot.conf.PapaBenchAutopilotConf.LinkFBWSendTaskConf;
@@ -59,7 +60,7 @@ import papabench.core.simulator.model.FlightModel;
 import papabench.core.simulator.tasks.handlers.SimulatorFlightModelTaskHandler;
 import papabench.core.simulator.tasks.handlers.SimulatorGPSTaskHandler;
 import papabench.core.simulator.tasks.handlers.SimulatorIRTaskHandler;
-import papabench.pj.commons.tasks.PJPeriodicTask;
+import papabench.jop.commons.tasks.PJPeriodicTask;
 
 /**
  * JOP based implementation of PapaBench.
@@ -102,6 +103,7 @@ public class PapaBenchJopImpl implements JopPapaBench {
 	}
 
 	public void init() {	
+		System.out.println("init");
 		// Allocate and initialize global objects: 
 		//  - MC0 - autopilot
 		autopilotModule = PapaBenchJopFactory.createAutopilotModule(this);
@@ -170,6 +172,7 @@ public class PapaBenchJopImpl implements JopPapaBench {
 	}
 
 	public void start() {
+		System.out.println("start");
 		// FIXME put here rendez-vous for all tasks		
 		for (int i = 0; i < SIMULATOR_TASKS_COUNT; i++) {
 			start(simulatorTasks[i]);
@@ -181,14 +184,17 @@ public class PapaBenchJopImpl implements JopPapaBench {
 		for (int i = 0; i < AUTOPILOT_TASKS_COUNT; i++) {
 			start(autopilotTasks[i]);
 		}		
+		RtThread.startMission();
 	}
 	
 	protected void start(PJPeriodicTask pjPeriodicTask) {
-//		executorService.scheduleAtFixedRate(pjPeriodicTask.getTaskHandler(), pjPeriodicTask.getReleaseMs(), pjPeriodicTask.getPeriodMs(), TimeUnit.MILLISECONDS);		
+		// this is a noop on JOP
 	}
 
 	@Override
 	public void shutdown() {
+		// there is no shutdown in a JOP RT thread system
+		System.out.println("Shutdown request");
 //		if (executorService!=null && !executorService.isShutdown()) {			
 //			executorService.shutdown();			
 //		} else {
