@@ -21,27 +21,38 @@
  */
 package papabench.jop.commons.tasks;
 
+import joprt.*;
+
 
 /**
- * This is just a simple representation of plain Java periodic thread. 
+ * This is a version witha JOP RT periodic thread. 
  * 
  * It carries information about periodic invocation, but it does not do it.
  *
  * @author Michal Malohlava
  *
  */
-public class PJPeriodicTask {
+public class PJPeriodicTask extends RtThread {
 	
 	private Runnable taskHandler;
 	private int priority;
 	private int releaseMs;
 	private int periodMs;
+	RtThread rtt;
 	
 	public PJPeriodicTask(Runnable taskHandler, int priority, int releaseMs, int periodMs) {
+		super(priority, periodMs*1000, releaseMs*1000);
 		this.taskHandler = taskHandler;
 		this.priority = priority;
 		this.releaseMs = releaseMs;
 		this.periodMs = periodMs;
+	}
+	
+	public void run() {
+		for (;;) {
+			taskHandler.run();
+			waitForNextPeriod();
+		}
 	}
 
 	public Runnable getTaskHandler() {
