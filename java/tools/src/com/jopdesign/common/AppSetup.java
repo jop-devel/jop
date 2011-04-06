@@ -442,7 +442,7 @@ public class AppSetup {
         try {
             for (String tool : tools.keySet()) {
                 if (useTool(tool)) {
-                    tools.get(tool).onSetupConfig(this);
+                    tools.get(tool).onSetupConfig(this, config.getOptions());
                 }
             }
         } catch (Config.BadConfigurationException e) {

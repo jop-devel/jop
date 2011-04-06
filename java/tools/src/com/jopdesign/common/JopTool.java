@@ -86,10 +86,11 @@ public interface JopTool<T extends AppEventHandler> {
      * </p>
      *
      * @param setup the AppSetup used to initialize this tool
+     * @param options the OptionGroup used for {@link #registerOptions(OptionGroup)}
      * @throws Config.BadConfigurationException if there is something rotten in the config or
      *                                          if the tool cannot be initialized
      */
-    void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException;
+    void onSetupConfig(AppSetup setup, OptionGroup options) throws Config.BadConfigurationException;
 
     /**
      * Called by {@link AppSetup#setupAppInfo(String[], boolean)} after the AppInfo roots and main
@@ -105,7 +106,7 @@ public interface JopTool<T extends AppEventHandler> {
      * Initialize the tool after AppInfo has been initialized and all classes have been loaded.
      * <p>
      * All setup tasks which affect class loading (like initializing
-     * {@link AppEventHandler#onCreateClass(ClassInfo, boolean)}) must be done in {@link #onSetupConfig(AppSetup)}
+     * {@link AppEventHandler#onCreateClass(ClassInfo, boolean)}) must be done in {@link #onSetupConfig(AppSetup,OptionGroup)}
      * or {@link #onSetupRoots(AppSetup, AppInfo)}, but note that AppInfo is not available in the first method.
      * </p>
      *

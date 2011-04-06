@@ -148,11 +148,11 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     }
 
     @Override
-    public void onSetupConfig(AppSetup setup) throws BadConfigurationException {
+    public void onSetupConfig(AppSetup setup, OptionGroup options) throws BadConfigurationException {
         appInfo = setup.getAppInfo();
         Config config = setup.getConfig();
 
-        projectConfig = new ProjectConfig(config);
+        projectConfig = new ProjectConfig(options);
         projectConfig.initConfig(setup.getMainSignature());
 
         this.projectName = projectConfig.getProjectName();

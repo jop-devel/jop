@@ -68,7 +68,7 @@ cleanup:
 	    sed "s/wcet;ipet;\([0-9]*\);\([0-9]*\);\([0-9]*\);\([.0-9]*\);\([.0-9]*\);\(.*\)/wcet;ipet;\1;\2;\3;\6/" > $$i; done	
 	for i in `ls $(OUTDIR)/old/csv/*.csv`; do \
 	  cp $$i $(OUTDIR)/tmp.csv; \
-	  grep -v "metric;date" $(OUTDIR)/tmp.csv | \
+	  grep -v "metric;date" $(OUTDIR)/tmp.csv | grep -v "min-cache-cost" | \
 	    sed "s/wcet;ipet;\([0-9]*\);\([0-9]*\);\([0-9]*\);\([.0-9]*\);\([.0-9]*\);\(.*\)/wcet;ipet;\1;\2;\3;\6/" > $$i; done	
 
 compare:

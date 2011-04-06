@@ -39,7 +39,15 @@ import java.util.List;
  */
 public class AnnotationAttribute extends CustomAttribute {
 
+    /**
+     * Annotation Type Tag for RTTM Atomic annotation
+     */
     public static final String ATOMIC_TAG_NAME = "Lrttm/atomic;";
+
+    /**
+     * Annotation Type Tag for Unused Member flag
+     */
+    public static final String UNUSED_TAG_NAME = "Lcom/jopdesign/unused;";
 
     private boolean visible;
     private List<Annotation> annotations;
@@ -52,6 +60,11 @@ public class AnnotationAttribute extends CustomAttribute {
         annotations = new ArrayList<Annotation>(initialNumAnnotations);
     }
 
+    //////////////////////////////////////////////////////////////////////////////
+    // Custom annotations support
+    // TODO maybe move this to a separate class??
+    //////////////////////////////////////////////////////////////////////////////
+
     public boolean hasAtomicAnnotation() {
         for (Annotation a : annotations) {
             if ( ATOMIC_TAG_NAME.equals(a.getTypeName()) ) {
@@ -60,6 +73,10 @@ public class AnnotationAttribute extends CustomAttribute {
         }
         return false;
     }
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Generic annotations methods
+    //////////////////////////////////////////////////////////////////////////////
 
     public boolean isVisible() {
         return visible;
@@ -80,6 +97,10 @@ public class AnnotationAttribute extends CustomAttribute {
     public void removeAnnotation(Annotation a) {
         annotations.remove(a);
     }
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Common attribute methods
+    //////////////////////////////////////////////////////////////////////////////
 
     @Override
     public void dump(DataOutputStream file) throws IOException {

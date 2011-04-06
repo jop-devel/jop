@@ -57,7 +57,7 @@ public class ExampleTool extends EmptyTool<ExampleManager> {
     }
 
     @Override
-    public void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException {
+    public void onSetupConfig(AppSetup setup, OptionGroup options) throws Config.BadConfigurationException {
     }
 
     public void run(Config config) {

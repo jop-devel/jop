@@ -29,6 +29,7 @@ import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationError;
 import com.jopdesign.common.config.EnumOption;
 import com.jopdesign.common.config.Option;
+import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
@@ -108,16 +109,16 @@ public class ProjectConfig {
     };
 
 
-    private Config config;
+    private OptionGroup config;
     private AppInfo appInfo;
 
-    public ProjectConfig(Config config) {
+    public ProjectConfig(OptionGroup config) {
         this.config = config;
         this.appInfo = AppInfo.getSingleton();
     }
 
     public Config getConfig() {
-        return this.config;
+        return this.config.getConfig();
     }
 
     /**
@@ -190,7 +191,7 @@ public class ProjectConfig {
 
     public File getOutDir() {
         //return new File(config.getOption(WCET_OUT));
-        return config.getOutDir();
+        return getConfig().getOutDir();
     }
 
     /**
