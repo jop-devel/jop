@@ -20,8 +20,8 @@
 
 package com.jopdesign.common;
 
+import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
-import com.jopdesign.common.config.OptionGroup;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -53,11 +53,11 @@ public abstract class EmptyTool<T extends AppEventHandler> implements JopTool<T>
     }
 
     @Override
-    public void registerOptions(OptionGroup options) {
+    public void registerOptions(Config config) {
     }
 
     @Override
-    public void onSetupConfig(AppSetup setup, OptionGroup options) throws BadConfigurationException {
+    public void onSetupConfig(AppSetup setup) throws BadConfigurationException {
     }
 
     @Override

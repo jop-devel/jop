@@ -22,7 +22,6 @@ package com.jopdesign.common;
 
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
-import com.jopdesign.common.config.OptionGroup;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -72,9 +71,13 @@ public interface JopTool<T extends AppEventHandler> {
 
     /**
      * Register the options of this tool to the given optiongroup.
-     * @param options the optiongroup where this tool is expected to add its options.
+     * <p>
+     * If this tool is supposed to be executed several times with different options, the tool must
+     * support this itself (e.g. by creating and using separate OptionGroups for different phases).
+     * </p>
+     * @param config the Config where this tool is expected to add its options.
      */
-    void registerOptions(OptionGroup options);
+    void registerOptions(Config config);
 
     /**
      * Called by {@link AppSetup#setupConfig(String[])} after the configuration has been loaded.
@@ -86,11 +89,10 @@ public interface JopTool<T extends AppEventHandler> {
      * </p>
      *
      * @param setup the AppSetup used to initialize this tool
-     * @param options the OptionGroup used for {@link #registerOptions(OptionGroup)}
      * @throws Config.BadConfigurationException if there is something rotten in the config or
      *                                          if the tool cannot be initialized
      */
-    void onSetupConfig(AppSetup setup, OptionGroup options) throws Config.BadConfigurationException;
+    void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException;
 
     /**
      * Called by {@link AppSetup#setupAppInfo(String[], boolean)} after the AppInfo roots and main
@@ -106,7 +108,7 @@ public interface JopTool<T extends AppEventHandler> {
      * Initialize the tool after AppInfo has been initialized and all classes have been loaded.
      * <p>
      * All setup tasks which affect class loading (like initializing
-     * {@link AppEventHandler#onCreateClass(ClassInfo, boolean)}) must be done in {@link #onSetupConfig(AppSetup,OptionGroup)}
+     * {@link AppEventHandler#onCreateClass(ClassInfo, boolean)}) must be done in {@link #onSetupConfig(AppSetup)}
      * or {@link #onSetupRoots(AppSetup, AppInfo)}, but note that AppInfo is not available in the first method.
      * </p>
      *

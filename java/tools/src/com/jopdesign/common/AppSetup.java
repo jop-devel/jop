@@ -251,7 +251,7 @@ public class AppSetup {
         }
 
         // setup options
-        jopTool.registerOptions(config.getOptions());
+        jopTool.registerOptions(config);
     }
 
     /**
@@ -442,7 +442,7 @@ public class AppSetup {
         try {
             for (String tool : tools.keySet()) {
                 if (useTool(tool)) {
-                    tools.get(tool).onSetupConfig(this, config.getOptions());
+                    tools.get(tool).onSetupConfig(this);
                 }
             }
         } catch (Config.BadConfigurationException e) {

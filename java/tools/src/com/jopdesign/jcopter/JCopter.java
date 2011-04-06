@@ -61,7 +61,8 @@ public class JCopter extends EmptyTool<JCopterManager> {
     }
 
     @Override
-    public void registerOptions(OptionGroup options) {
+    public void registerOptions(Config config) {
+        OptionGroup options = config.getOptions();
         JCopterConfig.registerOptions(options);
         // TODO add options/profiles/.. to this so that only a subset of
         //      optimizations/analyses are initialized ? Overwrite PhaseExecutor for this?
@@ -70,8 +71,10 @@ public class JCopter extends EmptyTool<JCopterManager> {
     }
 
     @Override
-    public void onSetupConfig(AppSetup setup, OptionGroup options) throws Config.BadConfigurationException {
+    public void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException {
 
+        OptionGroup options = setup.getConfig().getOptions();
+        
         config = new JCopterConfig(options);
         executor = new PhaseExecutor(this, options);
 

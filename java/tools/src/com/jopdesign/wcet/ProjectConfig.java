@@ -29,7 +29,6 @@ import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationError;
 import com.jopdesign.common.config.EnumOption;
 import com.jopdesign.common.config.Option;
-import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
@@ -109,16 +108,16 @@ public class ProjectConfig {
     };
 
 
-    private OptionGroup config;
+    private Config config;
     private AppInfo appInfo;
 
-    public ProjectConfig(OptionGroup config) {
+    public ProjectConfig(Config config) {
         this.config = config;
         this.appInfo = AppInfo.getSingleton();
     }
 
     public Config getConfig() {
-        return this.config.getConfig();
+        return this.config;
     }
 
     /**
