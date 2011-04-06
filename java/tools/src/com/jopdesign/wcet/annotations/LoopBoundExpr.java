@@ -13,6 +13,7 @@ import org.apache.bcel.classfile.ConstantValue;
 import org.apache.log4j.Logger;
 
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.graphutils.Pair;
 
@@ -127,7 +128,7 @@ public abstract class LoopBoundExpr {
 	/** Constant loop upper bound, or null if no (independent) constant upper bound is known */
 	public Long upperBound(ExecutionContext ctx) {
 		Pair<LInteger, LInteger> cv = constValue(ctx);
-		if(cv == null) return null;
+		if(cv.second().isInfinite()) return null;
 		return cv.second().longValue();
 	}
 
@@ -360,7 +361,12 @@ public abstract class LoopBoundExpr {
 			} else {
 				ci = ctx.getMethodInfo().getAppInfo().getClassInfo(className);
 			}
-			ConstantValue cv = ci.getFieldInfo(fieldName).getField().getConstantValue();
+			FieldInfo fieldInfo = ci.getFieldInfo(fieldName);
+			if(fieldInfo == null) {
+				Logger.getLogger(this.getClass()).error("Loop Bound Expression: Cannot find information on constant value "+toString());
+				return ANY_VALUE;
+			}
+			ConstantValue cv = fieldInfo.getField().getConstantValue();
 			if(cv == null) {
 				Logger.getLogger(this.getClass()).error("Loop Bound Expression: Cannot find information on constant value "+toString());
 				return ANY_VALUE;
