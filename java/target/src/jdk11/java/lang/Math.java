@@ -326,6 +326,15 @@ public final class Math {
 	  {
 	    return Cordic.cos(a);
 	  }
+	  
+	  public static double tan(double a)
+	  {
+		  return sin(a) / cos(a);
+	  }
+	  
+	  public static double atan2(double y, double x) {
+		  throw new Error("atan2 missing");
+	  }
 
 
 	/**
