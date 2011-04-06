@@ -20,6 +20,7 @@
 
 package com.jopdesign.jcopter;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Option;
@@ -35,11 +36,12 @@ import com.jopdesign.common.config.OptionGroup;
  */
 public class JCopterConfig {
 
-    public static final BooleanOption ALLOW_INCOMPLETE_APP =
-            new BooleanOption("allow-incomplete", "Ignore missing classes", false);
+    public static final BooleanOption ASSUME_REFLECTION =
+            new BooleanOption("assume-reflection",
+                    "Assume that reflection is used. If not set, check the code for reflection code.", false);
 
     private static final Option[] optionList =
-            { ALLOW_INCOMPLETE_APP };
+            { ASSUME_REFLECTION };
 
     public static void registerOptions(OptionGroup options) {
         options.addOptions(JCopterConfig.optionList);
@@ -51,11 +53,32 @@ public class JCopterConfig {
         this.options = options;
     }
 
+    /**
+     * Check the options, check if the assumptions on the code hold.
+     */
+    public void checkOptions() {
+        // TODO implement reflection check, implement incomplete code check
+    }
+
+    public AppInfo getAppInfo() {
+        return AppInfo.getSingleton();
+    }
+
     public Config getConfig() {
         return options.getConfig();
     }
 
-    public boolean doAllowIncompleteApp() {
-        return options.getOption(ALLOW_INCOMPLETE_APP);
+    /**
+     * @return true if we need to assume that reflection is used in the code.
+     */
+    public boolean doAssumeReflection() {
+        return options.getOption(ASSUME_REFLECTION);
+    }
+
+    /**
+     * @return true if we need to assume that the class hierarchy is not fully known
+     */
+    public boolean doAssumeIncompleteApp() {
+        return getAppInfo().doIgnoreMissingClasses();
     }
 }

@@ -24,6 +24,7 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.EmptyTool;
 import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.wcet.WCETTool;
@@ -77,11 +78,11 @@ public class JCopter extends EmptyTool<JCopterManager> {
         
         config = new JCopterConfig(options);
         executor = new PhaseExecutor(this, options);
+    }
 
-        if ( config.doAllowIncompleteApp() ) {
-            appInfo.setIgnoreMissingClasses(true);
-        }
-
+    @Override
+    public void onSetupAppInfo(AppSetup setup, AppInfo appInfo) throws BadConfigurationException {
+        config.checkOptions();
     }
 
     public JCopterConfig getJConfig() {
