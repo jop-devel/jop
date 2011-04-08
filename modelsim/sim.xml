@@ -20,15 +20,19 @@
 		</presetdef>
 
 		<vcom>
+			<arg line="${jopdir}/simpcon/sc_pack.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/top/jop_config_global.vhd"/>
+		</vcom>
+
+		<vcom>
 			<arg line="${jopdir}/simulation/sim_jop_config_100.vhd"/>
 		</vcom>
 
 		<vcom>
 			<arg line="${jopdir}/core/jop_types.vhd"/>
-		</vcom>
-
-		<vcom>
-			<arg line="${jopdir}/simpcon/sc_pack.vhd"/>
 		</vcom>
 
 		<vcom>
@@ -164,7 +168,7 @@
 		</vcom>
 
 		<vcom>
-			<arg line="${jopdir}/scio/scio_min_cache.vhd"/>
+			<arg line="${jopdir}/scio/scio_min.vhd"/>
 		</vcom>
 
 		<vcom>
@@ -172,7 +176,7 @@
 		</vcom>
 
 		<vcom>
-			<arg line="${jopdir}/top/jopcyc12_cache.vhd"/>
+			<arg line="${jopdir}/top/jopcyc12.vhd"/>
 		</vcom>
 
 		<vcom>
