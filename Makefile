@@ -360,7 +360,7 @@ ifeq ($(USE_RTTM),yes)
 endif
 	javac $(TARGET_JFLAGS) $(TARGET_APP)
 	# WCETPreprocess, overwrite existing class files 
-	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.wcet.WcetPreprocess \
+	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.wcet.WCETPreprocess \
            -c $(TARGET)/dist/classes -o $(TARGET)/dist $(MAIN_CLASS)
 ifeq ($(USE_JCOPTER),yes)
 	# JOPizer	
@@ -764,7 +764,7 @@ appinfo: tools
 testapp: tools
 	make java_app
 	-mkdir $(TARGET)/xxx
-	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
+	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WCETPreprocess \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/xxx $(MAIN_CLASS)
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
 		-cp $(TARGET)/xxx -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)

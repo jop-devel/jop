@@ -40,11 +40,11 @@ import com.jopdesign.common.AppSetup;
  * @author Martin Schoeberl
  * @author Stefan Hepp
  */
-public class WcetPreprocess {
+public class WCETPreprocess {
 
     private static final long serialVersionUID = 1L;
 
-    public WcetPreprocess() {
+    public WCETPreprocess() {
     }
 
     public static void preprocess(AppInfo ai) {

@@ -753,7 +753,7 @@
 	        <mkdir dir="${target}/tmp"/>
 		<java
 		   classpathref="tools-cp"
-		   classname="com.jopdesign.build.WcetPreprocess"
+		   classname="com.jopdesign.build.WCETPreprocess"
 		   failonerror="true" fork="true">
 		  <arg line="-cp ${target}/dist/lib/classes.zip -o ${target}/tmp ${main-class}"/>
 		</java>

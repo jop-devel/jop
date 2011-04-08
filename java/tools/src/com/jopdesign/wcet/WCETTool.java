@@ -235,7 +235,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         rebuildCallGraph();
 
         if (projectConfig.doPreprocess()) {
-            WcetPreprocess.preprocess(appInfo);
+            WCETPreprocess.preprocess(appInfo);
         }
 
         dumpCallGraph("callgraph");        
