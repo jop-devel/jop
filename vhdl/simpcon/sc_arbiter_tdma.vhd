@@ -68,15 +68,15 @@ use work.jop_types.all;
 entity arbiter is
 	generic(
 		addr_bits : integer;
-		CPU_CNT	: integer;
+		cpu_cnt	: integer;
 		write_gap : integer; -- remove defaults, each project shall
 		read_gap  : integer; -- set the correct numbers in the top level
 		slot_length : integer
 		);		-- number of masters for the arbiter
 	port (
 		clk, reset	: in std_logic;			
-		arb_out			: in arb_out_type(0 to CPU_CNT-1);
-		arb_in			: out arb_in_type(0 to CPU_CNT-1);
+		arb_out			: in arb_out_type(0 to cpu_cnt-1);
+		arb_in			: out arb_in_type(0 to cpu_cnt-1);
 		mem_out			: out sc_out_type;
 		mem_in			: in sc_in_type
 		);
@@ -86,29 +86,29 @@ end arbiter;
 architecture rtl of arbiter is
 
 -- stores the signals in a register of each master
-	signal reg_out, next_reg_out : arb_out_type(0 to CPU_CNT-1);
+	signal reg_out, next_reg_out : arb_out_type(0 to cpu_cnt-1);
 	
 -- register to CPU for rd_data
-	type reg_in_type is array (0 to CPU_CNT-1) of std_logic_vector(31 downto 0);
+	type reg_in_type is array (0 to cpu_cnt-1) of std_logic_vector(31 downto 0);
 	signal reg_in, next_reg_in : reg_in_type;
 	
 -- one fsm for each CPU
 	type state_type is (idle, pending, waitR, waitW);
-	type state_array is array (0 to CPU_CNT-1) of state_type;
+	type state_array is array (0 to cpu_cnt-1) of state_type;
 	signal state, next_state : state_array;
 -- stae machines for pipelining
 	type waitstate_type is (idle, wait1, wait0);
-	type waitstate_array is array (0 to CPU_CNT-1) of waitstate_type;
+	type waitstate_array is array (0 to cpu_cnt-1) of waitstate_type;
 	signal waitstate, next_waitstate : waitstate_array;
 
-	constant period : integer := CPU_CNT*slot_length;
+	constant period : integer := cpu_cnt*slot_length;
 
 -- counter
 	subtype counter_type is integer range 0 to period;
 	signal counter : counter_type;
-	type time_type is array (0 to CPU_CNT-1) of counter_type;
+	type time_type is array (0 to cpu_cnt-1) of counter_type;
 	signal cpu_time : time_type; -- how much clock cycles each CPU
-	type slot_type is array (0 to CPU_CNT-1) of std_logic;
+	type slot_type is array (0 to cpu_cnt-1) of std_logic;
 	signal rdslot : slot_type; -- defines which CPU may read
 	signal wrslot : slot_type; -- defines which CPU may write
 	
@@ -128,7 +128,7 @@ begin
 	end process;
 	
 	-- generate slot information
-	gen_timing: for i in 0 to CPU_CNT-1 generate
+	gen_timing: for i in 0 to cpu_cnt-1 generate
 		cpu_time(i) <= (i+1)*slot_length;
 	end generate;	
 
@@ -136,13 +136,13 @@ begin
 	gen_slots: process(counter, cpu_time)
 		variable lower_limit : integer;
 	begin
-		for i in 0 to CPU_CNT-1 loop
+		for i in 0 to cpu_cnt-1 loop
 			rdslot(i) <= '0';
 			wrslot(i) <= '0';
 		end loop;
 
 		lower_limit := 0;
-		for i in 0 to CPU_CNT-1 loop
+		for i in 0 to cpu_cnt-1 loop
 			if (counter >= lower_limit) and (counter < cpu_time(i)-write_gap) then
 				wrslot(i) <= '1';
 			end if;
@@ -153,7 +153,7 @@ begin
 		end loop;
 	end process;	
 
-	sync: for i in 0 to CPU_CNT-1 generate
+	sync: for i in 0 to cpu_cnt-1 generate
 		process (clk, reset)
 		begin  -- process sync
 			if reset = '1' then  				-- asynchronous reset (active low)
@@ -180,7 +180,7 @@ begin
 	end generate;
 
 	-- state machine for each master
-	async: for i in 0 to CPU_CNT-1 generate
+	async: for i in 0 to cpu_cnt-1 generate
 		process(rdslot, wrslot, state, waitstate, reg_in, reg_out, arb_out, mem_in)
 		begin
 
@@ -273,7 +273,7 @@ begin
 		mem_out.rd <= '0';
 		mem_out.wr <= '0';
 		
-		for i in 0 to CPU_CNT-1 loop
+		for i in 0 to cpu_cnt-1 loop
 			-- pass on registered value
 			if rdslot(i) = '1' and reg_out(i).rd = '1' then
 				mem_out <= reg_out(i);

@@ -39,8 +39,12 @@ use work.sc_arbiter_pack.all;
 
 entity arbiter is
 generic(
-			addr_bits : integer;
-			cpu_cnt	: integer);		-- number of masters for the arbiter
+		addr_bits : integer;
+		cpu_cnt	: integer; -- number of masters for the arbiter
+		write_gap : integer; -- dummy to be compatible with TDMA arbiter
+		read_gap  : integer;
+		slot_length : integer
+		);
 port (
 			clk, reset	: in std_logic;			
 			arb_out			: in arb_out_type(0 to cpu_cnt-1);

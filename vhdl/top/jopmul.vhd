@@ -110,7 +110,7 @@ port (
 --
 --	I/O pins of board
 --
---	io_b	: inout std_logic_vector(10 downto 1);
+	io_b	: inout std_logic_vector(10 downto 1);
 	io_l	: inout std_logic_vector(20 downto 1);
 	io_r	: inout std_logic_vector(20 downto 1);
 	io_t	: inout std_logic_vector(6 downto 1)
@@ -246,7 +246,11 @@ end process;
 	arbiter: entity work.arbiter
 		generic map(
 			addr_bits => SC_ADDR_SIZE,
-			cpu_cnt => cpu_cnt
+			cpu_cnt => cpu_cnt,
+			write_gap => 2,
+			read_gap => 1,
+			slot_length => 3
+
 		)
 		port map(clk_int, int_res,
 			sc_arb_out, sc_arb_in,
@@ -311,8 +315,8 @@ end process;
 			wd => wd_out(0),
 			l => io_l,
 			r => io_r,
-			t => io_t
-			--b => io_b
+			t => io_t,
+			b => io_b
 			-- remove the comment for RAM access counting
 			-- ram_cnt => ram_count			
 		);

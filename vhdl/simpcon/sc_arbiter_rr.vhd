@@ -54,7 +54,11 @@ use work.jop_types.all;
 entity arbiter is
 	generic(
 		addr_bits : integer;
-		CPU_CNT	: integer);		-- number of masters for the arbiter
+		cpu_cnt	: integer; -- number of masters for the arbiter
+		write_gap : integer; -- dummy to be compatible with TDMA arbiter
+		read_gap  : integer;
+		slot_length : integer
+		);
 	port (
 		clk, reset	: in std_logic;			
 		arb_out			: in arb_out_type(0 to CPU_CNT-1);

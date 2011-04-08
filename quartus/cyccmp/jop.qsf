@@ -66,6 +66,16 @@ set_location_assignment PIN_24 -to fl_noe
 set_location_assignment PIN_15 -to fl_nwe
 set_location_assignment PIN_29 -to fl_rdy
 set_location_assignment PIN_21 -to freeio
+set_location_assignment PIN_124 -to io_b[10]
+set_location_assignment PIN_58 -to io_b[1]
+set_location_assignment PIN_59 -to io_b[2]
+set_location_assignment PIN_60 -to io_b[3]
+set_location_assignment PIN_61 -to io_b[4]
+set_location_assignment PIN_62 -to io_b[5]
+set_location_assignment PIN_120 -to io_b[6]
+set_location_assignment PIN_121 -to io_b[7]
+set_location_assignment PIN_122 -to io_b[8]
+set_location_assignment PIN_123 -to io_b[9]
 set_location_assignment PIN_13 -to io_l[10]
 set_location_assignment PIN_38 -to io_l[11]
 set_location_assignment PIN_39 -to io_l[12]
