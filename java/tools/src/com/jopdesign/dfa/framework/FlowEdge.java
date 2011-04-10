@@ -20,7 +20,15 @@
 
 package com.jopdesign.dfa.framework;
 
+import java.io.Serializable;
+
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InstructionList;
+
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.misc.MethodNotFoundException;
+import com.jopdesign.common.type.MemberID;
 
 public class FlowEdge {
 
@@ -30,24 +38,26 @@ public class FlowEdge {
 
     private final InstructionHandle tail;
     private final InstructionHandle head;
-    private final Context context;
     private final int type;
 
+    private final Context context;
+
     public FlowEdge(InstructionHandle tail, InstructionHandle head, int type) {
-        this.tail = tail;
-        this.head = head;
-        this.context = null;
-        this.type = type;
+    	this(tail,head,type,null);
     }
 
     @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
     public FlowEdge(FlowEdge f, Context c) {
-        this.tail = f.tail;
-        this.head = f.head;
-        this.context = c;
-        this.type = f.type;
+    	this(f.tail,f.head,f.type,c);
     }
 
+    private FlowEdge(InstructionHandle tail, InstructionHandle head, int type, Context ctx) {
+        this.tail = tail;
+        this.head = head;
+        this.context = ctx;
+        this.type = type;    	
+    }
+    
     public InstructionHandle getHead() {
         return head;
     }
@@ -110,5 +120,34 @@ public class FlowEdge {
             return false;
         return true;
     }
+
+	public static class SerializedFlowEdge implements Serializable {
+		
+		private static final long serialVersionUID = 1L;
+
+		private int type;
+		private String methodName;
+		private int headIns;
+		private int tailIns;
+
+		public SerializedFlowEdge(FlowEdge e) {
+
+			this.type       = e.type;
+			this.methodName = e.getContext().getMethodInfo().getFQMethodName();
+			this.headIns    = e.head.getPosition();
+			this.tailIns    = e.head.getPosition();
+		}
+		
+		public FlowEdge toFlowEdge(AppInfo appInfo) throws MethodNotFoundException {
+	
+			MethodInfo method = appInfo.getMethodInfo(MemberID.parse(methodName));
+			InstructionList instructions = method.getCode().getInstructionList(false, false);
+			Context ctx = new Context();
+			ctx.setMethodInfo(method);
+
+			return new FlowEdge(instructions.findHandle(tailIns),
+					instructions.findHandle(headIns), this.type, ctx);
+		}
+	}
 
 }

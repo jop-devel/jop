@@ -196,6 +196,7 @@ public abstract class LoopBoundExpr {
 			while(argIter.hasNext()) {
 				r = r.binOp(ASSOCIATIVE_BIN_OPS.get(ident), argIter.next());
 			}
+			return r;
 		}
 		throw new ArithmeticException("Unsupported prim-op: "+ident);
 	}

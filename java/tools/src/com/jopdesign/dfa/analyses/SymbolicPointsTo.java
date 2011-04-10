@@ -20,13 +20,17 @@
 
 package com.jopdesign.dfa.analyses;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.graphutils.Pair;
+import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils.Query;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.framework.Analysis;
 import com.jopdesign.dfa.framework.BoundedSetFactory;
 import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
+import com.jopdesign.dfa.framework.AnalysisResultSerialization;
 import com.jopdesign.dfa.framework.Context;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.FlowEdge;
@@ -52,6 +56,8 @@ import org.apache.bcel.generic.StoreInstruction;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -68,7 +74,8 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 	// Set this to true to see how good one could get
 	private static final boolean ASSUME_NO_CONC = true;
 
-    private static final Logger logger = Logger.getLogger(DFATool.LOG_DFA_ANALYSES+".SymbolicPointsTo");
+    public static final String NAME = "SymbolicPointsTo";
+    private static final Logger logger = Logger.getLogger(DFATool.LOG_DFA_ANALYSES+"."+NAME);
 
 	private BoundedSetFactory<SymbolicAddress> bsFactory;
 	private final int callStringLength;
@@ -86,6 +93,10 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		executedOnce = new Query<InstructionHandle>() {
 			public boolean query(InstructionHandle a) { return false; }			
 		};
+	}
+
+	public String getId() {
+		return NAME + "-" + callStringLength;
 	}
 
 	public SymbolicPointsTo(int maxSetSize, int callStringLength, Query<InstructionHandle> eoAna) {
@@ -1009,4 +1020,14 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		return usedRefs;
 	}
 	
+    @Override
+	public void serializeResult(File cacheFile) throws IOException {
+    	AnalysisResultSerialization.fromContextMapResult(getResult()).serialize(cacheFile);
+	}
+
+    @Override
+    public Map deSerializeResult(AppInfo appInfo, File cacheFile) throws IOException,
+			ClassNotFoundException, MethodNotFoundException {
+    	return AnalysisResultSerialization.fromSerialization(cacheFile).toContextMapResult(appInfo, null);
+	}
 }

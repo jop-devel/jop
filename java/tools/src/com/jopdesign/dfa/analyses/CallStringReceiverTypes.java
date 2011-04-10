@@ -20,15 +20,18 @@
 
 package com.jopdesign.dfa.analyses;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.misc.AppInfoError;
+import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MissingClassError;
 import com.jopdesign.common.type.FieldRef;
 import com.jopdesign.common.type.MethodRef;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.framework.Analysis;
+import com.jopdesign.dfa.framework.AnalysisResultSerialization;
 import com.jopdesign.dfa.framework.Context;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.FlowEdge;
@@ -56,6 +59,8 @@ import org.apache.bcel.generic.StoreInstruction;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -68,11 +73,16 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 
     private final int callStringLength;
 
-    public static final Logger logger = Logger.getLogger(DFATool.LOG_DFA_ANALYSES+".CallStringReceiverTypes");
+    public static final String NAME = "CallStringReceiverTypes";
+    public static final Logger logger = Logger.getLogger(DFATool.LOG_DFA_ANALYSES+"."+NAME);
 
     public CallStringReceiverTypes(int callStringLength) {
         this.callStringLength = callStringLength;
     }
+
+	public String getId() {
+		return NAME + "-" + callStringLength;
+	}
 
     private Map<String, ContextMap<CallString, Set<TypeMapping>>> threads = new LinkedHashMap<String, ContextMap<CallString, Set<TypeMapping>>>();
     private Map<InstructionHandle, ContextMap<CallString, Set<String>>> targets = new LinkedHashMap<InstructionHandle, ContextMap<CallString, Set<String>>>();
@@ -122,7 +132,8 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
         }
 
         if (b == null) {
-            System.err.println(s2.getContext().callString.toStringList());
+        	logger.error("RT join: failed to find DF information for "+
+        			     s2.getContext().callString.toStringVerbose(false));
         }
 
         merged.addAll(b);
@@ -1359,16 +1370,24 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
     }
 
     public void printResult(DFATool program) {
-
-        for (InstructionHandle instr : targets.keySet()) {
-            ContextMap<CallString, Set<String>> r = targets.get(instr);
-            Context c = r.getContext();
-
-            System.out.println(c.method() + ":" + instr.getPosition());
-            for (CallString target : r.keySet()) {
-                System.out.println("\t" + target.toStringList() + " -> " + r.get(target));
-            }
-        }
+    	AnalysisResultSerialization.fromContextMapResult(getResult()).dump(System.out);
     }
+
+    @Override
+	public void serializeResult(File cacheFile) throws IOException {
+    	AnalysisResultSerialization.fromContextMapResult(getResult()).serialize(cacheFile);
+	}
+
+	public Map<InstructionHandle, ContextMap<CallString, Set<String>>>
+	    deSerializeResult(AppInfo appInfo, File cacheFile)
+	    throws IOException,ClassNotFoundException, MethodNotFoundException {
+
+		AnalysisResultSerialization<Set<String>> serialization =
+    		AnalysisResultSerialization.fromSerialization(cacheFile);
+		this.targets = serialization.toContextMapResult(appInfo, null);
+    	this.threads = null;
+    	return targets;
+	}
+
 
 }

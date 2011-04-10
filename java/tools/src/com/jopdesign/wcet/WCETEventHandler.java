@@ -44,6 +44,8 @@ import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * This class provides callback methods for AppInfo and performs the annotation loading.
@@ -64,6 +66,8 @@ public class WCETEventHandler extends EmptyAppEventHandler {
 
     private WCETTool project;
     private SourceAnnotationReader annotationReader;
+
+	private Set<BasicBlock> loopBoundWarnings = new HashSet<BasicBlock>();
 
     public WCETEventHandler(WCETTool wcetTool) {
         this.project = wcetTool;
@@ -170,28 +174,34 @@ public class WCETEventHandler extends EmptyAppEventHandler {
             // Insert a try-catch to deal with failures of the DFA analysis
             int bound;
             try {
-                bound = lbs.getBound(project.getDfaTool(), headOfLoopBlock.getLastInstruction(),eCtx.getCallString());
+                bound = lbs.getBound(headOfLoopBlock.getLastInstruction(),eCtx.getCallString());
             } catch(NullPointerException ex) {
                 // TODO not cool ..
                 ex.printStackTrace();
                 bound = -1;
             }
             if(bound < 0) {
-                logger.info("No DFA bound for " + methodInfo);
                 dfaBound = annotatedValue;
+                if(! loopBoundWarnings.contains(headOfLoopBlock)) {
+                	logger.info("No DFA bound for " + methodInfo+". Using manual bound: "+annotatedValue);
+                	loopBoundWarnings.add(headOfLoopBlock);
+                }
             } else if(annotatedValue == null) {
-                logger.info("Only DFA bound for "+methodInfo);
                 dfaBound = LoopBound.boundedAbove(bound);
+                logger.debug("Only DFA bound for "+methodInfo);
             } else {
                 dfaBound = annotatedValue.clone();
                 // More testing would be nice
                 dfaBound.addBound(LoopBoundExpr.numUpperBound(bound), SymbolicMarker.LOOP_ENTRY); 
                 long loopUb = annotatedValue.getSimpleLoopBound().upperBound(eCtx);
                 if(bound < loopUb) {
-                    logger.info("DFA analysis reports a smaller upper bound :"+bound+ " < "+loopUb+
+                    if(! loopBoundWarnings.contains(headOfLoopBlock)) {
+                        logger.info("DFA analysis reports a smaller upper bound :"+bound+ " < "+loopUb+
                                 " for "+methodInfo);
+                    	loopBoundWarnings.add(headOfLoopBlock);
+                    }
                 } else if (bound > loopUb) {
-                    logger.info("DFA analysis reports a larger upper bound: "+bound+ " > "+loopUb+
+                    logger.debug("DFA analysis reports a larger upper bound: "+bound+ " > "+loopUb+
                                 " for "+methodInfo);
                 } else {
                     if (logger.isDebugEnabled()) {
@@ -202,6 +212,7 @@ public class WCETEventHandler extends EmptyAppEventHandler {
         } else {
             dfaBound = annotatedValue;
         }
+                
         return dfaBound;
     }
 

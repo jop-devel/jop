@@ -25,6 +25,7 @@ import com.jopdesign.dfa.framework.BoundedSetFactory;
 import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 import org.apache.log4j.Logger;
 
+import java.io.Serializable;
 import java.util.HashMap;
 
 /**
@@ -32,7 +33,9 @@ import java.util.HashMap;
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  *
  */
-public class SymbolicAddress {
+public class SymbolicAddress implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	enum Tag { ROOT, FIELD_ACCESS, ARRAY_ACCESS }
 
@@ -48,12 +51,18 @@ public class SymbolicAddress {
 
 	}
 	
-	private static class RootObject extends SymbolicAddressNode {
+	private static class RootObject extends SymbolicAddressNode implements Serializable {
+
+		private static final long serialVersionUID = 1L;
+		
 		private HashedString name;
+		
 		public RootObject(HashedString name) {
 			this.name = name ;
 		}
-		public SymbolicAddress getParent() { return null; }
+		public SymbolicAddress getParent() { 
+			return null;
+		}
 		@Override
 		public int hashCode() {
 			return name.hashCode();
@@ -68,17 +77,23 @@ public class SymbolicAddress {
 		}
 	}
 
-	private static class FieldAccess extends SymbolicAddressNode {
+	private static class FieldAccess extends SymbolicAddressNode implements Serializable {
+
+		private static final long serialVersionUID = 1L;
+		
 		private SymbolicAddress parent;
 		private HashedString field;
 		private int hashCode;
 		private String stringReprCache = null;
+		
 		public FieldAccess(SymbolicAddress parent, String field) {
 			this.parent = parent;
 			this.field = new HashedString(field);
 			hashCode = field.hashCode() * 31 + parent.hashCode();
 		}
-		public SymbolicAddress getParent() { return parent; }
+		public SymbolicAddress getParent() {
+			return parent;
+		}
 		@Override
 		public int hashCode() {
 			return hashCode;
@@ -101,15 +116,18 @@ public class SymbolicAddress {
 		}
 	}
 
-	private static class ArrayAccess extends SymbolicAddressNode {
+	private static class ArrayAccess extends SymbolicAddressNode implements Serializable {
+
+		private static final long serialVersionUID = 1L;
+		
 		enum ArrayAccessKind { ANY, UNIQUE, ELEM }
 
 		private SymbolicAddress parent;
-		public SymbolicAddress getParent() { return parent; }
 		private ArrayAccessKind kind;
 		private long index;
 		private int hashCode;
 		private String stringReprCache;
+		
 		public static ArrayAccess any(SymbolicAddress symbolicAddress) {
 			ArrayAccess san = new ArrayAccess();
 			san.parent = symbolicAddress;
@@ -133,6 +151,9 @@ public class SymbolicAddress {
 			san.index = ix;
 			san.hashCode = san.parent.hashCode() * 31 + 3 + (ix)<<1;
 			return san;
+		}
+		public SymbolicAddress getParent() { 
+			return parent;
 		}
 		@Override
 		public int hashCode() {

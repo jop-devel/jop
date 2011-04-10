@@ -20,10 +20,13 @@
 
 package com.jopdesign.dfa.analyses;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
 @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
-public class Interval {
+public class Interval implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	public static final int TOP = Integer.MAX_VALUE;
 	public static final int BOT = Integer.MIN_VALUE;

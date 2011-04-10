@@ -20,12 +20,16 @@
 
 package com.jopdesign.common.misc;
 
+import java.io.Serializable;
+
 /**
  * A class which stores a string and its hash value.
  */
-public class HashedString {
+public class HashedString implements Serializable {
 
-    private final String value;
+	private static final long serialVersionUID = 1L;
+	
+	private final String value;
     private final int hash;
 
     public HashedString(String value) {
@@ -44,8 +48,13 @@ public class HashedString {
     public boolean equals(Object o) {
         if (this == o)
             return true;
-        if (getClass() != o.getClass())
-            return false;
-        return value.equals(o.toString());
+        try {
+        	HashedString oHashedString = (HashedString)o;
+        	if(hash != oHashedString.hash) 
+        		return false;
+            return value.equals(oHashedString.value);
+        } catch(ClassCastException e) {
+        	return false;
+        }
     }
 }

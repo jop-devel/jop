@@ -20,9 +20,13 @@
 
 package com.jopdesign.dfa.analyses;
 
-public class Location {
+import java.io.Serializable;
 
-    public final int stackLoc;
+public class Location implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	public final int stackLoc;
     public final String heapLoc;
     private final int hash;
 

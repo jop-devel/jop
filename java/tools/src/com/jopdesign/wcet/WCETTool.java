@@ -197,7 +197,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         }
 
         // create output dir only after initialization is successful
-        File outDir = projectConfig.getOutDir();
+        File outDir = projectConfig.getProjectDir();
         Config.checkDir(outDir, true);
     }
 
@@ -408,15 +408,12 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     }
 
     public File getOutDir(String sub) {
-        File outDir = projectConfig.getOutDir();
-        File subDir = new File(outDir, sub);
-        if (!subDir.exists()) subDir.mkdir();
-        return subDir;
+    	return projectConfig.getOutDir(sub);
     }
 
-    public File getOutFile(String file) {
-        return new File(projectConfig.getOutDir(), file);
-    }
+//    public File getOutFile(String file) {
+//        return new File(projectConfig.getOutDir(), file);
+//    }
 
     /* FIXME: Slow, caching is missing */
 
@@ -559,8 +556,13 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     public void dataflowAnalysis() {
         int callstringLength = (int) projectConfig.callstringLength();
 
+        // Moved DFA tool cache config to the DFA tool, but still ...
+        // FIXME: At the moment, we do not have a nice directory structure respecting
+        //        the fact that we perform many WCET analyses for one Application
+
         // TODO move this stuff to DFATool
         dfaTool.load();
+        
         topLevelLogger.info("Receiver analysis");
         CallStringReceiverTypes recTys = new CallStringReceiverTypes(callstringLength);
         Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults =

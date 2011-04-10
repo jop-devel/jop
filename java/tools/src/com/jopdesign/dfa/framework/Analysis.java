@@ -20,13 +20,25 @@
 
 package com.jopdesign.dfa.framework;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.dfa.DFATool;
+
 import org.apache.bcel.generic.InstructionHandle;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 public interface Analysis<K, V> {
+
+	/**
+	 * @return Unique ID for this analysis instance
+	 */
+	String getId();
 
     ContextMap<K, V> bottom();
 
@@ -61,4 +73,18 @@ public interface Analysis<K, V> {
     Map getResult();
 
     void printResult(DFATool program);
+
+    /** serialize the analysis results to the given file. 
+     *  precondition: {@link getResult()} returns non-null value.
+     *  @param cacheFile the file to serialize to
+     *  @throws IOException */
+	void serializeResult(File cacheFile) throws IOException;
+
+    /** deserialize the analysis results from the given file. 
+     *  precondition: {@link getResult()} returns non-null value.
+     *  @param cacheFile the file to serialize to
+     *  @throws IOException */
+	Map deSerializeResult(AppInfo appInfo, File cacheFile) throws
+		IOException, ClassNotFoundException, MethodNotFoundException;
+	
 }

@@ -59,7 +59,6 @@ import static com.jopdesign.wcet.ExecHelper.timeDiff;
  * WCET Analysis for JOP - Executable
  */
 public class WCETAnalysis {
-    private static final String CONFIG_FILE_NAME = "wcetanalysis.properties";
     private static final boolean CALCULATE_MINIMUM_CACHE_COST = false;
 
     public static void main(String[] args) {
@@ -83,7 +82,8 @@ public class WCETAnalysis {
         setup.registerTool("dfa", dfaTool, true, false);
         setup.registerTool("wcet", wcetTool);
 
-        AppInfo appInfo = setup.initAndLoad(args, true, false, false);
+        @SuppressWarnings("unused")
+		AppInfo appInfo = setup.initAndLoad(args, true, false, false);
 
         if (setup.useTool("dfa")) {
             wcetTool.setDfaTool(dfaTool);
@@ -174,7 +174,7 @@ public class WCETAnalysis {
             project.getReport().generateInfoPages();
             exec.info("Generating result document");
             project.writeReport();
-            exec.info("Generated files are in " + project.getProjectConfig().getOutDir());
+            exec.info("Generated files are in " + project.getProjectConfig().getProjectDir());
         } catch (Exception e) {
             exec.logException("Report generation", e);
             succeed = false;

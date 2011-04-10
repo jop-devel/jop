@@ -20,6 +20,7 @@
 
 package com.jopdesign.dfa.framework;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -73,12 +74,17 @@ public class BoundedSetFactory<V> {
 	 * 
 	 * @author Benedikt Huber <benedikt.huber@gmail.com>
 	 */
-	public class BoundedSetImpl implements BoundedSet<V> {
+	public class BoundedSetImpl implements BoundedSet<V>, Serializable {
+
+		private static final long serialVersionUID = 1L;
+		
 		private Set<V> setImpl;
 		private boolean isSaturated;
+		
 		public BoundedSetImpl() {
 			setImpl = new HashSet<V>();
 		}
+		
 		private BoundedSetImpl(HashSet<V> set) {
 			if(set.size() > limit) {
 				this.isSaturated = true;
@@ -86,6 +92,7 @@ public class BoundedSetFactory<V> {
 				setImpl = set;
 			}
 		}
+		
 		public void add(V el) {
 			if(this.isSaturated()) return; 
 			setImpl.add(el);

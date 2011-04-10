@@ -24,7 +24,11 @@ import org.jgrapht.DirectedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,10 +51,11 @@ import java.util.regex.Pattern;
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  */
 public class MiscUtils {
-    public interface Query<Arg> {
+
+	public interface Query<Arg> {
         boolean query(Arg a);
     }
-
+    
     public interface Function1<Arg, Ret> {
         Ret apply(Arg v);
     }
@@ -378,5 +383,17 @@ public class MiscUtils {
         }
         return new File(result.toString());
     }
+
+	public static void serialize(File outFile, Object obj) throws IOException {
+	    FileOutputStream fos = new FileOutputStream(outFile);
+	    ObjectOutputStream oos = new ObjectOutputStream(fos);
+	    oos.writeObject(obj);
+	}
+
+	public static Object deSerialize(File inFile) throws IOException, ClassNotFoundException {
+		FileInputStream fis = new FileInputStream(inFile);
+		ObjectInputStream ois = new ObjectInputStream(fis);
+		return ois.readObject();
+	}
 
 }

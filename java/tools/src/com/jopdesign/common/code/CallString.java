@@ -21,10 +21,17 @@
 
 package com.jopdesign.common.code;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.graphutils.Pair;
+import com.jopdesign.common.misc.MethodNotFoundException;
+import com.jopdesign.common.type.MemberID;
+
 import org.apache.bcel.generic.InstructionHandle;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,6 +44,33 @@ import java.util.List;
  * @author Stefan Hepp <stefan@stefant.org>
  */
 public class CallString implements CallStringProvider {
+
+	public static class CallStringSerialization implements Serializable {
+		private static final long serialVersionUID = 1L;
+		private List<Pair<String,Integer>> sites = new ArrayList<Pair<String,Integer>>();
+		public CallStringSerialization(CallString cs) {
+			for(InvokeSite site : cs.getInvokeSiteList()) {
+				String method = site.getMethod().getFQMethodName();
+				int pos = site.getInstruction().getPosition();
+				this.sites.add(new Pair<String,Integer>(method,pos));
+			}
+		}
+		public CallString getCallString(AppInfo appInfo) throws MethodNotFoundException {
+			List<InvokeSite> invokeSiteList = new ArrayList<InvokeSite>();
+			for(Pair<String,Integer> invokeSiteSpec : sites) {
+				String methodID   = invokeSiteSpec.first();
+				Integer pos       = invokeSiteSpec.second();
+				MethodInfo method = appInfo.getMethodInfo(MemberID.parse(methodID));
+				InstructionHandle ih = method.getCode().getInstructionList().findHandle(pos);
+				InvokeSite site   = method.getCode().getInvokeSite(ih);
+				invokeSiteList.add(site);
+			}
+			return CallString.fromInvokeSiteList(invokeSiteList);
+		}
+		public String toString() {
+			return this.sites.toString();
+		}
+	}
 
     private final InvokeSite[] callString;
     private final int hash;
@@ -246,8 +280,8 @@ public class CallString implements CallStringProvider {
     }
 
     public String toStringVerbose(boolean newlines) {
-        if (this.isEmpty()) return "CallString.EMPTY";
-        StringBuffer sb = new StringBuffer("CallString{");
+        if (this.isEmpty()) return "CALLCTX[]";
+        StringBuffer sb = new StringBuffer("CALLCTX[");
         boolean first = true;
         for (int i = callString.length-1; i >= 0; i--) {
             if (first) first = false;
@@ -255,7 +289,7 @@ public class CallString implements CallStringProvider {
             else sb.append(";");
             sb.append(callString[i].toString());
         }
-        sb.append("}");
+        sb.append("]");
         return sb.toString();
     }
 
@@ -273,5 +307,16 @@ public class CallString implements CallStringProvider {
         }
         return cs;
     }
+
+    /* for serialization */
+	public InvokeSite[] getInvokeSiteList() {
+		return this.callString;
+	}
+
+	public static CallString fromInvokeSiteList(List<InvokeSite> invokeSiteList) {
+		InvokeSite[] sites = new InvokeSite[invokeSiteList.size()];
+		invokeSiteList.toArray(sites);
+		return new CallString(Arrays.copyOf(sites, sites.length));
+	}
 
 }

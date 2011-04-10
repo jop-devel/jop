@@ -20,17 +20,26 @@
 
 package com.jopdesign.dfa.analyses;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.CallString.CallStringSerialization;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.AppInfoError;
+import com.jopdesign.common.misc.MethodNotFoundException;
+import com.jopdesign.common.type.MemberID;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.framework.Analysis;
+import com.jopdesign.dfa.framework.AnalysisResultSerialization;
 import com.jopdesign.dfa.framework.Context;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.dfa.framework.Interpreter;
 import com.jopdesign.dfa.framework.MethodHelper;
+import com.jopdesign.dfa.framework.AnalysisResultSerialization.ResultFormatter;
+import com.jopdesign.dfa.framework.AnalysisResultSerialization.Serializer;
+import com.jopdesign.dfa.framework.FlowEdge.SerializedFlowEdge;
+
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.generic.ANEWARRAY;
@@ -52,10 +61,19 @@ import org.apache.bcel.generic.StoreInstruction;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -63,7 +81,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
     private final int callStringLength;
 
-    private static final Logger logger = Logger.getLogger(DFATool.LOG_DFA_ANALYSES + ".LoopBounds");
+    public static final String NAME = "LoopBounds";
+    private static final Logger logger = Logger.getLogger(DFATool.LOG_DFA_ANALYSES + "." + NAME);
 
     // used to print messages only once if trace is not enabled
     private Set<String> noReceiverWarnings = new HashSet<String>();
@@ -72,6 +91,10 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
     public LoopBounds(int callStringLength) {
         this.callStringLength = callStringLength;
     }
+
+	public String getId() {
+		return NAME + "-" + callStringLength;
+	}
 
     public ContextMap<CallString, Map<Location, ValueMapping>> bottom() {
         return null;
@@ -1558,11 +1581,11 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
         return bounds;
     }
 
-    public int getBound(DFATool program, InstructionHandle instr) {
-        return getBound(program, instr, CallString.EMPTY);
+    public int getBound(InstructionHandle instr) {
+        return getBound(instr, CallString.EMPTY);
     }
 
-    public int getBound(DFATool program, InstructionHandle instr, CallString csSuffix) {
+    public int getBound(InstructionHandle instr, CallString csSuffix) {
 
         ContextMap<CallString, Pair<ValueMapping, ValueMapping>> r = bounds.get(instr);
         if (r == null) {
@@ -1615,38 +1638,6 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
         return maxValue;
     }
 
-    public void printResult(DFATool program) {
-
-        for (InstructionHandle instr : bounds.keySet()) {
-            ContextMap<CallString, Pair<ValueMapping, ValueMapping>> r = bounds.get(instr);
-            Context c = r.getContext();
-
-            LineNumberTable lines = c.getMethodInfo().getCode().getLineNumberTable();
-            int sourceLine = lines.getSourceLine(instr.getPosition());
-
-            for (CallString callString : r.keySet()) {
-                Pair<ValueMapping, ValueMapping> bounds = r.get(callString);
-
-                ValueMapping first = bounds.first();
-                ValueMapping second = bounds.second();
-
-                System.out.println(c.method() + ":" + sourceLine + ":\t" + callString.toStringList() + "\t$" + scopes.get(instr) + ": ");
-
-                System.out.print("\t\ttrue:\t");
-                System.out.println(first);
-                System.out.print("\t\tfalse:\t");
-                System.out.println(second);
-                System.out.print("\t\tbound:\t");
-
-                int val = getBound(program, instr);
-                if (val >= 0) {
-                    System.out.println(val);
-                } else {
-                    System.out.println("invalid");
-                }
-            }
-        }
-    }
 
     private void recordSize(InstructionHandle stmt, Context context, Interval size) {
         ContextMap<CallString, Interval[]> sizeMap;
@@ -1778,5 +1769,120 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
         }
         return retval;
     }
+    
+    private class LoopBoundsResultFormatter implements ResultFormatter<Pair<ValueMapping,ValueMapping>> {
+
+    	private AppInfo appInfo;
+
+    	public LoopBoundsResultFormatter(AppInfo appInfo) {
+    		
+    		this.appInfo = appInfo;
+    	}
+		
+    	@Override
+		public String format(String method,
+				CallStringSerialization css, Integer position,
+				Pair<ValueMapping, ValueMapping> bounds) {
+			
+			StringBuffer sb = new StringBuffer(); 
+			ValueMapping first = bounds.first();
+			ValueMapping second = bounds.second();
+				
+			sb.append("[true:  ");
+			sb.append(first);
+			sb.append(", false: ");
+			sb.append(second);
+			sb.append(", bound: ");
+
+			InstructionHandle instr;
+			CallString cs;
+			try {
+				instr = appInfo.getMethodInfo(MemberID.parse(method)).
+										  getCode().getInstructionList(false, false).findHandle(position);
+				cs = css.getCallString(appInfo);
+				int val = getBound(instr, cs);
+				if (val >= 0) {
+					sb.append(val);
+				} else {
+					sb.append("invalid");
+				}
+			} catch (MethodNotFoundException e) {
+				e.printStackTrace();
+			}
+			return sb.toString();
+		}
+    	
+    }
+		
+
+    public void printResult(DFATool program) {
+    	AnalysisResultSerialization<Pair<ValueMapping,ValueMapping>> serializedResult =
+    		AnalysisResultSerialization.fromContextMapResult(getResult());
+    	serializedResult.dump(System.out,
+    			new LoopBoundsResultFormatter(program.getAppInfo()));
+    	System.out.println("=== Array Indices ===");
+    	AnalysisResultSerialization.fromContextMapResult(arrayIndices).dump(System.out);
+    	System.out.println("=== Infeasibles ===");
+    	AnalysisResultSerialization.fromContextMapResult(infeasibles, FLOW_EDGE_SET_CONVERTER).dump(System.out);
+    	System.out.println("=== Sizes ===");
+    	AnalysisResultSerialization.fromContextMapResult(sizes).dump(System.out);
+    }
+
+    public static final Serializer<Set<FlowEdge>,List<SerializedFlowEdge>> FLOW_EDGE_SET_CONVERTER = 
+    	new Serializer<Set<FlowEdge>, List<SerializedFlowEdge>>() {
+
+
+		@Override
+		public Set<FlowEdge> fromSerializedRepresentation(
+				List<SerializedFlowEdge> serializedEdges, AppInfo appInfo) 
+				throws IOException, MethodNotFoundException {
+
+			Set<FlowEdge> edges = new HashSet<FlowEdge>();
+			for(SerializedFlowEdge sfe : serializedEdges) {
+				edges.add(sfe.toFlowEdge(appInfo));
+			}
+			return edges;
+		}
+
+		@Override
+		public List<SerializedFlowEdge> serializedRepresentation(
+				Set<FlowEdge> edges) {
+			List<SerializedFlowEdge> serializedEdges = new ArrayList<SerializedFlowEdge>();
+			for(FlowEdge fe : edges) {
+				serializedEdges.add(new FlowEdge.SerializedFlowEdge(fe));
+			}
+			return serializedEdges;
+		}
+    	
+    };
+    
+    /* SERIALIZE (in order): bounds, arrayIndices, infeasibles, scopes, sizes */
+    @Override
+	public void serializeResult(File cacheFile) throws IOException {
+
+    	ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(cacheFile));
+    	AnalysisResultSerialization.fromContextMapResult(bounds).serialize(oos);
+    	AnalysisResultSerialization.fromContextMapResult(arrayIndices).serialize(oos);
+    	AnalysisResultSerialization.fromContextMapResult(infeasibles, FLOW_EDGE_SET_CONVERTER).serialize(oos);
+    	AnalysisResultSerialization.fromContextMapResult(scopes).serialize(oos);
+    	AnalysisResultSerialization.fromContextMapResult(sizes).serialize(oos);
+    	oos.close();
+	}
+
+    /* DESERIALIZE (in order): bounds, arrayIndices, infeasibles, scopes, sizes */
+	public Map deSerializeResult(AppInfo appInfo, File cacheFile) throws IOException,
+			ClassNotFoundException, MethodNotFoundException {
+		
+    	ObjectInputStream ois = new ObjectInputStream(new FileInputStream(cacheFile));
+		bounds = AnalysisResultSerialization.deserializeContextMap(appInfo, ois, null);
+		arrayIndices = AnalysisResultSerialization.deserializeContextMap(appInfo, ois, null);
+		infeasibles = AnalysisResultSerialization.deserializeContextMap(appInfo, ois, FLOW_EDGE_SET_CONVERTER);
+		scopes = AnalysisResultSerialization.deserializeContextMap(appInfo, ois, null);
+		sizes = AnalysisResultSerialization.deserializeContextMap(appInfo, ois, null);
+    	
+		ois.close();
+		
+    	return this.getResult();
+	}
 
 }

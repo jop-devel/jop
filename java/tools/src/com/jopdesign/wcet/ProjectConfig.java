@@ -188,8 +188,7 @@ public class ProjectConfig {
         return new File(config.getOption(TARGET_BINPATH), getUnqualifiedAppClassName() + ".jop.link.txt");
     }
 
-    public File getOutDir() {
-        //return new File(config.getOption(WCET_OUT));
+    public File getProjectDir() {
         return getConfig().getOutDir();
     }
 
@@ -199,15 +198,11 @@ public class ProjectConfig {
      * @return the path to the subdirectory for output
      */
     public File getOutDir(String subdir) {
-        File dir = new File(getOutDir(), subdir);
-        dir.mkdir();
+        File dir = new File(getProjectDir(), subdir);
+        if(!dir.exists()) dir.mkdir();
         return dir;
     }
-
-    public File getOutFile(String filename) {
-        return new File(getOutDir(), MiscUtils.sanitizeFileName(filename));
-    }
-
+    
     public File getOutFile(String subdir, String name) {
         return new File(getOutDir(subdir),MiscUtils.sanitizeFileName(name));
     }
@@ -276,5 +271,6 @@ public class ProjectConfig {
     public boolean doPreprocess() {
         return config.getOption(WCET_PREPROCESS);
     }
+
 
 }

@@ -19,9 +19,13 @@
  */
 package com.jopdesign.dfa.analyses;
 
-public class ValueMapping {
+import java.io.Serializable;
 
-    private static final int WIDEN_LIMIT = 2;
+public class ValueMapping implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	private static final int WIDEN_LIMIT = 2;
     private static final int ASSIGN_LIMIT = 4;
     private static final int CONSTRAINT_LIMIT = 64;
 

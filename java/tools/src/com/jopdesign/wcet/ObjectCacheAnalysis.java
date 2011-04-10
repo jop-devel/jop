@@ -165,7 +165,7 @@ public class ObjectCacheAnalysis {
 		PrintStream pStream;
 		ExecHelper.TeePrintStream oStream;
 		try {
-			 pStream = new PrintStream(project.getOutFile("ocache_eval.txt"));
+			 pStream = new PrintStream(project.getProjectConfig().getOutFile("ocache","eval.txt"));
 			 oStream = new ExecHelper.TeePrintStream(System.out, pStream);
 		} catch (FileNotFoundException e) {
 			 oStream = new ExecHelper.TeePrintStream(System.out, null);
