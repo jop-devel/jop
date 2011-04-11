@@ -2,7 +2,10 @@ package com.jopdesign.wcet.annotations;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
@@ -158,6 +161,16 @@ public abstract class LoopBoundExpr {
 		return new IntervalExpr(ZERO, new LInteger(ub));
 	}
 
+	private static final Map<String,PrimOp> ASSOCIATIVE_BIN_OPS = buildAssociativeBinopMap();
+	private static Map<String,PrimOp> buildAssociativeBinopMap() {
+		HashMap<String, PrimOp> map = new HashMap<String, PrimOp>();
+		map.put("sum", PrimOp.ADD);
+		map.put("product", PrimOp.MUL);
+		map.put("union", PrimOp.UNION);
+		map.put("intersection", PrimOp.INTERSECT);
+		return map;
+	}
+
 	static LoopBoundExpr builtInFunction(String ident, List<LoopBoundExpr> args) {
 		if(ident.equals("bitlength")) {
 			return new PrimOpExpr(PrimOp.BIT_LENGTH, args, 1) {
@@ -173,6 +186,16 @@ public abstract class LoopBoundExpr {
 				}
 				
 			};
+		} else if(ASSOCIATIVE_BIN_OPS.containsKey(ident)) { 
+			/* associative bin-op */
+			Iterator<LoopBoundExpr> argIter = args.iterator();
+			if(! argIter.hasNext()) {
+				throw new ArithmeticException("LoopBound expression: Empty "+ident+" (probably not intended)");
+			}
+			LoopBoundExpr r = argIter.next();
+			while(argIter.hasNext()) {
+				r = r.binOp(ASSOCIATIVE_BIN_OPS.get(ident), argIter.next());
+			}
 		}
 		throw new ArithmeticException("Unsupported prim-op: "+ident);
 	}
@@ -262,6 +285,20 @@ public abstract class LoopBoundExpr {
 			}			
 		};
 	}
+
+	/* generic binop */
+	public LoopBoundExpr binOp(PrimOp op, LoopBoundExpr other) {
+		switch(op) {
+		case ADD: return add(other);
+		case SUB: return subtract(other);
+		case MUL: return mul(other);
+		case IDIV: return idiv(other);
+		case UNION: return union(other);
+		case INTERSECT: return intersect(other);
+		default: throw new ArithmeticException("Not a binary op: "+op);
+		}
+	}
+
 
 	public static class IntervalExpr extends LoopBoundExpr {
 		private LInteger lb, ub;
