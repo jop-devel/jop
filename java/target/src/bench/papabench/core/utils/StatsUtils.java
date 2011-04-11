@@ -36,9 +36,7 @@ final public class StatsUtils {
 		
 		float u1 = random.nextFloat();
 		float u2 = random.nextFloat();
-		
-		throw new Error("Math.log() missing, but why do we need it");
-		
-//		return (float) (mu + sigma * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2*Math.PI * u2));
+				
+		return (float) (mu + sigma * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2*Math.PI * u2));
 	}
 }

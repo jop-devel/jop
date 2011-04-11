@@ -34,6 +34,8 @@
 
 /*
  * Adapted by Wolfgang Puffitsch for JOP.
+ * 
+ * See oroginal source at: http://www.dclausen.net/projects/microfloat/
  */
 
 package com.jopdesign.sys;
@@ -75,16 +77,16 @@ public class SoftFloat64 {
 	// 	public static final long MIN_VALUE = 0x0000000000000001L;
 
 	/** A constant holding the value of 0.0d */
-	// 	public static final long ZERO = 0x0000000000000000L;
+	public static final long ZERO = 0x0000000000000000L;
 
 	/** A constant holding the value of -0.0d */
 	// 	public static final long NEGATIVE_ZERO = 0x8000000000000000L;
 
 	/** A constant holding the value of 1.0d */
-	// 	public static final long ONE = 0x3ff0000000000000L;
+	public static final long ONE = 0x3ff0000000000000L;
 
 	/** A constant holding the value of 2.0d */
-	// 	public static final long TWO = 0x4000000000000000L;
+	public static final long TWO = 0x4000000000000000L;
 
 	/** A constant holding the value of 0.5d */
 	// 	public static final long ONE_HALF          = 0x3fe0000000000000L;
@@ -93,8 +95,8 @@ public class SoftFloat64 {
 	// Packing and unpacking the IEEE-754 double precision format
 	/////////////////////////////////////////////////////////////////////////////
 	
-//	  private static final long ABS_MASK          = 0x7fffffffffffffffL;
-//	  private static final long SIGN_MASK         = 0x8000000000000000L; // 1 bit
+	  static final long ABS_MASK          = 0x7fffffffffffffffL;
+	  static final long SIGN_MASK         = 0x8000000000000000L; // 1 bit
 //	  private static final long EXPONENT_MASK     = 0x7ff0000000000000L; // 11 bits
 	  private static final long FRACTION_MASK     = 0x000fffffffffffffL; // 52 bits
 	  private static final long IMPLIED_ONE       = 0x0010000000000000L; // 53rd bit
