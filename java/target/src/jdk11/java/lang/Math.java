@@ -46,6 +46,7 @@ import com.jopdesign.sys.Cordic;
 import com.jopdesign.sys.Native;
 import com.jopdesign.sys.SoftFloat32;
 import com.jopdesign.sys.SoftFloat64;
+import com.jopdesign.sys.MathSupport;
 
 /**
  * Helper class containing useful mathematical functions and constants.
@@ -332,8 +333,41 @@ public final class Math {
 		  return sin(a) / cos(a);
 	  }
 	  
+	  public static double atan(double a)
+	  {
+		  return Double.longBitsToDouble(
+				  MathSupport.atan(Double.doubleToLongBits(a)));
+	  }
+	  
+	  public static double log(double a) {
+		  return Double.longBitsToDouble(
+				  MathSupport.log(Double.doubleToLongBits(a)));
+	  }
+
+	  /**
+	   * Quick hack of atan2
+	   * 
+	   * Missing handling NaN, Inf, and probably much more
+	   * @param y
+	   * @param x
+	   * @return
+	   */
 	  public static double atan2(double y, double x) {
-		  throw new Error("atan2 missing");
+
+		  double val;
+//		  double ax, ay, val;
+//		  // TODO: what happens on x, y == 0?
+//		  ax = x < 0 ? -x : x;
+//		  ay = y < 0 ? -y : y;
+//		  // TODO: check for small numbers
+		  val = atan(y/x);
+		  if (x > 0) {
+			  return val;
+		  }
+		  if (y < 0) {
+			  return val - PI;
+		  }
+		  return val + PI;
 	  }
 
 
