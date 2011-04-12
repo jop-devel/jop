@@ -21,10 +21,10 @@ package com.jopdesign.wcet.jop;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.processormodel.JOPConfig;
-import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.common.processormodel.JOPConfig.CacheImplementation;
+import com.jopdesign.wcet.WCETTool;
 
 public class VarBlockCache extends MethodCache {
 
@@ -44,10 +44,10 @@ public class VarBlockCache extends MethodCache {
 	}
 
 	public static MethodCache fromConfig(WCETTool p, boolean isLRU) {
-		Config c = p.getConfig();
+		OptionGroup o = JOPConfig.getOptions(p.getConfig());
 		return new VarBlockCache(p,
-				                 c.getOption(JOPConfig.CACHE_BLOCKS).intValue(),
-								 c.getOption(JOPConfig.CACHE_SIZE_WORDS).intValue(),
+				                 o.getOption(JOPConfig.CACHE_BLOCKS).intValue(),
+								 o.getOption(JOPConfig.CACHE_SIZE_WORDS).intValue(),
 								 isLRU);
 	}
 	/** Return the number of blocks needed for the a method of size {@code words}.

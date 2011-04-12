@@ -20,6 +20,7 @@
 
 package com.jopdesign.common.config;
 
+import com.jopdesign.common.config.Config.BadConfigurationError;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 
 import java.io.BufferedInputStream;
@@ -212,6 +213,9 @@ public class OptionGroup {
      * @see #hasValue(Option)
      */
     public boolean isSet(Option<?> option) {
+        if (!containsOption(option)) {
+            throw new BadConfigurationError("Option "+option.getKey()+" is not known in group "+prefix);
+        }
         return config.isSet(getConfigKey(option));
     }
 
@@ -225,6 +229,9 @@ public class OptionGroup {
      * @see #isSet(Option)
      */
     public boolean hasValue(Option<?> option) {
+        if (!containsOption(option)) {
+            throw new BadConfigurationError("Option "+option.getKey()+" is not known in group "+prefix);
+        }
         String val = config.getValue(getConfigKey(option));
         return val != null || option.getDefaultValue(this) != null;
     }
@@ -243,15 +250,11 @@ public class OptionGroup {
      * @throws IllegalArgumentException if the config-value cannot be parsed or is not valid.
      */
     public <T> T tryGetOption(Option<T> option) throws IllegalArgumentException {
-
-        String val;
-        // if this optiongroup has a prefix and the option is not defined here, try to
-        // look it up in the root group
-        if (prefix != null && !optionSet.containsKey(option.getKey())) {
-            val = config.getValue(option.getKey());
-        } else {
-            val = config.getValue(getConfigKey(option));
+        if (!containsOption(option)) {
+            throw new BadConfigurationError("Option "+option.getKey()+" is not known in group "+prefix);
         }
+
+        String val = config.getValue(getConfigKey(option));
 
         if (val == null) {
             return option.getDefaultValue(this);
@@ -268,6 +271,9 @@ public class OptionGroup {
      * @return the default value, or null if no default is set in neither the config nor the option.
      */
     public <T> T getDefaultValue(Option<T> option) {
+        if (!containsOption(option)) {
+            throw new BadConfigurationError("Option "+option.getKey()+" is not known in group "+prefix);
+        }
         String val = config.getDefaultValue(getConfigKey(option));
         if (val == null) {
             return option.getDefaultValue(this);
@@ -284,6 +290,9 @@ public class OptionGroup {
      * @return the default value as set in the config file or the option.
      */
     public String getDefaultValueText(Option option) {
+        if (!containsOption(option)) {
+            throw new BadConfigurationError("Option "+option.getKey()+" is not known in group "+prefix);
+        }
         String val = config.getDefaultValue(getConfigKey(option));
         if (val == null) {
             Object def = option.getDefaultValue();
@@ -294,6 +303,9 @@ public class OptionGroup {
     }
 
     public <T> T getOption(Option<T> option, T defaultVal) throws IllegalArgumentException {
+        if (!containsOption(option)) {
+            throw new BadConfigurationError("Option "+option.getKey()+" is not known in group "+prefix);
+        }
         T val = tryGetOption(option);
         return val != null ? val : defaultVal;
     }
@@ -309,9 +321,13 @@ public class OptionGroup {
      * @param option the option to get the value for.
      * @param <T>    type of the option.
      * @return the option value or null if
-     * @throws Config.BadConfigurationError if the config-value cannot be parsed or if the option is null but required.
+     * @throws BadConfigurationError if the option is not defined in this group, if config-value cannot
+     *         be parsed or if the option is null but required.
      */
-    public <T> T getOption(Option<T> option) throws Config.BadConfigurationError {
+    public <T> T getOption(Option<T> option) throws BadConfigurationError {
+        if (!containsOption(option)) {
+            throw new BadConfigurationError("Option "+option.getKey()+" is not known in group "+prefix);
+        }
         T opt;
         try {
             opt = tryGetOption(option);
@@ -331,11 +347,17 @@ public class OptionGroup {
     }
 
     public <T> void setOption(Option<T> option, T value) {
+        if (!containsOption(option)) {
+            throw new BadConfigurationError("Option "+option.getKey()+" is not known in group "+prefix);
+        }
         config.setProperty(getConfigKey(option), value.toString());
     }
 
     public <T> void setDefaultValue(Option<T> option, T value) {
-        config.setDefaultProperty(getConfigKey(option), value.toString());        
+        if (!containsOption(option)) {
+            throw new BadConfigurationError("Option "+option.getKey()+" is not known in group "+prefix);
+        }
+        config.setDefaultProperty(getConfigKey(option), value.toString());
     }
 
     /*

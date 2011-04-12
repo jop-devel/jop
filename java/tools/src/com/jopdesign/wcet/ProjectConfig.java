@@ -202,7 +202,13 @@ public class ProjectConfig {
         if(!dir.exists()) dir.mkdir();
         return dir;
     }
-    
+
+    public File getOutFile(String name) {
+        File dir = getProjectDir();
+        if(!dir.exists()) dir.mkdir();
+        return new File(dir, MiscUtils.sanitizeFileName(name));
+    }
+
     public File getOutFile(String subdir, String name) {
         return new File(getOutDir(subdir),MiscUtils.sanitizeFileName(name));
     }

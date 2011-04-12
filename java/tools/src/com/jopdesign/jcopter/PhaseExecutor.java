@@ -245,7 +245,7 @@ public class PhaseExecutor {
      */
     public void removeUnusedMembers() {
 
-        if (!getPhaseOptions().getOption(REMOVE_UNUSED_MEMBERS)) {
+        if (!getOptimizeOptions().getOption(REMOVE_UNUSED_MEMBERS)) {
             return;
         }
 

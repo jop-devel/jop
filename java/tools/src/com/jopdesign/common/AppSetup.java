@@ -299,9 +299,7 @@ public class AppSetup {
     private void addProcessorModelOptions() {
         config.addOption(Config.PROCESSOR_MODEL);
 
-        // TODO add JOPConfig options into own OptionGroup, show OptionGroups as separate blocks with --help
-        OptionGroup jopGroup = config.getOptions().addGroup("jop", false);
-        jopGroup.addOptions(JOPConfig.jopOptions);
+        JOPConfig.registerOptions(config);
     }
 
     /**

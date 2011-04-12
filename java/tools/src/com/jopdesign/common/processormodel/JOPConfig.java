@@ -92,7 +92,7 @@ public class JOPConfig {
                     "size of the cache in words",
                     1024);
 
-    public static final Option<?>[] jopOptions = {
+    private static final Option<?>[] jopOptions = {
             ASM_FILE, READ_WAIT_STATES, WRITE_WAIT_STATES,
 
             MULTIPROCESSOR, CMP_CPUS, CMP_TIMESLOT,
@@ -121,8 +121,17 @@ public class JOPConfig {
     private long objectCacheLoadFieldCycles;
     private long objectCacheLoadBlockCycles;
 
+    public static OptionGroup getOptions(Config configData) {
+        return configData.getOptions().getGroup("jop");
+    }
+
+    public static void registerOptions(Config configData) {
+        OptionGroup jopConfig = getOptions(configData);
+        jopConfig.addOptions(jopOptions);
+    }
+
     public JOPConfig(Config configData) {
-    	OptionGroup jopConfig = configData.getOptions().getGroup("jop");
+    	OptionGroup jopConfig = getOptions(configData);
         this.asmFile = new File(jopConfig.getOption(ASM_FILE));
 
         this.rws = jopConfig.getOption(READ_WAIT_STATES).intValue();

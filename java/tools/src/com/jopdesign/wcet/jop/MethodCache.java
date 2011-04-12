@@ -4,7 +4,7 @@ import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.misc.AppInfoException;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.processormodel.JOPConfig;
@@ -28,8 +28,8 @@ public abstract class MethodCache {
     }
 
     public static MethodCache getCacheModel(WCETTool p) {
-        Config c = p.getConfig();
-        switch (c.getOption(JOPConfig.CACHE_IMPL)) {
+        OptionGroup options = JOPConfig.getOptions(p.getConfig());
+        switch (options.getOption(JOPConfig.CACHE_IMPL)) {
             case NO_METHOD_CACHE:
                 return new NoMethodCache(p);
             case LRU_CACHE:
@@ -42,7 +42,7 @@ public abstract class MethodCache {
                 return VarBlockCache.fromConfig(p, false);
             default:
                 throw new AssertionError("Non-exhaustive match on enum: CACHE_IMPL: " +
-                        c.getOption(JOPConfig.CACHE_IMPL));
+                        options.getOption(JOPConfig.CACHE_IMPL));
         }
     }
 
