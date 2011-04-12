@@ -142,7 +142,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     @Override
     public void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException {
 
-    	if(setup.getConfig().hasOption(OPT_DFA_CACHE_DIR)) {
+    	if(setup.getConfig().getOption(OPT_DFA_CACHE_DIR) != null) {
     		this.cacheDir = new File(setup.getConfig().getOption(OPT_DFA_CACHE_DIR));
     	}
     }
@@ -543,6 +543,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
     /** If caching is enabled, look for cached results for the given analysis*/
 	private Map getCachedResults(Analysis analysis) {
+		if(cacheDir == null) return null;
 		File cacheFile = getCacheFile(analysis);
 		try {
 			if(! cacheFile.exists()) return null;
