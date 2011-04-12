@@ -24,6 +24,7 @@ import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.EnumOption;
 import com.jopdesign.common.config.IntegerOption;
 import com.jopdesign.common.config.Option;
+import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
 import com.jopdesign.timing.WCETInstruction;
 import com.jopdesign.timing.jop.MicrocodeAnalysis;
@@ -121,24 +122,25 @@ public class JOPConfig {
     private long objectCacheLoadBlockCycles;
 
     public JOPConfig(Config configData) {
-        this.asmFile = new File(configData.getOption(ASM_FILE));
+    	OptionGroup jopConfig = configData.getOptions().getGroup("jop");
+        this.asmFile = new File(jopConfig.getOption(ASM_FILE));
 
-        this.rws = configData.getOption(READ_WAIT_STATES).intValue();
-        this.wws = configData.getOption(WRITE_WAIT_STATES).intValue();
-        this.cmp = configData.getOption(MULTIPROCESSOR);
-        this.cpus = configData.getOption(CMP_CPUS).intValue();
-        this.timeslot = configData.getOption(CMP_TIMESLOT).intValue();
+        this.rws = jopConfig.getOption(READ_WAIT_STATES).intValue();
+        this.wws = jopConfig.getOption(WRITE_WAIT_STATES).intValue();
+        this.cmp = jopConfig.getOption(MULTIPROCESSOR);
+        this.cpus = jopConfig.getOption(CMP_CPUS).intValue();
+        this.timeslot = jopConfig.getOption(CMP_TIMESLOT).intValue();
 
-        this.objectCacheName = configData.getOption(CACHE_IMPL);
+        this.objectCacheName = jopConfig.getOption(CACHE_IMPL);
 
-        this.objectCacheAssociativity = configData.getOption(OBJECT_CACHE_ASSOCIATIVITY).intValue();
-        this.objectCacheBlockSize = configData.getOption(OBJECT_CACHE_BLOCK_SIZE).intValue();
+        this.objectCacheAssociativity = jopConfig.getOption(OBJECT_CACHE_ASSOCIATIVITY).intValue();
+        this.objectCacheBlockSize = jopConfig.getOption(OBJECT_CACHE_BLOCK_SIZE).intValue();
         this.objectCacheFieldTag = false;
-        this.objectCacheLineSize = configData.getOption(OBJECT_CACHE_WORDS_PER_LINE).intValue();
+        this.objectCacheLineSize = jopConfig.getOption(OBJECT_CACHE_WORDS_PER_LINE).intValue();
 
-        this.objectCacheHitCycles = configData.getOption(OBJECT_CACHE_HIT_CYCLES);
-        this.objectCacheLoadFieldCycles = configData.getOption(OBJECT_CACHE_LOAD_FIELD_CYCLES);
-        this.objectCacheLoadBlockCycles = configData.getOption(OBJECT_CACHE_LOAD_BLOCK_CYCLES);
+        this.objectCacheHitCycles = jopConfig.getOption(OBJECT_CACHE_HIT_CYCLES);
+        this.objectCacheLoadFieldCycles = jopConfig.getOption(OBJECT_CACHE_LOAD_FIELD_CYCLES);
+        this.objectCacheLoadBlockCycles = jopConfig.getOption(OBJECT_CACHE_LOAD_BLOCK_CYCLES);
     }
 
     public int rws() {
