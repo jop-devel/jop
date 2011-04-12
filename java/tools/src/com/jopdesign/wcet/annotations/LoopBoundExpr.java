@@ -20,6 +20,33 @@ import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.graphutils.Pair;
 
+/**
+ * <p>Loop Bound Expressions</p>
+ * We currently support the following loop bound expressions:
+ * <ul>
+ * <li/>{@code expr := IntervalExpr lb ub} with {@code lb,ub := LInteger } <br/>
+ *      Evaluates to [lb,ub], which corresponds to the set of integers     <br/>
+ *      { x | lb &lt;= x &lt; ub }  
+ * <li/>{@code expr := ConstRefExpr field} with {@code field := MemberID } <br/>
+ *      Evaluates to the singleton set [c,c], if c is the constant value of
+ *      field found in the classfile
+ * <li/>{@code expr := PrimOpExpr BitLength subexpr} <br/>
+ *      If subexpr evaluates to [lb,ub], it evaluates to the set 
+ *      {@code [bitlength(lb), bitlength(ub)]} <br/>
+ *      The bitlength is the number of bits needed to represent a number
+ *      in a standard 2-complements encoding, or equivalently <br/>
+ *      {@code floor(log(x) / log(2)) + 1}
+ * <li/>{@code expr := PrimOpExpr BinOp expr1 expr2} <br/>
+ *      Standard operations in the interval domain: addition, subtraction,
+ *      multiplication, integer division, intersection and union <br/>
+ *      We currently do not support maximum or minimum, as in most situations,
+ *      what you really mean is {@code union} (The maximum of the
+ *      upper bound and the minimum of the lower bound) or {@code intersection}
+ *      (The minum of the lower bound and the maximum of the upper bound)
+ * </ul>
+ * @author Benedikt Huber <benedikt.huber@gmail.com>
+ *
+ */
 @SuppressWarnings("unchecked")
 public abstract class LoopBoundExpr {
 	public static enum ExprType { LITERAL, CONST_REF, ARG_REF, PRIM_OP };

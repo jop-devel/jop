@@ -153,6 +153,7 @@ public class WCETEventHandler extends EmptyAppEventHandler {
 // 		throw new BadAnnotationException("No loop bound annotation",
 // 						 block,sourceRangeStart,sourceRangeStop);
                 logger.error("No loop bound annotation: " + method + ":" + n +
+                             " [line "+sourceRangeStart+"-"+sourceRangeStop+"]"+
                              ".\nApproximating with " + DEFAULT_LOOP_BOUND + ", but result is not safe anymore.");
                 loopAnnot = LoopBound.boundedAbove(DEFAULT_LOOP_BOUND);
             }

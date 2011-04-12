@@ -29,10 +29,31 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 /**
- * Purpose: Instances represent execution frequency bounds for loops.
+ *<p> Purpose: Instances represent execution frequency bounds for loops.
  * Simple loop bounds are relative to the execution frequency
- * of the entry edges of the loop (marker {@code outer(0)}); more
- * elaborate bounds are relative outer loop or method.
+ * of the entry edges of the loop; for more elaborated kinds of
+ * relative bounds see below. Note that you need at least one bound
+ * where the marker dominates the loop entry, otherwise the WCET problem
+ * will be unbounded.</p>
+ * We currently support the following loop bounds:<br/>
+ * {@code loop = loop-bound-expr marker? }
+ * <p>{@code loop-bound-expr} is a symbolic expression which is
+ * evaluated in the domain of integer intervals. The form
+ * {@code loop <= loop-bound-expr marker? } is a short hand for
+ * {@code loop = [0,loop-bound-expr] marker? }.</p>
+ * <p>Markers specify to which execution frequency loop bounds
+ * are relative to. The mark {@code outer(n)} expresses
+ * that the loop bound is relative to execution frequency of
+ * the entry edges of the n-th outer loop. If the marker is
+ * ommited, this is a short hand for {@code outer(0)}, the
+ * execution frequency sum of the entry edges of the current loop.</p>
+ * <p>To specify that the execution frequency of the loop body is bounded
+ * relative to some method, use the marker {@code method methodID}.</p>
+ * <p>TODO: maybe we also want to specify sums of (expr,marker) pairs</p>
+ * <p>TODO: we also want to allow absolute execution bounds for the loop
+ * as a whole. One idea would be to restrict the loop bound to 1, and then
+ * add the absolute cost to continue edge. 
+ * </p>
  *
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  */
@@ -119,8 +140,9 @@ public class LoopBound {
 
     public String toString() {
         StringBuffer sb = new StringBuffer();
+        boolean first = true;
         for (Entry<SymbolicMarker, LoopBoundExpr> lbEntry : markerBounds.entrySet()) {
-            sb.append("; ");
+            if(first) { sb.append("; "); first = false; }
             boundToString(sb, lbEntry.getValue(), lbEntry.getKey());
         }
         return sb.toString();
