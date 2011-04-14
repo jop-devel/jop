@@ -116,9 +116,13 @@ end component;
 	
 	signal sc_io_out		: sc_out_array_type(0 to cpu_cnt-1);
 	signal sc_io_in			: sc_in_array_type(0 to cpu_cnt-1);
-	signal irq_in			  : irq_in_array_type(0 to cpu_cnt-1);
+	signal irq_in			: irq_in_array_type(0 to cpu_cnt-1);
 	signal irq_out			: irq_out_array_type(0 to cpu_cnt-1);
 	signal exc_req			: exception_array_type(0 to cpu_cnt-1);
+
+	signal xc_int : std_logic_vector(0 to cpu_cnt-1);
+	type xc_out_array is array (0 to cpu_cnt-1) of std_logic_vector(cpu_cnt-1 downto 0);
+    signal xc_out : xc_out_array;
 
 --
 --	IO interface
@@ -238,6 +242,9 @@ end process;
 			uart_out => uart_out(0),
 			uart_in => uart_in(0),
 				  
+			xc_int => xc_int(0),
+			xc_out => xc_out(0),
+
 			wd => wd_out(0),
 			l => open,
 			r => open,
@@ -262,6 +269,9 @@ end process;
 
 			uart_out => uart_out(i),
 			uart_in => uart_in(i),
+
+			xc_int => xc_int(i),
+			xc_out => xc_out(i),
 			
 			wd => open,
 			l => open,
@@ -273,6 +283,18 @@ end process;
 		);
 	end generate;
 
+	xc: process (xc_out)
+		variable t : std_logic;
+	begin  -- process xc
+		for i in 0 to cpu_cnt-1 loop
+			t := '0';
+			for k in 0 to cpu_cnt-1 loop
+				t := t or xc_out(k)(i);
+			end loop;  -- k
+			xc_int(i) <= t;
+		end loop;  -- i
+	end process xc;
+			
 	scm: entity work.sc_mem_if
 		generic map (
 			ram_ws => ram_cnt-1,
@@ -315,10 +337,10 @@ end process;
 			addr_bits => 1,
 			clk_freq => clk_freq,
 			baud_rate => 115200,
-			txf_depth => 2,
-			txf_thres => 1,
-			rxf_depth => 2,
-			rxf_thres => 1
+			txf_depth => 32,
+			txf_thres => 16,
+			rxf_depth => 32,
+			rxf_thres => 16
 			)
 		port map(
 			clk => clk_int,

@@ -27,7 +27,6 @@ class Scheduler implements Runnable {
 	int active;					// active thread number
 
 	int boostIdx;               // thread runs at top priority when entered lock
-	int boostGcIdx;             // thread runs at top priority when entered GC mutex
 
 	int scanThres = -1;			// whether threads scan their own stack
 	SwEvent scanner;
@@ -113,9 +112,7 @@ class Scheduler implements Runnable {
 		// this is now
 		j = Native.rd(Const.IO_US_CNT);
 
-		if (boostGcIdx >= 0) {             // run at utmost priority when holding GC mutex
-			i = boostGcIdx;
-		} else if (!GC.concurrentGc && Native.rd(Const.IO_CPUCNT) > 1
+		if (!GC.concurrentGc && Native.rd(Const.IO_CPUCNT) > 1
 			&& event[cnt-1] == EV_FIRED) { // STWGC beats everything else
 			i = cnt-1;
 		} else if (boostIdx >= 0) {        // boosted threads come next
@@ -210,7 +207,6 @@ class Scheduler implements Runnable {
 		next = new int[cnt];
 		event = new int[cnt];
 		boostIdx = -1;
-		boostGcIdx = -1;
 		tmp = cnt-1;
 	}
 

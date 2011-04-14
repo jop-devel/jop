@@ -76,6 +76,9 @@ port (
 	irq_out			: in irq_ack_type;
 	exc_req			: in exception_type;
 
+	xc_int          : in std_logic;
+	xc_out          : out std_logic_vector(cpu_cnt-1 downto 0);
+	
 -- CMP
 
 	sync_out : in sync_out_type := NO_SYNC;
@@ -191,6 +194,9 @@ begin
 			irq_in => irq_in,
 			irq_out => irq_out,
 			exc_req => exc_req,
+
+			xc_int => xc_int,
+			xc_out => xc_out,
 			
 			sync_out => sync_out,
 			sync_in => sync_in,

@@ -1018,7 +1018,8 @@ class JVM {
 
 			// boost for GC mutex
 			if (objAddr == Native.toInt(GC.mutex)) {
-				s.boostGcIdx = s.active;
+				// disable scheduling and cross-core interrupts
+				Native.wr(~3, Const.IO_INTMASK);
 			}
 
 			// boost priority
@@ -1088,7 +1089,8 @@ class JVM {
 
 		// unboost for GC mutex
 		if (objAddr == Native.toInt(GC.mutex) && l.level == 0) {
-			s.boostGcIdx = -1;
+			// enable all interrupts again
+			Native.wr(-1, Const.IO_INTMASK);
 		}
 
 		Native.unlock();
@@ -1132,6 +1134,8 @@ class JVM {
 		type += cp;
 		type = Native.rdMem(type);
 		
+		if (type == 0) type = 1;
+
 		++pc;	// now to dimensions
 		
 		int dim = Native.rdMem(start+(pc>>2));

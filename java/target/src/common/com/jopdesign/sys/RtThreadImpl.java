@@ -64,6 +64,7 @@ public class RtThreadImpl {
 
 			// add scheduler for the core s
 			JVMHelp.addInterruptHandler(sys.cpuId, 0, s);
+			JVMHelp.addInterruptHandler(sys.cpuId, 1, s);
 
 			started = true;
 			
@@ -213,12 +214,12 @@ public class RtThreadImpl {
 		cpuId = id;
 	}
 
-	private static void genInt() {
+	private static void genInt(int core) {
 		
 		// just schedule an interrupt
 		// schedule() gets called.
-		Native.wr(0, Const.IO_SWINT);
-		for (int j=0;j<10;++j) ;
+		Native.wr(core, Const.IO_XCINT);
+		for (int j=0;j<10;++j) ; // in case we trigger ourselves
 	}
 
 	private void startThread() {
@@ -246,7 +247,7 @@ public class RtThreadImpl {
 				// This will not work if we change stack like in Thread.java.
 				// Then we have no reference to this.
 				Scheduler.sched[sys.cpuId].next[nr] = Native.rd(Const.IO_US_CNT) + 2*Scheduler.IDL_TICK;
-				genInt();
+				genInt(sys.cpuId);
 			}
 		}
 	}
@@ -380,6 +381,7 @@ public class RtThreadImpl {
 		
 		// add scheduler for the first core
 		JVMHelp.addInterruptHandler(0, 0, Scheduler.sched[0]);
+		JVMHelp.addInterruptHandler(0, 1, Scheduler.sched[0]);
 
 		// start the other CPUs
 		sys.signal = 1;
@@ -455,18 +457,14 @@ public class RtThreadImpl {
 		Scheduler.sched[this.cpuId].event[this.nr] = Scheduler.EV_FIRED;
 		// if prio higher...
 		// should not be allowed before startMission
-		// TODO: for cross CPU event fire we need to generate the interrupt
-		// for the other core!
-		genInt();
-
+		// Generate the interrupt for the appropriate core
+		genInt(this.cpuId);
 	}
 	
 	public void blockEvent() {
 		Scheduler.sched[this.cpuId].event[this.nr] = Scheduler.EV_WAITING;
-		// TODO: for cross CPU event fire we need to generate the interrupt
-		// for the other core!
-		genInt();
-
+		// Generate the interrupt for the appropriate core
+		genInt(this.cpuId);
 	}
 
 	/**
@@ -476,7 +474,7 @@ public class RtThreadImpl {
 	
 		int next = Native.rd(Const.IO_US_CNT)+millis*1000;
 		while (Native.rd(Const.IO_US_CNT)-next < 0) {
-			genInt();
+			genInt(sys.cpuId);
 		}
 	}
 	final static int MIN_US = 10;

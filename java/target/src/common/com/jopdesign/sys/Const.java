@@ -195,11 +195,16 @@ public class Const {
 	public static final int IO_CPUCNT = IO_BASE+11;
 
 	/**
-	 * Number of available interrupts depends on the parameter
-	 * in sc_sys.vhd. 3 is the default: one timer interrupt
-	 * and 2 software interrupts.
+	 * Cross-core interrupt
 	 */
-	public static final int NUM_INTERRUPTS = 3;
+	public static final int IO_XCINT = IO_BASE+11;	
+
+	/**
+	 * Number of available interrupts depends on the parameter
+	 * in sc_sys.vhd. 4 is the default: one timer interrupt, one
+	 * cross-core interrupt, and 2 software interrupts.
+	 */
+	public static final int NUM_INTERRUPTS = 4;
 
 	public static final int IO_STATUS = IO_BASE+0x10;
 	public static final int IO_UART = IO_BASE+0x10+1;
