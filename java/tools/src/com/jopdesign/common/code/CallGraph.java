@@ -26,6 +26,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationError;
 import com.jopdesign.common.config.Config.BadConfigurationException;
+import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.StringOption;
 import com.jopdesign.common.graphutils.AdvancedDOTExporter;
 import com.jopdesign.common.graphutils.DirectedCycleDetector;
@@ -86,6 +87,11 @@ public class CallGraph {
 
     public static final StringOption CALLGRAPH_DIR =
             new StringOption("cgdir", "Directory to put the callgraph files into", "${outdir}/callgraph");
+
+    /**
+     * Needs to be added to the root optiongroup if the dumpCallgraph method is used.
+     */
+    public static final Option[] dumpOptions = { CALLGRAPH_DIR };
 
     /**
      * Interface for a callgraph construction.
