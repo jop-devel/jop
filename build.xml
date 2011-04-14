@@ -271,11 +271,18 @@
 	<!-- To use JCopter, uncomment the following line (value is not important): -->
 	<!-- <property name="use-jcopter" value="true"/> -->
 
+	<target name="wcet-preprocess" description="Replace bytecodes that JOP cannot execute">
+	  <java classpathref="tools-cp" classname="com.jopdesign.wcet.WCETPreprocess">
+		<arg line="-c ${target}/dist/classes -o ${target}/dist ${main-class}"/>
+	  </java>
+	</target>
+
 	<target name="run-jcopter" description="Run JCopter on the compiled target" if="use-jcopter">
 		<java classpathref="tools-cp" classname="com.jopdesign.jcopter.JCopter">
 		    <arg line="--jop.jop-asm-file asm/generated/jvmusb.asm
 					   -c ${target}/dist/classes -o ${target}/dist --classdir ${target}/dist/classes.opt
 					   --dump-target-callgraph merged
+					   --wcet-preprocess 
 					   --use-dfa --dfa-cache-dir dfa-cache
 					   --target-method ${wcet-method} ${main-class}"/>
 		</java>
@@ -345,6 +352,8 @@
 		
 		<delete dir="${empty.dir}"/>
 		 
+		<antcall target="wcet-preprocess"/>
+
 		<antcall target="run-jcopter"/>
 
 		<antcall target="zip-classes"/>
