@@ -143,6 +143,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
     @Override
     public void registerOptions(Config config) {
+        config.addOptions(CallGraph.dumpOptions);
         // TODO maybe put some of the options into OptionGroups to make '--help' a bit clearer
         config.addOptions(WCETTool.optionList);
     }
