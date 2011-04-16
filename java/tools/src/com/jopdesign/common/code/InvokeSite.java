@@ -255,10 +255,15 @@ public class InvokeSite {
 
         String methodname = instr.getMethodName(cpg);
         String classname = invoker.getCode().getReferencedClassName(instr);
+        MemberID memberID = new MemberID(classname, methodname, instr.getSignature(cpg));
 
+        if ("<clinit>".equals(methodname)) {
+            // in this case, we do not know if the class is an interface or not, since interfaces
+            // can have <clinit> methods which are invoked by invokestatic
+            return AppInfo.getSingleton().getMethodRef(memberID);
+        }
         boolean isInterface = (instr instanceof INVOKEINTERFACE);
-        return AppInfo.getSingleton().getMethodRef(new MemberID(classname, methodname, instr.getSignature(cpg)),
-                            isInterface);
+        return AppInfo.getSingleton().getMethodRef(memberID, isInterface);
     }
 
     /**
