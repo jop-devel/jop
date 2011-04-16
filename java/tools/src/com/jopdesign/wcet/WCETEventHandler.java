@@ -29,17 +29,16 @@ import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.common.code.SymbolicMarker;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.LoopBound;
+import com.jopdesign.common.code.SymbolicMarker;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.wcet.annotations.BadAnnotationException;
 import com.jopdesign.wcet.annotations.LoopBoundExpr;
 import com.jopdesign.wcet.annotations.SourceAnnotationReader;
 import com.jopdesign.wcet.annotations.SourceAnnotations;
-
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -85,8 +84,9 @@ public class WCETEventHandler extends EmptyAppEventHandler {
         try {
             loadLoopAnnotations(cfg);
         } catch (BadAnnotationException e) {
-            // TODO maybe do more than just log an error? (halt?)
-            logger.error("Failed to load annotations for method "+cfg.getMethodInfo()+": "+e.getMessage(), e);
+            // TODO should we throw an error here instead?
+            // Since later analyses will expect loopbounds, they will most likely fail in some obscure way..
+            logger.fatal("Failed to load loopbounds for method "+cfg.getMethodInfo()+": "+e.getMessage(), e);
         }
     }
 

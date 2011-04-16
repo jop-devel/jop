@@ -21,12 +21,14 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.KeyManager.CustomKey;
+import com.jopdesign.common.KeyManager.KeyType;
 import com.jopdesign.common.bcel.StackMapTable;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.InvokeNode;
 import com.jopdesign.common.code.InvokeSite;
+import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.BadGraphError;
@@ -77,10 +79,17 @@ public class MethodCode {
      */
     private static final Object KEY_INVOKESITE = new HashedString("MethodInfo.InvokeSite");
     // Keys to attach custom values to InstructionHandles
-    private static final Object KEY_CUSTOMVALUES = new HashedString("KeyManager.InstructionValue");
+    private static final Object KEY_CUSTOMVALUES = new HashedString("MethodCode.CustomValues");
     // Keys to attach values directly to InstructionHandles, which are not handled by KeyManager
     private static final Object KEY_LINENUMBER = new HashedString("MethodCode.LineNumber");
     private static final Object KEY_SOURCEFILE = new HashedString("MethodCode.SourceFile");
+    // We attach the LoopBounds as CustomKeys, so we can use the KeyManager to clear/copy/.. them.
+    // TODO we could also attach them directly to InstructionHandles to save one map access (but then make this key private!)
+    public static final CustomKey KEY_LOOPBOUND;
+
+    static {
+        KEY_LOOPBOUND = KeyManager.getSingleton().registerKey(KeyType.CODE, "MethodCode.LoopBound");
+    }
 
     private static final Object[] MANAGED_KEYS = {KEY_INVOKESITE, KEY_LINENUMBER, KEY_SOURCEFILE};
 
@@ -663,10 +672,83 @@ public class MethodCode {
     }
 
     //////////////////////////////////////////////////////////////////////////////
+    // LoopBound methods
+    //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Get the loopbound set to an instruction.
+     * <p>
+     * Loopbounds should be set to the last instruction of the loop head basic block
+     * </p>
+     *
+     * @param ih the instruction handle to check.
+     * @return the loopbound set for this instruction, or null if none has been set.
+     */
+    public LoopBound getLoopBound(InstructionHandle ih) {
+        return (LoopBound) getCustomValue(ih, KEY_LOOPBOUND);
+    }
+
+    /**
+     * Set a new loopbound. Overwrites the existing loopbound.
+     * <p>
+     * Loopbounds should be set to the last instruction of the loop head basic block
+     * </p>
+     *
+     * @see #updateLoopBound(InstructionHandle, LoopBound)
+     * @see LoopBound#boundedAbove(long)
+     * @param ih the instruction handle to update.
+     * @param loopBound the new loopbound to set, or null to clear it.
+     */
+    public void setLoopBound(InstructionHandle ih, LoopBound loopBound) {
+        setCustomValue(ih, KEY_LOOPBOUND, loopBound);
+        // Note: we do not return the old loopbound so that there is no confusion with updateLoopBound()
+    }
+
+    public LoopBound updateLoopBound(InstructionHandle ih, long upperBound) {
+        if (upperBound < 0) {
+            return getLoopBound(ih);
+        }
+        return updateLoopBound(ih, LoopBound.boundedAbove(upperBound));
+    }
+
+    /**
+     * Tighten the existing loopbound with the given bound.
+     * <p>
+     * Loopbounds should be set to the last instruction of the loop head basic block
+     * </p>
+     * 
+     * @param ih the instruction to update.
+     * @param loopBound the loopbound used to tighten the existing one (can be null)
+     * @return the new loopbound
+     */
+    public LoopBound updateLoopBound(InstructionHandle ih, LoopBound loopBound) {
+        LoopBound oldLb = getLoopBound(ih);
+        if (loopBound == null) {
+            // nothing to update
+            return oldLb;
+        }
+        if (oldLb == null) {
+            // no old value, use new value
+            setLoopBound(ih, loopBound);
+            return loopBound;
+        }
+
+        // TODO tighten the old bound with the new bound
+
+        // TODO we might want to know where the loopbounds came from so that we can generate messages
+        // if the new loopbound is larger/smaller than the old one, so maybe we want to store the origin in LoopBound
+
+        throw new AppInfoError("Implement me ..");
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
     // Get and set CustomValues
     //////////////////////////////////////////////////////////////////////////////
 
     public Object setCustomValue(InstructionHandle ih, CustomKey key, Object value) {
+        if (value == null) {
+            return clearCustomKey(ih, key);
+        }
         @SuppressWarnings({"unchecked"})
         Map<CustomKey,Object> map = (Map<CustomKey, Object>) ih.getAttribute(KEY_CUSTOMVALUES);
         if (map == null) {

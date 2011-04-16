@@ -22,9 +22,6 @@ package com.jopdesign.common.code;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
-import com.jopdesign.common.KeyManager;
-import com.jopdesign.common.KeyManager.CustomKey;
-import com.jopdesign.common.KeyManager.KeyType;
 import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.logger.LogConfig;
@@ -155,12 +152,6 @@ public class BasicBlock {
         return (FlowInfo) ih.getAttribute(InstrField.FLOW_INFO);
     }
 
-    public static final CustomKey KEY_LOOPBOUND;
-
-    static {
-        KEY_LOOPBOUND = KeyManager.getSingleton().registerKey(KeyType.CODE, "BasicBlock.LoopBound");
-    }
-
     private final LinkedList<InstructionHandle> instructions = new LinkedList<InstructionHandle>();
     private final MethodCode methodCode;
     private FlowInfo exitFlowInfo;
@@ -205,13 +196,15 @@ public class BasicBlock {
     }
 
     public void setLoopBound(LoopBound loopBound) {
-        methodCode.setCustomValue(getFirstInstruction(), KEY_LOOPBOUND, loopBound);
+        methodCode.setLoopBound(getLastInstruction(), loopBound);
     }
 
     public LoopBound getLoopBound() {
         // TODO we might need to handle block copy/split/.. to keep this value attached to the correct handle
-        // we can only store and retrieve loopbounds here, but not call the DFA tool
-        return (LoopBound) methodCode.getCustomValue(getFirstInstruction(), KEY_LOOPBOUND);
+        // we can only store and retrieve loopbounds here, but not call the DFA tool.
+        // DFA should set its loopbounds after it finished its analysis.
+        // Currently, the DFA loopbounds are set to the CFG by the WCETEventHandler on creation of the CFG
+        return methodCode.getLoopBound(getLastInstruction());
     }
 
     /**
