@@ -94,7 +94,7 @@ public class AES extends StreamBenchmark {
 		return "AES";
 	}
 
-	protected Runnable[] getWorkers() {
+	public Runnable[] getWorkers() {
 		return runners;
 	}
 
@@ -102,7 +102,7 @@ public class AES extends StreamBenchmark {
 		return 4;
 	}
 
-	protected void reset(int cnt) {
+	public void reset(int cnt) {
 		finished = false;
 
 		source.reset();
@@ -113,7 +113,7 @@ public class AES extends StreamBenchmark {
 		blockCnt = cnt;
 	}
 
-	protected boolean isFinished() {
+	public boolean isFinished() {
 		return finished;
 	}
 

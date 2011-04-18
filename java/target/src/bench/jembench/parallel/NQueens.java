@@ -82,7 +82,7 @@ public class NQueens extends ParallelBenchmark implements Runnable {
 		return "NQueens(N=" + N + ";L=" + L + ")";
 	}
 
-	protected Runnable getWorker() {
+	public Runnable getWorker() {
 		// Reset State
 		sl[0] = ~bh[0];
 		col = 0;

@@ -70,5 +70,5 @@ public abstract class ParallelBenchmark extends Benchmark {
 
 	}
 
-	protected abstract Runnable getWorker();
+	public abstract Runnable getWorker();
 }

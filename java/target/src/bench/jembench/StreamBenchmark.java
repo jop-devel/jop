@@ -72,16 +72,16 @@ public abstract class StreamBenchmark extends Benchmark {
 	 */
 	protected abstract int getDepth();
 
-	protected abstract Runnable[] getWorkers();
+	public abstract Runnable[] getWorkers();
 
 	/**
 	 * Reset the benchmark for a new run with cnt iterations.
 	 */
-	protected abstract void reset(int cnt);
+	public abstract void reset(int cnt);
 	
 	/**
 	 * MS: what for are we using this?
 	 * @return
 	 */
-	protected abstract boolean isFinished(); 
+	public abstract boolean isFinished(); 
 }
