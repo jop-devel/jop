@@ -22,6 +22,7 @@ package com.jopdesign.common.code;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallGraph.CallgraphBuilder;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -32,12 +33,12 @@ import java.util.Set;
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class DefaultCallgraphConfig implements CallGraph.CallgraphConfig {
+public class DefaultCallgraphBuilder implements CallgraphBuilder {
 
     private final int callstringLength;
     private boolean skipNatives = false;
 
-    public DefaultCallgraphConfig(int callstringLength) {
+    public DefaultCallgraphBuilder(int callstringLength) {
         this.callstringLength = callstringLength;
     }
 
@@ -68,9 +69,21 @@ public class DefaultCallgraphConfig implements CallGraph.CallgraphConfig {
 
         Set<ExecutionContext> newContexts = new HashSet<ExecutionContext>();
 
+        invokeLoop:
         for(InvokeSite invokeSite : method.getCode().getInvokeSites()) {
 
             Set<MethodInfo> methods = getInvokedMethods(context, invokeSite);
+
+            if (skipNatives) {
+                for (MethodInfo impl : methods) {
+                    // we do not want to have native methods in the callgraph
+                    // we do not return any method for an invokesite even if only some of them are native,
+                    // to indicate that the candidates are not completely represented!
+                    if (impl.isNative()) {
+                        continue invokeLoop;
+                    }
+                }
+            }
 
             for(MethodInfo impl : methods) {
                 //System.out.println("Implemented Methods: "+impl+" from "+iNode.getBasicBlock().getMethodInfo().methodId+" in context "+callstring.toStringVerbose());
@@ -84,22 +97,17 @@ public class DefaultCallgraphConfig implements CallGraph.CallgraphConfig {
         return newContexts;
     }
 
+    /**
+     * Get a list of a all invoke candidates for an invokesite
+     * @param context the context, containing the callstring up to the invoke site
+     * @param invokeSite the invokesite
+     * @return a set of possible implementations
+     */
     protected Set<MethodInfo> getInvokedMethods(ExecutionContext context, InvokeSite invokeSite) {
         // This uses either the existing default callgraph to construct a new one (which has
         // the advantage that the new callgraph is derived from an existing one), or looks up
         // in the type graph if no default callgraph exists
-        Set<MethodInfo> methods = AppInfo.getSingleton().findImplementations(invokeSite, context.getCallString());
-        if (skipNatives) {
-            for (MethodInfo method : methods) {
-                // we do not want to have native methods in the callgraph
-                // we do not return any method even if only some of them are native, to indicate that
-                // the candidates are not completely represented!
-                if (method.isNative()) {
-                    return new HashSet<MethodInfo>(0);
-                }
-            }
-        }
-        return methods;
+        return AppInfo.getSingleton().findImplementations(invokeSite, context.getCallString());
     }
 
 }

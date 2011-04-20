@@ -33,7 +33,7 @@ import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
-import com.jopdesign.common.code.DefaultCallgraphConfig;
+import com.jopdesign.common.code.DefaultCallgraphBuilder;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.code.LoopBound;
@@ -47,7 +47,6 @@ import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.dfa.DFATool;
-import com.jopdesign.dfa.analyses.CallStringReceiverTypes;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.FlowEdge;
@@ -269,7 +268,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
      * @return the new callgraph.
      */
     public CallGraph rebuildCallGraph() {
-        DefaultCallgraphConfig config = new DefaultCallgraphConfig(projectConfig.callstringLength());
+        DefaultCallgraphBuilder config = new DefaultCallgraphBuilder(projectConfig.callstringLength());
         // we do not want to have native methods in the callgraph
         config.setSkipNatives(true);
         callGraph = CallGraph.buildCallGraph(projectConfig.getTargetMethodInfo(),
@@ -561,21 +560,15 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         // FIXME: At the moment, we do not have a nice directory structure respecting
         //        the fact that we perform many WCET analyses for one Application
 
-        // TODO move this stuff to DFATool
+        // TODO this is the same code as in JCopter PhaseExecutor
         dfaTool.load();
         
         topLevelLogger.info("Receiver analysis");
-        CallStringReceiverTypes recTys = new CallStringReceiverTypes(callstringLength);
-        Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults =
-                dfaTool.runAnalysis(recTys);
-
-        dfaTool.setReceivers(receiverResults);
-        this.receiverAnalysis = receiverResults;
+        this.receiverAnalysis = dfaTool.runReceiverAnalysis(callstringLength);
 
         topLevelLogger.info("Loop bound analysis");
-        LoopBounds dfaLoopBounds = new LoopBounds(callstringLength);
-        dfaTool.runAnalysis(dfaLoopBounds);
-        dfaTool.setLoopBounds(dfaLoopBounds);
+        dfaTool.runLoopboundAnalysis(callstringLength);
+
         this.hasDfaResults = true;
     }
 

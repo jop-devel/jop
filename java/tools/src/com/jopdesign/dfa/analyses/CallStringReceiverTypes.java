@@ -955,7 +955,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
                 MethodRef ref = context.getMethodInfo().getCode().getInvokeSite(stmt).getInvokeeRef();
                 ClassInfo constClass = ref.getClassInfo();
 
-                // find possible revceiver types
+                // find possible receiver types
                 List<String> receivers = new LinkedList<String>();
                 for (TypeMapping m : in) {
                     if (m.stackLoc == context.stackPtr - argSize) {

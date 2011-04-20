@@ -96,7 +96,7 @@ public class CallGraph {
     /**
      * Interface for a callgraph construction.
      */
-    public interface CallgraphConfig {
+    public interface CallgraphBuilder {
         /**
          * Get a set of all execution contexts possibly invoked by a given context.
          * To be consistent with {@link AppInfo#findImplementations(InvokeSite)} and to detect
@@ -356,7 +356,7 @@ public class CallGraph {
     // Fields
     // ~~~~~~
     private final Set<ExecutionContext> rootNodes;
-    private final CallgraphConfig config;
+    private final CallgraphBuilder builder;
 
     private ListenableDirectedGraph<ExecutionContext, ContextEdge> callGraph;
     private DirectedGraph<MethodNode, InvokeEdge> mergedCallGraph;
@@ -389,16 +389,16 @@ public class CallGraph {
      * @param className The class where the root method of the callgraph is located
      * @param methodSig The root method of the call graph. Either a plain method name
      *                   (e.g. "measure"), if unique, or a method with signature (e.g. "measure()Z")
-     * @param config the config class to use to build this graph
+     * @param builder the builder class to use to build this graph
      * @return a freshly constructed callgraph.
      * @throws MethodNotFoundException if the referenced main method was not found
      */
     public static CallGraph buildCallGraph(AppInfo appInfo, String className, String methodSig,
-                                       CallgraphConfig config)
+                                       CallgraphBuilder builder)
                                                     throws MethodNotFoundException
     {
         MethodInfo rootMethod = appInfo.getMethodInfo(className,methodSig);
-        return buildCallGraph(rootMethod, config);
+        return buildCallGraph(rootMethod, builder);
     }
 
     /**
@@ -406,13 +406,13 @@ public class CallGraph {
      *
      * @see AppInfo#getMethodInfo(String, String)
      * @param rootMethod The root method of the callgraph
-     * @param config the config class to use to build this graph
+     * @param builder the builder class to use to build this graph
      * @return a freshly constructed callgraph.
      */
-    public static CallGraph buildCallGraph(MethodInfo rootMethod, CallgraphConfig config)
+    public static CallGraph buildCallGraph(MethodInfo rootMethod, CallgraphBuilder builder)
     {
         ExecutionContext root = new ExecutionContext(rootMethod);
-        CallGraph cg = new CallGraph(Collections.singleton(root),config);
+        CallGraph cg = new CallGraph(Collections.singleton(root), builder);
         cg.build();
         return cg;
     }
@@ -423,10 +423,10 @@ public class CallGraph {
      *
      * @see AppInfo#getRootMethods()
      * @param appInfo the AppInfo to use
-     * @param config the config class to use to build this graph
+     * @param builder the builder class to use to build this graph
      * @return a freshly constructed callgraph.
      */
-    public static CallGraph buildCallGraph(AppInfo appInfo, CallgraphConfig config) {
+    public static CallGraph buildCallGraph(AppInfo appInfo, CallgraphBuilder builder) {
         Collection<MethodInfo> rootMethods = appInfo.getRootMethods();
         Set<ExecutionContext> roots = new HashSet<ExecutionContext>(rootMethods.size());
 
@@ -440,7 +440,7 @@ public class CallGraph {
             roots.add(new ExecutionContext(m));
         }
 
-        CallGraph cg = new CallGraph(roots, config);
+        CallGraph cg = new CallGraph(roots, builder);
         cg.build();
         return cg;
     }
@@ -452,11 +452,11 @@ public class CallGraph {
     /**
      * Initialize a CallGraph object.
      * @param rootMethods The root methods of the callgraph (not abstract).
-     * @param config the config class to use to build this graph
+     * @param builder the builder class to use to build this graph
      */
-    protected CallGraph(Collection<ExecutionContext> rootMethods, CallgraphConfig config) {
+    protected CallGraph(Collection<ExecutionContext> rootMethods, CallgraphBuilder builder) {
         this.rootNodes = new HashSet<ExecutionContext>(rootMethods);
-        this.config = config;
+        this.builder = builder;
         this.subgraphs = new HashMap<CallGraph,SubgraphUpdateListener>(1);
 
         // We need a custom ContextEdge here to keep the references to the vertices for the removeEdge listener
@@ -472,8 +472,8 @@ public class CallGraph {
         this.classInfos = new HashSet<ClassInfo>();
     }
 
-    protected CallGraph(CallGraph parent, Collection<ExecutionContext> rootNodes, CallgraphConfig config) {
-        this(rootNodes, config);
+    protected CallGraph(CallGraph parent, Collection<ExecutionContext> rootNodes, CallgraphBuilder builder) {
+        this(rootNodes, builder);
         this.parent = parent;
     }
     
@@ -538,7 +538,7 @@ public class CallGraph {
 
                 logger.debug("Processing " +current);
 
-                Set<ExecutionContext> invoked = config.getInvokedMethods(current);
+                Set<ExecutionContext> invoked = builder.getInvokedMethods(current);
                 for (ExecutionContext cgn : invoked) {
 
                     if (!callGraph.containsVertex(cgn)) {
@@ -824,7 +824,7 @@ public class CallGraph {
             }
         }
 
-        CallGraph subGraph = new CallGraph(this, roots, config);
+        CallGraph subGraph = new CallGraph(this, roots, builder);
         subGraph.build();
         SubgraphUpdateListener listener = new SubgraphUpdateListener(subGraph);
         callGraph.addGraphListener(listener);

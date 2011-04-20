@@ -35,10 +35,12 @@ import com.jopdesign.common.graphutils.MethodTraverser.MethodVisitor;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.tools.ConstantPoolRebuilder;
-import com.jopdesign.jcopter.optimize.LoadStoreOptimizer;
-import com.jopdesign.jcopter.optimize.PeepholeOptimizer;
-import com.jopdesign.jcopter.optimize.RelinkInvokesuper;
-import com.jopdesign.jcopter.optimize.UnusedCodeRemover;
+import com.jopdesign.dfa.DFATool;
+import com.jopdesign.dfa.framework.DFACallgraphBuilder;
+import com.jopdesign.jcopter.optimizer.LoadStoreOptimizer;
+import com.jopdesign.jcopter.optimizer.PeepholeOptimizer;
+import com.jopdesign.jcopter.optimizer.RelinkInvokesuper;
+import com.jopdesign.jcopter.optimizer.UnusedCodeRemover;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -100,6 +102,10 @@ public class PhaseExecutor {
 
     public Config getConfig() {
         return options.getConfig();
+    }
+
+    public JCopterConfig getJConfig() {
+        return jcopter.getJConfig();
     }
 
     public OptionGroup getPhaseOptions() {
@@ -165,6 +171,36 @@ public class PhaseExecutor {
     /////////////////////////////////////////////////////////////////////////////////////
     // Perform analyses
     /////////////////////////////////////////////////////////////////////////////////////
+
+    @SuppressWarnings("unchecked")
+    public void dataflowAnalysis() {
+        int callstringLength = appInfo.getCallstringLength();
+
+        // TODO this code is the same as in WCETTool ..
+
+        DFATool dfaTool = jcopter.getDfaTool();
+
+        logger.info("Starting DFA analysis");
+        dfaTool.load();
+
+        logger.info("Receiver analysis");
+        dfaTool.runReceiverAnalysis(callstringLength);
+
+        logger.info("Loop bound analysis");
+        dfaTool.runLoopboundAnalysis(callstringLength);
+    }
+
+    public void buildCallGraph() {
+
+        if (jcopter.useDFA()) {
+            // build the callgraph using DFA results
+            appInfo.buildCallGraph(new DFACallgraphBuilder(jcopter.getDfaTool(), appInfo.getCallstringLength()));
+        } else {
+            appInfo.buildCallGraph(false);
+
+            reduceCallGraph();
+        }
+    }
 
     /**
      * Reduce the callgraph stored with AppInfo.

@@ -18,34 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.jcopter.optimize;
-
-import com.jopdesign.common.MethodInfo;
-import com.jopdesign.jcopter.JCopter;
-import org.apache.log4j.Logger;
+package com.jopdesign.jcopter.inline;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class LoadStoreOptimizer extends AbstractOptimizer {
-
-    private static final Logger logger = Logger.getLogger(JCopter.LOG_OPTIMIZER+".LoadStoreOptimizer");
-
-    public LoadStoreOptimizer(JCopter jcopter) {
-        super(jcopter);
-    }
-
-    @Override
-    public void initialize() {
-    }
-
-    @Override
-    public void optimizeMethod(MethodInfo method) {
-        // TODO eliminate ..,store,load,.. patterns if stored variable is only used in next load
-        //      eliminate some store,load,...,load,.. patterns by using ..,dup,.. instead
-    }
-
-    @Override
-    public void printStatistics() {
-    }
+public class GreedyInliner {
 }

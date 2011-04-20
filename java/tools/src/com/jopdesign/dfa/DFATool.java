@@ -33,17 +33,15 @@ import com.jopdesign.common.MemberInfo.AccessType;
 import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.config.Config;
-import com.jopdesign.common.config.StringOption;
 import com.jopdesign.common.config.Config.BadConfigurationException;
+import com.jopdesign.common.config.StringOption;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.MethodNotFoundException;
-import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MemberID;
+import com.jopdesign.dfa.analyses.CallStringReceiverTypes;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.ValueMapping;
 import com.jopdesign.dfa.framework.Analysis;
@@ -53,7 +51,6 @@ import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.Flow;
 import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.dfa.framework.Interpreter;
-
 import org.apache.bcel.classfile.ConstantPool;
 import org.apache.bcel.generic.ACONST_NULL;
 import org.apache.bcel.generic.BranchInstruction;
@@ -74,23 +71,19 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
-import java.io.StringBufferInputStream;
-import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  * Tool for dataflow analysis
@@ -373,8 +366,23 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         return mi;
     }
 
+    public Map<InstructionHandle, ContextMap<CallString, Set<String>>>  runReceiverAnalysis(int callstringLength) {
+        CallStringReceiverTypes recTys = new CallStringReceiverTypes(callstringLength);
+        @SuppressWarnings({"unchecked"})
+        Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults = runAnalysis(recTys);
+
+        setReceivers(receiverResults);
+        return receiverResults;
+    }
+
+    public void runLoopboundAnalysis(int callstringLength) {
+        LoopBounds dfaLoopBounds = new LoopBounds(callstringLength);
+        runAnalysis(dfaLoopBounds);
+        setLoopBounds(dfaLoopBounds);        
+    }
+
     @SuppressWarnings("unchecked")
-	public Map runAnalysis(Analysis analysis) {
+    public Map runAnalysis(Analysis analysis) {
 	
     	/* use cached results if possible */
     	Map results;
@@ -441,6 +449,16 @@ public class DFATool extends EmptyTool<AppEventHandler> {
             }
         }
         return retval;
+    }
+
+    public Set<MethodInfo> getReceiverMethods(InstructionHandle stmt, CallString cs) {
+        Set<String> receivers = getReceivers(stmt, cs);
+        Set<MethodInfo> methods = new HashSet<MethodInfo>(receivers.size());
+        for (String rcv : receivers) {
+            MemberID mID = MemberID.parse(rcv);
+            methods.add(appInfo.getMethodInfoInherited(mID));
+        }
+        return methods;
     }
 
     public void setReceivers(Map<InstructionHandle, ContextMap<CallString, Set<String>>> receivers) {

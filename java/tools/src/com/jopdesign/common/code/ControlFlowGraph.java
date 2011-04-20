@@ -1180,7 +1180,6 @@ public class ControlFlowGraph {
     private void internalError(String reason) {
         logger.error("[INTERNAL ERROR] " + reason);
         logger.error("CFG of " + this.getMethodInfo().getFQMethodName() + "\n");
-        // TODO check this!
         logger.error(this.getMethodInfo().getMethod(false).getCode().toString(true));
         throw new AssertionError(reason);
     }

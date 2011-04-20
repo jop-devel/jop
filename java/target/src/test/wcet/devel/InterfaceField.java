@@ -44,7 +44,7 @@ public class InterfaceField {
     /**
      * Set to false for the WCET analysis, true for measurement
      */
-    final static boolean MEASURE = true;
+    final static boolean MEASURE = false;
     static int ts, te, to;
 
     public static void main(String[] args) {
@@ -54,7 +54,7 @@ public class InterfaceField {
         invoke();
         if (MEASURE) {
             int dt = te - ts - to;
-            System.out.print("measured-execution-time[TableSwitch]:");
+            System.out.print("measured-execution-time:");
             System.out.println(dt);
         }
     }

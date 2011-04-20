@@ -23,8 +23,10 @@ package com.jopdesign.jcopter;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
+import com.jopdesign.common.config.StringOption;
 
 /**
  * This class contains all generic options for JCopter.
@@ -36,12 +38,18 @@ import com.jopdesign.common.config.OptionGroup;
  */
 public class JCopterConfig {
 
-    public static final BooleanOption ASSUME_REFLECTION =
+    private static final BooleanOption ASSUME_REFLECTION =
             new BooleanOption("assume-reflection",
                     "Assume that reflection is used. If not set, check the code for reflection code.", false);
 
+    private static final StringOption OPTIMIZE =
+            new StringOption("optimize", "can be one of 's[ize]', '1' or '2'", 'O', "1");
+
+    private static final StringOption MAX_CODE_SIZE =
+            new StringOption("max-code-size", "maximum total code size", true);
+
     private static final Option[] optionList =
-            { ASSUME_REFLECTION };
+            { ASSUME_REFLECTION, OPTIMIZE, MAX_CODE_SIZE };
 
     public static void registerOptions(OptionGroup options) {
         options.addOptions(JCopterConfig.optionList);
@@ -49,8 +57,13 @@ public class JCopterConfig {
 
     private final OptionGroup options;
 
-    public JCopterConfig(OptionGroup options) {
+    public JCopterConfig(OptionGroup options) throws BadConfigurationException {
         this.options = options;
+        loadOptions();
+    }
+
+    private void loadOptions() throws BadConfigurationException {
+        
     }
 
     /**
@@ -80,5 +93,9 @@ public class JCopterConfig {
      */
     public boolean doAssumeIncompleteApp() {
         return getAppInfo().doIgnoreMissingClasses();
+    }
+
+    public int getCallstringLength() {
+        return (int) getConfig().getOption(Config.CALLSTRING_LENGTH).longValue();
     }
 }

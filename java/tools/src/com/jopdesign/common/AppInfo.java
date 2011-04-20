@@ -22,9 +22,9 @@ package com.jopdesign.common;
 
 import com.jopdesign.common.bcel.BcelRepositoryWrapper;
 import com.jopdesign.common.code.CallGraph;
-import com.jopdesign.common.code.CallGraph.CallgraphConfig;
+import com.jopdesign.common.code.CallGraph.CallgraphBuilder;
 import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.code.DefaultCallgraphConfig;
+import com.jopdesign.common.code.DefaultCallgraphBuilder;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
 import com.jopdesign.common.graphutils.ClassVisitor;
@@ -927,10 +927,15 @@ public final class AppInfo {
             callGraph = null;
         }
         if (callGraph == null) {
-            CallgraphConfig config = new DefaultCallgraphConfig(getCallstringLength());
-            // we only set the callgraph after building it, so it will not be used while constructing it.
-            callGraph = CallGraph.buildCallGraph(this, config);
+            CallgraphBuilder builder = new DefaultCallgraphBuilder(getCallstringLength());
+            buildCallGraph(builder);
         }
+        return callGraph;
+    }
+
+    public CallGraph buildCallGraph(CallgraphBuilder builder) {
+        // we need to set the callgraph after building it, so it will not be used while constructing it.
+        callGraph = CallGraph.buildCallGraph(this, builder);
         return callGraph;
     }
 
@@ -1045,6 +1050,7 @@ public final class AppInfo {
     public Set<MethodInfo> findImplementations(final MethodRef invokee) {
         final Set<MethodInfo> methods = new HashSet<MethodInfo>();
 
+        // 'method' may refer to an inherited MethodInfo or to an interface method if there is no implementation
         final MethodInfo method = invokee.getMethodInfo();
         if (method != null && (method.isStatic() || method.isPrivate())) {
             methods.add(method);
@@ -1056,15 +1062,16 @@ public final class AppInfo {
 
         if (invokeeClass == null) {
             // ok, now, if the target class is unknown, there is not much we can do, so return an empty set
-            logger.debug("Trying to find implementations of unknown method "+invokee.toString());
+            logger.debug("Trying to find implementations of a method in an unknown class "+invokee.toString());
             return methods;
         }
 
         boolean undefinedBaseMethod = false;
 
+        // check if method is defined in the referenced class or in a superclass
         if (invokeeClass.getMethodInfo(methodSig) == null) {
             // method is inherited, add to implementations
-            if (method != null && !method.isAbstract()) {
+            if (method != null && method.hasCode()) {
                 methods.add(method);
             } else if (method == null) {
                 // hm, invoke to an unknown method (maybe excluded or native), what should we do?

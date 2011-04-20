@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.jcopter.optimize;
+package com.jopdesign.jcopter.optimizer;
 
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodCode;

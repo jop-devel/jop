@@ -46,40 +46,40 @@ public class MemberID {
     private String stringRep = null;
 
     /**
-     * Parse a signature, with or without classname, with or without descriptor.
+     * Parse a member ID, with or without classname, with or without descriptor.
      *
-     * @param signature the signature to parse.
-     * @param isClassMember If the signature is ambiguous, if true always assume that the last simple member
+     * @param memberID the member ID to parse.
+     * @param isClassMember If the ID is ambiguous, if true always assume that the last simple member
      *                      name is a method or field, else assume it is a class name.
-     * @return the classname part of the signature.
+     * @return the classname part of the ID.
      */
-    public static String getClassName(String signature, boolean isClassMember) {
-        int pos = signature.indexOf(ALT_MEMBER_SEPARATOR);
+    public static String getClassName(String memberID, boolean isClassMember) {
+        int pos = memberID.indexOf(ALT_MEMBER_SEPARATOR);
         // uses alternative separator, easy
-        if (pos != -1) return signature.substring(0, pos);
+        if (pos != -1) return memberID.substring(0, pos);
 
-        pos = signature.indexOf('(');
+        pos = memberID.indexOf('(');
         if ( pos != -1 ) {
-            // has a descriptor, is a method signature, strip last member part
-            pos = signature.lastIndexOf('.', pos);
-            return pos != -1 ? signature.substring(0, pos) : "";
+            // has a descriptor, is a method ID, strip last member part
+            pos = memberID.lastIndexOf('.', pos);
+            return pos != -1 ? memberID.substring(0, pos) : "";
         }
 
         if (isClassMember) {
             // field or class name, cannot decide, assume it is a field
-            pos = signature.lastIndexOf('.');
-            return pos != -1 ? signature.substring(0, pos) : "";
+            pos = memberID.lastIndexOf('.');
+            return pos != -1 ? memberID.substring(0, pos) : "";
         } else {
             // assume it is a class name
-            return signature;
+            return memberID;
         }
     }
 
-    public static String getSignature(String className, String memberName) {
+    public static String getMemberID(String className, String memberName) {
         return className + "." +  memberName;
     }
 
-    public static String getSignature(String className, String memberName, String descriptor) {
+    public static String getMemberID(String className, String memberName, String descriptor) {
         return className + "." +  memberName + descriptor;
     }
 
@@ -88,55 +88,55 @@ public class MemberID {
     }
 
     /**
-     * Parse a signature, with or without classname, with or without descriptor.
-     * If the signature is ambiguous, first check if a class by that name exists, and
+     * Parse a member ID, with or without classname, with or without descriptor.
+     * If the ID is ambiguous, first check if a class by that name exists, and
      * if not assume that the signature refers to a class member.
      *
-     * @param signature the signature to parse.
-     * @return a new signature object.
+     * @param memberID the member ID to parse.
+     * @return a new MemberID object.
      */
-    public static MemberID parse(String signature) {
-        return parse(signature, false, AppInfo.getSingleton().getClassPath());
+    public static MemberID parse(String memberID) {
+        return parse(memberID, false, AppInfo.getSingleton().getClassPath());
     }
 
     /**
-     * Parse a signature, with or without classname, with or without descriptor.
+     * Parse a member ID, with or without classname, with or without descriptor.
      *
-     * @param signature the signature to parse.
-     * @param isClassMember If the signature is ambiguous, if true always assume that the last simple member
+     * @param memberID the memberID to parse.
+     * @param isClassMember If the ID is ambiguous, if true always assume that the last simple member
      *                      name is a method or field, else assume it is a class name.
-     * @return a new signature object.
+     * @return a new MemberID object.
      */
-    public static MemberID parse(String signature, boolean isClassMember) {
-        return parse(signature, isClassMember, null);
+    public static MemberID parse(String memberID, boolean isClassMember) {
+        return parse(memberID, isClassMember, null);
     }
 
     /**
-     * Parse a signature.
+     * Parse a member ID.
      *
-     * @param signature the signature to parse.
-     * @param classPath if the signature is ambiguous, first check if a class by that name exists in AppInfo or
+     * @param memberID the member ID to parse.
+     * @param classPath if the ID is ambiguous, first check if a class by that name exists in AppInfo or
      *                  in this classPath.
-     * @return a new signature object.
+     * @return a new MemberID object.
      */
-    public static MemberID parse(String signature, ClassPath classPath) {
-        return parse(signature, false, classPath);
+    public static MemberID parse(String memberID, ClassPath classPath) {
+        return parse(memberID, false, classPath);
     }
 
     /**
-     * Parse a signature, with or without classname, with or without descriptor.
+     * Parse a member ID, with or without classname, with or without descriptor.
      *
-     * @param signature the signature to parse.
+     * @param memberID the member ID to parse.
      * @param isClassMember If true, always assume that the last simple member
-     *                      name is a class member, if the signature is ambiguous.
-     * @param classPath If not null and the signature is ambiguous, first check if a class by that name exists, and
-     *                  if not assume that the signature refers to a class member. Only has an effect if
+     *                      name is a class member, if the ID is ambiguous.
+     * @param classPath If not null and the ID is ambiguous, first check if a class by that name exists, and
+     *                  if not assume that the ID refers to a class member. Only has an effect if
      *                  {@code isClassMember} is {@code false}.
-     * @return a new signature object.
+     * @return a new MemberID object.
      */
-    private static MemberID parse(String signature, boolean isClassMember, ClassPath classPath) {
-        int p1 = signature.indexOf(ALT_MEMBER_SEPARATOR);
-        int p2 = signature.indexOf("(");
+    private static MemberID parse(String memberID, boolean isClassMember, ClassPath classPath) {
+        int p1 = memberID.indexOf(ALT_MEMBER_SEPARATOR);
+        int p2 = memberID.indexOf("(");
 
         String className = null;
         String memberName = null;
@@ -146,44 +146,44 @@ public class MemberID {
             if ( p2 == -1 ) {
                 // TODO we might want to handle array signatures too here
                 // no descriptor, either not alternative syntax or no classname
-                if ( isClassMember || (classPath != null && !classExists(signature, classPath)) ) {
+                if ( isClassMember || (classPath != null && !classExists(memberID, classPath)) ) {
                     // is a class member with or without class name
-                    p1 = signature.lastIndexOf('.');
-                    className  = p1 != -1 ? signature.substring(0, p1) : null;
-                    memberName = p1 != -1 ? signature.substring(p1+1) : signature;
+                    p1 = memberID.lastIndexOf('.');
+                    className  = p1 != -1 ? memberID.substring(0, p1) : null;
+                    memberName = p1 != -1 ? memberID.substring(p1+1) : memberID;
                 } else {
                     // assume signature is classname only
-                    className = signature;
+                    className = memberID;
                 }
             } else {
                 // we have a descriptor, this is a method signature of some sort
-                p1 = signature.lastIndexOf('.', p2);
+                p1 = memberID.lastIndexOf('.', p2);
                 if (p1 != -1) {
-                    className = signature.substring(0, p1);
-                    memberName = signature.substring(p1+1,p2);
+                    className = memberID.substring(0, p1);
+                    memberName = memberID.substring(p1+1,p2);
                 } else {
-                    memberName = signature.substring(0,p2);
+                    memberName = memberID.substring(0,p2);
                 }
-                descriptor = Descriptor.parse(signature.substring(p2));
+                descriptor = Descriptor.parse(memberID.substring(p2));
             }
         } else {
             // alternative style with classname, easy to parse
-            className = signature.substring(0,p1);
+            className = memberID.substring(0,p1);
             if ( p2 == -1 ) {
-                memberName = signature.substring(p1+1);
+                memberName = memberID.substring(p1+1);
             } else {
-                memberName = signature.substring(p1+1, p2);
-                descriptor = Descriptor.parse(signature.substring(p2));
+                memberName = memberID.substring(p1+1, p2);
+                descriptor = Descriptor.parse(memberID.substring(p2));
             }
         }
 
         return new MemberID(className, memberName, descriptor);
     }
 
-    private static boolean classExists(String signature, ClassPath classPath) {
-        if (AppInfo.getSingleton().hasClassInfo(signature)) return true;
+    private static boolean classExists(String className, ClassPath classPath) {
+        if (AppInfo.getSingleton().hasClassInfo(className)) return true;
         try {
-            classPath.getClassFile(signature);
+            classPath.getClassFile(className);
             return true;
         } catch (IOException ignored) {
             return false;
@@ -195,7 +195,9 @@ public class MemberID {
      * Name of a Java class, field or method. Consists of the class name, the member's name and a
      * description of the member (i.e., its type).
      * It is permissible to leave out either the class name or the member name.
+     *
      * @param className name of the Java class. May be {@code null}, if class name is unknown.
+     *                  Separator must be '.' instead of '/'.
      * @param memberName name of the class member. If {@code null}, the instance represents a class name.
      * @param descriptor type of the class member. Must be {@code null}, if the member's name is not given
      */

@@ -122,16 +122,17 @@ public class JCopter extends EmptyTool<JCopterManager> {
      */
     public void prepare() {
 
-        // - callgraph thinning, various analyses
-        appInfo.buildCallGraph(false);
-        executor.reduceCallGraph();
-        executor.dumpCallgraph("callgraph");
-
         // - (optional) perform DFA: reduce callgraph even more/make callstrings more precise,
         //   maybe eliminate some nullpointer-checks
         if (useDFA()) {
-            // TODO do some analysing
+            executor.dataflowAnalysis();
         }
+
+        // - build callgraph: uses DFA results if available, else do some simple thinning
+        executor.buildCallGraph();
+
+        executor.dumpCallgraph("callgraph");
+
 
         // - devirtualize, mark methods which can be inlined (and what actions need to be taken in order to inline,
         //   i.e. rename methods/make public/..), calculate and store overhead for inlining for later analyses,

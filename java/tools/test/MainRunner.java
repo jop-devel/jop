@@ -22,7 +22,6 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.Cmdline;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.security.Permission;
 import java.util.ArrayList;
@@ -36,6 +35,8 @@ import java.util.List;
  * Use this class as entry point, and pass as argument the class containing the main method of the program
  * you want to test and optionally a list of arguments which should be added for every invocation.
  * You can then run the program multiple times with user supplied arguments.
+ *
+ *
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */

@@ -64,6 +64,13 @@ public class MethodRef {
         this.classRef = classRef;
     }
 
+    /**
+     * Get the referenced method info. If the method is inherited, get the inherited methodInfo,
+     * if the method is only defined by an implemented interface, get the interface methodInfo.
+     *
+     * @see ClassInfo#getMethodInfoInherited(MemberID, boolean)
+     * @return the referenced method.
+     */
     public MethodInfo getMethodInfo() {
         if (methodInfo == null) {
             // We could cache somehow if lookup fails, so we do not need to try again, but then how do we

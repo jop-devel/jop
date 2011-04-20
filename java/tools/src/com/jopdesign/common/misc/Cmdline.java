@@ -33,6 +33,8 @@ public class Cmdline {
     private String ps;
     private BufferedReader br;
 
+    private String lastCmd;
+
     public Cmdline() {
         this("");
     }
@@ -63,7 +65,18 @@ public class Cmdline {
         } catch (IOException e) {
             throw new AppInfoError("Error reading from stdin", e);
         }
-        return line.trim().split(" ");
+        line = line.trim();
+
+        if ("#".equals(line)) {
+            line = lastCmd;
+            System.out.println("Arguments: "+line);
+        } else if (line.startsWith("# ")) {
+            line = lastCmd + line.substring(1);
+            System.out.println("Arguments: "+line);
+        }
+        lastCmd = line;
+        
+        return line.split(" ");
     }
 
     public boolean isExit(String[] args) {
