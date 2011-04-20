@@ -1084,7 +1084,17 @@ public final class AppInfo {
         // now, we have a virtual call on our hands ..
         ClassVisitor visitor = new ClassVisitor() {
             public boolean visitClass(ClassInfo classInfo) {
-                MethodInfo m = classInfo.getMethodInfo(methodSig);
+                // Note: we also handle interface classes here, because they can contain <clinit> methods
+                MethodInfo m;
+                if (invokeeClass.isInterface() && !classInfo.isInterface()) {
+                    // If we invoke an interface method, we also need to find inherited methods in implementing
+                    // classes
+                    m = classInfo.getMethodInfoInherited(methodSig,true);
+                } else {
+                    // If we do not invoke an interface method, 'method' is already the only possible inherited 
+                    // method; If the visited class is an interface, it does not inherit implementations.
+                    m = classInfo.getMethodInfo(methodSig);
+                }		
                 if ( m != null ) {
                     if ( m.isPrivate() && !classInfo.equals(invokeeClass)) {
                         // found an overriding method which is private .. this is interesting..
