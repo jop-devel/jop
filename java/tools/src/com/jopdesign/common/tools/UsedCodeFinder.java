@@ -41,8 +41,6 @@ import org.apache.log4j.Logger;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -138,6 +136,9 @@ public class UsedCodeFinder {
 
     /**
      * Mark all used members, starting at all AppInfo roots.
+     * <p>
+     * To avoid marking unused Runnable.run methods, remove them from the callgraph roots first.
+     * </p>
      *
      * @see #markUsedMembers(ClassInfo,boolean)
      * @see #markUsedMembers(MethodInfo)
@@ -153,7 +154,7 @@ public class UsedCodeFinder {
         }
         // We do not need to visit all <clinit>, they are marked when the classes are visited
         // but we need to add all Runnable.run() methods as root methods
-        for (MethodInfo run : appInfo.getThreadRootMethods()) {
+        for (MethodInfo run : appInfo.getThreadRootMethods(true)) {
             markUsedMembers(run);
         }
 

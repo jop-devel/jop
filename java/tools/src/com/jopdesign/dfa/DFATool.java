@@ -96,6 +96,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     // Root logger
     public static final String LOG_DFA = "dfa";
     public static final String LOG_DFA_ANALYSES = "dfa.analyses";
+    public static final String LOG_DFA_FRAMEWORK = "dfa.framework";
 
     private static final Logger logger = Logger.getLogger(LOG_DFA+".DFATool");
 

@@ -50,7 +50,7 @@ public class CallString implements CallStringProvider {
 		private List<Pair<String,Integer>> sites = new ArrayList<Pair<String,Integer>>();
 		public CallStringSerialization(CallString cs) {
 			for(InvokeSite site : cs.getInvokeSiteList()) {
-				String method = site.getMethod().getFQMethodName();
+				String method = site.getInvoker().getFQMethodName();
 				int pos = site.getInstruction().getPosition();
 				this.sites.add(new Pair<String,Integer>(method,pos));
 			}
@@ -285,7 +285,7 @@ public class CallString implements CallStringProvider {
         boolean first = true;
         for (int i = callString.length-1; i >= 0; i--) {
             if (first) first = false;
-            else if (newlines) sb.append("\n           ");
+            else if (newlines) sb.append("\n        ");
             else sb.append(";");
             sb.append(callString[i].toString());
         }

@@ -842,9 +842,22 @@ public final class AppInfo {
         return methods;
     }
 
-    public Collection<MethodInfo> getThreadRootMethods() {
+    /**
+     * Find all Runnable.run() implementations from all the loaded classes.
+     * @param callgraphRootsOnly if true and if a callgraph has been created, only check callgraph root classes.
+     *                           This can be used to ignore unused Runnables by removing them from the callgraph (roots).
+     * @return a set of methods which implement Runnable.run().
+     */
+    public Collection<MethodInfo> getThreadRootMethods(boolean callgraphRootsOnly) {
         List<MethodInfo> methods = new ArrayList<MethodInfo>();
-        for (ClassInfo cls : classes.values()) {
+        Collection<ClassInfo> classList;
+
+        if (callGraph != null && callgraphRootsOnly) {
+            classList = callGraph.getRootClasses();
+        } else {
+            classList = classes.values();
+        }
+        for (ClassInfo cls : classList) {
             Ternary isRunnable = cls.hasSuperClass("java.lang.Runnable", true);
             if (isRunnable == Ternary.UNKNOWN) {
                 // what if unsafe? We ignore for now, must be added as root manually; should we log?
@@ -852,13 +865,29 @@ public final class AppInfo {
             }
             if (isRunnable == Ternary.TRUE) {
                 MethodInfo run = cls.getMethodInfo("run()V");
-                if (run != null) {
+                if (run != null && !run.isAbstract()) {
                     methods.add(run);
                 }
                 // TODO any other methods we might need to add?
             }
         }
         return methods;
+    }
+
+    /**
+     * @param classInfo a classinfo to check.
+     * @return true if this class implements Runnable and belongs to the JVM implementation.
+     */
+    public boolean isJVMThread(ClassInfo classInfo) {
+        // TODO make this check less hardcoded.. Move to ProcessorModel?
+        if ("joprt".equals(classInfo.getPackageName()) ||
+            "com.jopdesign.sys".equals(classInfo.getPackageName())) {
+            Ternary isRunnable = classInfo.hasSuperClass("java.lang.Runnable", true);
+            if (isRunnable != Ternary.FALSE) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void addRootMethods(Set<MethodInfo> methods, MemberInfo root) {
@@ -1024,8 +1053,8 @@ public final class AppInfo {
             // we do not have a callgraph, so just use typegraph info
             return findImplementations(invokeSite.getInvokeeRef());
         }
-        if (!callGraph.hasMethod(invokeSite.getMethod())) {
-            logger.info("Could not find method "+invokeSite.getMethod()+" in the callgraph, falling back to typegraph");
+        if (!callGraph.hasMethod(invokeSite.getInvoker())) {
+            logger.info("Could not find method "+invokeSite.getInvoker()+" in the callgraph, falling back to typegraph");
             return findImplementations(invokeSite.getInvokeeRef());
         }
 
@@ -1297,6 +1326,7 @@ public final class AppInfo {
                 return true;
             }
             if (cls != null) {
+                // TODO we could also check if any superclass has 'className' as package prefix
                 Ternary rs = cls.hasSuperClass(s, true);
                 // Hmm, what to do if the superclass check is not safe (ie result is UNKNOWN)?
                 // We just do not match for now ..

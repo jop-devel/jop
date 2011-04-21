@@ -20,13 +20,16 @@
 
 package com.jopdesign.dfa.framework;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.DefaultCallgraphBuilder;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.type.MemberID;
 import com.jopdesign.dfa.DFATool;
+import org.apache.log4j.Logger;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -35,20 +38,34 @@ import java.util.Set;
  */
 public class DFACallgraphBuilder extends DefaultCallgraphBuilder {
 
+    private final AppInfo appInfo;
     private final DFATool dfaTool;
+
+    private static final Logger logger = Logger.getLogger(DFATool.LOG_DFA_FRAMEWORK+".DFACallgraphBuilder");
 
     public DFACallgraphBuilder(DFATool dfaTool, int callgraphLength) {
         super(callgraphLength);
         this.dfaTool = dfaTool;
+        this.appInfo = AppInfo.getSingleton();
     }
 
     @Override
     protected Set<MethodInfo> getInvokedMethods(ExecutionContext context, InvokeSite invokeSite) {
+        // Receivers of instructions which are JVM calls are not the JVM class implementing the call, so
+        // to avoid problems we only use the DFA for virtual calls, all other can be uniquely resolved anyway.
+        if (!invokeSite.isVirtual()) {
+            return Collections.singleton(invokeSite.getInvokeeRef().getMethodInfo());
+        }
         Set<String> receivers = dfaTool.getReceivers(invokeSite.getInstruction(), context.getCallString());
+        if (receivers == null) {
+            // TODO should we create a log message?
+            // This can happen e.g. because we have all Runnable.run() methods as roots, regardless if they are used 
+            return appInfo.findImplementations(invokeSite, context.getCallString());
+        }
         Set<MethodInfo> methods = new HashSet<MethodInfo>(receivers.size());
         for (String rcv: receivers) {
             MemberID mId = MemberID.parse(rcv);
-
+            methods.add(appInfo.getMethodRef(mId).getMethodInfo());
         }
         return methods;
     }

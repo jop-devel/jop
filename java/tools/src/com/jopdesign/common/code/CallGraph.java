@@ -419,7 +419,8 @@ public class CallGraph {
 
     /**
      * Build a callgraph with all root methods of AppInfo.
-     * This also adds all static initializers of all classes to the callgraph.
+     * This also adds all static initializers of all classes and all Runnable.run() methods
+     * to the callgraph roots.
      *
      * @see AppInfo#getRootMethods()
      * @param appInfo the AppInfo to use
@@ -436,7 +437,7 @@ public class CallGraph {
         for (MethodInfo m : appInfo.getClinitMethods()) {
             roots.add(new ExecutionContext(m));
         }
-        for (MethodInfo m : appInfo.getThreadRootMethods()) {
+        for (MethodInfo m : appInfo.getThreadRootMethods(false)) {
             roots.add(new ExecutionContext(m));
         }
 
@@ -655,7 +656,7 @@ public class CallGraph {
         return childs;
     }
     
-    public Set<ClassInfo> getRootClass() {
+    public Set<ClassInfo> getRootClasses() {
         Set<ClassInfo> classes = new HashSet<ClassInfo>(2);
         for (ExecutionContext root : rootNodes) {
             classes.add(root.getMethodInfo().getClassInfo());
@@ -1013,7 +1014,7 @@ public class CallGraph {
         // graphs anyway?)
 
         // find all instances of possible invokers
-        Set<ExecutionContext> invoker = getNodes(invoke.getMethod());
+        Set<ExecutionContext> invoker = getNodes(invoke.getInvoker());
         for (ExecutionContext invokeNode : invoker) {
 
             // TODO filter out nodes which do not match the callstring, to speed up things a bit

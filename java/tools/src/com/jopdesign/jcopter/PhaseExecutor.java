@@ -150,13 +150,18 @@ public class PhaseExecutor {
                     clinitRoots.add(ctx);
                 } else if (jvmClasses.contains(ctx.getMethodInfo().getClassName())) {
                     jvmRoots.add(ctx);
+                } else if (appInfo.isJVMThread(ctx.getMethodInfo().getClassInfo())) {
+                    // This is to add Runnables like Scheduler and RtThread to the JVM classes.
+                    jvmRoots.add(ctx);
                 } else {
-                    // Should we dump Runnable.run() into another graph?
                     appRoots.add(ctx);
                 }
             }
 
             Config config = getConfig();
+
+            // TODO to keep the CG size down, we could add options to exclude methods (like '<init>') or packages
+            // from dumping and skip dumping methods reachable only over excluded methods
 
             graph.dumpCallgraph(config, graphName, "app", appRoots, config.getOption(DUMP_CALLGRAPH), false);
             graph.dumpCallgraph(config, graphName, "clinit", clinitRoots, config.getOption(DUMP_CALLGRAPH), false);

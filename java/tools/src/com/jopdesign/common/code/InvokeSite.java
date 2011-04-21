@@ -79,7 +79,7 @@ public class InvokeSite {
         return instruction;
     }
 
-    public MethodInfo getMethod() {
+    public MethodInfo getInvoker() {
         return invoker;
     }
 
@@ -88,6 +88,18 @@ public class InvokeSite {
      */
     public boolean isVirtual() {
         return isInvokeVirtual() || isInvokeInterface();
+    }
+
+    /**
+     * @return true if this is a JVM Java implementation invocation, false if this is a normal invoke instruction.
+     */
+    public boolean isJVMCall() {
+        Instruction instr = instruction.getInstruction();
+        if (instr instanceof InvokeInstruction) {
+            return false;
+        }
+        assert AppInfo.getSingleton().getProcessorModel().isImplementedInJava(instruction.getInstruction());
+        return true;
     }
 
     public boolean isInvokeSpecial() {
@@ -222,7 +234,7 @@ public class InvokeSite {
         if (!instruction.equals(is.getInstruction())) return false;
         // TODO performance optimization: if we assume that invokesites in different methods
         //      never share the same instruction handle, we could simply return true
-        return invoker.equals(is.getMethod());
+        return invoker.equals(is.getInvoker());
     }
 
     @Override
