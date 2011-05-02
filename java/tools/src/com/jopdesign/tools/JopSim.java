@@ -1763,19 +1763,32 @@ System.out.println("new heap: "+heap);
 
 		System.out.println();
 		System.out.println("CPU "+io.cpuId+":");
-		/*
 		int sum = 0;
 		int sumcnt = 0;
+//		// that's the JopInstr version
+//		for (int i=0; i<256; ++i) {
+//			if (bcStat[i] > 0) {
+//				System.out.println(bcStat[i]+"\t"+(bcStat[i]*JopInstr.cnt(i))+"\t"+JopInstr.name(i));
+//				sum += bcStat[i];
+//				sumcnt += bcStat[i]*JopInstr.cnt(i);
+//			}
+//		}
+//		System.out.println();
+//		System.out.println(sum+" instructions, "+sumcnt+" cycles");
+		// That's the version with WCETInstruction
+		sum = sumcnt = 0;
 		for (int i=0; i<256; ++i) {
 			if (bcStat[i] > 0) {
-				System.out.println(bcStat[i]+"\t"+(bcStat[i]*JopInstr.cnt(i))+"\t"+JopInstr.name(i));
+				int cnt = WCETInstruction.getCyclesEstimate(i, false, 0);
+//				System.out.println(bcStat[i]+"\t"+(bcStat[i]*cnt)+"\t"+JopInstr.name(i));
 				sum += bcStat[i];
-				sumcnt = bcStat[i]*JopInstr.cnt(i);
+				sumcnt += bcStat[i]*cnt;
 			}
 		}
 		System.out.println();
-		System.out.println(sum+" instructions, "+sumcnt+" cycles, "+instrBytesCnt+" bytes");
-		 */
+		System.out.println(sum+" instructions, "+sumcnt+" cycles (no M$ cycles)");
+		System.out.println("CPI: "+ ((float) sumcnt/sum));
+
 		System.out.println(maxSp+" maximum sp");
 //		System.out.println(heap+" heap"); not the heap pointer anymore
 //		System.out.println();
