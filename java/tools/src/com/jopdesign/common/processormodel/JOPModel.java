@@ -92,7 +92,9 @@ public class JOPModel implements ProcessorModel {
 
     /* FIXME: [NO THROW HACK] */
     public boolean isImplementedInJava(Instruction ii) {
-        return (JopInstr.isInJava(ii.getOpcode()) && !isNewOp(ii) && !isThrowOp(ii));
+        return (JopInstr.isInJava(ii.getOpcode())
+				// && !isNewOp(ii)
+				&& !isThrowOp(ii));
     }
 
     public MethodInfo getJavaImplementation(AppInfo ai, MethodInfo context, Instruction instr) {

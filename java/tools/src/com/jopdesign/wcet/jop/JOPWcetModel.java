@@ -73,8 +73,9 @@ public class JOPWcetModel implements WCETProcessorModel {
     
     /** return true if we are not able to compute a WCET for the given bytecode */
     public boolean isUnboundedBytecode(Instruction ii) {
-        return (ii instanceof ATHROW || ii instanceof NEW ||
-                ii instanceof NEWARRAY || ii instanceof ANEWARRAY);
+        // return (ii instanceof ATHROW || ii instanceof NEW ||
+        //         ii instanceof NEWARRAY || ii instanceof ANEWARRAY);
+		return ii instanceof ATHROW;
     }
 
     @Override
