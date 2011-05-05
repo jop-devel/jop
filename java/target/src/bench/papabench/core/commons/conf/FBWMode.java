@@ -41,6 +41,10 @@ public enum FBWMode {
 	}
 	
 	public static FBWMode valueOf(int i) {
-		return values()[i];				
+		if (i == 0) return MANUAL;
+		if (i == 1) return AUTO;
+		if (i == 2) return FAILSAFE;
+		throw new ArrayIndexOutOfBoundsException();
+		// return values()[i];
 	}
 }
