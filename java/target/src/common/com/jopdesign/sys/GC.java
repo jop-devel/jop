@@ -549,7 +549,7 @@ public class GC {
 		synchronized (mutex) {
 			if (copyPtr+size >= allocPtr) {
 				if (USE_SCOPES) {
-					log("No GC when scopes are used");
+					// log("No GC when scopes are used");
 					// OOMError.fillInStackTrace();
 					throw OOMError;
 				} else {
@@ -565,7 +565,7 @@ public class GC {
 		synchronized (mutex) {
 			if (freeList==0) {
 				if (USE_SCOPES) {
-					log("No GC when scopes are used");
+					// log("No GC when scopes are used");
 					// OOMError.fillInStackTrace();
 					throw OOMError;
 				} else {
@@ -654,7 +654,7 @@ public class GC {
 		synchronized (mutex) {
 			if (copyPtr+size >= allocPtr) {
 				if (USE_SCOPES) {
-					log("No GC when scopes are used");
+					// log("No GC when scopes are used");
 					// OOMError.fillInStackTrace();
 					throw OOMError;
 				} else {
@@ -670,7 +670,7 @@ public class GC {
 		synchronized (mutex) {
 			if (freeList==0) {
 				if (USE_SCOPES) {
-					log("No GC when scopes are used");
+					// log("No GC when scopes are used");
 					// OOMError.fillInStackTrace();
 					throw OOMError;
 				} else {
