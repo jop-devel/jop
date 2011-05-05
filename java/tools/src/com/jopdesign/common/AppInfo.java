@@ -968,6 +968,10 @@ public final class AppInfo {
         return callGraph;
     }
 
+    public boolean hasCallGraph() {
+        return callGraph != null;
+    }
+
     /**
      * Get the current default callgraph.
      * <p>

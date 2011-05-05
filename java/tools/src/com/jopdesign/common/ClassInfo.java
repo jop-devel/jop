@@ -724,6 +724,22 @@ public final class ClassInfo extends MemberInfo {
     // Access to fields and methods, lookups
     //////////////////////////////////////////////////////////////////////////////
 
+    public ClassMemberInfo getMemberInfo(MemberID memberID) {
+        return getMemberInfo(memberID.getMethodSignature());
+    }
+
+    /**
+     * @param memberSignature either a field name or a method signature (short name and descriptor).
+     * @return the member info for this signature or null if not found.
+     */
+    public ClassMemberInfo getMemberInfo(String memberSignature) {
+        MethodInfo method = methods.get(memberSignature);
+        if (method != null) {
+            return method;
+        }
+        return fields.get(memberSignature);
+    }
+
     public FieldInfo getFieldInfo(MemberID memberID) {
         return getFieldInfo(memberID.getMemberName());
     }
@@ -739,11 +755,11 @@ public final class ClassInfo extends MemberInfo {
     /**
      * Get the method with the given member signature (e.g. {@code "foo(I)V"}).
      *
-     * @param memberSignature the signature of the method without the classname.
+     * @param methodSignature the signature of the method without the classname.
      * @return the method or null if it does not exist.
      */
-    public MethodInfo getMethodInfo(String memberSignature) {
-        return methods.get(memberSignature);
+    public MethodInfo getMethodInfo(String methodSignature) {
+        return methods.get(methodSignature);
     }
 
     public Set<MethodInfo> getMethodByName(String name) {

@@ -84,6 +84,20 @@ public class MiscUtils {
         set.add(val);
     }
 
+    public static <T> T[] concat(T val, T[] vals) {
+        List<T> v = new ArrayList<T>(vals.length+1);
+        v.add(val);
+        v.addAll(Arrays.asList(vals));
+        return v.toArray(vals);
+    }
+
+    public static <T> T[] concat(T[] vals, T val) {
+        T[] v = Arrays.copyOf(vals, vals.length+1);
+        v[vals.length] = val;
+        return v;
+    }
+
+
     /**
      * partially sort the given collection by inserting the elements into buckets,
      * indexed by the given priority function.
