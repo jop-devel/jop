@@ -33,7 +33,6 @@ import org.apache.bcel.generic.CPInstruction;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.ConstantPushInstruction;
 import org.apache.bcel.generic.Instruction;
-import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.LoadInstruction;
 import org.apache.bcel.generic.StoreInstruction;
 import org.apache.bcel.generic.Type;
@@ -72,9 +71,7 @@ public class ValueAnalysis {
         }
     }
 
-    public void transfer(InstructionHandle ih) {
-
-        Instruction instruction = ih.getInstruction();
+    public void transfer(Instruction instruction) {
 
         switch (instruction.getOpcode()) {
             case Constants.NOP:

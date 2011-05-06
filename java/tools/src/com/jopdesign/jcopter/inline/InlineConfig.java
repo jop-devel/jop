@@ -34,7 +34,7 @@ import java.util.List;
  */
 public class InlineConfig {
 
-    public enum JVMInline { NONE, SAVE, ALL }
+    public enum JVMInline { NONE, SAFE, ALL }
 
     public static final StringOption EXCLUDE =
             new StringOption("exclude", "Comma separated list of methods (without descriptor), classes and packages to exclude from inlining.", true);
@@ -47,8 +47,8 @@ public class InlineConfig {
 
     public static final EnumOption<JVMInline> JVM_INLINE =
             new EnumOption<JVMInline>("jvm-calls",
-                    "Allow inlining of JVM calls: NONE: disabled, SAVE: only if result is verifiable, ALL: all calls",
-                    JVMInline.SAVE);
+                    "Allow inlining of JVM calls: disabled, only if result is verifiable, all calls",
+                    JVMInline.SAFE);
 
     private final OptionGroup options;
     private final List<String> ignorePrefix;

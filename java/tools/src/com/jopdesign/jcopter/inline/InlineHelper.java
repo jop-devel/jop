@@ -117,7 +117,16 @@ public class InlineHelper {
 
     /**
      * Devirtualize an invocation.
+     * <p>
+     * Since this uses the callgraph if available, the callstring must match the state of the callgraph,
+     * i.e. if an invocation in the callstring has been inlined and the callgraph has been updated to reflect
+     * the new invoke, the inlined invocation must be removed from the callstring too.
+     * Contrariwise, if an invoke has been inlined but the callgraph has not yet been updated, the callstring
+     * must also contain the inlined invoke. Also the callstring does not need to start at the method to optimize.
+     * This is different from what {@link #canInline(CallString, MethodInfo)} expects.
+     * </p>
      *
+     * @see #canInline(CallString, MethodInfo)
      * @param invokers the callstring of the invocation to devirtualize. The last entry must be the invoke site to
      *                 devirtualize. The first first entry does not need to be the method into which inlining
      *                 is performed.
@@ -136,7 +145,16 @@ public class InlineHelper {
 
     /**
      * Devirtualize an invocation.
+     * <p>
+     * Since this uses the callgraph, the callstring must match the state of the callgraph,
+     * i.e. if an invocation in the callstring has been inlined and the callgraph has been updated to reflect
+     * the new invoke, the inlined invocation must be removed from the callstring too.
+     * Contrariwise, if an invoke has been inlined but the callgraph has not yet been updated, the callstring
+     * must also contain the inlined invoke. Also the callstring does not need to start at the method to optimize.
+     * This is different from what {@link #canInline(CallString, MethodInfo)} expects.
+     * </p>
      *
+     * @see #canInline(CallString, MethodInfo)
      * @param callgraph the callgraph to use for devirtalization.
      * @param invokers the callstring of the invocation to devirtualize. The last entry must be the invoke site to
      *                 devirtualize. The first first entry does not need to be the method into which inlining
@@ -160,9 +178,9 @@ public class InlineHelper {
      * Perform an initial test if the invokesite can be replaced by the given method code
      * depending on the configuration and the class infos.
      * <p>
-     * The invoked method must be resolved first, and it must be ensured that this method is the only (known)
-     * method which can be called (e.g. by checking the CallGraph) as this is not checked here to allow for
-     * more sophisticated devirtualization techniques.
+     * The invoked method must be resolved first and it must be ensured that this method is the only (known)
+     * method which can be called (e.g. by using {@link #devirtualize(CallString)}) as this is not checked
+     * here to allow for different devirtualization techniques.
      * </p><p>
      * This depends on the flags and classinfos of the called method, and on the
      * configuration. This function does not check for resulting code sizes etc.
@@ -174,13 +192,25 @@ public class InlineHelper {
      * To check if inlining is actually possible under the target size restrictions, you also need to check
      * {@link #checkConstraints(MethodInfo, InvokeSite, MethodInfo, int, int, int)}.
      * To determine which code to generate, you might want to check
-     * {@link #needsEmptyStack(InvokeSite, MethodInfo)} and {@link #needsNullpointerCheck(InvokeSite, MethodInfo,boolean)}.
+     * {@link #needsEmptyStack(InvokeSite, MethodInfo)} and {@link #needsNullpointerCheck(CallString, MethodInfo,boolean)}.
      * If an invokesite is inlined, {@link #prepareInlining(MethodInfo, MethodInfo)} must be called before inlining.
      * </p>
+     * <p>
+     * The given callstring is not used to check the callgraph or any other analysis result, but to check
+     * for recursive inlining, so inlined invokes should not be removed from the callstring even if the callgraphs
+     * and analyses have been updated, and the callstring must start at the method to optimize.
+     * This is different from what {@link #devirtualize(CallString)} expects.
+     * </p>
      *
+     * @see #devirtualize(CallString)
+     * @see #checkConstraints(MethodInfo, InvokeSite, MethodInfo, int, int, int)
+     * @see #needsEmptyStack(InvokeSite, MethodInfo)
+     * @see #needsNullpointerCheck(CallString, MethodInfo, boolean)
+     * @see #prepareInlining(MethodInfo, MethodInfo)
      * @param invokers a callstring leading to the invokee. The first entry in the callstring must be the method into
      *                 which the other methods are recursively inlined, the last entry in the list must be invokesite
-     *                 of the invokee. This is needed to check to avoid endless inlining of recursive methods.
+     *                 of the invokee. This is needed to check to avoid endless inlining of recursive methods, inlined invokes
+     *                 should therefore not be removed from this callstring.
      * @param invokee the devirtualized invokee.
      * @return true if all initial tests succeed.
      */
@@ -217,15 +247,26 @@ public class InlineHelper {
      * <li>The inlined code will always generate an exception anyway</li>
      * <li>Generating checks has been disabled by configuration</li>
      * </ul>
+     * <p>
+     * The callstring does not need to start or to end at the method to optimize. However since the callstring is
+     * used to check the DFA results if available, the callstring must match what the DFA expects, i.e. if
+     * the DFA-results and -callstrings are updated during inlining, this callstring must not include inlined
+     * invokes. Contrariwise if the DFA results are not updated during inline, the callstring must contain already
+     * inlined invokes.
+     * </p>
      *
-     * @param invokeSite The invoke site. Does not need to refer to an invoke instruction, and does not need to
-     *                   refer to the method which will actually contain the invocation (in case of recursive inlining).
+     * @param callString The callstring including the invokesite of the invokee. The top invokesite does not need to
+     *                   refer to an invoke instruction, and the referenced invoker method does not need to
+     *                   be the method containing the invoke to inline (e.g. if the invoke to inline has
+     *                   been inlined itself). However the callstring needs to match what the DFA expects.
      * @param invokee the devirtualized invokee.
      * @param analyzeCode if false, skip checking the code of the invokee.
      * @return true if a nullpointer check code should be generated.
      */
-    public boolean needsNullpointerCheck(InvokeSite invokeSite, MethodInfo invokee, boolean analyzeCode) {
+    public boolean needsNullpointerCheck(CallString callString, MethodInfo invokee, boolean analyzeCode) {
         if (inlineConfig.skipNullpointerChecks()) return false;
+
+        InvokeSite invokeSite = callString.top();
 
         // check if we have a 'this' reference anyway
         if (invokeSite.isInvokeStatic() || invokeSite.isJVMCall()) {
@@ -253,7 +294,7 @@ public class InlineHelper {
             if (instr instanceof ConstantPushInstruction ||
                 instr instanceof LocalVariableInstruction)
             {
-                analysis.transfer(ih);
+                analysis.transfer(instr);
             } else if (instr instanceof GETFIELD ||
                        instr instanceof PUTFIELD ||
                        instr instanceof INVOKEVIRTUAL ||

@@ -36,6 +36,14 @@ public class ValueTable {
         stack = new ArrayList<ValueInfo>(4);
     }
 
+    public List<ValueInfo> getLocals() {
+        return locals;
+    }
+
+    public List<ValueInfo> getStack() {
+        return stack;
+    }
+
     public ValueInfo setLocalValue(int index, ValueInfo value) {
         for (int i = locals.size(); i <= index; i++) {
             locals.add(ValueInfo.UNUSED);

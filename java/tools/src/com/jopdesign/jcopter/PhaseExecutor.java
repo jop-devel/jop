@@ -90,6 +90,8 @@ public class PhaseExecutor {
         opt.addOptions(optimizeOptions);
         opt.addOptions(UnusedCodeRemover.optionList);
 
+        OptionGroup inline = options.getGroup(GROUP_INLINE);
+        InlineConfig.registerOptions(inline);
     }
 
     private final JCopter jcopter;
