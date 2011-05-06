@@ -45,12 +45,17 @@ public class ExampleTool extends EmptyTool<ExampleManager> {
         manager = new ExampleManager();
     }
 
+    @Override
     public ExampleManager getEventHandler() {
+        // optional, can return null
         return manager;
     }
 
     @Override
     public void registerOptions(Config config) {
+        // The tool is responsible for creating different option-groups.
+        // If it should be possible to instantiate the tool several times, the tool must create
+        // different option-groups per instance appropriately.
         config.addOption( new BooleanOption("flag", "switch some stuff on or off") );
         config.addOption( new IntegerOption("new", "create n new classes", 2).setMinMax(0,10) );
     }
@@ -59,7 +64,7 @@ public class ExampleTool extends EmptyTool<ExampleManager> {
     public void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException {
     }
 
-    public void run(Config config) {
+    public void doSomething(Config config) {
 
         AppInfo appInfo = AppInfo.getSingleton();
 
@@ -85,13 +90,16 @@ public class ExampleTool extends EmptyTool<ExampleManager> {
         AppSetup setup = new AppSetup();
         setup.setUsageInfo("example", "This is an example application just to show off.");
         setup.setVersionInfo("The version of this whole application is 0.1");
-        // set the name of the (optional) user-provided config file
-        setup.setConfigFilename("example.properties");
+        // We do not load an (optional) config file automatically, user has to specify it explicitly
+        // using '@config.props' to avoid unintentional misconfiguration
+        //setup.setConfigFilename("example.properties");
 
         ExampleTool example = new ExampleTool();
         setup.registerTool("example", example);
 
-        AppInfo appInfo = setup.initAndLoad(args, false, true, true);
+        setup.initAndLoad(args, true, true, true);
+
+        example.doSomething(setup.getConfig());
 
         // write results
         setup.writeClasses();
