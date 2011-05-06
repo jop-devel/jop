@@ -902,7 +902,7 @@ class JVM {
 				throw JVMHelp.CCExc;
 			} else {
 				// check if the appropriate bit is set
-				int i = Native.rdMem(iftab+((ifidx-31)>>>5));
+				int i = Native.rdMem(iftab-((-ifidx+31)>>>5));
 				if (((i >>> (~ifidx & 0x1f)) & 1) != 0) {
 					return objref;
 				} else {
@@ -941,7 +941,7 @@ class JVM {
 				return 0;
 			} else {
 				// check if the appropriate bit is set
-				int i = Native.rdMem(iftab+((ifidx-31)>>>5));
+				int i = Native.rdMem(iftab-((-ifidx+31)>>>5));
 				return (i >>> (~ifidx & 0x1f)) & 1;
 			}
 		}
