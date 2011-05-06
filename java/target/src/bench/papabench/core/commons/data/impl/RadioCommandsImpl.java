@@ -47,6 +47,7 @@ public class RadioCommandsImpl implements RadioCommands {
 	 */
 	protected RadioCommandsImpl(RadioCommandsImpl radioCommands) {
 		for (int i = 0 ; i < channels.length; i++) {
+			// @WCA loop = papabench.core.commons.conf.RadioConf.RADIO_CTL_NB
 			this.channels[i] = radioCommands.channels[i];			
 		}
 		this.containsAveragedChannels = radioCommands.containsAveragedChannels;
@@ -141,6 +142,7 @@ public class RadioCommandsImpl implements RadioCommands {
 		
 		int[] channels = radioCommands.getChannels();
 		for (int i = 0; i < channels.length; i++) {
+			// @WCA loop = papabench.core.commons.conf.RadioConf.RADIO_CTL_NB
 			this.channels[i] = channels[i];									
 		}
 		
