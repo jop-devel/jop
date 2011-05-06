@@ -902,7 +902,7 @@ class JVM {
 				throw JVMHelp.CCExc;
 			} else {
 				// check if the appropriate bit is set
-				int i = Native.rdMem(iftab+(ifidx-31)/32);				
+				int i = Native.rdMem(iftab+((ifidx-31)>>>5));
 				if (((i >>> (~ifidx & 0x1f)) & 1) != 0) {
 					return objref;
 				} else {
@@ -913,7 +913,8 @@ class JVM {
 
 		// search for superclass
 		for (;;) {
-			if (p==cons) {
+			// always check this bound with TypeGraphTool!
+			if (p==cons) { // @WCA loop <= 5
 				return objref;
 			} else {
 				p = Native.rdMem(p+Const.CLASS_SUPER);	// super class ptr
@@ -940,14 +941,15 @@ class JVM {
 				return 0;
 			} else {
 				// check if the appropriate bit is set
-				int i = Native.rdMem(iftab+(ifidx-31)/32);				
+				int i = Native.rdMem(iftab+((ifidx-31)>>>5));
 				return (i >>> (~ifidx & 0x1f)) & 1;
 			}
 		}
 
 		// search for superclass
 		for (;;) {
-			if (p==cons) {
+			// always check this bound with TypeGraphTool!
+			if (p==cons) { // @WCA loop <= 5
 				return 1;
 			} else {
 				p = Native.rdMem(p+Const.CLASS_SUPER);
