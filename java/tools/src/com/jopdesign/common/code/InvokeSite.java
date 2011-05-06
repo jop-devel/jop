@@ -47,6 +47,10 @@ import org.apache.log4j.Logger;
  * <p>
  * This class handles all the special cases of invocation target resolution. To find all implementations for 
  * virtual calls, see {@link AppInfo#findImplementations(InvokeSite)}
+ * </p>
+ * <p>Note that this class does not and must not cache the results of the invokee resolution, since the
+ * invoke instruction in the InstructionHandle can be changed without invalidating the InvokeSite.
+ * </p>
  *
  * @see MethodCode#getInvokeSite(InstructionHandle)
  * @author Stefan Hepp (stefan@stefant.org)
@@ -75,7 +79,7 @@ public class InvokeSite {
         this.hash = 31 * invoker.hashCode() + instruction.hashCode();
     }
 
-    public InstructionHandle getInstruction() {
+    public InstructionHandle getInstructionHandle() {
         return instruction;
     }
 
@@ -231,7 +235,7 @@ public class InvokeSite {
         if (this == obj) return true;
         if (!(obj instanceof InvokeSite))    return false;
         InvokeSite is = (InvokeSite) obj;
-        if (!instruction.equals(is.getInstruction())) return false;
+        if (!instruction.equals(is.getInstructionHandle())) return false;
         // TODO performance optimization: if we assume that invokesites in different methods
         //      never share the same instruction handle, we could simply return true
         return invoker.equals(is.getInvoker());

@@ -56,7 +56,7 @@ public class DFACallgraphBuilder extends DefaultCallgraphBuilder {
         if (!invokeSite.isVirtual()) {
             return Collections.singleton(invokeSite.getInvokeeRef().getMethodInfo());
         }
-        Set<String> receivers = dfaTool.getReceivers(invokeSite.getInstruction(), context.getCallString());
+        Set<String> receivers = dfaTool.getReceivers(invokeSite.getInstructionHandle(), context.getCallString());
         if (receivers == null) {
             // TODO should we create a log message?
             // This can happen e.g. because we have all Runnable.run() methods as roots, regardless if they are used 

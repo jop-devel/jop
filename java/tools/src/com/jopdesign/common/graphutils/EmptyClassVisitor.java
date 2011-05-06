@@ -18,10 +18,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.jcopter.inline;
+package com.jopdesign.common.graphutils;
+
+import com.jopdesign.common.ClassInfo;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class InlineChecker {
+public class EmptyClassVisitor implements ClassVisitor {
+    @Override
+    public boolean visitClass(ClassInfo classInfo) {
+        return true;
+    }
+
+    @Override
+    public void finishClass(ClassInfo classInfo) {
+    }
 }

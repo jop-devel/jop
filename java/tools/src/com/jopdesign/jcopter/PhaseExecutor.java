@@ -37,6 +37,8 @@ import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.tools.ConstantPoolRebuilder;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.framework.DFACallgraphBuilder;
+import com.jopdesign.jcopter.inline.InlineConfig;
+import com.jopdesign.jcopter.inline.SimpleInliner;
 import com.jopdesign.jcopter.optimizer.LoadStoreOptimizer;
 import com.jopdesign.jcopter.optimizer.PeepholeOptimizer;
 import com.jopdesign.jcopter.optimizer.RelinkInvokesuper;
@@ -241,12 +243,29 @@ public class PhaseExecutor {
      * {@link #markInlineCandidates()} must have been run first.
      */
     public void performSimpleInline() {
+        if (getJConfig().doAssumeDynamicClassLoader()) {
+            logger.info("Skipping simple-inliner since dynamic class loading is assumed.");
+            return;
+        }
+        logger.info("Starting simple-inliner");
+
+        new SimpleInliner(jcopter, new InlineConfig(getInlineOptions())).optimize();
+
+        logger.info("Finished simple-inliner");
     }
 
     /**
      * Inline all InvokeSites which are marked for inlining by an inline strategy.
      */
     public void performInline() {
+        if (getJConfig().doAssumeDynamicClassLoader()) {
+            logger.info("Skipping inliner since dynamic class loading is assumed.");
+            return;
+        }
+        logger.info("Starting inlining");
+
+        
+        logger.info("Finished inlining");
     }
 
     /**
@@ -287,6 +306,11 @@ public class PhaseExecutor {
     public void removeUnusedMembers() {
 
         if (!getOptimizeOptions().getOption(REMOVE_UNUSED_MEMBERS)) {
+            return;
+        }
+        // If reflection is used, we cannot remove unreferenced code since we might miss references by reflection
+        if (getJConfig().doAssumeReflection()) {
+            logger.info("Skipping removal of unused code because usage of reflection is assumed.");
             return;
         }
 

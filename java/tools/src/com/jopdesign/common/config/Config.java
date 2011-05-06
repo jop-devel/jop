@@ -195,7 +195,7 @@ public class Config {
      * Take a comma-separated list of strings and split them into an array,
      * avoiding empty strings, and trim all entries.
      *
-     * @param list a comma-separated list.
+     * @param list a comma-separated list, can be null.
      * @return trimmed entries of list.
      */
     public static List<String> splitStringList(String list) {
