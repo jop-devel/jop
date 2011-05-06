@@ -148,27 +148,44 @@ public class PapaBenchJopImpl implements JopPapaBench {
 		autopilotTasks[0] = new PJPeriodicTask(new AltitudeControlTaskHandler(autopilotModule), AltitudeControlTaskConf.PRIORITY, AltitudeControlTaskConf.RELEASE_MS, AltitudeControlTaskConf.PERIOD_MS);
 		autopilotTasks[1] = new PJPeriodicTask(new ClimbControlTaskHandler(autopilotModule), ClimbControlTaskConf.PRIORITY, ClimbControlTaskConf.RELEASE_MS, ClimbControlTaskConf.PERIOD_MS);
 		autopilotTasks[2] = new PJPeriodicTask(new LinkFBWSendTaskHandler(autopilotModule), LinkFBWSendTaskConf.PRIORITY, LinkFBWSendTaskConf.RELEASE_MS, LinkFBWSendTaskConf.PERIOD_MS);
+
 		autopilotTasks[3] = new PJPeriodicTask(new NavigationTaskHandler(autopilotModule), NavigationTaskConf.PRIORITY, NavigationTaskConf.RELEASE_MS, NavigationTaskConf.PERIOD_MS);
+		autopilotTasks[3].setScope(1024);
+
 		autopilotTasks[4] = new PJPeriodicTask(new RadioControlTaskHandler(autopilotModule), RadioControlTaskConf.PRIORITY, RadioControlTaskConf.RELEASE_MS, RadioControlTaskConf.PERIOD_MS);
+		autopilotTasks[4].setScope(128);
+
 		autopilotTasks[5] = new PJPeriodicTask(new ReportingTaskHandler(autopilotModule), ReportingTaskConf.PRIORITY, ReportingTaskConf.RELEASE_MS, ReportingTaskConf.PERIOD_MS);
 		
 		// StabilizationTask allocates messages which are sent to FBW unit -> allocate them in scope memory
-		autopilotTasks[6] = new PJPeriodicTask(new StabilizationTaskHandler(autopilotModule), StabilizationTaskConf.PRIORITY, StabilizationTaskConf.RELEASE_MS, StabilizationTaskConf.PERIOD_MS);		
+		autopilotTasks[6] = new PJPeriodicTask(new StabilizationTaskHandler(autopilotModule), StabilizationTaskConf.PRIORITY, StabilizationTaskConf.RELEASE_MS, StabilizationTaskConf.PERIOD_MS);
+		autopilotTasks[6].setScope(128);
 	}
 	
 	protected void createFBWTasks(FBWModule fbwModule) {
 		fbwTasks = new PJPeriodicTask[FBW_TASKS_COUNT];
 		fbwTasks[0] = new PJPeriodicTask(new CheckFailsafeTaskHandler(fbwModule), CheckFailsafeTaskConf.PRIORITY, CheckFailsafeTaskConf.RELEASE_MS, CheckFailsafeTaskConf.PERIOD_MS);
+
 		fbwTasks[1] = new PJPeriodicTask(new CheckMega128ValuesTaskHandler(fbwModule), CheckMega128ValuesTaskConf.PRIORITY, CheckMega128ValuesTaskConf.RELEASE_MS, CheckMega128ValuesTaskConf.PERIOD_MS);
+		fbwTasks[1].setScope(128);
+
 		fbwTasks[2] = new PJPeriodicTask(new SendDataToAutopilotTaskHandler(fbwModule), SendDataToAutopilotTaskConf.PRIORITY, SendDataToAutopilotTaskConf.RELEASE_MS, SendDataToAutopilotTaskConf.PERIOD_MS);
+		fbwTasks[2].setScope(128);
+
 		fbwTasks[3] = new PJPeriodicTask(new TestPPMTaskHandler(fbwModule), TestPPMTaskConf.PRIORITY, TestPPMTaskConf.RELEASE_MS, TestPPMTaskConf.PERIOD_MS);
 	}
 	
 	protected void createSimulatorTasks(FlightModel flightModel, AutopilotModule autopilotModule, FBWModule fbwModule) {
 		simulatorTasks = new PJPeriodicTask[SIMULATOR_TASKS_COUNT];
+
 		simulatorTasks[0] = new PJPeriodicTask(new SimulatorFlightModelTaskHandler(flightModel,autopilotModule,fbwModule), SimulatorFlightModelTaskConf.PRIORITY, SimulatorFlightModelTaskConf.RELEASE_MS, SimulatorFlightModelTaskConf.PERIOD_MS);
+		simulatorTasks[0].setScope(128);
+
 		simulatorTasks[1] = new PJPeriodicTask(new SimulatorGPSTaskHandler(flightModel,autopilotModule), SimulatorGPSTaskConf.PRIORITY, SimulatorGPSTaskConf.RELEASE_MS, SimulatorGPSTaskConf.PERIOD_MS);
-		simulatorTasks[2] = new PJPeriodicTask(new SimulatorIRTaskHandler(flightModel,autopilotModule), SimulatorIRTaskConf.PRIORITY, SimulatorIRTaskConf.RELEASE_MS, SimulatorIRTaskConf.PERIOD_MS);		
+		simulatorTasks[1].setScope(128);
+
+		simulatorTasks[2] = new PJPeriodicTask(new SimulatorIRTaskHandler(flightModel,autopilotModule), SimulatorIRTaskConf.PRIORITY, SimulatorIRTaskConf.RELEASE_MS, SimulatorIRTaskConf.PERIOD_MS);
+		simulatorTasks[2].setScope(128);
 	}
 
 	public void start() {

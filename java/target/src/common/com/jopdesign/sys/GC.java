@@ -34,8 +34,7 @@ public class GC {
 	 * Use either scoped memories or a GC.
 	 * Combining scopes and the GC needs some extra work.
 	 */
-	final static boolean USE_SCOPES = false;
-	
+	final static boolean USE_SCOPES = false;	
 	
 	static int mem_start;		// read from memory
 	// get a effective heap size with fixed handle count
@@ -477,11 +476,11 @@ public class GC {
 		concurrentGc = true;
 	}
 	static void gc_alloc() {
-		log("GC allocation triggered");
 		if (USE_SCOPES) {
 			log("No GC when scopes are used");
-			System.exit(1);
+			throw OOMError;
 		}
+		log("GC allocation triggered");
 		if (concurrentGc) {
 			// OOMError.fillInStackTrace();
 			throw OOMError;
@@ -549,21 +548,33 @@ public class GC {
 		// that's the stop-the-world GC
 		synchronized (mutex) {
 			if (copyPtr+size >= allocPtr) {
-				gc_alloc();
-				if (copyPtr+size >= allocPtr) {
-					// still not enough memory
+				if (USE_SCOPES) {
+					// log("No GC when scopes are used");
 					// OOMError.fillInStackTrace();
 					throw OOMError;
+				} else {
+					gc_alloc();
+					if (copyPtr+size >= allocPtr) {
+						// still not enough memory
+						// OOMError.fillInStackTrace();
+						throw OOMError;
+					}
 				}
 			}			
 		}
 		synchronized (mutex) {
 			if (freeList==0) {
-				log("Run out of handles in new Object!");
-				gc_alloc();
-				if (freeList==0) {
+				if (USE_SCOPES) {
+					// log("No GC when scopes are used");
 					// OOMError.fillInStackTrace();
 					throw OOMError;
+				} else {
+					log("Run out of handles in new Object!");
+					gc_alloc();
+					if (freeList==0) {
+						// OOMError.fillInStackTrace();
+						throw OOMError;
+					}
 				}
 			}			
 		}
@@ -624,24 +635,31 @@ public class GC {
 			}
 			if (sc!=null) {
 				int rem = sc.backingStore.length - sc.allocPtr;
-				if (size+2 > rem) {
+				if (size+4 > rem) {
 					// OOMError.fillInStackTrace();
 					throw OOMError;
 				}
 				int ref = sc.allocPtr;
-				sc.allocPtr += size+2;
+				sc.allocPtr += size+4;
 				int ptr = Native.toInt(sc.backingStore);
 				ptr = Native.rdMem(ptr);
 				ptr += ref;
-				sc.backingStore[ref] = ptr+2;
+				sc.backingStore[ref] = ptr+4;
 				sc.backingStore[ref+1] = arrayLength;
+				sc.backingStore[ref+3] = type;
 				return ptr;
 			}			
 		}
 
 		synchronized (mutex) {
 			if (copyPtr+size >= allocPtr) {
-				gc_alloc();
+				if (USE_SCOPES) {
+					// log("No GC when scopes are used");
+					// OOMError.fillInStackTrace();
+					throw OOMError;
+				} else {
+					gc_alloc();
+				}
 				if (copyPtr+size >= allocPtr) {
 					// still not enough memory
 					// OOMError.fillInStackTrace();
@@ -651,11 +669,17 @@ public class GC {
 		}
 		synchronized (mutex) {
 			if (freeList==0) {
-				log("Run out of handles in new array!");
-				gc_alloc();
-				if (freeList==0) {
+				if (USE_SCOPES) {
+					// log("No GC when scopes are used");
 					// OOMError.fillInStackTrace();
 					throw OOMError;
+				} else {
+					log("Run out of handles in new array!");
+					gc_alloc();
+					if (freeList==0) {
+						// OOMError.fillInStackTrace();
+						throw OOMError;
+					}
 				}
 			}			
 		}

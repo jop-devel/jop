@@ -33,10 +33,12 @@ import papabench.core.commons.conf.CommonTaskConfiguration;
  */
 public interface PapaBenchSimulatorConf {
 	
+	public static final int SLOWMOTION = 2;
+
 	public static interface SimulatorFlightModelTaskConf extends CommonTaskConfiguration {
 		public static final String NAME = "SimulatorFlightModelTask";		
 		public static final int PRIORITY = 26;		
-		public static final int PERIOD_MS = 25;
+		public static final int PERIOD_MS = 25*SLOWMOTION;
 		public static final int RELEASE_MS = 0;
 		public static final int SIZE = 0;
 	}
@@ -44,7 +46,7 @@ public interface PapaBenchSimulatorConf {
 	public static interface SimulatorGPSTaskConf extends CommonTaskConfiguration {
 		public static final String NAME = "SimulatorGPSTask";		
 		public static final int PRIORITY = 28;		
-		public static final int PERIOD_MS = 250;
+		public static final int PERIOD_MS = 250*SLOWMOTION;
 		public static final int RELEASE_MS = 0;
 		public static final int SIZE = 0;
 	}
@@ -52,7 +54,7 @@ public interface PapaBenchSimulatorConf {
 	public static interface SimulatorIRTaskConf extends CommonTaskConfiguration {
 		public static final String NAME = "SimulatorIRTask";		
 		public static final int PRIORITY = 27;		
-		public static final int PERIOD_MS = 50;
+		public static final int PERIOD_MS = 50*SLOWMOTION;
 		public static final int RELEASE_MS = 0;
 		public static final int SIZE = 0;
 	}

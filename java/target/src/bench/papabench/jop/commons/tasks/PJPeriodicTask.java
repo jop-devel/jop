@@ -21,6 +21,7 @@
  */
 package papabench.jop.commons.tasks;
 
+import com.jopdesign.sys.Scope;
 import joprt.*;
 
 
@@ -38,7 +39,7 @@ public class PJPeriodicTask extends RtThread {
 	private int priority;
 	private int releaseMs;
 	private int periodMs;
-	RtThread rtt;
+	private Scope scope;
 	
 	public PJPeriodicTask(Runnable taskHandler, int priority, int releaseMs, int periodMs) {
 		super(priority, periodMs*1000, releaseMs*1000);
@@ -48,9 +49,25 @@ public class PJPeriodicTask extends RtThread {
 		this.periodMs = periodMs;
 	}
 	
+	public Scope getScope() {
+		return scope;
+	}
+
+	public void setScope(int words) {
+		scope = new Scope(new int[words]);
+	}
+
+	public void setScope(Scope s) {
+		scope = s;
+	}
+
 	public void run() {
 		for (;;) {
-			taskHandler.run();
+			if (scope != null) {
+				scope.enter(taskHandler);
+			} else {
+				taskHandler.run();
+			}
 			waitForNextPeriod();
 		}
 	}
