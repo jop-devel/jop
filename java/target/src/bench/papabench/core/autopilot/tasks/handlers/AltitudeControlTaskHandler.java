@@ -44,7 +44,7 @@ public class AltitudeControlTaskHandler implements Runnable {
 	
 	// PID controller for altitude - it cannot be only a static method because it can 
 	// have inner state (e.g., last error value)
-	private PIDController pidController; 
+	private AltitudePIDController pidController; 
 
 	public AltitudeControlTaskHandler(AutopilotModule autopilotModule) {		
 		this.autopilotModule = autopilotModule;
