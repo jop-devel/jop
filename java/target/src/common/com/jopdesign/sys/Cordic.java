@@ -100,6 +100,7 @@ public class Cordic {
       }
 
       for(int  i = 0; i < CORDIC_N; i++) {
+		  // @WCA loop = CORDIC_N
 	if(pp >= 0) {
 	  final int  xx;
 	  xx  = x - (y>>i);

@@ -596,7 +596,7 @@ public class SoftFloat64 {
 		long m = 0;
 		x1 -= x2;
 		while (true) {
-			int s = BitUtils.countLeadingZeros(m1) - 1;
+			int s = BitUtils.countLeadingZeros(m1) - 1; // @WCA loop <= 228
 			int t = BitUtils.countLeadingZeros(m);
 			s = t < s ? t : s;
 			if (s <= 8) {
@@ -647,7 +647,9 @@ public class SoftFloat64 {
 		} else {
 			// reduce m1 by left shifting and modding until the exponents x1 and x2 are
 			// equal
+			int i = 0;
 			while (x1 != x2) {
+				// @WCA loop <= 206
 				int s = BitUtils.countLeadingZeros(m1) - 1;
 				s = x1-x2 < s ? x1-x2 : s;
 				x1 -= s;
@@ -688,7 +690,7 @@ public class SoftFloat64 {
 	    int x = unpackExponent(d);
 	    long m = unpackMantissa(d);
 	    // normalize 
-	    while (m < IMPLIED_ONE) {
+	    while (m < IMPLIED_ONE) { // @WCA loop <= 52
 	      m <<= 1;
 	      x--;
 	    }
@@ -704,7 +706,7 @@ public class SoftFloat64 {
 	    long q = 0L; // q = sqrt(x)
 	    long s = 0L;
 	    long r = 0x0020000000000000L;
-	    while (r != 0) {
+	    while (r != 0) { // @WCA loop = 53
 	      long t = s + r;
 	      if (t < m) {
 	        s = t + r;
