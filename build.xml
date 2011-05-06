@@ -52,7 +52,7 @@
 	<property name="use-config-usb" value="true"/>
 <!-- 	<property name="use-config-byteblast" value="true"/> -->
 <!-- 	<property name="use-config-usbblast" value="true"/> -->
-<!-- 	<property name="use-config-urjtag" value="true"/> -->
+<!--	<property name="use-config-urjtag" value="true"/> -->
 
 	<!-- choose blaster type for config-byteblast -->
 	<condition property="blaster-type" value="ByteBlastMV">
@@ -251,6 +251,7 @@
 			<include name="*.java"/>
 			<include name="org/apache/**/*.java"/>
 			<include name="com/jopdesign/build/*.java"/>
+			<include name="com/jopdesign/common/tools/*.java"/>
 			<include name="com/jopdesign/tools/*.java"/>
 			<include name="com/jopdesign/dfa/*.java"/>
 			<include name="com/jopdesign/jcopter/*.java"/>
@@ -759,7 +760,6 @@
 					   --dump-target-callgraph merged
 					   --program-dot /usr/bin/dot
 					   --wcet-preprocess 
-					   --use-dfa --dfa-cache-dir dfa-cache
 					   --target-method ${wcet-method} ${main-class}"/>
 		</java>
 	</target>
@@ -767,6 +767,16 @@
 	<target name="dot2eps"> <!-- depends wcet or wcet -->
 		<exec executable="make" dir="${target}/wcet" failonerror="yes"/>
 	</target>  
+	
+	<target name="typegraph">
+		<java
+			classpathref="tools-cp"
+			classname="com.jopdesign.common.tools.TypeGraphTool"
+			failonerror="true"
+			fork="true">
+			<arg line="--classpath ${target}/dist/lib/classes.zip --dump-levels --max-level ${main-class}"/>
+		</java>
+	</target>
 	
 	<target name="test">
 		<java
@@ -777,5 +787,5 @@
 			<arg line="-cp ${target}/dist/lib/classes.zip -o ${target}/wcet/${p3}call.txt -sp ${target-source-flattened} ${main-class}"/>
 		</java>
 	</target>
-	
+
 </project>
