@@ -45,13 +45,13 @@ import java.util.List;
  */
 public class CallString implements CallStringProvider {
 
-	public static class CallStringSerialization implements Serializable {
+    public static class CallStringSerialization implements Serializable {
 		private static final long serialVersionUID = 1L;
 		private List<Pair<String,Integer>> sites = new ArrayList<Pair<String,Integer>>();
 		public CallStringSerialization(CallString cs) {
 			for(InvokeSite site : cs.getInvokeSiteList()) {
-				String method = site.getMethod().getFQMethodName();
-				int pos = site.getInstruction().getPosition();
+				String method = site.getInvoker().getFQMethodName();
+				int pos = site.getInstructionHandle().getPosition();
 				this.sites.add(new Pair<String,Integer>(method,pos));
 			}
 		}
@@ -109,6 +109,20 @@ public class CallString implements CallStringProvider {
 
     public CallString getCallString() {
         return this;
+    }
+
+    public boolean contains(MethodInfo invoker) {
+        for (InvokeSite site : callString) {
+            if (site.getInvoker().equals(invoker)) return true;
+        }
+        return false;
+    }
+
+    public boolean contains(InvokeSite invokeSite) {
+        for (InvokeSite site : callString) {
+            if (site.equals(invokeSite)) return true;
+        }
+        return false;
     }
 
     public CallString push(InvokeSite invokeSite) {
@@ -178,6 +192,17 @@ public class CallString implements CallStringProvider {
 
     public int length() {
         return callString.length;
+    }
+
+    /**
+     * @return the first invokesite in this callstring.
+     */
+    public InvokeSite first() {
+        if (callString.length > 0) {
+            return callString[0];
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -285,7 +310,7 @@ public class CallString implements CallStringProvider {
         boolean first = true;
         for (int i = callString.length-1; i >= 0; i--) {
             if (first) first = false;
-            else if (newlines) sb.append("\n           ");
+            else if (newlines) sb.append("\n        ");
             else sb.append(";");
             sb.append(callString[i].toString());
         }

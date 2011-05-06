@@ -53,12 +53,24 @@ public abstract class AbstractOptimizer implements ClassVisitor {
 
     public void optimize() {
         initialize();
-        appInfo.iterate(this);
+        if (appInfo.hasCallGraph()) {
+            for (MethodInfo method : appInfo.getCallGraph().getMethodInfos()) {
+                if (appInfo.isHwObject(method.getClassInfo())) {
+                    // Do not optimize Hardware Objects, leave them alone!
+                    continue;
+                }
+                if (method.hasCode()) {
+                    optimizeMethod(method);
+                }
+            }
+        } else {
+            appInfo.iterate(this);
+        }
         printStatistics();
     }
 
     @Override
-    public boolean visitClass(ClassInfo classInfo) {
+    public final boolean visitClass(ClassInfo classInfo) {
         if (appInfo.isHwObject(classInfo)) {
             // Do not optimize Hardware Objects, leave them alone!
             return false;
@@ -72,7 +84,7 @@ public abstract class AbstractOptimizer implements ClassVisitor {
     }
 
     @Override
-    public void finishClass(ClassInfo classInfo) {
+    public final void finishClass(ClassInfo classInfo) {
     }
 
     public abstract void initialize();

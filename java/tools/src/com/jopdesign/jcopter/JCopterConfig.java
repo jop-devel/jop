@@ -42,6 +42,9 @@ public class JCopterConfig {
             new BooleanOption("assume-reflection",
                     "Assume that reflection is used. If not set, check the code for reflection code.", false);
 
+    private static final BooleanOption ASSUME_DYNAMIC_CLASSLOADING =
+            new BooleanOption("assume-dynloader", "Assume that classes can be loaded or replaced at runtime.", false);
+
     private static final StringOption OPTIMIZE =
             new StringOption("optimize", "can be one of 's[ize]', '1' or '2'", 'O', "1");
 
@@ -49,7 +52,7 @@ public class JCopterConfig {
             new StringOption("max-code-size", "maximum total code size", true);
 
     private static final Option[] optionList =
-            { ASSUME_REFLECTION, OPTIMIZE, MAX_CODE_SIZE };
+            { ASSUME_REFLECTION, ASSUME_DYNAMIC_CLASSLOADING, OPTIMIZE, MAX_CODE_SIZE };
 
     public static void registerOptions(OptionGroup options) {
         options.addOptions(JCopterConfig.optionList);
@@ -88,11 +91,17 @@ public class JCopterConfig {
         return options.getOption(ASSUME_REFLECTION);
     }
 
+    public boolean doAssumeDynamicClassLoader() {
+        return options.getOption(ASSUME_DYNAMIC_CLASSLOADING);
+    }
+
     /**
      * @return true if we need to assume that the class hierarchy is not fully known
      */
-    public boolean doAssumeIncompleteApp() {
-        return getAppInfo().doIgnoreMissingClasses();
+    public boolean doAssumeIncompleteAppInfo() {
+        // TODO Reflection may lead to loading of additional code not referenced explicitly in ConstantPool
+        //      on the other hand, it might not.. We could distinguish this using additional options.
+        return getAppInfo().doIgnoreMissingClasses() || doAssumeReflection() || doAssumeDynamicClassLoader();
     }
 
     public int getCallstringLength() {

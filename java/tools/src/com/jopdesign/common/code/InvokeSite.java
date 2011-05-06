@@ -47,6 +47,10 @@ import org.apache.log4j.Logger;
  * <p>
  * This class handles all the special cases of invocation target resolution. To find all implementations for 
  * virtual calls, see {@link AppInfo#findImplementations(InvokeSite)}
+ * </p>
+ * <p>Note that this class does not and must not cache the results of the invokee resolution, since the
+ * invoke instruction in the InstructionHandle can be changed without invalidating the InvokeSite.
+ * </p>
  *
  * @see MethodCode#getInvokeSite(InstructionHandle)
  * @author Stefan Hepp (stefan@stefant.org)
@@ -75,11 +79,11 @@ public class InvokeSite {
         this.hash = 31 * invoker.hashCode() + instruction.hashCode();
     }
 
-    public InstructionHandle getInstruction() {
+    public InstructionHandle getInstructionHandle() {
         return instruction;
     }
 
-    public MethodInfo getMethod() {
+    public MethodInfo getInvoker() {
         return invoker;
     }
 
@@ -88,6 +92,18 @@ public class InvokeSite {
      */
     public boolean isVirtual() {
         return isInvokeVirtual() || isInvokeInterface();
+    }
+
+    /**
+     * @return true if this is a JVM Java implementation invocation, false if this is a normal invoke instruction.
+     */
+    public boolean isJVMCall() {
+        Instruction instr = instruction.getInstruction();
+        if (instr instanceof InvokeInstruction) {
+            return false;
+        }
+        assert AppInfo.getSingleton().getProcessorModel().isImplementedInJava(instruction.getInstruction());
+        return true;
     }
 
     public boolean isInvokeSpecial() {
@@ -219,10 +235,10 @@ public class InvokeSite {
         if (this == obj) return true;
         if (!(obj instanceof InvokeSite))    return false;
         InvokeSite is = (InvokeSite) obj;
-        if (!instruction.equals(is.getInstruction())) return false;
+        if (!instruction.equals(is.getInstructionHandle())) return false;
         // TODO performance optimization: if we assume that invokesites in different methods
         //      never share the same instruction handle, we could simply return true
-        return invoker.equals(is.getMethod());
+        return invoker.equals(is.getInvoker());
     }
 
     @Override

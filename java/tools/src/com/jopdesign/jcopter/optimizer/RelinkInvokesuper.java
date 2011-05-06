@@ -74,7 +74,7 @@ public class RelinkInvokesuper implements ClassVisitor {
             return;
         }
         // now simply relink instruction (no need to check if it changes)
-        int index = is.getMethod().getClassInfo().addConstantInfo(new ConstantMethodInfo(invokee));
+        int index = is.getInvoker().getClassInfo().addConstantInfo(new ConstantMethodInfo(invokee));
         if (!(is.getInvokeInstruction() instanceof INVOKESPECIAL)) {
             throw new JavaClassFormatError("Invokesuper is not an invokespecial instruction!");
         }

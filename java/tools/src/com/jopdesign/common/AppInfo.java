@@ -842,9 +842,22 @@ public final class AppInfo {
         return methods;
     }
 
-    public Collection<MethodInfo> getThreadRootMethods() {
+    /**
+     * Find all Runnable.run() implementations from all the loaded classes.
+     * @param callgraphRootsOnly if true and if a callgraph has been created, only check callgraph root classes.
+     *                           This can be used to ignore unused Runnables by removing them from the callgraph (roots).
+     * @return a set of methods which implement Runnable.run().
+     */
+    public Collection<MethodInfo> getThreadRootMethods(boolean callgraphRootsOnly) {
         List<MethodInfo> methods = new ArrayList<MethodInfo>();
-        for (ClassInfo cls : classes.values()) {
+        Collection<ClassInfo> classList;
+
+        if (callGraph != null && callgraphRootsOnly) {
+            classList = callGraph.getRootClasses();
+        } else {
+            classList = classes.values();
+        }
+        for (ClassInfo cls : classList) {
             Ternary isRunnable = cls.hasSuperClass("java.lang.Runnable", true);
             if (isRunnable == Ternary.UNKNOWN) {
                 // what if unsafe? We ignore for now, must be added as root manually; should we log?
@@ -852,13 +865,29 @@ public final class AppInfo {
             }
             if (isRunnable == Ternary.TRUE) {
                 MethodInfo run = cls.getMethodInfo("run()V");
-                if (run != null) {
+                if (run != null && !run.isAbstract()) {
                     methods.add(run);
                 }
                 // TODO any other methods we might need to add?
             }
         }
         return methods;
+    }
+
+    /**
+     * @param classInfo a classinfo to check.
+     * @return true if this class implements Runnable and belongs to the JVM implementation.
+     */
+    public boolean isJVMThread(ClassInfo classInfo) {
+        // TODO make this check less hardcoded.. Move to ProcessorModel?
+        if ("joprt".equals(classInfo.getPackageName()) ||
+            "com.jopdesign.sys".equals(classInfo.getPackageName())) {
+            Ternary isRunnable = classInfo.hasSuperClass("java.lang.Runnable", true);
+            if (isRunnable != Ternary.FALSE) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void addRootMethods(Set<MethodInfo> methods, MemberInfo root) {
@@ -939,6 +968,10 @@ public final class AppInfo {
         return callGraph;
     }
 
+    public boolean hasCallGraph() {
+        return callGraph != null;
+    }
+
     /**
      * Get the current default callgraph.
      * <p>
@@ -964,7 +997,7 @@ public final class AppInfo {
      *
      * @see #findImplementations(InvokeSite, CallString)
      * @param invokeSite the invokesite to look up
-     * @return a list of possible implementations for the invocation, or an empty set if resolution fails or is not safe.
+     * @return a list of possible implementations for the invocation including native methods, or an empty set if resolution fails or is not safe.
      */
     public Set<MethodInfo> findImplementations(InvokeSite invokeSite) {
         return findImplementations(invokeSite, CallString.EMPTY);
@@ -979,7 +1012,7 @@ public final class AppInfo {
      *
      * @param invokeSite the invokesite to look up
      * @param cs the callstring up to the method containing the invocation, excluding the given invokesite
-     * @return a list of possible implementations for the invocation, or an empty set if resolution fails or is not safe.
+     * @return a list of possible implementations for the invocation including native methods, or an empty set if resolution fails or is not safe.
      */
     public Set<MethodInfo> findImplementations(InvokeSite invokeSite, CallString cs) {
         return findImplementations(cs.push(invokeSite));
@@ -993,7 +1026,7 @@ public final class AppInfo {
      * {@link #findImplementations(MethodRef)} to resolve virtual invocations.
      *
      * @param cs the callstring to the the invocation, including the given invokesite. Must not be empty.
-     * @return a list of possible implementations for the invocation, or an empty set if resolution fails or is not safe.
+     * @return a list of possible implementations for the invocation including native methods, or an empty set if resolution fails or is not safe.
      */
     public Set<MethodInfo> findImplementations(CallString cs) {
         if (cs.length() == 0) {
@@ -1024,8 +1057,8 @@ public final class AppInfo {
             // we do not have a callgraph, so just use typegraph info
             return findImplementations(invokeSite.getInvokeeRef());
         }
-        if (!callGraph.hasMethod(invokeSite.getMethod())) {
-            logger.info("Could not find method "+invokeSite.getMethod()+" in the callgraph, falling back to typegraph");
+        if (!callGraph.hasMethod(invokeSite.getInvoker())) {
+            logger.info("Could not find method "+invokeSite.getInvoker()+" in the callgraph, falling back to typegraph");
             return findImplementations(invokeSite.getInvokeeRef());
         }
 
@@ -1045,7 +1078,7 @@ public final class AppInfo {
      *
      * @see #findImplementations(InvokeSite)
      * @param invokee the method to resolve.
-     * @return all possible implementations.
+     * @return all possible implementations, including native methods.
      */
     public Set<MethodInfo> findImplementations(final MethodRef invokee) {
         final Set<MethodInfo> methods = new HashSet<MethodInfo>();
@@ -1071,7 +1104,7 @@ public final class AppInfo {
         // check if method is defined in the referenced class or in a superclass
         if (invokeeClass.getMethodInfo(methodSig) == null) {
             // method is inherited, add to implementations
-            if (method != null && method.hasCode()) {
+            if (method != null && !method.isAbstract()) {
                 methods.add(method);
             } else if (method == null) {
                 // hm, invoke to an unknown method (maybe excluded or native), what should we do?
@@ -1297,6 +1330,7 @@ public final class AppInfo {
                 return true;
             }
             if (cls != null) {
+                // TODO we could also check if any superclass has 'className' as package prefix
                 Ternary rs = cls.hasSuperClass(s, true);
                 // Hmm, what to do if the superclass check is not safe (ie result is UNKNOWN)?
                 // We just do not match for now ..
