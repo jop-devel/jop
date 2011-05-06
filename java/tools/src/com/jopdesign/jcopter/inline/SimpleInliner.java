@@ -159,13 +159,19 @@ public class SimpleInliner extends AbstractOptimizer {
 
     private boolean checkInvoke(CallString cs, MethodInfo invokee) {
 
+        // could be a native method, or it has not been devirtualized
+        if (invokee == null || !invokee.hasCode()) {
+            return false;
+        }
+
         if (invokee.getCode().getExceptionHandlers().length > 0) {
             // We do not support inlining code with exception handles (as this code would be too large anyway..)
             return false;
         }
 
-        // ignore methods which are most certainly too large (allow for param loading, invoke and return)
-        int estimate = invokee.getArgumentTypes().length * 2 + 6;
+        // ignore methods which are most certainly too large (allow for param loading, invoke and return,
+        // and some slack to allow for unused params)
+        int estimate = invokee.getArgumentTypes().length * 2 + 10;
         if (invokee.getCode().getNumberOfBytes(false) > estimate) {
             return false;
         }

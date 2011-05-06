@@ -343,7 +343,7 @@ public class InlineHelper {
         if (invokee.getCode().getExceptionHandlers().length > 0) {
             return false;
         }
-        return !invokee.isSynchronized();
+        return invokee.isSynchronized();
     }
 
     /**

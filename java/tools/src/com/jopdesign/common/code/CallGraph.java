@@ -696,6 +696,10 @@ public class CallGraph {
         return classInfos;
     }
 
+    public Set<MethodInfo> getMethodInfos() {
+        return methodNodes.keySet();
+    }
+
     /*---------------------------------------------------------------------------*
      * Modify the graph
      *---------------------------------------------------------------------------*/

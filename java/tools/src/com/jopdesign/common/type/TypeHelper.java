@@ -31,6 +31,15 @@ import org.apache.bcel.generic.Type;
  */
 public class TypeHelper {
 
+    public static int getNumSlots(Type[] types) {
+        if (types == null) return 0;
+        int i = 0;
+        for (Type t : types) {
+            i += t.getSize();
+        }
+        return i;
+    }
+
     /**
      * Check if we can assign something with type 'from' to something with type 'to'.
      *

@@ -55,15 +55,6 @@ import java.util.Arrays;
  */
 public class StackHelper {
 
-    public static int getNumSlots(Type[] types) {
-        if (types == null) return 0;
-        int i = 0;
-        for (Type t : types) {
-            i += t.getSize();
-        }
-        return i;
-    }
-
     public static Type[] consumeStack(ConstantPoolGen cpg, Instruction instruction) {
 
         // TODO any better (BCEL) way to do this?

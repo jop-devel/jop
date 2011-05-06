@@ -997,7 +997,7 @@ public final class AppInfo {
      *
      * @see #findImplementations(InvokeSite, CallString)
      * @param invokeSite the invokesite to look up
-     * @return a list of possible implementations for the invocation, or an empty set if resolution fails or is not safe.
+     * @return a list of possible implementations for the invocation including native methods, or an empty set if resolution fails or is not safe.
      */
     public Set<MethodInfo> findImplementations(InvokeSite invokeSite) {
         return findImplementations(invokeSite, CallString.EMPTY);
@@ -1012,7 +1012,7 @@ public final class AppInfo {
      *
      * @param invokeSite the invokesite to look up
      * @param cs the callstring up to the method containing the invocation, excluding the given invokesite
-     * @return a list of possible implementations for the invocation, or an empty set if resolution fails or is not safe.
+     * @return a list of possible implementations for the invocation including native methods, or an empty set if resolution fails or is not safe.
      */
     public Set<MethodInfo> findImplementations(InvokeSite invokeSite, CallString cs) {
         return findImplementations(cs.push(invokeSite));
@@ -1026,7 +1026,7 @@ public final class AppInfo {
      * {@link #findImplementations(MethodRef)} to resolve virtual invocations.
      *
      * @param cs the callstring to the the invocation, including the given invokesite. Must not be empty.
-     * @return a list of possible implementations for the invocation, or an empty set if resolution fails or is not safe.
+     * @return a list of possible implementations for the invocation including native methods, or an empty set if resolution fails or is not safe.
      */
     public Set<MethodInfo> findImplementations(CallString cs) {
         if (cs.length() == 0) {
@@ -1078,7 +1078,7 @@ public final class AppInfo {
      *
      * @see #findImplementations(InvokeSite)
      * @param invokee the method to resolve.
-     * @return all possible implementations.
+     * @return all possible implementations, including native methods.
      */
     public Set<MethodInfo> findImplementations(final MethodRef invokee) {
         final Set<MethodInfo> methods = new HashSet<MethodInfo>();
@@ -1104,7 +1104,7 @@ public final class AppInfo {
         // check if method is defined in the referenced class or in a superclass
         if (invokeeClass.getMethodInfo(methodSig) == null) {
             // method is inherited, add to implementations
-            if (method != null && method.hasCode()) {
+            if (method != null && !method.isAbstract()) {
                 methods.add(method);
             } else if (method == null) {
                 // hm, invoke to an unknown method (maybe excluded or native), what should we do?

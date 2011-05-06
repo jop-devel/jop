@@ -20,6 +20,9 @@
 
 package com.jopdesign.common.type;
 
+import org.apache.bcel.generic.Type;
+
+import javax.crypto.spec.IvParameterSpec;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -74,8 +77,14 @@ public class ValueTable {
     }
 
     public void push(ValueInfo value) {
+        push(value, true);
+    }
+
+    public void push(ValueInfo value, boolean addContinueMarker) {
+        if (Type.VOID.equals(value.getType())) return;
+
         stack.add(value);
-        if (value.usesTwoSlots()) {
+        if (addContinueMarker && value.usesTwoSlots()) {
             stack.add(ValueInfo.CONTINUED);
         }
     }
@@ -111,6 +120,16 @@ public class ValueTable {
     }
 
     /**
+     * remove the top n slots from the stack.
+     * @param num number of slots to remove
+     */
+    public void pop(int num) {
+        for (int i = 0; i < num; i++) {
+            pop();
+        }
+    }
+
+    /**
      * @return the top slot from the stack, or if there is a 64bit value on top, the second slot down.
      */
     public ValueInfo topValue() {
@@ -136,7 +155,17 @@ public class ValueTable {
         stack.clear();
     }
 
+    /**
+     * Insert a value into the stack. This does not create an additional slot if the value is of category 2.
+     * @param down number of slots down from the top to insert the new value into.
+     * @param value the new value to insert.
+     */
     public void insert(int down, ValueInfo value) {
         stack.add(stack.size()-down, value);
     }
+
+    public void clearStack() {
+        stack.clear();
+    }
+
 }

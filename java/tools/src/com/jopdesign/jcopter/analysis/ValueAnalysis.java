@@ -26,16 +26,29 @@ import com.jopdesign.common.type.ConstantDoubleInfo;
 import com.jopdesign.common.type.ConstantFloatInfo;
 import com.jopdesign.common.type.ConstantIntegerInfo;
 import com.jopdesign.common.type.ConstantLongInfo;
+import com.jopdesign.common.type.TypeHelper;
 import com.jopdesign.common.type.ValueInfo;
 import com.jopdesign.common.type.ValueTable;
 import org.apache.bcel.Constants;
+import org.apache.bcel.generic.ANEWARRAY;
+import org.apache.bcel.generic.ArrayInstruction;
+import org.apache.bcel.generic.ArrayType;
 import org.apache.bcel.generic.CPInstruction;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.ConstantPushInstruction;
+import org.apache.bcel.generic.ConversionInstruction;
+import org.apache.bcel.generic.FieldInstruction;
+import org.apache.bcel.generic.IINC;
 import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.LoadInstruction;
+import org.apache.bcel.generic.MULTIANEWARRAY;
+import org.apache.bcel.generic.NEW;
+import org.apache.bcel.generic.NEWARRAY;
 import org.apache.bcel.generic.StoreInstruction;
 import org.apache.bcel.generic.Type;
+
+import javax.crypto.spec.IvParameterSpec;
 
 /**
  * This is a helper class to analyse value mappings of stack and local slots.
@@ -198,18 +211,20 @@ public class ValueAnalysis {
             case Constants.DUP_X2:
                 values.insert(3, values.top());
             case Constants.DUP2:
-                if (values.top().isContinued()) {
-                    values.push(values.topValue());
-                } else {
-                    values.push(values.top(1));
-                    values.push(values.top(1));
-                }
+                values.push(values.top(1), false);
+                values.push(values.top(1), false);
                 break;
-
+            case Constants.DUP2_X1:
+                values.insert(3, values.top(1));
+                values.insert(3, values.top(0));
+                break;
+            case Constants.DUP2_X2:
+                values.insert(4, values.top(1));
+                values.insert(4, values.top(0));
+                break;
             case Constants.POP:
                 values.pop();
                 break;
-
             case Constants.POP2:
                 values.pop();
                 values.pop();
@@ -232,8 +247,6 @@ public class ValueAnalysis {
                 values.pop();
                 break;
 
-
-            
             case Constants.IALOAD:
             case Constants.LALOAD:
             case Constants.FALOAD:
@@ -241,46 +254,88 @@ public class ValueAnalysis {
             case Constants.CALOAD:
             case Constants.SALOAD:
             case Constants.BALOAD:
-            case Constants.AALOAD:
+            case Constants.AALOAD: {
+                values.pop();
+                values.pop();
+                Type t = ((ArrayInstruction)instruction).getType(cpg);
+                values.push(new ValueInfo(t));
+                break;
+            }
 
-            case Constants.IINC:
+            case Constants.IINC: {
+                int i = ((IINC)instruction).getIndex();
+                ValueInfo old = values.getLocalValue(i);
+                if (old.isConstantValue() && old.getConstantValue() instanceof ConstantIntegerInfo) {
+                    ConstantIntegerInfo value = (ConstantIntegerInfo) old.getConstantValue();
+                    int newval = value.getValue() + ((IINC)instruction).getIncrement();
+                    values.setLocalValue(i, new ValueInfo(new ConstantIntegerInfo(newval)));
+                } else {
+                    values.setLocalValue(i, new ValueInfo(Type.INT));
+                }
+                break;
+            }
 
             case Constants.IADD:
             case Constants.ISUB:
             case Constants.IMUL:
             case Constants.IDIV:
-            case Constants.INEG:
             case Constants.IREM:
-            case Constants.LADD:
-            case Constants.LSUB:
-            case Constants.LMUL:
-            case Constants.LDIV:
-            case Constants.LNEG:
-            case Constants.LREM:
+            case Constants.IAND:
+            case Constants.IOR:
+            case Constants.IXOR:
+            case Constants.ISHL:
+            case Constants.ISHR:
+            case Constants.IUSHR:
+                values.pop();
+            case Constants.INEG:
+                values.pop();
+                values.push(new ValueInfo(Type.INT));
+                break;
             case Constants.FADD:
             case Constants.FSUB:
             case Constants.FMUL:
             case Constants.FDIV:
-            case Constants.FNEG:
             case Constants.FREM:
+                values.pop();
+            case Constants.FNEG:
+                values.pop();
+                values.push(new ValueInfo(Type.FLOAT));
+                break;
+            case Constants.LADD:
+            case Constants.LSUB:
+            case Constants.LMUL:
+            case Constants.LDIV:
+            case Constants.LREM:
+            case Constants.LAND:
+            case Constants.LOR:
+            case Constants.LXOR:
+                values.pop();
+                values.pop();
+            case Constants.LNEG:
+                values.pop();
+                values.pop();
+                values.push(new ValueInfo(Type.LONG));
+                break;
             case Constants.DADD:
             case Constants.DSUB:
             case Constants.DMUL:
             case Constants.DDIV:
-            case Constants.DNEG:
             case Constants.DREM:
-            case Constants.ISHL:
-            case Constants.ISHR:
-            case Constants.IUSHR:
+                values.pop();
+                values.pop();
+            case Constants.DNEG:
+                values.pop();
+                values.pop();
+                values.push(new ValueInfo(Type.DOUBLE));
+                break;
             case Constants.LSHL:
             case Constants.LSHR:
             case Constants.LUSHR:
-            case Constants.IAND:
-            case Constants.IOR:
-            case Constants.IXOR:
-            case Constants.LAND:
-            case Constants.LOR:
-            case Constants.LXOR:
+                values.pop();
+                values.pop();
+                values.pop();
+                values.push(new ValueInfo(Type.LONG));
+                break;
 
             case Constants.I2B:
             case Constants.I2C:
@@ -296,23 +351,24 @@ public class ValueAnalysis {
             case Constants.F2D:
             case Constants.D2I:
             case Constants.D2L:
-            case Constants.D2F:
-
+            case Constants.D2F: {
+                values.popValue();
+                values.push(new ValueInfo( ((ConversionInstruction)instruction).getType(cpg) ));
+                break;
+            }
 
             case Constants.LCMP:
-            case Constants.FCMPL:
-            case Constants.FCMPG:
             case Constants.DCMPL:
             case Constants.DCMPG:
+                values.pop();
+                values.pop();
+            case Constants.FCMPL:
+            case Constants.FCMPG:
+                values.pop();
+                values.pop();
+                values.push( new ValueInfo(Type.INT) );
+                break;
 
-            case Constants.IFNULL:
-            case Constants.IFNONNULL:
-            case Constants.IFEQ:
-            case Constants.IFNE:
-            case Constants.IFLT:
-            case Constants.IFGE:
-            case Constants.IFLE:
-            case Constants.IFGT:
             case Constants.IF_ICMPEQ:
             case Constants.IF_ICMPNE:
             case Constants.IF_ICMPLT:
@@ -321,44 +377,108 @@ public class ValueAnalysis {
             case Constants.IF_ICMPLE:
             case Constants.IF_ACMPEQ:
             case Constants.IF_ACMPNE:
-                
+                values.pop();
+            case Constants.IFEQ:
+            case Constants.IFNE:
+            case Constants.IFLT:
+            case Constants.IFGE:
+            case Constants.IFLE:
+            case Constants.IFGT:
+            case Constants.IFNULL:
+            case Constants.IFNONNULL:
+                values.pop();
+                break;
+
             case Constants.GOTO:
+            case Constants.RET:
+                break;
+            case Constants.JSR:
+                // This is of type 'returnAddress'
+                values.push( new ValueInfo(Type.INT));
+                break;
 
             case Constants.ARETURN:
-            case Constants.RETURN:
             case Constants.IRETURN:
             case Constants.LRETURN:
             case Constants.FRETURN:
             case Constants.DRETURN:
+            case Constants.RETURN:
+                values.clearStack();
+                break;
 
             case Constants.LOOKUPSWITCH:
             case Constants.TABLESWITCH:
+                values.pop();
+                break;
 
-            case Constants.PUTFIELD:
             case Constants.GETFIELD:
-            case Constants.PUTSTATIC:
-            case Constants.GETSTATIC:
+                values.pop();
+            case Constants.GETSTATIC: {
+                FieldInstruction f = (FieldInstruction)instruction;
+                // TODO we could add a reference to the field to valueinfo (?)
+                values.push(new ValueInfo(f.getFieldType(cpg)));
+                break;
+            }
+            case Constants.PUTFIELD:
+                values.pop();
+            case Constants.PUTSTATIC: {
+                FieldInstruction f = (FieldInstruction)instruction;
+                values.pop( f.getFieldType(cpg).getSize() );
+                break;
+            }
 
             case Constants.INVOKEVIRTUAL:
             case Constants.INVOKEINTERFACE:
-            case Constants.INVOKESTATIC:
             case Constants.INVOKESPECIAL:
+                values.pop();
+            case Constants.INVOKESTATIC: {
+                InvokeInstruction invoke = (InvokeInstruction)instruction;
+                values.pop(TypeHelper.getNumSlots(invoke.getArgumentTypes(cpg)));
+                values.push(new ValueInfo(invoke.getReturnType(cpg)));
+                break;
+            }
 
             case Constants.MONITORENTER:
             case Constants.MONITOREXIT:
+                values.pop();
+                break;
 
             case Constants.ATHROW:
+                ValueInfo ref = values.pop();
+                values.clearStack();
+                values.push(ref);
+                break;
             case Constants.CHECKCAST:
+                break;
             case Constants.INSTANCEOF:
+                values.pop();
+                values.push( new ValueInfo(Type.INT) );
+                break;
 
             case Constants.NEW:
-
-            case Constants.NEWARRAY:
-            case Constants.ANEWARRAY:
-            case Constants.MULTIANEWARRAY:
+                values.push(new ValueInfo( ((NEW)instruction).getType(cpg) ));
+                break;
+            case Constants.NEWARRAY: {
+                Type t = ((NEWARRAY)instruction).getType();
+                values.push(new ValueInfo( new ArrayType(t, 1)));
+                break;
+            }
+            case Constants.ANEWARRAY: {
+                Type t = ((ANEWARRAY)instruction).getType(cpg);
+                values.push(new ValueInfo( new ArrayType(t, 1)));
+                break;
+            }
+            case Constants.MULTIANEWARRAY: {
+                MULTIANEWARRAY instr = (MULTIANEWARRAY) instruction;
+                values.pop(instr.getDimensions());
+                values.push(new ValueInfo( new ArrayType(instr.getType(cpg), instr.getDimensions()) ));
+                break;
+            }
 
             case Constants.ARRAYLENGTH:
-
+                values.pop();
+                values.push(new ValueInfo(Type.INT));
+                break;
 
             default:
                 throw new AppInfoError("Instruction not supported: "+instruction);
