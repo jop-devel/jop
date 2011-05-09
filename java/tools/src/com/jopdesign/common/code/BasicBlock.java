@@ -466,7 +466,7 @@ public class BasicBlock {
             // link to new handles, find first and last handle
             instructions.add(newIh);
             // we need to copy all attributes. FlowInfo should not be needed.
-            methodCode.copyCustomValues(ih, newIh);
+            methodCode.copyCustomValues(newIh, ih);
             for (Object key : attributes) {
                 Object value = ih.getAttribute(key);
                 if (value != null) newIh.addAttribute(key, value);

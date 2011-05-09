@@ -123,10 +123,10 @@ public class InlineHelper {
      * the new invoke, the inlined invocation must be removed from the callstring too.
      * Contrariwise, if an invoke has been inlined but the callgraph has not yet been updated, the callstring
      * must also contain the inlined invoke. Also the callstring does not need to start at the method to optimize.
-     * This is different from what {@link #canInline(CallString, MethodInfo)} expects.
+     * This is different from what {@link #canInline(CallString, InvokeSite, MethodInfo)} expects.
      * </p>
      *
-     * @see #canInline(CallString, MethodInfo)
+     * @see #canInline(CallString, InvokeSite, MethodInfo)
      * @param invokers the callstring of the invocation to devirtualize. The last entry must be the invoke site to
      *                 devirtualize. The first first entry does not need to be the method into which inlining
      *                 is performed.
@@ -151,11 +151,11 @@ public class InlineHelper {
      * the new invoke, the inlined invocation must be removed from the callstring too.
      * Contrariwise, if an invoke has been inlined but the callgraph has not yet been updated, the callstring
      * must also contain the inlined invoke. Also the callstring does not need to start at the method to optimize.
-     * This is different from what {@link #canInline(CallString, MethodInfo)} expects.
+     * This is different from what {@link #canInline(CallString, InvokeSite, MethodInfo)} expects.
      * </p>
      *
-     * @see #canInline(CallString, MethodInfo)
-     * @param callgraph the callgraph to use for devirtalization.
+     * @see #canInline(CallString, InvokeSite, MethodInfo)
+     * @param callgraph the callgraph to use for devirtualization.
      * @param invokers the callstring of the invocation to devirtualize. The last entry must be the invoke site to
      *                 devirtualize. The first first entry does not need to be the method into which inlining
      *                 is performed.
@@ -210,18 +210,20 @@ public class InlineHelper {
      * @param invokers a callstring leading to the invokee. The first entry in the callstring must be the method into
      *                 which the other methods are recursively inlined, the last entry in the list must be invokesite
      *                 of the invokee. This is needed to check to avoid endless inlining of recursive methods, inlined invokes
-     *                 should therefore not be removed from this callstring.
+     *                 should therefore not be removed from this callstring. The first invokesite may differ from the
+     *                 actual invokesite to inline (i.e. it can be the "original" invokesite).
+     * @param invokeSite the actual invokesite to inline
      * @param invokee the devirtualized invokee.
      * @return true if all initial tests succeed.
      */
-    public boolean canInline(CallString invokers, MethodInfo invokee) {
+    public boolean canInline(CallString invokers, InvokeSite invokeSite, MethodInfo invokee) {
 
         if ( !checkJVMCall(invokers.top(), invokee) ) {
             return false;
         }
 
         // check for unsupported invokes, method type, abstract methods, excludes, recursion, ..
-        if ( !checkPreliminaries(invokers, invokee) ) {
+        if ( !checkPreliminaries(invokers, invokeSite, invokee) ) {
             return false;
         }
 
@@ -236,7 +238,7 @@ public class InlineHelper {
         }
 
         // check if we need to modify something and if so if this is possible/allowed.
-        return checkCode(invokers.first().getInvoker(), invokee);
+        return checkCode(invokeSite.getInvoker(), invokee);
     }
 
     /**
@@ -398,7 +400,7 @@ public class InlineHelper {
      * This may change the code of the invokee, so this needs to be done before inlining the code.
      * The CFG of the invokee will be removed.
      * </p><p>
-     * This code assumes that {@link #canInline(CallString, MethodInfo)} returned true for this invoke.
+     * This code assumes that {@link #canInline(CallString, InvokeSite, MethodInfo)} returned true for this invoke.
      * </p>
      *
      * @param invoker the method where the code will be inlined to.
@@ -516,15 +518,17 @@ public class InlineHelper {
      * Check for some preliminary requirements (method unsupported, abstract method,
      * excluded packages, recursion, .. )
      *
+     *
      * @param invokers a callstring leading to the invokee. The first entry in the callstring must be the method into
      *                 which the other methods are recursively inlined, the last entry in the list must be invokesite
      *                 of the invokee. This is needed to check to avoid endless inlining of recursive methods.
+     * @param invokeSite the actual invokesite to inline.
      * @param invokee the devirtualized invokee.
      * @return true if the basic requirements for inlining are fulfilled.
      */
-    private boolean checkPreliminaries(CallString invokers, MethodInfo invokee) {
+    private boolean checkPreliminaries(CallString invokers, InvokeSite invokeSite, MethodInfo invokee) {
 
-        MethodInfo invoker = invokers.first().getInvoker();
+        MethodInfo invoker = invokeSite.getInvoker();
 
         // invocation of synchronized or unknown method not supported
         if ( invokee.isSynchronized() || invokee.isAbstract() || invokee.isNative() ) {

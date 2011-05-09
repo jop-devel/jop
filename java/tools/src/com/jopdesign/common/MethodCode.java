@@ -45,6 +45,7 @@ import org.apache.bcel.classfile.ConstantUtf8;
 import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.classfile.StackMap;
 import org.apache.bcel.generic.ArrayType;
+import org.apache.bcel.generic.CPInstruction;
 import org.apache.bcel.generic.CodeExceptionGen;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.FieldInstruction;
@@ -59,6 +60,7 @@ import org.apache.bcel.generic.LocalVariableGen;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.ObjectType;
 import org.apache.bcel.generic.ReferenceType;
+import org.apache.bcel.generic.TargetLostException;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
@@ -91,7 +93,8 @@ public class MethodCode {
         KEY_LOOPBOUND = KeyManager.getSingleton().registerKey(KeyType.CODE, "MethodCode.LoopBound");
     }
 
-    private static final Object[] MANAGED_KEYS = {KEY_INVOKESITE, KEY_LINENUMBER, KEY_SOURCEFILE};
+    // We do not include KEY_INVOKESITE because it should not be copied when the handle is copied
+    private static final Object[] MANAGED_KEYS = {KEY_LINENUMBER, KEY_SOURCEFILE};
 
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_CODE+".MethodCode");
 
@@ -443,6 +446,15 @@ public class MethodCode {
         removeCFG();
     }
 
+    public InstructionHandle getInstructionHandle(int pos) {
+        InstructionList il = getInstructionList();
+        InstructionHandle ih = il.getStart();
+        for (int i = 0; i < pos; i++) {
+            ih = ih.getNext();
+        }
+        return ih;
+    }
+
     /**
      * Retarget all targeters (jumps, branches, exception ranges, linenumbers,..) of a handle to a new handle.
      * @param oldHandle the old target
@@ -454,6 +466,194 @@ public class MethodCode {
         for (InstructionTargeter targeter : it) {
             targeter.updateTarget(oldHandle, newHandle);
         }
+    }
+
+    public void retarget(TargetLostException e, InstructionHandle newTarget) {
+        InstructionHandle[] targets = e.getTargets();
+        for (InstructionHandle target : targets) {
+            InstructionTargeter[] targeters = target.getTargeters();
+            for (InstructionTargeter targeter : targeters) {
+                targeter.updateTarget(target, newTarget);
+            }
+        }
+    }
+
+    /**
+     * Replace instructions in this code with an instruction list.
+     * If the number of instructions to replace differs from the number of source instructions, instruction
+     * handles will be removed or inserted appropriately and the targets will be updated.
+     * <p>
+     * The source instructions must use the constant pool of this method. Custom values will be copied.
+     * </p>
+     *
+     * @param replaceStart the first instruction in this code to replace
+     * @param replaceCount the number of instructions in this code to replace
+     * @param source the instructions to use as replacement.
+     * @return the first handle in the target list after the inserted code, or null if the last instruction in this
+     *         list has been replaced.
+     */
+    public InstructionHandle replace(InstructionHandle replaceStart, int replaceCount, InstructionList source) {
+        return replace(replaceStart, replaceCount, null, source, source.getStart(), source.getLength(), true);
+    }
+
+    /**
+     * Replace instructions in this code with an instruction list.
+     * If the number of instructions to replace differs from the number of source instructions, instruction
+     * handles will be removed or inserted appropriately and the targets will be updated.
+     * <p>
+     * The source instructions must use the constant pool of this method.
+     * </p>
+     *
+     * @param replaceStart the first instruction in this code to replace
+     * @param replaceCount the number of instructions in this code to replace
+     * @param source the instructions to use as replacement.
+     * @param copyCustomKeys if true copy the custom values from the source.
+     * @return the first handle in the target list after the inserted code, or null if the last instruction in this
+     *         list has been replaced.
+     */
+    public InstructionHandle replace(InstructionHandle replaceStart, int replaceCount, InstructionList source,
+                                     boolean copyCustomKeys)
+    {
+        return replace(replaceStart, replaceCount, null, source, source.getStart(), source.getLength(), copyCustomKeys);
+    }
+
+    /**
+     * Replace instructions in this code with an instruction list.
+     * If the number of instructions to replace differs from the number of source instructions, instruction
+     * handles will be removed or inserted appropriately and the targets will be updated.
+     *
+     * @param replaceStart the first instruction in this code to replace
+     * @param replaceCount the number of instructions in this code to replace
+     * @param sourceInfo the MethodInfo containing the source instruction. If non-null, the instructions will be copied
+     *                   using the constant pool from the given MethodInfo. If null, the instructions will not be copied.
+     * @param source the instructions to use as replacement.
+     * @param copyCustomKeys if true copy the custom values from the source.
+     * @return the first handle in the target list after the inserted code, or null if the last instruction in this
+     *         list has been replaced.
+     */
+    public InstructionHandle replace(InstructionHandle replaceStart, int replaceCount,
+                                     MethodInfo sourceInfo, InstructionList source, boolean copyCustomKeys)
+    {
+        return replace(replaceStart, replaceCount, sourceInfo, source, source.getStart(), source.getLength(), copyCustomKeys);
+    }
+
+
+    /**
+     * Replace instructions in this code with an instruction list or a part of it.
+     * If the number of instructions to replace differs from the number of source instructions, instruction
+     * handles will be removed or inserted appropriately and the targets will be updated.
+     *
+     * @param replaceStart the first instruction in this code to replace
+     * @param replaceCount the number of instructions in this code to replace
+     * @param sourceInfo the MethodInfo containing the source instruction. If non-null, the instructions will be copied
+     *                   using the constant pool from the given MethodInfo. If null, the instructions will not be copied.
+     * @param source the instructions to use as replacement.
+     * @param sourceStart the first instruction in the source list to use for replacing the code.
+     * @param sourceCount the number of instructions to use from the source.
+     * @param copyCustomValues if true copy the custom values from the source.
+     * @return the first handle in the target list after the inserted code, or null if the last instruction in this
+     *         list has been replaced.
+     */
+    public InstructionHandle replace(InstructionHandle replaceStart, int replaceCount,
+                                     MethodInfo sourceInfo, InstructionList source,
+                                     InstructionHandle sourceStart, int sourceCount, boolean copyCustomValues)
+    {
+        InstructionList il = getInstructionList();
+
+        InstructionHandle current = replaceStart;
+        InstructionHandle currSource = sourceStart;
+
+        // update the common prefix
+        int cnt = Math.min(replaceCount, sourceCount);
+        for (int i = 0; i < cnt; i++) {
+            Instruction instr;
+            if (sourceInfo != null) {
+                instr = copyFrom(sourceInfo.getClassInfo(), currSource.getInstruction());
+            } else {
+                instr = currSource.getInstruction();
+            }
+            current.setInstruction(instr);
+
+            if (copyCustomValues) {
+                copyCustomValues(current, currSource);
+            }
+
+            current = current.getNext();
+            currSource = currSource.getNext();
+        }
+
+        InstructionHandle next = current;
+
+        // Case 1: delete unused handles, update targets to next instruction
+        if (replaceCount > sourceCount) {
+            int rest = replaceCount - sourceCount;
+            for (int i=1; i < rest; i++) {
+                next = next.getNext();
+            }
+
+            InstructionHandle end = next;
+            next = next.getNext();
+
+            try {
+                // we cannot use next.getPrev, since next might be null
+                il.delete(current, end);
+            } catch (TargetLostException e) {
+                retarget(e, next);
+            }
+        }
+
+        // Case 2: insert new handles for rest of source
+        if (replaceCount < sourceCount) {
+            int rest = sourceCount - replaceCount;
+            for (int i=0; i < rest; i++) {
+                Instruction instr;
+                if (sourceInfo != null) {
+                    instr = copyFrom(sourceInfo.getClassInfo(), currSource.getInstruction());
+                } else {
+                    instr = currSource.getInstruction();
+                }
+                if (next == null) {
+                    current = il.append(instr);
+                } else {
+                    current = il.insert(next, instr);
+                }
+                if (copyCustomValues) {
+                    copyCustomValues(current, currSource);
+                }
+                currSource = currSource.getNext();
+            }
+
+        }
+
+        return next;
+    }
+
+
+    /**
+     * Create a copy of an instruction and if it uses the constantpool, copy and update the constantpool
+     * reference too.
+     * <p>Note that branch targets are not updated, so they will most likely be incorrect and need to be updated
+     * manually.</p>                                                                                 d
+     *
+     * @param sourceClass the class containing the constantpool the instruction uses.
+     * @param instruction the instruction to copy
+     * @return a new copy of the instruction.
+     */
+    public Instruction copyFrom(ClassInfo sourceClass, Instruction instruction) {
+        Instruction newInstr = instruction.copy();
+
+        if (instruction instanceof CPInstruction) {
+            int oldIndex = ((CPInstruction)instruction).getIndex();
+            int newIndex = getClassInfo().addConstantInfo(sourceClass.getConstantInfo(oldIndex));
+            ((CPInstruction)newInstr).setIndex(newIndex);
+        }
+
+        return newInstr;
+    }
+
+    public boolean isInvokeSite(InstructionHandle ih) {
+        return ih.getInstruction() instanceof InvokeInstruction ||
+               getAppInfo().getProcessorModel().isImplementedInJava(ih.getInstruction());
     }
 
     /**
@@ -488,9 +688,7 @@ public class MethodCode {
             }
         } else {
             for (InstructionHandle ih : methodGen.getInstructionList().getInstructionHandles()) {
-                if (ih.getInstruction() instanceof InvokeInstruction) {
-                    invokes.add( getInvokeSite(ih) );
-                } else if (getAppInfo().getProcessorModel().isImplementedInJava(ih.getInstruction())) {
+                if (isInvokeSite(ih)) {
                     invokes.add( getInvokeSite(ih) );
                 }
             }
@@ -790,7 +988,7 @@ public class MethodCode {
         return value;
     }
 
-    public void copyCustomValues(InstructionHandle from, InstructionHandle to) {
+    public void copyCustomValues(InstructionHandle to, InstructionHandle from) {
         Object value;
         for (Object key : MANAGED_KEYS) {
             value = from.getAttribute(key);
