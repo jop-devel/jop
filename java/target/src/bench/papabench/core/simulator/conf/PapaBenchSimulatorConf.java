@@ -33,7 +33,7 @@ import papabench.core.commons.conf.CommonTaskConfiguration;
  */
 public interface PapaBenchSimulatorConf {
 	
-	public static final int SLOWMOTION = 2;
+	public static final int SLOWMOTION = 3;
 
 	public static interface SimulatorFlightModelTaskConf extends CommonTaskConfiguration {
 		public static final String NAME = "SimulatorFlightModelTask";		

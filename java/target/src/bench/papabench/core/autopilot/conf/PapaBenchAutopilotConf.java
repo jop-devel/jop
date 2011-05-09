@@ -34,7 +34,7 @@ import papabench.core.commons.conf.CommonTaskConfiguration;
  */
 public class PapaBenchAutopilotConf {
 	
-	public static final int SLOWMOTION = 2;
+	public static final int SLOWMOTION = 3;
 
 	/**
 	 * Navigation task configuration
