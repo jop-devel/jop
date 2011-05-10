@@ -1,24 +1,23 @@
 package javax.safetycritical.test;
 
+import javax.safetycritical.PeriodicEventHandler;
+
 import joprt.RtThread;
 
 public class RtThreadImpl extends RtThread{
 
-	PeriodicEventHandlerImpl handlerImpl;
+	PeriodicEventHandler PEH;
 	
-	public RtThreadImpl(int prio, int us, PeriodicEventHandlerImpl handlerImpl) {
+	public RtThreadImpl(int prio, int us, PeriodicEventHandler handlerImpl) {
 		super(prio, us);
-		this.handlerImpl = handlerImpl;
+		this.PEH = handlerImpl;
 	}
 	
-	@Override
 	public void run() {
-		super.run();
 		while(true)
 		{
-			handlerImpl.handleAsyncEvent();
+			PEH.handleAsyncEvent();
 			this.waitForNextPeriod();
 		}
 	}
-	
 }

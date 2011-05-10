@@ -17,6 +17,9 @@ import static javax.safetycritical.annotate.Level.INFRASTRUCTURE;
 public abstract class ManagedEventHandler extends BoundAsyncEventHandler
   implements ManagedSchedulable
 {
+
+  PrivateMemory backingStore;
+
   /**
    * Constructor to create an event handler.
    * <p>
@@ -49,6 +52,10 @@ public abstract class ManagedEventHandler extends BoundAsyncEventHandler
 		      StorageParameters scp,
 		      String name)
   {
+	  if(scp != null)
+	  {
+		  backingStore = new PrivateMemory(scp.getTotalBackingStoreSize());
+	  }
   }
 
   /**

@@ -21,6 +21,8 @@
 
 package com.jopdesign.sys;
 
+import javax.realtime.ImmortalMemory;
+
 
 /**
  *     Real-time garbage collection for JOP
@@ -34,7 +36,7 @@ public class GC {
 	 * Use either scoped memories or a GC.
 	 * Combining scopes and the GC needs some extra work.
 	 */
-	final static boolean USE_SCOPES = false;
+	final static boolean USE_SCOPES = true;
 	
 	
 	static int mem_start;		// read from memory
@@ -138,9 +140,11 @@ public class GC {
 	static int roots[];
 
 	static OutOfMemoryError OOMError;
+	
+	// Memory allocation pointer used before we enter the ImmortalMemory 
+	static int allocationPointer;
 
 	static void init(int mem_size, int addr) {
-		
 		addrStaticRefs = addr;
 		mem_start = Native.rdMem(0);
 		// align mem_start to 8 word boundary for the
@@ -149,46 +153,55 @@ public class GC {
 //mem_start = 261300;
 		mem_start = (mem_start+7)&0xfffffff8;
 //mem_size = mem_start + 2000;
-		full_heap_size = mem_size-mem_start;
-		handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
-		semi_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
-		
-		heapStartA = mem_start+handle_cnt*HANDLE_SIZE;
-		heapStartB = heapStartA+semi_size;
-		
-//		log("");
-//		log("memory size", mem_size);
-//		log("handle start ", mem_start);
-//		log("heap start (toSpace)", heapStartA);
-//		log("fromSpace", heapStartB);
-//		log("heap size (bytes)", semi_size*4*2);
-		
-		useA = true;
-		copyPtr = heapStartA;
-		allocPtr = copyPtr+semi_size;
-		toSpace = heapStartA;
-		fromSpace = heapStartB;
-		
-		freeList = 0;
-		useList = 0;
-		grayList = GREY_END;
-		for (int i=0; i<handle_cnt; ++i) {
-			int ref = mem_start+i*HANDLE_SIZE;
-			// pointer to former freelist head
-			Native.wrMem(freeList, ref+OFF_NEXT);
-			// mark handle as free
-			Native.wrMem(0, ref+OFF_PTR);
-			freeList = ref;
-			Native.wrMem(0, ref+OFF_GREY);
-			Native.wrMem(0, ref+OFF_SPACE);
+		if(USE_SCOPES)
+		{
+			allocationPointer = mem_start;
+			// Creates the immortal memory
+			ImmortalMemory immortalMemory = ImmortalMemory.instance();
+			RtThreadImpl.outerArea = immortalMemory.getScope();
 		}
-		// clean the heap
-		int end = heapStartA+2*semi_size;
-		for (int i=heapStartA; i<end; ++i) {
-			Native.wrMem(0, i);
+		else
+		{
+			full_heap_size = mem_size-mem_start;
+			handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
+			semi_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
+			
+			heapStartA = mem_start+handle_cnt*HANDLE_SIZE;
+			heapStartB = heapStartA+semi_size;
+			
+	//		log("");
+	//		log("memory size", mem_size);
+	//		log("handle start ", mem_start);
+	//		log("heap start (toSpace)", heapStartA);
+	//		log("fromSpace", heapStartB);
+	//		log("heap size (bytes)", semi_size*4*2);
+			
+			useA = true;
+			copyPtr = heapStartA;
+			allocPtr = copyPtr+semi_size;
+			toSpace = heapStartA;
+			fromSpace = heapStartB;
+			
+			freeList = 0;
+			useList = 0;
+			grayList = GREY_END;
+			for (int i=0; i<handle_cnt; ++i) {
+				int ref = mem_start+i*HANDLE_SIZE;
+				// pointer to former freelist head
+				Native.wrMem(freeList, ref+OFF_NEXT);
+				// mark handle as free
+				Native.wrMem(0, ref+OFF_PTR);
+				freeList = ref;
+				Native.wrMem(0, ref+OFF_GREY);
+				Native.wrMem(0, ref+OFF_SPACE);
+			}
+			// clean the heap
+			int end = heapStartA+2*semi_size;
+			for (int i=heapStartA; i<end; ++i) {
+				Native.wrMem(0, i);
+			}
+			concurrentGc = false;
 		}
-		concurrentGc = false;
-		
 		// allocate the monitor
 		mutex = new Object();
 
@@ -520,30 +533,35 @@ public class GC {
 	 * @return address of the handle
 	 */
 	static int newObject(int cons) {
-
 		int size = Native.rdMem(cons);			// instance size
 		
 		if (USE_SCOPES) {
 			// allocate in scope
-			Scope sc = null;
-			if (RtThreadImpl.mission) {
-				sc = RtThreadImpl.getCurrentScope();				
+			int ptr = allocationPointer;
+			if(RtThreadImpl.outerArea == null)
+			{
+				allocationPointer += size+2;
 			}
-			if (sc!=null) {
-				int rem = sc.backingStore.length - sc.allocPtr;
+			else
+			{
+				Scope sc = null;
+				if (RtThreadImpl.mission) {
+					Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
+					sc = s.ref[s.active].currentArea;				
+				}
+				else
+				{
+					sc = RtThreadImpl.outerArea;
+				}
+				long rem = sc.size - (sc.allocationPointer - sc.startPointer);
 				if (size+2 > rem) {
 					// OOMError.fillInStackTrace();
 					throw OOMError;
 				}
-				int ref = sc.allocPtr;
-				sc.allocPtr += size+2;
-				int ptr = Native.toInt(sc.backingStore);
-				ptr = Native.rdMem(ptr);
-				ptr += ref;
-				sc.backingStore[ref] = ptr+2;
-				sc.backingStore[ref+1] = cons+Const.CLASS_HEADR;
-				return ptr;
-			}			
+			}
+			Native.wrMem(ptr+2, ptr);
+			Native.wrMem(cons+Const.CLASS_HEADR, ptr+1);
+			return ptr;		
 		}
 
 		// that's the stop-the-world GC
@@ -605,7 +623,6 @@ public class GC {
 	}
 	
 	static int newArray(int size, int type) {
-		
 		if (size < 0) {
 			throw new NegativeArraySizeException();
 		}
@@ -618,25 +635,31 @@ public class GC {
 		
 		if (USE_SCOPES) {
 			// allocate in scope
-			Scope sc = null;
-			if (RtThreadImpl.mission) {
-				sc = RtThreadImpl.getCurrentScope();				
+			int ptr = allocationPointer;
+			if(RtThreadImpl.outerArea == null)
+			{
+				allocationPointer += size+2;
 			}
-			if (sc!=null) {
-				int rem = sc.backingStore.length - sc.allocPtr;
+			else
+			{
+				Scope sc = null;
+				if (RtThreadImpl.mission) {
+					Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
+					sc = s.ref[s.active].currentArea;				
+				}
+				else
+				{
+					sc = RtThreadImpl.outerArea;
+				}
+				long rem = sc.size - (sc.allocationPointer - sc.startPointer);
 				if (size+2 > rem) {
 					// OOMError.fillInStackTrace();
 					throw OOMError;
 				}
-				int ref = sc.allocPtr;
-				sc.allocPtr += size+2;
-				int ptr = Native.toInt(sc.backingStore);
-				ptr = Native.rdMem(ptr);
-				ptr += ref;
-				sc.backingStore[ref] = ptr+2;
-				sc.backingStore[ref+1] = arrayLength;
-				return ptr;
-			}			
+			}
+			Native.wrMem(ptr+2, ptr);
+			Native.wrMem(arrayLength, ptr+1);
+			return ptr;		
 		}
 
 		synchronized (mutex) {

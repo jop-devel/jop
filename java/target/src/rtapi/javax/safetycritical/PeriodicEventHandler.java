@@ -8,13 +8,15 @@ import javax.realtime.PriorityParameters;
 import javax.safetycritical.annotate.MemoryAreaEncloses;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
+import javax.safetycritical.test.RtThreadImpl;
 
 import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 
 
 @SCJAllowed
 public abstract class PeriodicEventHandler extends ManagedEventHandler {
-
+	
+	
   /**
    * Constructor to create a periodic event handler.
    * <p>
@@ -50,7 +52,8 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
                               PeriodicParameters parameters,
                               StorageParameters scp)
   {
-    super(null, null, null, null);
+	  super(priority, parameters, scp, null);
+	  new RtThreadImpl(priority.getPriority(), (int)(parameters.getPeriod().getMilliseconds()*1000), this);
   }
 
   /**
@@ -86,7 +89,7 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
                               StorageParameters scp,
                               String name)
   {
-    super(null, null, null, null);
+    super(priority, release, scp, name);
   }
   
   /**
@@ -96,5 +99,8 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
   @SCJAllowed
   @Override
   @SCJRestricted(phase = INITIALIZATION)
-  public final void register() {}
+  public final void register() 
+  {
+	  
+  }
 }

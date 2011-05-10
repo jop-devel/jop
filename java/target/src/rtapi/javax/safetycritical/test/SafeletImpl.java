@@ -15,7 +15,7 @@ public class SafeletImpl implements Safelet<Mission> {
 	public MissionSequencerImpl getSequencer() {
 		return missionSequencer;
 	}
-
+	
 	@Override
 	public void setUp() {
 		// Here objects may be put into ImmortalMemoryArea

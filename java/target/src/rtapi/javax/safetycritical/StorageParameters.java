@@ -8,6 +8,12 @@ import javax.safetycritical.annotate.SCJAllowed;
 @SCJAllowed
 public class StorageParameters
 {
+	
+	
+  long totalBackingStore;
+  long nativeStack;
+  long javaStack;
+	
   /**
    * Get the amount of backing store set aside for the
    * current schedulable object.
@@ -96,7 +102,12 @@ public class StorageParameters
    */
   @SCJAllowed
   public StorageParameters(long totalBackingStore,
-                           long nativeStack, long javaStack) {}
+                           long nativeStack, long javaStack) 
+  {
+	  this.totalBackingStore = totalBackingStore;
+	  this.nativeStack = nativeStack;
+	  this.javaStack = javaStack;
+  }
   
   /**
    * Stack sizes for schedulable objects and sequencers. Passed as
@@ -137,21 +148,30 @@ public class StorageParameters
    *         memory areas created by the assocated SO.
    */
   @SCJAllowed
-  public long getTotalBackingStoreSize() { return 0L; }
+  public long getTotalBackingStoreSize() 
+  { 
+	return totalBackingStore; 
+  }
     
   /**
    *
    * @return the size of the native method stack available to the assocated SO.
    */
   @SCJAllowed
-  public long getNativeStackSize() { return 0L; }
+  public long getNativeStackSize() 
+  { 
+	return nativeStack; 
+  }
     
   /**
    *
    * @return the size of the Java stack available to the assocated SO.
    */ 
   @SCJAllowed
-  public long getJavaStackSize() { return 0L; }
+  public long getJavaStackSize() 
+  { 
+	return javaStack; 
+  }
     
   /**
    * 

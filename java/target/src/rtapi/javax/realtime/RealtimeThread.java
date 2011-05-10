@@ -20,11 +20,15 @@ public class RealtimeThread extends Thread implements Schedulable {
   // }
 
   @SCJProtected
-  public RealtimeThread(SchedulingParameters schedule, MemoryArea area) {
+  public RealtimeThread(SchedulingParameters schedule, MemoryArea area) 
+  {
+	  super(null);
   }
   
   @SCJProtected
-  public RealtimeThread() {
+  public RealtimeThread() 
+  {
+	  super(null);
   }
   
   public void deschedulePeriodic() {

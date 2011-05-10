@@ -9,6 +9,7 @@ public class Minimal {
 	 */
 	public static void main(String[] args) {
 		SafeletImpl si = new SafeletImpl();
+		si.setUp();
 		System.out.println("Hello SCJ World");
 		RtThreadImpl.startMission();
 	}

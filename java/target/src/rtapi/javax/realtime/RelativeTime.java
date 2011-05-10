@@ -39,7 +39,10 @@ public class RelativeTime extends HighResolutionTime {
    */
   @SCJAllowed
   @SCJRestricted(maySelfSuspend = false)
-  public RelativeTime(long ms, int ns) {
+  public RelativeTime(long ms, int ns) 
+  {
+	  milli = ms;
+	  nano = ns;
   }
 
   /**

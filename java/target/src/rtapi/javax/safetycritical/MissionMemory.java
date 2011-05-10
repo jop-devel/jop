@@ -3,7 +3,6 @@ package javax.safetycritical;
 
 import static javax.safetycritical.annotate.Level.LEVEL_1;
 
-import javax.realtime.SizeEstimator;
 import javax.safetycritical.annotate.Allocate;
 import javax.safetycritical.annotate.BlockFree;
 import javax.safetycritical.annotate.MemoryAreaEncloses;
@@ -20,7 +19,11 @@ class MissionMemory extends ManagedMemory
   /**
    * @param size is the amount of memory that this area can hold.
    */
-  MissionMemory(long size) { super(size); }
+  MissionMemory(long size) 
+  { 
+	super(size);
+	
+  }
 
   /**
    * @param size is the amount of memory that this area can hold.

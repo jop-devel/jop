@@ -48,7 +48,7 @@ public abstract class HighResolutionTime { // implements Comparable {
   @SCJAllowed
   @SCJRestricted(maySelfSuspend = false)
   public final long getMilliseconds() {
-    return -1L; // dummy return
+    return milli;
   }
 
   /**

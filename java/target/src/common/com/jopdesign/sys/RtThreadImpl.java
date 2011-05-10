@@ -116,7 +116,12 @@ public class RtThreadImpl {
 	/**
 	 * The scope that the thread is in. null when in heap context.
 	 */
-	Scope currentArrea;
+	Scope currentArea = null;
+	
+	/**
+	 * The scope for the the initial thread (and between missions). Null until ImmortalMemory is created.
+	 */
+	static Scope outerArea;
 
 	// linked list of threads in priority order
 	// used only at initialization time to collect the threads
@@ -157,7 +162,9 @@ public class RtThreadImpl {
 	}
 
 	public RtThreadImpl(RtThread rtt, int prio, int us, int off) {
-
+		System.out.print("period:");
+		System.out.print(us);
+		System.out.print("\n");
 		if (!initDone) {
 			init();
 		}
@@ -537,7 +544,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 //		JVMHelp.wr("getCurrent");
 		// we call it only when the mission is already started
 		Scheduler s = Scheduler.sched[sys.cpuId];
-		return s.ref[s.active].currentArrea;
+		return s.ref[s.active].currentArea;
 
 //		RtThreadImpl rtt = null;
 //		if (Scheduler.sched==null) {
@@ -556,15 +563,15 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 //		}
 	}
 	
-	static void setCurrentScope(Scope sc) {
-		RtThreadImpl rtt = null;
-		Scheduler s = Scheduler.sched[sys.cpuId];
-		if (s!=null || s.ref!=null) {
-			int nr = s.active;
-			rtt = s.ref[nr];
-		}
-		rtt.currentArrea = sc;
-	}
+//	static void setCurrentScope(Scope sc) {
+//		RtThreadImpl rtt = null;
+//		Scheduler s = Scheduler.sched[sys.cpuId];
+//		if (s!=null || s.ref!=null) {
+//			int nr = s.active;
+//			rtt = s.ref[nr];
+//		}
+//		rtt.currentArrea = sc;
+//	}
 
 	
 

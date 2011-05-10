@@ -32,7 +32,35 @@ public class ScratchpadScope extends ScopedMemory {
 	 * TODO: we have to find a solution to avoid this sharing.
 	 */
 	public ScratchpadScope() {
-		super(IOFactory.getFactory().getScratchpadMemory());
+		super(IOFactory.getFactory().getScratchpadMemory()[0]);
+	}
+
+	@Override
+	public void enter(Runnable logic)
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public long memoryConsumed()
+	{
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public long memoryRemaining()
+	{
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public long size()
+	{
+		// TODO Auto-generated method stub
+		return 0;
 	}
 
 }

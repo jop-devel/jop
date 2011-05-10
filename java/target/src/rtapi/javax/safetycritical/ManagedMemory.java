@@ -28,6 +28,7 @@ import javax.safetycritical.annotate.SCJAllowed;
 @SCJAllowed
 public abstract class ManagedMemory extends LTMemory
 {
+	
   ManagedMemory(long size) { super(size); }
   
 //  ManagedMemory(SizeEstimator estimator) { super(estimator); }
@@ -54,7 +55,10 @@ public abstract class ManagedMemory extends LTMemory
    * @param logic
    */
   @SCJAllowed
-  public void enterPrivateMemory(long size, Runnable logic) {}
+  public void enterPrivateMemory(long size, Runnable logic) 
+  {
+	  
+  }
 
   /**
    * @return

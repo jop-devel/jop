@@ -28,21 +28,45 @@ package com.jopdesign.sys;
  */
 public class Scope {
 
+
+	
 	int cnt;
-	int[] backingStore;
-	int allocPtr;
-	Scope outer;
+	long startPointer;
+	long allocationPointer;
+	long size;
+	Scope parent;
 
 	public Scope(long size) {
-		// that's wrong as it allocates the backing store
-		// in the current memory context, but it should do
-		// in heap/immortal
-		backingStore = new int[((int) size+3)>>2];
 		cnt = 0;
-		allocPtr = 0;
+		// Checks if the ImmortalMemory is currently being created
+		if(RtThreadImpl.outerArea == null)
+		{
+			// This scope belongs to the ImmortalMemory currently being created
+			startPointer = GC.allocationPointer;
+			parent = null;
+		}
+		else
+		{
+			if (RtThreadImpl.mission) {
+				Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
+				parent = s.ref[s.active].currentArea;
+				if(parent == null)
+				{
+					
+				}
+			}
+			else
+			{
+				parent = RtThreadImpl.outerArea;
+				
+			}
+			startPointer = parent.startPointer+parent.size;
+		}
+		allocationPointer = startPointer;
+		this.size = size;
 	}
 
-	// that's for our scratchpad memory
+	/*// that's for our scratchpad memory
 	public Scope(int[] localMem) {
 		backingStore = localMem;
 		cnt = 0;
@@ -51,11 +75,12 @@ public class Scope {
 		for (int i=0; i<localMem.length; ++i) {
 			localMem[i] = 0;
 		}
-	}
+	}*/
 	
-	public int getSize() {
-		return backingStore.length*4;
-	}
+	/*public int getSize() {
+		//return backingStore.length*4;
+		return size;
+	}*/
 
 	public void enter(Runnable logic) {
 		synchronized (this) {
@@ -65,22 +90,23 @@ public class Scope {
 			throw new Error("No cyclic enter and no sharing between threads");
 		}
 		// activate the memory area
-		outer = RtThreadImpl.getCurrentScope();
-		RtThreadImpl.setCurrentScope(this);
+		RtThreadImpl rtt = null;
+		// This method is only used by scopes within PrivateMemory so we 
+		// are certain that threads are running.
+		Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
+		int nr = s.active;
+		rtt = s.ref[nr];
+		Scope parent = rtt.currentArea;
+		rtt.currentArea = this;
 		// super.enter(logic); nothing to do in MemoryArea
 		logic.run();
 		// deactivate the area
-		RtThreadImpl.setCurrentScope(outer);
+		rtt.currentArea = parent;
 
-		synchronized (this) {
+		// No reason to reset anything since the scope is "destroyed" after this method
+		/*synchronized (this) {
 			cnt--;
-			if (cnt==0) {
-				for (int i=0; i<allocPtr; ++i) {
-					backingStore[i] = 0;
-				}
-				allocPtr = 0;
-			}
-		}
+		}*/
 	}
 
 }
