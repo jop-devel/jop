@@ -84,7 +84,7 @@ public class PJPeriodicTask extends RtThread {
 
 			if (INSTRUMENTATION) endMeasurement();			
 			if (INSTRUMENTATION
-				&& cnt++ == INSTRUMENTATION_RUNS) {
+				&& ++cnt == INSTRUMENTATION_RUNS) {
 				printInstrumentation();
 				cnt = 0;
 			}
@@ -116,11 +116,11 @@ public class PJPeriodicTask extends RtThread {
 		String name;
 		public MeasurementStatistic(String str) {
 			minElapsed = Integer.MAX_VALUE;
-			maxElapsed = 0;
+			maxElapsed = Integer.MIN_VALUE;
 			totalElapsed = 0;
 			totalRuns = 0;
 			minICacheCost = Integer.MAX_VALUE;
-			maxICacheCost = 0;
+			maxICacheCost = Integer.MIN_VALUE;
 			name = str;
 		}
 		public void recordRun(int elapsed) {
@@ -152,15 +152,33 @@ public class PJPeriodicTask extends RtThread {
 		}
 	}
 
+	private static class EmptyRunnable implements Runnable {
+		public void run() {
+		};
+	}
+
 	private MeasurementStatistic problemStats;
+	private Runnable emptyRunnable;
 	
 	private void initInstrumentation() {
 		/* initialize statistics */
 		problemStats = new MeasurementStatistic(name);
+		/* create a dummy runnable */
+		emptyRunnable = new EmptyRunnable();
 		/* JOP Specific instrumentation */
-		ts = Native.rdMem(Const.IO_CNT);
-		te = Native.rdMem(Const.IO_CNT);
+		startMeasurement();
+		if (scope != null) {
+			scope.enter(emptyRunnable);
+		} else {
+			emptyRunnable.run();
+		}
+		endMeasurement();
 		to = te-ts;
+		System.out.print(name);
+		System.out.print(" overhead for empty run(): ");
+		System.out.println(to);
+		/* initialize statistics again to get rid of overhead measurement artifacts */
+		problemStats = new MeasurementStatistic(name);
 	}
 	
 	private void printInstrumentation() {
