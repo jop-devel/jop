@@ -169,7 +169,9 @@ public class UsedCodeFinder {
         if (setMark(rootClass,true)==Mark.USED) return;
 
         // visit superclass and interfaces, attributes, but not methods or fields
-        logger.debug("Visiting references of "+rootClass);
+        if (logger.isTraceEnabled()) {
+            logger.trace("Visiting references of "+rootClass);
+        }
         Set<String> found = ConstantPoolReferenceFinder.findReferencedMembers(rootClass, false);
         visitReferences(found);
 
@@ -199,7 +201,9 @@ public class UsedCodeFinder {
         markUsedMembers(rootField.getClassInfo(), false);
 
         // visit type info, attributes, constantValue
-        logger.debug("Visiting references of "+rootField);
+        if (logger.isTraceEnabled()) {
+            logger.trace("Visiting references of "+rootField);
+        }
         Set<String> found = ConstantPoolReferenceFinder.findReferencedMembers(rootField);
         visitReferences(found);
     }
@@ -213,7 +217,9 @@ public class UsedCodeFinder {
         markUsedMembers(rootMethod.getClassInfo(), false);
 
         // visit parameters, attributes, instructions, tables, ..
-        logger.debug("Visiting references of "+rootMethod);
+        if (logger.isTraceEnabled()) {
+            logger.trace("Visiting references of "+rootMethod);
+        }
         Set<String> found = ConstantPoolReferenceFinder.findReferencedMembers(rootMethod);
         visitReferences(found);
 

@@ -537,7 +537,9 @@ public class CallGraph {
             while(! todo.empty()) {
                 ExecutionContext current = todo.pop();
 
-                logger.debug("Processing " +current);
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Processing " +current);
+                }
 
                 Set<ExecutionContext> invoked = builder.getInvokedMethods(current);
                 for (ExecutionContext cgn : invoked) {
@@ -546,7 +548,9 @@ public class CallGraph {
                         callGraph.addVertex(cgn);
                         todo.push(cgn);
                     }
-                    logger.trace(" - found invoke of " +cgn);
+                    if (logger.isTraceEnabled()) {
+                        logger.trace(" - found invoke of " +cgn);
+                    }
                     callGraph.addEdge(current, cgn);
                 }
             } /* end while */
