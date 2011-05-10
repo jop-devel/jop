@@ -29,6 +29,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -64,6 +65,12 @@ public class OptionGroup {
      * Map of subgroups and their OptionGroups.
      */
     private Map<String, OptionGroup> subGroups;
+
+    /**
+     * Map of option keys (relative to this group) to a set of option keys (global) which must be enabled
+     * to make an option in use. If an option is not in this map, it is always used.
+     */
+    private Map<String, Set<String>> enableOptions;
     /**
      * Set of all subgroup names which are handled as commands
      */
@@ -80,6 +87,7 @@ public class OptionGroup {
         optionSet = new HashMap<String, Option<?>>();
         subGroups = new HashMap<String, OptionGroup>(1);
         commands = new HashSet<String>(0);
+        enableOptions = new HashMap<String, Set<String>>();
     }
 
     public Config getConfig() {
@@ -130,6 +138,36 @@ public class OptionGroup {
         return config.getValue(getConfigKey(CMD_KEY));
     }
 
+    public Option findOption(String subKey) {
+        int pos = subKey.indexOf('.');
+        if (pos == -1) {
+            return getOptionSpec(subKey);
+        }
+        OptionGroup group = subGroups.get(subKey.substring(0,pos));
+        if (group == null) {
+            return getOptionSpec(subKey);
+        }
+        return group.findOption(subKey.substring(pos+1));
+    }
+
+    public OptionGroup findOptionGroup(String subKey) {
+        int pos = subKey.indexOf('.');
+        if (pos == -1) {
+            // check if the key specifies a group or a key: if the group is not known, assume its an option key
+            if (subGroups.containsKey(subKey)) {
+                return subGroups.get(subKey);
+            } else {
+                return this;
+            }
+        }
+        OptionGroup group = subGroups.get(subKey.substring(0,pos));
+        if (group == null) {
+            // no subgroup by that key, return this group
+            return this;
+        }
+        return group.findOptionGroup(subKey.substring(pos + 1));
+    }
+
     /*
     * Setup Options
     * ~~~~~~~~~~~~~
@@ -153,6 +191,28 @@ public class OptionGroup {
 
         // we keep the options in an additional list to have them sorted in the same way they are added.
         optionList.add(option);
+
+        addEnableOptions(option.getKey());
+    }
+
+    private void addEnableOptions(String key) {
+        String enable = config.getEnableOption();
+
+        Set<String> options = enableOptions.get(key);
+
+        if (enable == null && options != null) {
+            // option is used outside tool too, so it is always enabled
+            enableOptions.remove(key);
+            return;
+        }
+
+        if (enable != null) {
+            if (options == null) {
+                options = new HashSet<String>(1);
+                enableOptions.put(key, options);
+            }
+            options.add(enable);
+        }
     }
 
     public void addOptions(Option[][] options) {
@@ -203,6 +263,29 @@ public class OptionGroup {
      * Access Option Values
      * ~~~~~~~~~~~~~~~~~~~~ 
      */
+
+    /**
+     * Check if an option is used, i.e. if the options which must be set to enable this option are set.
+     *
+     * @param option the option in this group to check.
+     * @return true if the option is used/enabled.
+     */
+    public boolean isUsed(Option<?> option) {
+        if (!containsOption(option)) {
+            throw new BadConfigurationError("Option "+option.getKey()+" is not known in group "+prefix);
+        }
+        Set<String> keys = enableOptions.get(option.getKey());
+        if (keys == null) {
+            return true;
+        }
+
+        for (String key : keys) {
+            if (config.isEnabled(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * Check if option has been assigned a value in the config.
@@ -521,7 +604,7 @@ public class OptionGroup {
 
             // check for required options
             for (Option<?> option : optionList) {
-                if (!option.isOptional() && !hasValue(option)) {
+                if (!option.isOptional() && !hasValue(option) && isUsed(option)) {
                     throw new Config.BadConfigurationException("Missing required option '" + getConfigKey(option) + '"');
                 }
             }

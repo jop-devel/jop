@@ -237,6 +237,10 @@ public class AppSetup {
             BooleanOption option = new BooleanOption("use-"+name, "Use the "+name+" tool", useDefault);
             config.addOption(option);
             optionalTools.put(name, option);
+
+            config.setEnableOption(option.getKey());
+        } else {
+            config.unsetEnableOption();
         }
 
         // setup defaults and config
@@ -252,6 +256,8 @@ public class AppSetup {
 
         // setup options
         jopTool.registerOptions(config);
+
+        config.unsetEnableOption();
     }
 
     /**
@@ -838,8 +844,8 @@ public class AppSetup {
             throw new BadConfigurationException("'No method '"+mainName+"' found in '"+clsName+"'.");
         }
         if ( methods.size() > 1 ) {
-            StringBuffer s = new StringBuffer(String.format(
-                    "Multiple candidates for '%s' in '%s', please specify with a signature: ", mainName, clsName) );
+            StringBuilder s = new StringBuilder(String.format(
+                    "Multiple candidates for '%s' in '%s', please specify with a signature: ", mainName, clsName));
             for (MethodInfo m : methods) {
                 s.append("\n");
                 s.append(m.getMemberID());

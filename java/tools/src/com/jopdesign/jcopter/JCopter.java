@@ -202,7 +202,7 @@ public class JCopter extends EmptyTool<JCopterManager> {
         JCopter jcopter = new JCopter();
 
         setup.registerTool("dfa", dfaTool, true, false);
-        setup.registerTool("wcet", wcetTool, true, true);
+        setup.registerTool("wca", wcetTool, true, true);
         setup.registerTool("jcopter", jcopter);
 
         setup.initAndLoad(args, true, true, true);
@@ -211,7 +211,7 @@ public class JCopter extends EmptyTool<JCopterManager> {
             wcetTool.setDfaTool(dfaTool);
             jcopter.setDfaTool(dfaTool);
         }
-        if (setup.useTool("wcet")) {
+        if (setup.useTool("wca")) {
             jcopter.setWcetTool(wcetTool);
         }
 

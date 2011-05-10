@@ -331,7 +331,7 @@ public class SimpleInliner extends AbstractOptimizer {
                     // we do not return anything, so we must empty the stack
                     while (values.getValueTable().getStackSize() > 0) {
                         Instruction pop;
-                        if (values.getValueTable().getStackSize() > 1) {
+                        if (values.getValueTable().top().isContinued()) {
                             pop = new POP2();
                         } else {
                             pop = new POP();

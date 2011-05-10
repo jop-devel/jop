@@ -135,7 +135,7 @@ public class Config {
     public static String mergePaths(String[] paths) {
         if (paths.length == 0) return "";
 
-        StringBuffer sb = new StringBuffer(paths[0]);
+        StringBuilder sb = new StringBuilder(paths[0]);
         for (int i = 1; i < paths.length; i++) {
             sb.append(File.pathSeparator);
             sb.append(paths[i]);
@@ -180,6 +180,8 @@ public class Config {
 
     private Properties defaultProps, props;
     private OptionGroup options;
+
+    private String enableOption;
 
     public Config() {
         this(new Properties());
@@ -555,6 +557,27 @@ public class Config {
     }
 
     /**
+     * Check if an option is enabled.
+     * @see Option#isEnabled(OptionGroup)
+     * @param fullKey the key of the option, can specify an option in a subgroup.
+     * @return true if the option is enabled, i.e. has a value different from null, 0 or false,
+     *         depending on the option type.
+     */
+    public boolean isEnabled(String fullKey) {
+        Option option = findOption(fullKey);
+        OptionGroup group = findOptionGroup(fullKey);
+        return option.isEnabled(group);
+    }
+
+    public Option findOption(String fullKey) {
+        return options.findOption(fullKey);
+    }
+
+    public OptionGroup findOptionGroup(String fullKey) {
+        return options.findOptionGroup(fullKey);
+    }
+
+    /**
      * This is a shortcut to get an option from the main option group.
      *
      * @param option the option to read.
@@ -602,6 +625,29 @@ public class Config {
         }
 
         System.out.println();
+    }
+
+    /**
+     * Set the key of the currently processed tool enable/disable option. Options added after this has
+     * been set will only be required if this option is enabled.
+     *
+     * @param enableOption name of the option which must be enabled to make added options required.
+     */
+    public void setEnableOption(String enableOption) {
+        this.enableOption = enableOption;
+    }
+
+    public void unsetEnableOption() {
+        enableOption = null;
+    }
+
+    /**
+     * This returns the name of the currently set option key used to check if options should be required.
+     * @see #setEnableOption(String)
+     * @return the currently set option key or null if not set.
+     */
+    public String getEnableOption() {
+        return enableOption;
     }
 
     protected static void printOption(PrintStream p, int indent, String key, Object value) {

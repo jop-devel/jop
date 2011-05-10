@@ -183,7 +183,7 @@ public abstract class Option<T> {
     }
 
     public String toString(int lAdjust, OptionGroup options) {
-        StringBuffer s = new StringBuffer("  ");
+        StringBuilder s = new StringBuilder("  ");
         if (shortKey != SHORT_NONE) {
             s.append('-');
             s.append(shortKey);
@@ -205,14 +205,14 @@ public abstract class Option<T> {
 
         String defaultValue = options.getDefaultValueText(this);
 
-        StringBuffer s = new StringBuffer(this.description);
+        StringBuilder s = new StringBuilder(this.description);
         s.append(" ");
         s.append(getDefaultsText(defaultValue));
         return s.toString();
     }
 
     protected String getDefaultsText(String defaultValue) {
-        StringBuffer s = new StringBuffer();
+        StringBuilder s = new StringBuilder();
         if (defaultValue != null) {
             s.append("[default: ").append(defaultValue).append("]");
         } else {
@@ -223,7 +223,7 @@ public abstract class Option<T> {
 
     protected String replacePlaceholders(Config config, String s, Set<String> stack) {
         // just some sanity checks..
-        if (s.indexOf("$(") != -1) {
+        if (s.contains("$(")) {
             // TODO we need to setup a standard logger setup before parsing options so this can be seen before
             //      LogConfig gets initialized
             logger.warn("Found '$(' in value of option "+getKey()+", are you sure you did not mean '${..}' instead?");
@@ -233,7 +233,7 @@ public abstract class Option<T> {
             return s;
         }
 
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         int p2 = -1;
         while (p1 > -1) {
             buf.append(s.substring(p2 + 1, p1));
