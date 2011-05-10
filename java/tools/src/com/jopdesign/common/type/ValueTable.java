@@ -81,7 +81,7 @@ public class ValueTable {
     }
 
     public void push(ValueInfo value, boolean addContinueMarker) {
-        if (Type.VOID.equals(value.getType())) return;
+        if (Type.VOID.equals(value.getType()) && !value.isThisReference()) return;
 
         stack.add(value);
         if (addContinueMarker && value.usesTwoSlots()) {

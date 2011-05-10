@@ -56,6 +56,7 @@ import org.apache.log4j.Logger;
 import org.apache.velocity.runtime.parser.node.MapSetExecutor;
 import sun.awt.SunHints.Value;
 
+import java.io.ObjectInputStream.GetField;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -174,7 +175,7 @@ public class SimpleInliner extends AbstractOptimizer {
                 // Preliminary checks
                 if (checkInvoke(invoke, cs, invokee, invokeMap)) {
 
-                    invoke = performSimpleInline(cs.first(), invokee, invokeMap);
+                    invoke = performSimpleInline(invoke, invokee, invokeMap);
 
                     inlineCounter++;
 
@@ -377,7 +378,6 @@ public class SimpleInliner extends AbstractOptimizer {
         MethodInfo invoker = invokeSite.getInvoker();
 
         ConstantPoolGen invokerCpg = invoker.getConstantPoolGen();
-        ConstantPoolGen invokeeCpg = invokee.getConstantPoolGen();
 
         InstructionHandle invoke = invokeSite.getInstructionHandle();
 
@@ -417,20 +417,34 @@ public class SimpleInliner extends AbstractOptimizer {
             oldPrologue.add(0, instr);
         }
 
+        invokeMap.setOldPrologueLength(cnt);
+
+        List<ValueInfo> params = invokeMap.getParams();
+
         // other parameters must be used in the order they are pushed on the stack, we do not rearrange them
         int offset = args.length - cnt;
+
         for (int i = 0; i < offset; i++) {
-            ValueInfo value = invokeMap.getParams().get(i);
-            if (!value.isParamReference() || value.getParamNr() != i) {
-                return false;
+            if (i >= params.size()) {
+                Type t = args[i];
+                // unused argument, we cannot remove the push instruction so we pop it
+                invokeMap.addPrologue(t.getSize() == 2 ? new POP2() : new POP() );
+            } else {
+                ValueInfo value = params.get(i);
+
+                int argNum = value.getParamNr();
+                if (invokee.isStatic()) {
+                    argNum++;
+                }
+                if (argNum != i) {
+                    return false;
+                }
             }
         }
 
-        invokeMap.setOldPrologueLength(cnt);
-
         // Now, we create a new prologue using the expected argument values and the old push instructions
-        for (int i = offset; i < invokeMap.getParams().size(); i++) {
-            ValueInfo value = invokeMap.getParams().get(i);
+        for (int i = offset; i < params.size(); i++) {
+            ValueInfo value = params.get(i);
 
             if (value.isThisReference() || value.isParamReference()) {
                 int argNum = value.getParamNr();
@@ -448,7 +462,7 @@ public class SimpleInliner extends AbstractOptimizer {
 
                 invokeMap.addPrologue(instr);
 
-            } else if (value.isConstantValue()) {
+            } else if (value.isConstantValue() || value.isStaticFieldReference()) {
 
                 // We need to push a constant on the stack
                 Instruction instr = value.getConstantValue().createPushInstruction(invoker.getConstantPoolGen());
@@ -460,7 +474,7 @@ public class SimpleInliner extends AbstractOptimizer {
             }
         }
 
-        return false;
+        return true;
     }
 
     /**
@@ -525,6 +539,10 @@ public class SimpleInliner extends AbstractOptimizer {
         MethodInfo invoker = invokeSite.getInvoker();
         MethodCode invokerCode = invoker.getCode();
 
+        if (logger.isDebugEnabled()) {
+            logger.debug("Inlining at "+invokeSite+" using " + invokee);
+        }
+
         // Prepare code for the actual inlining
         helper.prepareInlining(invoker, invokee);
 
@@ -539,6 +557,9 @@ public class SimpleInliner extends AbstractOptimizer {
             }
 
             invokerCode.replace(start, invokeMap.getOldPrologueLength(), invokeMap.getPrologue(), false);
+        } else if (invokeMap.getPrologue().getLength() > 0) {
+            InstructionList il = invokerCode.getInstructionList();
+            il.insert(invoke, invokeMap.getPrologue());
         }
 
         // Replace the invoke
@@ -553,7 +574,7 @@ public class SimpleInliner extends AbstractOptimizer {
 
         InstructionHandle end = invokerCode.replace(invoke, 1, invokee, il, start, cnt, false);
 
-        // insert epilogue if any
+        // insert epilogue
         invokerCode.getInstructionList().insert(end, invokeMap.getEpilogue());
 
         // If we inlined another invokesite, find the new invokesite and return it

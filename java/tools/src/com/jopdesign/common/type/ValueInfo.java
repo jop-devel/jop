@@ -43,7 +43,7 @@ public class ValueInfo {
     private int paramNr = -1;
     private ConstantInfo constantValue;
 
-    // TODO support tracking of copies, support removal of copy-reference on write 
+    // TODO support tracking of copies, support removal of copy-reference on write ?
 
     private ValueInfo(ValueFlag flag) {
         this.flag = flag;
@@ -72,6 +72,12 @@ public class ValueInfo {
         this.paramNr = paramNr;
     }
 
+    public ValueInfo(Type type, FieldRef staticField) {
+        this.type = type;
+        this.flag = ValueFlag.LIVE;
+        this.constantValue = new ConstantFieldInfo(staticField);
+    }
+
     public ValueInfo(MethodInfo thisRef) {
         this.type = thisRef.getType();
         this.flag = ValueFlag.LIVE;
@@ -91,11 +97,16 @@ public class ValueInfo {
     }
 
     public boolean isConstantValue() {
-        return constantValue != null || type.equals(Type.NULL);
+        return (constantValue != null && !(constantValue instanceof ConstantFieldInfo))
+               || Type.NULL.equals(type);
     }
 
     public boolean isUnused() {
         return flag == ValueFlag.UNUSED;
+    }
+
+    public boolean isStaticFieldReference() {
+        return constantValue != null && constantValue instanceof ConstantFieldInfo;
     }
 
     public boolean isContinued() {
@@ -116,6 +127,10 @@ public class ValueInfo {
 
     public MethodInfo getThisRef() {
         return thisRef;
+    }
+
+    public FieldRef getStaticFieldRef() {
+        return isStaticFieldReference() ? ((ConstantFieldInfo)constantValue).getValue() : null;
     }
 
     /**

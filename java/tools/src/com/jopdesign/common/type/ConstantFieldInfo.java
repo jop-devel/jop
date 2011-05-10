@@ -20,10 +20,12 @@
 
 package com.jopdesign.common.type;
 
+import com.jopdesign.common.FieldInfo;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantFieldref;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.GETSTATIC;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.Type;
 
@@ -74,7 +76,11 @@ public class ConstantFieldInfo extends ConstantInfo<FieldRef, Type> {
 
     @Override
     public Instruction createPushInstruction(ConstantPoolGen cpg) {
-        // no such thing as a field reference on the stack, only class refs
+        FieldInfo fieldInfo = getValue().getFieldInfo();
+        if (fieldInfo != null && fieldInfo.isStatic()) {
+            // Special case although this is not a constant we are pushing, but it simplifies some code,
+            return new GETSTATIC(addConstant(cpg));
+        }
         return null;
     }
 

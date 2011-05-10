@@ -23,6 +23,7 @@ package com.jopdesign.jcopter.analysis;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.type.ConstantDoubleInfo;
+import com.jopdesign.common.type.ConstantFieldInfo;
 import com.jopdesign.common.type.ConstantFloatInfo;
 import com.jopdesign.common.type.ConstantIntegerInfo;
 import com.jopdesign.common.type.ConstantLongInfo;
@@ -415,15 +416,15 @@ public class ValueAnalysis {
                 values.pop();
             case Constants.GETSTATIC: {
                 FieldInstruction f = (FieldInstruction)instruction;
-                // TODO we could add a reference to the field to valueinfo (?)
-                values.push(new ValueInfo(f.getFieldType(cpg)));
+                ConstantFieldInfo field = (ConstantFieldInfo) methodInfo.getClassInfo().getConstantInfo(f.getIndex());
+                values.push(new ValueInfo(f.getFieldType(cpg), field.getValue()));
                 break;
             }
             case Constants.PUTFIELD:
                 values.pop();
             case Constants.PUTSTATIC: {
                 FieldInstruction f = (FieldInstruction)instruction;
-                values.pop( f.getFieldType(cpg).getSize() );
+                values.pop(f.getFieldType(cpg).getSize());
                 break;
             }
 
