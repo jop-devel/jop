@@ -25,6 +25,7 @@ import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantMethodref;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.Type;
 
 /**
@@ -84,5 +85,11 @@ public class ConstantMethodInfo extends ConstantInfo<MethodRef, Type> {
         }
         return cpg.lookupMethodref(method.getClassName(), method.getName(), 
                 method.getDescriptor().toString());
+    }
+
+    @Override
+    public Instruction createPushInstruction(ConstantPoolGen cpg) {
+        // there are no method references on the stack, only class refs
+        return null;
     }
 }

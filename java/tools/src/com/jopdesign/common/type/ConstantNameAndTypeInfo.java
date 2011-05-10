@@ -24,6 +24,7 @@ import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantNameAndType;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.Type;
 
 /**
@@ -62,6 +63,11 @@ public class ConstantNameAndTypeInfo extends ConstantInfo<MemberID, Type> {
     public int lookupConstant(ConstantPoolGen cpg) {
         MemberID sig = getValue();
         return cpg.lookupNameAndType(sig.getMemberName(), sig.getDescriptor().toString());
+    }
+
+    @Override
+    public Instruction createPushInstruction(ConstantPoolGen cpg) {
+        return null;
     }
 
 }

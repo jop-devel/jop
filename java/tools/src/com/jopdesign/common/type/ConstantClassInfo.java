@@ -25,6 +25,9 @@ import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantClass;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.NEW;
+import org.apache.bcel.generic.PushInstruction;
 import org.apache.bcel.generic.ReferenceType;
 
 /**
@@ -64,6 +67,12 @@ public class ConstantClassInfo extends ConstantInfo<ClassRef, ReferenceType> {
     @Override
     public int lookupConstant(ConstantPoolGen cpg) {
         return cpg.lookupClass(getValue().getClassName());
+    }
+
+    @Override
+    public Instruction createPushInstruction(ConstantPoolGen cpg) {
+        // TODO this is debatable: we could push a new class by creating a new object ..
+        return new NEW(addConstant(cpg));
     }
 
     public String getClassName() {

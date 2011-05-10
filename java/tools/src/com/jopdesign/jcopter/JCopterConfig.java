@@ -28,6 +28,8 @@ import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
 
+import java.awt.*;
+
 /**
  * This class contains all generic options for JCopter.
  *
@@ -46,19 +48,22 @@ public class JCopterConfig {
             new BooleanOption("assume-dynloader", "Assume that classes can be loaded or replaced at runtime.", false);
 
     private static final StringOption OPTIMIZE =
-            new StringOption("optimize", "can be one of 's[ize]', '1' or '2'", 'O', "1");
+            new StringOption("optimize", "can be one of: 's' (size), '1' (fast optimizations only), '2', '3' (experimental optimizations)", 'O', "1");
 
     private static final StringOption MAX_CODE_SIZE =
-            new StringOption("max-code-size", "maximum total code size", true);
+            new StringOption("max-code-size", "maximum total code size, 'kb' or 'mb' can be used as suffix", true);
 
     private static final Option[] optionList =
-            { ASSUME_REFLECTION, ASSUME_DYNAMIC_CLASSLOADING, OPTIMIZE, MAX_CODE_SIZE };
+            { OPTIMIZE, MAX_CODE_SIZE, ASSUME_REFLECTION, ASSUME_DYNAMIC_CLASSLOADING };
 
     public static void registerOptions(OptionGroup options) {
         options.addOptions(JCopterConfig.optionList);
     }
 
     private final OptionGroup options;
+    
+    private byte optimizeLevel;
+    private int  maxCodesize;
 
     public JCopterConfig(OptionGroup options) throws BadConfigurationException {
         this.options = options;
@@ -66,7 +71,32 @@ public class JCopterConfig {
     }
 
     private void loadOptions() throws BadConfigurationException {
-        
+        if ("s".equals(options.getOption(OPTIMIZE))) {
+            optimizeLevel = 0;
+        } else if ("1".equals(options.getOption(OPTIMIZE))) {
+            optimizeLevel = 1;
+        } else if ("2".equals(options.getOption(OPTIMIZE))) {
+            optimizeLevel = 2;
+        } else if ("3".equals(options.getOption(OPTIMIZE))) {
+            optimizeLevel = 3;
+        } else {
+            throw new BadConfigurationException("Invalid optimization level '"+options.getOption(OPTIMIZE)+"'");
+        }
+
+        String max = options.getOption(MAX_CODE_SIZE);
+        if (max != null) {
+            max = max.toLowerCase();
+            if (max.endsWith("kb")) {
+                maxCodesize = Integer.parseInt(max.substring(0,max.length()-2)) * 1024;
+            } else if (max.endsWith("mb")) {
+                maxCodesize = Integer.parseInt(max.substring(0,max.length()-2)) * 1024 * 1024;
+            } else {
+                maxCodesize = Integer.parseInt(max);
+            }
+        } else {
+            // TODO if we do not have max size: should we use some heuristics to limit codesize?
+
+        }
     }
 
     /**
@@ -106,5 +136,25 @@ public class JCopterConfig {
 
     public int getCallstringLength() {
         return (int) getConfig().getOption(Config.CALLSTRING_LENGTH).longValue();
+    }
+
+    public int getMaxCodesize() {
+        return maxCodesize;
+    }
+
+    public boolean doOptimizeCodesizeOnly() {
+        return optimizeLevel == 0;
+    }
+
+    public boolean doFastOptimize() {
+        return optimizeLevel >= 1;
+    }
+
+    public boolean doHardOptimize() {
+        return optimizeLevel >= 2;
+    }
+
+    public boolean doExperimental() {
+        return optimizeLevel == 3;
     }
 }

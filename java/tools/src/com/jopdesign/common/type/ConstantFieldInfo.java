@@ -24,6 +24,7 @@ import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantFieldref;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.Type;
 
 /**
@@ -69,6 +70,12 @@ public class ConstantFieldInfo extends ConstantInfo<FieldRef, Type> {
         FieldRef fieldRef = getValue();
         return cpg.lookupFieldref(fieldRef.getClassName(), fieldRef.getName(),
                                fieldRef.getType().getSignature());
+    }
+
+    @Override
+    public Instruction createPushInstruction(ConstantPoolGen cpg) {
+        // no such thing as a field reference on the stack, only class refs
+        return null;
     }
 
 }

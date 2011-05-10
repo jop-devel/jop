@@ -87,7 +87,7 @@ public class ValueInfo {
     }
 
     public boolean isParamReference() {
-        return paramNr >= 0;
+        return paramNr != -1;
     }
 
     public boolean isConstantValue() {
@@ -112,6 +112,18 @@ public class ValueInfo {
 
     public TypeInfo getTypeInfo() {
         return TypeInfo.getTypeInfo(type);
+    }
+
+    public MethodInfo getThisRef() {
+        return thisRef;
+    }
+
+    /**
+     * @return the number of the parameter this value represents, or -1 if this value
+     *         is not a parameter (or if it is a 'this' reference).
+     */
+    public int getParamNr() {
+        return paramNr;
     }
 
     public ConstantInfo getConstantValue() {

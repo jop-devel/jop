@@ -25,6 +25,9 @@ import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantLong;
 import org.apache.bcel.generic.BasicType;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.LCONST;
+import org.apache.bcel.generic.LDC2_W;
 import org.apache.bcel.generic.Type;
 
 /**
@@ -59,5 +62,13 @@ public class ConstantLongInfo extends ConstantInfo<Long, BasicType> {
     @Override
     public int lookupConstant(ConstantPoolGen cpg) {
         return cpg.lookupLong(getValue());
+    }
+
+    @Override
+    public Instruction createPushInstruction(ConstantPoolGen cpg) {
+        if (getValue() == 0 || getValue() == 1) {
+            return new LCONST(getValue());
+        }
+        return new LDC2_W(addConstant(cpg));
     }
 }

@@ -35,6 +35,8 @@ import com.jopdesign.jcopter.optimizer.AbstractOptimizer;
 import org.apache.bcel.generic.ArithmeticInstruction;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.ConversionInstruction;
+import org.apache.bcel.generic.DUP;
+import org.apache.bcel.generic.DUP2;
 import org.apache.bcel.generic.FieldInstruction;
 import org.apache.bcel.generic.GETFIELD;
 import org.apache.bcel.generic.Instruction;
@@ -51,8 +53,11 @@ import org.apache.bcel.generic.ReturnInstruction;
 import org.apache.bcel.generic.StackInstruction;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
+import org.apache.velocity.runtime.parser.node.MapSetExecutor;
+import sun.awt.SunHints.Value;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -389,8 +394,71 @@ public class SimpleInliner extends AbstractOptimizer {
         // Check and build prologue
         Type[] args = StackHelper.consumeStack(invokerCpg, invoke.getInstruction());
 
+        List<Instruction> oldPrologue = new LinkedList<Instruction>();
+        int cnt = 0;
 
+        InstructionHandle current = invoke;
+        while (cnt < args.length) {
+            if (current.hasTargeters()) {
+                // stay within the basic block
+                break;
+            }
 
+            current = current.getPrev();
+
+            Instruction instr = current.getInstruction();
+            // we only rearrange push-instructions
+            if (!(instr instanceof PushInstruction) || (instr instanceof DUP) || (instr instanceof DUP2)) {
+                break;
+            }
+
+            // we add this instruction to the old prologue to replace
+            cnt++;
+            oldPrologue.add(0, instr);
+        }
+
+        // other parameters must be used in the order they are pushed on the stack, we do not rearrange them
+        int offset = args.length - cnt;
+        for (int i = 0; i < offset; i++) {
+            ValueInfo value = invokeMap.getParams().get(i);
+            if (!value.isParamReference() || value.getParamNr() != i) {
+                return false;
+            }
+        }
+
+        invokeMap.setOldPrologueLength(cnt);
+
+        // Now, we create a new prologue using the expected argument values and the old push instructions
+        for (int i = offset; i < invokeMap.getParams().size(); i++) {
+            ValueInfo value = invokeMap.getParams().get(i);
+
+            if (value.isThisReference() || value.isParamReference()) {
+                int argNum = value.getParamNr();
+                if (!invokee.isStatic()) {
+                    argNum++;
+                }
+
+                if (argNum < offset) {
+                    // loading a param a second time which we do not duplicate, cannot inline this
+                    return false;
+                }
+
+                // To be on the safe side, copy the instruction in case a param is used more than once
+                Instruction instr = oldPrologue.get(argNum - offset).copy();
+
+                invokeMap.addPrologue(instr);
+
+            } else if (value.isConstantValue()) {
+
+                // We need to push a constant on the stack
+                Instruction instr = value.getConstantValue().createPushInstruction(invoker.getConstantPoolGen());
+
+                invokeMap.addPrologue(instr);
+
+            } else if (!value.isContinued()) {
+                throw new AssertionError("Unhandled value type");
+            }
+        }
 
         return false;
     }

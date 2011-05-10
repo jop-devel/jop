@@ -26,6 +26,9 @@ import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantString;
 import org.apache.bcel.classfile.ConstantUtf8;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.LDC;
+import org.apache.bcel.generic.LDC_W;
 import org.apache.bcel.generic.ObjectType;
 import org.apache.bcel.generic.Type;
 
@@ -82,5 +85,14 @@ public class ConstantStringInfo extends ConstantInfo<String, ObjectType> {
             return cpg.lookupUtf8(getValue());
         }
         return cpg.lookupString(getValue());
+    }
+
+    @Override
+    public Instruction createPushInstruction(ConstantPoolGen cpg) {
+        if (getTag() == Constants.CONSTANT_Utf8) {
+            return null;
+        }
+        int index = addConstant(cpg);
+        return index < 256 ? new LDC(index) : new LDC_W(index);
     }
 }

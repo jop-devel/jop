@@ -23,8 +23,15 @@ package com.jopdesign.common.type;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantInteger;
+import org.apache.bcel.generic.BIPUSH;
 import org.apache.bcel.generic.BasicType;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.ICONST;
+import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.LDC;
+import org.apache.bcel.generic.LDC2_W;
+import org.apache.bcel.generic.LDC_W;
+import org.apache.bcel.generic.SIPUSH;
 import org.apache.bcel.generic.Type;
 
 /**
@@ -59,5 +66,20 @@ public class ConstantIntegerInfo extends ConstantInfo<Integer, BasicType> {
     @Override
     public int lookupConstant(ConstantPoolGen cpg) {
         return cpg.lookupInteger(getValue());
+    }
+
+    @Override
+    public Instruction createPushInstruction(ConstantPoolGen cpg) {
+        if (getValue() >= -1 && getValue() <= 5) {
+            return new ICONST(getValue());
+        }
+        if (getValue() >= -128 && getValue() < 128) {
+            return new BIPUSH(getValue().byteValue());
+        }
+        if (getValue() >= -32768 && getValue() < 32768) {
+            return new SIPUSH(getValue().shortValue());
+        }
+        int index = addConstant(cpg);
+        return index < 256 ? new LDC(index) : new LDC_W(index);
     }
 }

@@ -38,6 +38,8 @@ import org.apache.bcel.classfile.ConstantPool;
 import org.apache.bcel.classfile.ConstantString;
 import org.apache.bcel.classfile.ConstantUtf8;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.PushInstruction;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
@@ -151,6 +153,13 @@ public abstract class ConstantInfo<T, U extends Type> {
     public abstract int addConstant(ConstantPoolGen cpg);
 
     public abstract int lookupConstant(ConstantPoolGen cpg);
+
+    /**
+     * Create an instruction which pushes this constant on the stack.
+     * @param cpg the constant pool to use for the new instruction.
+     * @return a new instruction which pushes this value.
+     */
+    public abstract Instruction createPushInstruction(ConstantPoolGen cpg);
 
     @Override
     public String toString() {

@@ -131,6 +131,9 @@ public class JCopter extends EmptyTool<JCopterManager> {
 
         // - build callgraph: uses DFA results if available, else do some simple thinning
         executor.buildCallGraph();
+        if (!useDFA()) {
+            executor.reduceCallGraph();
+        }
 
         executor.dumpCallgraph("callgraph");
 

@@ -25,6 +25,11 @@ import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantFloat;
 import org.apache.bcel.generic.BasicType;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.FCONST;
+import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.LDC;
+import org.apache.bcel.generic.LDC2_W;
+import org.apache.bcel.generic.LDC_W;
 import org.apache.bcel.generic.Type;
 
 /**
@@ -59,5 +64,14 @@ public class ConstantFloatInfo extends ConstantInfo<Float, BasicType> {
     @Override
     public int lookupConstant(ConstantPoolGen cpg) {
         return cpg.lookupFloat(getValue());
+    }
+
+    @Override
+    public Instruction createPushInstruction(ConstantPoolGen cpg) {
+        if (getValue() == 0.0f || getValue() == 1.0f || getValue() == 2.0f) {
+            return new FCONST(getValue());
+        }
+        int index = addConstant(cpg);
+        return index < 256 ? new LDC(index) : new LDC_W(index);
     }
 }

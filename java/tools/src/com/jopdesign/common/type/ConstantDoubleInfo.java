@@ -25,6 +25,10 @@ import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantDouble;
 import org.apache.bcel.generic.BasicType;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.DCONST;
+import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.LDC2_W;
+import org.apache.bcel.generic.PushInstruction;
 import org.apache.bcel.generic.Type;
 
 /**
@@ -59,5 +63,13 @@ public class ConstantDoubleInfo extends ConstantInfo<Double, BasicType> {
     @Override
     public int lookupConstant(ConstantPoolGen cpg) {
         return cpg.lookupDouble(getValue());
+    }
+
+    @Override
+    public Instruction createPushInstruction(ConstantPoolGen cpg) {
+        if (getValue() == 0.0 || getValue() == 1.0) {
+            return new DCONST(getValue());
+        }
+        return new LDC2_W(addConstant(cpg));
     }
 }

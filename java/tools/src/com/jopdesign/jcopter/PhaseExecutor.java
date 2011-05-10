@@ -206,8 +206,6 @@ public class PhaseExecutor {
             appInfo.buildCallGraph(new DFACallgraphBuilder(jcopter.getDfaTool(), appInfo.getCallstringLength()));
         } else {
             appInfo.buildCallGraph(false);
-
-            reduceCallGraph();
         }
     }
 
@@ -245,6 +243,9 @@ public class PhaseExecutor {
      * {@link #markInlineCandidates()} must have been run first.
      */
     public void performSimpleInline() {
+        // TODO inliner is experimental for now..
+        if (!getJConfig().doExperimental()) return;
+
         if (getJConfig().doAssumeDynamicClassLoader()) {
             logger.info("Skipping simple-inliner since dynamic class loading is assumed.");
             return;
@@ -260,6 +261,9 @@ public class PhaseExecutor {
      * Inline all InvokeSites which are marked for inlining by an inline strategy.
      */
     public void performInline() {
+        // TODO inliner is experimental for now..
+        if (!getJConfig().doExperimental()) return;
+
         if (getJConfig().doAssumeDynamicClassLoader()) {
             logger.info("Skipping inliner since dynamic class loading is assumed.");
             return;
