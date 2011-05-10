@@ -22,7 +22,7 @@
 package papabench.jop;
 
 import papabench.core.commons.data.FlightPlan;
-import papabench.core.commons.data.impl.Simple05FlightPlan;
+import papabench.core.commons.data.impl.BraunshweigFlightPlan;
 
 /**
  * Launcher for the JOP PapaBench implementation.
@@ -35,7 +35,7 @@ public class PapaBenchJopApplication {
 
 	public static void main(String[] args) {
 		JopPapaBench pjPapaBench = new PapaBenchJopImpl();
-		FlightPlan plan = new Simple05FlightPlan();
+		FlightPlan plan = new BraunshweigFlightPlan();
 	
 		pjPapaBench.setFlightPlan(plan);
 		

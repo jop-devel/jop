@@ -33,7 +33,7 @@ import papabench.core.commons.conf.CommonTaskConfiguration;
  */
 public interface PapaBenchFBWConf {
 	
-	public static final int SLOWMOTION = 2;
+	public static final int SLOWMOTION = 3;
 
 	/**
 	 * Test PPM (?) task configuration.
