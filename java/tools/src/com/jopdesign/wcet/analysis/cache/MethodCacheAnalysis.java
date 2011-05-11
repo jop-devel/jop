@@ -57,15 +57,15 @@ public class MethodCacheAnalysis {
     public static class MethodCacheSplitEdge {
 
         private SuperGraph.SuperGraphEdge interProcEdge;
-        private boolean isInvoke;
+        private boolean isHitEdge;
 
         /**
          * @param e        the corresponding supergraph edge
-         * @param isInvoke whether the edge is an invoke edge
+         * @param isHitEdge whether the edge is a miss edge
          */
-        public MethodCacheSplitEdge(SuperGraph.SuperGraphEdge e, boolean isInvoke) {
+        public MethodCacheSplitEdge(SuperGraph.SuperGraphEdge e, boolean isHitEdge) {
             this.interProcEdge = e;
-            this.isInvoke = isInvoke;
+            this.isHitEdge = isHitEdge;
         }
 
         /* (non-Javadoc)
@@ -77,7 +77,7 @@ public class MethodCacheAnalysis {
             final int prime = 31;
             int result = 1;
             result = prime * result + (interProcEdge.hashCode());
-            result = prime * result + (isInvoke ? 1231 : 1237);
+            result = prime * result + (isHitEdge ? 1231 : 1237);
             return result;
         }
 
@@ -92,7 +92,7 @@ public class MethodCacheAnalysis {
             if (getClass() != obj.getClass()) return false;
             MethodCacheSplitEdge other = (MethodCacheSplitEdge) obj;
             if (!interProcEdge.equals(other.interProcEdge)) return false;
-            if (isInvoke != other.isInvoke) return false;
+            if (isHitEdge != other.isHitEdge) return false;
             return true;
         }
 
@@ -102,8 +102,9 @@ public class MethodCacheAnalysis {
 
         @Override
         public String toString() {
-            return "MethodCacheSplitEdge [edge=" + interProcEdge
-                    + (isInvoke ? "invoke" : "return") + "]";
+            return "MethodCacheSplitEdge ["
+                    + (isHitEdge ? "hit! " : "miss! ")
+                    + interProcEdge + "]";
         }
     }
 
@@ -229,8 +230,8 @@ public class MethodCacheAnalysis {
     /**
      * @return a CFGEdge representing the either the hit or miss edge of an invoke or return edge
      */
-    public static MethodCacheSplitEdge splitEdge(SuperGraph.SuperGraphEdge e, boolean b) {
-        return new MethodCacheSplitEdge(e, b);
+    public static MethodCacheSplitEdge splitEdge(SuperGraph.SuperGraphEdge e, boolean isHitEdge) {
+        return new MethodCacheSplitEdge(e, isHitEdge);
     }
 
 

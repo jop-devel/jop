@@ -50,6 +50,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
+
 /**
  * Global IPET-based analysis, supporting variable block caches (all fit region approximation).
  *
@@ -122,10 +124,14 @@ public class GlobalAnalysis {
             long edgeCost = ipetSolver.getEdgeCost(edge);
             long flowCost = edgeCost * flowEntry.getValue();
             if (missEdges.contains(edge)) {
-                //if(flowCost > 0) System.err.println("Cache Cost: "+ edge + " = " + flowCost);
+            	if(WCETTool.logger.isTraceEnabled() && flowEntry.getValue() > 0) {
+            		WCETTool.logger.trace("Execution Cost [cache]: "+ edge + " = " + flowCost + " ( " + flowEntry.getValue() + " * " + edgeCost + " )");
+            	}
                 cost.addCacheCost(flowCost);
             } else {
-                //if(flowCost > 0) System.err.println("Execution Cost: "+ edge + " = " + flowCost);
+            	if(WCETTool.logger.isTraceEnabled() && flowEntry.getValue() > 0) {
+            		WCETTool.logger.trace("Execution Cost [flow]: "+ edge + " = " + flowCost);
+            	}
                 cost.addNonLocalCost(flowCost);
             }
         }
