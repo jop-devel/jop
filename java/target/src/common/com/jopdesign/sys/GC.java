@@ -36,7 +36,7 @@ public class GC {
 	 * Use either scoped memories or a GC.
 	 * Combining scopes and the GC needs some extra work.
 	 */
-	final static boolean USE_SCOPES = true;
+	final static boolean USE_SCOPES = false;
 	
 	
 	static int mem_start;		// read from memory
@@ -44,7 +44,9 @@ public class GC {
 	// for our RT-GC tests
 	static int full_heap_size;
 	
-
+	// Used in newObject and newArray to locate the object/array
+	private static final int HEADER_SIZE = 4;
+	
 	/**
 	 * Fields in the handle structure.
 	 * 
@@ -540,27 +542,31 @@ public class GC {
 			int ptr = allocationPointer;
 			if(RtThreadImpl.outerArea == null)
 			{
-				allocationPointer += size+2;
+				allocationPointer += size+HEADER_SIZE;
 			}
 			else
 			{
 				Scope sc = null;
 				if (RtThreadImpl.mission) {
 					Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
-					sc = s.ref[s.active].currentArea;				
+					sc = s.ref[s.active].currentArea;			
 				}
 				else
 				{
 					sc = RtThreadImpl.outerArea;
 				}
 				long rem = sc.size - (sc.allocationPointer - sc.startPointer);
-				if (size+2 > rem) {
+				if (size+HEADER_SIZE > rem) {
 					// OOMError.fillInStackTrace();
 					throw OOMError;
 				}
+				ptr = sc.allocationPointer;
+				sc.allocationPointer += size+HEADER_SIZE;
 			}
-			Native.wrMem(ptr+2, ptr);
-			Native.wrMem(cons+Const.CLASS_HEADR, ptr+1);
+			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
+			Native.wrMem(size, ptr+OFF_SIZE); // Just defining all headers
+			Native.wrMem(cons+Const.CLASS_HEADR, ptr+OFF_MTAB_ALEN);
+			Native.wrMem(0, ptr+OFF_TYPE);
 			return ptr;		
 		}
 
@@ -638,7 +644,7 @@ public class GC {
 			int ptr = allocationPointer;
 			if(RtThreadImpl.outerArea == null)
 			{
-				allocationPointer += size+2;
+				allocationPointer += size+HEADER_SIZE;
 			}
 			else
 			{
@@ -652,14 +658,18 @@ public class GC {
 					sc = RtThreadImpl.outerArea;
 				}
 				long rem = sc.size - (sc.allocationPointer - sc.startPointer);
-				if (size+2 > rem) {
+				if (size+HEADER_SIZE > rem) {
 					// OOMError.fillInStackTrace();
 					throw OOMError;
 				}
+				ptr = sc.allocationPointer;
+				sc.allocationPointer += size+HEADER_SIZE;
 			}
-			Native.wrMem(ptr+2, ptr);
-			Native.wrMem(arrayLength, ptr+1);
-			return ptr;		
+			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
+			Native.wrMem(arrayLength, ptr+OFF_SIZE); // Just defining all headers
+			Native.wrMem(arrayLength, ptr+OFF_MTAB_ALEN);
+			Native.wrMem(type, ptr+OFF_TYPE); // Array type
+			return ptr;
 		}
 
 		synchronized (mutex) {

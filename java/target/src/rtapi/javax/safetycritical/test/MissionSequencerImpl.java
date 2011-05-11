@@ -14,11 +14,11 @@ public class MissionSequencerImpl extends MissionSequencer<Mission> {
 			StorageParameters storage) {
 		super(priority, storage);
 		currentMission = new MissionImpl();
-		currentMission.initialize();
 	}
 
 	@Override
 	protected MissionImpl getNextMission() {
+		currentMission.initialize();
 		return currentMission;
 	}
 

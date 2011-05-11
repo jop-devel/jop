@@ -162,9 +162,6 @@ public class RtThreadImpl {
 	}
 
 	public RtThreadImpl(RtThread rtt, int prio, int us, int off) {
-		System.out.print("period:");
-		System.out.print(us);
-		System.out.print("\n");
 		if (!initDone) {
 			init();
 		}

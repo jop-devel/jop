@@ -31,8 +31,8 @@ public class Scope {
 
 	
 	int cnt;
-	long startPointer;
-	long allocationPointer;
+	int startPointer;
+	int allocationPointer;
 	long size;
 	Scope parent;
 
@@ -50,17 +50,13 @@ public class Scope {
 			if (RtThreadImpl.mission) {
 				Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
 				parent = s.ref[s.active].currentArea;
-				if(parent == null)
-				{
-					
-				}
 			}
 			else
 			{
 				parent = RtThreadImpl.outerArea;
 				
 			}
-			startPointer = parent.startPointer+parent.size;
+			startPointer = parent.startPointer+(int)parent.size;
 		}
 		allocationPointer = startPointer;
 		this.size = size;
