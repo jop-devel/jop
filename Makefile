@@ -63,9 +63,11 @@ BLASTER_TYPE=ByteBlasterMV
 #BLASTER_TYPE=USB-Blaster
 
 ifeq ($(WINDIR),)
+	DOWN=wine ./down.exe
 	USBRUNNER=./USBRunner
 	S=:
 else
+	DOWN=down.exe
 	USBRUNNER=USBRunner.exe
 	S=\;
 endif
@@ -83,6 +85,9 @@ JDK16=false
 
 # Number of cores for JopSim and RTTM simulation
 CORE_CNT=1
+
+# Callstring length for analysis and optimization
+CALLSTRING_LENGTH=0
 
 # Which project do you want to be downloaded?
 DLPROJ=$(QPROJ)
@@ -237,7 +242,7 @@ DEBUG_JOPSIM=
 #	application optimization with JCopter
 #
 USE_JCOPTER?=no
-JCOPTER_OPT?=--dump-callgraph merged --dump-jvm-callgraph merged --callstring-length 2 --target-method $(WCET_METHOD)
+JCOPTER_OPT?=--dump-callgraph merged --dump-jvm-callgraph merged --callstring-length $(CALLSTRING_LENGTH) --target-method $(WCET_METHOD)
 
 
 # build everything from scratch
@@ -355,22 +360,23 @@ java_app:
 ifeq ($(CLDC11),false)
 	javac $(TARGET_JFLAGS) $(TARGET_SRC_PATH)/jdk_base/java/lang/annotation/*.java	# oh new Java 1.5 world!
 endif
+
 ifeq ($(USE_RTTM),yes)	
 	javac $(TARGET_JFLAGS) $(TARGET_SRC_PATH)/common/rttm/internal/Utils.java
 endif
 	javac $(TARGET_JFLAGS) $(TARGET_APP)
-	# WCETPreprocess, overwrite existing class files 
+# WCETPreprocess, overwrite existing class files 
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.wcet.WCETPreprocess \
            -c $(TARGET)/dist/classes -o $(TARGET)/dist $(MAIN_CLASS)
+# Optimize
 ifeq ($(USE_JCOPTER),yes)
-	# JOPizer	
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter \
 	   -c $(TARGET)/dist/classes -o $(TARGET)/dist --classdir $(TARGET)/dist/classes.opt \
 	   $(JCOPTER_OPT) $(MAIN_CLASS)
-	cd $(TARGET)/dist/classes.opt && jar cf ../lib/classes.zip *
-else
-	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
+	mv $(TARGET)/dist/classes $(TARGET)/dist/classes.unopt
+	mv $(TARGET)/dist/classes.opt $(TARGET)/dist/classes
 endif 
+	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
 # use SymbolManager for Paulo's version of JOPizer instead
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
@@ -380,8 +386,11 @@ endif
 	cp *.dat modelsim
 	rm -f *.dat
 
-
-#
+jcopter_help:
+	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter --help
+	@echo "[make] Default JCopter options:"
+	@echo "[make] JCOPTER_OPT=--dump-callgraph merged --dump-jvm-callgraph merged --callstring-length \$$(CALLSTRING_LENGTH) --target-method \$$(WCET_METHOD)"
+	@echo ""
 #	project.sof fiels are used to boot from the serial line
 #
 jopser:
@@ -554,11 +563,12 @@ config_xilinx:
 
 
 download:
+#	this is the Java version for downloading
 #	java -cp java/tools/dist/lib/jop-tools.jar$(S)java/lib/RXTXcomm.jar com.jopdesign.tools.JavaDown \
 #		$(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
-#
+
 #	this is the download version with down.exe
-	./down $(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
+	$(DOWN) $(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
 
 #
 #	flash programming
@@ -700,13 +710,14 @@ WCET_UPPAAL?=no
 WCET_VERIFYTA?=verifyta	 # only needed if WCET_UPPAAL=yes
 wcet:
 	-mkdir -p $(TARGET)/wcet
-	java -Xss16M -Xmx512M $(JAVA_OPT) \
+	java -Xss16M -Xmx1280M $(JAVA_OPT) \
 	  $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis \
 		--classpath $(TARGET)/dist/lib/classes.zip --sp $(TARGET_SOURCE) \
 		--target-method $(WCET_METHOD) \
 		-o "$(TARGET)/wcet/\$${projectname}" \
 		--use-dfa $(WCET_DFA) \
 		--uppaal $(WCET_UPPAAL) --uppaal-verifier $(WCET_VERIFYTA) \
+		--callstring-length $(CALLSTRING_LENGTH) \
 		$(WCET_OPTIONS) $(MAIN_CLASS)	
 
 

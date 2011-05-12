@@ -107,6 +107,7 @@ public class WCETAnalysis {
     private WcetCost alwaysHitCost;
     private WcetCost minCacheCost;
     private IPETConfig ipetConfig;
+	private boolean reportGenerated;
 
     public WCETAnalysis(WCETTool wcetTool, ExecHelper e) {
         this.project = wcetTool;
@@ -157,7 +158,8 @@ public class WCETAnalysis {
         // bh wants to fix this soon
         try {
             /* Analysis */
-            computeMetrics(); /* some metrics, and some cheap analysis for comparison */
+        	reportGenerated = false;
+            computeMetrics(); /* some metrics, some cheap analysis for comparison and report if not supported by precise analysis */
             exec.info("Starting precise WCET analysis");
             computeWCET();
         } catch (Exception e) {
@@ -212,6 +214,7 @@ public class WCETAnalysis {
              * therefore we generate our report here */
             if(project.getProjectConfig().useUppaal() || preciseApprox.needsInterProcIPET()) {
                 project.setGenerateWCETReport(true);
+                reportGenerated = true;
             }
             /* always miss */
             start = System.nanoTime();
@@ -244,7 +247,7 @@ public class WCETAnalysis {
 
     private void computeWCET() throws IOException, DuplicateKeyException, XmlSerializationException, Config.BadConfigurationException {
         StaticCacheApproximation preciseApprox = IPETConfig.getPreciseCacheApprox(config);
-        project.setGenerateWCETReport(false);
+        project.setGenerateWCETReport(! reportGenerated);
 
         if(project.getProjectConfig().useUppaal()) {
             UppaalAnalysis an = new UppaalAnalysis(exec.getExecLogger(),project,project.getOutDir("uppaal"));
@@ -279,7 +282,6 @@ public class WCETAnalysis {
                 new RecursiveWcetAnalysis<AnalysisContextLocal>(project,ipetConfig,recStrategy);
 
             /* Run local analysis */
-            project.setGenerateWCETReport(true);
             LpSolveWrapper.resetSolverTime();
             long start = System.nanoTime();
             wcet = an.computeCost(project.getTargetMethod(),initialContext);

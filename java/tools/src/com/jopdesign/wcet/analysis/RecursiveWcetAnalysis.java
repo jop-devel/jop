@@ -28,6 +28,7 @@ import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
+import com.jopdesign.wcet.analysis.RecursiveAnalysis.CacheKey;
 import com.jopdesign.wcet.ipet.CostProvider;
 import com.jopdesign.wcet.ipet.IPETBuilder;
 import com.jopdesign.wcet.ipet.IPETConfig;
@@ -36,6 +37,7 @@ import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -180,6 +182,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 	private AppInfo appInfo;
 	private WCETProcessorModel processor;
 	private RecursiveAnalysis.RecursiveStrategy<Context, WcetCost> recursiveWCET;
+	private Set<MethodInfo> costsPerLineReported = new HashSet<MethodInfo>();
 
 	public RecursiveWcetAnalysis(WCETTool project,
 			RecursiveAnalysis.RecursiveStrategy<Context, WcetCost> recursiveStrategy) {
@@ -195,29 +198,32 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 
 		this.recursiveWCET = recursiveStrategy;
 	}
+	
 	/**
 	 * WCET analysis of the given method, using some strategy for recursive WCET calculation and cache
 	 * approximation.cache approximation scheme.
 	 * @param m the method to be analyzed
 	 * @return
 	 *
-	 * <p>FIXME: Logging/Report need to be cleaned up </p>
+	 * <p>FIXME: Logging/Report is somewhat broken and messy </p>
 	 */
 	public WcetCost computeCost(MethodInfo m, Context ctx) {
 		/* use memoization to speed up analysis */
 		CacheKey key = new CacheKey(m,ctx);
-		if(super.isCached(key)) return super.getCached(key);
+		if(isCached(key)) return getCached(key);
 		/* compute solution */
 		LocalWCETSolution sol = runWCETComputation(key.toString(), getWCETTool().getFlowGraph(m), ctx);
 		sol.checkConsistentency();
 		recordCost(key, sol.getCost());
 		/* Logging and Report */
+		logger.debug("WCET for " + key + ": "+sol.getCost());
 		if(getWCETTool().reportGenerationActive()) {
 			if (logger.isDebugEnabled()) {
-                            logger.debug("Report generation active: "+m+" in context "+ctx);
-                        }
+				logger.debug("Report generation active: "+m+" in context "+ctx);
+			}
 			updateReport(key, sol);
 		}
+
 		return sol.getTotalCost();
 	}
 
@@ -235,11 +241,33 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		return sol;
 	}
 	
-	// FIXME: [recursive-wet-analysis] Report generation is a big mess
+	// FIXME: [recursive-wcet-analysis] Report generation is a big mess
+	// FIXME: [recursive-wcet-analysis] For now, we only add line costs once per method
 	private void updateReport(CacheKey key, LocalWCETSolution sol) {
+		MethodInfo m = key.m;
+		HashMap<CFGNode, String> nodeFlowCostDescrs = new HashMap<CFGNode, String>();
+		updateClassReport(key, sol);
+		Map<String,Object> stats = new HashMap<String, Object>();
+		stats.put("WCET",sol.getCost());
+		stats.put("mode",key.ctx);
+		stats.put("all-methods-fit-in-cache", getWCETTool().getWCETProcessorModel().getMethodCache().allFit(m,null));
+		getWCETTool().getReport().addDetailedReport(m,"WCET_"+key.ctx.toString(),stats,nodeFlowCostDescrs,sol.getEdgeFlow());
+	}
+
+	/**
+	 * Update class report (cost per line number)
+	 * @param key
+	 * @param sol
+	 * FIXME: Currently only reported once per method
+	 */
+	private void updateClassReport(CacheKey key, LocalWCETSolution sol) {
+		MethodInfo m = key.m;
+		if(costsPerLineReported .contains(m)) return;
+		costsPerLineReported.add(m);
+		
 		Map<CFGNode,WcetCost> nodeCosts = sol.getNodeCostMap();
 		HashMap<CFGNode, String> nodeFlowCostDescrs = new HashMap<CFGNode, String>();
-		MethodInfo m = key.m;
+
 		for(Entry<CFGNode, WcetCost> entry: nodeCosts.entrySet()) {
 			CFGNode n = entry.getKey();
 			WcetCost cost = entry.getValue();
@@ -257,7 +285,13 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 					Long oldCost = (Long) cr.getLineProperty(lineRange.first(), "cost");
 					if(oldCost == null) oldCost = 0L;
 					long newCost = sol.getNodeFlow(n)*nodeCosts.get(n).getCost();
-					logger.trace("Attaching cost "+oldCost + " + "+newCost+" to line "+lineRange.first());
+
+					if(logger.isTraceEnabled()) {
+						logger.trace("Attaching cost "+oldCost + " + " + 
+								newCost+" ( " + sol.getNodeFlow(n)+ " * " + nodeCosts.get(n).getCost() + " )" + 
+								" to line "+lineRange.first() + " in " + basicBlock.getMethodInfo());
+					}
+					
 					cr.addLineProperty(lineRange.first(), "cost", oldCost + newCost);
 					for(int i : lineRange) {
 						cr.addLineProperty(i, "color", "red");
@@ -266,13 +300,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 			} else {
 				nodeFlowCostDescrs.put(n, ""+nodeCosts.get(n).getCost());
 			}
-		}
-		logger.debug("WCET for " + key + ": "+sol.getCost());
-		Map<String,Object> stats = new HashMap<String, Object>();
-		stats.put("WCET",sol.getCost());
-		stats.put("mode",key.ctx);
-		stats.put("all-methods-fit-in-cache", getWCETTool().getWCETProcessorModel().getMethodCache().allFit(m,null));
-		getWCETTool().getReport().addDetailedReport(m,"WCET_"+key.ctx.toString(),stats,nodeFlowCostDescrs,sol.getEdgeFlow());
+		}		
 	}
 
 	@Override
