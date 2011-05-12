@@ -182,7 +182,7 @@ public class PhaseExecutor {
     /////////////////////////////////////////////////////////////////////////////////////
 
     @SuppressWarnings("unchecked")
-    public void dataflowAnalysis() {
+    public void dataflowAnalysis(boolean loopBounds) {
         int callstringLength = appInfo.getCallstringLength();
 
         // TODO this code is the same as in WCETTool ..
@@ -195,38 +195,33 @@ public class PhaseExecutor {
         logger.info("Receiver analysis");
         dfaTool.runReceiverAnalysis(callstringLength);
 
-        logger.info("Loop bound analysis");
-        dfaTool.runLoopboundAnalysis(callstringLength);
+        if (loopBounds) {
+            logger.info("Loop bound analysis");
+            dfaTool.runLoopboundAnalysis(callstringLength);
+        }
     }
 
-    public void buildCallGraph() {
+    public void buildCallGraph(boolean useDFA) {
 
-        if (jcopter.useDFA()) {
+        if (useDFA) {
             // build the callgraph using DFA results
             appInfo.buildCallGraph(new DFACallgraphBuilder(jcopter.getDfaTool(), appInfo.getCallstringLength()));
         } else {
-            appInfo.buildCallGraph(false);
+            appInfo.buildCallGraph(true);
+            // reduce the callgraph old-school
+            reduceCallGraph();
         }
     }
 
     /**
      * Reduce the callgraph stored with AppInfo.
-     * {@link AppInfo#buildCallGraph(boolean)} must have been called first.
+     * Called by {@link AppInfo#buildCallGraph(boolean)}.
      */
     public void reduceCallGraph() {
         // TODO perform callgraph thinning analysis
-        // logger.info("Starting callgraph reduction");
+        // logger.info("Starting callgraph thinning");
 
-        // logger.info("Finished callgraph reduction");
-    }
-
-    /**
-     * Mark all InvokeSites which are safe to inline, or store info
-     * about what needs to be done in order to inline them.
-     * To get better results, reduce the callgraph first as much as possible.
-     */
-    public void markInlineCandidates() {
-        // TODO call invoke candidate finder
+        // logger.info("Finished callgraph thinning");
     }
 
 
@@ -240,11 +235,10 @@ public class PhaseExecutor {
 
     /**
      * Inline all methods which do not increase the code size.
-     * {@link #markInlineCandidates()} must have been run first.
      */
     public void performSimpleInline() {
         // TODO inliner is experimental for now..
-        if (!getJConfig().doExperimental()) return;
+        if (!getJConfig().doOptimizeExperimental()) return;
 
         if (getJConfig().doAssumeDynamicClassLoader()) {
             logger.info("Skipping simple-inliner since dynamic class loading is assumed.");
@@ -262,7 +256,7 @@ public class PhaseExecutor {
      */
     public void performInline() {
         // TODO inliner is experimental for now..
-        if (!getJConfig().doExperimental()) return;
+        if (!getJConfig().doOptimizeExperimental()) return;
 
         if (getJConfig().doAssumeDynamicClassLoader()) {
             logger.info("Skipping inliner since dynamic class loading is assumed.");

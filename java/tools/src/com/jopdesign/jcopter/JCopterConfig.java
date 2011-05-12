@@ -28,8 +28,6 @@ import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
 
-import java.awt.*;
-
 /**
  * This class contains all generic options for JCopter.
  *
@@ -146,15 +144,15 @@ public class JCopterConfig {
         return optimizeLevel == 0;
     }
 
-    public boolean doFastOptimize() {
-        return optimizeLevel >= 1;
+    public boolean doOptimizeFastOnly() {
+        return optimizeLevel == 1;
     }
 
-    public boolean doHardOptimize() {
+    public boolean doOptimizeHard() {
         return optimizeLevel >= 2;
     }
 
-    public boolean doExperimental() {
+    public boolean doOptimizeExperimental() {
         return optimizeLevel == 3;
     }
 }

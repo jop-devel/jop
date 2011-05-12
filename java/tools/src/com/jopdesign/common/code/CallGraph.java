@@ -76,6 +76,14 @@ import java.util.Stack;
  * <p>Note that this callgraph only contains MethodInfos, not MethodRefs, so invocations of unknown methods
  * are not represented in this graph. </p>
  *
+ * <p>
+ * This callgraph implementation does not require all nodes to have the same callstring length.
+ * However, to simplify some algorithms some methods which modify the graph may assume that
+ * the callstring length never decreases along any path in the callgraph.
+ * </p>
+ *
+ * @see CallgraphBuilder#getInvokedMethods(ExecutionContext)
+ *
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  * @author Stefan Hepp (stefan@stefant.org)
  */
@@ -102,6 +110,10 @@ public class CallGraph {
          * To be consistent with {@link AppInfo#findImplementations(InvokeSite)} and to detect
          * incomplete classes, this must return an empty set if only some of the possible implementations
          * are found (e.g. superclasses are missing).
+         * <p>
+         * To simplify some implementations, the callstrings returned by this method should never be
+         * shorter than the callstring of the argument.
+         * </p>
          *
          * @param context the calling context
          * @return a set of all possible invoked implementations or an empty set if unknown
@@ -780,6 +792,87 @@ public class CallGraph {
         }
         return true;
     }
+
+    /*
+    public void merge(MethodInfo target, Set<CallString> remove, Map<CallString, InvokeSite> invokeMap) {
+        int len = AppInfo.getSingleton().getCallstringLength();
+        merge(target, remove, invokeMap, new DefaultCallgraphBuilder(len), len);
+    }
+
+    public void merge(MethodInfo target, Set<CallString> remove, Map<CallString, InvokeSite> invokeMap,
+                      CallgraphBuilder builder)
+    {
+        merge(target, remove, invokeMap, builder, AppInfo.getSingleton().getCallstringLength());
+    }
+
+    public void merge(MethodInfo target, Set<CallString> remove, Map<CallString, InvokeSite> invokeMap,
+                      CallgraphBuilder builder, int callstringLength)
+    {
+        for (ExecutionContext context : getNodes(target)) {
+            merge(context, remove, invokeMap, builder, callstringLength);
+        }
+    }
+    */
+
+    /**
+     * Merge nodes in the callgraph.
+     * <p>
+     * This assumes that callstrings never decrease in length along any path in this callgraph.
+     * </p>
+     *
+     * TODO implement. For now we just make sure that all optimizations which modify the callgraph
+     *      (permanently) do not rely on an updated callgraph and we rebuild the callgraph and all
+     *      analysis-data after the optimization is complete.
+     *
+     * @param target the node to merge other nodes into
+     * @param remove a set of callstrings from the target to the nodes to remove. First item in a
+     *               callstring must be an invokeSite in the target method, last entry is the invokeSite
+     *               of the node to remove.
+     * @param invokeMap map merged invokes to new invokesites. The keys are callstrings from the target to
+     *                  the invokesites to replace, the values the new invokesites to use instead. The
+     *                  keyset must be a superset of callstrings to all invokesites directly reachable from
+     *                  the 'remove' set.
+     * @param builder the builder to use to check if an edge is still needed after merging if the node has
+     *                callstring-length 0.
+     * @param callstringLength the maximum callstring length for new nodes.
+     */
+    /*
+    public void merge(ExecutionContext target, Set<CallString> remove, Map<CallString, InvokeSite> invokeMap,
+                      CallgraphBuilder builder, int callstringLength)
+    {
+        // first we add the new edges so that nodes do not get disconnected to avoid unnecessary
+        // graph updates
+
+        // - for all nodes directly reachable from 'removed':
+        //    - clone them, create a context with callstring of the target + the new invokesite (retrieved
+        //       from invokeMap), add edges from the target to the new nodes
+        //       use callstringLength param to limit length
+        //    - for all reachable nodes from the cloned nodes:
+        //       clone those nodes with new callstrings (callstring of the new node + invokesite of cloned node)
+        //           recurse down until no new callstrings are created, limit length by callstringLength
+
+
+        // Now we need to remove old edges and we remove all new roots which have not been added
+        // as roots
+
+        // for all outgoing edges of 'target' and nodes in 'remove' set, check:
+        //    - if callstring length of edge-target = 0: we do not know if the target is still used
+        //      (e.g if one invokesite with this invokee has been inlined and another invokesite with same
+        //       invokee has not), so we need to use the builder to create all invokee nodes for 'target'
+        //      and check if the edge-target is still in the created set. If so, keep the edge.
+        //      Outgoing edges of 'target' and of nodes in the 'remove' set need to be handled differently..
+        //    - else: check the invokesites of the targets along the path from 'target' to the edge-target
+        //      if this path is contained in 'remove', if so we can remove the edge.
+        //    - for all removed edges: check if edge-target is now has no ingoing edges, if so
+        //      check if edge-target is not in the callgraph-roots, and if so remove the node and all
+        //      edges, recurse down with this check. Subgraphs and merged-graph are automatically updated.
+
+
+        // TODO we could also allow registering of callback handlers which will be notified
+        //      when callstrings change due to merging. This could be used to update callstrings in
+        //      the DFA results etc. so that we do not need to rerun the DFA after inlining
+    }
+    */
 
     /*---------------------------------------------------------------------------*
      * Merge graph, subgraphs

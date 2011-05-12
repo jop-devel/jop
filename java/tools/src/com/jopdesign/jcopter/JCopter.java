@@ -119,45 +119,46 @@ public class JCopter extends EmptyTool<JCopterManager> {
     }
 
     /**
-     * Run various analyses to prepare for optimizations.
+     * Run all configured optimizations and perform the required analyses.
      */
-    public void prepare() {
+    public void optimize() {
 
-        // - (optional) perform DFA: reduce callgraph even more/make callstrings more precise,
-        //   maybe eliminate some nullpointer-checks
-        if (useDFA()) {
-            executor.dataflowAnalysis();
+        // - (optional) perform receiver type DFA: reduce callgraph, maybe eliminate
+        //   some nullpointer-checks. This is used only for the SimpleInliner since this will
+        //   invalidate the results (see Callgraph#merge). We skip this for -O1 to save some time.
+        boolean firstPassDFA = useDFA() && !config.doOptimizeFastOnly();
+        if (firstPassDFA) {
+            executor.dataflowAnalysis(false);
         }
 
         // - build callgraph: uses DFA results if available, else do some simple thinning
-        executor.buildCallGraph();
-        if (!useDFA()) {
-            executor.reduceCallGraph();
-        }
+        executor.buildCallGraph(firstPassDFA);
 
         executor.dumpCallgraph("callgraph");
 
-
-        // - devirtualize, mark methods which can be inlined (and what actions need to be taken in order to inline,
-        //   i.e. rename methods/make public/..), calculate and store overhead for inlining for later analyses,
-        //   which invokes have constant parameters, which invokes need nullpointer checks,..
-        executor.markInlineCandidates();
-
-    }
-
-    /**
-     * Run all configured optimizations.
-     * @see #prepare()
-     */
-    public void optimize() {
 
         // - Kill'em all, since we do not use them and we do not update them so they will get out-of-date
         executor.removeDebugAttributes();
 
         // - perform simple, guaranteed optimizations (everything to reduce code size!)
         //   (inline 2/3 byte methods, load/store eliminate, peephole, dead-code elimination, constant folding, ..)
-        executor.performSimpleInline();
+        //   Be aware that we only have DFA receiver analysis data here (no loopbounds)!
         executor.cleanupMethodCode();
+
+        // - perform simple inlining: guaranteed not to increase worst case
+        executor.performSimpleInline();
+
+        // - Rebuild callgraph and rerun DFA analyses since SimpleInliner changed the callstrings
+        //   and we do not have an implementation for Callgraph#merge and a framework to notify analyses
+        //   of callstring/callgraph changes (yet..)
+        if (useDFA()) {
+            executor.dataflowAnalysis(true);
+        }
+
+        executor.buildCallGraph(useDFA());
+
+        // - Now we have full DFA results (if enabled) and an updated callgraph, now would be the time
+        //   for some cleanup optimizations before we start the WCA (but we may not have Loopbounds yet)
 
         // - perform WCET analysis, select methods for inlining
         if (useWCET()) {
@@ -179,6 +180,8 @@ public class JCopter extends EmptyTool<JCopterManager> {
         // - perform code cleanup optimizations (load/store/param-passing, constantpool cleanup,
         //   remove unused members, constant folding, dead-code elimination (remove some more NP-checks,..),
         //   remove NOPs, ... )
+        executor.cleanupMethodCode();
+
         executor.removeUnusedMembers();
 
         executor.relinkInvokesuper();
@@ -216,7 +219,6 @@ public class JCopter extends EmptyTool<JCopterManager> {
         }
 
         // run optimizations
-        jcopter.prepare();
         jcopter.optimize();
 
         // write results

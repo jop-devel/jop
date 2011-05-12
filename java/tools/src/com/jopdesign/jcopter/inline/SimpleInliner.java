@@ -53,10 +53,7 @@ import org.apache.bcel.generic.ReturnInstruction;
 import org.apache.bcel.generic.StackInstruction;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
-import org.apache.velocity.runtime.parser.node.MapSetExecutor;
-import sun.awt.SunHints.Value;
 
-import java.io.ObjectInputStream.GetField;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -66,7 +63,7 @@ import java.util.List;
  */
 public class SimpleInliner extends AbstractOptimizer {
 
-    private static class InvokeMap {
+    private static class InlineData {
         private List<ValueInfo> params;
         private InstructionList prologue;
         private InstructionList epilogue;
@@ -74,7 +71,7 @@ public class SimpleInliner extends AbstractOptimizer {
         private int oldPrologueLength;
         private InvokeSite invokeSite;
 
-        private InvokeMap() {
+        private InlineData() {
             params = new ArrayList<ValueInfo>(4);
             prologue = new InstructionList();
             epilogue = new InstructionList();
@@ -161,7 +158,7 @@ public class SimpleInliner extends AbstractOptimizer {
     public void optimizeMethod(MethodInfo method) {
         ConstantPoolGen cpg = method.getConstantPoolGen();
         InstructionList il = method.getCode().getInstructionList();
-        InvokeMap invokeMap = new InvokeMap();
+        InlineData inlineData = new InlineData();
 
         for (InvokeSite invoke : method.getCode().getInvokeSites()) {
 
@@ -173,14 +170,14 @@ public class SimpleInliner extends AbstractOptimizer {
                 MethodInfo invokee = helper.devirtualize(cs);
 
                 // Preliminary checks
-                if (checkInvoke(invoke, cs, invokee, invokeMap)) {
+                if (checkInvoke(invoke, cs, invokee, inlineData)) {
 
-                    invoke = performSimpleInline(invoke, invokee, invokeMap);
+                    invoke = performSimpleInline(invoke, invokee, inlineData);
 
                     inlineCounter++;
 
-                    if (invokeMap.getInvokeSite() != null) {
-                        cs.push(invokeMap.getInvokeSite());
+                    if (inlineData.getInvokeSite() != null) {
+                        cs.push(inlineData.getInvokeSite());
                     } else {
                         break;
                     }
@@ -206,7 +203,7 @@ public class SimpleInliner extends AbstractOptimizer {
         logger.info("Inlined "+inlineCounter+" invoke sites.");
     }
 
-    private boolean checkInvoke(InvokeSite invokeSite, CallString cs, MethodInfo invokee, InvokeMap invokeMap) {
+    private boolean checkInvoke(InvokeSite invokeSite, CallString cs, MethodInfo invokee, InlineData inlineData) {
 
         // could be a native method, or it has not been devirtualized
         if (invokee == null || !invokee.hasCode()) {
@@ -234,18 +231,18 @@ public class SimpleInliner extends AbstractOptimizer {
             return false;
         }
 
-        // check the invokee, the invoke site and the new code size and store the results into invokeMap
-        invokeMap.reset();
+        // check the invokee, the invoke site and the new code size and store the results into inlineData
+        inlineData.reset();
 
-        if (!analyzeInvokee(cs, invokee, invokeMap)) {
+        if (!analyzeInvokee(cs, invokee, inlineData)) {
             return false;
         }
 
-        if (!analyzeInvokeSite(invokeSite, invokee, invokeMap)) {
+        if (!analyzeInvokeSite(invokeSite, invokee, inlineData)) {
             return false;
         }
 
-        if (!analyzeCodeSize(invokeSite, invokee, invokeMap)) {
+        if (!analyzeCodeSize(invokeSite, invokee, inlineData)) {
             return false;
         }
 
@@ -255,10 +252,10 @@ public class SimpleInliner extends AbstractOptimizer {
     /**
      * @param cs the callstring from the invoker to the invoke to inline (if recursive). Used to check DFA results.
      * @param invokee the invoked method to analyze
-     * @param invokeMap the map to populate with the parameters and the instructions to inline.
+     * @param inlineData the map to populate with the parameters and the instructions to inline.
      * @return true if inlining is possible
      */
-    private boolean analyzeInvokee(CallString cs, MethodInfo invokee, InvokeMap invokeMap) {
+    private boolean analyzeInvokee(CallString cs, MethodInfo invokee, InlineData inlineData) {
 
         // we allow loading of parameters, loading of constants, some instruction, and a return
         ValueAnalysis values = new ValueAnalysis(invokee);
@@ -285,10 +282,10 @@ public class SimpleInliner extends AbstractOptimizer {
 
         // store the mapping
         for (ValueInfo value : values.getValueTable().getStack()) {
-            invokeMap.addParam(value);
+            inlineData.addParam(value);
         }
 
-        invokeMap.setInlineStart(count);
+        inlineData.setInlineStart(count);
 
         // if we do not need an NP check, we can also inline code which does not throw an exception in the same way
         boolean needsNPCheck = helper.needsNullpointerCheck(cs, invokee, false);
@@ -300,12 +297,12 @@ public class SimpleInliner extends AbstractOptimizer {
             Instruction instruction = ih.getInstruction();
 
             if (instruction instanceof InvokeInstruction) {
-                if (invokeMap.getInvokeSite() != null) {
+                if (inlineData.getInvokeSite() != null) {
                     // only inline at most one invoke
                     return false;
                 }
                 InvokeSite is = invokee.getCode().getInvokeSite(ih);
-                invokeMap.setInvokeSite(is);
+                inlineData.setInvokeSite(is);
 
                 hasNPCheck |= !is.isInvokeStatic();
             }
@@ -336,7 +333,7 @@ public class SimpleInliner extends AbstractOptimizer {
                         } else {
                             pop = new POP();
                         }
-                        invokeMap.addEpilogue(pop);
+                        inlineData.addEpilogue(pop);
                         values.transfer(pop);
                     }
 
@@ -371,10 +368,10 @@ public class SimpleInliner extends AbstractOptimizer {
      * Check if the invokesite can be modified in a way so that the parameters are passed in the correct order
      * @param invokeSite the invokesite to inline.
      * @param invokee the invoked method.
-     * @param invokeMap the map to store the analyzer results
+     * @param inlineData the map to store the analyzer results
      * @return true if the prologue can be changed to match the expected behaviour
      */
-    private boolean analyzeInvokeSite(InvokeSite invokeSite, MethodInfo invokee, InvokeMap invokeMap) {
+    private boolean analyzeInvokeSite(InvokeSite invokeSite, MethodInfo invokee, InlineData inlineData) {
         MethodInfo invoker = invokeSite.getInvoker();
 
         ConstantPoolGen invokerCpg = invoker.getConstantPoolGen();
@@ -417,9 +414,9 @@ public class SimpleInliner extends AbstractOptimizer {
             oldPrologue.add(0, instr);
         }
 
-        invokeMap.setOldPrologueLength(cnt);
+        inlineData.setOldPrologueLength(cnt);
 
-        List<ValueInfo> params = invokeMap.getParams();
+        List<ValueInfo> params = inlineData.getParams();
 
         // other parameters must be used in the order they are pushed on the stack, we do not rearrange them
         int offset = args.length - cnt;
@@ -428,7 +425,7 @@ public class SimpleInliner extends AbstractOptimizer {
             if (i >= params.size()) {
                 Type t = args[i];
                 // unused argument, we cannot remove the push instruction so we pop it
-                invokeMap.addPrologue(t.getSize() == 2 ? new POP2() : new POP() );
+                inlineData.addPrologue(t.getSize() == 2 ? new POP2() : new POP() );
             } else {
                 ValueInfo value = params.get(i);
 
@@ -460,14 +457,14 @@ public class SimpleInliner extends AbstractOptimizer {
                 // To be on the safe side, copy the instruction in case a param is used more than once
                 Instruction instr = oldPrologue.get(argNum - offset).copy();
 
-                invokeMap.addPrologue(instr);
+                inlineData.addPrologue(instr);
 
             } else if (value.isConstantValue() || value.isStaticFieldReference()) {
 
                 // We need to push a constant on the stack
                 Instruction instr = value.getConstantValue().createPushInstruction(invoker.getConstantPoolGen());
 
-                invokeMap.addPrologue(instr);
+                inlineData.addPrologue(instr);
 
             } else if (!value.isContinued()) {
                 throw new AssertionError("Unhandled value type");
@@ -481,10 +478,10 @@ public class SimpleInliner extends AbstractOptimizer {
      * Check if the resulting code will not be larger than the older code.
      * @param invokeSite the invokesite to inline.
      * @param invokee the invoked method.
-     * @param invokeMap the map to store the analyzer results
+     * @param inlineData the map to store the analyzer results
      * @return true if the new code will not violate any size constrains
      */
-    private boolean analyzeCodeSize(InvokeSite invokeSite, MethodInfo invokee, InvokeMap invokeMap) {
+    private boolean analyzeCodeSize(InvokeSite invokeSite, MethodInfo invokee, InlineData inlineData) {
 
         ProcessorModel pm = AppInfo.getSingleton().getProcessorModel();
         MethodInfo invoker = invokeSite.getInvoker();
@@ -493,7 +490,7 @@ public class SimpleInliner extends AbstractOptimizer {
         int delta = 0;
 
         InstructionHandle[] il = invokee.getCode().getInstructionList().getInstructionHandles();
-        InstructionHandle ih = il[invokeMap.getInlineStart()];
+        InstructionHandle ih = il[inlineData.getInlineStart()];
         while (ih != null) {
             Instruction instr = ih.getInstruction();
             if (instr instanceof ReturnInstruction) {
@@ -504,16 +501,16 @@ public class SimpleInliner extends AbstractOptimizer {
             ih = ih.getNext();
         }
 
-        for (InstructionHandle instr : invokeMap.getPrologue().getInstructionHandles()) {
+        for (InstructionHandle instr : inlineData.getPrologue().getInstructionHandles()) {
             delta += pm.getNumberOfBytes(invoker, instr.getInstruction());
         }
-        for (InstructionHandle instr : invokeMap.getEpilogue().getInstructionHandles()) {
+        for (InstructionHandle instr : inlineData.getEpilogue().getInstructionHandles()) {
             delta += pm.getNumberOfBytes(invoker, instr.getInstruction());
         }
 
         ih = invokeSite.getInstructionHandle();
 
-        for (int i = 0; i <= invokeMap.getOldPrologueLength(); i++) {
+        for (int i = 0; i <= inlineData.getOldPrologueLength(); i++) {
             Instruction instr = ih.getInstruction();
             delta -= pm.getNumberOfBytes(invoker, instr);
             ih = ih.getPrev();
@@ -531,10 +528,10 @@ public class SimpleInliner extends AbstractOptimizer {
      *
      * @param invokeSite the invoke to replace.
      * @param invokee the method to inline.
-     * @param invokeMap the parameters of the invokee and the code to inline.
+     * @param inlineData the parameters of the invokee and the code to inline.
      * @return true if inlining has been performed.
      */
-    private InvokeSite performSimpleInline(InvokeSite invokeSite, MethodInfo invokee, InvokeMap invokeMap) {
+    private InvokeSite performSimpleInline(InvokeSite invokeSite, MethodInfo invokee, InlineData inlineData) {
 
         MethodInfo invoker = invokeSite.getInvoker();
         MethodCode invokerCode = invoker.getCode();
@@ -549,24 +546,24 @@ public class SimpleInliner extends AbstractOptimizer {
         InstructionHandle invoke = invokeSite.getInstructionHandle();
 
         // Perform inlining: update the prologue
-        if (invokeMap.getOldPrologueLength() > 0) {
+        if (inlineData.getOldPrologueLength() > 0) {
             InstructionHandle start = invoke;
 
-            for (int i=0; i < invokeMap.getOldPrologueLength(); i++) {
+            for (int i=0; i < inlineData.getOldPrologueLength(); i++) {
                 start = start.getPrev();
             }
 
-            invokerCode.replace(start, invokeMap.getOldPrologueLength(), invokeMap.getPrologue(), false);
-        } else if (invokeMap.getPrologue().getLength() > 0) {
+            invokerCode.replace(start, inlineData.getOldPrologueLength(), inlineData.getPrologue(), false);
+        } else if (inlineData.getPrologue().getLength() > 0) {
             InstructionList il = invokerCode.getInstructionList();
-            il.insert(invoke, invokeMap.getPrologue());
+            il.insert(invoke, inlineData.getPrologue());
         }
 
         // Replace the invoke
         InstructionList il = invokee.getCode().getInstructionList();
-        InstructionHandle start = invokee.getCode().getInstructionHandle(invokeMap.getInlineStart());
+        InstructionHandle start = invokee.getCode().getInstructionHandle(inlineData.getInlineStart());
 
-        int cnt = il.getLength() - invokeMap.getInlineStart();
+        int cnt = il.getLength() - inlineData.getInlineStart();
         if (il.getEnd().getInstruction() instanceof ReturnInstruction) {
             // do not inline the return
             cnt--;
@@ -575,10 +572,10 @@ public class SimpleInliner extends AbstractOptimizer {
         InstructionHandle end = invokerCode.replace(invoke, 1, invokee, il, start, cnt, false);
 
         // insert epilogue
-        invokerCode.getInstructionList().insert(end, invokeMap.getEpilogue());
+        invokerCode.getInstructionList().insert(end, inlineData.getEpilogue());
 
         // If we inlined another invokesite, find the new invokesite and return it
-        if (invokeMap.getInvokeSite() != null) {
+        if (inlineData.getInvokeSite() != null) {
             end = end.getPrev();
             // search backwards from last inlined instruction
             while (end != null) {

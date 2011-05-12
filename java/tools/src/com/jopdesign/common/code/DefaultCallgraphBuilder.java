@@ -37,9 +37,19 @@ public class DefaultCallgraphBuilder implements CallgraphBuilder {
 
     private final int callstringLength;
     private boolean skipNatives = false;
+    private boolean useCallgraph = true;
+
+    public DefaultCallgraphBuilder() {
+        this.callstringLength = AppInfo.getSingleton().getCallstringLength();
+    }
 
     public DefaultCallgraphBuilder(int callstringLength) {
         this.callstringLength = callstringLength;
+    }
+
+    public DefaultCallgraphBuilder(int callstringLength, boolean useCallgraph) {
+        this.callstringLength = callstringLength;
+        this.useCallgraph = useCallgraph;
     }
 
     public int getCallstringLength() {
@@ -104,10 +114,14 @@ public class DefaultCallgraphBuilder implements CallgraphBuilder {
      * @return a set of possible implementations
      */
     protected Set<MethodInfo> getInvokedMethods(ExecutionContext context, InvokeSite invokeSite) {
-        // This uses either the existing default callgraph to construct a new one (which has
-        // the advantage that the new callgraph is derived from an existing one), or looks up
-        // in the type graph if no default callgraph exists
-        return AppInfo.getSingleton().findImplementations(invokeSite, context.getCallString());
+        if (useCallgraph) {
+            // This uses either the existing default callgraph to construct a new one (which has
+            // the advantage that the new callgraph is derived from an existing one), or looks up
+            // in the type graph if no default callgraph exists
+            return AppInfo.getSingleton().findImplementations(invokeSite, context.getCallString());
+        } else {
+            return AppInfo.getSingleton().findImplementations(invokeSite.getInvokeeRef());
+        }
     }
 
 }
