@@ -143,6 +143,11 @@ public class SimpleInliner extends AbstractOptimizer {
     private final InlineHelper helper;
 
     private int inlineCounter;
+    private int candidates;
+    private int unhandledInstructions;
+    private int requiresNPCheck;
+    private int signatureMismatch;
+    private int codesizeTooLarge;
 
     public SimpleInliner(JCopter jcopter, InlineConfig inlineConfig) {
         super(jcopter);
@@ -152,6 +157,11 @@ public class SimpleInliner extends AbstractOptimizer {
     @Override
     public void initialize() {
         inlineCounter = 0;
+        candidates = 0;
+        unhandledInstructions = 0;
+        requiresNPCheck = 0;
+        signatureMismatch = 0;
+        codesizeTooLarge = 0;
     }
 
     @Override
@@ -186,21 +196,23 @@ public class SimpleInliner extends AbstractOptimizer {
                     break;
                 }
             }
-
-            // TODO update callgraph (?) If we update the callgraph, the callstrings become invalid!
-            // -> update callgraph only after we finished inlining of a toplevel invokesite;
-            //    collect all invokesites to collapse into toplevel invokesite;
-            //    replace old invokesite with invokesites from inlined code, add edges to not inlined methods
-
-
-
-            
         }
+
+        // update callgraph (?) If we update the callgraph, the callstrings become invalid!
+        // -> update callgraph only after we finished inlining of a toplevel invokesite;
+        //    collect all invokesites to collapse into toplevel invokesite;
+        //    replace old invokesite with invokesites from inlined code, add edges to not inlined methods
+
+        // We could collect all nodes to merge and call callgraph.merge(), but this is not yet implemented.
+        // Instead we simply rebuild the whole callgraph and all results which use callstrings.
+
     }
 
     @Override
     public void printStatistics() {
         logger.info("Inlined "+inlineCounter+" invoke sites.");
+        logger.info("Candidates: "+candidates+"; need NP check: "+ requiresNPCheck +", uncorrectable signature mismatch: "+
+                signatureMismatch +", unhandled instruction: "+unhandledInstructions+", codesize: "+codesizeTooLarge);
     }
 
     private boolean checkInvoke(InvokeSite invokeSite, CallString cs, MethodInfo invokee, InlineData inlineData) {
@@ -231,6 +243,9 @@ public class SimpleInliner extends AbstractOptimizer {
             return false;
         }
 
+        // If we pass all tests so far, we count this as a candidate..
+        candidates++;
+
         // check the invokee, the invoke site and the new code size and store the results into inlineData
         inlineData.reset();
 
@@ -239,10 +254,12 @@ public class SimpleInliner extends AbstractOptimizer {
         }
 
         if (!analyzeInvokeSite(invokeSite, invokee, inlineData)) {
+            signatureMismatch++;
             return false;
         }
 
         if (!analyzeCodeSize(invokeSite, invokee, inlineData)) {
+            codesizeTooLarge++;
             return false;
         }
 
@@ -318,6 +335,8 @@ public class SimpleInliner extends AbstractOptimizer {
             }
             else if (instruction instanceof ReturnInstruction) {
                 if (needsNPCheck && !hasNPCheck) {
+                    // We were nearly finished.. but NP check test failed
+                    this.requiresNPCheck++;
                     return false;
                 }
 
@@ -351,6 +370,7 @@ public class SimpleInliner extends AbstractOptimizer {
             }
             else {
                 // if we encounter an instruction which we do not handle, we do not inline
+                unhandledInstructions++;
                 return false;
             }
 
