@@ -23,7 +23,7 @@
 #
 #	Set USB to true for an FTDI chip based board (dspio, usbmin, lego)
 #
-USB=true
+USB=false
 
 #
 #	com1 is the usual serial port
@@ -236,7 +236,7 @@ DEBUG_JOPSIM=
 #
 #	application optimization with JCopter
 #
-USE_JCOPTER?=yes
+USE_JCOPTER?=no
 JCOPTER_OPT?=--dump-callgraph merged --dump-jvm-callgraph merged --callstring-length 2 --target-method $(WCET_METHOD)
 
 
