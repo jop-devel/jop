@@ -62,6 +62,11 @@ public class DFACallgraphBuilder extends DefaultCallgraphBuilder {
             // This can happen e.g. because we have all Runnable.run() methods as roots, regardless if they are used 
             return appInfo.findImplementations(invokeSite, context.getCallString());
         }
+
+        if (receivers.size() == 0) {
+        	logger.error("No receivers for " + invokeSite + " in call context " + context.getCallString());        	
+        }
+
         Set<MethodInfo> methods = new HashSet<MethodInfo>(receivers.size());
         for (String rcv: receivers) {
             MemberID mId = MemberID.parse(rcv);

@@ -359,9 +359,9 @@ public class JopInstr{
 //		new JopInstr("resDF", 1, IMP_NO, 1),			// 0xDF
 
 		new JopInstr("getstatic_ref", 3, IMP_ASM, 14),   // 0xE0
-		new JopInstr("putstatic_ref", 3, IMP_ASM, 30),			// 0xE1
+		new JopInstr("putstatic_ref", 3, IMP_JAVA, 30),			// 0xE1
 		new JopInstr("getfield_ref", 3, IMP_ASM, 13),			// 0xE2
-		new JopInstr("putfield_ref", 3, IMP_ASM, 30),			// 0xE3
+		new JopInstr("putfield_ref", 3, IMP_JAVA, 30),			// 0xE3
 		new JopInstr("getstatic_long", 3, IMP_ASM, 30),			// 0xE4
 		new JopInstr("putstatic_long", 3, IMP_ASM, 30),			// 0xE5
 		new JopInstr("getfield_long", 3, IMP_ASM, 30),			// 0xE6
@@ -389,7 +389,7 @@ public class JopInstr{
 		new JopInstr("resFB", 1, IMP_NO, 1),			// 0xFB
 		new JopInstr("resFC", 1, IMP_NO, 1),			// 0xFC
 		new JopInstr("resFD", 1, IMP_NO, 1),			// 0xFD
-		new JopInstr("sys_noim", 1, IMP_ASM, 1),			// 0xFE
+		new JopInstr("sys_noim", 1, IMP_JAVA, 1),			// 0xFE
 		new JopInstr("sys_init", 1, IMP_NO, 1),			// 0xFF
 	};
 
