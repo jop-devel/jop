@@ -218,9 +218,6 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		/* Logging and Report */
 		logger.debug("WCET for " + key + ": "+sol.getCost());
 		if(getWCETTool().reportGenerationActive()) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Report generation active: "+m+" in context "+ctx);
-			}
 			updateReport(key, sol);
 		}
 

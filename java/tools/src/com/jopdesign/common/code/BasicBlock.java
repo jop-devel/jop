@@ -326,7 +326,7 @@ public class BasicBlock {
 
         public void visitInstruction(InstructionHandle ih) {
             ih.accept(this);
-            if (methodCode.getAppInfo().getProcessorModel().isImplementedInJava(ih.getInstruction())) {
+            if (methodCode.getAppInfo().getProcessorModel().isImplementedInJava(methodCode.getMethodInfo(), ih.getInstruction())) {
                 flowInfo.splitBefore = true;
                 flowInfo.splitAfter = true;
             }

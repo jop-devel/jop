@@ -26,14 +26,23 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.tools.JopInstr;
+import com.sun.org.apache.bcel.internal.Constants;
+
 import org.apache.bcel.generic.ANEWARRAY;
 import org.apache.bcel.generic.ATHROW;
+import org.apache.bcel.generic.BasicType;
+import org.apache.bcel.generic.FieldInstruction;
+import org.apache.bcel.generic.GETFIELD;
+import org.apache.bcel.generic.GETSTATIC;
 import org.apache.bcel.generic.INVOKESTATIC;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.NEW;
 import org.apache.bcel.generic.NEWARRAY;
 import org.apache.bcel.generic.ObjectType;
+import org.apache.bcel.generic.PUTFIELD;
+import org.apache.bcel.generic.PUTSTATIC;
 import org.apache.bcel.generic.ReferenceType;
+import org.apache.bcel.generic.Type;
 import org.apache.bcel.generic.VariableLengthInstruction;
 
 import java.util.ArrayList;
@@ -91,15 +100,63 @@ public class JOPModel implements ProcessorModel {
     }
 
     /* FIXME: [NO THROW HACK] */
-    public boolean isImplementedInJava(Instruction ii) {
-        return (JopInstr.isInJava(ii.getOpcode())
+    public boolean isImplementedInJava(MethodInfo context, Instruction ii) {
+        return (JopInstr.isInJava(getNativeOpCode(context, ii))
 				// && !isNewOp(ii)
 				&& !isThrowOp(ii));
     }
+    
+    /* performance hot spot */
+    public int getNativeOpCode(MethodInfo context, Instruction instr) {
+        if(isSpecialInvoke(context,instr)) {
+            INVOKESTATIC isi = (INVOKESTATIC) instr;
+            String methodName = isi.getMethodName(context.getConstantPoolGen());
+            return JopInstr.getNative(methodName);
+        } else if(instr instanceof FieldInstruction) {
+        	FieldInstruction finstr = (FieldInstruction) instr;
+        	Type ftype = finstr.getFieldType(context.getConstantPoolGen());
+			boolean isRef = ftype instanceof ReferenceType;
+			boolean isLong = ftype == BasicType.LONG || ftype == BasicType.DOUBLE;
 
+			if (finstr instanceof GETSTATIC) {
+				if (isRef) {
+					return JopInstr.get("getstatic_ref");
+				} else if (isLong) {
+					return JopInstr.get("getstatic_long");
+				}
+			} else if (finstr instanceof PUTSTATIC) {
+				if (isRef) {
+					if (!com.jopdesign.build.JOPizer.USE_RTTM) { /* FIXME: This should not be hardcoded? */
+						return JopInstr.get("putstatic_ref");
+					}
+				} else if (isLong) {
+					return JopInstr.get("putstatic_long");
+				}
+			} else if (finstr instanceof GETFIELD) {
+				if (isRef) {
+					return JopInstr.get("getfield_ref");
+				} else if (isLong) {
+					return JopInstr.get("getfield_long");
+				}
+			} else if (finstr instanceof PUTFIELD) {
+				if (isRef) {
+					if (!com.jopdesign.build.JOPizer.USE_RTTM) { /* FIXME: This should not be hardcoded? */
+						return JopInstr.get("putfield_ref");
+					}
+				} else if (isLong) {
+					return JopInstr.get("putfield_long");
+				}
+			} 
+			return instr.getOpcode();
+        } else {
+            return instr.getOpcode();        	
+        }
+
+    }
+    
     public MethodInfo getJavaImplementation(AppInfo ai, MethodInfo context, Instruction instr) {
         ClassInfo receiver = ai.getClassInfo(JVM_CLASS);
-        String methodName = "f_"+instr.getName();
+        String methodName = "f_" + JopInstr.name(getNativeOpCode(context, instr));
 
         Set<MethodInfo> mi = receiver.getMethodByName(methodName);
         if (!mi.isEmpty()) {
@@ -125,16 +182,6 @@ public class JOPModel implements ProcessorModel {
         else throw new AssertionError("Invalid opcode: "+context+" : "+instruction);
     }
 
-    /* performance hot spot */
-    public int getNativeOpCode(MethodInfo context, Instruction instr) {
-        if(isSpecialInvoke(context,instr)) {
-            INVOKESTATIC isi = (INVOKESTATIC) instr;
-            String methodName = isi.getMethodName(context.getConstantPoolGen());
-            return JopInstr.getNative(methodName);
-        } else {
-            return instr.getOpcode();
-        }
-    }
 
     public List<String> getJVMClasses() {
         List<String> jvmClasses = new ArrayList<String>(1);

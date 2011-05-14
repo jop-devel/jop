@@ -81,7 +81,7 @@ public class JamuthModel implements ProcessorModel {
         else throw new AssertionError("Invalid opcode: " + context + " : " + instruction);
     }
 
-    public boolean isImplementedInJava(Instruction i) {
+    public boolean isImplementedInJava(MethodInfo ctx, Instruction i) {
         return false;
     }
 

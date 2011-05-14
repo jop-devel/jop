@@ -102,7 +102,7 @@ public class InvokeSite {
         if (instr instanceof InvokeInstruction) {
             return false;
         }
-        assert AppInfo.getSingleton().getProcessorModel().isImplementedInJava(instruction.getInstruction());
+        assert AppInfo.getSingleton().getProcessorModel().isImplementedInJava(invoker, instruction.getInstruction());
         return true;
     }
 
@@ -207,7 +207,7 @@ public class InvokeSite {
             }
             return ref;
         }
-        if (appInfo.getProcessorModel().isImplementedInJava(instr)) {
+        if (appInfo.getProcessorModel().isImplementedInJava(invoker, instr)) {
             return appInfo.getProcessorModel().getJavaImplementation(appInfo, invoker, instr).getMethodRef();
         }
         throw new JavaClassFormatError("InvokeSite handle does not refer to an invoke instruction: "+toString());

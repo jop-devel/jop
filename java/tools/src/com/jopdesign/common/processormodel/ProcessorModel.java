@@ -54,7 +54,7 @@ public interface ProcessorModel {
      * @param i the instruction to check
      * @return true if it is implemented as a java method
      */
-    boolean isImplementedInJava(Instruction i);
+    boolean isImplementedInJava(MethodInfo ctx, Instruction i);
 
     /**
      * For Java implemented bytecodes, get the method

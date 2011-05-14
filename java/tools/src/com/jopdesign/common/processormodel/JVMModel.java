@@ -42,7 +42,7 @@ public class JVMModel implements ProcessorModel {
     }
 
     @Override
-    public boolean isImplementedInJava(Instruction i) {
+    public boolean isImplementedInJava(MethodInfo ctx, Instruction i) {
         return false;
     }
 

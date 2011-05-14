@@ -653,7 +653,7 @@ public class MethodCode {
 
     public boolean isInvokeSite(InstructionHandle ih) {
         return ih.getInstruction() instanceof InvokeInstruction ||
-               getAppInfo().getProcessorModel().isImplementedInJava(ih.getInstruction());
+               getAppInfo().getProcessorModel().isImplementedInJava(methodInfo, ih.getInstruction());
     }
 
     /**

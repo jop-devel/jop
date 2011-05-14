@@ -610,7 +610,7 @@ public class ControlFlowGraph {
 
         if (theInvoke != null) {
             n = new InvokeNode(bb, theInvoke);
-        } else if (appInfo.getProcessorModel().isImplementedInJava(lastInstr)) {
+        } else if (appInfo.getProcessorModel().isImplementedInJava(methodInfo, lastInstr)) {
             MethodInfo javaImpl = appInfo.getProcessorModel().getJavaImplementation(appInfo,
                                         bb.getMethodInfo(),lastInstr);
             n = new SpecialInvokeNode(bb, javaImpl);
