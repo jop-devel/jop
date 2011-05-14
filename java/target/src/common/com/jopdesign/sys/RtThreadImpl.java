@@ -121,7 +121,7 @@ public class RtThreadImpl {
 	/**
 	 * The scope for the the initial thread (and between missions). Null until ImmortalMemory is created.
 	 */
-	static Scope outerArea;
+	static Scope initArea;
 
 	// linked list of threads in priority order
 	// used only at initialization time to collect the threads

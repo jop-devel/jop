@@ -21,8 +21,6 @@
 
 package com.jopdesign.sys;
 
-import javax.realtime.ImmortalMemory;
-
 
 /**
  *     Real-time garbage collection for JOP
@@ -158,9 +156,14 @@ public class GC {
 		if(USE_SCOPES)
 		{
 			allocationPointer = mem_start;
+			// clean immortal memory
+			for (int i=mem_start; i<mem_size; ++i) {
+				Native.wrMem(0, i);
+			}
+			RtThreadImpl.initArea = new Scope(mem_start, mem_size-1);
 			// Creates the immortal memory
-			ImmortalMemory immortalMemory = ImmortalMemory.instance();
-			RtThreadImpl.outerArea = immortalMemory.getScope();
+//			ImmortalMemory immortalMemory = ImmortalMemory.instance();
+//			RtThreadImpl.outerArea = immortalMemory.getScope();
 		}
 		else
 		{
@@ -540,7 +543,7 @@ public class GC {
 		if (USE_SCOPES) {
 			// allocate in scope
 			int ptr = allocationPointer;
-			if(RtThreadImpl.outerArea == null)
+			if(RtThreadImpl.initArea == null)
 			{
 				allocationPointer += size+HEADER_SIZE;
 			}
@@ -553,20 +556,21 @@ public class GC {
 				}
 				else
 				{
-					sc = RtThreadImpl.outerArea;
+					sc = RtThreadImpl.initArea;
 				}
-				long rem = sc.size - (sc.allocationPointer - sc.startPointer);
-				if (size+HEADER_SIZE > rem) {
+				if (sc.allocPtr+size+HEADER_SIZE > sc.endLocalPtr) {
 					// OOMError.fillInStackTrace();
 					throw OOMError;
 				}
-				ptr = sc.allocationPointer;
-				sc.allocationPointer += size+HEADER_SIZE;
+				ptr = sc.allocPtr;
+				sc.allocPtr += size+HEADER_SIZE;
 			}
 			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
 			Native.wrMem(size, ptr+OFF_SIZE); // Just defining all headers
 			Native.wrMem(cons+Const.CLASS_HEADR, ptr+OFF_MTAB_ALEN);
 			Native.wrMem(0, ptr+OFF_TYPE);
+			// TODO: memory initialization is needed
+			// either on scope creation+exit or in new
 			return ptr;		
 		}
 
@@ -642,7 +646,7 @@ public class GC {
 		if (USE_SCOPES) {
 			// allocate in scope
 			int ptr = allocationPointer;
-			if(RtThreadImpl.outerArea == null)
+			if(RtThreadImpl.initArea == null)
 			{
 				allocationPointer += size+HEADER_SIZE;
 			}
@@ -655,15 +659,14 @@ public class GC {
 				}
 				else
 				{
-					sc = RtThreadImpl.outerArea;
+					sc = RtThreadImpl.initArea;
 				}
-				long rem = sc.size - (sc.allocationPointer - sc.startPointer);
-				if (size+HEADER_SIZE > rem) {
+				if (sc.allocPtr+size+HEADER_SIZE > sc.endLocalPtr) {
 					// OOMError.fillInStackTrace();
 					throw OOMError;
 				}
-				ptr = sc.allocationPointer;
-				sc.allocationPointer += size+HEADER_SIZE;
+				ptr = sc.allocPtr;
+				sc.allocPtr += size+HEADER_SIZE;
 			}
 			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
 			Native.wrMem(arrayLength, ptr+OFF_SIZE); // Just defining all headers
