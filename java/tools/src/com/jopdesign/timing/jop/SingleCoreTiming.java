@@ -60,6 +60,19 @@ public class SingleCoreTiming extends JOPTimingTable {
 
 	public long getCycles(int opcode, boolean isHit, int words) {
 		Vector<MicropathTiming> timing = this.getTiming(opcode);
+		if(hasBytecodeLoad(timing) &&
+		   ! JopInstr.isInJava(opcode) &&
+		   ! InstructionInfo.isReturnOpcode(opcode) &&
+		   ! InstructionInfo.isInvokeOpcode(opcode) &&
+		   ! InstructionInfo.isAsyncHandlerOpcode(opcode)) {
+			throw new AssertionError("Instruction " + JopInstr.OPCODE_NAMES[opcode] + " accesses the method cache, " +
+					"but table JopInstr believes it is NOT implemented in Java. Check this " +
+					"inconsistency manually!");
+		} else if(!hasBytecodeLoad(timing) && JopInstr.isInJava(opcode)) {
+			throw new AssertionError("Instruction " + JopInstr.OPCODE_NAMES[opcode] + " does not access the method cache, " +
+					"but table JopInstr believes it IS implemented in Java. Check this " +
+					"inconsistency manually!");			
+		}
 		if(words < 0) {
 			if(hasBytecodeLoad(timing)) {
 				throw new AssertionError("Cannot calculate WCET of instruction accessing method cache"+
