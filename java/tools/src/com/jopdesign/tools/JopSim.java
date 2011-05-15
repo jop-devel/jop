@@ -1797,16 +1797,16 @@ System.out.println("new heap: "+heap);
 		System.out.println(insByte+" Instructions bytes");
 		System.out.println(((float) insByte/instrCnt)+" average Instruction length");
 		
-		System.out.println();
-		System.out.println("\tType \t&       Load &      &      Store &      \\\\");
-		int ld = 0, st=0;
-		for (Access a : Access.values()) {
-			ld += a.rdCnt; st += a.wrCnt;
-			System.out.printf("\t%s\t& %10d & %2d\\%% & %10d & %2d\\%% \\\\%n",
-					a.name(), a.rdCnt, (a.rdCnt*1000/rdMemCnt+5)/10, a.wrCnt, (a.wrCnt*1000/wrMemCnt+5)/10);
-		}
-		System.out.println("\t\\midrule");
-		System.out.printf("\tSum\t& %10d &      & %10d &      \\\\%n", ld, st);
+//		System.out.println();
+//		System.out.println("\tType \t&       Load &      &      Store &      \\\\");
+//		int ld = 0, st=0;
+//		for (Access a : Access.values()) {
+//			ld += a.rdCnt; st += a.wrCnt;
+//			System.out.printf("\t%s\t& %10d & %2d\\%% & %10d & %2d\\%% \\\\%n",
+//					a.name(), a.rdCnt, (a.rdCnt*1000/rdMemCnt+5)/10, a.wrCnt, (a.wrCnt*1000/wrMemCnt+5)/10);
+//		}
+//		System.out.println("\t\\midrule");
+//		System.out.printf("\tSum\t& %10d &      & %10d &      \\\\%n", ld, st);
 		
 		System.out.println();
 		System.out.println("memory word: "+rdMemCnt+" load "+wrMemCnt+" store");

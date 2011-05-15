@@ -26,11 +26,7 @@ package com.jopdesign.sys;
  * The backing store of a nested scope is allocated
  * within the backing store of the outer scope.
  * A nested scope starts after the size for object allocations
- * for the outer scope and takes all of the remaining
- * backing store.
- * 
- * Therefore, at the moment no support for multiple, parallel
- * scopes!
+ * for the outer scope.
  * 
  * @author Martin Schoeberl (martin@jopdesign.com)
  * 
@@ -67,6 +63,12 @@ public class Memory {
 	Memory parent;
 	/** Nesting level */
 	int level;
+	
+	/**
+	 * A reference for an inner memory that shall be reused
+	 * for enterPrivateMemory.
+	 */
+	Memory inner;
 
 	/**
 	 * The singleton reference for the immortal memory.
@@ -105,7 +107,6 @@ public class Memory {
 			parent = s.ref[s.active].currentArea;
 		} else {
 			parent = RtThreadImpl.initArea;
-
 		}
 		// If backing store size is not set, take all
 		if (bsSize==0) {
@@ -161,6 +162,12 @@ public class Memory {
 		if (cnt != 1) {
 			throw new Error("No cyclic enter and no sharing between threads");
 		}
+		// clean the scope memory
+		// would be more efficient to clean after exit...
+//		for (int i = startPtr; i <= endLocalPtr; ++i) {
+//			Native.wrMem(0, i);
+//		}
+
 		// activate the memory area
 		RtThreadImpl rtt = null;
 		Memory outer = null;
@@ -187,6 +194,64 @@ public class Memory {
 		for (int i = startPtr; i < allocPtr; ++i) {
 			Native.wrMem(0, i);
 		}
+		inner = null;
 		allocPtr = startPtr;
+	}
+	
+	/**
+	 * Return the memory region which we are currently in.
+	 * @return
+	 */
+	public static Memory getCurrentMemory() {
+		Memory m;
+		if (RtThreadImpl.mission) {
+			Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
+			m = s.ref[s.active].currentArea;
+		} else {
+			m = RtThreadImpl.initArea;
+		}
+		return m;
+	}
+	
+	/**
+	 * This is SCJ style inner scopes for private memory.
+	 * 
+	 * At the moment we will just create a local Memory
+	 * object for each enter. However, this is a memory
+	 * leak and one instance shall be reused.
+	 * 
+	 * @param size
+	 * @param logic
+	 */
+	public void enterPrivateMemory(int size, Runnable logic) {
+		// TODO: is this assignment allowed?
+		// The scope object lives in an outer one,
+		// so it is not!
+		if (inner==null) {
+			inner = new Memory();
+		}
+		// Now set all fields for inner and adapt this
+		inner.parent = this;
+		// check if remaining BS is at least size
+		if (this.endBsPtr-this.allocBsPtr+1<size) {
+			throw GC.OOMError;
+		}
+		inner.startPtr = this.allocBsPtr;
+		// use bsSize backing store
+		// Take all backing store
+		inner.endBsPtr = this.endBsPtr;
+		// save this BS allocation pointer
+		int bsPtr = this.allocBsPtr;
+		// adjust parents BS allocation pointer
+		this.allocBsPtr = inner.endBsPtr+1;
+		inner.allocPtr = inner.startPtr;
+		inner.endLocalPtr = inner.startPtr+size-1;
+		// Own offered BS for nested scopes starts after
+		// the local area
+		inner.allocBsPtr = inner.endLocalPtr+1;
+		inner.level = this.level+1;
+		inner.enter(logic);
+		// Reset BS allocation pointer
+		this.allocBsPtr = bsPtr;
 	}
 }

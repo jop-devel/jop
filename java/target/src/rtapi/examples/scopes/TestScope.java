@@ -35,10 +35,29 @@ public class TestScope implements Runnable {
 	public static void main(String[] args) {
 
 		Memory sc = new Memory(10000, 10000);
-		Memory sc2 = new Memory(20000, 20000);
+		Memory sc2 = new Memory(10000, 20000);
 		TestScope t = new TestScope();
 		for (int i=0; i<10; ++i) {
 			sc.enter(t);
+		}
+		
+		Runnable r2 = new Runnable() {
+			public void run() {
+				int a[] = new int[1000];
+				System.out.println("In Scope 2");
+				Runnable r3 = new Runnable() {
+					public void run() {
+						int b[] = new int[1000];
+					}
+				};
+				Memory m = Memory.getCurrentMemory();
+				for (int i=0; i<100; ++i) {
+					m.enterPrivateMemory(10000, r3);
+				}
+			}
+		};
+		for (int i=0; i<10; ++i) {
+			sc2.enter(r2);
 		}
 	}
 
@@ -46,7 +65,7 @@ public class TestScope implements Runnable {
 	public void run() {
 		for (int i=0; i<50; ++i) {
 			String s = "Hello "+i+" ";
-			System.out.print(s);
+//			System.out.print(s);
 		}
 	}
 
