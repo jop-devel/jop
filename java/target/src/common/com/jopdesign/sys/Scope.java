@@ -41,7 +41,6 @@ public class Scope {
 	// scope (e.g. mission memory) is created
 	final static int IM_SIZE = 10000;
 
-	// TODO would be easier to use end address instead of size
 	int cnt;
 	/** Start address of memory area */
 	int startPtr;
@@ -57,34 +56,49 @@ public class Scope {
 	 * Points to the last usable word.
 	 */
 	int endBsPtr;
+	/**
+	 * Allocation pointer for the nested backing store.
+	 */
+	int allocBsPtr;
 	// TODO: support for multiple parallel scopes
 	// We need also an allocation pointer for the backing
 	// store.
 	/** Parent scope */
 	Scope parent;
-	
+	/** Nesting level */
+	int level;
 
 	/**
-	 * Constructor for the first scope that represents immortal memory.
-	 * 
-	 * @param start
-	 * @param end
+	 * The singleton reference for the immortal memory.
 	 */
-	Scope(int start, int end) {
-		startPtr = start;
-		endBsPtr = end;
-		endLocalPtr = startPtr + IM_SIZE - 1;
-		// the Scope object itself is already allocated
-		allocPtr = GC.allocationPointer;
-		parent = null;
+	static Scope immortal;
+
+	
+	Scope() {
+	}
+	
+	/**
+	 * Create a Scope object that represents immortal memory.
+	 * Should only be called by GC on JVM startup.
+	 * @return
+	 */
+	static Scope getImmortal(int start, int end) {
+		if (immortal==null) {
+			immortal = new Scope();
+			immortal.startPtr = start;
+			immortal.endBsPtr = end;
+			immortal.endLocalPtr = immortal.startPtr + IM_SIZE - 1;
+			immortal.allocBsPtr = immortal.endLocalPtr+1;
+			// the Scope object itself is already allocated
+			immortal.allocPtr = GC.allocationPointer;
+			immortal.parent = null;
+			immortal.level = 0;
+			
+		}
+		return immortal;
 	}
 
-	/**
-	 * Standard constructor for current experiments
-	 * 
-	 * @param size
-	 */
-	public Scope(int size) {
+	public Scope(int size, int bsSize) {
 		cnt = 0;
 		if (RtThreadImpl.mission) {
 			Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
@@ -93,16 +107,38 @@ public class Scope {
 			parent = RtThreadImpl.initArea;
 
 		}
+		// If backing store size is not set, take all
+		if (bsSize==0) {
+			bsSize = parent.endBsPtr-parent.allocBsPtr+1;			
+		}
+
 		// new memory area is within parents backing store and
 		// starts after the area for objects allocated in the parent
-		startPtr = parent.endLocalPtr+1;
-		// use all available backing store
-		// needs to be adapted for multiple PM allocations in MM
-		endBsPtr = parent.endBsPtr;
+		if (bsSize<size || parent.endBsPtr-parent.allocBsPtr+1 < bsSize) {
+			throw GC.OOMError;
+		}
+		startPtr = parent.allocBsPtr;
+		// use bsSize backing store
+		endBsPtr = startPtr+bsSize-1;
+		// adjust parents BS allocation pointer
+		parent.allocBsPtr = endBsPtr+1;
 		allocPtr = startPtr;
-		endLocalPtr = startPtr + size - 1;
+		endLocalPtr = startPtr+size-1;
+		// Own offered BS for nested scopes starts after
+		// the local area
+		allocBsPtr = endLocalPtr+1;
+		level = parent.level+1;
+	}
+	/**
+	 * Create a scope and use all available backing store from the outer scope.
+	 * 
+	 * @param size
+	 */
+	public Scope(int size) {
+		this(size, 0);
 	}
 
+	
 	// that's for our scratchpad memory
 	// public Scope(int[] localMem) {
 	// backingStore = localMem;

@@ -153,20 +153,15 @@ public class GC {
 //mem_start = 261300;
 		mem_start = (mem_start+7)&0xfffffff8;
 //mem_size = mem_start + 2000;
-		if(USE_SCOPES)
-		{
+		if(USE_SCOPES) {
 			allocationPointer = mem_start;
 			// clean immortal memory
 			for (int i=mem_start; i<mem_size; ++i) {
 				Native.wrMem(0, i);
 			}
-			RtThreadImpl.initArea = new Scope(mem_start, mem_size-1);
-			// Creates the immortal memory
-//			ImmortalMemory immortalMemory = ImmortalMemory.instance();
-//			RtThreadImpl.outerArea = immortalMemory.getScope();
-		}
-		else
-		{
+			// Create the Scope that represents immortal memory
+			RtThreadImpl.initArea = Scope.getImmortal(mem_start, mem_size-1);
+		} else {
 			full_heap_size = mem_size-mem_start;
 			handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
 			semi_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
