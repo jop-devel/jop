@@ -35,7 +35,7 @@ package com.jopdesign.sys;
  * @author Martin Schoeberl (martin@jopdesign.com)
  * 
  */
-public class Scope {
+public class Memory {
 
 	// TODO should be set at some time, before the first
 	// scope (e.g. mission memory) is created
@@ -64,17 +64,17 @@ public class Scope {
 	// We need also an allocation pointer for the backing
 	// store.
 	/** Parent scope */
-	Scope parent;
+	Memory parent;
 	/** Nesting level */
 	int level;
 
 	/**
 	 * The singleton reference for the immortal memory.
 	 */
-	static Scope immortal;
+	static Memory immortal;
 
 	
-	Scope() {
+	Memory() {
 	}
 	
 	/**
@@ -82,9 +82,9 @@ public class Scope {
 	 * Should only be called by GC on JVM startup.
 	 * @return
 	 */
-	static Scope getImmortal(int start, int end) {
+	static Memory getImmortal(int start, int end) {
 		if (immortal==null) {
-			immortal = new Scope();
+			immortal = new Memory();
 			immortal.startPtr = start;
 			immortal.endBsPtr = end;
 			immortal.endLocalPtr = immortal.startPtr + IM_SIZE - 1;
@@ -98,7 +98,7 @@ public class Scope {
 		return immortal;
 	}
 
-	public Scope(int size, int bsSize) {
+	public Memory(int size, int bsSize) {
 		cnt = 0;
 		if (RtThreadImpl.mission) {
 			Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
@@ -134,7 +134,7 @@ public class Scope {
 	 * 
 	 * @param size
 	 */
-	public Scope(int size) {
+	public Memory(int size) {
 		this(size, 0);
 	}
 
@@ -163,7 +163,7 @@ public class Scope {
 		}
 		// activate the memory area
 		RtThreadImpl rtt = null;
-		Scope outer = null;
+		Memory outer = null;
 		if (RtThreadImpl.mission) {
 			// This method is only used by scopes within PrivateMemory so we
 			// are certain that threads are running.

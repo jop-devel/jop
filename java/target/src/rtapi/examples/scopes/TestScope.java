@@ -19,7 +19,7 @@
 */
 package examples.scopes;
 
-import com.jopdesign.sys.Scope;
+import com.jopdesign.sys.Memory;
 
 /**
  * Test the JOP specific scoped memory.
@@ -34,8 +34,8 @@ public class TestScope implements Runnable {
 	 */
 	public static void main(String[] args) {
 
-		Scope sc = new Scope(10000, 10000);
-		Scope sc2 = new Scope(20000, 20000);
+		Memory sc = new Memory(10000, 10000);
+		Memory sc2 = new Memory(20000, 20000);
 		TestScope t = new TestScope();
 		for (int i=0; i<10; ++i) {
 			sc.enter(t);

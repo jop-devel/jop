@@ -47,7 +47,7 @@ import javax.safetycritical.annotate.MemoryAreaEncloses;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
 
-import com.jopdesign.sys.Scope;
+import com.jopdesign.sys.Memory;
 
 import static javax.safetycritical.annotate.Level.INFRASTRUCTURE;;
 
@@ -60,7 +60,7 @@ public abstract class MemoryArea implements AllocationContext
 { 
 	
   protected long size;
-  private Scope scope; // SHOULD ONLY BE ACCESSED BY INFRASTRUCTURE
+  private Memory scope; // SHOULD ONLY BE ACCESSED BY INFRASTRUCTURE
   
   MemoryArea(long size)
   {
@@ -70,7 +70,7 @@ public abstract class MemoryArea implements AllocationContext
   /**
    * SHOULD ONLY BE USED BY FRAMEWORK
    */
-  public Scope getScope()
+  public Memory getScope()
   {
 	  return scope;
   }

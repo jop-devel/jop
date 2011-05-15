@@ -116,12 +116,12 @@ public class RtThreadImpl {
 	/**
 	 * The scope that the thread is in. null when in heap context.
 	 */
-	Scope currentArea = null;
+	Memory currentArea = null;
 	
 	/**
 	 * The scope for the the initial thread (and between missions). Null until ImmortalMemory is created.
 	 */
-	static Scope initArea;
+	static Memory initArea;
 
 	// linked list of threads in priority order
 	// used only at initialization time to collect the threads
@@ -536,7 +536,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		return s.ref[s.active].rtt;
 	}
 	
-	static Scope getCurrentScope() {
+	static Memory getCurrentScope() {
 		
 //		JVMHelp.wr("getCurrent");
 		// we call it only when the mission is already started

@@ -160,7 +160,7 @@ public class GC {
 				Native.wrMem(0, i);
 			}
 			// Create the Scope that represents immortal memory
-			RtThreadImpl.initArea = Scope.getImmortal(mem_start, mem_size-1);
+			RtThreadImpl.initArea = Memory.getImmortal(mem_start, mem_size-1);
 		} else {
 			full_heap_size = mem_size-mem_start;
 			handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
@@ -544,7 +544,7 @@ public class GC {
 			}
 			else
 			{
-				Scope sc = null;
+				Memory sc = null;
 				if (RtThreadImpl.mission) {
 					Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
 					sc = s.ref[s.active].currentArea;			
@@ -647,7 +647,7 @@ public class GC {
 			}
 			else
 			{
-				Scope sc = null;
+				Memory sc = null;
 				if (RtThreadImpl.mission) {
 					Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
 					sc = s.ref[s.active].currentArea;				
