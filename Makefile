@@ -125,9 +125,9 @@ P3=HelloWorld
 #P2=oebb
 #P3=Main
 
-P2=wcet
-P3=Dispatch
-WCET_METHOD=measure
+#P2=wcet
+#P3=Dispatch
+#WCET_METHOD=measure
 
 #P1=.
 #P2=dsvmmcp
@@ -242,7 +242,7 @@ DEBUG_JOPSIM=
 #	application optimization with JCopter
 #
 USE_JCOPTER?=no
-JCOPTER_OPT?=--dump-callgraph merged --dump-jvm-callgraph merged --callstring-length $(CALLSTRING_LENGTH) --target-method $(WCET_METHOD)
+JCOPTER_OPT?=--dump-callgraph merged --dump-jvm-callgraph off --callstring-length $(CALLSTRING_LENGTH)
 
 
 # build everything from scratch
@@ -350,6 +350,12 @@ cprog:
 #
 #	compile and JOPize the application
 #
+ifeq (${WCET_METHOD},)
+  JCOPTER_OPTIONS=--no-use-wca ${JCOPTER_OPT}
+else
+  JCOPTER_OPTIONS=--target-method ${WCET_METHOD} ${JCOPTER_OPT}  
+endif
+
 java_app:
 	-rm -rf $(TARGET)/dist
 	-mkdir $(TARGET)/dist
@@ -372,7 +378,7 @@ endif
 ifeq ($(USE_JCOPTER),yes)
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter \
 	   -c $(TARGET)/dist/classes -o $(TARGET)/dist --classdir $(TARGET)/dist/classes.opt \
-	   $(JCOPTER_OPT) $(MAIN_CLASS)
+	   $(JCOPTER_OPTIONS) $(MAIN_CLASS)
 	mv $(TARGET)/dist/classes $(TARGET)/dist/classes.unopt
 	mv $(TARGET)/dist/classes.opt $(TARGET)/dist/classes
 endif 
