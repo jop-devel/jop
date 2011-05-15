@@ -51,6 +51,7 @@ public interface ProcessorModel {
     /**
      * Check whether the given instruction is implemented in Java.
      *
+     * @param ctx the method containing the instructions
      * @param i the instruction to check
      * @return true if it is implemented as a java method
      */

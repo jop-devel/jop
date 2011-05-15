@@ -26,7 +26,6 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.tools.JopInstr;
-import com.sun.org.apache.bcel.internal.Constants;
 
 import org.apache.bcel.generic.ANEWARRAY;
 import org.apache.bcel.generic.ATHROW;
@@ -69,7 +68,7 @@ public class JOPModel implements ProcessorModel {
     }
 
     public JOPModel(Config configData) {
-        StringBuffer key = new StringBuffer();
+        StringBuilder key = new StringBuilder();
         this.config = new JOPConfig(configData);
         key.append("jop");
         if(config.isCmp()) key.append("-cmp");

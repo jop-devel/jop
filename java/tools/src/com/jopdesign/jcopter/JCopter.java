@@ -28,6 +28,7 @@ import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.wcet.WCETTool;
+import org.apache.log4j.Logger;
 
 /**
  * User: Stefan Hepp (stefan@stefant.org)
@@ -42,6 +43,8 @@ public class JCopter extends EmptyTool<JCopterManager> {
     public static final String LOG_ROOT = "jcopter";
     public static final String LOG_OPTIMIZER = "jcopter.optimizer";
     public static final String LOG_INLINE = "jcopter.inline";
+
+    private static final Logger logger = Logger.getLogger(LOG_ROOT + ".JCopter");
 
     private final JCopterManager manager;
     private final AppInfo appInfo;
@@ -169,6 +172,8 @@ public class JCopter extends EmptyTool<JCopterManager> {
 
 
         } else {
+            logger.info("WCA tool is disabled, not performing WCET-driven optimizations.");
+
             // use non-WCET-based inline selector
 
         }
