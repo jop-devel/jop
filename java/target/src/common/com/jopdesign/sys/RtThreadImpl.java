@@ -114,12 +114,14 @@ public class RtThreadImpl {
 	int sp;
 	
 	/**
-	 * The scope that the thread is in. null when in heap context.
+	 * The scope that the thread is in.
+	 * Set to initArea when started.
 	 */
 	Memory currentArea = null;
 	
 	/**
-	 * The scope for the the initial thread (and between missions). Null until ImmortalMemory is created.
+	 * The scope for the the initial thread (and between missions).
+	 * Null until the Memory object that represents immortal is created.
 	 */
 	static Memory initArea;
 
@@ -231,6 +233,9 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 			state = WAITING;
 		}
 
+		// set memory context to the current one
+		currentArea = initArea;
+		
 		createStack();
 
 		// new thread starts right here after first scheduled
@@ -542,6 +547,9 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		// we call it only when the mission is already started
 		Scheduler s = Scheduler.sched[sys.cpuId];
 		return s.ref[s.active].currentArea;
+		
+		// but we could use that in general to encapsulate
+		// scope set/get into this class
 
 //		RtThreadImpl rtt = null;
 //		if (Scheduler.sched==null) {

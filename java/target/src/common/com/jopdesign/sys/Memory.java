@@ -227,6 +227,7 @@ public class Memory {
 		// TODO: is this assignment allowed?
 		// The scope object lives in an outer one,
 		// so it is not!
+		// That is actually an example where we need allocateInArea().
 		if (inner==null) {
 			inner = new Memory();
 		}
