@@ -757,11 +757,12 @@ public class ControlFlowGraph {
 
     /**
      * resolve all virtual invoke nodes, and replace them by actual implementations
+     * @param reachableMethods set of methods which is actually reachable from the analyzed method
      *
      * @throws BadGraphException If the flow graph analysis (post replacement) fails
      */
     @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
-    public void resolveVirtualInvokes() throws BadGraphException {
+    public void resolveVirtualInvokes(Set<MethodInfo> reachableMethods) throws BadGraphException {
 
         // Hack to make this optional
         if (virtualInvokesResolved) return;
@@ -781,7 +782,16 @@ public class ControlFlowGraph {
         /* replace them */
         for (InvokeNode inv : virtualInvokes) {
             // TODO resolve with callstring?
-            Set<MethodInfo> impls = inv.getImplementedMethods();
+        	// As a short term solution, we filter out all methods which are
+        	// unreachable
+            Set<MethodInfo> implsPre = inv.getImplementedMethods();
+            Set<MethodInfo> impls    = new HashSet<MethodInfo>();
+            for(MethodInfo impl : implsPre) {
+            	if(reachableMethods.contains(impl)) {
+            		impls.add(impl);
+            	}
+            }
+            
             if (impls.size() == 0) internalError("No implementations for " + inv.referenced);
             if (impls.size() == 1) {
                 InvokeNode implNode = inv.createImplNode(impls.iterator().next(), inv);

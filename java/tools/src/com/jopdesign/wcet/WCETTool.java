@@ -49,6 +49,7 @@ import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.framework.ContextMap;
+import com.jopdesign.dfa.framework.DFACallgraphBuilder;
 import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.wcet.allocation.BlockAllocationModel;
 import com.jopdesign.wcet.allocation.HandleAllocationModel;
@@ -82,6 +83,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 /**
+ * Purpose: This class provides the interface to JOP's WCET tool
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  */
@@ -120,6 +123,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
     private AppInfo appInfo;
     private CallGraph callGraph;
+    
     private DFATool dfaTool;
 
     private boolean genWCETReport;
@@ -230,6 +234,17 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             dataflowAnalysis();
             topLevelLogger.info("DFA analysis finished");
         }
+        
+        DefaultCallgraphBuilder callGraphBuilder;
+		/* build callgraph for the whole program */
+        if (doDataflowAnalysis()) {
+            // build the callgraph using DFA results
+        	callGraphBuilder = new DFACallgraphBuilder(getDfaTool(), appInfo.getCallstringLength());
+        } else {
+        	callGraphBuilder = new DefaultCallgraphBuilder();
+        }
+        callGraphBuilder.setSkipNatives(true); // we do not want natives in the callgraph
+        appInfo.buildCallGraph(callGraphBuilder);
 
         /* build callgraph for target method */
         rebuildCallGraph();
@@ -268,16 +283,28 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
      * @return the new callgraph.
      */
     public CallGraph rebuildCallGraph() {
-        DefaultCallgraphBuilder config = new DefaultCallgraphBuilder(projectConfig.callstringLength());
-        // we do not want to have native methods in the callgraph
-        config.setSkipNatives(true);
-        callGraph = CallGraph.buildCallGraph(projectConfig.getTargetMethodInfo(),
-                config);
-        callGraph.checkAcyclicity();
+    	/* This would be the ideal solution, but this way the root
+    	 * does NOT have an empty callstring
+    	 */
+        // callGraph = appInfo.getCallGraph().getSubGraph(projectConfig.getTargetMethodInfo());
+        
+        DefaultCallgraphBuilder callGraphBuilder;
+		/* build callgraph for the whole program */
+        if (doDataflowAnalysis()) {
+            // build the callgraph using DFA results
+        	callGraphBuilder = new DFACallgraphBuilder(getDfaTool(), appInfo.getCallstringLength());
+        } else {
+        	callGraphBuilder = new DefaultCallgraphBuilder();
+        }
+        callGraphBuilder.setSkipNatives(true); // we do not want natives in the callgraph
+        callGraph = CallGraph.buildCallGraph(getTargetMethod(), callGraphBuilder);
+
+    	callGraph.checkAcyclicity();
         return callGraph;
     }
 
     public void dumpCallGraph(String graphName) {
+    	
         if (callGraph == null) return;
 
         Config config = projectConfig.getConfig();
@@ -289,7 +316,8 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             logger.warn("Unable to dump the target method callgraph", e);
         }
     }
-
+    
+    /** @return the precomputed callgraph for WCET analysis */
     public CallGraph getCallGraph() {
         return callGraph;
     }
@@ -364,11 +392,20 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         if (!mi.hasCode()) return null;
         ControlFlowGraph cfg = mi.getCode().getControlFlowGraph(false);
         try {
-            cfg.resolveVirtualInvokes();
-//	    cfg.insertSplitNodes();
-//	    cfg.insertSummaryNodes();
+    		cfg.resolveVirtualInvokes(this.callGraph.getMethodInfos());
+//        	if(this.appInfo.getCallstringLength() > 0) {
+//        		if(! warnedCallstringLength) {
+//        			logger.info("Callstring Length > 0 ==> Not resolving virtuals invokes");
+//        			warnedCallstringLength = true;
+//        		}
+//        	} else {
+//        	}
             cfg.insertReturnNodes();
             cfg.insertContinueLoopNodes();
+
+//    	    cfg.insertSplitNodes();
+//    	    cfg.insertSummaryNodes();
+
         } catch (BadGraphException e) {
             // TODO handle this somehow??
             throw new BadGraphError(e.getMessage(), e);
@@ -605,13 +642,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     public Collection<MethodInfo> findImplementations(MethodInfo invokerM, InstructionHandle ih, CallString ctx) {
         InvokeSite is = invokerM.getCode().getInvokeSite(ih);
         // We do not use appInfo.findImplementations here so that the result is always consistent with the callgraph
-        Collection<MethodInfo> staticImpls = callGraph.findImplementingMethods(ctx.push(is));
-
-        // TODO we should use the DFA to refine the callgraph of AppInfo (or this.callgraph) after constructing the graph
-        // - Either construct AppInfo callgraph first, optimize it using DFA/.., then call WCETTool.rebuildCallgraph()
-        // - Or just optimize both AppInfo callgraph and this.callgraph using DFA/.. separately
-        staticImpls = dfaReceivers(ih, staticImpls, ctx);
-        return staticImpls;
+        return callGraph.findImplementingMethods(ctx.push(is));
     }
 
     /**
@@ -652,36 +683,6 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             }
         }
         return retval;
-    }
-
-    // TODO: [wcet-app-info] dfaReceivers() is rather slow, for debugging purposes
-
-    private Collection<MethodInfo> dfaReceivers(InstructionHandle ih, Collection<MethodInfo> staticImpls, CallString ctx) {
-        if (this.receiverAnalysis != null && receiverAnalysis.containsKey(ih)) {
-            List<MethodInfo> dynImpls = new ArrayList<MethodInfo>();
-            Set<String> dynReceivers = new HashSet<String>();
-
-            ContextMap<CallString, Set<String>> allReceivers = receiverAnalysis.get(ih);
-            for (Entry<CallString, Set<String>> e : allReceivers.entrySet()) {
-                if (e.getKey().hasSuffix(ctx)) {
-                    dynReceivers.addAll(e.getValue());
-                }
-            }
-            for (MethodInfo impl : staticImpls) {
-                if (dynReceivers.contains(impl.getFQMethodName())) {
-                    dynReceivers.remove(impl.getFQMethodName());
-                    dynImpls.add(impl);
-                } else {
-                    logger.info("Static but not dynamic receiver: " + impl);
-                }
-            }
-            if (!dynReceivers.isEmpty()) {
-                throw new AssertionError("Bad receiver analysis ? Dynamic but not static receivers: " + dynReceivers);
-            }
-            return dynImpls;
-        } else {
-            return staticImpls;
-        }
     }
 
 }
