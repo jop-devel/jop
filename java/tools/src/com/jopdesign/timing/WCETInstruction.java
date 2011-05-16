@@ -23,6 +23,8 @@ package com.jopdesign.timing;
 
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.tools.JopInstr;
+import org.apache.bcel.generic.Instruction; 
+import org.apache.bcel.generic.InstructionHandle;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -200,7 +202,19 @@ public class WCETInstruction {
 	// TODO: make those missing (the rup/ms specific ones, but are they
 	// reachable?)
 
-	
+	/**
+	 * Same as getWCET, but using the handle.
+	 *
+	 * @param ih
+	 * @param pmiss true if the cache is missed and false if there is a cache hit
+	 * @return wcet or WCETNOTAVAILABLE (-1)
+	 */
+	public static int getCyclesFromHandle(InstructionHandle ih, boolean pmiss, int n) {
+		Instruction ins = ih.getInstruction();
+		int opcode = ins.getOpcode();
+
+		return getCycles(opcode, pmiss, n);
+	}
 
 	/**
 	 * Get the name using the opcode. Used when WCA toWCAString().
@@ -1477,7 +1491,26 @@ public class WCETInstruction {
 		else
 			return true;
 	}
-	
+
+	/**
+	 * Get an estimation of the bytecode execution time.
+	 *
+	 * TODO: measure Java implemented bytecodes and add the numbers.
+	 * @param opcode
+	 * @param pmiss
+	 * @param n
+	 * @return
+	 */
+	public static int getCyclesEstimate(int opcode, boolean pmiss, int n) {
+
+		int ret = getCycles(opcode, pmiss, n);
+		// VERY rough estimate
+		if (ret==WCETNOTAVAILABLE) {
+			ret = 200;
+		}
+		return ret;
+	}
+
 	public static int getNoImplDispatchCycles() {
 		// FIXME (CMP_WCET): invokevirtual should be a conservative approximation to sys_noim for now
 		if(CMP_WCET) return getCycles(org.apache.bcel.Constants.INVOKEVIRTUAL,false,0);
