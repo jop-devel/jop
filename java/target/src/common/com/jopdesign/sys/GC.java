@@ -34,7 +34,8 @@ public class GC {
 	 * Use either scoped memories or a GC.
 	 * Combining scopes and the GC needs some extra work.
 	 */
-	final static boolean USE_SCOPES = false;	
+	final static boolean USE_SCOPES = false;
+	final static boolean ADD_REF_INFO = false;
 	
 	static int mem_start;		// read from memory
 	// get a effective heap size with fixed handle count
@@ -69,6 +70,7 @@ public class GC {
 	public static final int OFF_MTAB_ALEN = 1;
 	public static final int OFF_SIZE = 2;
 	public static final int OFF_TYPE = 3;
+	public static final int OFF_SCOPE = 7;
 	
 	// size != array length (think about long/double)
 	
@@ -558,6 +560,13 @@ public class GC {
 				}
 				ptr = sc.allocPtr;
 				sc.allocPtr += size+HEADER_SIZE;
+				
+				//Add scope info to pointer of newly created object
+				if (ADD_REF_INFO){
+					ptr = ptr | (sc.level << 25);	
+				}
+				//Add scope info to object's handler field
+				Native.wrMem(sc.level , ptr+OFF_SCOPE);
 			}
 			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
 			Native.wrMem(size, ptr+OFF_SIZE); // Just defining all headers
@@ -673,6 +682,13 @@ public class GC {
 				}
 				ptr = sc.allocPtr;
 				sc.allocPtr += size+HEADER_SIZE;
+				
+				//Add scope info to pointer of newly created array
+				if (ADD_REF_INFO){
+					ptr = ptr | (sc.level << 25);	
+				}
+				//Add scope info to array's handler field
+				Native.wrMem(sc.level , ptr+OFF_SCOPE);
 			}
 			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
 			Native.wrMem(arrayLength, ptr+OFF_SIZE); // Just defining all headers
