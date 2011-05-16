@@ -43,7 +43,7 @@ public class PJPeriodicTask extends RtThread {
 	private int priority;
 	private int releaseMs;
 	private int periodMs;
-	private Scope scope;
+	private Memory scope;
 	private String name;
 
 	public PJPeriodicTask(Runnable taskHandler, int priority, int releaseMs, int periodMs, String name) {
@@ -55,16 +55,12 @@ public class PJPeriodicTask extends RtThread {
 		this.name = name;
 	}
 	
-	public Scope getScope() {
+	public Memory getScope() {
 		return scope;
 	}
 
 	public void setScope(int words) {
-		scope = new Scope(new int[words]);
-	}
-
-	public void setScope(Scope s) {
-		scope = s;
+		scope = new Memory(words, words);
 	}
 
 	public void run() {
@@ -114,6 +110,9 @@ public class PJPeriodicTask extends RtThread {
 		long totalElapsed;
 		int minICacheCost, maxICacheCost;
 		String name;
+		Dumper dumper;
+		Memory dumperScope;
+
 		public MeasurementStatistic(String str) {
 			minElapsed = Integer.MAX_VALUE;
 			maxElapsed = Integer.MIN_VALUE;
@@ -122,6 +121,8 @@ public class PJPeriodicTask extends RtThread {
 			minICacheCost = Integer.MAX_VALUE;
 			maxICacheCost = Integer.MIN_VALUE;
 			name = str;
+			dumper = new Dumper();
+			dumperScope = new Memory(1024, 1024);
 		}
 		public void recordRun(int elapsed) {
 			totalRuns++;
@@ -133,19 +134,29 @@ public class PJPeriodicTask extends RtThread {
 			if(minICacheCost > cost) minICacheCost = cost;
 			if(maxICacheCost < cost) maxICacheCost = cost;
 		}
-		public void dump(PrintStream out) {
-			out.print(name);
-			out.print(":\t");
-			out.print("min:\t"); out.print(minElapsed);
-			out.print("\tmax:\t"); out.print(maxElapsed);
-			out.print("\ttotal:\t"); out.print(totalElapsed);
-			out.print("/\t"); out.print(totalRuns);
-			if(maxICacheCost > 0) {
-				out.print("\ti$-min:\t"); out.print(minICacheCost);
-				out.print("\ti$-max:\t"); out.print(maxICacheCost);
+
+		private class Dumper implements Runnable {
+			PrintStream out;
+			public void run() {
+				out.print(name);
+				out.print(":\t");
+				out.print("min:\t"); out.print(minElapsed);
+				out.print("\tmax:\t"); out.print(maxElapsed);
+				out.print("\ttotal:\t"); out.print(totalElapsed);
+				out.print("/\t"); out.print(totalRuns);
+				if(maxICacheCost > 0) {
+					out.print("\ti$-min:\t"); out.print(minICacheCost);
+					out.print("\ti$-max:\t"); out.print(maxICacheCost);
+				}
+				out.println("");
 			}
-			out.println("");
 		}
+
+		public void dump(PrintStream out) {
+			dumper.out = out;
+			dumperScope.enter(dumper);
+		}
+
 		public String toString() {
 			return "min:\t"+minElapsed+"\tmax:\t"+maxElapsed
 				+"\ttotal:\t"+totalElapsed+"/"+totalRuns;
