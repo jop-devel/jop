@@ -1,0 +1,118 @@
+/* imports */
+import java.util.List;
+import java.util.ArrayList;
+
+import com.jopdesign.common.code.LoopBound;
+import com.jopdesign.common.code.SymbolicMarker;
+
+COMPILER Annotation
+
+  /* arbitrary Java code */
+LoopBound result;
+public LoopBound getResult()
+{
+	return result;
+}
+LoopBound
+buildLoopBound(String cmpop, LoopBoundExpr bound, SymbolicMarker marker)
+{
+    if(bound == null) return null;
+	if(cmpop.equals("<=")) bound = bound.relaxLowerBound(0);
+	if(marker == null) return LoopBound.simpleBound(bound);
+	else               return LoopBound.markerBound(bound, marker);
+}
+/*--------------------------------------------------------------------*/
+
+CHARACTERS
+  letter    = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_".
+  digit     = "0123456789".
+  cr        = '\r'.
+  lf        = '\n'.
+  tab       = '\t'.
+  stringCh  = ANY - '"' - '\\' - cr - lf.
+  charCh    = ANY - '\'' - '\\' - cr - lf.
+  printable = '\u0020' .. '\u007e'.
+  hex       = "0123456789abcdef".
+
+TOKENS
+  ident     = letter { letter | digit }.
+  vident    = '$' letter { letter | digit }.
+  number    = digit { digit }.
+  string    = '"' { stringCh | '\\' printable } '"'.
+  char      = '\'' ( charCh | '\\' printable { hex } ) '\''.
+  cmpop     = ['<'] '='.
+COMMENTS FROM "/*" TO "*/" NESTED
+COMMENTS FROM "//" TO cr lf
+
+IGNORE cr + lf + tab
+
+/*--------------------------------------------------------------------*/
+
+PRODUCTIONS
+
+Annotation
+= 
+  (. String cmpop; LoopBoundExpr expr; SymbolicMarker marker; .)
+  "loop"
+    cmpop (. cmpop = t.val; .)
+    Expression<out expr>
+    Context<out marker>        
+  (. result = buildLoopBound(cmpop, expr, marker); .)
+.
+
+
+Expression<out LoopBoundExpr expr>
+= (. LoopBoundExpr e2; .)
+  Expression2<out expr>
+  {   "+" Expression2<out e2> (. expr = expr.add(e2); .)
+    | "-" Expression2<out e2> (. expr = expr.subtract(e2); .)
+  } 
+.
+
+Expression2<out LoopBoundExpr expr>
+= (. LoopBoundExpr e2; .)
+  Expression3<out expr>
+  {   "*" Expression3<out e2> (. expr = expr.mul(e2); .)
+    | "/" Expression3<out e2> (. expr = expr.idiv(e2); .)
+  } 
+.
+
+Expression3<out LoopBoundExpr expr> (. expr = null; .)
+=   
+    number   (. expr = LoopBoundExpr.numericBound(t.val, t.val); .)
+  | "(" Expression<out expr> ")"
+  | ident  (. String ident = t.val; .)  IdentExpression<out expr, ident>
+  | vident (. String ident = t.val; .)  ArgExpression<out expr, ident>
+.
+
+IdentExpression<out LoopBoundExpr expr, String ident> (. expr = null; .)
+=   (. ArrayList<LoopBoundExpr> args = new ArrayList<LoopBoundExpr>(); .)
+    "(" ExpressionList<args> ")" (. expr = LoopBoundExpr.builtInFunction(ident, args); .)
+  | (. ArrayList<String> members = new ArrayList<String>(); members.add(ident); .)
+    { "." ident (. members.add(t.val); .) } (. expr = LoopBoundExpr.constRef(members); .)
+.
+
+ArgExpression<out LoopBoundExpr expr, String index>
+=  (. ArrayList<String> members = new ArrayList<String>(); .)
+   { "." ident (. members.add(t.val); .) } (. expr = LoopBoundExpr.argRef(index, members); .)
+.
+
+ExpressionList<List args>
+=  (. LoopBoundExpr expr; .)
+   Expression<out expr> (. args.add(expr); .)
+   { "," Expression<out expr> (. args.add(expr); .) }
+ | 
+.
+
+Context<out SymbolicMarker marker> (. marker = null; .) 
+=   
+   "outer"      (. int outerLoop = 1; .)
+    [ "(" number (. outerLoop = Integer.parseInt(t.val); .) ")"]
+    (. marker = SymbolicMarker.outerLoopMarker(outerLoop); .)
+  | "method"     (. String markerMethod = null; .)
+    ["(" string  (. markerMethod = t.val; .) ")"]
+    (. marker = SymbolicMarker.methodMarker(markerMethod); .)
+  |
+.
+
+END Annotation.

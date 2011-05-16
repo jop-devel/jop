@@ -659,7 +659,7 @@ public final class SoftFloat32 {
 		} else {
 			// reduce m1 by left shifting and modding until the exponents x1 and x2 are
 			// equal
-			while (x1 != x2) {
+			while (x1 != x2) { // @WCA loop <= 7
 				int s = x1-x2 < 39 ? x1-x2 : 39;
 				x1 -= s;
 				m1 = (int) ((((long) m1) << s) % m2);

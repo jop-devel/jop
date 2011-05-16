@@ -1,4 +1,8 @@
 (User) ChangeLog for wcet08. Please keep current.
+Dez 10
+------
+  - Ported to new framework
+
 April 09
 --------
   - Big config file cleanup

@@ -1,0 +1,79 @@
+Java Annotation Language
+========================
+v 1.0 / 2011/04/04
+
+Loop Bounds
+===========
+Loop Bounds have to be annotated on the same line or directly
+after the loop construct (if, for, while), using //-style comments.
+
+  for(int i = 0; i < 5; i+=1) { // @WCA loop = 5
+  for(int i = 0; i < 5; i+=2) {
+    // @WCA loop = 10
+
+Loop bounds have the form
+
+  "loop" rel-op expression context
+
+rel-op
+------
+
+rel-op is either   
+   "="  exact bound
+   "<=" upper bound
+   ">=" lower bound (currently not supported)
+
+expressions
+-----------
+expression is an integer expression of the following form:
+
+  expr :=
+   number
+   const-ref [field-spec] (not yet supported)
+   arg-ref [field-spec]   (not yet supported)
+   op(expr_1,expr_2,...,expr_N)
+
+Numbers are ordinary, non-negative integer numbers, for example "3" or "7".
+A reference to a constant field (const-ref) is the possibly qualified
+name of a visible, static, final field. If the class qualifier is
+missing, the constant refers to the current class. If the constant
+is not an integer, the field of interest needs to be specified (field-spec).
+
+  // @WCA loop = NUM_ELEMENTS
+  // @WCA loop = jbe.Lift.NUM_SENSORS
+  // @WCA loop = jbe.Lift#NUM_SENSORS
+  // @WCA loop = jbe.Lift#CONFIG.numSensors
+
+A reference to a method argument is useful if you want to reuse
+the results obtained by automated value analyses. Arguments
+are referred to by a dollar sign, followed by the (1-based) index
+of the argument. Note that for instance methods, $0 (or $this) refers
+to the current object, while for static methods $0 is undefined.
+
+	void insertion_sort(int array[], int index)
+  // @WCA loop = $2
+  // @WCA loop = $1.length
+  // @WCA loop = $this.maxLength
+
+Finally, the following interval arithmetic operators can be used to
+specify formulas build on the atoms described above:
+
+  +,-,*   :: (infix, precedence as in Java, interval arithmetic)
+  min,max :: (prefix, interval arithmetic)                        (not yet supported)
+  ld(y)   :: (the interval [xl,xu] s.t. y \in [2^xl,2^xu])        (not yet supported)
+
+  // @WCA loop = ld($1.length) + 1
+
+context
+-------
+A context is either
+  context :=
+    ""                             (relative to the number of times the loop is executed)
+    "outer"                        (relative to the number of times the outer loop is executed)
+    "outer" "(" n ")"              (relative to the number of times the n-th outer loop is executed)
+                                   (the loop itself has index 0, the directly enclosing outer loop index 1)
+    "method"                       (relative to the number of times the enclosing method is executed) 
+    "method" '"' method-name '"'   (relative to the number of times method method-name is executed)   (not yet supported)
+
+If a loop bound is provided, at least one local loop bound (with context loop entry, outer loop entry or
+enclosing method) should be provided.

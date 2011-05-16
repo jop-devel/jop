@@ -1,35 +1,65 @@
-/**
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
  *
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.jopdesign.wcet.analysis;
 
-import com.jopdesign.dfa.framework.CallString;
-import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
+import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 
-public class AnalysisContextLocal extends AnalysisContextIpet {
+public class AnalysisContextLocal implements AnalysisContext {
 
-	public final CallString callString;
+	protected final CallString callString;
+	protected final StaticCacheApproximation mode;
 
+	public AnalysisContextLocal(StaticCacheApproximation mode) {
+		 this(mode, CallString.EMPTY);
+	}
+	
 	public AnalysisContextLocal(StaticCacheApproximation mode, CallString callString) {
-		super(mode);
+		this.mode = mode;
 		this.callString = callString;
 	}
-	public AnalysisContextLocal(StaticCacheApproximation mode) {
-		super(mode);
-		this.callString = CallString.EMPTY;
-	}
-	@Override
-	public AnalysisContextLocal withCacheApprox(StaticCacheApproximation mode) {
-		return new AnalysisContextLocal(mode, this.callString);
-	}
-	public AnalysisContextLocal withCallString(CallString cs)
-	{
-		return new AnalysisContextLocal(this.cacheApprox, cs);
-	}
+
 	@Override
 	public CallString getCallString()
 	{
 		return callString;
+	}
+	
+	public StaticCacheApproximation getCacheApproxMode() {
+		return mode;
+	}
+
+	public AnalysisContextLocal withCacheApprox(StaticCacheApproximation mode) {
+		return new AnalysisContextLocal(mode, this.callString);
+	}
+	
+	public AnalysisContextLocal withCallString(CallString cs)
+	{
+		return new AnalysisContextLocal(this.mode, cs);
+	}
+
+	@Override
+	public ExecutionContext getExecutionContext(CFGNode n) {
+		return new ExecutionContext(n.getControlFlowGraph().getMethodInfo(), callString);
 	}
 
 	@Override
@@ -45,14 +75,19 @@ public class AnalysisContextLocal extends AnalysisContextIpet {
 		if (obj == null) return false;
 		if (obj.getClass() != getClass()) return false;
 		AnalysisContextLocal other = (AnalysisContextLocal) obj;
-		if (!cacheApprox.equals(other.cacheApprox)) return false;
+		if (!mode.equals(other.mode)) return false;
 		if (!callString.equals(other.callString)) return false;
 		return true;
 	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
 	@Override
 	public String toString() {
-		String s = super.toString();
-		if(getCallString().isEmpty()) return s;
-		return s+"-"+getCallString().toString();
+		return "AnalysisContextLocal [callString=" + callString + ", mode="
+				+ mode + "]";
 	}
+
+	
 }

@@ -18,16 +18,17 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 package com.jopdesign.wcet.uppaal;
+
+import com.jopdesign.common.config.BooleanOption;
+import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.EnumOption;
+import com.jopdesign.common.config.IntegerOption;
+import com.jopdesign.common.config.Option;
+import com.jopdesign.common.config.StringOption;
+
 import java.io.File;
 
-import com.jopdesign.wcet.config.BooleanOption;
-import com.jopdesign.wcet.config.Config;
-import com.jopdesign.wcet.config.EnumOption;
-import com.jopdesign.wcet.config.IntegerOption;
-import com.jopdesign.wcet.config.Option;
-import com.jopdesign.wcet.config.StringOption;
-
-/** 
+/**
  * 
  * UppAal configuration
  * @author Benedikt Huber (benedikt.huber@gmail.com)
@@ -47,6 +48,7 @@ public class UppAalConfig {
 		ALWAYS_MISS,
 		CACHE_SIM
 	}
+
 	public static final EnumOption<UppaalCacheApproximation> UPPAAL_CACHE_APPROX =
 		new EnumOption<UppaalCacheApproximation>(
 				"uppaal-cache-approx",
@@ -63,7 +65,7 @@ public class UppAalConfig {
 				"collapse leaf methods to speed up simulation", 
 				false);
 	
-	public static final Option<Boolean> UPPAAL_CONVEX_HULL = 
+	public static final Option<Boolean> UPPAAL_CONVEX_HULL =
 		new BooleanOption("uppaal-convex-hull",
 			"use UPPAAL's convex hull approximation",
 			false);

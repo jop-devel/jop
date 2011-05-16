@@ -52,7 +52,9 @@ public class ArrayCyclicQueue /* implements Queue */ {
 		if (this.queueSize == 1) {
 			this.queueStart = this.queueEnd;
 		}
-		this.queueEnd = (this.queueEnd + 1) % this.maxSize;
+		this.queueEnd++;
+		if (this.queueEnd == this.maxSize)
+			this.queueEnd = 0;
 	}
 	
 	public synchronized Object poll() {
@@ -61,7 +63,9 @@ public class ArrayCyclicQueue /* implements Queue */ {
 		} else {
 			Object o = this.queue[this.queueStart];
 			this.queue[this.queueStart] = null;
-			this.queueStart = (this.queueStart + 1) % this.maxSize;
+			this.queueStart++;
+			if (this.queueStart == this.maxSize)
+				this.queueStart = 0;
 			this.queueSize--;
 			
 			return o;

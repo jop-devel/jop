@@ -22,11 +22,14 @@ package com.jopdesign.timing;
 
 import org.apache.bcel.Constants;
 
+import com.jopdesign.tools.JopInstr;
+
 /**
  * Class for encapsulating a instruction to be analyzed.
  * Can be specialized for specific processor models.
  */
 public class InstructionInfo {
+	
 	/** return opcodes are hardcoded: {A,D,F,I,L,_}RETURN */
 	public static final int[] RETURN_OPCODES = {
 		Constants.ARETURN,
@@ -35,6 +38,22 @@ public class InstructionInfo {
 		Constants.IRETURN,
 		Constants.LRETURN,
 		Constants.RETURN };
+	
+	/** invoke opcodes are hardcoded: INVOKE{INTERFACE, SPECIAL, STATIC, VIRTUAL, SUPER} and jopsys_invoke */
+	public static final int[] INVOKE_OPCODES = {
+		Constants.INVOKEINTERFACE,
+		Constants.INVOKESPECIAL,
+		Constants.INVOKESTATIC,
+		Constants.INVOKEVIRTUAL,
+		JopInstr.get("jopsys_invoke"), 
+		JopInstr.get("invokesuper")
+	};
+
+	/** Exception/Interrupt handler opcodes */
+	public static final int[] ASYNC_HANDLER_OPCODES = {
+		JopInstr.get("sys_int"),
+		JopInstr.get("sys_exc")
+	};
 
 	public static boolean isReturnOpcode(int opcode) {
 		for(int rop : RETURN_OPCODES) {
@@ -42,6 +61,19 @@ public class InstructionInfo {
 		}
 		return false;
 	}
+	public static boolean isInvokeOpcode(int opcode) {
+		for(int rop : INVOKE_OPCODES) {
+			if(rop == opcode) return true;
+		}
+		return false;
+	}
+	public static boolean isAsyncHandlerOpcode(int opcode) {
+		for(int rop : ASYNC_HANDLER_OPCODES) {
+			if(rop == opcode) return true;
+		}
+		return false;
+	}
+
 	private int opcode;
 
 	public InstructionInfo(int opcode) {

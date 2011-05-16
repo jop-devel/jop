@@ -48,8 +48,16 @@ final public class MathUtils {
 	}
 	
 	public static float normalizeRadAngle(float angle) {
-		while(angle > Math.PI) angle -= TWO_PI;
-		while(angle < - Math.PI) angle += TWO_PI;
+		// while(angle > Math.PI) angle -= TWO_PI;
+		// while(angle < - Math.PI) angle += TWO_PI;
+
+		// The code above return an angle in (-Math.PI,Math.PI), which
+		// is the same as:
+		angle %= (float)TWO_PI;
+		if (angle > Math.PI)
+			angle -= TWO_PI;
+		if (angle < -Math.PI)
+			angle += TWO_PI;
 		
 		return angle;
 	}

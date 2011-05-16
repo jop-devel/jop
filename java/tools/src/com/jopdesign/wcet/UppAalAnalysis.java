@@ -21,104 +21,122 @@
 
 package com.jopdesign.wcet;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.List;
-import java.util.Vector;
-
-import org.apache.log4j.Logger;
-
-import com.jopdesign.build.MethodInfo;
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.AppSetup;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.dfa.DFATool;
 import com.jopdesign.wcet.analysis.UppaalAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
-import com.jopdesign.wcet.config.Config;
-import com.jopdesign.wcet.config.Option;
-import com.jopdesign.wcet.ipet.IpetConfig;
-import com.jopdesign.wcet.jop.JOPConfig;
-import com.jopdesign.wcet.report.ReportConfig;
-import com.jopdesign.wcet.uppaal.UppAalConfig;
+import org.apache.log4j.Logger;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
 
 public class UppAalAnalysis {
-	private static final String CONFIG_FILE_PROP = "config";
-	private static final Logger tlLogger = Logger.getLogger(UppAalAnalysis.class);
-	private static final int ECC_TRESHOLD = 400;
-	public static Option<?>[][] options = {
-		ProjectConfig.projectOptions,
-		JOPConfig.jopOptions,
-		IpetConfig.ipetOptions,
-		UppAalConfig.uppaalOptions,
-		ReportConfig.reportOptions
-	};
-	class WCETEntry {
-		MethodInfo target;
-		long wcet;
-		double searchtime;
-		double  solvertime;
-		public WCETEntry(MethodInfo target, long wcet, double searchtime, double solvertime) {
-			this.target = target;
-			this.wcet = wcet;
-			this.searchtime = searchtime; 
-			this.solvertime = solvertime;
-		}
-	}
-	
-	public static void main(String[] args) {
-		Config config = Config.instance();
-		config.addOptions(options);
-		ExecHelper exec = new ExecHelper(UppAalAnalysis.class, "1.0 [deprecated]", tlLogger, CONFIG_FILE_PROP);
-		
-		exec.initTopLevelLogger();       /* Console logging for top level messages */
-		exec.loadConfig(args);           /* Load config */
-		UppAalAnalysis inst = new UppAalAnalysis();
-		/* run */
-		if(! inst.run(exec)) exec.bail("UppAal translation failed");
-		tlLogger.info("UppAal translation finished");
-	}
+    private static final String CONFIG_FILE_PROP = "wcetanalysis.properties";
+    private static final Logger tlLogger = Logger.getLogger(UppAalAnalysis.class);
+    private static final int ECC_TRESHOLD = 400;
 
-	private boolean run(ExecHelper exec) {
-		Config c = Config.instance();
-		File uppaalOutDir = null;
-		Project project = null;
-		try { 
-			project = new Project(new ProjectConfig(c));
-			project.setTopLevelLogger(tlLogger);
-			tlLogger.info("Loading project");
-			project.load();
-			uppaalOutDir = project.getOutDir("uppaal");
-		}
-		catch (Exception e) { 
-			exec.logException("loading project", e); 
-			return false; 
-		}
-		UppaalAnalysis ua = new UppaalAnalysis(tlLogger,project,uppaalOutDir);
-		List<MethodInfo> methods = project.getCallGraph().getImplementedMethods(project.getTargetMethod());
-		Collections.reverse(methods);
-		List<WCETEntry> entries = new Vector<WCETEntry>();
-		for( MethodInfo m : methods ) {
-			if(project.computeCyclomaticComplexity(m) > ECC_TRESHOLD) {
-				tlLogger.info("Skipping UppAal translation for "+m+
-						      " because extended cyclomatic compleity "+
-						      project.computeCyclomaticComplexity(m) + " > treshold");				
-			} else {
-				tlLogger.info("Starting UppAal translation for "+m);
-				WcetCost wcet;
-				try {
-					wcet = ua.calculateWCET(m);
-					entries.add(new WCETEntry(m,wcet.getCost(),ua.getSearchtime(),ua.getSolvertimemax()));
-				} catch (Exception e) {
-					exec.logException("Uppaal calculation",e);
-					return false;
-				}
-			}
-		}
-		for(WCETEntry entry : entries) {
-			System.out.println("***" + entry.target.toString());
-			System.out.println("    wcet: " + entry.wcet);
-			System.out.println("    complex: " + project.computeCyclomaticComplexity(entry.target));
-			System.out.println("    searchT: " + entry.searchtime);
-			System.out.println("    solverTmax: " + entry.solvertime);			
-		}
-		return true;
-	}
+    class WCETEntry {
+        MethodInfo target;
+        long wcet;
+        double searchtime;
+        double solvertime;
+
+        public WCETEntry(MethodInfo target, long wcet, double searchtime, double solvertime) {
+            this.target = target;
+            this.wcet = wcet;
+            this.searchtime = searchtime;
+            this.solvertime = solvertime;
+        }
+    }
+
+    public static void main(String[] args) {
+
+        // We set a different output path for this tool if invoked by cmdline
+        // Note that WCETTool could also override defaults, but we do not want to change the
+        // default value of outdir if WCETTool is invoked from another tool
+        Properties defaultProps = new Properties();
+        defaultProps.put("outdir", "java/target/wcet/${projectname}");
+
+        AppSetup setup = new AppSetup(defaultProps, false);
+        setup.setVersionInfo("1.0 [deprecated]");
+        // We do not load a config file automatically, user has to specify it explicitly to avoid
+        // unintentional misconfiguration
+        //setup.setConfigFilename(CONFIG_FILE_NAME);
+        setup.setUsageInfo("UppAllAnalysis", "UppAll WCET Analysis");
+
+        WCETTool wcetTool = new WCETTool();
+        DFATool dfaTool = new DFATool();
+
+        setup.registerTool("dfa", dfaTool, true, false);
+        setup.registerTool("wcet", wcetTool);
+
+        AppInfo appInfo = setup.initAndLoad(args, true, false, false);
+
+        if (setup.useTool("dfa")) {
+            wcetTool.setDfaTool(dfaTool);
+        }
+
+        ExecHelper exec = new ExecHelper(setup.getConfig(), tlLogger);
+
+        exec.dumpConfig();
+        UppAalAnalysis inst = new UppAalAnalysis(wcetTool);
+        /* run */
+        if (!inst.run(exec)) exec.bail("UppAal translation failed");
+        tlLogger.info("UppAal translation finished");
+    }
+
+    private WCETTool project;
+
+    public UppAalAnalysis(WCETTool wcetTool) {
+        project = wcetTool;
+    }
+
+    private boolean run(ExecHelper exec) {
+        File uppaalOutDir;
+        try {
+            project.setTopLevelLogger(tlLogger);
+            tlLogger.info("Loading project");
+            project.initialize();
+            uppaalOutDir = project.getOutDir("uppaal");
+        }
+        catch (Exception e) {
+            exec.logException("loading project", e);
+            return false;
+        }
+        UppaalAnalysis ua = new UppaalAnalysis(tlLogger, project, uppaalOutDir);
+        List<MethodInfo> methods = project.getCallGraph().getReachableImplementations(project.getTargetMethod());
+        Collections.reverse(methods);
+        List<WCETEntry> entries = new ArrayList<WCETEntry>();
+        for (MethodInfo m : methods) {
+            if (project.computeCyclomaticComplexity(m) > ECC_TRESHOLD) {
+                tlLogger.info("Skipping UppAal translation for " + m +
+                        " because extended cyclomatic complexity " +
+                        project.computeCyclomaticComplexity(m) + " > treshold");
+            } else {
+                tlLogger.info("Starting UppAal translation for " + m);
+                WcetCost wcet;
+                try {
+                    wcet = ua.calculateWCET(m);
+                    entries.add(new WCETEntry(m, wcet.getCost(), ua.getSearchtime(), ua.getSolvertimemax()));
+                } catch (Exception e) {
+                    exec.logException("Uppaal calculation", e);
+                    return false;
+                }
+            }
+        }
+        for (WCETEntry entry : entries) {
+            System.out.println("***" + entry.target.toString());
+            System.out.println("    wcet: " + entry.wcet);
+            System.out.println("    complex: " + project.computeCyclomaticComplexity(entry.target));
+            System.out.println("    searchT: " + entry.searchtime);
+            System.out.println("    solverTmax: " + entry.solvertime);
+        }
+        return true;
+    }
 
 }

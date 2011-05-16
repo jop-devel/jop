@@ -19,24 +19,22 @@
 */
 package com.jopdesign.wcet.ipet;
 
+import com.jopdesign.common.graphutils.IDProvider;
+import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
+import lpsolve.LpSolve;
+import lpsolve.LpSolveException;
+import org.apache.log4j.Logger;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.Map.Entry;
-
-import org.apache.log4j.Logger;
-
-import com.jopdesign.wcet.graphutils.IDProvider;
-import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
-
-import lpsolve.LpSolve;
-import lpsolve.LpSolveException;
+import java.util.TreeMap;
 
 /**
  * Simple, typed API for invoking LpSolve.
  *
- * @param<T> type of variables. If you don't want typed variables, use {@link java.lang.Object}
+ * @param <T> type of variables. If you don't want typed variables, use {@link java.lang.Object}
  *
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  */
@@ -54,9 +52,11 @@ public class LpSolveWrapper<T> {
 			this.statusCode = c;
 		}
 	}
+	private static final long LP_SOLVE_SEC_TIMEOUT = 20;
 	private static long solverTime = 0;
+
 	/**
-	 * Get time spend in the solver since the last call to {@link resetSolverTime}
+	 * Get time spend in the solver since the last call to {@link #resetSolverTime()}
 	 * @return the time spend in the solver in seconds
 	 */
 	public static double getSolverTime() { return ((double)solverTime)/1.0E9; }
@@ -69,7 +69,7 @@ public class LpSolveWrapper<T> {
 	private static Map<Integer,SolverStatus> readMap = null;
 
 	/**
-	 * Wrap the return code of lp_solve into a {@ link SolverStatus} variable.
+	 * Wrap the return code of lp_solve into a {@link SolverStatus} variable.
 	 * @param code the code returned by the solver
 	 * @return
 	 */
@@ -188,6 +188,25 @@ public class LpSolveWrapper<T> {
 		this.lpsolve.setAddRowmode(false);
 	}
 
+	private class SolverThread extends Thread {
+		int result = -1;
+		long solverTime = 0;
+		LpSolveException exception = null;
+
+		public SolverThread() {}
+		@Override
+		public void run() {
+			long start = System.nanoTime();
+			try {
+				result = lpsolve.solve();
+			} catch (LpSolveException e) {
+				exception = e;
+			}
+			long stop = System.nanoTime();			
+			solverTime = stop-start;
+		}		
+	}
+	
 	/**
 	 * Solve the I(LP)
 	 * @param objVec if non-null, write the solution into this array
@@ -196,11 +215,25 @@ public class LpSolveWrapper<T> {
 	 */
 	public double solve(double[] objVec) throws LpSolveException {
 		freeze();
-		long start = System.nanoTime();
-		int r = this.lpsolve.solve();
-		long stop = System.nanoTime();
-		LpSolveWrapper.solverTime +=(stop-start);
-		SolverStatus st = getSolverStatus(r);
+		
+	    lpsolve.setTimeout(LP_SOLVE_SEC_TIMEOUT);
+		SolverThread thr = new SolverThread();
+		thr.start();
+    	int cnt=1;
+	    while(true) {
+	    	boolean interrupted = false;
+		    try {
+				thr.join(1000);
+			} catch (InterruptedException e) {
+				interrupted = true;
+			}
+		    if(! thr.isAlive()) break;
+		    if(!interrupted) {
+		    	System.err.println("LP Solve: Hard Problem, calculating ("+(cnt++)+"s)");
+		    }
+	    }
+		LpSolveWrapper.solverTime += (thr.solverTime);
+		SolverStatus st = getSolverStatus(thr.result);
 		if(objVec != null) this.lpsolve.getVariables(objVec);
 		if(st != SolverStatus.OPTIMAL) {
 			if(objVec != null) {

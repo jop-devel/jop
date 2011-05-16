@@ -21,8 +21,10 @@
  */
 package papabench.jop.commons.tasks;
 
-import joprt.*;
+import java.io.PrintStream;
 
+import com.jopdesign.sys.*;
+import joprt.*;
 
 /**
  * This is a version witha JOP RT periodic thread. 
@@ -34,23 +36,59 @@ import joprt.*;
  */
 public class PJPeriodicTask extends RtThread {
 	
+	public static final boolean INSTRUMENTATION = true;
+	public static final int INSTRUMENTATION_RUNS = 100;
+
 	private Runnable taskHandler;
 	private int priority;
 	private int releaseMs;
 	private int periodMs;
-	RtThread rtt;
-	
-	public PJPeriodicTask(Runnable taskHandler, int priority, int releaseMs, int periodMs) {
+	private Scope scope;
+	private String name;
+
+	public PJPeriodicTask(Runnable taskHandler, int priority, int releaseMs, int periodMs, String name) {
 		super(priority, periodMs*1000, releaseMs*1000);
 		this.taskHandler = taskHandler;
 		this.priority = priority;
 		this.releaseMs = releaseMs;
 		this.periodMs = periodMs;
+		this.name = name;
 	}
 	
+	public Scope getScope() {
+		return scope;
+	}
+
+	public void setScope(int words) {
+		scope = new Scope(new int[words]);
+	}
+
+	public void setScope(Scope s) {
+		scope = s;
+	}
+
 	public void run() {
+		
+		if (INSTRUMENTATION) initInstrumentation();
+		int cnt = 0;
+
 		for (;;) {
-			taskHandler.run();
+
+			if (INSTRUMENTATION) startMeasurement();
+
+			if (scope != null) {
+				scope.enter(taskHandler);
+			} else {
+				taskHandler.run();
+			}
+
+			if (INSTRUMENTATION) endMeasurement();			
+			if (INSTRUMENTATION
+				&& ++cnt == INSTRUMENTATION_RUNS) {
+				printInstrumentation();
+				cnt = 0;
+			}
+
 			waitForNextPeriod();
 		}
 	}
@@ -69,5 +107,95 @@ public class PJPeriodicTask extends RtThread {
 
 	public int getPeriodMs() {
 		return periodMs;
+	}
+
+	private static class MeasurementStatistic {
+		int minElapsed, maxElapsed, totalRuns;		
+		long totalElapsed;
+		int minICacheCost, maxICacheCost;
+		String name;
+		public MeasurementStatistic(String str) {
+			minElapsed = Integer.MAX_VALUE;
+			maxElapsed = Integer.MIN_VALUE;
+			totalElapsed = 0;
+			totalRuns = 0;
+			minICacheCost = Integer.MAX_VALUE;
+			maxICacheCost = Integer.MIN_VALUE;
+			name = str;
+		}
+		public void recordRun(int elapsed) {
+			totalRuns++;
+			totalElapsed += elapsed;
+			if(minElapsed > elapsed) minElapsed = elapsed;
+			if(maxElapsed < elapsed) maxElapsed = elapsed;
+		}
+		public void recordICacheCost(int cost) {
+			if(minICacheCost > cost) minICacheCost = cost;
+			if(maxICacheCost < cost) maxICacheCost = cost;
+		}
+		public void dump(PrintStream out) {
+			out.print(name);
+			out.print(":\t");
+			out.print("min:\t"); out.print(minElapsed);
+			out.print("\tmax:\t"); out.print(maxElapsed);
+			out.print("\ttotal:\t"); out.print(totalElapsed);
+			out.print("/\t"); out.print(totalRuns);
+			if(maxICacheCost > 0) {
+				out.print("\ti$-min:\t"); out.print(minICacheCost);
+				out.print("\ti$-max:\t"); out.print(maxICacheCost);
+			}
+			out.println("");
+		}
+		public String toString() {
+			return "min:\t"+minElapsed+"\tmax:\t"+maxElapsed
+				+"\ttotal:\t"+totalElapsed+"/"+totalRuns;
+		}
+	}
+
+	private static class EmptyRunnable implements Runnable {
+		public void run() {
+		};
+	}
+
+	private MeasurementStatistic problemStats;
+	private Runnable emptyRunnable;
+	
+	private void initInstrumentation() {
+		/* initialize statistics */
+		problemStats = new MeasurementStatistic(name);
+		/* create a dummy runnable */
+		emptyRunnable = new EmptyRunnable();
+		/* JOP Specific instrumentation */
+		startMeasurement();
+		if (scope != null) {
+			scope.enter(emptyRunnable);
+		} else {
+			emptyRunnable.run();
+		}
+		endMeasurement();
+		to = te-ts;
+		System.out.print(name);
+		System.out.print(" overhead for empty run(): ");
+		System.out.println(to);
+		/* initialize statistics again to get rid of overhead measurement artifacts */
+		problemStats = new MeasurementStatistic(name);
+	}
+	
+	private void printInstrumentation() {
+		problemStats.dump(System.out);
+	}
+
+	private int ts, te, to;
+
+	public void startMeasurement() {
+		Native.wrMem(0, Const.IO_INT_ENA);
+		ts = Native.rdMem(Const.IO_CNT);
+	}
+
+	public void endMeasurement() {
+		/* JOP Specific instrumentation */
+		te = Native.rdMem(Const.IO_CNT);			
+		problemStats.recordRun(te-ts-to);
+		Native.wrMem(-1, Const.IO_INT_ENA);
 	}
 }

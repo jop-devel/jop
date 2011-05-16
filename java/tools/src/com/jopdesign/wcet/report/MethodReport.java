@@ -19,55 +19,60 @@
 */
 package com.jopdesign.wcet.report;
 
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.LoopBound;
+import com.jopdesign.wcet.WCETTool;
+
 import java.util.Collection;
 import java.util.Set;
 import java.util.TreeSet;
 
-import com.jopdesign.build.ClassInfo;
-import com.jopdesign.build.MethodInfo;
-import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.frontend.ControlFlowGraph;
-import com.jopdesign.wcet.frontend.CallGraph.CallGraphNode;
-import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
-import com.jopdesign.wcet.graphutils.Pair;
-
 public class MethodReport {
-	private MethodInfo info;
-	private Collection<LoopBound> loopBounds;
-	private Set<String> referenced;
-	String page;
-	private int sizeInWords;
-	private ControlFlowGraph fg;
-	private int cacheBlocks;
-	public MethodReport(Project p, MethodInfo m, String page) {
-		this.info = m;
-		fg = p.getWcetAppInfo().getFlowGraph(info);
-		this.loopBounds = fg.getLoopBounds().values();
-		this.sizeInWords = fg.getNumberOfWords();		
-		this.referenced = new TreeSet<String>();
-		for(CallGraphNode cgn : p.getCallGraph().getReferencedMethods(m)) {
-			Pair<ClassInfo, String> ref = cgn.getReferencedMethod();
-			this.referenced.add(ref.fst().clazz.getClassName()+"."+ref.snd());
-		}
-		this.page = page;
-		this.cacheBlocks = p.getProcessorModel().getMethodCache().requiredNumberOfBlocks(fg.getNumberOfWords());
-	}
-	public MethodInfo getInfo() {
-		return info;
-	}
-	public Collection<LoopBound> getLoopBounds() {
-		return loopBounds;
-	}
-	public Set<String> getReferenced() {
-		return referenced;
-	}
-	public String getPage() {
-		return page;
-	}
-	public int getSizeInWords() {
-		return this.sizeInWords;
-	}
-	public int getCacheBlocks() {
-		return cacheBlocks;
-	}
+    private MethodInfo info;
+    private Collection<LoopBound> loopBounds;
+    private Set<String> referenced;
+    String page;
+    private int sizeInWords;
+    private ControlFlowGraph fg;
+    private int cacheBlocks;
+
+    public MethodReport(WCETTool p, MethodInfo m, String page) {
+        this.info = m;
+        fg = info.getCode().getControlFlowGraph(false);
+        this.loopBounds = fg.buildLoopBoundMap().values();
+        this.sizeInWords = fg.getNumberOfWords();
+        this.referenced = new TreeSet<String>();
+        for (ExecutionContext cgn : p.getCallGraph().getReferencedMethods(m)) {
+            MethodInfo ref = cgn.getMethodInfo();
+            this.referenced.add(ref.toString());
+        }
+        this.page = page;
+        this.cacheBlocks = p.getWCETProcessorModel().getMethodCache().requiredNumberOfBlocks(fg.getNumberOfWords());
+    }
+
+    public MethodInfo getInfo() {
+        return info;
+    }
+
+    public Collection<LoopBound> getLoopBounds() {
+        return loopBounds;
+    }
+
+    public Set<String> getReferenced() {
+        return referenced;
+    }
+
+    public String getPage() {
+        return page;
+    }
+
+    public int getSizeInWords() {
+        return this.sizeInWords;
+    }
+
+    public int getCacheBlocks() {
+        return cacheBlocks;
+    }
 }

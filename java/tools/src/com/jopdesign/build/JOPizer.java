@@ -21,19 +21,17 @@
 
 package com.jopdesign.build;
 
+import com.jopdesign.common.bcel.CustomAttribute;
+
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
-
-import org.apache.bcel.classfile.Attribute;
-
-import boxpeeking.instrument.bcel.AnnotationReader;
 
 /**
  * @author flavius, martin
  *
  */
-public class JOPizer extends AppInfo implements Serializable {
+public class JOPizer extends OldAppInfo implements Serializable {
 
 	// needed to avoid issues related to store/load of serializable content
 	private static final long serialVersionUID = 1307508540685275006L;
@@ -98,7 +96,7 @@ public class JOPizer extends AppInfo implements Serializable {
 	// Added to implement the symbol manager
 	public static JOPizer jz;
 
-	public JOPizer(ClassInfo template) {
+	public JOPizer(OldClassInfo template) {
 		super(template);
 	}
 
@@ -107,7 +105,8 @@ public class JOPizer extends AppInfo implements Serializable {
 		dumpMgci = System.getProperty("mgci", "false").equals("true");
 
 		if (USE_RTTM) {
-			Attribute.addAttributeReader("RuntimeInvisibleAnnotations", new AnnotationReader());
+                    // This will be done by AppSetup
+                    CustomAttribute.registerDefaultReader();
 		}
 
 
@@ -154,11 +153,14 @@ public class JOPizer extends AppInfo implements Serializable {
 
 	        // replace the wide instructions generated
 			// by Sun's javac 1.5
-			jz.iterate(new ReplaceIinc(jz));
+            // TODO ReplaceIinc and InerstSynchronized has been ported to new AppInfo already, port rest of this tool!
+            /*
+			jz.iterate(new ReplaceIinc());
 
 			// add monitorenter and exit for synchronized
 			// methods
-			jz.iterate(new InsertSynchronized(jz));
+			jz.iterate(new InsertSynchronized());
+            */
 
 	        // dump of BCEL info to a text file
 			jz.iterate(new Dump(jz, jz.outTxt));
@@ -173,7 +175,7 @@ public class JOPizer extends AppInfo implements Serializable {
 
 			// find all <clinit> methods and their dependency,
 			// resolve the depenency and generate the list
-			ClinitOrder cliOrder = new  ClinitOrder(jz);
+			OldClinitOrder cliOrder = new OldClinitOrder(jz);
 			jz.iterate(cliOrder);
 			JopMethodInfo.clinitList = cliOrder.findOrder();
 

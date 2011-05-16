@@ -1,24 +1,43 @@
-/**
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
  *
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.jopdesign.wcet.analysis;
 
-import com.jopdesign.build.MethodInfo;
-import com.jopdesign.wcet.ProcessorModel;
-import com.jopdesign.wcet.Project;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.wcet.WCETProcessorModel;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
-import com.jopdesign.wcet.ipet.IpetConfig;
-import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.IPETConfig;
+import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.jop.MethodCache;
+import org.apache.log4j.Logger;
 
 public class LocalAnalysis 
 implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 	private boolean assumeMissOnceOnInvoke;
 	private int maxCallstringLength;
 
-	public LocalAnalysis(Project p, IpetConfig ipetConfig) {
-		this.assumeMissOnceOnInvoke = ipetConfig.assumeMissOnceOnInvoke;
+        private static final Logger logger = Logger.getLogger(WCETTool.LOG_WCET_ANALYSIS+".LocalAnalysis");
+
+	public LocalAnalysis(WCETTool p, IPETConfig ipetConfig) {
+		this.assumeMissOnceOnInvoke = ipetConfig.doAssumeMissOnceOnInvoke();
 		this.maxCallstringLength = (int)p.getProjectConfig().callstringLength();
 	}
 	public LocalAnalysis() {
@@ -26,17 +45,17 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 	}
 	public WcetCost recursiveCost(
 			RecursiveAnalysis<AnalysisContextLocal,WcetCost> stagedAnalysis,
-			InvokeNode n,
+			ControlFlowGraph.InvokeNode n,
 			AnalysisContextLocal ctx) {
-		StaticCacheApproximation cacheMode = ctx.cacheApprox;
+		StaticCacheApproximation cacheMode = ctx.getCacheApproxMode();
 		if(cacheMode.needsInterProcIPET()) {
 			throw new AssertionError("Error: Cache Mode "+cacheMode+" not supported using local IPET strategy - " +
 					"it needs an interprocedural IPET analysis");
 		}
-		Project project    = stagedAnalysis.getProject();
+		WCETTool project   = stagedAnalysis.getWCETTool();
 		MethodInfo invoker = n.getBasicBlock().getMethodInfo();
 		MethodInfo invoked = n.getImplementedMethod();
-		ProcessorModel proc = project.getProcessorModel();
+		WCETProcessorModel proc = project.getWCETProcessorModel();
 		MethodCache cache = proc.getMethodCache();
 		long cacheCost;
 		AnalysisContextLocal recCtx = ctx.withCallString(ctx.getCallString().push(n,maxCallstringLength));
@@ -49,9 +68,9 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
                 project.getFlowGraph(invoked));
 		if(! proc.hasMethodCache() || cacheMode == StaticCacheApproximation.ALWAYS_HIT) {
 			cacheCost = 0;
-		} else if(project.getCallGraph().isLeafNode(invoked)) {
+		} else if(project.getCallGraph().isLeafMethod(invoked)) {
 			cacheCost = invokeReturnCost + nonLocalCacheCost;
-		} else if(cacheMode == StaticCacheApproximation.ALL_FIT_SIMPLE && cache.allFit(invoked)) {
+		} else if(cacheMode == StaticCacheApproximation.ALL_FIT_SIMPLE && cache.allFit(invoked,ctx.getCallString())) {
 			long returnCost = cache.getMissOnReturnCost(proc, project.getFlowGraph(invoker));
 			/* Maybe its better not to apply the all-fit heuristic ... */
 			long noAllFitCost = recCost.getCost() + invokeReturnCost;
@@ -80,7 +99,7 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 		WcetCost cost = new WcetCost();
 		cost.addNonLocalCost(nonLocalExecCost);
 		cost.addCacheCost(cacheCost);
-		RecursiveWcetAnalysis.logger.info("Recursive WCET computation: " + invoked.getMethod() +
+		logger.debug("Recursive WCET computation: " + invoked +
 				". invoke return cache cost: " + invokeReturnCost+
 				". non-local cache cost: "    + nonLocalCacheCost+
 				". cummulative cache cost: "+cacheCost+

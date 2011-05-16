@@ -19,21 +19,22 @@
 */
 package com.jopdesign.wcet.uppaal.translator;
 
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.LoopBound;
+import com.jopdesign.wcet.uppaal.UppAalConfig;
+import com.jopdesign.wcet.uppaal.model.LayoutCFG;
+import com.jopdesign.wcet.uppaal.model.Location;
+import com.jopdesign.wcet.uppaal.model.Location.LocationAttribute;
+import com.jopdesign.wcet.uppaal.model.Template;
+import com.jopdesign.wcet.uppaal.model.Transition;
+import com.jopdesign.wcet.uppaal.model.TransitionAttributes;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
-
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
-import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
-import com.jopdesign.wcet.uppaal.UppAalConfig;
-import com.jopdesign.wcet.uppaal.model.LayoutCFG;
-import com.jopdesign.wcet.uppaal.model.Location;
-import com.jopdesign.wcet.uppaal.model.Template;
-import com.jopdesign.wcet.uppaal.model.Transition;
-import com.jopdesign.wcet.uppaal.model.TransitionAttributes;
-import com.jopdesign.wcet.uppaal.model.Location.LocationAttribute;
 
 /**
  * Builder for program templates.
@@ -69,7 +70,7 @@ public class TemplateBuilder {
 	/* which variable to use for the given HOL */
 	private HashMap<CFGNode, Integer> loopVars;
 	/* upper bound for loop variables */
-	private Vector<Integer> loopVarBounds = new Vector<Integer>();
+	private Vector<Long> loopVarBounds = new Vector<Long>();
 	/* which bound constants to use for the given HOL */
 	private HashMap<CFGNode,Integer> loopBounds;
 	private String clockBB;
@@ -77,7 +78,7 @@ public class TemplateBuilder {
 	private Location postEnd;
 
 	private int pid;
-	public Vector<Integer> getLoopVarBounds() {
+	public Vector<Long> getLoopVarBounds() {
 		return this.loopVarBounds;
 	}
 
@@ -88,7 +89,6 @@ public class TemplateBuilder {
 	 * A number of loop variables, depending on the maximum nesting depth is created.
 	 * @param name the template's name
 	 * @param bbClock the basic block clock
-	 * @param createBBClock whether to create the basic block clock
 	 */
 	public TemplateBuilder(UppAalConfig config,
 						   String name, int processId,
@@ -113,22 +113,24 @@ public class TemplateBuilder {
 			String.format("clock %s; ", clock));
 	}
 	public int addLoop(CFGNode hol, int nestingDepth, LoopBound lb) {
+		
+		ExecutionContext eCtx = new ExecutionContext(hol.getControlFlowGraph().getMethodInfo());
 		nestingDepth = nestingDepth - 1;
 		int varKey = loopBounds.size();
 		getTemplate().appendDeclaration(
 				String.format("const int %s = %d;", 
-							  loopBoundConst(varKey), lb.getUpperBound()));
+							  loopBoundConst(varKey), lb.getUpperBound(eCtx)));
 		getTemplate().appendDeclaration(
 				String.format("const int %s = %d;", 
-							  loopLowerBoundConst(varKey), lb.getLowerBound()));
+							  loopLowerBoundConst(varKey), lb.getLowerBound(eCtx)));
 		while(loopVarBounds.size() < nestingDepth) {
-			loopVarBounds.add(0);
+			loopVarBounds.add(0L);
 		}
 		if(loopVarBounds.size() <= nestingDepth) {
-			loopVarBounds.add(lb.getUpperBound());
+			loopVarBounds.add(lb.getUpperBound(eCtx).longValue());
 		} else {
-			if(lb.getUpperBound() > loopVarBounds.get(nestingDepth)) {
-				loopVarBounds.set(nestingDepth,lb.getUpperBound());
+			if(lb.getUpperBound(eCtx).longValue() > loopVarBounds.get(nestingDepth)) {
+				loopVarBounds.set(nestingDepth,lb.getUpperBound(eCtx).longValue());
 			}
 		}
 		this.loopBounds.put(hol, varKey);

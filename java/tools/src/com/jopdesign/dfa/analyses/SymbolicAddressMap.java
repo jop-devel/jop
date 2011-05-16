@@ -1,14 +1,33 @@
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
+ *
+ * Copyright (C) 2010, Benedikt Huber <benedikt.huber@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package com.jopdesign.dfa.analyses;
+
+import com.jopdesign.dfa.framework.BoundedSetFactory;
+import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
+import org.apache.log4j.Logger;
 
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import org.apache.log4j.Logger;
-
-import com.jopdesign.dfa.framework.BoundedSetFactory;
-import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 
 
 /**
@@ -54,8 +73,8 @@ public class SymbolicAddressMap {
 	
 	/* full, private constructor */
 	private SymbolicAddressMap(BoundedSetFactory<SymbolicAddress> bsFactory,
-							   HashMap<Location,BoundedSet<SymbolicAddress>> initP,
-							   HashMap<String,BoundedSet<SymbolicAddress>> initA) {
+                               HashMap<Location, BoundedSet<SymbolicAddress>> initP,
+                               HashMap<String, BoundedSet<SymbolicAddress>> initA) {
 		this.bsFactory = bsFactory;
 		this.mapP = initP;
 		this.mapA = initA;
@@ -118,7 +137,7 @@ public class SymbolicAddressMap {
 	}
 	
 	/** Clone address map, but only those stack variables with index greater than or equal to
-	 *  {@code framePtr}. The stack variables are move down to the beginning of the stack. */
+	 *  {@code framePtr}. The stack variables are moved down to the beginning of the stack. */
 	public SymbolicAddressMap cloneInvoke(int framePtr) {
 		if(this.isTop()) return this;
 		SymbolicAddressMap copy = new SymbolicAddressMap(this.bsFactory);
@@ -197,7 +216,10 @@ public class SymbolicAddressMap {
 		BoundedSet<SymbolicAddress> val = mapP.get(loc);
 		if(val == null) {
 			Logger.getLogger(this.getClass()).error("Undefined stack location: "+loc);
-			throw new AssertionError("Undefined stack Location");
+			for(Entry<Location, BoundedSet<SymbolicAddress>> entry : this.mapP.entrySet()) {
+				System.err.println("  "+entry.getKey()+ " --> "+entry.getValue());
+			}
+//			throw new AssertionError("Undefined stack Location");
 		}
 		return val;
 	}
@@ -209,7 +231,7 @@ public class SymbolicAddressMap {
 		Location loc = new Location(staticfield);
 		BoundedSet<SymbolicAddress> val = mapP.get(loc);
 		if(val == null) {
-			val = bsFactory.singleton(new SymbolicAddress(staticfield));
+			val = bsFactory.singleton(SymbolicAddress.rootAddress(staticfield));
 		}
 		return val;
 	}
@@ -229,6 +251,11 @@ public class SymbolicAddressMap {
 		if(this.isTop()) return;
 		BoundedSet<SymbolicAddress> oldAlias = this.mapA.get(ty);
 		if(oldAlias == null) oldAlias = bsFactory.empty();
+		// FIXME: Debugging
+		if(newAliases == null) {
+			Logger.getLogger("Object Cache Analysis").error("Undefined alias set for "+ty);
+			return;
+		}
 		oldAlias.addAll(newAliases);
 		mapA.put(ty, newAliases);
 	}
@@ -257,6 +284,7 @@ public class SymbolicAddressMap {
 			out.print(indentstr.toString());
 			out.print(entry.getKey());
 			out.print(": ");
+			out.print(entry.getValue().getSize()+"<="+entry.getValue().getLimit());
 			out.print(entry.getValue());
 			out.print("\n");
 		}
@@ -264,6 +292,7 @@ public class SymbolicAddressMap {
 			out.print(indentstr.toString());
 			out.print(entry.getKey());
 			out.print("~~> ");
+			out.print(entry.getValue().getSize()+"<="+entry.getValue().getLimit());
 			out.print(entry.getValue());
 			out.print("\n");
 		}

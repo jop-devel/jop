@@ -39,7 +39,7 @@ public class ReplaceNativeAndCPIdx extends JOPizerVisitor {
 
 	private ConstantPool cp;
 
-	public ReplaceNativeAndCPIdx(AppInfo jz) {
+	public ReplaceNativeAndCPIdx(OldAppInfo jz) {
 		super(jz);
 	}
 
@@ -55,7 +55,7 @@ public class ReplaceNativeAndCPIdx extends JOPizerVisitor {
 			if (!(methods[i].isAbstract() || methods[i].isNative())) {
 
 				Method m = replace(methods[i]);
-		        MethodInfo mi = getCli().getMethodInfo(m.getName()+m.getSignature());
+		        OldMethodInfo mi = getCli().getMethodInfo(m.getName()+m.getSignature());
 		        // set new method also in MethodInfo
 		        mi.setMethod(m);
 				if (m != null) {
@@ -73,7 +73,7 @@ public class ReplaceNativeAndCPIdx extends JOPizerVisitor {
 
 		String methodId = method.getName() + method.getSignature();
 
-		MethodInfo mi = getCli().getMethodInfo(methodId);
+		OldMethodInfo mi = getCli().getMethodInfo(methodId);
 
 		// find invokes first and replace call to Native by
 		// JOP native instructions.

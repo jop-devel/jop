@@ -20,6 +20,33 @@
 
 package com.jopdesign.build;
 
+import com.jopdesign.common.bcel.AnnotationAttribute;
+import com.jopdesign.sys.Const;
+import org.apache.bcel.Constants;
+import org.apache.bcel.classfile.Attribute;
+import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.classfile.Method;
+import org.apache.bcel.generic.ArrayType;
+import org.apache.bcel.generic.BranchInstruction;
+import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.DSTORE;
+import org.apache.bcel.generic.IINC;
+import org.apache.bcel.generic.IndexedInstruction;
+import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.InstructionConstants;
+import org.apache.bcel.generic.InstructionFactory;
+import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InstructionList;
+import org.apache.bcel.generic.InstructionTargeter;
+import org.apache.bcel.generic.LSTORE;
+import org.apache.bcel.generic.MethodGen;
+import org.apache.bcel.generic.ObjectType;
+import org.apache.bcel.generic.PUSH;
+import org.apache.bcel.generic.StoreInstruction;
+import org.apache.bcel.generic.TargetLostException;
+import org.apache.bcel.generic.Type;
+import org.apache.bcel.util.InstructionFinder;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -27,15 +54,6 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
-import org.apache.bcel.generic.*;
-import org.apache.bcel.util.InstructionFinder;
-import org.apache.bcel.classfile.*;
-import org.apache.bcel.*;
-
-import com.jopdesign.sys.Const;
-
-import boxpeeking.instrument.bcel.AnnotationsAttribute;
 
 /**
  * Known limitations: 
@@ -49,7 +67,7 @@ import boxpeeking.instrument.bcel.AnnotationsAttribute;
  */
 public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 
-	public ReplaceAtomicAnnotation(AppInfo jz) {
+	public ReplaceAtomicAnnotation(OldAppInfo jz) {
 		super(jz);
 	}
 	
@@ -61,12 +79,12 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 		
 		for(int i = 0; i < methods.length; i++) {
 			for (Attribute a: methods[i].getAttributes()) {
-				if (a instanceof AnnotationsAttribute) {
-					if (((AnnotationsAttribute)a).hasAtomicAnnotation()) {
+				if (a instanceof AnnotationAttribute) {
+					if (((AnnotationAttribute)a).hasAtomicAnnotation()) {
 						ConstantPoolGen cpoolgen = new ConstantPoolGen(clazz.getConstantPool()); 
 						
 						Method nm = transform(methods[i], clazz, cpoolgen);						
-				        MethodInfo mi = getCli().getMethodInfo(nm.getName()+nm.getSignature());
+				        OldMethodInfo mi = getCli().getMethodInfo(nm.getName()+nm.getSignature());
 				        // set new method also in MethodInfo
 				        mi.setMethod(nm);
 						

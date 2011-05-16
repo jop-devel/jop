@@ -1,9 +1,30 @@
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
+ *
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.jopdesign.wcet.jop;
 
-import com.jopdesign.build.MethodInfo;
-import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.config.Config;
-import com.jopdesign.wcet.jop.JOPConfig.CacheImplementation;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.config.OptionGroup;
+import com.jopdesign.common.processormodel.JOPConfig;
+import com.jopdesign.common.processormodel.JOPConfig.CacheImplementation;
+import com.jopdesign.wcet.WCETTool;
 
 public class VarBlockCache extends MethodCache {
 
@@ -11,7 +32,7 @@ public class VarBlockCache extends MethodCache {
 	private int blockSize;
 	private boolean isLRU;
 
-	public VarBlockCache(Project p, int blockCount, int cacheSizeInWords, boolean isLRU) {
+	public VarBlockCache(WCETTool p, int blockCount, int cacheSizeInWords, boolean isLRU) {
 		super(p,cacheSizeInWords);
 		this.blockCount = blockCount;
 		if(cacheSizeWords % blockCount != 0) {
@@ -22,11 +43,11 @@ public class VarBlockCache extends MethodCache {
 		this.isLRU = isLRU;
 	}
 
-	public static MethodCache fromConfig(Project p, boolean isLRU) {
-		Config c = p.getConfig();
+	public static MethodCache fromConfig(WCETTool p, boolean isLRU) {
+		OptionGroup o = JOPConfig.getOptions(p.getConfig());
 		return new VarBlockCache(p,
-				                 c.getOption(JOPConfig.CACHE_BLOCKS).intValue(),
-								 c.getOption(JOPConfig.CACHE_SIZE_WORDS).intValue(),
+				                 o.getOption(JOPConfig.CACHE_BLOCKS).intValue(),
+								 o.getOption(JOPConfig.CACHE_SIZE_WORDS).intValue(),
 								 isLRU);
 	}
 	/** Return the number of blocks needed for the a method of size {@code words}.
@@ -37,8 +58,8 @@ public class VarBlockCache extends MethodCache {
 	}
 
 	@Override
-	public boolean allFit(MethodInfo m) {
-		return super.getAllFitCacheBlocks(m) <= this.blockCount;
+	public boolean allFit(MethodInfo m, CallString cs) {
+		return super.getAllFitCacheBlocks(m, cs) <= this.blockCount;
 	}
 
 	@Override

@@ -96,9 +96,9 @@ public class JopWriter {
 	private int dumpByteCode() {
 
 		int cnt = 0;
-		Iterator<? extends ClassInfo> it = jz.cliMap.values().iterator();
+		Iterator<? extends OldClassInfo> it = jz.cliMap.values().iterator();
 		while (it.hasNext()) {
-			ClassInfo cli = (ClassInfo) it.next();
+			OldClassInfo cli = (OldClassInfo) it.next();
 
 			out.println("//\t"+cli.clazz.getClassName());
 			List methods = cli.getMethods();
@@ -106,7 +106,7 @@ public class JopWriter {
 			for(int i=0; i < methods.size(); i++) {
 				if(JOPizer.dumpMgci){
 				  // GCRT: dump the words before the method bytecode
-				  GCRTMethodInfo.dumpMethodGcis(((MethodInfo) methods.get(i)), out);
+				  GCRTMethodInfo.dumpMethodGcis(((OldMethodInfo) methods.get(i)), out);
 				}
 				((JopMethodInfo) methods.get(i)).dumpByteCode(out, outLinkInfo);
 				++cnt;
@@ -118,7 +118,7 @@ public class JopWriter {
 	private void dumpStaticFields() {
 
 		// dump the static value fields
-		Iterator<? extends ClassInfo> it = jz.cliMap.values().iterator();
+		Iterator<? extends OldClassInfo> it = jz.cliMap.values().iterator();
 		while (it.hasNext()) {
 			JopClassInfo cli = (JopClassInfo) it.next();
 			cli.dumpStaticFields(out, outLinkInfo, false);
@@ -133,7 +133,7 @@ public class JopWriter {
 
 	private void dumpClassInfo() {
 
-		Iterator<? extends ClassInfo> it = jz.cliMap.values().iterator();
+		Iterator<? extends OldClassInfo> it = jz.cliMap.values().iterator();
 		while (it.hasNext()) {
 			JopClassInfo cli = (JopClassInfo) it.next();
 			cli.dump(out, outLinkInfo);
@@ -149,7 +149,7 @@ public class JopWriter {
 		out.println("\t\t"+JopMethodInfo.clinitList.size()+",\t//\tnumber of methods");
 		Iterator it = JopMethodInfo.clinitList.iterator();
 		while (it.hasNext()) {
-			JopMethodInfo mi = (JopMethodInfo) ((ClassInfo) it.next()).getMethodInfo(AppInfo.clinitSig);
+			JopMethodInfo mi = (JopMethodInfo) ((OldClassInfo) it.next()).getMethodInfo(OldAppInfo.clinitSig);
 			out.println("\t\t"+mi.structAddress+",\t//\t"+mi.getCli().clazz.getClassName());
 		}
 	}

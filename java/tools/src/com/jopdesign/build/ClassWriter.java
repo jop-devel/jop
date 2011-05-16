@@ -24,19 +24,19 @@
  */
 package com.jopdesign.build;
 
+import org.apache.bcel.classfile.JavaClass;
+
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.bcel.classfile.JavaClass;
-
 /**
  * @author Martin Schoeberl
- *
+ * @deprecated
  */
 public class ClassWriter extends AppVisitor {
 
 	String dir;
-	public ClassWriter(AppInfo ai, String outDir) {
+	public ClassWriter(OldAppInfo ai, String outDir) {
 		super(ai);
 		dir = outDir;
 	}

@@ -43,7 +43,7 @@ public class BuildVT extends JOPizerVisitor {
 	Map mapClFT = new HashMap();
 
 	
-	public BuildVT(AppInfo jz) {
+	public BuildVT(OldAppInfo jz) {
 		super(jz);
 	}
 	
@@ -87,7 +87,7 @@ System.err.println("build VT on class: "+cli.clazz);
 		if (clazz.getClassName().equals(clazz.getSuperclassName())) {
 			;	// now we'r Object
 		} else {
-			ClassInfo clisup = (ClassInfo) ai.cliMap.get(clazz.getSuperclassName());
+			OldClassInfo clisup = (OldClassInfo) ai.cliMap.get(clazz.getSuperclassName());
 
 //					JavaClass superClazz = clazz.getSuperClass();
 //			 System.err.println("super: "+superClazz);
@@ -197,7 +197,7 @@ System.err.println("build VT on class: "+cli.clazz);
 		// add interface methods that are not actually implemented here
 		try {
 			for (i = 0; i < clazz.getInterfaces().length; i++) {
-				ClassInfo icli = ai.cliMap.get(clazz.getInterfaces()[i].getClassName());
+				OldClassInfo icli = ai.cliMap.get(clazz.getInterfaces()[i].getClassName());
 				for (String methodId : icli.methods.keySet()) {
 					for (j=0; j<clvt.len; ++j) {
 						if (clvt.key[j].equals(methodId)) { // ok, we have the method
@@ -283,7 +283,7 @@ System.err.println("build VT on class: "+cli.clazz);
 
 		int i, j;
 
-		ClassInfo cli = (ClassInfo) ai.cliMap.get(clazz.getClassName());
+		OldClassInfo cli = (OldClassInfo) ai.cliMap.get(clazz.getClassName());
 
 		Method m[] = clazz.getMethods();
 		int methodCount =  m.length;

@@ -1,5 +1,26 @@
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
+ *
+ * Copyright (C) 2010, Benedikt Huber <benedikt.huber@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package com.jopdesign.dfa.framework;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,15 +54,19 @@ public class BoundedSetFactory<V> {
 		return top;
 	}
 	
-	public static interface BoundedSet<V>  {
-		public void add(V el);
-		public void addAll(BoundedSet<V> other);
-		public BoundedSet<V> join(BoundedSet<V> other);
-		public boolean isSaturated();
+	public interface BoundedSet<V>  {
+		BoundedSet<V> newBoundedSet();
+		
+		void add(V el);
+		void addAll(BoundedSet<V> other);
+		BoundedSet<V> join(BoundedSet<V> other);
+		boolean isSaturated();
 		/** precondition: not (isTop()) */
-		public Set<V> getSet();
-		public int getSize();
-		public boolean isSubset(BoundedSet<V> otherEntry);
+                Set<V> getSet();
+		int getSize();
+		boolean isSubset(BoundedSet<V> otherEntry);
+
+                int getLimit();
 	}
 	
 	/** 
@@ -49,12 +74,17 @@ public class BoundedSetFactory<V> {
 	 * 
 	 * @author Benedikt Huber <benedikt.huber@gmail.com>
 	 */
-	public class BoundedSetImpl implements BoundedSet<V> {
+	public class BoundedSetImpl implements BoundedSet<V>, Serializable {
+
+		private static final long serialVersionUID = 1L;
+		
 		private Set<V> setImpl;
 		private boolean isSaturated;
+		
 		public BoundedSetImpl() {
 			setImpl = new HashSet<V>();
 		}
+		
 		private BoundedSetImpl(HashSet<V> set) {
 			if(set.size() > limit) {
 				this.isSaturated = true;
@@ -62,6 +92,7 @@ public class BoundedSetFactory<V> {
 				setImpl = set;
 			}
 		}
+		
 		public void add(V el) {
 			if(this.isSaturated()) return; 
 			setImpl.add(el);
@@ -83,6 +114,8 @@ public class BoundedSetFactory<V> {
 			BoundedSetImpl r = new BoundedSetImpl(joinedSet);
 			return r;
 		}
+
+
 		public Set<V> getSet() {
 			return setImpl;
 		}
@@ -94,9 +127,16 @@ public class BoundedSetFactory<V> {
 			this.setImpl = null;
 		}
 		public int getSize() {
+			if(setImpl.size() > limit) {
+				throw new AssertionError("Bounded Set exceeded size: "+setImpl.size());
+			}
 			if(isSaturated) return limit+1;
 			else return setImpl.size();
 		}
+		public int getLimit() {
+			return limit;
+		}
+
 		@Override
 		public int hashCode() {
 			if(isSaturated) return 1;
@@ -122,6 +162,10 @@ public class BoundedSetFactory<V> {
 		public String toString() {
 			if(this.isSaturated) return "BoundedSet.TOP";
 			return this.setImpl.toString();
+		}
+		
+		public BoundedSet<V> newBoundedSet() {
+			return new BoundedSetImpl(new HashSet<V>());
 		}
 	}
 

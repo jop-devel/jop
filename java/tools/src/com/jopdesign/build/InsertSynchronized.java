@@ -20,92 +20,85 @@
 
 package com.jopdesign.build;
 
-import java.util.*;
-import org.apache.bcel.classfile.*;
-import org.apache.bcel.generic.*;
+import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.MethodCode;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.graphutils.ClassVisitor;
+import com.jopdesign.common.misc.JavaClassFormatError;
+import org.apache.bcel.generic.ALOAD;
+import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InstructionList;
+import org.apache.bcel.generic.MONITORENTER;
+import org.apache.bcel.generic.MONITOREXIT;
 import org.apache.bcel.util.InstructionFinder;
 
+import java.util.Iterator;
+
 /**
- * 
  * Insert bytecodes for synchronizing methods.
- * 
+ *
  * @author Martin Schoeberl, Wolfgang Puffitsch
- * 
  */
-public class InsertSynchronized extends JOPizerVisitor {
+public class InsertSynchronized implements ClassVisitor {
 
-	private ConstantPoolGen cpoolgen;
+    public InsertSynchronized() {
+    }
 
-	public InsertSynchronized(AppInfo jz) {
-		super(jz);
-	}
+    @Override
+    public boolean visitClass(ClassInfo classInfo) {
 
-	public void visitJavaClass(JavaClass clazz) {
+        for (MethodInfo method : classInfo.getMethods()) {
+            if (!(method.isAbstract() || method.isNative())
+                    && method.isSynchronized()) {
+                synchronize(method);
+            }
+        }
+        return true;
+    }
 
-		super.visitJavaClass(clazz);
+    @Override
+    public void finishClass(ClassInfo classInfo) {
+    }
 
-		Method[] methods = clazz.getMethods();
-		cpoolgen = new ConstantPoolGen(clazz.getConstantPool());
+    private void synchronize(MethodInfo method) {
 
-		for(int i=0; i < methods.length; i++) {
-			if(!(methods[i].isAbstract() || methods[i].isNative())
-					&& methods[i].isSynchronized()) {		
-				Method m = synchronize(methods[i]);
-		        // why does this work without the following line?
-		        // mi.setMethod(m);
-				if (m!=null) {
-					methods[i] = m;
-				}
-			}
-		}
-	}
+        MethodCode mc = method.getCode();
+        InstructionList il = mc.getInstructionList();
+        InstructionFinder f;
 
-	private Method synchronize(Method method) {
+        // prepend monitorenter (reversed order of opcodes)
+        il.insert(new MONITORENTER());
+        if (method.isStatic()) {
+            // il.insert(new GET_CURRENT_CLASS());
+            throw new JavaClassFormatError("synchronized on static methods not yet supported");
+        } else {
+            il.insert(new ALOAD(0));
+        }
+        il.setPositions();
 
-		MethodGen mg  = new MethodGen(method, clazz.getClassName(), cpoolgen);
-		InstructionList il  = mg.getInstructionList();
-		InstructionFinder f;
+        f = new InstructionFinder(il);
+        // find return instructions and insert monitorexit
+        String retInstr = "ReturnInstruction";
 
-		// prepend monitorenter (reversed order of opcodes)
-		il.insert(new MONITORENTER());
-		if (method.isStatic()) {
-			// il.insert(new GET_CURRENT_CLASS());
-			throw new Error("synchronized on static methods not yet supported");
-		} else {
-			il.insert(new ALOAD(0));
-		}
-		il.setPositions();
+        for (Iterator iterator = f.search(retInstr); iterator.hasNext();) {
+            InstructionHandle[] match = (InstructionHandle[]) iterator.next();
+            InstructionHandle ih = match[0];
+            InstructionHandle newh; // handle for inserted sequence
 
-		f = new InstructionFinder(il);
-		// find return instructions and insert monitorexit
-		String retInstr = "ReturnInstruction";
+            if (method.isStatic()) {
+                // il.insert(ih, new GET_CURRENT_CLASS());
+                throw new JavaClassFormatError("synchronized on static methods not yet supported");
+            } else {
+                newh = il.insert(ih, new ALOAD(0));
+            }
+            il.insert(ih, new MONITOREXIT());
 
-		for(Iterator iterator = f.search(retInstr); iterator.hasNext(); ) {
-			InstructionHandle[] match = (InstructionHandle[])iterator.next();
-			InstructionHandle   ih = match[0];
-			InstructionHandle   newh; // handle for inserted sequence
+            // correct jumps
+            method.getCode().retarget(ih, newh);
+        }
+        il.setPositions();
 
-			if (method.isStatic()) {
-				// il.insert(ih, new GET_CURRENT_CLASS());
-				throw new Error("synchronized on static methods not yet supported");
-			} else {
-				newh = il.insert(ih, new ALOAD(0));
-			}
-			il.insert(ih, new MONITOREXIT());
-
-			// correct jumps
-			InstructionTargeter[] it = ih.getTargeters();
-			for (int i = 0; it != null && i < it.length; i++) {
-				it[i].updateTarget(ih, newh);
-			}
-		}	
-		il.setPositions();
-
-		mg.setInstructionList(il);
-
-		Method m = mg.getMethod();
-		il.dispose();
-		return m;
-	}
+        method.compile();
+    }
 
 }

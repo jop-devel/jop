@@ -35,7 +35,7 @@ import org.apache.bcel.classfile.*;
 public class CountStaticFields extends JOPizerVisitor {
 
 	
-	public CountStaticFields(AppInfo jz) {
+	public CountStaticFields(OldAppInfo jz) {
 		super(jz);
 	}
 	

@@ -1,28 +1,32 @@
 /*
-  This file is part of JOP, the Java Optimized Processor
-    see <http://www.jopdesign.com/>
-
-  Copyright (C) 2008, Wolfgang Puffitsch
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
+ *
+ * Copyright (C) 2008, Wolfgang Puffitsch
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 package com.jopdesign.dfa.analyses;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
-public class Interval {
+@SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
+public class Interval implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	public static final int TOP = Integer.MAX_VALUE;
 	public static final int BOT = Integer.MIN_VALUE;
@@ -32,7 +36,7 @@ public class Interval {
 	private int ub;
 	private boolean uv;
 	
-	public Interval(Interval val) {
+    public Interval(Interval val) {
 		lb = val.lb;
 		lv = val.lv;
 		ub = val.ub;
@@ -178,6 +182,38 @@ public class Interval {
 		}
 	}
 	
+	public void div(Interval val) {
+		if (lv && val.lv) {
+			if ((val.lb > 0 && val.ub > 0)  // val does not contain zero
+				 || (val.lb < 0 && val.ub < 0)) { 
+
+				long[] bounds = new long[4];
+				bounds[0] = lb/val.lb;
+				bounds[1] = lb/val.ub;
+				bounds[2] = ub/val.lb;
+				bounds[3] = ub/val.ub;
+				Arrays.sort(bounds);
+				long resL = bounds[0];
+				long resU = bounds[3];
+				if (resL == (long)(int)resL
+						&& resU == (long)(int)resU) {
+					lb = (int)resL;
+					ub = (int)resU;
+				}				
+			} else {
+				lb = BOT;
+				lv = false;
+				ub = TOP;
+				uv = false;				
+			}
+		} else {
+			lb = BOT;
+			lv = false;
+			ub = TOP;
+			uv = false;
+		}
+	}
+	
 	public void mul(Interval val) {
 		if (lv && val.lv) {
 			long[] bounds = new long[4];
@@ -259,6 +295,8 @@ public class Interval {
 	}
 
 	public boolean equals(Object obj) {
+        if (!(obj instanceof Interval)) return false;
+
 		Interval i = (Interval) obj;
 		if (lb != i.lb || ub != i.ub)
 			return false;

@@ -35,7 +35,7 @@ import org.apache.bcel.classfile.*;
 public class SetStaticAddresses extends JOPizerVisitor {
 
 	
-	public SetStaticAddresses(AppInfo jz) {
+	public SetStaticAddresses(OldAppInfo jz) {
 		super(jz);
 	}
 	

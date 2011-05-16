@@ -31,12 +31,12 @@
 	<property name="usb" value="true"/>
 
 	<!-- com1 is the usual serial port -->
-	<condition property="com-port" value="COM1">
+	<condition property="com-port" value="/dev/ttyS0">
 	  <not> <istrue value="${usb}"/> </not>
 	</condition>
 
 	<!-- com6 is the FTDI VCOM for the USB download -->
-	<condition property="com-port" value="COM6">
+	<condition property="com-port" value="/dev/ttyUSB1">
 	  <istrue value="${usb}"/>
 	</condition>
 
@@ -52,7 +52,7 @@
 	<property name="use-config-usb" value="true"/>
 <!-- 	<property name="use-config-byteblast" value="true"/> -->
 <!-- 	<property name="use-config-usbblast" value="true"/> -->
-<!-- 	<property name="use-config-urjtag" value="true"/> -->
+<!--	<property name="use-config-urjtag" value="true"/> -->
 
 	<!-- choose blaster type for config-byteblast -->
 	<condition property="blaster-type" value="ByteBlastMV">
@@ -249,12 +249,13 @@
 			<src path="${tools}/src"/>
 			<src path="${target}/src/common"/>
 			<include name="*.java"/>
-			<include name="com/jopdesign/build/*.java"/>
-			<include name="com/jopdesign/tools/*.java"/>
-			<include name="com/jopdesign/wcet/*.java"/>
-			<include name="com/jopdesign/wcet/WCETAnalysis.java"/>
-			<include name="com/jopdesign/dfa/*.java"/>
 			<include name="org/apache/**/*.java"/>
+			<include name="com/jopdesign/build/*.java"/>
+			<include name="com/jopdesign/common/tools/*.java"/>
+			<include name="com/jopdesign/tools/*.java"/>
+			<include name="com/jopdesign/dfa/*.java"/>
+			<include name="com/jopdesign/jcopter/*.java"/>
+			<include name="com/jopdesign/wcet/*.java"/>
 		</javac>
 		<!-- Additional files to be included in the tools.jar -->
 		<copy todir="${tools}/dist/classes" failonerror="true">
@@ -265,71 +266,26 @@
 
 		<jar basedir="${tools}/dist/classes" destfile="${tools}/dist/lib/jop-tools.jar"/>
 
-		<antcall target="joptimizer"/>
 	</target>
 
     
-	<!-- Targets to compile and run JOPtimizer -->
-	<!-- To use joptimizer, uncomment the following line (value is not important): -->
-	<!-- <property name="use-joptimizer" value=""/> -->
+	<!-- To use JCopter, uncomment the following line (value is not important): -->
+	<!-- <property name="use-jcopter" value="true"/> -->
 
-	<path id="joptimizer-cp">
-		<path refid="tools-cp"/>
-		<pathelement location="${tools}/dist/lib/joptimizer.jar"/>
-	</path>
-
-	<target name="libgraph" description="Build libgraph as standalone library">
-		<mkdir dir="${tools}/dist/classes"/>
-		<mkdir dir="${tools}/dist/lib"/>
-		
-		<javac debug="true" destdir="${tools}/dist/classes" classpathref="ext-cp" encoding="Latin1">
-		    <src path="${tools}/src"/>
-		    <include name="com/jopdesign/libgraph/**/*"/>
-		</javac>
-
-		<jar basedir="${tools}/dist/classes" destfile="${tools}/dist/lib/libgraph.jar">
-		    <include name="com/jopdesign/libgraph/**/*"/>
-		</jar>
-		
-		<!-- package resource files from source path -->
-		<jar basedir="${tools}/src" destfile="${tools}/dist/lib/libgraph.jar" update="true">
-		    <include name="com/jopdesign/libgraph/**/*.properties"/>
-		</jar>
+	<target name="wcet-preprocess" description="Replace bytecodes that JOP cannot execute">
+	  <java classpathref="tools-cp" classname="com.jopdesign.wcet.WCETPreprocess">
+		<arg line="-c ${target}/dist/classes -o ${target}/dist ${main-class}"/>
+	  </java>
 	</target>
 
-	<target name="joptimizer" description="Build the JOPtimizer tool" if="use-joptimizer">
-
-		<mkdir dir="${tools}/dist/classes"/>
-		<mkdir dir="${tools}/dist/lib"/>
-
-		<javac debug="true" destdir="${tools}/dist/classes" classpathref="ext-cp" encoding="Latin1"> 
-		    <src path="${tools}/src"/>
-		    <!-- compilerarg value="-Xlint:unchecked" compiler="modern"/ -->
-		    <include name="joptimizer/**/*.java"/>
-		    <include name="com/jopdesign/libgraph/**/*.java"/>
-		</javac>
-
-		<jar basedir="${tools}/dist/classes" destfile="${tools}/dist/lib/joptimizer.jar" 
-		     manifest="${tools}/src/joptimizer/MANIFEST.MF">
-		    <include name="joptimizer/**/*"/>
-		    <include name="com/jopdesign/libgraph/**/*"/>
-		</jar>
-
-		<!-- package resource files from source path -->
-		<jar basedir="${tools}/src" destfile="${tools}/dist/lib/joptimizer.jar" update="true">
-		    <include name="joptimizer/config/*.properties"/>
-		</jar>
-
-		<!-- some files must go into the root directory of the jar -->
-		<jar basedir="${tools}/src/joptimizer" destfile="${tools}/dist/lib/joptimizer.jar" update="true">
-		    <include name="log4j.properties"/>
-		    <include name="jop.conf"/>
-		</jar>
-	</target>
-
-	<target name="run-joptimizer" description="Run JOPtimizer on the compiled target" if="use-joptimizer">
-		<java classpathref="joptimizer-cp" classname="joptimizer.JOPtimizerRunner">
-		    <arg line="-config jar:file:${tools}/dist/lib/joptimizer.jar!/jop.conf ${main-class}"/>
+	<target name="run-jcopter" description="Run JCopter on the compiled target" if="use-jcopter">
+		<java classpathref="tools-cp" classname="com.jopdesign.jcopter.JCopter">
+		    <arg line="--jop.jop-asm-file asm/generated/jvmusb.asm
+					   -c ${target}/dist/classes -o ${target}/dist --classdir ${target}/dist/classes.opt
+					   --dump-target-callgraph merged
+					   --wcet-preprocess 
+					   --use-dfa --dfa-cache-dir dfa-cache
+					   --target-method ${wcet-method} ${main-class}"/>
 		</java>
 	</target>
 
@@ -337,6 +293,14 @@
 		<java classpathref="tools-cp" classname="com.jopdesign.dfa.Main">
 			<arg line="-cp ${target}/dist/lib/classes.zip ${main-class}"/>
 		</java>
+	</target>
+
+	<target name="zip-classes" description="Zip classes" unless="use-jcopter">
+		<jar destfile="${target}/dist/lib/classes.zip" basedir="${target}/dist/classes"/> 
+	</target>
+
+	<target name="zip-classes-opt" description="Zip optimized classes" if="use-jcopter">
+		<jar destfile="${target}/dist/lib/classes.zip" basedir="${target}/dist/classes.opt"/> 
 	</target>
 
 	<target name="java-app" description="Compile and JOPize the application">
@@ -389,9 +353,12 @@
 		
 		<delete dir="${empty.dir}"/>
 		 
-		<antcall target="run-joptimizer"/>
+		<antcall target="wcet-preprocess"/>
 
-		<jar destfile="${target}/dist/lib/classes.zip" basedir="${target}/dist/classes"/> 
+		<antcall target="run-jcopter"/>
+
+		<antcall target="zip-classes"/>
+		<antcall target="zip-classes-opt"/>
 		 
 		<antcall target="optimize"/> 
 		 
@@ -513,7 +480,7 @@
 			<arg line="quartus/${qbt}/jop"/>
 		</exec>
 		
-		<exec executable="quartus_tan" failonerror="true">
+		<exec executable="quartus_sta" failonerror="true">
 			<arg line="quartus/${qbt}/jop"/>
 		</exec>
 
@@ -725,7 +692,7 @@
 			<arg line="${qp}"/>
 		</exec>
 		
-		<exec executable="quartus_tan" failonerror="true">
+		<exec executable="quartus_sta" failonerror="true">
 			<arg line="${qp}"/>
 		</exec>
 
@@ -753,7 +720,7 @@
 	        <mkdir dir="${target}/tmp"/>
 		<java
 		   classpathref="tools-cp"
-		   classname="com.jopdesign.build.WcetPreprocess"
+		   classname="com.jopdesign.build.WCETPreprocess"
 		   failonerror="true" fork="true">
 		  <arg line="-cp ${target}/dist/lib/classes.zip -o ${target}/tmp ${main-class}"/>
 		</java>
@@ -776,7 +743,6 @@
 		</java>
 	</target>
 
-    <property name="dataflow-analysis" value="false"/>
 	<target name="wcet" description="Benedikt's WCET analyser" depends="java-app">
 		<delete dir="${target}/wcet"/>
 		<mkdir dir="${target}/wcet"/>
@@ -785,18 +751,32 @@
 			classname="com.jopdesign.wcet.WCETAnalysis"
 			failonerror="true"
 			fork="true">
-			<sysproperty key="cp" value="${target}/dist/lib/classes.zip"/>
-			<sysproperty key="sp" value="${target-source-flattened}"/>
-			<sysproperty key="reportdir" value="${target}/wcet"/>
-			<sysproperty key="dataflow-analysis" value="${dataflow-analysis}"/>
+		  <jvmarg line="-Xms1280M -Xmx1280M"/>
 			<sysproperty key="java.library.path" value=".:${java.library.path}"/>
-			<arg line="-app-class ${main-class} -target-method ${wcet-method}"/>
+			<arg line="--jop.jop-asm-file asm/generated/jvmusb.asm					   
+					   --classpath ${target}/dist/lib/classes.zip
+					   --sp ${target-source-flattened}
+					   --reportdir ${target}/wcet
+					   --dump-target-callgraph merged
+					   --program-dot /usr/bin/dot
+					   --wcet-preprocess 
+					   --target-method ${wcet-method} ${main-class}"/>
 		</java>
 	</target>
 
 	<target name="dot2eps"> <!-- depends wcet or wcet -->
 		<exec executable="make" dir="${target}/wcet" failonerror="yes"/>
 	</target>  
+	
+	<target name="typegraph">
+		<java
+			classpathref="tools-cp"
+			classname="com.jopdesign.common.tools.TypeGraphTool"
+			failonerror="true"
+			fork="true">
+			<arg line="--classpath ${target}/dist/lib/classes.zip --dump-levels --max-level ${main-class}"/>
+		</java>
+	</target>
 	
 	<target name="test">
 		<java
@@ -807,5 +787,5 @@
 			<arg line="-cp ${target}/dist/lib/classes.zip -o ${target}/wcet/${p3}call.txt -sp ${target-source-flattened} ${main-class}"/>
 		</java>
 	</target>
-	
+
 </project>

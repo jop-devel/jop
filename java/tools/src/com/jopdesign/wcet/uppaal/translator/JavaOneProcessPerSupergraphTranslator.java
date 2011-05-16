@@ -1,29 +1,48 @@
+/*
+ * This file is part of JOP, the Java Optimized Processor
+ * see <http://www.jopdesign.com/>
+ *
+ * Copyright (C) 2010, Benedikt Huber (benedikt.huber@gmail.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.jopdesign.wcet.uppaal.translator;
 
-import java.util.HashMap;
-import java.util.Vector;
-import java.util.Map.Entry;
-
-import com.jopdesign.build.MethodInfo;
-import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.analysis.LocalAnalysis;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.SuperGraph;
+import com.jopdesign.common.code.SuperGraphNode;
+import com.jopdesign.common.graphutils.Pair;
+import com.jopdesign.common.misc.BadGraphError;
+import com.jopdesign.common.misc.BadGraphException;
+import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
+import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
-import com.jopdesign.wcet.frontend.ControlFlowGraph;
-import com.jopdesign.wcet.frontend.SuperGraph;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
-import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
-import com.jopdesign.wcet.frontend.SuperGraph.SuperInvokeEdge;
-import com.jopdesign.wcet.frontend.SuperGraph.SuperReturnEdge;
-import com.jopdesign.wcet.graphutils.MiscUtils;
-import com.jopdesign.wcet.graphutils.Pair;
-import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
+import com.jopdesign.common.code.LoopBound;
+import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;
 import com.jopdesign.wcet.uppaal.model.Location;
 import com.jopdesign.wcet.uppaal.model.Transition;
+
+import java.util.HashMap;
+import java.util.Map.Entry;
+import java.util.Vector;
 
 public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 
@@ -39,7 +58,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 		 * @see com.jopdesign.wcet.uppaal.translator.InvokeBuilder#translateInvoke(com.jopdesign.wcet.uppaal.translator.MethodBuilder, com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode, long)
 		 */
 		@Override
-		public SubAutomaton translateInvoke(MethodBuilder mBuilder, InvokeNode n, long staticWCET) {
+		public SubAutomaton translateInvoke(MethodBuilder mBuilder, ControlFlowGraph.InvokeNode n, long staticWCET) {
 			int invokedID = callSiteIDs.get(n);
 			String suffix = "_"+invokedID+"_"+n.getId();
 			/* location for executing the code */
@@ -87,7 +106,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 				Location startInvokeNode,
 				Location endInvokeNode,
 				int invokedID,
-				InvokeNode n) {
+				ControlFlowGraph.InvokeNode n) {
 			MethodInfo invoked = n.getImplementedMethod();
 			if(n.receiverFlowGraph().isLeafMethod() && config.collapseLeaves) {
 				RecursiveWcetAnalysis<AnalysisContextLocal> ilpAn =
@@ -109,11 +128,11 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 
 	private HashMap<MethodInfo, Integer> methodMNDs;
 	private SuperGraph superGraph;
-	private HashMap<InvokeNode, Integer> callSiteIDs;
+	private HashMap<ControlFlowGraph.InvokeNode, Integer> callSiteIDs;
 
-	public JavaOneProcessPerSupergraphTranslator(UppAalConfig c, Project p,MethodInfo root) {
+	public JavaOneProcessPerSupergraphTranslator(UppAalConfig c, WCETTool p,MethodInfo root) {
 		super(c, p, root);
-		this.superGraph =  new SuperGraph(project.getWcetAppInfo(), project.getFlowGraph(root));
+		this.superGraph =  new SuperGraph(project.getAppInfo(), project.getFlowGraph(root), p.getProjectConfig().callstringLength());
 	}
 
 	@Override
@@ -129,14 +148,14 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 		/* Create start and end nodes for other methods */
 		for(int i = 1; i < this.methodInfos.size(); i++) {
 			MethodInfo mi = methodInfos.get(i);
-			if(project.getCallGraph().isLeafNode(mi) && config.collapseLeaves) continue;
+			if(project.getCallGraph().isLeafMethod(mi) && config.collapseLeaves) continue;
 
 			SubAutomaton mAuto = tBuilder.createSubAutomaton(MiscUtils.qEncode(mi.getFQMethodName()));
 			addMethodAutomaton(mi,mAuto);
 		}
 		int i = 0;
 		for(MethodInfo mi : methodInfos) {
-			if(project.getCallGraph().isLeafNode(mi) && config.collapseLeaves) continue;
+			if(project.getCallGraph().isLeafMethod(mi) && config.collapseLeaves) continue;
 			translateMethod(tBuilder,
 					        getMethodAutomaton(mi),
 					        i++,
@@ -157,7 +176,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 	private void addProgessMeasure(TemplateBuilder tBuilder) {
 		if(tBuilder.getLoopVarBounds().isEmpty()) return;
 		Vector<String> progressSummands = new Vector<String>();
-		Vector<Integer> lvbs = tBuilder.getLoopVarBounds();
+		Vector<Long> lvbs = tBuilder.getLoopVarBounds();
 		long multiplicator = 1;
 		for(int i = lvbs.size() - 1; i >= 0; i--) {
 			progressSummands.add(""+multiplicator+" * M0."+TemplateBuilder.loopVarName(i));
@@ -177,10 +196,14 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 	//  gmnd of f is gmnd of X = 2 + gmnd of main = 2
 	//  gmnd of HOL is 4
 	private void recordLoops(TemplateBuilder tBuilder) {
-		computeMethodNestingDepths();
+		try {
+			computeMethodNestingDepths();
+		} catch (BadGraphException e) {
+			throw new BadGraphError(e);
+		}
 		for(MethodInfo m : methodInfos) {
 			ControlFlowGraph cfg = project.getFlowGraph(m);
-			for( Entry<CFGNode, LoopBound> entry : cfg.getLoopBounds().entrySet()) {
+			for( Entry<CFGNode, LoopBound> entry : cfg.buildLoopBoundMap().entrySet()) {
 				CFGNode hol = entry.getKey();
 				LoopBound lb = entry.getValue();
 				int nesting = cfg.getLoopColoring().getLoopColor(hol).size();
@@ -191,27 +214,30 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 		if(config.debug) tBuilder.dumpLoops();
 	}
 
-	private void computeMethodNestingDepths() {
+	private void computeMethodNestingDepths() throws BadGraphException {
 		this.methodMNDs = new HashMap<MethodInfo,Integer>();
-		/* for methods in topological order */
-		for(MethodInfo m : project.getCallGraph().getImplementedMethods(project.getTargetMethod())) {
+		/* for super graph nodes in topological order */
+		for(SuperGraphNode n : superGraph.topologicalOrderIterator().getTopologicalTraversal()) {
+			MethodInfo methodInvoked = n.getCfg().getMethodInfo();
 			int maxCaller = 0;
-			ControlFlowGraph cfgInvoked = project.getFlowGraph(m);
-			for(Pair<SuperInvokeEdge,SuperReturnEdge> callSite : superGraph.getCallSites(cfgInvoked)) {
-				InvokeNode callSiteNode = callSite.fst().getInvokeNode();
+			for(Pair<SuperGraph.SuperInvokeEdge,SuperGraph.SuperReturnEdge> callSite : superGraph.getCallSites(n)) {
+				ControlFlowGraph.InvokeNode callSiteNode = callSite.first().getInvokeNode();
 				ControlFlowGraph cfgInvoker = callSiteNode.invokerFlowGraph();
 				int callerRootDepth = methodMNDs.get(cfgInvoker.getMethodInfo());
 				int nestingDepth    = cfgInvoker.getLoopColoring().getLoopColor(callSiteNode).size();
 				maxCaller = Math.max(maxCaller, callerRootDepth + nestingDepth);
 			}
-			methodMNDs.put(m,maxCaller);
+			Integer oldValue = methodMNDs.get(methodInvoked);
+			if(oldValue == null) oldValue = 0;
+			methodMNDs.put(methodInvoked, Math.max(oldValue, maxCaller));
 		}
 		if(config.debug) MiscUtils.printMap(System.out, methodMNDs,30);
 	}
+	
 	private void computeCallSiteIDs() {
-		this.callSiteIDs = new HashMap<InvokeNode,Integer>();
+		this.callSiteIDs = new HashMap<ControlFlowGraph.InvokeNode,Integer>();
 		int i = 0;
-		for(SuperInvokeEdge e : superGraph.getSuperEdgePairs().keySet()) {
+		for(SuperGraph.SuperInvokeEdge e : superGraph.getSuperEdgePairs().keySet()) {
 			callSiteIDs.put(e.getInvokeNode(), i++);
 		}
 	}

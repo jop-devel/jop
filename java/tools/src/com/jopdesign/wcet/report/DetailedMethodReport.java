@@ -19,51 +19,73 @@
 */
 package com.jopdesign.wcet.report;
 
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.wcet.WCETTool;
+import org.apache.log4j.Logger;
+
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
-import com.jopdesign.build.MethodInfo;
-import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.frontend.ControlFlowGraph;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
-
 public class DetailedMethodReport {
-	Map<String,Object> stats;
-	Map<CFGNode,?> nodeAnnotations;
-	Map<CFGEdge,?> edgeAnnotations;
-	private String graphLink;
-	private MethodInfo method;
-	private String key;
-	private Project project;
-	private ReportConfig config;
-	public DetailedMethodReport(ReportConfig c, 
-			Project p, MethodInfo m, 
-			String key, Map<String, Object> stats, 
-			Map<CFGNode, ?> wcets, Map<CFGEdge, ?> flowMapOut) {
-		this.config = c;
-		this.project = p;
-		this.method = m;
-		this.key=key;
-		this.stats = stats;
-		this.nodeAnnotations = wcets;
-		this.edgeAnnotations = flowMapOut;
-	}
-	public Map<String,Object> getStats() { return stats; }
-	public String getGraph() {
-		if(graphLink == null) {
-			File graphfile = generateGraph(method,key,nodeAnnotations,edgeAnnotations);
-			graphLink = graphfile.getName();
-		}
-		return graphLink;
-	}
-	public String getKey() { return key; }
-	private File generateGraph(MethodInfo method, String key, Map<CFGNode, ?> nodeAnnotations, Map<CFGEdge, ?> edgeAnnotations) {
-		File cgdot = config.getOutFile(method,key+".dot");
-		File cgimg = config.getOutFile(method,key+".png");
-		ControlFlowGraph flowGraph = project.getWcetAppInfo().getFlowGraph(method);
-		flowGraph.exportDOT(cgdot,nodeAnnotations, edgeAnnotations);
-		project.getReport().recordDot(cgdot,cgimg);
-		return cgimg;
-	}
+    Map<String, Object> stats;
+    Map<CFGNode, ?> nodeAnnotations;
+    Map<ControlFlowGraph.CFGEdge, ?> edgeAnnotations;
+    private String graphLink;
+    private MethodInfo method;
+    private String key;
+    private WCETTool project;
+    private ReportConfig config;
+
+    private static final Logger logger = Logger.getLogger(WCETTool.LOG_WCET_REPORT+".DetailedMethodReport");
+
+    public DetailedMethodReport(ReportConfig c,
+                                WCETTool p, MethodInfo m,
+                                String key, Map<String, Object> stats,
+                                Map<CFGNode, ?> wcets, Map<ControlFlowGraph.CFGEdge, ?> flowMapOut) {
+        this.config = c;
+        this.project = p;
+        this.method = m;
+        this.key = key;
+        this.stats = stats;
+        this.nodeAnnotations = wcets;
+        this.edgeAnnotations = flowMapOut;
+    }
+
+    public Map<String, Object> getStats() {
+        return stats;
+    }
+
+    public String getGraph() {
+        if (graphLink == null) {
+            File graphfile;
+            try {
+                graphfile = generateGraph(method, key, nodeAnnotations, edgeAnnotations);
+                graphLink = graphfile.getName();
+            } catch (IOException e) {
+                logger.error("Failed to generate graph file for " + method, e);
+            }
+        }
+        return graphLink;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    private File generateGraph(MethodInfo method, String key, Map<CFGNode, ?> nodeAnnotations,
+                               Map<ControlFlowGraph.CFGEdge, ?> edgeAnnotations) throws IOException {
+        File cgdot = config.getOutFile(method, key + ".dot");
+        File cgimg = config.getOutFile(method, key + ".png");
+        ControlFlowGraph flowGraph = method.getCode().getControlFlowGraph(false);
+        if (nodeAnnotations != null || edgeAnnotations != null) {
+            flowGraph.exportDOT(cgdot, nodeAnnotations, edgeAnnotations);
+        } else {
+            flowGraph.exportDOT(cgdot, new WCETNodeLabeller(project), null);
+        }
+        project.getReport().recordDot(cgdot, cgimg);
+        return cgimg;
+    }
 }

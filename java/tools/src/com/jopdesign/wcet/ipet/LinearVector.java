@@ -19,7 +19,7 @@
 */
 package com.jopdesign.wcet.ipet;
 
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -33,27 +33,30 @@ import java.util.Map.Entry;
  * @param <T> type of the variables
  */
 public class LinearVector<T> {
-	private Hashtable<T,Long> coeffs;
+	private HashMap<T,Long> coeffs;
 
 	/**
 	 * Initialize the linear vector, with all coefficient 0.
 	 */
 	public LinearVector() {
-		coeffs = new Hashtable<T,Long>();
+		coeffs = new HashMap<T,Long>();
 	}
+	
 	/**
 	 * Create a copy of the given linear vector
 	 * @param vector 
 	 */
 	public LinearVector(LinearVector<T> vector) {
-		this.coeffs = new Hashtable<T,Long>(vector.getCoeffs());
+		this.coeffs = new HashMap<T,Long>(vector.getCoeffs());
 	}
+	
 	/**
 	 * the number of non-zero coefficients
 	 */
 	public int size() {
 		return this.coeffs.size();
 	}
+	
 	/**
 	 * Add the product <code>coeff * var</code> to the linear vector
 	 * @param var
@@ -73,6 +76,7 @@ public class LinearVector<T> {
 			}
 		}
 	}
+	
 	/**
 	 * Multiply the vector with the given scalar
 	 * @param c the number to multiply each coefficient with
@@ -88,6 +92,11 @@ public class LinearVector<T> {
 	 */
 	public Map<T, Long> getCoeffs() {
 		return this.coeffs;
+	}
+	
+	@Override
+	public LinearVector<T> clone() {
+		return new LinearVector<T>(this);
 	}
 	
 	@Override

@@ -1,20 +1,28 @@
 /*
- * Copyright  2000-2004 The Apache Software Foundation
+ * This file is part of JOP, the Java Optimized Processor
+ *   see <http://www.jopdesign.com/>
  *
- *  Licensed under the Apache License, Version 2.0 (the "License"); 
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Copyright (C) 2010, Stefan Hepp (stefan@stefant.org).
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License. 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.apache.bcel.util;
+
+import org.apache.bcel.Constants;
+import org.apache.bcel.generic.ClassGenException;
+import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InstructionList;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,11 +32,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.bcel.Constants;
-import org.apache.bcel.generic.ClassGenException;
-import org.apache.bcel.generic.Instruction;
-import org.apache.bcel.generic.InstructionHandle;
-import org.apache.bcel.generic.InstructionList;
 
 /**
  * InstructionFinder is a tool to search for given instructions patterns, i.e.,
@@ -36,34 +39,35 @@ import org.apache.bcel.generic.InstructionList;
  * expressions. This can be used, e.g., in order to implement a peep hole
  * optimizer that looks for code patterns and replaces them with faster
  * equivalents.
- * 
+ *
  * <p>
  * This class internally uses the <a href="http://jakarta.apache.org/regexp/">
  * Regexp</a> package to search for regular expressions.
- * 
+ *
  * A typical application would look like this:
- * 
+ *
  * <pre>
- * 
- *  
+ *
+ *
  *   InstructionFinder f   = new InstructionFinder(il);
  *   String            pat = &quot;IfInstruction ICONST_0 GOTO ICONST_1 NOP (IFEQ|IFNE)&quot;;
- *   
+ *
  *   for(Iterator i = f.search(pat, constraint); i.hasNext(); ) {
  *   InstructionHandle[] match = (InstructionHandle[])i.next();
  *   ...
  *   il.delete(match[1], match[5]);
  *   ...
  *   }
- *   
- *  
+ *
+ *
  * </pre>
- * 
+ *
  * @version $Id: InstructionFinder.java 386056 2006-03-15 11:31:56Z tcurdt $
  * @author <A HREF="mailto:m.dahm@gmx.de">M. Dahm</A>
- * @see Instruction
- * @see InstructionList
+ * @see org.apache.bcel.generic.Instruction
+ * @see org.apache.bcel.generic.InstructionList
  */
+@SuppressWarnings({"ALL"})
 public class InstructionFinder {
 
     private static final int OFFSET = 32767; // char + OFFSET is
@@ -108,7 +112,7 @@ public class InstructionFinder {
 
     /**
      * Map symbolic instruction names like "getfield" to a single character.
-     * 
+     *
      * @param pattern
      *          instruction pattern in lower case
      * @return encoded string for a pattern such as "BranchInstruction".
@@ -131,7 +135,7 @@ public class InstructionFinder {
      * Replace symbolic names of instructions with the appropiate character and
      * remove all white space from string. Meta characters such as +, * are
      * ignored.
-     * 
+     *
      * @param pattern
      *          The pattern to compile
      * @return translated regular expression string
@@ -180,26 +184,26 @@ public class InstructionFinder {
      * "BranchInstruction" or "LoadInstruction". "istore" is also an alias for all
      * "istore_x" instructions. Additional aliases are "if" for "ifxx", "if_icmp"
      * for "if_icmpxx", "if_acmp" for "if_acmpxx".
-     * 
+     *
      * BUGFIX: wrong length (WP)
-     * 
+     *
      * Consecutive instruction names must be separated by white space which will
      * be removed during the compilation of the pattern.
-     * 
+     *
      * For the rest the usual pattern matching rules for regular expressions
      * apply.
      * <P>
      * Example pattern:
-     * 
+     *
      * <pre>
      * search(&quot;BranchInstruction NOP ((IfInstruction|GOTO)+ ISTORE Instruction)*&quot;);
      * </pre>
-     * 
+     *
      * <p>
      * If you alter the instruction list upon a match such that other matching
      * areas are affected, you should call reread() to update the finder and call
      * search() again, because the matches are cached.
-     * 
+     *
      * @param pattern
      *          the instruction pattern to search for, where case is ignored
      * @param from
@@ -243,7 +247,7 @@ public class InstructionFinder {
 
     /**
      * Start search beginning from the start of the given instruction list.
-     * 
+     *
      * @param pattern
      *          the instruction pattern to search for, where case is ignored
      * @return iterator of matches where e.nextElement() returns an array of
@@ -256,7 +260,7 @@ public class InstructionFinder {
 
     /**
      * Start search beginning from `from'.
-     * 
+     *
      * @param pattern
      *          the instruction pattern to search for, where case is ignored
      * @param from
@@ -272,7 +276,7 @@ public class InstructionFinder {
     /**
      * Start search beginning from the start of the given instruction list. Check
      * found matches with the constraint object.
-     * 
+     *
      * @param pattern
      *          the instruction pattern to search for, case is ignored
      * @param constraint
@@ -303,7 +307,7 @@ public class InstructionFinder {
      * Code patterns found may be checked using an additional user-defined
      * constraint object whether they really match the needed criterion. I.e.,
      * check constraints that can not expressed with regular expressions.
-     * 
+     *
      */
     public static interface CodeConstraint {
 

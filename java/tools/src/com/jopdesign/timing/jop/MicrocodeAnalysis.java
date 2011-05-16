@@ -574,7 +574,6 @@ public class MicrocodeAnalysis {
 		return tmpFile;
 	}
 
-	@SuppressWarnings("unchecked")
 	private void parse(boolean preprocess) throws IOException {
 		if(! asmFile.exists()) {
 			throw new IOException("Assembler file "+asmFile+" not found. You may need to run e.g.: 'make gen_mem -e ASM_SRC=jvm JVM_TYPE=USB'");

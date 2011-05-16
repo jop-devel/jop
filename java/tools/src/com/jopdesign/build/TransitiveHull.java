@@ -28,14 +28,24 @@
 package com.jopdesign.build;
 
 
-import org.apache.bcel.classfile.*;
-import org.apache.bcel.generic.*;
-import org.apache.bcel.util.*;
-
-import java.io.IOException;
-import java.util.*;
 import org.apache.bcel.Constants;
 import org.apache.bcel.Repository;
+import org.apache.bcel.classfile.ConstantCP;
+import org.apache.bcel.classfile.ConstantClass;
+import org.apache.bcel.classfile.ConstantFieldref;
+import org.apache.bcel.classfile.ConstantInterfaceMethodref;
+import org.apache.bcel.classfile.ConstantMethodref;
+import org.apache.bcel.classfile.ConstantNameAndType;
+import org.apache.bcel.classfile.ConstantPool;
+import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.generic.ObjectType;
+import org.apache.bcel.generic.Type;
+import org.apache.bcel.util.ClassPath;
+import org.apache.bcel.util.ClassQueue;
+import org.apache.bcel.util.ClassSet;
+import org.apache.bcel.util.SyntheticRepository;
+
+import java.util.Arrays;
 
 /**
  * Find all classes referenced by given start class and all classes
@@ -48,6 +58,7 @@ import org.apache.bcel.Repository;
  * It fails however in the presence of reflection code.
  *
  * @author	<A HREF="mailto:markus.dahm@berlin.de">M. Dahm</A>
+ * @deprecated
  */
 public class TransitiveHull extends org.apache.bcel.classfile.EmptyVisitor {
 	

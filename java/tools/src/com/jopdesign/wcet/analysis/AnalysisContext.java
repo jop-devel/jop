@@ -1,35 +1,36 @@
+/*
+  This file is part of JOP, the Java Optimized Processor
+    see <http://www.jopdesign.com/>
+
+  Copyright (C) 2010, Benedikt Huber (benedikt@vmars.tuwien.ac.at)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package com.jopdesign.wcet.analysis;
 
-import com.jopdesign.build.MethodInfo;
-import com.jopdesign.dfa.framework.CallString;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.BasicBlockNode;
-import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
+
+import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ExecutionContext;
 
 /**
- * Context for WCET analysis of a method.
- * Subclasses may provide callstrings and other context information.
- *
- * @author Benedikt Huber <benedikt.huber@gmail.com>
+ * Purpose:
+ * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  *
  */
-public class AnalysisContext {
-	public CallString getCallString() {
-		return CallString.EMPTY;
-	}
-	/* FIXME: One big problem in Java:
-	 * We would like to FORCE subclasses to override equals
-	 */
-	@Override
-	public boolean equals(Object other) {
-		if (this == other) return true;
-		if (other == null) return false;
-		if (other.getClass() != getClass()) return false;
-		return true;
-	}
-	public int hashCode() {
-		return 1;
-	}
-	public ExecutionContext getExecutionContext(BasicBlockNode n) {
-		return new ExecutionContext(n.getBasicBlock().getMethodInfo(),getCallString());
-	}
+public interface AnalysisContext {
+	CallString getCallString();
+	ExecutionContext getExecutionContext(CFGNode n);
 }

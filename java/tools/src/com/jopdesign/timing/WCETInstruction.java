@@ -21,20 +21,18 @@
 
 package com.jopdesign.timing;
 
+import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.tools.JopInstr;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.bcel.generic.Instruction;
-import org.apache.bcel.generic.InstructionHandle;
-
-import com.jopdesign.tools.JopInstr;
-import com.jopdesign.wca_rup.WU;
 
 
 /**
  * It has wcet info on byte code instruction granularity. Should we consider
  * making a class that wraps the microcodes into objects?
  */
+@Deprecated
 public class WCETInstruction {
 
 	// indicate that wcet is not available for this bytecode
@@ -202,19 +200,7 @@ public class WCETInstruction {
 	// TODO: make those missing (the rup/ms specific ones, but are they
 	// reachable?)
 
-	/**
-	 * Same as getWCET, but using the handle. 
-	 * 
-	 * @param ih
-	 * @param pmiss true if the cache is missed and false if there is a cache hit
-	 * @return wcet or WCETNOTAVAILABLE (-1)
-	 */
-	public static int getCyclesFromHandle(InstructionHandle ih, boolean pmiss, int n) {
-		Instruction ins = ih.getInstruction();
-		int opcode = ins.getOpcode();
-
-		return getCycles(opcode, pmiss, n);
-	}
+	
 
 	/**
 	 * Get the name using the opcode. Used when WCA toWCAString().
@@ -246,17 +232,17 @@ public class WCETInstruction {
 		for (int op = 0; op <= 255; op++) {
 			// name (25)
 			String str = new String("[" + op + "] " + getNameFromOpcode(op));
-			sb.append(WU.postpad(str, 25));
+			sb.append(MiscUtils.postpad(str, 25));
 
 			//hit n={0,1000}
 			String hitstr = getCycles(op, false, 0) + "/"
 					+ getCycles(op, false, 1000);
-			hitstr = WU.prepad(hitstr, 12);
+			hitstr = MiscUtils.prepad(hitstr, 12);
 
 			//miss n={0,1000}
 			String missstr = getCycles(op, true, 0) + "/"
 					+ getCycles(op, true, 1000);
-			missstr = WU.prepad(missstr, 12);
+			missstr = MiscUtils.prepad(missstr, 12);
 
 			sb.append(hitstr + missstr + "\n");
 		}
@@ -1150,7 +1136,7 @@ public class WCETInstruction {
 			break;
 		// GETFIELD = 180
 		case org.apache.bcel.Constants.GETFIELD:
-			wcet = 8 + 2 * r;
+			wcet = 7 + 2 * r;
 			if (CMP_WCET==true)
 				wcet = getfield.wcet;
 			break;
@@ -1382,7 +1368,7 @@ public class WCETInstruction {
 			
 		// GETFIELD_REF = 226
 		case GETFIELD_REF:
-			wcet = 8 + 2 * r;
+			wcet = 7 + 2 * r;
 			if (CMP_WCET==true){
 				WCETMemInstruction getfield_ref = new WCETMemInstruction();
 				getfield_ref.microcode = new int [wcet];
@@ -1432,7 +1418,7 @@ public class WCETInstruction {
 
 		// JOPSYS_GETFIELD = 233
 		case JOPSYS_GETFIELD:
-			// perhaps it is 9 + 2r?
+			// FIXME: perhaps it is 9 + 2r?
 			wcet = 8 + 2*r;
 			if (CMP_WCET==true)
 				wcet = -1;
@@ -1491,26 +1477,6 @@ public class WCETInstruction {
 		else
 			return true;
 	}
-	
-	/**
-	 * Get an estimation of the bytecode execution time.
-	 * 
-	 * TODO: measure Java implemented bytecodes and add the numbers.
-	 * @param opcode
-	 * @param pmiss
-	 * @param n
-	 * @return
-	 */
-	public static int getCyclesEstimate(int opcode, boolean pmiss, int n) {
-		
-		int ret = getCycles(opcode, pmiss, n);
-		// VERY rough estimate
-		if (ret==WCETNOTAVAILABLE) {
-			ret = 200;
-		}
-		return ret;
-	}
-
 	
 	public static int getNoImplDispatchCycles() {
 		// FIXME (CMP_WCET): invokevirtual should be a conservative approximation to sys_noim for now

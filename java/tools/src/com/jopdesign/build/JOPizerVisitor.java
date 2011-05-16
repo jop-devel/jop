@@ -35,7 +35,7 @@ package com.jopdesign.build;
  */
 public class JOPizerVisitor extends AppVisitor {
 
-	public JOPizerVisitor(AppInfo ai) {
+	public JOPizerVisitor(OldAppInfo ai) {
 		super(ai);
 	}
 	

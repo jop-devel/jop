@@ -19,23 +19,13 @@
 */
 package com.jopdesign.wcet.uppaal.translator;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.Vector;
-import java.util.Map.Entry;
-
-import org.w3c.dom.Document;
-
-import com.jopdesign.build.MethodInfo;
-import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.graphutils.MiscUtils;
-import com.jopdesign.wcet.graphutils.MiscUtils.Function1;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.common.processormodel.JOPConfig.CacheImplementation;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.jop.BlockCache;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.jop.VarBlockCache;
-import com.jopdesign.wcet.jop.JOPConfig.CacheImplementation;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.UppAalConfig.UppaalCacheApproximation;
 import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;
@@ -44,10 +34,19 @@ import com.jopdesign.wcet.uppaal.model.Template;
 import com.jopdesign.wcet.uppaal.model.XmlSerializationException;
 import com.jopdesign.wcet.uppaal.translator.cache.CacheSimBuilder;
 import com.jopdesign.wcet.uppaal.translator.cache.FIFOCacheBuilder;
+import com.jopdesign.wcet.uppaal.translator.cache.FIFOVarBlockCacheBuilder;
 import com.jopdesign.wcet.uppaal.translator.cache.LRUCacheBuilder;
 import com.jopdesign.wcet.uppaal.translator.cache.LRUVarBlockCacheBuilder;
 import com.jopdesign.wcet.uppaal.translator.cache.StaticCacheBuilder;
-import com.jopdesign.wcet.uppaal.translator.cache.FIFOVarBlockCacheBuilder;
+import org.w3c.dom.Document;
+
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
+import java.util.Vector;
 
 /**
  * Builder for the system modeling the java program.
@@ -81,7 +80,7 @@ public class SystemBuilder {
 	private HashMap<Template,Integer> priorities = new HashMap<Template,Integer>();
 	private HashMap<MethodInfo,Integer> methodId = new HashMap<MethodInfo, Integer>();
 	private CacheSimBuilder cacheSim;
-	private Project project;
+	private WCETTool project;
 	private UppAalConfig config;
 	private int numMethods;
 	private int maxCallStackDepth;
@@ -90,12 +89,12 @@ public class SystemBuilder {
 	/**
 	 * Create a new top-level UPPAAL System builder
 	 * @param config             configuration
-	 * @param project            uplink to Project
+	 * @param p                  uplink to Project
 	 * @param maxCallStackDepth  the maximal call stack depth
-	 * @param numMethods         the number of methods of the program
+	 * @param methods            the methods of the program
 	 */
 	public SystemBuilder(UppAalConfig config,
-			             Project p,
+			             WCETTool p,
 			             int maxCallStackDepth, List<MethodInfo> methods) {
 		this.config = config;
 		this.project = p;
@@ -112,7 +111,7 @@ public class SystemBuilder {
 		cacheSim.appendDeclarations(system,NUM_METHODS);
 	}
 	private CacheSimBuilder getCacheSimulation() {
-		MethodCache cache = project.getProcessorModel().getMethodCache();
+		MethodCache cache = project.getWCETProcessorModel().getMethodCache();
 		UppaalCacheApproximation cacheApprox = config.getCacheApproximation();
 		CacheSimBuilder sim;
 		if(cache.getName() == CacheImplementation.NO_METHOD_CACHE) {
@@ -128,18 +127,18 @@ public class SystemBuilder {
 				sim = new FIFOCacheBuilder((BlockCache)cache, config.emptyInitialCache);
 				break;
 			case LRU_VARBLOCK_CACHE:
-				sim = new LRUVarBlockCacheBuilder(project, (VarBlockCache)cache, this.numMethods);
+				sim = new LRUVarBlockCacheBuilder(project, (VarBlockCache)cache, this.methodId.keySet());
 				break;				
 			case FIFO_VARBLOCK_CACHE: 
 				sim = new FIFOVarBlockCacheBuilder(project,        (VarBlockCache)cache, 
-						                       this.numMethods, config.emptyInitialCache);
+						                       this.methodId.keySet(), config.emptyInitialCache);
 				break;
 			default: throw new AssertionError("Unsupport cache implementation: "+cache.getName());
 			}
 		}
 		return sim;
 	}
-	public Project getProject() {
+	public WCETTool getProject() {
 		return project;
 	}
 	public CacheSimBuilder getCacheSim() {
@@ -172,7 +171,7 @@ public class SystemBuilder {
 	 */
 	public void addCallStack(MethodInfo rootMethod, int numCallSites) {
 		int rootId = this.getMethodId(rootMethod);
-		Vector<String> initArray = new Vector<String>();
+		List<String> initArray = new LinkedList<String>();
 		initArray.add(""+rootId);
 		for(int i = 1; i < maxCallStackDepth; i++) { initArray.add(""+rootId); }
 		system.appendDeclaration(String.format("int[0,%d] callStack[%s] = %s;",
@@ -218,17 +217,17 @@ public class SystemBuilder {
 		/* Instantiate processes */
 		sys.append("system ");
 		/* bucket sort templates by priority */
-		TreeMap<Integer, Vector<Template>> templatesByPrio = 
-			MiscUtils.partialSort(templates.keySet(), new Function1<Template,Integer>() {
-				public Integer apply(Template t) {
-					return priorities.get(t);
-				}
-			}			
-		);
+		TreeMap<Integer, List<Template>> templatesByPrio =
+			MiscUtils.partialSort(templates.keySet(), new MiscUtils.Function1<Template, Integer>() {
+                public Integer apply(Template t) {
+                    return priorities.get(t);
+                }
+            }
+            );
 		/* create system declaration strings */
-		Vector<String> systemEntry = new Vector<String>();
-		for(Vector<Template> entry : templatesByPrio.values()) {
-			Vector<String> proclist = new Vector<String>();
+		List<String> systemEntry = new LinkedList<String>();
+		for(List<Template> entry : templatesByPrio.values()) {
+			List<String> proclist = new LinkedList<String>();
 			for(Template t : entry) {
 				proclist.add("M"+templates.get(t));
 			}
@@ -256,7 +255,7 @@ public class SystemBuilder {
 	public Document toXML() throws XmlSerializationException {
 		return this.system.toXML();
 	}
-	public static StringBuilder constArray(Vector<?> elems) {
+	public static StringBuilder constArray(List<?> elems) {
 		StringBuilder sb = new StringBuilder("{ ");
 		boolean first = true;
 		for(Object o : elems) {

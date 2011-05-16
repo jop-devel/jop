@@ -42,6 +42,17 @@ public class LinearConstraint<T> {
 		this.inhom = 0;		
 		this.op   = op;
 	}
+
+	/**
+	 * Copy constructor
+	 * @param proto prototype to clone from
+	 */
+	public LinearConstraint(LinearConstraint<T> proto) {
+		this.vec   = proto.vec.clone();
+		this.inhom = proto.inhom;		
+		this.op    = proto.op;
+	}
+
 	/**
 	 * Add <code>coeff * var</code> to the left-hand-side of the constraint
 	 * @param var  
@@ -92,6 +103,11 @@ public class LinearConstraint<T> {
 		return op;
 	}
 
+	@Override
+	public LinearConstraint<T> clone() {
+		return new LinearConstraint<T>(this);		
+	}
+	
 	@Override
 	public String toString() {
 		StringBuffer s = new StringBuffer();

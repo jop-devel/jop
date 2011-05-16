@@ -36,7 +36,6 @@ import java.io.*;
 
 
 import com.jopdesign.sys.*;
-import com.jopdesign.timing.WCETInstruction;
 
 public class JopSimDisplay extends JopSim {
 	

@@ -32,29 +32,29 @@ import org.apache.bcel.classfile.*;
  * application specific visitors for easy access to ClassInfo.
  * 
  * @author Martin
- *
+ * @deprecated Use ClassVisitor instead
  */
 public class AppVisitor extends EmptyVisitor {
 
-	protected AppInfo ai;
+	protected OldAppInfo ai;
 	// should be private, but we need access in e.g. JOPizerVisitor
-	protected ClassInfo cli;
+	protected OldClassInfo cli;
 	protected JavaClass clazz;
 
-	public AppVisitor(AppInfo ai) {
+	public AppVisitor(OldAppInfo ai) {
 		this.ai = ai;
 	}
 	
 	public void visitJavaClass(JavaClass clazz) {
 		this.clazz = clazz;
-		setCli((ClassInfo) ai.cliMap.get(clazz.getClassName()));
+		setCli((OldClassInfo) ai.cliMap.get(clazz.getClassName()));
 	}
 
-	protected void setCli(ClassInfo cli) {
+	protected void setCli(OldClassInfo cli) {
 		this.cli = cli;
 	}
 
-	protected ClassInfo getCli() {
+	protected OldClassInfo getCli() {
 		return cli;
 	}
 

@@ -89,7 +89,7 @@ public class GCRTMethodInfo {
 	 * 
 	 * @param mi the method
 	 */
-	public static void stackWalker(MethodInfo mi) {
+	public static void stackWalker(OldMethodInfo mi) {
 		((GCRTMethodInfo) miMap.get(mi)).stackWalker();
 	}
 
@@ -99,7 +99,7 @@ public class GCRTMethodInfo {
 	 * @param methodbcel
 	 * @return Returns the length in words that the GC bit maps will take.
 	 */
-	public static int gcLength(MethodInfo mi) {
+	public static int gcLength(OldMethodInfo mi) {
 		return ((GCRTMethodInfo) miMap.get(mi)).gcLength();
 	}
 
@@ -112,16 +112,16 @@ public class GCRTMethodInfo {
 	 * @param mi
 	 *            the method
 	 */
-	public static void dumpMethodGcis(MethodInfo mi, PrintWriter out) {
+	public static void dumpMethodGcis(OldMethodInfo mi, PrintWriter out) {
 		((GCRTMethodInfo) miMap.get(mi)).dumpMethodGcis(out);
 	}
   
-  public static void removePC(int pc,MethodInfo mi){
+  public static void removePC(int pc,OldMethodInfo mi){
     ((GCRTMethodInfo) miMap.get(mi)).removePC(pc);
   }
 
 	// instance
-	MethodInfo mi;
+	OldMethodInfo mi;
 
 	Method method;
 
@@ -152,7 +152,7 @@ public class GCRTMethodInfo {
 	/**
 	 * Instanciated from from <code>SetClassInfo</code>.
 	 */
-	public GCRTMethodInfo(MethodInfo mi, Method method) {
+	public GCRTMethodInfo(OldMethodInfo mi, Method method) {
 		this.mi = mi;
 		this.method = method;
 
