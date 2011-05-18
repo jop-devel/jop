@@ -35,6 +35,7 @@ public class GC {
 	 * Combining scopes and the GC needs some extra work.
 	 */
 	final static boolean USE_SCOPES = false;
+	final static boolean USE_SCOPECHECKS = false;
 	final static boolean ADD_REF_INFO = false;
 	
 	static int mem_start;		// read from memory

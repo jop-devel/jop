@@ -114,8 +114,7 @@ class JVM {
 	private static void f_aastore(int ref, int index, int value) {
 			
 		synchronized (GC.mutex) {
-			if (GC.USE_SCOPES) {
-				// TODO Scope check
+			if (GC.USE_SCOPECHECKS) {
 				JVMHelp.scopeCheck(ref, value);
 				
 			} else {
@@ -1101,8 +1100,7 @@ class JVM {
 	private static void f_putstatic_ref(int val, int addr) {
 		
 		synchronized (GC.mutex) {
-			if (GC.USE_SCOPES) {
-				// TODO Scope check
+			if (GC.USE_SCOPECHECKS) {
 				/**
 				 * val cannot be in a scoped region because if the scoped area is freed, then
 				 * we get a dangling reference in the modified static field
@@ -1139,8 +1137,7 @@ class JVM {
 		
 		synchronized (GC.mutex) {
 			
-			if (GC.USE_SCOPES) {
-				// TODO Scope check
+			if (GC.USE_SCOPECHECKS) {
 				JVMHelp.scopeCheck(ref, value);
 			} else {
 				// snapshot-at-beginning barrier

@@ -368,8 +368,7 @@ synchronized (o) {
 		wr(' ');
 	}
 	
-	public static void scopeCheck(int ref, int val){
-		
+	public static void scopeCheck(int ref, int val) {		
 
 		/** val has to be in a longer lived memory region than ref. This means that val can be in: 
 		 * 
@@ -381,29 +380,28 @@ synchronized (o) {
 
 		int ref_level; 
 		int val_level; 
-
-		
-		if (GC.ADD_REF_INFO){
+	
+		if (GC.ADD_REF_INFO) {
 			ref_level = (ref & 0x3E000000) >>> 25;
 			val_level = (val & 0x3E000000) >>> 25;
 			
-		}else{
+		} else {
 			ref_level = Native.rdMem(ref + GC.OFF_SCOPE);
-			val_level = Native.rdIntMem(val + GC.OFF_SCOPE);
+			val_level = Native.rdMem(val + GC.OFF_SCOPE);
 		}
 			
-		if ( val_level == 0){
-			if ( ref_level != 0){//ref is in scoped memory
+		if (val_level == 0){
+			if (ref_level != 0) { // ref is in scoped memory
 				GC.log("Illegal Assignment Exception: Shorter lived object references longer lived object!");
 			}
-		}else{//val is in scope
-			if (ref_level !=0){//ref is in scope
-				if (ref_level > val_level){//ref is deeper nested than val
+		} else { //val is in scope
+			if (ref_level != 0){ // ref is in scope
+				if (ref_level > val_level) { // ref is deeper nested than val
 					GC.log("Illegal Assignment Exception: Scope level missmatch");
 				}
 			}
 		}
-		}
+	}
 
 
 }
