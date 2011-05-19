@@ -76,6 +76,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -404,7 +405,8 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             // TODO do we want to keep the graphs internally? however we would need a way to clear the cache
             //      when code gets changed, e.g. by removing all kept callgraphs manually or by using AppEventHandler.onMethodModified()
 
-            cfg = new ControlFlowGraph(mi, CallString.EMPTY, callGraph);
+            //cfg = new ControlFlowGraph(mi, CallString.EMPTY, callGraph);
+            cfg = mi.getCode().getControlFlowGraph(false);
             cfg.resolveVirtualInvokes();
             cfg.insertReturnNodes();
             cfg.insertContinueLoopNodes();
