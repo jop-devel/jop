@@ -35,9 +35,12 @@ package test;
 public class HelloWorld {
 
 	public static void main(String[] args) {
-
-		int val;
-
+		measure();
 		System.out.println("Hello World from JOP!");
+	}
+	
+	static int x,y,z;
+	public static void measure() {	
+		z=x+y;
 	}
 }
