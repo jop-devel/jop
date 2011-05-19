@@ -18,6 +18,7 @@ package wcet.devel;
  *
  */
 
+import com.jopdesign.sys.Config;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
@@ -55,9 +56,6 @@ public class AnnotLang2 {
 			x = (x+1) * i;
 	}
 
-	/* testing wcet */
-	/** Set to false for the WCET analysis, true for measurement */
-	final static boolean MEASURE = true;
 	static int ts, te, to;
 	private static AnnotLang2 test;
 
@@ -67,7 +65,7 @@ public class AnnotLang2 {
 		to = te-ts;
 		test = new AnnotLang2();
 		invoke();
-		if (MEASURE) {
+		if (Config.MEASURE) {
 			int dt = te-ts-to;
 			System.out.print("wcet[AnnotLang2]:");
             System.out.println(dt);
@@ -76,11 +74,11 @@ public class AnnotLang2 {
 	
 	static void invoke() {
 		measure();
-		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 	}
 
 	static void measure() {
-		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		test.testConstantReference();
 	}
 }

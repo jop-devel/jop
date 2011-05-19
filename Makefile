@@ -19,6 +19,9 @@
 #
 #
 
+################################################################################
+# Board configuration
+################################################################################
 
 #
 #	Set USB to true for an FTDI chip based board (dspio, usbmin, lego)
@@ -35,8 +38,12 @@ ifeq ($(USB),true)
 	COM_PORT=COM5
 	COM_FLAG=-e -usb
 else
-	COM_PORT=COM1
 	COM_FLAG=-e
+ifeq ($(WINDIR),)
+	COM_PORT=/dev/ttyS0
+else 
+	COM_PORT=COM1
+endif
 endif
 
 #
@@ -44,6 +51,7 @@ endif
 #
 # 'some' different Quartus projects
 QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp de2-70vga cycrttm de2-70rttm
+
 # if you want to build only one Quartus project use e.q.:
 ifeq ($(USB),true)
 	QPROJ=usbmin
@@ -78,60 +86,79 @@ endif
 CLDC11=false
 
 #
-#	Kind of JDK 1.6
+#	Whether to use JDK 1.6
 #
 JDK16=false
 
-
+#
 # Number of cores for JopSim and RTTM simulation
+#
 CORE_CNT=1
-
-# Callstring length for analysis and optimization
-CALLSTRING_LENGTH=0
 
 # Which project do you want to be downloaded?
 DLPROJ=$(QPROJ)
+
 # Which project do you want to be programmed into the flash?
 FLPROJ=$(DLPROJ)
+
 # IP address for Flash programming
 IPDEST=192.168.1.2
 IPDEST=192.168.0.123
 
+################################################################################
+# Application configuration
+################################################################################
+
+# Jop RTS configuration
+USE_SCOPES=false
+USE_SCOPECHECKS=false
+ADD_REF_INFO=false
+MEASURE=true
+JOP_CONF_STR=USE_SCOPES=$(USE_SCOPES) USE_SCOPECHECKS=$(USE_SCOPECHECKS) ADD_REF_INFO=$(ADD_REF_INFO) MEASURE=$(MEASURE)
+
 P1=test
 P2=test
 P3=HelloWorld
+
+#
+# Run JVM Tests
+# 
 #P2=jvm
 #P3=DoAll
-#P1=rtapi
-#P2=examples/scopes
-#P3=LocalScope
-#P3=LocalMatrixCalc
 
-#P1=test
-#P2=rtlib
-#P3=CMPBuffer
-
-#P1=common
-#P2=ejip123/examples
-#P3=HelloWorldHereIPing
-
-#P1=bench
-#P2=jbe
-#P3=DoApp
+#
 # The test program for Basio and the NAND Flash
+#
 #P3=FlashBaseio
 
-#P1=app
-#P2=oebb
-#P3=Main
 
-#P2=wcet
-#P3=Dispatch
-#WCET_METHOD=measure
+################################################################################
+# Tool configuration
+################################################################################
 
-#P1=.
-#P2=dsvmmcp
-#P3=TestDSVMMCP
+#
+# Callstring length for analysis and optimization
+#
+CALLSTRING_LENGTH=0
+
+#
+# dataflow analysis
+#
+USE_DFA?=no
+
+
+#
+#	Application optimization with JCopter
+#
+USE_JCOPTER?=no
+JCOPTER_OPT?=--use-dfa=$(USE_DFA) --dump-callgraph merged --dump-jvm-callgraph off --callstring-length $(CALLSTRING_LENGTH)
+JCOPTER_USE_WCA?=no
+#
+#       WCET analysis
+#
+
+WCET_METHOD=measure
+# WCET_OPTIONS=
 
 ################## end of configuration section ###################
 
@@ -238,23 +265,26 @@ DEBUG_JOPSIM=
 #	uncomment following line to use it
 #OPTIMIZE=mv java/target/dist/lib/classes.zip java/target/dist/lib/in.zip; java -jar java/lib/proguard.jar @optimize.pro
 
-#
-#	application optimization with JCopter
-#
-USE_JCOPTER?=no
-JCOPTER_OPT?=--dump-callgraph merged --dump-jvm-callgraph off --callstring-length $(CALLSTRING_LENGTH)
-
+################################################################################
+# Make rules
+################################################################################
 
 # build everything from scratch
 all:
-	make directories
-	make tools
+	make init
 ifeq ($(USB),true)
 	make jopusb
 else
 	make jopser
 endif
 	make japp
+
+# Build toolchain and autogenerate source files
+init:
+	make directories
+	make tools
+	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SERIAL
+	make jop_config
 
 # build the Java application and download it
 japp:
@@ -350,18 +380,24 @@ cprog:
 #
 #	compile and JOPize the application
 #
-ifeq (${WCET_METHOD},)
+ifeq (${JCOPTER_USE_WCA},no)
   JCOPTER_OPTIONS=--no-use-wca ${JCOPTER_OPT}
 else
   JCOPTER_OPTIONS=--target-method ${WCET_METHOD} ${JCOPTER_OPT}  
 endif
 
-java_app:
+jop_config:
+	java $(TOOLS_CP) com.jopdesign.tools.GenJopConfig $(JOP_CONF_STR) > $(TARGET)/src/common/com/jopdesign/sys/Config.java
+
+java_app: 
 	-rm -rf $(TARGET)/dist
 	-mkdir $(TARGET)/dist
 	-mkdir $(TARGET)/dist/classes
 	-mkdir $(TARGET)/dist/lib
 	-mkdir $(TARGET)/dist/bin
+
+	make jop_config
+
 	javac $(TARGET_JFLAGS) $(TARGET_SRC_PATH)/common/com/jopdesign/sys/*.java
 ifeq ($(CLDC11),false)
 	javac $(TARGET_JFLAGS) $(TARGET_SRC_PATH)/jdk_base/java/lang/annotation/*.java	# oh new Java 1.5 world!
@@ -395,8 +431,10 @@ endif
 jcopter_help:
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter --help
 	@echo "[make] Default JCopter options:"
-	@echo "[make] JCOPTER_OPT=--dump-callgraph merged --dump-jvm-callgraph merged --callstring-length \$$(CALLSTRING_LENGTH) --target-method \$$(WCET_METHOD)"
+	@echo "[make] JCOPTER_OPT=--dump-callgraph merged --dump-jvm-callgraph merged --use-dfa=\$$(USE_DFA) --dump-callgraph merged --dump-jvm-callgraph off --callstring-length \$$(CALLSTRING_LENGTH) --target-method \$$(WCET_METHOD)"
+	@echo "[make] JCOPTER_OPT=$(JCOPTER_OPT)"
 	@echo ""
+
 #	project.sof fiels are used to boot from the serial line
 #
 jopser:
@@ -450,11 +488,6 @@ gen_mem:
 # copy generated files into working directories
 	cp asm/generated/*.vhd vhdl
 	cp asm/generated/*.dat modelsim
-
-# not used targets
-#	rem java -cp ..\java\tools\dist\lib\jop-tools.jar BlockGen -b %blocksize% -pd -d 1024 -w 8 -m xjbc_block -o generated
-#	rem java -cp ..\java\tools\dist\lib\jop-tools.jar BlockGen -b %blocksize% -pd -m xrom_block generated\rom.mif generated\xrom_block.vhd
-
 
 #
 #	Quartus build process
@@ -689,10 +722,6 @@ udp_dbg:
 	java -cp java/pc/dist/lib/jop-pc.jar udp.UDPDbg
 
 
-# WCET help
-wcet_help:
-	java $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis --help
-
 # set library path to current directory for the Mac
 DYLD_FALLBACK_LIBRARY_PATH:=.:$(DYLD_FALLBACK_LIBRARY_PATH)
 export DYLD_FALLBACK_LIBRARY_PATH 
@@ -703,7 +732,6 @@ export DYLD_FALLBACK_LIBRARY_PATH
 # make after (dot): (cd java/target/wcet/<project-name>; make)
 #
 # Makefile options:
-# WCET_DFA: perform dataflow analysis
 # WCET_UPPAAL: whether to use modelchecking for WCET analysis
 # WCET_VERIFYTA: UPPAAL verifier executable
 # WCET_OPTIONS: Additional WCET options (run 'make wcet_help')
@@ -711,7 +739,7 @@ export DYLD_FALLBACK_LIBRARY_PATH
 # Profiling: add -Xss16M -agentlib:hprof=cpu=samples,interval=2,depth=8 to java arguments
 # On Mac don't forget:
 # export DYLD_FALLBACK_LIBRARY_PATH=.
-WCET_DFA?=no
+WCET_DFA?=$(USE_DFA)
 WCET_UPPAAL?=no
 WCET_VERIFYTA?=verifyta	 # only needed if WCET_UPPAAL=yes
 wcet:
@@ -725,6 +753,10 @@ wcet:
 		--uppaal $(WCET_UPPAAL) --uppaal-verifier $(WCET_VERIFYTA) \
 		--callstring-length $(CALLSTRING_LENGTH) \
 		$(WCET_OPTIONS) $(MAIN_CLASS)	
+
+# WCET help
+wcet_help:
+	java $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis --help
 
 
 # dotgraph works for wcet.WCETAnalyser

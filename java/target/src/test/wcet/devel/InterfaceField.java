@@ -20,6 +20,7 @@
 
 package wcet.devel;
 
+import com.jopdesign.sys.Config;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
@@ -40,11 +41,6 @@ public class InterfaceField {
         }
     }
 
-    /* testing wcet */
-    /**
-     * Set to false for the WCET analysis, true for measurement
-     */
-    final static boolean MEASURE = false;
     static int ts, te, to;
 
     public static void main(String[] args) {
@@ -52,7 +48,7 @@ public class InterfaceField {
         te = Native.rdMem(Const.IO_CNT);
         to = te - ts;
         invoke();
-        if (MEASURE) {
+        if (Config.MEASURE) {
             int dt = te - ts - to;
             System.out.print("measured-execution-time:");
             System.out.println(dt);
@@ -61,11 +57,11 @@ public class InterfaceField {
 
     static void invoke() {
         measure();
-        if (MEASURE) te = Native.rdMem(Const.IO_CNT);
+        if (Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
     }
 
     static void measure() {
-        if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
+        if (Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
         test1();
     }
 

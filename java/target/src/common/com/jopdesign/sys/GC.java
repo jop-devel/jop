@@ -30,12 +30,6 @@ package com.jopdesign.sys;
  */
 public class GC {
 	
-	/**
-	 * Use either scoped memories or a GC.
-	 * Combining scopes and the GC needs some extra work.
-	 */
-	final static boolean USE_SCOPES = false;	
-	
 	static int mem_start;		// read from memory
 	// get a effective heap size with fixed handle count
 	// for our RT-GC tests
@@ -69,6 +63,7 @@ public class GC {
 	public static final int OFF_MTAB_ALEN = 1;
 	public static final int OFF_SIZE = 2;
 	public static final int OFF_TYPE = 3;
+	public static final int OFF_SCOPE = 7;
 	
 	// size != array length (think about long/double)
 	
@@ -152,7 +147,7 @@ public class GC {
 //mem_start = 261300;
 		mem_start = (mem_start+7)&0xfffffff8;
 //mem_size = mem_start + 2000;
-		if(USE_SCOPES) {
+		if(Config.USE_SCOPES) {
 			allocationPointer = mem_start;
 			// clean immortal memory
 			for (int i=mem_start; i<mem_size; ++i) {
@@ -489,7 +484,7 @@ public class GC {
 		concurrentGc = true;
 	}
 	static void gc_alloc() {
-		if (USE_SCOPES) {
+		if (Config.USE_SCOPES) {
 			log("No GC when scopes are used");
 			throw OOMError;
 		}
@@ -534,7 +529,7 @@ public class GC {
 	static int newObject(int cons) {
 		int size = Native.rdMem(cons);			// instance size
 		
-		if (USE_SCOPES) {
+		if (Config.USE_SCOPES) {
 			// allocate in scope
 			int ptr = allocationPointer;
 			if(RtThreadImpl.initArea == null)
@@ -558,6 +553,13 @@ public class GC {
 				}
 				ptr = sc.allocPtr;
 				sc.allocPtr += size+HEADER_SIZE;
+				
+				//Add scope info to pointer of newly created object
+				if (Config.ADD_REF_INFO){
+					ptr = ptr | (sc.level << 25);	
+				}
+				//Add scope info to object's handler field
+				Native.wrMem(sc.level , ptr+OFF_SCOPE);
 			}
 			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
 			Native.wrMem(size, ptr+OFF_SIZE); // Just defining all headers
@@ -571,7 +573,7 @@ public class GC {
 		// that's the stop-the-world GC
 		synchronized (mutex) {
 			if (copyPtr+size >= allocPtr) {
-				if (USE_SCOPES) {
+				if (Config.USE_SCOPES) {
 					// log("No GC when scopes are used");
 					// OOMError.fillInStackTrace();
 					throw OOMError;
@@ -587,7 +589,7 @@ public class GC {
 		}
 		synchronized (mutex) {
 			if (freeList==0) {
-				if (USE_SCOPES) {
+				if (Config.USE_SCOPES) {
 					// log("No GC when scopes are used");
 					// OOMError.fillInStackTrace();
 					throw OOMError;
@@ -649,7 +651,7 @@ public class GC {
 		if((type==11)||(type==7)) size <<= 1;
 		// reference array type is 1 (our convention)
 		
-		if (USE_SCOPES) {
+		if (Config.USE_SCOPES) {
 			// allocate in scope
 			int ptr = allocationPointer;
 			if(RtThreadImpl.initArea == null)
@@ -673,6 +675,13 @@ public class GC {
 				}
 				ptr = sc.allocPtr;
 				sc.allocPtr += size+HEADER_SIZE;
+				
+				//Add scope info to pointer of newly created array
+				if (Config.ADD_REF_INFO){
+					ptr = ptr | (sc.level << 25);	
+				}
+				//Add scope info to array's handler field
+				Native.wrMem(sc.level , ptr+OFF_SCOPE);
 			}
 			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
 			Native.wrMem(arrayLength, ptr+OFF_SIZE); // Just defining all headers
@@ -683,7 +692,7 @@ public class GC {
 
 		synchronized (mutex) {
 			if (copyPtr+size >= allocPtr) {
-				if (USE_SCOPES) {
+				if (Config.USE_SCOPES) {
 					// log("No GC when scopes are used");
 					// OOMError.fillInStackTrace();
 					throw OOMError;
@@ -699,7 +708,7 @@ public class GC {
 		}
 		synchronized (mutex) {
 			if (freeList==0) {
-				if (USE_SCOPES) {
+				if (Config.USE_SCOPES) {
 					// log("No GC when scopes are used");
 					// OOMError.fillInStackTrace();
 					throw OOMError;
