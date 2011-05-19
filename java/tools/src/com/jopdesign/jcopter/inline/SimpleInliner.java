@@ -255,11 +255,17 @@ public class SimpleInliner extends AbstractOptimizer {
 
         if (!analyzeInvokeSite(invokeSite, invokee, inlineData)) {
             signatureMismatch++;
+            if (logger.isTraceEnabled()) {
+                logger.trace("Not inlining "+invokee+" at "+invokeSite+" because of signature mismatch.");
+            }
             return false;
         }
 
         if (!analyzeCodeSize(invokeSite, invokee, inlineData)) {
             codesizeTooLarge++;
+            if (logger.isTraceEnabled()) {
+                logger.trace("Not inlining "+invokee+" at "+invokeSite+" because of codesize.");
+            }
             return false;
         }
 
@@ -337,6 +343,9 @@ public class SimpleInliner extends AbstractOptimizer {
                 if (needsNPCheck && !hasNPCheck) {
                     // We were nearly finished.. but NP check test failed
                     this.requiresNPCheck++;
+                    if (logger.isTraceEnabled()) {
+                        logger.trace("Not inlining "+invokee+" because it requires a NP check.");
+                    }
                     return false;
                 }
 
@@ -371,6 +380,9 @@ public class SimpleInliner extends AbstractOptimizer {
             else {
                 // if we encounter an instruction which we do not handle, we do not inline
                 unhandledInstructions++;
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Not inlining "+invokee+" because of unhandled instructions.");
+                }
                 return false;
             }
 

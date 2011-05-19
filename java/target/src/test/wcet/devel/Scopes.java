@@ -24,10 +24,10 @@ import joprt.RtThread;
 
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
-import com.jopdesign.sys.Scope;
+import com.jopdesign.sys.Memory;
 /**
- * Purpose: Analyze {@link Scope#enter(Runnable)}
- * Requires that in {@link com.jopdesign.sys.GC.USE_SCOPES} is set to {@code true}. 
+ * Purpose: Analyze {@link Memory#enter(Runnable)}
+ * Requires that in {@link com.jopdesign.sys.GC#USE_SCOPES} is set to {@code true}.
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  *
  */
@@ -64,7 +64,7 @@ public class Scopes {
 	}
 
 	static int ts, te, to, tos;
-	Scope scope;
+	Memory scope;
 	
 	Empty empty;
 	Alloc alloc;
@@ -72,7 +72,7 @@ public class Scopes {
 
 	public Scopes() {
 		// scope overhead
-		scope = new Scope(5000);
+		scope = new Memory(5000);
 
 		empty = new Empty();		
 		bigMethod = new BigMethod();
