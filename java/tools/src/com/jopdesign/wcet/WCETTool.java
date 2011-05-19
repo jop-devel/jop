@@ -66,7 +66,6 @@ import com.jopdesign.wcet.jop.LinkerInfo.LinkInfo;
 import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.report.ReportConfig;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
-import com.sun.xml.internal.bind.v2.TODO;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
 
@@ -77,7 +76,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
