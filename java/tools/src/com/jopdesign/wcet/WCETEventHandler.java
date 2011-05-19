@@ -80,7 +80,7 @@ public class WCETEventHandler extends EmptyAppEventHandler {
     }
 
     @Override
-    public void onCreateControlFlowGraph(ControlFlowGraph cfg, boolean clean) {
+    public void onCreateControlFlowGraph(ControlFlowGraph cfg) {
         try {
             loadLoopAnnotations(cfg);
         } catch (BadAnnotationException e) {

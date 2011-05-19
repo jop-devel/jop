@@ -466,7 +466,12 @@ public class BasicBlock {
         List<InstructionHandle> old = new ArrayList<InstructionHandle>(instructions);
         instructions.clear();
         for (InstructionHandle ih : old) {
-            InstructionHandle newIh = il.append(ih.getInstruction());
+            InstructionHandle newIh;
+            if (ih.getInstruction() instanceof BranchInstruction) {
+                newIh = il.append((BranchInstruction)ih.getInstruction());
+            } else {
+                newIh = il.append(ih.getInstruction());
+            }
             // link to new handles, find first and last handle
             instructions.add(newIh);
             // we need to copy all attributes. FlowInfo should not be needed.

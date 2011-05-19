@@ -27,6 +27,7 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.EmptyTool;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
+import com.jopdesign.common.code.CFGProvider;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
@@ -88,7 +89,7 @@ import java.util.Set;
  * @author Stefan Hepp (stefan@stefant.org)
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  */
-public class WCETTool extends EmptyTool<WCETEventHandler> {
+public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider {
 
     public static final String VERSION = "1.0.1";
 
@@ -397,19 +398,32 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         if (!mi.hasCode()) return null;
         ControlFlowGraph cfg;
         try {
-            // We want the resolved invokes to be consistent with our callgraph so we use
-            // that callgraph to resolve invokes (although if this.callgraph is not modified,
-            // there is no difference to the appInfo callgraph). We also do not want to store
-            // modifications of the graph back to the code.
-
-            // TODO do we want to keep the graphs internally? however we would need a way to clear the cache
-            //      when code gets changed, e.g. by removing all kept callgraphs manually or by using AppEventHandler.onMethodModified()
-
+            /* TODO We need to make sure that changes to the CFG are not compiled back automatically
+             * but CFG#compile() is not yet fully implemented anyways.
+             * We could add an option to MethodCode#getControlFlowGraph() to get a graph which will not be compiled back.
+             *
+             * We could also create a new graph instead, would allow us to create CFGs per callstring and be consistent
+             * with this.callgraph. But as long as neither this.callgraph and appInfo.callgraph are not modified
+             * after rebuildCallGraph() has been called, there is no difference.
+             *
+             * However, if we create a new graph we have to
+             * - keep the new graph, if we just recreate them modifications by analyses will be lost and some things
+             *   like SuperGraph will break if we return new graphs every time.
+             * - provide a way to rebuild the CFGs if the code is modified, either by implementing WCETEventHandler.onMethodModified
+             *   or by providing a dispose() method which must be called before the analysis starts after any code modifications.
+             * - when we do not use a CFG anymore (e.g. because we recreate it) we need to call CFG.dispose() so that it
+             *   is not attached to the instruction handles anymore.
+             */
             //cfg = new ControlFlowGraph(mi, CallString.EMPTY, callGraph);
+
             cfg = mi.getCode().getControlFlowGraph(false);
+
             cfg.resolveVirtualInvokes();
             cfg.insertReturnNodes();
             cfg.insertContinueLoopNodes();
+
+            // This currently only works for one graph at a time per method..
+            cfg.registerHandleNodes();
 
 //    	    cfg.insertSplitNodes();
 //    	    cfg.insertSummaryNodes();
@@ -682,8 +696,8 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             LoopBounds lbs = getDfaLoopBounds();
             Set<FlowEdge> edges = lbs.getInfeasibleEdges(block.getLastInstruction(), cs);
             for (FlowEdge e : edges) {
-                BasicBlockNode head = ControlFlowGraph.getHandleNode(e.getHead());
-                BasicBlockNode tail = ControlFlowGraph.getHandleNode(e.getTail());
+                BasicBlockNode head = cfg.getHandleNode(e.getHead());
+                BasicBlockNode tail = cfg.getHandleNode(e.getTail());
                 CFGEdge edge = cfg.getGraph().getEdge(tail, head);
                 if (edge != null) { // edge does not seem to exist any longer
                     retval.add(edge);

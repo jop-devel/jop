@@ -74,13 +74,23 @@ public interface AppEventHandler {
     void onClearAppInfo(AppInfo appInfo);
 
     /**
-     * Called when {@link MethodCode#getControlFlowGraph(boolean)} creates a new CFG.
-     * Not called when a CFG is created outside the framework. 
+     * Called whenever a new ControlFlowGraph is created, either via constructor or via
+     * {@link MethodCode#getControlFlowGraph(boolean)}.
      *
+     * @see #onCreateMethodControlFlowGraph(ControlFlowGraph, boolean)
+     * @param cfg the new CFG.
+     */
+    void onCreateControlFlowGraph(ControlFlowGraph cfg);
+
+    /**
+     * Called when {@link MethodCode#getControlFlowGraph(boolean)} creates a new CFG.
+     * Not called when a CFG is created outside the framework.
+     *
+     * @see #onCreateControlFlowGraph(ControlFlowGraph)
      * @param cfg the new CFG
      * @param clean true if a 'clean' graph is requested, i.e. no analyse transformations should be performed.
      */
-    void onCreateControlFlowGraph(ControlFlowGraph cfg, boolean clean);
+    void onCreateMethodControlFlowGraph(ControlFlowGraph cfg, boolean clean);
 
     /**
      * Called when the method instruction list is modified.

@@ -200,20 +200,23 @@ public class SuperGraph {
      */
     private AppInfo ai;
 
+    private CFGProvider cfgProvider;
+
     /**
      * (invoke,return) edge pairs
      */
     private Map<SuperInvokeEdge, SuperReturnEdge> superEdgePairs;
 
-    public SuperGraph(AppInfo appInfo, ControlFlowGraph rootFlowGraph, int callstringLength) {
-        this(appInfo, rootFlowGraph, callstringLength, CallString.EMPTY);
+    public SuperGraph(CFGProvider cfgProvider, ControlFlowGraph rootFlowGraph, int callstringLength) {
+        this(cfgProvider, rootFlowGraph, callstringLength, CallString.EMPTY);
     }
 
-    public SuperGraph(AppInfo appInfo,
+    public SuperGraph(CFGProvider cfgProvider,
                       ControlFlowGraph rootFlowGraph,
                       int callstringLength,
                       CallString initialCallString) {
-        this.ai = appInfo;
+        this.ai = AppInfo.getSingleton();
+        this.cfgProvider = cfgProvider;
         this.rootNode = new SuperGraphNode(rootFlowGraph, initialCallString);
         this.superGraphNodes = new Vector<SuperGraphNode>();
         this.superGraph = new DirectedMultigraph<SuperGraphNode, SuperGraphEdge>(SuperGraphEdge.class);
@@ -246,7 +249,6 @@ public class SuperGraph {
     }
 
 
-    /** */
     public Collection<SuperInvokeEdge> incomingInvokeEdgesOf(SuperGraphNode n) {
         Vector<SuperInvokeEdge> invokeEdges = new Vector<SuperInvokeEdge>();
         for (SuperGraphEdge edge : superGraph.incomingEdgesOf(n)) {
@@ -374,7 +376,7 @@ public class SuperGraph {
                 if (node instanceof ControlFlowGraph.InvokeNode) {
                     ControlFlowGraph.InvokeNode iNode = (ControlFlowGraph.InvokeNode) node;
                     MethodInfo impl = iNode.getImplementedMethod();
-                    ControlFlowGraph invokedCFG = impl.getCode().getControlFlowGraph(false);
+                    ControlFlowGraph invokedCFG = cfgProvider.getFlowGraph(impl);
                     CallString invokedCS = currentCS.push(iNode, callstringLength);
                     SuperGraphNode invoked = new SuperGraphNode(invokedCFG, invokedCS);
 

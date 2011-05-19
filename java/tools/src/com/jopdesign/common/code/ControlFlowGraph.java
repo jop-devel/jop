@@ -21,6 +21,7 @@
 
 package com.jopdesign.common.code;
 
+import com.jopdesign.common.AppEventHandler;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ImplementationFinder;
 import com.jopdesign.common.MethodInfo;
@@ -188,8 +189,9 @@ public class ControlFlowGraph {
             return ControlFlowGraph.this;
         }
 
-        protected void dispose() {
-        }
+        protected void register() { }
+
+        protected void dispose() { }
     }
 
     /**
@@ -231,7 +233,12 @@ public class ControlFlowGraph {
         public BasicBlockNode(BasicBlock block) {
             super(idGen++, "basic(" + blocks.indexOf(block) + ")");
             this.block = block;
+        }
+
+        @Override
+        protected void register() {
             for (InstructionHandle ih : block.getInstructions()) {
+                // TODO to support multiple registered CFGs per method, add a Map<ControlFlowGraph,BasicBlockNode> instead
                 ih.addAttribute(KEY_CFGNODE, this);
             }
         }
@@ -329,6 +336,7 @@ public class ControlFlowGraph {
          */
         public ControlFlowGraph receiverFlowGraph() {
             if (isVirtual()) return null;
+            // TODO if context and implementationFinder is set, use them instead
             return getImplementedMethod().getCode().getControlFlowGraph(false);
         }
 
@@ -375,6 +383,14 @@ public class ControlFlowGraph {
             n.instantiatedFrom = virtual;
             return n;
         }
+
+        @Override
+        protected void register() {
+            if (instantiatedFrom == null) {
+                // only register the 'virtual' node, since we do not register multiple nodes per handle
+                super.register();
+            }
+        }
     }
 
     /**
@@ -405,6 +421,7 @@ public class ControlFlowGraph {
         }
 
         public ControlFlowGraph receiverFlowGraph() {
+            // TODO if context and implementationFinder is set, use them instead
             return receiverImpl.getCode().getControlFlowGraph(false);
         }
 
@@ -544,6 +561,7 @@ public class ControlFlowGraph {
         this.appInfo = method.getAppInfo();
         createFlowGraph(method);
         check();
+        sendCreateGraphEvent();
     }
 
     private ControlFlowGraph(AppInfo appInfo) {
@@ -553,6 +571,8 @@ public class ControlFlowGraph {
         this.graph =
                 new DefaultFlowGraph<CFGNode, CFGEdge>(CFGEdge.class, subEntry, subExit);
         this.deadNodes = new HashSet<CFGNode>();
+        // TODO should we do this? currently only used to create an internal subgraph
+        //sendCreateGraphEvent();
     }
 
     /* worker: create the flow graph */
@@ -609,6 +629,12 @@ public class ControlFlowGraph {
             }
         }
         this.graph.addEdge(graph.getEntry(), graph.getExit(), exitEdge());
+    }
+
+    private void sendCreateGraphEvent() {
+        for (AppEventHandler e : appInfo.getEventHandlers()) {
+            e.onCreateControlFlowGraph(this);
+        }
     }
 
 
@@ -674,11 +700,13 @@ public class ControlFlowGraph {
 
         Object[] attributes = {KEY_CFGNODE};
 
+        Map<BasicBlock, BasicBlockNode> blockMap = buildBlockNodeMap();
+
         for (int i = 0; i < blocks.size(); i++) {
             BasicBlock bb = blocks.get(i);
-            BasicBlockNode bbn = getHandleNode(bb);
+            BasicBlockNode bbn = blockMap.get(bb);
 
-            bb.appendTo(il, attributes);
+            // bb.appendTo(il, attributes);
 
             for (CFGEdge e : graph.outgoingEdgesOf(bbn)) {
                 if (e.getKind() != EdgeKind.NEXT_EDGE) continue;
@@ -689,7 +717,9 @@ public class ControlFlowGraph {
             }
         }
 
-        methodInfo.getCode().setInstructionList(il);
+        // TODO compile is not yet fully implemented (retarget, exception-handlers, ..)
+
+        // methodInfo.getCode().setInstructionList(il);
     }
 
     /**
@@ -755,11 +785,38 @@ public class ControlFlowGraph {
         return blocks;
     }
 
+    public Map<BasicBlock, BasicBlockNode> buildBlockNodeMap() {
+        Map<BasicBlock, BasicBlockNode> map = new HashMap<BasicBlock, BasicBlockNode>(blocks.size());
+        for (CFGNode node : graph.vertexSet()) {
+            if (node instanceof BasicBlockNode) {
+                BasicBlockNode bbn = (BasicBlockNode) node;
+                map.put(bbn.getBasicBlock(), bbn);
+            }
+        }
+        return map;
+    }
+
     /**
-     * @param ih The instruction handle of a method which has a CFG associated with it
+     * Set the basic block nodes to the instruction handles of the method code.
+     * <p>
+     * You should make sure that {@link #dispose()} is called if this is used when this graph is not used anymore,
+     * else the blocks and hence the whole graph will stay attached to the instructions.
+     * </p>
+     * For now only one CFG per method can be registered.
+     */
+    public void registerHandleNodes() {
+        for (CFGNode node : graph.vertexSet()) {
+            node.register();
+        }
+    }
+
+    /**
+     * Get the node for an instruction handle. This only works if {@link #registerHandleNodes()} has been called first.
+     *
+     * @param ih The instruction handle of a method which has this CFG associated with it
      * @return The basic block node associated with an instruction handle
      */
-    public static BasicBlockNode getHandleNode(InstructionHandle ih) {
+    public BasicBlockNode getHandleNode(InstructionHandle ih) {
         BasicBlockNode blockNode = (BasicBlockNode) ih.getAttribute(KEY_CFGNODE);
         if (blockNode == null) {
             String errMsg = "No basic block recorded for instruction " + ih.toString(true);
@@ -767,10 +824,6 @@ public class ControlFlowGraph {
             return null;
         }
         return blockNode;
-    }
-
-    public BasicBlockNode getHandleNode(BasicBlock bb) {
-        return getHandleNode(bb.getFirstInstruction());
     }
 
     public boolean isLeafMethod() {

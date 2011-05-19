@@ -795,7 +795,7 @@ public class MethodCode {
             try {
                 cfg = new ControlFlowGraph(this.getMethodInfo());
                 for (AppEventHandler ah : AppInfo.getSingleton().getEventHandlers()) {
-                    ah.onCreateControlFlowGraph(cfg, clean);
+                    ah.onCreateMethodControlFlowGraph(cfg, clean);
                 }
             } catch (BadGraphException e) {
                 throw new BadGraphError("Unable to create CFG for " + methodInfo, e);

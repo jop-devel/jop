@@ -82,7 +82,7 @@ public class GlobalAnalysis {
         }
 
         String key = m.getFQMethodName() + "_global_" + cacheMode;
-        SuperGraph sg = new SuperGraph(project.getAppInfo(),
+        SuperGraph sg = new SuperGraph(project,
                 project.getFlowGraph(m),
                 project.getProjectConfig().callstringLength(),
                 ctx.getCallString());

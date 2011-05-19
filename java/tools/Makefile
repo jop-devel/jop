@@ -8,12 +8,12 @@
 # Paths relative to this makefile
 
 NEWTOOLS_ROOT=../..
-OLDTOOLS_ROOT=../../../wcmem
+OLDTOOLS_ROOT=../../../master
 
 OUTDIR=out
 
 # Sourcepath to use for newtools, relative to newtools root
-NEWTOOLS_SRC=../wcmem/java/target/src
+NEWTOOLS_SRC=../master/java/target/src
 
 
 all: wcet_test cleanup compare

@@ -21,9 +21,11 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.bcel.BcelRepositoryWrapper;
+import com.jopdesign.common.code.CFGProvider;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallGraph.CallgraphBuilder;
 import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.DefaultCallgraphBuilder;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
@@ -74,7 +76,7 @@ import java.util.Set;
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public final class AppInfo implements ImplementationFinder{
+public final class AppInfo implements ImplementationFinder, CFGProvider {
 
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT + ".AppInfo");
     private static final Logger loadLogger = Logger.getLogger(LogConfig.LOG_LOADING + ".AppInfo");
@@ -748,6 +750,18 @@ public final class AppInfo implements ImplementationFinder{
         ClassInfo classInfo = getClassInfo(memberID.getClassName());
         if (classInfo == null) return null;
         return classInfo.getMethodInfoInherited(memberID, true);
+    }
+
+    /**
+     * Convenience method to implement CFGProvider.
+     *
+     * @param method the method to get the CFG for.
+     * @return the CFG attached to the method's code.
+     */
+    @Override
+    public ControlFlowGraph getFlowGraph(MethodInfo method) {
+        if (!method.hasCode()) return null;
+        return method.getCode().getControlFlowGraph(false);
     }
 
     //////////////////////////////////////////////////////////////////////////////
