@@ -41,6 +41,7 @@ import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
+import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.misc.BadGraphError;
 import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.MethodNotFoundException;
@@ -493,18 +494,19 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
     public void recordResult(WcetCost wcet, double timeDiff, double solverTime) {
         if (resultRecord == null) return;
         Config c = projectConfig.getConfig();
+        OptionGroup o = JOPConfig.getOptions(c);
         if (projectConfig.addPerformanceResults()) {
             recordCVS("wcet", "ipet", wcet, timeDiff, solverTime,
-                    c.getOption(JOPConfig.CACHE_IMPL),
-                    c.getOption(JOPConfig.CACHE_SIZE_WORDS),
-                    c.getOption(JOPConfig.CACHE_BLOCKS),
+                    o.getOption(JOPConfig.CACHE_IMPL),
+                    o.getOption(JOPConfig.CACHE_SIZE_WORDS),
+                    o.getOption(JOPConfig.CACHE_BLOCKS),
                     c.getOption(IPETConfig.STATIC_CACHE_APPROX),
                     c.getOption(IPETConfig.ASSUME_MISS_ONCE_ON_INVOKE));
         } else {
             recordCVS("wcet", "ipet", wcet,
-                    c.getOption(JOPConfig.CACHE_IMPL),
-                    c.getOption(JOPConfig.CACHE_SIZE_WORDS),
-                    c.getOption(JOPConfig.CACHE_BLOCKS),
+                    o.getOption(JOPConfig.CACHE_IMPL),
+                    o.getOption(JOPConfig.CACHE_SIZE_WORDS),
+                    o.getOption(JOPConfig.CACHE_BLOCKS),
                     c.getOption(IPETConfig.STATIC_CACHE_APPROX),
                     c.getOption(IPETConfig.ASSUME_MISS_ONCE_ON_INVOKE));
         }
@@ -515,11 +517,12 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
                                    double timeDiff, double searchtime, double solvertimemax) {
         if (resultRecord == null) return;
         Config c = projectConfig.getConfig();
+        OptionGroup o = JOPConfig.getOptions(c);
         if (projectConfig.addPerformanceResults()) {
             recordCVS("wcet", "uppaal", wcet, timeDiff, searchtime, solvertimemax,
-                    c.getOption(JOPConfig.CACHE_IMPL),
-                    c.getOption(JOPConfig.CACHE_SIZE_WORDS),
-                    c.getOption(JOPConfig.CACHE_BLOCKS),
+                    o.getOption(JOPConfig.CACHE_IMPL),
+                    o.getOption(JOPConfig.CACHE_SIZE_WORDS),
+                    o.getOption(JOPConfig.CACHE_BLOCKS),
                     c.getOption(UppAalConfig.UPPAAL_CACHE_APPROX),
                     c.getOption(UppAalConfig.UPPAAL_COMPLEXITY_TRESHOLD),
                     c.getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES),
@@ -531,9 +534,9 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
             );
         } else {
             recordCVS("wcet", "uppaal", wcet,
-                    c.getOption(JOPConfig.CACHE_IMPL),
-                    c.getOption(JOPConfig.CACHE_SIZE_WORDS),
-                    c.getOption(JOPConfig.CACHE_BLOCKS),
+                    o.getOption(JOPConfig.CACHE_IMPL),
+                    o.getOption(JOPConfig.CACHE_SIZE_WORDS),
+                    o.getOption(JOPConfig.CACHE_BLOCKS),
                     c.getOption(UppAalConfig.UPPAAL_CACHE_APPROX),
                     c.getOption(UppAalConfig.UPPAAL_COMPLEXITY_TRESHOLD),
                     c.getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES),
