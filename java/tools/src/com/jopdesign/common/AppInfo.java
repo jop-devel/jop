@@ -74,7 +74,7 @@ import java.util.Set;
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public final class AppInfo {
+public final class AppInfo implements ImplementationFinder{
 
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT + ".AppInfo");
     private static final Logger loadLogger = Logger.getLogger(LogConfig.LOG_LOADING + ".AppInfo");
@@ -1062,7 +1062,7 @@ public final class AppInfo {
             return findImplementations(invokeSite.getInvokeeRef());
         }
 
-        return callGraph.findImplementingMethods(cs);
+        return callGraph.findImplementations(cs);
     }
 
     /**

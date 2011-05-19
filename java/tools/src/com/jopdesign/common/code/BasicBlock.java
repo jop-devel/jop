@@ -410,7 +410,11 @@ public class BasicBlock {
     static List<BasicBlock> buildBasicBlocks(MethodCode methodCode) {
         InstructionTargetVisitor itv = new InstructionTargetVisitor(methodCode);
         List<BasicBlock> basicBlocks = new LinkedList<BasicBlock>();
-        InstructionList il = methodCode.getInstructionList();
+        // We do want to have the latest code, so we compile any existing, *attached* CFG first.
+        // However, we do NOT want to remove this CFG, and we do *NOT* want to trigger the onBeforeCodeModify event,
+        // else we might remove all CFGs for this method, which we want to avoid if we only modify the graph but do not
+        // compile it (the event will be triggered when CFG#compile() is called).
+        InstructionList il = methodCode.getInstructionList(true, false);
         il.setPositions(true);
 
         /* Step 1: compute flow info */

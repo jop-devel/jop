@@ -21,6 +21,7 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.code.ControlFlowGraph;
+import org.apache.bcel.generic.InstructionList;
 
 /**
  * An AppEventHandler is used to access attributes and flow-facts from classes, methods, fields and code.
@@ -82,10 +83,18 @@ public interface AppEventHandler {
     void onCreateControlFlowGraph(ControlFlowGraph cfg, boolean clean);
 
     /**
-     * Called when a method was modified.
+     * Called when the method instruction list is modified.
+     * <p>
+     * We currently do not have a safe way to detect modifications to instruction lists, therefore to be on the safe
+     * side this event might be triggered before the actual modification takes place, i.e. when
+     * {@link MethodCode#getInstructionList()} is called.
+     * </p>
+     * TODO we might want to implement something like MethodCode#modified() which is called by the user after modification.
      *
-     * @param methodInfo the method which got modified.
+     * @param methodCode the method which got modified.
+     * @param beforeModification true if called when the instruction list is handed out for modification, false if
+     *        {@link MethodCode#setInstructionList(InstructionList)} is called.
      */
-    void onMethodModified(MethodInfo methodInfo);
+    void onMethodCodeModify(MethodCode methodCode, boolean beforeModification);
 
 }

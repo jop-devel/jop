@@ -55,6 +55,6 @@ public abstract class EmptyAppEventHandler implements AppEventHandler {
     }
 
     @Override
-    public void onMethodModified(MethodInfo methodInfo) {
+    public void onMethodCodeModify(MethodCode methodCode, boolean beforeModification) {
     }
 }

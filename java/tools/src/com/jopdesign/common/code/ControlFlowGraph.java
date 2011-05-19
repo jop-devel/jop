@@ -22,6 +22,7 @@
 package com.jopdesign.common.code;
 
 import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.ImplementationFinder;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.graphutils.AdvancedDOTExporter;
 import com.jopdesign.common.graphutils.AdvancedDOTExporter.DOTLabeller;
@@ -35,6 +36,7 @@ import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.HashedString;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.type.MethodRef;
+import ninjaFS.Rpc.Call;
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
@@ -296,10 +298,11 @@ public class ControlFlowGraph {
         }
 
         /**
-         * @return all possible implementations of the invoked method
+         * @return all possible implementations of the invoked method, using the context and the implementation finder
+         *         of the CFG.
          */
         public Set<MethodInfo> getImplementedMethods() {
-            return getImplementedMethods(CallString.EMPTY);
+            return getImplementedMethods(context, implementationFinder);
         }
 
         public InvokeSite getInvokeSite() {
@@ -308,14 +311,15 @@ public class ControlFlowGraph {
 
         /**
          * @param ctx the callstring of the invocation
+         * @param finder the finder to use for finding implementations of this invokesite.
          * @return all possible implementations of the invoked method in
          * the given context
          */
-        public Set<MethodInfo> getImplementedMethods(CallString ctx) {
+        public Set<MethodInfo> getImplementedMethods(CallString ctx, ImplementationFinder finder) {
             if (!isVirtual()) {
                 return Collections.singleton(getImplementedMethod());
             } else {
-                return appInfo.findImplementations(getInvokeSite(), ctx);
+                return finder.findImplementations(ctx.push(getInvokeSite()));
             }
         }
 
@@ -492,6 +496,10 @@ public class ControlFlowGraph {
     private FlowGraph<CFGNode, CFGEdge> graph;
     private Set<CFGNode> deadNodes;
 
+    /* this we need for resolveVirtualInvokes() */
+    private CallString context;
+    private ImplementationFinder implementationFinder;
+
     /* analysis stuff, needs to be reevaluated when graph changes */
     private TopOrder<CFGNode, CFGEdge> topOrder = null;
     private LoopColoring<CFGNode, CFGEdge> loopColoring = null;
@@ -516,7 +524,23 @@ public class ControlFlowGraph {
      * @throws BadGraphException if the bytecode results in an invalid flow graph
      */
     public ControlFlowGraph(MethodInfo method) throws BadGraphException {
+        this(method, CallString.EMPTY, method.getAppInfo());
+    }
+
+    /**
+     * Build a new flow graph for the given method
+     *
+     * @param method needs attached code (<code>method.getCode() != null</code>)
+     * @param context the callstring leading to this method, used to resolve virtual invokes. Can be empty.
+     * @param finder the implementation finder to find implementations of an invokesite (who would have guessed? :) )
+     * @throws BadGraphException if the bytecode results in an invalid flow graph
+     */
+    public ControlFlowGraph(MethodInfo method, CallString context, ImplementationFinder finder) throws BadGraphException {
         this.methodInfo = method;
+        // we set this in the constructor instead of passing it to resolveVirtualInvokes, so that it is harder to
+        // use this incorrectly (ie. attaching a callgraph for a context to the context-less MethodCode)
+        this.context = context;
+        this.implementationFinder = finder;
         this.appInfo = method.getAppInfo();
         createFlowGraph(method);
         check();
@@ -687,6 +711,17 @@ public class ControlFlowGraph {
     }
 
     /**
+     * @return the context for which this callgraph is valid.
+     */
+    public CallString getContext() {
+        return context;
+    }
+
+    public ImplementationFinder getImplementationFinder() {
+        return implementationFinder;
+    }
+
+    /**
      * get the method this flow graph models
      *
      * @return the MethodInfo the flow graph was build from
@@ -756,13 +791,15 @@ public class ControlFlowGraph {
     }
 
     /**
-     * resolve all virtual invoke nodes, and replace them by actual implementations
-     * @param reachableMethods set of methods which is actually reachable from the analyzed method
+     * resolve all virtual invoke nodes, and replace them by actual implementations.
+     * <p>
+     * This uses the context and the implementation finder passed to the constructor of this graph.
+     * </p>
      *
      * @throws BadGraphException If the flow graph analysis (post replacement) fails
      */
     @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
-    public void resolveVirtualInvokes(Set<MethodInfo> reachableMethods) throws BadGraphException {
+    public void resolveVirtualInvokes() throws BadGraphException {
 
         // Hack to make this optional
         if (virtualInvokesResolved) return;
@@ -781,17 +818,9 @@ public class ControlFlowGraph {
         }
         /* replace them */
         for (InvokeNode inv : virtualInvokes) {
-            // TODO resolve with callstring?
-        	// As a short term solution, we filter out all methods which are
-        	// unreachable
-            Set<MethodInfo> implsPre = inv.getImplementedMethods();
-            Set<MethodInfo> impls    = new HashSet<MethodInfo>();
-            for(MethodInfo impl : implsPre) {
-            	if(reachableMethods.contains(impl)) {
-            		impls.add(impl);
-            	}
-            }
-            
+            // Magic: this uses the context and the implementation finder passed to the constructor of this graph.
+            Set<MethodInfo> impls = inv.getImplementedMethods();
+
             if (impls.size() == 0) internalError("No implementations for " + inv.referenced);
             if (impls.size() == 1) {
                 InvokeNode implNode = inv.createImplNode(impls.iterator().next(), inv);

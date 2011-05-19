@@ -424,6 +424,7 @@ public class MethodCode {
             // If one only uses the IList to analyze code but does not modify it, we could keep an existing CFG.
             // Unfortunately, there is no 'const InstructionList' or 'UnmodifiableInstructionList', so we
             // can never be sure what the user will do with the list, so we kill the CFG to avoid inconsistencies.
+            modifyCode(true);
             removeCFG();
         }
 
@@ -443,11 +444,13 @@ public class MethodCode {
     public void setInstructionList(InstructionList il) {
         methodGen.getInstructionList().dispose();
         methodGen.setInstructionList(il);
+        modifyCode(false);
         removeCFG();
     }
 
     public InstructionHandle getInstructionHandle(int pos) {
-        InstructionList il = getInstructionList();
+        // we do not want to trigger events here ..
+        InstructionList il = prepareInstructionList();
         InstructionHandle ih = il.getStart();
         for (int i = 0; i < pos; i++) {
             ih = ih.getNext();
@@ -770,6 +773,13 @@ public class MethodCode {
 
     /**
      * Get the control flow graph associated with this method code or create a new one.
+     * <p>
+     * By default, changes to the returned CFG are compiled back before the InstructionList of this method is accessed.
+     * If you want a CFG where changes to it are not compiled back automatically, use {@code new ControlFlowGraph(MethodInfo)}
+     * instead. Also if you want to construct a CFG for a specific context or with a different implementation finder,
+     * you need to construct a callgraph yourself, keep a reference to it as long as you want to keep modifications to the
+     * graph and you need ensure that changes to a graph invalidate other graphs of the same method yourself, if required.
+     * </p>
      * @param clean if true, compile and recreate the graph if {@link ControlFlowGraph#isClean()} returns false.
      * @return the CFG for this method.
      */
@@ -1016,5 +1026,11 @@ public class MethodCode {
             cfg.compile();
         }
         return methodGen.getInstructionList();
+    }
+
+    private void modifyCode(boolean beforeModify) {
+        for (AppEventHandler e : AppInfo.getSingleton().getEventHandlers()) {
+            e.onMethodCodeModify(this, beforeModify);
+        }
     }
 }

@@ -65,6 +65,7 @@ import com.jopdesign.wcet.jop.LinkerInfo.LinkInfo;
 import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.report.ReportConfig;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
+import com.sun.xml.internal.bind.v2.TODO;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
 
@@ -75,11 +76,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -234,17 +233,19 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             dataflowAnalysis();
             topLevelLogger.info("DFA analysis finished");
         }
-        
-        DefaultCallgraphBuilder callGraphBuilder;
-		/* build callgraph for the whole program */
-        if (doDataflowAnalysis()) {
-            // build the callgraph using DFA results
-        	callGraphBuilder = new DFACallgraphBuilder(getDfaTool(), appInfo.getCallstringLength());
-        } else {
-        	callGraphBuilder = new DefaultCallgraphBuilder();
+
+        if (!appInfo.hasCallGraph()) {
+            DefaultCallgraphBuilder callGraphBuilder;
+            /* build callgraph for the whole program */
+            if (doDataflowAnalysis()) {
+                // build the callgraph using DFA results
+                callGraphBuilder = new DFACallgraphBuilder(getDfaTool(), appInfo.getCallstringLength());
+            } else {
+                callGraphBuilder = new DefaultCallgraphBuilder();
+            }
+            callGraphBuilder.setSkipNatives(true); // we do not want natives in the callgraph
+            appInfo.buildCallGraph(callGraphBuilder);
         }
-        callGraphBuilder.setSkipNatives(true); // we do not want natives in the callgraph
-        appInfo.buildCallGraph(callGraphBuilder);
 
         /* build callgraph for target method */
         rebuildCallGraph();
@@ -287,15 +288,13 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     	 * does NOT have an empty callstring
     	 */
         // callGraph = appInfo.getCallGraph().getSubGraph(projectConfig.getTargetMethodInfo());
-        
-        DefaultCallgraphBuilder callGraphBuilder;
-		/* build callgraph for the whole program */
-        if (doDataflowAnalysis()) {
-            // build the callgraph using DFA results
-        	callGraphBuilder = new DFACallgraphBuilder(getDfaTool(), appInfo.getCallstringLength());
-        } else {
-        	callGraphBuilder = new DefaultCallgraphBuilder();
-        }
+
+        /* Instead, we create a new "subgraph" based on the appInfo callgraph (which has been created using
+         * DFA results if available in initialize() or by some other tool), where the target method has an empty
+         * callstring, using the callstring length configured for the WCET tool (which is currently the same
+         * as the global setting).
+         */
+        DefaultCallgraphBuilder callGraphBuilder = new DefaultCallgraphBuilder(projectConfig.callstringLength());
         callGraphBuilder.setSkipNatives(true); // we do not want natives in the callgraph
         callGraph = CallGraph.buildCallGraph(getTargetMethod(), callGraphBuilder);
 
@@ -383,23 +382,30 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     }
 
     /**
-     * Convenience delegator to get the flowgraph of the given method
+     * Get the flowgraph of the given method.
+     * <p>
+     * A new callgraph is constructed when this method is called, changes to this graph are not
+     * automatically stored back to MethodCode. If you want to keep changes to the graph you need to keep a
+     * reference to this graph yourself.
+     * </p>
      *
      * @param mi the method to get the CFG for
      * @return the CFG for the method.
      */
     public ControlFlowGraph getFlowGraph(MethodInfo mi) {
         if (!mi.hasCode()) return null;
-        ControlFlowGraph cfg = mi.getCode().getControlFlowGraph(false);
+        ControlFlowGraph cfg;
         try {
-    		cfg.resolveVirtualInvokes(this.callGraph.getMethodInfos());
-//        	if(this.appInfo.getCallstringLength() > 0) {
-//        		if(! warnedCallstringLength) {
-//        			logger.info("Callstring Length > 0 ==> Not resolving virtuals invokes");
-//        			warnedCallstringLength = true;
-//        		}
-//        	} else {
-//        	}
+            // We want the resolved invokes to be consistent with our callgraph so we use
+            // that callgraph to resolve invokes (although if this.callgraph is not modified,
+            // there is no difference to the appInfo callgraph). We also do not want to store
+            // modifications of the graph back to the code.
+
+            // TODO do we want to keep the graphs internally? however we would need a way to clear the cache
+            //      when code gets changed, e.g. by removing all kept callgraphs manually or by using AppEventHandler.onMethodModified()
+
+            cfg = new ControlFlowGraph(mi, CallString.EMPTY, callGraph);
+            cfg.resolveVirtualInvokes();
             cfg.insertReturnNodes();
             cfg.insertContinueLoopNodes();
 
@@ -642,7 +648,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     public Collection<MethodInfo> findImplementations(MethodInfo invokerM, InstructionHandle ih, CallString ctx) {
         InvokeSite is = invokerM.getCode().getInvokeSite(ih);
         // We do not use appInfo.findImplementations here so that the result is always consistent with the callgraph
-        return callGraph.findImplementingMethods(ctx.push(is));
+        return callGraph.findImplementations(ctx.push(is));
     }
 
     /**

@@ -163,7 +163,7 @@ public class InlineHelper {
      */
     public MethodInfo devirtualize(CallGraph callgraph, CallString invokers) {
         // we only use the callgraph, methods not in the graph are not devirtualized.
-        Set<MethodInfo> methods = callgraph.findImplementingMethods(invokers);
+        Set<MethodInfo> methods = callgraph.findImplementations(invokers);
         if (methods.size() == 1) {
             return methods.iterator().next();
         } else {

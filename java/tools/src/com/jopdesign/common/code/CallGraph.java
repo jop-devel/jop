@@ -22,6 +22,7 @@ package com.jopdesign.common.code;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.ImplementationFinder;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationError;
@@ -87,7 +88,7 @@ import java.util.Stack;
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class CallGraph {
+public class CallGraph implements ImplementationFinder {
 
     public static final Logger logger = Logger.getLogger(LogConfig.LOG_CODE + ".CallGraph");
 
@@ -1063,12 +1064,12 @@ public class CallGraph {
      * solemnly on this callgraph, even for non-virtual invokes.
      *
      * @see AppInfo#findImplementations(CallString)
-     * @see #getImplementations(CallString) 
+     * @see #findImplementationContexts(CallString)
      * @param cs the non-empty callstring, top element represents the invocation.
      * @return a set of implementing methods of the invokee.
      */
-    public Set<MethodInfo> findImplementingMethods(CallString cs) {
-        Collection<ExecutionContext> nodes = getImplementations(cs);
+    public Set<MethodInfo> findImplementations(CallString cs) {
+        Collection<ExecutionContext> nodes = findImplementationContexts(cs);
         Set<MethodInfo> methods = new HashSet<MethodInfo>(nodes.size());
         for (ExecutionContext node : nodes) {
             methods.add(node.getMethodInfo());
@@ -1091,7 +1092,7 @@ public class CallGraph {
      * @return a list of all methods which might get invoked by the top invocation of the callstring,
      *         with their callstrings.
      */
-    public Set<ExecutionContext> getImplementations(CallString cs) {
+    public Set<ExecutionContext> findImplementationContexts(CallString cs) {
         if (cs.length() == 0) {
             throw new AssertionError("Callstring must not be empty!");
         }

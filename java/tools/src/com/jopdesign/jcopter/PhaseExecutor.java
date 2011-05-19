@@ -24,6 +24,7 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallGraph.DUMPTYPE;
+import com.jopdesign.common.code.DefaultCallgraphBuilder;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
@@ -205,9 +206,13 @@ public class PhaseExecutor {
 
         if (useDFA) {
             // build the callgraph using DFA results
-            appInfo.buildCallGraph(new DFACallgraphBuilder(jcopter.getDfaTool(), appInfo.getCallstringLength()));
+            DFACallgraphBuilder builder = new DFACallgraphBuilder(jcopter.getDfaTool(), appInfo.getCallstringLength());
+            builder.setSkipNatives(true);
+            appInfo.buildCallGraph(builder);
         } else {
-            appInfo.buildCallGraph(true);
+            DefaultCallgraphBuilder builder = new DefaultCallgraphBuilder();
+            builder.setSkipNatives(true);
+            appInfo.buildCallGraph(builder);
             // reduce the callgraph old-school
             reduceCallGraph();
         }
