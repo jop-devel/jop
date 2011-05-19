@@ -23,6 +23,7 @@ package wcet.devel;
  * $grep$> wcet: (cost: ^ 2079848 $ , execution
  * ==> ~ 210 c
  */
+import com.jopdesign.sys.Config;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
@@ -111,9 +112,6 @@ public class SuperGraph1 {
 			x = (x+1) * i;
 	}
 	
-	/* testing wcet */
-	/** Set to false for the WCET analysis, true for measurement */
-	final static boolean MEASURE = true;
 	static int ts, te, to;
 	static SuperGraph1 test;
 
@@ -124,15 +122,15 @@ public class SuperGraph1 {
 		to = te-ts;
 		test = new SuperGraph1();
 		invoke();
-		if (MEASURE) {
+		if (Config.MEASURE) {
 			dt = te-ts-to;
 			System.out.print("wcet[r()]:");
             System.out.println(dt);
         }
-		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		test.compute10();
-		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
-		if (MEASURE) {
+		if (Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) {
 			int dtc = te-ts-to;
 			System.out.print("wcet[r()]: ");
             System.out.print(dt*10/dtc);
@@ -144,11 +142,11 @@ public class SuperGraph1 {
 	
 	static void invoke() {
 		measure();
-		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 	}
 
 	static void measure() {
-		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		test.r();
 	}
 	

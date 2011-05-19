@@ -22,15 +22,12 @@
 
 package wcet.devel;
 
+import com.jopdesign.sys.Config;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
 public class ObjectCache {
-    /**
-	 * Set to false for the WCET analysis, true for measurement
-	 */
-    final static boolean MEASURE = false;
-	static int ts, te, to;
+    static int ts, te, to;
     static int cs, ce;
     /* classes */
     public abstract static class Obj1 {
@@ -131,12 +128,12 @@ public class ObjectCache {
 	}
 	
 	static int invoke() {
-		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 		return measure();
 	}
 	
 	static int measure() {
-		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		int val = 0;
 		val += test1();
 		val += test2();

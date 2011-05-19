@@ -22,6 +22,7 @@
 
 package wcet.devel;
 
+import com.jopdesign.sys.Config;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 /*
@@ -46,11 +47,7 @@ public class LoadOnReturn {
     final static int CACHE_FLUSH = -51;
     final static int CACHE_RD_COST = -52;
     
-	/**
-	 * Set to false for the WCET analysis, true for measurement
-	 */
-    final static boolean MEASURE = false;
-    final static boolean MEASURE_CACHE = false;
+	final static boolean MEASURE_CACHE = false;
 	static int ts, te, to;
     static int cs, ce;
 
@@ -62,7 +59,7 @@ public class LoadOnReturn {
 		invoke();
 		int val = te-ts-to;
 		int cacheCost = ce-cs;
-		if (MEASURE)       { System.out.print("wcet: "); System.out.println(val);             }
+		if (Config.MEASURE)       { System.out.print("wcet: "); System.out.println(val);             }
 		if (MEASURE_CACHE) { System.out.print("cache cost: "); System.out.println(cacheCost); }
 	}
 	
@@ -72,7 +69,7 @@ public class LoadOnReturn {
 		    Native.wrMem(1,CACHE_FLUSH);
 		}
 	    measure();
-		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 		if (MEASURE_CACHE) ce = Native.rdMem(CACHE_RD_COST);
 	}
 	
@@ -91,7 +88,7 @@ public class LoadOnReturn {
 	   - Luckily, we can loop at this point if we want
 	 */
 	static void measure() {
-		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		// Optional: loop
 		// for(int i = 0; i < 100; i++) {
 		

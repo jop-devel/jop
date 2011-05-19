@@ -20,6 +20,7 @@
 
 package wcet.devel;
 
+import com.jopdesign.sys.Config;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
@@ -33,10 +34,6 @@ public class UnboundedBytecodes {
 	final static int CACHE_FLUSH = -51;
 	final static int CACHE_DUMP = -53;
 
-	/**
-	 * Set to false for the WCET analysis, true for measurement
-	 */
-	final static boolean MEASURE = true;
 	final static boolean MEASURE_CACHE = false;
 
 	static int ts, te, to;
@@ -54,41 +51,41 @@ public class UnboundedBytecodes {
 		if (MEASURE_CACHE) Native.wrMem(1,CACHE_FLUSH);
 		r = invoke_testNew();
 		val = te-ts-to;
-		if (MEASURE) { System.out.print("#cycles testNew: ");System.out.println(val); }
+		if (Config.MEASURE) { System.out.print("#cycles testNew: ");System.out.println(val); }
 
 		if (MEASURE_CACHE) Native.wrMem(1,CACHE_FLUSH);
 		r = invoke_testNewArray();
 		val = te-ts-to;
-		if (MEASURE) { System.out.print("#cycles testNew: ");System.out.println(val); }
+		if (Config.MEASURE) { System.out.print("#cycles testNew: ");System.out.println(val); }
 
 		if (MEASURE_CACHE) Native.wrMem(1,CACHE_FLUSH);
 		invoke();
 		val = te-ts-to;
-		if (MEASURE) { System.out.print("#cycles measure: ");System.out.println(val); }
+		if (Config.MEASURE) { System.out.print("#cycles measure: ");System.out.println(val); }
 	}
 
 	private static void invoke() {
 		measure();
-		if(MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if(Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 	}
 
 	private static void measure() {
-		if(MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if(Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		testNew();
 		testNewArray();
 	}
 
 	private static int invoke_testNew() {
-		if(MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if(Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		int r = testNew();
-		if(MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if(Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 		return r;
 	}
 
 	private static int invoke_testNewArray() {
-		if(MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if(Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		int r = testNewArray();
-		if(MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if(Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 		return r;
 	}
 

@@ -20,11 +20,10 @@
 
 package wcet.devel;
 
-import joprt.RtThread;
-
+import com.jopdesign.sys.Config;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
-import com.jopdesign.sys.Scope;
+import com.jopdesign.sys.Memory;
 /**
  * Purpose: Analyze {@link Scope#enter(Runnable)}
  * Requires that in {@link com.jopdesign.sys.GC.USE_SCOPES} is set to {@code true}. 
@@ -36,8 +35,7 @@ public class Scopes {
     final static int CACHE_FLUSH = -51;
     final static int CACHE_DUMP = -53;
 
-    final static boolean MEASURE = true;
-	final static boolean MEASURE_CACHE = false;
+    final static boolean MEASURE_CACHE = false;
 
 	static class Empty implements Runnable {
 		@Override
@@ -64,7 +62,7 @@ public class Scopes {
 	}
 
 	static int ts, te, to, tos;
-	Scope scope;
+	Memory scope;
 	
 	Empty empty;
 	Alloc alloc;
@@ -72,65 +70,56 @@ public class Scopes {
 
 	public Scopes() {
 		// scope overhead
-		scope = new Scope(5000);
-
+		scope = new Memory(5000);
 		empty = new Empty();		
 		bigMethod = new BigMethod();
 		alloc = new Alloc();
 	}
 	
-	public void createThreads() {
-		new RtThread(10, 5000000) { // 5 seconds should be enough time for the benchmark
-			public void run() {
-				for (;;) {
-					scopeEmpty();
-					if(MEASURE) {
-						System.out.print("Cost for executing empty scope (excluding to): ");
-						System.out.println(te-ts-to);
-					}
-					scopeAlloc();
-					if(MEASURE) {
-						System.out.print("Cost for executing scope allocating 1024 words (excluding to): ");
-						System.out.println(te-ts-to);
-					}
-					scopeFull();
-					if(MEASURE) {
-						System.out.print("Cost for executing scope with one large method (excluding to): ");
-						System.out.println(te-ts-to);
-					}
-					waitForNextPeriod();					
-				}
-			}
-		};
-	}
 
+	public void measure() {
+		
+		scopeEmpty();
+		if(Config.MEASURE) {
+			System.out.print("Cost for executing empty scope (excluding to): ");
+			System.out.println(te-ts-to);
+		}
+		scopeAlloc();
+		if(Config.MEASURE) {
+			System.out.print("Cost for executing scope allocating 1024 words (excluding to): ");
+			System.out.println(te-ts-to);
+		}
+		scopeFull();
+		if(Config.MEASURE) {
+			System.out.print("Cost for executing scope with one large method (excluding to): ");
+			System.out.println(te-ts-to);
+		}
+	}
 	public static void main(String[] args) {
 
-
-		if(MEASURE) {
+		if(Config.MEASURE) {
 			ts = Native.rdMem(Const.IO_CNT);
 			te = Native.rdMem(Const.IO_CNT);
 			to = te-ts;
 		}
 		
-		Scopes s = new Scopes();		
-		s.createThreads();		
-		RtThread.startMission();
+		Scopes s = new Scopes();
+		s.measure();
 	}
 	
 	public void scopeEmpty() {
-		if(MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if(Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		scope.enter(empty);
-		if(MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if(Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 	}
 	public void scopeAlloc() {
-		if(MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if(Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		scope.enter(alloc);
-		if(MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if(Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 	}
 	public void scopeFull() {
-		if(MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if(Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		scope.enter(bigMethod);
-		if(MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if(Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 	}
 }

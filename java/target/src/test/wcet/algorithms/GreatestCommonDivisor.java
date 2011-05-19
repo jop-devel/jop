@@ -20,6 +20,7 @@
 */
 package wcet.algorithms;
 
+import com.jopdesign.sys.Config;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
@@ -28,11 +29,6 @@ import com.jopdesign.sys.Native;
  *  Interesting because % is currently a Java Implemented Bytecode
  */
 public class GreatestCommonDivisor {
-	/**
-	 * Set to false for the WCET analysis, true for measurement
-	 */
-	final static boolean MEASURE = false;
-
 	static int ts,te,to;
 
 	/**
@@ -45,13 +41,13 @@ public class GreatestCommonDivisor {
 
 		measure(1134903170,1836311903);
 		
-		if (MEASURE) System.out.println(te-ts-to);		
+		if (Config.MEASURE) System.out.println(te-ts-to);		
 	}
 
 	public static void measure(int a, int b) {
-		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		gcd(a,b);
-		if(MEASURE)  te = Native.rdMem(Const.IO_CNT);		
+		if(Config.MEASURE)  te = Native.rdMem(Const.IO_CNT);		
 	}
 	// See [Introduction to Algorithms, Cormen at al.]: if a > b >= 1, and EUCLID(a,b) performs k >= 1 recursive calls, a >= F(k+2), b >= F(k+1)
 	// As a is at most 2**31 < F(47), by a < F(45+2), gcd needs at most 44 loop iterations
