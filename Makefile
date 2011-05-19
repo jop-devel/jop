@@ -97,6 +97,13 @@ FLPROJ=$(DLPROJ)
 IPDEST=192.168.1.2
 IPDEST=192.168.0.123
 
+# Jop RTS configuration
+USE_SCOPES=false
+USE_SCOPECHECKS=false
+ADD_REF_INFO=false
+MEASURE=true
+JOP_CONF_STR=USE_SCOPES=$(USE_SCOPES) USE_SCOPECHECKS=$(USE_SCOPECHECKS) ADD_REF_INFO=$(ADD_REF_INFO) MEASURE=$(MEASURE)
+
 P1=test
 P2=test
 P3=HelloWorld
@@ -239,10 +246,16 @@ DEBUG_JOPSIM=
 #OPTIMIZE=mv java/target/dist/lib/classes.zip java/target/dist/lib/in.zip; java -jar java/lib/proguard.jar @optimize.pro
 
 #
+# dataflow analysis
+#
+USE_DFA?=no
+
+
+#
 #	application optimization with JCopter
 #
 USE_JCOPTER?=no
-JCOPTER_OPT?=--dump-callgraph merged --dump-jvm-callgraph off --callstring-length $(CALLSTRING_LENGTH)
+JCOPTER_OPT?=--use-dfa=$(USE_DFA) --dump-callgraph merged --dump-jvm-callgraph off --callstring-length $(CALLSTRING_LENGTH)
 
 
 # build everything from scratch
@@ -356,12 +369,15 @@ else
   JCOPTER_OPTIONS=--target-method ${WCET_METHOD} ${JCOPTER_OPT}  
 endif
 
-java_app:
+java_app: 
 	-rm -rf $(TARGET)/dist
 	-mkdir $(TARGET)/dist
 	-mkdir $(TARGET)/dist/classes
 	-mkdir $(TARGET)/dist/lib
 	-mkdir $(TARGET)/dist/bin
+
+	java $(TOOLS_CP) com.jopdesign.tools.GenJopConfig $(JOP_CONF_STR) > $(TARGET)/src/common/com/jopdesign/sys/Config.java
+
 	javac $(TARGET_JFLAGS) $(TARGET_SRC_PATH)/common/com/jopdesign/sys/*.java
 ifeq ($(CLDC11),false)
 	javac $(TARGET_JFLAGS) $(TARGET_SRC_PATH)/jdk_base/java/lang/annotation/*.java	# oh new Java 1.5 world!
@@ -395,7 +411,8 @@ endif
 jcopter_help:
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter --help
 	@echo "[make] Default JCopter options:"
-	@echo "[make] JCOPTER_OPT=--dump-callgraph merged --dump-jvm-callgraph merged --callstring-length \$$(CALLSTRING_LENGTH) --target-method \$$(WCET_METHOD)"
+	@echo "[make] JCOPTER_OPT=--dump-callgraph merged --dump-jvm-callgraph merged --use-dfa=\$$(USE_DFA) --dump-callgraph merged --dump-jvm-callgraph off --callstring-length \$$(CALLSTRING_LENGTH) --target-method \$$(WCET_METHOD)"
+	@echo "[make] JCOPTER_OPT=$(JCOPTER_OPT)"
 	@echo ""
 #	project.sof fiels are used to boot from the serial line
 #
@@ -703,7 +720,6 @@ export DYLD_FALLBACK_LIBRARY_PATH
 # make after (dot): (cd java/target/wcet/<project-name>; make)
 #
 # Makefile options:
-# WCET_DFA: perform dataflow analysis
 # WCET_UPPAAL: whether to use modelchecking for WCET analysis
 # WCET_VERIFYTA: UPPAAL verifier executable
 # WCET_OPTIONS: Additional WCET options (run 'make wcet_help')
@@ -711,7 +727,7 @@ export DYLD_FALLBACK_LIBRARY_PATH
 # Profiling: add -Xss16M -agentlib:hprof=cpu=samples,interval=2,depth=8 to java arguments
 # On Mac don't forget:
 # export DYLD_FALLBACK_LIBRARY_PATH=.
-WCET_DFA?=no
+WCET_DFA?=$(USE_DFA)
 WCET_UPPAAL?=no
 WCET_VERIFYTA?=verifyta	 # only needed if WCET_UPPAAL=yes
 wcet:
