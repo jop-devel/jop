@@ -114,8 +114,8 @@ class JVM {
 	private static void f_aastore(int ref, int index, int value) {
 			
 		synchronized (GC.mutex) {
-			if (GC.USE_SCOPES) {
-				if (GC.USE_SCOPECHECKS) {
+			if (Config.USE_SCOPES) {
+				if (Config.USE_SCOPECHECKS) {
 					JVMHelp.scopeCheck(ref, value);
 				}
 			} else {
@@ -1101,15 +1101,15 @@ class JVM {
 	private static void f_putstatic_ref(int val, int addr) {
 		
 		synchronized (GC.mutex) {
-			if (GC.USE_SCOPES) {
-				if (GC.USE_SCOPECHECKS) {
+			if (Config.USE_SCOPES) {
+				if (Config.USE_SCOPECHECKS) {
 					/**
 					 * val cannot be in a scoped region because if the scoped area is freed, then
 					 * we get a dangling reference in the modified static field
 					 */
 					int val_level;
 				
-					if (GC.ADD_REF_INFO){
+					if (Config.ADD_REF_INFO){
 						val_level = (val & 0x3E000000) >>> 25;
 					}else{
 						val_level = Native.rdMem(val + GC.OFF_SCOPE);
@@ -1139,8 +1139,8 @@ class JVM {
 	private static void f_putfield_ref(int ref, int value, int index) {
 		
 		synchronized (GC.mutex) {			
-			if (GC.USE_SCOPES) {
-				if (GC.USE_SCOPECHECKS) {
+			if (Config.USE_SCOPES) {
+				if (Config.USE_SCOPECHECKS) {
 					JVMHelp.scopeCheck(ref, value);
 				}
 			} else {

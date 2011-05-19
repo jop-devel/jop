@@ -20,6 +20,7 @@
 
 package wcet.devel;
 
+import com.jopdesign.sys.Config;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 import com.jopdesign.sys.Memory;
@@ -34,8 +35,7 @@ public class Scopes {
     final static int CACHE_FLUSH = -51;
     final static int CACHE_DUMP = -53;
 
-    final static boolean MEASURE = true;
-	final static boolean MEASURE_CACHE = false;
+    final static boolean MEASURE_CACHE = false;
 
 	static class Empty implements Runnable {
 		@Override
@@ -80,24 +80,24 @@ public class Scopes {
 	public void measure() {
 		
 		scopeEmpty();
-		if(MEASURE) {
+		if(Config.MEASURE) {
 			System.out.print("Cost for executing empty scope (excluding to): ");
 			System.out.println(te-ts-to);
 		}
 		scopeAlloc();
-		if(MEASURE) {
+		if(Config.MEASURE) {
 			System.out.print("Cost for executing scope allocating 1024 words (excluding to): ");
 			System.out.println(te-ts-to);
 		}
 		scopeFull();
-		if(MEASURE) {
+		if(Config.MEASURE) {
 			System.out.print("Cost for executing scope with one large method (excluding to): ");
 			System.out.println(te-ts-to);
 		}
 	}
 	public static void main(String[] args) {
 
-		if(MEASURE) {
+		if(Config.MEASURE) {
 			ts = Native.rdMem(Const.IO_CNT);
 			te = Native.rdMem(Const.IO_CNT);
 			to = te-ts;
@@ -108,18 +108,18 @@ public class Scopes {
 	}
 	
 	public void scopeEmpty() {
-		if(MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if(Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		scope.enter(empty);
-		if(MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if(Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 	}
 	public void scopeAlloc() {
-		if(MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if(Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		scope.enter(alloc);
-		if(MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if(Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 	}
 	public void scopeFull() {
-		if(MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if(Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		scope.enter(bigMethod);
-		if(MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if(Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 	}
 }

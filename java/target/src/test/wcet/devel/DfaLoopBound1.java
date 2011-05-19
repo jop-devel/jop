@@ -23,6 +23,7 @@ package wcet.devel;
  *
  */
 
+import com.jopdesign.sys.Config;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
@@ -55,13 +56,10 @@ public class DfaLoopBound1 {
 			x = (x+1) * i;
 	}
 	
-	/* testing wcet */
-	/** Set to false for the WCET analysis, true for measurement */
-	final static boolean MEASURE = true;
 	static int ts, te, to;
 
 	public static void main(String[] args) {
-		if (MEASURE) {
+		if (Config.MEASURE) {
 			ts = Native.rdMem(Const.IO_CNT);
 			te = Native.rdMem(Const.IO_CNT);
 			to = te-ts;
@@ -69,7 +67,7 @@ public class DfaLoopBound1 {
 		y=2;
 		x=1;
 		invoke();
-		if (MEASURE) {
+		if (Config.MEASURE) {
 			int dt = te-ts-to;
 			System.out.print("wcet[DfaLoopBound1]:");
             System.out.println(dt);
@@ -78,11 +76,11 @@ public class DfaLoopBound1 {
 	
 	static void invoke() {
 		measure();
-		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 	}
 
 	static void measure() {
-		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		test0();
 		test1();
 	}

@@ -381,7 +381,7 @@ synchronized (o) {
 		int ref_level; 
 		int val_level; 
 	
-		if (GC.ADD_REF_INFO) {
+		if (Config.ADD_REF_INFO) {
 			ref_level = (ref & 0x3E000000) >>> 25;
 			val_level = (val & 0x3E000000) >>> 25;
 			
