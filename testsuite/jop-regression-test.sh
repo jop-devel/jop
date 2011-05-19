@@ -1,14 +1,12 @@
 #!/bin/sh
 #
-# git pull and run JOP regression test
+# git clone and run JOP regression test
 #
 LOG_DIR=`pwd`/logs
 
-# Change to jop directory
-cd jop
-
-# Pull
-git pull
+# get the JOP source tree
+rm -rf jop
+git clone git://www.soc.tuwien.ac.at/jop.git
 
 # Make sure working tree is clean
 # git status | grep "working directory clean" >/dev/null
