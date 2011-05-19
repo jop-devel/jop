@@ -114,8 +114,10 @@ class JVM {
 	private static void f_aastore(int ref, int index, int value) {
 			
 		synchronized (GC.mutex) {
-			if (GC.USE_SCOPES) {
-				// TODO Scope check
+			if (Config.USE_SCOPES) {
+				if (Config.USE_SCOPECHECKS) {
+					JVMHelp.scopeCheck(ref, value);
+				}
 			} else {
 				// snapshot-at-beginning barrier
 				int oldVal = Native.arrayLoad(ref, index);
@@ -1099,8 +1101,24 @@ class JVM {
 	private static void f_putstatic_ref(int val, int addr) {
 		
 		synchronized (GC.mutex) {
-			if (GC.USE_SCOPES) {
-				// TODO Scope check
+			if (Config.USE_SCOPES) {
+				if (Config.USE_SCOPECHECKS) {
+					/**
+					 * val cannot be in a scoped region because if the scoped area is freed, then
+					 * we get a dangling reference in the modified static field
+					 */
+					int val_level;
+				
+					if (Config.ADD_REF_INFO){
+						val_level = (val & 0x3E000000) >>> 25;
+					}else{
+						val_level = Native.rdMem(val + GC.OFF_SCOPE);
+					}
+				
+					if ( val_level != 0 ){
+						GC.log("Illegal Assignment Exception: Static field references scoped object");
+					}
+				}
 			} else {
 				// snapshot-at-beginning barrier
 				int oldVal = Native.getStatic(addr);
@@ -1120,10 +1138,11 @@ class JVM {
 	private static void f_resE2() { JVMHelp.noim();}
 	private static void f_putfield_ref(int ref, int value, int index) {
 		
-		synchronized (GC.mutex) {
-			
-			if (GC.USE_SCOPES) {
-				// TODO Scope check
+		synchronized (GC.mutex) {			
+			if (Config.USE_SCOPES) {
+				if (Config.USE_SCOPECHECKS) {
+					JVMHelp.scopeCheck(ref, value);
+				}
 			} else {
 				// snapshot-at-beginning barrier
 				int oldVal = Native.getField(ref, index);

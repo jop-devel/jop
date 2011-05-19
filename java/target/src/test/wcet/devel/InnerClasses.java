@@ -1,5 +1,6 @@
 package wcet.devel;
 
+import com.jopdesign.sys.Config;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
@@ -73,21 +74,18 @@ public class InnerClasses {
 			x = (x+1) * i;
 	}
 
-	/* testing wcet */
-	/** Set to false for the WCET analysis, true for measurement */
-	final static boolean MEASURE = false;
 	static int ts, te, to;
 	private static InnerClasses inst;
 
 	public static void main(String[] args) {
-		if(MEASURE) {
+		if(Config.MEASURE) {
 			ts = Native.rdMem(Const.IO_CNT);
 			te = Native.rdMem(Const.IO_CNT);
 			to = te-ts;
 		}
 		inst = new InnerClasses();
 		invoke();
-		if (MEASURE) {
+		if (Config.MEASURE) {
 			int dt = te-ts-to;
 			System.out.print("wcet[AnnotLang1]:");
             System.out.println(dt);
@@ -96,11 +94,11 @@ public class InnerClasses {
 	
 	static void invoke() {
 		measure();
-		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 	}
 
 	static void measure() {
-		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		inst.test();
 	}
 

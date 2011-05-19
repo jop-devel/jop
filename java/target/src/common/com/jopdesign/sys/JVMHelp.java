@@ -367,6 +367,42 @@ synchronized (o) {
 		}
 		wr(' ');
 	}
+	
+	public static void scopeCheck(int ref, int val) {		
+
+		/** val has to be in a longer lived memory region than ref. This means that val can be in: 
+		 * 
+		 *   1. Immortal or Mission memory.
+		 *   2. A scope with a level smaller than the level of ref. (i.e. ref is in a deeper nested
+		 *   	scope than val).
+		 * 
+		 */
+
+		int ref_level; 
+		int val_level; 
+	
+		if (Config.ADD_REF_INFO) {
+			ref_level = (ref & 0x3E000000) >>> 25;
+			val_level = (val & 0x3E000000) >>> 25;
+			
+		} else {
+			ref_level = Native.rdMem(ref + GC.OFF_SCOPE);
+			val_level = Native.rdMem(val + GC.OFF_SCOPE);
+		}
+			
+		if (val_level == 0){
+			if (ref_level != 0) { // ref is in scoped memory
+				GC.log("Illegal Assignment Exception: Shorter lived object references longer lived object!");
+			}
+		} else { //val is in scope
+			if (ref_level != 0){ // ref is in scope
+				if (ref_level > val_level) { // ref is deeper nested than val
+					GC.log("Illegal Assignment Exception: Scope level missmatch");
+				}
+			}
+		}
+	}
+
 
 }
 
