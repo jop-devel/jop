@@ -535,6 +535,13 @@ public class InlineHelper {
             return false;
         }
 
+        // check if the invokee is a native method
+        if (AppInfo.getSingleton().isNative(invokee.getClassInfo().getClassName())) {
+            return false;
+        }
+
+        // TODO we could optionally skip inlining library code
+
         // check for recursions, we do not inline recursive methods
         if ( invokers.contains(invokee) ) {
             return false;

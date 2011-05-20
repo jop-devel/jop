@@ -156,6 +156,11 @@ public class DFATool extends EmptyTool<AppEventHandler> {
      */
     public void load() {
 
+        // First clear everything ..
+        statements.clear();
+        flow.clear();
+        receivers = null;
+
         // find ordering for class initializers
         ClinitOrder c = new ClinitOrder();
         appInfo.iterate(c);
@@ -230,6 +235,8 @@ public class DFATool extends EmptyTool<AppEventHandler> {
      */
     public void cleanup() {
         appInfo.getKeyManager().clearAllValues(KEY_NOP);
+        flow.clear();
+        statements.clear();
     }
 
     private void loadMethod(MethodInfo method) {

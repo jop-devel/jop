@@ -35,6 +35,10 @@ public class Flow {
         flow = new LinkedHashMap<InstructionHandle, Set<FlowEdge>>();
     }
 
+    public void clear() {
+        flow.clear();
+    }
+
     public void addEdge(FlowEdge f) {
         Set<FlowEdge> set = flow.get(f.getTail());
         if (set == null) {

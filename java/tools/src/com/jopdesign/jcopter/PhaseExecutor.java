@@ -200,6 +200,8 @@ public class PhaseExecutor {
             logger.info("Loop bound analysis");
             dfaTool.runLoopboundAnalysis(callstringLength);
         }
+
+        dfaTool.cleanup();
     }
 
     public void buildCallGraph(boolean useDFA) {
