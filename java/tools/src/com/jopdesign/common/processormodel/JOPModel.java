@@ -56,6 +56,7 @@ public class JOPModel implements ProcessorModel {
     public static final String JVM_CLASS = "com.jopdesign.sys.JVM";
     public static final String STARTUP_CLASS = "com.jopdesign.sys.Startup";
     public static final String JOP_NATIVE = "com.jopdesign.sys.Native";
+    public static final String BOOT_METHOD = "com.jopdesign.sys.Startup#boot()V";
 
     private final String identifier;
     private final JOPConfig config;
@@ -196,4 +197,18 @@ public class JOPModel implements ProcessorModel {
         return jvmClasses;
     }
 
+    @Override
+    public List<String> getJVMRoots() {
+        List<String> roots = new ArrayList<String>(1);
+        // TODO anything else we need?
+        // Hardware objects, <clinit> are handled by AppSetup/UnusedCodeRemover, Runnables are always added as roots
+        roots.add(BOOT_METHOD);
+        return roots;
+    }
+
+    @Override
+    public boolean keepJVMClasses() {
+        // or should we keep them?
+        return false;
+    }
 }

@@ -749,7 +749,15 @@ public final class ClassInfo extends MemberInfo {
     }
 
     public MethodInfo getMethodInfo(MemberID memberID) {
-        return getMethodInfo(memberID.getMethodSignature());
+        if (memberID.hasMethodSignature()) {
+            return getMethodInfo(memberID.getMethodSignature());
+        }
+        Set<MethodInfo> methods = getMethodByName(memberID.getMemberName());
+        if (methods.size() == 1) {
+            return methods.iterator().next();
+        }
+        // not found or not unique
+        return null;
     }
 
     /**

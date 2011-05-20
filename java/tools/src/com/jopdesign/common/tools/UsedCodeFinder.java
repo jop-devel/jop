@@ -166,7 +166,7 @@ public class UsedCodeFinder {
 
     public void markUsedMembers(ClassInfo rootClass, boolean visitMembers) {
         // has already been visited before, do not recurse down again.
-        if (setMark(rootClass,true)==Mark.USED) return;
+        if (!visitMembers && setMark(rootClass,true)==Mark.USED) return;
 
         // visit superclass and interfaces, attributes, but not methods or fields
         if (logger.isTraceEnabled()) {
@@ -188,6 +188,9 @@ public class UsedCodeFinder {
             if (clinit != null) {
                 markUsedMembers(clinit);
             }
+
+            // TODO if this implements Runnable, we could also mark the run() method, but using the callgraph
+            // to find used threads is a bit more flexible
         }
 
     }

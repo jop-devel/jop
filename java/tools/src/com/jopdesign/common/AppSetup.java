@@ -718,7 +718,7 @@ public class AppSetup {
 
     private void loadClassInfos() {
         // We could use UsedCodeFinder here to load only reachable code, once it supports loading classes on the fly
-        new AppLoader().loadAll(true);
+        new AppLoader().loadAll(false);
         appInfo.reloadClassHierarchy();
     }
 
@@ -750,7 +750,6 @@ public class AppSetup {
                 System.err.println("Error loading JVM class '"+jvmClass+"'.");
                 System.exit(4);
             }
-            appInfo.addRoot(rootInfo);
         }
         if (appInfo.doLoadNatives()) {
             for (String nativeClass : pm.getNativeClasses()) {
@@ -759,9 +758,27 @@ public class AppSetup {
                     System.err.println("Error loading Native class '"+nativeClass+"'.");
                     System.exit(4);
                 }
-                appInfo.addRoot(rootInfo);
             }
         }
+
+        // we do not set the JVM and native classes as root anymore, instead we let the PM decide which roots we need
+        for (String root : pm.getJVMRoots()) {
+            MemberID mID = MemberID.parse(root);
+            // make sure the class exists..
+            ClassInfo cls = appInfo.loadClass(mID.getClassName());
+            // Get the member and add it as root
+            if (mID.hasMemberName()) {
+                MethodInfo methodInfo = cls.getMethodInfo(mID);
+                if (methodInfo == null) {
+                    System.err.println("Could not find JVM root "+root);
+                    System.exit(5);
+                }
+                appInfo.addRoot(methodInfo);
+            } else {
+                appInfo.addRoot(cls);
+            }
+        }
+
     }
 
     private File findConfigFile(String configFile) {

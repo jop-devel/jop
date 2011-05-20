@@ -54,6 +54,18 @@ public class JamuthModel implements ProcessorModel {
         return new ArrayList<String>(0);
     }
 
+    @Override
+    public List<String> getJVMRoots() {
+        // TODO define root methods
+        return new ArrayList<String>(0);
+    }
+
+    @Override
+    public boolean keepJVMClasses() {
+        // TODO should we keep jvm classes?
+        return false;
+    }
+
     // FIXME: Java implemented bytecodes ?
 
     public MethodInfo getJavaImplementation(AppInfo ai,
