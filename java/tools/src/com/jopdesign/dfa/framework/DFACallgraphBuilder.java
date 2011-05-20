@@ -64,7 +64,8 @@ public class DFACallgraphBuilder extends DefaultCallgraphBuilder {
         }
 
         if (receivers.size() == 0) {
-        	logger.error("No receivers for " + invokeSite + " in call context " + context.getCallString());        	
+            logger.error("No receivers for " + invokeSite.getInvokeeRef() + " at " + invokeSite + " in call context " +
+                         context.getCallString().toStringVerbose(false));
         }
 
         Set<MethodInfo> methods = new HashSet<MethodInfo>(receivers.size());
