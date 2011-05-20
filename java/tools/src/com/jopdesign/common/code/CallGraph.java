@@ -1101,12 +1101,6 @@ public class CallGraph implements ImplementationFinder {
         Set<ExecutionContext> methods = new HashSet<ExecutionContext>();
 
         MethodRef invokeeRef = invoke.getInvokeeRef();
-        MethodInfo invokee = invokeeRef.getMethodInfo();
-        if (invokee == null) {
-            // The target of the invoke is unknown .. we wont find any implementations here 
-            logger.debug("Tried to find implementations of unknown method "+invokeeRef);
-            return methods;
-        }
 
         // if the invoke is not virtual, should we look it up in the graph anyway?
         // We could just return new ExecutionContext(invokee, cs);
@@ -1127,7 +1121,7 @@ public class CallGraph implements ImplementationFinder {
                 // check if the target callstring matches the given callstring
                 if (cgString.isEmpty()) {
                     // target has no callstring, must at least override the invoked method
-                    if (outEdge.getTarget().getMethodInfo().overrides(invokee, true)) {
+                    if (outEdge.getTarget().getMethodInfo().overrides(invokeeRef, true)) {
                         methods.add(outEdge.getTarget());
                     }
                 } else {

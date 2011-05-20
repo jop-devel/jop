@@ -47,9 +47,9 @@ wcet_test:
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=FUCAMethod           WCET_METHOD=measure
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=Dispatch             WCET_METHOD=measure
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=DispatchI            WCET_METHOD=measure
-	$(MAKE) $(TEST) -e P1=test P2=wcet P3=DispatchViaException WCET_METHOD=measure
+	#$(MAKE) $(TEST) -e P1=test P2=wcet P3=DispatchViaException WCET_METHOD=measure
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartKfl             WCET_METHOD=measure  
-	$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartBenchUdpIp      WCET_METHOD=measure  
+	#$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartBenchUdpIp      WCET_METHOD=measure  
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartLift            WCET_METHOD=measure  
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartLineFollower    WCET_METHOD=measure  
 	$(MAKE) $(TEST) -e P1=test P2=wcet P3=StartDSVM            WCET_METHOD=measure

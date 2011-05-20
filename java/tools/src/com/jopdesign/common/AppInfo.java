@@ -1091,6 +1091,7 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
      * instead.</p>
      *
      * @see #findImplementations(InvokeSite)
+     * @see MethodInfo#overrides(MethodRef, boolean)
      * @param invokee the method to resolve.
      * @return all possible implementations, including native methods.
      */
