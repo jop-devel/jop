@@ -27,8 +27,10 @@ package javax.safetycritical;
 import javax.realtime.PriorityParameters;
 
 /**
+ * Not anymore part of the SCJ specification.
  * @author Martin Schoeberl
  *
+ * 
  */
 public class SingleMissionSequencer extends MissionSequencer {
 	
