@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2008-2011, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -44,6 +44,8 @@ public class JopSystem {
 		
 		// this should be a loop
 		Mission m = ms.getNextMission();
+		// that should be done in the sequencer
+		m.initialize();
 		
 		
 		Terminal.getTerminal().writeln("SCJ Start mission on JOP");
