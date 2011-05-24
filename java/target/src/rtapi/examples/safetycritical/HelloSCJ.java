@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2008-2011, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,33 +18,22 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-/**
- * 
- */
 package examples.safetycritical;
 
 import javax.realtime.PriorityParameters;
 import javax.realtime.RelativeTime;
-import javax.safetycritical.JopSystem;
-import javax.safetycritical.MissionDescriptor;
-import javax.safetycritical.MissionSequencer;
-import javax.safetycritical.PeriodicEventHandler;
-import javax.safetycritical.PeriodicParameters;
-import javax.safetycritical.Safelet;
-import javax.safetycritical.SingleMissionSequencer;
-import javax.safetycritical.StorageParameters;
-import javax.safetycritical.Terminal;
-import javax.safetycritical.ThreadConfiguration;
-
-import jbe.kfl.JopSys;
+import javax.safetycritical.*;
 
 /**
+ * A minimal SCJ application - The SCJ Hello World
+ * 
  * @author Martin Schoeberl
  *
  */
-public class HelloSCJ extends MissionDescriptor implements Safelet {
+public class HelloSCJ extends Mission implements Safelet {
 
+	// From Mission
+	@Override
 	protected void initialize() {
 		
 		PeriodicEventHandler peh = new PeriodicEventHandler(
@@ -58,25 +47,12 @@ public class HelloSCJ extends MissionDescriptor implements Safelet {
 		};
 	}
 
-	public long missionMemorySize() {
-		return 0;
-	}
-
-	public int getLevel() {
-		return 1;
-	}
-
+	// Safelet methods
+	@Override
 	public MissionSequencer getSequencer() {
 		// we assume this method is invoked only once
-		return new SingleMissionSequencer(new PriorityParameters(13), this);
-	}
-
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		Terminal.getTerminal().writeln("Hello SCJ World!");
-		JopSystem.startMission(new HelloSCJ());
+		StorageParameters sp = new StorageParameters(1000000, 0, 0);
+		return new LinearMissionSequencer(new PriorityParameters(13), sp, this);
 	}
 
 	@Override
@@ -90,5 +66,30 @@ public class HelloSCJ extends MissionDescriptor implements Safelet {
 		// TODO Auto-generated method stub
 		
 	}
+
+
+	
+	// not used anymore
+//	public long missionMemorySize() {
+//		return 0;
+//	}
+//
+//	public int getLevel() {
+//		return 1;
+//	}
+
+
+	/**
+	 * Within the JOP SCJ version we use a main method instead
+	 * of a command line parameter or configuration file.
+	 * 
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		System.out.println("Hello");
+		Terminal.getTerminal().writeln("Hello SCJ World!");
+		JopSystem.startMission(new HelloSCJ());
+	}
+
 
 }
