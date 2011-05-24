@@ -1546,6 +1546,25 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                     out.put(l, in.get(l));
                 }
             }
+        } else if (methodId.equals("com.jopdesign.sys.Native#invalidate()V")) {
+            for (Location l : in.keySet()) {
+                if (l.stackLoc < context.stackPtr) {
+                    out.put(l, in.get(l));
+                }
+            }
+        } else if (methodId.equals("com.jopdesign.sys.Native#arrayLength(I)I")
+                || methodId.equals("com.jopdesign.sys.Native#invoke(I)V")) {
+            for (Location l : in.keySet()) {
+                if (l.stackLoc < context.stackPtr - 1) {
+                    out.put(l, in.get(l));
+                }
+            }
+        } else if (methodId.equals("com.jopdesign.sys.Native#invoke(II)V")) {
+            for (Location l : in.keySet()) {
+                if (l.stackLoc < context.stackPtr - 2) {
+                    out.put(l, in.get(l));
+                }
+            }
         } else {
         	AppInfoError ex = new AppInfoError("Unknown native method: " + methodId);
         	logger.error(ex);

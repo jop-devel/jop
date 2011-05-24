@@ -191,6 +191,7 @@ public class PhaseExecutor {
         DFATool dfaTool = jcopter.getDfaTool();
 
         logger.info("Starting DFA analysis");
+        dfaTool.setAnalyzeBootMethod(true);
         dfaTool.load();
 
         logger.info("Receiver analysis");

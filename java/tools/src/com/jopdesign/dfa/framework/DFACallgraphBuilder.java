@@ -58,14 +58,17 @@ public class DFACallgraphBuilder extends DefaultCallgraphBuilder {
         }
         Set<String> receivers = dfaTool.getReceivers(invokeSite.getInstructionHandle(), context.getCallString());
         if (receivers == null) {
-            // TODO should we create a log message?
-            // This can happen e.g. because we have all Runnable.run() methods as roots, regardless if they are used 
+            // This can happen e.g. because we have all Runnable.run() methods as roots, regardless if they are used
+            logger.debug("No receivers for " + invokeSite.getInvokeeRef() + " at " + invokeSite + " in call context " +
+                         context.getCallString().toStringVerbose(false));
             return appInfo.findImplementations(invokeSite, context.getCallString());
         }
 
         if (receivers.size() == 0) {
-            logger.error("No receivers for " + invokeSite.getInvokeeRef() + " at " + invokeSite + " in call context " +
+            // This can happen if a method is analyzed for some contexts but not for this context
+            logger.debug("No receivers for " + invokeSite.getInvokeeRef() + " at " + invokeSite + " in call context " +
                          context.getCallString().toStringVerbose(false));
+            return appInfo.findImplementations(invokeSite, context.getCallString());
         }
 
         Set<MethodInfo> methods = new HashSet<MethodInfo>(receivers.size());

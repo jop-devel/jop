@@ -102,6 +102,8 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
     private AppInfo appInfo;
 
+    private boolean analyzeBootMethod;
+
     private List<InstructionHandle> statements;
     private Flow flow;
     private Map<InstructionHandle, ContextMap<CallString, Set<String>>> receivers;
@@ -122,6 +124,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         this.statements = new LinkedList<InstructionHandle>();
         this.flow = new Flow();
         this.receivers = null;
+        this.analyzeBootMethod = false;
     }
 
     public AppInfo getAppInfo() {
@@ -147,6 +150,10 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         // We do not call load() here, because some other tool might want to modify the code before
         // running the DFA the first tool..
         KEY_NOP = appInfo.getKeyManager().registerKey(KeyType.STRUCT, "dfa.nop");
+    }
+
+    public void setAnalyzeBootMethod(boolean analyzeBootMethod) {
+        this.analyzeBootMethod = analyzeBootMethod;
     }
 
     /**
@@ -313,13 +320,15 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         int idx;
 
         // add magic initializers to prologue sequence
-        instr = new ICONST(0);
-        prologue.append(instr);
-        instr = new ICONST(0);
-        prologue.append(instr);
-        idx = prologueCP.addMethodref("com.jopdesign.sys.GC", "init", "(II)V");
-        instr = new INVOKESTATIC(idx);
-        prologue.append(instr);
+        if (!analyzeBootMethod) {
+            instr = new ICONST(0);
+            prologue.append(instr);
+            instr = new ICONST(0);
+            prologue.append(instr);
+            idx = prologueCP.addMethodref("com.jopdesign.sys.GC", "init", "(II)V");
+            instr = new INVOKESTATIC(idx);
+            prologue.append(instr);
+        }
 
         // Not in prologue anymore
         //        idx = prologueCP.addMethodref("java.lang.System", "<init>", "()V");
@@ -331,6 +340,14 @@ public class DFATool extends EmptyTool<AppEventHandler> {
             MemberID cSig = appInfo.getClinitSignature(clinit.getClassName());
             idx = prologueCP.addMethodref(cSig.getClassName(), cSig.getMemberName(),
                     cSig.getDescriptor().toString());
+            instr = new INVOKESTATIC(idx);
+            prologue.append(instr);
+        }
+
+        if (analyzeBootMethod) {
+            // Let's just analyze the full boot method, so that the callgraph-builder is happy.
+            // Doing this after clinit, so that we have DFA infos on fields in JVMHelp.init()
+            idx = prologueCP.addMethodref("com.jopdesign.sys.Startup", "boot", "()V");
             instr = new INVOKESTATIC(idx);
             prologue.append(instr);
         }
