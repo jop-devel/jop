@@ -540,8 +540,6 @@ public class InlineHelper {
             return false;
         }
 
-        // TODO we could optionally skip inlining library code
-
         // check for recursions, we do not inline recursive methods
         if ( invokers.contains(invokee) ) {
             return false;
@@ -558,12 +556,17 @@ public class InlineHelper {
 
         // check excluded packages
         // invoker method
-        if ( !inlineConfig.doExcludeMethod(invoker) ) {
+        if ( inlineConfig.doExcludeMethod(invoker) ) {
             return false;
         }
         // invoked method implementation
         // TODO we do not check the referenced receiver classname.. should we?
-        if ( !inlineConfig.doExcludeMethod(invokee) ) {
+        if ( inlineConfig.doExcludeMethod(invokee) ) {
+            return false;
+        }
+
+        // do not inline library code into application code (and we do not inline within the library neither..)
+        if ( !inlineConfig.doInlineLibraries() && AppInfo.getSingleton().isLibrary(invokee.getClassName()) ) {
             return false;
         }
 
@@ -578,10 +581,10 @@ public class InlineHelper {
             return true;
         }
 
-        if (inlineConfig.allowJVMCalls() == JVMInline.NONE) {
+        if (inlineConfig.doInlineJVMCalls() == JVMInline.NONE) {
             return false;
         }
-        if (inlineConfig.allowJVMCalls() == JVMInline.ALL) {
+        if (inlineConfig.doInlineJVMCalls() == JVMInline.ALL) {
             return true;
         }
 
