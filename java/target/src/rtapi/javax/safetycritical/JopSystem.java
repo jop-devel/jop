@@ -39,8 +39,13 @@ public class JopSystem {
 		// for it -- needs a reread on current spec
 		// and a fix
 //		MissionDescriptor md = ms.getNextMission();
-		MissionDescriptor md = null;
-		md.initialize();
+//		MissionDescriptor md = null;
+//		md.initialize();
+		
+		// this should be a loop
+		Mission m = ms.getNextMission();
+		
+		
 		Terminal.getTerminal().writeln("SCJ Start mission on JOP");
 		RtThread.startMission();
 	}
