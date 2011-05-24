@@ -407,8 +407,10 @@ public class AppSetup {
                     is.close();
                 } catch (FileNotFoundException e) {
                     // should never happen
+                    System.out.flush();
                     System.err.println("Configuration file '"+configFilename+"' not found: "+e.getMessage());
                 } catch (IOException e) {
+                    System.out.flush();
                     System.err.println("Could not read config file '"+file+"': "+e.getMessage());
                     System.exit(3);
                 }
@@ -425,6 +427,7 @@ public class AppSetup {
             // AppInfo is initialized
             mainMethodID = getMainSignature(rest.length > 0 ? rest[0] : null);
         } catch (Config.BadConfigurationException e) {
+            System.out.flush();
             System.err.println(e.getMessage());
             if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
                 System.err.println("Use '--help' to show a usage message.");
@@ -450,6 +453,7 @@ public class AppSetup {
                 }
             }
         } catch (Config.BadConfigurationException e) {
+            System.out.flush();
             System.err.println(e.getMessage());
             if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
                 System.err.println("Use '--help' to show a usage message.");
@@ -525,6 +529,7 @@ public class AppSetup {
         for (String root : roots) {
             ClassInfo rootInfo = appInfo.loadClass(root.replaceAll("/","."));
             if ( rootInfo == null ) {
+                System.out.flush();
                 System.err.println("Error loading root class '"+root+"'.");
                 System.exit(4);
             }
@@ -537,6 +542,7 @@ public class AppSetup {
         } else if(config.hasOption(Config.MAIN_METHOD_NAME)){
         	mainClassName = MemberID.parse(config.getOption(Config.MAIN_METHOD_NAME)).getClassName();
         } else {
+            System.out.flush();
             System.err.println("You need to specify a main class or entry method.");
             if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
                 System.err.println("Use '--help' to show a usage message.");
@@ -551,6 +557,7 @@ public class AppSetup {
             appInfo.setMainMethod(main);
 
         } catch (Config.BadConfigurationException e) {
+            System.out.flush();
             System.err.println(e.getMessage());
             if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
                 System.err.println("Use '--help' to show a usage message.");
@@ -572,6 +579,7 @@ public class AppSetup {
                 }
             }
         } catch (Config.BadConfigurationException e) {
+            System.out.flush();
             System.err.println(e.getMessage());
             if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
                 System.err.println("Use '--help' to show a usage message.");
@@ -592,6 +600,7 @@ public class AppSetup {
                 }
             }
         } catch (Config.BadConfigurationException e) {
+            System.out.flush();
             System.err.println(e.getMessage());
             if ( config.getOptions().containsOption(Config.SHOW_HELP) ) {
                 System.err.println("Use '--help' to show a usage message.");
@@ -617,6 +626,7 @@ public class AppSetup {
                 String infoFile  = outDir + config.getOption(Config.INFO_LOG_FILE);
                 logConfig.setReportLoggers(new File(errorFile), new File(infoFile));
             } catch (IOException e) {
+                System.out.flush();
                 System.err.println("Error creating log files: "+e.getMessage());
                 System.exit(4);
             }
