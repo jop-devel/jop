@@ -32,6 +32,7 @@ import com.jopdesign.common.type.ValueInfo;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.ValueAnalysis;
 import com.jopdesign.jcopter.optimizer.AbstractOptimizer;
+import org.apache.bcel.generic.ARRAYLENGTH;
 import org.apache.bcel.generic.ArithmeticInstruction;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.ConversionInstruction;
@@ -43,6 +44,8 @@ import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.InvokeInstruction;
+import org.apache.bcel.generic.LDC;
+import org.apache.bcel.generic.LDC2_W;
 import org.apache.bcel.generic.NOP;
 import org.apache.bcel.generic.POP;
 import org.apache.bcel.generic.POP2;
@@ -330,11 +333,19 @@ public class SimpleInliner extends AbstractOptimizer {
                 hasNPCheck |= !is.isInvokeStatic();
             }
             else if (instruction instanceof FieldInstruction) {
-                hasNPCheck |= (instruction instanceof GETFIELD || instruction instanceof PUTFIELD);
+                if (instruction instanceof GETFIELD) {
+                    hasNPCheck |= values.getValueTable().top(1).isThisReference();
+                }
+                if (instruction instanceof PUTFIELD) {
+                    int down = values.getValueTable().top().isContinued() ? 2 : 1;
+                    hasNPCheck |= values.getValueTable().top(down).isThisReference();
+                }
             }
             else if (instruction instanceof ArithmeticInstruction ||
                      instruction instanceof ConversionInstruction ||
                      instruction instanceof StackInstruction ||
+                     instruction instanceof LDC || instruction instanceof LDC2_W ||
+                     instruction instanceof ARRAYLENGTH ||
                      instruction instanceof NOP)
             {
                 // nothing to do, just copy them
@@ -381,7 +392,8 @@ public class SimpleInliner extends AbstractOptimizer {
                 // if we encounter an instruction which we do not handle, we do not inline
                 unhandledInstructions++;
                 if (logger.isTraceEnabled()) {
-                    logger.trace("Not inlining "+invokee+" because of unhandled instructions.");
+                    logger.trace("Not inlining "+invokee+" because of unhandled instruction "+
+                            instruction.toString(invokee.getClassInfo().getConstantPoolGen().getConstantPool()));
                 }
                 return false;
             }
@@ -462,7 +474,7 @@ public class SimpleInliner extends AbstractOptimizer {
                 ValueInfo value = params.get(i);
 
                 int argNum = value.getParamNr();
-                if (invokee.isStatic()) {
+                if (!invokee.isStatic()) {
                     argNum++;
                 }
                 if (argNum != i) {
