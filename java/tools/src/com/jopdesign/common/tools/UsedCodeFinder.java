@@ -274,14 +274,7 @@ public class UsedCodeFinder {
     }
 
     private void visitInvokeSites(MethodCode code) {
-        InstructionList il = code.getInstructionList();
-        for (InstructionHandle ih : il.getInstructionHandles()) {
-            if (!(ih.getInstruction() instanceof InvokeInstruction)) {
-                continue;
-            }
-
-            InvokeSite invokeSite = code.getInvokeSite(ih);
-
+        for (InvokeSite invokeSite : code.getInvokeSites()) {
             // find all implementations for each invoke, mark them as used.
             for (MethodInfo method : findMethods(invokeSite)) {
                 markUsedMembers(method);

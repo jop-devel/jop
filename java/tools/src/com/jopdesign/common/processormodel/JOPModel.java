@@ -208,7 +208,7 @@ public class JOPModel implements ProcessorModel {
 
     @Override
     public boolean keepJVMClasses() {
-        // or should we keep them?
-        return false;
+        // TODO maybe return enum here, keep only classes but allow removal of methods (or make them abstract?)
+        return true;
     }
 }
