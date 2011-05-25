@@ -58,7 +58,7 @@ public class PeriodicParameters extends ReleaseParameters {
 	@SCJAllowed
 	@BlockFree
 	public PeriodicParameters(HighResolutionTime start, RelativeTime period) {
-		super(null, null, null, null);
+		throw new Error("implement me");
 	}
 
 	/**
@@ -84,7 +84,7 @@ public class PeriodicParameters extends ReleaseParameters {
 	@BlockFree
 	public PeriodicParameters(HighResolutionTime start, RelativeTime period,
 			RelativeTime deadline, AsyncEventHandler handler) {
-		super(null, null, null, null);
+		throw new Error("implement me");
 	}
 
 	/**
