@@ -256,10 +256,10 @@ public class MemberID {
     }
 
     /**
-     * @return the member name and descriptor, if set.
+     * @return the member name and descriptor if set and if it is a method descriptor.
      */
     public String getMethodSignature() {
-        return (memberName!=null ? memberName : "") + (descriptor!=null ? descriptor : "");
+        return (memberName!=null ? memberName : "") + (descriptor!=null && descriptor.isMethod() ? descriptor : "");
     }
 
     public String getMemberName() {

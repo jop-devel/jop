@@ -725,7 +725,7 @@ public final class ClassInfo extends MemberInfo {
     //////////////////////////////////////////////////////////////////////////////
 
     public ClassMemberInfo getMemberInfo(MemberID memberID) {
-        return getMemberInfo(memberID.getMethodSignature());
+        return getMemberInfo(memberID.hasMethodSignature() ? memberID.getMethodSignature() : memberID.getMemberName());
     }
 
     /**
