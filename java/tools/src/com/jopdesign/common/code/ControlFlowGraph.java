@@ -512,6 +512,7 @@ public class ControlFlowGraph {
     /* graph */
     private FlowGraph<CFGNode, CFGEdge> graph;
     private Set<CFGNode> deadNodes;
+	private boolean hasThrowEdges;
 
     /* this we need for resolveVirtualInvokes() */
     private CallString context;
@@ -528,6 +529,7 @@ public class ControlFlowGraph {
     private boolean hasContinueLoopNodes = false;
     private boolean hasSplitNodes = false;
     private boolean hasSummaryNodes = false;
+
 
 
     /*---------------------------------------------------------------------------*
@@ -599,6 +601,7 @@ public class ControlFlowGraph {
                 nodeTable.get(blocks.get(0).getFirstInstruction().getPosition()),
                 entryEdge());
         /* flow edges */
+        hasThrowEdges = false;
         for (BasicBlockNode bbNode : nodeTable.values()) {
             BasicBlock bb = bbNode.getBasicBlock();
             FlowInfo bbf = bb.getExitFlowInfo();
@@ -606,7 +609,8 @@ public class ControlFlowGraph {
                 // do not connect exception edges
                 if (bbNode.getBasicBlock().getLastInstruction().getInstruction().getOpcode()
                         == Constants.ATHROW) {
-                    logger.warn("Found ATHROW edge - ignoring");
+                    logger.warn("Found ATHROW edge in " + this.toString() + " - ignoring (results in dead and stuck code)");
+                    hasThrowEdges = true;
                 } else {
                     graph.addEdge(bbNode, graph.getExit(), exitEdge());
                 }
@@ -1226,12 +1230,19 @@ public class ControlFlowGraph {
     private void check() throws BadGraphException {
         /* Remove unreachable and stuck code */
         deadNodes = TopOrder.findDeadNodes(graph, getEntry());
-        if (!deadNodes.isEmpty()) logger.error("Found dead code (Exceptions ?): " + deadNodes);
-        Set<CFGNode> stucks = TopOrder.findStuckNodes(graph, getExit());
-        if (!stucks.isEmpty()) logger.error("Found stuck code (Exceptions ?): " + stucks);
-        deadNodes.addAll(stucks);
-        if (!deadNodes.isEmpty()) {
-            graph.removeAllVertices(deadNodes);
+        Set<CFGNode> stuckNodes = TopOrder.findStuckNodes(graph, getExit());
+        if (( !deadNodes.isEmpty() || !stuckNodes.isEmpty()) && !hasThrowEdges) {
+			if(!deadNodes.isEmpty()) {
+				logger.error("Unexpected dead nodes in " +this.toString()+ " (no ATHROW edges): "+deadNodes);
+			}
+			if(!stuckNodes.isEmpty()) {
+				logger.error("Unexpected stuck nodes  in " +this.toString()+ " (no ATHROW edges): "+stuckNodes);
+			}
+        }
+        Set<CFGNode> unreachableNodes = stuckNodes; 
+        unreachableNodes.addAll(deadNodes);
+        if (!unreachableNodes.isEmpty()) {
+            graph.removeAllVertices(unreachableNodes);
             this.invalidate();
         }
         /* now checks should succeed */
