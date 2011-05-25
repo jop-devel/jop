@@ -353,6 +353,9 @@ public class BasicBlock {
         @Override
         public void visitSelect(Select obj) {
             super.visitSelect(obj);
+            flowInfo.addTarget(obj.getTarget(), ControlFlowGraph.EdgeKind.SELECT_EDGE);
+            this.targeted.add(obj.getTarget());
+            // Note that getTargets() does not include the default target
             for (InstructionHandle tih : obj.getTargets()) {
                 flowInfo.addTarget(tih, ControlFlowGraph.EdgeKind.SELECT_EDGE);
                 this.targeted.add(tih);
