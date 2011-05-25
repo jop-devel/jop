@@ -30,9 +30,11 @@ public class ScratchpadScope extends ScopedMemory {
 	 * All instances of ScratchpadScope on the same processor
 	 * point to the same on-chip memory.
 	 * TODO: we have to find a solution to avoid this sharing.
+	 * 
+	 * TODO: find a nicer solution for SCJ version of SPM.
 	 */
 	public ScratchpadScope() {
-		super(IOFactory.getFactory().getScratchpadMemory()[0]);
+//		super(IOFactory.getFactory().getScratchpadMemory()[0]);
 	}
 
 	@Override
