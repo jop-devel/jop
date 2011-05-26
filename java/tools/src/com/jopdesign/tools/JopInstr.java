@@ -115,8 +115,8 @@ public class JopInstr{
 		new JopInstr("fconst_0", 1, IMP_ASM, 1),		// 0x0B
 		new JopInstr("fconst_1", 1, IMP_JAVA, 1),		// 0x0C
 		new JopInstr("fconst_2", 1, IMP_JAVA, 1),		// 0x0D
-		new JopInstr("dconst_0", 1, IMP_NO, 1),		// 0x0E
-		new JopInstr("dconst_1", 1, IMP_NO, 1),		// 0x0F
+		new JopInstr("dconst_0", 1, IMP_NO, 2),		// 0x0E
+		new JopInstr("dconst_1", 1, IMP_JAVA, 1),		// 0x0F
 
 		new JopInstr("bipush", 2, IMP_ASM, 2),		// 0x10
 		new JopInstr("sipush", 3, IMP_ASM, 3),		// 0x11
