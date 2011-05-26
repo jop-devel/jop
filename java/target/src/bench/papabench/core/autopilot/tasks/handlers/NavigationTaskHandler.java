@@ -50,13 +50,24 @@ public class NavigationTaskHandler implements Runnable {
 	}
 
 	public void run() {
+
 		// FIXME 4Hz is a frequency of this task -> update time every 4th call		
 		autopilotModule.getEstimator().updateFlightTime();
 		LogUtils.log(this, "\n\n\n============================ Navigation cycle: " + autopilotModule.getEstimator().getFlightTime());
 		
+		update();
+		
+		//LogUtils.log(this, "course recomputation");
+		courseComputation();
+		
+		//LogUtils.log(this, "Final autopilot status:");
+		//LogUtils.log(this, this.autopilotModule.toString());
+	}
+
+	protected void update() {		
 		// FIXME following line should be in dedicated task: if (gps_msg_received) => update state
 		autopilotModule.getEstimator().updatePosition();
-		
+
 		autopilotModule.setLateralFlightMode(LateralFlightMode.COURSE);
 		
 		if (autopilotModule.getAutopilotMode() == AutopilotMode.HOME) {
@@ -67,12 +78,6 @@ public class NavigationTaskHandler implements Runnable {
 			
 			autopilotModule.getNavigator().autoNavigate();
 		}
-		
-		//LogUtils.log(this, "course recomputation");
-		courseComputation();
-		
-		//LogUtils.log(this, "Final autopilot status:");
-		//LogUtils.log(this, this.autopilotModule.toString());
 	}
 	
 	protected void courseComputation() {
