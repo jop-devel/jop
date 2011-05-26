@@ -211,7 +211,7 @@ public class PapaBenchJopImpl implements JopPapaBench {
 	@Override
 	public void shutdown() {
 		// there is no shutdown in a JOP RT thread system
-		System.out.println("Shutdown request");
+		// System.out.println("Shutdown request");
 //		if (executorService!=null && !executorService.isShutdown()) {			
 //			executorService.shutdown();			
 //		} else {
