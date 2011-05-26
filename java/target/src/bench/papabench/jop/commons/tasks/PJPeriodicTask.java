@@ -36,7 +36,6 @@ import joprt.*;
  */
 public class PJPeriodicTask extends RtThread {
 	
-	public static final boolean INSTRUMENTATION = true;
 	public static final int INSTRUMENTATION_RUNS = 100;
 
 	private Runnable taskHandler;
@@ -65,12 +64,12 @@ public class PJPeriodicTask extends RtThread {
 
 	public void run() {
 		
-		if (INSTRUMENTATION) initInstrumentation();
+		if (Config.MEASURE) initInstrumentation();
 		int cnt = 0;
 
 		for (;;) {
 
-			if (INSTRUMENTATION) startMeasurement();
+			if (Config.MEASURE) startMeasurement();
 
 			if (scope != null) {
 				scope.enter(taskHandler);
@@ -78,8 +77,8 @@ public class PJPeriodicTask extends RtThread {
 				taskHandler.run();
 			}
 
-			if (INSTRUMENTATION) endMeasurement();			
-			if (INSTRUMENTATION
+			if (Config.MEASURE) endMeasurement();			
+			if (Config.MEASURE
 				&& ++cnt == INSTRUMENTATION_RUNS) {
 				printInstrumentation();
 				cnt = 0;
