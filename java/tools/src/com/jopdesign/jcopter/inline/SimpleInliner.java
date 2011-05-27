@@ -597,8 +597,16 @@ public class SimpleInliner extends AbstractOptimizer {
                 start = start.getPrev();
             }
 
+            // invokeSite is not a target in this case, no need to worry about targets here
             invokerCode.replace(start, inlineData.getOldPrologueLength(), inlineData.getPrologue(), false);
+
         } else if (inlineData.getPrologue().getLength() > 0) {
+
+            // old-prologue is empty, invokeSite may be a target.. Need to update the targets to the new prologue
+            if (invoke.hasTargeters()) {
+                invokerCode.retarget(invoke, inlineData.getPrologue().getStart());
+            }
+
             InstructionList il = invokerCode.getInstructionList();
             il.insert(invoke, inlineData.getPrologue());
         }
