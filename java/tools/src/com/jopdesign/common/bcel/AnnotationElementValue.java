@@ -25,8 +25,29 @@ import org.apache.bcel.classfile.ConstantPool;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
+ * Just for me, because the formatting in the JVM spec is horrible ..
+ *
+ * element_value {
+ *     u1   tag;
+ *     union {
+ *         u2   const_value_index;
+ *         {
+ *            u2    type_name_index;
+ *            u2    const_name_index;
+ *         } enum_const_value;
+ *         u2   class_info_index;
+ *         annotation   annotation_value;
+ *         {
+ *              u2  num_values;
+ *              element_value   values[num_values];
+ *         } array_value;
+ *     } value;
+ * }
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class AnnotationElementValue {
@@ -34,6 +55,10 @@ public class AnnotationElementValue {
     private byte tag;
     private ConstantPool constantPool;
     private short constValueIndex;
+    private short typeNameIndex;
+    private short constNameIndex;
+    private short classInfoIndex;
+    private List<AnnotationElementValue> arrayValue;
 
     public static AnnotationElementValue createValue(DataInputStream in, ConstantPool cp) throws IOException {
         byte tag = in.readByte();
@@ -51,22 +76,47 @@ public class AnnotationElementValue {
                 short constValueIndex = in.readShort();
                 return new AnnotationElementValue(tag, cp, constValueIndex);
             case 'e':
-                // enum_const_value
+                short typeNameIndex = in.readShort();
+                short constNameIndex = in.readShort();
+                return new AnnotationElementValue(tag, cp, typeNameIndex, constNameIndex);
             case 'c':
-                // class_info_index
+                short classInfoIndex = in.readShort();
+                return new AnnotationElementValue(tag, cp, classInfoIndex);
+            case '[':
+                short numValues = in.readShort();
+                List<AnnotationElementValue> arrayValue = new ArrayList<AnnotationElementValue>(numValues);
+                for (int i = 0; i < numValues; i++) {
+                    arrayValue.add( createValue(in, cp) );
+                }
+                return new AnnotationElementValue(tag, cp, arrayValue);
             case '@':
                 // annotation_value
-            case '[':
-                // array_value
             default:
                 throw new UnsupportedOperationException("Annotation element value tag "+((char)tag)+" not supported");
         }
     }
 
-    public AnnotationElementValue(byte tag, ConstantPool constantPool, short constValueIndex) {
+    public AnnotationElementValue(byte tag, ConstantPool constantPool, short index) {
         this.tag = tag;
         this.constantPool = constantPool;
-        this.constValueIndex = constValueIndex;
+        if (tag == 'c') {
+            this.classInfoIndex = index;
+        } else {
+            this.constValueIndex = index;
+        }
+    }
+
+    public AnnotationElementValue(byte tag, ConstantPool constantPool, short typeNameIndex, short constNameIndex) {
+        this.tag = tag;
+        this.constantPool = constantPool;
+        this.typeNameIndex = typeNameIndex;
+        this.constNameIndex = constNameIndex;
+    }
+
+    public AnnotationElementValue(byte tag, ConstantPool constantPool, List<AnnotationElementValue> arrayValue) {
+        this.tag = tag;
+        this.constantPool = constantPool;
+        this.arrayValue = arrayValue;
     }
 
     public byte getTag() {
@@ -98,6 +148,18 @@ public class AnnotationElementValue {
                tag == 'J' || tag == 'S' || tag == 'Z' || tag == 's';
     }
 
+    public boolean isClassValue() {
+        return tag == 'c';
+    }
+
+    public boolean isEnumValue() {
+        return tag == 'e';
+    }
+
+    public boolean isArrayValue() {
+        return tag == '[';
+    }
+
     public int length() {
         switch (tag) {
             case 'B':
@@ -111,13 +173,17 @@ public class AnnotationElementValue {
             case 's':
                 return 3;
             case 'e':
-                // enum_const_value
+                return 5;
             case 'c':
-                // class_info_index
+                return 3;
+            case '[':
+                int length = 3; // tag + num_values
+                for (AnnotationElementValue ev : arrayValue) {
+                    length += ev.length();
+                }
+                return length;
             case '@':
                 // annotation_value
-            case '[':
-                // array_value
             default:
                 throw new UnsupportedOperationException("Annotation element value tag "+((char)tag)+" not supported");
         }
@@ -139,13 +205,20 @@ public class AnnotationElementValue {
                 out.writeShort(constValueIndex);
                 return;
             case 'e':
-                // enum_const_value
+                out.writeShort(typeNameIndex);
+                out.writeShort(constNameIndex);
+                return;
             case 'c':
-                // class_info_index
+                out.writeShort(classInfoIndex);
+                return;
+            case '[':
+                out.writeShort(arrayValue.size());
+                for (AnnotationElementValue ev : arrayValue) {
+                    ev.dump(out);
+                }
+                return;
             case '@':
                 // annotation_value
-            case '[':
-                // array_value
             default:
                 throw new UnsupportedOperationException("Annotation element value tag "+((char)tag)+" not supported");
         }
