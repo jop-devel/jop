@@ -21,8 +21,10 @@
 package com.jopdesign.common.code;
 
 import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph.CallgraphBuilder;
+import org.apache.bcel.classfile.Method;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -80,7 +82,7 @@ public class DefaultCallgraphBuilder implements CallgraphBuilder {
         Set<ExecutionContext> newContexts = new HashSet<ExecutionContext>();
 
         invokeLoop:
-        for(InvokeSite invokeSite : method.getCode().getInvokeSites()) {
+        for(InvokeSite invokeSite : findInvokeSites(method.getCode())) {
 
             Set<MethodInfo> methods = getInvokedMethods(context, invokeSite);
 
@@ -105,6 +107,14 @@ public class DefaultCallgraphBuilder implements CallgraphBuilder {
         }
 
         return newContexts;
+    }
+
+    /**
+     * @param code the method to process
+     * @return a set of invokeSites in this method which should be included in the constructed callgraph.
+     */
+    protected Set<InvokeSite> findInvokeSites(MethodCode code) {
+        return code.getInvokeSites();
     }
 
     /**

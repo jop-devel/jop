@@ -725,7 +725,7 @@ public final class ClassInfo extends MemberInfo {
     //////////////////////////////////////////////////////////////////////////////
 
     public ClassMemberInfo getMemberInfo(MemberID memberID) {
-        return getMemberInfo(memberID.getMethodSignature());
+        return getMemberInfo(memberID.hasMethodSignature() ? memberID.getMethodSignature() : memberID.getMemberName());
     }
 
     /**
@@ -749,7 +749,15 @@ public final class ClassInfo extends MemberInfo {
     }
 
     public MethodInfo getMethodInfo(MemberID memberID) {
-        return getMethodInfo(memberID.getMethodSignature());
+        if (memberID.hasMethodSignature()) {
+            return getMethodInfo(memberID.getMethodSignature());
+        }
+        Set<MethodInfo> methods = getMethodByName(memberID.getMemberName());
+        if (methods.size() == 1) {
+            return methods.iterator().next();
+        }
+        // not found or not unique
+        return null;
     }
 
     /**

@@ -68,6 +68,30 @@ public class JopLookup {
             positions = new ArrayList<Integer>();
             instructions = new HashMap<Integer, String>();
         }
+
+        public String getClassName() {
+            return name.substring(0, name.indexOf(':'));
+        }
+
+        public ClassEntry getClassEntry() {
+            String clsName = getClassName();
+            for (ClassEntry cls : classes.values()) {
+                if (cls.name.equals(clsName)) {
+                    return cls;
+                }
+            }
+            return null;
+        }
+
+        public int getAddress() {
+            ClassEntry entry = getClassEntry();
+            for (Integer address : entry.methods.keySet()) {
+                if (entry.methods.get(address).equals(name.replace(':','.'))) {
+                    return address;
+                }
+            }
+            return -1;
+        }
     }
 
     private static Map<Integer, String> fields = new HashMap<Integer, String>();
@@ -126,6 +150,7 @@ public class JopLookup {
                 processQuery(qArgs);
             } catch (NumberFormatException e) {
                 System.out.println("Error: "+e);
+                e.printStackTrace();
             }
         }
     }
@@ -237,17 +262,16 @@ public class JopLookup {
     }
 
     private static void processQuery(String[] args) throws NumberFormatException {
-        if (args.length == 0) return;
-        if ("help".equals(args[0])) {
+        if (args.length == 0 || "".equals(args[0]) || "help".equals(args[0])) {
             System.out.println("Usage: ");
             System.out.println("<address>        Print link info at address");
             System.out.println("class <address>  Print class info of the member at the class address");
             System.out.println("method <mp|fqn>  Print instructions of method");
-            System.out.println("pc <mp> <pc>     Print instruction at program counter");
+            System.out.println("pc [<mp>] <pc>   Print instruction at program counter");
             return;
         }
 
-        if ("class".equals(args[0])) {
+        if ("class".equals(args[0]) || "c".equals(args[0])) {
             int loc = Integer.parseInt(args[1]);
             if (classes.containsKey(loc)) {
                 ClassEntry entry = classes.get(loc);
@@ -257,18 +281,24 @@ public class JopLookup {
             return;
         }
         if ("pc".equals(args[0])) {
-            int mp = Integer.parseInt(args[1]);
-            int pc = Integer.parseInt(args[2]);
-            String method = lookupLoc(mp);
-            MethodEntry entry = methods.get(method);
-            if (entry == null) {
-                System.out.println("Unknown method");
+            if (args.length == 2) {
+                int pc = Integer.parseInt(args[1]);
+                System.out.println(lookupPC(pc));
+                return;
+            } else {
+                int mp = Integer.parseInt(args[1]);
+                int pc = Integer.parseInt(args[2]);
+                String method = lookupLoc(mp);
+                MethodEntry entry = methods.get(method);
+                if (entry == null) {
+                    System.out.println("Unknown method");
+                    return;
+                }
+                System.out.println(entry.instructions.get(pc));
                 return;
             }
-            System.out.println(entry.instructions.get(pc));
-            return;
         }
-        if ("method".equals(args[0])) {
+        if ("method".equals(args[0]) || "m".equals(args[0])) {
             MethodEntry entry = methods.get(args[1]);
             if (entry == null) {
                 int mp = Integer.parseInt(args[1]);
@@ -303,7 +333,25 @@ public class JopLookup {
                 return entry.constmap.get(loc).toString();
             }
         }
-        return "Unknown!";
+        return lookupPC(loc);
+    }
+
+    private static String lookupPC(int pc) {
+        int offset = Integer.MAX_VALUE;
+        String method = null;
+        for (Integer start : bytecode.keySet()) {
+            // find nearest method start
+            if (start > pc || pc - start > offset) {
+                continue;
+            }
+            offset = pc - start;
+            method = bytecode.get(start);
+        }
+        MethodEntry entry = methods.get(method);
+        if (entry == null) {
+            return "Unknown";
+        }
+        return method+" [address "+entry.getAddress()+", local pc: "+offset+"]: "+entry.instructions.get(offset);
     }
 
     private static void printMethod(MethodEntry entry) {

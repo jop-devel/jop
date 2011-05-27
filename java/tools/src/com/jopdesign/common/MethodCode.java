@@ -504,6 +504,11 @@ public class MethodCode {
      * If the number of instructions to replace differs from the number of source instructions, instruction
      * handles will be removed or inserted appropriately and the targets will be updated.
      * <p>
+     *     Instruction handles will be reused, so attached values and targets will not be lost if the new length is not
+     *     shorter than the old length. Else instruction handles are removed and the targeters to removed instructions
+     *     are updated to the instruction after the next instruction after the deleted instructions.
+     * </p>
+     * <p>
      * The source instructions must use the constant pool of this method.
      * </p>
      *
@@ -524,6 +529,11 @@ public class MethodCode {
      * Replace instructions in this code with an instruction list.
      * If the number of instructions to replace differs from the number of source instructions, instruction
      * handles will be removed or inserted appropriately and the targets will be updated.
+     * <p>
+     *     Instruction handles will be reused, so attached values and targets will not be lost if the new length is not
+     *     shorter than the old length. Else instruction handles are removed and the targeters to removed instructions
+     *     are updated to the instruction after the next instruction after the deleted instructions.
+     * </p>
      *
      * @param replaceStart the first instruction in this code to replace
      * @param replaceCount the number of instructions in this code to replace
@@ -545,6 +555,11 @@ public class MethodCode {
      * Replace instructions in this code with an instruction list or a part of it.
      * If the number of instructions to replace differs from the number of source instructions, instruction
      * handles will be removed or inserted appropriately and the targets will be updated.
+     * <p>
+     *     Instruction handles will be reused, so attached values and targets will not be lost if the new length is not
+     *     shorter than the old length. Else instruction handles are removed and the targeters to removed instructions
+     *     are updated to the instruction after the next instruction after the deleted instructions.
+     * </p>
      *
      * @param replaceStart the first instruction in this code to replace
      * @param replaceCount the number of instructions in this code to replace

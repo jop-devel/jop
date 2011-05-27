@@ -45,10 +45,13 @@ public class InlineConfig {
     public static final BooleanOption SKIP_NP_CHECKS =
             new BooleanOption("skip-np-checks", "Do not generate any nullpointer checks", false);
 
-    public static final EnumOption<JVMInline> JVM_INLINE =
+    public static final EnumOption<JVMInline> INLINE_JVM =
             new EnumOption<JVMInline>("jvm-calls",
                     "Allow inlining of JVM calls: disabled, only if result is verifiable, all calls",
                     JVMInline.SAFE);
+
+    public static final BooleanOption INLINE_LIBARIES =
+            new BooleanOption("inline-libs", "Allow inlining of library code", false);
 
     private final OptionGroup options;
     private final List<String> ignorePrefix;
@@ -57,7 +60,8 @@ public class InlineConfig {
         options.addOption(EXCLUDE);
         options.addOption(ALLOW_CODEMODIFY);
         options.addOption(SKIP_NP_CHECKS);
-        options.addOption(JVM_INLINE);
+        options.addOption(INLINE_JVM);
+        options.addOption(INLINE_LIBARIES);
     }
 
     public InlineConfig(OptionGroup options) {
@@ -83,17 +87,21 @@ public class InlineConfig {
             if ( className.startsWith(prefix+".") || className.equals(prefix)
                  || prefix.equals(className+"."+method.getShortName())
                  || prefix.equals(className+"#"+method.getShortName())) {
-                return false;
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     public boolean skipNullpointerChecks() {
         return options.getOption(SKIP_NP_CHECKS);
     }
 
-    public JVMInline allowJVMCalls() {
-        return options.getOption(JVM_INLINE);
+    public JVMInline doInlineJVMCalls() {
+        return options.getOption(INLINE_JVM);
+    }
+
+    public boolean doInlineLibraries() {
+        return options.getOption(INLINE_LIBARIES);
     }
 }
