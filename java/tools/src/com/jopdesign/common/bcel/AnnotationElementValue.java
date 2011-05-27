@@ -31,6 +31,15 @@ import java.util.List;
 /**
  * Just for me, because the formatting in the JVM spec is horrible ..
  *
+ * annotation {
+ *     u2   type_index;
+ *     u2   num_element_value_pairs;
+ *     {
+ *         u2               element_name_index;
+ *         element_value    value;
+ *     } element_value_pairs[num_element_value_pairs];
+ * }
+ *
  * element_value {
  *     u1   tag;
  *     union {
@@ -58,6 +67,7 @@ public class AnnotationElementValue {
     private short typeNameIndex;
     private short constNameIndex;
     private short classInfoIndex;
+    private Annotation annotation;
     private List<AnnotationElementValue> arrayValue;
 
     public static AnnotationElementValue createValue(DataInputStream in, ConstantPool cp) throws IOException {
@@ -82,6 +92,9 @@ public class AnnotationElementValue {
             case 'c':
                 short classInfoIndex = in.readShort();
                 return new AnnotationElementValue(tag, cp, classInfoIndex);
+            case '@':
+                Annotation annotation = Annotation.createAnnotation(in, cp);
+                return new AnnotationElementValue(tag, cp, annotation);
             case '[':
                 short numValues = in.readShort();
                 List<AnnotationElementValue> arrayValue = new ArrayList<AnnotationElementValue>(numValues);
@@ -89,8 +102,6 @@ public class AnnotationElementValue {
                     arrayValue.add( createValue(in, cp) );
                 }
                 return new AnnotationElementValue(tag, cp, arrayValue);
-            case '@':
-                // annotation_value
             default:
                 throw new UnsupportedOperationException("Annotation element value tag "+((char)tag)+" not supported");
         }
@@ -117,6 +128,12 @@ public class AnnotationElementValue {
         this.tag = tag;
         this.constantPool = constantPool;
         this.arrayValue = arrayValue;
+    }
+
+    public AnnotationElementValue(byte tag, ConstantPool constantPool, Annotation annotation) {
+        this.tag = tag;
+        this.constantPool = constantPool;
+        this.annotation = annotation;
     }
 
     public byte getTag() {
@@ -156,6 +173,10 @@ public class AnnotationElementValue {
         return tag == 'e';
     }
 
+    public boolean isAnnotationValue() {
+        return tag == '@';
+    }
+
     public boolean isArrayValue() {
         return tag == '[';
     }
@@ -176,14 +197,14 @@ public class AnnotationElementValue {
                 return 5;
             case 'c':
                 return 3;
+            case '@':
+                return 1 + annotation.length();
             case '[':
                 int length = 3; // tag + num_values
                 for (AnnotationElementValue ev : arrayValue) {
                     length += ev.length();
                 }
                 return length;
-            case '@':
-                // annotation_value
             default:
                 throw new UnsupportedOperationException("Annotation element value tag "+((char)tag)+" not supported");
         }
@@ -211,14 +232,15 @@ public class AnnotationElementValue {
             case 'c':
                 out.writeShort(classInfoIndex);
                 return;
+            case '@':
+                annotation.dump(out);
+                return;
             case '[':
                 out.writeShort(arrayValue.size());
                 for (AnnotationElementValue ev : arrayValue) {
                     ev.dump(out);
                 }
                 return;
-            case '@':
-                // annotation_value
             default:
                 throw new UnsupportedOperationException("Annotation element value tag "+((char)tag)+" not supported");
         }
