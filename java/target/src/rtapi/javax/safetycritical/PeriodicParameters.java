@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2008-2011, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -19,14 +19,14 @@
 */
 
 
-/**
- * 
- */
+
 package javax.safetycritical;
 
 import javax.realtime.RelativeTime;
 
 /**
+ * TODO: check current spec source and docu for actual version.
+ * 
  * @author Martin Schoeberl
  *
  */

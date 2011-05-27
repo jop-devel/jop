@@ -71,7 +71,7 @@ BLASTER_TYPE=ByteBlasterMV
 #BLASTER_TYPE=USB-Blaster
 
 ifeq ($(WINDIR),)
-	DOWN=wine ./down.exe
+	DOWN=./down
 	USBRUNNER=./USBRunner
 	S=:
 else
@@ -446,6 +446,7 @@ else
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		make qsyn -e QBT=$$target || exit; \
+		quartus_cpf  -c -q 10MHz -g 3.3 -n p quartus/$$target/jop.sof rbf/jop.svf; \
 	done
 endif
 

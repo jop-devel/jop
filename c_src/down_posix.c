@@ -283,7 +283,7 @@ int main(int argc, char *argv[])
 	if (echo) {
 		long rdCnt;
 		for (;;) {
-			read(fdSerial, &c, 1);
+		        if(read(fdSerial, &c, 1)<=0) continue;
 			printf("%c", c); fflush(stdout);
 			for (j=0; j<strlen(exitString)-1; ++j) {
 				buf[j] = buf[j+1];

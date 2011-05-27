@@ -26,6 +26,10 @@
 			ant -Dqproj=cycwrk -Dtarget-app-path=java/target/src/bench -Dmain-class=jbe/DoAll japp
 
 	</description>
+
+	<!--================================================================
+	   Board configuration
+	  ================================================================-->
 	
 	<!-- set property usb to true for an USB based board (dspio, usbmin, lego) -->
 	<property name="usb" value="true"/>
@@ -102,31 +106,45 @@
 	<!-- <property name="ipdest" value="192.168.1.2"/> -->
 	<property name="ipdest" value="192.168.0.123"/>
 
+	<!--================================================================
+	   Application configuration
+	  ================================================================-->
+
+	<!-- JOP RTS configuration -->
+
+	<property name="USE_SCOPES" value="false"/>
+	<property name="USE_SCOPECHECKS" value="false"/>
+	<property name="ADD_REF_INFO" value="false"/>
+	<property name="MEASURE" value="true"/>
+	<property name="jop-conf-string"
+			  value="USE_SCOPES=${USE_SCOPES} USE_SCOPECHECKS=${USE_SCOPECHECKS} ADD_REF_INFO=${ADD_REF_INFO} MEASURE=${MEASURE}"/>
+
 	<property name="p1" value="test"/>
 	<property name="p2" value="test"/>
 	<property name="p3" value="HelloWorld"/>
 
-	<!-- <property name="p2" value="wcet"/> -->
-	<!-- <property name="p3" value="Loop"/> -->
-	 
-	<!-- <property name="p2" value="wcet"/> -->
-	<!-- <property name="p3" value="StartLineFollower"/> -->
-	<!-- <property name="p3" value="StartKfl"/> -->
+	<!-- Run full test suite -->
+	<!-- <property name="p1" value="test"/> -->
+	<!-- <property name="p2" value="test"/> -->
+	<!-- <property name="p3" value="DoAll"/> -->	
+
+	<!--================================================================
+	   Tool configuration
+	  ================================================================-->
+
+	<!-- application optimization with ProGuard: proguard.sourceforge.net -->
+	<!-- 	uncomment following line to use it -->
+	<!-- <property name="optimize" value="true"/> -->
+	
+	<!-- To use JCopter, uncomment the following line (value is not important): -->
+	<!-- <property name="use-jcopter" value="true"/> -->
+
 	<!-- <property name="wcet-method" value="main"/> -->
 	<property name="wcet-method" value="measure"/>
 
-	<!-- <property name="p2" value="jdk"/> -->
-	<!-- <property name="p3" value="DoAll"/> -->
-
-	<!-- Jens & Mikael uncomment this -->
-	<!-- <property name="p1" value="app"/> -->
-	<!-- <property name="p2" value="dsp"/> -->
-	<!-- <property name="p3" value="SigDel"/> -->
-
-	<!-- Nelson uncomment this -->
-	<!-- <property name="p1" value="common"/> -->
-	<!-- <property name="p2" value="ejip"/> -->
-	<!-- <property name="p3" value="Main"/> -->
+	<!--================================================================
+	   end of configuration section
+	  ================================================================-->
 
 	<property name="tools" value="java/tools"/>
 	
@@ -150,10 +168,8 @@
 		<path refid="ext-cp"/>
 	</path>
 	
-	<!-- application optimization with ProGuard: proguard.sourceforge.net -->
-	<!-- 	uncomment following line to use it -->
-	<!-- <property name="optimize" value="true"/> -->
-	
+	<property name="pctools" value="java/pc"/>
+
 	<target name="optimize" if="optimize">
 		
 		<move file="java/target/dist/lib/classes.zip" tofile="java/target/dist/lib/in.zip"/>
@@ -227,15 +243,24 @@
 	
 	<pathconvert refid="target-source" property="target-source-flattened"/>
 	
-	<target name="all" depends="directories, tools, jopser, jopusb, japp" description="Use this for serial download"/>
+	<target name="all" depends="directories, tools, jopser, jopusb, jop-config, japp" description="Every everything"/>
 	<target name="japp" depends="java-app, config-usb, config-urjtag, config-byteblast, download"/>
 	
 	<target name="clean">
-		<echo message="This is specific for my configuration ;-)"/>
+		<delete dir="asm/generated"/>
+		<delete>
+		  <fileset dir="vhdl" includes="*.vhd"/>
+		</delete>
+		<delete includeemptydirs="true">
+		  <fileset dir="quartus" includes="**/*.svf,**/*.rpt,**/*.smsg,**/*.sof,**/*.pin,**/*.pin,**/jop.pof,**/*.summary,**/*.ttf,**/*.qdf,**/*.done,**/*.qws,**/db/,**/incremental_db/"/>
+		</delete>
 		<ant dir="modelsim" antfile="clean.xml"/>
-		<echo message="classes"/>
-		<exec executable="d:\bin\del_class.bat" failonerror="true"/>
-		<exec executable="d:\bin\qu_del.bat" dir="quartus" failonerror="true"/>
+		<delete dir="rbf"/>
+		<delete file="${target}/src/common/com/jopdesign/sys/Config.java"/>
+		<delete dir="${tools}/dist"/>
+		<delete dir="${pctools}/dist"/>
+		<delete dir="${target}/dist"/>
+		<delete dir="${target}/wcet"/>
 	</target>
 
 	<target name="tools" description="Builds all the (Java) tools">
@@ -268,11 +293,7 @@
 
 	</target>
 
-    
-	<!-- To use JCopter, uncomment the following line (value is not important): -->
-	<!-- <property name="use-jcopter" value="true"/> -->
-
-	<target name="wcet-preprocess" description="Replace bytecodes that JOP cannot execute">
+    <target name="wcet-preprocess" description="Replace bytecodes that JOP cannot execute">
 	  <java classpathref="tools-cp" classname="com.jopdesign.wcet.WCETPreprocess">
 		<arg line="-c ${target}/dist/classes -o ${target}/dist ${main-class}"/>
 	  </java>
@@ -301,6 +322,13 @@
 
 	<target name="zip-classes-opt" description="Zip optimized classes" if="use-jcopter">
 		<jar destfile="${target}/dist/lib/classes.zip" basedir="${target}/dist/classes.opt"/> 
+	</target>
+
+	<target name="jop-config" description="Build configuration">
+	  <java classpathref="tools-cp" classname="com.jopdesign.tools.GenJopConfig"
+			output="${target}/src/common/com/jopdesign/sys/Config.java">
+		<arg line="${jop-conf-string}"/>
+	  </java>
 	</target>
 
 	<target name="java-app" description="Compile and JOPize the application">
@@ -392,19 +420,19 @@
 	<!-- TODO: change it to RXTXcomm if it's working ok -->
 	<target name="pc">
 
-		<delete dir="java/pc/dist"/>
+		<delete dir="${pctools}/dist"/>
 		
-		<mkdir dir="java/pc/dist/lib"/>
-		<mkdir dir="java/pc/dist/classes"/>
+		<mkdir dir="${pctools}/dist/lib"/>
+		<mkdir dir="${pctools}/dist/classes"/>
 		
-		<javac debug="true" destdir="java/pc/dist/classes">
+		<javac debug="true" destdir="${pctools}/dist/classes" encoding="Latin1">
 			<src path="java/target/src/common"/> 
 			<include name="com/jopdesign/sys/SoftFloat.java"/> 
 		</javac>
 
-		<javac debug="true" srcdir="java/pc/src" destdir="java/pc/dist/classes"/> 
+		<javac debug="true" srcdir="${pctools}/src" destdir="${pctools}/dist/classes" encoding="Latin1"/> 
 		
-		<jar destfile="java/pc/dist/lib/jop-pc.jar" basedir="java/pc/dist/classes"/>
+		<jar destfile="${pctools}/dist/lib/jop-pc.jar" basedir="${pctools}/dist/classes"/>
 
 	</target>
 	
@@ -562,7 +590,7 @@
 		</exec>
 		
 		<java
-			classpath="java/pc/dist/lib/jop-pc.jar"
+			classpath="${pctools}/dist/lib/jop-pc.jar"
 			classname="udp.Flash"
 			failonerror="true"
 			fork="true">
@@ -570,7 +598,7 @@
 		</java>
 		
 		<java
-			classpath="java/pc/dist/lib/jop-pc.jar"
+			classpath="${pctools}/dist/lib/jop-pc.jar"
 			classname="udp.Flash"
 			failonerror="true"
 			fork="true">
@@ -585,7 +613,7 @@
 	
 	<target name="erase-flash">
 		<java
-			classpath="java/pc/dist/lib/jop-pc.jar"
+			classpath="${pctools}/dist/lib/jop-pc.jar"
 			classname="udp.Erase"
 			failonerror="true"
 			fork="true">
@@ -607,7 +635,7 @@
 
 	<target name="oebb">
 		<java
-			classpath="java/pc/dist/lib/jop-pc.jar"
+			classpath="${pctools}/dist/lib/jop-pc.jar"
 			classname="udp.Flash"
 			failonerror="true"
 			fork="true">
@@ -706,7 +734,7 @@
 	<target name="udp-dbg" description="UDP debugging">
 		<java
 			classname="udp.UDPDbg"
-			classpath="java/pc/dist/lib/jop-pc.jar"
+			classpath="${pctools}/dist/lib/jop-pc.jar"
 			failonerror="true"
 			fork="true"/>
 	</target>

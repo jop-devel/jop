@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e -v
+QPROJ=altde2-70
+make jopser QPROJ=${QPROJ} 
+
+# cp rbf/jop.svf nightly/build/jop-current/designs/${QPROJ}.svf
+# masca@imm.dtu.dk wpuffits@mail.tuwien.ac.at
