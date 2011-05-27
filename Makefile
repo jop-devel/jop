@@ -198,7 +198,7 @@ else
 	TARGET_SOURCE=$(TARGET_SRC_PATH)/common$(S)$(TARGET_SRC_PATH)/jdk_base$(S)$(TARGET_SRC_PATH)/jdk11$(S)$(TARGET_SRC_PATH)/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
 endif
 endif
-TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5
+TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5 -encoding Latin1
 GCC_PARAMS=
 
 # uncomment this to use RTTM

@@ -2,4 +2,4 @@
 set -e -v
 make java_app -e P1=test P2=test P3=DoAll
 jtag testsuite/urjtag.config 
-make download COM_PORT=/dev/ttyS0
+make download -e P1=test P2=test P3=DoAll COM_PORT=/dev/ttyS0
