@@ -40,17 +40,17 @@ public class JopLookup {
     @SuppressWarnings({"PublicField"})
     private static class ClassEntry {
         public String name;
-        public int start;
-        public int end;
+        public int methodTable;
+        public int cpIndex;
         public int size;
         public int superRef;
         public Map<Integer, String> methods;
         public Map<Integer, Integer> constmap;
 
-        private ClassEntry(String name, int start, int end) {
+        private ClassEntry(String name, int methodTable, int cpIndex) {
             this.name = name;
-            this.start = start;
-            this.end = end;
+            this.methodTable = methodTable;
+            this.cpIndex = cpIndex;
             this.methods = new HashMap<Integer, String>();
             this.constmap = new HashMap<Integer, Integer>();
         }
@@ -176,7 +176,7 @@ public class JopLookup {
                 }
                 if (entry.startsWith("class")) {
                     current = new ClassEntry(tab[1], Integer.parseInt(tab[2]), Integer.parseInt(tab[3]));
-                    classes.put(current.start, current);
+                    classes.put(current.methodTable-5, current);
                 }
                 assert(current != null);
                 if (entry.startsWith(" -instSize ")) {
@@ -187,7 +187,6 @@ public class JopLookup {
                 }
                 if (entry.startsWith(" -mtab ")) {
                     current.methods.put(Integer.parseInt(tab[2]), tab[1]);
-                    classes.put(Integer.parseInt(tab[2]), current);
                 }
                 if (entry.startsWith(" -constmap ")) {
                     current.constmap.put(Integer.parseInt(tab[2]), Integer.parseInt(tab[1]));
@@ -265,7 +264,7 @@ public class JopLookup {
         if (args.length == 0 || "".equals(args[0]) || "help".equals(args[0])) {
             System.out.println("Usage: ");
             System.out.println("<address>        Print link info at address");
-            System.out.println("class <address>  Print class info of the member at the class address");
+            System.out.println("class <address>  Print class info of the class at the address");
             System.out.println("method <mp|fqn>  Print instructions of method");
             System.out.println("pc [<mp>] <pc>   Print instruction at program counter");
             return;
@@ -276,7 +275,10 @@ public class JopLookup {
             if (classes.containsKey(loc)) {
                 ClassEntry entry = classes.get(loc);
                 System.out.println(entry.name);
-                System.out.println("super: "+entry.superRef);
+                System.out.println("super: "+entry.superRef+", cp: "+entry.cpIndex);
+                for (Integer key : entry.methods.keySet()) {
+                    System.out.println("-mtab "+entry.methods.get(key)+" "+key);
+                }
             }
             return;
         }
@@ -302,7 +304,17 @@ public class JopLookup {
             MethodEntry entry = methods.get(args[1]);
             if (entry == null) {
                 int mp = Integer.parseInt(args[1]);
-                String method = lookupLoc(mp);
+                String method = bytecode.get(mp);
+                if (method == null) {
+                    for (ClassEntry cls : classes.values()) {
+                        for (Integer key : cls.methods.keySet()) {
+                            if ( key == mp ) {
+                                method = cls.methods.get(key);
+                                break;
+                            }
+                        }
+                    }
+                }
                 entry = methods.get(method);
             }
             if (entry == null) {
@@ -319,18 +331,32 @@ public class JopLookup {
 
     private static String lookupLoc(int loc) {
         if (fields.containsKey(loc)) {
-            return fields.get(loc);
+            return "Field " + fields.get(loc);
         }
         if (bytecode.containsKey(loc)) {
-            return bytecode.get(loc);
+            return "Bytecode of "+bytecode.get(loc);
         }
         if (classes.containsKey(loc)) {
             ClassEntry entry = classes.get(loc);
-            if (entry.methods.containsKey(loc)) {
-                return entry.methods.get(loc);
+            return "Class "+entry.name;
+        }
+        for (ClassEntry entry: classes.values()) {
+            String clsName = "class "+ (entry.methodTable-5) + " (" +entry.name+")";
+            if (entry.cpIndex == loc) {
+                return "Constantpool of "+clsName;
             }
-            if (entry.constmap.containsKey(loc)) {
-                return entry.constmap.get(loc).toString();
+            for (Integer key : entry.methods.keySet()) {
+                if (key == loc) {
+                    String method = entry.methods.get(key);
+                    int bc = -1;
+                    for (Integer k : bytecode.keySet()) {
+                        if (bytecode.get(k).equals(method)) {
+                            bc = k;
+                            break;
+                        }
+                    }
+                    return "MTab entry " + method + ", code at "+bc+", in " +clsName;
+                }
             }
         }
         return lookupPC(loc);
