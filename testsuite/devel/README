@@ -1,0 +1,4 @@
+== testsuite/devel ==
+It is important to record the test procedure for benchmarks, so the results are easily reproducible by others.
+The directory testsuite/devel is intended for tests scripts where the results are manually evaluation.
+That is, testsuite/devel should contain all tests which are not ready for the fully automated test suite, but can at least be run automatically by means of a script. Typical candidates are evaluations of new benchmarks, work on papers etc.
