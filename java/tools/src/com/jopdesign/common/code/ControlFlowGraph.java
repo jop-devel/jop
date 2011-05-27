@@ -710,6 +710,11 @@ public class ControlFlowGraph {
             BasicBlock bb = blocks.get(i);
             BasicBlockNode bbn = blockMap.get(bb);
 
+            if (bbn == null) {
+                // Basic block without a node in the graph? Dead code due to removal of exception-errors or
+                // infeasible edges..
+                continue;
+            }
             // bb.appendTo(il, attributes);
 
             for (CFGEdge e : graph.outgoingEdgesOf(bbn)) {

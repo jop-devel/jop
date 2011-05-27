@@ -27,6 +27,7 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.EmptyTool;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
+import com.jopdesign.common.code.CFGCallgraphBuilder;
 import com.jopdesign.common.code.CFGProvider;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallString;
@@ -295,7 +296,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
          * callstring, using the callstring length configured for the WCET tool (which is currently the same
          * as the global setting).
          */
-        DefaultCallgraphBuilder callGraphBuilder = new DefaultCallgraphBuilder(projectConfig.callstringLength());
+        DefaultCallgraphBuilder callGraphBuilder = new CFGCallgraphBuilder(projectConfig.callstringLength());
         callGraphBuilder.setSkipNatives(true); // we do not want natives in the callgraph
         callGraph = CallGraph.buildCallGraph(getTargetMethod(), callGraphBuilder);
 
