@@ -32,6 +32,9 @@ import javax.safetycritical.*;
  */
 public class HelloSCJ extends Mission implements Safelet {
 
+	// work around...
+	static HelloSCJ single;
+	
 	// From Mission
 	@Override
 	protected void initialize() {
@@ -41,10 +44,17 @@ public class HelloSCJ extends Mission implements Safelet {
 				new PeriodicParameters(new RelativeTime(0,0), new RelativeTime(1000,0)),
 				new StorageParameters(0, 0, 0)
 			) {
+			int cnt;
 			public void handleAsyncEvent() {
-				Terminal.getTerminal().writeln("Ping ");
+				Terminal.getTerminal().writeln("Ping "+cnt);
+				++cnt;
+				if (cnt>5) {
+					// getCurrentMission is not yet working
+					single.requestTermination();
+				}
 			}
 		};
+		peh.register();
 	}
 
 	// Safelet methods
@@ -56,27 +66,9 @@ public class HelloSCJ extends Mission implements Safelet {
 	}
 
 	@Override
-	public void setUp() {
-		// TODO Auto-generated method stub
-		
+	public long missionMemorySize() {
+		return 100000;
 	}
-
-	@Override
-	public void tearDown() {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	
-	// not used anymore
-//	public long missionMemorySize() {
-//		return 0;
-//	}
-//
-//	public int getLevel() {
-//		return 1;
-//	}
 
 
 	/**
@@ -88,8 +80,10 @@ public class HelloSCJ extends Mission implements Safelet {
 	public static void main(String[] args) {
 		System.out.println("Hello");
 		Terminal.getTerminal().writeln("Hello SCJ World!");
-		JopSystem.startMission(new HelloSCJ());
+		single = new HelloSCJ();
+		JopSystem.startMission(single);
 	}
+
 
 
 }

@@ -16,13 +16,4 @@ public class SafeletImpl implements Safelet<Mission> {
 		return missionSequencer;
 	}
 	
-	@Override
-	public void setUp() {
-		// Here objects may be put into ImmortalMemoryArea
-	}
-
-	@Override
-	public void tearDown() {
-		
-	}
 }

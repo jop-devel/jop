@@ -1,3 +1,23 @@
+/*
+  This file is part of JOP, the Java Optimized Processor
+    see <http://www.jopdesign.com/>
+
+  Copyright (C) 2008-2011, Martin Schoeberl (martin@jopdesign.com)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package javax.safetycritical;
 
 import javax.safetycritical.annotate.SCJAllowed;
@@ -9,48 +29,25 @@ import static javax.safetycritical.annotate.Phase.CLEANUP;
 import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 
 /**
- * A safety-critical application consists of one or more missions,
- * executed concurrently or in sequence.  Every safety-critical
- * application is represented by an implementation of Safelet which
- * identifies the outer-most MissionSequencer.  This outer-most
- * MissionSequencer takes responsibility for running the sequence of
- * Missions that comprise this safety-critical application. 
- * <p>
- * The mechanism used to identify the Safelet to a particular SCJ
- * environment is implementation defined.
- * <p>
- * Given the implementation s of Safelet that represents a particular
- * SCJ application, the SCJ infrastructure invokes
- * in sequence s.setUp() followed by s.getSequencer().
- * For the MissionSequencer q returned from s.getSequencer(), the SCJ
- * infrastructure arranges for an independent thread to begin
- * executing the code forthat sequencer and then waits for that thread
- * to terminate its execution.  Upon termination of the
- * MissionSequencer's thread, the SCJ infrastructure invokes
- * s.tearDown(). 
+ * The interface that represents the SCJ application.
+ * 
+ * @author Martin Schoeberl
+ * 
+ * @param <MissionLevel>
  */
 @SCJAllowed
-public interface Safelet<MissionLevel extends Mission>
-{
-  /**
-   * @return the MissionSequencer that oversees execution of Missions
-   * for this application.
-   */
-  @SCJAllowed(SUPPORT)
-  @SCJRestricted(phase = INITIALIZATION)
-  public MissionSequencer<MissionLevel> getSequencer();
-  
-  /**
-   * Code to execute before the sequencer starts.
-   */
-  @SCJAllowed(SUPPORT)
-  @SCJRestricted(phase = INITIALIZATION)
-  public void setUp();
-  
-  /**
-   * Code to execute after the sequencer ends.
-   */
-  @SCJAllowed(SUPPORT)
-  @SCJRestricted(phase = CLEANUP)
-  public void tearDown();
+public interface Safelet<MissionLevel extends Mission> {
+
+	@SCJAllowed(SUPPORT)
+	@SCJRestricted(phase = INITIALIZATION)
+	public MissionSequencer<MissionLevel> getSequencer();
+	
+	// according to the 2011 Reading meeting this is gone
+	// @SCJAllowed(SUPPORT)
+	// @SCJRestricted(phase = INITIALIZATION)
+	// public void setUp();
+	//  
+	// @SCJAllowed(SUPPORT)
+	// @SCJRestricted(phase = CLEANUP)
+	// public void tearDown();
 }

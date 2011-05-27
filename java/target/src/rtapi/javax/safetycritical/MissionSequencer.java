@@ -1,3 +1,23 @@
+/*
+  This file is part of JOP, the Java Optimized Processor
+    see <http://www.jopdesign.com/>
+
+  Copyright (C) 2008-2011, Martin Schoeberl (martin@jopdesign.com)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package javax.safetycritical;
 
 import static javax.safetycritical.annotate.Level.LEVEL_2;
@@ -16,8 +36,11 @@ import joprt.SwEvent;
 import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 
 /**
- * A MissionSequencer runs a sequence of independent Missions interleaved with
- * repeated execution of certain Missions.
+ * That's the root of (all evil ;-), no the main startup logic...
+ * 
+ * @author Martin Schoeberl
+ * 
+ * @param <SpecificMission>
  */
 @SCJAllowed
 public abstract class MissionSequencer<SpecificMission extends Mission> extends
@@ -25,9 +48,12 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 
 	private SwEvent clean;
 	private boolean cleanupDidRun;
-	
+
 	// why is this static?
 	// ok, in level 1 we have only one mission.
+	// But it is ugly that Mission does not know about its
+	// sequencer and therefore cannot call the termination on
+	// a specific one.
 	static boolean terminationRequest = false;
 
 	/**
@@ -46,8 +72,10 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 		// MS: just to make the system happy, but we don't want to
 		// really extend the handler.... We want to run in the
 		// plain Java thread!
+		// in Level 1 we can simply ignore the priority
 		super(priority, null, storage, name);
-		// just an idle thread that watches the tremination request
+		// just an idle thread that watches the termination request
+		// We should use the inital main thread to watch for termination...
 		new RtThread(0, 10000) {
 			public void run() {
 				for (;;) {
@@ -70,19 +98,6 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 		// };
 	}
 
-	/**
-	 * Construct a MissionSequencer to run at the priority and with the memory
-	 * resources specified by its parameters.
-	 * 
-	 * @throws IllegalStateException
-	 *             if invoked at an inappropriate time. The only appropriate
-	 *             times for instantiation of a new MissionSequencer are (a)
-	 *             during execution of Safelet.getSequencer() by SCJ
-	 *             infrastructure during startup of an SCJ application, or (b)
-	 *             during execution of Mission.initialize() by SCJ
-	 *             infrastructure during initialization of a new Mission in a
-	 *             LevelTwo configuration of the SCJ run-time environment.
-	 */
 	@SCJAllowed
 	@MemoryAreaEncloses(inner = { "this" }, outer = { "priority" })
 	@SCJRestricted(phase = INITIALIZATION)
@@ -91,64 +106,34 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 		super(priority, null, storage, null);
 	}
 
-	/**
-	 * This method is called by infrastructure to select the initial Mission to
-	 * execute, and subsequently, each time one Mission terminates, to determine
-	 * the next Mission to execute.
-	 * <p>
-	 * Prior to each invocation of getNextMission() by infrastructure,
-	 * infrastructure instantiates and enters a very large MissionMemory
-	 * allocation area. The typical behavior is for getNextMission() to return a
-	 * Mission object that resides in this MissionMemory area.
-	 * 
-	 * @return the next Mission to run, or null if no further Missions are to
-	 *         run under the control of this MissionSequencer.
-	 */
 	@SCJAllowed(SUPPORT)
 	protected abstract SpecificMission getNextMission();
 
 	/**
-	 * This method is declared final because the implementation is provided by
-	 * the vendor of the SCJ implementation and shall not be overridden. This
-	 * method performs all of the activities that correspond to sequencing of
-	 * Missions by this MissionSequencer.
+	 * Inherited because we extend MEH although we could use composition....
 	 */
 	@Override
 	@SCJAllowed(INFRASTRUCTURE)
 	public final void handleAsyncEvent() {
+		// NOOP
 	}
 
+	/**
+	 * Inherited because we extend MEH although we could use composition....
+	 */
 	@Override
 	@SCJAllowed
 	@SCJRestricted(phase = INITIALIZATION)
 	public final void register() {
+		// NOOP in Level 1
 	}
 
-	/**
-	 * Try to finish the work of this mission sequencer soon by invoking the
-	 * currently running Mission's requestTermination method. Upon completion of
-	 * the currently running Mission, this MissionSequencer shall return from
-	 * its eventHandler method without invoking getNextMission and without
-	 * starting any additional missions.
-	 * <p>
-	 * Note that requestSequenceTermination does not force the sequence to
-	 * terminate because the currently running Mission must voluntarily
-	 * relinquish its resources.
-	 * <p>
-	 * TBD: shouldn't we also have a sequenceTerminationPending() method? We
-	 * need something like this in order to implement
-	 * Mission.sequenceTerminationPending().
-	 * <p>
-	 * TBD: why restrict this to level_2? in level_0 and level_1, requesting
-	 * sequence termination represents a mechanism to request "graceful"
-	 * shutdown of an application.
-	 */
-//	@SCJAllowed(LEVEL_2)
-//	public final void requestSequenceTermination() {
-//	}
-//
-//	@SCJAllowed(LEVEL_2)
-//	public final boolean sequenceTerminationPending() {
-//		return false;
-//	}
+	@SCJAllowed(LEVEL_2)
+	public final void requestSequenceTermination() {
+	}
+
+	@SCJAllowed(LEVEL_2)
+	public final boolean sequenceTerminationPending() {
+		return false;
+	}
 }

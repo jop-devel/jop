@@ -16,4 +16,10 @@ public class MissionImpl extends Mission{
 		new PeriodicEventHandlerImpl(new PriorityParameters(3), new PeriodicParameters(new RelativeTime(0, 0), new RelativeTime(500, 0)),sp, "Periodic Event Handler 3\n");
 		new PeriodicEventHandlerImpl(new PriorityParameters(4), new PeriodicParameters(new RelativeTime(0, 0), new RelativeTime(3000, 0)),sp, "Periodic Event Handler 4\n");
 	}
+
+	@Override
+	public long missionMemorySize() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 }
