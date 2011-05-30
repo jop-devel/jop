@@ -1,0 +1,5 @@
+This directory contains just a collection of useful,
+but private scripts. It shall not be considered as part
+of the official JOP distribution. Every developer may
+add some convenient scripts here. There shall be no
+dependency of the JOP design flow on the scripts here.

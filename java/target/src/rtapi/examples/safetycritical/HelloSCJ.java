@@ -22,7 +22,6 @@ package examples.safetycritical;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PrintStream;
 
 import javax.microedition.io.Connector;
 import javax.realtime.PriorityParameters;
@@ -58,7 +57,7 @@ public class HelloSCJ extends Mission implements Safelet {
 		PeriodicEventHandler peh = new PeriodicEventHandler(
 				new PriorityParameters(11), new PeriodicParameters(
 						new RelativeTime(0, 0), new RelativeTime(1000, 0)),
-				new StorageParameters(0, 0, 0)) {
+				new StorageParameters(10000, 1000, 1000)) {
 			int cnt;
 
 			public void handleAsyncEvent() {
