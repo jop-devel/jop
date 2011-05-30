@@ -22,6 +22,8 @@ package javax.microedition.io;
 
 import java.io.*;
 
+import javax.safetycritical.io.ConsoleConnection;
+
 public class Connector {
 
 	public final static int READ = 1;
@@ -29,6 +31,19 @@ public class Connector {
 	public final static int READ_WRITE = (READ | WRITE);
 
 	private Connector() {
+	}
+	
+	private static ConsoleConnection single;
+	/**
+	 * This method is public, but as no one can create directly
+	 * a ConsoleConnection it can practically only be used by
+	 * javax.safetycritical.io.ConsoleConnection
+	 * @param console
+	 */
+	public static void setConsoleConnection(ConsoleConnection console) {
+		if (console!=null) {
+			single = console;
+		}
 	}
 
 	public static Connection open(String name) throws IOException {
@@ -39,19 +54,37 @@ public class Connector {
 		return open(name, mode, false);
 	}
 
+	/**
+	 * Does this method alone make sense?
+	 * @param name
+	 * @param mode
+	 * @param timeouts
+	 * @return
+	 * @throws IOException
+	 */
 	public static Connection open(String name, int mode, boolean timeouts)
 			throws IOException {
-		return null;
+		if (!name.equals("console:")) {
+			throw new IOException();
+		}
+		return single;
 	}
 
 	public static DataInputStream openDataInputStream(String name)
 			throws IOException {
-		return null;
+		throw new IOException();
 	}
 
+	/**
+	 * Do we need DataOutputStream?
+	 * 
+	 * @param name
+	 * @return
+	 * @throws IOException
+	 */
 	public static DataOutputStream openDataOutputStream(String name)
 			throws IOException {
-		return null;
+		throw new IOException();
 	}
 
 	public static InputStream openInputStream(String name) throws IOException {
@@ -61,7 +94,11 @@ public class Connector {
 
 	public static OutputStream openOutputStream(String name) throws IOException {
 
-		return openDataOutputStream(name);
+		// return openDataOutputStream(name);
+		if (!name.equals("console:")) {
+			throw new IOException();
+		}
+		return single.openOutputStream();
 	}
 
 }

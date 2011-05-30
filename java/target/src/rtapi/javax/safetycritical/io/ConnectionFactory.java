@@ -1,19 +1,23 @@
-/*---------------------------------------------------------------------*\
- *
- * Copyright aicas GmbH, Karlsruhe 2009
- *
- * This code is provided to the JSR 302 group for evaluation purpose
- * under the LGPL 2 license from GNU.  This notice must appear in all
- * derived versions of the code and the source must be made available
- * with any binary version.  Viewing this code does not prejudice one
- * from writing an independent version of the classes within.
- *
- * $Source: /home/cvs/jsr302/scj/specsrc/javax/safetycritical/io/ConnectionFactory.java,v $
- * $Revision: 1.2 $
- * $Author: jjh $
- * Contents: Java source code of ConnectionFactory
- *
-\*---------------------------------------------------------------------*/
+/*
+  This file is part of JOP, the Java Optimized Processor
+    see <http://www.jopdesign.com/>
+
+  Copyright (C) 2011, Martin Schoeberl (martin@jopdesign.com)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 
 package javax.safetycritical.io;
 
@@ -23,54 +27,15 @@ import javax.microedition.io.Connection;
 import javax.microedition.io.ConnectionNotFoundException;
 import javax.safetycritical.annotate.SCJAllowed;
 
-/** A factory for creating connections for a given URL type. */
 @SCJAllowed(members = true)
 public abstract class ConnectionFactory
 {
-  private String prefix_;
-
-  /**
-   * Create a Connection factory for the given URL type
-   *
-   * @param prefix is the type of the URL
-   */
   protected ConnectionFactory(String prefix)
   {
-    prefix_ = prefix;
   }
 
-  /**
-   * @param name
-   * @return
-   */
-  boolean matches(String name)
-  {
-    return name.startsWith(prefix_);
-  }
-
-  /**
-   * Create of connection for the URL type of this factory.
-   *
-   * @param url for which to create the connection
-   * @return a connection for the URL
-   * @throws ConnectionNotFoundException when the I/O resource referenced
-   *                                     by the URL is not found.
-   * @throws IOException when some other I/O problem is encountered.                            
-   */
   public abstract Connection create(String url)
     throws ConnectionNotFoundException,
            IOException;
 
-  @Override
-  public int hashCode()
-  {
-    return prefix_.hashCode();
-  }
-
-  @Override
-  public boolean equals(Object other)
-  {
-    return (other instanceof ConnectionFactory) &&
-            prefix_.equals(((ConnectionFactory)other).prefix_);
-  }
 }
