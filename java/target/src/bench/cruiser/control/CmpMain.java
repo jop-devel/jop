@@ -66,10 +66,25 @@ public class CmpMain {
 											 frontRightFilter,
 											 rearLeftFilter,
 											 rearRightFilter);
-		RtThread dThread = new RtThread(dispatch, 8, 1*1000);
+		RtThread dThread = new RtThread(dispatch, 8, 2*1000);
 		dThread.setProcessor(0);
 
 		System.out.println("created Dispatcher");
+
+		GC.GCThread gcThread = new GC.GCThread(2, 199*1000);
+		gcThread.setProcessor(0);
+
+		GC.ScanEvent sc0Event = new GC.ScanEvent(7, 199*1000, 0);
+		GC.ScanEvent sc1Event = new GC.ScanEvent(7, 199*1000, 1);
+		GC.ScanEvent sc2Event = new GC.ScanEvent(7, 199*1000, 2);
+		GC.ScanEvent sc3Event = new GC.ScanEvent(7, 199*1000, 3);
+
+		GC.setConcurrent();
+
+		System.out.print("total: ");
+		System.out.print(GC.totalMemory());
+		System.out.print(" free: ");
+		System.out.println(GC.freeMemory());
 
 		RtThread.startMission();
 
