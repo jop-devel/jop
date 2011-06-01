@@ -244,7 +244,7 @@ public class GC {
 				return;
 			}
 			
-			// only objects not allready in the gray list
+			// only objects not already in the gray list
 			// are added
 			if (Native.rdMem(ref+OFF_GREY)==0) {
 				// pointer to former gray list head
@@ -365,11 +365,11 @@ public class GC {
 		
 		int i, ref;
 
- 		// log("stack");
+		log("stack");
 		getStackRoots();			
- 		// log("static");
+		log("static");
 		getStaticRoots();
- 		// log("trace");
+		log("trace");
 		for (;;) {
 
 			// pop one object from the gray list
@@ -431,6 +431,7 @@ public class GC {
 				Native.wrMem(toSpace, ref+OFF_SPACE);
 
 				Native.lock();
+
 				if (size>0) {
 					// copy it
 					for (i=0; i<size; i++) {
@@ -445,6 +446,7 @@ public class GC {
 				// for (i = 0; i < 10; i++);
 				// // turn off address translation
 				// Native.memCopy(dest, dest, -1);
+
 				Native.unlock();
 			}
 		}
@@ -463,7 +465,6 @@ public class GC {
 		}
 		
 		while (ref!=0) {
-			
 			// read next element, as it is destroyed
 			// by addTo*List()
 			int next = Native.rdMem(ref+OFF_NEXT);
@@ -499,11 +500,11 @@ public class GC {
 		}
 	}
 
-	static void triggerGc() {
+	public static void triggerGc() {
 
-		// log("GC triggered on CPU", sys.cpuId);
+		log("GC triggered on CPU", sys.cpuId);
 
-		// scpoes and GC cannot be mixed
+		// scopes and GC cannot be mixed
 		if (USE_SCOPES) {
 			log("No GC when scopes are used");
 			System.exit(1);
@@ -544,16 +545,16 @@ public class GC {
 
 		// log("start GC");
 
-		// log("flip");
+		log("flip");
 		flip();
-		// log("m&c");
+		log("m&c");
 		markAndCopy();
-		// log("sweep");
+		log("sweep");
 		sweepHandles();
-		// log("zap");
+		log("zap");
 		zapSemi();	
 
-		// log("end GC");
+		log("end GC");
 
 //  		log("GC end - free memory:",freeMemory());
 	}
@@ -602,16 +603,25 @@ public class GC {
 			}			
 		}
 
-		// that's the stop-the-world GC
 		synchronized (mutex) {
 			if (copyPtr+size+GC_MARGIN >= allocPtr || freeList==0) {
 				log("Run out of memory on CPU", sys.cpuId);
-				triggerGc();
+				if (!concurrentGc) {
+					// that's the stop-the-world GC
+					triggerGc();
+				} else {
+					// fall-back for concurrent GC
+					gcRunning = true;
+					log("Wait for concurrent GC");
+				}
 			}			
 		}
 		
 		while (gcRunning) {
 			// wait for the GC to finish
+			if (concurrentGc) {
+				RtThread.currentRtThread().waitForNextPeriod();
+			}
 		}
 
 		int ref;
@@ -645,7 +655,7 @@ public class GC {
 			// pointer to method table in the handle
 			Native.wrMem(cons+Const.CLASS_HEADR, ref+OFF_MTAB_ALEN);
 			// TODO: should not be necessary - now just for sure
-			// Native.wrMem(0, ref+OFF_LOCK);
+			Native.wrMem(0, ref+OFF_LOCK);
 		}
 
 		return ref;
@@ -686,17 +696,25 @@ public class GC {
 			}			
 		}
 
-
-		// that's the stop-the-world GC
 		synchronized (mutex) {
 			if (copyPtr+size+GC_MARGIN >= allocPtr || freeList==0) {
 				log("Run out of memory on CPU", sys.cpuId);
-				triggerGc();
+				if (!concurrentGc) {
+					// that's the stop-the-world GC
+					triggerGc();
+				} else {
+					// fall-back for concurrent GC
+					gcRunning = true;
+					log("Wait for concurrent GC");
+				}
 			}			
 		}
 
 		while (gcRunning) {
 			// wait for the GC to finish
+			if (concurrentGc) {
+				RtThread.currentRtThread().waitForNextPeriod();
+			}
 		}
 
 		int ref;
@@ -729,8 +747,9 @@ public class GC {
 			// array length in the handle
 			Native.wrMem(arrayLength, ref+OFF_MTAB_ALEN);
 			// TODO: should not be necessary - now just for sure
-			// Native.wrMem(0, ref+OFF_LOCK);
+			Native.wrMem(0, ref+OFF_LOCK);
 		}
+
 		return ref;
 		
 	}
@@ -782,7 +801,10 @@ public class GC {
 		public void run() {
 			for (;;) {
 				// log("G");
+				GC.log("<");
 				GC.gc();
+				gcRunning = false;
+				GC.log(">");
 				waitForNextPeriod();
 			}
 		}
@@ -804,16 +826,16 @@ public class GC {
 		public void handle() {
 			SysDevice sys = IOFactory.getFactory().getSysDevice();
 
-			// synchronized(GC.mutex) {
-			//  	GC.log("Handling GC event on CPU", sys.cpuId);
-			// }
+			synchronized(GC.mutex) {
+			   	GC.log("Handling GC event on CPU", sys.cpuId);
+			}
 
 			handshake = true;
 			if (GC.sys.cpuId == GC.gcRunnerId) {
 
-				// synchronized(GC.mutex) {
-				//  	GC.log("Waiting for handshakes");
-				// }
+				synchronized(GC.mutex) {
+				   	GC.log("Waiting for handshakes");
+				}
 
 				// wait for handshake
 				int cpus = GC.sys.nrCpu;
@@ -845,9 +867,9 @@ public class GC {
 				while (GC.gcRunning) {
 					// wait for the GC to finish
 				}
-				// synchronized(GC.mutex) {
-				// 	GC.log("Seen GC finish on CPU", sys.cpuId);
-				// }
+				synchronized(GC.mutex) {
+				  	GC.log("Seen GC finish on CPU", sys.cpuId);
+				}
 			}
 		}
 	}
@@ -856,6 +878,7 @@ public class GC {
 
 		public static void getOwnStackRoots() {
 			int	i, j;
+
 			i = Native.getSP();			
 			for (j = Const.STACK_OFF; j <= i; ++j) {
 				push(Native.rdIntMem(j));
@@ -882,7 +905,9 @@ public class GC {
 			int i, j;
 
 			SysDevice sys = IOFactory.getFactory().getSysDevice();
-			GC.log("Handling scan event on CPU", sys.cpuId);
+			synchronized (mutex) {
+				GC.log("Handling scan event on CPU", sys.cpuId);
+			}
 
 			Scheduler sched = Scheduler.sched[GC.sys.cpuId];
 			int cnt = sched.ref.length;

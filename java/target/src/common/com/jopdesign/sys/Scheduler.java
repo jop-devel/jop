@@ -112,10 +112,12 @@ class Scheduler implements Runnable {
 		// this is now
 		j = Native.rd(Const.IO_US_CNT);
 
-		if (!GC.concurrentGc && Native.rd(Const.IO_CPUCNT) > 1
+		if (!GC.concurrentGc
+			&& Native.rd(Const.IO_CPUCNT) > 1
 			&& event[cnt-1] == EV_FIRED) { // STWGC beats everything else
 			i = cnt-1;
-		} else if (boostIdx >= 0) {        // boosted threads come next
+		} else if (boostIdx >= 0 
+				   && next[boostIdx]-j < TIM_OFF) { // boosted threads come next
 			i = boostIdx;
 		} else {
 			for (i=cnt-1; i>0; --i) {
