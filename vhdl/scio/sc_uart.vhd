@@ -201,6 +201,7 @@ begin
 
 	tf_ready <= tdre;
 	rf_avail <= rdrf;
+	pa_error <= parity_error;
 	
 --
 --	serial clock
