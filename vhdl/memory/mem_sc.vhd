@@ -110,7 +110,7 @@ port (
 );
 end component;
 
-	constant ENABLE_COPY : boolean := true;
+	constant ENABLE_COPY : boolean := false;
 
 --
 --	signals for mem interface
@@ -151,7 +151,6 @@ end component;
 	signal state_rd		: std_logic;
 	signal state_wr		: std_logic;
 	signal state_dcache : sc_cache_type;
-	signal state_atomic : std_logic;
 
 --
 --	signals for object and array access
@@ -276,7 +275,6 @@ end process;
 	sc_mem_out.wr <= mem_in.wr or mem_in.wrf or state_wr;
 	sc_mem_out.cache <= ram_dcache;
 	sc_mem_out.cinval <= mem_in.cinval;
-    sc_mem_out.atomic <= state_atomic;
 
 --
 --	read data MUX on cache hit
@@ -776,7 +774,6 @@ begin
 		null_pointer <= '0';
 		bounds_error <= '0';
 		state_wr <= '0';
-		state_atomic <= '0';
 		sc_mem_out.tm_cache <= '1';
 		ocin.wr_gf <= '0';
 		ocin.chk_pf <= '0';
@@ -888,10 +885,6 @@ begin
 		bounds_error <= '0';
 		state_wr <= '0';
 		state_dcache <= bypass;
-<<<<<<< HEAD
-		state_atomic <= '0';
-=======
->>>>>>> origin/datacache
 		sc_mem_out.tm_cache <= '1';
 		ocin.wr_gf <= '0';
 		ocin.chk_pf <= '0';
@@ -960,11 +953,7 @@ begin
 
 			when bc_wr =>
 				-- BC write
-<<<<<<< HEAD
 				bc_wr_ena <= '1';
-=======
-				bc_wr_ena <= '1';				
->>>>>>> origin/datacache
 				sc_mem_out.tm_cache <= '0';
 
 			when bc_wl =>
@@ -1053,27 +1042,10 @@ begin
                           
 			when cp0 =>
 				read_ocache<='0';
-<<<<<<< HEAD
-				state_atomic <= '1';
-=======
->>>>>>> origin/datacache
 				state_bsy <= '1';
 
 			when cp1 =>
 				state_rd <= '1';
-<<<<<<< HEAD
-				state_atomic <= '1';
-				
-			when cp2 =>
-				state_atomic <= '1';
-
-			when cp3 =>
-				state_atomic <= '1';
-
-			when cp4 =>
-				state_wr <= '1';
-				state_atomic <= '1';
-=======
 				
 			when cp2 =>
 
@@ -1081,7 +1053,6 @@ begin
 
 			when cp4 =>
 				state_wr <= '1';
->>>>>>> origin/datacache
 
 			when cpstop =>
 
