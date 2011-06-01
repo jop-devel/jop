@@ -431,6 +431,7 @@ public class GC {
 				Native.wrMem(toSpace, ref+OFF_SPACE);
 
 				Native.lock();
+				Native.atmstart();
 
 				if (size>0) {
 					// copy it
@@ -447,6 +448,7 @@ public class GC {
 				// // turn off address translation
 				// Native.memCopy(dest, dest, -1);
 
+				Native.atmend();
 				Native.unlock();
 			}
 		}

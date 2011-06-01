@@ -1645,6 +1645,12 @@ jopsys_unlock:
 			stmwd				// write ext. mem data
 			wait
 			wait
-
 no_int_ena:	nop		nxt
+
+jopsys_atmstart:
+			atmstart nxt
+
+jopsys_atmend:
+			atmend nxt
+
 

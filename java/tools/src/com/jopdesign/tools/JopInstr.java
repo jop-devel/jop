@@ -334,9 +334,9 @@ public class JopInstr{
 //
 //	reserved instructions
 //
-		new JopInstr("resCB", 1, IMP_NO, 1),			// 0xCB
+		new JopInstr("jopsys_atmstart", 1, IMP_ASM, 1),	// 0xCB
 		new JopInstr("jopsys_inval", 1, IMP_ASM, 7),	// 0xCC
-		new JopInstr("resCD", 1, IMP_NO, 1),			// 0xCD
+		new JopInstr("jopsys_atmend", 1, IMP_ASM, 1),	// 0xCD
 		new JopInstr("jopsys_lock", 1, IMP_ASM, 1),		// 0xCE
 		new JopInstr("jopsys_unlock", 1, IMP_ASM, 1),	// 0xCF
 
@@ -427,6 +427,8 @@ public class JopInstr{
 			"invalidate", "jopsys_inval",
 			"lock", "jopsys_lock",
 			"unlock", "jopsys_unlock",
+			"atmstart", "jopsys_atmstart",
+			"atmend", "jopsys_atmend",
 			"toLock", "jopsys_nop",
 			"toRtThreadImpl", "jopsys_nop",
 			"memCopy", "jopsys_memcpy",
