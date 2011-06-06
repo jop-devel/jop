@@ -55,7 +55,7 @@ import static javax.safetycritical.annotate.Level.LEVEL_1;
 public abstract class Clock {
 
 	// TODO: provide a concrete class for the real-time clock
-	private static Clock single = null; // new Clock();
+	static Clock single = null; // new Clock();
 	
   /**
    * There is always at least one clock object available: the
