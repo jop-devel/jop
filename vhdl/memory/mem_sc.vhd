@@ -111,7 +111,7 @@ port (
 );
 end component;
 
-	constant ENABLE_COPY : boolean := true;
+	constant ENABLE_COPY : boolean := false;
 
 --
 --	signals for mem interface
@@ -960,7 +960,7 @@ begin
 
 			when bc_wr =>
 				-- BC write
-				bc_wr_ena <= '1';				
+				bc_wr_ena <= '1';
 				sc_mem_out.tm_cache <= '0';
 
 			when bc_wl =>

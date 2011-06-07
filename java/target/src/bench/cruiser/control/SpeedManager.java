@@ -37,7 +37,7 @@ public class SpeedManager implements Runnable {
 
 	// distance estimation
 	private long lastNow = 0;
-	private long distance = 0;
+	private long distance = 0; // meter * 1000
 
 	public SpeedManager() {
 		speedState[0] = frontLeftSpeed;
@@ -47,7 +47,7 @@ public class SpeedManager implements Runnable {
 	}
 
 	private void manage(long now) {
-
+		
 		// compute average
 		int sum = 0;
 		int sqsum = 0;
@@ -81,8 +81,11 @@ public class SpeedManager implements Runnable {
 			}
 		}
 
-		distance += ((long)currentSpeed.speed*1000*1000*1000)/Math.max(1, now-lastNow);
-		lastNow = now;
+		if (now != lastNow) {
+			// (meters per second * 100) / (second * 10^-9) / 10^8 = meter * 1000
+			distance += ((long)currentSpeed.speed*(now-lastNow))/100000000;
+			lastNow = now;
+		}
 	}
 
 	public int getCurrentSpeed() {
@@ -100,7 +103,7 @@ public class SpeedManager implements Runnable {
 		} else {
 			TargetSpeedState t = targetSpeed;
 
-			long dist = distance/1000;
+			long dist = distance;
 			if (t.targetDistance - dist > 0) {
 				int retval;
 

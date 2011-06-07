@@ -118,8 +118,8 @@ begin
 		mem_out.wr_data <= cpu_out_reg.wr_data;
 		mem_out.rd <= '0';
 		mem_out.wr <= '0';
+		mem_out.atomic <= '0';
 		mem_out.cache <= cpu_out_reg.cache;
-		mem_out.atomic <= cpu_out_reg.atomic;
 
 		ram_rdaddress <= cpu_out.address(index_bits-1 downto 0);
 
@@ -159,6 +159,7 @@ begin
 
 			when rd1 =>
 				mem_out.rd <= '1';
+				mem_out.atomic <= cpu_out_reg.atomic;
 				cpu_in.rdy_cnt <= "11";
 				next_state <= rd2;
 
@@ -175,7 +176,8 @@ begin
 				ram_din.data <= cpu_out_reg.wr_data;
 				ram_wren <= '1';
 				
-				mem_out.wr <= '1';				
+				mem_out.wr <= '1';
+				mem_out.atomic <= cpu_out_reg.atomic;				
 				cpu_in.rdy_cnt <= "11";
 				next_state <= wr1;
 				

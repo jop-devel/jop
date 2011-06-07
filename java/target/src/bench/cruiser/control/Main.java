@@ -55,13 +55,13 @@ public class Main {
 											 frontRightFilter,
 											 rearLeftFilter,
 											 rearRightFilter);
-		RtThread dThread = new RtThread(dispatch, 7, 1000);
+		RtThread dThread = new RtThread(dispatch, 7, 1*1000);
 
 		System.out.println("created Dispatcher");
 
-		System.out.println("Cruise control up and running");
-
 		RtThread.startMission();
+
+		System.out.println("Cruise control up and running");
 
 		for (;;) {
 			// wait forever

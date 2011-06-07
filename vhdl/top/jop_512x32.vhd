@@ -23,6 +23,7 @@
 --	jop_512x32.vhd
 --
 --	top level for a 512x32 SSRAM board (e.g. Altera DE2-70 board)
+-- 	now it's basically the Altera DE2 board
 --
 --	2009-03-31	adapted from jop_256x16.vhd
 --  2010-06-25  Working version with SSRAM

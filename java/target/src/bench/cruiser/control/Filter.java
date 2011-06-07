@@ -20,8 +20,7 @@
 
 package cruiser.control;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.Queue;
 import java.util.LinkedList;
 
 import joprt.RtThread;
@@ -31,7 +30,7 @@ public class Filter implements Runnable {
 
 	private static final long MAX_AGE = 100*1000*1000; // nano seconds
 
-	private final List<StampedMessage> queue = Collections.synchronizedList(new LinkedList<StampedMessage>());
+	private final Queue<StampedMessage> queue = new LinkedList<StampedMessage>();
 	private final String name;
 	private final SpeedState state;
 
@@ -42,7 +41,11 @@ public class Filter implements Runnable {
 
 	public void enqueue(StampedMessage msg) {
 		synchronized(queue) {
-			queue.add(0, msg);
+			// enforce reasonable capacity limit, as determined by
+			// message inter-arrival time and MAX_AGE
+			if (queue.size() < 110) {
+				queue.add(msg);
+			}
 		}
 	}
 
@@ -51,8 +54,8 @@ public class Filter implements Runnable {
 		// MAX_AGE determine maximum length of queue
 		synchronized (queue) {
 			while (!queue.isEmpty()) { //@WCA loop <= 110
-				if (queue.get(queue.size()-1).getStamp() < now-MAX_AGE) {
-					queue.remove(queue.size()-1);
+				if (queue.element().getStamp() < now-MAX_AGE) {
+					queue.remove();
 				} else {
 					break;
 				}

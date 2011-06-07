@@ -61,11 +61,13 @@ public class RtThreadImpl {
 			for (int i=0; i<s.cnt; ++i) {
 				s.ref[i].startThread();
 			}
+
 			// add scheduler for the core s
 			JVMHelp.addInterruptHandler(sys.cpuId, 0, s);
+			JVMHelp.addInterruptHandler(sys.cpuId, 1, s);
 
 			started = true;
-
+			
 			// clear all pending interrupts (e.g. timer after reset)
 			Native.wr(1, Const.IO_INTCLEARALL);
 			// schedule timer in 10 ms
@@ -94,7 +96,7 @@ public class RtThreadImpl {
 
 
 	RtThread rtt;		// reference to RtThread's run method
-	private int priority;
+	int priority;
 	private int period;			// period in us
 	private int offset;			// offset in us
 	private boolean isEvent;	// it's a software event
@@ -107,23 +109,17 @@ public class RtThreadImpl {
 	final static int DEAD = 3;
 	int state;
 
-	int cpuId;			// core that the thread is running on
-	// index in next, ref and event
-	int nr;
-	int[] stack;
-	int sp;
+	int     cpuId; // core that the thread is running on				   
+	int     nr;    // index in next, ref and event
+	int []  stack;
+	int     sp;
+
+	volatile boolean scan = false;
 	
 	/**
-	 * The scope that the thread is in.
-	 * Set to initArea when started.
+	 * The scope that the thread is in. null when in heap context.
 	 */
-	Memory currentArea = null;
-	
-	/**
-	 * The scope for the the initial thread (and between missions).
-	 * Null until the Memory object that represents immortal is created.
-	 */
-	static Memory initArea;
+	Scope currentArea;
 
 	// linked list of threads in priority order
 	// used only at initialization time to collect the threads
@@ -134,6 +130,10 @@ public class RtThreadImpl {
 	static boolean initDone;
 	static boolean mission;
 
+	// fields for lock implementation
+	static volatile boolean useLocks;
+	int lockLevel;
+	volatile int lockQueue;
 
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 
@@ -164,6 +164,7 @@ public class RtThreadImpl {
 	}
 
 	public RtThreadImpl(RtThread rtt, int prio, int us, int off) {
+
 		if (!initDone) {
 			init();
 		}
@@ -171,9 +172,9 @@ public class RtThreadImpl {
 		stack = new int[Const.STACK_SIZE-Const.STACK_OFF];
 		sp = Const.STACK_OFF;	// default empty stack for GC before startMission()
 		
-for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
-	stack[i] = 1234567;
-}
+		for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
+			stack[i] = 1234567;
+		}
 
 		this.rtt = rtt;
 		
@@ -213,12 +214,12 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		cpuId = id;
 	}
 
-	private static void genInt() {
+	private static void genInt(int core) {
 		
 		// just schedule an interrupt
 		// schedule() gets called.
-		Native.wr(0, Const.IO_SWINT);
-		for (int j=0;j<10;++j) ;
+		Native.wr(core, Const.IO_XCINT);
+		for (int j=0;j<10;++j) ; // in case we trigger ourselves
 	}
 
 	private void startThread() {
@@ -233,9 +234,6 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 			state = WAITING;
 		}
 
-		// set memory context to the current one
-		currentArea = initArea;
-		
 		createStack();
 
 		// new thread starts right here after first scheduled
@@ -249,7 +247,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 				// This will not work if we change stack like in Thread.java.
 				// Then we have no reference to this.
 				Scheduler.sched[sys.cpuId].next[nr] = Native.rd(Const.IO_US_CNT) + 2*Scheduler.IDL_TICK;
-				genInt();
+				genInt(sys.cpuId);
 			}
 		}
 	}
@@ -282,7 +280,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		stack[j-Const.STACK_OFF-2] -= k;
 		stack[j-Const.STACK_OFF-4] -= k;
 		
-/*	this is the save version
+/*	this is the safe version
 		i = Native.getSP();
 		sp = i;
 		for (j=Const.STACK_OFF; j<=i; ++j) {
@@ -291,17 +289,12 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 */
 	}
 
-//	public void run() {
-//		;							// nothing to do
-//	}
-
 	/**
 	 * Static start time of scheduling used by all cores
 	 */
 	static int startTime;
 
 	public static void startMission() {
-
 
 		int i, j, c;
 		RtThreadImpl th;
@@ -318,7 +311,13 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		Native.wr(0, Const.IO_INT_ENA);
 		Native.wr(0, Const.IO_INTMASK);		
 
-
+		// Do we need STW GC events?
+		if (!GC.concurrentGc && sys.nrCpu > 1) {
+			for (i=0; i<sys.nrCpu; ++i) {
+				int priority = head != null ? head.priority+1 : MAX_PRIORITY+RT_BASE;
+				Scheduler.sched[i].collector = new GC.STWGCEvent(head.priority+1, 0, i);
+			}
+		}
 
 		// if we have int's enabled for Thread scheduling
 		// or using the Scheduler interrupt
@@ -354,6 +353,8 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 			Scheduler.sched[i].addMain();
 		}
 
+		useLocks = true;
+
 		// running threads (state!=CREATED)
 		// are not started
 		// TODO: where are 'normal' Threads placed?
@@ -362,27 +363,17 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 			s.ref[i].startThread();
 		}
 
-		// wait 10 ms for the real start if the mission
-		startTime = Native.rd(Const.IO_US_CNT)+10000;		
-		for (i=0; i<sys.nrCpu; ++i) {
-			s = Scheduler.sched[i];
-			for (j=0; j<s.cnt; ++j) {
-				s.next[j] = startTime+s.ref[j].offset;
-			}
-		}
-		
-		// add scheduler for the first core
-		JVMHelp.addInterruptHandler(0, 0, Scheduler.sched[0]);
-
-
 		CMPStart cmps[] = new CMPStart[sys.nrCpu-1];
 		// add the Runnables to start the other CPUs
 		for (i=0; i<sys.nrCpu-1; ++i) {
 			cmps[i] = new RtThreadImpl.CMPStart();
 			Startup.setRunnable(cmps[i], i);
-			
 		}
 		
+		// add scheduler for the first core
+		JVMHelp.addInterruptHandler(0, 0, Scheduler.sched[0]);
+		JVMHelp.addInterruptHandler(0, 1, Scheduler.sched[0]);
+
 		// start the other CPUs
 		sys.signal = 1;
 
@@ -399,6 +390,15 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		
 		mission = true;
 
+		// wait 10 ms for the real start of the mission
+		startTime = Native.rd(Const.IO_US_CNT)+10000;
+		for (i=0; i<sys.nrCpu; ++i) {
+			s = Scheduler.sched[i];
+			for (j=0; j<s.cnt; ++j) {
+				s.next[j] = startTime+s.ref[j].offset;
+			}
+		}
+		
 		// clear all pending interrupts (e.g. timer after reset)
 		Native.wr(1, Const.IO_INTCLEARALL);
 		// schedule timer in 10 ms
@@ -415,6 +415,10 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		int nxt, now;
 		Scheduler s = Scheduler.sched[sys.cpuId];
 
+		if (priority >= s.scanThres) {
+			GC.ScanEvent.getOwnStackRoots();
+		}
+
 		Native.wr(0, Const.IO_INT_ENA);
 
 		nxt = s.next[nr] + period;
@@ -422,7 +426,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		now = Native.rd(Const.IO_US_CNT);
 		if (nxt-now < 0) {					// missed time!
 			s.next[nr] = now;				// correct next
-//			next[nr] = nxt;					// without correction!
+			// s.next[nr] = nxt;				// without correction!
 			Native.wr(1, Const.IO_INT_ENA);
 			return false;
 		} else {
@@ -452,35 +456,25 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 	public void fire() {
 		Scheduler.sched[this.cpuId].event[this.nr] = Scheduler.EV_FIRED;
 		// if prio higher...
-// should not be allowed befor startMission
-		// TODO: for cross CPU event fire we need to generate the interrupt
-		// for the other core!
-		genInt();
-
+		// should not be allowed before startMission
+		// Generate the interrupt for the appropriate core
+		genInt(this.cpuId);
 	}
 	
 	public void blockEvent() {
 		Scheduler.sched[this.cpuId].event[this.nr] = Scheduler.EV_WAITING;
-		// TODO: for cross CPU event fire we need to generate the interrupt
-		// for the other core!
-		genInt();
-
+		// Generate the interrupt for the appropriate core
+		genInt(this.cpuId);
 	}
-	/**
-	*	dummy yield() for compatibility reason.
-	*/
-//	public static void yield() {}
-
 
 	/**
 	*	for 'soft' rt threads.
 	*/
-
 	public static void sleepMs(int millis) {
 	
 		int next = Native.rd(Const.IO_US_CNT)+millis*1000;
 		while (Native.rd(Const.IO_US_CNT)-next < 0) {
-			genInt();
+			genInt(sys.cpuId);
 		}
 	}
 	final static int MIN_US = 10;
@@ -500,7 +494,6 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		for (;;) {
 			t2 = Native.rd(Const.IO_US_CNT);
 			t3 = t2-t1;
-//			System.out.println(cnt+" "+t3);
 			t1 = t2;
 			if (t3<MIN_US) {
 				cnt += t3;
@@ -515,7 +508,6 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 //  stack while assembling it. Then some writebarrier should protect the 
 //  references and downgrade the GC state from black to grey?
 
-	// TODO: make it CMP aware
 	static int[] getStack(int num) {
 		return Scheduler.sched[sys.cpuId].ref[num].stack;
 	}
@@ -541,15 +533,12 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		return s.ref[s.active].rtt;
 	}
 	
-	static Memory getCurrentScope() {
+	static Scope getCurrentScope() {
 		
 //		JVMHelp.wr("getCurrent");
 		// we call it only when the mission is already started
 		Scheduler s = Scheduler.sched[sys.cpuId];
 		return s.ref[s.active].currentArea;
-		
-		// but we could use that in general to encapsulate
-		// scope set/get into this class
 
 //		RtThreadImpl rtt = null;
 //		if (Scheduler.sched==null) {
@@ -564,45 +553,42 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 //			// we don't have started the mission
 //			return null;
 //		} else {
-//			return rtt.currentArrea;			
+//			return rtt.currentArea;			
 //		}
 	}
 	
-//	static void setCurrentScope(Scope sc) {
-//		RtThreadImpl rtt = null;
-//		Scheduler s = Scheduler.sched[sys.cpuId];
-//		if (s!=null || s.ref!=null) {
-//			int nr = s.active;
-//			rtt = s.ref[nr];
-//		}
-//		rtt.currentArrea = sc;
-//	}
+	static void setCurrentScope(Scope sc) {
+		RtThreadImpl rtt = null;
+		Scheduler s = Scheduler.sched[sys.cpuId];
+		if (s!=null || s.ref!=null) {
+			int nr = s.active;
+			rtt = s.ref[nr];
+		}
+		rtt.currentArea = sc;
+	}
 
 	
 
-static void trace(int[] stack, int sp) {
+	static void trace(int[] stack, int sp) {
 
-	int fp, mp, vp, addr, loc, args;
-	int val;
+		int fp, mp, vp, addr, loc, args;
+		int val;
 
-	fp = sp-4;		// first frame point is easy, since last sp points to the end of the frame
+		fp = sp-4;		// first frame point is easy, since last sp points to the end of the frame
 
-	while (fp>Const.STACK_OFF+5) {	// stop befor 'fist' method
-		mp = stack[fp+4-Const.STACK_OFF];
-		vp = stack[fp+2-Const.STACK_OFF];
-		val = Native.rdMem(mp);
-		addr = val>>>10;			// address of callee
-		util.Dbg.intVal(addr);
+		while (fp>Const.STACK_OFF+5) {	// stop before 'first' method
+			mp = stack[fp+4-Const.STACK_OFF];
+			vp = stack[fp+2-Const.STACK_OFF];
+			val = Native.rdMem(mp);
+			addr = val>>>10;			// address of callee
+			util.Dbg.intVal(addr);
 
-		val = Native.rdMem(mp+1);	// cp, locals, args
-		args = val & 0x1f;
-		loc = (val>>>5) & 0x1f;
-		fp = vp+args+loc;			// new fp can be calc. with vp and count of local vars
+			val = Native.rdMem(mp+1);	// cp, locals, args
+			args = val & 0x1f;
+			loc = (val>>>5) & 0x1f;
+			fp = vp+args+loc;			// new fp can be calc. with vp and count of local vars
+		}
 	}
-}
-
-
-
 
 
 }

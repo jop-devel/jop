@@ -38,14 +38,16 @@ public class Controller implements Runnable {
 		int delta = target - current;
 
 		int P = delta;
-		int I = (integralError*255)/256 + delta;
+		int I = // (integralError*255)/256 + delta;
+			(((integralError << 8)-integralError) >> 8) + delta;
 		integralError = I;
 		int D = delta - lastDelta;
 		lastDelta = delta;
 
 		// System.err.println("P:\t"+P+"\tI:\t"+I+"\tD:\t"+D);
 	
-		return 64*P+I/8+D/256;
+		// return 64*P+I/8+D/256;
+		return (P<<6)+(I>>3)+(D>>8);
 	}
 
 	private void control() {
@@ -71,7 +73,7 @@ public class Controller implements Runnable {
 		} else if (controlValue < -0x7fff) {
 			controlValue = -0x7fff;
 		}				
-		
+
 		// send control messages
 		WireMessage msg;
 		if (controlValue > 0) {

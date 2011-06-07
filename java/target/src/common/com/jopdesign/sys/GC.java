@@ -21,6 +21,10 @@
 
 package com.jopdesign.sys;
 
+import com.jopdesign.io.IOFactory;
+import com.jopdesign.io.SysDevice;
+import joprt.RtThread;
+import joprt.SwEvent;
 
 /**
  *     Real-time garbage collection for JOP
@@ -30,14 +34,19 @@ package com.jopdesign.sys;
  */
 public class GC {
 	
+	/**
+	 * Use either scoped memories or a GC.
+	 * Combining scopes and the GC needs some extra work.
+	 */
+	final static boolean USE_SCOPES = false;
+	
+	
 	static int mem_start;		// read from memory
 	// get a effective heap size with fixed handle count
 	// for our RT-GC tests
 	static int full_heap_size;
 	
-	// Used in newObject and newArray to locate the object/array
-	private static final int HEADER_SIZE = 4;
-	
+
 	/**
 	 * Fields in the handle structure.
 	 * 
@@ -55,7 +64,8 @@ public class GC {
 	 * 4 pointer to next handle of same type (used or free)
 	 * 5 gray list
 	 * 6 space marker - either toSpace or fromSpace
-	 * 
+	 * 7 pointer to object's lock
+	 *
 	 * !!! be carefule when changing the handle structure, it's
 	 * used in System.arraycopy() and probably in jvm.asm!!!
 	 */
@@ -63,7 +73,6 @@ public class GC {
 	public static final int OFF_MTAB_ALEN = 1;
 	public static final int OFF_SIZE = 2;
 	public static final int OFF_TYPE = 3;
-	public static final int OFF_SCOPE = 7;
 	
 	// size != array length (think about long/double)
 	
@@ -91,6 +100,16 @@ public class GC {
 	 * Denote in which space the object is
 	 */
 	static final int OFF_SPACE = 6;
+
+	/**
+	 * Field that points to the object's lock
+	 */
+	static final int OFF_LOCK = 7;
+
+	/**
+	 * Trigger GC when free memory is below this margin
+	 */
+	static final int GC_MARGIN = 256;
 		
 	static final int TYPICAL_OBJ_SIZE = 5;
 	static int handle_cnt;
@@ -120,8 +139,6 @@ public class GC {
 	static int allocPtr;
 	
 	static int freeList;
-	// TODO: useList is only used for a faster handle sweep
-	// do we need it?
 	static int useList;
 	static int grayList;
 	
@@ -129,73 +146,58 @@ public class GC {
 	
 	static Object mutex;
 	
-	static boolean concurrentGc;
-		
-	static int roots[];
-
 	static OutOfMemoryError OOMError;
-	
-	// Memory allocation pointer used before we enter the ImmortalMemory 
-	static int allocationPointer;
+
+	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 
 	static void init(int mem_size, int addr) {
+		
 		addrStaticRefs = addr;
 		mem_start = Native.rdMem(0);
 		// align mem_start to 8 word boundary for the
-		// conservative handle check
-		
-//mem_start = 261300;
+		// conservative handle check		
 		mem_start = (mem_start+7)&0xfffffff8;
-//mem_size = mem_start + 2000;
-		if(Config.USE_SCOPES) {
-			allocationPointer = mem_start;
-			// clean immortal memory
-			for (int i=mem_start; i<mem_size; ++i) {
-				Native.wrMem(0, i);
-			}
-			// Create the Scope that represents immortal memory
-			RtThreadImpl.initArea = Memory.getImmortal(mem_start, mem_size-1);
-		} else {
-			full_heap_size = mem_size-mem_start;
-			handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
-			semi_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
-			
-			heapStartA = mem_start+handle_cnt*HANDLE_SIZE;
-			heapStartB = heapStartA+semi_size;
-			
-	//		log("");
-	//		log("memory size", mem_size);
-	//		log("handle start ", mem_start);
-	//		log("heap start (toSpace)", heapStartA);
-	//		log("fromSpace", heapStartB);
-	//		log("heap size (bytes)", semi_size*4*2);
-			
-			useA = true;
-			copyPtr = heapStartA;
-			allocPtr = copyPtr+semi_size;
-			toSpace = heapStartA;
-			fromSpace = heapStartB;
-			
-			freeList = 0;
-			useList = 0;
-			grayList = GREY_END;
-			for (int i=0; i<handle_cnt; ++i) {
-				int ref = mem_start+i*HANDLE_SIZE;
-				// pointer to former freelist head
-				Native.wrMem(freeList, ref+OFF_NEXT);
-				// mark handle as free
-				Native.wrMem(0, ref+OFF_PTR);
-				freeList = ref;
-				Native.wrMem(0, ref+OFF_GREY);
-				Native.wrMem(0, ref+OFF_SPACE);
-			}
-			// clean the heap
-			int end = heapStartA+2*semi_size;
-			for (int i=heapStartA; i<end; ++i) {
-				Native.wrMem(0, i);
-			}
-			concurrentGc = false;
+		full_heap_size = mem_size-mem_start;
+		handle_cnt = full_heap_size/(2*TYPICAL_OBJ_SIZE+HANDLE_SIZE);
+		semi_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
+		
+		heapStartA = mem_start+handle_cnt*HANDLE_SIZE;
+		heapStartB = heapStartA+semi_size;
+		
+//		log("");
+//		log("memory size", mem_size);
+//		log("handle start ", mem_start);
+//		log("heap start (toSpace)", heapStartA);
+//		log("fromSpace", heapStartB);
+//		log("heap size (bytes)", semi_size*4*2);
+		
+		useA = true;
+		copyPtr = heapStartA;
+		allocPtr = copyPtr+semi_size;
+		toSpace = heapStartA;
+		fromSpace = heapStartB;
+		
+		freeList = 0;
+		useList = 0;
+		grayList = GREY_END;
+		for (int i=0; i<handle_cnt; ++i) {
+			int ref = mem_start+i*HANDLE_SIZE;
+			// pointer to former freelist head
+			Native.wrMem(freeList, ref+OFF_NEXT);
+			// mark handle as free
+			Native.wrMem(0, ref+OFF_PTR);
+			freeList = ref;
+			Native.wrMem(0, ref+OFF_GREY);
+			Native.wrMem(0, ref+OFF_SPACE);
+			Native.wrMem(0, ref+OFF_LOCK);
 		}
+		// clean the heap
+		int end = heapStartA+2*semi_size;
+		for (int i=heapStartA; i<end; ++i) {
+			Native.wrMem(0, i);
+		}
+		// concurrentGc = false;
+		
 		// allocate the monitor
 		mutex = new Object();
 
@@ -211,7 +213,7 @@ public class GC {
 	 * @param ref
 	 */
 	static void push(int ref) {
-		
+
 		// null pointer check is in the following handle check
 		
 		// Only objects that are referenced by a handle in the
@@ -222,9 +224,8 @@ public class GC {
 			return;
 		}
 		// does the reference point to a handle start?
-		// TODO: happens in concurrent
+		// happens in concurrent
 		if ((ref&0x7)!=0) {
-//				log("a not aligned handle");
 			return;
 		}
 
@@ -232,8 +233,7 @@ public class GC {
 			// Is this handle on the free list?
 			// Is possible when using conservative stack scanning
 			if (Native.rdMem(ref+OFF_PTR)==0) {
-				// TODO: that happens in concurrent!
-//				log("push of a handle with 0 at OFF_PRT!", ref);
+				// that happens in concurrent!
 				return;
 			}
 						
@@ -242,11 +242,10 @@ public class GC {
 			// -- it's checked in the write barrier
 			// -- but not in mark....
 			if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
-//				log("push: already in toSpace");
 				return;
 			}
 			
-			// only objects not allready in the gray list
+			// only objects not already in the gray list
 			// are added
 			if (Native.rdMem(ref+OFF_GREY)==0) {
 				// pointer to former gray list head
@@ -260,7 +259,7 @@ public class GC {
 	 */
 	static void flip() {
 		synchronized (mutex) {
-			if (grayList!=GREY_END) log("GC: gray list not empty");
+			// if (grayList!=GREY_END) log("GC: gray list not empty");
 
 			useA = !useA;
 			if (useA) {
@@ -281,39 +280,71 @@ public class GC {
 	 *
 	 */
 	static void getStackRoots() {
-		int i, j, cnt;
-		// only pushing stack roots need to be atomic
-		synchronized (mutex) {
-			// add complete stack of the current thread to the root list
-//			roots = GCStkWalk.swk(RtThreadImpl.getActive(),true,false);
-			i = Native.getSP();			
-			for (j = Const.STACK_OFF; j <= i; ++j) {
-				// disable the if when not using gc stack info
-//				if (roots[j - Const.STACK_OFF] == 1) {
-					push(Native.rdIntMem(j));
-//				}
-			}
-			// Stacks from the other threads
-			cnt = RtThreadImpl.getCnt();
-			
-			for (i = 0; i < cnt; ++i) {
-				if (i != RtThreadImpl.getActive()) {
-					int[] mem = RtThreadImpl.getStack(i);
-					 // sp starts at Const.STACK_OFF
-					int sp = RtThreadImpl.getSP(i) - Const.STACK_OFF;
-
-//					roots = GCStkWalk.swk(i, false, false);
-
-					for (j = 0; j <= sp; ++j) {
-						// disable the if when not using gc stack info
-//						if (roots[j] == 1) {
-							push(mem[j]);
-//						}
+		int i, j, k, cnt, cpus;
+		
+		if (concurrentGc) {
+			cpus = sys.nrCpu;
+			for (i = cpus-1; i >= 0; --i) {
+				// we fire the scanner event for this CPU last, so we do
+				// not delay the start on other CPUs
+				if (i == sys.cpuId)
+					continue;
+				if (Scheduler.sched[i].scanner != null) {					
+					cnt = Scheduler.sched[i].ref.length;
+					for (j = 0; j < cnt; j++) {
+						Scheduler.sched[i].ref[j].scan = true;
 					}
+					Scheduler.sched[i].scanner.fire();
+				} else {
+					throw OOMError;
 				}
 			}
 
+			// fire event for current CPU
+			i = sys.cpuId;
+			if (Scheduler.sched[i].scanner != null) {					
+				cnt = Scheduler.sched[i].ref.length;
+				for (j = 0; j < cnt; j++) {
+					Scheduler.sched[i].ref[j].scan = true;
+				}
+				Scheduler.sched[i].scanner.fire();
+			} else {
+				throw OOMError;
+			}
+			
+			// wait for everyone to finish root scanning
+			for (i = 0; i < cpus; i++) {
+				cnt = Scheduler.sched[i].ref.length;
+				for (j = 0; j < cnt; j++) {
+					while (Scheduler.sched[i].ref[j].scan) {
+						/* wait for root scanning threads to do the work */
+					}
+				}
+			}
+		} else {
+			// add stack of the current thread to the root list
+			ScanEvent.getOwnStackRoots();
+
+			// add stacks of all other threads to the root list
+ 			cpus = sys.nrCpu;
+ 			for (i = 0; i < cpus; i++) {
+				RtThreadImpl [] ref = Scheduler.sched[i].ref;
+ 				if (ref != null) {
+					cnt = ref.length;
+					for (j = 0; j < cnt; j++) {
+						synchronized(mutex) {						
+							int[] mem = ref[j].stack;
+							// sp starts at Const.STACK_OFF
+							int sp = ref[j].sp - Const.STACK_OFF;
+							for (k = 0; k <= sp; ++k) {
+								push(mem[k]);
+							}
+						}
+ 					}
+  				}
+ 			}
 		}
+
 	}
 
 	/**
@@ -333,13 +364,14 @@ public class GC {
 	static void markAndCopy() {
 		
 		int i, ref;
-		
-		if (!concurrentGc) {
-			getStackRoots();			
-		}
+
+		// log("stack");
+		getStackRoots();			
+		// log("static");
 		getStaticRoots();
+		// log("trace");
 		for (;;) {
-			
+
 			// pop one object from the gray list
 			synchronized (mutex) {
 				ref = grayList;
@@ -350,25 +382,17 @@ public class GC {
 				Native.wrMem(0, ref+OFF_GREY);		// mark as not in list
 			}
 
-			// allready moved
+			// already moved
 			// can this happen? - yes, as we do not check it in mark
 			// TODO: no, it's checked in push()
-			// What happens when the actuall scanning object is
+			// What happens when the actually scanned object is
 			// again pushed on the gray stack by the mutator?
 			if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
 				// it happens 
-//				log("mark/copy allready in toSpace");
 				continue;
 			}
 			
-			// there should be no null pointers on the mark stack
-//			if (Native.rdMem(ref+OFF_PTR)==0) {
-//				log("mark/copy OFF_PTR=0!!!");
-//				continue; 
-//			}
-			
-				
-			// push all childs
+			// push all children
 				
 			// get pointer to object
 			int addr = Native.rdMem(ref);
@@ -405,22 +429,28 @@ public class GC {
 
 				// set it BLACK
 				Native.wrMem(toSpace, ref+OFF_SPACE);
-			}
 
-			if (size>0) {
-				// copy it
-				for (i=0; i<size; i++) {
-//  					Native.wrMem(Native.rdMem(addr+i), dest+i);
-  					Native.memCopy(dest, addr, i);					
+				Native.lock();
+				Native.atmstart();
+
+				if (size>0) {
+					// copy it
+					for (i=0; i<size; i++) {
+						Native.wrMem(Native.rdMem(addr+i), dest+i);
+						// Native.memCopy(dest, addr, i);					
+					}
 				}
-			}
 
-			// update object pointer to the new location
-			Native.wrMem(dest, ref+OFF_PTR);
-			// wait until everybody uses the new location
-			for (i = 0; i < 10; i++);
-			// turn off address translation
-			Native.memCopy(dest, dest, -1);		
+				// update object pointer to the new location
+				Native.wrMem(dest, ref+OFF_PTR);
+				// // wait until everybody uses the new location
+				// for (i = 0; i < 10; i++);
+				// // turn off address translation
+				// Native.memCopy(dest, dest, -1);
+
+				Native.atmend();
+				Native.unlock();
+			}
 		}
 	}
 	
@@ -437,7 +467,6 @@ public class GC {
 		}
 		
 		while (ref!=0) {
-			
 			// read next element, as it is destroyed
 			// by addTo*List()
 			int next = Native.rdMem(ref+OFF_NEXT);
@@ -458,7 +487,6 @@ public class GC {
 			}
 			ref = next;
 		}
-		
 	}
 
 	/**
@@ -472,41 +500,65 @@ public class GC {
 		for (int i=fromSpace; i<end; ++i) {
 			Native.wrMem(0, i);
 		}
-		// for tests clean also the remainig memory in the to-space
-//		synchronized (mutex) {
-//			for (int i=copyPtr; i<allocPtr; ++i) {
-//				Native.wrMem(0, i);
-//			}			
-//		}
 	}
 
-	public static void setConcurrent() {
-		concurrentGc = true;
-	}
-	static void gc_alloc() {
-		if (Config.USE_SCOPES) {
+	public static void triggerGc() {
+
+		log("GC triggered on CPU", sys.cpuId);
+
+		// scopes and GC cannot be mixed
+		if (USE_SCOPES) {
 			log("No GC when scopes are used");
-			throw OOMError;
+			System.exit(1);
 		}
-		log("GC allocation triggered");
+
+		// nasty things would happen if we allowed this
 		if (concurrentGc) {
 			// OOMError.fillInStackTrace();
 			throw OOMError;
-		} else {
+		}
+				
+		if (sys.nrCpu <= 1 || sys.signal == 0) {
+			// stop-the world GC on (de facto) uniprocessor
 			gc();
+		} else {
+			// only trigger if not running already
+			if (!gcRunning) {
+				gcRunning = true;
+				gcRunnerId = sys.cpuId;
+				
+				// start GC events on all CPUs
+				int cpus = sys.nrCpu;
+				for (int i = cpus-1; i >= 0; --i) {
+					if (Scheduler.sched[i].collector != null) {					
+						// log("Fire event on CPU", i);
+						Scheduler.sched[i].collector.fire();
+					} else if (Startup.cpuStart[i] != null) {
+						log("Stop-the-world GC on CMP needs GC events");
+						System.exit(1);
+					}
+				}
+			}
 		}
 	}
 
 	public static void gc() {
-//		log("GC called - free memory:", freeMemory());
+//  		log("GC called - free memory:", freeMemory());
 
+		// log("start GC");
+
+		// log("flip");
 		flip();
+		// log("m&c");
 		markAndCopy();
+		// log("sweep");
 		sweepHandles();
+		// log("zap");
 		zapSemi();	
 
-//		log("GC end - free memory:",freeMemory());
-		
+		// log("end GC");
+
+//  		log("GC end - free memory:",freeMemory());
 	}
 	
 	static int free() {
@@ -527,96 +579,61 @@ public class GC {
 	 * @return address of the handle
 	 */
 	static int newObject(int cons) {
+
 		int size = Native.rdMem(cons);			// instance size
 		
-		if (Config.USE_SCOPES) {
+		if (USE_SCOPES) {
 			// allocate in scope
-			int ptr = allocationPointer;
-			if(RtThreadImpl.initArea == null)
-			{
-				allocationPointer += size+HEADER_SIZE;
+			Scope sc = null;
+			if (RtThreadImpl.mission) {
+				sc = RtThreadImpl.getCurrentScope();				
 			}
-			else
-			{
-				Memory sc = null;
-				if (RtThreadImpl.mission) {
-					Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
-					sc = s.ref[s.active].currentArea;			
-				}
-				else
-				{
-					sc = RtThreadImpl.initArea;
-				}
-				if (sc.allocPtr+size+HEADER_SIZE > sc.endLocalPtr) {
+			if (sc!=null) {
+				int rem = sc.backingStore.length - sc.allocPtr;
+				if (size+2 > rem) {
 					// OOMError.fillInStackTrace();
 					throw OOMError;
 				}
-				ptr = sc.allocPtr;
-				sc.allocPtr += size+HEADER_SIZE;
-				
-				//Add scope info to pointer of newly created object
-				if (Config.ADD_REF_INFO){
-					ptr = ptr | (sc.level << 25);	
-				}
-				//Add scope info to object's handler field
-				Native.wrMem(sc.level , ptr+OFF_SCOPE);
-			}
-			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
-			Native.wrMem(size, ptr+OFF_SIZE); // Just defining all headers
-			Native.wrMem(cons+Const.CLASS_HEADR, ptr+OFF_MTAB_ALEN);
-			Native.wrMem(0, ptr+OFF_TYPE);
-			// TODO: memory initialization is needed
-			// either on scope creation+exit or in new
-			return ptr;		
-		}
-
-		// that's the stop-the-world GC
-		synchronized (mutex) {
-			if (copyPtr+size >= allocPtr) {
-				if (Config.USE_SCOPES) {
-					// log("No GC when scopes are used");
-					// OOMError.fillInStackTrace();
-					throw OOMError;
-				} else {
-					gc_alloc();
-					if (copyPtr+size >= allocPtr) {
-						// still not enough memory
-						// OOMError.fillInStackTrace();
-						throw OOMError;
-					}
-				}
+				int ref = sc.allocPtr;
+				sc.allocPtr += size+2;
+				int ptr = Native.toInt(sc.backingStore);
+				ptr = Native.rdMem(ptr);
+				ptr += ref;
+				sc.backingStore[ref] = ptr+2;
+				sc.backingStore[ref+1] = cons+Const.CLASS_HEADR;
+				return ptr;
 			}			
 		}
+
 		synchronized (mutex) {
-			if (freeList==0) {
-				if (Config.USE_SCOPES) {
-					// log("No GC when scopes are used");
-					// OOMError.fillInStackTrace();
-					throw OOMError;
+			if (copyPtr+size+GC_MARGIN >= allocPtr || freeList==0) {
+				if (!concurrentGc) {
+					log("Run out of memory on CPU", sys.cpuId);
+					// that's the stop-the-world GC
+					triggerGc();
 				} else {
-					log("Run out of handles in new Object!");
-					gc_alloc();
-					if (freeList==0) {
-						// OOMError.fillInStackTrace();
-						throw OOMError;
-					}
+					// concurrent GC could not keep up
+					throw OOMError;
 				}
 			}			
 		}
 		
+		while (gcRunning) {
+			// wait for the GC to finish
+		}
+
 		int ref;
 		
 		synchronized (mutex) {
+			if (copyPtr+size >= allocPtr || freeList==0) {
+				// make sure we actually freed enough memory
+				// OOMError.fillInStackTrace();
+				throw OOMError;
+			}
 			// we allocate from the upper part
 			allocPtr -= size;
 			// get one from free list
 			ref = freeList;
-	//		if ((ref&0x07)!=0) {
-	//			log("getHandle problem");
-	//		}
-	//		if (Native.rdMem(ref+OFF_PTR)!=0) {
-	//			log("getHandle not free");
-	//		}
 			freeList = Native.rdMem(ref+OFF_NEXT);
 			// and add it to use list
 			Native.wrMem(useList, ref+OFF_NEXT);
@@ -635,12 +652,15 @@ public class GC {
 			Native.wrMem(IS_OBJ, ref+OFF_TYPE);
 			// pointer to method table in the handle
 			Native.wrMem(cons+Const.CLASS_HEADR, ref+OFF_MTAB_ALEN);
+			// TODO: should not be necessary - now just for sure
+			Native.wrMem(0, ref+OFF_LOCK);
 		}
 
 		return ref;
 	}
 	
 	static int newArray(int size, int type) {
+		
 		if (size < 0) {
 			throw new NegativeArraySizeException();
 		}
@@ -651,90 +671,59 @@ public class GC {
 		if((type==11)||(type==7)) size <<= 1;
 		// reference array type is 1 (our convention)
 		
-		if (Config.USE_SCOPES) {
+		if (USE_SCOPES) {
 			// allocate in scope
-			int ptr = allocationPointer;
-			if(RtThreadImpl.initArea == null)
-			{
-				allocationPointer += size+HEADER_SIZE;
+			Scope sc = null;
+			if (RtThreadImpl.mission) {
+				sc = RtThreadImpl.getCurrentScope();				
 			}
-			else
-			{
-				Memory sc = null;
-				if (RtThreadImpl.mission) {
-					Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
-					sc = s.ref[s.active].currentArea;				
-				}
-				else
-				{
-					sc = RtThreadImpl.initArea;
-				}
-				if (sc.allocPtr+size+HEADER_SIZE > sc.endLocalPtr) {
+			if (sc!=null) {
+				int rem = sc.backingStore.length - sc.allocPtr;
+				if (size+2 > rem) {
 					// OOMError.fillInStackTrace();
 					throw OOMError;
 				}
-				ptr = sc.allocPtr;
-				sc.allocPtr += size+HEADER_SIZE;
-				
-				//Add scope info to pointer of newly created array
-				if (Config.ADD_REF_INFO){
-					ptr = ptr | (sc.level << 25);	
-				}
-				//Add scope info to array's handler field
-				Native.wrMem(sc.level , ptr+OFF_SCOPE);
-			}
-			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
-			Native.wrMem(arrayLength, ptr+OFF_SIZE); // Just defining all headers
-			Native.wrMem(arrayLength, ptr+OFF_MTAB_ALEN);
-			Native.wrMem(type, ptr+OFF_TYPE); // Array type
-			return ptr;
+				int ref = sc.allocPtr;
+				sc.allocPtr += size+2;
+				int ptr = Native.toInt(sc.backingStore);
+				ptr = Native.rdMem(ptr);
+				ptr += ref;
+				sc.backingStore[ref] = ptr+2;
+				sc.backingStore[ref+1] = arrayLength;
+				return ptr;
+			}			
 		}
 
 		synchronized (mutex) {
-			if (copyPtr+size >= allocPtr) {
-				if (Config.USE_SCOPES) {
-					// log("No GC when scopes are used");
-					// OOMError.fillInStackTrace();
-					throw OOMError;
+			if (copyPtr+size+GC_MARGIN >= allocPtr || freeList==0) {
+				if (!concurrentGc) {
+					log("Run out of memory on CPU", sys.cpuId);
+					// that's the stop-the-world GC
+					triggerGc();
 				} else {
-					gc_alloc();
-				}
-				if (copyPtr+size >= allocPtr) {
-					// still not enough memory
-					// OOMError.fillInStackTrace();
+					// concurrent GC could not keep up
 					throw OOMError;
 				}
 			}			
 		}
-		synchronized (mutex) {
-			if (freeList==0) {
-				if (Config.USE_SCOPES) {
-					// log("No GC when scopes are used");
-					// OOMError.fillInStackTrace();
-					throw OOMError;
-				} else {
-					log("Run out of handles in new array!");
-					gc_alloc();
-					if (freeList==0) {
-						// OOMError.fillInStackTrace();
-						throw OOMError;
-					}
-				}
-			}			
+
+		while (gcRunning) {
+			// wait for the GC to finish
 		}
 
 		int ref;
+		
 		synchronized (mutex) {
+			if (copyPtr+size >= allocPtr || freeList==0) {
+				// make sure we actually freed enough memory
+				// OOMError.fillInStackTrace();
+				throw OOMError;
+			}
+
 			// we allocate from the upper part
 			allocPtr -= size;
 			// get one from free list
 			ref = freeList;
-	//		if ((ref&0x07)!=0) {
-	//			log("getHandle problem");
-	//		}
-	//		if (Native.rdMem(ref+OFF_PTR)!=0) {
-	//			log("getHandle not free");
-	//		}
 			freeList = Native.rdMem(ref+OFF_NEXT);
 			// and add it to use list
 			Native.wrMem(useList, ref+OFF_NEXT);
@@ -751,7 +740,10 @@ public class GC {
 			Native.wrMem(type, ref+OFF_TYPE);
 			// array length in the handle
 			Native.wrMem(arrayLength, ref+OFF_MTAB_ALEN);
+			// TODO: should not be necessary - now just for sure
+			Native.wrMem(0, ref+OFF_LOCK);
 		}
+
 		return ref;
 		
 	}
@@ -770,146 +762,8 @@ public class GC {
 	public static int totalMemory() {
 		return semi_size*4;
 	}
-	
-	/**
-	 * Check if a given value is a valid handle.
-	 * 
-	 * This method traverse the list of handles (in use) to check
-	 * if the handle provided belong to the list.
-	 * 
-	 * It does *not* check the free handle list.
-	 * 
-	 * One detail: the result may state that a handle to a 
-	 * (still unknown garbage) object is valid, in case 
-	 * the object is not reachable but still present 
-	 * on the use list.
-	 * This happens in case the object becomes unreachable
-	 * during execution, but GC has not reclaimed it yet.
-	 * Anyway, it's still a valid object handle.
-	 * 
-	 * @param handle the value to be checked.
-	 * @return
-	 */
-	public static final boolean isValidObjectHandle(int handle)
-	{
-	  boolean isValid;
-	  int handlePointer;
 	  
-	  // assume it's not valid and try to show otherwise 
-	  isValid = false;
-	  
-	  // synchronize on the GC lock
-	  synchronized (mutex) {
-		// start on the first element of the list
-	    handlePointer = useList;
-	    
-	    // traverse the list until the element is found or the list is over
-	    while(handlePointer != 0)
-	    {
-	      if(handle == handlePointer)
-	      {
-	    	// found it! hence, it's a valid handle. Stop the search.
-	    	isValid = true;
-	    	break;
-	      }
-	      
-	      // not found yet. Let's go to the next element and try again. 
-	      handlePointer = Native.rdMem(handlePointer+OFF_NEXT);
-	    }
-	  }
-	  
-	  return isValid;
-	}
-  
-  /**
-   * Write barrier for an object field. May be used with regular objects
-   * and reference arrays.
-   * 
-   * @param handle the object handle
-   * @param index the field index
-   */
-  public static final void writeBarrier(int handle, int index)
-  {
-    boolean shouldExecuteBarrier = false;
-    int gcInfo;
-    
-//    log("WriteBarrier: snapshot-at-beginning.");
-    
-    if (handle == 0)
-    {
-      throw new NullPointerException();
-    }
-    
-    synchronized (GC.mutex)
-    {
-      // ignore objects with size zero (is this correct?)
-      if(Native.rdMem(handle) == 0)
-      {
-//        log("ignore objects with size zero");
-        return;
-      }
-      
-      // get information on the object type.
-      int type = Native.rdMem(handle + GC.OFF_TYPE);
-      
-      // if it's an object or reference array, execute the barrier
-      if(type == GC.IS_REFARR)
-      {
-//        log("Reference array.");
-        shouldExecuteBarrier = true;
-      }
-      
-      if(type == GC.IS_OBJ)
-      {
-//        log("Regular object.");
-        // get the object GC info from the class structure. 
-        gcInfo = Native.rdMem(handle + GC.OFF_MTAB_ALEN) + Const.MTAB2GC_INFO;
-        gcInfo = Native.rdMem(gcInfo);
-        
-//        log("GCInfo field: ", gcInfo);
-        
-        // if the correct bit is set for the field, it may hold a reference.
-        // then, execute the write barrier.
-        if((gcInfo & (0x01 << index)) != 0)
-        {
-//          log("Field can hold a reference. Execute barrier!");
-          shouldExecuteBarrier = true;
-        }
-      }
-      
-      // execute the write barrier, if necessary.
-      if(shouldExecuteBarrier)
-      {
-        // handle indirection
-        handle = Native.rdMem(handle);
-        // snapshot-at-beginning barrier
-        int oldVal = Native.rdMem(handle+index);
-        
-//        log("Old val:       ", oldVal);
-//        if(oldVal != 0)
-//        {
-//          log("Current space: ", Native.rdMem(oldVal+GC.OFF_SPACE));
-//        }
-//        else
-//        {
-//          log("Current space: NULL object.");
-//        }
-//        log("toSpace:       ", GC.toSpace);
-        
-        if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
-//          log("Executing write barrier for old handle: ", handle);
-          GC.push(oldVal);
-        }
-      }
-//      else
-//      {
-//        log("Should not execute the barrier.");
-//      }
-    }
-  }
-  
-/************************************************************************************************/
-	
+/************************************************************************************************/	
 
 	static void log(String s, int i) {
 		JVMHelp.wr(s);
@@ -920,6 +774,161 @@ public class GC {
 	static void log(String s) {
 		JVMHelp.wr(s);
 		JVMHelp.wr("\n");
+	}
+
+/************************************************************************************************/	
+
+	static final boolean concurrentGc = true;
+
+	public static void setConcurrent() {
+		// concurrentGc = true;
+	}
+
+	static volatile boolean gcRunning;
+	static volatile int gcRunnerId;
+	
+	public static final class GCThread extends RtThread {
+		
+		public GCThread(int prio, int period) {
+			super(prio, period);
+		}
+		public void run() {
+			for (;;) {
+				// log("G");
+				// GC.log("<");
+				GC.gc();
+				// GC.log(">");
+				waitForNextPeriod();
+			}
+		}
+	}
+
+	public static final class STWGCEvent extends SwEvent {
+		
+		volatile boolean handshake;
+
+		public STWGCEvent(int prio, int minTime) {
+			this(prio, minTime, GC.sys.cpuId);
+		}
+
+		public STWGCEvent(int prio, int minTime, int cpu) {
+			super(prio, minTime);
+			setProcessor(cpu);
+		}
+
+		public void handle() {
+			SysDevice sys = IOFactory.getFactory().getSysDevice();
+
+			synchronized(GC.mutex) {
+			   	GC.log("Handling GC event on CPU", sys.cpuId);
+			}
+
+			handshake = true;
+			if (GC.sys.cpuId == GC.gcRunnerId) {
+
+				synchronized(GC.mutex) {
+				   	GC.log("Waiting for handshakes");
+				}
+
+				// wait for handshake
+				int cpus = GC.sys.nrCpu;
+				for (int i = cpus-1; i >= 0; --i) {
+					while (!Scheduler.sched[i].collector.handshake) {
+						/* wait for handshake from other CPUs */
+					}
+				}
+
+				synchronized(GC.mutex) {				
+					GC.log("Start STWGC");
+				}
+
+				// the real stuff
+				GC.gc();
+
+				synchronized(GC.mutex) {				
+					GC.log("Finished STWGC");
+				}
+
+				// clear handshakes for future
+				for (int i = cpus-1; i >= 0; --i) {
+					Scheduler.sched[i].collector.handshake = false;
+				}
+
+				// let other CPUs continue again
+				GC.gcRunning = false;
+			} else {
+				while (GC.gcRunning) {
+					// wait for the GC to finish
+				}
+				synchronized(GC.mutex) {
+				  	GC.log("Seen GC finish on CPU", sys.cpuId);
+				}
+			}
+		}
+	}
+
+	public static final class ScanEvent extends SwEvent {
+
+		public static void getOwnStackRoots() {
+			int	i, j;
+
+			i = Native.getSP();			
+			for (j = Const.STACK_OFF; j <= i; ++j) {
+				push(Native.rdIntMem(j));
+			}
+			Scheduler sched = Scheduler.sched[GC.sys.cpuId];
+			if (sched.ref != null) {
+				sched.ref[sched.active].scan = false;
+			}
+		}
+
+		public ScanEvent(int prio, int minTime) {
+			this(prio, minTime, GC.sys.cpuId);
+		}
+
+		public ScanEvent(int prio, int minTime, int cpu) {
+			super(prio, minTime);
+			Scheduler.sched[cpu].scanner = this;
+			Scheduler.sched[cpu].scanThres = prio+RtThreadImpl.MAX_PRIORITY+RtThreadImpl.RT_BASE;
+			setProcessor(cpu);
+		}
+
+		public void handle() {
+		
+			int i, j;
+
+			SysDevice sys = IOFactory.getFactory().getSysDevice();
+			// synchronized (mutex) {
+			// 	GC.log("Handling scan event on CPU", sys.cpuId);
+			// }
+
+			Scheduler sched = Scheduler.sched[GC.sys.cpuId];
+			int cnt = sched.ref.length;
+
+			for (i = 0; i < cnt; i++) {
+
+				RtThreadImpl ref = sched.ref[i];
+
+				if (ref.scan && ref.priority < sched.scanThres) {
+						
+					// threads cannot execute while we scan their
+					// stacks, because we run at a higher priority
+
+					int[] mem = ref.stack;
+					// sp starts at Const.STACK_OFF
+					int sp = ref.sp - Const.STACK_OFF;
+					for (j = 0; j <= sp; ++j) {
+						push(mem[j]);
+					}
+						
+					ref.scan = false;
+				}
+			}
+
+			// our own stack is empty
+			sched.ref[sched.active].scan = false;
+		}
+
 	}
 
 }

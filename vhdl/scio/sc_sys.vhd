@@ -134,9 +134,12 @@ port (
 	irq_in		: out irq_bcf_type;
 	irq_out		: in irq_ack_type;
 	exc_req		: in exception_type;
-
-	io_int		: in std_logic_vector(num_io_int-1 downto 0) := "00";
 	
+	io_int		: in std_logic_vector(num_io_int-1 downto 0) := "00";
+
+	xc_int      : in std_logic := '0';
+	xc_out      : out std_logic_vector(cpu_cnt-1 downto 0);
+
 	sync_out : in sync_out_type := NO_SYNC;
 	sync_in	 : out sync_in_type;
 	
@@ -189,7 +192,8 @@ architecture rtl of sc_sys is
 --
 --	signals for interrupt source state machines
 --
-	constant NUM_INT	: integer := num_io_int+1;		-- plus timer interrupt
+	constant NUM_INT	: integer := num_io_int+2;		-- plus timer interrupt
+														-- and cross-core interrupt
 	signal hwreq		: std_logic_vector(NUM_INT-1 downto 0);
 	signal swreq		: std_logic_vector(NUM_INT-1 downto 0);
 	signal intreq		: std_logic_vector(NUM_INT-1 downto 0);
@@ -286,7 +290,8 @@ end process;
 --
 
 	hwreq(0) <= timer_int;
-	hwreq(NUM_INT-1 downto 1) <= io_int;
+    hwreq(1) <= xc_int;
+	hwreq(NUM_INT-1 downto 2) <= io_int;
 
 process(prioint, irq_out.ack_irq) begin
 	ack <= (others => '0');
@@ -302,9 +307,7 @@ end process;
 				ack => ack(i),
 				clear => clearall,
 				pending => pending(i)
-			);
-
-		
+			);		
 	end generate;
 
 -- find highest priority pending interrupt
@@ -406,6 +409,7 @@ begin
 
 		exc_pend <= '0';
 		swreq <= (others => '0');
+		xc_out <= (others => '0');
 		clearall <= '0';
 
 		-- disable interrupts on a taken interrupt or excption
@@ -472,6 +476,8 @@ begin
 				when "1010" =>		-- dely 'instruction'
 					dly_timeout <= wr_data;
 					dly_block <= '1';
+				when "1011" =>
+					xc_out(to_integer(unsigned(wr_data))) <= '1';
 				when others =>
 					null;
 			end case;

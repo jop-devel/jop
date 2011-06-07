@@ -266,7 +266,7 @@ public class ReplaceNativeAndCPIdx extends JOPizerVisitor {
 	}
 
 	/**
-	 * Get field offset: relative affset for object fields, absolute
+	 * Get field offset: relative offset for object fields, absolute
 	 * addresses for static fields.
 	 * 
 	 * TODO: remove the dead code in constant pool replacement

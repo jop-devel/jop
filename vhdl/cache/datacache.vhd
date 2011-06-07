@@ -26,6 +26,9 @@ architecture rtl of datacache is
 
 	signal bp_fetch, next_bp_fetch : std_logic;
 	signal bp_rd_data, next_bp_rd_data : std_logic_vector(31 downto 0);
+
+	signal in_atomic, next_in_atomic : std_logic;
+	signal out_atomic, next_out_atomic : std_logic;
 	
 begin  -- rtl
 
@@ -62,12 +65,16 @@ begin  -- rtl
 			out_mux_reg <= bp;
 			in_mux_reg <= bp;
 			bp_fetch <= '0';
-			bp_rd_data <= (others => '0');			
+			bp_rd_data <= (others => '0');
+			in_atomic <= '0';
+			out_atomic <= '0';
 		elsif clk'event and clk = '1' then  -- rising clock edge
 			out_mux_reg <= next_out_mux;
 			in_mux_reg <= next_in_mux;
 			bp_fetch <= next_bp_fetch;
 			bp_rd_data <= next_bp_rd_data;
+			in_atomic <= next_in_atomic;
+			out_atomic <= next_out_atomic;
 		end if;
 	end process sync;
 
@@ -75,9 +82,10 @@ begin  -- rtl
 					out_mux_reg, in_mux_reg,
 					dmc_mem_out, dm_mem_out, fa_mem_out,
 					dmc_cpu_in, dm_cpu_in, fa_cpu_in,
-					bp_rd_data, bp_fetch)
+					bp_rd_data, bp_fetch,
+					in_atomic, out_atomic)
 
-		variable bp_rd, bp_wr : std_logic;
+		variable bp_rd, bp_wr, bp_atomic : std_logic;
 		
 	begin  -- process async
 		
@@ -85,6 +93,8 @@ begin  -- rtl
 		next_in_mux <= in_mux_reg;
 		next_bp_fetch <= '0';
 		next_bp_rd_data <= bp_rd_data;
+		next_in_atomic <= cpu_out.atomic;
+		next_out_atomic <= out_atomic;
 
 		case out_mux_reg is
 			when dmc =>
@@ -103,6 +113,7 @@ begin  -- rtl
 
 		bp_rd := '0';
 		bp_wr := '0';
+		bp_atomic := '0';
 
 		if cpu_out.rd = '1' or cpu_out.wr = '1' then
 			case cpu_out.cache is
@@ -118,6 +129,7 @@ begin  -- rtl
 					mem_out <= cpu_out;
 					bp_rd := cpu_out.rd;
 					bp_wr := cpu_out.wr;
+					bp_atomic := cpu_out.atomic;
 			end case;
 		end if;
 
@@ -125,6 +137,19 @@ begin  -- rtl
 		mem_out.rd <= dmc_mem_out.rd or dm_mem_out.rd or fa_mem_out.rd or bp_rd;
 		mem_out.wr <= dmc_mem_out.wr or dm_mem_out.wr or fa_mem_out.wr or bp_wr;
 
+		-- generate atomic signal
+		mem_out.atomic <= out_atomic or
+						  dmc_mem_out.atomic or dm_mem_out.atomic or fa_mem_out.atomic or bp_atomic;
+		if (cpu_out.atomic and
+			(dmc_mem_out.atomic or dm_mem_out.atomic or fa_mem_out.atomic or bp_atomic)) = '1' then
+			next_out_atomic <= '1';
+		end if;
+		if (in_atomic or
+			(dmc_mem_out.atomic or dm_mem_out.atomic or fa_mem_out.atomic or bp_atomic)) = '0' then
+			mem_out.atomic <= '0';
+			next_out_atomic <= '0';
+		end if;			
+		
 		case in_mux_reg is
 			when dmc =>
 				cpu_in.rd_data <= dmc_cpu_in.rd_data;

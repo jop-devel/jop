@@ -72,7 +72,7 @@ public final class SerialPort extends HardwareObject {
 		return (status & MASK_TDRE) != 0;
 	}
 
-	public boolean parityError() {
+	final public boolean parityError() {
 		return (status & MASK_PARITY_ERR) != 0;
 	}
 	

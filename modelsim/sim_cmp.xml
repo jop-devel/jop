@@ -1,0 +1,241 @@
+<project name="sim" default="sim">
+	
+	<property name="jopdir" value="../vhdl"/>
+	
+	<!-- <property name="options" value="-93 -quiet -check_synthesis -lint -pedanticerrors"/> -->
+	<property name="options" value="-93 -quiet +acc"/>
+	
+	<target name="sim">
+	
+		<delete dir="work"/>
+
+		<exec executable="vlib" failonerror="true">
+			<arg line="work"/>
+		</exec>
+
+		<presetdef name="vcom">
+			<exec executable="vcom" failonerror="true">
+				<arg line="${options}"/>
+			</exec>
+		</presetdef>
+
+		<vcom>
+			<arg line="${jopdir}/simulation/sim_jop_config_100.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/jop_types.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/simpcon/sc_pack.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/simulation/sim_ram.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/simulation/sim_pll.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/simulation/sim_jbc.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/simulation/sim_rom.vhd"/>
+		</vcom>
+
+        <vcom>
+          <arg line="${jopdir}/simulation/conversions.vhd"/>
+        </vcom>
+		
+        <vcom>
+          <arg line="${jopdir}/simulation/gen_utils.vhd"/>
+        </vcom>
+		
+		<!-- <vcom> -->
+		<!-- 	<arg line="${jopdir}/simulation/sim_memory.vhd"/> -->
+		<!-- </vcom> -->
+
+        <vcom>
+           <arg line="${jopdir}/simulation/sim_ssram_512x36.vhd"/>
+        </vcom>
+
+		<vcom>
+			<arg line="+acc ${jopdir}/simulation/bytecode.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="+acc ${jopdir}/simulation/microcode.vhd"/>
+		</vcom>
+
+		<!-- <vcom> -->
+		<!-- 	<arg line="${jopdir}/scio/fifo.vhd"/> -->
+		<!-- </vcom> -->
+
+		<!-- <vcom> -->
+		<!-- 	<arg line="${jopdir}/scio/sc_uart.vhd"/> -->
+		<!-- </vcom> -->
+
+		<vcom>
+			<arg line="+acc ${jopdir}/simulation/sim_sc_uart.vhd"/>
+		</vcom>
+
+		<!-- <vcom> -->
+		<!--	<arg line="${jopdir}/wishbone/wb_pack.vhd"/> -->
+		<!-- </vcom> -->
+
+		<!-- <vcom> -->
+		<!-- 	<arg line="${jopdir}/wishbone/wb_test_slave.vhd"/> -->
+		<!-- </vcom> -->
+
+		<!-- <vcom> -->
+		<!-- 	<arg line="${jopdir}/wishbone/wb_top.vhd"/> -->
+		<!-- </vcom> -->
+
+		<vcom>
+			<arg line="${jopdir}/jtbl.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/memory/sdpram.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/cache.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/cache/ocache.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/cache/lru.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/cache/fifo.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/cache/directmapped.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/cache/directmapped_invalidate.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/cache/datacache.vhd"/>
+		</vcom>
+
+		<!-- <vcom> -->
+		<!-- 	<arg line="${jopdir}/memory/sc_sram32_flash.vhd"/> -->
+		<!-- </vcom> -->
+
+		<!-- <vcom> -->
+		<!-- 	<arg line="${jopdir}/memory/sc_sram16.vhd"/> -->
+		<!-- </vcom> -->
+
+        <vcom>
+           <arg line="${jopdir}/memory/sc_ssram32.vhd"/>
+        </vcom>
+
+		<vcom>
+			<arg line="${jopdir}/memory/mem_sc.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/mul.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/bcfetch.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/fetch.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/decode.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/shift.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/stack.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/core.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/scio/sc_sys.vhd"/>
+		</vcom>
+
+        <vcom>
+          <arg line="${jopdir}/scio/cmpsync.vhd"/>
+        </vcom>
+
+		<vcom>
+			<arg line="${jopdir}/scio/scio_min_cache.vhd"/>
+		</vcom>
+
+        <vcom>
+          <arg line="${jopdir}/simpcon/sc_arbiter_pack.vhd"/>
+        </vcom>
+		
+        <vcom>
+          <arg line="${jopdir}/simpcon/sc_arbiter_tdma.vhd"/>
+        </vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/jopcpu.vhd"/>
+		</vcom>
+
+		<!-- <vcom> -->
+		<!-- 	<arg line="${jopdir}/top/jopcyc12_cache.vhd"/> -->
+		<!-- </vcom> -->
+
+		<!-- <vcom> -->
+		<!-- 	<arg line="${jopdir}/simulation/tb_jop.vhd"/> -->
+		<!-- </vcom> -->
+
+		<!-- <vcom> -->
+		<!-- 	<arg line="${jopdir}/top/jop_256x16.vhd"/> -->
+		<!-- </vcom> -->
+
+		<!-- <vcom> -->
+		<!-- 	<arg line="${jopdir}/simulation/tb_jop_sram16.vhd"/> -->
+		<!-- </vcom> -->
+
+        <vcom>
+           <arg line="${jopdir}/top/jopmul_512x32_cache.vhd"/>
+        </vcom>
+		
+        <vcom>
+           <arg line="${jopdir}/simulation/tb_jop_ssram32.vhd"/>
+        </vcom>
+
+<!--
+		<input message="Start simulation (y/n)?" validargs="y,n" addproperty="start-simulation"/>
+		<condition property="abort-simulation">
+			<equals arg1="n" arg2="${start-simulation}"/>
+		</condition>
+		<fail if="abort-simulation">Simulation aborted.</fail>
+
+		<input>Press Enter to start the simulation.</input>
+-->
+		<exec executable="vsim" failonerror="true">
+			<arg line="-i -do sim_cmp.do tb_jop"/>
+		</exec>
+
+	</target>
+	
+</project>

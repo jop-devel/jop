@@ -22,6 +22,8 @@ package cruiser.control;
 
 import com.jopdesign.io.*;
 import joprt.RtThread;
+import joprt.SwEvent;
+import com.jopdesign.sys.GC;
 
 public class CmpMain {
 
@@ -37,7 +39,7 @@ public class CmpMain {
 
 		Controller control = new Controller(manager);
 		RtThread ctrlThread = new RtThread(control, 4, 10*1000);
-		ctrlThread.setProcessor(0);
+		ctrlThread.setProcessor(3%sys.nrCpu);
 
 		System.out.println("created Controller");
 
@@ -64,10 +66,25 @@ public class CmpMain {
 											 frontRightFilter,
 											 rearLeftFilter,
 											 rearRightFilter);
-		RtThread dThread = new RtThread(dispatch, 7, 1000);
+		RtThread dThread = new RtThread(dispatch, 8, 2*1000);
 		dThread.setProcessor(0);
 
 		System.out.println("created Dispatcher");
+
+		GC.GCThread gcThread = new GC.GCThread(2, 199*1000);
+		gcThread.setProcessor(0);
+
+		GC.ScanEvent sc0Event = new GC.ScanEvent(7, 199*1000, 0);
+		GC.ScanEvent sc1Event = new GC.ScanEvent(7, 199*1000, 1);
+		GC.ScanEvent sc2Event = new GC.ScanEvent(7, 199*1000, 2);
+		GC.ScanEvent sc3Event = new GC.ScanEvent(7, 199*1000, 3);
+
+		GC.setConcurrent();
+
+		System.out.print("total: ");
+		System.out.print(GC.totalMemory());
+		System.out.print(" free: ");
+		System.out.println(GC.freeMemory());
 
 		RtThread.startMission();
 

@@ -3,9 +3,11 @@ package com.jopdesign.sys;
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 
+import joprt.SwEvent;
+
 /**
  * Represent the scheduler and thread queue for one CPU.
- * Created and set in startMisison()
+ * Created and set in startMissison()
  * 
  * @author martin
  *
@@ -23,7 +25,13 @@ class Scheduler implements Runnable {
 
 	int cnt;					// number of threads
 	int active;					// active thread number
-	
+
+	int boostIdx;               // thread runs at top priority when entered lock
+
+	int scanThres = -1;			// whether threads scan their own stack
+	SwEvent scanner;
+	GC.STWGCEvent collector;
+
 	int tmp;					// counter to build the thread list
 	
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
@@ -32,7 +40,6 @@ class Scheduler implements Runnable {
 		// create scheduler objects for all cores
 		for (int i=0; i<sys.nrCpu; ++i) {
 			new Scheduler(i);
-
 		}
 	}
 	
@@ -40,9 +47,6 @@ class Scheduler implements Runnable {
 		active = 0;			// main thread (or idle thread) is first thread
 		cnt = 0;			// stays 0 till startMission
 
-//		next = new int[1];
-//		ref = new RtThreadImpl[1];
-		
 		sched[core] = this;
 	}
 	
@@ -52,7 +56,7 @@ class Scheduler implements Runnable {
 	 * TODO: a cross-core SW event is only detected at a scheduler
 	 * invocation due to a thread on this core or at idle tick. 
 	 */
-	final static int IDL_TICK = 1000000;
+	final static int IDL_TICK = 100000;
 
 	// use local memory for two values
 	private final static int TIM_VAL_ADDR = 0x1e;
@@ -61,7 +65,7 @@ class Scheduler implements Runnable {
 	// timer offset to ensure that no timer interrupt happens just
 	// after monitorexit in this method and the new thread
 	// has a minimum time to run.
-	private final static int TIM_OFF = 200;
+ 	private final static int TIM_OFF = 200;
 //	private final static int TIM_OFF = 20;
 //	private final static int TIM_OFF = 2; // for 100 MHz version 20 or even lower
 										 // 2 is minimum
@@ -92,6 +96,8 @@ class Scheduler implements Runnable {
 		// take care to NOT invoke a method with monitorexit
 		// can happen on the write barrier on reference assignment
 
+		Native.lock();
+
 		// save stack
 		i = Native.getSP();
 		th = ref[active];
@@ -106,19 +112,28 @@ class Scheduler implements Runnable {
 		// this is now
 		j = Native.rd(Const.IO_US_CNT);
 
-		for (i=cnt-1; i>0; --i) {
-
-			if (event[i] == EV_FIRED) {
-				break;						// a pending event found
-			} else if (event[i] == NO_EVENT) {
-				diff = next[i]-j;			// check only periodic
-				if (diff < TIM_OFF) {
-					break;					// found a ready task
-				} else if (diff < k) {
-					k = diff;				// next interrupt time of higher priority thread
+		if (!GC.concurrentGc
+			&& Native.rd(Const.IO_CPUCNT) > 1
+			&& event[cnt-1] == EV_FIRED) { // STWGC beats everything else
+			i = cnt-1;
+		} else if (boostIdx >= 0 
+				   && next[boostIdx]-j < TIM_OFF) { // boosted threads come next
+			i = boostIdx;
+		} else {
+			for (i=cnt-1; i>0; --i) {
+				if (event[i] == EV_FIRED) {
+					break;						// a pending event found
+				} else if (event[i] == NO_EVENT) {
+					diff = next[i]-j;			// check only periodic
+					if (diff < TIM_OFF) {
+						break;					// found a ready task
+					} else if (diff < k) {
+						k = diff;				// next interrupt time of higher priority thread
+					}
 				}
 			}
 		}
+
 		// i is next ready thread (index into the list)
 		// If none is ready i points to idle task or main thread (fist in the list)
 		active = i;
@@ -177,7 +192,9 @@ class Scheduler implements Runnable {
 		// disable and enable INT 'manual'
 		// and DON'T call a method with synchronized
 		// it would enable the INT on monitorexit
-		Native.wr(1, Const.IO_INT_ENA);
+
+		// unlock enables also interrupts again
+		Native.unlock();
 	}
 
 	/**
@@ -186,15 +203,12 @@ class Scheduler implements Runnable {
 	 */
 	void allocArrays() {
 
-		// change active if a lower priority
-		// thread is before main
-//		tq.active = tq.ref[0].nr;		// this was our main thread
-
 		// cnt one higher for start thread (main or Runnable)
 		++cnt;
 		ref = new RtThreadImpl[cnt];
 		next = new int[cnt];
 		event = new int[cnt];
+		boostIdx = -1;
 		tmp = cnt-1;
 	}
 

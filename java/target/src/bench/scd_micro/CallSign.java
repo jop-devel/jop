@@ -8,13 +8,15 @@ public class CallSign {
 	final private byte[] val;
 
 	public CallSign(final byte[] v) {
+		if(v.length > RawFrame.MAX_CALLSIGN_LENGTH) {
+			throw new Error("CallSign(): MAX_CALLSIGN_LENGTH exceeded");
+		}
 		val = v;
 	}
-
 	/** Returns a valid hash code for this object. */
 	public int hashCode() {
 		int h = 0;
-		for(int i=0; i<val.length; i++) {
+		for(int i=0; i<val.length; i++) { //@WCA loop<=10
 			h += val[i];
 		}
 		return h;
@@ -26,8 +28,9 @@ public class CallSign {
 		else if (other instanceof CallSign) {
 			final byte[] cs = ((CallSign) other).val;
 			if (cs.length != val.length) return false;
-			for (int i = 0; i < cs.length; i++)
+			for (int i = 0; i < cs.length; i++) { //@WCA loop<=10
 				if (cs[i] != val[i]) return false;
+			}
 			return true;
 		} else return false;
 	}
@@ -37,9 +40,19 @@ public class CallSign {
 		final byte[] cs = ((CallSign) _other).val;
 		if (cs.length < val.length) return -1;
 		if (cs.length > val.length) return +1;
-		for (int i = 0; i < cs.length; i++)
+		for (int i = 0; i < cs.length; i++) { //@WCA loop<=10
 			if (cs[i] < val[i]) return -1;
 			else if (cs[i] > val[i]) return +1;
+		}
 		return 0;
+	}
+	
+	public String toString() {
+		StringBuffer sb = new StringBuffer("CallSign{");
+		for (int i = 0; i < val.length; i++) { //@WCA loop<=10
+			sb.append(val[i]); //String.format("%02x",b));
+		}
+		sb.append("}");
+		return sb.toString();
 	}
 }

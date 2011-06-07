@@ -1,7 +1,6 @@
 package scd_micro;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -13,29 +12,32 @@ import java.util.List;
  */
 class Collision {
 	/** The aircraft that were involved.  */
-	private ArrayList aircraft;
+	private ArrayList<Aircraft> aircraft;
 
 	/** The location where the collision happened. */
 	private Vector3d location;
 
 	/** Construct a Collision with a given set of aircraft and a location.  */
-	public Collision(List aircraft, Vector3d location) {
-		this.aircraft = new ArrayList(aircraft);
-		Collections.sort(this.aircraft);
+	public Collision(List<Aircraft> aircraft, Vector3d location) {
+		if(aircraft.size() > RawFrame.MAX_PLANES) {
+			throw new Error("Collision(): airplane count exceeds MAX_PLANES");
+		}
+		this.aircraft = new ArrayList<Aircraft>(aircraft);
+		MergeSort.sort(this.aircraft);
 		this.location = location;
 	}
 
 	/** Construct a Coollision with two aircraft an a location. */
 	public Collision(Aircraft one, Aircraft two, Vector3d location) {
-		aircraft = new ArrayList();
+		aircraft = new ArrayList<Aircraft>(2);
 		aircraft.add(one);
 		aircraft.add(two);
-		Collections.sort(aircraft);
+		MergeSort.sort(aircraft);
 		this.location = location;
 	}
 
 	/** Returns the list of aircraft involved. You are not to modify this list. */
-	public ArrayList getAircraftInvolved() { return aircraft; }
+	public ArrayList<Aircraft> getAircraftInvolved() { return aircraft; }
 
 	/** Returns the location of the collision. You are not to modify this location. */
 	public Vector3d getLocation() { return location; }
@@ -44,24 +46,25 @@ class Collision {
 
 	public int hashCode() {
 		int ret = 0;
-		for (Iterator iter = aircraft.iterator(); iter.hasNext();) 
+		for (Iterator<Aircraft> iter = aircraft.iterator(); iter.hasNext();) //@WCA loop<=10 
 			ret += ((Aircraft) iter.next()).hashCode();	
 		return ret;
 	}
 
 	/** Determines collision equality. Two collisions are equal if they have the same aircraft.*/
-
 	public boolean equals(Object _other) {
 		if (_other == this)  return true;
 		if (!(_other instanceof Collision)) return false;
 		Collision other = (Collision) _other;
-		ArrayList a = getAircraftInvolved();
-		ArrayList b = other.getAircraftInvolved();
+		
+		// The analysis cannot not yet cope with allocations in equals(), as it is used everywhere		
+		// Therefore, using iterators here is discouraged
+		ArrayList<Aircraft> a = getAircraftInvolved();
+		ArrayList<Aircraft> b = other.getAircraftInvolved();
 		if (a.size() != b.size()) return false;
-		Iterator ai = a.iterator();
-		Iterator bi = b.iterator();
-		while (ai.hasNext()) 
-			if (!ai.next().equals(bi.next())) return false;		
+		for(int i = 0; i < a.size(); i++) { //@WCA loop<=2
+			if(! a.get(i).equals(b.get(i))) return false;
+		}
 		return true;
 	}
 
@@ -70,7 +73,7 @@ class Collision {
 	public String toString() {
 		StringBuffer buf = new StringBuffer("Collision between ");
 		boolean first = true;
-		for (Iterator iter = getAircraftInvolved().iterator(); iter.hasNext();) {
+		for (Iterator<Aircraft> iter = getAircraftInvolved().iterator(); iter.hasNext();) { //@WCA loop<=10
 			if (first) first = false;
 			else buf.append(", ");	    
 			buf.append(iter.next().toString());

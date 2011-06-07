@@ -24,7 +24,7 @@ public class CarModel extends Thread {
 
 	volatile long timestep = 0;
 
-	public final static double TIME_SCALE = 0.005; // seconds
+	public final static double TIME_SCALE = 0.05; // seconds
 
 	final static double GRAVITY = 9.81; // meters per queare seconds
 	final static double AIR_DENSITY = 1.2; // kilograms per cubic meter

@@ -97,6 +97,8 @@ public class JVMHelp {
 	
 	static void noim() {
 
+		Native.lock();
+
 		int i;
 		wr('n');
 		wr('i');
@@ -105,31 +107,31 @@ public class JVMHelp {
 		int sp = Native.rdIntMem(i-4);		// sp of calling function
 		int pc = Native.rdIntMem(sp-3)-1;	// one to high
 		i = Native.rdIntMem(sp);			// mp
-wrSmall(i);
-wr(' ');
+		wrSmall(i);
+		wr(' ');
 		int start = Native.rdMem(i)>>>10;
-wrSmall(start);
-wr(' ');
-wrByte(pc);
-wr(' ');
+		wrSmall(start);
+		wr(' ');
+		wrByte(pc);
+		wr(' ');
 
 		int val = Native.rdMem(start+(pc>>2));
 		for (i=(pc&0x03); i<3; ++i) val >>= 8;
 		val &= 0xff;
 		wrByte(val);
 
-Object o = new Object();
-synchronized (o) {
+		Object o = new Object();
+		synchronized (o) {
 
-		System.out.println();
-		System.out.print("JOP: bytecode ");
-		System.out.print(val);
-		System.out.println(" not implemented");
+			System.out.println();
+			System.out.print("JOP: bytecode ");
+			System.out.print(val);
+			System.out.println(" not implemented");
 
-		trace(sp);
+			trace(sp);
 
-		for (;;);
-}
+			for (;;);
+		}
 	}
 
 	static void handleException() {

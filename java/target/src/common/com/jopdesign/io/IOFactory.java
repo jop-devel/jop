@@ -23,7 +23,7 @@ package com.jopdesign.io;
 import com.jopdesign.sys.JVMHelp;
 import com.jopdesign.sys.Native;
 import com.jopdesign.sys.Const;
-import com.jopdesign.sys.GC;
+import com.jopdesign.sys.Startup;
 
 /**
  * Base class for all IO device factories
@@ -64,7 +64,7 @@ public class IOFactory {
 				Const.IO_UART1_BASE, 0);
 		sys = (SysDevice) makeHWObject(new SysDevice(),
 				Const.IO_SYS_DEVICE, 1);
-		spMem = makeHWArray(GC.getScratchpadSize(), Const.SCRATCHPAD_ADDRESS, 2);
+		spMem = makeHWArray(Startup.getSPMSize(), Const.SCRATCHPAD_ADDRESS, 2);
 	};
 	// that has to be overridden by each sub class to get
 	// the correct cp

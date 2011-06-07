@@ -113,25 +113,28 @@ class JVM {
 	private static void f_dastore() { JVMHelp.noim(); /* jvm_long.inc */ }
 	private static void f_aastore(int ref, int index, int value) {
 			
-		synchronized (GC.mutex) {
-			if (Config.USE_SCOPES) {
-				if (Config.USE_SCOPECHECKS) {
-					JVMHelp.scopeCheck(ref, value);
-				}
-			} else {
-				// snapshot-at-beginning barrier
-				int oldVal = Native.arrayLoad(ref, index);
-				// Is it white?
-				if (oldVal != 0
-					&& Native.rdMem(oldVal+GC.OFF_SPACE) != GC.toSpace
-					&& Native.rdMem(oldVal+GC.OFF_GREY)==0) {
-					// Mark grey
-					Native.wrMem(GC.grayList, oldVal+GC.OFF_GREY);
-					GC.grayList = oldVal;			
-				}				
-			}
-
+		// we cannot synchronize on null, plus the GC is not running yet
+		if (GC.mutex == null) {
 			Native.arrayStore(ref, index, value);
+		} else {
+			synchronized (GC.mutex) {
+				if (GC.USE_SCOPES) {
+					// TODO Scope check
+				} else {
+					// snapshot-at-beginning barrier
+					int oldVal = Native.arrayLoad(ref, index);
+					// Is it white?
+					if (oldVal != 0
+						&& Native.rdMem(oldVal+GC.OFF_SPACE) != GC.toSpace
+						&& Native.rdMem(oldVal+GC.OFF_GREY)==0) {
+						// Mark grey
+						Native.wrMem(GC.grayList, oldVal+GC.OFF_GREY);
+						GC.grayList = oldVal;			
+					}				
+				}
+				
+				Native.arrayStore(ref, index, value);
+			}
 		}
 	}
 		
@@ -806,6 +809,8 @@ class JVM {
 
 	private static Throwable f_athrow(Throwable t) {
 		
+		Native.lock();
+
 		if (Const.USE_RTTM) {
 			// abort transaction on any exception 
 			Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
@@ -829,10 +834,11 @@ class JVM {
 			int tabstart = (i >>> 10) + (i & 0x3ff);
 			i = Native.rdMem(tabstart);
 			int tablen = i & 0xffff;
-			int mode = i & 0x10000;
+			int isSync = i & 0x10000;
+			int isStat = i & 0x20000;
 			
 			// search exception table
-			for (j = tabstart+1; j < tabstart+1+2*tablen; j+=2) {
+			for (j = tabstart+1; j < tabstart+1+(tablen<<1); j+=2) {
 				
 				// extract table entry
 				i = Native.rdMem(j);
@@ -857,16 +863,18 @@ class JVM {
 
 						// return with faked frame
 						Native.setSP(fp+4);
+						Native.unlock();
 						return t;
 					}
 				}
 			}
 
 			// do monitorexit if necessary
-			if (mode != 0) {
-				i = Native.rdIntMem(fp+5); // reference is right above the frame
-				// TODO: object to lock is found somewhere else for static methods
- 				Native.monitorExit(i);
+			if (isSync != 0) {
+				// TODO: object to lock is found somewhere else for static methods, pass null for now
+				i = Native.rdIntMem(vp); // reference is first argument of caller
+				if (isStat != 0) i = 0;
+ 				f_monitorexit(i);
 			}
 
 			// go up one frame
@@ -882,6 +890,7 @@ class JVM {
 		JVMHelp.wr("\n");
 		JVMHelp.trace(Native.getSP());
 
+		// Native.unlock(); // No need to unlock if we're about to crash anyway
 		System.exit(1);
 		return t;
 	}
@@ -904,7 +913,7 @@ class JVM {
 				throw JVMHelp.CCExc;
 			} else {
 				// check if the appropriate bit is set
-				int i = Native.rdMem(iftab-((-ifidx+31)>>>5));
+				int i = Native.rdMem(iftab+(ifidx-31)/32);				
 				if (((i >>> (~ifidx & 0x1f)) & 1) != 0) {
 					return objref;
 				} else {
@@ -915,8 +924,7 @@ class JVM {
 
 		// search for superclass
 		for (;;) {
-			// always check this bound with TypeGraphTool!
-			if (p==cons) { // @WCA loop <= 5
+			if (p==cons) {
 				return objref;
 			} else {
 				p = Native.rdMem(p+Const.CLASS_SUPER);	// super class ptr
@@ -943,15 +951,14 @@ class JVM {
 				return 0;
 			} else {
 				// check if the appropriate bit is set
-				int i = Native.rdMem(iftab-((-ifidx+31)>>>5));
+				int i = Native.rdMem(iftab+(ifidx-31)/32);				
 				return (i >>> (~ifidx & 0x1f)) & 1;
 			}
 		}
 
 		// search for superclass
 		for (;;) {
-			// always check this bound with TypeGraphTool!
-			if (p==cons) { // @WCA loop <= 5
+			if (p==cons) {
 				return 1;
 			} else {
 				p = Native.rdMem(p+Const.CLASS_SUPER);
@@ -961,34 +968,133 @@ class JVM {
 
 	}
 
-
-	private static int enterCnt;
-
 	private static void f_monitorenter(int objAddr) {
 
-/* is now in jvm.asm
-*/
-		// is there a race condition???????????????? when timer int happens NOW!
-		Native.wr(0, Const.IO_INT_ENA);
-		++enterCnt;
-		// JVMHelp.wr('M');
+		// we cannot do real locking during startup
+		if (!RtThreadImpl.useLocks || objAddr == 0) {
+			Native.lock();
+			return;
+		}
+
+		// get current thread
+		Scheduler s = Scheduler.sched[Native.rd(Const.IO_CPU_ID)];
+		RtThreadImpl c = s.ref[s.active];
+
+		// retrieve lock or create new one
+		Lock l = null;
+
+		Native.lock();
+
+		if (Native.rd(objAddr+GC.OFF_LOCK) == 0) {			
+			if (Lock.lockPool.empty()) {
+				JVMHelp.wr("run out of locks!\n");
+				for(;;);
+			} else {
+				l = Native.toLock(Lock.lockPool.read());
+			}
+			Native.wr(Native.toInt(l), objAddr+GC.OFF_LOCK);
+		} else {			
+			l = Native.toLock(Native.rd(objAddr+GC.OFF_LOCK));
+		}
+
+		if (l.holder == Native.toInt(c) && l.level > 0) {
+			// we already hold the lock
+			l.holder = Native.toInt(c);
+			++l.level;
+			++c.lockLevel;
+			Native.unlock();
+			return;
+		} else {
+			// enqueue this thread
+			RtThreadImpl q = Native.toRtThreadImpl(l.queue);
+			if (q == null) {
+				l.queue = Native.toInt(c);
+			} else {
+				while (q.lockQueue != 0) {
+					q = Native.toRtThreadImpl(q.lockQueue);
+				}
+				q.lockQueue = Native.toInt(c);
+			}
+
+			// boost for GC mutex
+			if (objAddr == Native.toInt(GC.mutex)) {
+				// disable scheduling and cross-core interrupts
+				Native.wr(~3, Const.IO_INTMASK);
+			}
+
+			// boost priority
+			if (s.boostIdx < 0) {
+				s.boostIdx = s.active;
+			}
+		}
+
+		Native.unlock();
+
+		// wait until lock is free
+		for (;;) {
+			Native.lock();
+			if (l.level == 0 && l.queue == Native.toInt(c)) {
+				break;
+			}
+			Native.unlock();
+		}
+
+		// remove from queue
+		l.queue = c.lockQueue;
+		c.lockQueue = 0;
+
+		// enter lock
+		l.holder = Native.toInt(c);
+		++l.level;		
+		++c.lockLevel;
+
+		Native.unlock();
 	}
 
 	private static void f_monitorexit(int objAddr) {
 
-/* is now in jvm.asm
-*/
-		// JVMHelp.wr('E');
-		--enterCnt;
-		if (enterCnt<0) {
-			JVMHelp.wr('^');
-			for (;;);
+		// we cannot do real locking during startup
+		if (!RtThreadImpl.useLocks || objAddr == 0) {
+			Native.unlock();
+			return;
 		}
-		if (enterCnt==0) {
-			Native.wr(1, Const.IO_INT_ENA);
-		}
-	}
 
+		// get current thread
+		Scheduler s = Scheduler.sched[Native.rd(Const.IO_CPU_ID)];
+		RtThreadImpl c = s.ref[s.active];
+
+		Native.lock();
+
+		// get lock (must exist already!)
+		Lock l = Native.toLock(Native.rd(objAddr+GC.OFF_LOCK));
+		if (l == null) {
+			JVMHelp.wr("missing lock on monitorexit!\n");
+			for(;;);
+		}
+
+		--l.level;
+		// kill lock and return to pool
+		if (l.level == 0 && l.queue == 0) {
+			Native.wr(0, objAddr+GC.OFF_LOCK);
+			Lock.lockPool.write(Native.toInt(l));
+		}
+
+		--c.lockLevel;
+		// unboost priority, if we are boosted
+		if (c.lockLevel == 0) {
+			if (s.boostIdx == s.active) {
+				s.boostIdx = -1;
+			}
+		}
+
+		// unboost for GC mutex
+		if (objAddr == Native.toInt(GC.mutex) && l.level == 0) {
+			// enable all interrupts again
+			Native.wr(-1, Const.IO_INTMASK);
+		}
+
+		Native.unlock();
+	}
 
 	private static void f_wide() { JVMHelp.noim();}
 	
@@ -1028,6 +1134,8 @@ class JVM {
 		type += cp;
 		type = Native.rdMem(type);
 		
+		if (type == 0) type = 1;
+
 		++pc;	// now to dimensions
 		
 		int dim = Native.rdMem(start+(pc>>2));
@@ -1077,10 +1185,10 @@ class JVM {
 	private static void f_jsr_w() { JVMHelp.noim();}
 	private static void f_breakpoint() { JVMHelp.noim();}
 	private static void f_resCB() { JVMHelp.noim();}
-	private static void f_resCC() { JVMHelp.noim();}
+	private static void f_invalidate() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_resCD() { JVMHelp.noim();}
-	private static void f_resCE() { JVMHelp.noim();}
-	private static void f_resCF() { JVMHelp.noim();}
+	private static void f_lock() { JVMHelp.noim(); /* jvm.asm */ }
+	private static void f_unlock() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_jopsys_null() { JVMHelp.noim();}
 	private static void f_jopsys_rd() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_jopsys_wr() { JVMHelp.noim(); /* jvm.asm */ }
@@ -1099,63 +1207,53 @@ class JVM {
 	private static void f_resDF() { JVMHelp.noim();}
 	private static void f_resE0() { JVMHelp.noim();}
 	private static void f_putstatic_ref(int val, int addr) {
-		
-		synchronized (GC.mutex) {
-			if (Config.USE_SCOPES) {
-				if (Config.USE_SCOPECHECKS) {
-					/**
-					 * val cannot be in a scoped region because if the scoped area is freed, then
-					 * we get a dangling reference in the modified static field
-					 */
-					int val_level;
-				
-					if (Config.ADD_REF_INFO){
-						val_level = (val & 0x3E000000) >>> 25;
-					}else{
-						val_level = Native.rdMem(val + GC.OFF_SCOPE);
-					}
-				
-					if ( val_level != 0 ){
-						GC.log("Illegal Assignment Exception: Static field references scoped object");
-					}
-				}
-			} else {
-				// snapshot-at-beginning barrier
-				int oldVal = Native.getStatic(addr);
-				// Is it white?
-				if (oldVal != 0
-					&& Native.rdMem(oldVal+GC.OFF_SPACE) != GC.toSpace
-					&& Native.rdMem(oldVal+GC.OFF_GREY)==0) {
-					// Mark grey
-					Native.wrMem(GC.grayList, oldVal+GC.OFF_GREY);
-					GC.grayList = oldVal;
-				}				
-			}
-
+		// we cannot synchronize on null, plus the GC is not running yet
+		if (GC.mutex == null) {
 			Native.putStatic(val, addr);
+		} else {		
+			synchronized (GC.mutex) {
+				if (GC.USE_SCOPES) {
+					// TODO Scope check
+				} else {
+					// snapshot-at-beginning barrier
+					int oldVal = Native.getStatic(addr);
+					// Is it white?
+					if (oldVal != 0
+						&& Native.rdMem(oldVal+GC.OFF_SPACE) != GC.toSpace
+						&& Native.rdMem(oldVal+GC.OFF_GREY)==0) {
+						// Mark grey
+						Native.wrMem(GC.grayList, oldVal+GC.OFF_GREY);
+						GC.grayList = oldVal;
+					}				
+				}
+				
+				Native.putStatic(val, addr);
+			}
 		}
 	}
 	private static void f_resE2() { JVMHelp.noim();}
 	private static void f_putfield_ref(int ref, int value, int index) {
-		
-		synchronized (GC.mutex) {			
-			if (Config.USE_SCOPES) {
-				if (Config.USE_SCOPECHECKS) {
-					JVMHelp.scopeCheck(ref, value);
-				}
-			} else {
-				// snapshot-at-beginning barrier
-				int oldVal = Native.getField(ref, index);
-				// Is it white?
-				if (oldVal != 0
-					&& Native.rdMem(oldVal+GC.OFF_SPACE) != GC.toSpace
-					&& Native.rdMem(oldVal+GC.OFF_GREY)==0) {
-					// Mark grey
-					Native.wrMem(GC.grayList, oldVal+GC.OFF_GREY);
-					GC.grayList = oldVal;
-				}				
-			}
+		// we cannot synchronize on null, plus the GC is not running yet
+		if (GC.mutex == null) {
 			Native.putField(ref, index, value);
+		} else {
+			synchronized (GC.mutex) {			
+				if (GC.USE_SCOPES) {
+					// TODO Scope check
+				} else {
+					// snapshot-at-beginning barrier
+					int oldVal = Native.getField(ref, index);
+					// Is it white?
+					if (oldVal != 0
+						&& Native.rdMem(oldVal+GC.OFF_SPACE) != GC.toSpace
+						&& Native.rdMem(oldVal+GC.OFF_GREY)==0) {
+						// Mark grey
+						Native.wrMem(GC.grayList, oldVal+GC.OFF_GREY);
+						GC.grayList = oldVal;
+					}				
+				}
+				Native.putField(ref, index, value);
+			}
 		}
 	}
 	private static void f_resE4() { JVMHelp.noim();}

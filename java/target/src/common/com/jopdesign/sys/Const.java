@@ -56,11 +56,11 @@ public class Const {
 	/**
 	 * Class info start relative to start of MTAB.
 	 */
-	public static final int MTAB2CLINFO = -5;
+	public static final int MTAB2CLINFO = -8;
 	/**
 	 * GC_INFO field relative to start of MTAB.
 	 */
-	static final int MTAB2GC_INFO = -3;
+	static final int MTAB2GC_INFO = -6;
 	
 	/**
 	 * Size of the on-chip stack cache including the area
@@ -75,7 +75,7 @@ public class Const {
 	 * Used in @link RtThreadImpl
 	 * 
 	 */
-	public static final int STACK_SIZE = 256;
+	public static final int STACK_SIZE = 1024;
 	
 	/**
 	 * Set to true if support for double bytecodes should be
@@ -195,11 +195,16 @@ public class Const {
 	public static final int IO_CPUCNT = IO_BASE+11;
 
 	/**
-	 * Number of available interrupts depends on the parameter
-	 * in sc_sys.vhd. 3 is the default: one timer interrupt
-	 * and 2 software interrupts.
+	 * Cross-core interrupt
 	 */
-	public static final int NUM_INTERRUPTS = 3;
+	public static final int IO_XCINT = IO_BASE+11;	
+
+	/**
+	 * Number of available interrupts depends on the parameter
+	 * in sc_sys.vhd. 4 is the default: one timer interrupt, one
+	 * cross-core interrupt, and 2 software interrupts.
+	 */
+	public static final int NUM_INTERRUPTS = 4;
 
 	public static final int IO_STATUS = IO_BASE+0x10;
 	public static final int IO_UART = IO_BASE+0x10+1;

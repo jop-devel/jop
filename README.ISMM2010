@@ -1,0 +1,5 @@
+To run the analyses, use the runbenchmarks.sh script.
+
+The as used for the evaluation trading application is located in
+java/target/src/app/trading/plain/. Our verison of the CDx benchmark
+can be found in java/target/src/bench/scd_micro/.

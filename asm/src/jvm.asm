@@ -148,7 +148,6 @@
 //				stmraf	load through fully assoc. cache
 //				stmwdf	store through fully assoc. cache
 //	2010-10-28	MS: cinval, atmstart, atmend added
-//	2011-01-07	MS: O$ with multiple objects and fields
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -158,7 +157,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhd files
 //
-version		= 20110107
+version		= 20101028
 
 //
 //	start of stack area in the on-chip RAM
@@ -215,7 +214,7 @@ fpu_const_res = -13
 	jjp		?		// pointer to meth. table of Java JVM functions
 	jjhp	?		// pointer to meth. table of Java JVM help functions
 
-	moncnt	?		// counter for monitor
+	lockcnt	?		// counter for lock
 
 //
 //	local vars
@@ -1387,64 +1386,10 @@ saload:
 			wait
 			ldmrd nxt
 
-monitorenter:
- 			pop					// drop reference
-//			bz null_pointer		// null pointer check
-			ldi	io_int_ena
-			stmwa				// write ext. mem address
-			ldi	0
-			stmwd				// write ext. mem data
-			ldm	moncnt
-			ldi	1
-			add
-			wait
-			wait
-			cinval				// invalidate earlier, just in case
-			stm	moncnt
-			// request the global lock
-			ldi	io_lock
-			stmwa				// write ext. mem address
-			ldi	1
-			stmwd				// write ext. mem data
-			wait
-			wait
-			nop nxt
-
-monitorexit:
-			pop					// drop reference
-//			bz null_pointer		// null pointer check
-			ldm	moncnt
-			ldi	1
-			sub
-			dup
-			stm	moncnt
-			bnz	mon_no_ena
-			// can be exec in in branch delay?
-			// up to now yes, but we change the write
-			// some time....
-			// nop
-			// nop
-			// free the global lock
-			ldi	io_lock
-			stmwa				// write ext. mem address
-			ldi	0
-			stmwd				// write ext. mem data
-			wait
-			wait
-			ldi	io_int_ena
-			stmwa
-			ldi	1
-			stmwd				// write ext. mem data
-			wait
-			wait
-mon_no_ena:	nop		nxt
-
 //		
 // long bytecodes
 //
 #include "jvm_long.inc"
-
-
 
 
 //****************
@@ -1656,3 +1601,56 @@ jopsys_inval:
 			nop
 			nop
 			nop nxt
+
+jopsys_lock:
+			ldi	io_int_ena
+			stmwa				// write ext. mem address
+			ldi	0
+			stmwd				// write ext. mem data
+			ldm	lockcnt
+			ldi	1
+			add
+			wait
+			wait
+			stm	lockcnt
+			// request the global lock
+			ldi	io_lock
+			stmwa				// write ext. mem address
+			ldi	1
+			stmwd				// write ext. mem data
+			wait
+			wait
+			nop nxt
+
+jopsys_unlock:
+			ldm	lockcnt
+			ldi	1
+			sub
+			dup
+			stm	lockcnt
+			bnz	no_int_ena
+			nop
+			nop
+
+			// free the global lock
+			ldi	io_lock
+			stmwa				// write ext. mem address
+			ldi	0
+			stmwd				// write ext. mem data
+			wait
+			wait
+			ldi	io_int_ena
+			stmwa
+			ldi	1
+			stmwd				// write ext. mem data
+			wait
+			wait
+no_int_ena:	nop		nxt
+
+jopsys_atmstart:
+			atmstart nxt
+
+jopsys_atmend:
+			atmend nxt
+
+

@@ -115,8 +115,8 @@ public class JopInstr{
 		new JopInstr("fconst_0", 1, IMP_ASM, 1),		// 0x0B
 		new JopInstr("fconst_1", 1, IMP_JAVA, 1),		// 0x0C
 		new JopInstr("fconst_2", 1, IMP_JAVA, 1),		// 0x0D
-		new JopInstr("dconst_0", 1, IMP_NO, 2),		// 0x0E
-		new JopInstr("dconst_1", 1, IMP_JAVA, 1),		// 0x0F
+		new JopInstr("dconst_0", 1, IMP_NO, 1),		// 0x0E
+		new JopInstr("dconst_1", 1, IMP_NO, 1),		// 0x0F
 
 		new JopInstr("bipush", 2, IMP_ASM, 2),		// 0x10
 		new JopInstr("sipush", 3, IMP_ASM, 3),		// 0x11
@@ -334,11 +334,11 @@ public class JopInstr{
 //
 //	reserved instructions
 //
-		new JopInstr("resCB", 1, IMP_NO, 1),			// 0xCB
-		new JopInstr("jopsys_inval", 1, IMP_ASM, 7),			// 0xCC
-		new JopInstr("resCD", 1, IMP_NO, 1),			// 0xCD
-		new JopInstr("resCE", 1, IMP_NO, 1),			// 0xCE
-		new JopInstr("resCF", 1, IMP_NO, 1),			// 0xCF
+		new JopInstr("jopsys_atmstart", 1, IMP_ASM, 1),	// 0xCB
+		new JopInstr("jopsys_inval", 1, IMP_ASM, 7),	// 0xCC
+		new JopInstr("jopsys_atmend", 1, IMP_ASM, 1),	// 0xCD
+		new JopInstr("jopsys_lock", 1, IMP_ASM, 1),		// 0xCE
+		new JopInstr("jopsys_unlock", 1, IMP_ASM, 1),	// 0xCF
 
 		new JopInstr("jopsys_null", 1, IMP_NO, 1),			// 0xD0
 		new JopInstr("jopsys_rd", 1, IMP_ASM, 3),			// 0xD1
@@ -359,9 +359,9 @@ public class JopInstr{
 //		new JopInstr("resDF", 1, IMP_NO, 1),			// 0xDF
 
 		new JopInstr("getstatic_ref", 3, IMP_ASM, 14),   // 0xE0
-		new JopInstr("putstatic_ref", 3, IMP_JAVA, 30),			// 0xE1
+		new JopInstr("putstatic_ref", 3, IMP_ASM, 30),			// 0xE1
 		new JopInstr("getfield_ref", 3, IMP_ASM, 13),			// 0xE2
-		new JopInstr("putfield_ref", 3, IMP_JAVA, 30),			// 0xE3
+		new JopInstr("putfield_ref", 3, IMP_ASM, 30),			// 0xE3
 		new JopInstr("getstatic_long", 3, IMP_ASM, 30),			// 0xE4
 		new JopInstr("putstatic_long", 3, IMP_ASM, 30),			// 0xE5
 		new JopInstr("getfield_long", 3, IMP_ASM, 30),			// 0xE6
@@ -389,7 +389,7 @@ public class JopInstr{
 		new JopInstr("resFB", 1, IMP_NO, 1),			// 0xFB
 		new JopInstr("resFC", 1, IMP_NO, 1),			// 0xFC
 		new JopInstr("resFD", 1, IMP_NO, 1),			// 0xFD
-		new JopInstr("sys_noim", 1, IMP_JAVA, 1),			// 0xFE
+		new JopInstr("sys_noim", 1, IMP_ASM, 1),			// 0xFE
 		new JopInstr("sys_init", 1, IMP_NO, 1),			// 0xFF
 	};
 
@@ -425,6 +425,12 @@ public class JopInstr{
 			"condMove", "jopsys_cond_move",
 			"condMoveRef", "jopsys_cond_move",
 			"invalidate", "jopsys_inval",
+			"lock", "jopsys_lock",
+			"unlock", "jopsys_unlock",
+			"atmstart", "jopsys_atmstart",
+			"atmend", "jopsys_atmend",
+			"toLock", "jopsys_nop",
+			"toRtThreadImpl", "jopsys_nop",
 			"memCopy", "jopsys_memcpy",
 			"putStatic", "jopsys_putstatic",
 			"getStatic", "jopsys_getstatic",
