@@ -64,7 +64,8 @@ public class GC {
 	 * 4 pointer to next handle of same type (used or free)
 	 * 5 gray list
 	 * 6 space marker - either toSpace or fromSpace
-	 * 
+	 * 7 pointer to object's lock
+	 *
 	 * !!! be carefule when changing the handle structure, it's
 	 * used in System.arraycopy() and probably in jvm.asm!!!
 	 */
@@ -195,7 +196,7 @@ public class GC {
 		for (int i=heapStartA; i<end; ++i) {
 			Native.wrMem(0, i);
 		}
-		concurrentGc = false;
+		// concurrentGc = false;
 		
 		// allocate the monitor
 		mutex = new Object();
@@ -258,7 +259,7 @@ public class GC {
 	 */
 	static void flip() {
 		synchronized (mutex) {
-			if (grayList!=GREY_END) log("GC: gray list not empty");
+			// if (grayList!=GREY_END) log("GC: gray list not empty");
 
 			useA = !useA;
 			if (useA) {
@@ -295,8 +296,7 @@ public class GC {
 					}
 					Scheduler.sched[i].scanner.fire();
 				} else {
-					log("Concurrent GC needs root scanning events");
-					System.exit(1);
+					throw OOMError;
 				}
 			}
 
@@ -309,8 +309,7 @@ public class GC {
 				}
 				Scheduler.sched[i].scanner.fire();
 			} else {
-				log("Concurrent GC needs root scanning events");
-				System.exit(1);
+				throw OOMError;
 			}
 			
 			// wait for everyone to finish root scanning
@@ -329,13 +328,14 @@ public class GC {
 			// add stacks of all other threads to the root list
  			cpus = sys.nrCpu;
  			for (i = 0; i < cpus; i++) {
- 				if (Scheduler.sched[i].ref != null) {
-					cnt = Scheduler.sched[i].ref.length;
+				RtThreadImpl [] ref = Scheduler.sched[i].ref;
+ 				if (ref != null) {
+					cnt = ref.length;
 					for (j = 0; j < cnt; j++) {
 						synchronized(mutex) {						
-							int[] mem = Scheduler.sched[i].ref[j].stack;
+							int[] mem = ref[j].stack;
 							// sp starts at Const.STACK_OFF
-							int sp = Scheduler.sched[i].ref[j].sp - Const.STACK_OFF;
+							int sp = ref[j].sp - Const.STACK_OFF;
 							for (k = 0; k <= sp; ++k) {
 								push(mem[k]);
 							}
@@ -365,11 +365,11 @@ public class GC {
 		
 		int i, ref;
 
-		log("stack");
+		// log("stack");
 		getStackRoots();			
-		log("static");
+		// log("static");
 		getStaticRoots();
-		log("trace");
+		// log("trace");
 		for (;;) {
 
 			// pop one object from the gray list
@@ -547,16 +547,16 @@ public class GC {
 
 		// log("start GC");
 
-		log("flip");
+		// log("flip");
 		flip();
-		log("m&c");
+		// log("m&c");
 		markAndCopy();
-		log("sweep");
+		// log("sweep");
 		sweepHandles();
-		log("zap");
+		// log("zap");
 		zapSemi();	
 
-		log("end GC");
+		// log("end GC");
 
 //  		log("GC end - free memory:",freeMemory());
 	}
@@ -607,23 +607,19 @@ public class GC {
 
 		synchronized (mutex) {
 			if (copyPtr+size+GC_MARGIN >= allocPtr || freeList==0) {
-				log("Run out of memory on CPU", sys.cpuId);
 				if (!concurrentGc) {
+					log("Run out of memory on CPU", sys.cpuId);
 					// that's the stop-the-world GC
 					triggerGc();
 				} else {
-					// fall-back for concurrent GC
-					gcRunning = true;
-					log("Wait for concurrent GC");
+					// concurrent GC could not keep up
+					throw OOMError;
 				}
 			}			
 		}
 		
 		while (gcRunning) {
 			// wait for the GC to finish
-			if (concurrentGc) {
-				RtThread.currentRtThread().waitForNextPeriod();
-			}
 		}
 
 		int ref;
@@ -700,23 +696,19 @@ public class GC {
 
 		synchronized (mutex) {
 			if (copyPtr+size+GC_MARGIN >= allocPtr || freeList==0) {
-				log("Run out of memory on CPU", sys.cpuId);
 				if (!concurrentGc) {
+					log("Run out of memory on CPU", sys.cpuId);
 					// that's the stop-the-world GC
 					triggerGc();
 				} else {
-					// fall-back for concurrent GC
-					gcRunning = true;
-					log("Wait for concurrent GC");
+					// concurrent GC could not keep up
+					throw OOMError;
 				}
 			}			
 		}
 
 		while (gcRunning) {
 			// wait for the GC to finish
-			if (concurrentGc) {
-				RtThread.currentRtThread().waitForNextPeriod();
-			}
 		}
 
 		int ref;
@@ -786,10 +778,10 @@ public class GC {
 
 /************************************************************************************************/	
 
-	static boolean concurrentGc;
+	static final boolean concurrentGc = true;
 
 	public static void setConcurrent() {
-		concurrentGc = true;
+		// concurrentGc = true;
 	}
 
 	static volatile boolean gcRunning;
@@ -803,10 +795,9 @@ public class GC {
 		public void run() {
 			for (;;) {
 				// log("G");
-				GC.log("<");
+				// GC.log("<");
 				GC.gc();
-				gcRunning = false;
-				GC.log(">");
+				// GC.log(">");
 				waitForNextPeriod();
 			}
 		}
@@ -907,9 +898,9 @@ public class GC {
 			int i, j;
 
 			SysDevice sys = IOFactory.getFactory().getSysDevice();
-			synchronized (mutex) {
-				GC.log("Handling scan event on CPU", sys.cpuId);
-			}
+			// synchronized (mutex) {
+			// 	GC.log("Handling scan event on CPU", sys.cpuId);
+			// }
 
 			Scheduler sched = Scheduler.sched[GC.sys.cpuId];
 			int cnt = sched.ref.length;
