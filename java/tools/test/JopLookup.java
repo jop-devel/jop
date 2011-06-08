@@ -263,10 +263,10 @@ public class JopLookup {
     private static void processQuery(String[] args) throws NumberFormatException {
         if (args.length == 0 || "".equals(args[0]) || "help".equals(args[0])) {
             System.out.println("Usage: ");
-            System.out.println("<address>        Print link info at address");
-            System.out.println("class <address>  Print class info of the class at the address");
-            System.out.println("method <mp|fqn>  Print instructions of method");
-            System.out.println("pc [<mp>] <pc>   Print instruction at program counter");
+            System.out.println("<address>          Print link info at address");
+            System.out.println("c[lass] <address>  Print class info of the class at the address");
+            System.out.println("m[ethod] <mp|fqn>  Print instructions of method");
+            System.out.println("pc [<mp>] <pc>     Print instruction at program counter");
             return;
         }
 
