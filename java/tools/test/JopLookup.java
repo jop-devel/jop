@@ -40,17 +40,17 @@ public class JopLookup {
     @SuppressWarnings({"PublicField"})
     private static class ClassEntry {
         public String name;
-        public int start;
-        public int end;
+        public int methodTable;
+        public int cpIndex;
         public int size;
         public int superRef;
         public Map<Integer, String> methods;
         public Map<Integer, Integer> constmap;
 
-        private ClassEntry(String name, int start, int end) {
+        private ClassEntry(String name, int methodTable, int cpIndex) {
             this.name = name;
-            this.start = start;
-            this.end = end;
+            this.methodTable = methodTable;
+            this.cpIndex = cpIndex;
             this.methods = new HashMap<Integer, String>();
             this.constmap = new HashMap<Integer, Integer>();
         }
@@ -67,6 +67,30 @@ public class JopLookup {
             this.code = code;
             positions = new ArrayList<Integer>();
             instructions = new HashMap<Integer, String>();
+        }
+
+        public String getClassName() {
+            return name.substring(0, name.indexOf(':'));
+        }
+
+        public ClassEntry getClassEntry() {
+            String clsName = getClassName();
+            for (ClassEntry cls : classes.values()) {
+                if (cls.name.equals(clsName)) {
+                    return cls;
+                }
+            }
+            return null;
+        }
+
+        public int getAddress() {
+            ClassEntry entry = getClassEntry();
+            for (Integer address : entry.methods.keySet()) {
+                if (entry.methods.get(address).equals(name.replace(':','.'))) {
+                    return address;
+                }
+            }
+            return -1;
         }
     }
 
@@ -126,6 +150,7 @@ public class JopLookup {
                 processQuery(qArgs);
             } catch (NumberFormatException e) {
                 System.out.println("Error: "+e);
+                e.printStackTrace();
             }
         }
     }
@@ -151,7 +176,7 @@ public class JopLookup {
                 }
                 if (entry.startsWith("class")) {
                     current = new ClassEntry(tab[1], Integer.parseInt(tab[2]), Integer.parseInt(tab[3]));
-                    classes.put(current.start, current);
+                    classes.put(current.methodTable-5, current);
                 }
                 assert(current != null);
                 if (entry.startsWith(" -instSize ")) {
@@ -162,7 +187,6 @@ public class JopLookup {
                 }
                 if (entry.startsWith(" -mtab ")) {
                     current.methods.put(Integer.parseInt(tab[2]), tab[1]);
-                    classes.put(Integer.parseInt(tab[2]), current);
                 }
                 if (entry.startsWith(" -constmap ")) {
                     current.constmap.put(Integer.parseInt(tab[2]), Integer.parseInt(tab[1]));
@@ -237,42 +261,60 @@ public class JopLookup {
     }
 
     private static void processQuery(String[] args) throws NumberFormatException {
-        if (args.length == 0) return;
-        if ("help".equals(args[0])) {
+        if (args.length == 0 || "".equals(args[0]) || "help".equals(args[0])) {
             System.out.println("Usage: ");
-            System.out.println("<address>        Print link info at address");
-            System.out.println("class <address>  Print class info of the member at the class address");
-            System.out.println("method <mp|fqn>  Print instructions of method");
-            System.out.println("pc <mp> <pc>     Print instruction at program counter");
+            System.out.println("<address>          Print link info at address");
+            System.out.println("c[lass] <address>  Print class info of the class at the address");
+            System.out.println("m[ethod] <mp|fqn>  Print instructions of method");
+            System.out.println("pc [<mp>] <pc>     Print instruction at program counter");
             return;
         }
 
-        if ("class".equals(args[0])) {
+        if ("class".equals(args[0]) || "c".equals(args[0])) {
             int loc = Integer.parseInt(args[1]);
             if (classes.containsKey(loc)) {
                 ClassEntry entry = classes.get(loc);
                 System.out.println(entry.name);
-                System.out.println("super: "+entry.superRef);
+                System.out.println("super: "+entry.superRef+", cp: "+entry.cpIndex);
+                for (Integer key : entry.methods.keySet()) {
+                    System.out.println("-mtab "+entry.methods.get(key)+" "+key);
+                }
             }
             return;
         }
         if ("pc".equals(args[0])) {
-            int mp = Integer.parseInt(args[1]);
-            int pc = Integer.parseInt(args[2]);
-            String method = lookupLoc(mp);
-            MethodEntry entry = methods.get(method);
-            if (entry == null) {
-                System.out.println("Unknown method");
+            if (args.length == 2) {
+                int pc = Integer.parseInt(args[1]);
+                System.out.println(lookupPC(pc));
+                return;
+            } else {
+                int mp = Integer.parseInt(args[1]);
+                int pc = Integer.parseInt(args[2]);
+                String method = lookupLoc(mp);
+                MethodEntry entry = methods.get(method);
+                if (entry == null) {
+                    System.out.println("Unknown method");
+                    return;
+                }
+                System.out.println(entry.instructions.get(pc));
                 return;
             }
-            System.out.println(entry.instructions.get(pc));
-            return;
         }
-        if ("method".equals(args[0])) {
+        if ("method".equals(args[0]) || "m".equals(args[0])) {
             MethodEntry entry = methods.get(args[1]);
             if (entry == null) {
                 int mp = Integer.parseInt(args[1]);
-                String method = lookupLoc(mp);
+                String method = bytecode.get(mp);
+                if (method == null) {
+                    for (ClassEntry cls : classes.values()) {
+                        for (Integer key : cls.methods.keySet()) {
+                            if ( key == mp ) {
+                                method = cls.methods.get(key);
+                                break;
+                            }
+                        }
+                    }
+                }
                 entry = methods.get(method);
             }
             if (entry == null) {
@@ -289,21 +331,53 @@ public class JopLookup {
 
     private static String lookupLoc(int loc) {
         if (fields.containsKey(loc)) {
-            return fields.get(loc);
+            return "Field " + fields.get(loc);
         }
         if (bytecode.containsKey(loc)) {
-            return bytecode.get(loc);
+            return "Bytecode of "+bytecode.get(loc);
         }
         if (classes.containsKey(loc)) {
             ClassEntry entry = classes.get(loc);
-            if (entry.methods.containsKey(loc)) {
-                return entry.methods.get(loc);
+            return "Class "+entry.name;
+        }
+        for (ClassEntry entry: classes.values()) {
+            String clsName = "class "+ (entry.methodTable-5) + " (" +entry.name+")";
+            if (entry.cpIndex == loc) {
+                return "Constantpool of "+clsName;
             }
-            if (entry.constmap.containsKey(loc)) {
-                return entry.constmap.get(loc).toString();
+            for (Integer key : entry.methods.keySet()) {
+                if (key == loc) {
+                    String method = entry.methods.get(key);
+                    int bc = -1;
+                    for (Integer k : bytecode.keySet()) {
+                        if (bytecode.get(k).equals(method)) {
+                            bc = k;
+                            break;
+                        }
+                    }
+                    return "MTab entry " + method + ", code at "+bc+", in " +clsName;
+                }
             }
         }
-        return "Unknown!";
+        return lookupPC(loc);
+    }
+
+    private static String lookupPC(int pc) {
+        int offset = Integer.MAX_VALUE;
+        String method = null;
+        for (Integer start : bytecode.keySet()) {
+            // find nearest method start
+            if (start > pc || pc - start > offset) {
+                continue;
+            }
+            offset = pc - start;
+            method = bytecode.get(start);
+        }
+        MethodEntry entry = methods.get(method);
+        if (entry == null) {
+            return "Unknown";
+        }
+        return method+" [address "+entry.getAddress()+", local pc: "+offset+"]: "+entry.instructions.get(offset);
     }
 
     private static void printMethod(MethodEntry entry) {
