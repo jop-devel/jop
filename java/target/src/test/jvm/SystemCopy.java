@@ -82,9 +82,13 @@ public class SystemCopy extends TestCase
 		// constants.
 		
 		// This test case should throw an eception
-		System.arraycopy("abcde", 0, cDest, 0, 3);
-		System.out.println(cDest);
-		if (cDest[2]!='c') {
+		boolean thrown = false;
+		try {
+			System.arraycopy("abcde", 0, cDest, 0, 3);
+		} catch (ArrayStoreException exc) {
+			thrown = true;
+		}
+		if (!thrown) {
 			return false;
 		}
 		
