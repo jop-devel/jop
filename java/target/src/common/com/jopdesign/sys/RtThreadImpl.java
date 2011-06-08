@@ -109,17 +109,25 @@ public class RtThreadImpl {
 	final static int DEAD = 3;
 	int state;
 
-	int     cpuId; // core that the thread is running on				   
-	int     nr;    // index in next, ref and event
-	int []  stack;
-	int     sp;
+	int cpuId;                      // core that the thread is running on
+	// index in next, ref and event
+	int nr;
+	int[] stack;
+	int sp;
+    
+	/**
+	 * The scope that the thread is in.
+	 * Set to initArea when started.
+	 */
+	Memory currentArea = null;
 
 	volatile boolean scan = false;
 	
 	/**
-	 * The scope that the thread is in. null when in heap context.
+	 * The scope for the the initial thread (and between missions).
+	 * Null until the Memory object that represents immortal is created.
 	 */
-	Scope currentArea;
+	static Memory initArea;
 
 	// linked list of threads in priority order
 	// used only at initialization time to collect the threads
@@ -533,7 +541,7 @@ public class RtThreadImpl {
 		return s.ref[s.active].rtt;
 	}
 	
-	static Scope getCurrentScope() {
+	static Memory getCurrentScope() {
 		
 //		JVMHelp.wr("getCurrent");
 		// we call it only when the mission is already started
@@ -557,7 +565,7 @@ public class RtThreadImpl {
 //		}
 	}
 	
-	static void setCurrentScope(Scope sc) {
+	static void setCurrentScope(Memory sc) {
 		RtThreadImpl rtt = null;
 		Scheduler s = Scheduler.sched[sys.cpuId];
 		if (s!=null || s.ref!=null) {

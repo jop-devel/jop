@@ -118,7 +118,7 @@ class JVM {
 			Native.arrayStore(ref, index, value);
 		} else {
 			synchronized (GC.mutex) {
-				if (GC.USE_SCOPES) {
+				if (Config.USE_SCOPES) {
 					// TODO Scope check
 				} else {
 					// snapshot-at-beginning barrier
@@ -132,7 +132,6 @@ class JVM {
 						GC.grayList = oldVal;			
 					}				
 				}
-				
 				Native.arrayStore(ref, index, value);
 			}
 		}
@@ -1212,7 +1211,7 @@ class JVM {
 			Native.putStatic(val, addr);
 		} else {		
 			synchronized (GC.mutex) {
-				if (GC.USE_SCOPES) {
+				if (Config.USE_SCOPES) {
 					// TODO Scope check
 				} else {
 					// snapshot-at-beginning barrier
@@ -1238,7 +1237,7 @@ class JVM {
 			Native.putField(ref, index, value);
 		} else {
 			synchronized (GC.mutex) {			
-				if (GC.USE_SCOPES) {
+				if (Config.USE_SCOPES) {
 					// TODO Scope check
 				} else {
 					// snapshot-at-beginning barrier

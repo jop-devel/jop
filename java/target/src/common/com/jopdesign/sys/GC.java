@@ -34,18 +34,13 @@ import joprt.SwEvent;
  */
 public class GC {
 	
-	/**
-	 * Use either scoped memories or a GC.
-	 * Combining scopes and the GC needs some extra work.
-	 */
-	final static boolean USE_SCOPES = false;
-	
-	
 	static int mem_start;		// read from memory
 	// get a effective heap size with fixed handle count
 	// for our RT-GC tests
 	static int full_heap_size;
 	
+	// Used in newObject and newArray to locate the object/array
+	private static final int HEADER_SIZE = 4;
 
 	/**
 	 * Fields in the handle structure.
@@ -148,6 +143,9 @@ public class GC {
 	
 	static OutOfMemoryError OOMError;
 
+	// Memory allocation pointer used before we enter the ImmortalMemory 
+	static int allocationPointer;
+
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 
 	static void init(int mem_size, int addr) {
@@ -157,46 +155,56 @@ public class GC {
 		// align mem_start to 8 word boundary for the
 		// conservative handle check		
 		mem_start = (mem_start+7)&0xfffffff8;
-		full_heap_size = mem_size-mem_start;
-		handle_cnt = full_heap_size/(2*TYPICAL_OBJ_SIZE+HANDLE_SIZE);
-		semi_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
-		
-		heapStartA = mem_start+handle_cnt*HANDLE_SIZE;
-		heapStartB = heapStartA+semi_size;
-		
-//		log("");
-//		log("memory size", mem_size);
-//		log("handle start ", mem_start);
-//		log("heap start (toSpace)", heapStartA);
-//		log("fromSpace", heapStartB);
-//		log("heap size (bytes)", semi_size*4*2);
-		
-		useA = true;
-		copyPtr = heapStartA;
-		allocPtr = copyPtr+semi_size;
-		toSpace = heapStartA;
-		fromSpace = heapStartB;
-		
-		freeList = 0;
-		useList = 0;
-		grayList = GREY_END;
-		for (int i=0; i<handle_cnt; ++i) {
-			int ref = mem_start+i*HANDLE_SIZE;
-			// pointer to former freelist head
-			Native.wrMem(freeList, ref+OFF_NEXT);
-			// mark handle as free
-			Native.wrMem(0, ref+OFF_PTR);
-			freeList = ref;
-			Native.wrMem(0, ref+OFF_GREY);
-			Native.wrMem(0, ref+OFF_SPACE);
-			Native.wrMem(0, ref+OFF_LOCK);
+		if(Config.USE_SCOPES) {
+			allocationPointer = mem_start;
+			// clean immortal memory
+			for (int i=mem_start; i<mem_size; ++i) {
+				Native.wrMem(0, i);
+			}
+			// Create the Scope that represents immortal memory
+			RtThreadImpl.initArea = Memory.getImmortal(mem_start, mem_size-1);
+		} else {
+			full_heap_size = mem_size-mem_start;
+			handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
+			semi_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
+			
+			heapStartA = mem_start+handle_cnt*HANDLE_SIZE;
+			heapStartB = heapStartA+semi_size;
+			
+			//              log("");
+			//              log("memory size", mem_size);
+			//              log("handle start ", mem_start);
+			//              log("heap start (toSpace)", heapStartA);
+			//              log("fromSpace", heapStartB);
+			//              log("heap size (bytes)", semi_size*4*2);
+			
+			useA = true;
+			copyPtr = heapStartA;
+			allocPtr = copyPtr+semi_size;
+			toSpace = heapStartA;
+			fromSpace = heapStartB;
+            
+			freeList = 0;
+			useList = 0;
+			grayList = GREY_END;
+			for (int i=0; i<handle_cnt; ++i) {
+				int ref = mem_start+i*HANDLE_SIZE;
+				// pointer to former freelist head
+				Native.wrMem(freeList, ref+OFF_NEXT);
+				// mark handle as free
+				Native.wrMem(0, ref+OFF_PTR);
+				freeList = ref;
+				Native.wrMem(0, ref+OFF_GREY);
+				Native.wrMem(0, ref+OFF_SPACE);
+				Native.wrMem(0, ref+OFF_LOCK);
+			}
+			// clean the heap
+			int end = heapStartA+2*semi_size;
+			for (int i=heapStartA; i<end; ++i) {
+				Native.wrMem(0, i);
+			}
+			concurrentGc = false;
 		}
-		// clean the heap
-		int end = heapStartA+2*semi_size;
-		for (int i=heapStartA; i<end; ++i) {
-			Native.wrMem(0, i);
-		}
-		// concurrentGc = false;
 		
 		// allocate the monitor
 		mutex = new Object();
@@ -507,7 +515,7 @@ public class GC {
 		log("GC triggered on CPU", sys.cpuId);
 
 		// scopes and GC cannot be mixed
-		if (USE_SCOPES) {
+		if (Config.USE_SCOPES) {
 			log("No GC when scopes are used");
 			System.exit(1);
 		}
@@ -582,27 +590,39 @@ public class GC {
 
 		int size = Native.rdMem(cons);			// instance size
 		
-		if (USE_SCOPES) {
+		if (Config.USE_SCOPES) {
 			// allocate in scope
-			Scope sc = null;
-			if (RtThreadImpl.mission) {
-				sc = RtThreadImpl.getCurrentScope();				
-			}
-			if (sc!=null) {
-				int rem = sc.backingStore.length - sc.allocPtr;
-				if (size+2 > rem) {
+			int ptr = allocationPointer;
+			if(RtThreadImpl.initArea == null) {
+				allocationPointer += size+HEADER_SIZE;
+			} else {
+				Memory sc = null;
+				if (RtThreadImpl.mission) {
+					Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
+					sc = s.ref[s.active].currentArea;                       
+				} else {
+					sc = RtThreadImpl.initArea;
+				}
+				if (sc.allocPtr+size+HEADER_SIZE > sc.endLocalPtr) {
 					// OOMError.fillInStackTrace();
 					throw OOMError;
 				}
-				int ref = sc.allocPtr;
-				sc.allocPtr += size+2;
-				int ptr = Native.toInt(sc.backingStore);
-				ptr = Native.rdMem(ptr);
-				ptr += ref;
-				sc.backingStore[ref] = ptr+2;
-				sc.backingStore[ref+1] = cons+Const.CLASS_HEADR;
-				return ptr;
-			}			
+				sc.allocPtr += size+HEADER_SIZE;
+				
+				//Add scope info to pointer of newly created object
+				if (Config.ADD_REF_INFO) {
+					ptr = ptr | (sc.level << 25);   
+				}
+				//Add scope info to object's handler field
+				// Native.wrMem(sc.level, ptr+OFF_SCOPE);
+			}
+			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
+			Native.wrMem(size, ptr+OFF_SIZE); // Just defining all headers
+			Native.wrMem(cons+Const.CLASS_HEADR, ptr+OFF_MTAB_ALEN);
+			Native.wrMem(0, ptr+OFF_TYPE);
+			// TODO: memory initialization is needed
+			// either on scope creation+exit or in new
+			return ptr;             
 		}
 
 		synchronized (mutex) {
@@ -671,27 +691,39 @@ public class GC {
 		if((type==11)||(type==7)) size <<= 1;
 		// reference array type is 1 (our convention)
 		
-		if (USE_SCOPES) {
+		if (Config.USE_SCOPES) {
 			// allocate in scope
-			Scope sc = null;
-			if (RtThreadImpl.mission) {
-				sc = RtThreadImpl.getCurrentScope();				
-			}
-			if (sc!=null) {
-				int rem = sc.backingStore.length - sc.allocPtr;
-				if (size+2 > rem) {
+			int ptr = allocationPointer;
+			if(RtThreadImpl.initArea == null) {
+				allocationPointer += size+HEADER_SIZE;
+			} else {
+				Memory sc = null;
+				if (RtThreadImpl.mission) {
+					Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
+					sc = s.ref[s.active].currentArea;                       
+				} else {
+					sc = RtThreadImpl.initArea;
+				}
+				if (sc.allocPtr+size+HEADER_SIZE > sc.endLocalPtr) {
 					// OOMError.fillInStackTrace();
 					throw OOMError;
 				}
-				int ref = sc.allocPtr;
-				sc.allocPtr += size+2;
-				int ptr = Native.toInt(sc.backingStore);
-				ptr = Native.rdMem(ptr);
-				ptr += ref;
-				sc.backingStore[ref] = ptr+2;
-				sc.backingStore[ref+1] = arrayLength;
-				return ptr;
-			}			
+				sc.allocPtr += size+HEADER_SIZE;
+				
+				//Add scope info to pointer of newly created object
+				if (Config.ADD_REF_INFO) {
+					ptr = ptr | (sc.level << 25);   
+				}
+				//Add scope info to object's handler field
+				// Native.wrMem(sc.level, ptr+OFF_SCOPE);
+			}
+			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
+			Native.wrMem(size, ptr+OFF_SIZE); // Just defining all headers
+			Native.wrMem(arrayLength, ptr+OFF_MTAB_ALEN);
+			Native.wrMem(type, ptr+OFF_TYPE);
+			// TODO: memory initialization is needed
+			// either on scope creation+exit or in new
+			return ptr;             
 		}
 
 		synchronized (mutex) {
@@ -778,10 +810,10 @@ public class GC {
 
 /************************************************************************************************/	
 
-	static final boolean concurrentGc = true;
+	static boolean concurrentGc = false;
 
 	public static void setConcurrent() {
-		// concurrentGc = true;
+		concurrentGc = true;
 	}
 
 	static volatile boolean gcRunning;
