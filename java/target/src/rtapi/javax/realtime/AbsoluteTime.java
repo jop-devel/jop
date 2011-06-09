@@ -247,7 +247,7 @@ public class AbsoluteTime extends HighResolutionTime {
 		if (time == null || time.clock != clock)
 			throw new IllegalArgumentException("null arg or different clock");
 
-		return add(time.millis, time.nanos, dest);
+		return add(-time.millis, -time.nanos, dest);
 	}
 	
 	/**

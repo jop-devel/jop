@@ -240,7 +240,7 @@ public abstract class HighResolutionTime { // implements Comparable {
             if (nanos < 0) { // watch for negative overflow
                 long tmp = millis + millis_in_nanos;
                 if (tmp >= 0) {
-                	// What should we do in case of overflow? - Tórur 3/6/2011
+                	// What should we do in case of overflow? - Torur 3/6/2011
                 	throw new ArithmeticException("overflow");
                 	//return false
                 }
@@ -287,28 +287,28 @@ public abstract class HighResolutionTime { // implements Comparable {
 	 *            wait indefinitely. If it is null then wait indefinitely.
 	 * @throws java.lang.InterruptedException
 	 */
-	@SCJAllowed(LEVEL_2)
-    public static void waitForObject(java.lang.Object target,
-            HighResolutionTime time) throws java.lang.InterruptedException {
-        if (target == null)
-            throw new NullPointerException("null target");
-
-        if (time != null) {
-            if (time.clock != Clock.single)
-                throw new UnsupportedOperationException("Incompatible clock");
-
-            if (time instanceof AbsoluteTime) {
-                time = ((AbsoluteTime) time).subtract(Clock.single.getTime());
-                //target.wait(time.getMilliseconds(), time.getNanoseconds());
-            } else {
-                /*if (time.isNegative())
-                    throw new IllegalArgumentException("negative relative time");
-                else
-                    target.wait(time.getMilliseconds(), time.getNanoseconds());*/
-            }
-        } else
-            target.wait();
-    }
+//	@SCJAllowed(LEVEL_2)
+//    public static void waitForObject(java.lang.Object target,
+//            HighResolutionTime time) throws java.lang.InterruptedException {
+//        if (target == null)
+//            throw new NullPointerException("null target");
+//
+//        if (time != null) {
+//            if (time.clock != Clock.single)
+//                throw new UnsupportedOperationException("Incompatible clock");
+//
+//            if (time instanceof AbsoluteTime) {
+//                time = ((AbsoluteTime) time).subtract(Clock.single.getTime());
+//                //target.wait(time.getMilliseconds(), time.getNanoseconds());
+//            } else {
+//                /*if (time.isNegative())
+//                    throw new IllegalArgumentException("negative relative time");
+//                else
+//                    target.wait(time.getMilliseconds(), time.getNanoseconds());*/
+//            }
+//        } else
+//            target.wait();
+//    }
 	
 	HighResolutionTime add(long millis, int nanos, HighResolutionTime dest) {
 //        if (!
