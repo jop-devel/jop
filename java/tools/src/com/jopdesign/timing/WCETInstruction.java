@@ -120,7 +120,11 @@ public class WCETInstruction {
 	}
 	
 	//Native bytecodes (see jvm.asm)
+	private static final int JOPSYS_ATMSTART = 203;
 	private static final int JOPSYS_INVAL = 204;
+	private static final int JOPSYS_ATMEND = 205;
+	private static final int JOPSYS_LOCK = 206;
+	private static final int JOPSYS_UNLOCK = 207;
 	private static final int JOPSYS_RD = 209;
 	private static final int JOPSYS_WR = 210;
 	private static final int JOPSYS_RDMEM = 211;
@@ -1268,11 +1272,11 @@ public class WCETInstruction {
 			break;
 		// MONITORENTER = 194
 		case org.apache.bcel.Constants.MONITORENTER:
-			wcet = 19;
+			wcet = -1;
 			break;
 		// MONITOREXIT = 195
 		case org.apache.bcel.Constants.MONITOREXIT:
-			wcet = 20;
+			wcet = -1;
 			break;
 		// WIDE = 196
 		case org.apache.bcel.Constants.WIDE:
@@ -1465,9 +1469,29 @@ public class WCETInstruction {
 			wcet = -1;
 			break;
 		
+		// JOPSYS_ATMSTART = 203
+		case JOPSYS_ATMSTART:
+			wcet = 1;
+			break;
+
 		// JOPSYS_INVAL = 204
 		case JOPSYS_INVAL:
 			wcet = 4;
+			break;
+
+		// JOPSYS_ATMEND = 205
+		case JOPSYS_ATMEND:
+			wcet = 1;
+			break;
+
+		// JOPSYS_LOCK = 206
+		case JOPSYS_LOCK:
+			wcet = 17;
+			break;
+
+		// JOPSYS_UNLOCK = 207
+		case JOPSYS_UNLOCK:
+			wcet = 21;
 			break;
 
 		default:

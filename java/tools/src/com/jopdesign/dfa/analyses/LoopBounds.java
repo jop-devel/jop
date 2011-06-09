@@ -1531,6 +1531,15 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                 }
             }
             out.put(new Location(context.stackPtr), new ValueMapping());
+        } else if (methodId.equals("com.jopdesign.sys.Native#lock()V")
+				   || methodId.equals("com.jopdesign.sys.Native#unlock()V")
+				   || methodId.equals("com.jopdesign.sys.Native#atmstart()V")
+				   || methodId.equals("com.jopdesign.sys.Native#atmend()V")) {
+            for (Location l : in.keySet()) {
+                if (l.stackLoc < context.stackPtr) {
+                    out.put(l, in.get(l));
+                }
+            }
         } else if (methodId.equals("com.jopdesign.sys.Native#toInt(Ljava/lang/Object;)I")) {
             for (Location l : in.keySet()) {
                 if (l.stackLoc < context.stackPtr - 1) {

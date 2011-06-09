@@ -1321,6 +1321,11 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
             filterSet(in, out, context.stackPtr - 2);
         } else if (methodId.equals("com.jopdesign.sys.Native#getSP()I")) {
             filterSet(in, out, context.stackPtr);
+        } else if (methodId.equals("com.jopdesign.sys.Native#lock()V")
+				   || methodId.equals("com.jopdesign.sys.Native#unlock()V")
+				   || methodId.equals("com.jopdesign.sys.Native#atmstart()V")
+				   || methodId.equals("com.jopdesign.sys.Native#atmend()V")) {
+            filterSet(in, out, context.stackPtr);
         } else if (methodId.equals("com.jopdesign.sys.Native#toInt(Ljava/lang/Object;)I")
                 || methodId.equals("com.jopdesign.sys.Native#toObject(I)Ljava/lang/Object;")) {
             filterSet(in, out, context.stackPtr - 1);
