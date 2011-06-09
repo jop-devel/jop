@@ -54,8 +54,8 @@ import static javax.safetycritical.annotate.Level.LEVEL_1;
 @SCJAllowed
 public abstract class Clock {
 
-	// TODO: provide a concrete class for the real-time clock
-	static Clock single = null; // new Clock();
+	// it is in the concrete implementation
+//	static Clock single = null; // new RealtimeClock();
 	
   /**
    * There is always at least one clock object available: the
@@ -65,7 +65,7 @@ public abstract class Clock {
   @SCJAllowed
   @SCJRestricted(maySelfSuspend = false)
   public static Clock getRealtimeClock() {
-		return single;
+		return RealtimeClock.single;
   }
 
   /**
