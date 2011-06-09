@@ -45,6 +45,7 @@ public class JVMHelp {
 	static ArrayIndexOutOfBoundsException ABExc;
 	static ArithmeticException ArithExc;
 	static ClassCastException CCExc;
+	static IllegalMonitorStateException IMSExc;
 	
 	static RetryException RetryExc;
 
@@ -182,6 +183,7 @@ public class JVMHelp {
 		ABExc = new ArrayIndexOutOfBoundsException();
 		ArithExc = new ArithmeticException();
 		CCExc = new ClassCastException();
+		IMSExc = new IllegalMonitorStateException();
 		
 		RetryExc = RetryException.instance;
 

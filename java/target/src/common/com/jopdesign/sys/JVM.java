@@ -986,8 +986,8 @@ class JVM {
 
 		if (Native.rd(objAddr+GC.OFF_LOCK) == 0) {			
 			if (Lock.lockPool.empty()) {
-				JVMHelp.wr("run out of locks!\n");
-				for(;;);
+				// JVMHelp.wr("run out of locks!\n");
+				throw JVMHelp.IMSExc;
 			} else {
 				l = Native.toLock(Lock.lockPool.read());
 			}
@@ -1067,8 +1067,8 @@ class JVM {
 		// get lock (must exist already!)
 		Lock l = Native.toLock(Native.rd(objAddr+GC.OFF_LOCK));
 		if (l == null) {
-			JVMHelp.wr("missing lock on monitorexit!\n");
-			for(;;);
+			// JVMHelp.wr("missing lock on monitorexit!\n");
+			throw JVMHelp.IMSExc;
 		}
 
 		--l.level;
