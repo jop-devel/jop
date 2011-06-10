@@ -17,22 +17,25 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-package javax.realtime;
+package udclock;
+
+import javax.realtime.AbsoluteTime;
+import javax.realtime.Clock;
+import javax.realtime.ClockCallBack;
+import javax.realtime.RelativeTime;
 
 /**
  * @author martin
  *
  */
-public class RealtimeClock extends Clock {
-
-	static Clock single = new RealtimeClock();
+public class PassiveClock extends Clock {
 
 	/* (non-Javadoc)
 	 * @see javax.realtime.Clock#drivesEvents()
 	 */
 	@Override
 	protected boolean drivesEvents() {
-		return true;
+		return false;
 	}
 
 	/* (non-Javadoc)
@@ -40,7 +43,7 @@ public class RealtimeClock extends Clock {
 	 */
 	@Override
 	public RelativeTime getEpochOffset() {
-		return new RelativeTime(0L, 0);
+		return new RelativeTime(0L, 0, this);
 	}
 
 	/* (non-Javadoc)
@@ -48,7 +51,9 @@ public class RealtimeClock extends Clock {
 	 */
 	@Override
 	public RelativeTime getResolution() {
-		return new RelativeTime(0L, 1000);
+		// TODO should use the MHz measurement as in Startup.getSpeed()
+		// now we assume a 100 MHz clock
+		return new RelativeTime(0L, 10, this);
 	}
 
 	/* (non-Javadoc)
@@ -56,8 +61,8 @@ public class RealtimeClock extends Clock {
 	 */
 	@Override
 	public RelativeTime getResolution(RelativeTime dest) {
-		dest.set(0L, 1000);
-		return dest;
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	/* (non-Javadoc)
@@ -65,9 +70,8 @@ public class RealtimeClock extends Clock {
 	 */
 	@Override
 	public AbsoluteTime getTime() {
-		AbsoluteTime t = new AbsoluteTime();
-		t.set(System.currentTimeMillis());
-		return t;
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	/* (non-Javadoc)
@@ -75,8 +79,8 @@ public class RealtimeClock extends Clock {
 	 */
 	@Override
 	public AbsoluteTime getTime(AbsoluteTime dest) {
-		dest.set(System.currentTimeMillis());
-		return dest;
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	/* (non-Javadoc)

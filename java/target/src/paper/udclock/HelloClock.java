@@ -31,6 +31,8 @@ import javax.realtime.RelativeTime;
 import javax.safetycritical.*;
 import javax.safetycritical.io.SimplePrintStream;
 
+import kfl.Timer;
+
 /**
  * A minimal SCJ application - The SCJ Hello World
  * 
@@ -44,6 +46,8 @@ public class HelloClock extends Mission implements Safelet {
 
 	static SimplePrintStream out;
 
+	HelloClock ref;
+	
 	// From Mission
 	@Override
 	protected void initialize() {
@@ -95,7 +99,19 @@ public class HelloClock extends Mission implements Safelet {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		
+		
+		HelloClock x = new HelloClock();
+		HelloClock y = new HelloClock();
+		
+		Timer.wd();
+		x.ref = y;
+		
 		System.out.println("Hello");
+		
+		
+		
+		
 		Terminal.getTerminal().writeln("Hello SCJ World!");
 		single = new HelloClock();
 		JopSystem.startMission(single);
