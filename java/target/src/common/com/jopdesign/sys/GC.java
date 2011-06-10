@@ -148,6 +148,44 @@ public class GC {
 
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 
+	/**
+	 * Provide static bounds for WCET analysis
+	 */
+	static final int MAX_CPUS = 8;
+	static final int MAX_THREADS = 20;
+	static final int MAX_STATIC_REFS = 64;
+	static final int MAX_HEAP_SIZE = (1024-100)*1024/4;
+	static final int MAX_HANDLE_CNT = MAX_HEAP_SIZE/(2*TYPICAL_OBJ_SIZE+HANDLE_SIZE);
+	static final int MAX_SEMI_SIZE = (MAX_HEAP_SIZE-MAX_HANDLE_CNT*HANDLE_SIZE)/2;
+
+	static void checkLimits() {
+		if (Native.rd(Const.IO_CPUCNT) > MAX_CPUS) {
+			log("warning: real number of cores exceeds assumed number of cores");
+			log("real: ", Native.rd(Const.IO_CPUCNT));
+			log("max: ", MAX_CPUS);
+		}
+		if (Native.rdMem(addrStaticRefs+1) > MAX_STATIC_REFS) {
+			log("warning: real number of static refs exceeds assumed number of static refs");
+			log("real: ", Native.rdMem(addrStaticRefs+1));
+			log("max: ", MAX_STATIC_REFS);
+		}
+		if (full_heap_size > MAX_HEAP_SIZE) {
+			log("warning: real heap size exceeds assumed maximum heap size");
+			log("real: ", full_heap_size);
+			log("max: ", MAX_HEAP_SIZE);
+		}
+		if (handle_cnt > MAX_HANDLE_CNT) {
+			log("warning: real number of handles exceeds assumed maximum number of handles");
+			log("real: ", handle_cnt);
+			log("max: ", MAX_HANDLE_CNT);
+		}
+		if (semi_size > MAX_SEMI_SIZE) {
+			log("warning: real semi space size exceeds assumed maximum semi space size");
+			log("real: ", semi_size);
+			log("max: ", MAX_SEMI_SIZE);
+		}
+	}
+
 	static void init(int mem_size, int addr) {
 		
 		addrStaticRefs = addr;
@@ -165,9 +203,11 @@ public class GC {
 			RtThreadImpl.initArea = Memory.getImmortal(mem_start, mem_size-1);
 		} else {
 			full_heap_size = mem_size-mem_start;
-			handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
+			handle_cnt = full_heap_size/(2*TYPICAL_OBJ_SIZE+HANDLE_SIZE);
 			semi_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
 			
+			checkLimits();
+
 			heapStartA = mem_start+handle_cnt*HANDLE_SIZE;
 			heapStartB = heapStartA+semi_size;
 			
@@ -289,20 +329,24 @@ public class GC {
 	 */
 	static void getStackRoots() {
 		int i, j, k, cnt, cpus;
+		Scheduler sched;
+		RtThreadImpl [] ref;
 		
 		if (concurrentGc) {
 			cpus = sys.nrCpu;
-			for (i = cpus-1; i >= 0; --i) {
+			for (i = cpus-1; i >= 0; --i) { // @WCA loop <= MAX_CPUS
 				// we fire the scanner event for this CPU last, so we do
 				// not delay the start on other CPUs
 				if (i == sys.cpuId)
 					continue;
-				if (Scheduler.sched[i].scanner != null) {					
-					cnt = Scheduler.sched[i].ref.length;
-					for (j = 0; j < cnt; j++) {
-						Scheduler.sched[i].ref[j].scan = true;
+				sched = Scheduler.sched[i];
+				if (sched.scanner != null) {
+					ref = sched.ref;
+					cnt = ref.length;
+					for (j = 0; j < cnt; j++) { // @WCA loop <= MAX_THREADS outer
+						ref[j].scan = true;
 					}
-					Scheduler.sched[i].scanner.fire();
+					sched.scanner.fire();
 				} else {
 					throw OOMError;
 				}
@@ -310,21 +354,25 @@ public class GC {
 
 			// fire event for current CPU
 			i = sys.cpuId;
-			if (Scheduler.sched[i].scanner != null) {					
-				cnt = Scheduler.sched[i].ref.length;
-				for (j = 0; j < cnt; j++) {
-					Scheduler.sched[i].ref[j].scan = true;
+			sched = Scheduler.sched[i];
+			ref = sched.ref;
+			if (sched.scanner != null) {					
+				cnt = ref.length;
+				for (j = 0; j < cnt; j++) { // @WCA loop <= MAX_THREADS
+					ref[j].scan = true;
 				}
-				Scheduler.sched[i].scanner.fire();
+				sched.scanner.fire();
 			} else {
 				throw OOMError;
 			}
 			
 			// wait for everyone to finish root scanning
-			for (i = 0; i < cpus; i++) {
-				cnt = Scheduler.sched[i].ref.length;
-				for (j = 0; j < cnt; j++) {
-					while (Scheduler.sched[i].ref[j].scan) {
+			for (i = 0; i < cpus; i++) { // @WCA loop <= MAX_CPUS
+				sched = Scheduler.sched[i];
+				ref = sched.ref;
+				cnt = ref.length;
+				for (j = 0; j < cnt; j++) { // @WCA loop <= MAX_THREADS outer
+					while (ref[j].scan) { // @WCA loop <= 1
 						/* wait for root scanning threads to do the work */
 					}
 				}
@@ -335,11 +383,11 @@ public class GC {
 
 			// add stacks of all other threads to the root list
  			cpus = sys.nrCpu;
- 			for (i = 0; i < cpus; i++) {
-				RtThreadImpl [] ref = Scheduler.sched[i].ref;
+ 			for (i = 0; i < cpus; i++) { // @WCA loop <= MAX_CPUS
+				ref = Scheduler.sched[i].ref;
  				if (ref != null) {
 					cnt = ref.length;
-					for (j = 0; j < cnt; j++) {
+					for (j = 0; j < cnt; j++) { // @WCA loop <= MAX_THREADS outer
 						synchronized(mutex) {						
 							int[] mem = ref[j].stack;
 							// sp starts at Const.STACK_OFF
@@ -364,7 +412,7 @@ public class GC {
 		// add static refs to root list
 		int addr = Native.rdMem(addrStaticRefs);
 		int cnt = Native.rdMem(addrStaticRefs+1);
-		for (i=0; i<cnt; ++i) {
+		for (i=0; i<cnt; ++i) { // @WCA loop <= MAX_STATIC_REFS
 			push(Native.rdMem(addr+i));
 		}
 	}
@@ -372,6 +420,8 @@ public class GC {
 	static void markAndCopy() {
 		
 		int i, ref;
+
+		Object mtx = mutex;
 
 		// log("stack");
 		getStackRoots();			
@@ -381,9 +431,9 @@ public class GC {
 		for (;;) {
 
 			// pop one object from the gray list
-			synchronized (mutex) {
+			synchronized (mtx) { // @WCA loop <= MAX_HANDLE_CNT
 				ref = grayList;
-				if (ref==GREY_END) {
+				if (ref==GREY_END) { 
 					break;
 				}
 				grayList = Native.rdMem(ref+OFF_GREY);
@@ -396,7 +446,7 @@ public class GC {
 			// What happens when the actually scanned object is
 			// again pushed on the gray stack by the mutator?
 			if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
-				// it happens 
+				// it happens
 				continue;
 			}
 			
@@ -408,7 +458,7 @@ public class GC {
 			if (flags==IS_REFARR) {
 				// is an array of references
 				int size = Native.rdMem(ref+OFF_MTAB_ALEN);
-				for (i=0; i<size; ++i) {
+				for (i=0; i<size; ++i) { // @WCA loop <= MAX_SEMI_SIZE outer
 					push(Native.rdMem(addr+i));
 				}
 				// However, multianewarray does probably NOT work
@@ -419,6 +469,8 @@ public class GC {
 				// get real flags
 				flags = Native.rdMem(flags+Const.MTAB2GC_INFO);
 				for (i=0; flags!=0; ++i) {
+					// @WCA loop <= 32
+					// @WCA loop <= MAX_SEMI_SIZE outer
 					if ((flags&1)!=0) {
 						push(Native.rdMem(addr+i));
 					}
@@ -430,7 +482,7 @@ public class GC {
 			int size;
 			int dest;
 
-			synchronized(mutex) {
+			synchronized(mtx) {
 				size = Native.rdMem(ref+OFF_SIZE);
 				dest = copyPtr;
 				copyPtr += size;			
@@ -443,7 +495,7 @@ public class GC {
 
 				if (size>0) {
 					// copy it
-					for (i=0; i<size; i++) {
+					for (i=0; i<size; i++) { // @WCA loop <= MAX_SEMI_SIZE outer
 						Native.wrMem(Native.rdMem(addr+i), dest+i);
 						// Native.memCopy(dest, addr, i);					
 					}
@@ -468,17 +520,18 @@ public class GC {
 	static void sweepHandles() {
 
 		int ref;
-		
-		synchronized (mutex) {
+		Object mtx = mutex;
+	
+		synchronized (mtx) {
 			ref = useList;		// get start of the list
 			useList = 0;		// new uselist starts empty
 		}
 		
-		while (ref!=0) {
+		while (ref!=0) { // @WCA loop <= MAX_HANDLE_CNT
 			// read next element, as it is destroyed
 			// by addTo*List()
 			int next = Native.rdMem(ref+OFF_NEXT);
-			synchronized (mutex) {
+			synchronized (mtx) {
 				// a BLACK one
 				if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
 					// add to used list
@@ -505,7 +558,7 @@ public class GC {
 		// clean the from-space to prepare for the next
 		// flip
 		int end = fromSpace+semi_size;
-		for (int i=fromSpace; i<end; ++i) {
+		for (int i=fromSpace; i<end; ++i) { // @WCA loop <= MAX_SEMI_SIZE
 			Native.wrMem(0, i);
 		}
 	}
@@ -537,7 +590,7 @@ public class GC {
 				
 				// start GC events on all CPUs
 				int cpus = sys.nrCpu;
-				for (int i = cpus-1; i >= 0; --i) {
+				for (int i = cpus-1; i >= 0; --i) { // @WCA loop <= MAX_CPUS
 					if (Scheduler.sched[i].collector != null) {					
 						// log("Fire event on CPU", i);
 						Scheduler.sched[i].collector.fire();
@@ -851,35 +904,35 @@ public class GC {
 		public void handle() {
 			SysDevice sys = IOFactory.getFactory().getSysDevice();
 
-			synchronized(GC.mutex) {
-			   	GC.log("Handling GC event on CPU", sys.cpuId);
-			}
+			// synchronized(GC.mutex) {
+			//    	GC.log("Handling GC event on CPU", sys.cpuId);
+			// }
 
 			handshake = true;
 			if (GC.sys.cpuId == GC.gcRunnerId) {
 
-				synchronized(GC.mutex) {
-				   	GC.log("Waiting for handshakes");
-				}
+				// synchronized(GC.mutex) {
+				//    	GC.log("Waiting for handshakes");
+				// }
 
 				// wait for handshake
 				int cpus = GC.sys.nrCpu;
-				for (int i = cpus-1; i >= 0; --i) {
-					while (!Scheduler.sched[i].collector.handshake) {
+				for (int i = cpus-1; i >= 0; --i) { // @WCA loop <= MAX_CPUS
+					while (!Scheduler.sched[i].collector.handshake) { // @WCA loop <= 1
 						/* wait for handshake from other CPUs */
 					}
 				}
 
-				synchronized(GC.mutex) {				
-					GC.log("Start STWGC");
-				}
+				// synchronized(GC.mutex) {				
+				// 	GC.log("Start STWGC");
+				// }
 
 				// the real stuff
 				GC.gc();
 
-				synchronized(GC.mutex) {				
-					GC.log("Finished STWGC");
-				}
+				// synchronized(GC.mutex) {				
+				// 	GC.log("Finished STWGC");
+				// }
 
 				// clear handshakes for future
 				for (int i = cpus-1; i >= 0; --i) {
@@ -892,9 +945,9 @@ public class GC {
 				while (GC.gcRunning) {
 					// wait for the GC to finish
 				}
-				synchronized(GC.mutex) {
-				  	GC.log("Seen GC finish on CPU", sys.cpuId);
-				}
+				// synchronized(GC.mutex) {
+				//   	GC.log("Seen GC finish on CPU", sys.cpuId);
+				// }
 			}
 		}
 	}

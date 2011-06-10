@@ -1009,8 +1009,10 @@ class JVM {
 			if (q == null) {
 				l.queue = Native.toInt(c);
 			} else {
-				while (q.lockQueue != 0) {
-					q = Native.toRtThreadImpl(q.lockQueue);
+				int t = q.lockQueue; 
+				while (t != 0) {  // @WCA loop <= com.jopdesign.sys.GC.MAX_CPUS
+					q = Native.toRtThreadImpl(t);
+					t = q.lockQueue;
 				}
 				q.lockQueue = Native.toInt(c);
 			}
@@ -1032,7 +1034,7 @@ class JVM {
 		// wait until lock is free
 		for (;;) {
 			Native.lock();
-			if (l.level == 0 && l.queue == Native.toInt(c)) {
+			if (l.level == 0 && l.queue == Native.toInt(c)) { // @WCA loop <= 1
 				break;
 			}
 			Native.unlock();

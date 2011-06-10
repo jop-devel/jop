@@ -227,7 +227,8 @@ public class RtThreadImpl {
 		// just schedule an interrupt
 		// schedule() gets called.
 		Native.wr(core, Const.IO_XCINT);
-		for (int j=0;j<10;++j) ; // in case we trigger ourselves
+		for (int j=0;j<10;++j) ; // @WCA loop = 10
+		// in case we trigger ourselves
 	}
 
 	private void startThread() {
