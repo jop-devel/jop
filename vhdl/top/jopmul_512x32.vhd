@@ -144,6 +144,10 @@ end component;
 	signal irq_out			: irq_out_array_type(0 to cpu_cnt-1);
 	signal exc_req			: exception_array_type(0 to cpu_cnt-1);
 
+	signal xc_int : std_logic_vector(0 to cpu_cnt-1);
+	type xc_out_array is array (0 to cpu_cnt-1) of std_logic_vector(cpu_cnt-1 downto 0);
+    signal xc_out : xc_out_array;
+
 --
 --	IO interface
 --
@@ -169,6 +173,15 @@ end component;
 
 	signal sync_in_array	: sync_in_array_type(0 to cpu_cnt-1);
 	signal sync_out_array	: sync_out_array_type(0 to cpu_cnt-1);
+
+-- signals for UART arbitration
+	signal uart_out			: arb_out_type(0 to cpu_cnt-1);
+	signal uart_in			: arb_in_type(0 to cpu_cnt-1);
+    signal sc_uart_out		: sc_out_type;
+    signal sc_uart_in		: sc_in_type;
+    signal sc_uart_tf_ready	: std_logic;
+    signal sc_uart_rf_avail : std_logic;
+    signal sc_uart_pa_error : std_logic;
 
 -- not available at this board:
 	signal ser_ncts			: std_logic;
@@ -240,10 +253,7 @@ end process;
 	arbiter: entity work.arbiter
 		generic map(
 			addr_bits => SC_ADDR_SIZE,
-			cpu_cnt => cpu_cnt,
-			write_gap => 2,
-			read_gap => 2,
-			slot_length => 3			
+			cpu_cnt => cpu_cnt			
 		)
 		port map(clk_int, int_res,
 			sc_arb_out, sc_arb_in,
@@ -261,15 +271,12 @@ end process;
 			sync_out => sync_out_array(0),
 			sync_in => sync_in_array(0),
 
-			txd => ser_txd,
-			rxd => ser_rxd,
-			ncts => oUART_CTS,
-			nrts => iUART_RTS,
-			
-			oLEDR => oLEDR,
---			oLEDG => oLEDG,
-			iSW => iSW,
-						
+			uart_out => uart_out(0),
+			uart_in => uart_in(0),
+				  
+			xc_int => xc_int(0),
+			xc_out => xc_out(0),
+
 			wd => wd_out(0),
 			l => open,
 			r => open,
@@ -279,36 +286,47 @@ end process;
 			-- ram_cnt => ram_count
 		);
 		
-	-- io for processors with only sc_sys
+	-- io for other processors
 	gen_io: for i in 1 to cpu_cnt-1 generate
-		io2: entity work.sc_sys generic map (
-			addr_bits => 4,
-			clk_freq => clk_freq,
+		io2: entity work.scio generic map (
 			cpu_id => i,
 			cpu_cnt => cpu_cnt
 		)
-		port map(
-			clk => clk_int,
-			reset => int_res,
-			address => sc_io_out(i).address(3 downto 0),
-			wr_data => sc_io_out(i).wr_data,
-			rd => sc_io_out(i).rd,
-			wr => sc_io_out(i).wr,
-			rd_data => sc_io_in(i).rd_data,
-			rdy_cnt => sc_io_in(i).rdy_cnt,
-			
-			irq_in => irq_in(i),
-			irq_out => irq_out(i),
-			exc_req => exc_req(i),
-			
+		port map (clk_int, int_res,
+			sc_io_out(i), sc_io_in(i),
+			irq_in(i), irq_out(i), exc_req(i),
+
 			sync_out => sync_out_array(i),
 			sync_in => sync_in_array(i),
-			wd => wd_out(i)
+
+			uart_out => uart_out(i),
+			uart_in => uart_in(i),
+
+			xc_int => xc_int(i),
+			xc_out => xc_out(i),
+			
+			wd => open,
+			l => open,
+			r => open,
+			t => open,
+			b => open
 			-- remove the comment for RAM access counting
-			-- ram_count => ram_count
+			-- ram_cnt => ram_count
 		);
 	end generate;
 
+	xc: process (xc_out)
+		variable t : std_logic;
+	begin  -- process xc
+		for i in 0 to cpu_cnt-1 loop
+			t := '0';
+			for k in 0 to cpu_cnt-1 loop
+				t := t or xc_out(k)(i);
+			end loop;  -- k
+			xc_int(i) <= t;
+		end loop;  -- i
+	end process xc;
+		
 	scm: entity work.sc_mem_if
 		generic map (
 			ram_ws => ram_cnt-1,
@@ -329,6 +347,58 @@ end process;
 			ram_nwe => ram_nwe
 		);
 		
+   -- shared access to UART
+	cmpua : entity work.sc_cmpuart
+		generic map (
+			addr_bits => 1,
+			cpu_cnt	  => cpu_cnt
+			)
+		port map (
+			clk		 => clk_int,
+			reset	 => int_res,
+			-- SimpCon interfaces
+			arb_out	 => uart_out,
+			arb_in	 => uart_in,
+			uart_out => sc_uart_out,
+			uart_in	 => sc_uart_in,
+			-- signals to UART
+			tf_ready => sc_uart_tf_ready,
+			rf_avail => sc_uart_rf_avail,
+			pa_error => sc_uart_pa_error
+			);
+
+	ua: entity work.sc_uart
+		generic map (
+			addr_bits => 1,
+			clk_freq => clk_freq,
+			baud_rate => 115200,
+			txf_depth => 32,
+			txf_thres => 16,
+			rxf_depth => 32,
+			rxf_thres => 16
+			)
+		port map(
+			clk => clk_int,
+			reset => int_res,
+			-- SimpCon interface
+			address => sc_uart_out.address(0 downto 0),
+			wr_data => sc_uart_out.wr_data,
+			rd => sc_uart_out.rd,
+			wr => sc_uart_out.wr,
+			rd_data => sc_uart_in.rd_data,
+			rdy_cnt => sc_uart_in.rdy_cnt,
+			-- signals for UART arbiter
+			tf_ready => sc_uart_tf_ready,
+			rf_avail => sc_uart_rf_avail,
+			pa_error => sc_uart_pa_error,
+			-- interface to environment
+			txd	 => ser_txd,
+			rxd	 => ser_rxd,
+			ncts => ser_ncts,
+			nrts => ser_nrts
+			);
+
+	ser_ncts <= '0';
 		
 	-- syncronization of processors
 	sync: entity work.cmpsync generic map (
