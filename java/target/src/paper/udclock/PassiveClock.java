@@ -24,12 +24,20 @@ import javax.realtime.Clock;
 import javax.realtime.ClockCallBack;
 import javax.realtime.RelativeTime;
 
+import com.jopdesign.io.IOFactory;
+import com.jopdesign.io.SysDevice;
+
 /**
  * @author martin
  *
  */
 public class PassiveClock extends Clock {
 
+	SysDevice sys = IOFactory.getFactory().getSysDevice();
+	
+	public PassiveClock() {
+		
+	}
 	/**
 	 * Our passive clock uses a 32-bit counter
 	 */
@@ -78,8 +86,10 @@ public class PassiveClock extends Clock {
 	 */
 	@Override
 	public AbsoluteTime getTime() {
-		// TODO Auto-generated method stub
-		return null;
+		int val = sys.cntInt;
+		// that's very expensive!
+		// basically not usable for a processor cycles clock
+		return new AbsoluteTime(val/100000, val%100000);
 	}
 
 	/* (non-Javadoc)

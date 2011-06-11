@@ -41,6 +41,8 @@ public class HelloClock extends Mission implements Safelet {
 
 	// work around...
 	static HelloClock single;
+	
+	static PassiveClock counter;
 
 	static SimplePrintStream out;
 
@@ -55,6 +57,8 @@ public class HelloClock extends Mission implements Safelet {
 			throw new Error("No console available");
 		}
 		out = new SimplePrintStream(os);
+		
+		counter = new PassiveClock();
 
 		PeriodicEventHandler peh = new PeriodicEventHandler(
 				new PriorityParameters(11), new PeriodicParameters(
@@ -64,7 +68,8 @@ public class HelloClock extends Mission implements Safelet {
 
 			public void handleAsyncEvent() {
 				AbsoluteTime time = Clock.getRealtimeClock().getTime();
-				out.println("It is " + time.getMilliseconds());
+				out.print("It is " + time.getMilliseconds());
+				out.println(" counter " + counter.getTime().getMilliseconds());
 				++cnt;
 				if (cnt > 5) {
 					// getCurrentMission is not yet working
