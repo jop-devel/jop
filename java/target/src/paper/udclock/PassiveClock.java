@@ -30,6 +30,14 @@ import javax.realtime.RelativeTime;
  */
 public class PassiveClock extends Clock {
 
+	/**
+	 * Our passive clock uses a 32-bit counter
+	 */
+	@Override
+	public long getMaxValue() {
+		return 0xffffffff;
+	}
+
 	/* (non-Javadoc)
 	 * @see javax.realtime.Clock#drivesEvents()
 	 */

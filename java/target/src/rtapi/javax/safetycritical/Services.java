@@ -5,8 +5,8 @@ import static javax.safetycritical.annotate.Level.LEVEL_0;
 import static javax.safetycritical.annotate.Level.LEVEL_1;
 import static javax.safetycritical.annotate.Level.LEVEL_2;
 
+import javax.realtime.AbstractTime;
 import javax.realtime.AffinitySet;
-import javax.realtime.HighResolutionTime;
 import javax.realtime.ProcessorAffinityException;
 import javax.safetycritical.annotate.Level;
 import javax.safetycritical.annotate.SCJAllowed;
@@ -109,7 +109,7 @@ public class Services
    */
   @SCJAllowed(LEVEL_2)
   @SCJRestricted(maySelfSuspend = true)
-  public static void delay(HighResolutionTime delay) {}
+  public static void delay(AbstractTime delay) {}
 
   /**
    * This is like sleep except that it is not interruptible and it uses
@@ -132,7 +132,7 @@ public class Services
    * @param delay
    */
   // @ICS
-  public static void spin(HighResolutionTime delay) {}
+  public static void spin(AbstractTime delay) {}
   
   /**
    * Busy wait in nano seconds.

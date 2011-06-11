@@ -38,7 +38,7 @@ import javax.safetycritical.annotate.SCJRestricted;
  * 
  */
 @SCJAllowed
-public abstract class HighResolutionTime { // implements Comparable {
+public abstract class HighResolutionTime extends AbstractTime  {
 
 	static final int NANOS_PER_MILLI = 1000 * 1000;
 	
@@ -51,13 +51,6 @@ public abstract class HighResolutionTime { // implements Comparable {
 	 */
 	int nanos;
 
-	/**
-	 * the clock associated with this time.
-	 * This is only interesting when user-defined clocks are
-	 * used, which are a Level 2 feature.
-	 */
-	Clock clock;
-	
 	HighResolutionTime(long millis, int nanos) {
 		clock = Clock.getRealtimeClock();
 		set(millis, nanos);
@@ -74,6 +67,23 @@ public abstract class HighResolutionTime { // implements Comparable {
 		set(millis, nanos);
 	}
 	
+	/**
+	 * When we keep millis and nanos we're here
+	 * changing the resolution. Just use nano seconds
+	 * for the tick. This is good for
+	 * about 585 years.
+	 * 
+	 * A concrete implementation could use the underlying
+	 * Clock for the tick calculation.
+	 */
+	public long getTicks() {
+		return millis*NANOS_PER_MILLI + nanos;
+	}
+	
+	public void setTicks(long t) {
+		millis = t/NANOS_PER_MILLI;
+		nanos = (int) (t%NANOS_PER_MILLI);
+	}
 	/**
 	 * Compares this HighResolutionTime with the specified HighResolutionTime
 	 * time.
@@ -139,17 +149,6 @@ public abstract class HighResolutionTime { // implements Comparable {
 	@SCJRestricted(maySelfSuspend = false)
 	public boolean equals(java.lang.Object object) {
 		return equals((HighResolutionTime)object);
-	}
-	
-	/**
-	 * At the moment just return the single real-time clock.
-	 * 
-	 * @return A reference to the clock associated with this.
-	 */
-	@SCJAllowed
-	@SCJRestricted(maySelfSuspend = false)
-	public Clock getClock() {
-		return clock;
 	}
 	
 	/**

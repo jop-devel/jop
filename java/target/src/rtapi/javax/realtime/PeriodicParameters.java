@@ -57,7 +57,7 @@ public class PeriodicParameters extends ReleaseParameters {
 	 */
 	@SCJAllowed
 	@BlockFree
-	public PeriodicParameters(HighResolutionTime start, RelativeTime period) {
+	public PeriodicParameters(AbstractTime start, RelativeTime period) {
 		throw new Error("implement me");
 	}
 
@@ -82,7 +82,7 @@ public class PeriodicParameters extends ReleaseParameters {
 	 */
 	@SCJAllowed
 	@BlockFree
-	public PeriodicParameters(HighResolutionTime start, RelativeTime period,
+	public PeriodicParameters(AbstractTime start, RelativeTime period,
 			RelativeTime deadline, AsyncEventHandler handler) {
 		throw new Error("implement me");
 	}
@@ -93,7 +93,7 @@ public class PeriodicParameters extends ReleaseParameters {
 	 */
 	@BlockFree
 	@SCJAllowed
-	public HighResolutionTime getStart() {
+	public AbstractTime getStart() {
 		return null;
 	}
 

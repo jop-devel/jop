@@ -81,7 +81,7 @@ public class RealtimeThread extends Thread implements Schedulable {
 
 	@SCJAllowed(LEVEL_2)
 	@SCJRestricted(maySelfSuspend = true)
-	public static void sleep(javax.realtime.HighResolutionTime time)
+	public static void sleep(AbstractTime time)
 			throws InterruptedException {
 	};
 

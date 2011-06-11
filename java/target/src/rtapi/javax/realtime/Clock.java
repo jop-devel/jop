@@ -68,6 +68,8 @@ public abstract class Clock {
 		return RealtimeClock.single;
   }
 
+  public abstract long getMaxValue();
+  
   /**
    * Gets the current time in a newly allocated object. Note: This
    * method will return an absolute time value that represents the

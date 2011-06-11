@@ -27,6 +27,16 @@ public class RealtimeClock extends Clock {
 
 	static Clock single = new RealtimeClock();
 
+	/**
+	 * What is the maximum value of our real-time clock?
+	 * 
+	 * On JOP it is actually way smaller at the moment.
+	 */
+	@Override
+	public long getMaxValue() {
+		return -1;
+	}
+
 	/* (non-Javadoc)
 	 * @see javax.realtime.Clock#drivesEvents()
 	 */
@@ -105,5 +115,6 @@ public class RealtimeClock extends Clock {
 		// TODO Auto-generated method stub
 
 	}
+
 
 }
