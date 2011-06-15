@@ -250,7 +250,17 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
         MethodCode mcode = method.getCode();
         // TODO is there a better way to get an instruction handle? Do we need to keep the list somehow?
-        InstructionHandle exit = new InstructionList(new NOP()).getStart();
+        InstructionHandle exit;
+        exit = (InstructionHandle) method.getCustomValue(KEY_NOP);
+        // we reuse the NOP if it exists, so that we can have multiple DFAs running at the same time
+        if (exit == null) {
+            exit = new InstructionList(new NOP()).getStart();
+            // We do not really want to modify the REAL instruction list and append exit
+            // (SH) Fixed :) Yep, we need the NOP somewhere, else doInvoke() will collect the wrong result state.
+            //      But we can eliminate the NOP by adding the instruction not to the list, but instead to the
+            //      MethodInfo, and also retrieve it from there.
+            method.setCustomValue(KEY_NOP, exit);
+        }
         this.getStatements().add(exit);
 
         // We do not modify the code, so we leave existing CFGs alone, just make sure the instruction list is uptodate
@@ -291,12 +301,6 @@ public class DFATool extends EmptyTool<AppEventHandler> {
                             FlowEdge.NORMAL_EDGE));
             }
         }
-
-        // We do not really want to modify the REAL instruction list and append exit
-        // (SH) Fixed:) Yep, we need the NOP somewhere, else doInvoke() will collect the wrong result state.
-        //      But we can eliminate the NOP by adding the instruction not to the list, but instead to the
-        //      MethodInfo, and also retrieve it from there.
-        method.setCustomValue(KEY_NOP, exit);
     }
 
     public InstructionHandle getEntryHandle(MethodInfo method) {

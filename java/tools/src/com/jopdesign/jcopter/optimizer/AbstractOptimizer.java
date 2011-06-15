@@ -28,7 +28,7 @@ import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.JCopterConfig;
 
 /**
- * This is the root class for optimizations, which provides some basic checks
+ * This is the root class for simple intraprocedural optimizations, which provides some basic checks
  * if classes and methods should be optimized and iterates over all non-abstract methods.
  *
  * @author Stefan Hepp (stefan@stefant.org)

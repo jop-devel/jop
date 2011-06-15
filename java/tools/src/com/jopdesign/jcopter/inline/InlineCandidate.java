@@ -20,8 +20,42 @@
 
 package com.jopdesign.jcopter.inline;
 
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.jcopter.greedy.Candidate;
+import org.apache.bcel.generic.InstructionHandle;
+
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class GreedyInliner {
+public class InlineCandidate extends Candidate {
+
+
+    protected InlineCandidate(MethodInfo method, InstructionHandle start, InstructionHandle end) {
+        super(method, start, end);
+    }
+
+    @Override
+    public boolean optimize() {
+        return false;
+    }
+
+    @Override
+    public boolean recalculate() {
+        return false;
+    }
+
+    @Override
+    public int getDeltaCodesize() {
+        return 0;
+    }
+
+    @Override
+    public int getDeltaLocals() {
+        return 0;
+    }
+
+    @Override
+    public int getLocalGain() {
+        return 0;
+    }
 }
