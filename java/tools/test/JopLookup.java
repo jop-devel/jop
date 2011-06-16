@@ -99,9 +99,16 @@ public class JopLookup {
     private static Map<Integer, ClassEntry> classes = new HashMap<Integer, ClassEntry>();
     private static Map<String, MethodEntry> methods = new HashMap<String, MethodEntry>();
 
+    public static void usage() {
+        System.out.println("Usage: JopLookup [<jop-link-file>]");
+        System.out.println();
+        System.out.println("If no jop-file is specified, JopLookup tries to use java/target/dist/bin/*.jop");
+        System.out.println("This tool can be used to find methods, fields and instructions in the .jop file by address");
+    }
+
     public static void main(String[] args) {
         File jopFile = null;
-        if (args.length != 1) {
+        if (args.length == 0) {
             // try to find it ..
             File binDir = new File("java/target/dist/bin");
             String[] files = binDir.list();
@@ -111,11 +118,17 @@ public class JopLookup {
                 }
             }
             if (jopFile == null) {
-                System.out.println("Usage: JopLookup [<jop-link-file>]");
+                usage();
                 System.exit(1);
             } else {
                 System.out.println("Using link file "+jopFile);
             }
+        } else if (args.length > 1) {
+            usage();
+            System.exit(1);
+        } else if ("--help".equals(args[0]) || "-h".equals(args[0])) {
+            usage();
+            System.exit(0);
         } else {
             jopFile = new File(args[0]);
         }
