@@ -130,7 +130,17 @@ class JVM {
 						// Mark grey
 						Native.wrMem(GC.grayList, oldVal+GC.OFF_GREY);
 						GC.grayList = oldVal;			
-					}				
+					}
+					if (GC.DOUBLE_BARRIER) {
+						// incremental update barrier
+						if (value != 0
+							&& Native.rdMem(value+GC.OFF_SPACE) != GC.toSpace
+							&& Native.rdMem(value+GC.OFF_GREY)==0) {
+							// Mark grey
+							Native.wrMem(GC.grayList, value+GC.OFF_GREY);
+							GC.grayList = value;			
+						}
+					}
 				}
 				Native.arrayStore(ref, index, value);
 			}
@@ -1225,7 +1235,17 @@ class JVM {
 						// Mark grey
 						Native.wrMem(GC.grayList, oldVal+GC.OFF_GREY);
 						GC.grayList = oldVal;
-					}				
+					}
+					if (GC.DOUBLE_BARRIER) {
+						// incremental update barrier
+						if (val != 0 && val >= GC.mem_start
+							&& Native.rdMem(val+GC.OFF_SPACE) != GC.toSpace
+							&& Native.rdMem(val+GC.OFF_GREY)==0) {
+							// Mark grey
+							Native.wrMem(GC.grayList, val+GC.OFF_GREY);
+							GC.grayList = val;			
+						}
+					}
 				}
 				
 				Native.putStatic(val, addr);
@@ -1252,6 +1272,16 @@ class JVM {
 						Native.wrMem(GC.grayList, oldVal+GC.OFF_GREY);
 						GC.grayList = oldVal;
 					}				
+					if (GC.DOUBLE_BARRIER) {
+						// incremental update barrier
+						if (value != 0 && value >= GC.mem_start
+							&& Native.rdMem(value+GC.OFF_SPACE) != GC.toSpace
+							&& Native.rdMem(value+GC.OFF_GREY)==0) {
+							// Mark grey
+							Native.wrMem(GC.grayList, value+GC.OFF_GREY);
+							GC.grayList = value;			
+						}
+					}
 				}
 				Native.putField(ref, index, value);
 			}

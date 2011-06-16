@@ -105,6 +105,12 @@ public class GC {
 	 * Trigger GC when free memory is below this margin
 	 */
 	static final int GC_MARGIN = 256;
+	/**
+	 * Whether to use a double barrier or to allocate new objects
+	 * anthracite
+	 */
+	static final boolean DOUBLE_BARRIER = false;
+
 		
 	static final int TYPICAL_OBJ_SIZE = 5;
 	static int handle_cnt;
@@ -440,16 +446,6 @@ public class GC {
 				Native.wrMem(0, ref+OFF_GREY);		// mark as not in list
 			}
 
-			// already moved
-			// can this happen? - yes, as we do not check it in mark
-			// TODO: no, it's checked in push()
-			// What happens when the actually scanned object is
-			// again pushed on the gray stack by the mutator?
-			if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
-				// it happens
-				continue;
-			}
-			
 			// push all children
 				
 			// get pointer to object
@@ -477,6 +473,13 @@ public class GC {
 					flags >>>= 1;
 				}				
 			}
+
+			// already moved, happens because of
+			// - anthracite objects
+			// - objects pushed during scanning
+			if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
+				continue;
+			}			
 			
 			// now copy it - color it BLACK			
 			int size;
@@ -718,7 +721,7 @@ public class GC {
 			// mark it as BLACK - means it will be in toSpace
 			Native.wrMem(toSpace, ref+OFF_SPACE);
 			// TODO: should not be necessary - now just for sure
-			Native.wrMem(0, ref+OFF_GREY);
+			// Native.wrMem(0, ref+OFF_GREY);
 			// BTW: when we create mutex we synchronize on the not yet
 			// created Object!
 			// ref. flags used for array marker
@@ -726,7 +729,13 @@ public class GC {
 			// pointer to method table in the handle
 			Native.wrMem(cons+Const.CLASS_HEADR, ref+OFF_MTAB_ALEN);
 			// TODO: should not be necessary - now just for sure
-			Native.wrMem(0, ref+OFF_LOCK);
+			// Native.wrMem(0, ref+OFF_LOCK);
+
+			if (!DOUBLE_BARRIER) {
+				// allocate anthracite
+				Native.wrMem(GC.grayList, ref+GC.OFF_GREY);
+				GC.grayList = ref;
+			}
 		}
 
 		return ref;
@@ -820,17 +829,22 @@ public class GC {
 			// mark it as BLACK - means it will be in toSpace
 			Native.wrMem(toSpace, ref+OFF_SPACE);
 			// TODO: should not be necessary - now just for sure
-			Native.wrMem(0, ref+OFF_GREY);
+			// Native.wrMem(0, ref+OFF_GREY);
 			// ref. flags used for array marker
 			Native.wrMem(type, ref+OFF_TYPE);
 			// array length in the handle
 			Native.wrMem(arrayLength, ref+OFF_MTAB_ALEN);
 			// TODO: should not be necessary - now just for sure
-			Native.wrMem(0, ref+OFF_LOCK);
+			// Native.wrMem(0, ref+OFF_LOCK);
+
+			if (!DOUBLE_BARRIER) {
+				// allocate anthracite
+				Native.wrMem(GC.grayList, ref+GC.OFF_GREY);
+				GC.grayList = ref;
+			}
 		}
 
-		return ref;
-		
+		return ref;		
 	}
 	
 
