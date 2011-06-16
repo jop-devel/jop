@@ -20,15 +20,23 @@
 		</presetdef>
 
 		<vcom>
+			<arg line="${jopdir}/simpcon/sc_pack.vhd"/>
+		</vcom>
+
+        <vcom>
+          <arg line="${jopdir}/simpcon/sc_arbiter_pack.vhd"/>
+        </vcom>
+		
+		<vcom>
+			<arg line="${jopdir}/top/jop_config_global.vhd"/>
+		</vcom>
+
+		<vcom>
 			<arg line="${jopdir}/simulation/sim_jop_config_100.vhd"/>
 		</vcom>
 
 		<vcom>
 			<arg line="${jopdir}/core/jop_types.vhd"/>
-		</vcom>
-
-		<vcom>
-			<arg line="${jopdir}/simpcon/sc_pack.vhd"/>
 		</vcom>
 
 		<vcom>
@@ -71,16 +79,20 @@
 			<arg line="+acc ${jopdir}/simulation/microcode.vhd"/>
 		</vcom>
 
-		<!-- <vcom> -->
-		<!-- 	<arg line="${jopdir}/scio/fifo.vhd"/> -->
-		<!-- </vcom> -->
+		<vcom>
+			<arg line="${jopdir}/scio/fifo.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/scio/sc_uart.vhd"/>
+		</vcom>
 
 		<!-- <vcom> -->
-		<!-- 	<arg line="${jopdir}/scio/sc_uart.vhd"/> -->
+		<!-- 	<arg line="+acc ${jopdir}/simulation/sim_sc_uart.vhd"/> -->
 		<!-- </vcom> -->
 
 		<vcom>
-			<arg line="+acc ${jopdir}/simulation/sim_sc_uart.vhd"/>
+			<arg line="${jopdir}/scio/sc_cmpuart.vhd"/>
 		</vcom>
 
 		<!-- <vcom> -->
@@ -184,15 +196,11 @@
         </vcom>
 
 		<vcom>
-			<arg line="${jopdir}/scio/scio_min_cache.vhd"/>
+			<arg line="${jopdir}/scio/scio_min_cmp.vhd"/>
 		</vcom>
 
         <vcom>
-          <arg line="${jopdir}/simpcon/sc_arbiter_pack.vhd"/>
-        </vcom>
-		
-        <vcom>
-          <arg line="${jopdir}/simpcon/sc_arbiter_tdma.vhd"/>
+          <arg line="${jopdir}/simpcon/sc_arbiter_rr_atomic.vhd"/>
         </vcom>
 
 		<vcom>
@@ -216,7 +224,7 @@
 		<!-- </vcom> -->
 
         <vcom>
-           <arg line="${jopdir}/top/jopmul_512x32_cache.vhd"/>
+           <arg line="${jopdir}/top/jopmul_512x32.vhd"/>
         </vcom>
 		
         <vcom>

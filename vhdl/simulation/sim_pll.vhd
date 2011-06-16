@@ -31,7 +31,9 @@ ENTITY pll IS
 	PORT
 	(
 		inclk0		: IN STD_LOGIC  := '0';
-		c0		: OUT STD_LOGIC 
+		c0			: OUT STD_LOGIC;
+		c1          : OUT STD_LOGIC;
+		locked      : OUT STD_LOGIC
 	);
 END pll;
 
@@ -43,5 +45,7 @@ BEGIN
     assert multiply_by = 1 and divide_by = 1 
 		report "PLL factors have to be 1 for dummy PLL" severity ERROR;
 	c0 <= inclk0;
+	c1 <= not inclk0;
+	locked <= '1';
 
 END SYN;
