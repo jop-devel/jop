@@ -43,7 +43,7 @@ public class IOFactory {
 	private static int SYS_MTAB;
 	// test serial port access via array
 	private int[] spMem;
-	private static int ARR_PRT;
+	private static int ARR_PTR;
 	private static int ARR_LENGTH;
 
 	// declare all constants AFTER the static fields for

@@ -89,7 +89,7 @@ public class Startup {
 			version();
 			started = true;
 			clazzinit();
-			// not in <clinit> as first methods are special and palcement
+			// not in <clinit> as first methods are special and placement
 			// of <clinit> depends on compiler
 			JVMHelp.init();
 		}
