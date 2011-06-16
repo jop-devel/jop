@@ -116,17 +116,19 @@ public class StringInfo {
 		commentary(string, addr, out);
 		out.println("\t"+(addr+16)+",\t//\tString handle points to the first field");
 		out.println("\t"+strcli.methodsAddress+",\t//\t pointer to String mtab ");
-		for (int i = 0; i < 5; i++) {
-			out.println("\t0,\t//\tdummy");
-		}
+		out.println("\t0,\t//\tdummy");
+		out.println("\t0,\t//\ttype");
+		out.println("\t0,\t//\tdummy");
+		out.println("\t-1,\t//\tgray");
+		out.println("\t0,\t//\tdummy");
 		out.println("\t0,\t//\tlock");
 		out.println("\t"+(addr+17)+",\t//\tchar[] handle points to the first element");
 		out.println("\t"+string.length()+",\t//\tarray length in the handle");
 		out.println("\t0,\t//\tdummy");
 		out.println("\t5,\t//\ttype");
-		for (int i = 0; i < 3; i++) {
-			out.println("\t0,\t//\tdummy");
-		}
+		out.println("\t0,\t//\tdummy");
+		out.println("\t-1,\t//\tgray");
+		out.println("\t0,\t//\tdummy");
 		out.println("\t0,\t//\tlock");
 		out.println("\t"+(addr+8)+",\t//\tchar ref. points to char[] handle");
 			
