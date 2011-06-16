@@ -43,7 +43,7 @@ class ClassCastException extends RuntimeException {
      * Constructs a <code>ClassCastException</code> with no detail message.
      */
     public ClassCastException() {
-        super();
+        super("ClassCastException");
     }
 
     /**

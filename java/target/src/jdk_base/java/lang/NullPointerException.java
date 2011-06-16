@@ -69,7 +69,7 @@ public class NullPointerException extends RuntimeException
   public NullPointerException()
   {
 	  // until Class works
-	  super("NullPointer");
+	  super("NullPointerException");
   }
 
   /**

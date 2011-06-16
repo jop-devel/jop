@@ -45,7 +45,7 @@ class IllegalMonitorStateException extends RuntimeException {
      * detail message.
      */
     public IllegalMonitorStateException() {
-        super();
+        super("IllegalMonitorStateException");
     }
 
     /**

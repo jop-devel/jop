@@ -40,7 +40,7 @@ class ArithmeticException extends RuntimeException {
      * message.
      */
     public ArithmeticException() {
-        super();
+        super("ArithmeticException");
     }
 
     /**

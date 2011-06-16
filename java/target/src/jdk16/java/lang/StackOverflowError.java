@@ -38,7 +38,7 @@ class StackOverflowError extends VirtualMachineError {
      * Constructs a <code>StackOverflowError</code> with no detail message.
      */
     public StackOverflowError() {
-        super("Stack overflow");
+        super("StackOverflowError");
     }
 
     /**
