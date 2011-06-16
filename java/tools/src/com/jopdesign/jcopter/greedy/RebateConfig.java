@@ -20,21 +20,41 @@
 
 package com.jopdesign.jcopter.greedy;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.jcopter.analysis.AnalysisManager;
-import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
-import org.apache.bcel.generic.InstructionHandle;
+import com.jopdesign.jcopter.JCopter;
+import com.jopdesign.jcopter.JCopterConfig;
+import com.jopdesign.jopui.core.OptionGroup;
 
-import java.util.Collection;
+import java.util.Set;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public interface CodeOptimizer {
+public class RebateConfig {
 
-    Collection<Candidate> findCandidates(MethodInfo method, AnalysisManager analyses, StacksizeAnalysis stacksize, int maxLocals);
+    private final AppInfo appInfo;
+    private final JCopterConfig jConfig;
 
-    Collection<Candidate> findCandidates(MethodInfo method, AnalysisManager analyses, StacksizeAnalysis stacksize, int maxLocals,
-                                         InstructionHandle start, InstructionHandle end);
+    public RebateConfig(JCopterConfig jConfig, OptionGroup rebateOptions) {
+        this.jConfig = jConfig;
+        appInfo = AppInfo.getSingleton();
+    }
 
+    public AppInfo getAppInfo() {
+        return appInfo;
+    }
+
+    public JCopterConfig getJConfig() {
+        return jConfig;
+    }
+
+
+    public Set<MethodInfo> getRootMethods() {
+        return null;
+    }
+
+    public Set<MethodInfo> getWCATargets() {
+        return null;
+    }
 }

@@ -102,14 +102,14 @@ public class InstructionInterpreter<T> {
     private final MethodInfo methodInfo;
     private final InstructionAnalysis<T> analysis;
 
-    private final Map<InstructionHandle, T> values;
+    private final Map<InstructionHandle, T> results;
 
     private boolean startAtExceptionHandlers = false;
 
     public InstructionInterpreter(MethodInfo methodInfo, InstructionAnalysis<T> analysis) {
         this.methodInfo = methodInfo;
         this.analysis = analysis;
-        values = new HashMap<InstructionHandle, T>();
+        results = new HashMap<InstructionHandle, T>();
     }
 
     public MethodInfo getMethodInfo() {
@@ -124,7 +124,16 @@ public class InstructionInterpreter<T> {
         this.startAtExceptionHandlers = startAtExceptionHandlers;
     }
 
-    public void traverse(boolean initialize) {
+    public void reset(InstructionHandle from, InstructionHandle to) {
+        InstructionHandle ih = from;
+        while (ih != to) {
+            results.put(ih, analysis.bottom());
+            ih = ih.getNext();
+        }
+        results.put(ih, analysis.bottom());
+    }
+
+    public void interpret(boolean initialize) {
         InstructionList il = methodInfo.getCode().getInstructionList(true, false);
         InstructionHandle entry = il.getStart();
 
@@ -139,28 +148,28 @@ public class InstructionInterpreter<T> {
             }
         }
 
-        traverse(il, start, initialize);
+        interpret(il, start, initialize);
     }
 
-    public void traverse(InstructionHandle entry, boolean initialize) {
+    public void interpret(InstructionHandle entry, boolean initialize) {
         // TODO we could use the CFG instead if it exists ?
         InstructionList il = methodInfo.getCode().getInstructionList(true, false);
 
         Map<InstructionHandle,T> start = new HashMap<InstructionHandle, T>(1);
         start.put(entry, initialize ? analysis.initial(entry) : null);
-        traverse(il, start, initialize);
+        interpret(il, start, initialize);
     }
 
-    private void traverse(InstructionList il, Map<InstructionHandle,T> start, boolean initialize) {
+    private void interpret(InstructionList il, Map<InstructionHandle, T> start, boolean initialize) {
 
         if (initialize) {
             InstructionHandle ih = il.getStart();
             while (ih != null) {
-                values.put(ih, analysis.bottom());
+                results.put(ih, analysis.bottom());
                 ih = ih.getNext();
             }
 
-            values.putAll(start);
+            results.putAll(start);
         }
 
         LinkedList<Edge> worklist = new LinkedList<Edge>();
@@ -176,14 +185,14 @@ public class InstructionInterpreter<T> {
             InstructionHandle tail = edge.getTail();
             InstructionHandle head = edge.getHead();
 
-            T tailValue = values.get(tail);
-            T headValue = values.get(head);
+            T tailValue = results.get(tail);
+            T headValue = results.get(head);
             T transferred = analysis.transfer(tailValue, edge);
 
             if (!analysis.compare(transferred, headValue)) {
 
                 T newValue = analysis.join(transferred, headValue);
-                values.put(head, newValue);
+                results.put(head, newValue);
 
                 if (edge.getType() == EdgeType.EXIT_EDGE) {
                     continue;
@@ -206,8 +215,12 @@ public class InstructionInterpreter<T> {
 
     }
 
-    public T getValue(InstructionHandle ih) {
-        return values.get(ih);
+    public T getResult(InstructionHandle ih) {
+        return results.get(ih);
+    }
+
+    public Map<InstructionHandle,T> getResults() {
+        return results;
     }
 
     public InstructionHandle getExitInstruction() {

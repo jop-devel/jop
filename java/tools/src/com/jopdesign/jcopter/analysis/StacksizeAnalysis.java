@@ -21,10 +21,13 @@
 package com.jopdesign.jcopter.analysis;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.InstructionAnalysis;
+import com.jopdesign.common.code.InstructionInterpreter;
+import com.jopdesign.common.code.InstructionInterpreter.Edge;
+import org.apache.bcel.generic.CodeExceptionGen;
+import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * TODO maybe also analyze the types on the stack and optionally the value-mapping if needed.
@@ -33,12 +36,51 @@ import java.util.Map;
  */
 public class StacksizeAnalysis {
 
-    private MethodInfo method;
-    private Map<InstructionHandle, Integer> stacksize;
+    private class StackAnalysis implements InstructionAnalysis<Integer> {
+        @Override
+        public Integer bottom() {
+            return null;
+        }
+
+        @Override
+        public Integer initial(InstructionHandle entry) {
+            return 0;
+        }
+
+        @Override
+        public Integer initial(CodeExceptionGen exceptionHandler) {
+            return 1;
+        }
+
+        @Override
+        public Integer transfer(Integer tailValue, Edge edge) {
+            ConstantPoolGen cpg = method.getConstantPoolGen();
+            Instruction tail = edge.getTail().getInstruction();
+            return tailValue - tail.consumeStack(cpg) + tail.produceStack(cpg);
+        }
+
+        @Override
+        public boolean compare(Integer transferred, Integer oldValue) {
+            // stack size must be static, if we already have a value it must be the same value.
+            assert (oldValue == null || transferred.equals(oldValue));
+            return oldValue != null;
+        }
+
+        @Override
+        public Integer join(Integer transferred, Integer oldValue) {
+            // stack size must be static, if we already have a value it must be the same value.
+            assert (oldValue == null || transferred.equals(oldValue));
+            return transferred;
+        }
+    }
+
+    private final MethodInfo method;
+    private final InstructionInterpreter<Integer> interpreter;
+
 
     public StacksizeAnalysis(MethodInfo method) {
         this.method = method;
-        stacksize = new HashMap<InstructionHandle, Integer>();
+        interpreter = new InstructionInterpreter<Integer>(method, new StackAnalysis());
     }
 
     public MethodInfo getMethod() {
@@ -46,12 +88,16 @@ public class StacksizeAnalysis {
     }
 
     public int getStacksizeBefore(InstructionHandle ih) {
-        return stacksize.get(ih);
+        return interpreter.getResult(ih);
     }
 
     public void analyze() {
+        interpreter.interpret(true);
+    }
 
-
+    public void analyze(InstructionHandle start, InstructionHandle end) {
+        interpreter.reset(start, end);
+        interpreter.interpret(start, false);
     }
 
 }

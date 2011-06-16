@@ -30,7 +30,7 @@ import com.jopdesign.common.type.StackHelper;
 import com.jopdesign.common.type.TypeHelper;
 import com.jopdesign.common.type.ValueInfo;
 import com.jopdesign.jcopter.JCopter;
-import com.jopdesign.jcopter.analysis.ValueAnalysis;
+import com.jopdesign.jcopter.analysis.ValueMapAnalysis;
 import com.jopdesign.jcopter.optimizer.AbstractOptimizer;
 import org.apache.bcel.generic.ARRAYLENGTH;
 import org.apache.bcel.generic.ArithmeticInstruction;
@@ -284,7 +284,7 @@ public class SimpleInliner extends AbstractOptimizer {
     private boolean analyzeInvokee(CallString cs, MethodInfo invokee, InlineData inlineData) {
 
         // we allow loading of parameters, loading of constants, some instruction, and a return
-        ValueAnalysis values = new ValueAnalysis(invokee);
+        ValueMapAnalysis values = new ValueMapAnalysis(invokee);
         values.loadParameters();
 
         InstructionList il = invokee.getCode().getInstructionList(true, false);

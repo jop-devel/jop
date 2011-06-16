@@ -61,13 +61,13 @@ import javax.crypto.spec.IvParameterSpec;
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ValueAnalysis {
+public class ValueMapAnalysis {
     private final MethodInfo methodInfo;
     private final ConstantPoolGen cpg;
 
     private ValueTable values;
 
-    public ValueAnalysis(MethodInfo methodInfo) {
+    public ValueMapAnalysis(MethodInfo methodInfo) {
         this.methodInfo = methodInfo;
         this.cpg = methodInfo.getConstantPoolGen();
 

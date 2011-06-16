@@ -26,20 +26,16 @@ import org.apache.bcel.generic.InstructionHandle;
 import java.util.Collection;
 
 /**
- * This is the main optimizer, which uses CodeOptimizers to generate candidates and uses a greedy
- * selection algorithm to select the candidates to optimize.
- *
- * TODO can we reuse Candidate and CodeOptimizer for different optimization strategies as well? Either move them
- *   to a different package or rename them to something more specific to avoid naming conflicts.
- *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class RebateOptimizer {
+public interface CandidateSelector {
 
-    private static class RebateRatio {
+    void addCandidates(MethodInfo method, Collection<Candidate> candidates);
 
-    }
+    void removeCandidates(MethodInfo method, InstructionHandle start, InstructionHandle end);
 
+    void initialize();
 
+    Collection<Candidate> selectNextCandidates();
 
 }

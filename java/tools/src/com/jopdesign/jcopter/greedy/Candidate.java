@@ -21,12 +21,14 @@
 package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import org.apache.bcel.generic.InstructionHandle;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public abstract class Candidate {
+
     private final MethodInfo method;
     protected InstructionHandle start;
     protected InstructionHandle end;
@@ -61,28 +63,38 @@ public abstract class Candidate {
     }
 
     /**
-     * @return
-     */
-    public InstructionHandle getEntry() {
-        return start;
-    }
-
-    /**
      * Perform optimization, update start and end instruction handle to the new code.
+     * @param stacksize the stack analysis for the method to optimize
      * @return true if the optimization has been performed.
      */
-    public abstract boolean optimize();
+    public abstract boolean optimize(StacksizeAnalysis stacksize);
 
     /**
      * Update deltaCodesize, deltaLocals and localGain, after some method which may be invoked by the
      * affected code has been changed.
+     *
+     * <p>This MUST return false if either the stack size or the number of locals exceeds the limits of the
+     * processor. This MAY return false if the new local codesize exceeds the limits of the processor (but this
+     * will be checked anyway by the candidate selector).</p>
+     *
+     * @param stacksize the stack analysis for the method to optimize.
      * @return false if this is not a candidate anymore.
      */
-    public abstract boolean recalculate();
+    public abstract boolean recalculate(StacksizeAnalysis stacksize);
 
-    public abstract int getDeltaCodesize();
+    public abstract int getDeltaLocalCodesize();
 
-    public abstract int getDeltaLocals();
+    public abstract int getDeltaGlobalCodesize();
+
+    public abstract int getMaxLocalsInRegion();
+
+    /**
+     * TODO in order to support this properly, we need to extend the StacksizeAnalysis with a life range analysis
+     *      for locals (this could use the ValueMapAnalysis).
+     *
+     * @return the number of additional local slots required outside the changed code range.
+     */
+    public abstract int getNumPersistentLocals();
 
     public abstract int getLocalGain();
 }

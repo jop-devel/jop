@@ -41,7 +41,7 @@ import com.jopdesign.common.type.StackHelper;
 import com.jopdesign.common.type.TypeHelper;
 import com.jopdesign.common.type.ValueInfo;
 import com.jopdesign.jcopter.JCopter;
-import com.jopdesign.jcopter.analysis.ValueAnalysis;
+import com.jopdesign.jcopter.analysis.ValueMapAnalysis;
 import com.jopdesign.jcopter.inline.InlineConfig.JVMInline;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.ConstantPushInstruction;
@@ -286,7 +286,7 @@ public class InlineHelper {
 
         // check if the code will always throw an exception anyway (without producing any side effects before throwing)
 
-        ValueAnalysis analysis = new ValueAnalysis(invokee);
+        ValueMapAnalysis analysis = new ValueMapAnalysis(invokee);
         analysis.loadParameters();
 
         InstructionList list = invokee.getCode().getInstructionList(true, false);

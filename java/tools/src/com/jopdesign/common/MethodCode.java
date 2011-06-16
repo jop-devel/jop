@@ -63,6 +63,7 @@ import org.apache.bcel.generic.ReferenceType;
 import org.apache.bcel.generic.TargetLostException;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
+import sun.reflect.generics.tree.VoidDescriptor;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -835,10 +836,11 @@ public class MethodCode {
     }
 
     /**
-     * Compile all changes, and update maxStack and maxLocals.
+     * Compile all changes, and update maxStack, maxLocals and positions.
      */
     public void compile() {
-        prepareInstructionList();
+        InstructionList il = prepareInstructionList();
+        il.setPositions();
         methodGen.setMaxLocals();
         methodGen.setMaxStack();
     }

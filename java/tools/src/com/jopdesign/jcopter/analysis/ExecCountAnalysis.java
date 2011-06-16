@@ -20,7 +20,10 @@
 
 package com.jopdesign.jcopter.analysis;
 
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.InvokeSite;
 
 import java.util.Map;
 
@@ -32,5 +35,22 @@ public class ExecCountAnalysis {
     public ExecCountAnalysis(Map<ExecutionContext, Integer> roots) {
     }
 
+
+
+    public int getExecCount(MethodInfo methodInfo) {
+        return 0;
+    }
+
+    public int getExecCount(InvokeSite invokeSite) {
+        return 0;
+    }
+
+    public int getExecFrequency(CallString callString) {
+        return 0;
+    }
+
+    public int getExecFrequency(ExecutionContext context) {
+        return 0;
+    }
 
 }
