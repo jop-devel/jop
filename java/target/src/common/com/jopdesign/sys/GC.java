@@ -493,26 +493,30 @@ public class GC {
 				// set it BLACK
 				Native.wrMem(toSpace, ref+OFF_SPACE);
 
+				// TODO: lock guards against int2ext and ext2int, should be eliminated
 				Native.lock();
-				Native.atmstart();
 
 				if (size>0) {
 					// copy it
-					for (i=0; i<size; i++) { // @WCA loop <= MAX_SEMI_SIZE outer
-						Native.wrMem(Native.rdMem(addr+i), dest+i);
-						// Native.memCopy(dest, addr, i);					
+					Native.wr(addr, Const.IO_CCCP_SRC);
+					Native.wr(dest, Const.IO_CCCP_DST);
+					Native.wr(1, Const.IO_CCCP_ACT);
+					for (i = 0; i < size; i++) { // @WCA loop <= MAX_SEMI_SIZE outer
+						Native.wr(i, Const.IO_CCCP_POS);
 					}
 				}
 
 				// update object pointer to the new location
 				Native.wrMem(dest, ref+OFF_PTR);
-				// // wait until everybody uses the new location
-				// for (i = 0; i < 10; i++);
-				// // turn off address translation
-				// Native.memCopy(dest, dest, -1);
 
-				Native.atmend();
 				Native.unlock();
+
+				if (size>0) {
+					// wait until everybody uses the new location
+					for (i = 0; i < 10; i++); // @WCA loop = 10
+					// turn off address translation
+					Native.wr(0, Const.IO_CCCP_ACT);
+				}
 			}
 		}
 	}
@@ -895,6 +899,7 @@ public class GC {
 			for (;;) {
 				// log("G");
 				// GC.log("<");
+				// System.out.println(System.nanoTime());
 				GC.gc();
 				// GC.log(">");
 				waitForNextPeriod();

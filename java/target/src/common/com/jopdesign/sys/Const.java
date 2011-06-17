@@ -199,6 +199,12 @@ public class Const {
 	 */
 	public static final int IO_XCINT = IO_BASE+11;	
 
+
+	public static final int IO_CCCP_SRC = IO_BASE+0x30+0;
+	public static final int IO_CCCP_DST = IO_BASE+0x30+1;
+	public static final int IO_CCCP_POS = IO_BASE+0x30+2;
+	public static final int IO_CCCP_ACT = IO_BASE+0x30+3;
+
 	/**
 	 * Number of available interrupts depends on the parameter
 	 * in sc_sys.vhd. 4 is the default: one timer interrupt, one
@@ -210,7 +216,7 @@ public class Const {
 	public static final int IO_UART = IO_BASE+0x10+1;
 
 	public static final int MSK_UA_TDRE = 1;
-	public static final int MSK_UA_RDRF = 2;
+	public static final int MSK_UA_RDRF = 2;	
 	
 	// LED & SWITCH on DE2
 	public static final int LS_BASE = IO_BASE+0x40;

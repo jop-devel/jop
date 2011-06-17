@@ -81,13 +81,18 @@ port (
 	
 -- CMP
 
-	sync_out : in sync_out_type := NO_SYNC;
+	sync_out : in  sync_out_type := NO_SYNC;
 	sync_in	 : out sync_in_type;
+
+-- copy unit
+
+	cccp_out : out sc_out_type;
+	cccp_in  : in  sc_in_type;
 	
 -- interface to UART
 
 	uart_out : out sc_out_type;
-	uart_in : in sc_in_type;
+	uart_in  : in  sc_in_type;
 
 -- watch dog
 
@@ -107,7 +112,7 @@ end scio;
 
 architecture rtl of scio is
 
-	constant SLAVE_CNT : integer := 3;
+	constant SLAVE_CNT : integer := 4;
 	-- SLAVE_CNT <= 2**DECODE_BITS
 	-- take care of USB address 0x20!
 	constant DECODE_BITS : integer := 2;
@@ -208,6 +213,14 @@ begin
 		
 	-- remove the comment for RAM access counting
 	-- ram_count <= ram_cnt;
+
+	-- pass on copy unit signals
+	cccp_out.address <= sc_io_out.address;
+	cccp_out.wr_data <= sc_io_out.wr_data;
+	cccp_out.rd <= sc_rd(3);
+	cccp_out.wr <= sc_wr(3);
+	sc_dout(3) <= cccp_in.rd_data;
+	sc_rdy_cnt(3) <= cccp_in.rdy_cnt;
 
 	-- pass on UART signals
 	uart_out.address <= sc_io_out.address;

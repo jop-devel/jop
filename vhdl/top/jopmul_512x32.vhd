@@ -174,6 +174,11 @@ end component;
 	signal sync_in_array	: sync_in_array_type(0 to cpu_cnt-1);
 	signal sync_out_array	: sync_out_array_type(0 to cpu_cnt-1);
 
+-- copy unit signals
+
+    signal sc_cccp_out		: sc_out_type;
+    signal sc_cccp_in		: sc_in_type;
+
 -- signals for UART arbitration
 	signal uart_out			: arb_out_type(0 to cpu_cnt-1);
 	signal uart_in			: arb_in_type(0 to cpu_cnt-1);
@@ -250,14 +255,20 @@ end process;
 				irq_in(i), irq_out(i), exc_req(i));
 	end generate;
 	
-	arbiter: entity work.arbiter
+	cccp: entity work.cccp
 		generic map(
 			addr_bits => SC_ADDR_SIZE,
 			cpu_cnt => cpu_cnt			
 		)
-		port map(clk_int, int_res,
-			sc_arb_out, sc_arb_in,
-			sc_mem_out, sc_mem_in);
+		port map(
+			clk => clk_int,
+			reset => int_res,
+			arb_out => sc_arb_out,
+			arb_in => sc_arb_in,
+			mem_out => sc_mem_out,
+			mem_in => sc_mem_in,
+			config_out => sc_cccp_out,
+			config_in => sc_cccp_in);
 
 	-- io for processor 0
 	io: entity work.scio generic map (
@@ -271,6 +282,9 @@ end process;
 			sync_out => sync_out_array(0),
 			sync_in => sync_in_array(0),
 
+			cccp_out => sc_cccp_out,
+			cccp_in => sc_cccp_in,
+				  
 			uart_out => uart_out(0),
 			uart_in => uart_in(0),
 				  
@@ -298,6 +312,9 @@ end process;
 
 			sync_out => sync_out_array(i),
 			sync_in => sync_in_array(i),
+
+			cccp_out => open,
+			cccp_in => ((others => '0'), "00"),
 
 			uart_out => uart_out(i),
 			uart_in => uart_in(i),

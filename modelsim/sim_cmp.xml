@@ -200,7 +200,11 @@
 		</vcom>
 
         <vcom>
-          <arg line="${jopdir}/simpcon/sc_arbiter_rr_atomic.vhd"/>
+          <arg line="${jopdir}/simpcon/sc_arbiter_tdma.vhd"/>
+        </vcom>
+
+        <vcom>
+          <arg line="${jopdir}/simpcon/sc_cccp.vhd"/>
         </vcom>
 
 		<vcom>

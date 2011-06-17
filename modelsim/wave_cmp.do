@@ -3,7 +3,6 @@ quietly WaveActivateNextPane {} 0
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/clk_int
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/int_res
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/io/wd
-add wave -noupdate -format Literal -radix ascii /tb_jop/joptop/io/ua/char
 add wave -noupdate -divider core0
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_cpu__0/cpu/core/stk/a
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_cpu__0/cpu/core/stk/b
@@ -37,54 +36,39 @@ add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/io/sys/timer_
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/io/sys/int_pend
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/io/sys/int_ena
 add wave -noupdate -divider sc_sys1
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_io__1/io2/address
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_io__1/io2/wr_data
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__1/io2/rd
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__1/io2/wr
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_io__1/io2/rdy_cnt
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_io__1/io2/sync_out
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_io__1/io2/sync_in
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__1/io2/lock_reqest
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__1/io2/timer_int
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__1/io2/int_pend
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__1/io2/int_ena
 add wave -noupdate -divider sc_sys2
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/address
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/wr_data
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/rd
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/wr
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/rdy_cnt
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/sync_out
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/sync_in
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/lock_reqest
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/timer_int
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/int_pend
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/gen_io__2/io2/int_ena
 add wave -noupdate -divider Sync
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/sync/sync_in_array
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/sync/sync_out_array
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/sync/next_state
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/sync/next_locked_id
 add wave -noupdate -divider Arbiter
-add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/arbiter/arb_out
-add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/arbiter/arb_in
-add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/arbiter/mem_out
-add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/arbiter/mem_in
-add wave -noupdate -divider {external signals}
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/addr
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/data
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/main_mem/ncs
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/main_mem/noe
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/main_mem/nwr
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/fl_a
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/fl_d
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/fl_ncs
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/fl_ncsb
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/fl_noe
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/fl_nwe
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/fl_rdy
-add wave -noupdate -divider mem_sc
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/data
+add wave -noupdate -divider CCCP
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cccp/active
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/arb_back_in
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/arb_back_out
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/arb_front_in
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/arb_front_out
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/arb_in
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/arb_out
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/buf
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/config_in
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/config_out
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/dest
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/mem_in
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/mem_out
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/next_buf
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/next_state
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/next_vpos
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/pos
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cccp/reset
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/src
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/state
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cccp/vpos
 TreeUpdate [SetDefaultTree]
 WaveRestoreCursors {{Cursor 1} {9447891 ns} 0}
 configure wave -namecolwidth 240
@@ -99,5 +83,6 @@ configure wave -gridoffset 0
 configure wave -gridperiod 1
 configure wave -griddelta 40
 configure wave -timeline 0
+configure wave -timelineunits ns
 update
-WaveRestoreZoom {20874523 ns} {20875069 ns}
+WaveRestoreZoom {0 ns} {2678046 ns}
