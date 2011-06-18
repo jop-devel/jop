@@ -21,6 +21,8 @@
 package com.jopdesign.jcopter.inline;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.jcopter.analysis.AnalysisManager;
+import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import com.jopdesign.jcopter.greedy.Candidate;
 import com.jopdesign.jcopter.greedy.CodeOptimizer;
 import org.apache.bcel.generic.InstructionHandle;
@@ -33,13 +35,12 @@ import java.util.Collection;
 public class InlineOptimizer implements CodeOptimizer {
 
     @Override
-    public Collection<Candidate> findCandidates(MethodInfo method) {
+    public Collection<Candidate> findCandidates(MethodInfo method, AnalysisManager analyses, StacksizeAnalysis stacksize, int maxLocals) {
         return null;
     }
 
     @Override
-    public Collection<Candidate> findCandidates(MethodInfo method, InstructionHandle start, InstructionHandle end) {
+    public Collection<Candidate> findCandidates(MethodInfo method, AnalysisManager analyses, StacksizeAnalysis stacksize, int maxLocals, InstructionHandle start, InstructionHandle end) {
         return null;
     }
-
 }

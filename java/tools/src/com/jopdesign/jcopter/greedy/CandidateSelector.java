@@ -26,15 +26,24 @@ import org.apache.bcel.generic.InstructionHandle;
 import java.util.Collection;
 
 /**
+ * Interface for a candidate selector implementation. The selector gets sets of optimization candidates
+ * and needs to return a subset of candidates to optimize next.
+ *
+ * <p>The selector is also responsible for checking codesize constraints, both global and per method.</p>
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public interface CandidateSelector {
 
+    void initialize();
+
     void addCandidates(MethodInfo method, Collection<Candidate> candidates);
+
+    void removeCandidates(MethodInfo method);
 
     void removeCandidates(MethodInfo method, InstructionHandle start, InstructionHandle end);
 
-    void initialize();
+    void sortCandidates();
 
     Collection<Candidate> selectNextCandidates();
 

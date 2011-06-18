@@ -21,8 +21,12 @@
 package com.jopdesign.jcopter.inline;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.jcopter.analysis.AnalysisManager;
+import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import com.jopdesign.jcopter.greedy.Candidate;
 import org.apache.bcel.generic.InstructionHandle;
+
+import java.util.Collection;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -35,22 +39,32 @@ public class InlineCandidate extends Candidate {
     }
 
     @Override
-    public boolean optimize() {
+    public boolean optimize(AnalysisManager analyses, StacksizeAnalysis stacksize) {
         return false;
     }
 
     @Override
-    public boolean recalculate() {
+    public boolean recalculate(AnalysisManager analyses, StacksizeAnalysis stacksize) {
         return false;
     }
 
     @Override
-    public int getDeltaCodesize() {
+    public int getDeltaLocalCodesize() {
         return 0;
     }
 
     @Override
-    public int getDeltaLocals() {
+    public Collection<MethodInfo> getUnreachableMethods() {
+        return null;
+    }
+
+    @Override
+    public int getMaxLocalsInRegion() {
+        return 0;
+    }
+
+    @Override
+    public int getNumPersistentLocals() {
         return 0;
     }
 

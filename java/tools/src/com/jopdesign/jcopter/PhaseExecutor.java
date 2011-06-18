@@ -246,7 +246,7 @@ public class PhaseExecutor {
      */
     public void performSimpleInline() {
         // TODO inliner is experimental for now..
-        if (!getJConfig().doOptimizeExperimental()) return;
+        if (!getJConfig().doAllowExperimental()) return;
 
         if (getJConfig().doAssumeDynamicClassLoader()) {
             logger.info("Skipping simple-inliner since dynamic class loading is assumed.");
@@ -264,7 +264,10 @@ public class PhaseExecutor {
      */
     public void performInline() {
         // TODO inliner is experimental for now..
-        if (!getJConfig().doOptimizeExperimental()) return;
+        if (!getJConfig().doAllowExperimental()) return;
+
+        // this is a more elaborate optimization which may increase codesize.
+        if (!getJConfig().doOptimizeNormal()) return;
 
         if (getJConfig().doAssumeDynamicClassLoader()) {
             logger.info("Skipping inliner since dynamic class loading is assumed.");

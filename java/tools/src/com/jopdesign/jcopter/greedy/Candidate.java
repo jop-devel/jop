@@ -21,10 +21,24 @@
 package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallString;
+import com.jopdesign.jcopter.analysis.AnalysisManager;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import org.apache.bcel.generic.InstructionHandle;
 
+import java.util.Collection;
+
 /**
+ * TODO we currently do not account for additional advantages when pairs (or sets) of candidates are optimized.
+ *      We would need to tell the optimizer about
+ *      - possible future candidates, e.g. invoke sites which are created by inlining a method.
+ *      - advantages when optimizing combinations of candidates (from the same optimizer; considering gains when
+ *        candidates of different optimizers are taken into account would be quite tricky), e.g. if all invokesites
+ *        are inlined, we know that we can remove the invokee. We could use the CodeOptimizers to find promising sets
+ *        of candidates, else the candidates would need to provide all the required information to find such sets in a
+ *        generic way.
+ *      - improved WCET-gains when optimizing multiple candidates (this could be done in some generic way).
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public abstract class Candidate {
@@ -64,10 +78,12 @@ public abstract class Candidate {
 
     /**
      * Perform optimization, update start and end instruction handle to the new code.
+     *
+     * @param analyses the analyses used by the optimizer.
      * @param stacksize the stack analysis for the method to optimize
      * @return true if the optimization has been performed.
      */
-    public abstract boolean optimize(StacksizeAnalysis stacksize);
+    public abstract boolean optimize(AnalysisManager analyses, StacksizeAnalysis stacksize);
 
     /**
      * Update deltaCodesize, deltaLocals and localGain, after some method which may be invoked by the
@@ -77,14 +93,39 @@ public abstract class Candidate {
      * processor. This MAY return false if the new local codesize exceeds the limits of the processor (but this
      * will be checked anyway by the candidate selector).</p>
      *
+     * @param analyses the analyses used by the optimizer.
      * @param stacksize the stack analysis for the method to optimize.
      * @return false if this is not a candidate anymore.
      */
-    public abstract boolean recalculate(StacksizeAnalysis stacksize);
+    public abstract boolean recalculate(AnalysisManager analyses, StacksizeAnalysis stacksize);
 
     public abstract int getDeltaLocalCodesize();
 
-    public abstract int getDeltaGlobalCodesize();
+    /**
+     * Return a set of methods which become unreachable (w.r.t. to the complete callgraph, not to the set of
+     * methods to optimize) after the optimization has been performed, e.g. due to inlining the last callsite.
+     *
+     * <p>This is used to calculate the resulting total codesize as well as to skip unused methods from optimizations.</p>
+     *
+     * <p>Note that the resultset can increase after another optimization took place.</p>
+     *
+     * @return a set of methods which can be removed after the optimization, or null or an empty set if nothing changes.
+     */
+    public Collection<MethodInfo> getUnreachableMethods() {
+        return null;
+    }
+
+    /**
+     * To get a few more candidates, we allow for candidates which only work in a set of execution contexts.
+     * The optimization is only valid if either all other execution contexts are removed (e.g. by inlining or
+     * callgraph pruning), of if the optimizer creates a copy of the method for all other execution contexts first.
+     *
+     * @return a set of callstrings leading to the optimized method for which this optimization is valid, or null
+     * or an empty set (or a set with a single empty callstring) if this optimization is valid for all callstrings.
+     */
+    public Collection<CallString> getRequiredContext() {
+        return null;
+    }
 
     public abstract int getMaxLocalsInRegion();
 
@@ -94,7 +135,9 @@ public abstract class Candidate {
      *
      * @return the number of additional local slots required outside the changed code range.
      */
-    public abstract int getNumPersistentLocals();
+    public int getNumPersistentLocals() {
+        return 0;
+    }
 
     public abstract int getLocalGain();
 }

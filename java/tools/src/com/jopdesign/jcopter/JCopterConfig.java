@@ -21,12 +21,16 @@
 package com.jopdesign.jcopter;
 
 import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
+import sun.reflect.generics.tree.ReturnType;
+
+import java.util.List;
 
 /**
  * This class contains all generic options for JCopter.
@@ -46,13 +50,21 @@ public class JCopterConfig {
             new BooleanOption("assume-dynloader", "Assume that classes can be loaded or replaced at runtime.", false);
 
     private static final StringOption OPTIMIZE =
-            new StringOption("optimize", "can be one of: 's' (size), '1' (fast optimizations only), '2', '3' (experimental optimizations)", 'O', "1");
+            new StringOption("optimize", "can be one of: 's' (size), '1' (fast optimizations only), '2' (most optimizations), '3' (bring on the big guns)", 'O', "1");
+
+    private static final BooleanOption ALLOW_EXPERIMENTAL =
+            new BooleanOption("experimental", "Enable experimental optimizations which are still in development", false);
 
     private static final StringOption MAX_CODE_SIZE =
             new StringOption("max-code-size", "maximum total code size, 'kb' or 'mb' can be used as suffix", true);
 
+    private static final StringOption WCA_TARGETS =
+            new StringOption("wca-targets", "comma separated list of target-methods if the WCA is used (main class is used if the classname is omitted)", "measure");
+
     private static final Option[] optionList =
-            { OPTIMIZE, MAX_CODE_SIZE, ASSUME_REFLECTION, ASSUME_DYNAMIC_CLASSLOADING };
+            { OPTIMIZE, ALLOW_EXPERIMENTAL, MAX_CODE_SIZE,
+              ASSUME_REFLECTION, ASSUME_DYNAMIC_CLASSLOADING,
+              WCA_TARGETS };
 
     public static void registerOptions(OptionGroup options) {
         options.addOptions(JCopterConfig.optionList);
@@ -62,6 +74,7 @@ public class JCopterConfig {
     
     private byte optimizeLevel;
     private int  maxCodesize;
+    private List<MethodInfo> wcaTargets;
 
     public JCopterConfig(OptionGroup options) throws BadConfigurationException {
         this.options = options;
@@ -140,19 +153,40 @@ public class JCopterConfig {
         return maxCodesize;
     }
 
+    /**
+     * Includes optimizations which are more expensive, excludes optimization which increase size.
+     * @return true if we should only perform optimizations which reduce the total codesize.
+     */
     public boolean doOptimizeCodesizeOnly() {
         return optimizeLevel == 0;
     }
 
+    /**
+     * Includes optimizations which may increase size, excludes optimizations which are more expensive.
+     * @return true if we only want fast optimizations.
+     */
     public boolean doOptimizeFastOnly() {
         return optimizeLevel == 1;
     }
 
-    public boolean doOptimizeHard() {
+    /**
+     * Includes all optimizations which are more expensive, may increase size. Excludes optimizations which may take
+     * a long time.
+     * @return true if we want most optimizations to execute.
+     */
+    public boolean doOptimizeNormal() {
         return optimizeLevel >= 2;
     }
 
-    public boolean doOptimizeExperimental() {
-        return optimizeLevel == 3;
+    /**
+     * Includes everything.
+     * @return true if we want to try really hard to optimize, even if it may take a long time.
+     */
+    public boolean doOptimizeHard() {
+        return optimizeLevel >= 3;
+    }
+
+    public boolean doAllowExperimental() {
+        return options.getOption(ALLOW_EXPERIMENTAL);
     }
 }

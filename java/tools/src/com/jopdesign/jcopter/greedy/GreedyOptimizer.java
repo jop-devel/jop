@@ -20,7 +20,6 @@
 
 package com.jopdesign.jcopter.greedy;
 
-import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
@@ -32,9 +31,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.logging.Logger;
 
 /**
@@ -71,12 +68,12 @@ public class GreedyOptimizer {
         }
     }
 
-    private final RebateConfig config;
+    private final GreedyConfig config;
     private final List<CodeOptimizer> optimizers;
 
     private static final Logger logger = Logger.getLogger(JCopter.LOG_OPTIMIZER+".GreedyOptimizer");
 
-    public GreedyOptimizer(RebateConfig config) {
+    public GreedyOptimizer(GreedyConfig config) {
         this.config = config;
         this.optimizers = new ArrayList<CodeOptimizer>();
     }
@@ -102,6 +99,8 @@ public class GreedyOptimizer {
 
         CandidateSelector selector = new RebateSelector(analyses);
 
+        selector.initialize();
+
         // first find and initialize all candidates
         for (MethodInfo method : methods) {
 
@@ -123,7 +122,7 @@ public class GreedyOptimizer {
         }
 
         // now use the RebateSelector to order the candidates
-        selector.initialize();
+        selector.sortCandidates();
 
         Set<MethodInfo> optimizedMethods = new HashSet<MethodInfo>();
         Set<MethodInfo> changedMethods = new HashSet<MethodInfo>();
@@ -139,7 +138,7 @@ public class GreedyOptimizer {
                 MethodInfo method = c.getMethod();
                 StacksizeAnalysis stacksize = methodData.get(method).getStacksizeAnalysis();
 
-                if (!c.optimize(stacksize)) continue;
+                if (!c.optimize(analyses, stacksize)) continue;
 
                 // to update maxStack and positions
                 method.getCode().compile();
@@ -149,8 +148,15 @@ public class GreedyOptimizer {
 
                 int locals = c.getMaxLocalsInRegion();
 
+                // We need to remove candidates from methods which are no longer reachable
+                Collection<MethodInfo> unreachable = c.getUnreachableMethods();
+                if (unreachable != null && !unreachable.isEmpty()) {
+                    for (MethodInfo m : unreachable) {
+                        selector.removeCandidates(m);
+                    }
+                }
+
                 // need to remove all candidates in this method which overlap the optimized region first
-                // - update positions in IL, compare ranges of candidates with all
                 selector.removeCandidates(method, c.getStart(), c.getEnd());
 
                 for (CodeOptimizer optimizer : optimizers) {

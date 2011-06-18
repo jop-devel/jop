@@ -112,6 +112,10 @@ public class RebateSelector implements CandidateSelector {
     public RebateSelector(AnalysisManager analyses) {
     }
 
+    @Override
+    public void initialize() {
+    }
+
     public void addCandidates(MethodInfo method, Collection<Candidate> candidates) {
         MethodData data = methodData.get(method);
         if (data == null) {
@@ -122,6 +126,14 @@ public class RebateSelector implements CandidateSelector {
     }
 
     @Override
+    public void removeCandidates(MethodInfo method) {
+        MethodData data = methodData.remove(method);
+
+        // TODO remove ratios from queue
+
+    }
+
+    @Override
     public void removeCandidates(MethodInfo method, InstructionHandle start, InstructionHandle end) {
         // TODO go through all candidates of the method, remove all with overlapping range (use positions to check)
         // for now, we just assume that candidates do not overlap ..
@@ -129,7 +141,7 @@ public class RebateSelector implements CandidateSelector {
     }
 
     @Override
-    public void initialize() {
+    public void sortCandidates() {
         // TODO
 
     }

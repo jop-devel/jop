@@ -31,12 +31,12 @@ import java.util.Set;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class RebateConfig {
+public class GreedyConfig {
 
     private final AppInfo appInfo;
     private final JCopterConfig jConfig;
 
-    public RebateConfig(JCopterConfig jConfig, OptionGroup rebateOptions) {
+    public GreedyConfig(JCopterConfig jConfig, OptionGroup rebateOptions) {
         this.jConfig = jConfig;
         appInfo = AppInfo.getSingleton();
     }

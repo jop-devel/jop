@@ -237,6 +237,7 @@ public class SimpleInliner extends AbstractOptimizer {
             return false;
         }
 
+        // initial checks
         if (!helper.canInline(cs, invokeSite, invokee)) {
             return false;
         }
@@ -251,6 +252,9 @@ public class SimpleInliner extends AbstractOptimizer {
 
         // check the invokee, the invoke site and the new code size and store the results into inlineData
         inlineData.reset();
+
+        // We do not check stacksize and maxLocals here, because we do not inline store instructions and we simply
+        // assume that for simple invokees stacksize is never a problem ..
 
         if (!analyzeInvokee(cs, invokee, inlineData)) {
             return false;
