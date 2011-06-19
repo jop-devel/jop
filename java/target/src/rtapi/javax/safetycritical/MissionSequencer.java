@@ -47,7 +47,8 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 		ManagedEventHandler {
 
 	private SwEvent clean;
-	private boolean cleanupDidRun;
+//	private boolean cleanupDidRun;
+	public static boolean cleanupDidRun;
 
 	// why is this static?
 	// ok, in level 1 we have only one mission.
@@ -78,14 +79,11 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 		// We should use the inital main thread to watch for termination...
 		new RtThread(0, 10000) {
 			public void run() {
-				for (;;) {
-					if (!cleanupDidRun && terminationRequest) {
-						// where is the cleanup now?
-						// cleanup();
-						cleanupDidRun = true;
-					}
+				while (!MissionSequencer.terminationRequest) {
 					waitForNextPeriod();
 				}
+				cleanUp();
+				cleanupDidRun = true;
 			}
 		};
 
@@ -103,7 +101,7 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 	@SCJRestricted(phase = INITIALIZATION)
 	public MissionSequencer(PriorityParameters priority,
 			StorageParameters storage) {
-		super(priority, null, storage, null);
+		this(priority, storage, "");
 	}
 
 	@SCJAllowed(SUPPORT)
@@ -115,7 +113,10 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 	@Override
 	@SCJAllowed(INFRASTRUCTURE)
 	public final void handleAsyncEvent() {
-		// NOOP
+		// Currently used as a means to start the single mission from another package
+		Mission mission = getNextMission();
+		mission.initialize();
+		RtThread.startMission();
 	}
 
 	/**
@@ -130,6 +131,7 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 
 	@SCJAllowed(LEVEL_2)
 	public final void requestSequenceTermination() {
+		this.getNextMission().requestTermination();
 	}
 
 	@SCJAllowed(LEVEL_2)

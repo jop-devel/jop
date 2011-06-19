@@ -19,7 +19,7 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
   
-  @authors  Martin Schoeberl, Lei Zhao, Ales Plsek, Tórur Strøm
+  @authors  Martin Schoeberl, Lei Zhao, Ales Plsek, TÃ³rur StrÃ¸m
  */
 
 package javax.realtime;
@@ -87,7 +87,7 @@ public abstract class HighResolutionTime { // implements Comparable {
 	public int compareTo(HighResolutionTime time) {
         if (time == null)
             throw new IllegalArgumentException("null parameter");
-        // We are missing reflection in JOP - Tórur 3/6/2011
+        // We are missing reflection in JOP - Tï¿½rur 3/6/2011
         /*if (getClass() != time.getClass())
             throw new ClassCastException();*/
         if (clock != time.clock)
@@ -229,7 +229,7 @@ public abstract class HighResolutionTime { // implements Comparable {
             } else { // watch for overflow
                 long tmp = millis + millis_in_nanos;
                 if (tmp <= 0) {
-                    // What should we do in case of overflow? - Tórur 3/6/2011
+                    // What should we do in case of overflow? - Tï¿½rur 3/6/2011
                 	throw new ArithmeticException("overflow");
                 	//return false
                 }

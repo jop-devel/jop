@@ -23,6 +23,8 @@ package javax.safetycritical;
 import static javax.safetycritical.annotate.Level.LEVEL_1;
 import static javax.safetycritical.annotate.Level.LEVEL_0;
 
+import javax.realtime.HighResolutionTime;
+import javax.realtime.PeriodicParameters;
 import javax.realtime.PriorityParameters;
 import javax.realtime.RelativeTime;
 import javax.safetycritical.annotate.MemoryAreaEncloses;
@@ -73,12 +75,12 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 		super(priority, release, scp, name);
 		this.priority = priority;
 
-		start = release.start;
-		period = release.period;
+		start = (RelativeTime)release.getStart();
+		period = release.getPeriod();
 		// TODO scp
 		// this.tconf = tconf;
 		this.name = name;
-
+		System.out.println(start);
 		int p = ((int) period.getMilliseconds()) * 1000
 				+ period.getNanoseconds() / 1000;
 		int off = ((int) start.getMilliseconds()) * 1000

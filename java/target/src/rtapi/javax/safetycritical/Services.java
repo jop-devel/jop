@@ -93,8 +93,8 @@ public class Services
   /*
    * The deployment level
    */
-  @SCJAllowed
-  public static Level getDeploymentLevel() { return LEVEL_0; }
+//  @SCJAllowed
+//  public static Level getDeploymentLevel() { return LEVEL_0; }
 
   /**
    * This is like sleep except that it is not interruptible and it uses
