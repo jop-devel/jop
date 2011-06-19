@@ -22,9 +22,9 @@ package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.JCopterConfig;
-import com.jopdesign.jopui.core.OptionGroup;
 
 import java.util.Set;
 
@@ -34,10 +34,14 @@ import java.util.Set;
 public class GreedyConfig {
 
     private final AppInfo appInfo;
-    private final JCopterConfig jConfig;
+    private final JCopter jcopter;
 
-    public GreedyConfig(JCopterConfig jConfig, OptionGroup rebateOptions) {
-        this.jConfig = jConfig;
+    public static void registerOptions(OptionGroup options) {
+
+    }
+
+    public GreedyConfig(JCopter jcopter, OptionGroup rebateOptions) {
+        this.jcopter = jcopter;
         appInfo = AppInfo.getSingleton();
     }
 
@@ -46,7 +50,7 @@ public class GreedyConfig {
     }
 
     public JCopterConfig getJConfig() {
-        return jConfig;
+        return jcopter.getJConfig();
     }
 
 
@@ -57,4 +61,9 @@ public class GreedyConfig {
     public Set<MethodInfo> getWCATargets() {
         return null;
     }
+
+    public boolean useWCA() {
+        return jcopter.useWCET();
+    }
+
 }

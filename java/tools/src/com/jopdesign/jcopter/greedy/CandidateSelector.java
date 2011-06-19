@@ -21,9 +21,11 @@
 package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import org.apache.bcel.generic.InstructionHandle;
 
 import java.util.Collection;
+import java.util.Set;
 
 /**
  * Interface for a candidate selector implementation. The selector gets sets of optimization candidates
@@ -43,8 +45,14 @@ public interface CandidateSelector {
 
     void removeCandidates(MethodInfo method, InstructionHandle start, InstructionHandle end);
 
-    void sortCandidates();
+    void updateSelection();
+
+    void updateSelection(Set<MethodInfo> changedMethods);
 
     Collection<Candidate> selectNextCandidates();
+
+    Collection<Candidate> getCandidates(MethodInfo method);
+
+    void updateCandidates(MethodInfo method, StacksizeAnalysis stacksizeAnalysis);
 
 }

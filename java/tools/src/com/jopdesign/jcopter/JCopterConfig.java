@@ -28,7 +28,6 @@ import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
-import sun.reflect.generics.tree.ReturnType;
 
 import java.util.List;
 

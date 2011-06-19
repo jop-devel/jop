@@ -22,13 +22,16 @@ package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
+import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import org.apache.bcel.generic.InstructionHandle;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 
 /**
@@ -106,10 +109,14 @@ public class RebateSelector implements CandidateSelector {
         }
     }
 
+    private final AnalysisManager analyses;
+    private final Map<MethodInfo, MethodData> methodData;
+
     private TreeSet<RebateRatio> queue = new TreeSet<RebateRatio>();
-    private Map<MethodInfo,MethodData> methodData = new HashMap<MethodInfo, MethodData>();
 
     public RebateSelector(AnalysisManager analyses) {
+        this.analyses = analyses;
+        methodData = new HashMap<MethodInfo, MethodData>();
     }
 
     @Override
@@ -141,8 +148,34 @@ public class RebateSelector implements CandidateSelector {
     }
 
     @Override
-    public void sortCandidates() {
-        // TODO
+    public Collection<Candidate> getCandidates(MethodInfo method) {
+        return methodData.get(method).getCandidates();
+    }
+
+    @Override
+    public void updateCandidates(MethodInfo method, StacksizeAnalysis stacksizeAnalysis) {
+        MethodData data = methodData.get(method);
+        if (data == null) return;
+
+        Iterator<Candidate> it = data.getCandidates().iterator();
+        while (it.hasNext()) {
+            Candidate c = it.next();
+            if (!c.recalculate(analyses, stacksizeAnalysis)) {
+                it.remove();
+            }
+        }
+    }
+
+    @Override
+    public void updateSelection() {
+        queue.clear();
+        updateSelection(methodData.keySet());
+    }
+
+    @Override
+    public void updateSelection(Set<MethodInfo> changedMethods) {
+
+
 
     }
 

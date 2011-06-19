@@ -63,7 +63,6 @@ import org.apache.bcel.generic.ReferenceType;
 import org.apache.bcel.generic.TargetLostException;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
-import sun.reflect.generics.tree.VoidDescriptor;
 
 import java.util.ArrayList;
 import java.util.HashMap;

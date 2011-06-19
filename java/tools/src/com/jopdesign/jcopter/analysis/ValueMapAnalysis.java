@@ -49,8 +49,6 @@ import org.apache.bcel.generic.NEWARRAY;
 import org.apache.bcel.generic.StoreInstruction;
 import org.apache.bcel.generic.Type;
 
-import javax.crypto.spec.IvParameterSpec;
-
 /**
  * This is a helper class to analyse value mappings of stack and local slots.
  *

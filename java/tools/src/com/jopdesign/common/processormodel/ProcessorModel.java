@@ -119,4 +119,15 @@ public interface ProcessorModel {
      *         from there).
      */
     boolean keepJVMClasses();
+
+    /////////////////////////////////////////////////////////////////////////////////////
+    // Information about the processor and cache configuration
+    /////////////////////////////////////////////////////////////////////////////////////
+
+    int getMaxMethodSize();
+
+    int getMaxStackSize();
+
+    int getMaxLocals();
+
 }

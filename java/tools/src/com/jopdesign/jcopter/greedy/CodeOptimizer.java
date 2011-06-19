@@ -32,9 +32,16 @@ import java.util.Collection;
  */
 public interface CodeOptimizer {
 
+    /**
+     * @param roots the roots in the callgraph of all methods which should be optimized.
+     */
+    void initialize(Collection<MethodInfo> roots);
+
     Collection<Candidate> findCandidates(MethodInfo method, AnalysisManager analyses, StacksizeAnalysis stacksize, int maxLocals);
 
     Collection<Candidate> findCandidates(MethodInfo method, AnalysisManager analyses, StacksizeAnalysis stacksize, int maxLocals,
                                          InstructionHandle start, InstructionHandle end);
+
+    void printStatistics();
 
 }

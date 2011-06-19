@@ -180,7 +180,7 @@ public class JCopter extends EmptyTool<JCopterManager> {
 
         // - perform inlining (check previous analysis results to avoid creating nullpointer checks),
         //   duplicate/rename/.. methods, perform method extraction/splitting too?
-        executor.performInline();
+        executor.performGreedyOptimizer();
 
         // - perform code cleanup optimizations (load/store/param-passing, constantpool cleanup,
         //   remove unused members, constant folding, dead-code elimination (remove some more NP-checks,..),

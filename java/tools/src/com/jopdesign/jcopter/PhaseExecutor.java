@@ -38,7 +38,10 @@ import com.jopdesign.common.tools.ClinitOrder;
 import com.jopdesign.common.tools.ConstantPoolRebuilder;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.framework.DFACallgraphBuilder;
+import com.jopdesign.jcopter.greedy.GreedyConfig;
+import com.jopdesign.jcopter.greedy.GreedyOptimizer;
 import com.jopdesign.jcopter.inline.InlineConfig;
+import com.jopdesign.jcopter.inline.InlineOptimizer;
 import com.jopdesign.jcopter.inline.SimpleInliner;
 import com.jopdesign.jcopter.optimizer.LoadStoreOptimizer;
 import com.jopdesign.jcopter.optimizer.PeepholeOptimizer;
@@ -80,6 +83,7 @@ public class PhaseExecutor {
         };
 
     public static final String GROUP_OPTIMIZE = "opt";
+    public static final String GROUP_GREEDY = "greedy";
     public static final String GROUP_INLINE   = "inline";
 
     public static void registerOptions(OptionGroup options) {
@@ -90,6 +94,9 @@ public class PhaseExecutor {
         OptionGroup opt = options.getGroup(GROUP_OPTIMIZE);
         opt.addOptions(optimizeOptions);
         opt.addOptions(UnusedCodeRemover.optionList);
+
+        OptionGroup greedy = options.getGroup(GROUP_GREEDY);
+        GreedyConfig.registerOptions(greedy);
 
         OptionGroup inline = options.getGroup(GROUP_INLINE);
         InlineConfig.registerOptions(inline);
@@ -119,6 +126,10 @@ public class PhaseExecutor {
 
     public OptionGroup getOptimizeOptions() {
         return options.getGroup(GROUP_OPTIMIZE);
+    }
+
+    public OptionGroup getGreedyOptions() {
+        return options.getGroup(GROUP_GREEDY);
     }
 
     public OptionGroup getInlineOptions() {
@@ -245,9 +256,9 @@ public class PhaseExecutor {
      * Inline all methods which do not increase the code size.
      */
     public void performSimpleInline() {
-        // TODO inliner is experimental for now..
-        if (!getJConfig().doAllowExperimental()) return;
+        // We never increase codesize, we do not copy methods, we are quite fast.. so just do this always ..
 
+        // .. well, almost always.
         if (getJConfig().doAssumeDynamicClassLoader()) {
             logger.info("Skipping simple-inliner since dynamic class loading is assumed.");
             return;
@@ -262,21 +273,27 @@ public class PhaseExecutor {
     /**
      * Inline all InvokeSites which are marked for inlining by an inline strategy.
      */
-    public void performInline() {
+    public void performGreedyOptimizer() {
         // TODO inliner is experimental for now..
         if (!getJConfig().doAllowExperimental()) return;
 
         // this is a more elaborate optimization which may increase codesize.
         if (!getJConfig().doOptimizeNormal()) return;
 
+        GreedyOptimizer optimizer = new GreedyOptimizer( new GreedyConfig(jcopter, getGreedyOptions()) );
+
         if (getJConfig().doAssumeDynamicClassLoader()) {
             logger.info("Skipping inliner since dynamic class loading is assumed.");
+            // we do not have any other CodeOptimizers for now, remove return when we have some more
             return;
+        } else {
+            optimizer.addOptimizer( new InlineOptimizer(jcopter, new InlineConfig(getInlineOptions())) );
         }
-        logger.info("Starting inlining");
+        logger.info("Starting greedy optimizer");
 
-        
-        logger.info("Finished inlining");
+        optimizer.optimize();
+
+        logger.info("Finished greedy optimizer");
     }
 
     /**

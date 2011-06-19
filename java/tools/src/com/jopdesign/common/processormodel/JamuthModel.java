@@ -66,6 +66,22 @@ public class JamuthModel implements ProcessorModel {
         return false;
     }
 
+    @Override
+    public int getMaxMethodSize() {
+        return 65535;
+    }
+
+    @Override
+    public int getMaxStackSize() {
+        return 65535;
+    }
+
+    @Override
+    public int getMaxLocals() {
+        // TODO do we have some limitations here?
+        return 65535;
+    }
+
     // FIXME: Java implemented bytecodes ?
 
     public MethodInfo getJavaImplementation(AppInfo ai,

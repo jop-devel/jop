@@ -20,10 +20,12 @@
 
 package com.jopdesign.jcopter.greedy;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
+import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,7 +34,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
 
 /**
  * This is the main optimizer, which uses CodeOptimizers to generate candidates and uses a greedy
@@ -68,6 +69,7 @@ public class GreedyOptimizer {
         }
     }
 
+    private final AppInfo appInfo;
     private final GreedyConfig config;
     private final List<CodeOptimizer> optimizers;
 
@@ -75,6 +77,7 @@ public class GreedyOptimizer {
 
     public GreedyOptimizer(GreedyConfig config) {
         this.config = config;
+        this.appInfo = config.getAppInfo();
         this.optimizers = new ArrayList<CodeOptimizer>();
     }
 
@@ -122,10 +125,11 @@ public class GreedyOptimizer {
         }
 
         // now use the RebateSelector to order the candidates
-        selector.sortCandidates();
+        selector.updateSelection();
 
         Set<MethodInfo> optimizedMethods = new HashSet<MethodInfo>();
         Set<MethodInfo> changedMethods = new HashSet<MethodInfo>();
+        Set<MethodInfo> wcaChangeset = new HashSet<MethodInfo>();
 
         Collection<Candidate> candidates = selector.selectNextCandidates();
         while (candidates != null) {
@@ -142,6 +146,10 @@ public class GreedyOptimizer {
 
                 // to update maxStack and positions
                 method.getCode().compile();
+
+                // Update analyses with new codesize
+                // TODO
+
 
                 // Now we need to update the stackAnalysis and find new candidates in the optimized code
                 stacksize.analyze(c.getStart(), c.getEnd());
@@ -168,20 +176,57 @@ public class GreedyOptimizer {
                 optimizedMethods.add(method);
             }
 
-            // now we need to find out for which _invokeSites_ the cache-miss-counts of the
-            // cache analysis changed, add them to the change-set
+            // First, find out for which *methods* the *cache-miss-counts* changed (because this is used to calculate
+            // the gain), needed later for the selector.
 
-            // then we add all optimized methods as well as their direct callers, because the cache-miss-costs changed
 
-            // for those methods with invokesites with cache-cost changes, as well as all their callers,
-            // but only for the methods reachable from the WCA-targets, we need to recalculate the WCA
+            // now we need to find out for which *invokeSites* the *cache-miss-counts* (invoke and return) of the
+            // cache analysis changed, and add those methods to the change-set (because candidates may use this data).
+            // Actually we would only need to update candidates whose range includes the affected invokeSites, but well..
+
+
+
+            // then we add all optimized methods as well as their direct callers, because the *cache-miss-costs*
+            // changed for this methods, might be used by the candidates.
+
+            changedMethods.addAll(optimizedMethods);
+
+            for (MethodInfo method : optimizedMethods) {
+                changedMethods.addAll( appInfo.getCallGraph().getDirectInvokers(method) );
+            }
+
+            // for those methods with invokesites with cache-cost changes, as well as all their callers
+            // (but only for the methods reachable from the WCA-targets) we need to recalculate the WCA if used
+
+            if (config.useWCA()) {
+                wcaChangeset.clear();
+
+
+
+            }
 
             // for those methods with invokesites with cache-cost changes, recalculate the candidate-gains
-            // (assuming that they do not use the WCA results, else we would recalculate wca-changeset too)
+            // (assuming that the candidates do not use the WCA results, else we would recalculate in wcaChangeset too)
+            // but only for methods which we optimize.
 
-            // Now, find out for which _methods_ the cache-miss-counts changed, add them to the set of methods where the
-            // candidates changed, add the WCA-changeset, and recalculate the rebate for all those methods
+            // small shortcut if we optimize one method at a time. In this case we only have one method to update
+            for (MethodInfo method : (methods.size() == 1 ? methods : changedMethods)) {
+                MethodData data = methodData.get(method);
+                if (data == null) continue;
+                selector.updateCandidates(method, data.getStacksizeAnalysis());
+            }
 
+            // Finally use the set of methods with changed cache-miss-counts, add the set of methods where the
+            // candidates changed, add the WCA-changeset, and recalculate the rebate for all methods which have candidates.
+
+            if (methods.size() == 1) {
+                selector.updateSelection(methods);
+            } else {
+
+
+
+                selector.updateSelection(changedMethods);
+            }
 
             // Finally, select the next candidates
             candidates = selector.selectNextCandidates();

@@ -20,6 +20,7 @@
 
 package com.jopdesign.common.type;
 
+import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.misc.AppInfoError;
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.BasicType;
@@ -38,6 +39,14 @@ public class TypeHelper {
             i += t.getSize();
         }
         return i;
+    }
+
+    public static int getNumInvokeSlots(MethodInfo method) {
+        int slots = getNumSlots(method.getArgumentTypes());
+        if (!method.isStatic()) {
+            slots += 1;
+        }
+        return slots;
     }
 
     /**

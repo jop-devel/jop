@@ -948,6 +948,19 @@ public class CallGraph implements ImplementationFinder {
      * Various lookup methods
      *---------------------------------------------------------------------------*/
 
+    public Collection<MethodInfo> getDirectInvokers(MethodInfo method) {
+        MethodNode node = getMethodNode(method);
+        Set<MethodInfo> invokers = new HashSet<MethodInfo>();
+
+        for (ExecutionContext ec : node.getInstances()) {
+            for (ContextEdge edge : callGraph.incomingEdgesOf(ec)) {
+                invokers.add( edge.getSource().getMethodInfo() );
+            }
+        }
+
+        return invokers;
+    }
+
     /**
      * Return a top-down (topological) iterator for the callgraph
      * @return A topological order iterator

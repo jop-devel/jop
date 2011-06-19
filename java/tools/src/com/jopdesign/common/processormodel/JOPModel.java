@@ -211,4 +211,21 @@ public class JOPModel implements ProcessorModel {
         // TODO maybe return enum here, keep only classes but allow removal of methods (or make them abstract?)
         return true;
     }
+
+    @Override
+    public int getMaxMethodSize() {
+        // TODO get this from cache config
+        return 65535;
+    }
+
+    @Override
+    public int getMaxStackSize() {
+        return 32;
+    }
+
+    @Override
+    public int getMaxLocals() {
+        // TODO can this be changed for JOP?
+        return 32;
+    }
 }
