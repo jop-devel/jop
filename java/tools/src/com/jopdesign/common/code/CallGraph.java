@@ -769,15 +769,61 @@ public class CallGraph implements ImplementationFinder {
         return exists;
     }
 
+    public boolean removeEdges(MethodInfo invoker, MethodInfo invokee, boolean removeUnreachable) {
+
+        MethodNode node = methodNodes.get(invoker);
+        if (node == null) return false;
+
+        List<ContextEdge> remove = new LinkedList<ContextEdge>();
+        for (ExecutionContext ec : node.getInstances()) {
+            for (ContextEdge edge : callGraph.outgoingEdgesOf(ec)) {
+                if (edge.getTarget().getMethodInfo().equals(invokee)) {
+                    remove.add(edge);
+                }
+            }
+        }
+
+        for (ContextEdge edge : remove) {
+            removeEdge(edge, removeUnreachable);
+        }
+
+        return !remove.isEmpty();
+    }
+
+    public boolean removeNodes(InvokeSite invokeSite, MethodInfo invokee, boolean removeUnreachable) {
+        return removeNodes(new CallString(invokeSite), invokee, removeUnreachable);
+    }
+
+    public boolean removeNodes(CallString callstring, MethodInfo invokee, boolean removeUnreachable) {
+        // find all edges to remove
+        MethodNode node = methodNodes.get(invokee);
+        if (node == null) return false;
+
+        // need to save nodes to remove into a temp list, because removing them from the graph would modify the instance list
+        List<ExecutionContext> remove = new ArrayList<ExecutionContext>(node.getInstances().size());
+        for (ExecutionContext ec : node.getInstances()) {
+            if (ec.getCallString().hasSuffix(callstring)) {
+                // if the node has the given callstring as suffix (i.e. is reached via the callstring), remove it
+                remove.add(ec);
+            }
+        }
+
+        for (ExecutionContext ec : remove) {
+            removeNode(ec, removeUnreachable);
+        }
+
+        return !remove.isEmpty();
+    }
+
     public boolean removeNode(ExecutionContext context, boolean removeUnreachable) {
         if (removeUnreachable) {
-            // we only need to do this if we want to remove reachable nodes, since removing a vertex
+            // we only need to do this if we want to remove unreachable nodes, since removing a vertex
             // also removes its edges
             for (ContextEdge e : callGraph.outgoingEdgesOf(context)) {
                 removeEdge(e, removeUnreachable);
             }
         }
-        // Note that we do not need to worry about any onRemove methods, they are called by the listeners
+        // we do not need to worry about any onRemove methods, they are called by the listeners
         return callGraph.removeVertex(context);
     }
 

@@ -23,6 +23,7 @@ package com.jopdesign.jcopter.inline;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.processormodel.ProcessorModel;
@@ -55,6 +56,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -72,6 +74,7 @@ public class InlineOptimizer implements CodeOptimizer {
 
     protected class InlineCandidate extends Candidate {
 
+        private final InvokeSite invokeSite;
         private final MethodInfo invokee;
         private final boolean needsNPCheck;
         private final boolean needsEmptyStack;
@@ -87,6 +90,7 @@ public class InlineOptimizer implements CodeOptimizer {
                                   boolean needsNPCheck, boolean needsEmptyStack, int maxLocals)
         {
             super(invokeSite.getInvoker(), invokeSite.getInstructionHandle(), invokeSite.getInstructionHandle());
+            this.invokeSite = invokeSite;
             this.invokee = invokee;
             this.needsNPCheck = needsNPCheck;
             this.needsEmptyStack = needsEmptyStack;
@@ -132,8 +136,8 @@ public class InlineOptimizer implements CodeOptimizer {
             }
 
             // finally, we need to update the analyses
-
-            // TODO remove inlined edge in callgraph, update isLastInvoke
+            updateCallgraph(appInfo.getCallGraph());
+            updateAnalyses(analyses);
 
             return true;
         }
@@ -262,6 +266,35 @@ public class InlineOptimizer implements CodeOptimizer {
             }
         }
 
+        private void updateCallgraph(CallGraph cg) {
+            if (!cg.removeNodes(invokeSite, invokee, true)) {
+                // we did not remove an exec context, this happens when callstring length is 0
+                // only way to handle this is to check all invokesites of this method, see if the invokee is still in
+                // the set of invokees.
+                boolean found = false;
+                for (InvokeSite site : getMethod().getCode().getInvokeSites()) {
+                    // this checks the same callgraph we want to prune, but there is actually no difference to
+                    // checking the type hierarchy, since this returns only methods which override the invoked method.
+                    Set<MethodInfo> methods = appInfo.findImplementations(invokeSite);
+                    if (methods.isEmpty() || methods.contains(invokee)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    cg.removeEdges(getMethod(), invokee, true);
+                }
+            }
+
+            // Note that we do not need to check if any other method has been removed, because we added edges
+            // to all targets of all invokesites of the removed method.
+            isLastInvoke = cg.hasMethod(invokee);
+        }
+
+        private void updateAnalyses(AnalysisManager analyses) {
+
+        }
+
         @Override
         public boolean recalculate(AnalysisManager analyses, StacksizeAnalysis stacksize) {
 
@@ -386,6 +419,9 @@ public class InlineOptimizer implements CodeOptimizer {
         }
 
         private boolean checkIsLastInvoke() {
+            CallGraph cg = appInfo.getCallGraph();
+
+
 
             return false;
         }
