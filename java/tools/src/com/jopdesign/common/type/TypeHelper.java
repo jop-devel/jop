@@ -23,8 +23,14 @@ package com.jopdesign.common.type;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.misc.AppInfoError;
 import org.apache.bcel.Constants;
+import org.apache.bcel.generic.ASTORE;
 import org.apache.bcel.generic.BasicType;
+import org.apache.bcel.generic.DSTORE;
+import org.apache.bcel.generic.FSTORE;
+import org.apache.bcel.generic.ISTORE;
+import org.apache.bcel.generic.LSTORE;
 import org.apache.bcel.generic.ReferenceType;
+import org.apache.bcel.generic.StoreInstruction;
 import org.apache.bcel.generic.Type;
 
 /**
@@ -47,6 +53,27 @@ public class TypeHelper {
             slots += 1;
         }
         return slots;
+    }
+
+    public static StoreInstruction createStoreInstruction(Type type, int slot) {
+        switch (type.getType()) {
+            case Constants.T_BOOLEAN:
+            case Constants.T_CHAR:
+            case Constants.T_SHORT:
+            case Constants.T_INT:
+                return new ISTORE(slot);
+            case Constants.T_FLOAT:
+                return new FSTORE(slot);
+            case Constants.T_LONG:
+                return new LSTORE(slot);
+            case Constants.T_DOUBLE:
+                return new DSTORE(slot);
+            case Constants.T_OBJECT:
+            case Constants.T_ARRAY:
+                return new ASTORE(slot);
+            default:
+                throw new AppInfoError("Unsupported type "+type+" for slot "+slot);
+        }
     }
 
     /**

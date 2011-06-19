@@ -34,7 +34,9 @@ import com.jopdesign.jcopter.greedy.Candidate;
 import com.jopdesign.jcopter.greedy.CodeOptimizer;
 import org.apache.bcel.generic.ASTORE;
 import org.apache.bcel.generic.ATHROW;
+import org.apache.bcel.generic.BranchInstruction;
 import org.apache.bcel.generic.DUP;
+import org.apache.bcel.generic.GOTO;
 import org.apache.bcel.generic.IFNONNULL;
 import org.apache.bcel.generic.IINC;
 import org.apache.bcel.generic.Instruction;
@@ -42,6 +44,9 @@ import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.LocalVariableInstruction;
 import org.apache.bcel.generic.ReturnInstruction;
+import org.apache.bcel.generic.Select;
+import org.apache.bcel.generic.TargetLostException;
+import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
 import java.util.Collection;
@@ -102,44 +107,159 @@ public class InlineOptimizer implements CodeOptimizer {
 
             // To avoid problems with loosing targets we insert our code after the invoke and remove
             // the invoke afterwards, retargeting to the next instruction
+            assert(start == end);
             InstructionHandle invoke = start;
-            InstructionHandle after = end.getNext();
+            InstructionHandle next = end.getNext();
 
             // insert the prologue
-            InstructionHandle last = insertPrologue(il, invoke);
+            insertPrologue(il, next);
 
-            // insert the
+            // insert the invokee code
+            insertInvokee(il, next);
+
+            // remove the invoke, retarget to next instruction, update start and end handlers
+            start = invoke.getNext();
+            end = next.getPrev();
+            if (end == null) {
+                // if we inline an empty static method with no arguments at the beginning of the code, end is null
+                start = null;
+            }
+
+            try {
+                il.delete(invoke);
+            } catch (TargetLostException e) {
+                code.retarget(e, start);
+            }
+
+            // finally, we need to update the analyses
+
+            // TODO remove inlined edge in callgraph, update isLastInvoke
 
             return true;
         }
 
-        private InstructionHandle insertPrologue(InstructionList il, InstructionHandle after)
+        private void insertPrologue(InstructionList il, InstructionHandle next)
         {
             int paramOffset = invokee.isStatic() ? maxLocals : maxLocals + 1;
-            InstructionHandle last = after;
 
             // store all parameters in the slots used for the inlined code, except the this-reference
+            Type[] types = invokee.getArgumentTypes();
+            paramOffset += TypeHelper.getNumSlots(types);
 
+            for (int i = types.length - 1; i >= 0; i--) {
+                paramOffset -= types[i].getSize();
+
+                Instruction store = TypeHelper.createStoreInstruction(types[i], paramOffset);
+                il.insert(next, store);
+            }
 
             if (invokee.isStatic()) {
-                return last;
+                return;
             }
 
             // store the this reference
-            InstructionHandle store = il.append(last, new ASTORE(maxLocals));
+            InstructionHandle store = il.insert(next, new ASTORE(maxLocals));
 
             // insert nullpointer check
             if (needsNPCheck) {
                 // we popped all arguments, so there must be the this-ref left on the TOS before the store
                 il.insert(store, new DUP());
                 il.insert(store, new IFNONNULL(store));
-                il.append(store, new ATHROW());
+                // throwing a null reference throws a nullpointer-exception, just what we want.
+                // TODO this could insert a new invokesite (changing the cache,..), but we just ignore this for now!
+                il.insert(store, new ATHROW());
             }
 
             // TODO saving the stack is currently not implemented..
             assert(!needsEmptyStack);
+        }
 
-            return store;
+        private void insertInvokee(InstructionList il, InstructionHandle next) {
+
+            MethodCode code = getMethod().getCode();
+            String sourcefile = getMethod().getClassInfo().getSourceFileName();
+
+            MethodCode invokeeCode = invokee.getCode();
+            InstructionList iList = invokeeCode.getInstructionList(true, false);
+
+            Map<InstructionHandle,InstructionHandle> instrMap = new HashMap<InstructionHandle, InstructionHandle>();
+
+            // first copy all instruction handles
+            for (InstructionHandle src = iList.getStart(); src != null; src = src.getNext()) {
+
+                InstructionHandle ih = copyInstruction(invokeeCode, il, src, next);
+
+                code.setSourceFileName(ih, sourcefile);
+
+                if (code.isInvokeSite(ih)) {
+                    // TODO copy callgraph edges, update analyses ?
+
+                    // TODO update inline-callstring for this instruction
+
+                }
+
+                instrMap.put(src, ih);
+            }
+
+            remapTargets(instrMap, next.getPrev(), iList.getEnd());
+        }
+
+        private InstructionHandle copyInstruction(MethodCode invokeeCode, InstructionList il,
+                                                  InstructionHandle src, InstructionHandle next)
+        {
+            InstructionHandle ih;
+            Instruction instr = src.getInstruction();
+            Instruction c = instr.copy();
+
+            if (instr instanceof LocalVariableInstruction) {
+                // remap local variables
+                int slot = maxLocals + ((LocalVariableInstruction)instr).getIndex();
+                ((LocalVariableInstruction)c).setIndex(slot);
+            } else if (instr instanceof ReturnInstruction) {
+                // replace return with goto
+                c = new GOTO(next);
+            }
+
+            if (c instanceof BranchInstruction) {
+                ih = il.insert(next, (BranchInstruction) c);
+            } else {
+                ih = il.insert(next, c);
+            }
+
+            invokeeCode.copyCustomValues(ih, src);
+
+            return ih;
+        }
+
+        private void remapTargets(Map<InstructionHandle,InstructionHandle> instrMap,
+                                  InstructionHandle last, InstructionHandle oldLast)
+        {
+            InstructionHandle src = oldLast;
+            InstructionHandle ih = last;
+            while (src != null) {
+                Instruction i = src.getInstruction();
+                Instruction c = ih.getInstruction();
+
+                // Note that this skips over the goto instructions we inserted instead of returns, this is intentional
+                if (i instanceof BranchInstruction) {
+                    BranchInstruction bi = (BranchInstruction) i;
+                    BranchInstruction bc = (BranchInstruction) c;
+                    InstructionHandle target = bi.getTarget(); // old target
+
+                    // New target is in hash map
+                    if (bi instanceof Select) {
+                        // Either LOOKUPSWITCH or TABLESWITCH
+                        InstructionHandle[] targets = ((Select) bi).getTargets();
+                        for (int j = 0; j < targets.length; j++) {
+                            ((Select)bc).setTarget(j, instrMap.get(targets[j]));
+                        }
+                    }
+                    bc.setTarget(instrMap.get(target));
+                }
+
+                src = src.getPrev();
+                ih = ih.getPrev();
+            }
         }
 
         @Override
@@ -192,7 +312,7 @@ public class InlineOptimizer implements CodeOptimizer {
 
         @Override
         public Collection<CallString> getRequiredContext() {
-            // TODO we could support inlining only for certain contexts..
+            // we could support inlining only for certain contexts..
             return null;
         }
 
@@ -288,7 +408,6 @@ public class InlineOptimizer implements CodeOptimizer {
 
     @Override
     public void initialize(Collection<MethodInfo> roots) {
-
     }
 
     @Override
