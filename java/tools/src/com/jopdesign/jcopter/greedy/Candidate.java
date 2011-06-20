@@ -139,5 +139,17 @@ public abstract class Candidate {
         return 0;
     }
 
-    public abstract int getLocalGain();
+    /**
+     * Get the expected gain accumulated for all executions of the code to optimize, including the cache costs of
+     * invokes in the optimized code, but not including the cache-miss cost increases due to an increased codesize of
+     * the optimized method.
+     *
+     * TODO should we calculate WC-gain from gain in this method or in the generic algorithm? Second option only works
+     *      if we assume the optimized code is a single path with a single entry. First option needs to know if we
+     *      optimize for WCET and needs to do the WC-Gain calculation itself. Neither option allows for more intelligent
+     *      selection algorithms, for this we would need to encode the optimization as supergraph transformation.
+     *
+     * @return the expected gain in cycles over all executions of this code.
+     */
+    public abstract long getTotalGain();
 }

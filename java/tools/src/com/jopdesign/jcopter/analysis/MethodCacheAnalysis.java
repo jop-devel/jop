@@ -20,6 +20,12 @@
 
 package com.jopdesign.jcopter.analysis;
 
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.InvokeSite;
+import com.jopdesign.jcopter.JCopter;
+import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.jop.MethodCache;
 
 /**
@@ -30,13 +36,37 @@ import com.jopdesign.wcet.jop.MethodCache;
  */
 public class MethodCacheAnalysis {
 
-    // TODO make this independent of WCA!
     private MethodCache cache;
+    private final JCopter jcopter;
 
-    public MethodCacheAnalysis(MethodCache cache) {
-        this.cache = cache;
+    public MethodCacheAnalysis(JCopter jcopter) {
+        this.jcopter = jcopter;
+        this.cache = jcopter.getMethodCache();
     }
 
+    public int getInvokeMissCount(InvokeSite invokeSite) {
+        return 0;
+    }
 
+    public int getReturnMissCount(InvokeSite invokeSite) {
+        return 0;
+    }
 
+    public long getTotalInvokeReturnMissCosts(InvokeSite invokeSite) {
+        return getTotalInvokeReturnMissCosts(new CallString(invokeSite));
+    }
+
+    public long getTotalInvokeReturnMissCosts(CallString callString) {
+
+        int size = 0;
+        for (MethodInfo method : AppInfo.getSingleton().findImplementations(callString)) {
+            size = Math.max(size, method.getCode().getNumberOfWords());
+        }
+
+        WCETProcessorModel pm = jcopter.getWCETProcessorModel();
+        int sizeInvoker = callString.top().getInvoker().getCode().getNumberOfWords();
+
+        return getInvokeMissCount(callString.top()) * pm.getMethodCacheMissPenalty(size, true)
+             - getReturnMissCount(callString.top()) * pm.getMethodCacheMissPenalty(sizeInvoker, false);
+    }
 }

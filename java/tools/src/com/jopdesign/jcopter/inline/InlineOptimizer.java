@@ -67,6 +67,7 @@ public class InlineOptimizer implements CodeOptimizer {
 
     public static final Logger logger = Logger.getLogger(JCopter.LOG_INLINE+".InlineOptimizer");
 
+    private final JCopter jcopter;
     private final InlineConfig config;
     private final AppInfo appInfo;
     private final ProcessorModel processorModel;
@@ -79,6 +80,8 @@ public class InlineOptimizer implements CodeOptimizer {
 
     protected class InlineCandidate extends Candidate {
 
+        // TODO having a context with a callstring != EMPTY is not yet fully supported (callgraph/analysis-updating!)
+        private final ExecutionContext context;
         private final InvokeSite invokeSite;
         private final MethodInfo invokee;
         private final boolean needsNPCheck;
@@ -88,13 +91,14 @@ public class InlineOptimizer implements CodeOptimizer {
 
         private int deltaCodesize;
         private int deltaLocals;
-        private int localGain;
+        private long totalGain;
         private boolean isLastInvoke;
 
         protected InlineCandidate(InvokeSite invokeSite, MethodInfo invokee,
                                   boolean needsNPCheck, boolean needsEmptyStack, int maxLocals)
         {
             super(invokeSite.getInvoker(), invokeSite.getInstructionHandle(), invokeSite.getInstructionHandle());
+            this.context = new ExecutionContext(invokeSite.getInvoker());
             this.invokeSite = invokeSite;
             this.invokee = invokee;
             this.needsNPCheck = needsNPCheck;
@@ -351,7 +355,7 @@ public class InlineOptimizer implements CodeOptimizer {
             isLastInvoke = checkIsLastInvoke();
 
             // localGain: could have changed due to codesize changes, or cache-miss-count changes
-            localGain = calcLocalGain(analyses);
+            totalGain = calcTotalGain(analyses);
 
             return true;
         }
@@ -372,14 +376,13 @@ public class InlineOptimizer implements CodeOptimizer {
         }
 
         @Override
-        public int getLocalGain() {
-            return localGain;
+        public long getTotalGain() {
+            return totalGain;
         }
 
         @Override
         public Collection<CallString> getRequiredContext() {
-            // we could support inlining only for certain contexts..
-            return null;
+            return context.getCallString().length() > 0 ? Collections.singleton(context.getCallString()) : null;
         }
 
         private boolean checkStackAndLocals(StacksizeAnalysis stacksize) {
@@ -483,14 +486,24 @@ public class InlineOptimizer implements CodeOptimizer {
             return false;
         }
 
-        private int calcLocalGain(AnalysisManager analyses) {
+        private long calcTotalGain(AnalysisManager analyses) {
 
             // gain without cache costs for single invoke..
-            int gain = invokee.getArgumentTypes().length * storeCycles;
-            if ( !invokee.isStatic() ) gain += storeCycles;
-            if (needsNPCheck) gain += checkNPCycles;
+            long gain = jcopter.getWCETProcessorModel().getExecutionTime(context, invokeSite.getInstructionHandle());
 
+            // we loose some gain due to the prologue
+            gain -= invokee.getArgumentTypes().length * storeCycles;
+            if ( !invokee.isStatic() ) gain -= storeCycles;
+            if (needsNPCheck) gain -= checkNPCycles;
 
+            // TODO we may also loose/gain some speed because we replaced returns with gotos and changed local-var slots
+
+            // .. gain for all executions
+            gain *= analyses.getExecCountAnalysis().getExecCount(invokeSite);
+
+            // We also gain something due to removed cache-misses (we do not consider gain-losses due to increased
+            // invoker-codesize here)
+            gain += analyses.getMethodCacheAnalysis().getTotalInvokeReturnMissCosts(invokeSite);
 
             return gain;
         }
@@ -498,6 +511,7 @@ public class InlineOptimizer implements CodeOptimizer {
 
 
     public InlineOptimizer(JCopter jcopter, InlineConfig config) {
+        this.jcopter = jcopter;
         this.config = config;
         this.appInfo = AppInfo.getSingleton();
         this.processorModel = appInfo.getProcessorModel();
