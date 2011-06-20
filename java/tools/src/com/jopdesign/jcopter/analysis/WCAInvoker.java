@@ -23,36 +23,13 @@ package com.jopdesign.jcopter.analysis;
 import com.jopdesign.jcopter.JCopter;
 
 /**
- * Container for various analyses, provide some methods to invalidate/.. all analyses.
- *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class AnalysisManager {
-
+public class WCAInvoker {
     private final JCopter jcopter;
 
-    private WCAInvoker wcaInvoker;
-    private ExecCountAnalysis execCountAnalysis;
-    private MethodCacheAnalysis methodCacheAnalysis;
-
-    public AnalysisManager(JCopter jcopter) {
+    public WCAInvoker(JCopter jcopter) {
         this.jcopter = jcopter;
-    }
-
-    public JCopter getJCopter() {
-        return jcopter;
-    }
-
-    public void createWCAInvoker() {
-
-    }
-
-    public ExecCountAnalysis getExecCountAnalysis() {
-        return execCountAnalysis;
-    }
-
-    public MethodCacheAnalysis getMethodCacheAnalysis() {
-        return methodCacheAnalysis;
     }
 
 

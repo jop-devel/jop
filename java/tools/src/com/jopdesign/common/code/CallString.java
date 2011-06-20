@@ -27,12 +27,13 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.type.MemberID;
-
 import org.apache.bcel.generic.InstructionHandle;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -43,7 +44,7 @@ import java.util.List;
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  * @author Stefan Hepp <stefan@stefant.org>
  */
-public class CallString implements CallStringProvider {
+public class CallString implements CallStringProvider, Iterable<InvokeSite> {
 
     public static class CallStringSerialization implements Serializable {
 		private static final long serialVersionUID = 1L;
@@ -92,6 +93,10 @@ public class CallString implements CallStringProvider {
         hash = site.hashCode(); 
     }
 
+    public CallString(List<InvokeSite> sites) {
+        this(sites.toArray(new InvokeSite[sites.size()]));
+    }
+
     private CallString() {
         callString = new InvokeSite[]{};
         hash = 1;
@@ -109,6 +114,25 @@ public class CallString implements CallStringProvider {
 
     public CallString getCallString() {
         return this;
+    }
+
+    @Override
+    public Iterator<InvokeSite> iterator() {
+        return new Iterator<InvokeSite>() {
+            private int pos = 0;
+            @Override
+            public boolean hasNext() {
+                return pos < callString.length;
+            }
+            @Override
+            public InvokeSite next() {
+                return callString[pos++];
+            }
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 
     public boolean contains(MethodInfo invoker) {
@@ -334,14 +358,18 @@ public class CallString implements CallStringProvider {
     }
 
     /* for serialization */
-	public InvokeSite[] getInvokeSiteList() {
-		return this.callString;
-	}
+    private InvokeSite[] getInvokeSiteList() {
+        return this.callString;
+    }
 
-	public static CallString fromInvokeSiteList(List<InvokeSite> invokeSiteList) {
-		InvokeSite[] sites = new InvokeSite[invokeSiteList.size()];
-		invokeSiteList.toArray(sites);
-		return new CallString(Arrays.copyOf(sites, sites.length));
-	}
+    public List<InvokeSite> getInvokeSites() {
+        return Collections.unmodifiableList(Arrays.asList(callString));
+    }
+
+    public static CallString fromInvokeSiteList(List<InvokeSite> invokeSiteList) {
+        InvokeSite[] sites = new InvokeSite[invokeSiteList.size()];
+        invokeSiteList.toArray(sites);
+        return new CallString(Arrays.copyOf(sites, sites.length));
+    }
 
 }

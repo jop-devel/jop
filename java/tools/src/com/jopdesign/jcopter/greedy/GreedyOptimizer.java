@@ -89,11 +89,22 @@ public class GreedyOptimizer {
 
         Set<MethodInfo> rootMethods = config.getRootMethods();
 
-        //AnalysisManager analyses = initializeAnalyses();
+        AnalysisManager analyses = initializeAnalyses();
+
+        for (CodeOptimizer opt : optimizers) {
+            opt.initialize(analyses, rootMethods);
+        }
+
+
 
 
     }
 
+    private AnalysisManager initializeAnalyses() {
+
+
+        return null;
+    }
 
 
     private void optimizeMethods(AnalysisManager analyses, Set<MethodInfo> methods) {

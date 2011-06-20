@@ -672,7 +672,7 @@ public class CallGraph implements ImplementationFinder {
         }
         return childs;
     }
-    
+
     public Set<ClassInfo> getRootClasses() {
         Set<ClassInfo> classes = new HashSet<ClassInfo>(2);
         for (ExecutionContext root : rootNodes) {
@@ -720,6 +720,10 @@ public class CallGraph implements ImplementationFinder {
     /*---------------------------------------------------------------------------*
      * Modify the graph
      *---------------------------------------------------------------------------*/
+
+    public ContextEdge addEdge(ExecutionContext source, ExecutionContext target) {
+        return callGraph.addEdge(source, target);
+    }
 
     /**
      * Remove an edge from the graph.
@@ -794,6 +798,16 @@ public class CallGraph implements ImplementationFinder {
         return removeNodes(new CallString(invokeSite), invokee, removeUnreachable);
     }
 
+    /**
+     * Remove all nodes from the graph which are invoked in a certain context, i.e. all execution contexts which
+     * have the callstring as suffix. This does not remove contexts which have a context callstring shorter than the
+     * callstring.
+     *
+     * @param callstring the callstring leading to the invokee
+     * @param invokee the method for which contexts should be removed
+     * @param removeUnreachable remove all newly unreachable methods from the callgraph too.
+     * @return false if no nodes have been removed.
+     */
     public boolean removeNodes(CallString callstring, MethodInfo invokee, boolean removeUnreachable) {
         // find all edges to remove
         MethodNode node = methodNodes.get(invokee);
@@ -838,6 +852,56 @@ public class CallGraph implements ImplementationFinder {
             removeNode(c, removeUnreachable);
         }
         return true;
+    }
+
+    /**
+     * Copy an existing node, and replace the callstring of the node with a new callstring.
+     * All reachable nodes are also copied using the new callstring if they do not exist.
+     *
+     * @param source the node to copy
+     * @param newContext the new callstring for the new node
+     * @param callstringLength the maximum callstring length for new nodes.
+     * @return the new node
+     */
+    public ExecutionContext copyNodeRecursive(ExecutionContext source, CallString newContext, int callstringLength) {
+
+        ExecutionContext root = new ExecutionContext(source.getMethodInfo(), newContext);
+        if (callGraph.containsVertex(root)) {
+            return root;
+        }
+
+        callGraph.addVertex(root);
+
+        List<ExecutionContext> newQueue = new LinkedList<ExecutionContext>();
+        List<ExecutionContext> oldQueue = new LinkedList<ExecutionContext>();
+
+        oldQueue.add(source);
+        newQueue.add(root);
+
+        while (!newQueue.isEmpty()) {
+            ExecutionContext newNode = newQueue.remove(0);
+            ExecutionContext oldNode = oldQueue.remove(0);
+
+            // create a copy for every child of oldNode, construct a new callstring
+            for (ExecutionContext oldChild : getChildren(oldNode)) {
+
+                CallString newString;
+                if (oldChild.getCallString().isEmpty()) {
+                    newString = CallString.EMPTY;
+                } else {
+                    newString = newNode.getCallString().push(oldChild.getCallString().top(), callstringLength);
+                }
+                ExecutionContext newChild = new ExecutionContext(oldChild.getMethodInfo(), newString);
+
+                if (!callGraph.containsVertex(newChild)) {
+                    oldQueue.add(oldChild);
+                    newQueue.add(newChild);
+                }
+                callGraph.addEdge(newNode, newChild);
+            }
+        }
+
+        return root;
     }
 
     /*
@@ -994,8 +1058,12 @@ public class CallGraph implements ImplementationFinder {
      * Various lookup methods
      *---------------------------------------------------------------------------*/
 
-    public Collection<MethodInfo> getDirectInvokers(MethodInfo method) {
-        MethodNode node = getMethodNode(method);
+    /**
+     * @param invokee the invoked method
+     * @return a set of all methods which may directly invoke this method
+     */
+    public Set<MethodInfo> getDirectInvokers(MethodInfo invokee) {
+        MethodNode node = getMethodNode(invokee);
         Set<MethodInfo> invokers = new HashSet<MethodInfo>();
 
         for (ExecutionContext ec : node.getInstances()) {
@@ -1005,6 +1073,32 @@ public class CallGraph implements ImplementationFinder {
         }
 
         return invokers;
+    }
+
+    public List<ExecutionContext> getInvokedNodes(ExecutionContext node, MethodInfo invokee) {
+        Set<ContextEdge> out = callGraph.outgoingEdgesOf(node);
+        List<ExecutionContext> childs = new ArrayList<ExecutionContext>();
+        for (ContextEdge e : out) {
+            if (e.getTarget().getMethodInfo().equals(invokee)) {
+                childs.add(e.getTarget());
+            }
+        }
+        return childs;
+    }
+
+    public Collection<ContextEdge> getInvokeEdges(MethodInfo invoker, MethodInfo invokee) {
+        MethodNode node = getMethodNode(invoker);
+        List<ContextEdge> edges = new ArrayList<ContextEdge>();
+
+        for (ExecutionContext ec : node.getInstances()) {
+            for (ContextEdge edge : callGraph.outgoingEdgesOf(ec)) {
+                if (edge.getTarget().getMethodInfo().equals(invokee)) {
+                    edges.add(edge);
+                }
+            }
+        }
+
+        return edges;
     }
 
     /**

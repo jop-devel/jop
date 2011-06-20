@@ -21,6 +21,7 @@
 package com.jopdesign.jcopter;
 
 import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
@@ -28,7 +29,11 @@ import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
+import com.jopdesign.common.misc.MethodNotFoundException;
+import com.jopdesign.common.type.MemberID;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -57,13 +62,16 @@ public class JCopterConfig {
     private static final StringOption MAX_CODE_SIZE =
             new StringOption("max-code-size", "maximum total code size, 'kb' or 'mb' can be used as suffix", true);
 
+    private static final BooleanOption USE_WCA =
+            new BooleanOption("use-wca", "Use the WCA tool to optimize for WCET", false);
+
     private static final StringOption WCA_TARGETS =
             new StringOption("wca-targets", "comma separated list of target-methods if the WCA is used (main class is used if the classname is omitted)", "measure");
 
     private static final Option[] optionList =
             { OPTIMIZE, ALLOW_EXPERIMENTAL, MAX_CODE_SIZE,
               ASSUME_REFLECTION, ASSUME_DYNAMIC_CLASSLOADING,
-              WCA_TARGETS };
+              USE_WCA, WCA_TARGETS };
 
     public static void registerOptions(OptionGroup options) {
         options.addOptions(JCopterConfig.optionList);
@@ -107,6 +115,33 @@ public class JCopterConfig {
             // TODO if we do not have max size: should we use some heuristics to limit codesize?
 
         }
+
+        if (useWCA()) {
+            wcaTargets = new ArrayList<MethodInfo>();
+
+            List<String> targets = Config.splitStringList(options.getOption(WCA_TARGETS));
+
+            for (String target : targets) {
+                MemberID id = MemberID.parse(target, true);
+
+                if (!id.hasClassName()) {
+                    ClassInfo main = AppInfo.getSingleton().getMainMethod().getClassInfo();
+                    MethodInfo m = main.getMethodInfo(id);
+                    if (m == null) {
+                        throw new BadConfigurationException("Cannot find wca-target method '"+target+"' in main class "+main);
+                    }
+                    wcaTargets.add(m);
+                } else {
+                    try {
+                        MethodInfo m = AppInfo.getSingleton().getMethodInfo(id);
+                        wcaTargets.add(m);
+                    } catch (MethodNotFoundException e) {
+                        throw new BadConfigurationException("Cannot find wca-target method "+target, e);
+                    }
+                }
+            }
+        }
+
     }
 
     /**
@@ -122,6 +157,14 @@ public class JCopterConfig {
 
     public Config getConfig() {
         return options.getConfig();
+    }
+
+    public boolean useWCA() {
+        return options.getOption(USE_WCA);
+    }
+
+    public Collection<MethodInfo> getWCATargets() {
+        return wcaTargets;
     }
 
     /**

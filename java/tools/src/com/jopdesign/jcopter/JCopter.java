@@ -27,7 +27,9 @@ import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.dfa.DFATool;
+import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
+import com.jopdesign.wcet.jop.MethodCache;
 import org.apache.log4j.Logger;
 
 /**
@@ -109,6 +111,14 @@ public class JCopter extends EmptyTool<JCopterManager> {
         return wcetTool;
     }
 
+    public WCETProcessorModel getWCETProcessorModel() {
+        return wcetTool.getWCETProcessorModel();
+    }
+
+    public MethodCache getMethodCache() {
+        return getWCETProcessorModel().getMethodCache();
+    }
+
     public void setWcetTool(WCETTool wcetTool) {
         this.wcetTool = wcetTool;
     }
@@ -118,7 +128,7 @@ public class JCopter extends EmptyTool<JCopterManager> {
     }
 
     public boolean useWCET() {
-        return wcetTool != null;
+        return getJConfig().useWCA();
     }
 
     /**
@@ -210,7 +220,7 @@ public class JCopter extends EmptyTool<JCopterManager> {
         JCopter jcopter = new JCopter();
 
         setup.registerTool("dfa", dfaTool, true, false);
-        setup.registerTool("wca", wcetTool, true, true);
+        setup.registerTool("wca", wcetTool);
         setup.registerTool("jcopter", jcopter);
 
         setup.initAndLoad(args, true, true, true);
@@ -219,9 +229,7 @@ public class JCopter extends EmptyTool<JCopterManager> {
             wcetTool.setDfaTool(dfaTool);
             jcopter.setDfaTool(dfaTool);
         }
-        if (setup.useTool("wca")) {
-            jcopter.setWcetTool(wcetTool);
-        }
+        jcopter.setWcetTool(wcetTool);
 
         // run optimizations
         jcopter.optimize();

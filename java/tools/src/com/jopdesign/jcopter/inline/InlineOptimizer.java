@@ -25,6 +25,7 @@ import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.common.type.TypeHelper;
@@ -50,6 +51,7 @@ import org.apache.bcel.generic.TargetLostException;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -71,6 +73,9 @@ public class InlineOptimizer implements CodeOptimizer {
     private final InlineHelper helper;
 
     private final Map<InstructionHandle,CallString> callstrings;
+
+    private int storeCycles;
+    private int checkNPCycles;
 
     protected class InlineCandidate extends Candidate {
 
@@ -119,7 +124,8 @@ public class InlineOptimizer implements CodeOptimizer {
             insertPrologue(il, next);
 
             // insert the invokee code
-            insertInvokee(il, next);
+            Map<InvokeSite,InvokeSite> invokeMap;
+            invokeMap = insertInvokee(analyses, il, next);
 
             // remove the invoke, retarget to next instruction, update start and end handlers
             start = invoke.getNext();
@@ -136,8 +142,8 @@ public class InlineOptimizer implements CodeOptimizer {
             }
 
             // finally, we need to update the analyses
-            updateCallgraph(appInfo.getCallGraph());
-            updateAnalyses(analyses);
+            updateCallgraph(appInfo.getCallGraph(), invokeMap);
+            updateAnalyses(analyses, invokeMap);
 
             return true;
         }
@@ -178,7 +184,7 @@ public class InlineOptimizer implements CodeOptimizer {
             assert(!needsEmptyStack);
         }
 
-        private void insertInvokee(InstructionList il, InstructionHandle next) {
+        private Map<InvokeSite,InvokeSite> insertInvokee(AnalysisManager analyses, InstructionList il, InstructionHandle next) {
 
             MethodCode code = getMethod().getCode();
             String sourcefile = getMethod().getClassInfo().getSourceFileName();
@@ -187,6 +193,7 @@ public class InlineOptimizer implements CodeOptimizer {
             InstructionList iList = invokeeCode.getInstructionList(true, false);
 
             Map<InstructionHandle,InstructionHandle> instrMap = new HashMap<InstructionHandle, InstructionHandle>();
+            Map<InvokeSite,InvokeSite> invokeMap = new HashMap<InvokeSite, InvokeSite>();
 
             // first copy all instruction handles
             for (InstructionHandle src = iList.getStart(); src != null; src = src.getNext()) {
@@ -196,7 +203,10 @@ public class InlineOptimizer implements CodeOptimizer {
                 code.setSourceFileName(ih, sourcefile);
 
                 if (code.isInvokeSite(ih)) {
-                    // TODO copy callgraph edges, update analyses ?
+                    InvokeSite newInvoke = code.getInvokeSite(ih);
+                    InvokeSite oldInvoke = invokeeCode.getInvokeSite(src);
+
+                    invokeMap.put(oldInvoke, newInvoke);
 
                     // TODO update inline-callstring for this instruction
 
@@ -206,6 +216,8 @@ public class InlineOptimizer implements CodeOptimizer {
             }
 
             remapTargets(instrMap, next.getPrev(), iList.getEnd());
+
+            return invokeMap;
         }
 
         private InstructionHandle copyInstruction(MethodCode invokeeCode, InstructionList il,
@@ -266,22 +278,27 @@ public class InlineOptimizer implements CodeOptimizer {
             }
         }
 
-        private void updateCallgraph(CallGraph cg) {
+        private void updateCallgraph(CallGraph cg, Map<InvokeSite,InvokeSite> invokeMap) {
+
+            // first we need to copy the execution contexts with new callstrings
+            for (ExecutionContext invoker : cg.getNodes(getMethod())) {
+
+                for (ExecutionContext ecInvokee : cg.getInvokedNodes(invoker, invokee)) {
+                    CallString cs = updateCallString(invokeMap, ecInvokee.getCallString());
+
+                    ExecutionContext newInvokee = cg.copyNodeRecursive(ecInvokee, cs, appInfo.getCallstringLength());
+
+                    // Note that this may introduce a decreasing callstring length, since we removed an invokesite
+                    cg.addEdge(invoker, newInvokee);
+                }
+            }
+
+            // Now we remove the inlined edge(s) and contexts from the graph
             if (!cg.removeNodes(invokeSite, invokee, true)) {
                 // we did not remove an exec context, this happens when callstring length is 0
                 // only way to handle this is to check all invokesites of this method, see if the invokee is still in
                 // the set of invokees.
-                boolean found = false;
-                for (InvokeSite site : getMethod().getCode().getInvokeSites()) {
-                    // this checks the same callgraph we want to prune, but there is actually no difference to
-                    // checking the type hierarchy, since this returns only methods which override the invoked method.
-                    Set<MethodInfo> methods = appInfo.findImplementations(invokeSite);
-                    if (methods.isEmpty() || methods.contains(invokee)) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
+                if (!searchInvokeSites()) {
                     cg.removeEdges(getMethod(), invokee, true);
                 }
             }
@@ -291,7 +308,23 @@ public class InlineOptimizer implements CodeOptimizer {
             isLastInvoke = cg.hasMethod(invokee);
         }
 
-        private void updateAnalyses(AnalysisManager analyses) {
+        private CallString updateCallString(Map<InvokeSite, InvokeSite> invokeMap, CallString callString) {
+            List<InvokeSite> cs = new ArrayList<InvokeSite>(callString.length());
+
+            for (InvokeSite is : callString) {
+                if (is.equals(invokeSite)) continue;
+                InvokeSite mapped = invokeMap.get(is);
+                cs.add( mapped == null ? is : mapped );
+            }
+
+            return new CallString(cs);
+        }
+
+        private void updateAnalyses(AnalysisManager analyses, Map<InvokeSite,InvokeSite> invokeMap) {
+
+            // TODO update execution frequencies of invokee
+
+            // TODO update cache analysis
 
         }
 
@@ -421,14 +454,45 @@ public class InlineOptimizer implements CodeOptimizer {
         private boolean checkIsLastInvoke() {
             CallGraph cg = appInfo.getCallGraph();
 
+            for (ExecutionContext node :  cg.getNodes(invokee)) {
+                if (node.getCallString().isEmpty()) {
+                    // This is a problem, we can only find out if we check all invokes in this method.
+                    if (searchInvokeSites()) {
+                        return false;
+                    }
+                } else {
+                    if (!node.getCallString().top().equals(invokeSite)) {
+                        return false;
+                    }
+                }
+            }
 
+            return true;
+        }
 
+        private boolean searchInvokeSites() {
+            for (InvokeSite site : getMethod().getCode().getInvokeSites()) {
+                if (invokeSite.equals(site)) continue;
+                // this checks the same callgraph we want to prune, but there is actually no difference to
+                // checking the type hierarchy, since this returns only methods which override the invoked method.
+                Set<MethodInfo> methods = appInfo.findImplementations(site);
+                if (methods.isEmpty() || methods.contains(invokee)) {
+                    return true;
+                }
+            }
             return false;
         }
 
         private int calcLocalGain(AnalysisManager analyses) {
 
-            return 0;
+            // gain without cache costs for single invoke..
+            int gain = invokee.getArgumentTypes().length * storeCycles;
+            if ( !invokee.isStatic() ) gain += storeCycles;
+            if (needsNPCheck) gain += checkNPCycles;
+
+
+
+            return gain;
         }
     }
 
@@ -443,7 +507,11 @@ public class InlineOptimizer implements CodeOptimizer {
     }
 
     @Override
-    public void initialize(Collection<MethodInfo> roots) {
+    public void initialize(AnalysisManager analyses, Collection<MethodInfo> roots) {
+
+        storeCycles = 0;
+        checkNPCycles = 0;
+
     }
 
     @Override
