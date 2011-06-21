@@ -39,15 +39,17 @@ public interface CandidateSelector {
 
     void initialize();
 
+    void printStatistics();
+
     void addCandidates(MethodInfo method, Collection<Candidate> candidates);
 
     void removeCandidates(MethodInfo method);
 
     void removeCandidates(MethodInfo method, InstructionHandle start, InstructionHandle end);
 
-    void updateSelection();
+    void sortCandidates();
 
-    void updateSelection(Set<MethodInfo> changedMethods);
+    void sortCandidates(Set<MethodInfo> changedMethods);
 
     Collection<Candidate> selectNextCandidates();
 
@@ -55,4 +57,7 @@ public interface CandidateSelector {
 
     void updateCandidates(MethodInfo method, StacksizeAnalysis stacksizeAnalysis);
 
+    void wasSuccessful(Candidate candidate);
+
+    void clear();
 }

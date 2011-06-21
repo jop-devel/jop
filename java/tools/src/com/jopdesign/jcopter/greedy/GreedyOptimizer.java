@@ -95,6 +95,9 @@ public class GreedyOptimizer {
             opt.initialize(analyses, rootMethods);
         }
 
+        CandidateSelector selector = new RebateSelector(analyses, config.getMaxCodesize());
+
+        selector.initialize();
 
 
 
@@ -107,13 +110,11 @@ public class GreedyOptimizer {
     }
 
 
-    private void optimizeMethods(AnalysisManager analyses, Set<MethodInfo> methods) {
+    private void optimizeMethods(AnalysisManager analyses, CandidateSelector selector, Set<MethodInfo> methods) {
 
         Map<MethodInfo,MethodData> methodData = new HashMap<MethodInfo, MethodData>(methods.size());
 
-        CandidateSelector selector = new RebateSelector(analyses);
-
-        selector.initialize();
+        selector.clear();
 
         // first find and initialize all candidates
         for (MethodInfo method : methods) {
@@ -136,7 +137,7 @@ public class GreedyOptimizer {
         }
 
         // now use the RebateSelector to order the candidates
-        selector.updateSelection();
+        selector.sortCandidates();
 
         Set<MethodInfo> optimizedMethods = new HashSet<MethodInfo>();
         Set<MethodInfo> changedMethods = new HashSet<MethodInfo>();
@@ -174,6 +175,11 @@ public class GreedyOptimizer {
                         selector.removeCandidates(m);
                     }
                 }
+
+                // TODO maybe merge those next three selector calls into one update call?
+
+                // Notify selector that the candidate has been optimized successfully
+                selector.wasSuccessful(c);
 
                 // need to remove all candidates in this method which overlap the optimized region first
                 selector.removeCandidates(method, c.getStart(), c.getEnd());
@@ -231,12 +237,12 @@ public class GreedyOptimizer {
             // candidates changed, add the WCA-changeset, and recalculate the rebate for all methods which have candidates.
 
             if (methods.size() == 1) {
-                selector.updateSelection(methods);
+                selector.sortCandidates(methods);
             } else {
 
 
 
-                selector.updateSelection(changedMethods);
+                selector.sortCandidates(changedMethods);
             }
 
             // Finally, select the next candidates

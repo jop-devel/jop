@@ -20,13 +20,19 @@
 
 package com.jopdesign.jcopter.greedy;
 
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.processormodel.ProcessorModel;
+import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -41,49 +47,49 @@ public class RebateSelector implements CandidateSelector {
 
     protected static class RebateRatio implements Comparable<RebateRatio> {
 
-         private final Candidate candidate;
-         private final float ratio;
+        private final Candidate candidate;
+        private final float ratio;
 
-         private RebateRatio(Candidate candidate, float ratio) {
-             this.candidate = candidate;
-             this.ratio = ratio;
-         }
+        private RebateRatio(Candidate candidate, float ratio) {
+            this.candidate = candidate;
+            this.ratio = ratio;
+        }
 
-         public Candidate getCandidate() {
-             return candidate;
-         }
+        public Candidate getCandidate() {
+            return candidate;
+        }
 
-         public float getRatio() {
-             return ratio;
-         }
+        public float getRatio() {
+            return ratio;
+        }
 
-         @Override
-         public boolean equals(Object o) {
-             if (this == o) return true;
-             if (o == null || getClass() != o.getClass()) return false;
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
 
-             RebateRatio that = (RebateRatio) o;
+            RebateRatio that = (RebateRatio) o;
 
-             return Float.compare(that.getRatio(), ratio) == 0 && candidate.equals(that.getCandidate());
-         }
+            return Float.compare(that.getRatio(), ratio) == 0 && candidate.equals(that.getCandidate());
+        }
 
-         @Override
-         public int hashCode() {
-             int result = candidate.hashCode();
-             result = 31 * result + (ratio != +0.0f ? Float.floatToIntBits(ratio) : 0);
-             return result;
-         }
+        @Override
+        public int hashCode() {
+            int result = candidate.hashCode();
+            result = 31 * result + (ratio != +0.0f ? Float.floatToIntBits(ratio) : 0);
+            return result;
+        }
 
-         @Override
-         public int compareTo(RebateRatio o) {
-             if (ratio == o.getRatio()) {
-                 // since we want to keep different entries with the same ratio, use candidate as tiebreaker
-                 if (candidate.equals(o.getCandidate())) return 0;
-                 // TODO two candidates could still have the same hashCode .. we might want to use something else
-                 return candidate.hashCode() < o.getCandidate().hashCode() ? -1 : 1;
-             }
-             return ratio < o.getRatio() ? -1 : 1;
-         }
+        @Override
+        public int compareTo(RebateRatio o) {
+            if (ratio == o.getRatio()) {
+                // since we want to keep different entries with the same ratio, use candidate as tiebreaker
+                if (candidate.equals(o.getCandidate())) return 0;
+                // TODO two candidates could still have the same hashCode .. we might want to use something else
+                return candidate.hashCode() < o.getCandidate().hashCode() ? -1 : 1;
+            }
+            return ratio < o.getRatio() ? -1 : 1;
+        }
     }
 
 
@@ -97,7 +103,11 @@ public class RebateSelector implements CandidateSelector {
         }
 
         public void addCandidates(Collection<Candidate> c) {
-            candidates.addAll(c);
+            for (Candidate candidate : c) {
+                if (checkConstraints(candidate)) {
+                    candidates.add(candidate);
+                }
+            }
         }
 
         public List<Candidate> getCandidates() {
@@ -109,18 +119,58 @@ public class RebateSelector implements CandidateSelector {
         }
     }
 
+    private static final Logger logger = Logger.getLogger(JCopter.LOG_OPTIMIZER+".RebateSelector");
+
     private final AnalysisManager analyses;
+    private final ProcessorModel processorModel;
+
     private final Map<MethodInfo, MethodData> methodData;
+    private final TreeSet<RebateRatio> queue;
 
-    private TreeSet<RebateRatio> queue = new TreeSet<RebateRatio>();
+    private boolean usesCodeRemover;
+    private int maxGlobalSize;
+    private int globalCodesize;
 
-    public RebateSelector(AnalysisManager analyses) {
+    public RebateSelector(AnalysisManager analyses, int maxGlobalSize) {
         this.analyses = analyses;
+        this.maxGlobalSize = maxGlobalSize;
+        this.processorModel = AppInfo.getSingleton().getProcessorModel();
+
+        usesCodeRemover = analyses.getJCopter().getExecutor().useCodeRemover();
+        queue = new TreeSet<RebateRatio>();
         methodData = new HashMap<MethodInfo, MethodData>();
     }
 
     @Override
     public void initialize() {
+        // calculate current global codesize
+        globalCodesize = 0;
+        if (usesCodeRemover) {
+            for (MethodInfo method : AppInfo.getSingleton().getCallGraph().getMethodInfos()) {
+                if (!method.hasCode()) continue;
+                globalCodesize += method.getCode().getNumberOfBytes();
+            }
+        } else {
+            for (ClassInfo cls : AppInfo.getSingleton().getClassInfos()) {
+                for (MethodInfo method : cls.getMethods()) {
+                    if (!method.hasCode()) continue;
+                    globalCodesize += method.getCode().getNumberOfBytes();
+                }
+            }
+        }
+
+        logger.info("Initial codesize: "+globalCodesize+" bytes");
+    }
+
+    @Override
+    public void clear() {
+        queue.clear();
+        methodData.clear();
+    }
+
+    @Override
+    public void printStatistics() {
+        logger.info("Codesize after optimization: " + globalCodesize + " bytes");
     }
 
     public void addCandidates(MethodInfo method, Collection<Candidate> candidates) {
@@ -135,15 +185,15 @@ public class RebateSelector implements CandidateSelector {
     @Override
     public void removeCandidates(MethodInfo method) {
         MethodData data = methodData.remove(method);
-
-        // TODO remove ratios from queue
-
+        queue.removeAll(data.getRatios());
     }
 
     @Override
     public void removeCandidates(MethodInfo method, InstructionHandle start, InstructionHandle end) {
         // TODO go through all candidates of the method, remove all with overlapping range (use positions to check)
         // for now, we just assume that candidates do not overlap ..
+        MethodData data = methodData.get(method);
+
 
     }
 
@@ -163,28 +213,83 @@ public class RebateSelector implements CandidateSelector {
             if (!c.recalculate(analyses, stacksizeAnalysis)) {
                 it.remove();
             }
+            /*
+            if (!checkConstraints(c)) {
+                it.remove();
+            }
+            */
         }
     }
 
     @Override
-    public void updateSelection() {
+    public void sortCandidates() {
         queue.clear();
-        updateSelection(methodData.keySet());
+        sortCandidates(methodData.keySet());
     }
 
     @Override
-    public void updateSelection(Set<MethodInfo> changedMethods) {
+    public void sortCandidates(Set<MethodInfo> changedMethods) {
+
+        for (MethodInfo method : changedMethods) {
+            MethodData data = methodData.get(method);
+
+            queue.removeAll(data.getRatios());
+
+            data.getRatios().clear();
 
 
+
+
+        }
 
     }
 
     @Override
     public Collection<Candidate> selectNextCandidates() {
+        while (true) {
+            RebateRatio next = queue.pollLast();
+            if (next == null) return null;
 
+            if (!checkConstraints(next.getCandidate())) {
+                continue;
+            }
 
-        return null;
+            return Collections.singleton(next.getCandidate());
+        }
     }
 
+    @Override
+    public void wasSuccessful(Candidate candidate) {
+        globalCodesize += getDeltaGlobalCodesize(candidate);
+    }
+
+    private boolean checkConstraints(Candidate candidate) {
+        // check local and global codesize
+
+        int size = candidate.getMethod().getCode().getNumberOfBytes();
+        size += candidate.getDeltaLocalCodesize();
+
+        if (size > processorModel.getMaxMethodSize()) return false;
+
+        int newGlobalSize = globalCodesize + getDeltaGlobalCodesize(candidate);
+        if (newGlobalSize > maxGlobalSize) return false;
+
+        return true;
+    }
+
+    private int getDeltaGlobalCodesize(Candidate candidate) {
+        int size = globalCodesize + candidate.getDeltaLocalCodesize();
+
+        if (usesCodeRemover) {
+            Collection<MethodInfo> removed = candidate.getUnreachableMethods();
+            if (removed != null) {
+                for (MethodInfo m : removed) {
+                    size -= m.getCode().getNumberOfBytes();
+                }
+            }
+        }
+
+        return size;
+    }
 
 }

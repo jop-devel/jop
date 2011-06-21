@@ -36,12 +36,15 @@ public class GreedyConfig {
     private final AppInfo appInfo;
     private final JCopter jcopter;
 
+    private final OptionGroup options;
+
     public static void registerOptions(OptionGroup options) {
 
     }
 
-    public GreedyConfig(JCopter jcopter, OptionGroup rebateOptions) {
+    public GreedyConfig(JCopter jcopter, OptionGroup greedyOptions) {
         this.jcopter = jcopter;
+        this.options = greedyOptions;
         appInfo = AppInfo.getSingleton();
     }
 
@@ -66,4 +69,8 @@ public class GreedyConfig {
         return jcopter.useWCET();
     }
 
+    public int getMaxCodesize() {
+        // TODO make this configurable, set default maxCodesize in constructor
+        return jcopter.getJConfig().getMaxCodesize();
+    }
 }

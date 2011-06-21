@@ -136,6 +136,10 @@ public class PhaseExecutor {
         return options.getGroup(GROUP_INLINE);
     }
 
+    public boolean useCodeRemover() {
+        return getOptimizeOptions().getOption(REMOVE_UNUSED_MEMBERS) && !getJConfig().doAssumeReflection();
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////
     // Dump Callgraph
     /////////////////////////////////////////////////////////////////////////////////////
@@ -359,4 +363,5 @@ public class PhaseExecutor {
 
         logger.info("Finished cleanup of constant pools");
     }
+
 }
