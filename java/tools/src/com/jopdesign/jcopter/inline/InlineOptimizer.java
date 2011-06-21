@@ -34,6 +34,7 @@ import com.jopdesign.jcopter.analysis.AnalysisManager;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import com.jopdesign.jcopter.greedy.Candidate;
 import com.jopdesign.jcopter.greedy.CodeOptimizer;
+import com.jopdesign.wcet.WCETProcessorModel;
 import org.apache.bcel.generic.ASTORE;
 import org.apache.bcel.generic.ATHROW;
 import org.apache.bcel.generic.BranchInstruction;
@@ -45,6 +46,9 @@ import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.LocalVariableInstruction;
+import org.apache.bcel.generic.POP;
+import org.apache.bcel.generic.POP2;
+import org.apache.bcel.generic.RETURN;
 import org.apache.bcel.generic.ReturnInstruction;
 import org.apache.bcel.generic.Select;
 import org.apache.bcel.generic.TargetLostException;
@@ -75,8 +79,11 @@ public class InlineOptimizer implements CodeOptimizer {
 
     private final Map<InstructionHandle,CallString> callstrings;
 
+    private boolean preciseEstimate;
+
     private int storeCycles;
     private int checkNPCycles;
+    private int deltaReturnCycles;
 
     protected class InlineCandidate extends Candidate {
 
@@ -191,18 +198,22 @@ public class InlineOptimizer implements CodeOptimizer {
         private Map<InvokeSite,InvokeSite> insertInvokee(AnalysisManager analyses, InstructionList il, InstructionHandle next) {
 
             MethodCode code = getMethod().getCode();
-            String sourcefile = getMethod().getClassInfo().getSourceFileName();
 
+            String sourcefile = invokee.getClassInfo().getSourceFileName();
             MethodCode invokeeCode = invokee.getCode();
             InstructionList iList = invokeeCode.getInstructionList(true, false);
 
             Map<InstructionHandle,InstructionHandle> instrMap = new HashMap<InstructionHandle, InstructionHandle>();
             Map<InvokeSite,InvokeSite> invokeMap = new HashMap<InvokeSite, InvokeSite>();
 
+            // TODO we could use the AnalysisManager to store the StackAnalysis per method and reuse them
+            StacksizeAnalysis stacksize = analyses.getStacksizeAnalysis(invokee);
+
             // first copy all instruction handles
             for (InstructionHandle src = iList.getStart(); src != null; src = src.getNext()) {
 
-                InstructionHandle ih = copyInstruction(invokeeCode, il, src, next);
+                InstructionHandle ih = copyInstruction(invokeeCode, stacksize, il, src, next);
+                if (ih == null) continue;
 
                 code.setSourceFileName(ih, sourcefile);
 
@@ -224,7 +235,8 @@ public class InlineOptimizer implements CodeOptimizer {
             return invokeMap;
         }
 
-        private InstructionHandle copyInstruction(MethodCode invokeeCode, InstructionList il,
+        private InstructionHandle copyInstruction(MethodCode invokeeCode, StacksizeAnalysis stacksize,
+                                                  InstructionList il,
                                                   InstructionHandle src, InstructionHandle next)
         {
             InstructionHandle ih;
@@ -235,12 +247,45 @@ public class InlineOptimizer implements CodeOptimizer {
                 // remap local variables
                 int slot = maxLocals + ((LocalVariableInstruction)instr).getIndex();
                 ((LocalVariableInstruction)c).setIndex(slot);
+                ih = il.insert(next, c);
             } else if (instr instanceof ReturnInstruction) {
-                // replace return with goto
-                c = new GOTO(next);
-            }
+                // replace return with goto, for last instruction we use fallthrough
+                if (src.getNext() != null) {
+                    c = new GOTO(next);
+                    ih = il.insert(next, c);
+                } else {
+                    ih = null;
+                }
 
-            if (c instanceof BranchInstruction) {
+                // we need to check if there is a single value left on the stack, else we need to
+                // store the value in maxLocals (we can overwrite whatever it holds), pop everything else end restore it!
+                // make sure that ih refers to the *first* new instruction
+                int stack = stacksize.getStacksizeBefore(src);
+                Type type = ((ReturnInstruction) instr).getType();
+                stack -= type.getSize();
+                if (stack != 0) {
+                    // create xSTORE,[POP,..],xLOAD before GOTO, ih must refer to STORE
+                    Instruction store = TypeHelper.createStoreInstruction(type, maxLocals);
+                    ih = il.insert(ih == null ? next : ih, store);
+
+                    Instruction load = TypeHelper.createLoadInstruction(type, maxLocals);
+                    il.append(ih, load);
+                    while (stack > 0) {
+                        if (stack > 1) {
+                            il.append(ih, new POP2());
+                            stack -= 2;
+                        } else {
+                            il.append(ih, new POP());
+                            stack--;
+                        }
+                    }
+                }
+
+                if (ih == null) {
+                    return null;
+                }
+
+            } else if (c instanceof BranchInstruction) {
                 ih = il.insert(next, (BranchInstruction) c);
             } else {
                 ih = il.insert(next, c);
@@ -349,7 +394,7 @@ public class InlineOptimizer implements CodeOptimizer {
             }
 
             // deltaCodesize: codesize of invokee may have changed
-            deltaCodesize = calcDeltaCodesize();
+            deltaCodesize = calcDeltaCodesize(analyses);
 
             // isLastInvoke: may have changed due to previous inlining
             isLastInvoke = checkIsLastInvoke();
@@ -402,7 +447,7 @@ public class InlineOptimizer implements CodeOptimizer {
             return true;
         }
 
-        private int calcDeltaCodesize() {
+        private int calcDeltaCodesize(AnalysisManager analyses) {
             int delta = 0;
 
             // we remove the invokesite
@@ -415,17 +460,17 @@ public class InlineOptimizer implements CodeOptimizer {
             }
             if (!invokee.isStatic()) {
                 // ASTORE this
-                delta += maxLocals > 255 ? 4 : (maxLocals > 3 ? 2 : 1);
+                delta += getLoadStoreSize(0);
 
             }
             // xSTORE parameters: over-approximate by assuming 2/4 bytes per store
-            if (invokee.getArgumentTypes().length + maxLocals >= 255) {
-                delta += invokee.getArgumentTypes().length * 4;
-            } else {
-                delta += invokee.getArgumentTypes().length * 2;
-            }
+            delta += invokee.getArgumentTypes().length * getLoadStoreSize(TypeHelper.getNumInvokeSlots(invokee));
+
+            // TODO if preciseEstimate is false, just use JVM codesize and ignore all other changes..
 
             // TODO if we need to save the stack, we need to account for this as well
+
+            StacksizeAnalysis stacksize = analyses.getStacksizeAnalysis(invokee);
 
             // .. and finally we inline the code, but with some modifications
             InstructionHandle ih = invokee.getCode().getInstructionList(true, false).getStart();
@@ -434,15 +479,25 @@ public class InlineOptimizer implements CodeOptimizer {
 
                 if (instr instanceof ReturnInstruction) {
                     // we replace this with goto, and since method-size is limited to 16bit, we do not need the wide version
-                    delta += 3;
+                    if (ih.getNext() != null) {
+                        delta += 3;
+                    }
+                    // if we need to pop unused values from the stack, account for this as well
+                    int stack = stacksize.getStacksizeBefore(ih);
+                    stack -= ((ReturnInstruction)instr).getType().getSize();
+                    if (stack > 0) {
+                        delta += 2*getLoadStoreSize(0);
+                        delta += (stack+1)/2;
+                    }
+
                 } else if (instr instanceof LocalVariableInstruction) {
                     // we map the local vars to higher indices, might increase code size
-                    int idx = ((LocalVariableInstruction)instr).getIndex() + maxLocals;
+                    int idx = ((LocalVariableInstruction)instr).getIndex();
 
                     if (instr instanceof IINC) {
-                        delta += idx > 255 ? 6 : 3;
+                        delta += maxLocals + idx > 255 ? 6 : 3;
                     } else {
-                        delta += maxLocals > 255 ? 4 : (maxLocals > 3 ? 2 : 1);
+                        delta += getLoadStoreSize(idx);
                     }
                 } else {
                     delta += processorModel.getNumberOfBytes(invokee, instr);
@@ -452,6 +507,11 @@ public class InlineOptimizer implements CodeOptimizer {
             }
 
             return delta;
+        }
+
+        private int getLoadStoreSize(int slot) {
+            int pos = maxLocals + slot;
+            return pos > 255 ? 4 : (pos > 3 ? 2 : 1);
         }
 
         private boolean checkIsLastInvoke() {
@@ -492,6 +552,7 @@ public class InlineOptimizer implements CodeOptimizer {
             long gain = jcopter.getWCETProcessorModel().getExecutionTime(context, invokeSite.getInstructionHandle());
 
             // we loose some gain due to the prologue
+
             gain -= invokee.getArgumentTypes().length * storeCycles;
             if ( !invokee.isStatic() ) gain -= storeCycles;
             if (needsNPCheck) gain -= checkNPCycles;
@@ -518,14 +579,31 @@ public class InlineOptimizer implements CodeOptimizer {
 
         this.helper = new InlineHelper(jcopter, config);
         this.callstrings = new HashMap<InstructionHandle, CallString>();
+
+        // TODO get from config
+        preciseEstimate = false;
     }
 
     @Override
     public void initialize(AnalysisManager analyses, Collection<MethodInfo> roots) {
 
-        storeCycles = 0;
-        checkNPCycles = 0;
+        if (!preciseEstimate) {
+            ExecutionContext dummy = new ExecutionContext(roots.iterator().next());
 
+            WCETProcessorModel pm = analyses.getJCopter().getWCETProcessorModel();
+
+            InstructionList il = new InstructionList();
+
+            // TODO very messy approximation of exec time
+            storeCycles = (int) pm.getExecutionTime(dummy, il.append(new ASTORE(10)));
+
+            checkNPCycles = 0;
+            checkNPCycles += (int) pm.getExecutionTime(dummy, il.append(new DUP()));
+            checkNPCycles += (int) pm.getExecutionTime(dummy, il.append(new IFNONNULL(il.append(new ATHROW()))));
+
+            deltaReturnCycles  = (int) pm.getExecutionTime(dummy, il.append(new RETURN()));
+            deltaReturnCycles -= (int) pm.getExecutionTime(dummy, il.append(new GOTO(il.getEnd())));
+        }
     }
 
     @Override
@@ -554,11 +632,21 @@ public class InlineOptimizer implements CodeOptimizer {
                 CallString cs = new CallString(site);
 
                 MethodInfo invokee = helper.devirtualize(cs);
+                if (invokee == null) continue;
 
-                Candidate candidate = checkInvoke(code, cs, invokee);
-                if (candidate != null) {
-                    candidates.add(candidate);
+                // for the initial check and the DFA lookup we need to old callstring
+                cs = getInlineCallString(code, ih);
+
+                Candidate candidate = checkInvoke(code, cs, site, invokee, maxLocals);
+                if (candidate == null) {
+                    continue;
                 }
+                // initial check for locals and stack, calculate gain and codesize
+                if (!candidate.recalculate(analyses, stacksize)) {
+                    continue;
+                }
+
+                candidates.add(candidate);
             }
 
             if (ih == end) break;
@@ -572,10 +660,22 @@ public class InlineOptimizer implements CodeOptimizer {
     public void printStatistics() {
     }
 
-    private Candidate checkInvoke(MethodCode code, CallString cs, MethodInfo invokee) {
+    private Candidate checkInvoke(MethodCode code, CallString cs, InvokeSite invokeSite, MethodInfo invokee,
+                                  int maxLocals)
+    {
+        if (!helper.canInline(cs, invokeSite, invokee)) {
+            return null;
+        }
 
+        boolean needsEmptyStack = helper.needsEmptyStack(invokeSite, invokee);
+        boolean needsNPCheck = helper.needsNullpointerCheck(cs, invokee, true);
 
-        return null;
+        if (needsEmptyStack) {
+            // Not supported for now..
+            return null;
+        }
+
+        return new InlineCandidate(invokeSite, invokee, needsNPCheck, needsEmptyStack, maxLocals);
     }
 
     /**

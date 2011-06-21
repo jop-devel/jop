@@ -20,7 +20,11 @@
 
 package com.jopdesign.jcopter.analysis;
 
+import com.jopdesign.common.MethodInfo;
 import com.jopdesign.jcopter.JCopter;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Container for various analyses, provide some methods to invalidate/.. all analyses.
@@ -34,9 +38,11 @@ public class AnalysisManager {
     private WCAInvoker wcaInvoker;
     private ExecCountAnalysis execCountAnalysis;
     private MethodCacheAnalysis methodCacheAnalysis;
+    private Map<MethodInfo,StacksizeAnalysis> stacksizeMap;
 
     public AnalysisManager(JCopter jcopter) {
         this.jcopter = jcopter;
+        stacksizeMap = new HashMap<MethodInfo, StacksizeAnalysis>();
     }
 
     public JCopter getJCopter() {
@@ -56,4 +62,13 @@ public class AnalysisManager {
     }
 
 
+    public StacksizeAnalysis getStacksizeAnalysis(MethodInfo methodInfo) {
+        StacksizeAnalysis stacksize = stacksizeMap.get(methodInfo);
+        if (stacksize == null) {
+            stacksize = new StacksizeAnalysis(methodInfo);
+            stacksize.analyze();
+            stacksizeMap.put(methodInfo, stacksize);
+        }
+        return stacksize;
+    }
 }

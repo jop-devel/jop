@@ -43,14 +43,14 @@ import java.util.TreeSet;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class RebateSelector implements CandidateSelector {
+public abstract class RebateSelector implements CandidateSelector {
 
     protected static class RebateRatio implements Comparable<RebateRatio> {
 
         private final Candidate candidate;
         private final float ratio;
 
-        private RebateRatio(Candidate candidate, float ratio) {
+        protected RebateRatio(Candidate candidate, float ratio) {
             this.candidate = candidate;
             this.ratio = ratio;
         }
@@ -93,7 +93,7 @@ public class RebateSelector implements CandidateSelector {
     }
 
 
-    private class MethodData {
+    protected class MethodData {
         private List<Candidate> candidates;
         private List<RebateRatio> ratios;
 
@@ -213,7 +213,7 @@ public class RebateSelector implements CandidateSelector {
             if (!c.recalculate(analyses, stacksizeAnalysis)) {
                 it.remove();
             }
-            /*
+            /* we check in selectCandidate anyway..
             if (!checkConstraints(c)) {
                 it.remove();
             }
@@ -234,12 +234,12 @@ public class RebateSelector implements CandidateSelector {
             MethodData data = methodData.get(method);
 
             queue.removeAll(data.getRatios());
-
             data.getRatios().clear();
 
+            Collection<RebateRatio> ratios = calculateRatios(method, data.getCandidates());
 
-
-
+            data.getRatios().addAll(ratios);
+            queue.addAll(ratios);
         }
 
     }
@@ -263,7 +263,7 @@ public class RebateSelector implements CandidateSelector {
         globalCodesize += getDeltaGlobalCodesize(candidate);
     }
 
-    private boolean checkConstraints(Candidate candidate) {
+    protected boolean checkConstraints(Candidate candidate) {
         // check local and global codesize
 
         int size = candidate.getMethod().getCode().getNumberOfBytes();
@@ -277,7 +277,7 @@ public class RebateSelector implements CandidateSelector {
         return true;
     }
 
-    private int getDeltaGlobalCodesize(Candidate candidate) {
+    public int getDeltaGlobalCodesize(Candidate candidate) {
         int size = globalCodesize + candidate.getDeltaLocalCodesize();
 
         if (usesCodeRemover) {
@@ -291,5 +291,17 @@ public class RebateSelector implements CandidateSelector {
 
         return size;
     }
+
+    public long calculateGain(Candidate candidate) {
+        long gain = candidate.getTotalGain();
+
+        // TODO calculate effect on cache by increasing the local codesize, remove costs from gain
+
+
+
+        return gain;
+    }
+
+    protected abstract Collection<RebateRatio> calculateRatios(MethodInfo method, List<Candidate> candidates);
 
 }

@@ -48,12 +48,10 @@ public class GreedyOptimizer {
 
     private class MethodData {
 
-        private StacksizeAnalysis stacksizeAnalysis;
         private int maxLocals;
 
-        private MethodData(int maxLocals, StacksizeAnalysis stacksizeAnalysis) {
+        private MethodData(int maxLocals) {
             this.maxLocals = maxLocals;
-            this.stacksizeAnalysis = stacksizeAnalysis;
         }
 
         public int getMaxLocals() {
@@ -62,10 +60,6 @@ public class GreedyOptimizer {
 
         public void setMaxLocals(int maxLocals) {
             this.maxLocals = maxLocals;
-        }
-
-        public StacksizeAnalysis getStacksizeAnalysis() {
-            return stacksizeAnalysis;
         }
     }
 
@@ -95,7 +89,7 @@ public class GreedyOptimizer {
             opt.initialize(analyses, rootMethods);
         }
 
-        CandidateSelector selector = new RebateSelector(analyses, config.getMaxCodesize());
+        CandidateSelector selector = new WCETRebateSelector(analyses, config.getMaxCodesize());
 
         selector.initialize();
 
@@ -122,8 +116,7 @@ public class GreedyOptimizer {
             // to update maxLocals
             method.getCode().compile();
 
-            StacksizeAnalysis stacksize = new StacksizeAnalysis(method);
-            stacksize.analyze();
+            StacksizeAnalysis stacksize = analyses.getStacksizeAnalysis(method);
 
             int locals = method.getCode().getMaxLocals();
 
@@ -133,7 +126,7 @@ public class GreedyOptimizer {
                 selector.addCandidates(method, found);
             }
 
-            methodData.put(method, new MethodData(locals, stacksize));
+            methodData.put(method, new MethodData(locals));
         }
 
         // now use the RebateSelector to order the candidates
@@ -152,7 +145,7 @@ public class GreedyOptimizer {
             // perform optimization
             for (Candidate c : candidates) {
                 MethodInfo method = c.getMethod();
-                StacksizeAnalysis stacksize = methodData.get(method).getStacksizeAnalysis();
+                StacksizeAnalysis stacksize = analyses.getStacksizeAnalysis(method);
 
                 if (!c.optimize(analyses, stacksize)) continue;
 
@@ -230,7 +223,7 @@ public class GreedyOptimizer {
             for (MethodInfo method : (methods.size() == 1 ? methods : changedMethods)) {
                 MethodData data = methodData.get(method);
                 if (data == null) continue;
-                selector.updateCandidates(method, data.getStacksizeAnalysis());
+                selector.updateCandidates(method, analyses.getStacksizeAnalysis(method));
             }
 
             // Finally use the set of methods with changed cache-miss-counts, add the set of methods where the

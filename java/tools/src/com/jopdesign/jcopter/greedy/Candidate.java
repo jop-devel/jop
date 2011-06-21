@@ -76,6 +76,10 @@ public abstract class Candidate {
         return end;
     }
 
+    public float getHeuristicFactor() {
+        return 1.0f;
+    }
+
     /**
      * Perform optimization, update start and end instruction handle to the new code.
      *
