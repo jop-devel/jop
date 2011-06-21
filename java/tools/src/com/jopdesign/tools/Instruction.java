@@ -127,6 +127,8 @@ public class Instruction implements Serializable {
 			new Instruction("stmraf", 0x040 + 0xd, 0, JmpType.NOP, StackType.POP),
 			// write through fully associative cache
 			new Instruction("stmwdf", 0x040 + 0xe, 0, JmpType.NOP, StackType.POP),
+			// stpfr used for reference asignment checks
+			new Instruction("stpfr",  0x040 + 0xf, 0, JmpType.NOP, StackType.POP),
 
 			//
 			// 'push' instructions

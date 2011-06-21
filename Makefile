@@ -40,9 +40,9 @@ ifeq ($(USB),true)
 else
 	COM_FLAG=-e
 ifeq ($(WINDIR),)
-	COM_PORT=/dev/ttyS0
+	COM_PORT=/dev/ttyUSB0
 else 
-	COM_PORT=COM1
+	COM_PORT=/dev/ttyUSB0
 endif
 endif
 
@@ -56,7 +56,7 @@ QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp d
 ifeq ($(USB),true)
 	QPROJ=usbmin
 else
-	QPROJ=cycmin
+	QPROJ=altde2-70
 endif
 
 #
@@ -67,8 +67,8 @@ XPROJ=ml50x
 XFPGA=false
 
 # Altera FPGA configuration cable
-BLASTER_TYPE=ByteBlasterMV
-#BLASTER_TYPE=USB-Blaster
+#BLASTER_TYPE=ByteBlasterMV
+BLASTER_TYPE=USB-Blaster
 
 ifeq ($(WINDIR),)
 	DOWN=./down
@@ -110,15 +110,19 @@ IPDEST=192.168.0.123
 ################################################################################
 
 # Jop RTS configuration
-USE_SCOPES=false
-USE_SCOPECHECKS=false
-ADD_REF_INFO=false
+USE_SCOPES=true
+USE_SCOPECHECKS=true
+ADD_REF_INFO=true
 MEASURE=true
 JOP_CONF_STR=USE_SCOPES=$(USE_SCOPES) USE_SCOPECHECKS=$(USE_SCOPECHECKS) ADD_REF_INFO=$(ADD_REF_INFO) MEASURE=$(MEASURE)
 
-P1=test
+#P1=test
+#P2=test
+#P3=Hello
+
+P1=jrri
 P2=test
-P3=HelloWorld
+P3=ReferenceTest
 
 #
 # Run JVM Tests
@@ -607,8 +611,12 @@ download:
 #	java -cp java/tools/dist/lib/jop-tools.jar$(S)java/lib/RXTXcomm.jar com.jopdesign.tools.JavaDown \
 #		$(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
 
+	java -Djava.library.path=/usr/lib/jni/ -cp java/tools/dist/lib/jop-tools.jar:/usr/share/java/RXTXcomm-2.2pre2.jar com.jopdesign.tools.JavaDown \
+		$(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
+
+
 #	this is the download version with down.exe
-	$(DOWN) $(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
+#	$(DOWN) $(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
 
 #
 #	flash programming

@@ -659,9 +659,23 @@ newarray:
 //
 
 putfield_ref:
-putstatic_ref:
 
+			stpfr 			// start putfield index is taken from the BC operand
+			nop	opd
+			nop	opd			// get rid of second stack location
+			wait
+			wait
+			pop nxt
+
+putstatic_ref:
 //
+//
+//			stpsr opd	// MMU uses bc opd
+//			nop opd
+//			wait
+//			wait
+//			nop nxt
+
 //	find address for JVM function
 //
 			ldjpc

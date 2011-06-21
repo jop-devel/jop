@@ -337,6 +337,7 @@ begin
 			when "0001000101" =>			-- stast
 			when "0001000110" =>			-- stgf
 			when "0001000111" =>			-- stpf
+			when "0001001111" =>			-- stpfr
 			when "0001001000" =>			-- stcp
 			when "0001001001" =>			-- stbcrd
 			when "0001001010" =>			-- stidx
@@ -454,6 +455,7 @@ begin
 		mem_in.iastore <= '0';
 		mem_in.getfield <= '0';
 		mem_in.putfield <= '0';
+		mem_in.putref <= '0';
 		mem_in.getstatic <= '0';
 		mem_in.putstatic <= '0';
 		mem_in.rdc <= '0';
@@ -476,6 +478,7 @@ begin
 		mem_in.iastore <= '0';
 		mem_in.getfield <= '0';
 		mem_in.putfield <= '0';
+		mem_in.putref <= '0';
 		mem_in.getstatic <= '0';
 		mem_in.putstatic <= '0';
 		mem_in.rdc <= '0';
@@ -507,6 +510,9 @@ begin
 					mem_in.getfield <= '1';	-- start getfield
 				when STPF =>
 					mem_in.putfield <= '1';	-- start putfield
+				when STPFR =>
+					mem_in.putfield <= '1'; -- start putfield reference
+					mem_in.putref	<= '1';	
 				when STCP =>
 					mem_in.copy <= '1';		-- start copy
 				when STBCR =>

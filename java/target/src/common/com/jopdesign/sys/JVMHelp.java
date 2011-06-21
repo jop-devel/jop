@@ -23,6 +23,7 @@ package com.jopdesign.sys;
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 
+
 //
 //	I don't like to make JVMHelp public, but I need it in java.io.PrintStream
 //
