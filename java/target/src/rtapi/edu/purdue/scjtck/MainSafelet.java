@@ -24,6 +24,8 @@ import javax.safetycritical.annotate.Level;
 
 public abstract class MainSafelet implements Safelet {
 
+	protected abstract String getArgs();
+	
     protected Properties _prop = new Properties();
 
     protected Thread _launcher;
@@ -40,7 +42,7 @@ public abstract class MainSafelet implements Safelet {
     public void setup() {
 //        _launcher = Thread.currentThread();
 //        _prop.parseArgs(PropFileReader.readAll());
-    	_prop.parseArgs("-L 2 -D 2000");
+    	_prop.parseArgs(getArgs());
         _priorityParam = new PriorityParameters(_prop._priority);
         _periodicParam = new PeriodicParameters(new RelativeTime(_prop._iDelay,
                 0), new RelativeTime(_prop._period, 0));

@@ -82,6 +82,7 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 				while (!MissionSequencer.terminationRequest) {
 					waitForNextPeriod();
 				}
+				getNextMission().cleanUp();
 				cleanUp();
 				cleanupDidRun = true;
 			}

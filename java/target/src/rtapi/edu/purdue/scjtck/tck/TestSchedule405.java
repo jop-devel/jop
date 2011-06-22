@@ -18,6 +18,12 @@ import javax.safetycritical.StorageParameters;
  */
 public class TestSchedule405 extends TestCase {
 
+	@Override
+	protected String getArgs()
+	{
+		return "-L 1";
+	}
+	
     public MissionSequencer getSequencer() {
         return new GeneralSingleMissionSequencer(new GeneralMission() {
             /*
@@ -102,7 +108,8 @@ public class TestSchedule405 extends TestCase {
 
             // take around ? ms
             private void doWorks() {
-                for (int i = 0; i < 100000000; i++)
+//                for (int i = 0; i < 100000000; i++)
+            	for (int i = 0; i < 100000; i++)
                     ;
             }
 
