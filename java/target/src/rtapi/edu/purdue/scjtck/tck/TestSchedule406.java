@@ -17,6 +17,12 @@ import javax.safetycritical.StorageParameters;
  */
 public class TestSchedule406 extends TestCase {
 
+	@Override
+	protected String getArgs()
+	{
+		return "-L 1 -I 100";
+	}
+	
     public MissionSequencer getSequencer() {
         return new GeneralSingleMissionSequencer(new GeneralMission() {
 

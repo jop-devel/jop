@@ -229,7 +229,7 @@ public abstract class HighResolutionTime { // implements Comparable {
             } else { // watch for overflow
                 long tmp = millis + millis_in_nanos;
                 if (tmp <= 0) {
-                    // What should we do in case of overflow? - T�rur 3/6/2011
+                    // What should we do in case of overflow? - Tórur 3/6/2011
                 	throw new ArithmeticException("overflow");
                 	//return false
                 }
@@ -240,7 +240,7 @@ public abstract class HighResolutionTime { // implements Comparable {
             if (nanos < 0) { // watch for negative overflow
                 long tmp = millis + millis_in_nanos;
                 if (tmp >= 0) {
-                	// What should we do in case of overflow? - Torur 3/6/2011
+                	// What should we do in case of overflow? - Tórur 3/6/2011
                 	throw new ArithmeticException("overflow");
                 	//return false
                 }

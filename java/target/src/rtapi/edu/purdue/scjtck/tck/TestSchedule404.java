@@ -22,6 +22,12 @@ import javax.safetycritical.StorageParameters;
  */
 public class TestSchedule404 extends TestCase {
 
+	@Override
+	protected String getArgs()
+	{
+		return "-L 1";
+	}
+	
     public MissionSequencer getSequencer() {
         return new GeneralSingleMissionSequencer(new GeneralMission() {
             /*
@@ -104,7 +110,9 @@ public class TestSchedule404 extends TestCase {
 
             // take around ? ms
             private void doWorks() {
-                for (int i = 0; i < 100000000; i++)
+//            	for (int i = 0; i < 100000000; i++)
+            	// Above code takes to long in jop simulator - Tórur 22/6/2011
+            	for (int i = 0; i < 100000; i++)
                     ;
             }
 
