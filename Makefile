@@ -120,6 +120,22 @@ JOP_CONF_STR=USE_SCOPES=$(USE_SCOPES) USE_SCOPECHECKS=$(USE_SCOPECHECKS) ADD_REF
 #P2=test
 #P3=Hello
 
+# Currently same hardware is used so all three cannot be "yes" at the same time
+# Remember to edit decode.vhd file and uncomment/comment the appropriate microcode
+#
+# STPSR = start put static reference
+# STPFR = start put filed reference
+# STASTR = start array store reference
+# 
+# The same should be done in Instruction.java and uncomment/comment the lines where 
+# stpfr, stsr, stastr are defined
+#
+# After that a full make is necessary
+
+USE_HW_PUTFIELD_REF=no
+USE_HW_PUTSTATIC_REF=no
+USE_HW_AASTORE=no
+
 P1=jrri
 P2=test
 P3=ReferenceTest
@@ -207,6 +223,21 @@ GCC_PARAMS=
 
 # uncomment this to use RTTM
 #USE_RTTM=yes
+
+#
+ifeq ($(USE_HW_PUTFIELD_REF),yes)
+GCC_PARAMS=-DHW_PUTFIELD_REF
+endif
+
+ifeq ($(USE_HW_PUTSTATIC_REF),yes)
+GCC_PARAMS=-DHW_PUTSTATIC_REF
+endif
+
+ifeq ($(USE_HW_AASTORE),yes)
+GCC_PARAMS=-DHW_AASTORE
+endif
+
+#
 
 ifeq ($(USE_RTTM),yes)
 GCC_PARAMS=-DRTTM

@@ -658,24 +658,74 @@ newarray:
 //		with index into constant pool on stack
 //
 
-putfield_ref:
 
+putfield_ref:
+#ifdef HW_PUTFIELD_REF
+//
+// Use hardware support for scope checks
+//
 			stpfr 			// start putfield index is taken from the BC operand
 			nop	opd
 			nop	opd			// get rid of second stack location
 			wait
 			wait
 			pop nxt
+#else
+//
+// Use the write barrier in JVM.java version of putfield_ref
+//
+//	find address for JVM function
+//
+			ldjpc
+			ldi	1
+			sub
+			stjpc				// get last byte code
+			nop					// ???
+			nop					// one more now (2004-04-06) ?
+			ldm	jjp
+			nop	opd
+			ld_opd_8u
+			ldi	255
+			and
+			dup
+			add					// *2
+			add					// jjp+2*bc
+			stm	a				// save
+
+//
+//	get index
+//
+			nop	opd
+			nop	opd
+			ld_opd_16u
+
+			ldm	a				// restore mp
+
+//
+//	invoke JVM.fxxx(int index)
+//
+			jmp	invoke
+			nop
+			nop
+//
+//	this is an interrupt, (bytecode 0xf0)
+//	call com.jopdesign.sys.JVMHelp.interrupt()	(
+//		oder gleich eine f aus JVMHelp ????
+//		... JVM in Java!
+//
+#endif
 
 putstatic_ref:
+#ifdef HW_PUTSTATIC_REF
 //
 //
-//			stpsr opd	// MMU uses bc opd
-//			nop opd
-//			wait
-//			wait
-//			nop nxt
+			stpsr opd	// MMU uses bc opd
+			nop opd
+			wait
+			wait
+			nop nxt
 
+#else
 //	find address for JVM function
 //
 			ldjpc
@@ -727,7 +777,7 @@ sys_int:
 			jmp	invoke			// simulate invokestatic with ptr to meth. str. on stack
 			nop
 			nop
-
+#endif
 
 //
 //	this is an exception, (bytecode 0xf1)
@@ -1377,6 +1427,16 @@ arraylength:
 #else
 aastore:
 #endif
+
+#ifdef HW_AASTORE
+			stastr
+			pop
+			pop
+			wait
+			wait
+			nop nxt
+#endif
+			
 bastore:
 castore:
 fastore:

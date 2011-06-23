@@ -129,6 +129,8 @@ public class Instruction implements Serializable {
 			new Instruction("stmwdf", 0x040 + 0xe, 0, JmpType.NOP, StackType.POP),
 			// stpfr used for reference asignment checks
 			new Instruction("stpfr",  0x040 + 0xf, 0, JmpType.NOP, StackType.POP),
+			//new Instruction("stpsr",  0x040 + 0xf, 0, JmpType.NOP, StackType.POP),
+			//new Instruction("stastr",  0x040 + 0xf, 0, JmpType.NOP, StackType.POP),
 
 			//
 			// 'push' instructions

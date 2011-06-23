@@ -337,7 +337,7 @@ begin
 			when "0001000101" =>			-- stast
 			when "0001000110" =>			-- stgf
 			when "0001000111" =>			-- stpf
-			when "0001001111" =>			-- stpfr
+			when "0001001111" =>			-- stpfr/stpsr/stastr
 			when "0001001000" =>			-- stcp
 			when "0001001001" =>			-- stbcrd
 			when "0001001010" =>			-- stidx
@@ -513,6 +513,12 @@ begin
 				when STPFR =>
 					mem_in.putfield <= '1'; -- start putfield reference
 					mem_in.putref	<= '1';	
+-- 				when STPSR =>
+-- 					mem_in.putstatic <= '1'; -- start putstatic reference
+-- 					mem_in.putref	<= '1';
+-- 				when STASTR => 
+-- 					mem_in.iastore <= '1';	-- start reference array store
+-- 					mem_in.putref	<= '1';	
 				when STCP =>
 					mem_in.copy <= '1';		-- start copy
 				when STBCR =>

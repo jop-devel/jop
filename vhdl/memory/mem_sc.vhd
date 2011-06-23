@@ -413,6 +413,7 @@ begin
 	-- computations that depend on the state
 	if state=iast0 then
 		addr_next <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+		dest_level <= unsigned(bin(31 downto SC_ADDR_SIZE+2));
 	end if;
 
 	-- get/putfield could be optimized for faster memory (e.g. SPM or SimpCon cache - see mem_sc_new)
@@ -510,7 +511,13 @@ begin
 			end if;
 
 		when ps1 =>
-			next_state <= last;
+			-- perform the scope check
+			if (putref_reg='1') and (unsigned(value(31 downto SC_ADDR_SIZE+2)) /= 0) then
+				--test failed
+				next_state <= iaexc;
+			else
+				next_state <= last;
+			end if;
 
 		when gs1 =>
 			next_state <= last;
@@ -579,10 +586,14 @@ begin
 		-- iald0 to iald3 are shared with iastore
 		--
 		when iald0 =>
+
 			if addr_reg=0 then
 				next_state <= npexc;
 			elsif index(SC_ADDR_SIZE-1)='1' then
 				next_state <= abexc;
+			elsif (putref_reg='1') and (dest_level_reg < unsigned(value(31 downto SC_ADDR_SIZE+2))) then
+ 				--test failed
+ 				next_state <= iaexc;
 			else
 				next_state <= iald1;
 				-- shortcut
@@ -590,6 +601,7 @@ begin
 					next_state <= iald2;
 				end if;
 			end if;
+			
 			
 		when iald1 =>
 			-- w. pipeline level 2
@@ -696,14 +708,9 @@ begin
 			if addr_reg=0 then
 				next_state <= npexc;
 			--perform the scope check
- 			elsif putref_reg='1' then
- 				if (unsigned(value(31 downto SC_ADDR_SIZE+2)) <= dest_level_reg) then
- 					--test is OK
- 					next_state <= pf2;
- 				else
- 					--test failed
- 					next_state <= iaexc;
- 				end if;
+ 			elsif (putref_reg='1') and (dest_level_reg < unsigned(value(31 downto SC_ADDR_SIZE+2))) then
+ 				--test failed
+ 				next_state <= iaexc;
  			else
 				next_state <= pf2;
 			end if;
@@ -940,6 +947,7 @@ begin
 
 			when idl =>
 				state_bsy <= '0';
+				putref_reg <='0';
 				-- update object cache on a missed getfield
 				-- only valid on first idle cycle when comming
 				-- from a 'real' getfield (no preceeding stidx)
@@ -1075,7 +1083,6 @@ begin
 				state_dcache <= full_assoc;
 
 			when pf2 =>
-				putref_reg <='0';
 
 			when pf3 =>
 
@@ -1116,7 +1123,6 @@ begin
 				bounds_error <= '1';
 				
 			when iaexc =>
-				putref_reg <='0';
 				illegal_assignment <= '1';
 
 			when excw =>

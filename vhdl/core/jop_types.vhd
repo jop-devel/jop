@@ -46,7 +46,11 @@ package jop_types is
 	constant STAST	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0101"; 
 	constant STGF	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0110"; 
 	constant STPF	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0111";
+--
     constant STPFR	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1111";	 
+    constant STPSR	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1111";	 
+    constant STASTR	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1111";
+	
 	constant STCP	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1000"; 
 	constant STBCR	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1001"; 
 	constant STIDX	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1010"; 
