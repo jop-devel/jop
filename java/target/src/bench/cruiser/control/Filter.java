@@ -54,7 +54,7 @@ public class Filter implements Runnable {
 		// MAX_AGE determine maximum length of queue
 		synchronized (queue) {
 			while (!queue.isEmpty()) { //@WCA loop <= 110
-				if (queue.element().getStamp() < now-MAX_AGE) {
+				if ((int)(queue.element().getStamp()/1000) < (int)(now/1000)-(int)(MAX_AGE/1000)) {
 					queue.remove();
 				} else {
 					break;
