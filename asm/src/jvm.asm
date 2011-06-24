@@ -1471,23 +1471,23 @@ jopsys_int2ext:
 			ldi	-1
 			add
 			stm c			// counter-1
-			stmra			// read handle indirection
-			stm	b			// intern address
-			wait			// for the GC
-			wait
-			ldmrd
-			stm	a			// extern address
+			stm b			// handle indirection
+			stm	a			// intern address
 			ldm	c			// keep counter on the stack
 
 intext_loop:
 			dup
-			ldm	b
-			add
-			star
-			dup
 			ldm	a
 			add
-			stmwa
+			star
+			ldm	b			// resolve handle indirection
+			stmra
+			dup		
+			wait
+			wait
+			ldmrd
+			add
+			stmwa			// write to array
 			ldmi
 			stmwd
 			dup
@@ -1507,18 +1507,18 @@ jopsys_ext2int:
 			add
 			stm c			// counter-1
 			stm	b			// intern address
-			stmra			// read handle indirection
-			wait			// for the GC
-			wait
-			ldmrd
-			stm	a			// extern address
+			stm a			// handle indirection
 			ldm	c			// keep counter on the stack
 
 extint_loop:
-			dup
-			ldm	a
-			add
+			ldm	a			// resolve handle indirection
 			stmra
+			dup
+		    wait
+			wait
+			ldmrd
+			add
+			stmra			// read from array
 			dup
 			ldm	b
 			add
