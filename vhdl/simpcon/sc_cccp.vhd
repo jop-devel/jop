@@ -148,16 +148,13 @@ begin
 		next_vpos <= vpos;
 		next_buf <= buf;
 
-		arb_front_out(0).wr_data <= (others => '0');
-		arb_front_out(0).address <= (others => '0');
-		arb_front_out(0).rd <= '0';
-		arb_front_out(0).wr <= '0';
+		-- pass on signals by default
+		arb_front_out(0) <= arb_out(0);
+		arb_in(0) <= arb_front_in(0);
 		
 		config_in.rdy_cnt <= "00";
 
-		arb_in(0).rd_data <= (others => '0');
-		arb_in(0).rdy_cnt <= "00";
-		
+		-- copy state machine
 		case state is
 			when idle =>
 				arb_front_out(0) <= arb_out(0);
@@ -203,6 +200,10 @@ begin
 		if arb_back_out.wr = '1'
 			and arb_back_out.address = std_logic_vector(unsigned(src)+unsigned(pos)) then
 			next_buf <= arb_back_out.wr_data;
+			-- skip the actual read if necessary
+			if state = rd2 and arb_front_in(0).rdy_cnt(1) = '0' then
+				next_state <= wr1;
+			end if;
 		end if;
 		
 	end process frontmux;
@@ -211,12 +212,20 @@ begin
 					  src, dest, active, vpos)
 		variable offset : unsigned(addr_bits downto 0);
 	begin  -- process backmux
+		-- pass on signals from arbiter
 		arb_back_in <= mem_in;
 		mem_out <= arb_back_out;
 
+		-- redirect accesses if necessary
 		offset := unsigned('0' & arb_back_out.address) - unsigned('0' & src);
 		if active='1' and offset < unsigned(vpos) then
 			mem_out.address <= std_logic_vector(unsigned(dest) + offset(addr_bits-1 downto 0));
+		end if;
+		
+		-- make sure we write the most recent value
+		if active='1' and (state = wr1 or state = wr2)
+			and arb_back_out.address = std_logic_vector(unsigned(dest)+unsigned(pos)) then
+			mem_out.wr_data <= buf;
 		end if;
 	end process redirect;
 

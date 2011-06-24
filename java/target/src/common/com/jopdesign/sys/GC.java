@@ -339,6 +339,7 @@ public class GC {
 		RtThreadImpl [] ref;
 		
 		if (concurrentGc) {
+
 			cpus = sys.nrCpu;
 			for (i = cpus-1; i >= 0; --i) { // @WCA loop <= MAX_CPUS
 				// we fire the scanner event for this CPU last, so we do
@@ -493,9 +494,6 @@ public class GC {
 				// set it BLACK
 				Native.wrMem(toSpace, ref+OFF_SPACE);
 
-				// TODO: lock guards against int2ext and ext2int, should be eliminated
-				Native.lock();
-
 				if (size>0) {
 					// copy it
 					Native.wr(addr, Const.IO_CCCP_SRC);
@@ -509,11 +507,9 @@ public class GC {
 				// update object pointer to the new location
 				Native.wrMem(dest, ref+OFF_PTR);
 
-				Native.unlock();
-
 				if (size>0) {
 					// wait until everybody uses the new location
-					for (i = 0; i < 10; i++); // @WCA loop = 10
+					for (i = 10; i > 0; --i); // @WCA loop = 10
 					// turn off address translation
 					Native.wr(0, Const.IO_CCCP_ACT);
 				}
