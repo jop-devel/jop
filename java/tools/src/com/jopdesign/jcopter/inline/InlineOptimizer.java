@@ -79,7 +79,8 @@ public class InlineOptimizer implements CodeOptimizer {
 
     private final Map<InstructionHandle,CallString> callstrings;
 
-    private boolean preciseEstimate;
+    private boolean preciseSizeEstimate;
+    private boolean preciseCycleEstimate;
 
     private int storeCycles;
     private int checkNPCycles;
@@ -98,7 +99,8 @@ public class InlineOptimizer implements CodeOptimizer {
 
         private int deltaCodesize;
         private int deltaLocals;
-        private long totalGain;
+        private long localGain;
+        private long deltaCacheMiss;
         private boolean isLastInvoke;
 
         protected InlineCandidate(InvokeSite invokeSite, MethodInfo invokee,
@@ -400,7 +402,9 @@ public class InlineOptimizer implements CodeOptimizer {
             isLastInvoke = checkIsLastInvoke();
 
             // localGain: could have changed due to codesize changes, or cache-miss-count changes
-            totalGain = calcTotalGain(analyses);
+            localGain = calcLocalGain(analyses);
+
+            deltaCacheMiss = analyses.getMethodCacheAnalysis().getInvokeReturnMissCosts(invokeSite, invokee);
 
             return true;
         }
@@ -421,8 +425,13 @@ public class InlineOptimizer implements CodeOptimizer {
         }
 
         @Override
-        public long getTotalGain() {
-            return totalGain;
+        public long getLocalGain() {
+            return localGain;
+        }
+
+        @Override
+        public long getDeltaCacheMissCosts() {
+            return deltaCacheMiss;
         }
 
         @Override
@@ -458,6 +467,10 @@ public class InlineOptimizer implements CodeOptimizer {
                 // DUP IFNONNULL ATHROW
                 delta += 5;
             }
+            if (needsEmptyStack) {
+                // TODO if we need to save the stack, we need to account for this as well
+            }
+
             if (!invokee.isStatic()) {
                 // ASTORE this
                 delta += getLoadStoreSize(0);
@@ -466,9 +479,11 @@ public class InlineOptimizer implements CodeOptimizer {
             // xSTORE parameters: over-approximate by assuming 2/4 bytes per store
             delta += invokee.getArgumentTypes().length * getLoadStoreSize(TypeHelper.getNumInvokeSlots(invokee));
 
-            // TODO if preciseEstimate is false, just use JVM codesize and ignore all other changes..
-
-            // TODO if we need to save the stack, we need to account for this as well
+            // if preciseEstimate is false, just use JVM codesize and ignore all other changes..
+            if (!preciseSizeEstimate) {
+                delta += invokee.getCode().getNumberOfBytes(false);
+                return delta;
+            }
 
             StacksizeAnalysis stacksize = analyses.getStacksizeAnalysis(invokee);
 
@@ -546,25 +561,22 @@ public class InlineOptimizer implements CodeOptimizer {
             return false;
         }
 
-        private long calcTotalGain(AnalysisManager analyses) {
+        private long calcLocalGain(AnalysisManager analyses) {
 
             // gain without cache costs for single invoke..
             long gain = jcopter.getWCETProcessorModel().getExecutionTime(context, invokeSite.getInstructionHandle());
 
             // we loose some gain due to the prologue
+            if (!preciseCycleEstimate) {
+                gain -= invokee.getArgumentTypes().length * storeCycles;
+                if ( !invokee.isStatic() ) gain -= storeCycles;
+                if (needsNPCheck) gain -= checkNPCycles;
+            } else {
 
-            gain -= invokee.getArgumentTypes().length * storeCycles;
-            if ( !invokee.isStatic() ) gain -= storeCycles;
-            if (needsNPCheck) gain -= checkNPCycles;
+
+            }
 
             // TODO we may also loose/gain some speed because we replaced returns with gotos and changed local-var slots
-
-            // .. gain for all executions
-            gain *= analyses.getExecCountAnalysis().getExecCount(invokeSite);
-
-            // We also gain something due to removed cache-misses (we do not consider gain-losses due to increased
-            // invoker-codesize here)
-            gain += analyses.getMethodCacheAnalysis().getTotalInvokeReturnMissCosts(invokeSite);
 
             return gain;
         }
@@ -581,13 +593,14 @@ public class InlineOptimizer implements CodeOptimizer {
         this.callstrings = new HashMap<InstructionHandle, CallString>();
 
         // TODO get from config
-        preciseEstimate = false;
+        preciseSizeEstimate = true;
+        preciseCycleEstimate = false;
     }
 
     @Override
     public void initialize(AnalysisManager analyses, Collection<MethodInfo> roots) {
 
-        if (!preciseEstimate) {
+        if (!preciseCycleEstimate) {
             ExecutionContext dummy = new ExecutionContext(roots.iterator().next());
 
             WCETProcessorModel pm = analyses.getJCopter().getWCETProcessorModel();

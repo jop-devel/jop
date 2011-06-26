@@ -76,6 +76,16 @@ public abstract class Candidate {
         return end;
     }
 
+    /**
+     * We assume that there is only a single entry edge into this optimized code region. The entry instruction is
+     * used to check if the optimized code is on the WCET path and to get the execution frequency for the code to optimize.
+     *
+     * @return the direct dominator instruction for the optimized code.
+     */
+    public InstructionHandle getEntry() {
+        return start;
+    }
+
     public float getHeuristicFactor() {
         return 1.0f;
     }
@@ -144,16 +154,17 @@ public abstract class Candidate {
     }
 
     /**
-     * Get the expected gain accumulated for all executions of the code to optimize, including the cache costs of
-     * invokes in the optimized code, but not including the cache-miss cost increases due to an increased codesize of
-     * the optimized method.
-     *
-     * TODO should we calculate WC-gain from gain in this method or in the generic algorithm? Second option only works
-     *      if we assume the optimized code is a single path with a single entry. First option needs to know if we
-     *      optimize for WCET and needs to do the WC-Gain calculation itself. Neither option allows for more intelligent
-     *      selection algorithms, for this we would need to encode the optimization as supergraph transformation.
-     *
-     * @return the expected gain in cycles over all executions of this code.
+     * @return the expected gain in cycles for a single execution of this code without cache costs
+     *        (i.e. assuming always-hit).
      */
-    public abstract long getTotalGain();
+    public abstract long getLocalGain();
+
+    /**
+     * @return the expected difference for cache miss costs for a single execution of this code, assuming an
+     *         unknown cache state previous to the execution of the code. This does not need to assume always-miss:
+     *         if a method is invoked twice in the optimized code and the invoker is in an all-fit region, the second
+     *         invoke (and the return from the first invoke!) can be assumed to be a hit, although the first invoke
+     *         must be assumed to be a miss.
+     */
+    public abstract long getDeltaCacheMissCosts();
 }

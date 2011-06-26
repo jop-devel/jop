@@ -69,4 +69,8 @@ public class MethodCacheAnalysis {
         return getInvokeMissCount(callString.top()) * pm.getMethodCacheMissPenalty(size, true)
              - getReturnMissCount(callString.top()) * pm.getMethodCacheMissPenalty(sizeInvoker, false);
     }
+
+    public long getInvokeReturnMissCosts(InvokeSite invokeSite, MethodInfo invokee) {
+        return 0;
+    }
 }

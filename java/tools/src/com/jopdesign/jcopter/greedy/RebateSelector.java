@@ -293,7 +293,7 @@ public abstract class RebateSelector implements CandidateSelector {
     }
 
     public long calculateGain(Candidate candidate) {
-        long gain = candidate.getTotalGain();
+        long gain = candidate.getLocalGain();
 
         // TODO calculate effect on cache by increasing the local codesize, remove costs from gain
 
