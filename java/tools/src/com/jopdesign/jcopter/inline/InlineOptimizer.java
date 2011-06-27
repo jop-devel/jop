@@ -225,8 +225,8 @@ public class InlineOptimizer implements CodeOptimizer {
 
                     invokeMap.put(oldInvoke, newInvoke);
 
-                    // TODO update inline-callstring for this instruction
-
+                    // update inline-callstring for this instruction
+                    setInlineCallString(code, ih, getInlineCallString(code, ih).push(invokeSite));
                 }
 
                 instrMap.put(src, ih);
@@ -331,16 +331,21 @@ public class InlineOptimizer implements CodeOptimizer {
 
         private void updateCallgraph(CallGraph cg, Map<InvokeSite,InvokeSite> invokeMap) {
 
-            // first we need to copy the execution contexts with new callstrings
+            // first we need to copy the execution contexts with new callstrings:
             for (ExecutionContext invoker : cg.getNodes(getMethod())) {
 
-                for (ExecutionContext ecInvokee : cg.getInvokedNodes(invoker, invokee)) {
-                    CallString cs = updateCallString(invokeMap, ecInvokee.getCallString());
+                // for all invokee contexts reachable via the invokesite ..
+                for (ExecutionContext invokeeNode : cg.getInvokedNodes(invoker, invokeSite, invokee)) {
+                    // .. copy all invoked contexts
+                    for (ExecutionContext child : cg.getChildren(invokeeNode)) {
+                        // .. remove the invoker from the invokee context, replace the invokee invokeSites
+                        CallString cs = updateCallString(invokeMap, child.getCallString());
 
-                    ExecutionContext newInvokee = cg.copyNodeRecursive(ecInvokee, cs, appInfo.getCallstringLength());
+                        ExecutionContext newInvokee = cg.copyNodeRecursive(child, cs, appInfo.getCallstringLength());
 
-                    // Note that this may introduce a decreasing callstring length, since we removed an invokesite
-                    cg.addEdge(invoker, newInvokee);
+                        // Note that this may introduce a decreasing callstring length, since we removed an invokesite
+                        cg.addEdge(invoker, newInvokee);
+                    }
                 }
             }
 
@@ -404,7 +409,9 @@ public class InlineOptimizer implements CodeOptimizer {
             // localGain: could have changed due to codesize changes, or cache-miss-count changes
             localGain = calcLocalGain(analyses);
 
-            deltaCacheMiss = analyses.getMethodCacheAnalysis().getInvokeReturnMissCosts(invokeSite, invokee);
+            deltaCacheMiss = -analyses.getMethodCacheAnalysis().getInvokeReturnMissCosts(invokeSite, invokee);
+
+            // TODO we might need to save the stack now if exception-handlers have been added, check this
 
             return true;
         }
@@ -694,7 +701,8 @@ public class InlineOptimizer implements CodeOptimizer {
     /**
      * Get the callstring starting at the method to optimize to the invokesite to inline, containing all
      * original invokesites in the unoptimized code (if the invokesite to inline has been inlined before).
-     * This is required to lookup results in analyses for which callstrings are not updated by the inliner (e.g. DFA).
+     * This is required to lookup results in analyses for which callstrings are not updated by the inliner (e.g. DFA)
+     * and to check for recursive invokes.
      * Note that the AppInfo callgraph is updated, so this callstring must NOT be used for lookups there.
      *
      * @param code the code of the method to optimize.

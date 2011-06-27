@@ -71,4 +71,9 @@ public class AnalysisManager {
         }
         return stacksize;
     }
+
+    public void clearChangeSets() {
+        if (execCountAnalysis != null) execCountAnalysis.clearChangeSet();
+        if (methodCacheAnalysis != null) methodCacheAnalysis.clearChangeSet();
+    }
 }

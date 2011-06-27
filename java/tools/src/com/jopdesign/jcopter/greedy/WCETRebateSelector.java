@@ -44,16 +44,31 @@ public class WCETRebateSelector extends RebateSelector {
 
             if (!checkWCPath(candidate)) continue;
 
-            long gain = calculateGain(candidate);
+            float gain = calculateGain(candidate);
+            if (gain < 0) continue;
+
             float codesize = getDeltaGlobalCodesize(candidate);
-
-
 
             RebateRatio ratio = new RebateRatio(candidate, candidate.getHeuristicFactor() * gain / codesize);
             ratios.add(ratio);
         }
 
         return ratios;
+    }
+
+    private long calculateGain(Candidate candidate) {
+
+        // TODO depending on config, use WCA to calculate local or global WC gain
+
+        long gain = analyses.getExecCountAnalysis().getExecCount(candidate.getMethod(), candidate.getEntry())
+                    * candidate.getLocalGain();
+
+        gain -= analyses.getMethodCacheAnalysis().getMissCount(candidate.getMethod(), candidate.getEntry())
+                * candidate.getDeltaCacheMissCosts();
+
+        gain -= getCodesizeCacheCosts(candidate);
+
+        return gain;
     }
 
     private boolean checkWCPath(Candidate candidate) {

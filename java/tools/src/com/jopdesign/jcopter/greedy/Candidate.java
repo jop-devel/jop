@@ -160,11 +160,16 @@ public abstract class Candidate {
     public abstract long getLocalGain();
 
     /**
-     * @return the expected difference for cache miss costs for a single execution of this code, assuming an
-     *         unknown cache state previous to the execution of the code. This does not need to assume always-miss:
-     *         if a method is invoked twice in the optimized code and the invoker is in an all-fit region, the second
-     *         invoke (and the return from the first invoke!) can be assumed to be a hit, although the first invoke
-     *         must be assumed to be a miss.
+     * Return the expected difference for cache miss costs for a single execution of this code, assuming an
+     * unknown cache state previous to the execution of the code. This does not need to assume always-miss:
+     * if a method is invoked twice in the optimized code and the invoker is in an all-fit region, the second
+     * invoke (and the return from the first invoke!) can be assumed to be a hit, although the first invoke
+     * must be assumed to be a miss. A negative value means reduced cache miss costs.
+     *
+     * <p>This does not include the cache effects due to the increased codesize of the optimized method.</p>
+     *
+     * @return the cache miss costs difference assuming an unknown cache state for a single execution for the invokes
+     *         in the optimized code.
      */
     public abstract long getDeltaCacheMissCosts();
 }

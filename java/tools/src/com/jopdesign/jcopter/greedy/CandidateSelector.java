@@ -25,6 +25,7 @@ import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import org.apache.bcel.generic.InstructionHandle;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -55,9 +56,9 @@ public interface CandidateSelector {
 
     Collection<Candidate> getCandidates(MethodInfo method);
 
-    void updateCandidates(MethodInfo method, StacksizeAnalysis stacksizeAnalysis);
+    void onSuccessfulOptimize(Candidate optimized, List<Candidate> newCandidates);
 
-    void wasSuccessful(Candidate candidate);
+    void updateCandidates(MethodInfo method, StacksizeAnalysis stacksizeAnalysis);
 
     void clear();
 }

@@ -121,8 +121,8 @@ public abstract class RebateSelector implements CandidateSelector {
 
     private static final Logger logger = Logger.getLogger(JCopter.LOG_OPTIMIZER+".RebateSelector");
 
-    private final AnalysisManager analyses;
-    private final ProcessorModel processorModel;
+    protected final AnalysisManager analyses;
+    protected final ProcessorModel processorModel;
 
     private final Map<MethodInfo, MethodData> methodData;
     private final TreeSet<RebateRatio> queue;
@@ -159,7 +159,7 @@ public abstract class RebateSelector implements CandidateSelector {
             }
         }
 
-        logger.info("Initial codesize: "+globalCodesize+" bytes");
+        logger.info("Initial codesize: " + globalCodesize + " bytes");
     }
 
     @Override
@@ -200,6 +200,25 @@ public abstract class RebateSelector implements CandidateSelector {
     @Override
     public Collection<Candidate> getCandidates(MethodInfo method) {
         return methodData.get(method).getCandidates();
+    }
+
+    @Override
+    public void onSuccessfulOptimize(Candidate optimized, List<Candidate> newCandidates) {
+        globalCodesize += getDeltaGlobalCodesize(optimized);
+
+        // We need to remove candidates from methods which are no longer reachable
+        Collection<MethodInfo> unreachable = optimized.getUnreachableMethods();
+        if (unreachable != null && !unreachable.isEmpty()) {
+            for (MethodInfo m : unreachable) {
+                // codesize of removed candidates already handled above
+                removeCandidates(m);
+            }
+        }
+
+        // replace old candidates with new ones in range
+        removeCandidates(optimized.getMethod(), optimized.getStart(), optimized.getEnd());
+
+        addCandidates(optimized.getMethod(),  newCandidates);
     }
 
     @Override
@@ -258,11 +277,6 @@ public abstract class RebateSelector implements CandidateSelector {
         }
     }
 
-    @Override
-    public void wasSuccessful(Candidate candidate) {
-        globalCodesize += getDeltaGlobalCodesize(candidate);
-    }
-
     protected boolean checkConstraints(Candidate candidate) {
         // check local and global codesize
 
@@ -292,14 +306,11 @@ public abstract class RebateSelector implements CandidateSelector {
         return size;
     }
 
-    public long calculateGain(Candidate candidate) {
-        long gain = candidate.getLocalGain();
-
-        // TODO calculate effect on cache by increasing the local codesize, remove costs from gain
+    public long getCodesizeCacheCosts(Candidate candidate) {
 
 
 
-        return gain;
+        return 0;
     }
 
     protected abstract Collection<RebateRatio> calculateRatios(MethodInfo method, List<Candidate> candidates);

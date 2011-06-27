@@ -650,6 +650,16 @@ public class CallGraph implements ImplementationFinder {
         return methodNodes.get(m).getInstances();
     }
 
+    public Set<ExecutionContext> getNodes(CallString cs, MethodInfo m) {
+        Set<ExecutionContext> nodes = new HashSet<ExecutionContext>();
+        for (ExecutionContext ec : methodNodes.get(m).getInstances()) {
+            if (ec.getCallString().matches(cs)) {
+                nodes.add(ec);
+            }
+        }
+        return nodes;
+    }
+
     /**
      * Get a MethodNode for a given methodInfo.
      * @param m the method to check.
@@ -1075,15 +1085,19 @@ public class CallGraph implements ImplementationFinder {
         return invokers;
     }
 
-    public List<ExecutionContext> getInvokedNodes(ExecutionContext node, MethodInfo invokee) {
-        Set<ContextEdge> out = callGraph.outgoingEdgesOf(node);
-        List<ExecutionContext> childs = new ArrayList<ExecutionContext>();
-        for (ContextEdge e : out) {
-            if (e.getTarget().getMethodInfo().equals(invokee)) {
-                childs.add(e.getTarget());
+    public List<ExecutionContext> getInvokedNodes(ExecutionContext node, InvokeSite invokeSite, MethodInfo invokee) {
+        List<ExecutionContext> invoked = new ArrayList<ExecutionContext>(1);
+        for (ContextEdge edge : callGraph.outgoingEdgesOf(node)) {
+            if (!edge.getTarget().getMethodInfo().equals(invokee)) {
+                continue;
+            }
+            if (edge.getTarget().getCallString().isEmpty() ||
+                edge.getTarget().getCallString().top().equals(invokeSite)) {
+                invoked.add(edge.getTarget());
             }
         }
-        return childs;
+
+        return invoked;
     }
 
     public Collection<ContextEdge> getInvokeEdges(MethodInfo invoker, MethodInfo invokee) {

@@ -27,6 +27,9 @@ import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.jop.MethodCache;
+import org.apache.bcel.generic.InstructionHandle;
+
+import java.util.Collection;
 
 /**
  * This analysis keeps track of the number of bytes and blocks of code reachable from a method and
@@ -71,6 +74,28 @@ public class MethodCacheAnalysis {
     }
 
     public long getInvokeReturnMissCosts(InvokeSite invokeSite, MethodInfo invokee) {
+        return 0;
+    }
+
+    /**
+     * @return all methods containing invokeSites for which the cache analysis changed
+     */
+    public Collection<MethodInfo> getClassificationChangeSet() {
+        return null;
+    }
+
+    public void clearChangeSet() {
+
+    }
+
+    /**
+     *
+     * @param method method containing the instruction
+     * @param entry the instruction to check
+     * @return number of expected executions of the instruction where not all methods reachable from
+     *         the invoker (including the invoker) are in the cache.
+     */
+    public int getMissCount(MethodInfo method, InstructionHandle entry) {
         return 0;
     }
 }

@@ -24,6 +24,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
+import org.apache.bcel.generic.InstructionHandle;
 
 import java.util.Map;
 
@@ -42,6 +43,11 @@ public class ExecCountAnalysis {
     }
 
     public int getExecCount(InvokeSite invokeSite) {
+        return getExecCount(invokeSite.getInvoker(), invokeSite.getInstructionHandle());
+    }
+
+    public int getExecCount(MethodInfo method, InstructionHandle instructionHandle) {
+
         return 0;
     }
 
@@ -51,6 +57,10 @@ public class ExecCountAnalysis {
 
     public int getExecFrequency(ExecutionContext context) {
         return 0;
+    }
+
+    public void clearChangeSet() {
+
     }
 
 }

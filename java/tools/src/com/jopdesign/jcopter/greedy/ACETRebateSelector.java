@@ -41,7 +41,10 @@ public class ACETRebateSelector extends RebateSelector {
         List<RebateRatio> ratios = new ArrayList<RebateRatio>(candidates.size());
 
         for (Candidate candidate : candidates) {
+
             float gain = calculateGain(candidate);
+            if (gain < 0) continue;
+
             float codesize = getDeltaGlobalCodesize(candidate);
 
             RebateRatio ratio = new RebateRatio(candidate, candidate.getHeuristicFactor() * gain / codesize);
@@ -50,4 +53,18 @@ public class ACETRebateSelector extends RebateSelector {
 
         return ratios;
     }
+
+    private long calculateGain(Candidate candidate) {
+
+        long gain = analyses.getExecCountAnalysis().getExecCount(candidate.getMethod(), candidate.getEntry())
+                    * candidate.getLocalGain();
+
+        gain -= analyses.getMethodCacheAnalysis().getMissCount(candidate.getMethod(), candidate.getEntry())
+                * candidate.getDeltaCacheMissCosts();
+
+        gain -= getCodesizeCacheCosts(candidate);
+
+        return gain;
+    }
+
 }
