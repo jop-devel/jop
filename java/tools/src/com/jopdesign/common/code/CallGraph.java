@@ -650,6 +650,15 @@ public class CallGraph implements ImplementationFinder {
         return methodNodes.get(m).getInstances();
     }
 
+    /**
+     * Get all matching nodes for a context in the graph.
+     * @param context an execution context, not necessarily a node in the graph.
+     * @return all nodes of the same method with matching callstrings.
+     */
+    public Set<ExecutionContext> getNodes(ExecutionContext context) {
+        return getNodes(context.getCallString(), context.getMethodInfo());
+    }
+
     public Set<ExecutionContext> getNodes(CallString cs, MethodInfo m) {
         Set<ExecutionContext> nodes = new HashSet<ExecutionContext>();
         for (ExecutionContext ec : methodNodes.get(m).getInstances()) {
@@ -681,6 +690,15 @@ public class CallGraph implements ImplementationFinder {
             childs.add(e.getTarget());
         }
         return childs;
+    }
+
+    public List<ExecutionContext> getParents(ExecutionContext node) {
+        Set<ContextEdge> in = callGraph.incomingEdgesOf(node);
+        List<ExecutionContext> parents = new ArrayList<ExecutionContext>(in.size());
+        for (ContextEdge e : in) {
+            parents.add(e.getSource());
+        }
+        return parents;
     }
 
     public Set<ClassInfo> getRootClasses() {

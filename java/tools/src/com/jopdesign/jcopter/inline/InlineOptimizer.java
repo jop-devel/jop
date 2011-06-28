@@ -59,6 +59,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -378,7 +379,7 @@ public class InlineOptimizer implements CodeOptimizer {
 
         private void updateAnalyses(AnalysisManager analyses, Map<InvokeSite,InvokeSite> invokeMap) {
 
-            // TODO update execution frequencies of invokee
+            analyses.getExecCountAnalysis().inline(invokeSite, invokee, new HashSet<InvokeSite>(invokeMap.values()) );
 
             // TODO update cache analysis
 

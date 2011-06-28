@@ -214,6 +214,31 @@ public class InvokeSite {
     }
 
     /**
+     * @param methodInfo a possible invokee
+     * @return true if this invokeSite may invoke the method. Does not use the callgraph to check.
+     */
+    public Ternary canInvoke(MethodInfo methodInfo) {
+        MethodRef invokeeRef = getInvokeeRef();
+        MethodInfo method = invokeeRef.getMethodInfo();
+
+        if (!isVirtual()) {
+            // if it is non-virtual and we do not know the referenced invokee, it must be a different method
+            // and therefore cannot be invoked
+            return Ternary.valueOf(methodInfo.equals(invokeeRef.getMethodInfo()));
+        }
+
+        if (method == null) {
+            return Ternary.UNKNOWN;
+        }
+
+        if (!methodInfo.getClassInfo().isSubclassOf(invokeeRef.getClassInfo())) {
+            return Ternary.FALSE;
+        }
+
+        return Ternary.valueOf( methodInfo.overrides(method, true) );
+    }
+
+    /**
      * Create a string representation of this InvokeSite.
      * Note that the result is neither unique nor constant (since the position in the code can change).
      *
