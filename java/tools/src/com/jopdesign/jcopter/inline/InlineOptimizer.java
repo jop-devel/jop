@@ -55,7 +55,6 @@ import org.apache.bcel.generic.TargetLostException;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -339,12 +338,21 @@ public class InlineOptimizer implements CodeOptimizer {
                 for (ExecutionContext invokeeNode : cg.getInvokedNodes(invoker, invokeSite, invokee)) {
                     // .. copy all invoked contexts
                     for (ExecutionContext child : cg.getChildren(invokeeNode)) {
-                        // .. remove the invoker from the invokee context, replace the invokee invokeSites
-                        CallString cs = updateCallString(invokeMap, child.getCallString());
 
-                        ExecutionContext newInvokee = cg.copyNodeRecursive(child, cs, appInfo.getCallstringLength());
+                        ExecutionContext newInvokee;
+                        if (!child.getCallString().isEmpty()) {
+                            // construct a new callstring using the context of the invoker and by replacing
+                            // the invokeSite in the old invokee with the inlined invokeSite
+                            CallString cs = invoker.getCallString();
+                            cs = cs.push( invokeMap.get( child.getCallString().top() ), appInfo.getCallstringLength());
 
-                        // Note that this may introduce a decreasing callstring length, since we removed an invokesite
+                            // we need to copy the new nodes recursively since childs with depth up to max callstring
+                            // length can contain the old invokesite and must now contain the new one
+                            newInvokee = cg.copyNodeRecursive(child, cs, appInfo.getCallstringLength());
+                        } else {
+                            newInvokee = child;
+                        }
+
                         cg.addEdge(invoker, newInvokee);
                     }
                 }
@@ -363,18 +371,6 @@ public class InlineOptimizer implements CodeOptimizer {
             // Note that we do not need to check if any other method has been removed, because we added edges
             // to all targets of all invokesites of the removed method.
             isLastInvoke = cg.hasMethod(invokee);
-        }
-
-        private CallString updateCallString(Map<InvokeSite, InvokeSite> invokeMap, CallString callString) {
-            List<InvokeSite> cs = new ArrayList<InvokeSite>(callString.length());
-
-            for (InvokeSite is : callString) {
-                if (is.equals(invokeSite)) continue;
-                InvokeSite mapped = invokeMap.get(is);
-                cs.add( mapped == null ? is : mapped );
-            }
-
-            return new CallString(cs);
         }
 
         private void updateAnalyses(AnalysisManager analyses, Map<InvokeSite,InvokeSite> invokeMap) {
