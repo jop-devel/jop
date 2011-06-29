@@ -65,7 +65,7 @@ class Scheduler implements Runnable {
 	// timer offset to ensure that no timer interrupt happens just
 	// after monitorexit in this method and the new thread
 	// has a minimum time to run.
- 	private final static int TIM_OFF = 200;
+	private final static int TIM_OFF = 200;
 //	private final static int TIM_OFF = 20;
 //	private final static int TIM_OFF = 2; // for 100 MHz version 20 or even lower
 										 // 2 is minimum
@@ -95,8 +95,6 @@ class Scheduler implements Runnable {
 		
 		// take care to NOT invoke a method with monitorexit
 		// can happen on the write barrier on reference assignment
-
-		Native.lock();
 
 		// save stack
 		i = Native.getSP();
@@ -156,6 +154,14 @@ class Scheduler implements Runnable {
 		// get this back form the array of Schedulers		
 		s = sched[sys.cpuId];
 		th = s.ref[s.active];
+
+		// disable cross-core interrupt for high priority tasks
+		if (th.priority >= s.scanThres) {
+		 	Native.wr(0xfffffffd, Const.IO_INTMASK);
+		} else {
+		 	Native.wr(0xffffffff, Const.IO_INTMASK);
+		}
+
 		i = Native.rdIntMem(SP_VAL_ADDR);		
 		
 		// can't use s1-127 as count,
@@ -193,8 +199,8 @@ class Scheduler implements Runnable {
 		// and DON'T call a method with synchronized
 		// it would enable the INT on monitorexit
 
-		// unlock enables also interrupts again
-		Native.unlock();
+		// enable interrupts again
+		Native.wr(1, Const.IO_INT_ENA);
 	}
 
 	/**

@@ -1029,8 +1029,8 @@ class JVM {
 
 			// boost for GC mutex
 			if (objAddr == Native.toInt(GC.mutex)) {
-				// disable scheduling and cross-core interrupts
-				Native.wr(~3, Const.IO_INTMASK);
+			 	// disable scheduling and cross-core interrupts
+				Native.wr(0xfffffffc, Const.IO_INTMASK);
 			}
 
 			// boost priority
@@ -1100,8 +1100,12 @@ class JVM {
 
 		// unboost for GC mutex
 		if (objAddr == Native.toInt(GC.mutex) && l.level == 0) {
-			// enable all interrupts again
-			Native.wr(-1, Const.IO_INTMASK);
+		 	// enable interrupts again
+			if (c.priority >= s.scanThres) {
+				Native.wr(0xfffffffd, Const.IO_INTMASK);
+			} else {
+				Native.wr(0xffffffff, Const.IO_INTMASK);
+			}
 		}
 
 		Native.unlock();

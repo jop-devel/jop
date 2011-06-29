@@ -222,13 +222,20 @@ public class RtThreadImpl {
 		cpuId = id;
 	}
 
-	private static void genInt(int core) {
-		
+	private static void genXInt(int core) {		
 		// just schedule an interrupt
 		// schedule() gets called.
 		Native.wr(core, Const.IO_XCINT);
 		for (int j=0;j<10;++j) ; // @WCA loop = 10
 		// in case we trigger ourselves
+	}
+
+	private static void genInt() {		
+		// just schedule an interrupt
+		// schedule() gets called.
+		Native.wr(0, Const.IO_SWINT);
+		for (int j=0;j<10;++j) ; // @WCA loop = 10
+		// we trigger ourselves
 	}
 
 	private void startThread() {
@@ -256,7 +263,7 @@ public class RtThreadImpl {
 				// This will not work if we change stack like in Thread.java.
 				// Then we have no reference to this.
 				Scheduler.sched[sys.cpuId].next[nr] = Native.rd(Const.IO_US_CNT) + 2*Scheduler.IDL_TICK;
-				genInt(sys.cpuId);
+				genInt();
 			}
 		}
 	}
@@ -434,8 +441,8 @@ public class RtThreadImpl {
 
 		now = Native.rd(Const.IO_US_CNT);
 		if (nxt-now < 0) {					// missed time!
-			s.next[nr] = now;				// correct next
-			// s.next[nr] = nxt;				// without correction!
+			// s.next[nr] = now;				// correct next
+			s.next[nr] = nxt;				// without correction!
 			Native.wr(1, Const.IO_INT_ENA);
 			return false;
 		} else {
@@ -449,7 +456,6 @@ public class RtThreadImpl {
 		Native.wr(0, Const.IO_SWINT);
 		// will arrive before return statement,
 		// just after interrupt enable
-		// TODO: do we really need this loop?
 		for (int j=0;j<10;++j) ;
 		Native.wr(1, Const.IO_INT_ENA);
 
@@ -467,13 +473,13 @@ public class RtThreadImpl {
 		// if prio higher...
 		// should not be allowed before startMission
 		// Generate the interrupt for the appropriate core
-		genInt(this.cpuId);
+		genXInt(this.cpuId);
 	}
 	
 	public void blockEvent() {
 		Scheduler.sched[this.cpuId].event[this.nr] = Scheduler.EV_WAITING;
 		// Generate the interrupt for the appropriate core
-		genInt(this.cpuId);
+		genInt();
 	}
 
 	/**
@@ -483,7 +489,7 @@ public class RtThreadImpl {
 	
 		int next = Native.rd(Const.IO_US_CNT)+millis*1000;
 		while (Native.rd(Const.IO_US_CNT)-next < 0) {
-			genInt(sys.cpuId);
+			genInt();
 		}
 	}
 	final static int MIN_US = 10;
