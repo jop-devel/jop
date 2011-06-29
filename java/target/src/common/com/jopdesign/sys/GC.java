@@ -40,7 +40,7 @@ public class GC {
 	static int full_heap_size;
 	
 	// Used in newObject and newArray to locate the object/array
-	private static final int HEADER_SIZE = 4;
+	private static final int HEADER_SIZE = 8;
 
 	/**
 	 * Fields in the handle structure.
@@ -159,8 +159,8 @@ public class GC {
 	 */
 	static final int MAX_CPUS = 8;
 	static final int MAX_THREADS = 20;
-	static final int MAX_STATIC_REFS = 64;
-	static final int MAX_HEAP_SIZE = (1024-100)*1024/4;
+	static final int MAX_STATIC_REFS = 80;
+	static final int MAX_HEAP_SIZE = (2048-100)*1024/4;
 	static final int MAX_HANDLE_CNT = MAX_HEAP_SIZE/(2*TYPICAL_OBJ_SIZE+HANDLE_SIZE);
 	static final int MAX_SEMI_SIZE = (MAX_HEAP_SIZE-MAX_HANDLE_CNT*HANDLE_SIZE)/2;
 
@@ -202,7 +202,8 @@ public class GC {
 		if(Config.USE_SCOPES) {
 			allocationPointer = mem_start;
 			// clean immortal memory
-			for (int i=mem_start; i<mem_size; ++i) {
+			int size = mem_size;
+			for (int i=mem_start; i<size; ++i) {
 				Native.wrMem(0, i);
 			}
 			// Create the Scope that represents immortal memory
@@ -895,7 +896,7 @@ public class GC {
 			for (;;) {
 				// log("G");
 				// GC.log("<");
-				// System.out.println(System.nanoTime());
+				System.out.println(System.nanoTime());
 				GC.gc();
 				// GC.log(">");
 				waitForNextPeriod();
@@ -1002,7 +1003,7 @@ public class GC {
 			// 	GC.log("Handling scan event on CPU", sys.cpuId);
 			// }
 
-			Scheduler sched = Scheduler.sched[GC.sys.cpuId];
+			Scheduler sched = Scheduler.sched[sys.cpuId];
 			int cnt = sched.ref.length;
 
 			for (i = 0; i < cnt; i++) {
