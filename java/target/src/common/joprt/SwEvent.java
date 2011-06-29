@@ -34,14 +34,6 @@ public class SwEvent extends RtThread {
 	}
 
 	public final void run() {
-
-// shure to not run on startThread:
-/* not necessary: run gets called on first schedul
-if (event[this.nr] == EV_WAITING) {
-	RtThread.genInt();	// schedule another thread
-}
-*/
-
 		for (;;) {
 			handle();
 			thr.blockEvent();
