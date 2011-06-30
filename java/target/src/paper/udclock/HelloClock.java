@@ -70,8 +70,7 @@ public class HelloClock extends Mission implements Safelet {
 			public void handleAsyncEvent() {
 				AbsoluteTime time = Clock.getRealtimeClock().getTime();
 				out.print("It is " + time.getMilliseconds());
-// following does not work, the correct version is in branch clock
-//				out.println(" counter " + counter.getTime().getMilliseconds());
+				out.println(" counter " + counter.getTime().getMilliseconds());
 				++cnt;
 				if (cnt > 5) {
 					// getCurrentMission is not yet working
