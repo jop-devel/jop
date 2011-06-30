@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import javax.microedition.io.Connector;
+import javax.realtime.PeriodicParameters;
 import javax.realtime.PriorityParameters;
 import javax.realtime.RelativeTime;
 import javax.safetycritical.*;
