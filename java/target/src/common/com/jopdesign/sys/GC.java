@@ -275,7 +275,7 @@ public class GC {
 		// handle area are considered for GC.
 		// Null pointer and references to static strings are not
 		// investigated.
-		if (ref<mem_start || ref>=mem_start+handle_cnt*HANDLE_SIZE) {
+		if (ref<mem_start || ref>=heapStartA) {
 			return;
 		}
 		// does the reference point to a handle start?
@@ -351,13 +351,15 @@ public class GC {
 				if (sched.scanner != null) {
 					ref = sched.ref;
 					cnt = ref.length;
-					for (j = 0; j < cnt; j++) { // @WCA loop <= MAX_THREADS outer
+					for (j = (i == 0 ? 0 : 1); j < cnt; j++) { // @WCA loop <= MAX_THREADS outer
 						ref[j].scan = true;
 					}
 					sched.scanner.fire();
-				} else {
-					throw OOMError;
 				}
+				// We trust the application designer here for now
+				//  else {
+				// 	throw OOMError;
+				// }
 			}
 
 			// fire event for current CPU
@@ -366,13 +368,15 @@ public class GC {
 			ref = sched.ref;
 			if (sched.scanner != null) {					
 				cnt = ref.length;
-				for (j = 0; j < cnt; j++) { // @WCA loop <= MAX_THREADS
+				for (j = (i == 0 ? 0 : 1); j < cnt; j++) { // @WCA loop <= MAX_THREADS
 					ref[j].scan = true;
 				}
 				sched.scanner.fire();
-			} else {
-				throw OOMError;
 			}
+			// We trust the application designer here for now
+			// else {
+			// 	throw OOMError;
+			// }
 			
 			// wait for everyone to finish root scanning
 			for (i = 0; i < cpus; i++) { // @WCA loop <= MAX_CPUS
@@ -734,8 +738,8 @@ public class GC {
 
 			if (!DOUBLE_BARRIER) {
 				// allocate anthracite
-				Native.wrMem(GC.grayList, ref+GC.OFF_GREY);
-				GC.grayList = ref;
+				Native.wrMem(grayList, ref+GC.OFF_GREY);
+				grayList = ref;
 			}
 		}
 
@@ -840,8 +844,8 @@ public class GC {
 
 			if (!DOUBLE_BARRIER) {
 				// allocate anthracite
-				Native.wrMem(GC.grayList, ref+GC.OFF_GREY);
-				GC.grayList = ref;
+				Native.wrMem(grayList, ref+GC.OFF_GREY);
+				grayList = ref;
 			}
 		}
 
@@ -894,12 +898,11 @@ public class GC {
 		}
 		public void run() {
 			for (;;) {
-				// log("G");
-				// GC.log("<");
+				// log("<");
 				System.out.println(System.nanoTime());
 				GC.gc();
-				// GC.log(">");
-				waitForNextPeriod();
+				// log(">");
+				// waitForNextPeriod();
 			}
 		}
 	}
