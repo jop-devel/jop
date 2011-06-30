@@ -23,17 +23,24 @@ package com.jopdesign.jcopter.analysis;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
+import com.jopdesign.common.code.CallGraph.ContextEdge;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.common.misc.Ternary;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.jop.MethodCache;
 import org.apache.bcel.generic.InstructionHandle;
+import org.jgrapht.DirectedGraph;
+import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This analysis keeps track of the number of bytes and blocks of code reachable from a method and
@@ -47,11 +54,75 @@ public class MethodCacheAnalysis {
 
     public enum AnalysisType { ALWAYS_MISS, ALWAYS_HIT, ALWAYS_MISS_HIT, MOST_ONCE_HIT }
 
+
+    private interface CacheUpdater {
+        /**
+         * @param node current node
+         * @param topOrder true if all reachable nodes have already been updated.
+         * @return the number of blocks for all reachable nodes of this nodes.
+         */
+        int getCacheBlocks(ExecutionContext node, boolean topOrder);
+
+        /**
+         * @param node current node
+         * @param newBlocks number of blocks returned by getCacheBlocks
+         * @return false if invokers of this node do not need to be visited.
+         */
+        boolean updateBlocks(ExecutionContext node, int newBlocks);
+    }
+
+    private class DefaultCacheUpdater implements CacheUpdater  {
+
+        private final boolean updateChangeSet;
+
+        private DefaultCacheUpdater(boolean updateChangeSet) {
+            this.updateChangeSet = updateChangeSet;
+        }
+
+        @Override
+        public int getCacheBlocks(ExecutionContext node, boolean topOrder) {
+            int newBlocks;
+            // We do not use cache.allFit() here because this uses the wrong callgraph
+            if (topOrder) {
+                newBlocks = cache.requiredNumberOfBlocks(node.getMethodInfo());
+                for (ExecutionContext child : callGraph.getChildren(node)) {
+                    newBlocks += cacheBlocks.get(child);
+                }
+            } else {
+                newBlocks = 0;
+                for (MethodInfo invokee : callGraph.getReachableImplementationsSet(node)) {
+                    newBlocks += cache.requiredNumberOfBlocks(invokee);
+                }
+            }
+            return newBlocks;
+        }
+
+        @Override
+        public boolean updateBlocks(ExecutionContext node, int newBlocks) {
+            if (updateChangeSet) {
+                Integer oldBlocks = cacheBlocks.get(node);
+                if (oldBlocks == null) {
+                    classifyChanges.add(node.getMethodInfo());
+                } else {
+                    boolean oldFit = cache.allFit(oldBlocks);
+                    boolean newFit = cache.allFit(newBlocks);
+                    if (oldFit != newFit) {
+                        classifyChanges.add(node.getMethodInfo());
+                    }
+                }
+            }
+            cacheBlocks.put(node, newBlocks);
+            return true;
+        }
+    }
+
     private final MethodCache cache;
     private final CallGraph callGraph;
     private final Map<ExecutionContext,Integer> cacheBlocks;
     private final AnalysisManager analyses;
     private final AnalysisType analysisType;
+
+    private final Set<MethodInfo> classifyChanges;
 
     ///////////////////////////////////////////////////////////////////////////////////
     // Constructors, initialization, standard getter
@@ -66,7 +137,9 @@ public class MethodCacheAnalysis {
         this.analysisType = analysisType;
         this.cache = analyses.getJCopter().getMethodCache();
         this.callGraph = callGraph;
+
         cacheBlocks = new HashMap<ExecutionContext, Integer>();
+        classifyChanges = new HashSet<MethodInfo>();
     }
 
     public CallGraph getCallGraph() {
@@ -77,33 +150,12 @@ public class MethodCacheAnalysis {
 
         cacheBlocks.clear();
 
-        // We do not use cache.allFit() here because this uses the wrong callgraph
-        if (callGraph.isAcyclic()) {
-            // This is easy ..
-            for (ExecutionContext node : callGraph.reverseTopologicalOrder()) {
-
-                int blocks = cache.requiredNumberOfBlocks(node.getMethodInfo());
-
-                for (ExecutionContext child : callGraph.getChildren(node)) {
-                    blocks += cacheBlocks.get(child);
-                }
-
-                cacheBlocks.put(node, blocks);
-            }
-        } else {
-            // This is slow .. could be implemented faster, somehow.
-            for (ExecutionContext node : callGraph.getNodes()) {
-
-                int blocks = 0;
-
-                for (MethodInfo method : callGraph.getReachableImplementationsSet(node)) {
-                    blocks += cache.requiredNumberOfBlocks(method);
-                }
-
-                cacheBlocks.put(node, blocks);
-            }
+        if (analysisType == AnalysisType.ALWAYS_HIT || analysisType == AnalysisType.ALWAYS_MISS) {
+            // we do not use the number of blocks for those analyses
+            return;
         }
 
+        traverseInvokeGraph(callGraph.getReversedGraph(), new DefaultCacheUpdater(false));
     }
 
     ///////////////////////////////////////////////////////////////////////////////////
@@ -111,11 +163,9 @@ public class MethodCacheAnalysis {
     ///////////////////////////////////////////////////////////////////////////////////
 
     public boolean allFit(MethodInfo method) {
-
         for (ExecutionContext node : callGraph.getNodes(method)) {
             if (!allFit(node)) return false;
         }
-
         return true;
     }
 
@@ -266,7 +316,7 @@ public class MethodCacheAnalysis {
     ///////////////////////////////////////////////////////////////////////////////////
 
     public void clearChangeSet() {
-
+        classifyChanges.clear();
     }
 
     /**
@@ -276,13 +326,26 @@ public class MethodCacheAnalysis {
         return null;
     }
 
+    public Collection<MethodInfo> getMissCountChangeSet() {
+        return null;
+    }
+
     public void inline(InvokeSite invokeSite, MethodInfo invokee) {
-        // Nothing else to do .. yet (if allFit, we might want to update cache miss counts)
         updateCodesize(invokeSite.getInvoker());
+        onExecCountUpdate();
     }
 
     public void updateCodesize(MethodInfo method) {
 
+        updateBlockCounts( callGraph.getNodes(method) );
+
+        // TODO we might need to check for which methods the cache miss counts changed
+
+    }
+
+    public void onExecCountUpdate() {
+        // TODO we might want to check the exec analysis for changed exec counts,
+        //      we might need to update change sets since cache miss counts may change
     }
 
     ///////////////////////////////////////////////////////////////////////////////////
@@ -295,6 +358,116 @@ public class MethodCacheAnalysis {
             blocks = Math.max(blocks, cacheBlocks.get(node));
         }
         return blocks;
+    }
+
+    private Set<ExecutionContext> findClassificationChanges(MethodInfo method, int deltaBlocks) {
+        if (analysisType == AnalysisType.ALWAYS_HIT || analysisType == AnalysisType.ALWAYS_MISS || deltaBlocks == 0) {
+            return Collections.emptySet();
+        }
+
+        Set<ExecutionContext> roots = callGraph.getNodes(method);
+        DirectedGraph<ExecutionContext, ContextEdge> invokers = callGraph.createInvokeGraph(roots, true);
+
+        final Set<ExecutionContext> changeSet = new HashSet<ExecutionContext>();
+        final Map<ExecutionContext,Integer> blockMap = new HashMap<ExecutionContext, Integer>();
+
+        for (ExecutionContext root : roots) {
+            blockMap.put(root, cacheBlocks.get(root) + deltaBlocks);
+            // no need to visit them ..
+            invokers.removeVertex(root);
+        }
+
+        traverseInvokeGraph(invokers, new CacheUpdater() {
+            @Override
+            public int getCacheBlocks(ExecutionContext node, boolean topOrder) {
+                int newBlocks;
+                if (topOrder) {
+                    newBlocks = cache.requiredNumberOfBlocks(node.getMethodInfo());
+
+                    for (ExecutionContext child : callGraph.getChildren(node)) {
+                        Integer val = blockMap.get(child);
+                        if (val != null) {
+                            newBlocks += val;
+                        } else {
+                            // reuse old results
+                            newBlocks += cacheBlocks.get(child);
+                        }
+                    }
+                } else {
+                    // TODO we could at least reuse the blocks for all nodes outside the invoker graph
+                    //      as they did not change
+                    newBlocks = 0;
+                    for (MethodInfo invokee : callGraph.getReachableImplementationsSet(node)) {
+                        newBlocks += cache.requiredNumberOfBlocks(invokee);
+                    }
+                }
+
+                blockMap.put(node, newBlocks);
+                return newBlocks;
+            }
+
+            @Override
+            public boolean updateBlocks(ExecutionContext node, int newBlocks) {
+                int oldBlocks = cacheBlocks.get(node);
+
+                boolean oldFit = cache.allFit(oldBlocks);
+                boolean newFit = cache.allFit(newBlocks);
+
+                if (oldFit != newFit) {
+                    changeSet.add(node);
+                }
+                if (!oldFit && !newFit) {
+                    return false;
+                }
+                return true;
+            }
+        });
+
+
+        return changeSet;
+    }
+
+    private Set<ExecutionContext> updateBlockCounts(Collection<ExecutionContext> roots) {
+        if (analysisType == AnalysisType.ALWAYS_HIT || analysisType == AnalysisType.ALWAYS_MISS) {
+            return Collections.emptySet();
+        }
+
+        DirectedGraph<ExecutionContext, ContextEdge> invokers = callGraph.createInvokeGraph(roots, true);
+
+        traverseInvokeGraph(invokers, new DefaultCacheUpdater(true) );
+
+        return null;
+    }
+
+    private void traverseInvokeGraph(DirectedGraph<ExecutionContext,ContextEdge> graph, CacheUpdater updater) {
+
+        if (callGraph.getAcyclicity() == Ternary.TRUE) {
+            TopologicalOrderIterator<ExecutionContext,ContextEdge> topOrder =
+                    new TopologicalOrderIterator<ExecutionContext, ContextEdge>(graph);
+
+            while (topOrder.hasNext()) {
+                ExecutionContext node = topOrder.next();
+
+                int newBlocks = updater.getCacheBlocks(node, true);
+
+                if (!updater.updateBlocks(node, newBlocks)) {
+                    // TODO nothing going to change for any invoker, we could skip all childs in the invoke graph,
+                    //      if we could somehow tell this the topOrderIterator ..
+                }
+            }
+
+        } else {
+            // We have cycles.. Again we fall back to a slow algorithm
+            for (ExecutionContext node : graph.vertexSet()) {
+
+                int newBlocks = updater.getCacheBlocks(node, false);
+
+                if (!updater.updateBlocks(node, newBlocks)) {
+                    // TODO nothing going to change for any invoker, we could skip all childs in the invoke graph
+                }
+            }
+        }
+
     }
 
 }

@@ -27,6 +27,7 @@ import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
+import com.jopdesign.common.misc.Ternary;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.common.type.TypeHelper;
 import com.jopdesign.jcopter.JCopter;
@@ -333,6 +334,9 @@ public class InlineOptimizer implements CodeOptimizer {
 
         private void updateCallgraph(CallGraph cg, Map<InvokeSite,InvokeSite> invokeMap) {
 
+            // This is a quick hack: inlining does not change acyclic property,
+            Ternary acyclic = cg.getAcyclicity();
+
             // first we need to copy the execution contexts with new callstrings:
             for (ExecutionContext invoker : cg.getNodes(getMethod())) {
 
@@ -370,6 +374,10 @@ public class InlineOptimizer implements CodeOptimizer {
                 }
             }
 
+            if (acyclic != Ternary.UNKNOWN) {
+                cg.setAcyclicity(acyclic == Ternary.TRUE);
+            }
+
             // Note that we do not need to check if any other method has been removed, because we added edges
             // to all targets of all invokesites of the removed method.
             isLastInvoke = cg.hasMethod(invokee);
@@ -379,7 +387,7 @@ public class InlineOptimizer implements CodeOptimizer {
 
             analyses.getExecCountAnalysis().inline(invokeSite, invokee, new HashSet<InvokeSite>(invokeMap.values()) );
 
-            // TODO update cache analysis
+            analyses.getMethodCacheAnalysis().inline(invokeSite, invokee);
 
         }
 

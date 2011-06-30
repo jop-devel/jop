@@ -49,6 +49,7 @@ import org.jgrapht.event.TraversalListenerAdapter;
 import org.jgrapht.event.VertexTraversalEvent;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DirectedMaskSubgraph;
+import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.graph.ListenableDirectedGraph;
 import org.jgrapht.graph.MaskFunctor;
 import org.jgrapht.traverse.DepthFirstIterator;
@@ -532,8 +533,12 @@ public class CallGraph implements ImplementationFinder {
         logger.debug("No loops found in callgraph");
     }
 
-    public void setAcyclic(boolean acyclic) {
+    public void setAcyclicity(boolean acyclic) {
         this.acyclic = Ternary.valueOf(acyclic);
+    }
+
+    public Ternary getAcyclicity() {
+        return acyclic;
     }
 
     public boolean isAcyclic() {
@@ -1103,6 +1108,55 @@ public class CallGraph implements ImplementationFinder {
         subgraphs.remove(subgraph);
     }
 
+    public DirectedGraph<ExecutionContext, ContextEdge> getReversedGraph() {
+        EdgeReversedGraph<ExecutionContext, ContextEdge> reversed =
+                new EdgeReversedGraph<ExecutionContext, ContextEdge>(callGraph);
+        return reversed;
+    }
+
+    public DirectedGraph<ExecutionContext, ContextEdge> createInvokeGraph(Collection<ExecutionContext> roots,
+                                                                          boolean reversed)
+    {
+        DirectedGraph<ExecutionContext, ContextEdge> caller =
+                new DefaultDirectedGraph<ExecutionContext,ContextEdge>(
+                    new EdgeFactory<ExecutionContext,ContextEdge>() {
+                        @Override
+                        public ContextEdge createEdge(ExecutionContext sourceVertex, ExecutionContext targetVertex) {
+                            return new ContextEdge(sourceVertex,targetVertex);
+                        }
+                    });
+
+        LinkedList<ExecutionContext> queue = new LinkedList<ExecutionContext>(roots);
+        for (ExecutionContext root : roots) {
+            caller.addVertex(root);
+        }
+
+        // add all incoming edges to the new graph, add new nodes to the queue
+        while (!queue.isEmpty()) {
+            ExecutionContext next = queue.removeFirst();
+
+            // add all incoming edges
+            for (ContextEdge edge : callGraph.incomingEdgesOf(next)) {
+                ExecutionContext node = edge.getSource();
+
+                // new node, not yet in queue
+                if (!caller.containsVertex(node)) {
+                    caller.addVertex(node);
+                    queue.add(node);
+                }
+
+                // add edge
+                if (reversed) {
+                    caller.addEdge(next, node);
+                } else {
+                    caller.addEdge(node, next);
+                }
+            }
+        }
+
+        return caller;
+    }
+
     /*---------------------------------------------------------------------------*
      * Various lookup methods
      *---------------------------------------------------------------------------*/
@@ -1162,8 +1216,8 @@ public class CallGraph implements ImplementationFinder {
         return new TopologicalOrderIterator<ExecutionContext, ContextEdge>(callGraph);
     }
 
-    public List<ExecutionContext> reverseTopologicalOrder() {
-        return MiscUtils.reverseTopologicalOrder(callGraph);
+    public TopologicalOrderIterator<ExecutionContext, ContextEdge> reverseTopologicalOrder() {
+        return new TopologicalOrderIterator<ExecutionContext, ContextEdge>( getReversedGraph() );
     }
 
     /**
