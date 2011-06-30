@@ -34,7 +34,7 @@ import papabench.core.commons.conf.CommonTaskConfiguration;
  */
 public class PapaBenchAutopilotConf {
 	
-	public static final int SLOWMOTION = 3;
+	public static final int SLOWMOTION = 1;
 
 	/**
 	 * Navigation task configuration
@@ -45,6 +45,7 @@ public class PapaBenchAutopilotConf {
 		public static final int PERIOD_MS = 250*SLOWMOTION;
 		public static final int RELEASE_MS = 0;
 		public static final int SIZE = 0;
+		public static final int CORE = 7;
 	}
 	
 	/**
@@ -53,10 +54,11 @@ public class PapaBenchAutopilotConf {
 	 */
 	public static interface AltitudeControlTaskConf extends CommonTaskConfiguration {
 		public static final String NAME = "AltitudeControl";		
-		public static final int PRIORITY = 31;		
+		public static final int PRIORITY = 29;		
 		public static final int PERIOD_MS = 250*SLOWMOTION;
 		public static final int RELEASE_MS = 0;
 		public static final int SIZE = 0;		
+		public static final int CORE = 6;
 	}
 	
 	/**
@@ -69,6 +71,7 @@ public class PapaBenchAutopilotConf {
 		public static final int PERIOD_MS = 250*SLOWMOTION;
 		public static final int RELEASE_MS = 0;
 		public static final int SIZE = 0;		
+		public static final int CORE = 5;
 	}
 	
 	/**
@@ -77,10 +80,11 @@ public class PapaBenchAutopilotConf {
 	 */
 	public static interface StabilizationTaskConf extends CommonTaskConfiguration {
 		public static final String NAME = "Stabilization";		
-		public static final int PRIORITY = 29; /* has to have higher prior than LinkFBWSendTaskConf */		
+		public static final int PRIORITY = 31; /* has to have higher prior than LinkFBWSendTaskConf */		
 		public static final int PERIOD_MS = 50*SLOWMOTION;
 		public static final int RELEASE_MS = 0;
 		public static final int SIZE = 0;		
+		public static final int CORE = 6;
 	}
 	
 	/**
@@ -92,6 +96,7 @@ public class PapaBenchAutopilotConf {
 		public static final int PERIOD_MS = 25*SLOWMOTION;
 		public static final int RELEASE_MS = 0;
 		public static final int SIZE = 0;		
+		public static final int CORE = 5;
 	}
 	
 	/**
@@ -103,6 +108,7 @@ public class PapaBenchAutopilotConf {
 		public static final int PERIOD_MS = 50*SLOWMOTION;
 		public static final int RELEASE_MS = 0;
 		public static final int SIZE = 0;		
+		public static final int CORE = 0;
 	}
 	
 	/**
@@ -114,6 +120,7 @@ public class PapaBenchAutopilotConf {
 		public static final int PERIOD_MS = 100*SLOWMOTION; // TODO: check this in AADL there is f=10Hz, in code f=20Hz
 		public static final int RELEASE_MS = 0;
 		public static final int SIZE = 0;		
+		public static final int CORE = 0;
 	}
 
 }

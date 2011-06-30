@@ -33,7 +33,7 @@ import papabench.core.commons.conf.CommonTaskConfiguration;
  */
 public interface PapaBenchFBWConf {
 	
-	public static final int SLOWMOTION = 3;
+	public static final int SLOWMOTION = 1;
 
 	/**
 	 * Test PPM (?) task configuration.
@@ -44,6 +44,7 @@ public interface PapaBenchFBWConf {
 		public static final int PERIOD_MS = 25*SLOWMOTION;
 		public static final int RELEASE_MS = 0;
 		public static final int SIZE = 0;
+		public static final int CORE = 3;
 	}
 	
 	/**
@@ -55,6 +56,7 @@ public interface PapaBenchFBWConf {
 		public static final int PERIOD_MS = 50*SLOWMOTION;	
 		public static final int RELEASE_MS = 0;
 		public static final int SIZE = 0;
+		public static final int CORE = 3;
 	}
 	
 	/**
@@ -66,6 +68,7 @@ public interface PapaBenchFBWConf {
 		public static final int PERIOD_MS = 50*SLOWMOTION;
 		public static final int RELEASE_MS = 0;
 		public static final int SIZE = 0;
+		public static final int CORE = 4;
 	}
 	
 	/**
@@ -77,6 +80,7 @@ public interface PapaBenchFBWConf {
 		public static final int PERIOD_MS = 25*SLOWMOTION;
 		public static final int RELEASE_MS = 0;
 		public static final int SIZE = 0;
+		public static final int CORE = 4;
 	}
 	
 	
