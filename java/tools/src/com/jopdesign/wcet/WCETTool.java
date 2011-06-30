@@ -43,6 +43,7 @@ import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
+import com.jopdesign.common.misc.AppInfoException;
 import com.jopdesign.common.misc.BadGraphError;
 import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.MethodNotFoundException;
@@ -300,7 +301,11 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         callGraphBuilder.setSkipNatives(true); // we do not want natives in the callgraph
         callGraph = CallGraph.buildCallGraph(getTargetMethod(), callGraphBuilder);
 
-    	callGraph.checkAcyclicity();
+        try {
+            callGraph.checkAcyclicity();
+        } catch (AppInfoException e) {
+            throw new AssertionError(e);
+        }
         return callGraph;
     }
 

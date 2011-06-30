@@ -155,7 +155,9 @@ public class InlineOptimizer implements CodeOptimizer {
             }
 
             // finally, we need to update the analyses
-            updateCallgraph(appInfo.getCallGraph(), invokeMap);
+            for (CallGraph cg : analyses.getCallGraphs()) {
+                updateCallgraph(cg, invokeMap);
+            }
             updateAnalyses(analyses, invokeMap);
 
             return true;

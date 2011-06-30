@@ -20,11 +20,15 @@
 
 package com.jopdesign.jcopter.analysis;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.jcopter.JCopter;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Container for various analyses, provide some methods to invalidate/.. all analyses.
@@ -40,6 +44,8 @@ public class AnalysisManager {
     private MethodCacheAnalysis methodCacheAnalysis;
     private Map<MethodInfo,StacksizeAnalysis> stacksizeMap;
 
+    private CallGraph targetCallGraph;
+
     public AnalysisManager(JCopter jcopter) {
         this.jcopter = jcopter;
         stacksizeMap = new HashMap<MethodInfo, StacksizeAnalysis>();
@@ -51,6 +57,28 @@ public class AnalysisManager {
 
     public void createWCAInvoker() {
 
+    }
+
+    public CallGraph getTargetCallGraph() {
+        return targetCallGraph;
+    }
+
+    public CallGraph getAppInfoCallGraph() {
+        return AppInfo.getSingleton().getCallGraph();
+    }
+
+    public CallGraph getWCACallGraph() {
+        return wcaInvoker != null ? jcopter.getWcetTool().getCallGraph() : null;
+    }
+
+    public Set<CallGraph> getCallGraphs() {
+        Set<CallGraph> graphs = new HashSet<CallGraph>(3);
+        graphs.add(getAppInfoCallGraph());
+        graphs.add(getTargetCallGraph());
+        if (wcaInvoker != null) {
+            graphs.add(getWCACallGraph());
+        }
+        return graphs;
     }
 
     public ExecCountAnalysis getExecCountAnalysis() {

@@ -4,8 +4,8 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.processormodel.JOPConfig;
-import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.common.processormodel.JOPConfig.CacheImplementation;
+import com.jopdesign.wcet.WCETTool;
 
 public class BlockCache extends MethodCache {
 
@@ -34,10 +34,15 @@ public class BlockCache extends MethodCache {
 
 	@Override
 	public boolean allFit(MethodInfo m, CallString cs) {
-		return super.getAllFitCacheBlocks(m, cs) <= this.blockCount;
+		return allFit(super.getAllFitCacheBlocks(m, cs));
 	}
 
-	@Override
+    @Override
+    public boolean allFit(long blocks) {
+        return blocks <= this.blockCount;
+    }
+
+    @Override
 	public boolean isLRU() {
 		return this.isLRU;
 	}
@@ -55,6 +60,7 @@ public class BlockCache extends MethodCache {
 		if(this.isLRU) return CacheImplementation.LRU_CACHE;
 		else return CacheImplementation.FIFO_CACHE;
 	}
+
 	public int getNumBlocks() {
 		return this.blockCount;
 	}

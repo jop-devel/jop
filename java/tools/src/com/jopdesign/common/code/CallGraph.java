@@ -34,8 +34,10 @@ import com.jopdesign.common.graphutils.DirectedCycleDetector;
 import com.jopdesign.common.graphutils.InvokeDot;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.logger.LogConfig;
+import com.jopdesign.common.misc.AppInfoException;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.common.misc.Ternary;
 import com.jopdesign.common.type.MethodRef;
 import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
@@ -238,7 +240,7 @@ public class CallGraph implements ImplementationFinder {
                 addMergedGraphEdge(e.getEdge());
             }
             // graph may not be acyclic anymore, need to check again
-            loopFree = false;
+            acyclic = Ternary.UNKNOWN;
         }
 
         @Override
@@ -379,7 +381,7 @@ public class CallGraph implements ImplementationFinder {
 
     private Set<ClassInfo> classInfos;
     private Map<MethodInfo,MethodNode> methodNodes;
-    private boolean loopFree = false;
+    private Ternary acyclic = Ternary.UNKNOWN;
 
     //
     // Caching Fields
@@ -505,7 +507,7 @@ public class CallGraph implements ImplementationFinder {
         invalidate();
     }
 
-    public void checkAcyclicity() {
+    public void checkAcyclicity() throws AppInfoException {
         /* Check the callgraph is cycle free */
         for (ExecutionContext rootNode : rootNodes) {
 
@@ -522,11 +524,27 @@ public class CallGraph implements ImplementationFinder {
                     System.err.println(""+src+" --> "+target);
                 }
                 */
-                throw new AssertionError(cyclicCallGraphMsg(cycle));
+                acyclic = Ternary.FALSE;
+                throw new AppInfoException(cyclicCallGraphMsg(cycle));
             }
         }
-        loopFree = true;
+        acyclic = Ternary.TRUE;
         logger.debug("No loops found in callgraph");
+    }
+
+    public void setAcyclic(boolean acyclic) {
+        this.acyclic = Ternary.valueOf(acyclic);
+    }
+
+    public boolean isAcyclic() {
+        if (acyclic == Ternary.UNKNOWN) {
+            try {
+                checkAcyclicity();
+            } catch (AppInfoException e) {
+                logger.debug("Found loop in callgraph: "+e.getMessage());
+            }
+        }
+        return acyclic == Ternary.TRUE;
     }
 
     /**
@@ -640,14 +658,17 @@ public class CallGraph implements ImplementationFinder {
      *
      * @see #getMethodNode(MethodInfo)
      * @param m the method to check.
-     * @return a set of execution contexts of this method in the callgraph.
-     * @throws AssertionError if the method has no contexts in the callgraph
+     * @return a set of execution contexts of this method in the callgraph, or an empty set if this method has no nodes.
      */
     public Set<ExecutionContext> getNodes(MethodInfo m) {
         if (!methodNodes.containsKey(m)) {
-            throw new AssertionError("No callgraph nodes for "+ m);
+            return Collections.emptySet();
         }
         return methodNodes.get(m).getInstances();
+    }
+
+    public Set<ExecutionContext> getNodes() {
+        return callGraph.vertexSet();
     }
 
     /**
@@ -1141,6 +1162,10 @@ public class CallGraph implements ImplementationFinder {
         return new TopologicalOrderIterator<ExecutionContext, ContextEdge>(callGraph);
     }
 
+    public List<ExecutionContext> reverseTopologicalOrder() {
+        return MiscUtils.reverseTopologicalOrder(callGraph);
+    }
+
     /**
      * Get non-abstract methods, in topological order.
      *
@@ -1191,10 +1216,15 @@ public class CallGraph implements ImplementationFinder {
                 new ExecutionContext(rootMethod, cs));
         }
 
+        ExecutionContext cgNode = this.getNode(rootMethod, cs);
+
+        return getReachableImplementations(cgNode);
+    }
+
+    public List<MethodInfo> getReachableImplementations(ExecutionContext cgNode) {
         final List<MethodInfo> implemented = new ArrayList<MethodInfo>();
         final Set<MethodInfo> visited = new HashSet<MethodInfo>();
 
-        ExecutionContext cgNode = this.getNode(rootMethod, cs);
         DepthFirstIterator<ExecutionContext, ContextEdge> ti =
                 new DepthFirstIterator<ExecutionContext, ContextEdge>(callGraph,cgNode);
         ti.setCrossComponentTraversal(false);
@@ -1229,9 +1259,21 @@ public class CallGraph implements ImplementationFinder {
             throw new AssertionError("CallGraph#getReachableImplementations: no such node: "+
                 new ExecutionContext(rootMethod, cs));
         }
+        ExecutionContext cgNode = this.getNode(rootMethod, cs);
+
+        return getReachableImplementationsSet(cgNode);
+    }
+
+
+    /**
+     * Retrieve non-abstract methods reachable from the given call graph node.
+     * All callgraph nodes reachable from nodes representing the given a method are collected
+     * @param cgNode where to start
+     * @return a list of all reachable implementations, sorted in DFS order
+     */
+    public Set<MethodInfo> getReachableImplementationsSet(ExecutionContext cgNode) {
         Set<MethodInfo> implemented = new HashSet<MethodInfo>();
 
-        ExecutionContext cgNode = this.getNode(rootMethod, cs);
         DepthFirstIterator<ExecutionContext, ContextEdge> ti =
                 new DepthFirstIterator<ExecutionContext, ContextEdge>(callGraph,cgNode);
         ti.setCrossComponentTraversal(false);
@@ -1527,7 +1569,7 @@ public class CallGraph implements ImplementationFinder {
     private void calculateDepthAndHeight() {
         if(this.maxDistanceToRoot != null) return; // caching
 
-        if (!loopFree) {
+        if (acyclic != Ternary.TRUE) {
             throw new AssertionError("Callgraph needs to be checked for acyclicity first.");
         }
         if (rootNodes.size() != 1) {

@@ -27,10 +27,13 @@ import com.jopdesign.common.code.CallgraphFilter;
 import com.jopdesign.common.code.CallgraphTraverser;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
+import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.EmptyCallgraphVisitor;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.code.LoopBound;
+import com.jopdesign.common.graphutils.LoopColoring;
 import com.jopdesign.common.misc.Ternary;
 import org.apache.bcel.generic.InstructionHandle;
 
@@ -92,8 +95,8 @@ public class ExecCountAnalysis {
     private final Map<ExecutionContext, Long> roots;
     private final CallGraph callGraph;
 
-    private Map<ExecutionContext,Long> nodeCount;
-    private Set<MethodInfo> changeSet;
+    private final Map<ExecutionContext,Long> nodeCount;
+    private final Set<MethodInfo> changeSet;
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Construction, initialization
@@ -104,6 +107,16 @@ public class ExecCountAnalysis {
         callGraph = AppInfo.getSingleton().getCallGraph();
         nodeCount =  new HashMap<ExecutionContext, Long>();
         changeSet = new HashSet<MethodInfo>(1);
+    }
+
+    public ExecCountAnalysis(CallGraph callGraph) {
+        this.callGraph = callGraph;
+        nodeCount =  new HashMap<ExecutionContext, Long>();
+        changeSet = new HashSet<MethodInfo>(1);
+        roots = new HashMap<ExecutionContext, Long>(callGraph.getRootNodes().size());
+        for (ExecutionContext node : callGraph.getRootNodes()) {
+            roots.put(node, 1L);
+        }
     }
 
     public void initialize() {
@@ -152,19 +165,25 @@ public class ExecCountAnalysis {
 
         // By loading the CFG, loopbounds are attached to the blocks if the WCA tool is loaded
         ControlFlowGraph cfg = method.getCode().getControlFlowGraph(false);
+        LoopColoring<CFGNode,CFGEdge> lc = cfg.getLoopColoring();
         BasicBlockNode node = cfg.getHandleNode(ih);
 
-        // TODO go up every enclosing loop, multiply loop bounds
-        // TODO if we do not have loop bounds, use a default value per loop nesting level
+        long ef = 1;
 
-        LoopBound lb = node.getBasicBlock().getLoopBound();
-        if (lb != null) {
-            // TODO we might want to choose between upper/lower bound or even use an average value
-            return lb.getUpperBound(context);
+        for (CFGNode hol : lc.getLoopColor(node)) {
+
+            LoopBound lb = hol.getLoopBound();
+            if (lb != null) {
+                // TODO we might want to choose between upper/lower bound or even use an average value
+                ef *= lb.getUpperBound(context);
+            } else {
+                // TODO magic number..
+                ef *= 10;
+            }
+
         }
 
-
-        return 1;
+        return ef;
     }
 
     public long getExecFrequency(InvokeSite invokeSite) {
