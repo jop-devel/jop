@@ -429,6 +429,7 @@ public class JopInstr{
 			"putStatic", "jopsys_putstatic",
 			"getStatic", "jopsys_getstatic",
 			"putField", "jopsys_putfield",
+//			"putField", "putfield_ref",
 			"getField", "jopsys_getfield",
 			"arrayLoad", "iaload",
 			"arrayStore", "iastore",

@@ -64,6 +64,7 @@ public abstract class Mission {
 
 	@SCJAllowed
 	public final void requestSequenceTermination() {
+		requestTermination();
 	}
 
 	@SCJAllowed
