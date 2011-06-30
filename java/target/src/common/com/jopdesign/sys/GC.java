@@ -64,7 +64,9 @@ public class GC {
 	public static final int OFF_MTAB_ALEN = 1;
 	public static final int OFF_SIZE = 2;
 	public static final int OFF_TYPE = 3;
-	public static final int OFF_SCOPE = 7;
+	// reuse the size field for the scope level, as the size
+	// field is (hopefully) only used by the GC
+	public static final int OFF_SCOPE = 2;
 	
 	// size != array length (think about long/double)
 	
@@ -563,7 +565,6 @@ public class GC {
 				Native.wrMem(sc.level , ptr+OFF_SCOPE);
 			}
 			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
-			Native.wrMem(size, ptr+OFF_SIZE); // Just defining all headers
 			Native.wrMem(cons+Const.CLASS_HEADR, ptr+OFF_MTAB_ALEN);
 			Native.wrMem(0, ptr+OFF_TYPE);
 			// TODO: memory initialization is needed
@@ -685,7 +686,6 @@ public class GC {
 				Native.wrMem(sc.level , ptr+OFF_SCOPE);
 			}
 			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
-			Native.wrMem(arrayLength, ptr+OFF_SIZE); // Just defining all headers
 			Native.wrMem(arrayLength, ptr+OFF_MTAB_ALEN);
 			Native.wrMem(type, ptr+OFF_TYPE); // Array type
 			return ptr;
