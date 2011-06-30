@@ -80,7 +80,6 @@ public class RtThreadImpl {
 
 			// nothing to do in the main thread for the CMP cores 1 .. n-1
 			for (;;) {
-				;
 			}
 		}
 	}
@@ -386,6 +385,15 @@ public class RtThreadImpl {
 			Startup.setRunnable(cmps[i], i);
 		}
 		
+		// wait 10 ms for the real start of the mission
+		startTime = Native.rd(Const.IO_US_CNT)+10000;
+		for (i=0; i<sys.nrCpu; ++i) {
+			s = Scheduler.sched[i];
+			for (j=0; j<s.cnt; ++j) {
+				s.next[j] = startTime+s.ref[j].offset;
+			}
+		}
+		
 		// add scheduler for the first core
 		JVMHelp.addInterruptHandler(0, 0, Scheduler.sched[0]);
 		JVMHelp.addInterruptHandler(0, 1, Scheduler.sched[0]);
@@ -406,15 +414,6 @@ public class RtThreadImpl {
 		
 		mission = true;
 
-		// wait 10 ms for the real start of the mission
-		startTime = Native.rd(Const.IO_US_CNT)+10000;
-		for (i=0; i<sys.nrCpu; ++i) {
-			s = Scheduler.sched[i];
-			for (j=0; j<s.cnt; ++j) {
-				s.next[j] = startTime+s.ref[j].offset;
-			}
-		}
-		
 		// clear all pending interrupts (e.g. timer after reset)
 		Native.wr(1, Const.IO_INTCLEARALL);
 		// schedule timer in 10 ms
