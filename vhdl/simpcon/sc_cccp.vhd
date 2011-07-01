@@ -209,7 +209,8 @@ begin
 	end process frontmux;
 
 	redirect: process(arb_back_out, mem_in,
-					  src, dest, active, vpos)
+					  src, dest, active, vpos,
+					  state, pos, buf)
 		variable offset : unsigned(addr_bits downto 0);
 	begin  -- process backmux
 		-- pass on signals from arbiter
