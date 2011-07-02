@@ -37,7 +37,7 @@ use work.sc_pack.all;
 package jop_config_global is
 
 	-- on-chip memory size (stack plus JVM vaiables and constants)
-	constant STACK_SIZE_GLOBAL : integer := 8; -- # of address bits of internal ram (sp,...)
+	constant STACK_SIZE_GLOBAL : integer := 10; -- # of address bits of internal ram (sp,...)
 	
 	-- enable or disable the object cache
 	constant USE_OCACHE : std_logic := '0';

@@ -33,9 +33,9 @@ use work.jop_config_global.all;
 package jop_config is
 
 	-- constants for 50 MHz input clock
-	constant clk_freq : integer := 60000000;
-	constant pll_mult : natural := 6;
-	constant pll_div : natural := 5;
+	constant clk_freq : integer := 100000000;
+	constant pll_mult : natural := 2;
+	constant pll_div : natural := 1;
 
 	-- constant for on-chip memory
 	constant ram_width : integer := STACK_SIZE_GLOBAL;	-- address bits of internal ram (sp,...)
