@@ -186,7 +186,8 @@ public abstract class AllocationWcetModel implements WCETProcessorModel {
 
 		ClassInfo cli = project.getAppInfo().getClassInfo(className);
 
-		if (cli.getSuperClassName() != null) {
+		if (cli.getSuperClassName() != null
+			&& !className.equals("java.lang.Object")) {
 			l.addAll(getObjectFields(cli.getSuperClassName()));
 		}
 
