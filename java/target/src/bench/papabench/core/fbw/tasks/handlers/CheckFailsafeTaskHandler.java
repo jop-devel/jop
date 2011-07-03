@@ -49,7 +49,7 @@ public class CheckFailsafeTaskHandler implements Runnable {
 
 			this.fbwModule.getServosController().setServos(RadioConf.safestateRadioCommands);
 			
-			log(this, "Airplane was switched into failsafe mode");
+			// log(this, "Airplane was switched into failsafe mode");
 		}
 	}
 }

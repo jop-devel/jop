@@ -172,7 +172,7 @@ public class EstimatorModuleImpl implements Estimator, Module {
 	
 	public void updateFlightTime() {
 		flightTime++;		
-		LogUtils.log(this, "Flight time = " + flightTime);
+		// LogUtils.log(this, "Flight time = " + flightTime);
 	}
 	
 	public void setGPSDevice(GPSDevice gpsDevice) {

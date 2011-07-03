@@ -53,7 +53,7 @@ public class NavigationTaskHandler implements Runnable {
 
 		// FIXME 4Hz is a frequency of this task -> update time every 4th call		
 		autopilotModule.getEstimator().updateFlightTime();
-		LogUtils.log(this, "\n\n\n============================ Navigation cycle: " + autopilotModule.getEstimator().getFlightTime());
+		// LogUtils.log(this, "\n\n\n============================ Navigation cycle: " + autopilotModule.getEstimator().getFlightTime());
 		
 		update();
 		
