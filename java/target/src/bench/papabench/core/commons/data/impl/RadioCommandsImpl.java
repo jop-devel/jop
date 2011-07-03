@@ -37,7 +37,7 @@ public class RadioCommandsImpl implements RadioCommands {
 	
 	private boolean containsAveragedChannels = false;
 	
-	private int[] channels = new int[RadioConf.RADIO_CTL_NB];
+	private int[] channels = new int[RadioConf.RADIO_CTL_NB]; // @WCA loop <= papabench.core.commons.conf.RadioConf.RADIO_CTL_NB
 	
 	public RadioCommandsImpl() {	
 	}
