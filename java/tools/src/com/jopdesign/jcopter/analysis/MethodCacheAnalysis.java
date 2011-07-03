@@ -20,7 +20,6 @@
 
 package com.jopdesign.jcopter.analysis;
 
-import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallGraph.ContextEdge;
@@ -170,12 +169,20 @@ public class MethodCacheAnalysis {
     }
 
     public boolean allFit(ExecutionContext node) {
-        int blocks = cacheBlocks.get(node);
+        Integer blocks = cacheBlocks.get(node);
+        if (blocks == null) {
+            // not a node in the graph .. over-approximate simply by checking all nodes
+            return allFit(node.getMethodInfo());
+        }
         return cache.allFit(blocks);
     }
 
     public long getInvokeMissCount(InvokeSite invokeSite) {
         return getMissCount(invokeSite.getInvoker(), invokeSite.getInstructionHandle());
+    }
+
+    public long getInvokeMissCount(CallString context) {
+        return getMissCount(context.getExecutionContext(), context.top().getInstructionHandle());
     }
 
     public long getReturnMissCount(InvokeSite invokeSite) {
@@ -187,22 +194,33 @@ public class MethodCacheAnalysis {
         return 0;
     }
 
+    public long getReturnMissCount(CallString callString) {
+        if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
+        if (analysisType == AnalysisType.ALWAYS_MISS || !allFit(callString.top().getInvoker())) {
+            return analyses.getExecCountAnalysis().getExecCount(
+                    callString.getExecutionContext(), callString.top().getInstructionHandle());
+        }
+        // for all-fit, a return never causes a cache miss (this is different to getInvokeMissCount)
+        return 0;
+    }
+
     public long getTotalInvokeReturnMissCosts(InvokeSite invokeSite) {
         return getTotalInvokeReturnMissCosts(new CallString(invokeSite));
     }
 
     public long getTotalInvokeReturnMissCosts(CallString callString) {
+        if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
 
         int size = 0;
-        for (MethodInfo method : AppInfo.getSingleton().findImplementations(callString)) {
+        for (MethodInfo method : callGraph.findImplementations(callString)) {
             size = Math.max(size, method.getCode().getNumberOfWords());
         }
 
         WCETProcessorModel pm = analyses.getJCopter().getWCETProcessorModel();
         int sizeInvoker = callString.top().getInvoker().getCode().getNumberOfWords();
 
-        return getInvokeMissCount(callString.top()) * pm.getMethodCacheMissPenalty(size, true)
-             - getReturnMissCount(callString.top()) * pm.getMethodCacheMissPenalty(sizeInvoker, false);
+        return getInvokeMissCount(callString) * pm.getMethodCacheMissPenalty(size, true)
+             - getReturnMissCount(callString) * pm.getMethodCacheMissPenalty(sizeInvoker, false);
     }
 
     /**
@@ -229,16 +247,16 @@ public class MethodCacheAnalysis {
     }
 
     /**
-     * @param method method containing the instruction
+     * @param node an execution context containing the instruction
      * @param entry the instruction to check
      * @return number of expected executions of the instruction where not all methods reachable from
      *         the invoker (including the invoker) are in the cache.
      */
-    public long getMissCount(MethodInfo method, InstructionHandle entry) {
+    public long getMissCount(ExecutionContext node, InstructionHandle entry) {
         if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
 
-        if (analysisType == AnalysisType.ALWAYS_MISS || !allFit(method)) {
-            return analyses.getExecCountAnalysis().getExecCount(method, entry);
+        if (analysisType == AnalysisType.ALWAYS_MISS || !allFit(node)) {
+            return analyses.getExecCountAnalysis().getExecCount(node, entry);
         }
         if (analysisType == AnalysisType.ALWAYS_MISS_HIT) {
             return 0;
@@ -250,6 +268,16 @@ public class MethodCacheAnalysis {
         return 0;
     }
 
+    /**
+     * @param method method containing the instruction
+     * @param entry the instruction to check
+     * @return number of expected executions of the instruction where not all methods reachable from
+     *         the invoker (including the invoker) are in the cache.
+     */
+    public long getMissCount(MethodInfo method, InstructionHandle entry) {
+        return getMissCount(new ExecutionContext(method), entry);
+    }
+
     public long getDeltaCacheMissCosts(MethodInfo method, int deltaBytes) {
         if (deltaBytes == 0) return 0;
         if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
@@ -259,18 +287,19 @@ public class MethodCacheAnalysis {
         int oldWords = MiscUtils.bytesToWords(size);
         int newWords = MiscUtils.bytesToWords(size+deltaBytes);
 
-        // TODO if delta is negative, an not-all-fit method may become all-fit, need to handle this properly if we ever
-        //      actually have a decreasing codesize..
-        if (deltaBytes < 0) {
-            throw new AssertionError("Negative codesize change is not yet supported.");
-        }
+        int deltaBlocks = cache.requiredNumberOfBlocks(newWords) - cache.requiredNumberOfBlocks(oldWords);
+        int newBlocks = getRequiredBlocks(method) + deltaBlocks;
 
-        if (analysisType == AnalysisType.ALWAYS_MISS || !allFit(method)) {
+        long costs = 0;
+
+        // if the method is not all-fit, we have a cache miss cost delta due to the codesize
+        // we do not worry about changing cache classifications here, those costs are added later
+        if (analysisType == AnalysisType.ALWAYS_MISS || cache.allFit(newBlocks)) {
             long oldCycles = pm.getMethodCacheMissPenalty(oldWords, true);
             long newCycles = pm.getMethodCacheMissPenalty(newWords, true);
 
             // costs for invoke of the modified method
-            long costs = analyses.getExecCountAnalysis().getExecCount(method) * (newCycles - oldCycles);
+            costs = analyses.getExecCountAnalysis().getExecCount(method) * (newCycles - oldCycles);
 
             // costs for all returns to this method
             oldCycles = pm.getMethodCacheMissPenalty(oldWords, false);
@@ -278,37 +307,48 @@ public class MethodCacheAnalysis {
             for (InvokeSite invokeSite : method.getCode().getInvokeSites()) {
                 costs += analyses.getExecCountAnalysis().getExecCount(invokeSite) * (newCycles - oldCycles);
             }
+        }
 
+        if (analysisType == AnalysisType.ALWAYS_MISS) {
             return costs;
         }
 
-        if (analysisType == AnalysisType.ALWAYS_MISS_HIT) {
-            // How many blokes does it take to store all reachable code?
-            int blocks = getRequiredBlocks(method);
-            // .. same as before, only add additional blocks for increased method
-            blocks += cache.requiredNumberOfBlocks(newWords) - cache.requiredNumberOfBlocks(oldWords);
+        // for ALWAYS_MISS_HIT oder MOST_ONCE we need to find out what has changed for all-fit
+        Set<ExecutionContext> changes = findClassificationChanges(method, deltaBytes);
 
-            if (cache.allFit(blocks)) {
-                // hu, still fits, so nothing changes (assuming always-hit for all-fit)
-                return 0;
+        // In all nodes where we have changes, we need to sum up the new costs
+        long deltaCosts = 0;
+        for (ExecutionContext node : changes) {
+            // we do not need to count the invokes of the method itself
+            // but all invokes in the method are now no longer always-hit/-miss
+            for (InvokeSite invokeSite : node.getMethodInfo().getCode().getInvokeSites()) {
+                // find max invokee size
+                int sizeWords = 0;
+                for (MethodInfo invokee : callGraph.findImplementations(node.getCallString().push(invokeSite))) {
+                    sizeWords = Math.max(sizeWords, invokee.getCode().getNumberOfWords());
+                }
+
+                long count = analyses.getExecCountAnalysis().getExecCount(node, invokeSite.getInstructionHandle());
+                // every invoke is now/was before always-miss both on invoke and return
+                deltaCosts += count * pm.getMethodCacheMissPenalty(sizeWords, true);
+                deltaCosts += count * pm.getMethodCacheMissPenalty(oldWords, false);
             }
-
-            // Now this delta just got expensive: not always-hit anymore, this is always-miss now, including all invokers
-
-            // TODO need to find all invokers which previously were always-hit and are now always-miss
-            // for all those methods we now need to add up cache costs for all invoke sites
-
-
-            return 0;
+        }
+        // if the code increased, the classification changed from always-hit to always-miss ..
+        if (deltaBytes > 0) {
+            costs += deltaCosts;
+        } else {
+            costs -= deltaCosts;
         }
 
-        // TODO this is actually quite tricky.. need to find out which methods are now no longer all-fit,
-        //      multiply the delta codesize with the number of cache misses of the method (number of invokes
-        //      of all top-most all-fit methods which can reach this method), and add cache costs due to
-        //      increasing the number of invokes of the top-most all-fit methods for the whole graph (since
-        //      the top-most methods may have changed)
+        if (analysisType == AnalysisType.MOST_ONCE_HIT) {
 
-        return 0;
+            // TODO we need to add changed cache costs of all methods reachable from changeset since the
+            //      number of cache misses (i.e number of invokes of top-most all-fit methods) changed
+
+        }
+
+        return costs;
     }
 
     ///////////////////////////////////////////////////////////////////////////////////

@@ -83,7 +83,18 @@ import java.util.Stack;
  * <p>
  * This callgraph implementation does not require all nodes to have the same callstring length.
  * However, to simplify some algorithms some methods which modify the graph may assume that
- * the callstring length never decreases along any path in the callgraph.
+ * the callstring length never decreases along any path in the callgraph.. for now.
+ * We may later remove this restriction to compress the graph, by merging nodes with different contexts into
+ * a single node when the invoked methods are identical for each invokesite. If you want to find all references
+ * of an invokesite in the callstrings of the nodes of the graph, you need to go down from the invoker as deep as
+ * the maximum callstring length used to create the graph.
+ * </p>
+ * <p>
+ * In any case we require that the set of children for every node does not contain matching execution contexts.
+ * Two execution contexts match if they refer to the same method and one of their callstrings is a suffix of the other
+ * (note that we do not need to handle the case if the callstrings are equal, since in this case the contexts are equal
+ * and the callgraph does not contain duplicate contexts). This implies that if a node has a context with an empty
+ * callstring as child it cannot have another context with a nonempty callstring for the same method as child.
  * </p>
  *
  * @see CallgraphBuilder#getInvokedMethods(ExecutionContext)

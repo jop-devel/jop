@@ -214,6 +214,22 @@ public class CallString implements CallStringProvider, Iterable<InvokeSite> {
         return new CallString(cs);
     }
 
+    public CallString pop() {
+        if (callString.length < 2) {
+            return EMPTY;
+        }
+        InvokeSite[] cs = Arrays.copyOfRange(callString, 0, callString.length-1);
+        return new CallString(cs);
+    }
+
+    /**
+     * @return the execution context containing the top invoke
+     */
+    public ExecutionContext getExecutionContext() {
+        if (callString.length == 0) return null;
+        return new ExecutionContext(top().getInvoker(), pop());
+    }
+
     public int length() {
         return callString.length;
     }
