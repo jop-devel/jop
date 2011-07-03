@@ -109,7 +109,7 @@ public class GC {
 	 * Whether to use a double barrier or to allocate new objects
 	 * anthracite
 	 */
-	static final boolean DOUBLE_BARRIER = false;
+	static final boolean DOUBLE_BARRIER = true;
 
 		
 	static final int TYPICAL_OBJ_SIZE = 5;
@@ -160,7 +160,7 @@ public class GC {
 	static final int MAX_CPUS = 8;
 	static final int MAX_THREADS = 20;
 	static final int MAX_STATIC_REFS = 80;
-	static final int MAX_HEAP_SIZE = (2048-100)*1024/4;
+	static final int MAX_HEAP_SIZE = (2048-150)*1024/4;
 	static final int MAX_HANDLE_CNT = MAX_HEAP_SIZE/(2*TYPICAL_OBJ_SIZE+HANDLE_SIZE);
 	static final int MAX_SEMI_SIZE = (MAX_HEAP_SIZE-MAX_HANDLE_CNT*HANDLE_SIZE)/2;
 
@@ -250,7 +250,7 @@ public class GC {
 			for (int i=heapStartA; i<end; ++i) {
 				Native.wrMem(0, i);
 			}
-			concurrentGc = false;
+			// concurrentGc = false;
 		}
 		
 		// allocate the monitor
@@ -341,6 +341,8 @@ public class GC {
 		
 		if (concurrentGc) {
 
+			// int ts = Native.rd(Const.IO_CNT);
+
 			cpus = sys.nrCpu;
 			for (i = cpus-1; i >= 0; --i) { // @WCA loop <= MAX_CPUS
 				// we fire the scanner event for this CPU last, so we do
@@ -389,6 +391,10 @@ public class GC {
 					}
 				}
 			}
+
+			// int te = Native.rd(Const.IO_CNT);
+			// JVMHelp.wrSmall((te-ts)/100);
+
 		} else {
 			// add stack of the current thread to the root list
 			ScanEvent.getOwnStackRoots();
@@ -435,10 +441,13 @@ public class GC {
 
 		Object mtx = mutex;
 
+		gcScanning = true;
 		// log("stack");
 		getStackRoots();			
 		// log("static");
 		getStaticRoots();
+		gcScanning = false;
+
 		// log("trace");
 		for (;;) {
 
@@ -449,8 +458,15 @@ public class GC {
 					break;
 				}
 				grayList = Native.rdMem(ref+OFF_GREY);
-				Native.wrMem(0, ref+OFF_GREY);		// mark as not in list
+ 				Native.wrMem(0, ref+OFF_GREY);		// mark as not in list
 			}
+
+			// already moved, happens because of
+			// - anthracite objects
+			// - objects pushed during scanning
+			if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
+				continue;
+			}			
 
 			// push all children
 				
@@ -480,44 +496,45 @@ public class GC {
 				}				
 			}
 
-			// already moved, happens because of
-			// - anthracite objects
-			// - objects pushed during scanning
-			if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
-				continue;
-			}			
-			
 			// now copy it - color it BLACK			
 			int size;
 			int dest;
 
+			size = Native.rdMem(ref+OFF_SIZE);
 			synchronized(mtx) {
-				size = Native.rdMem(ref+OFF_SIZE);
 				dest = copyPtr;
-				copyPtr += size;			
+				copyPtr += size;
+			}
 
-				// set it BLACK
-				Native.wrMem(toSpace, ref+OFF_SPACE);
+			// set it BLACK
+			Native.wrMem(toSpace, ref+OFF_SPACE);
 
-				if (size>0) {
-					// copy it
-					Native.wr(addr, Const.IO_CCCP_SRC);
-					Native.wr(dest, Const.IO_CCCP_DST);
-					Native.wr(1, Const.IO_CCCP_ACT);
-					for (i = 0; i < size; i++) { // @WCA loop <= MAX_SEMI_SIZE outer
-						Native.wr(i, Const.IO_CCCP_POS);
-					}
+			// Native.lock();
+
+			if (size>0) {
+				// copy it
+				Native.wr(addr, Const.IO_CCCP_SRC);
+				Native.wr(dest, Const.IO_CCCP_DST);
+				Native.wr(1, Const.IO_CCCP_ACT);
+				for (i = 0; i < size; i++) { // @WCA loop <= MAX_SEMI_SIZE outer
+					Native.wr(i, Const.IO_CCCP_POS);
 				}
 
-				// update object pointer to the new location
-				Native.wrMem(dest, ref+OFF_PTR);
+				// for (i=0; i<size; i++) { // @WCA loop <= MAX_SEMI_SIZE outer
+				// 	Native.wrMem(Native.rdMem(addr+i), dest+i);
+				// }
+			}
 
-				if (size>0) {
-					// wait until everybody uses the new location
-					for (i = 10; i > 0; --i); // @WCA loop = 10
-					// turn off address translation
-					Native.wr(0, Const.IO_CCCP_ACT);
-				}
+			// update object pointer to the new location
+			Native.wr(dest, ref+OFF_PTR);
+
+			// Native.unlock();
+
+			if (size>0) {
+				// wait until everybody uses the new location
+				for (i = 10; i > 0; --i); // @WCA loop = 10
+				// turn off address translation
+				Native.wr(0, Const.IO_CCCP_ACT);
 			}
 		}
 	}
@@ -699,9 +716,9 @@ public class GC {
 			}			
 		}
 		
-		while (gcRunning) {
-			// wait for the GC to finish
-		}
+		// while (gcRunning) {
+		// 	// wait for the GC to finish
+		// }
 
 		int ref;
 		
@@ -736,7 +753,7 @@ public class GC {
 			// TODO: should not be necessary - now just for sure
 			// Native.wrMem(0, ref+OFF_LOCK);
 
-			if (!DOUBLE_BARRIER) {
+			if (!DOUBLE_BARRIER && gcScanning) {
 				// allocate anthracite
 				Native.wrMem(grayList, ref+GC.OFF_GREY);
 				grayList = ref;
@@ -806,9 +823,9 @@ public class GC {
 			}			
 		}
 
-		while (gcRunning) {
-			// wait for the GC to finish
-		}
+		// while (gcRunning) {
+		// 	// wait for the GC to finish
+		// }
 
 		int ref;
 		
@@ -842,7 +859,7 @@ public class GC {
 			// TODO: should not be necessary - now just for sure
 			// Native.wrMem(0, ref+OFF_LOCK);
 
-			if (!DOUBLE_BARRIER) {
+			if (!DOUBLE_BARRIER && gcScanning) {
 				// allocate anthracite
 				Native.wrMem(grayList, ref+GC.OFF_GREY);
 				grayList = ref;
@@ -882,14 +899,14 @@ public class GC {
 
 /************************************************************************************************/	
 
-	static boolean concurrentGc = false;
-
 	public static void setConcurrent() {
-		concurrentGc = true;
+	 	// concurrentGc = true;
 	}
 
-	static volatile boolean gcRunning;
-	static volatile int gcRunnerId;
+	static final boolean concurrentGc = true;
+	static volatile boolean gcScanning = false;
+	static volatile boolean gcRunning = false;
+	static volatile int gcRunnerId = 0;
 	
 	public static final class GCThread extends RtThread {
 		
@@ -898,11 +915,13 @@ public class GC {
 		}
 		public void run() {
 			for (;;) {
-				// log("<");
-				System.out.println(System.nanoTime());
+				JVMHelp.wr('<');
+				// System.out.print(System.nanoTime());
+				// JVMHelp.wr('|');
 				GC.gc();
-				// log(">");
-				// waitForNextPeriod();
+				JVMHelp.wr('>');
+				JVMHelp.wr('\n');
+				waitForNextPeriod();
 			}
 		}
 	}

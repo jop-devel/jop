@@ -27,6 +27,7 @@ class Scheduler implements Runnable {
 	int active;					// active thread number
 
 	int boostIdx;               // thread runs at top priority when entered lock
+	boolean boostBlocked;       // whether we blocked someone else while being boosted
 
 	int scanThres = -1;			// whether threads scan their own stack
 	SwEvent scanner;
@@ -56,7 +57,7 @@ class Scheduler implements Runnable {
 	 * TODO: a cross-core SW event is only detected at a scheduler
 	 * invocation due to a thread on this core or at idle tick. 
 	 */
-	final static int IDL_TICK = 100000;
+	final static int IDL_TICK = 1000000000;
 
 	// use local memory for two values
 	private final static int TIM_VAL_ADDR = 0x1e;
@@ -65,8 +66,8 @@ class Scheduler implements Runnable {
 	// timer offset to ensure that no timer interrupt happens just
 	// after monitorexit in this method and the new thread
 	// has a minimum time to run.
-	private final static int TIM_OFF = 200;
-//	private final static int TIM_OFF = 20;
+//	private final static int TIM_OFF = 200;
+	private final static int TIM_OFF = 10;
 //	private final static int TIM_OFF = 2; // for 100 MHz version 20 or even lower
 										 // 2 is minimum
 	/**
@@ -96,6 +97,8 @@ class Scheduler implements Runnable {
 		// take care to NOT invoke a method with monitorexit
 		// can happen on the write barrier on reference assignment
 
+		// Native.lock();
+
 		// save stack
 		i = Native.getSP();
 		th = ref[active];
@@ -117,6 +120,7 @@ class Scheduler implements Runnable {
 		} else if (boostIdx >= 0 
 				   && next[boostIdx]-j < TIM_OFF) { // boosted threads come next
 			i = boostIdx;
+			boostBlocked = true;
 		} else {
 			for (i=cnt-1; i>0; --i) {
 				if (event[i] == EV_FIRED) {
@@ -130,6 +134,7 @@ class Scheduler implements Runnable {
 					}
 				}
 			}
+			boostBlocked = false;
 		}
 
 		// i is next ready thread (index into the list)
@@ -201,6 +206,7 @@ class Scheduler implements Runnable {
 
 		// enable interrupts again
 		Native.wr(1, Const.IO_INT_ENA);
+		// Native.unlock();
 	}
 
 	/**
@@ -223,8 +229,7 @@ class Scheduler implements Runnable {
 	 */
 	public void addMain() {
 		
-		//	thread structure for main and the start Runnables
-		// TODO: do we need to do a startThread for the CMP start Runnable?
+		// thread structure for main and the start Runnables
 		ref[0] = new RtThreadImpl(RtThreadImpl.NORM_PRIORITY, 0);
 		ref[0].state = RtThreadImpl.READY;		// main thread is READY
 		next[0] = 0;

@@ -131,7 +131,7 @@ class JVM {
 						Native.wrMem(GC.grayList, oldVal+GC.OFF_GREY);
 						GC.grayList = oldVal;			
 					}
-					if (GC.DOUBLE_BARRIER) {
+					if (GC.DOUBLE_BARRIER && GC.gcScanning) {
 						// incremental update barrier
 						if (value != 0
 							&& Native.rdMem(value+GC.OFF_SPACE) != GC.toSpace
@@ -933,7 +933,7 @@ class JVM {
 
 		// search for superclass
 		for (;;) {
-			if (p==cons) {
+			if (p==cons) { // @WCA loop <= 5
 				return objref;
 			} else {
 				p = Native.rdMem(p+Const.CLASS_SUPER);	// super class ptr
@@ -1095,6 +1095,9 @@ class JVM {
 		if (c.lockLevel == 0) {
 			if (s.boostIdx == s.active) {
 				s.boostIdx = -1;
+				// trigger scheduler in case we blocked someone else
+				if (s.boostBlocked)
+					Native.wr(0, Const.IO_SWINT);
 			}
 		}
 
@@ -1240,7 +1243,7 @@ class JVM {
 						Native.wrMem(GC.grayList, oldVal+GC.OFF_GREY);
 						GC.grayList = oldVal;
 					}
-					if (GC.DOUBLE_BARRIER) {
+					if (GC.DOUBLE_BARRIER && GC.gcScanning) {
 						// incremental update barrier
 						if (val != 0 && val >= GC.mem_start
 							&& Native.rdMem(val+GC.OFF_SPACE) != GC.toSpace
@@ -1276,7 +1279,7 @@ class JVM {
 						Native.wrMem(GC.grayList, oldVal+GC.OFF_GREY);
 						GC.grayList = oldVal;
 					}				
-					if (GC.DOUBLE_BARRIER) {
+					if (GC.DOUBLE_BARRIER && GC.gcScanning) {
 						// incremental update barrier
 						if (value != 0 && value >= GC.mem_start
 							&& Native.rdMem(value+GC.OFF_SPACE) != GC.toSpace
