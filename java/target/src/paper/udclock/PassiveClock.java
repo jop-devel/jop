@@ -97,8 +97,9 @@ public class PassiveClock extends Clock {
 	 */
 	@Override
 	public AbsoluteTime getTime(AbsoluteTime dest) {
-		// TODO Auto-generated method stub
-		return null;
+		int val = sys.cntInt;
+		dest.set(val/100000, val%100000);
+		return dest;
 	}
 
 	/* (non-Javadoc)

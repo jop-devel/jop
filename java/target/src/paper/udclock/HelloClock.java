@@ -33,7 +33,7 @@ import javax.safetycritical.*;
 import javax.safetycritical.io.SimplePrintStream;
 
 /**
- * A minimal SCJ application - The SCJ Hello World
+ * A minimal SCJ application to show a passive clock
  * 
  * @author Martin Schoeberl
  * 
@@ -66,11 +66,13 @@ public class HelloClock extends Mission implements Safelet {
 						new RelativeTime(0, 0), new RelativeTime(1000, 0)),
 				new StorageParameters(10000, 1000, 1000)) {
 			int cnt;
+			AbsoluteTime dest = new AbsoluteTime();
 
 			public void handleAsyncEvent() {
 				AbsoluteTime time = Clock.getRealtimeClock().getTime();
 				out.print("It is " + time.getMilliseconds());
-				out.println(" counter " + counter.getTime().getMilliseconds());
+				counter.getTime(dest);
+				out.println(" counter " + dest.getMilliseconds());
 				++cnt;
 				if (cnt > 5) {
 					// getCurrentMission is not yet working
