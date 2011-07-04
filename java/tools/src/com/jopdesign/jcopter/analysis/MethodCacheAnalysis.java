@@ -102,11 +102,13 @@ public class MethodCacheAnalysis {
                 Integer oldBlocks = cacheBlocks.get(node);
                 if (oldBlocks == null) {
                     classifyChanges.add(node.getMethodInfo());
+                    countChanges.add(node.getMethodInfo());
                 } else {
                     boolean oldFit = cache.allFit(oldBlocks);
                     boolean newFit = cache.allFit(newBlocks);
                     if (oldFit != newFit) {
                         classifyChanges.add(node.getMethodInfo());
+                        countChanges.add(node.getMethodInfo());
                     }
                 }
             }
@@ -122,6 +124,7 @@ public class MethodCacheAnalysis {
     private final AnalysisType analysisType;
 
     private final Set<MethodInfo> classifyChanges;
+    private final Set<MethodInfo> countChanges;
 
     ///////////////////////////////////////////////////////////////////////////////////
     // Constructors, initialization, standard getter
@@ -139,6 +142,7 @@ public class MethodCacheAnalysis {
 
         cacheBlocks = new HashMap<ExecutionContext, Integer>();
         classifyChanges = new HashSet<MethodInfo>();
+        countChanges = new HashSet<MethodInfo>();
     }
 
     public CallGraph getCallGraph() {
@@ -278,6 +282,11 @@ public class MethodCacheAnalysis {
         return getMissCount(new ExecutionContext(method), entry);
     }
 
+    /**
+     * @param method the changed method
+     * @param deltaBytes the number of bytes to add to the current code size
+     * @return the number of cache miss cycles due to the code size change
+     */
     public long getDeltaCacheMissCosts(MethodInfo method, int deltaBytes) {
         if (deltaBytes == 0) return 0;
         if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
@@ -357,17 +366,18 @@ public class MethodCacheAnalysis {
 
     public void clearChangeSet() {
         classifyChanges.clear();
+        countChanges.clear();
     }
 
     /**
      * @return all methods containing invokeSites for which the cache analysis changed
      */
     public Collection<MethodInfo> getClassificationChangeSet() {
-        return null;
+        return classifyChanges;
     }
 
     public Collection<MethodInfo> getMissCountChangeSet() {
-        return null;
+        return countChanges;
     }
 
     public void inline(InvokeSite invokeSite, MethodInfo invokee) {
@@ -379,13 +389,29 @@ public class MethodCacheAnalysis {
 
         updateBlockCounts( callGraph.getNodes(method) );
 
-        // TODO we might need to check for which methods the cache miss counts changed
-
+        // TODO for MOST_ONCE_MISS we have additional miss-count changes for all methods reachable below
+        //      classification changes, need to add them to countChanges either here or when classification is updated.
     }
 
     public void onExecCountUpdate() {
-        // TODO we might want to check the exec analysis for changed exec counts,
-        //      we might need to update change sets since cache miss counts may change
+        if (analysisType == AnalysisType.ALWAYS_HIT) return;
+
+        // we check the exec analysis for changed exec counts,
+        // need to update change sets since cache miss counts changed for cache-misses
+        Set<MethodInfo> methods = analyses.getExecCountAnalysis().getChangeSet();
+        if (analysisType == AnalysisType.ALWAYS_MISS) {
+            countChanges.addAll(methods);
+            return;
+        }
+
+        for (MethodInfo method : methods) {
+            if (!allFit(method)) {
+                countChanges.add(method);
+            }
+            // TODO if MOST_ONCE_MISS and not all invokers of this method are all-fit, we need to add
+            //      all reachable methods to the changeset too!
+        }
+
     }
 
     ///////////////////////////////////////////////////////////////////////////////////

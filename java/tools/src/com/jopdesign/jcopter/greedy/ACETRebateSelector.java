@@ -25,7 +25,9 @@ import com.jopdesign.jcopter.analysis.AnalysisManager;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -67,4 +69,11 @@ public class ACETRebateSelector extends RebateSelector {
         return gain;
     }
 
+    @Override
+    public Set<MethodInfo> updateChangeSet(Set<MethodInfo> optimizedMethods, Set<MethodInfo> candidateChanges) {
+        Set<MethodInfo> changeSet = new HashSet<MethodInfo>(candidateChanges);
+        changeSet.addAll( analyses.getExecCountAnalysis().getChangeSet() );
+        changeSet.addAll( analyses.getMethodCacheAnalysis().getMissCountChangeSet() );
+        return changeSet;
+    }
 }

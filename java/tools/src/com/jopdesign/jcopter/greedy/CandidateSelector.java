@@ -61,4 +61,11 @@ public interface CandidateSelector {
     void updateCandidates(MethodInfo method, StacksizeAnalysis stacksizeAnalysis);
 
     void clear();
+
+    /**
+     * @param optimizedMethods methods which have been optimized
+     * @param candidateChanges methods for which the candidates will be recalculated.
+     * @return a set of methods for which the candidates need to be sorted again.
+     */
+    Set<MethodInfo> updateChangeSet(Set<MethodInfo> optimizedMethods, Set<MethodInfo> candidateChanges);
 }

@@ -307,10 +307,8 @@ public abstract class RebateSelector implements CandidateSelector {
     }
 
     public long getCodesizeCacheCosts(Candidate candidate) {
-
-
-
-        return 0;
+        return analyses.getMethodCacheAnalysis().getDeltaCacheMissCosts(candidate.getMethod(),
+                candidate.getDeltaLocalCodesize());
     }
 
     protected abstract Collection<RebateRatio> calculateRatios(MethodInfo method, List<Candidate> candidates);

@@ -25,7 +25,9 @@ import com.jopdesign.jcopter.analysis.AnalysisManager;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -73,8 +75,23 @@ public class WCETRebateSelector extends RebateSelector {
 
     private boolean checkWCPath(Candidate candidate) {
 
+        if (!analyses.getWCAInvoker().isWCAMethod(candidate.getMethod())) return true;
+
         // TODO check WCA tool if candidate is on WC path
 
         return true;
+    }
+
+    @Override
+    public Set<MethodInfo> updateChangeSet(Set<MethodInfo> optimizedMethods, Set<MethodInfo> candidateChanges) {
+        Set<MethodInfo> changeSet = new HashSet<MethodInfo>(candidateChanges);
+        changeSet.addAll( analyses.getExecCountAnalysis().getChangeSet() );
+        changeSet.addAll( analyses.getMethodCacheAnalysis().getMissCountChangeSet() );
+
+        // TODO update WCA for all caller of optimized methods, add methods with changed WCA results to changeSet
+
+
+
+        return changeSet;
     }
 }

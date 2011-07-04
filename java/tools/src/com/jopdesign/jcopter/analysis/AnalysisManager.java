@@ -144,4 +144,7 @@ public class AnalysisManager {
         if (methodCacheAnalysis != null) methodCacheAnalysis.clearChangeSet();
     }
 
+    public WCAInvoker getWCAInvoker() {
+        return wcaInvoker;
+    }
 }

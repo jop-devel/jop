@@ -28,6 +28,7 @@ import com.jopdesign.common.code.DefaultCallgraphBuilder;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.EnumOption;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
@@ -106,10 +107,21 @@ public class PhaseExecutor {
     private final OptionGroup options;
     private final AppInfo appInfo;
 
-    public PhaseExecutor(JCopter jcopter, OptionGroup options) {
+    private GreedyConfig greedyConfig;
+    private InlineConfig inlineConfig;
+
+    public PhaseExecutor(JCopter jcopter, OptionGroup options) throws BadConfigurationException {
         this.jcopter = jcopter;
         this.options = options;
         appInfo = AppInfo.getSingleton();
+        loadOptions();
+    }
+
+    private void loadOptions() throws BadConfigurationException {
+        if (getJConfig().doOptimizeNormal() && getJConfig().doAllowExperimental()) {
+            greedyConfig = new GreedyConfig(jcopter, getGreedyOptions());
+        }
+        inlineConfig = new InlineConfig(getInlineOptions());
     }
 
     public Config getConfig() {
@@ -269,7 +281,7 @@ public class PhaseExecutor {
         }
         logger.info("Starting simple-inliner");
 
-        new SimpleInliner(jcopter, new InlineConfig(getInlineOptions())).optimize();
+        new SimpleInliner(jcopter, inlineConfig).optimize();
 
         logger.info("Finished simple-inliner");
     }
@@ -284,14 +296,14 @@ public class PhaseExecutor {
         // this is a more elaborate optimization which may increase codesize.
         if (!getJConfig().doOptimizeNormal()) return;
 
-        GreedyOptimizer optimizer = new GreedyOptimizer( new GreedyConfig(jcopter, getGreedyOptions()) );
+        GreedyOptimizer optimizer = new GreedyOptimizer( greedyConfig );
 
         if (getJConfig().doAssumeDynamicClassLoader()) {
             logger.info("Skipping inliner since dynamic class loading is assumed.");
             // we do not have any other CodeOptimizers for now, remove return when we have some more
             return;
         } else {
-            optimizer.addOptimizer( new InlineOptimizer(jcopter, new InlineConfig(getInlineOptions())) );
+            optimizer.addOptimizer( new InlineOptimizer(jcopter, inlineConfig ) );
         }
         logger.info("Starting greedy optimizer");
 

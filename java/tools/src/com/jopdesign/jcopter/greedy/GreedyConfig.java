@@ -91,10 +91,13 @@ public class GreedyConfig {
         return appInfo;
     }
 
+    public JCopter getJCopter() {
+        return jcopter;
+    }
+
     public JCopterConfig getJConfig() {
         return jcopter.getJConfig();
     }
-
 
     public GreedyOrder getOrder() {
         return options.getOption(GREEDY_ORDER);

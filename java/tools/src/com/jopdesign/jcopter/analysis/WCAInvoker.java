@@ -46,6 +46,9 @@ public class WCAInvoker {
         return wcaTargets;
     }
 
+    public boolean isWCAMethod(MethodInfo method) {
+        return false;
+    }
 
     public Collection<CallGraph> getWCACallGraphs() {
         return null;
