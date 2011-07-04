@@ -1,9 +1,11 @@
 package javax.safetycritical.test;
 
+import javax.safetycritical.JopSystem;
 import javax.safetycritical.MissionSequencer;
+
+import edu.purdue.scjtck.bench.clock.ClockAccuracy;
 import joprt.RtThread;
 
-import edu.purdue.scjtck.tck.TestSchedule406;
 
 public class Minimal {
 
@@ -11,11 +13,11 @@ public class Minimal {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		final TestSchedule406 test = new TestSchedule406();
+		/*final ClockAccuracy test = new ClockAccuracy();
 		test.setup();
 		MissionSequencer seq = test.getSequencer();
 		new RtThread(5, 10000) {
-			private TestSchedule406 tester = test;
+			private ClockAccuracy tester = test;
 			
 			public void run() {
 				while (!MissionSequencer.cleanupDidRun) {
@@ -25,7 +27,8 @@ public class Minimal {
 			}
 		};
 		System.out.println("Hello SCJ World");
-		seq.handleAsyncEvent(); // Starts the tests
+		seq.handleAsyncEvent(); // Starts the tests*/
+		JopSystem.startMission(new ScopeTest());
 	}
 
 }
