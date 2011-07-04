@@ -86,6 +86,11 @@ public class HelloSCJ extends Mission implements Safelet {
 		return 100000;
 	}
 
+	@Override
+	public long immortalMemorySize() {
+		return 1000;
+	}
+
 	/**
 	 * Within the JOP SCJ version we use a main method instead of a command line
 	 * parameter or configuration file.
