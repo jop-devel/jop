@@ -22,9 +22,11 @@ package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
+import com.jopdesign.jcopter.greedy.GreedyConfig.GreedyOrder;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
@@ -64,12 +66,14 @@ public class GreedyOptimizer {
     }
 
     private final AppInfo appInfo;
+    private final JCopter jcopter;
     private final GreedyConfig config;
     private final List<CodeOptimizer> optimizers;
 
     private static final Logger logger = Logger.getLogger(JCopter.LOG_OPTIMIZER+".GreedyOptimizer");
 
-    public GreedyOptimizer(GreedyConfig config) {
+    public GreedyOptimizer(JCopter jcopter, GreedyConfig config) {
+        this.jcopter = jcopter;
         this.config = config;
         this.appInfo = config.getAppInfo();
         this.optimizers = new ArrayList<CodeOptimizer>();
@@ -81,7 +85,9 @@ public class GreedyOptimizer {
 
     public void optimize() {
 
-        Set<MethodInfo> rootMethods = config.getRootMethods();
+        List<MethodInfo> rootMethods = config.getTargetMethods();
+
+        // initialization
 
         AnalysisManager analyses = initializeAnalyses();
 
@@ -89,18 +95,59 @@ public class GreedyOptimizer {
             opt.initialize(analyses, rootMethods);
         }
 
-        CandidateSelector selector = new WCETRebateSelector(analyses, config.getMaxCodesize());
+        CandidateSelector selector;
+        if (config.useWCA()) {
+            selector = new WCETRebateSelector(analyses, config.getMaxCodesize());
+        } else {
+            selector = new ACETRebateSelector(analyses, config.getMaxCodesize());
+        }
 
         selector.initialize();
 
+        // iterate over regions in callgraph
 
+        GreedyOrder order = config.getOrder();
+        if (order == GreedyOrder.Global || (order == GreedyOrder.WCAFirst && !config.useWCA())) {
+
+            optimizeMethods(analyses, selector, analyses.getTargetCallGraph().getMethodInfos());
+
+        } else if (order == GreedyOrder.Targets) {
+
+            for (MethodInfo target : config.getTargetMethods()) {
+                optimizeMethods(analyses, selector,
+                        analyses.getTargetCallGraph().getReachableImplementationsSet(target));
+            }
+
+        } else if (order == GreedyOrder.WCAFirst) {
+
+            Set<MethodInfo> wcaMethods = analyses.getWCAMethods();
+            optimizeMethods(analyses, selector, wcaMethods);
+
+            // We do not want to include the wca methods in the second pass because inlining there could have negative
+            // effects on the WCET path due to the cache
+            Set<MethodInfo> others = new HashSet<MethodInfo>(analyses.getTargetCallGraph().getMethodInfos());
+            others.removeAll(wcaMethods);
+
+            selector = new ACETRebateSelector(analyses, config.getMaxCodesize());
+            selector.initialize();
+
+            optimizeMethods(analyses, selector, others);
+
+        } else {
+            // TODO implement bottom-up and top-down traversal (ignoring back-edges in callgraph)
+
+            throw new AppInfoError("Order "+order+" not yet implemented.");
+        }
 
     }
 
     private AnalysisManager initializeAnalyses() {
 
+        AnalysisManager analyses = new AnalysisManager(jcopter);
 
-        return null;
+        analyses.initAnalyses(config.getTargetMethods(), config.getCacheAnalysisType(), config.getWCATargets());
+
+        return analyses;
     }
 
 

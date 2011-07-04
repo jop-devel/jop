@@ -23,10 +23,16 @@ package com.jopdesign.jcopter.analysis;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
+import com.jopdesign.common.code.DefaultCallgraphBuilder;
 import com.jopdesign.jcopter.JCopter;
+import com.jopdesign.jcopter.analysis.MethodCacheAnalysis.AnalysisType;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -55,8 +61,32 @@ public class AnalysisManager {
         return jcopter;
     }
 
-    public void createWCAInvoker() {
+    /**
+     * Quick'n'dirty initialization of all analyses.
+     * If the analyses get more options or get more complex in the future, this will need some work.
+     *
+     * @param targets the root methods to use for all analyses and the callgraph.
+     * @param cacheAnalysisType cache analysis type
+     * @param wcaRoots if not null, initialize the WCA invoker with these roots.
+     */
+    public void initAnalyses(Collection<MethodInfo> targets, AnalysisType cacheAnalysisType,
+                             Collection<MethodInfo> wcaRoots)
+    {
+        targetCallGraph = CallGraph.buildCallGraph(targets,
+                new DefaultCallgraphBuilder(AppInfo.getSingleton().getCallstringLength()));
 
+        // TODO we might want to classify methods depending on whether they are reachable from the wcaRoots
+        //      for all non-wca-methods we might want to use different initial analysis data, e.g.
+        //      if we use the WCA, we might want to use the IPET WCA to initialize the execCountAnalysis for
+        //      wca-methods
+
+        execCountAnalysis = new ExecCountAnalysis(targetCallGraph);
+        methodCacheAnalysis = new MethodCacheAnalysis(this, cacheAnalysisType, targetCallGraph);
+
+        if (wcaRoots != null) {
+            // TODO init wca invoker
+
+        }
     }
 
     public CallGraph getTargetCallGraph() {
@@ -67,17 +97,26 @@ public class AnalysisManager {
         return AppInfo.getSingleton().getCallGraph();
     }
 
-    public CallGraph getWCACallGraph() {
-        return wcaInvoker != null ? jcopter.getWcetTool().getCallGraph() : null;
+    public Set<MethodInfo> getWCAMethods() {
+        if (wcaInvoker == null) return Collections.emptySet();
+
+        Set<MethodInfo> methods = new HashSet<MethodInfo>();
+        for (MethodInfo root : wcaInvoker.getWcaTargets()) {
+            methods.addAll( targetCallGraph.getReachableImplementationsSet(root) );
+        }
+
+        return methods;
     }
 
-    public Set<CallGraph> getCallGraphs() {
-        Set<CallGraph> graphs = new HashSet<CallGraph>(3);
+    public Collection<CallGraph> getWCACallGraphs() {
+        return wcaInvoker != null ? wcaInvoker.getWCACallGraphs() : Collections.<CallGraph>emptySet();
+    }
+
+    public List<CallGraph> getCallGraphs() {
+        List<CallGraph> graphs = new ArrayList<CallGraph>(4);
         graphs.add(getAppInfoCallGraph());
         graphs.add(getTargetCallGraph());
-        if (wcaInvoker != null) {
-            graphs.add(getWCACallGraph());
-        }
+        graphs.addAll(getWCACallGraphs());
         return graphs;
     }
 
@@ -104,4 +143,5 @@ public class AnalysisManager {
         if (execCountAnalysis != null) execCountAnalysis.clearChangeSet();
         if (methodCacheAnalysis != null) methodCacheAnalysis.clearChangeSet();
     }
+
 }

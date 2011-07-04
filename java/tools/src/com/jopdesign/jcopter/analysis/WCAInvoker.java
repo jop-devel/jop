@@ -20,17 +20,34 @@
 
 package com.jopdesign.jcopter.analysis;
 
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.jcopter.JCopter;
+
+import java.util.Collection;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class WCAInvoker {
     private final JCopter jcopter;
+    private final Collection<MethodInfo> wcaTargets;
 
-    public WCAInvoker(JCopter jcopter) {
+    public WCAInvoker(JCopter jcopter, Collection<MethodInfo> wcaTargets) {
         this.jcopter = jcopter;
+        this.wcaTargets = wcaTargets;
+    }
+
+    public JCopter getJcopter() {
+        return jcopter;
+    }
+
+    public Collection<MethodInfo> getWcaTargets() {
+        return wcaTargets;
     }
 
 
+    public Collection<CallGraph> getWCACallGraphs() {
+        return null;
+    }
 }

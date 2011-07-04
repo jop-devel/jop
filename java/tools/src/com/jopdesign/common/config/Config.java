@@ -21,8 +21,13 @@
 
 package com.jopdesign.common.config;
 
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.misc.AppInfoError;
+import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.processormodel.ProcessorModel.Model;
+import com.jopdesign.common.type.MemberID;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -30,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -132,6 +138,10 @@ public class Config {
               SHOW_WARN_ONLY, SHOW_INFO_ONLY };
 
 
+    /////////////////////////////////////////////////////////////////////////////////////////////
+    // Helper Functions
+    /////////////////////////////////////////////////////////////////////////////////////////////
+
     public static String mergePaths(String[] paths) {
         if (paths.length == 0) return "";
 
@@ -149,10 +159,47 @@ public class Config {
         return paths.split(File.pathSeparator);
     }
 
-    /*
-    * Exception classes
-    * ~~~~~~~~~~~~~~~~~
-    */
+    /**
+     * @param methodNames comma separated list of method names, either fully qualified with or without descriptor, or
+     *        method names of methods in the main class.
+     * @return the set of methods represented by these names
+     * @throws BadConfigurationException if a name is not resolvable
+     */
+    public static List<MethodInfo> parseMethodList(String methodNames) throws BadConfigurationException {
+
+        List<String> names = splitStringList(methodNames);
+        List<MethodInfo> methods = new ArrayList<MethodInfo>(names.size());
+
+        for (String name : names) {
+            MemberID id = MemberID.parse(name);
+
+            if (!id.hasClassName()) {
+                ClassInfo main = AppInfo.getSingleton().getMainMethod().getClassInfo();
+                Set<MethodInfo> m = main.getMethodInfos(id);
+                if (m.isEmpty()) {
+                    throw new BadConfigurationException("Cannot find method '"+name+"' in main class "+main);
+                }
+                methods.addAll(m);
+            } else {
+                try {
+                    Collection<MethodInfo> infos = AppInfo.getSingleton().getMethodInfos(id);
+                    if (infos.isEmpty()) {
+                        throw new BadConfigurationException("Cannot find methods for "+name);
+                    }
+                    methods.addAll(infos);
+                } catch (MethodNotFoundException e) {
+                    throw new BadConfigurationException("Cannot find class for "+name, e);
+                }
+            }
+        }
+
+        return methods;
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////
+    // Exceptions
+    /////////////////////////////////////////////////////////////////////////////////////////////
+
     @SuppressWarnings({"UncheckedExceptionClass"})
     public static class BadConfigurationError extends Error {
         private static final long serialVersionUID = 1L;

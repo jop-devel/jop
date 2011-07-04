@@ -438,8 +438,23 @@ public class CallGraph implements ImplementationFinder {
      */
     public static CallGraph buildCallGraph(MethodInfo rootMethod, CallgraphBuilder builder)
     {
-        ExecutionContext root = new ExecutionContext(rootMethod);
-        CallGraph cg = new CallGraph(Collections.singleton(root), builder);
+        return buildCallGraph(Collections.singleton(rootMethod), builder);
+    }
+
+    /**
+     * Build a callgraph rooted at the given set of methods
+     *
+     * @param rootMethods The root methods of the callgraph
+     * @param builder the builder class to use to build this graph
+     * @return a freshly constructed callgraph.
+     */
+    public static CallGraph buildCallGraph(Collection<MethodInfo> rootMethods, CallgraphBuilder builder)
+    {
+        List<ExecutionContext> roots = new ArrayList<ExecutionContext>(rootMethods.size());
+        for (MethodInfo method : rootMethods) {
+            roots.add(new ExecutionContext(method));
+        }
+        CallGraph cg = new CallGraph(roots, builder);
         cg.build();
         return cg;
     }

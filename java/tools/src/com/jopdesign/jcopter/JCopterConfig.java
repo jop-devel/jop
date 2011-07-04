@@ -21,7 +21,6 @@
 package com.jopdesign.jcopter;
 
 import com.jopdesign.common.AppInfo;
-import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
@@ -29,11 +28,7 @@ import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
-import com.jopdesign.common.misc.MethodNotFoundException;
-import com.jopdesign.common.type.MemberID;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -117,29 +112,7 @@ public class JCopterConfig {
         }
 
         if (useWCA()) {
-            wcaTargets = new ArrayList<MethodInfo>();
-
-            List<String> targets = Config.splitStringList(options.getOption(WCA_TARGETS));
-
-            for (String target : targets) {
-                MemberID id = MemberID.parse(target, true);
-
-                if (!id.hasClassName()) {
-                    ClassInfo main = AppInfo.getSingleton().getMainMethod().getClassInfo();
-                    MethodInfo m = main.getMethodInfo(id);
-                    if (m == null) {
-                        throw new BadConfigurationException("Cannot find wca-target method '"+target+"' in main class "+main);
-                    }
-                    wcaTargets.add(m);
-                } else {
-                    try {
-                        MethodInfo m = AppInfo.getSingleton().getMethodInfo(id);
-                        wcaTargets.add(m);
-                    } catch (MethodNotFoundException e) {
-                        throw new BadConfigurationException("Cannot find wca-target method "+target, e);
-                    }
-                }
-            }
+            wcaTargets = Config.parseMethodList(options.getOption(WCA_TARGETS));
         }
 
     }
@@ -163,7 +136,7 @@ public class JCopterConfig {
         return options.getOption(USE_WCA);
     }
 
-    public Collection<MethodInfo> getWCATargets() {
+    public List<MethodInfo> getWCATargets() {
         return wcaTargets;
     }
 

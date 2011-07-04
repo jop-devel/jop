@@ -760,6 +760,14 @@ public final class ClassInfo extends MemberInfo {
         return null;
     }
 
+    public Set<MethodInfo> getMethodInfos(MemberID memberID) {
+        if (memberID.hasMethodSignature()) {
+            MethodInfo method = getMethodInfo(memberID.getMethodSignature());
+            return method != null ? Collections.singleton(method) : Collections.<MethodInfo>emptySet();
+        }
+        return getMethodByName(memberID.getMemberName());
+    }
+
     /**
      * Get the method with the given member signature (e.g. {@code "foo(I)V"}).
      *

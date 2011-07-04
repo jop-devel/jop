@@ -566,7 +566,9 @@ public class InlineHelper {
         }
 
         // do not inline library code into application code (and we do not inline within the library neither..)
-        if ( !inlineConfig.doInlineLibraries() && AppInfo.getSingleton().isLibrary(invokee.getClassName()) ) {
+        if ( !inlineConfig.doInlineLibraries() && (AppInfo.getSingleton().isLibrary(invokee.getClassName())
+                                                || AppInfo.getSingleton().isLibrary(invoker.getClassName())) )
+        {
             return false;
         }
 

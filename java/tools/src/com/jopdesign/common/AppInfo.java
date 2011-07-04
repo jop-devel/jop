@@ -724,6 +724,25 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
     }
 
     /**
+     * @param memberID at least a class name.
+     * @return a set of all matching methods.
+     * @throws MethodNotFoundException if the base class cannot be found
+     */
+    public Collection<MethodInfo> getMethodInfos(MemberID memberID) throws MethodNotFoundException {
+        String className = memberID.getClassName();
+        ClassInfo classInfo = classes.get(className);
+        if (classInfo == null) {
+            throw new MethodNotFoundException("Could not find class for method "+memberID);
+        }
+
+        if (!memberID.hasMemberName()) {
+            // We could filter out methods by descriptor if it is set
+            return classInfo.getMethods();
+        }
+        return classInfo.getMethodInfos(memberID);
+    }
+
+    /**
      * Find a MethodInfo using a class name and the given signature of a method.
      * Only methods which are are accessible (i.e. inherited) by the class are returned.
      *
