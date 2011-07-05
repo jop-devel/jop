@@ -77,9 +77,7 @@ public class WCETRebateSelector extends RebateSelector {
 
         if (!analyses.getWCAInvoker().isWCAMethod(candidate.getMethod())) return true;
 
-        // TODO check WCA tool if candidate is on WC path
-
-        return true;
+        return analyses.getWCAInvoker().isOnWCETPath(candidate.getMethod(), candidate.getEntry());
     }
 
     @Override
@@ -88,9 +86,8 @@ public class WCETRebateSelector extends RebateSelector {
         changeSet.addAll( analyses.getExecCountAnalysis().getChangeSet() );
         changeSet.addAll( analyses.getMethodCacheAnalysis().getMissCountChangeSet() );
 
-        // TODO update WCA for all caller of optimized methods, add methods with changed WCA results to changeSet
-
-
+        // WCA invoker checks analysis changesets itself
+        analyses.getWCAInvoker().updateWCA(optimizedMethods);
 
         return changeSet;
     }

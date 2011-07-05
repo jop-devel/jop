@@ -61,7 +61,9 @@ public class JCopterConfig {
             new BooleanOption("use-wca", "Use the WCA tool to optimize for WCET", false);
 
     private static final StringOption WCA_TARGETS =
-            new StringOption("wca-targets", "comma separated list of target-methods if the WCA is used (main class is used if the classname is omitted)", "measure");
+            // TODO change back when WCAInvoker supports more than one target method
+            // new StringOption("wca-targets", "comma separated list of target-methods if the WCA is used (main class is used if the classname is omitted)", "measure");
+            new StringOption("wca-target", "target-method if the WCA is used (main class is used if the classname is omitted)", "measure");
 
     private static final Option[] optionList =
             { OPTIMIZE, ALLOW_EXPERIMENTAL, MAX_CODE_SIZE,

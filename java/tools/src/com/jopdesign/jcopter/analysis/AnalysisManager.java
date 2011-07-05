@@ -24,6 +24,8 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.DefaultCallgraphBuilder;
+import com.jopdesign.common.config.Config.BadConfigurationError;
+import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.MethodCacheAnalysis.AnalysisType;
 
@@ -84,8 +86,18 @@ public class AnalysisManager {
         methodCacheAnalysis = new MethodCacheAnalysis(this, cacheAnalysisType, targetCallGraph);
 
         if (wcaRoots != null) {
-            // TODO init wca invoker
+            wcaInvoker = new WCAInvoker(this, wcaRoots);
+            try {
+                wcaInvoker.initialize();
+            } catch (BadConfigurationException e) {
+                // TODO or maybe just throw the exception up a few levels more?
+                throw new BadConfigurationError(e.getMessage(), e);
+            }
 
+            // TODO maybe we could use the initial WCA results to make other analyses more precise if IPET is
+            //      used for the initial WCET analysis. Either handle this here or in wcaInvoker.initialize()?
+            //      Letting the other analyses use the WCA results is the nicer option, something like
+            //      execCountAnalysis.loadWCAResults(wcaInvoker);
         }
     }
 

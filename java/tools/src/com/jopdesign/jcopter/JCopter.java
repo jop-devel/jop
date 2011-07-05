@@ -49,7 +49,6 @@ public class JCopter extends EmptyTool<JCopterManager> {
     private static final Logger logger = Logger.getLogger(LOG_ROOT + ".JCopter");
 
     private final JCopterManager manager;
-    private final AppInfo appInfo;
 
     private JCopterConfig config;
     private PhaseExecutor executor;
@@ -59,7 +58,6 @@ public class JCopter extends EmptyTool<JCopterManager> {
     public JCopter() {
         super(VERSION);
         manager = new JCopterManager();
-        appInfo = AppInfo.getSingleton();
     }
 
     @Override
@@ -79,16 +77,18 @@ public class JCopter extends EmptyTool<JCopterManager> {
 
     @Override
     public void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException {
-
         OptionGroup options = setup.getConfig().getOptions();
-        
+
         config = new JCopterConfig(options);
-        executor = new PhaseExecutor(this, options);
     }
 
     @Override
     public void onSetupAppInfo(AppSetup setup, AppInfo appInfo) throws BadConfigurationException {
+        OptionGroup options = setup.getConfig().getOptions();
+
         config.checkOptions();
+
+        executor = new PhaseExecutor(this, options);
     }
 
     public JCopterConfig getJConfig() {
@@ -218,6 +218,8 @@ public class JCopter extends EmptyTool<JCopterManager> {
         DFATool dfaTool = new DFATool();
         WCETTool wcetTool = new WCETTool();
         JCopter jcopter = new JCopter();
+
+        wcetTool.setAvailableOptions(false, true, false, false);
 
         setup.registerTool("dfa", dfaTool, true, false);
         setup.registerTool("wca", wcetTool);

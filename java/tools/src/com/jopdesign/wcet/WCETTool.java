@@ -41,7 +41,6 @@ import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
-import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.misc.AppInfoException;
 import com.jopdesign.common.misc.BadGraphError;
@@ -112,13 +111,6 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
     //      print INFO for 'console.*' and WARN/ERROR only for the rest if '-q' and '-d' are not given 
     private Logger topLevelLogger = Logger.getLogger(LOG_WCET);
 
-    private static final Option<?>[][] optionList = {
-            ProjectConfig.projectOptions,
-            IPETConfig.ipetOptions,
-            UppAalConfig.uppaalOptions,
-            ReportConfig.reportOptions
-    };
-
     private WCETEventHandler eventHandler;
     private ProjectConfig projectConfig;
     private String projectName;
@@ -136,9 +128,28 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
     private boolean hasDfaResults;
     private Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverAnalysis = null;
 
+    private boolean standaloneOptions = true;
+    private boolean ipetOptions = true;
+    private boolean uppaalOptions = true;
+    private boolean reportOptions = true;
+
     public WCETTool() {
         super(VERSION);
         eventHandler = new WCETEventHandler(this);
+    }
+
+    /**
+     * Set which options should be exposed to the user.
+     * @param standalone if true, add options to set target method and to enable report generation
+     * @param ipet if true, add IPET options
+     * @param uppaal if true, add UPPAAL options
+     * @param reports if true, add report generation options
+     */
+    public void setAvailableOptions(boolean standalone, boolean ipet, boolean uppaal, boolean reports) {
+        standaloneOptions = standalone;
+        ipetOptions = ipet;
+        uppaalOptions = uppaal;
+        reportOptions = reports;
     }
 
     @Override
@@ -150,7 +161,10 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
     public void registerOptions(Config config) {
         config.addOptions(CallGraph.dumpOptions);
         // TODO maybe put some of the options into OptionGroups to make '--help' a bit clearer
-        config.addOptions(WCETTool.optionList);
+        ProjectConfig.registerOptions(config, standaloneOptions, uppaalOptions, reportOptions);
+        if (ipetOptions) config.addOptions(IPETConfig.ipetOptions);
+        if (uppaalOptions) config.addOptions(UppAalConfig.uppaalOptions);
+        if (reportOptions) config.addOptions(ReportConfig.reportOptions);
     }
 
     @Override
@@ -159,7 +173,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         Config config = setup.getConfig();
 
         projectConfig = new ProjectConfig(config);
-        projectConfig.initConfig(setup.getMainSignature());
+        projectConfig.initConfig(setup.getMainMethodID());
 
         this.projectName = projectConfig.getProjectName();
 

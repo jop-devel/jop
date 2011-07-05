@@ -70,7 +70,7 @@ public class ProjectConfig {
     public static final StringOption TARGET_BINPATH =
             new StringOption("linkinfo-path", "directory holding linker info (.link.txt)","java/target/dist/bin");
 
-    private static final BooleanOption DO_GENERATE_REPORTS =
+    public static final BooleanOption DO_GENERATE_REPORTS =
             new BooleanOption("report-generation","whether reports should be generated",true);
 
     public static final BooleanOption WCET_PREPROCESS =
@@ -94,22 +94,37 @@ public class ProjectConfig {
     public static final EnumOption<DUMPTYPE> DUMP_TARGET_CALLGRAPH =
             new EnumOption<DUMPTYPE>("dump-target-callgraph", "Dump the target method callgraph (with or without callstrings)", CallGraph.DUMPTYPE.off);
 
-    public static final Option<?>[] projectOptions =
+    private static final Option<?>[] standaloneOptions =
     {
-            TARGET_METHOD, PROJECT_NAME,
-            TARGET_LIB_SOURCEPATH, TARGET_SOURCEPATH, TARGET_BINPATH,
-            WCET_MODEL,
+            TARGET_METHOD,
             WCET_PREPROCESS,
-            OBJECT_CACHE_ANALYSIS,
-            USE_UPPAAL,
-            DO_GENERATE_REPORTS,
-            RESULT_FILE, RESULTS_APPEND, RESULTS_PERFORMANCE,
             DUMP_TARGET_CALLGRAPH
     };
-
+    private static final Option<?>[] projectOptions =
+    {
+            TARGET_LIB_SOURCEPATH, TARGET_SOURCEPATH, TARGET_BINPATH,
+            WCET_MODEL,
+            OBJECT_CACHE_ANALYSIS,
+    };
+    private static final Option<?>[] reportOptions = {
+            PROJECT_NAME,
+            DO_GENERATE_REPORTS,
+            RESULT_FILE, RESULTS_APPEND, RESULTS_PERFORMANCE,
+    };
 
     private Config config;
     private AppInfo appInfo;
+
+    public static void registerOptions(Config config, boolean standalone, boolean uppaal, boolean reports) {
+
+        if (standalone) config.addOptions(standaloneOptions);
+
+        if (uppaal) config.addOption(USE_UPPAAL);
+
+        config.addOptions(projectOptions);
+
+        if (reports) config.addOptions(reportOptions);
+    }
 
     public ProjectConfig(Config config) {
         this.config = config;
@@ -277,6 +292,5 @@ public class ProjectConfig {
     public boolean doPreprocess() {
         return config.getOption(WCET_PREPROCESS);
     }
-
 
 }

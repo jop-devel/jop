@@ -380,7 +380,7 @@ public class InlineOptimizer implements CodeOptimizer {
 
             // Note that we do not need to check if any other method has been removed, because we added edges
             // to all targets of all invokesites of the removed method.
-            isLastInvoke = cg.hasMethod(invokee);
+            isLastInvoke = cg.containsMethod(invokee);
         }
 
         private void updateAnalyses(AnalysisManager analyses, Map<InvokeSite,InvokeSite> invokeMap) {

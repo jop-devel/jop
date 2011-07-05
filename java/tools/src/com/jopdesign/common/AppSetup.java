@@ -199,7 +199,7 @@ public class AppSetup {
      *
      * @return the signature of the main method, as set by the options.
      */
-    public MemberID getMainSignature() {
+    public MemberID getMainMethodID() {
         return mainMethodID;
     }
 

@@ -1090,7 +1090,7 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
             // we do not have a callgraph, so just use typegraph info
             return findImplementations(invokeSite.getInvokeeRef());
         }
-        if (!callGraph.hasMethod(invokeSite.getInvoker())) {
+        if (!callGraph.containsMethod(invokeSite.getInvoker())) {
             if (logger.isTraceEnabled()) {
                 logger.trace("Could not find method "+invokeSite.getInvoker()+
                              " in the callgraph, falling back to typegraph");

@@ -680,7 +680,7 @@ public class CallGraph implements ImplementationFinder {
         return callGraph.containsVertex(new ExecutionContext(m,cs == null ? CallString.EMPTY : cs));
     }
 
-    public boolean hasMethod(MethodInfo m) {
+    public boolean containsMethod(MethodInfo m) {
         return methodNodes.containsKey(m);
     }
 
