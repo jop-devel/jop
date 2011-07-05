@@ -664,6 +664,7 @@ public class AppSetup {
 
         System.out.println();
 
+        // TODO this does not handle sub-subgroups
         for (String name : options.availableSubgroups()) {
             System.out.println("Options in group " + name + ":");
             OptionGroup group = options.getGroup(name);

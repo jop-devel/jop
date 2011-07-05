@@ -536,6 +536,11 @@ public class Config {
         options.addOption(option);
     }
 
+    public void addOption(Option<?> option, boolean available) {
+            options.addOption(option, available);
+    }
+
+
     /**
      * This is a shortcut to add a list of options to the main option group.
      *
@@ -544,6 +549,10 @@ public class Config {
      */
     public void addOptions(Option<?>[] options) {
         this.options.addOptions(options);
+    }
+
+    public void addOptions(Option<?>[] options, boolean available) {
+        this.options.addOptions(options, available);
     }
 
     /**

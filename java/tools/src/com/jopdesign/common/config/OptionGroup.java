@@ -29,7 +29,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -52,9 +51,9 @@ public class OptionGroup {
     private String prefix;
 
     /**
-     * List of all options in this group.
+     * List of all non-hidden options in this group.
      */
-    private List<Option<?>> optionList;
+    private List<Option<?>> availableOptions;
 
     /**
      * Map of options to their respective keys (excluding group prefix).
@@ -83,7 +82,7 @@ public class OptionGroup {
     public OptionGroup(Config config, String prefix) {
         this.config = config;
         this.prefix = prefix;
-        optionList = new LinkedList<Option<?>>();
+        availableOptions = new LinkedList<Option<?>>();
         optionSet = new HashMap<String, Option<?>>();
         subGroups = new HashMap<String, OptionGroup>(1);
         commands = new HashSet<String>(0);
@@ -174,12 +173,20 @@ public class OptionGroup {
     */
 
     public List<Option<?>> availableOptions() {
-        return optionList;
+        return availableOptions;
+    }
+
+    public Collection<Option<?>> getOptions() {
+        return optionSet.values();
     }
 
     public void addOption(Option option) {
+        addOption(option, true);
+    }
+
+    public void addOption(Option option, boolean available) {
         if (optionSet.containsKey(option.getKey())) {
-            for (Iterator<Option<?>> it = optionList.iterator(); it.hasNext();) {
+            for (Iterator<Option<?>> it = availableOptions.iterator(); it.hasNext();) {
                 Option opt = it.next();
                 if (opt.getKey().equals(option.getKey())) {
                     it.remove();
@@ -190,7 +197,7 @@ public class OptionGroup {
         optionSet.put(option.getKey(), option);
 
         // we keep the options in an additional list to have them sorted in the same way they are added.
-        optionList.add(option);
+        if (available) availableOptions.add(option);
 
         addEnableOptions(option.getKey());
     }
@@ -227,11 +234,17 @@ public class OptionGroup {
         }
     }
 
+    public void addOptions(Option[] options, boolean available) {
+        for (Option opt : options) {
+            addOption(opt, available);
+        }
+    }
+
     public Option getShortOptionKey(char shortKey) {
         if (shortKey == Option.SHORT_NONE) {
             return null;
         }
-        for (Option o : optionList) {
+        for (Option o : getOptions()) {
             if (o.getShortKey() == shortKey) {
                 return o;
             }
@@ -264,13 +277,17 @@ public class OptionGroup {
      * ~~~~~~~~~~~~~~~~~~~~ 
      */
 
+    public boolean isHidden(Option option) {
+        return !availableOptions.contains(option);
+    }
+
     /**
      * Check if an option is used, i.e. if the options which must be set to enable this option are set.
      *
      * @param option the option in this group to check.
      * @return true if the option is used/enabled.
      */
-    public boolean isUsed(Option<?> option) {
+    public boolean isUsed(Option option) {
         if (!containsOption(option)) {
             throw new BadConfigurationError("Option "+option.getKey()+" is not known in group "+prefix);
         }
@@ -526,6 +543,10 @@ public class OptionGroup {
         Option<?> spec = getOptionSpec(key);
 
         if (spec != null) {
+            if (isHidden(spec)) {
+                throw new BadConfigurationException("Invalid option: "+spec);
+            }
+
             String val = null;
             if (pos + 1 < args.length) {
                 String newVal = args[pos +1];
@@ -545,7 +566,7 @@ public class OptionGroup {
             if (spec instanceof BooleanOption && val == null) {
                 val = "true";
             } else if (val == null) {
-                throw new Config.BadConfigurationException("Missing argument for option: " + spec);
+                throw new BadConfigurationException("Missing argument for option: " + spec);
             } else {
                 i++;
             }
@@ -557,6 +578,10 @@ public class OptionGroup {
         // maybe a boolean option, check for --no-<key>
         if (key.startsWith("no-")) {
             spec = getOptionSpec(key.substring(3));
+            if (isHidden(spec)) {
+                throw new BadConfigurationException("Invalid option: "+spec);
+            }
+
             if (spec != null && spec instanceof BooleanOption) {
                 config.setProperty(getConfigKey(spec), "false");
             } else if (spec != null) {
@@ -574,24 +599,24 @@ public class OptionGroup {
         }
 
         if (spec == null) {
-            throw new Config.BadConfigurationException("Unknown option: " + key);
+            throw new BadConfigurationException("Unknown option: " + key);
         }
 
         return pos;
     }
 
-    public void checkOptions() throws Config.BadConfigurationException {
+    public void checkOptions() throws BadConfigurationException {
 
         boolean skipCheck = false;
 
         // first, check if we can parse all options and if we need to call the OptionChecker
-        for (Option<?> option : optionList) {
+        for (Option<?> option : getOptions()) {
 
             // check if we can parse
             try {
                 tryGetOption(option);
             } catch (IllegalArgumentException e) {
-                throw new Config.BadConfigurationException("Error parsing option '" + getConfigKey(option) + "': " + e.getMessage(), e);
+                throw new BadConfigurationException("Error parsing option '" + getConfigKey(option) + "': " + e.getMessage(), e);
             }
 
             if (option.doSkipChecks() && option.isEnabled(this)) {
@@ -603,9 +628,9 @@ public class OptionGroup {
         if (!skipCheck) {
 
             // check for required options
-            for (Option<?> option : optionList) {
+            for (Option<?> option : availableOptions) {
                 if (!option.isOptional() && !hasValue(option) && isUsed(option)) {
-                    throw new Config.BadConfigurationException("Missing required option '" + getConfigKey(option) + '"');
+                    throw new BadConfigurationException("Missing required option '" + getConfigKey(option) + '"');
                 }
             }
 

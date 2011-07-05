@@ -98,32 +98,28 @@ public class ProjectConfig {
     {
             TARGET_METHOD,
             WCET_PREPROCESS,
-            DUMP_TARGET_CALLGRAPH
+            DUMP_TARGET_CALLGRAPH,
+            OBJECT_CACHE_ANALYSIS
     };
     private static final Option<?>[] projectOptions =
     {
             TARGET_LIB_SOURCEPATH, TARGET_SOURCEPATH, TARGET_BINPATH,
-            WCET_MODEL,
-            OBJECT_CACHE_ANALYSIS,
+            WCET_MODEL
     };
     private static final Option<?>[] reportOptions = {
             PROJECT_NAME,
             DO_GENERATE_REPORTS,
-            RESULT_FILE, RESULTS_APPEND, RESULTS_PERFORMANCE,
+            RESULT_FILE, RESULTS_APPEND, RESULTS_PERFORMANCE
     };
 
     private Config config;
     private AppInfo appInfo;
 
     public static void registerOptions(Config config, boolean standalone, boolean uppaal, boolean reports) {
-
-        if (standalone) config.addOptions(standaloneOptions);
-
-        if (uppaal) config.addOption(USE_UPPAAL);
-
+        config.addOptions(standaloneOptions, standalone);
+        config.addOption (USE_UPPAAL, uppaal);
         config.addOptions(projectOptions);
-
-        if (reports) config.addOptions(reportOptions);
+        config.addOptions(reportOptions, reports);
     }
 
     public ProjectConfig(Config config) {

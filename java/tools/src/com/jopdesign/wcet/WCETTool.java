@@ -162,9 +162,9 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         config.addOptions(CallGraph.dumpOptions);
         // TODO maybe put some of the options into OptionGroups to make '--help' a bit clearer
         ProjectConfig.registerOptions(config, standaloneOptions, uppaalOptions, reportOptions);
-        if (ipetOptions) config.addOptions(IPETConfig.ipetOptions);
-        if (uppaalOptions) config.addOptions(UppAalConfig.uppaalOptions);
-        if (reportOptions) config.addOptions(ReportConfig.reportOptions);
+        config.addOptions(IPETConfig.ipetOptions, ipetOptions);
+        config.addOptions(UppAalConfig.uppaalOptions, uppaalOptions);
+        config.addOptions(ReportConfig.reportOptions, reportOptions);
     }
 
     @Override
