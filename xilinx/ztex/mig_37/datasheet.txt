@@ -1,0 +1,64 @@
+
+
+CORE Generator Options:
+   Target Device              : xc6slx25-ftg256
+   Speed Grade                : -3
+   HDL                        : vhdl
+   Synthesis Tool             : Foundation_ISE
+
+MIG Output Options:
+   Component Name             : mig_37
+   No of Controllers          : 1
+   Hardware Test Bench           : enabled
+
+    
+/*******************************************************/
+/*                  Controller 3                       */
+/*******************************************************/
+Controller Options : 
+   Memory                  : DDR_SDRAM
+   Design Clock Frequency  : 5000 ps (200.00 MHz)
+   Memory Type             : Components
+   Memory Part             : MT46V32M16XX-5B-IT
+   Equivalent Part(s)      : MT46V32M16BN-5B-IT
+   Row Address             : 13
+   Bank Address            : 2
+   Data Mask               : enabled
+
+Memory Options :
+   Mode Register :
+   Burst Length                       : 4(010)
+   CAS Latency                        : 3
+   DLL Enable                         : Enable-Normal
+   Output Drive Strength              : Normal
+
+User Interface Parameters :
+   Configuration Type     : Two 32-bit bi-directional and four 32-bit unidirectional ports
+   Ports Selected         : Port0
+   Memory Address Mapping : ROW_BANK_COLUMN
+
+   Arbitration Algorithm  : Round Robin
+
+   Arbitration            : 
+      Time Slot0 : 0
+      Time Slot1 : 0
+      Time Slot2 : 0
+      Time Slot3 : 0
+      Time Slot4 : 0
+      Time Slot5 : 0
+      Time Slot6 : 0
+      Time Slot7 : 0
+      Time Slot8 : 0
+      Time Slot9 : 0
+      Time Slot10: 0
+      Time Slot11: 0
+
+FPGA Options :
+   Class for Address and Control       : II
+   Class for Data                      : II
+   Memory Interface Pin Termination    : EXTERN_TERM
+   DQ/DQS                              : 25 Ohms
+   Bypass Calibration                  : enabled
+   Debug Signals for Memory Controller : Disable
+   Input Clock Type                    : Single-Ended 
+    
