@@ -90,7 +90,6 @@ public class WCAInvoker {
 
         setWCETOptions(wcaTargets.iterator().next(), false);
 
-
         // Init WCA tool
         wcetTool.initialize();
 
@@ -98,14 +97,13 @@ public class WCAInvoker {
 
         RecursiveStrategy<AnalysisContextLocal,WcetCost> strategy;
         if (useMethodCacheStrategy) {
-            strategy = analyses.getMethodCacheAnalysis();
+            strategy = analyses.getMethodCacheAnalysis().createRecursiveStrategy(wcetTool, ipetConfig);
         } else {
             strategy = new LocalAnalysis(wcetTool, ipetConfig);
         }
 
         recursiveAnalysis = new RecursiveWcetAnalysis<AnalysisContextLocal>(
                     wcetTool, ipetConfig, strategy);
-
 
         // Perform initial analysis
         WcetCost cost = recursiveAnalysis.computeCost(wcetTool.getTargetMethod(),

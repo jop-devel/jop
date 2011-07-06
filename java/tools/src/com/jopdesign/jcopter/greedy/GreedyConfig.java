@@ -108,7 +108,7 @@ public class GreedyConfig {
     }
 
     public AnalysisType getCacheAnalysisType() {
-        return AnalysisType.ALWAYS_MISS_HIT;
+        return AnalysisType.ALWAYS_MISS_OR_HIT;
     }
 
     public Collection<MethodInfo> getWCATargets() {

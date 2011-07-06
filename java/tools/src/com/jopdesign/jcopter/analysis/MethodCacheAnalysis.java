@@ -30,10 +30,13 @@ import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.misc.Ternary;
 import com.jopdesign.wcet.WCETProcessorModel;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
+import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.WcetCost;
+import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.jop.MethodCache;
 import org.apache.bcel.generic.InstructionHandle;
@@ -55,9 +58,9 @@ import java.util.Set;
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class MethodCacheAnalysis implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
+public class MethodCacheAnalysis {
 
-    public enum AnalysisType { ALWAYS_MISS, ALWAYS_HIT, ALWAYS_MISS_HIT, MOST_ONCE_HIT }
+    public enum AnalysisType { ALWAYS_MISS, ALWAYS_HIT, ALWAYS_MISS_OR_HIT, ALL_FIT_REGIONS }
 
 
     private interface CacheUpdater {
@@ -131,6 +134,8 @@ public class MethodCacheAnalysis implements RecursiveStrategy<AnalysisContextLoc
 
     private final Set<MethodInfo> classifyChanges;
     private final Set<MethodInfo> countChanges;
+
+    private RecursiveStrategy<AnalysisContextLocal,WcetCost> recursiveStrategy;
 
     ///////////////////////////////////////////////////////////////////////////////////
     // Constructors, initialization, standard getter
@@ -268,7 +273,7 @@ public class MethodCacheAnalysis implements RecursiveStrategy<AnalysisContextLoc
         if (analysisType == AnalysisType.ALWAYS_MISS || !allFit(node)) {
             return analyses.getExecCountAnalysis().getExecCount(node, entry);
         }
-        if (analysisType == AnalysisType.ALWAYS_MISS_HIT) {
+        if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT) {
             return 0;
         }
 
@@ -356,7 +361,7 @@ public class MethodCacheAnalysis implements RecursiveStrategy<AnalysisContextLoc
             costs -= deltaCosts;
         }
 
-        if (analysisType == AnalysisType.MOST_ONCE_HIT) {
+        if (analysisType == AnalysisType.ALL_FIT_REGIONS) {
 
             // TODO we need to add changed cache costs of all methods reachable from changeset since the
             //      number of cache misses (i.e number of invokes of top-most all-fit methods) changed
@@ -424,21 +429,41 @@ public class MethodCacheAnalysis implements RecursiveStrategy<AnalysisContextLoc
     // WCA Interface
     ///////////////////////////////////////////////////////////////////////////////////
 
+    public RecursiveStrategy<AnalysisContextLocal,WcetCost>
+           createRecursiveStrategy(WCETTool tool, IPETConfig ipetConfig)
+    {
+        return new LocalAnalysis(tool, ipetConfig) {
+            @Override
+            public WcetCost recursiveCost(RecursiveAnalysis<AnalysisContextLocal, WcetCost> stagedAnalysis,
+                                          InvokeNode n, AnalysisContextLocal ctx) {
+                AnalysisContextLocal newCtx = ctx;
 
-    public AnalysisContextLocal getRootContext() {
-        return new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_MISS);
+                if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT &&
+                        allFit(cache, n.getInvokeSite().getInvoker(), ctx.getCallString()))
+                {
+                    newCtx = ctx.withCacheApprox(StaticCacheApproximation.ALWAYS_HIT);
+                }
+                return super.recursiveCost(stagedAnalysis, n, newCtx);
+            }
+
+            @Override
+            protected boolean allFit(MethodCache cache, MethodInfo method, CallString callString) {
+                return MethodCacheAnalysis.this.allFit(new ExecutionContext(method, callString));
+            }
+        };
     }
 
-    @Override
-    public WcetCost recursiveCost(RecursiveAnalysis<AnalysisContextLocal, WcetCost> stagedAnalysis,
-                                  InvokeNode invocation,
-                                  AnalysisContextLocal ctx)
-    {
-
-
-
-
-        return null;
+    public AnalysisContextLocal getRootContext() {
+        if (analysisType == AnalysisType.ALWAYS_HIT) {
+            return new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_HIT);
+        }
+        if (analysisType == AnalysisType.ALWAYS_MISS) {
+            return new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_MISS);
+        }
+        if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT) {
+            return new AnalysisContextLocal(StaticCacheApproximation.ALL_FIT_SIMPLE);
+        }
+        return new AnalysisContextLocal(StaticCacheApproximation.ALL_FIT_SIMPLE);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////
