@@ -160,6 +160,8 @@ public class GreedyOptimizer {
         // first find and initialize all candidates
         for (MethodInfo method : methods) {
 
+            if (method.isNative()) continue;
+
             // to update maxLocals
             method.getCode().compile();
 

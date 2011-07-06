@@ -24,11 +24,17 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallGraph.ContextEdge;
 import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.ControlFlowGraph.InvokeNode;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.misc.Ternary;
 import com.jopdesign.wcet.WCETProcessorModel;
+import com.jopdesign.wcet.analysis.AnalysisContextLocal;
+import com.jopdesign.wcet.analysis.RecursiveAnalysis;
+import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
+import com.jopdesign.wcet.analysis.WcetCost;
+import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.jop.MethodCache;
 import org.apache.bcel.generic.InstructionHandle;
 import org.jgrapht.DirectedGraph;
@@ -49,7 +55,7 @@ import java.util.Set;
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class MethodCacheAnalysis {
+public class MethodCacheAnalysis implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 
     public enum AnalysisType { ALWAYS_MISS, ALWAYS_HIT, ALWAYS_MISS_HIT, MOST_ONCE_HIT }
 
@@ -412,6 +418,27 @@ public class MethodCacheAnalysis {
             //      all reachable methods to the changeset too!
         }
 
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////
+    // WCA Interface
+    ///////////////////////////////////////////////////////////////////////////////////
+
+
+    public AnalysisContextLocal getRootContext() {
+        return new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_MISS);
+    }
+
+    @Override
+    public WcetCost recursiveCost(RecursiveAnalysis<AnalysisContextLocal, WcetCost> stagedAnalysis,
+                                  InvokeNode invocation,
+                                  AnalysisContextLocal ctx)
+    {
+
+
+
+
+        return null;
     }
 
     ///////////////////////////////////////////////////////////////////////////////////

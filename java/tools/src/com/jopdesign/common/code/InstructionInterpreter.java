@@ -97,7 +97,7 @@ public class InstructionInterpreter<T> {
      * This key is used to attach a NOP instruction handle to each method which is used as handle for
      * the result state of a method.
      */
-    private static final CustomKey KEY_NOP = KeyManager.getSingleton().registerCodeKey("InstructionInterpreter.NOP");
+    private static final CustomKey KEY_NOP = KeyManager.getSingleton().registerStructKey("InstructionInterpreter.NOP");
 
     private final MethodInfo methodInfo;
     private final InstructionAnalysis<T> analysis;

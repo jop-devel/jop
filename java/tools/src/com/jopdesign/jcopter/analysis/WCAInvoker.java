@@ -22,7 +22,9 @@ package com.jopdesign.jcopter.analysis;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
-import com.jopdesign.common.code.CallGraph.ContextEdge;
+import com.jopdesign.common.code.CallGraph.DUMPTYPE;
+import com.jopdesign.common.code.CallgraphTraverser;
+import com.jopdesign.common.code.CallgraphVisitor;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ExecutionContext;
@@ -31,9 +33,13 @@ import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.wcet.ProjectConfig;
 import com.jopdesign.wcet.WCETTool;
+import com.jopdesign.wcet.analysis.AnalysisContextLocal;
+import com.jopdesign.wcet.analysis.LocalAnalysis;
+import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
+import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
+import com.jopdesign.wcet.analysis.WcetCost;
+import com.jopdesign.wcet.ipet.IPETConfig;
 import org.apache.bcel.generic.InstructionHandle;
-import org.jgrapht.DirectedGraph;
-import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,12 +57,15 @@ public class WCAInvoker {
     private final AnalysisManager analyses;
 
     private WCETTool wcetTool;
+    private RecursiveWcetAnalysis<AnalysisContextLocal> recursiveAnalysis;
+    private boolean useMethodCacheStrategy;
 
     public WCAInvoker(AnalysisManager analyses, Collection<MethodInfo> wcaTargets) {
         this.analyses = analyses;
         this.jcopter = analyses.getJCopter();
         this.wcaTargets = wcaTargets;
         wcetTool = jcopter.getWcetTool();
+        useMethodCacheStrategy = true;
     }
 
     public JCopter getJcopter() {
@@ -70,22 +79,39 @@ public class WCAInvoker {
     public void initialize() throws BadConfigurationException {
 
         if (wcaTargets.size() != 1) {
-            // To support this, we would either need to split the WCA tool into the tool itself
-            // (which does configuration stuff and holds global results) and a Project class per target
-            // which represents the analysis for one target which holds the wcet-callgraph and is passed to all analyses
-            // or we would need to rerun the WCA for each target every time a method is optimized.
+            // TODO To support this, we would either need to split the WCA tool into the tool itself
+            //      (which does configuration stuff and holds global results) and a Project class per target
+            //      which represents the analysis for one target which holds the wcet-callgraph and is passed
+            //      to all analyses,
+            //      or we would need to rerun the WCA for each target every time a method is optimized,
+            //      or we would need to support multiple roots for the WCETTool callgraph (and its analyses)
             throw new BadConfigurationException("Currently only a single WCA target is supported.");
         }
 
         setWCETOptions(wcaTargets.iterator().next(), false);
 
+
         // Init WCA tool
         wcetTool.initialize();
 
+        IPETConfig ipetConfig = new IPETConfig(wcetTool.getConfig());
+
+        RecursiveStrategy<AnalysisContextLocal,WcetCost> strategy;
+        if (useMethodCacheStrategy) {
+            strategy = analyses.getMethodCacheAnalysis();
+        } else {
+            strategy = new LocalAnalysis(wcetTool, ipetConfig);
+        }
+
+        recursiveAnalysis = new RecursiveWcetAnalysis<AnalysisContextLocal>(
+                    wcetTool, ipetConfig, strategy);
+
+
         // Perform initial analysis
-        // TODO we could use the IPET solver for the initial analysis
+        WcetCost cost = recursiveAnalysis.computeCost(wcetTool.getTargetMethod(),
+                analyses.getMethodCacheAnalysis().getRootContext());
 
-
+        // TODO log wcet
     }
 
 
@@ -98,9 +124,7 @@ public class WCAInvoker {
         ControlFlowGraph cfg = method.getCode().getControlFlowGraph(false);
         BasicBlockNode node = cfg.getHandleNode(ih);
 
-
-
-        return false;
+        return recursiveAnalysis.isWCETBlock(cfg, node);
     }
 
     /**
@@ -117,8 +141,8 @@ public class WCAInvoker {
         // classification changed too
         roots.addAll(analyses.getMethodCacheAnalysis().getClassificationChangeSet());
 
-        // Now get a reversed callgraph starting at the roots and traverse it in topological order
-        // (the WCA requires its callgraph to be loop-free, so no problems here), updating the WCA results
+        // Now we need to clear all results for all callers of the modified methods as well as the modified methods,
+        // and recalculate all results
         CallGraph callGraph = wcetTool.getCallGraph();
 
         List<ExecutionContext> rootNodes = new ArrayList<ExecutionContext>(roots.size());
@@ -126,17 +150,23 @@ public class WCAInvoker {
             rootNodes.addAll(callGraph.getNodes(root));
         }
 
-        DirectedGraph<ExecutionContext,ContextEdge> invokeGraph = callGraph.createInvokeGraph(rootNodes, true);
+        final Set<MethodInfo> methods = new HashSet<MethodInfo>();
 
-        TopologicalOrderIterator<ExecutionContext,ContextEdge> topOrder =
-                new TopologicalOrderIterator<ExecutionContext, ContextEdge>(invokeGraph);
+        CallgraphTraverser traverser = new CallgraphTraverser(wcetTool.getCallGraph(), new CallgraphVisitor() {
+            @Override
+            public boolean visitNode(ExecutionContext node, List<ExecutionContext> childs, boolean isRecursion) {
+                methods.add(node.getMethodInfo());
+                return true;
+            }
+            @Override
+            public void finishNode(ExecutionContext node) {
+            }
+        });
+        traverser.traverseUp(rootNodes, true);
 
-        while (topOrder.hasNext()) {
-            ExecutionContext node = topOrder.next();
+        recursiveAnalysis.clearCache(methods);
 
-
-
-        }
+        recursiveAnalysis.computeCost(wcetTool.getTargetMethod(), analyses.getMethodCacheAnalysis().getRootContext());
     }
 
     public Collection<CallGraph> getWCACallGraphs() {
@@ -147,5 +177,7 @@ public class WCAInvoker {
         Config config = wcetTool.getConfig();
         config.setOption(ProjectConfig.TARGET_METHOD, targetMethod.getMemberID().toString());
         config.setOption(ProjectConfig.DO_GENERATE_REPORTS, generateReports);
+        config.setOption(ProjectConfig.DO_GENERATE_REPORTS, false);
+        config.setOption(ProjectConfig.DUMP_TARGET_CALLGRAPH, DUMPTYPE.off);
     }
 }

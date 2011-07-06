@@ -113,6 +113,10 @@ public class CallgraphTraverser {
         traverse(roots, skipVisited, true);
     }
 
+    public void traverseUp(Collection<ExecutionContext> roots, boolean skipVisited) {
+        traverse(roots, skipVisited, false);
+    }
+
     /**
      * Implements a DFS traversal of the callgraph, starting at the given root nodes.
      * @param roots a set of nodes in the callgraph.
