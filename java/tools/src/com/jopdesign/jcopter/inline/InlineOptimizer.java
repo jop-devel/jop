@@ -139,7 +139,8 @@ public class InlineOptimizer implements CodeOptimizer {
 
             // insert the invokee code
             Map<InvokeSite,InvokeSite> invokeMap;
-            invokeMap = insertInvokee(analyses, il, next);
+            CallString callString = getInlineCallString(code, invoke).push(invokeSite);
+            invokeMap = insertInvokee(analyses, callString, il, next);
 
             // remove the invoke, retarget to next instruction, update start and end handlers
             start = invoke.getNext();
@@ -200,11 +201,11 @@ public class InlineOptimizer implements CodeOptimizer {
             assert(!needsEmptyStack);
         }
 
-        private Map<InvokeSite,InvokeSite> insertInvokee(AnalysisManager analyses, InstructionList il, InstructionHandle next) {
+        private Map<InvokeSite,InvokeSite> insertInvokee(AnalysisManager analyses, CallString callString,
+                                                         InstructionList il, InstructionHandle next) {
 
             MethodCode code = getMethod().getCode();
 
-            String sourcefile = invokee.getClassInfo().getSourceFileName();
             MethodCode invokeeCode = invokee.getCode();
             InstructionList iList = invokeeCode.getInstructionList(true, false);
 
@@ -220,7 +221,7 @@ public class InlineOptimizer implements CodeOptimizer {
                 InstructionHandle ih = copyInstruction(invokeeCode, stacksize, il, src, next);
                 if (ih == null) continue;
 
-                code.setSourceFileName(ih, sourcefile);
+                code.copyCustomValues(invokee, ih, src);
 
                 if (code.isInvokeSite(ih)) {
                     InvokeSite newInvoke = code.getInvokeSite(ih);
@@ -229,7 +230,7 @@ public class InlineOptimizer implements CodeOptimizer {
                     invokeMap.put(oldInvoke, newInvoke);
 
                     // update inline-callstring for this instruction
-                    setInlineCallString(code, ih, getInlineCallString(code, ih).push(invokeSite));
+                    setInlineCallString(code, ih, callString);
                 }
 
                 instrMap.put(src, ih);
@@ -295,8 +296,6 @@ public class InlineOptimizer implements CodeOptimizer {
             } else {
                 ih = il.insert(next, c);
             }
-
-            invokeeCode.copyCustomValues(ih, src);
 
             return ih;
         }
@@ -661,8 +660,8 @@ public class InlineOptimizer implements CodeOptimizer {
                 MethodInfo invokee = helper.devirtualize(cs);
                 if (invokee == null) continue;
 
-                // for the initial check and the DFA lookup we need to old callstring
-                cs = getInlineCallString(code, ih);
+                // for the initial check and the DFA lookup we need the old callstring
+                cs = getInlineCallString(code, ih).push(site);
 
                 Candidate candidate = checkInvoke(code, cs, site, invokee, maxLocals);
                 if (candidate == null) {

@@ -93,9 +93,6 @@ public class MethodCode {
         KEY_LOOPBOUND = KeyManager.getSingleton().registerKey(KeyType.CODE, "MethodCode.LoopBound");
     }
 
-    // We do not include KEY_INVOKESITE because it should not be copied when the handle is copied
-    private static final Object[] MANAGED_KEYS = {KEY_LINENUMBER, KEY_SOURCEFILE};
-
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_CODE+".MethodCode");
 
     private final MethodInfo methodInfo;
@@ -214,19 +211,34 @@ public class MethodCode {
      */
     public void removeLineNumbers() {
         methodGen.removeLineNumbers();
+        // TODO should we do something about the CFG?
+        for (InstructionHandle ih : methodGen.getInstructionList().getInstructionHandles()) {
+            ih.removeAttribute(KEY_SOURCEFILE);
+            ih.removeAttribute(KEY_LINENUMBER);
+        }
     }
 
-    public LineNumberGen setLineNumber(InstructionHandle ih, int src_line) {
-        LineNumberGen lg = getLineNumberEntry(ih, false);
-        if (lg != null) {
-            lg.setSourceLine(src_line);
-            return lg;
+    public void setLineNumber(InstructionHandle ih, int src_line) {
+        setLineNumber(ih, null, src_line);
+    }
+
+    /**
+     * Removes all line number entries from this instruction. This has the effect that the instruction
+     * gets the same line number as the previous instruction.
+     *
+     * @param ih the instruction to clear.
+     */
+    public void clearLineNumber(InstructionHandle ih) {
+        ih.removeAttribute(KEY_SOURCEFILE);
+        ih.removeAttribute(KEY_LINENUMBER);
+        LineNumberGen entry = getLineNumberEntry(ih, false);
+        if (entry != null) {
+            removeLineNumber(entry);
         }
-        return methodGen.addLineNumber(ih, src_line);
     }
 
     public LineNumberGen getLineNumberEntry(InstructionHandle ih, boolean checkPrevious) {
-        InstructionHandle prev = ih.getPrev();
+        InstructionHandle prev = ih;
         while (prev != null) {
             InstructionTargeter[] targeter = ih.getTargeters();
             if (targeter != null) {
@@ -248,28 +260,98 @@ public class MethodCode {
     }
 
     /**
-     * Get the line number of the instruction. If instruction handle attributes are not used,
-     * the positions of the instruction handles must be uptodate.
+     * Get the line number of the instruction. This may refer to a line number in another file.
+     * To get the correct source file for this instruction, use {@link #getSourceFileName(InstructionHandle)}.
      *
      * @see #getSourceFileName(InstructionHandle)
      * @param ih the instruction to check.
      * @return the line number of the instruction, or -1 if unknown.
      */
     public int getLineNumber(InstructionHandle ih) {
-        return getLineNumberTable().getSourceLine(ih.getPosition());
+        InstructionHandle handle = findLineNumberHandle(ih);
+        if (handle == null) return -1;
+
+        Integer line = (Integer) handle.getAttribute(KEY_LINENUMBER);
+        if (line != null) {
+            return line;
+        }
+        LineNumberGen entry = getLineNumberEntry(ih, false);
+        return entry != null ? entry.getSourceLine() : -1;
     }
 
-    public void setSourceFileName(InstructionHandle ih, String filename) {
-        ih.addAttribute(KEY_SOURCEFILE, filename);
+    public void setLineNumber(InstructionHandle ih, String filename, int line) {
+        LineNumberGen lg = getLineNumberEntry(ih, false);
+
+        if (filename == null || filename.equals(methodInfo.getClassInfo().getSourceFileName())) {
+            ih.removeAttribute(KEY_SOURCEFILE);
+            ih.removeAttribute(KEY_LINENUMBER);
+            if (lg != null) {
+                lg.setSourceLine(line);
+            } else {
+                methodGen.addLineNumber(ih, line);
+            }
+        } else {
+            ih.addAttribute(KEY_SOURCEFILE, filename);
+            ih.addAttribute(KEY_LINENUMBER, line);
+            if (lg != null) {
+                removeLineNumber(lg);
+            }
+        }
     }
 
     public String getSourceFileName(InstructionHandle ih) {
-        // We cannot store SourceFile info in Tables, so we always check the InstructionHandle..
-        String source = (String) ih.getAttribute(KEY_SOURCEFILE);
+        InstructionHandle handle = findLineNumberHandle(ih);
+        if (handle == null) return methodInfo.getClassInfo().getSourceFileName();
+
+        String source = (String) handle.getAttribute(KEY_SOURCEFILE);
         if (source != null) {
             return source;
         }
         return methodInfo.getClassInfo().getSourceFileName();
+    }
+
+    private InstructionHandle findLineNumberHandle(InstructionHandle ih) {
+        InstructionHandle handle = ih;
+        while (handle != null) {
+            if (getLineNumberEntry(handle, false) != null) return handle;
+            if (handle.getAttribute(KEY_LINENUMBER) != null) return handle;
+            handle = handle.getPrev();
+        }
+        return null;
+    }
+
+    private void copyLineNumbers(MethodInfo sourceInfo, InstructionHandle to, InstructionHandle from) {
+        // TODO should we make this public?
+        MethodCode srcCode = sourceInfo != null ? sourceInfo.getCode() : this;
+        if (srcCode == null) {
+            throw new AppInfoError("Invalid operation: cannot copy line numbers from method without code");
+        }
+
+        String source = (String) from.getAttribute(KEY_SOURCEFILE);
+        if (source != null) {
+            int line = (Integer) from.getAttribute(KEY_LINENUMBER);
+            if (source.equals(getClassInfo().getSourceFileName())) {
+                setLineNumber(to, line);
+            } else {
+                to.addAttribute(KEY_SOURCEFILE, source);
+                to.addAttribute(KEY_LINENUMBER, line);
+            }
+            return;
+        }
+
+        LineNumberGen entry = srcCode.getLineNumberEntry(from, false);
+        if (entry != null) {
+            int line = entry.getSourceLine();
+            source = srcCode.getClassInfo().getSourceFileName();
+            if (source == null || source.equals(getClassInfo().getSourceFileName()) ||
+                getClassInfo().getSourceFileName() == null)
+            {
+                setLineNumber(to, line);
+            } else {
+                to.addAttribute(KEY_SOURCEFILE, source);
+                to.addAttribute(KEY_LINENUMBER, line);
+            }
+        }
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -593,7 +675,7 @@ public class MethodCode {
             current.setInstruction(instr);
 
             if (copyCustomValues) {
-                copyCustomValues(current, currSource);
+                copyCustomValues(sourceInfo, current, currSource);
             }
 
             current = current.getNext();
@@ -636,7 +718,7 @@ public class MethodCode {
                     current = il.insert(next, instr);
                 }
                 if (copyCustomValues) {
-                    copyCustomValues(current, currSource);
+                    copyCustomValues(sourceInfo, current, currSource);
                 }
                 currSource = currSource.getNext();
             }
@@ -1014,14 +1096,16 @@ public class MethodCode {
         return value;
     }
 
-    public void copyCustomValues(InstructionHandle to, InstructionHandle from) {
-        Object value;
-        for (Object key : MANAGED_KEYS) {
-            value = from.getAttribute(key);
-            if (value != null) to.addAttribute(key, value);
-            else to.removeAttribute(key);
-        }
-
+    /**
+     * Copy custom values and line numbers from one instruction to an instruction in this method.
+     * Source and target method are used to update line number entries correctly. CustomKeys are copied using
+     * shallow copy.
+     *
+     * @param sourceInfo the method containing the source handle. If null assume it is the same method as the target.
+     * @param to the target instruction.
+     * @param from the source instruction.
+     */
+    public void copyCustomValues(MethodInfo sourceInfo, InstructionHandle to, InstructionHandle from) {
         @SuppressWarnings({"unchecked"})
         Map<CustomKey,Object> map = (Map<CustomKey, Object>) from.getAttribute(KEY_CUSTOMVALUES);
         if (map == null) {
@@ -1030,6 +1114,8 @@ public class MethodCode {
         }
         Map<CustomKey,Object> newMap = new HashMap<CustomKey, Object>(map);
         to.addAttribute(KEY_CUSTOMVALUES, newMap);
+
+        copyLineNumbers(sourceInfo, to, from);
     }
 
 

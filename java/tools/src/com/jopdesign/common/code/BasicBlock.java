@@ -462,10 +462,13 @@ public class BasicBlock {
 
     /**
      * Append the instructions of this block to an instruction list.
+     *
+     * @see MethodCode#copyCustomValues(MethodInfo, InstructionHandle, InstructionHandle)
+     * @param sourceInfo the method info containing the source instructions, used to copy custom values.
      * @param il the instruction list to append to.
      * @param attributes a list of attribute keys to copy in addition to those managed by MethodCode and BasicBlock.
      */
-    public void appendTo(InstructionList il, Object[] attributes) {
+    public void appendTo(MethodInfo sourceInfo, InstructionList il, Object[] attributes) {
         List<InstructionHandle> old = new ArrayList<InstructionHandle>(instructions);
         instructions.clear();
         for (InstructionHandle ih : old) {
@@ -478,7 +481,7 @@ public class BasicBlock {
             // link to new handles, find first and last handle
             instructions.add(newIh);
             // we need to copy all attributes. FlowInfo should not be needed.
-            methodCode.copyCustomValues(newIh, ih);
+            methodCode.copyCustomValues(sourceInfo, newIh, ih);
             for (Object key : attributes) {
                 Object value = ih.getAttribute(key);
                 if (value != null) newIh.addAttribute(key, value);
