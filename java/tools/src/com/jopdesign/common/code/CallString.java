@@ -203,9 +203,15 @@ public class CallString implements CallStringProvider, Iterable<InvokeSite> {
      */
     public CallString push(InvokeSite is, int maxLen) {
 
-        if (maxLen == 0) return EMPTY;
+        if (maxLen <= 0) return EMPTY;
 
-        // shallow clone
+        // Workaround for hanging copyOfRange() if this is the empty callstring
+        if (callString.length == 0) {
+            // We know that maxLen is > 0 here
+            return new CallString(is);
+        }
+
+        // shallow clone, new length is k
         int k = Math.min(callString.length + 1, maxLen);
         int end = callString.length + 1;
         InvokeSite[] cs = Arrays.copyOfRange(callString, end - k, end);

@@ -285,8 +285,10 @@ public abstract class RebateSelector implements CandidateSelector {
 
         if (size > processorModel.getMaxMethodSize()) return false;
 
-        int newGlobalSize = globalCodesize + getDeltaGlobalCodesize(candidate);
-        if (newGlobalSize > maxGlobalSize) return false;
+        if (maxGlobalSize > 0) {
+            int newGlobalSize = globalCodesize + getDeltaGlobalCodesize(candidate);
+            if (newGlobalSize > maxGlobalSize) return false;
+        }
 
         return true;
     }

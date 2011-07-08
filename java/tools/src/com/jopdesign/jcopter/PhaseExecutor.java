@@ -118,7 +118,7 @@ public class PhaseExecutor {
     }
 
     private void loadOptions() throws BadConfigurationException {
-        if (getJConfig().doOptimizeNormal() && getJConfig().doAllowExperimental()) {
+        if (getJConfig().doOptimizeNormal()) {
             greedyConfig = new GreedyConfig(jcopter, getGreedyOptions());
         }
         inlineConfig = new InlineConfig(getInlineOptions());
@@ -290,8 +290,6 @@ public class PhaseExecutor {
      * Inline all InvokeSites which are marked for inlining by an inline strategy.
      */
     public void performGreedyOptimizer() {
-        // TODO inliner is experimental for now..
-        if (!getJConfig().doAllowExperimental()) return;
 
         // this is a more elaborate optimization which may increase codesize.
         if (!getJConfig().doOptimizeNormal()) return;

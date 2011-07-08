@@ -43,6 +43,7 @@ public class JCopter extends EmptyTool<JCopterManager> {
     public static final String CONFIG_FILE_NAME = "jcopter.properties";
 
     public static final String LOG_ROOT = "jcopter";
+    public static final String LOG_ANALYSIS = "jcopter.analysis";
     public static final String LOG_OPTIMIZER = "jcopter.optimizer";
     public static final String LOG_INLINE = "jcopter.inline";
 

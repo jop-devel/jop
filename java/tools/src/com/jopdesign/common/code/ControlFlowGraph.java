@@ -37,7 +37,6 @@ import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.HashedString;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.type.MethodRef;
-import ninjaFS.Rpc.Call;
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
@@ -826,8 +825,12 @@ public class ControlFlowGraph {
      * @return The basic block node associated with an instruction handle
      */
     public BasicBlockNode getHandleNode(InstructionHandle ih) {
+        return getHandleNode(ih, false);
+    }
+
+    public BasicBlockNode getHandleNode(InstructionHandle ih, boolean ignoreMissingNodes) {
         BasicBlockNode blockNode = (BasicBlockNode) ih.getAttribute(KEY_CFGNODE);
-        if (blockNode == null) {
+        if (blockNode == null && !ignoreMissingNodes) {
             String errMsg = "No basic block recorded for instruction " + ih.toString(true);
             logger.error(errMsg);
             return null;

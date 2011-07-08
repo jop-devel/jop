@@ -29,6 +29,7 @@ import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.misc.Ternary;
+import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
@@ -40,6 +41,7 @@ import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.jop.MethodCache;
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
@@ -126,6 +128,8 @@ public class MethodCacheAnalysis {
         }
     }
 
+    private static final Logger logger = Logger.getLogger(JCopter.LOG_ANALYSIS+".MethodCacheAnalysis");
+
     private final MethodCache cache;
     private final CallGraph callGraph;
     private final Map<ExecutionContext,Integer> cacheBlocks;
@@ -187,7 +191,17 @@ public class MethodCacheAnalysis {
         Integer blocks = cacheBlocks.get(node);
         if (blocks == null) {
             // not a node in the graph .. over-approximate simply by checking all nodes
-            return allFit(node.getMethodInfo());
+            // do not call allFit(MethodInfo) or we might get endless recursion if for some reason the analysis
+            // has not been updated for this method
+            for (ExecutionContext n : callGraph.getNodes(node.getMethodInfo())) {
+                blocks = cacheBlocks.get(node);
+                if (blocks == null) {
+                    logger.warn("No analysis results for method "+node.getMethodInfo());
+                    return false;
+                }
+                if (!cache.allFit(blocks)) return false;
+            }
+            return true;
         }
         return cache.allFit(blocks);
     }

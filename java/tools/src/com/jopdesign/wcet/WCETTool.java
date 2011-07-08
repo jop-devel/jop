@@ -441,9 +441,6 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
             cfg.insertReturnNodes();
             cfg.insertContinueLoopNodes();
 
-            // This currently only works for one graph at a time per method..
-            cfg.registerHandleNodes();
-
 //    	    cfg.insertSplitNodes();
 //    	    cfg.insertSummaryNodes();
 

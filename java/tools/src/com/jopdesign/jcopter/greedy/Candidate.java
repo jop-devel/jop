@@ -172,4 +172,9 @@ public abstract class Candidate {
      *         in the optimized code.
      */
     public abstract long getDeltaCacheMissCosts();
+
+    @Override
+    public String toString() {
+        return getMethod().toString()+"@"+getEntry();
+    }
 }

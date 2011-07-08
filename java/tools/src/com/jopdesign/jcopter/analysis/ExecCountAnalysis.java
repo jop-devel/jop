@@ -165,8 +165,15 @@ public class ExecCountAnalysis {
 
         // By loading the CFG, loopbounds are attached to the blocks if the WCA tool is loaded
         ControlFlowGraph cfg = method.getCode().getControlFlowGraph(false);
+
         LoopColoring<CFGNode,CFGEdge> lc = cfg.getLoopColoring();
-        BasicBlockNode node = cfg.getHandleNode(ih);
+        BasicBlockNode node = cfg.getHandleNode(ih, true);
+        if (node == null) {
+            // Since the CFG does not represent the complete code, there might be some instructions without block
+            // (exception handlers, ..)
+            // THIS IS UNSAFE! but what can you do ...
+            return 1;
+        }
 
         long ef = 1;
 

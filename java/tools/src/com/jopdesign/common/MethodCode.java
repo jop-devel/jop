@@ -275,7 +275,7 @@ public class MethodCode {
         if (line != null) {
             return line;
         }
-        LineNumberGen entry = getLineNumberEntry(ih, false);
+        LineNumberGen entry = getLineNumberEntry(handle, false);
         return entry != null ? entry.getSourceLine() : -1;
     }
 
@@ -898,6 +898,8 @@ public class MethodCode {
         if ( this.cfg == null ) {
             try {
                 cfg = new ControlFlowGraph(this.getMethodInfo());
+                // TODO we do this for now by default for the 'main' CFG on creation
+                cfg.registerHandleNodes();
                 for (AppEventHandler ah : AppInfo.getSingleton().getEventHandlers()) {
                     ah.onCreateMethodControlFlowGraph(cfg, clean);
                 }

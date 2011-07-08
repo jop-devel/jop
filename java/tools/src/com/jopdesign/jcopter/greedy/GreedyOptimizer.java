@@ -70,6 +70,9 @@ public class GreedyOptimizer {
     private final GreedyConfig config;
     private final List<CodeOptimizer> optimizers;
 
+    private int countCandidates;
+    private int countOptimized;
+
     private static final Logger logger = Logger.getLogger(JCopter.LOG_OPTIMIZER+".GreedyOptimizer");
 
     public GreedyOptimizer(GreedyConfig config) {
@@ -88,6 +91,7 @@ public class GreedyOptimizer {
         List<MethodInfo> rootMethods = config.getTargetMethods();
 
         // initialization
+        resetCounters();
 
         AnalysisManager analyses = initializeAnalyses();
 
@@ -128,6 +132,8 @@ public class GreedyOptimizer {
             Set<MethodInfo> others = new HashSet<MethodInfo>(analyses.getTargetCallGraph().getMethodInfos());
             others.removeAll(wcaMethods);
 
+            selector.printStatistics();
+
             selector = new ACETRebateSelector(analyses, config.getMaxCodesize());
             selector.initialize();
 
@@ -139,6 +145,17 @@ public class GreedyOptimizer {
             throw new AppInfoError("Order "+order+" not yet implemented.");
         }
 
+        selector.printStatistics();
+        printStatistics();
+    }
+
+    private void resetCounters() {
+        countCandidates = 0;
+        countOptimized = 0;
+    }
+
+    private void printStatistics() {
+        logger.info("Candidates: "+countCandidates+", Optimized: "+countOptimized);
     }
 
     private AnalysisManager initializeAnalyses() {
@@ -146,6 +163,8 @@ public class GreedyOptimizer {
         AnalysisManager analyses = new AnalysisManager(jcopter);
 
         analyses.initAnalyses(config.getTargetMethods(), config.getCacheAnalysisType(), config.getWCATargets());
+
+        logger.info("Callgraph nodes: "+analyses.getTargetCallGraph().getNodes().size());
 
         return analyses;
     }
@@ -173,6 +192,7 @@ public class GreedyOptimizer {
                 Collection<Candidate> found;
                 found = optimizer.findCandidates(method, analyses, stacksize, locals);
                 selector.addCandidates(method, found);
+                countCandidates += found .size();
             }
 
             methodData.put(method, new MethodData(locals));
@@ -197,7 +217,9 @@ public class GreedyOptimizer {
                 MethodInfo method = c.getMethod();
                 StacksizeAnalysis stacksize = analyses.getStacksizeAnalysis(method);
 
+                logger.info("Optimizing "+c.toString());
                 if (!c.optimize(analyses, stacksize)) continue;
+                countOptimized++;
 
                 // to update maxStack and positions
                 method.getCode().compile();
@@ -218,6 +240,7 @@ public class GreedyOptimizer {
                 // Notify selector to update codesize, remove unreachable methods and to replace
                 // old candidates with new ones
                 selector.onSuccessfulOptimize(c, newCandidates);
+                countCandidates += newCandidates.size();
 
                 optimizedMethods.add(method);
             }

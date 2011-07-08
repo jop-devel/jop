@@ -28,6 +28,7 @@ import com.jopdesign.common.config.Config.BadConfigurationError;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.MethodCacheAnalysis.AnalysisType;
+import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,6 +45,8 @@ import java.util.Set;
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class AnalysisManager {
+
+    private static final Logger logger = Logger.getLogger(JCopter.LOG_ANALYSIS+".AnalysisManager");
 
     private final JCopter jcopter;
 
@@ -74,6 +77,8 @@ public class AnalysisManager {
     public void initAnalyses(Collection<MethodInfo> targets, AnalysisType cacheAnalysisType,
                              Collection<MethodInfo> wcaRoots)
     {
+        logger.info("Initializing analyses..");
+
         targetCallGraph = CallGraph.buildCallGraph(targets,
                 new DefaultCallgraphBuilder(AppInfo.getSingleton().getCallstringLength()));
 
@@ -82,10 +87,16 @@ public class AnalysisManager {
         //      if we use the WCA, we might want to use the IPET WCA to initialize the execCountAnalysis for
         //      wca-methods
 
+        logger.info("Initializing ExecCountAnalysis");
         execCountAnalysis = new ExecCountAnalysis(targetCallGraph);
+        execCountAnalysis.initialize();
+
+        logger.info("Initializing MethodCacheAnalysis");
         methodCacheAnalysis = new MethodCacheAnalysis(this, cacheAnalysisType, targetCallGraph);
+        methodCacheAnalysis.initialize();
 
         if (wcaRoots != null) {
+            logger.info("Initializing WCAInvoker");
             wcaInvoker = new WCAInvoker(this, wcaRoots);
             try {
                 wcaInvoker.initialize();

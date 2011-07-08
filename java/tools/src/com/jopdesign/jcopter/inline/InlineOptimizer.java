@@ -648,8 +648,7 @@ public class InlineOptimizer implements CodeOptimizer {
 
         MethodCode code = method.getCode();
 
-        InstructionHandle ih = start;
-        while (ih != null) {
+        for (InstructionHandle ih = start; ih != null; ih = ih.getNext()) {
 
             if (code.isInvokeSite(ih)) {
                 InvokeSite site = code.getInvokeSite(ih);
@@ -676,7 +675,6 @@ public class InlineOptimizer implements CodeOptimizer {
             }
 
             if (ih == end) break;
-            ih = ih.getNext();
         }
 
         return candidates;
