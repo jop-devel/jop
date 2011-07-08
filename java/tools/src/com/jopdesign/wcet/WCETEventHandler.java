@@ -120,12 +120,6 @@ public class WCETEventHandler extends EmptyAppEventHandler {
         MethodCode code = method.getCode();
         ExecutionContext eCtx = new ExecutionContext(cfg.getMethodInfo());
         
-        try {
-            wcaMap = getAnnotations(method.getClassInfo());
-        } catch (IOException e) {
-            throw new BadAnnotationException("IO Error reading annotation: " + e.getMessage(), e);
-        }
-        
         for (CFGNode n : cfg.getLoopColoring().getHeadOfLoops()) {
             BasicBlockNode headOfLoop = (BasicBlockNode) n;
             BasicBlock block = headOfLoop.getBasicBlock();
@@ -134,6 +128,11 @@ public class WCETEventHandler extends EmptyAppEventHandler {
                 // TODO maybe check if we already loaded annotations for this methodInfo before
                 // or at least check if the source-annotation is tighter than what is currently set?
                 continue;
+            }
+            try {
+                wcaMap = getAnnotations(method.getCode().getSourceClassInfo(block.getFirstInstruction()));
+            } catch (IOException e) {
+                throw new BadAnnotationException("IO Error reading annotation: " + e.getMessage(), e);
             }
             // search for loop annotation in range
             int sourceRangeStart = code.getLineNumber(block.getFirstInstruction());

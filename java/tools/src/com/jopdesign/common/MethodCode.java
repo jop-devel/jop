@@ -84,7 +84,7 @@ public class MethodCode {
     private static final Object KEY_CUSTOMVALUES = new HashedString("MethodCode.CustomValues");
     // Keys to attach values directly to InstructionHandles, which are not handled by KeyManager
     private static final Object KEY_LINENUMBER = new HashedString("MethodCode.LineNumber");
-    private static final Object KEY_SOURCEFILE = new HashedString("MethodCode.SourceFile");
+    private static final Object KEY_SOURCECLASS = new HashedString("MethodCode.SourceClass");
     // We attach the LoopBounds as CustomKeys, so we can use the KeyManager to clear/copy/.. them.
     // TODO we could also attach them directly to InstructionHandles to save one map access (but then make this key private!)
     public static final CustomKey KEY_LOOPBOUND;
@@ -213,7 +213,7 @@ public class MethodCode {
         methodGen.removeLineNumbers();
         // TODO should we do something about the CFG?
         for (InstructionHandle ih : methodGen.getInstructionList().getInstructionHandles()) {
-            ih.removeAttribute(KEY_SOURCEFILE);
+            ih.removeAttribute(KEY_SOURCECLASS);
             ih.removeAttribute(KEY_LINENUMBER);
         }
     }
@@ -229,7 +229,7 @@ public class MethodCode {
      * @param ih the instruction to clear.
      */
     public void clearLineNumber(InstructionHandle ih) {
-        ih.removeAttribute(KEY_SOURCEFILE);
+        ih.removeAttribute(KEY_SOURCECLASS);
         ih.removeAttribute(KEY_LINENUMBER);
         LineNumberGen entry = getLineNumberEntry(ih, false);
         if (entry != null) {
@@ -279,11 +279,11 @@ public class MethodCode {
         return entry != null ? entry.getSourceLine() : -1;
     }
 
-    public void setLineNumber(InstructionHandle ih, String filename, int line) {
+    public void setLineNumber(InstructionHandle ih, ClassInfo classInfo, int line) {
         LineNumberGen lg = getLineNumberEntry(ih, false);
 
-        if (filename == null || filename.equals(methodInfo.getClassInfo().getSourceFileName())) {
-            ih.removeAttribute(KEY_SOURCEFILE);
+        if (classInfo == null || classInfo.equals(methodInfo.getClassInfo())) {
+            ih.removeAttribute(KEY_SOURCECLASS);
             ih.removeAttribute(KEY_LINENUMBER);
             if (lg != null) {
                 lg.setSourceLine(line);
@@ -291,7 +291,8 @@ public class MethodCode {
                 methodGen.addLineNumber(ih, line);
             }
         } else {
-            ih.addAttribute(KEY_SOURCEFILE, filename);
+            // or should we attach the ClassInfo directly?
+            ih.addAttribute(KEY_SOURCECLASS, classInfo.getClassName());
             ih.addAttribute(KEY_LINENUMBER, line);
             if (lg != null) {
                 removeLineNumber(lg);
@@ -299,15 +300,23 @@ public class MethodCode {
         }
     }
 
-    public String getSourceFileName(InstructionHandle ih) {
+    public ClassInfo getSourceClassInfo(InstructionHandle ih) {
         InstructionHandle handle = findLineNumberHandle(ih);
-        if (handle == null) return methodInfo.getClassInfo().getSourceFileName();
+        if (handle == null) return methodInfo.getClassInfo();
 
-        String source = (String) handle.getAttribute(KEY_SOURCEFILE);
-        if (source != null) {
-            return source;
+        String sourceClass = (String) handle.getAttribute(KEY_SOURCECLASS);
+        if (sourceClass != null) {
+            return getAppInfo().getClassInfo(sourceClass);
         }
-        return methodInfo.getClassInfo().getSourceFileName();
+        return methodInfo.getClassInfo();
+    }
+
+    public String getSourceFileName(InstructionHandle ih) {
+        ClassInfo classInfo = getSourceClassInfo(ih);
+        if (classInfo == null) {
+            return null;
+        }
+        return classInfo.getSourceFileName();
     }
 
     private InstructionHandle findLineNumberHandle(InstructionHandle ih) {
@@ -327,13 +336,13 @@ public class MethodCode {
             throw new AppInfoError("Invalid operation: cannot copy line numbers from method without code");
         }
 
-        String source = (String) from.getAttribute(KEY_SOURCEFILE);
+        String source = (String) from.getAttribute(KEY_SOURCECLASS);
         if (source != null) {
             int line = (Integer) from.getAttribute(KEY_LINENUMBER);
-            if (source.equals(getClassInfo().getSourceFileName())) {
+            if (source.equals(getClassInfo().getClassName())) {
                 setLineNumber(to, line);
             } else {
-                to.addAttribute(KEY_SOURCEFILE, source);
+                to.addAttribute(KEY_SOURCECLASS, source);
                 to.addAttribute(KEY_LINENUMBER, line);
             }
             return;
@@ -342,13 +351,11 @@ public class MethodCode {
         LineNumberGen entry = srcCode.getLineNumberEntry(from, false);
         if (entry != null) {
             int line = entry.getSourceLine();
-            source = srcCode.getClassInfo().getSourceFileName();
-            if (source == null || source.equals(getClassInfo().getSourceFileName()) ||
-                getClassInfo().getSourceFileName() == null)
-            {
+            source = srcCode.getClassInfo().getClassName();
+            if (source.equals(getClassInfo().getClassName())) {
                 setLineNumber(to, line);
             } else {
-                to.addAttribute(KEY_SOURCEFILE, source);
+                to.addAttribute(KEY_SOURCECLASS, source);
                 to.addAttribute(KEY_LINENUMBER, line);
             }
         }
