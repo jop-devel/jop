@@ -31,6 +31,7 @@ import org.apache.bcel.generic.CodeExceptionGen;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
+import org.apache.bcel.generic.InstructionTargeter;
 import org.apache.bcel.generic.JSR;
 import org.apache.bcel.generic.JSR_W;
 import org.apache.bcel.generic.NOP;
@@ -138,13 +139,13 @@ public class InstructionInterpreter<T> {
         InstructionHandle entry = il.getStart();
 
         Map<InstructionHandle,T> start = new HashMap<InstructionHandle, T>();
-        start.put(entry, initialize ? analysis.initial(entry) : null);
+        start.put(entry, initialize ? analysis.initial(entry) : analysis.bottom());
 
         // start at exception handler entries too?
         if (startAtExceptionHandlers) {
             for (CodeExceptionGen eg : methodInfo.getCode().getExceptionHandlers()) {
                 InstructionHandle ih = eg.getHandlerPC();
-                start.put(ih, initialize ? analysis.initial(eg) : null);
+                start.put(ih, initialize ? analysis.initial(eg) : analysis.bottom());
             }
         }
 
@@ -156,7 +157,7 @@ public class InstructionInterpreter<T> {
         InstructionList il = methodInfo.getCode().getInstructionList(true, false);
 
         Map<InstructionHandle,T> start = new HashMap<InstructionHandle, T>(1);
-        start.put(entry, initialize ? analysis.initial(entry) : null);
+        start.put(entry, initialize ? analysis.initial(entry) : analysis.bottom());
         interpret(il, start, initialize);
     }
 
@@ -164,19 +165,50 @@ public class InstructionInterpreter<T> {
 
         if (initialize) {
             InstructionHandle ih = il.getStart();
+            // set initial value for all instructions
             while (ih != null) {
                 results.put(ih, analysis.bottom());
                 ih = ih.getNext();
             }
 
             results.putAll(start);
+        } else {
+            // Set initial values for new instructions
+            for (InstructionHandle ih = il.getStart(); ih != null; ih = ih.getNext()) {
+                if (results.containsKey(ih)) continue;
+
+                if (ih.getPrev() == null && !ih.hasTargeters()) {
+                    // entry edge
+                    results.put(ih, analysis.initial(ih));
+                } else {
+                    results.put(ih, analysis.bottom());
+                    // check for exception handler entry
+                    if (ih.hasTargeters()) {
+                        for (InstructionTargeter targeter : ih.getTargeters()) {
+                            if (targeter instanceof CodeExceptionGen) {
+                                results.put(ih, analysis.initial((CodeExceptionGen) targeter));
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         LinkedList<Edge> worklist = new LinkedList<Edge>();
 
-        // setup the worklist with edges starting at the start instructions
+        // setup the worklist
         for (InstructionHandle ih : start.keySet()) {
-            worklist.addAll(getOutEdges(ih));
+            if (initialize) {
+                // when initializing, we start from the initial value, not from ingoing edges
+                worklist.addAll(getOutEdges(ih));
+            } else if (ih.getPrev() == null && !ih.hasTargeters()) {
+                // entry instruction without ingoing edges
+                worklist.addAll(getOutEdges(ih));
+            } else {
+                // we continue from existing results
+                worklist.addAll(getInEdges(il, ih));
+            }
         }
 
         while (!worklist.isEmpty()) {
@@ -273,6 +305,41 @@ public class InstructionInterpreter<T> {
         //      but for now, we just ignore them too.. in a safe way :)
         if (instr instanceof RET || instr instanceof JSR || instr instanceof JSR_W) {
             throw new JavaClassFormatError("Unsupported instruction "+instr+" in "+methodInfo);
+        }
+
+        return edges;
+    }
+
+    private List<Edge> getInEdges(InstructionList il, InstructionHandle ih) {
+        List<Edge> edges = new LinkedList<Edge>();
+
+        InstructionHandle prev = ih.getPrev();
+        if (prev != null) {
+            // check if we can fall through from prev instruction
+            Instruction instr = prev.getInstruction();
+            if (!(instr instanceof UnconditionalBranch
+                 || instr instanceof Select || instr instanceof ReturnInstruction))
+            {
+                if (instr instanceof BranchInstruction) {
+                    edges.add(new Edge(prev, ih, EdgeType.FALSE_EDGE));
+                } else {
+                    edges.add(new Edge(prev, ih, EdgeType.NORMAL_EDGE));
+                }
+            }
+        }
+
+        // This is bad: because we do not get the instruction handles of the targeters, we need to search the
+        // whole instruction list. There is no other way to find the ingoing edges except than constructing the
+        // flow graph explicitly
+        for (InstructionHandle targeter = il.getStart(); targeter != null; targeter = targeter.getNext()) {
+            // TODO we do not care about CodeExceptionGen targeters.. or should we? We should set the initial value
+            //      for the instruction for the exception handler
+            if (!(targeter.getInstruction() instanceof BranchInstruction)) continue;
+
+            BranchInstruction bi = (BranchInstruction) targeter.getInstruction();
+            if (bi.containsTarget(ih)) {
+                edges.add(new Edge(targeter, ih, EdgeType.TRUE_EDGE));
+            }
         }
 
         return edges;

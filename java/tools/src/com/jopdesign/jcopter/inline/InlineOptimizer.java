@@ -236,7 +236,7 @@ public class InlineOptimizer implements CodeOptimizer {
                 instrMap.put(src, ih);
             }
 
-            remapTargets(instrMap, next.getPrev(), iList.getEnd());
+            remapTargets(instrMap, next);
 
             return invokeMap;
         }
@@ -287,10 +287,6 @@ public class InlineOptimizer implements CodeOptimizer {
                     }
                 }
 
-                if (ih == null) {
-                    return null;
-                }
-
             } else if (c instanceof BranchInstruction) {
                 ih = il.insert(next, (BranchInstruction) c);
             } else {
@@ -300,17 +296,16 @@ public class InlineOptimizer implements CodeOptimizer {
             return ih;
         }
 
-        private void remapTargets(Map<InstructionHandle,InstructionHandle> instrMap,
-                                  InstructionHandle last, InstructionHandle oldLast)
-        {
-            InstructionHandle src = oldLast;
-            InstructionHandle ih = last;
-            while (src != null) {
-                Instruction i = src.getInstruction();
-                Instruction c = ih.getInstruction();
+        private void remapTargets(Map<InstructionHandle,InstructionHandle> instrMap, InstructionHandle next) {
+
+            for (Map.Entry<InstructionHandle,InstructionHandle> e : instrMap.entrySet()) {
+                InstructionHandle oldIh = e.getKey();
+                InstructionHandle newIh = e.getValue();
+                Instruction i = oldIh.getInstruction();
+                Instruction c = newIh.getInstruction();
 
                 // Note that this skips over the goto instructions we inserted instead of returns, this is intentional
-                if (i instanceof BranchInstruction) {
+                if (c instanceof BranchInstruction) {
                     BranchInstruction bi = (BranchInstruction) i;
                     BranchInstruction bc = (BranchInstruction) c;
                     InstructionHandle target = bi.getTarget(); // old target
@@ -320,14 +315,15 @@ public class InlineOptimizer implements CodeOptimizer {
                         // Either LOOKUPSWITCH or TABLESWITCH
                         InstructionHandle[] targets = ((Select) bi).getTargets();
                         for (int j = 0; j < targets.length; j++) {
-                            ((Select)bc).setTarget(j, instrMap.get(targets[j]));
+                            InstructionHandle newTarget = instrMap.get(targets[j]);
+                            ((Select)bc).setTarget(j, newTarget != null ? newTarget : next);
                         }
                     }
-                    bc.setTarget(instrMap.get(target));
+                    // If the old instruction targets an instruction which we removed, we retarget the new instruction to
+                    // the instruction after the inlined code. We can do this because we only remove return instructions.
+                    InstructionHandle newTarget = instrMap.get(target);
+                    bc.setTarget(newTarget != null ? newTarget : next);
                 }
-
-                src = src.getPrev();
-                ih = ih.getPrev();
             }
         }
 

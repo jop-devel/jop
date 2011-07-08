@@ -913,7 +913,8 @@ public class CallGraph implements ImplementationFinder {
         if (removeUnreachable) {
             // we only need to do this if we want to remove unreachable nodes, since removing a vertex
             // also removes its edges
-            for (ContextEdge e : callGraph.outgoingEdgesOf(context)) {
+            List<ContextEdge> remove = new ArrayList<ContextEdge>(callGraph.outgoingEdgesOf(context));
+            for (ContextEdge e : remove) {
                 removeEdge(e, removeUnreachable);
             }
         }
