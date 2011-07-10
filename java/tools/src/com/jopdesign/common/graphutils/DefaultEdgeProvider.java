@@ -18,24 +18,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common.code;
+package com.jopdesign.common.graphutils;
 
-import java.util.List;
+import org.jgrapht.DirectedGraph;
+
+import java.util.Collection;
 
 /**
- * @author Stefan Hepp (stefan@stefant.org)
- */
-public interface CallgraphFilter {
+* @author Stefan Hepp (stefan@stefant.org)
+*/
+public class DefaultEdgeProvider<V,E> implements EdgeProvider<V,E> {
+    private final DirectedGraph<V,E> graph;
 
-    /**
-     * @param context the context to get all childs for
-     * @return a list of childs to visit (the list must be a modifiable copy and will be consumed), or null to use all childs.
-     */
-    List<ExecutionContext> getChildren(ExecutionContext context);
+    DefaultEdgeProvider(DirectedGraph<V, E> graph) {
+        this.graph = graph;
+    }
 
-    /**
-     * @param context the context to get all parents for
-     * @return a list of parents to visit (the list must be a modifiable copy and will be consumed), or null to use all parents.
-     */
-    List<ExecutionContext> getParents(ExecutionContext context);
+    @Override
+    public Collection<E> outgoingEdgesOf(V node) {
+        return graph.outgoingEdgesOf(node);
+    }
+
+    @Override
+    public V getEdgeTarget(E edge) {
+        return graph.getEdgeTarget(edge);
+    }
 }

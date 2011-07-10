@@ -22,14 +22,16 @@ package com.jopdesign.jcopter.analysis;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
+import com.jopdesign.common.code.CallGraph.ContextEdge;
 import com.jopdesign.common.code.CallGraph.DUMPTYPE;
-import com.jopdesign.common.code.CallgraphTraverser;
-import com.jopdesign.common.code.CallgraphVisitor;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
+import com.jopdesign.common.graphutils.DFSTraverser;
+import com.jopdesign.common.graphutils.DFSTraverser.DFSVisitor;
+import com.jopdesign.common.graphutils.DFSTraverser.EmptyDFSVisitor;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.wcet.ProjectConfig;
 import com.jopdesign.wcet.WCETTool;
@@ -40,6 +42,7 @@ import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import org.apache.bcel.generic.InstructionHandle;
+import org.jgrapht.DirectedGraph;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -150,17 +153,17 @@ public class WCAInvoker {
 
         final Set<MethodInfo> methods = new HashSet<MethodInfo>();
 
-        CallgraphTraverser traverser = new CallgraphTraverser(wcetTool.getCallGraph(), new CallgraphVisitor() {
+        DFSVisitor<ExecutionContext,ContextEdge> visitor = new EmptyDFSVisitor<ExecutionContext, ContextEdge>() {
             @Override
-            public boolean visitNode(ExecutionContext node, List<ExecutionContext> childs, boolean isRecursion) {
+            public void preorder(ExecutionContext node) {
                 methods.add(node.getMethodInfo());
-                return true;
             }
-            @Override
-            public void finishNode(ExecutionContext node) {
-            }
-        });
-        traverser.traverseUp(rootNodes, true);
+        };
+
+        DirectedGraph<ExecutionContext,ContextEdge> reversed = wcetTool.getCallGraph().getReversedGraph();
+
+        DFSTraverser<ExecutionContext,ContextEdge> traverser = new DFSTraverser<ExecutionContext, ContextEdge>(visitor);
+        traverser.traverse(reversed);
 
         recursiveAnalysis.clearCache(methods);
 

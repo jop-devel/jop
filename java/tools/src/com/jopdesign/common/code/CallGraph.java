@@ -30,6 +30,7 @@ import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.StringOption;
 import com.jopdesign.common.graphutils.AdvancedDOTExporter;
+import com.jopdesign.common.graphutils.BackEdgeFinder;
 import com.jopdesign.common.graphutils.DirectedCycleDetector;
 import com.jopdesign.common.graphutils.InvokeDot;
 import com.jopdesign.common.graphutils.Pair;
@@ -660,6 +661,10 @@ public class CallGraph implements ImplementationFinder {
      * Various getters, access to nodes
      *---------------------------------------------------------------------------*/
 
+    public EdgeFactory<ExecutionContext,ContextEdge> getEdgeFactory() {
+        return callGraph.getEdgeFactory();
+    }
+
     /**
      * Get node for a method info and call context
      * @param m the method
@@ -728,6 +733,10 @@ public class CallGraph implements ImplementationFinder {
      */
     public MethodNode getMethodNode(MethodInfo m) {
         return methodNodes.get(m);
+    }
+
+    public Collection<ContextEdge> getOutgoingEdges(ExecutionContext node) {
+        return callGraph.outgoingEdgesOf(node);
     }
 
     /**
@@ -1233,6 +1242,10 @@ public class CallGraph implements ImplementationFinder {
         }
 
         return edges;
+    }
+
+    public BackEdgeFinder<ExecutionContext,ContextEdge> getBackEdgeFinder() {
+        return new BackEdgeFinder<ExecutionContext, ContextEdge>(callGraph);
     }
 
     /**

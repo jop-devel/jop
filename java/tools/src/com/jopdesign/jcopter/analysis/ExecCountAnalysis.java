@@ -23,21 +23,25 @@ package com.jopdesign.jcopter.analysis;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
-import com.jopdesign.common.code.CallgraphFilter;
-import com.jopdesign.common.code.CallgraphTraverser;
+import com.jopdesign.common.code.CallGraph.ContextEdge;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
-import com.jopdesign.common.code.EmptyCallgraphVisitor;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.code.LoopBound;
+import com.jopdesign.common.graphutils.BackEdgeFinder;
+import com.jopdesign.common.graphutils.EdgeProvider;
+import com.jopdesign.common.graphutils.GraphUtils;
 import com.jopdesign.common.graphutils.LoopColoring;
 import com.jopdesign.common.misc.Ternary;
 import org.apache.bcel.generic.InstructionHandle;
+import org.jgrapht.DirectedGraph;
+import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -50,45 +54,32 @@ import java.util.Set;
  */
 public class ExecCountAnalysis {
 
-    private class ExecCountUpdater extends EmptyCallgraphVisitor {
-        @Override
-        public boolean visitNode(ExecutionContext node, List<ExecutionContext> childs, boolean isRecursion) {
-            if (isRecursion) {
-                // TODO What shall we do if we encounter a recursive call? Just ignore it for now..
-                //      We could assume a max number of iterations and add them up
-                return false;
-            }
-
-            updateChilds(node, childs);
-
-            return true;
-        }
-    }
-
-    private class InlineFilter implements CallgraphFilter {
+    private class InlineEdgeProvider implements EdgeProvider<ExecutionContext,ContextEdge> {
 
         private final Set<InvokeSite> newInvokeSites;
 
-        private InlineFilter(Set<InvokeSite> newInvokeSites) {
+        private InlineEdgeProvider(Set<InvokeSite> newInvokeSites) {
             this.newInvokeSites = newInvokeSites;
         }
 
         @Override
-        public List<ExecutionContext> getChildren(ExecutionContext context) {
-            List<ExecutionContext> childs = new LinkedList<ExecutionContext>();
-            for (ExecutionContext child : callGraph.getChildren(context)) {
-                for (InvokeSite is : child.getCallString()) {
+        public Collection<ContextEdge> outgoingEdgesOf(ExecutionContext node) {
+            Collection<ContextEdge> edges = callGraph.getOutgoingEdges(node);
+            List<ContextEdge> result = new ArrayList<ContextEdge>(edges.size());
+
+            for (ContextEdge edge : edges) {
+                for (InvokeSite is : edge.getTarget().getCallString()) {
                     if (newInvokeSites.contains(is)) {
-                        childs.add(child);
+                        result.add(edge);
                     }
                 }
             }
-            return childs;
+            return result;
         }
 
         @Override
-        public List<ExecutionContext> getParents(ExecutionContext context) {
-            return null;
+        public ExecutionContext getEdgeTarget(ContextEdge edge) {
+            return edge.getTarget();
         }
     }
 
@@ -121,10 +112,14 @@ public class ExecCountAnalysis {
 
     public void initialize() {
         nodeCount.clear();
+
+        // initialize roots
         nodeCount.putAll(roots);
 
-        CallgraphTraverser traverser  = new CallgraphTraverser(callGraph, new ExecCountUpdater());
-        traverser.traverseDown(roots.keySet(), false);
+        BackEdgeFinder<ExecutionContext,ContextEdge> finder = callGraph.getBackEdgeFinder();
+        DirectedGraph<ExecutionContext,ContextEdge> dag = finder.createDAG();
+
+        updateExecCounts(dag);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -246,9 +241,14 @@ public class ExecCountAnalysis {
         // longer in the callgraph. We could however remove those nodes from our data structures in a
         // separate step before the callgraph is updated.
 
-        CallgraphTraverser traverser = new CallgraphTraverser(callGraph, new ExecCountUpdater());
-        traverser.setFilter( new InlineFilter(newInvokeSites) );
-        traverser.traverseDown(queue, false);
+        // To do this, we create a temporary subgraph containing all new nodes and no back edges, and then traverse
+        // it in topological order
+
+        // TODO if the callgraph is compressed, we need to look down up to callstringLength for new nodes!
+
+        DirectedGraph<ExecutionContext,ContextEdge> dag =
+                GraphUtils.copyGraph(new InlineEdgeProvider(newInvokeSites), callGraph.getEdgeFactory(), queue, false);
+        updateExecCounts(dag);
 
         // Despite all that is going on, the only *method* for which something changes in total is the inlined invokee
         changeSet.add(invokee);
@@ -264,6 +264,24 @@ public class ExecCountAnalysis {
         long val = (c == null) ? 0 : c;
         val += count;
         nodeCount.put(node, val);
+    }
+
+    private void updateExecCounts(DirectedGraph<ExecutionContext,ContextEdge> dag) {
+
+        // For now, we just require the graph to be a DAG.
+
+        // TODO for all back-edges, we should find some max recursion count and update reachable nodes accordingly..
+        // For now, we just assume we have no recursion (backedges are only due to insufficient callgraph thinning)
+        // or simply ignore recursion (unsafe, of course..)
+
+        // for the rest of the graph, we can now use a topological order
+        TopologicalOrderIterator<ExecutionContext,ContextEdge> topOrder =
+                new TopologicalOrderIterator<ExecutionContext, ContextEdge>(dag);
+        while (topOrder.hasNext()) {
+            ExecutionContext next = topOrder.next();
+
+            updateChilds(next, callGraph.getChildren(next));
+        }
     }
 
     private void updateChilds(ExecutionContext context, List<ExecutionContext> childs) {

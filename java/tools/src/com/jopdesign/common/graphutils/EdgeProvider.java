@@ -18,24 +18,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.common.code;
+package com.jopdesign.common.graphutils;
 
-import java.util.List;
+import java.util.Collection;
 
 /**
- * @author Stefan Hepp (stefan@stefant.org)
- */
-public interface CallgraphVisitor {
-
+* @author Stefan Hepp (stefan@stefant.org)
+*/
+public interface EdgeProvider<V,E> {
     /**
-     * Visit a node in preorder.
-     * @param node the current node.
-     * @param childs all (filtered) childs or parents of this node which will be visited later, including already visited nodes.
-     * @param isRecursion true when the call to the current node
-     * @return true if the childs should be visited.
+     * Get all outgoing edges of a node. The iterator of the result defines the order in which childs
+     * are visited. If an edge is not included in the result, the edge target will not be visited from this
+     * node, but it might still be visited from another node.
+     *
+     * @param node the node to get edges for
+     * @return all outgoing edges of the node which should be visited from this node.
      */
-    boolean visitNode(ExecutionContext node, List<ExecutionContext> childs, boolean isRecursion);
+    Collection<E> outgoingEdgesOf(V node);
 
-    void finishNode(ExecutionContext node);
-
+    V getEdgeTarget(E edge);
 }
