@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2008-2011, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2010, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -16,32 +16,47 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-
-
-package javax.safetycritical;
-
-import javax.realtime.RelativeTime;
+ */
+package test;
 
 /**
- * TODO: check current spec source and docu for actual version.
+ * This class should fail the static class initializer order generation.
  * 
- * @author Martin Schoeberl
- *
+ * @author martin
+ * 
  */
-public class PeriodicParameters extends javax.realtime.PeriodicParameters {
-	
-	RelativeTime start;
-	RelativeTime period;
-	
-	public PeriodicParameters(RelativeTime start, RelativeTime period) {
-		super(start, period); // dummy as we don't want to use it...
-		this.start = start;
-		this.period = period;
+public class ClinitFail {
+
+	static class C1 {
+		static void foo() {
+		}
+
+		static {
+			System.out.println("Static initializer in C1");
+			C2.foo();
+		}
 	}
 
-	public RelativeTime getPeriod() {
-		return period;
+	static class C2 {
+		static void foo() {
+		}
+
+		static {
+			System.out.println("Static initializer in C2");
+			C1.foo();
+		}
 	}
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		System.out.println("Hello from Main");
+		if (args.length == 0) {
+			C1.foo();
+		} else {
+			C2.foo();
+		}
+	}
+
 }

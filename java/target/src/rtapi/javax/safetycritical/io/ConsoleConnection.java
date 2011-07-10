@@ -1,3 +1,23 @@
+/*
+  This file is part of JOP, the Java Optimized Processor
+    see <http://www.jopdesign.com/>
+
+  Copyright (C) 2011, Martin Schoeberl (martin@jopdesign.com)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package javax.safetycritical.io;
 
 import java.io.DataInputStream;
@@ -7,50 +27,55 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import javax.microedition.io.ConnectionNotFoundException;
+import javax.microedition.io.Connector;
 import javax.microedition.io.StreamConnection;
 import javax.safetycritical.annotate.SCJAllowed;
 
-/** A connection for the default I/O device. */
+/** A connection for the terminal. */
 @SCJAllowed
-public class ConsoleConnection implements StreamConnection
-{
-  /** Create a new object of this type. */
-  @SCJAllowed
-  ConsoleConnection(String name) throws ConnectionNotFoundException
-  {
-  }
+public class ConsoleConnection implements StreamConnection {
 
-  @SCJAllowed
-  public void close() throws IOException
-  {
-  }
+	/**
+	 * A singleton to return the available System.in/out
+	 * streams (e.g., JOPPrintStream).
+	 * 
+	 */
+	static ConsoleConnection single = new ConsoleConnection();
+	static {
+		Connector.setConsoleConnection(single);
+	}
+	/**
+	 * No public constructor. Again, how do we a safe packet crossing. Let's try
+	 * using Torur's friend concept ;-)
+	 * 
+	 * @param name
+	 * @throws ConnectionNotFoundException
+	 */
+	@SCJAllowed
+	ConsoleConnection() { // throws ConnectionNotFoundException {
+	}
 
-  @SCJAllowed
-  public InputStream openInputStream()
-    throws IOException
-  {
-    return null;
-  }
+	@SCJAllowed
+	public void close() throws IOException {
+	}
 
-  /* (non-Javadoc)
-   * @see javax.microedition.io.OutputConnection#openOutputStream()
-   */
-  @SCJAllowed
-  public OutputStream openOutputStream()
-      throws IOException
-  {
-    return null;
-  }
+	@SCJAllowed
+	public InputStream openInputStream() throws IOException {
+		return System.in;
+	}
 
-@Override
-public DataInputStream openDataInputStream() throws IOException {
-	// TODO Auto-generated method stub
-	return null;
-}
+	@SCJAllowed
+	public OutputStream openOutputStream() throws IOException {
+		return System.out;
+	}
 
-@Override
-public DataOutputStream openDataOutputStream() throws IOException {
-	// TODO Auto-generated method stub
-	return null;
-}
+	@Override
+	public DataInputStream openDataInputStream() throws IOException {
+		return null;
+	}
+
+	@Override
+	public DataOutputStream openDataOutputStream() throws IOException {
+		return null;
+	}
 }

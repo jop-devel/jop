@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2001-2011, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,38 +18,36 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+package wcet.devel;
 
-/**
- * 
- */
-package javax.safetycritical;
-
-import javax.realtime.PriorityParameters;
-
-/**
- * Not anymore part of the SCJ specification.
- * @author Martin Schoeberl
- *
- * 
- */
-public class SingleMissionSequencer extends MissionSequencer {
+public class ExceptionPreprocess {
 	
-	private MissionDescriptor mission;
-
-	public SingleMissionSequencer(PriorityParameters priority, MissionDescriptor md) {
-		super(priority, null, "Hans");
-		mission = md;
+	public static void main(String [] args) {
+		ExceptionPreprocess e = new ExceptionPreprocess();
+		try {
+			e.throwA();
+		} catch (Exception exc) {
+			exc.printStackTrace();
+			System.out.println("FAIL");
+			return;
+		}
+		System.out.println("PASS");
 	}
 
-	public MissionDescriptor getInitialMission() {
-		return mission;
+	static Exception throw_exc;
+
+	private void throwA() throws Exception {
+		throw_exc = new Exception("ok");
+		try {
+			throwB();
+		} catch (Exception exc) {
+			if (exc != throw_exc)
+				throw exc;
+		}
 	}
 
-	/**
-	 * This is a single mission so we return null for the
-	 * next mission.
-	 */
-	public Mission getNextMission() {
-		return null;
+	private synchronized void throwB() throws Exception {
+		throw throw_exc;
 	}
+
 }

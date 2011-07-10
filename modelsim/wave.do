@@ -33,14 +33,18 @@ add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/sta
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/addr_reg
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/index
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/value
+add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/putref_reg
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/dest_level_reg
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/was_a_store
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/was_a_stidx
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/was_a_hwo
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/read_ocache
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cpu/mem/null_pointer
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cpu/mem/bounds_error
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cpu/mem/illegal_assignment
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/np_exc
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/ab_exc
+add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/ia_exc
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/sc_mem_out
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/sc_mem_in
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/data

@@ -4,7 +4,7 @@
   This subset of javax.realtime is provided for the JSR 302
   Safety Critical Specification for Java
 
-  Copyright (C) 2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2008-2011, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,9 +18,11 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 package javax.realtime;
+
+// This is the version to support SPM
 
 //import com.jopdesign.io.IOFactory;
 //import com.jopdesign.sys.Scope;
@@ -83,49 +85,28 @@ package javax.realtime;
 //}
 
 // this is the SCJ version
-import static javax.safetycritical.annotate.Allocate.Area.SCOPED;
-import static javax.safetycritical.annotate.Level.LEVEL_1;
 
-import javax.safetycritical.annotate.Allocate;
-import javax.safetycritical.annotate.BlockFree;
 import javax.safetycritical.annotate.SCJAllowed;
-import javax.safetycritical.annotate.SCJProtected;
 
+/**
+ * Another empty class....
+ * 
+ * @author martin
+ *
+ */
 @SCJAllowed
-public abstract class ScopedMemory
-  extends MemoryArea implements ScopedAllocationContext
-{
-  @Allocate({SCOPED})
-  @BlockFree
-  @SCJProtected
-  public ScopedMemory(long size) 
-  {
-	  super(size);
-  }
-
-  @Allocate({SCOPED})
-  @BlockFree
-  @SCJProtected
-  public ScopedMemory(SizeEstimator estimator) {}
-
-  /**
-   * Not @SCJAllowed
-   *
-   */
-  public Object getPortal() throws MemoryAccessError, IllegalAssignmentError
-  {
-    return null; // dummy return
-  }
-
-  /**
-   * Not @SCJAllowed
-   */
-  public void setPortal(Object object) {}
-  
-  @SCJAllowed
-  public void resize(long size) {};
+public abstract class ScopedMemory extends MemoryArea implements
+		ScopedAllocationContext {
+	
+	/**
+	 * resize is gone.
+	 * @param estimator
+	 */
+//	@Allocate( { SCOPED })
+//	@BlockFree
+//	@SCJProtected
+//	public ScopedMemory(SizeEstimator estimator) {
+//	}
 
 
-  public void join() throws InterruptedException {}
-  
 }

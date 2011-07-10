@@ -20,6 +20,8 @@
 
 package com.jopdesign.sys;
 
+import util.Timer;
+
 class JVM {
 
 	private static void f_nop() { JVMHelp.noim(); /* jvm.asm */ }
@@ -115,9 +117,13 @@ class JVM {
 			
 		synchronized (GC.mutex) {
 			if (Config.USE_SCOPES) {
-				if (Config.USE_SCOPECHECKS) {
-					JVMHelp.scopeCheck(ref, value);
+				//if (Config.USE_SCOPECHECKS) {
+				if (((value & 0x3E000000) >>> 25) > ((ref & 0x3E000000) >>> 25)){
+					GC.log("Illegal array reference");
 				}
+
+//					JVMHelp.scopeCheck(ref, value);
+				//}
 			} else {
 				// snapshot-at-beginning barrier
 				int oldVal = Native.arrayLoad(ref, index);
@@ -1102,23 +1108,15 @@ class JVM {
 		
 		synchronized (GC.mutex) {
 			if (Config.USE_SCOPES) {
-				if (Config.USE_SCOPECHECKS) {
+//				if (Config.USE_SCOPECHECKS) {
 					/**
 					 * val cannot be in a scoped region because if the scoped area is freed, then
 					 * we get a dangling reference in the modified static field
 					 */
-					int val_level;
-				
-					if (Config.ADD_REF_INFO){
-						val_level = (val & 0x3E000000) >>> 25;
-					}else{
-						val_level = Native.rdMem(val + GC.OFF_SCOPE);
+					if (((val & 0x3E000000) >>> 25) != 0){
+						GC.log("Illegal static reference");
 					}
-				
-					if ( val_level != 0 ){
-						GC.log("Illegal Assignment Exception: Static field references scoped object");
-					}
-				}
+//				}
 			} else {
 				// snapshot-at-beginning barrier
 				int oldVal = Native.getStatic(addr);
@@ -1140,9 +1138,11 @@ class JVM {
 		
 		synchronized (GC.mutex) {			
 			if (Config.USE_SCOPES) {
-				if (Config.USE_SCOPECHECKS) {
-					JVMHelp.scopeCheck(ref, value);
-				}
+//				if (Config.USE_SCOPECHECKS) {
+					if (((value & 0x3E000000) >>> 25) > ((ref & 0x3E000000) >>> 25)){
+						GC.log("Illegal field reference");
+					}
+//				}
 			} else {
 				// snapshot-at-beginning barrier
 				int oldVal = Native.getField(ref, index);

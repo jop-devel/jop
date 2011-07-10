@@ -151,7 +151,7 @@ public abstract class AbstractFlightPlan implements FlightPlan {
 	}
 	
 	private void missionFinished() {
-		LogUtils.log(this, "Flightplan finished - mission termination requested");
+		//LogUtils.log(this, "Flightplan finished - mission termination requested");
 		
 		this.currentBlock = null;
 		this.autopilotModule.missionFinished();		
@@ -204,7 +204,7 @@ public abstract class AbstractFlightPlan implements FlightPlan {
 		protected final void execute() {			
 			preCall();
 			
-			LogUtils.log(this, "Block " + blockNumber + " Stage " + this.currentStage.stageNumber + " executed");
+			//LogUtils.log(this, "Block " + blockNumber + " Stage " + this.currentStage.stageNumber + " executed");
 			this.currentStage.execute();
 			
 //			if (!skipPostCall) {

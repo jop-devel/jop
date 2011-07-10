@@ -18,6 +18,8 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  
+  @authors  Martin Schoeberl, Lei Zhao, Ales Plsek, Tórur Strøm
  */
 
 package javax.realtime;
@@ -47,6 +49,7 @@ public class RelativeTime extends HighResolutionTime {
 	@SCJAllowed
 	@SCJRestricted(maySelfSuspend = false)
 	public RelativeTime() {
+		this(0, 0);
 	}
 
 	/**
@@ -68,14 +71,7 @@ public class RelativeTime extends HighResolutionTime {
 	@SCJAllowed
 	@SCJRestricted(maySelfSuspend = false)
 	public RelativeTime(long ms, int ns) {
-		ms += ns / 1000;
-		ns %= 1000;
-		if (ns < 0) {
-			ns += 1000;
-			ms--;
-		}
-		millis = ms;
-		nanos = ns;
+		super(ms,ns);
 	}
 
 	/**
@@ -88,6 +84,7 @@ public class RelativeTime extends HighResolutionTime {
 	@SCJAllowed
 	@SCJRestricted(maySelfSuspend = false)
 	public RelativeTime(Clock clock) {
+		this(0, 0, clock);
 	}
 
 	/**
@@ -107,6 +104,7 @@ public class RelativeTime extends HighResolutionTime {
 	@SCJAllowed
 	@SCJRestricted(maySelfSuspend = false)
 	public RelativeTime(long ms, int ns, Clock clock) {
+		super(ms, ns, clock);
 	}
 
 	// /**
@@ -124,26 +122,7 @@ public class RelativeTime extends HighResolutionTime {
 	@SCJAllowed
 	@SCJRestricted(maySelfSuspend = false)
 	public RelativeTime(RelativeTime time) {
-		millis = time.millis;
-		nanos = time.nanos;
-	}
-
-	/**
-	 * Create a new object representing the result of adding millis and nanos to
-	 * the values from this and normalizing the result.
-	 * 
-	 * @param millis
-	 *            The number of milliseconds to be added to this.
-	 * @param nanos
-	 *            The number of nanoseconds to be added to this.
-	 * @return A new RelativeTime object whose time is the normalization of this
-	 *         plus millis and nanos.
-	 */
-	@Allocate( { CURRENT })
-	@SCJAllowed
-	@SCJRestricted(maySelfSuspend = false)
-	public RelativeTime add(long millis, int nanos) {
-		return add(millis, nanos);
+		super(time);
 	}
 
 	/**
@@ -159,9 +138,34 @@ public class RelativeTime extends HighResolutionTime {
 	@SCJAllowed
 	@SCJRestricted(maySelfSuspend = false)
 	public RelativeTime add(RelativeTime time) {
-		return add(time);
-	}
+        if (time == null || time.clock != clock)
+            throw new IllegalArgumentException("null arg or different clock");
 
+        return add(time.millis, time.nanos);
+	}
+	
+	/**
+	 * Return an object containing the value resulting from adding time to the
+	 * value of this and normalizing the result.
+	 * 
+	 * @param time
+	 *            The time to add to this.
+	 * @param dest
+	 *            If dest is not null, the result is placed there and returned.
+	 *            Otherwise, a new object is allocated for the result.
+	 * @return the result of the normalization of this plus the RelativeTime
+	 *         parameter time in dest if dest is not null, otherwise the result
+	 *         is returned in a newly allocated object.
+	 */
+	@SCJAllowed
+	@SCJRestricted(maySelfSuspend = false)
+	public RelativeTime add(RelativeTime time, RelativeTime dest) {
+		if (time == null || time.clock != clock)
+			throw new IllegalArgumentException("null arg or different clock");
+
+		return add(time.millis, time.nanos, dest);
+	}
+	
 	/**
 	 * Return an object containing the value resulting from adding millis and
 	 * nanos to the values from this and normalizing the result.
@@ -180,44 +184,28 @@ public class RelativeTime extends HighResolutionTime {
 	@SCJAllowed
 	@SCJRestricted(maySelfSuspend = false)
 	public RelativeTime add(long millis, int nanos, RelativeTime dest) {
-		return null;
+		return (RelativeTime) super.add(millis, nanos,
+				dest == null ? new RelativeTime(0, 0, clock) : dest);
 	}
-
+	
 	/**
-	 * Return an object containing the value resulting from adding time to the
-	 * value of this and normalizing the result.
+	 * Create a new object representing the result of adding millis and nanos to
+	 * the values from this and normalizing the result.
 	 * 
-	 * @param time
-	 *            The time to add to this.
-	 * @param dest
-	 *            If dest is not null, the result is placed there and returned.
-	 *            Otherwise, a new object is allocated for the result.
-	 * @return the result of the normalization of this plus the RelativeTime
-	 *         parameter time in dest if dest is not null, otherwise the result
-	 *         is returned in a newly allocated object.
-	 */
-	@SCJAllowed
-	@SCJRestricted(maySelfSuspend = false)
-	public RelativeTime add(RelativeTime time, RelativeTime dest) {
-		return null;
-	}
-
-	/**
-	 * Create a new instance of RelativeTime representing the result of
-	 * subtracting time from the value of this and normalizing the result.
-	 * 
-	 * @param time
-	 *            The time to subtract from this.
+	 * @param millis
+	 *            The number of milliseconds to be added to this.
+	 * @param nanos
+	 *            The number of nanoseconds to be added to this.
 	 * @return A new RelativeTime object whose time is the normalization of this
-	 *         minus the parameter time parameter time.
+	 *         plus millis and nanos.
 	 */
 	@Allocate( { CURRENT })
 	@SCJAllowed
 	@SCJRestricted(maySelfSuspend = false)
-	public RelativeTime subtract(RelativeTime time) {
-		return subtract(time);
+	public RelativeTime add(long millis, int nanos) {
+		return add(millis, nanos, null);
 	}
-
+	
 	/**
 	 * Return an object containing the value resulting from subtracting the
 	 * value of time from the value of this and normalizing the result.
@@ -234,7 +222,29 @@ public class RelativeTime extends HighResolutionTime {
 	@SCJAllowed
 	@SCJRestricted(maySelfSuspend = false)
 	public RelativeTime subtract(RelativeTime time, RelativeTime dest) {
-		return null;
+		if (time == null || time.clock != this.clock)
+			throw new IllegalArgumentException("null arg or different clock");
+
+		return (RelativeTime) add(-time.millis, -time.nanos, dest);
+	}
+
+	/**
+	 * Create a new instance of RelativeTime representing the result of
+	 * subtracting time from the value of this and normalizing the result.
+	 * 
+	 * @param time
+	 *            The time to subtract from this.
+	 * @return A new RelativeTime object whose time is the normalization of this
+	 *         minus the parameter time parameter time.
+	 */
+	@Allocate( { CURRENT })
+	@SCJAllowed
+	@SCJRestricted(maySelfSuspend = false)
+	public RelativeTime subtract(RelativeTime time) {
+		if (time == null || time.clock != clock)
+            throw new IllegalArgumentException("null arg or different clock");
+
+        return add(-time.millis, -time.nanos);
 	}
 
 	/************** unused RTSJ methods ******************************/
@@ -257,6 +267,7 @@ public class RelativeTime extends HighResolutionTime {
 
 	// clock conversion
 	public RelativeTime(RelativeTime time, Clock clock) {
+		this();
 	}
 
 	public AbsoluteTime absolute(Clock clock, AbsoluteTime destination) {

@@ -1,3 +1,23 @@
+/*
+  This file is part of JOP, the Java Optimized Processor
+    see <http://www.jopdesign.com/>
+
+  Copyright (C) 2008-2011, Martin Schoeberl (martin@jopdesign.com)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package javax.safetycritical;
 
 import javax.realtime.BoundAsyncEventHandler;
@@ -12,85 +32,48 @@ import static javax.safetycritical.annotate.Phase.CLEANUP;
 import static javax.safetycritical.annotate.Level.SUPPORT;
 import static javax.safetycritical.annotate.Level.INFRASTRUCTURE;
 
-
+/**
+ * An almost empty class, just to add two methods.
+ * 
+ * @author Martin Schoeberl
+ * 
+ */
 @SCJAllowed
 public abstract class ManagedEventHandler extends BoundAsyncEventHandler
-  implements ManagedSchedulable
-{
+		implements ManagedSchedulable {
 
-  PrivateMemory backingStore;
+	private String name;
 
-  /**
-   * Constructor to create an event handler.
-   * <p>
-   * Does not perform memory allocation. Does not allow this to escape local
-   * scope. Builds links from this to priority, parameters, and name so those
-   * three arguments must reside in scopes that enclose this.
-   *
-   * @param priority
-   *        specifies the priority parameters for this periodic event
-   *        handler. Must not be null.
-   *
-   * @param release
-   *        specifies the periodic release parameters, in particular the
-   *        start time and period. Note that a relative start time is not
-   *        relative to NOW but relative to the point in time when
-   *        initialization is finished and the timers are started. This
-   *        argument must not be null.
-   *         
-   * @param scp
-   *        The scp parameter describes the organization of memory
-   *        dedicated to execution of the underlying thread. (added by MS)
-   *
-   * @throws IllegalArgumentException
-   *         if priority parameters are null.
-   */
-  @SCJAllowed(INFRASTRUCTURE)
-  @SCJRestricted(phase = INITIALIZATION)
-  ManagedEventHandler(PriorityParameters priority,
-		      ReleaseParameters release,
-		      StorageParameters scp,
-		      String name)
-  {
-	  if(scp != null)
-	  {
-		  backingStore = new PrivateMemory(scp.getTotalBackingStoreSize());
-	  }
-  }
+	@SCJAllowed(INFRASTRUCTURE)
+	@SCJRestricted(phase = INITIALIZATION)
+	ManagedEventHandler(PriorityParameters priority, ReleaseParameters release,
+			StorageParameters scp, String name) {
+		this.name = name;
+		if (scp != null) {
+			// create memory (backing store)
+		}
+	}
 
-  /**
-   * Application developers override this method with code to be executed when
-   * this event handler's execution is disabled (upon termination of the
-   * enclosing mission).
-   *
-   */
-  @Override
-  @SCJAllowed(SUPPORT)
-  @SCJRestricted(phase = CLEANUP)
-  public void cleanUp() {}
+	@Override
+	@SCJAllowed(SUPPORT)
+	@SCJRestricted(phase = CLEANUP)
+	public void cleanUp() {
+	}
 
-  /**
-   * Application developers override this method with code to be executed
-   * whenever the event(s) to which this event handler is bound is fired.
-   */
-  @Override
-  @SCJAllowed(SUPPORT)
-  public abstract void handleAsyncEvent();
+	// TODO: do we need to repeat it here?
+	// ok, why not...
+	@Override
+	@SCJAllowed(SUPPORT)
+	public abstract void handleAsyncEvent();
 
-  /**
-   * @return the name of this event handler.
-   */
-  @SCJAllowed
-  public String getName()
-  {
-    return null;
-  }
+	@SCJAllowed
+	public String getName() {
+		return name;
+	}
 
-  /**
-   * @see javax.safetycritical.ManagedSchedulable#register()
-   */
-  @Override
-  @SCJAllowed
-  @SCJRestricted(phase = INITIALIZATION)
-  public void register() {}
+	@Override
+	@SCJAllowed
+	@SCJRestricted(phase = INITIALIZATION)
+	public void register() {
+	}
 }

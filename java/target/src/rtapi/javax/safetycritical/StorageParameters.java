@@ -142,6 +142,21 @@ public class StorageParameters
                            int messageLength,
                            int stackTraceLength) { }
 
+  
+  /**
+   * This is the only constructor that should exist according to the current spec.
+   * It should be properly implemented.
+   * Tórur - 1/7/2011
+   * */
+  @SCJAllowed
+  public StorageParameters(long totalBackingStore,
+                           long[] sizes, 
+                           int messageLength,
+                           int stackTraceLength) 
+  {
+	  this.totalBackingStore = totalBackingStore;
+  }
+  
   /**
    *
    * @return the size of the total backing store available for scoped

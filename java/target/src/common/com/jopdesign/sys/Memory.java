@@ -103,6 +103,7 @@ public class Memory {
 	public Memory(int size, int bsSize) {
 		cnt = 0;
 		if (RtThreadImpl.mission) {
+			// should be atomic? probably not
 			Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
 			parent = s.ref[s.active].currentArea;
 		} else {
@@ -156,6 +157,7 @@ public class Memory {
 	 */
 
 	public void enter(Runnable logic) {
+		// Anders thinks cnt is useless here
 		synchronized (this) {
 			++cnt;
 		}
@@ -198,6 +200,32 @@ public class Memory {
 		allocPtr = startPtr;
 	}
 	
+	// just a enter without pointer reset (and cleanup)
+	// need to be checked that the area is actually owned
+	// by a thread when it is private memory
+	public void executeInArea(Runnable logic) {
+		// activate the memory area
+		RtThreadImpl rtt = null;
+		Memory outer = null;
+		if (RtThreadImpl.mission) {
+			// This method is only used by scopes within PrivateMemory so we
+			// are certain that threads are running.
+			Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
+			int nr = s.active;
+			rtt = s.ref[nr];
+			outer = rtt.currentArea;
+			rtt.currentArea = this;
+			logic.run();
+			// exit the area
+			rtt.currentArea = outer;
+		} else {
+			// without RtThreads running, main thread
+			outer = RtThreadImpl.initArea;
+			RtThreadImpl.initArea = this;
+			logic.run();
+			RtThreadImpl.initArea = outer;
+		}
+	}
 	/**
 	 * Return the memory region which we are currently in.
 	 * @return
@@ -255,4 +283,6 @@ public class Memory {
 		// Reset BS allocation pointer
 		this.allocBsPtr = bsPtr;
 	}
+	
+	// executeInArea -- don't forget to synchronize new
 }

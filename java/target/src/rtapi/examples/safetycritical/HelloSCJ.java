@@ -16,35 +16,61 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 package examples.safetycritical;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
+import javax.microedition.io.Connector;
+import javax.realtime.PeriodicParameters;
 import javax.realtime.PriorityParameters;
 import javax.realtime.RelativeTime;
 import javax.safetycritical.*;
+import javax.safetycritical.io.SimplePrintStream;
 
 /**
  * A minimal SCJ application - The SCJ Hello World
  * 
  * @author Martin Schoeberl
- *
+ * 
  */
 public class HelloSCJ extends Mission implements Safelet {
+
+	// work around...
+	static HelloSCJ single;
+
+	static SimplePrintStream out;
 
 	// From Mission
 	@Override
 	protected void initialize() {
-		
+
+		OutputStream os = null;
+		try {
+			os = Connector.openOutputStream("console:");
+		} catch (IOException e) {
+			throw new Error("No console available");
+		}
+		out = new SimplePrintStream(os);
+
 		PeriodicEventHandler peh = new PeriodicEventHandler(
-				new PriorityParameters(11),
-				new PeriodicParameters(new RelativeTime(0,0), new RelativeTime(1000,0)),
-				new StorageParameters(0, 0, 0)
-			) {
+				new PriorityParameters(11), new PeriodicParameters(
+						new RelativeTime(0, 0), new RelativeTime(1000, 0)),
+				new StorageParameters(10000, 1000, 1000)) {
+			int cnt;
+
 			public void handleAsyncEvent() {
-				Terminal.getTerminal().writeln("Ping ");
+				out.println("Ping " + cnt);
+				++cnt;
+				if (cnt > 5) {
+					// getCurrentMission is not yet working
+					single.requestTermination();
+				}
 			}
 		};
+		peh.register();
 	}
 
 	// Safelet methods
@@ -56,40 +82,26 @@ public class HelloSCJ extends Mission implements Safelet {
 	}
 
 	@Override
-	public void setUp() {
-		// TODO Auto-generated method stub
-		
+	public long missionMemorySize() {
+		return 100000;
 	}
 
 	@Override
-	public void tearDown() {
-		// TODO Auto-generated method stub
-		
+	public long immortalMemorySize() {
+		return 1000;
 	}
 
-
-	
-	// not used anymore
-//	public long missionMemorySize() {
-//		return 0;
-//	}
-//
-//	public int getLevel() {
-//		return 1;
-//	}
-
-
 	/**
-	 * Within the JOP SCJ version we use a main method instead
-	 * of a command line parameter or configuration file.
+	 * Within the JOP SCJ version we use a main method instead of a command line
+	 * parameter or configuration file.
 	 * 
 	 * @param args
 	 */
 	public static void main(String[] args) {
 		System.out.println("Hello");
 		Terminal.getTerminal().writeln("Hello SCJ World!");
-		JopSystem.startMission(new HelloSCJ());
+		single = new HelloSCJ();
+		JopSystem.startMission(single);
 	}
-
 
 }

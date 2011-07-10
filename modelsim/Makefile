@@ -8,11 +8,11 @@ JOPDIR=../vhdl
 OPTIONS=-93 -quiet
 
 ifeq ($(WINDIR),)
-	WINE=wine
+	WINE=
 	S=:
 else
 	WINE=
-	S=\;
+	S=:
 endif
 
 all: clean base

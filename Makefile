@@ -90,6 +90,22 @@ CLDC11=false
 #
 JDK16=false
 
+# Currently same hardware is used so all three cannot be "yes" at the same time
+# Remember to edit decode.vhd file and uncomment/comment the appropriate microcode
+#
+# STPSR = start put static reference
+# STPFR = start put filed reference
+# STASTR = start array store reference
+# 
+# The same should be done in Instruction.java and uncomment/comment the lines where 
+# stpfr, stsr, stastr are defined
+#
+# After that a full make is necessary
+
+USE_HW_PUTFIELD_REF=no
+USE_HW_PUTSTATIC_REF=no
+USE_HW_AASTORE=no
+
 #
 # Number of cores for JopSim and RTTM simulation
 #
@@ -198,7 +214,7 @@ else
 	TARGET_SOURCE=$(TARGET_SRC_PATH)/common$(S)$(TARGET_SRC_PATH)/jdk_base$(S)$(TARGET_SRC_PATH)/jdk11$(S)$(TARGET_SRC_PATH)/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
 endif
 endif
-TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5
+TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5 -encoding Latin1
 GCC_PARAMS=
 
 # uncomment this to use RTTM
