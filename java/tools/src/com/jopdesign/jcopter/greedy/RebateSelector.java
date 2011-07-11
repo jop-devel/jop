@@ -257,6 +257,8 @@ public abstract class RebateSelector implements CandidateSelector {
 
         for (MethodInfo method : changedMethods) {
             MethodData data = methodData.get(method);
+            // changed methods which are not optimized or not reachable anymore are skipped
+            if (data == null) continue;
 
             queue.removeAll(data.getRatios());
             data.getRatios().clear();
