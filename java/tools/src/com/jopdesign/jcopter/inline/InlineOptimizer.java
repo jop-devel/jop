@@ -247,7 +247,7 @@ public class InlineOptimizer implements CodeOptimizer {
         {
             InstructionHandle ih;
             Instruction instr = src.getInstruction();
-            Instruction c = instr.copy();
+            Instruction c = invokeSite.getInvoker().getCode().copyFrom(invokee.getClassInfo(), instr);
 
             if (instr instanceof LocalVariableInstruction) {
                 // remap local variables

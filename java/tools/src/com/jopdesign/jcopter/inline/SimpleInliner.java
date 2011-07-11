@@ -625,7 +625,7 @@ public class SimpleInliner extends AbstractOptimizer {
             cnt--;
         }
 
-        InstructionHandle end = invokerCode.replace(invoke, 1, invokee, il, start, cnt, false);
+        InstructionHandle end = invokerCode.replace(invoke, 1, invokee, start, cnt, false);
 
         // insert epilogue
         invokerCode.getInstructionList().insert(end, inlineData.getEpilogue());

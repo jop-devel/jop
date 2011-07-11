@@ -585,7 +585,7 @@ public class MethodCode {
      *         list has been replaced.
      */
     public InstructionHandle replace(InstructionHandle replaceStart, int replaceCount, InstructionList source) {
-        return replace(replaceStart, replaceCount, null, source, source.getStart(), source.getLength(), true);
+        return replace(replaceStart, replaceCount, null, source.getStart(), source.getLength(), true);
     }
 
     /**
@@ -611,7 +611,7 @@ public class MethodCode {
     public InstructionHandle replace(InstructionHandle replaceStart, int replaceCount, InstructionList source,
                                      boolean copyCustomKeys)
     {
-        return replace(replaceStart, replaceCount, null, source, source.getStart(), source.getLength(), copyCustomKeys);
+        return replace(replaceStart, replaceCount, null, source.getStart(), source.getLength(), copyCustomKeys);
     }
 
     /**
@@ -636,7 +636,7 @@ public class MethodCode {
     public InstructionHandle replace(InstructionHandle replaceStart, int replaceCount,
                                      MethodInfo sourceInfo, InstructionList source, boolean copyCustomKeys)
     {
-        return replace(replaceStart, replaceCount, sourceInfo, source, source.getStart(), source.getLength(), copyCustomKeys);
+        return replace(replaceStart, replaceCount, sourceInfo, source.getStart(), source.getLength(), copyCustomKeys);
     }
 
 
@@ -654,15 +654,13 @@ public class MethodCode {
      * @param replaceCount the number of instructions in this code to replace
      * @param sourceInfo the MethodInfo containing the source instruction. If non-null, the instructions will be copied
      *                   using the constant pool from the given MethodInfo. If null, the instructions will not be copied.
-     * @param source the instructions to use as replacement.
      * @param sourceStart the first instruction in the source list to use for replacing the code.
      * @param sourceCount the number of instructions to use from the source.
      * @param copyCustomValues if true copy the custom values from the source.
      * @return the first handle in the target list after the inserted code, or null if the last instruction in this
      *         list has been replaced.
      */
-    public InstructionHandle replace(InstructionHandle replaceStart, int replaceCount,
-                                     MethodInfo sourceInfo, InstructionList source,
+    public InstructionHandle replace(InstructionHandle replaceStart, int replaceCount, MethodInfo sourceInfo,
                                      InstructionHandle sourceStart, int sourceCount, boolean copyCustomValues)
     {
         InstructionList il = getInstructionList();
