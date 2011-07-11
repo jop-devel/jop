@@ -984,6 +984,7 @@ public class CallGraph implements ImplementationFinder {
                 ExecutionContext newChild = new ExecutionContext(oldChild.getMethodInfo(), newString);
 
                 if (!callGraph.containsVertex(newChild)) {
+                    callGraph.addVertex(newChild);
                     oldQueue.add(oldChild);
                     newQueue.add(newChild);
                 }

@@ -258,7 +258,7 @@ public class InlineOptimizer implements CodeOptimizer {
                 // replace return with goto, for last instruction we use fallthrough
                 if (src.getNext() != null) {
                     c = new GOTO(next);
-                    ih = il.insert(next, c);
+                    ih = il.insert(next, (BranchInstruction)c);
                 } else {
                     ih = null;
                 }
@@ -305,7 +305,7 @@ public class InlineOptimizer implements CodeOptimizer {
                 Instruction c = newIh.getInstruction();
 
                 // Note that this skips over the goto instructions we inserted instead of returns, this is intentional
-                if (c instanceof BranchInstruction) {
+                if (i instanceof BranchInstruction) {
                     BranchInstruction bi = (BranchInstruction) i;
                     BranchInstruction bc = (BranchInstruction) c;
                     InstructionHandle target = bi.getTarget(); // old target
