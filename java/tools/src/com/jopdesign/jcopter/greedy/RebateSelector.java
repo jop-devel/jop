@@ -182,6 +182,11 @@ public abstract class RebateSelector implements CandidateSelector {
         data.addCandidates(candidates);
     }
 
+    public void removeCandidate(Candidate candidate) {
+        MethodData data = methodData.remove(candidate.getMethod());
+        data.getCandidates().remove(candidate);
+    }
+
     @Override
     public void removeCandidates(MethodInfo method) {
         MethodData data = methodData.remove(method);
@@ -216,6 +221,7 @@ public abstract class RebateSelector implements CandidateSelector {
         }
 
         // replace old candidates with new ones in range
+        removeCandidate(optimized);
         removeCandidates(optimized.getMethod(), optimized.getStart(), optimized.getEnd());
 
         addCandidates(optimized.getMethod(),  newCandidates);

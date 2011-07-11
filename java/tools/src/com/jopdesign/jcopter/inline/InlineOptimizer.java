@@ -218,7 +218,7 @@ public class InlineOptimizer implements CodeOptimizer {
             // first copy all instruction handles
             for (InstructionHandle src = iList.getStart(); src != null; src = src.getNext()) {
 
-                InstructionHandle ih = copyInstruction(invokeeCode, stacksize, il, src, next);
+                InstructionHandle ih = copyInstruction(code, stacksize, il, src, next);
                 if (ih == null) continue;
 
                 code.copyCustomValues(invokee, ih, src);
@@ -241,13 +241,13 @@ public class InlineOptimizer implements CodeOptimizer {
             return invokeMap;
         }
 
-        private InstructionHandle copyInstruction(MethodCode invokeeCode, StacksizeAnalysis stacksize,
+        private InstructionHandle copyInstruction(MethodCode invokerCode, StacksizeAnalysis stacksize,
                                                   InstructionList il,
                                                   InstructionHandle src, InstructionHandle next)
         {
             InstructionHandle ih;
             Instruction instr = src.getInstruction();
-            Instruction c = invokeSite.getInvoker().getCode().copyFrom(invokee.getClassInfo(), instr);
+            Instruction c = invokerCode.copyFrom(invokee.getClassInfo(), instr);
 
             if (instr instanceof LocalVariableInstruction) {
                 // remap local variables
