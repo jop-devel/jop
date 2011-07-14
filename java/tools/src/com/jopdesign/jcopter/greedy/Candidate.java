@@ -121,7 +121,8 @@ public abstract class Candidate {
      *
      * <p>This is used to calculate the resulting total codesize as well as to skip unused methods from optimizations.</p>
      *
-     * <p>Note that the resultset can increase after another optimization took place.</p>
+     * <p>Note that the resultset can become larger after another optimization took place. Also note that if a method
+     * becomes unreachable in the target- or WCA-callgraph but not in the main callgraph, it is not returned here.</p>
      *
      * @return a set of methods which can be removed after the optimization, or null or an empty set if nothing changes.
      */

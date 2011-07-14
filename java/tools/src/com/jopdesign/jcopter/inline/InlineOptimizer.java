@@ -162,6 +162,13 @@ public class InlineOptimizer implements CodeOptimizer {
             }
             updateAnalyses(analyses, invokeMap);
 
+            // We already updated the callgraph, so no need to call checkLastInvoke, instead just check the main graph.
+            // Note that we do not need to check if any other method has been removed, because we added edges
+            // to all targets of all invokesites of the removed method.
+            // Also note, that although a method may still be in the main graph, it may have been removed from the
+            // target- or WCA-callgraph. Here we want to know if a method can be removed from the whole application.
+            isLastInvoke = !analyses.getAppInfoCallGraph().containsMethod(invokee);
+
             return true;
         }
 
@@ -372,10 +379,6 @@ public class InlineOptimizer implements CodeOptimizer {
             if (acyclic != Ternary.UNKNOWN) {
                 cg.setAcyclicity(acyclic == Ternary.TRUE);
             }
-
-            // Note that we do not need to check if any other method has been removed, because we added edges
-            // to all targets of all invokesites of the removed method.
-            isLastInvoke = cg.containsMethod(invokee);
         }
 
         private void updateAnalyses(AnalysisManager analyses, Map<InvokeSite,InvokeSite> invokeMap) {
@@ -446,6 +449,11 @@ public class InlineOptimizer implements CodeOptimizer {
         @Override
         public Collection<CallString> getRequiredContext() {
             return context.getCallString().length() > 0 ? Collections.singleton(context.getCallString()) : null;
+        }
+
+        @Override
+        public String toString() {
+            return invokeSite + " => " + invokee;
         }
 
         private boolean checkStackAndLocals(StacksizeAnalysis stacksize) {

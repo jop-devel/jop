@@ -183,7 +183,7 @@ public abstract class RebateSelector implements CandidateSelector {
     }
 
     public void removeCandidate(Candidate candidate) {
-        MethodData data = methodData.remove(candidate.getMethod());
+        MethodData data = methodData.get(candidate.getMethod());
         data.getCandidates().remove(candidate);
     }
 
@@ -211,7 +211,8 @@ public abstract class RebateSelector implements CandidateSelector {
     public void onSuccessfulOptimize(Candidate optimized, List<Candidate> newCandidates) {
         globalCodesize += getDeltaGlobalCodesize(optimized);
 
-        // We need to remove candidates from methods which are no longer reachable
+        // We can remove candidates from methods which are no longer reachable here already
+        // This does not find everything, candidates which are only unreachable in the target graph are removed later
         Collection<MethodInfo> unreachable = optimized.getUnreachableMethods();
         if (unreachable != null && !unreachable.isEmpty()) {
             for (MethodInfo m : unreachable) {
@@ -259,6 +260,12 @@ public abstract class RebateSelector implements CandidateSelector {
             MethodData data = methodData.get(method);
             // changed methods which are not optimized or not reachable anymore are skipped
             if (data == null) continue;
+
+            // remove candidates of methods which are no longer reachable
+            if (!analyses.getTargetCallGraph().containsMethod(method)) {
+                removeCandidates(method);
+                continue;
+            }
 
             queue.removeAll(data.getRatios());
             data.getRatios().clear();

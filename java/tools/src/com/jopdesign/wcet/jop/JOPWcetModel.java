@@ -31,12 +31,9 @@ import com.jopdesign.timing.jop.JOPTimingTable;
 import com.jopdesign.timing.jop.SingleCoreTiming;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
-import org.apache.bcel.generic.ANEWARRAY;
 import org.apache.bcel.generic.ATHROW;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
-import org.apache.bcel.generic.NEW;
-import org.apache.bcel.generic.NEWARRAY;
 
 import java.io.IOException;
 

@@ -194,7 +194,7 @@ public class MethodCacheAnalysis {
             // do not call allFit(MethodInfo) or we might get endless recursion if for some reason the analysis
             // has not been updated for this method
             for (ExecutionContext n : callGraph.getNodes(node.getMethodInfo())) {
-                blocks = cacheBlocks.get(node);
+                blocks = cacheBlocks.get(n);
                 if (blocks == null) {
                     logger.warn("No analysis results for method "+node.getMethodInfo());
                     return false;

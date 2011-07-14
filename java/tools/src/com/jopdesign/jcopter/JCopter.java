@@ -23,6 +23,7 @@ package com.jopdesign.jcopter;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.EmptyTool;
+import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.OptionGroup;
@@ -81,6 +82,9 @@ public class JCopter extends EmptyTool<JCopterManager> {
         OptionGroup options = setup.getConfig().getOptions();
 
         config = new JCopterConfig(options);
+
+        // Silence the CFG.. We know that ATHROW is bad.
+        ControlFlowGraph.setIgnoreATHROW(true);
     }
 
     @Override

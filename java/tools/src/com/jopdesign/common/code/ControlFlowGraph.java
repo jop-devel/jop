@@ -529,7 +529,7 @@ public class ControlFlowGraph {
     private boolean hasSplitNodes = false;
     private boolean hasSummaryNodes = false;
 
-
+    private static boolean ignoreATHROW = false;
 
     /*---------------------------------------------------------------------------*
      * CFG Creation
@@ -563,6 +563,13 @@ public class ControlFlowGraph {
         createFlowGraph(method);
         check();
         sendCreateGraphEvent();
+    }
+
+    /**
+     * @param ignore true to disable ATHROW warnings during callgraph creation.
+     */
+    public static void setIgnoreATHROW(boolean ignore) {
+        ignoreATHROW = ignore;
     }
 
     private ControlFlowGraph(AppInfo appInfo) {
@@ -607,8 +614,16 @@ public class ControlFlowGraph {
             if (bbf.isExit()) { // exit edge
                 // do not connect exception edges
                 if (bbNode.getBasicBlock().getLastInstruction().getInstruction().getOpcode()
-                        == Constants.ATHROW) {
-                    logger.warn("Found ATHROW edge in " + this.toString() + " - ignoring (results in dead and stuck code)");
+                        == Constants.ATHROW)
+                {
+                    if (ignoreATHROW) {
+                        // Yep, you are looking at a hack.. We know that ATHROW is bad, no need to spam the log output.
+                        if (logger.isTraceEnabled()) {
+                            logger.trace("Found ATHROW edge in " + this.toString() + " - ignoring (results in dead and stuck code)");
+                        }
+                    } else {
+                        logger.warn("Found ATHROW edge in " + this.toString() + " - ignoring (results in dead and stuck code)");
+                    }
                     hasThrowEdges = true;
                 } else {
                     graph.addEdge(bbNode, graph.getExit(), exitEdge());

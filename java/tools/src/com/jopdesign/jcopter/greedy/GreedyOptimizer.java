@@ -283,6 +283,7 @@ public class GreedyOptimizer {
             if (methods.size() == 1) {
                 selector.sortCandidates(methods);
             } else {
+                logger.info("Sort changes "+changeSet.size());
                 selector.sortCandidates(changeSet);
             }
 
