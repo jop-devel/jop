@@ -159,7 +159,7 @@ public class CallGraph implements ImplementationFinder {
         }
 
         public Set<ExecutionContext> getInstances() {
-            return instances;
+            return Collections.unmodifiableSet(instances);
         }
 
         @Override
@@ -836,7 +836,7 @@ public class CallGraph implements ImplementationFinder {
      * @return true if the edge existed
      */
     public boolean removeEdge(ContextEdge edge, boolean removeUnreachable) {
-        // Edge equals is defined over the touching execution contexts, so we can do this here
+        // Edge equals is defined over the adjacent execution contexts, so we can do this here
         // without worrying about same instances
         boolean exists = callGraph.removeEdge(edge);
 

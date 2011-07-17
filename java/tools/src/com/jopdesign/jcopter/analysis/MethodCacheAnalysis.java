@@ -49,6 +49,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -406,13 +408,30 @@ public class MethodCacheAnalysis {
     }
 
     public void inline(InvokeSite invokeSite, MethodInfo invokee) {
-        updateCodesize(invokeSite.getInvoker());
+        Set<ExecutionContext> nodes = new HashSet<ExecutionContext>(callGraph.getNodes(invokeSite.getInvoker()));
+
+        // We need to go down first, find all new nodes
+        List<ExecutionContext> queue = new LinkedList<ExecutionContext>(nodes);
+
+        while (!queue.isEmpty()) {
+            ExecutionContext node = queue.remove(0);
+            for (ExecutionContext child : callGraph.getChildren(node)) {
+                if (!cacheBlocks.containsKey(child) && !nodes.contains(child)) {
+                    nodes.add(child);
+                    queue.add(child);
+                }
+            }
+        }
+
+        // Go up from all new nodes, update codesize
+        updateCodesize(nodes);
+
         onExecCountUpdate();
     }
 
-    public void updateCodesize(MethodInfo method) {
+    public void updateCodesize(Set<ExecutionContext> nodes) {
 
-        updateBlockCounts( callGraph.getNodes(method) );
+        updateBlockCounts(nodes);
 
         // TODO for MOST_ONCE_MISS we have additional miss-count changes for all methods reachable below
         //      classification changes, need to add them to countChanges either here or when classification is updated.

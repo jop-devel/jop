@@ -56,6 +56,7 @@ import org.apache.bcel.generic.TargetLostException;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -155,6 +156,9 @@ public class InlineOptimizer implements CodeOptimizer {
             } catch (TargetLostException e) {
                 code.retarget(e, start);
             }
+
+            // Not really needed, but makes debugging easier
+            il.setPositions();
 
             // finally, we need to update the analyses
             for (CallGraph cg : analyses.getCallGraphs()) {
@@ -339,8 +343,10 @@ public class InlineOptimizer implements CodeOptimizer {
             // This is a quick hack: inlining does not change acyclic property,
             Ternary acyclic = cg.getAcyclicity();
 
-            // first we need to copy the execution contexts with new callstrings:
-            for (ExecutionContext invoker : cg.getNodes(getMethod())) {
+            // First we need to copy the execution contexts with new callstrings:
+            // We need to create a copy of the node-list of the invoker in case we have a recursive method
+            List<ExecutionContext> nodes = new ArrayList<ExecutionContext>(cg.getNodes(getMethod()));
+            for (ExecutionContext invoker : nodes) {
 
                 // for all invokee contexts reachable via the invokesite ..
                 for (ExecutionContext invokeeNode : cg.getInvokedNodes(invoker, invokeSite, invokee)) {
