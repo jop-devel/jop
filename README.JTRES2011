@@ -1,0 +1,67 @@
+This file describes how to reproduce the measurements in the JTRES2011
+paper "Hard Real-Time Garbage Collection for a Java Chip
+Multi-Processor".
+
+Prerequisites
+-------------
+
+Make sure you have checked out the remote branch "rtgc" and are at the
+revision tagged "jtres11". For the synthesis, Quartus-II is
+needed. The measurements were made on a DE2-70 board from Altera,
+which is therefore also required.
+
+Synthesis Results
+-----------------
+
+The synthesis results for the "copy unit" configuration can be
+obtained by opening the project file quartus/altde2-70cmp/jop.qpf with
+Quartus and starting the synthesis.
+
+For the "registered" version, check out revision
+2f9d11d7ae882d04b667c1343c26e5e698f85902 for file
+vhdl/top/jopmul_512x32.vhd, and add to the generic map of the arbiter
+in that file "write_gap => 2, read_gap => 2, slot_length => 3" for
+proper configuration. Redo synthesis with Quartus.
+
+For the "zero-cycle" configuration, check out revision
+47e9da16a03f87c147365c5de5e05234a83c5ac2 for the file
+vhdl/simpcon/sc_arbiter_tdma.vhd and synthesize with Quartus.
+
+Analysis Results
+----------------
+
+To analyze the WCET of a task, run "ant -Dp1=bench -Dp2=papabench/jopgc
+-Dp3=PapaBenchJopGcApplication -Dwcet-method=<method> wcet",
+with <method> being the method to be analyzed, for example
+-Dwcet-method=papabench.core.autopilot.tasks.handlers.AltitudeControlTaskHandler.run.
+The results are located in java/target/wcet and are given in cycles;
+as the processor is clocked at 100MHz, they have to be divided by 100
+to obtain the results in microseconds.
+
+To analyze a task's allocations, add the parameters "--wcet-model
+allocObjs" or "--wcet-model allocHandles" in the parameter list
+starting at line 784 in the file build.xml. The first variant gives
+the number of allocated objects, the second variant the number of
+allocated words without meta data, which has to be multiplied by 4 for
+the number of allocated bytes.
+
+Measurement Results
+-------------------
+
+A measurement run can be started with "./timeout3 -t 350 ant
+-Dp1=bench -Dp2=papabench/jopgc -Dp3=PapaBenchJopGcApplication
+japp". The reported numbers are the estimated measurement overhead,
+the minimum, average, and maximum observed response time, the earliest
+and latest observed start time and the observed release jitter.
+
+The task offsets can be varied in the files
+java/target/src/bench/papabench/core/autopilot/conf/PapaBenchAutopilotConf.java,
+java/target/src/bench/papabench/core/fbw/conf/PapaBenchFBWConf.java and
+java/target/src/bench/papabench/core/simulator/conf/PapaBenchSimulatorConf.java.
+
+To emulate atomic copying, uncomment lines 512 and 531 in file
+java/target/src/common/com/jopdesign/sys/GC.java and lines 100 and 209
+in file java/target/src/common/com/jopdesign/sys/Scheduler.java. Note
+that this does not make indiviual accesses to object and array fields
+atomic and can lead to data corruption. This configuration should only
+be used to estimate the release jitter from atomic copying.

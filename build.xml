@@ -32,7 +32,7 @@
 	  ================================================================-->
 	
 	<!-- set property usb to true for an USB based board (dspio, usbmin, lego) -->
-	<property name="usb" value="true"/>
+	<!-- <property name="usb" value="true"/> -->
 
 	<!-- com1 is the usual serial port -->
 	<condition property="com-port" value="/dev/ttyS0">
@@ -53,10 +53,10 @@
 	</condition>
 
 	<!-- select how to configure the board -->
-	<property name="use-config-usb" value="true"/>
+	<!-- <property name="use-config-usb" value="true"/> -->
 <!-- 	<property name="use-config-byteblast" value="true"/> -->
 <!-- 	<property name="use-config-usbblast" value="true"/> -->
-<!--	<property name="use-config-urjtag" value="true"/> -->
+	<property name="use-config-urjtag" value="true"/>
 
 	<!-- choose blaster type for config-byteblast -->
 	<condition property="blaster-type" value="ByteBlastMV">
@@ -90,7 +90,7 @@
 	<!-- <property name="qproj" value="cycfpu"/> -->
 	<!-- <property name="qproj" value="cyc256x16"/> -->
 	<!-- <property name="qproj" value="sopcmin"/> -->
-	<property name="qproj" value="usbmin"/> 
+	<property name="qproj" value="altde2-70cmp"/> 
 	
 	<!-- Nelson uncomment this -->
 	<!-- <property name="qproj" value="cyc12baseio"/> -->
@@ -301,11 +301,11 @@
 
 	<target name="run-jcopter" description="Run JCopter on the compiled target" if="use-jcopter">
 		<java classpathref="tools-cp" classname="com.jopdesign.jcopter.JCopter">
-		    <arg line="--jop.jop-asm-file asm/generated/jvmusb.asm
+		    <arg line="--jop.jop-asm-file asm/generated/jvmgen.asm
 					   -c ${target}/dist/classes -o ${target}/dist --classdir ${target}/dist/classes.opt
 					   --dump-target-callgraph merged
 					   --wcet-preprocess 
-					   --use-dfa --dfa-cache-dir dfa-cache
+					   --use-dfa --dfa-cache-dir ${target}/dfa-cache
 					   --target-method ${wcet-method} ${main-class}"/>
 		</java>
 	</target>
@@ -516,7 +516,7 @@
 
 	<target name="sim" depends="java-app" description="Modelsim target without the tools">
 		<ant dir="asm" antfile="jopsim.xml"/>
-		<ant dir="modelsim" antfile="sim.xml"/>
+		<ant dir="modelsim" antfile="sim_cmp.xml"/>
 	</target>
 
 	<target name="jsim" depends="java-app" description="JopSim target without the tools">
@@ -772,7 +772,7 @@
 	</target>
 
 	<target name="wcet" description="Benedikt's WCET analyser" depends="java-app">
-		<delete dir="${target}/wcet"/>
+		<!-- <delete dir="${target}/wcet"/> -->
 		<mkdir dir="${target}/wcet"/>
 		<java
 			classpathref="tools-cp"
@@ -781,13 +781,13 @@
 			fork="true">
 		  <jvmarg line="-Xms1280M -Xmx1280M"/>
 			<sysproperty key="java.library.path" value=".:${java.library.path}"/>
-			<arg line="--jop.jop-asm-file asm/generated/jvmusb.asm					   
+			<arg line="--jop.jop-asm-file asm/generated/jvmgen.asm					   
 					   --classpath ${target}/dist/lib/classes.zip
 					   --sp ${target-source-flattened}
-					   --reportdir ${target}/wcet
 					   --dump-target-callgraph merged
-					   --program-dot /usr/bin/dot
 					   --wcet-preprocess 
+                       --jop.jop-rws 27
+                       --jop.jop-wws 27
 					   --target-method ${wcet-method} ${main-class}"/>
 		</java>
 	</target>
