@@ -330,7 +330,7 @@ public class MethodCacheAnalysis {
 
         // if the method is not all-fit, we have a cache miss cost delta due to the codesize
         // we do not worry about changing cache classifications here, those costs are added later
-        if (analysisType == AnalysisType.ALWAYS_MISS || cache.allFit(newBlocks)) {
+        if (analysisType == AnalysisType.ALWAYS_MISS || !cache.allFit(newBlocks)) {
             long oldCycles = pm.getMethodCacheMissPenalty(oldWords, true);
             long newCycles = pm.getMethodCacheMissPenalty(newWords, true);
 
@@ -487,16 +487,20 @@ public class MethodCacheAnalysis {
     }
 
     public AnalysisContextLocal getRootContext() {
+        return getAnalysisContext(CallString.EMPTY);
+    }
+
+    public AnalysisContextLocal getAnalysisContext(CallString callString) {
         if (analysisType == AnalysisType.ALWAYS_HIT) {
-            return new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_HIT);
+            return new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_HIT, callString);
         }
         if (analysisType == AnalysisType.ALWAYS_MISS) {
-            return new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_MISS);
+            return new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_MISS, callString);
         }
         if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT) {
-            return new AnalysisContextLocal(StaticCacheApproximation.ALL_FIT_SIMPLE);
+            return new AnalysisContextLocal(StaticCacheApproximation.ALL_FIT_SIMPLE, callString);
         }
-        return new AnalysisContextLocal(StaticCacheApproximation.ALL_FIT_SIMPLE);
+        return new AnalysisContextLocal(StaticCacheApproximation.ALL_FIT_SIMPLE, callString);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////
@@ -611,7 +615,8 @@ public class MethodCacheAnalysis {
             // We have cycles.. Again we fall back to a slow algorithm
             for (ExecutionContext node : graph.vertexSet()) {
 
-                int newBlocks = updater.getCacheBlocks(node, false);
+                // int newBlocks = updater.getCacheBlocks(node, false);
+                int newBlocks = 1;
 
                 if (!updater.updateBlocks(node, newBlocks)) {
                     // TODO nothing going to change for any invoker, we could skip all childs in the invoke graph

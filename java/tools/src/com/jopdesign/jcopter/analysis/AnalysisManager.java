@@ -79,7 +79,13 @@ public class AnalysisManager {
     {
         logger.info("Initializing analyses..");
 
-        targetCallGraph = CallGraph.buildCallGraph(targets,
+        Set<MethodInfo> allTargets = new HashSet<MethodInfo>(targets);
+        if (wcaRoots != null) {
+            // Just make sure the WCA callgraph is contained in the target graph..
+            allTargets.addAll(wcaRoots);
+        }
+
+        targetCallGraph = CallGraph.buildCallGraph(allTargets,
                 new DefaultCallgraphBuilder(AppInfo.getSingleton().getCallstringLength()));
 
         // TODO we might want to classify methods depending on whether they are reachable from the wcaRoots

@@ -117,7 +117,7 @@ public class GreedyConfig {
     }
 
     public boolean useWCA() {
-        return jcopter.useWCET();
+        return jcopter.useWCA();
     }
 
     public int getMaxCodesize() {

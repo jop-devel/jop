@@ -204,7 +204,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 	 * <p>FIXME: Logging/Report is somewhat broken and messy </p>
 	 */
 	public WcetCost computeCost(MethodInfo m, Context ctx) {
-		/* use memoization to speed up analysis */
+		/* use memorization to speed up analysis */
 		CacheKey key = new CacheKey(m,ctx);
 		if(isCached(key)) return getCached(key);
 		/* compute solution */
@@ -219,6 +219,24 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 
 		return sol.getTotalCost();
 	}
+
+    public LocalWCETSolution computeSolution(MethodInfo m, Context ctx) {
+        /* just compute the solution using cached results, and also place the result into the cache,
+           but always return the complete solution. Also, no reports are generated here..
+         */
+        // TODO return type could be made more generic and this method could be moved to RecursiveAnalysis
+
+        CacheKey key = new CacheKey(m,ctx);
+        /* compute solution */
+        ControlFlowGraph cfg = getWCETTool().getFlowGraph(m);
+        LocalWCETSolution sol = runWCETComputation(key.toString(), cfg, ctx);
+        sol.checkConsistency();
+        recordCost(key, sol.getCost());
+        /* Logging */
+        logger.debug("WCET for " + key + ": "+sol.getCost());
+
+        return sol;
+    }
 
 	public LocalWCETSolution runWCETComputation(
 			String key,
@@ -358,15 +376,5 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 
 		return nodeFlow;
 	}
-
-
-
-    public boolean isWCETBlock(ControlFlowGraph cfg, BasicBlockNode node) {
-
-
-
-
-        return false;
-    }
 
 }

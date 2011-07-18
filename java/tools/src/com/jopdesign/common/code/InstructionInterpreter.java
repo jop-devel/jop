@@ -128,7 +128,8 @@ public class InstructionInterpreter<T> {
     public void reset(InstructionHandle from, InstructionHandle to) {
         InstructionHandle ih = from;
         while (ih != to) {
-            results.put(ih, analysis.bottom());
+            // we remove the entry, initial value will be set by interpret()
+            results.remove(ih);
             ih = ih.getNext();
         }
         results.put(ih, analysis.bottom());
@@ -177,8 +178,9 @@ public class InstructionInterpreter<T> {
             for (InstructionHandle ih = il.getStart(); ih != null; ih = ih.getNext()) {
                 if (results.containsKey(ih)) continue;
 
-                if (ih.getPrev() == null && !ih.hasTargeters()) {
-                    // entry edge
+                if (ih.getPrev() == null) {
+                    // entry instruction, must always be merged with the initial state once, even
+                    // if this has an ingoing edge
                     results.put(ih, analysis.initial(ih));
                 } else {
                     results.put(ih, analysis.bottom());
@@ -200,14 +202,17 @@ public class InstructionInterpreter<T> {
         // setup the worklist
         for (InstructionHandle ih : start.keySet()) {
             if (initialize) {
-                // when initializing, we start from the initial value, not from ingoing edges
-                worklist.addAll(getOutEdges(ih));
-            } else if (ih.getPrev() == null && !ih.hasTargeters()) {
-                // entry instruction without ingoing edges
+                // when initializing, we start from the initial values, not from ingoing edges
                 worklist.addAll(getOutEdges(ih));
             } else {
                 // we continue from existing results
-                worklist.addAll(getInEdges(il, ih));
+                List<Edge> inEdges = getInEdges(il, ih);
+                if (inEdges.isEmpty()) {
+                    // entry instruction without ingoing edges, nothing to continue from
+                    worklist.addAll(getOutEdges(ih));
+                } else {
+                    worklist.addAll(inEdges);
+                }
             }
         }
 

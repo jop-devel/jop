@@ -26,12 +26,10 @@ import com.jopdesign.common.code.CallGraph.ContextEdge;
 import com.jopdesign.common.code.CallGraph.DUMPTYPE;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
-import com.jopdesign.common.graphutils.DFSTraverser;
-import com.jopdesign.common.graphutils.DFSTraverser.DFSVisitor;
-import com.jopdesign.common.graphutils.DFSTraverser.EmptyDFSVisitor;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.wcet.ProjectConfig;
 import com.jopdesign.wcet.WCETTool;
@@ -43,21 +41,26 @@ import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import org.apache.bcel.generic.InstructionHandle;
 import org.jgrapht.DirectedGraph;
+import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class WCAInvoker {
+
     private final JCopter jcopter;
     private final Collection<MethodInfo> wcaTargets;
     private final AnalysisManager analyses;
+    private final Map<ExecutionContext, Map<CFGNode,Long>> wcaNodeFlow;
 
     private WCETTool wcetTool;
     private RecursiveWcetAnalysis<AnalysisContextLocal> recursiveAnalysis;
@@ -69,6 +72,7 @@ public class WCAInvoker {
         this.wcaTargets = wcaTargets;
         wcetTool = jcopter.getWcetTool();
         useMethodCacheStrategy = true;
+        wcaNodeFlow = new HashMap<ExecutionContext, Map<CFGNode, Long>>();
     }
 
     public JCopter getJcopter() {
@@ -109,10 +113,7 @@ public class WCAInvoker {
                     wcetTool, ipetConfig, strategy);
 
         // Perform initial analysis
-        WcetCost cost = recursiveAnalysis.computeCost(wcetTool.getTargetMethod(),
-                analyses.getMethodCacheAnalysis().getRootContext());
-
-        // TODO log wcet
+        runAnalysis(wcetTool.getCallGraph().getReversedGraph());
     }
 
 
@@ -123,9 +124,14 @@ public class WCAInvoker {
     public boolean isOnWCETPath(MethodInfo method, InstructionHandle ih) {
 
         ControlFlowGraph cfg = method.getCode().getControlFlowGraph(false);
-        BasicBlockNode node = cfg.getHandleNode(ih);
+        BasicBlockNode block = cfg.getHandleNode(ih);
 
-        return recursiveAnalysis.isWCETBlock(cfg, node);
+        for (ExecutionContext node : wcetTool.getCallGraph().getNodes(method)) {
+            Long flow = wcaNodeFlow.get(node).get(block);
+            if (flow > 0) return true;
+        }
+
+        return false;
     }
 
     /**
@@ -151,27 +157,33 @@ public class WCAInvoker {
             rootNodes.addAll(callGraph.getNodes(root));
         }
 
-        final Set<MethodInfo> methods = new HashSet<MethodInfo>();
-
-        DFSVisitor<ExecutionContext,ContextEdge> visitor = new EmptyDFSVisitor<ExecutionContext, ContextEdge>() {
-            @Override
-            public void preorder(ExecutionContext node) {
-                methods.add(node.getMethodInfo());
-            }
-        };
-
-        DirectedGraph<ExecutionContext,ContextEdge> reversed = wcetTool.getCallGraph().getReversedGraph();
-
-        DFSTraverser<ExecutionContext,ContextEdge> traverser = new DFSTraverser<ExecutionContext, ContextEdge>(visitor);
-        traverser.traverse(reversed);
-
-        recursiveAnalysis.clearCache(methods);
-
-        recursiveAnalysis.computeCost(wcetTool.getTargetMethod(), analyses.getMethodCacheAnalysis().getRootContext());
+        runAnalysis(wcetTool.getCallGraph().createInvokeGraph(rootNodes, true));
     }
 
     public Collection<CallGraph> getWCACallGraphs() {
         return Collections.singleton(wcetTool.getCallGraph());
+    }
+
+    private void runAnalysis(DirectedGraph<ExecutionContext,ContextEdge> reversed) {
+        // Phew. The WCA only runs on acyclic callgraphs, we can therefore assume the
+        // reversed graph to be a DAG
+        TopologicalOrderIterator<ExecutionContext,ContextEdge> topOrder =
+                new TopologicalOrderIterator<ExecutionContext, ContextEdge>(reversed);
+
+        MethodCacheAnalysis cacheAnalysis = analyses.getMethodCacheAnalysis();
+
+        while (topOrder.hasNext()) {
+            ExecutionContext node = topOrder.next();
+
+            // At times like this I really wish Java would have type aliases ..
+            RecursiveWcetAnalysis<AnalysisContextLocal>.LocalWCETSolution sol =
+                    recursiveAnalysis.computeSolution(node.getMethodInfo(),
+                                cacheAnalysis.getAnalysisContext(node.getCallString()));
+
+            wcaNodeFlow.put(node, sol.getNodeFlow());
+
+            // TODO some logging would be nice, keep target-method WCET for comparison of speedup
+        }
     }
 
     private void setWCETOptions(MethodInfo targetMethod, boolean generateReports) {
@@ -180,5 +192,6 @@ public class WCAInvoker {
         config.setOption(ProjectConfig.DO_GENERATE_REPORTS, generateReports);
         config.setOption(ProjectConfig.DO_GENERATE_REPORTS, false);
         config.setOption(ProjectConfig.DUMP_TARGET_CALLGRAPH, DUMPTYPE.off);
+        config.setOption(IPETConfig.DUMP_ILP, false);
     }
 }

@@ -239,7 +239,7 @@ public abstract class RebateSelector implements CandidateSelector {
             if (!c.recalculate(analyses, stacksizeAnalysis)) {
                 it.remove();
             }
-            /* we check in selectCandidate anyway..
+            /* we check this in selectCandidate anyway..
             if (!checkConstraints(c)) {
                 it.remove();
             }

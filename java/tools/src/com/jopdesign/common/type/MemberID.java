@@ -288,17 +288,25 @@ public class MemberID {
 
     @Override
     public int hashCode() {
-        return toString().hashCode();
+        int result = className != null ? className.hashCode() : 0;
+        result = 31 * result + (memberName != null ? memberName.hashCode() : 0);
+        result = 31 * result + (descriptor != null ? descriptor.hashCode() : 0);
+        return result;
     }
 
+    @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject"})
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null) return false;
-        if (!this.getClass().equals(obj.getClass())) return false;
-        
-        // TODO do we want to check for equality of the type of fields too?
-        return this.toString().equals(obj.toString());
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MemberID memberID = (MemberID) o;
+
+        if (className != null ? !className.equals(memberID.className) : memberID.className != null) return false;
+        if (memberName != null ? !memberName.equals(memberID.memberName) : memberID.memberName != null) return false;
+        if (descriptor != null ? !descriptor.equals(memberID.descriptor) : memberID.descriptor != null) return false;
+
+        return true;
     }
 
     /**

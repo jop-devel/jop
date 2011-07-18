@@ -113,16 +113,18 @@ public class JCopterConfig {
 
         }
 
-        if (useWCA()) {
-            wcaTargets = Config.parseMethodList(options.getOption(WCA_TARGETS));
-        }
-
     }
 
     /**
      * Check the options, check if the assumptions on the code hold.
+     * @throws BadConfigurationException if the WCA_TARGETS option is not set correctly
      */
-    public void checkOptions() {
+    public void initialize() throws BadConfigurationException {
+        // need to do this here because main method class is not available on load
+        if (useWCA()) {
+            wcaTargets = Config.parseMethodList(options.getOption(WCA_TARGETS));
+        }
+
         // TODO implement reflection check, implement incomplete code check
     }
 

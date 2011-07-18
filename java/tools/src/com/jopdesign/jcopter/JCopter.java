@@ -91,7 +91,7 @@ public class JCopter extends EmptyTool<JCopterManager> {
     public void onSetupAppInfo(AppSetup setup, AppInfo appInfo) throws BadConfigurationException {
         OptionGroup options = setup.getConfig().getOptions();
 
-        config.checkOptions();
+        config.initialize();
 
         executor = new PhaseExecutor(this, options);
     }
@@ -132,7 +132,7 @@ public class JCopter extends EmptyTool<JCopterManager> {
         return dfaTool != null;
     }
 
-    public boolean useWCET() {
+    public boolean useWCA() {
         return getJConfig().useWCA();
     }
 
@@ -179,7 +179,7 @@ public class JCopter extends EmptyTool<JCopterManager> {
         //   for some cleanup optimizations before we start the WCA (but we may not have Loopbounds yet)
 
         // - perform WCET analysis, select methods for inlining
-        if (useWCET()) {
+        if (useWCA()) {
             // First, rebuild the WCET-Tool callgraph, since we modified the appInfo graph already
             wcetTool.rebuildCallGraph();
 

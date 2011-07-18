@@ -565,6 +565,16 @@ public class InlineHelper {
             return false;
         }
 
+        // We do not inline the WCA target method, else we would run into problems because the wca target
+        // might be removed and will not be in the appinfo callgraph anymore
+        if (jcopter.useWCA()) {
+            for (MethodInfo method : jcopter.getJConfig().getWCATargets()) {
+                if (method.equals(invokee)) {
+                    return false;
+                }
+            }
+        }
+
         // do not inline library code into application code (and we do not inline within the library neither..)
         if ( !inlineConfig.doInlineLibraries() && (AppInfo.getSingleton().isLibrary(invokee.getClassName())
                                                 || AppInfo.getSingleton().isLibrary(invoker.getClassName())) )
