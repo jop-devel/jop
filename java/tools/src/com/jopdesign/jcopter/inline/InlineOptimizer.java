@@ -615,7 +615,7 @@ public class InlineOptimizer implements CodeOptimizer {
         this.helper = new InlineHelper(jcopter, config);
         this.callstrings = new HashMap<InstructionHandle, CallString>();
 
-        // TODO get from config
+        // TODO get from config, preciseCycleEstimate is not yet fully implemented
         preciseSizeEstimate = true;
         preciseCycleEstimate = false;
     }

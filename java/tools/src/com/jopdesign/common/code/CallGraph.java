@@ -209,10 +209,13 @@ public class CallGraph implements ImplementationFinder {
     public static class ContextEdge {
         private final ExecutionContext source;
         private final ExecutionContext target;
+        private final int hash;
 
         private ContextEdge(ExecutionContext source, ExecutionContext target) {
             this.source = source;
             this.target = target;
+            // this result is used *very* often ..
+            this.hash = source.hashCode() * 31 + target.hashCode();
         }
 
         public ExecutionContext getSource() {
@@ -225,7 +228,7 @@ public class CallGraph implements ImplementationFinder {
 
         @Override
         public int hashCode() {
-            return source.hashCode() * 31 + target.hashCode();
+            return hash;
         }
 
         @Override
@@ -1154,7 +1157,14 @@ public class CallGraph implements ImplementationFinder {
     public DirectedGraph<ExecutionContext, ContextEdge> createInvokeGraph(Collection<ExecutionContext> roots,
                                                                           boolean reversed)
     {
-        DirectedGraph<ExecutionContext, ContextEdge> caller =
+        // TODO this method is a hotspot, but what can you do? The TopologicalOrderIterator only works on
+        //      on full graphs, it does not allow to "start in the middle, because it does not make
+        //      much sense". One could implement an own TopOrderIterator, but finding out which nodes are
+        //      the 'real' roots (i.e. eliminating all roots which have a path to other roots) may not be much
+        //      faster than this code.
+        // A better approach would simply be to 'compress' the callgraph once.
+
+        DirectedGraph<ExecutionContext, ContextEdge> invokeGraph =
                 new DefaultDirectedGraph<ExecutionContext,ContextEdge>(
                     new EdgeFactory<ExecutionContext,ContextEdge>() {
                         @Override
@@ -1165,33 +1175,33 @@ public class CallGraph implements ImplementationFinder {
 
         LinkedList<ExecutionContext> queue = new LinkedList<ExecutionContext>(roots);
         for (ExecutionContext root : roots) {
-            caller.addVertex(root);
+            invokeGraph.addVertex(root);
         }
 
         // add all incoming edges to the new graph, add new nodes to the queue
         while (!queue.isEmpty()) {
-            ExecutionContext next = queue.removeFirst();
+            ExecutionContext node = queue.removeFirst();
 
             // add all incoming edges
-            for (ContextEdge edge : callGraph.incomingEdgesOf(next)) {
-                ExecutionContext node = edge.getSource();
+            for (ContextEdge edge : callGraph.incomingEdgesOf(node)) {
+                ExecutionContext source = edge.getSource();
 
                 // new node, not yet in queue
-                if (!caller.containsVertex(node)) {
-                    caller.addVertex(node);
-                    queue.add(node);
+                if (!invokeGraph.containsVertex(source)) {
+                    invokeGraph.addVertex(source);
+                    queue.add(source);
                 }
 
                 // add edge
                 if (reversed) {
-                    caller.addEdge(next, node);
+                    invokeGraph.addEdge(node, source);
                 } else {
-                    caller.addEdge(node, next);
+                    invokeGraph.addEdge(source, node);
                 }
             }
         }
 
-        return caller;
+        return invokeGraph;
     }
 
     /*---------------------------------------------------------------------------*

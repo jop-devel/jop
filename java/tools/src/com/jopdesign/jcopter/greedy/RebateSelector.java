@@ -309,7 +309,7 @@ public abstract class RebateSelector implements CandidateSelector {
     }
 
     public int getDeltaGlobalCodesize(Candidate candidate) {
-        int size = globalCodesize + candidate.getDeltaLocalCodesize();
+        int size = candidate.getDeltaLocalCodesize();
 
         if (usesCodeRemover) {
             Collection<MethodInfo> removed = candidate.getUnreachableMethods();
@@ -326,6 +326,20 @@ public abstract class RebateSelector implements CandidateSelector {
     public long getCodesizeCacheCosts(Candidate candidate) {
         return analyses.getMethodCacheAnalysis().getDeltaCacheMissCosts(candidate.getMethod(),
                 candidate.getDeltaLocalCodesize());
+    }
+
+    protected RebateRatio createRatio(Candidate candidate, float gain) {
+        float codesize = getDeltaGlobalCodesize(candidate);
+
+        float ratio;
+        if (codesize > 0) {
+            ratio = candidate.getHeuristicFactor() * gain / codesize;
+        } else {
+            // little hack: if we have no codesize increase, use just the gain as factor
+            ratio = candidate.getHeuristicFactor() * gain;
+        }
+
+        return new RebateRatio(candidate, ratio);
     }
 
     protected abstract Collection<RebateRatio> calculateRatios(MethodInfo method, List<Candidate> candidates);

@@ -47,10 +47,7 @@ public class ACETRebateSelector extends RebateSelector {
             float gain = calculateGain(candidate);
             if (gain < 0) continue;
 
-            float codesize = getDeltaGlobalCodesize(candidate);
-
-            RebateRatio ratio = new RebateRatio(candidate, candidate.getHeuristicFactor() * gain / codesize);
-            ratios.add(ratio);
+            ratios.add(createRatio(candidate, gain));
         }
 
         return ratios;
