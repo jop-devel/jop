@@ -27,7 +27,6 @@
 
 package com.jopdesign.wcet;
 
-import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
@@ -82,8 +81,8 @@ public class WCETAnalysis {
         setup.registerTool("dfa", dfaTool, true, false);
         setup.registerTool("wcet", wcetTool);
 
-        @SuppressWarnings("unused")
-		AppInfo appInfo = setup.initAndLoad(args, true, false, false);
+        setup.addSourceLineOptions(false);
+	setup.initAndLoad(args, true, false, false);
 
         if (setup.useTool("dfa")) {
             wcetTool.setDfaTool(dfaTool);

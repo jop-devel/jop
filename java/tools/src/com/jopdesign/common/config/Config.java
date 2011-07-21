@@ -125,6 +125,12 @@ public class Config {
     public static final StringOption INFO_LOG_FILE =
         new StringOption("info-log","the info log file, placed in the report dir","info.log.html");
 
+    public static final StringOption LOAD_SOURCELINES =
+        new StringOption("read-sourcelines", "Read source line infos from file if file exists", "${classpath}/sourcelines.txt");
+
+    public static final StringOption WRITE_SOURCELINES =
+        new StringOption("write-sourcelines", "Write source line infos to a file", "${classdir}/sourcelines.txt");
+
     //
     // Some common options, which are not added by default, but can be added by other programs
     //

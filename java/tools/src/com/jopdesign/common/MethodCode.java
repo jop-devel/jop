@@ -250,7 +250,7 @@ public class MethodCode {
                 }
             }
             // no match found
-            if (checkPrevious) {
+            if (checkPrevious && prev.getAttribute(KEY_LINENUMBER) == null) {
                 prev = prev.getPrev();
             } else {
                 break;
@@ -279,6 +279,12 @@ public class MethodCode {
         return entry != null ? entry.getSourceLine() : -1;
     }
 
+    /**
+     * @param ih the *first* instruction which should be assigned to this source line.
+     *        Use {@link #clearLineNumber(InstructionHandle)} for all following instructions which have the same line.
+     * @param classInfo the classinfo containing the original source code, or null to use the class of this method
+     * @param line the line number to set
+     */
     public void setLineNumber(InstructionHandle ih, ClassInfo classInfo, int line) {
         LineNumberGen lg = getLineNumberEntry(ih, false);
 
@@ -300,6 +306,10 @@ public class MethodCode {
         }
     }
 
+    /**
+     * @param ih the instruction handle to check.
+     * @return the class info assigned to this handle or to a previous handle, default is the class info of the method.
+     */
     public ClassInfo getSourceClassInfo(InstructionHandle ih) {
         InstructionHandle handle = findLineNumberHandle(ih);
         if (handle == null) return methodInfo.getClassInfo();
@@ -317,6 +327,23 @@ public class MethodCode {
             return null;
         }
         return classInfo.getSourceFileName();
+    }
+
+    /**
+     * This does not check previous instructions and only returns something other than null if the source class name
+     * is set and different from this methods' class.
+     *
+     * @see #getSourceClassInfo(InstructionHandle)
+     * @param ih the instruction handle to check.
+     * @return the source class name assigned to this handle, or null if no class name is assigned to this handle.
+     */
+    public String getSourceClassAttribute(InstructionHandle ih) {
+        String sourceClass = (String) ih.getAttribute(KEY_SOURCECLASS);
+        if (sourceClass != null && sourceClass.equals(getClassInfo().getClassName())) {
+            // we might actually convert this to a LineNumberGen entry..
+            return null;
+        }
+        return sourceClass;
     }
 
     private InstructionHandle findLineNumberHandle(InstructionHandle ih) {

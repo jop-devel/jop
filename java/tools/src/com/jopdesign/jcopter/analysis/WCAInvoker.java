@@ -40,6 +40,7 @@ import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
@@ -65,6 +66,8 @@ public class WCAInvoker {
     private WCETTool wcetTool;
     private RecursiveWcetAnalysis<AnalysisContextLocal> recursiveAnalysis;
     private boolean useMethodCacheStrategy;
+
+    private static final Logger logger = Logger.getLogger(JCopter.LOG_ANALYSIS+".WCAInvoker");
 
     public WCAInvoker(AnalysisManager analyses, Collection<MethodInfo> wcaTargets) {
         this.analyses = analyses;
@@ -183,6 +186,9 @@ public class WCAInvoker {
             wcaNodeFlow.put(node, sol.getNodeFlow());
 
             // TODO some logging would be nice, keep target-method WCET for comparison of speedup
+            if (node.getMethodInfo().equals(wcetTool.getTargetMethod())) {
+                logger.info("WCET: "+sol.getCost().getCost());
+            }
         }
     }
 

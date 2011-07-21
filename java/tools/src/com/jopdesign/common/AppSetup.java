@@ -38,6 +38,7 @@ import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.common.processormodel.ProcessorModel.Model;
 import com.jopdesign.common.tools.AppLoader;
 import com.jopdesign.common.tools.ClassWriter;
+import com.jopdesign.common.tools.SourceLineStorage;
 import com.jopdesign.common.type.MemberID;
 import org.apache.bcel.util.ClassPath;
 
@@ -339,6 +340,20 @@ public class AppSetup {
     }
 
     /**
+     * Add options to load and store instruction source line infos which have a different source file
+     * than the class to a file. Loading and writing classes using AppSetup will then load the configured
+     * file automatically.
+     *
+     * @param writeOption add option for writing too, else only a load option is added.
+     */
+    public void addSourceLineOptions(boolean writeOption) {
+        config.addOption(Config.LOAD_SOURCELINES);
+        if (writeOption) {
+            config.addOption(Config.WRITE_SOURCELINES);
+        }
+    }
+
+    /**
      * Set some usage infos.
      *
      * @param programName the executable program name
@@ -508,6 +523,17 @@ public class AppSetup {
 
         for (String hwObject : Config.splitStringList(config.getOption(Config.HW_OBJECTS))) {
             appInfo.addHwObjectName(hwObject);
+        }
+
+        // register source line loader before other event handlers
+        if ( config.hasOption(Config.LOAD_SOURCELINES) ) {
+            String filename = config.getOption(Config.LOAD_SOURCELINES);
+            if (filename != null && !"".equals(filename.trim())) {
+                File storage = new File(filename);
+                if (storage.exists()) {
+                    appInfo.registerEventHandler(new SourceLineStorage(storage));
+                }
+            }
         }
 
         // register handler
@@ -709,6 +735,15 @@ public class AppSetup {
      */
     public void writeClasses() {
         writeClasses(Config.WRITE_CLASSPATH);
+
+        // writing the source line infos *after* all other classes have been written so that timestamp checks works
+        if (config.hasOption(Config.WRITE_SOURCELINES)) {
+            String filename = config.getOption(Config.WRITE_SOURCELINES);
+            if (filename != null && !"".equals(filename.trim())) {
+                File storage = new File(filename);
+                new SourceLineStorage(storage).storeSourceInfos();
+            }
+        }
     }
 
     /**

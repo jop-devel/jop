@@ -230,6 +230,8 @@ public class JCopter extends EmptyTool<JCopterManager> {
         setup.registerTool("wca", wcetTool);
         setup.registerTool("jcopter", jcopter);
 
+        setup.addSourceLineOptions(true);
+
         setup.initAndLoad(args, true, true, true);
 
         if (setup.useTool("dfa")) {
