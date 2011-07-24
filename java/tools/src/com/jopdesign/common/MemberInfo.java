@@ -475,7 +475,7 @@ public abstract class MemberInfo {
 
     @Override
     public String toString() {
-        return memberId.toString();
+        return memberId.toString(false);
     }
 
     ////////////////////////////////////////////////////////////////////////////

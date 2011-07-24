@@ -525,17 +525,6 @@ public class AppSetup {
             appInfo.addHwObjectName(hwObject);
         }
 
-        // register source line loader before other event handlers
-        if ( config.hasOption(Config.LOAD_SOURCELINES) ) {
-            String filename = config.getOption(Config.LOAD_SOURCELINES);
-            if (filename != null && !"".equals(filename.trim())) {
-                File storage = new File(filename);
-                if (storage.exists()) {
-                    appInfo.registerEventHandler(new SourceLineStorage(storage));
-                }
-            }
-        }
-
         // register handler
         for (String toolName : tools.keySet()) {
             if (useTool(toolName)) {
@@ -616,6 +605,19 @@ public class AppSetup {
         // load and initialize all app classes
         if (loadTransitiveHull) {
             loadClassInfos();
+
+        // register source line loader before other event handlers
+        if ( config.hasOption(Config.LOAD_SOURCELINES) ) {
+            String filename = config.getOption(Config.LOAD_SOURCELINES);
+            if (filename != null && !"".equals(filename.trim())) {
+                File storage = new File(filename);
+                if (storage.exists()) {
+                    new SourceLineStorage(storage).loadSourceInfos();
+                }
+            }
+        }
+
+
         }
 
         // let modules process their config options

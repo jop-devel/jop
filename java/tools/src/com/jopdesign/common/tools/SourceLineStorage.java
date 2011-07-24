@@ -148,7 +148,7 @@ public class SourceLineStorage extends EmptyAppEventHandler {
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_APPINFO+".SourceLineStorage");
 
     private final File storage;
-    private Map<MethodInfo, List<SourceLineEntry>> sourceLineMap;
+    private Map<MemberID, List<SourceLineEntry>> sourceLineMap;
 
     /**
      * Create a new storage manager.
@@ -184,7 +184,7 @@ public class SourceLineStorage extends EmptyAppEventHandler {
             for (MethodInfo method : classInfo.getMethods()) {
                 if (!method.hasCode()) continue;
 
-                List<SourceLineEntry> entries = sourceLineMap.get(method);
+                List<SourceLineEntry> entries = sourceLineMap.get(method.getMemberID());
                 if (entries == null) continue;
 
                 applySourceInfos(method, entries);
@@ -220,22 +220,40 @@ public class SourceLineStorage extends EmptyAppEventHandler {
 
     /**
      * Load all source file and -line annotations for all classes from the storage file.
-     * @throws IOException on file read errors
      */
-    public void loadSourceInfos() throws IOException {
+    public void loadSourceInfos() {
         if (sourceLineMap == null) {
-            readSourceInfos();
+            try {
+                readSourceInfos();
+            } catch (IOException e) {
+                logger.error("Error reading sourceline file "+storage, e);
+            }
         }
 
-        for (MethodInfo method : sourceLineMap.keySet()) {
-            if (AppInfo.getSingleton().getClassFile(method.getClassInfo()).getTime() > storage.lastModified()) {
-                logger.error("One or more class files are newer than annotation file "+storage+
-                             ", not loading source line annotations!");
+        Map<MethodInfo, List<SourceLineEntry>> methodMap = new HashMap<MethodInfo, List<SourceLineEntry>>(sourceLineMap.size());
+        for (MemberID mID : sourceLineMap.keySet()) {
+            try {
+                MethodInfo method = AppInfo.getSingleton().getMethodInfo(mID);
+                methodMap.put(method, sourceLineMap.get(mID));
+            } catch (MethodNotFoundException ignored) {
+                logger.warn("No method for entry "+mID+" in " +storage+" found!");
+            }
+        }
+
+        for (MethodInfo method : methodMap.keySet()) {
+            try {
+                if (AppInfo.getSingleton().getClassFile(method.getClassInfo()).getTime() > storage.lastModified()) {
+                    logger.error("One or more class files are newer than annotation file "+storage+
+                                 ", not loading source line annotations!");
+                    return;
+                }
+            } catch (FileNotFoundException e) {
+                logger.error("Could not get class file for class "+method.getClassInfo()+", not loading source lines!", e);
                 return;
             }
         }
 
-        for (Map.Entry<MethodInfo,List<SourceLineEntry>> entry : sourceLineMap.entrySet()) {
+        for (Map.Entry<MethodInfo,List<SourceLineEntry>> entry : methodMap.entrySet()) {
             MethodInfo method = entry.getKey();
             applySourceInfos(method, entry.getValue());
         }
@@ -254,7 +272,7 @@ public class SourceLineStorage extends EmptyAppEventHandler {
 
         BufferedReader reader = new BufferedReader(new FileReader(storage));
 
-        sourceLineMap = new HashMap<MethodInfo, List<SourceLineEntry>>();
+        sourceLineMap = new HashMap<MemberID, List<SourceLineEntry>>();
 
         String entry;
         List<SourceLineEntry> entries = null;
@@ -269,19 +287,12 @@ public class SourceLineStorage extends EmptyAppEventHandler {
                 String methodID = entry.substring(1, p1);
                 entries = new ArrayList<SourceLineEntry>();
 
-                try {
-                    MemberID id = MemberID.parse(methodID);
-                    MethodInfo method = AppInfo.getSingleton().getMethodInfo(id);
-                    sourceLineMap.put(method, entries);
-                } catch (MethodNotFoundException ignored) {
-                    logger.warn("No method for entry "+methodID+" in " +storage+" found!");
-                }
-
+                MemberID id = MemberID.parse(methodID);
+                sourceLineMap.put(id, entries);
             } else if (!"".equals(entry)) {
                 assert entries != null;
                 entries.add(SourceLineEntry.readEntry(entry));
             }
-
         }
 
         reader.close();

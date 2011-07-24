@@ -38,6 +38,7 @@ import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.JsrInstruction;
+import org.apache.bcel.generic.LineNumberGen;
 import org.apache.bcel.generic.PUTFIELD;
 import org.apache.bcel.generic.PUTSTATIC;
 import org.apache.bcel.generic.ReturnInstruction;
@@ -295,7 +296,9 @@ public class BasicBlock {
     public TreeSet<Integer> getSourceLineRange() {
         TreeSet<Integer> lines = new TreeSet<Integer>();
         for (InstructionHandle ih : instructions) {
-            int sourceLine = methodCode.getLineNumber(ih);
+            // TODO for now we just ignore lines from other classes
+            LineNumberGen gen = methodCode.getLineNumberEntry(ih, ih == instructions.getFirst());
+            int sourceLine = gen != null ? gen.getSourceLine() : -1;
             if (sourceLine >= 0) lines.add(sourceLine);
         }
         return lines;
