@@ -108,6 +108,7 @@ public class GreedyConfig {
     }
 
     public AnalysisType getCacheAnalysisType() {
+        // TODO get from options
         return AnalysisType.ALWAYS_MISS_OR_HIT;
     }
 

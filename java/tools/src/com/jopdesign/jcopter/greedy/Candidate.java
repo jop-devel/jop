@@ -23,6 +23,7 @@ package com.jopdesign.jcopter.greedy;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
+import com.jopdesign.jcopter.analysis.CodeModification;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import org.apache.bcel.generic.InstructionHandle;
 
@@ -41,7 +42,7 @@ import java.util.Collection;
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public abstract class Candidate {
+public abstract class Candidate implements CodeModification {
 
     private final MethodInfo method;
     protected InstructionHandle start;
@@ -56,6 +57,7 @@ public abstract class Candidate {
     /**
      * @return the method containing this candidate.
      */
+    @Override
     public MethodInfo getMethod() {
         return method;
     }
@@ -113,19 +115,7 @@ public abstract class Candidate {
      */
     public abstract boolean recalculate(AnalysisManager analyses, StacksizeAnalysis stacksize);
 
-    public abstract int getDeltaLocalCodesize();
-
-    /**
-     * Return a set of methods which become unreachable (w.r.t. to the complete callgraph, not to the set of
-     * methods to optimize) after the optimization has been performed, e.g. due to inlining the last callsite.
-     *
-     * <p>This is used to calculate the resulting total codesize as well as to skip unused methods from optimizations.</p>
-     *
-     * <p>Note that the resultset can become larger after another optimization took place. Also note that if a method
-     * becomes unreachable in the target- or WCA-callgraph but not in the main callgraph, it is not returned here.</p>
-     *
-     * @return a set of methods which can be removed after the optimization, or null or an empty set if nothing changes.
-     */
+    @Override
     public Collection<MethodInfo> getUnreachableMethods() {
         return null;
     }

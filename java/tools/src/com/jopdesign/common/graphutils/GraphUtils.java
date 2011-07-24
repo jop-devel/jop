@@ -29,6 +29,7 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.util.Collection;
+import java.util.Set;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -70,5 +71,53 @@ public class GraphUtils {
         traverser.traverse(provider, roots);
 
         return newGraph;
+    }
+
+    public static <V,E> SimpleDirectedGraph<V,E> createSimpleGraph(DirectedGraph<V,E> graph) {
+        SimpleDirectedGraph<V,E> simpleGraph = new SimpleDirectedGraph<V, E>(graph.getEdgeFactory());
+
+        // add all nodes
+        for (V node : graph.vertexSet()) {
+            simpleGraph.addVertex(node);
+        }
+
+        for (E edge : graph.edgeSet()) {
+            V source = graph.getEdgeSource(edge);
+            V target = graph.getEdgeTarget(edge);
+
+            if (source.equals(target)) {
+                graph.addEdge(source, target, edge);
+            }
+        }
+
+        return simpleGraph;
+    }
+
+
+    public static <V,E> SimpleDirectedGraph<V,E> createSimpleGraph(DirectedGraph<V,E> graph,
+                                                                   Set<V> nodes, boolean addChilds)
+    {
+        SimpleDirectedGraph<V,E> simpleGraph = new SimpleDirectedGraph<V, E>(graph.getEdgeFactory());
+
+        for (V node : nodes) {
+            simpleGraph.addVertex(node);
+        }
+
+        for (V node : nodes) {
+            for (E edge : graph.outgoingEdgesOf(node)) {
+                V target = graph.getEdgeTarget(edge);
+                boolean inGraph = simpleGraph.containsVertex(target);
+
+                if (addChilds && !inGraph) {
+                    simpleGraph.addVertex(target);
+                    inGraph = true;
+                }
+                if (inGraph) {
+                    simpleGraph.addEdge(node, target, edge);
+                }
+            }
+        }
+
+        return simpleGraph;
     }
 }

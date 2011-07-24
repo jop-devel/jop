@@ -1144,10 +1144,10 @@ public class MethodCode {
         Map<CustomKey,Object> map = (Map<CustomKey, Object>) from.getAttribute(KEY_CUSTOMVALUES);
         if (map == null) {
             to.removeAttribute(KEY_CUSTOMVALUES);
-            return;
+        } else {
+            Map<CustomKey,Object> newMap = new HashMap<CustomKey, Object>(map);
+            to.addAttribute(KEY_CUSTOMVALUES, newMap);
         }
-        Map<CustomKey,Object> newMap = new HashMap<CustomKey, Object>(map);
-        to.addAttribute(KEY_CUSTOMVALUES, newMap);
 
         copyLineNumbers(sourceInfo, to, from);
     }

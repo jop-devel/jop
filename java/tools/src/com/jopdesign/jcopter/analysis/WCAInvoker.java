@@ -20,6 +20,7 @@
 
 package com.jopdesign.jcopter.analysis;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallGraph.ContextEdge;
@@ -30,6 +31,10 @@ import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
+import com.jopdesign.common.graphutils.DFSTraverser;
+import com.jopdesign.common.graphutils.DFSTraverser.DFSEdgeType;
+import com.jopdesign.common.graphutils.DFSTraverser.DFSVisitor;
+import com.jopdesign.common.graphutils.DFSTraverser.EmptyDFSVisitor;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.wcet.ProjectConfig;
 import com.jopdesign.wcet.WCETTool;
@@ -44,12 +49,10 @@ import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -145,19 +148,39 @@ public class WCAInvoker {
      */
     public void updateWCA(Collection<MethodInfo> changedMethods) {
 
-        Set<MethodInfo> roots = new HashSet<MethodInfo>(changedMethods);
-
-        // since we use the cache analysis for the WCA, we need to update all methods for which the
-        // classification changed too
-        roots.addAll(analyses.getMethodCacheAnalysis().getClassificationChangeSet());
-
         // Now we need to clear all results for all callers of the modified methods as well as the modified methods,
         // and recalculate all results
         CallGraph callGraph = wcetTool.getCallGraph();
 
-        List<ExecutionContext> rootNodes = new ArrayList<ExecutionContext>(roots.size());
-        for (MethodInfo root : roots) {
+        final Set<ExecutionContext> rootNodes = new HashSet<ExecutionContext>();
+
+        for (MethodInfo root : changedMethods) {
             rootNodes.addAll(callGraph.getNodes(root));
+        }
+
+        // we also need to recalculate for new nodes.. we simply go down callstring-length from the changed methods
+        final int callstringLength = AppInfo.getSingleton().getCallstringLength();
+
+        DFSVisitor<ExecutionContext,ContextEdge> visitor =
+                new EmptyDFSVisitor<ExecutionContext,ContextEdge>() {
+                    @Override
+                    public boolean visitNode(ExecutionContext parent, ContextEdge edge, ExecutionContext node,
+                                             DFSEdgeType type, Collection<ContextEdge> outEdges, int depth)
+                    {
+                        if (type.isFirstVisit() && !wcaNodeFlow.containsKey(node)) {
+                            rootNodes.add(node);
+                        }
+                        return depth <= callstringLength;
+                    }
+                };
+
+        DFSTraverser<ExecutionContext,ContextEdge> traverser = new DFSTraverser<ExecutionContext, ContextEdge>(visitor);
+        traverser.traverse(callGraph.getGraph(), rootNodes);
+
+        // since we use the cache analysis for the WCA, we need to update all methods for which the
+        // classification changed too
+        for (MethodInfo method : analyses.getMethodCacheAnalysis().getClassificationChangeSet()) {
+            rootNodes.addAll(callGraph.getNodes(method));
         }
 
         runAnalysis(wcetTool.getCallGraph().createInvokeGraph(rootNodes, true));

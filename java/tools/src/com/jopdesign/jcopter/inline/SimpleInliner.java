@@ -616,8 +616,9 @@ public class SimpleInliner extends AbstractOptimizer {
         }
 
         // Replace the invoke
-        InstructionList il = invokee.getCode().getInstructionList();
-        InstructionHandle start = invokee.getCode().getInstructionHandle(inlineData.getInlineStart());
+        MethodCode invokeeCode = invokee.getCode();
+        InstructionList il = invokeeCode.getInstructionList();
+        InstructionHandle start = invokeeCode.getInstructionHandle(inlineData.getInlineStart());
 
         int cnt = il.getLength() - inlineData.getInlineStart();
         if (il.getEnd().getInstruction() instanceof ReturnInstruction) {
@@ -625,7 +626,17 @@ public class SimpleInliner extends AbstractOptimizer {
             cnt--;
         }
 
-        InstructionHandle end = invokerCode.replace(invoke, 1, invokee, start, cnt, false);
+        InstructionHandle end = invokerCode.replace(invoke, 1, invokee, start, cnt, true);
+
+        // copy source line number for first inlined instruction separately, since we skipped some instructions in
+        // the invokee
+        if (cnt > 0) {
+            InstructionHandle ih = end;
+            for (int i = 0; i < cnt; i++) {
+                ih = ih.getPrev();
+            }
+            invokerCode.setLineNumber(ih, invokeeCode.getSourceClassInfo(start), invokeeCode.getLineNumber(start));
+        }
 
         // insert epilogue
         invokerCode.getInstructionList().insert(end, inlineData.getEpilogue());

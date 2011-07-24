@@ -104,6 +104,7 @@ public class InlineOptimizer implements CodeOptimizer {
         private long localGain;
         private long deltaCacheMiss;
         private boolean isLastInvoke;
+        private boolean isLastLocalInvoke;
 
         protected InlineCandidate(InvokeSite invokeSite, MethodInfo invokee,
                                   boolean needsNPCheck, boolean needsEmptyStack, int maxLocals)
@@ -223,7 +224,6 @@ public class InlineOptimizer implements CodeOptimizer {
             Map<InstructionHandle,InstructionHandle> instrMap = new HashMap<InstructionHandle, InstructionHandle>();
             Map<InvokeSite,InvokeSite> invokeMap = new HashMap<InvokeSite, InvokeSite>();
 
-            // TODO we could use the AnalysisManager to store the StackAnalysis per method and reuse them
             StacksizeAnalysis stacksize = analyses.getStacksizeAnalysis(invokee);
 
             // first copy all instruction handles
@@ -377,7 +377,7 @@ public class InlineOptimizer implements CodeOptimizer {
                 // we did not remove an exec context, this happens when callstring length is 0
                 // only way to handle this is to check all invokesites of this method, see if the invokee is still in
                 // the set of invokees.
-                if (!searchInvokeSites()) {
+                if (isLastLocalInvoke) {
                     cg.removeEdges(getMethod(), invokee, true);
                 }
             }
@@ -391,7 +391,7 @@ public class InlineOptimizer implements CodeOptimizer {
 
             analyses.getExecCountAnalysis().inline(invokeSite, invokee, new HashSet<InvokeSite>(invokeMap.values()) );
 
-            analyses.getMethodCacheAnalysis().inline(invokeSite, invokee);
+            analyses.getMethodCacheAnalysis().inline(this, invokeSite, invokee);
 
         }
 
@@ -414,8 +414,10 @@ public class InlineOptimizer implements CodeOptimizer {
             // deltaCodesize: codesize of invokee may have changed
             deltaCodesize = calcDeltaCodesize(analyses);
 
-            // isLastInvoke: may have changed due to previous inlining
-            isLastInvoke = checkIsLastInvoke();
+            // isLastInvoke,isLastLocalInvoke: may have changed due to previous inlining
+            isLastLocalInvoke = checkIsLastLocalInvoke();
+
+            isLastInvoke = isLastLocalInvoke && checkIsLastInvoker();
 
             // localGain: could have changed due to codesize changes, or cache-miss-count changes
             localGain = calcLocalGain(analyses);
@@ -435,6 +437,11 @@ public class InlineOptimizer implements CodeOptimizer {
         @Override
         public Collection<MethodInfo> getUnreachableMethods() {
             return isLastInvoke ? Collections.singleton(invokee) : null;
+        }
+
+        @Override
+        public Collection<MethodInfo> getRemovedInvokees() {
+            return isLastLocalInvoke ? Collections.singleton(invokee) : Collections.<MethodInfo>emptyList();
         }
 
         @Override
@@ -552,10 +559,26 @@ public class InlineOptimizer implements CodeOptimizer {
             return pos > 255 ? 4 : (pos > 3 ? 2 : 1);
         }
 
-        private boolean checkIsLastInvoke() {
+        private boolean checkIsLastInvoker() {
             CallGraph cg = appInfo.getCallGraph();
 
-            for (ExecutionContext node :  cg.getNodes(invokee)) {
+            // check if the invokee is invoked in any other method
+            for (ExecutionContext node : cg.getNodes(invokee)) {
+                for (ExecutionContext parent : cg.getParents(node)) {
+                    if (!parent.getMethodInfo().equals(invokeSite.getInvoker())) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private boolean checkIsLastLocalInvoke() {
+
+            for (ExecutionContext node : appInfo.getCallGraph().getReferencedMethods(invokeSite.getInvoker())) {
+                if (!node.getMethodInfo().equals(invokee)) continue;
+
                 if (node.getCallString().isEmpty()) {
                     // This is a problem, we can only find out if we check all invokes in this method.
                     if (searchInvokeSites()) {

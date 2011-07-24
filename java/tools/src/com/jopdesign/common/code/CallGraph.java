@@ -53,6 +53,7 @@ import org.jgrapht.graph.DirectedMaskSubgraph;
 import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.graph.ListenableDirectedGraph;
 import org.jgrapht.graph.MaskFunctor;
+import org.jgrapht.graph.UnmodifiableDirectedGraph;
 import org.jgrapht.traverse.DepthFirstIterator;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
@@ -666,6 +667,10 @@ public class CallGraph implements ImplementationFinder {
 
     public EdgeFactory<ExecutionContext,ContextEdge> getEdgeFactory() {
         return callGraph.getEdgeFactory();
+    }
+
+    public DirectedGraph<ExecutionContext,ContextEdge> getGraph() {
+        return new UnmodifiableDirectedGraph<ExecutionContext, ContextEdge>(callGraph);
     }
 
     /**
@@ -1472,9 +1477,9 @@ public class CallGraph implements ImplementationFinder {
      * @param m invoker method
      * @return methods possibly directly invoked from the given method
      */
-    public List<ExecutionContext> getReferencedMethods(MethodInfo m) {
+    public Set<ExecutionContext> getReferencedMethods(MethodInfo m) {
         Set<ExecutionContext> nodes = getNodes(m);
-        List<ExecutionContext> succs = new ArrayList<ExecutionContext>();
+        Set<ExecutionContext> succs = new HashSet<ExecutionContext>();
         for(ExecutionContext node : nodes) {
             for(ContextEdge e : callGraph.outgoingEdgesOf(node)) {
                 succs.add(callGraph.getEdgeTarget(e));

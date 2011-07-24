@@ -197,10 +197,9 @@ public class SourceLineStorage extends EmptyAppEventHandler {
 
     /**
      * Store all source file and -line annotations of all classes to the storage file.
-     * @throws IOException on file write errors
      */
     public void storeSourceInfos() {
-        PrintWriter writer = null;
+        PrintWriter writer;
         try {
             writer = new PrintWriter(new BufferedWriter(new FileWriter(storage, false)));
         } catch (IOException e) {
