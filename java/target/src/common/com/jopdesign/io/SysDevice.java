@@ -91,4 +91,11 @@ public final class SysDevice extends HardwareObject {
 	 * Number of CPUs
 	 */
 	public volatile int nrCpu;
+	
+	/**
+	 * Performance counters.
+	 * -1 resets all counter
+	 * Currently only used in JopSim for data access and cache statistics.
+	 */
+	public volatile int perfCounter;
 }
