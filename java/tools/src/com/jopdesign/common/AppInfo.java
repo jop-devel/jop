@@ -1408,6 +1408,14 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
         JavaClass javaClass = new ClassParser(is, className).parse();
         is.close();
 
+        if (javaClass.getMajor() > 50) {
+            // TODO this requires some work: Java 7 introduces new Attributes (must be parsed correctly and
+            //      handled by the UsedCodeFinder etc), new constantpool entry types a new invokedynamic
+            //      instruction (requires patching of BCEL code similar to Classpath and InstructionFinder)
+            throw new JavaClassFormatError
+                    ("Classfiles with versions 51.0 (Java 7) and above are currently not supported!");
+        }
+
         return new ClassInfo(new ClassGen(javaClass));
     }
 
