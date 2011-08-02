@@ -122,9 +122,10 @@ public class MethodCacheAnalysis {
     }
 
     /**
-     * Analyze the number of blocks needed by each scope.
+     * Analyze the number of blocks needed by each scope (assuming all blocks should be persistent)
      * <h2>Technique</h2>
-     * <p>Traverse the scope graph, create a local ILP, and find maximum number of blocks</p>
+     * <p>Traverse the call graph, and solve the IPET problem determining the maximum number of
+     * distinct blocks accessed when executing the method
      * <ol>
      * <li/> Create an IPET-problem for this scope (structural constraints, flow constraints)
      * <li/> Add Block Usage Constraints.

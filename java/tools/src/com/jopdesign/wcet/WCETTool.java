@@ -51,7 +51,6 @@ import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.analyses.LoopBounds;
-import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.DFACallgraphBuilder;
 import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.wcet.allocation.BlockAllocationModel;
@@ -80,12 +79,26 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
- * Purpose: This class provides the interface to JOP's WCET tool
- *
+ * <p>Purpose: This class provides the interface to JOP's WCET tool</p>
+ * <p>
+ * For a typical usage, you would
+ * <ul>
+ * <li/> Create a tool instance:
+ *  <pre>WCETTool wcetTool = new WCETTool();</pre>
+ * <li/> Register and Initialize the WCET tool:
+ *  <pre>setup.registerTool("wcet", wcetTool);</pre>
+ *  <pre>wcetTool.initialize(); </pre>
+ * <li/> Create analysis instance:
+ * <pre> RecursiveWcetAnalysis an = 
+ *         new RecursiveWcetAnalysis(wcetTool,ipetConfig,strategy);</pre>
+ * <li/> Run Analysis:
+ * <pre> wcet = an.computeCost(wcetTool.getTargetMethod(), analysisContex); </pre>
+ * </ul>
+ * </p>
+ * @see WCETAnalysis
  * @author Stefan Hepp (stefan@stefant.org)
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  */
@@ -126,7 +139,6 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
     private File resultRecord;
     private LinkerInfo linkerInfo;
     private boolean hasDfaResults;
-    private Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverAnalysis = null;
 
     private boolean standaloneOptions = true;
     private boolean ipetOptions = true;
@@ -641,7 +653,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         dfaTool.load();
         
         topLevelLogger.info("Receiver analysis");
-        this.receiverAnalysis = dfaTool.runReceiverAnalysis(callstringLength);
+        dfaTool.runReceiverAnalysis(callstringLength);
 
         topLevelLogger.info("Loop bound analysis");
         dfaTool.runLoopboundAnalysis(callstringLength);
