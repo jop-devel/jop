@@ -117,9 +117,20 @@ public class IPETSolver {
      * @throws Exception if the ILP solver fails
      */
     public double solve(Map<ExecutionEdge, Long> flowMapOut) throws Exception {
+    	return solve(flowMapOut, true);
+    }
 
+    /**
+     * Solve the max cost network flow problem using {@link LpSolveWrapper}.
+     *
+     * @param flowMapOut if not null, write solution into this map, assigning a flow to each edge
+     * @param isILP      if false, assumes all variables are rational (relaxed problem)
+     * @return the cost of the solution
+     * @throws Exception if the ILP solver fails
+     */
+     public double solve(Map<ExecutionEdge, Long> flowMapOut, boolean isILP) throws Exception {
         IDProvider<Object> idProvider = this.generateMapping();
-        LpSolveWrapper<Object> wrapper = new LpSolveWrapper<Object>(edgeSet.size(), true, idProvider);
+        LpSolveWrapper<Object> wrapper = new LpSolveWrapper<Object>(edgeSet.size(), isILP, idProvider);
 
         /* Add Constraints */
         for (LinearConstraint<ExecutionEdge> lc : edgeConstraints) {
