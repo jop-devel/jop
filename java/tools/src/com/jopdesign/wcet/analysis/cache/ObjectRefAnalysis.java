@@ -68,7 +68,7 @@ import static com.jopdesign.common.misc.MiscUtils.addToSet;
  * <li/> Only consider getfield. putfield does not modify cache
  * <li/> Handle access should be configurable (HANDLE_ACCESS = false or true)
  * </ul>
- * For the general technique, see {@link MethodCacheAnalysis#analyzeBlockUsage()}
+ * For the general technique, see {@link MethodCacheAnalysis#countDistinctCacheBlocks()}
  * <h2>Bytecodes using object references</h2>
  * <ul>
  *   <li/> getfield (top of stack)

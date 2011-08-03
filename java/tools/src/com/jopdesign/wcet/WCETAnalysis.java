@@ -30,6 +30,8 @@ package com.jopdesign.wcet;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.CallGraph.ContextEdge;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.dfa.DFATool;
@@ -37,6 +39,7 @@ import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
+import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.TreeAnalysis;
 import com.jopdesign.wcet.analysis.UppaalAnalysis;
@@ -48,6 +51,7 @@ import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;
 import com.jopdesign.wcet.uppaal.model.XmlSerializationException;
 import org.apache.log4j.Logger;
+import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -128,6 +132,37 @@ public class WCETAnalysis {
             return false;
         }
 
+        // Segment Cache Analysis: Experiments
+        MethodCacheAnalysis mca = new MethodCacheAnalysis(wcetTool);
+        /* iterate top down the scope graph (currently: the call graph) */
+        TopologicalOrderIterator<ExecutionContext, ContextEdge> iter =
+                wcetTool.getCallGraph().reverseTopologicalOrder();
+
+        LpSolveWrapper.resetSolverTime();
+        long blocks = 0;
+        long start = System.nanoTime();
+        while (iter.hasNext()) {
+            ExecutionContext scope = iter.next();
+            
+            long total, distinctApprox = -1, distinct = -1;
+            
+            blocks = total = mca.countTotalCacheBlocks(scope);
+            if(total >= 8) {
+            	blocks = distinctApprox = mca.countDistinctCacheBlocks(scope, false);
+                if(distinctApprox < 32) {
+                	blocks = distinct = mca.countDistinctCacheBlocks(scope, true);                	
+                }
+            }
+            System.out.println(String.format("block-count < %2d [%2d,%2d,%2d] for %-30s @ %s", blocks,
+            		total, distinctApprox, distinct,
+            		scope.getMethodInfo().getFQMethodName(), scope.getCallString().toStringVerbose(false)));
+        }
+        long stop  = System.nanoTime();
+        reportSpecial("block-count",WcetCost.totalCost(blocks),start,stop,LpSolveWrapper.getSolverTime());
+        System.out.println("solver-time: "+LpSolveWrapper.getSolverTime());
+//      return true;
+        
+        
         // project.getLinkerInfo().dump(System.out);
         // new ConstantCache(project).build().dumpStats();
 
@@ -147,6 +182,7 @@ public class WCETAnalysis {
         } else {
             return runWCETAnalysis();
         }
+        
     }
     
     private boolean runWCETAnalysis() {

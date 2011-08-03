@@ -28,6 +28,8 @@ import com.jopdesign.common.graphutils.FlowGraph;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.graphutils.TopOrder;
 import com.jopdesign.common.misc.BadGraphException;
+
+import org.apache.log4j.Logger;
 import org.jgrapht.graph.DirectedMultigraph;
 
 import java.io.FileWriter;
@@ -375,16 +377,23 @@ public class SuperGraph {
             for (CFGNode node : current.getCfg().getGraph().vertexSet()) {
                 if (node instanceof ControlFlowGraph.InvokeNode) {
                     ControlFlowGraph.InvokeNode iNode = (ControlFlowGraph.InvokeNode) node;
-                    MethodInfo impl = iNode.getImplementedMethod();
-                    ControlFlowGraph invokedCFG = cfgProvider.getFlowGraph(impl);
-                    CallString invokedCS = currentCS.push(iNode, callstringLength);
-                    SuperGraphNode invoked = new SuperGraphNode(invokedCFG, invokedCS);
-
-                    if (!superGraph.containsVertex(invoked)) {
-                        superGraph.addVertex(invoked);
-                        todo.push(invoked);
+                    Set<MethodInfo> impls = iNode.getImplementedMethods();
+                    if(impls.size() == 0) {
+                    	throw new AssertionError("No implementations for iNode available");
+                    } else if(impls.size() != 1) {
+                    	Logger.getLogger(SuperGraph.class).warn("Unresolved virtual Dispatch for " + iNode + ": " + impls);
                     }
-                    addEdge(iNode, current, invoked);
+                    for(MethodInfo impl : impls) {
+                    	ControlFlowGraph invokedCFG = cfgProvider.getFlowGraph(impl);
+                    	CallString invokedCS = currentCS.push(iNode, callstringLength);
+                    	SuperGraphNode invoked = new SuperGraphNode(invokedCFG, invokedCS);
+
+                    	if (!superGraph.containsVertex(invoked)) {
+                    		superGraph.addVertex(invoked);
+                    		todo.push(invoked);
+                    	}
+                        addEdge(iNode, current, invoked);
+                    }
                 }
             }
         }
@@ -402,8 +411,8 @@ public class SuperGraph {
             throw new AssertionError("SuperGraph: Outdegree of invoker node > 1.");
         }
         CFGNode returnNode = invokerGraph.getEdgeTarget(invokerGraph.outgoingEdgesOf(node).iterator().next());
-        if (invokerGraph.inDegreeOf(returnNode) != 1) {
-            throw new AssertionError("SuperGraph: Indegree of return node != 1. Maybe return node missing ?");
+        if (invokerGraph.inDegreeOf(returnNode) == 0) {
+            throw new AssertionError("SuperGraph: Indegree of return node "+invokerGraph.inDegreeOf(returnNode)+"== 0. Maybe return node missing ?");
         }
         SuperReturnEdge rEdge = new SuperReturnEdge(returnNode, invoker.getContext());
         superGraph.addEdge(invoked, invoker, rEdge);

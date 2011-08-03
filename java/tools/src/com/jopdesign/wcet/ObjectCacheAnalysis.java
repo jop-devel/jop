@@ -292,7 +292,7 @@ public class ObjectCacheAnalysis {
         start = System.nanoTime();
 		LpSolveWrapper.resetSolverTime();
 		MethodCacheAnalysis mcAnalysis = new MethodCacheAnalysis(project);
-		mcAnalysis.analyzeBlockUsage();
+		mcAnalysis.countDistinctCacheBlocks();
         stop  = System.nanoTime();
 		System.err.println(
 				String.format("[Method Cache Analysis]: Total time: %.2f s / Total solver time: %.2f s",

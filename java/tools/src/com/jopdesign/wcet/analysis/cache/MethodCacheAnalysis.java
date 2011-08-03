@@ -115,14 +115,16 @@ public class MethodCacheAnalysis {
     /**
      * The project analyzed
      */
-    private WCETTool project;
+    private WCETTool wcetTool;
+	private MethodCache methodCache;
 
     public MethodCacheAnalysis(WCETTool p) {
-        this.project = p;
+        this.wcetTool = p;
+        this.methodCache = wcetTool.getWCETProcessorModel().getMethodCache();        
     }
 
     /**
-     * Analyze the number of blocks needed by each scope (assuming all blocks should be persistent)
+     * Analyze the number of distinct cache tags accessed in each scope
      * <h2>Technique</h2>
      * <p>Traverse the call graph, and solve the IPET problem determining the maximum number of
      * distinct blocks accessed when executing the method
@@ -145,87 +147,116 @@ public class MethodCacheAnalysis {
      * frequency is 0, the method is never loaded. The method at the root of the scope graph is
      * always loaded.
      */
-    public void analyzeBlockUsage() {
+    public void countDistinctCacheBlocks() {
         /* Get Method Cache */
-        if (!project.getWCETProcessorModel().hasMethodCache()) {
+        if (!wcetTool.getWCETProcessorModel().hasMethodCache()) {
             throw new AssertionError(String.format("MethodCacheAnalysis: Processor %s has no method cache",
-                    project.getWCETProcessorModel().getName()));
+                    wcetTool.getWCETProcessorModel().getName()));
         }
 
-        MethodCache methodCache = project.getWCETProcessorModel().getMethodCache();
-        IPETConfig ipetConfig = new IPETConfig(project.getConfig());
 
         /* initialize result data */
         blocksNeeded = new HashMap<ExecutionContext, Long>();
 
         /* iterate top down the scope graph (currently: the call graph) */
         TopologicalOrderIterator<ExecutionContext, ContextEdge> iter =
-                project.getCallGraph().topDownIterator();
+                wcetTool.getCallGraph().topDownIterator();
 
         while (iter.hasNext()) {
             ExecutionContext scope = iter.next();
 
-            /* Create a supergraph */
-            SuperGraph sg = getScopeSuperGraph(scope);
-
-            /* create an ILP graph for all reachable methods */
-            String key = String.format("method_cache_analysis:%s", scope.toString());
-
-            /* create an global IPET problem for the supergraph */
-            IPETSolver ipetSolver = GlobalAnalysis.buildIpetProblem(project, key, sg, ipetConfig);
-            IPETBuilder<SuperGraph.CallContext> ipetBuilder = new IPETBuilder<SuperGraph.CallContext>(project, null);
-
-            /* Add decision variables for all invoked methods, cost (blocks) and constraints */
-            Map<MethodInfo, List<Pair<SuperGraph.SuperInvokeEdge, SuperGraph.SuperReturnEdge>>> callSites = sg.getAllCallSites();
-
-            callSites.remove(scope.getMethodInfo());
-
-            for (MethodInfo mi : callSites.keySet()) {
-
-                /* sum(load_edges) <= 1 */
-                LinearConstraint<ExecutionEdge> lv = new LinearConstraint<ExecutionEdge>(ConstraintType.LessEqual);
-                for (Pair<SuperGraph.SuperInvokeEdge, SuperGraph.SuperReturnEdge> callSite : callSites.get(mi)) {
-                    SuperGraph.SuperInvokeEdge invokeEdge = callSite.first();
-                    /* add load and use edges */
-                    ipetBuilder.changeContext(invokeEdge.getCallContext());
-                    ExecutionEdge parentEdge = ipetBuilder.newEdge(invokeEdge);
-                    ExecutionEdge loadEdge = ipetBuilder.newEdge(MethodCacheAnalysis.splitEdge(invokeEdge, true));
-                    ExecutionEdge useEdge = ipetBuilder.newEdge(MethodCacheAnalysis.splitEdge(invokeEdge, false));
-                    ipetSolver.addConstraint(IPETUtils.lowLevelEdgeSplit(parentEdge, loadEdge, useEdge));
-                    ipetSolver.addEdgeCost(loadEdge, methodCache.requiredNumberOfBlocks(mi));
-                    lv.addLHS(loadEdge, 1);
-                }
-                lv.addRHS(1);
-                ipetSolver.addConstraint(lv);
-            }
-
-            /* Return variables */
-            Map<ExecutionEdge, Long> flowMap = new HashMap<ExecutionEdge, Long>();
-
-            /* Solve */
-            double lpCost;
-            try {
-                lpCost = ipetSolver.solve(flowMap);
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new RuntimeException("LP Solver failed: " + e, e);
-            }
-            long neededBlocks = (long) (lpCost + 0.5);
-            neededBlocks += methodCache.requiredNumberOfBlocks(scope.getMethodInfo());
-            Logger.getLogger(this.getClass()).info("Number of Blocks for " + scope.getMethodInfo() + " is " + neededBlocks);
-            this.blocksNeeded.put(scope, neededBlocks);
+            long neededBlocks = countDistinctCacheBlocks(scope, true);
+    		Logger.getLogger(this.getClass()).info("Maximum number of distinct cache tags for " +
+    				scope.getMethodInfo() + " is " + neededBlocks);
+    		this.blocksNeeded.put(scope, neededBlocks);
         }
     }
 
+    
+	/**
+	 * Analyze the number of cache lines (ways) needed to guarantee that all methods
+	 * are persistent
+	 * @param scope the scope to analyze
+	 * @param use integer variables (more expensive, more accurate)
+	 * @return
+	 */
+	public long countDistinctCacheBlocks(ExecutionContext scope, boolean useILP) {
+
+        IPETConfig ipetConfig = new IPETConfig(wcetTool.getConfig());
+
+		/* Create a supergraph */
+		SuperGraph sg = getScopeSuperGraph(scope);
+
+		/* create an ILP graph for all reachable methods */
+		String key = String.format("method_cache_analysis:%s", scope.toString());
+
+		/* create an global IPET problem for the supergraph */
+		IPETSolver ipetSolver = GlobalAnalysis.buildIpetProblem(wcetTool, key, sg, ipetConfig);
+		IPETBuilder<SuperGraph.CallContext> ipetBuilder = new IPETBuilder<SuperGraph.CallContext>(wcetTool, null);
+
+		/* Add decision variables for all invoked methods, cost (blocks) and constraints */
+		Map<MethodInfo, List<Pair<SuperGraph.SuperInvokeEdge, SuperGraph.SuperReturnEdge>>> callSites = sg.getAllCallSites();
+
+		callSites.remove(scope.getMethodInfo());
+
+		for (MethodInfo mi : callSites.keySet()) {
+
+		    /* sum(load_edges) <= 1 */
+		    LinearConstraint<ExecutionEdge> lv = new LinearConstraint<ExecutionEdge>(ConstraintType.LessEqual);
+		    for (Pair<SuperGraph.SuperInvokeEdge, SuperGraph.SuperReturnEdge> callSite : callSites.get(mi)) {
+		        SuperGraph.SuperInvokeEdge invokeEdge = callSite.first();
+		        /* add load and use edges */
+		        ipetBuilder.changeContext(invokeEdge.getCallContext());
+		        ExecutionEdge parentEdge = ipetBuilder.newEdge(invokeEdge);
+		        ExecutionEdge loadEdge = ipetBuilder.newEdge(MethodCacheAnalysis.splitEdge(invokeEdge, true));
+		        ExecutionEdge useEdge = ipetBuilder.newEdge(MethodCacheAnalysis.splitEdge(invokeEdge, false));
+		        ipetSolver.addConstraint(IPETUtils.lowLevelEdgeSplit(parentEdge, loadEdge, useEdge));
+		        ipetSolver.addEdgeCost(loadEdge, methodCache.requiredNumberOfBlocks(mi));
+		        lv.addLHS(loadEdge, 1);
+		    }
+		    lv.addRHS(1);
+		    ipetSolver.addConstraint(lv);
+		}
+
+		/* Return variables */
+		Map<ExecutionEdge, Long> flowMap = new HashMap<ExecutionEdge, Long>();
+
+		/* Solve */
+		double lpCost;
+		try {
+		    lpCost = ipetSolver.solve(flowMap, useILP);
+		} catch (Exception e) {
+		    e.printStackTrace();
+		    throw new RuntimeException("LP Solver failed: " + e, e);
+		}
+		long neededBlocks = (long) (lpCost + 0.5);
+		neededBlocks += methodCache.requiredNumberOfBlocks(scope.getMethodInfo());
+		return neededBlocks;
+	}
+
+	/**
+	 * Get the maximum number of distinct method cache blocks possibly accessed in the
+	 * given execution context
+	 * @param scope the scope to analyze
+	 * @return
+	 */
+	public long countTotalCacheBlocks(ExecutionContext scope) {
+        long blocks = 0;
+		for (MethodInfo reachable : wcetTool.getCallGraph().getReachableImplementations(scope)) {
+        	blocks  += methodCache.requiredNumberOfBlocks(reachable);
+        }
+        return blocks;
+	}
+
     public Map<ExecutionContext, Long> getBlockUsage() {
-        if (blocksNeeded == null) analyzeBlockUsage();
+        if (blocksNeeded == null) countDistinctCacheBlocks();
         return blocksNeeded;
     }
 
 
     private SuperGraph getScopeSuperGraph(ExecutionContext scope) {
         MethodInfo m = scope.getMethodInfo();
-        return new SuperGraph(project.getAppInfo(), project.getFlowGraph(m), project.getProjectConfig().callstringLength());
+        return new SuperGraph(wcetTool.getAppInfo(), wcetTool.getFlowGraph(m), wcetTool.getProjectConfig().callstringLength());
     }
 
     /**

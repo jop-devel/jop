@@ -1431,7 +1431,7 @@ public class CallGraph implements ImplementationFinder {
      */
     public Set<ExecutionContext> findImplementationContexts(CallString cs) {
         if (cs.length() == 0) {
-            throw new AssertionError("Callstring must not be empty!");
+            throw new AssertionError("findImplementationContexts: callstring must not be empty!");
         }
 
         InvokeSite invoke = cs.top();
