@@ -20,6 +20,8 @@
 
 package com.jopdesign.common.code;
 
+import com.jopdesign.common.misc.BadGraphException;
+
 /**
  * Purpose: Represents one node in the supergraph.
  * Corresponds to a CFG in a certain context.

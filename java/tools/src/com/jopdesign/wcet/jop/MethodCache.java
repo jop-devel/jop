@@ -54,6 +54,9 @@ public abstract class MethodCache {
 
     public abstract boolean fitsInCache(int sizeInWords);
 
+    /** @return total number of cache blocks (0 if no method cache is available) */
+    public abstract int getNumBlocks();
+
     public abstract int requiredNumberOfBlocks(int sizeInWords);
 
     public int requiredNumberOfBlocks(MethodInfo mi) {
@@ -189,4 +192,5 @@ public abstract class MethodCache {
     }
 
     public abstract CacheImplementation getName();
+
 }

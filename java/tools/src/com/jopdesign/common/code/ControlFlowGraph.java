@@ -565,6 +565,14 @@ public class ControlFlowGraph {
         sendCreateGraphEvent();
     }
 
+
+	/**
+	 * @return true if there virtual dispatch nodes have been removed
+	 */
+	public boolean areVirtualInvokesResolved() {		
+		return virtualInvokesResolved;
+	}
+	
     /**
      * @param ignore true to disable ATHROW warnings during callgraph creation.
      */
@@ -885,6 +893,10 @@ public class ControlFlowGraph {
         if (virtualInvokesResolved) return;
         virtualInvokesResolved = true;
         clean = false;
+        
+        if(hasReturnNodes) {
+        	throw new AssertionError("Virtuals need to be resolved before inserting return nodes (file a bug)");
+        }
 
         List<InvokeNode> virtualInvokes = new ArrayList<InvokeNode>();
         /* find virtual invokes */
@@ -1271,12 +1283,35 @@ public class ControlFlowGraph {
         /* now checks should succeed */
         try {
             TopOrder.checkIsFlowGraph(graph, getEntry(), getExit());
+            checkInvokeNodes();
         } catch (BadGraphException ex) {
             debugDumpGraph();
             throw ex;
         }
     }
 
+    /* check invoke and return nodes */
+    private void checkInvokeNodes() throws BadGraphException  {
+    	
+    	for(CFGNode n :this.getGraph().vertexSet()) {
+    		if(n instanceof InvokeNode) {
+    			if(hasReturnNodes) {
+    				if(this.getGraph().outDegreeOf(n) != 1) {
+    					throw new BadGraphException("CFG with return nodes but outdegree of invoke node != 1");
+    				}
+    				CFGEdge re = getGraph().outgoingEdgesOf(n).iterator().next();
+    				if(re.getKind() != EdgeKind.RETURN_EDGE) {
+    					throw new BadGraphException("CFG with return nodes but return edge has wrong kind");    					
+    				}
+    				CFGNode r = getGraph().getEdgeTarget(re);
+    				if(getGraph().inDegreeOf(r) != 1) {
+    					throw new BadGraphException("CFG with return nodes but indegree of return node != 1");    					
+    				}
+    			}
+    		}
+    	}
+    }
+    
     private void invalidate() {
         this.topOrder = null;
         this.loopColoring = null;
@@ -1348,5 +1383,6 @@ public class ControlFlowGraph {
     private CFGEdge nextEdge() {
         return new CFGEdge(EdgeKind.NEXT_EDGE);
     }
+
 
 }

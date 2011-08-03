@@ -39,6 +39,9 @@ import java.util.TreeMap;
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  */
 public class LpSolveWrapper<T> {
+	
+	/* FIXME: do know yet how to get correct information on variables after presolving.
+	 * Therefore, presolving is only enabled if you just need a objective value */
 	private static final int PRESOLVE_OPTIONS =
 		  0
 	  //  | LpSolve.PRESOLVE_COLS
@@ -231,11 +234,29 @@ public class LpSolveWrapper<T> {
 	 * @throws LpSolveException
 	 */
 	public double solve(double[] objVec) throws LpSolveException {
+		return solve(objVec, false);
+	}
+
+	
+	/**
+	 * Solve the I(LP)
+	 * @param presolve whether to use presolving
+	 * @return the objective value
+	 * @throws LpSolveException
+	 */
+	public double solve(boolean preSolve) throws LpSolveException {
+		return solve(null, true);
+	}
+
+	/* either presolving, or a solution vector (at the moment) */
+	private double solve(double[] objVec, boolean preSolve) throws LpSolveException {
 		freeze();
 		
 		/* Presolving gives a speedup of factor 5 on the 'min-cache-blocks' problem for StartKfl */
-		lpsolve.setPresolve(PRESOLVE_OPTIONS,lpsolve.getPresolveloops());
-
+		/* But, the flow in the variables seems to be wrong; need to check whether this can be fixed */
+		if(preSolve) {
+			lpsolve.setPresolve(PRESOLVE_OPTIONS,lpsolve.getPresolveloops());
+		}
 		lpsolve.setTimeout(LP_SOLVE_SEC_TIMEOUT);
 
 	    SolverThread thr = new SolverThread();

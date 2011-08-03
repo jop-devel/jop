@@ -426,7 +426,9 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
      * @return the CFG for the method.
      */
     public ControlFlowGraph getFlowGraph(MethodInfo mi) {
-        if (!mi.hasCode()) return null;
+        if (!mi.hasCode()) {
+        	throw new AssertionError("No CFG for MethodInfo "+mi);
+        }
         ControlFlowGraph cfg;
         try {
             /* TODO We need to make sure that changes to the CFG are not compiled back automatically
@@ -460,6 +462,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
             // TODO handle this somehow??
             throw new BadGraphError(e.getMessage(), e);
         }
+        
         return cfg;
     }
 

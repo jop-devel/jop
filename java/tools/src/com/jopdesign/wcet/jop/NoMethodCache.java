@@ -46,6 +46,11 @@ public class NoMethodCache extends MethodCache {
 	public boolean fitsInCache(int sizeInWords) {
 		return true;
 	}
+    
+    @Override
+    public int getNumBlocks() { 
+    	return 0;
+    }
 
 	@Override
 	public boolean isLRU() {

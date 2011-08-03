@@ -218,13 +218,10 @@ public class MethodCacheAnalysis {
 		    ipetSolver.addConstraint(lv);
 		}
 
-		/* Return variables */
-		Map<ExecutionEdge, Long> flowMap = new HashMap<ExecutionEdge, Long>();
-
 		/* Solve */
 		double lpCost;
 		try {
-		    lpCost = ipetSolver.solve(flowMap, useILP);
+		    lpCost = ipetSolver.solve(null, useILP);
 		} catch (Exception e) {
 		    e.printStackTrace();
 		    throw new RuntimeException("LP Solver failed: " + e, e);
@@ -256,7 +253,7 @@ public class MethodCacheAnalysis {
 
     private SuperGraph getScopeSuperGraph(ExecutionContext scope) {
         MethodInfo m = scope.getMethodInfo();
-        return new SuperGraph(wcetTool.getAppInfo(), wcetTool.getFlowGraph(m), wcetTool.getProjectConfig().callstringLength());
+        return new SuperGraph(wcetTool, wcetTool.getFlowGraph(m), wcetTool.getProjectConfig().callstringLength());
     }
 
     /**

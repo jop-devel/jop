@@ -144,12 +144,13 @@ public class WCETAnalysis {
         while (iter.hasNext()) {
             ExecutionContext scope = iter.next();
             
+            int availBlocks = wcetTool.getWCETProcessorModel().getMethodCache().getNumBlocks();
             long total, distinctApprox = -1, distinct = -1;
             
             blocks = total = mca.countTotalCacheBlocks(scope);
-            if(total >= 8) {
+            if(total > availBlocks) {
             	blocks = distinctApprox = mca.countDistinctCacheBlocks(scope, false);
-                if(distinctApprox < 32) {
+                if(blocks > availBlocks && blocks < availBlocks*2) {
                 	blocks = distinct = mca.countDistinctCacheBlocks(scope, true);                	
                 }
             }

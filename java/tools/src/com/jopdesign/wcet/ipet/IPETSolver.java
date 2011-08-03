@@ -146,18 +146,21 @@ public class IPETSolver {
         }
 
         wrapper.setObjective(costVec, true);
-        double[] objVec = new double[edgeSet.size()];
         wrapper.freeze();
 
         if (this.outDir != null) {
             dumpILP(wrapper);
         }
-        double sol = Math.round(wrapper.solve(objVec));
 
+        double sol;
         if (flowMapOut != null) {
-            for (int i = 0; i < idEdgeMap.size(); i++) {
+            double[] objVec = new double[edgeSet.size()];
+        	sol = Math.round(wrapper.solve(objVec));
+        	for (int i = 0; i < idEdgeMap.size(); i++) {
                 flowMapOut.put(idEdgeMap.get(i + 1), Math.round(objVec[i]));
             }
+        } else {
+        	sol = Math.round(wrapper.solve(true));
         }
         return sol;
     }

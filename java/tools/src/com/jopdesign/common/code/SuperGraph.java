@@ -23,6 +23,7 @@ package com.jopdesign.common.code;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.graphutils.AdvancedDOTExporter;
 import com.jopdesign.common.graphutils.FlowGraph;
 import com.jopdesign.common.graphutils.Pair;
@@ -126,7 +127,7 @@ public class SuperGraph {
     /**
      * Edge connecting nodes from different CFGs
      */
-    public abstract static class SuperGraphEdge extends ControlFlowGraph.CFGEdge {
+    public abstract static class SuperGraphEdge extends CFGEdge {
         private static final long serialVersionUID = 1L;
 
         public SuperGraphEdge(ControlFlowGraph.EdgeKind kind) {
@@ -370,6 +371,11 @@ public class SuperGraph {
 
         while (!todo.empty()) {
             SuperGraphNode current = todo.pop();
+            
+        	if(! current.getCfg().areVirtualInvokesResolved()) {
+        		throw new AssertionError("Virtual dispatch nodes not yet supported for supergraph (file a bug)");                    		
+        	}
+            
             this.superGraphNodes.add(current);
 
             CallString currentCS = current.getCallString();
@@ -402,17 +408,20 @@ public class SuperGraph {
     private void addEdge(ControlFlowGraph.InvokeNode node, SuperGraphNode invoker, SuperGraphNode invoked) {
         SuperInvokeEdge iEdge = new SuperInvokeEdge(node, invoker.getContext());
         superGraph.addEdge(invoker, invoked, iEdge);
-        FlowGraph<CFGNode, ControlFlowGraph.CFGEdge> invokerGraph = invoker.getCfg().getGraph();
+        FlowGraph<CFGNode, CFGEdge> invokerGraph = invoker.getCfg().getGraph();
 
 //		addToSet(specialInSet,invoked.getEntry(), iEdge);
 //		addToSet(specialOutSet, node, iEdge);
 
         if (invokerGraph.outDegreeOf(node) != 1) {
-            throw new AssertionError("SuperGraph: Outdegree of invoker node > 1.");
+            throw new AssertionError("SuperGraph: Outdegree of invoker node != 1 (Missing return node?)");
         }
         CFGNode returnNode = invokerGraph.getEdgeTarget(invokerGraph.outgoingEdgesOf(node).iterator().next());
-        if (invokerGraph.inDegreeOf(returnNode) == 0) {
-            throw new AssertionError("SuperGraph: Indegree of return node "+invokerGraph.inDegreeOf(returnNode)+"== 0. Maybe return node missing ?");
+        if (invokerGraph.inDegreeOf(returnNode) != 1) {
+        	for(CFGEdge e: invokerGraph.incomingEdgesOf(returnNode)) {
+        		System.err.println("Incoming edge to return node of type: " + e.getKind());
+        	}
+            throw new AssertionError("SuperGraph: Indegree of return node != 1 (Missing return node?)");
         }
         SuperReturnEdge rEdge = new SuperReturnEdge(returnNode, invoker.getContext());
         superGraph.addEdge(invoked, invoker, rEdge);

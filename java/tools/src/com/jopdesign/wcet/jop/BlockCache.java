@@ -61,6 +61,7 @@ public class BlockCache extends MethodCache {
 		else return CacheImplementation.FIFO_CACHE;
 	}
 
+	@Override
 	public int getNumBlocks() {
 		return this.blockCount;
 	}
