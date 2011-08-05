@@ -248,8 +248,11 @@ begin
 				--	rd_data(31 downto 0) <= ram_counter;
 				when "1011" =>
 					rd_data <= std_logic_vector(to_unsigned(cpu_cnt, 32));
+				when "1100" =>
+					-- reserved for performance counters
 				when "1111" =>
 					-- nothing, cache inval is write only
+					-- MS: probably not used anymore as there is a microcode for that
 				when others =>
 					-- nothing
 			end case;
@@ -467,8 +470,10 @@ begin
 					sync_in.s_in <= wr_data(0);
 				when "1000" =>
 					mask <= wr_data(NUM_INT-1 downto 0);
-				when "1001" =>
+				when "1001" =>		-- clear interrupts
 					clearall <= '1';
+				when "1100" =>
+					-- reserved for performance counters
 				when "1010" =>		-- dely 'instruction'
 					dly_timeout <= wr_data;
 					dly_block <= '1';

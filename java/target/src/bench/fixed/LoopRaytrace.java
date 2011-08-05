@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2001-2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2010, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,51 +17,39 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+package fixed;
 
-package testurt;
-import joprt.RtThread;
-import util.Dbg;
-import util.Timer;
+import jembench.*;
 
-public class Two extends RtThread {
-
-	int c;
-	Two(int ch) {
-
-		super(5, 100000);
-		c = ch;
-	}
-
-	public void run() {
-
-		for (;;) {
-			Dbg.wr(c);
-			waitForNextPeriod();
-/*
-					int ts = Native.rd(Native.IO_US_CNT) + 99000;
-					while (ts-Native.rd(Native.IO_US_CNT)>0)
-						;
-*/
-		}
-	}
+/**
+ * Run JemBench benchmarks with a fixed iteration count.
+ * 
+ * @author martin
+ *
+ */
+public class LoopRaytrace {
 	
+	public static final int FREQ = 60000000;
 
+	/**
+	 * @param args
+	 */
 	public static void main(String[] args) {
-
-		Dbg.initSer();				// use serial line for debug output
-
-		new Two('a');
-		new Two('b');
-		new Two('c');
-
-		RtThread.startMission();
-
-		// sleep
-		for (;;) {
-			Dbg.wr('M');
-			Timer.wd();
-			RtThread.sleepMs(1200);
+		
+		ParallelBenchmark bench = new jembench.parallel.raytrace.Raytrace();
+		System.out.println(bench);
+		int t1 = (int) System.currentTimeMillis();
+		for (int i=0; i<10; ++i) {
+			bench.getWorker().run();
 		}
+		int t2 = (int) System.currentTimeMillis();
+		System.out.print(t2-t1);			
+		System.out.println(" ms");
+		System.out.print((t2-t1)*(FREQ/1000));
+		System.out.println(" cycles");
+
+		// TODO Auto-generated method stub
+
 	}
 
 }
