@@ -1136,6 +1136,19 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
             return methods;
         }
 
+        // Constructors are only called by invokespecial
+        if ("<init>".equals(invokee.getName())) {
+            MethodInfo init = invokee.getMethodInfo();
+            if (init == null) {
+                throw new JavaClassFormatError("Constructor not found: "+invokee);
+            }
+            if (init.isAbstract()) {
+                throw new JavaClassFormatError("Found abstract constructor, this isn't right..: "+invokee);
+            }
+            methods.add(init);
+            return methods;
+        }
+
         boolean undefinedBaseMethod = false;
 
         // check if method is defined in the referenced class or in a superclass

@@ -242,6 +242,8 @@ public class PhaseExecutor {
         } else {
             DefaultCallgraphBuilder builder = new DefaultCallgraphBuilder();
             builder.setSkipNatives(true);
+            // rebuild without using the existing callgraph, because the callstrings are not updated by SimpleInliner
+            builder.setUseCallgraph(false);
             appInfo.buildCallGraph(builder);
             // reduce the callgraph old-school
             reduceCallGraph();

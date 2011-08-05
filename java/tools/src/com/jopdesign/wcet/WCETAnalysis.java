@@ -119,7 +119,7 @@ public class WCETAnalysis {
         try {
             project.setTopLevelLogger(exec.getExecLogger());
             exec.info("Loading project");
-            project.initialize();
+            project.initialize(true);
             MethodInfo largestMethod = project.getWCETProcessorModel().getMethodCache().checkCache();
             int minWords = MiscUtils.bytesToWords(largestMethod.getCode().getNumberOfBytes());
             reportMetric("min-cache-size",largestMethod.getFQMethodName(),minWords);
@@ -322,6 +322,8 @@ public class WCETAnalysis {
         if(start != stop) System.out.println(key+".time: " + timeDiff(start,stop));
         if(solverTime != 0) System.out.println(key+".solvertime: " + solverTime);
         project.recordSpecialResult(metric,cost);
-        project.getReport().addStat(key, cost.toString());
+        if (project.reportGenerationActive()) {
+            project.getReport().addStat(key, cost.toString());
+        }
     }
 }

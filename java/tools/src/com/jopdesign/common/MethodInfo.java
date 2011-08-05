@@ -392,6 +392,14 @@ public final class MethodInfo extends ClassMemberInfo {
             return implementations;
         }
 
+        if ("<init>".equals(getShortName())) {
+            if (isAbstract()) {
+                throw new JavaClassFormatError("Found abstract constructor, this isn't right..: "+toString());
+            }
+            implementations.add(this);
+            return implementations;
+        }
+
         ClassVisitor visitor = new ClassVisitor() {
 
             public boolean visitClass(ClassInfo classInfo) {

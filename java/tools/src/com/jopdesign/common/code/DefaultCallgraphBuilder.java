@@ -24,7 +24,6 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph.CallgraphBuilder;
-import org.apache.bcel.classfile.Method;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -64,6 +63,14 @@ public class DefaultCallgraphBuilder implements CallgraphBuilder {
 
     public void setSkipNatives(boolean skipNatives) {
         this.skipNatives = skipNatives;
+    }
+
+    public boolean doUseCallgraph() {
+        return useCallgraph;
+    }
+
+    public void setUseCallgraph(boolean useCallgraph) {
+        this.useCallgraph = useCallgraph;
     }
 
     @Override

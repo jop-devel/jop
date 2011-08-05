@@ -101,7 +101,7 @@ public class UppAalAnalysis {
         try {
             project.setTopLevelLogger(tlLogger);
             tlLogger.info("Loading project");
-            project.initialize();
+            project.initialize(true);
             uppaalOutDir = project.getOutDir("uppaal");
         }
         catch (Exception e) {
