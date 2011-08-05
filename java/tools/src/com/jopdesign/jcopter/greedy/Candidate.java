@@ -62,18 +62,10 @@ public abstract class Candidate implements CodeModification {
         return method;
     }
 
-    /**
-     * @return the first instruction in the instruction list which will be modified. After optimization this needs
-     *         to refer to the first modified or new instruction.
-     */
     public InstructionHandle getStart() {
         return start;
     }
 
-    /**
-     * @return the last instruction in the instruction list which will be modified. After optimization this needs
-     *         to refer to the last modified or new instruction.
-     */
     public InstructionHandle getEnd() {
         return end;
     }

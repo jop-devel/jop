@@ -20,6 +20,7 @@
 
 package com.jopdesign.jcopter.analysis;
 
+import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallGraph.ContextEdge;
@@ -191,8 +192,9 @@ public class MethodCacheAnalysis {
     public long getTotalInvokeReturnMissCosts(CallString callString) {
         if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
 
+        AppInfo appInfo = AppInfo.getSingleton();
         int size = 0;
-        for (MethodInfo method : callGraph.findImplementations(callString)) {
+        for (MethodInfo method : appInfo.findImplementations(callString)) {
             size = Math.max(size, method.getCode().getNumberOfWords());
         }
 
@@ -294,7 +296,15 @@ public class MethodCacheAnalysis {
             // costs for all returns to this method
             oldCycles = pm.getMethodCacheMissPenalty(oldWords, false);
             newCycles = pm.getMethodCacheMissPenalty(newWords, false);
+            int startPos = modification.getStart().getPosition();
+            int endPos = modification.getEnd().getPosition();
+
             for (InvokeSite invokeSite : method.getCode().getInvokeSites()) {
+                // skip invokesites within the modified code, since we do not know what the new code will be..
+                // must be handled by the optimizer itself.
+                int pos = invokeSite.getInstructionHandle().getPosition();
+                if (pos >= startPos && pos <= endPos) continue;
+
                 costs += analyses.getExecCountAnalysis().getExecCount(invokeSite) * (newCycles - oldCycles);
             }
         }
@@ -308,6 +318,7 @@ public class MethodCacheAnalysis {
                                                                   modification.getRemovedInvokees(), false);
 
         // In all nodes where we have changes, we need to sum up the new costs
+        AppInfo appInfo = AppInfo.getSingleton();
         long deltaCosts = 0;
         for (ExecutionContext node : changes) {
             // we do not need to count the invokes of the method itself
@@ -315,7 +326,7 @@ public class MethodCacheAnalysis {
             for (InvokeSite invokeSite : node.getMethodInfo().getCode().getInvokeSites()) {
                 // find max invokee size
                 int sizeWords = 0;
-                for (MethodInfo invokee : callGraph.findImplementations(node.getCallString().push(invokeSite))) {
+                for (MethodInfo invokee : appInfo.findImplementations(node.getCallString().push(invokeSite))) {
                     sizeWords = Math.max(sizeWords, invokee.getCode().getNumberOfWords());
                 }
 

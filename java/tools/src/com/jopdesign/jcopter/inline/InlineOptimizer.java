@@ -27,6 +27,7 @@ import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
+import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.Ternary;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.common.type.TypeHelper;
@@ -422,11 +423,28 @@ public class InlineOptimizer implements CodeOptimizer {
             // localGain: could have changed due to codesize changes, or cache-miss-count changes
             localGain = calcLocalGain(analyses);
 
-            deltaCacheMiss = -analyses.getMethodCacheAnalysis().getInvokeReturnMissCosts(invokeSite, invokee);
+            deltaCacheMiss = calcDeltaCacheMissCosts(analyses);
 
             // TODO we might need to save the stack now if exception-handlers have been added, check this
 
             return true;
+        }
+
+        private long calcDeltaCacheMissCosts(AnalysisManager analyses) {
+
+            // we save the cache miss costs for the invoke and the return
+            long delta = -analyses.getMethodCacheAnalysis().getInvokeReturnMissCosts(invokeSite, invokee);
+
+
+            // TODO
+            // However, the costs increase because all invokes in the invokee will now have a higher return
+            // cache miss cost!
+            // Need to find out how many return misses there are in the new code, and how many return misses are in the
+            // old code, and how big the cache miss cost difference is..
+
+
+
+            return delta;
         }
 
         @Override
@@ -612,17 +630,20 @@ public class InlineOptimizer implements CodeOptimizer {
             // gain without cache costs for single invoke..
             long gain = jcopter.getWCETProcessorModel().getExecutionTime(context, invokeSite.getInstructionHandle());
 
-            // we loose some gain due to the prologue
             if (!preciseCycleEstimate) {
+                // we loose some gain due to the prologue
                 gain -= invokee.getArgumentTypes().length * storeCycles;
                 if ( !invokee.isStatic() ) gain -= storeCycles;
                 if (needsNPCheck) gain -= checkNPCycles;
+
+                // we gain something since we execute a goto now instead of a return (assuming no exceptions are thrown)
+                // TODO there may be no goto at all if there is only one return at the end
+                gain += deltaReturnCycles;
             } else {
-
-
+                throw new AppInfoError("Precise cycle gain calculation not yet implemented!");
             }
 
-            // TODO we may also loose/gain some speed because we replaced returns with gotos and changed local-var slots
+            // TODO we may also loose some speed because we changed local-var slots
 
             return gain;
         }
