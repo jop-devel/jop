@@ -26,6 +26,7 @@ import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.EnumOption;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
+import com.jopdesign.jcopter.JCopter;
 
 import java.util.List;
 
@@ -53,6 +54,7 @@ public class InlineConfig {
     public static final BooleanOption INLINE_LIBARIES =
             new BooleanOption("inline-libs", "Allow inlining of library code", false);
 
+    private final JCopter jcopter;
     private final OptionGroup options;
     private final List<String> ignorePrefix;
 
@@ -64,7 +66,8 @@ public class InlineConfig {
         options.addOption(INLINE_LIBARIES);
     }
 
-    public InlineConfig(OptionGroup options) {
+    public InlineConfig(JCopter jcopter, OptionGroup options) {
+        this.jcopter = jcopter;
         this.options = options;
         this.ignorePrefix = Config.splitStringList(options.getOption(EXCLUDE));
     }
@@ -79,14 +82,25 @@ public class InlineConfig {
         return false;
     }
 
-    public boolean doExcludeMethod(MethodInfo method) {
-        String className = method.getClassName();
+    public boolean doExcludeInvoker(MethodInfo invoker) {
+        return false;
+    }
+
+    public boolean doExcludeInvokee(MethodInfo invokee) {
+        String className = invokee.getClassName();
+
+        // We never inline WCA targets, else they might be removed and are not available for analysis
+        for (MethodInfo target : jcopter.getJConfig().getWCATargets()) {
+            if (target.equals(invokee)) {
+                return false;
+            }
+        }
 
         // NOTICE maybe separate configs for ignore from and ignore to?
         for (String prefix : ignorePrefix) {
             if ( className.startsWith(prefix+".") || className.equals(prefix)
-                 || prefix.equals(className+"."+method.getShortName())
-                 || prefix.equals(className+"#"+method.getShortName())) {
+                 || prefix.equals(className+"."+invokee.getShortName())
+                 || prefix.equals(className + "#" +invokee.getShortName())) {
                 return true;
             }
         }

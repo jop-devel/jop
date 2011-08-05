@@ -28,7 +28,9 @@ import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
+import org.apache.log4j.Logger;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -73,6 +75,8 @@ public class JCopterConfig {
     public static void registerOptions(OptionGroup options) {
         options.addOptions(JCopterConfig.optionList);
     }
+
+    private static final Logger logger = Logger.getLogger(JCopter.LOG_ROOT+".JCopterConfig");
 
     private final OptionGroup options;
     
@@ -122,7 +126,18 @@ public class JCopterConfig {
     public void initialize() throws BadConfigurationException {
         // need to do this here because main method class is not available on load
         if (useWCA()) {
-            wcaTargets = Config.parseMethodList(options.getOption(WCA_TARGETS));
+        } else if (options.isSet(WCA_TARGETS)) {
+            try {
+                wcaTargets = Config.parseMethodList(options.getOption(WCA_TARGETS));
+            } catch (BadConfigurationException ignored) {
+                logger.warn("WCA target method is set to "+options.getOption(WCA_TARGETS)+" but does not exist, ignored since WCA is not used.");
+            }
+        } else {
+            try {
+                wcaTargets = Config.parseMethodList(options.getOption(WCA_TARGETS));
+            } catch (BadConfigurationException ignored) {
+                logger.debug("Default WCA target method not found, ignored since WCA is not used.");
+            }
         }
 
         // TODO implement reflection check, implement incomplete code check
@@ -141,7 +156,7 @@ public class JCopterConfig {
     }
 
     public List<MethodInfo> getWCATargets() {
-        return wcaTargets;
+        return wcaTargets == null ? Collections.<MethodInfo>emptyList() : wcaTargets;
     }
 
     /**

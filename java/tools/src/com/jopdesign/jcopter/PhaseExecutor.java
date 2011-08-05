@@ -121,7 +121,7 @@ public class PhaseExecutor {
         if (getJConfig().doOptimizeNormal()) {
             greedyConfig = new GreedyConfig(jcopter, getGreedyOptions());
         }
-        inlineConfig = new InlineConfig(getInlineOptions());
+        inlineConfig = new InlineConfig(jcopter, getInlineOptions());
     }
 
     public Config getConfig() {
