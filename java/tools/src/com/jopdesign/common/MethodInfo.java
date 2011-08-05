@@ -249,6 +249,13 @@ public final class MethodInfo extends ClassMemberInfo {
             return false;
         }
 
+        MethodInfo sm = superMethod.getMethodInfo();
+
+        // special case: check if this method is the method which is inherited to the referenced class
+        if ( this.equals(sm) ) {
+            return true;
+        }
+
         if (checkSignature) {
             if ( !getMethodSignature().equals(superMethod.getMethodSignature()) ) {
                 return false;
@@ -257,8 +264,6 @@ public final class MethodInfo extends ClassMemberInfo {
                 return false;
             }
         }
-
-        MethodInfo sm = superMethod.getMethodInfo();
 
         if (sm == null) {
             throw new AppInfoError("Trying to check unknown method "+superMethod+", this is not supported.");
