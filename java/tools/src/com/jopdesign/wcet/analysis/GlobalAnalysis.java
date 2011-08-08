@@ -24,8 +24,8 @@ import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.SuperGraph.ContextCFG;
 import com.jopdesign.common.code.SuperGraph;
-import com.jopdesign.common.code.SuperGraphNode;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
@@ -49,8 +49,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
-import org.apache.log4j.Logger;
 
 /**
  * Global IPET-based analysis, supporting variable block caches (all fit region approximation).
@@ -163,7 +161,7 @@ public class GlobalAnalysis {
         IPETBuilder<SuperGraph.CallContext> ipetBuilder =
                 new IPETBuilder<SuperGraph.CallContext>(wcetTool, sg.getRootNode().getContext());
 
-        for (SuperGraphNode n : sg.getSuperGraphNodes()) {
+        for (ContextCFG n : sg.getSuperGraphNodes()) {
 
             ControlFlowGraph cfg = n.getCfg();
             ipetBuilder.changeContext(n.getContext());
@@ -174,8 +172,8 @@ public class GlobalAnalysis {
             } else {
                 /* Inner node: inputEdges = outputEdges = flow(superReturnEdges which have super graph node as source) */
                 List<ExecutionEdge> invokeEdges = new ArrayList<ExecutionEdge>();
-                for (SuperGraph.SuperGraphEdge e : sg.incomingInvokeEdgesOf(n)) {
-                    invokeEdges.add(ipetBuilder.newEdgeInContext(e, e.getCallContext()));
+                for (SuperGraph.SuperInvokeEdge e : sg.incomingInvokeEdgesOf(n)) {
+                    invokeEdges.add(ipetBuilder.newEdgeInContext(e, e.getCaller().getContext()));
                 }
                 ipetSolver.addConstraints(IPETUtils.structuralFlowConstraints(cfg.getGraph(), invokeEdges, invokeEdges, ipetBuilder));
             }
@@ -187,7 +185,7 @@ public class GlobalAnalysis {
 
         /* Constraints for invoke/return super edge pairs */
         for (Entry<SuperGraph.SuperInvokeEdge, SuperGraph.SuperReturnEdge> superEdgePair : sg.getSuperEdgePairs().entrySet()) {
-            ipetBuilder.changeContext(superEdgePair.getKey().getCallContext());
+            ipetBuilder.changeContext(superEdgePair.getKey().getCaller().getContext());
             ipetSolver.addConstraints(IPETUtils.invokeReturnConstraints(superEdgePair.getKey(), superEdgePair.getValue(), ipetBuilder));
         }
 
@@ -209,7 +207,7 @@ public class GlobalAnalysis {
 
         IPETBuilder<SuperGraph.CallContext> ipetBuilder = new IPETBuilder<SuperGraph.CallContext>(project, new SuperGraph.CallContext(CallString.EMPTY));
 
-        for (SuperGraphNode n : sg.getGraph().vertexSet()) {
+        for (ContextCFG n : sg.getGraph().vertexSet()) {
             ipetBuilder.changeContext(n.getContext());
 
             // FIXME: There is a discrepancy but also overlap between analysis contexts and execution contexts
@@ -235,17 +233,17 @@ public class GlobalAnalysis {
     private Set<ExecutionEdge> addMissOnceCost(SuperGraph sg, IPETSolver ipetSolver) {
         /* collect access sites */
 
-        Map<MethodInfo, List<SuperGraph.SuperGraphEdge>> accessEdges = getMethodSwitchEdges(sg);
+        Map<MethodInfo, List<SuperGraph.SuperEdge>> accessEdges = getMethodSwitchEdges(sg);
         MethodCache cache = project.getWCETProcessorModel().getMethodCache();
 
         Set<ExecutionEdge> missEdges = new HashSet<ExecutionEdge>();
         /* For each  MethodInfo, create a binary decision variable */
-        for (Entry<MethodInfo, List<SuperGraph.SuperGraphEdge>> entry : accessEdges.entrySet()) {
+        for (Entry<MethodInfo, List<SuperGraph.SuperEdge>> entry : accessEdges.entrySet()) {
             LinearConstraint<ExecutionEdge> lv = new LinearConstraint<ExecutionEdge>(ConstraintType.LessEqual);
             /* sum(miss_edges) <= 1 */
-            for (SuperGraph.SuperGraphEdge e : entry.getValue()) {
+            for (SuperGraph.SuperEdge e : entry.getValue()) {
                 /* add hit and miss edges */
-                IPETBuilder<SuperGraph.CallContext> c = new IPETBuilder<SuperGraph.CallContext>(project, e.getCallContext());
+                IPETBuilder<SuperGraph.CallContext> c = new IPETBuilder<SuperGraph.CallContext>(project, e.getCaller().getContext());
                 IPETBuilder.ExecutionEdge parentEdge = c.newEdge(e);
                 IPETBuilder.ExecutionEdge hitEdge = c.newEdge(MethodCacheAnalysis.splitEdge(e, true));
                 IPETBuilder.ExecutionEdge missEdge = c.newEdge(MethodCacheAnalysis.splitEdge(e, false));
@@ -267,14 +265,14 @@ public class GlobalAnalysis {
      * @param superGraph
      * @return
      */
-    private Map<MethodInfo, List<SuperGraph.SuperGraphEdge>> getMethodSwitchEdges(SuperGraph superGraph) {
+    private Map<MethodInfo, List<SuperGraph.SuperEdge>> getMethodSwitchEdges(SuperGraph superGraph) {
 
-        Map<MethodInfo, List<SuperGraph.SuperGraphEdge>> iMap =
-                new HashMap<MethodInfo, List<SuperGraph.SuperGraphEdge>>();
-        for (SuperGraph.SuperGraphEdge edge : superGraph.getSuperEdges()) {
-            MethodInfo targetMethod = superGraph.getTargetNode(edge).getCfg().getMethodInfo();
-            List<SuperGraph.SuperGraphEdge> edges = iMap.get(targetMethod);
-            if (edges == null) edges = new ArrayList<SuperGraph.SuperGraphEdge>();
+        Map<MethodInfo, List<SuperGraph.SuperEdge>> iMap =
+                new HashMap<MethodInfo, List<SuperGraph.SuperEdge>>();
+        for (SuperGraph.SuperEdge edge : superGraph.getSuperEdges()) {
+            MethodInfo targetMethod = edge.getCallee().getCfg().getMethodInfo();
+            List<SuperGraph.SuperEdge> edges = iMap.get(targetMethod);
+            if (edges == null) edges = new ArrayList<SuperGraph.SuperEdge>();
             edges.add(edge);
             iMap.put(targetMethod, edges);
         }

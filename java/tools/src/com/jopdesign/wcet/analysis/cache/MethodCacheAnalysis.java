@@ -206,7 +206,7 @@ public class MethodCacheAnalysis {
 		    for (Pair<SuperGraph.SuperInvokeEdge, SuperGraph.SuperReturnEdge> callSite : callSites.get(mi)) {
 		        SuperGraph.SuperInvokeEdge invokeEdge = callSite.first();
 		        /* add load and use edges */
-		        ipetBuilder.changeContext(invokeEdge.getCallContext());
+		        ipetBuilder.changeContext(invokeEdge.getCallee().getContext());
 		        ExecutionEdge parentEdge = ipetBuilder.newEdge(invokeEdge);
 		        ExecutionEdge loadEdge = ipetBuilder.newEdge(MethodCacheAnalysis.splitEdge(invokeEdge, true));
 		        ExecutionEdge useEdge = ipetBuilder.newEdge(MethodCacheAnalysis.splitEdge(invokeEdge, false));

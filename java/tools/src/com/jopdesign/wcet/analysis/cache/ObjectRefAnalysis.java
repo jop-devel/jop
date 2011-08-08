@@ -496,9 +496,9 @@ public class ObjectRefAnalysis {
 
 
 	/** Get all access sites per method */
-	public static Map<MethodInfo, Set<ControlFlowGraph.CFGEdge>> getAccessEdges(SuperGraph sg) {
-		Map<MethodInfo, Set<ControlFlowGraph.CFGEdge>> accessEdges =
-			new HashMap<MethodInfo, Set<ControlFlowGraph.CFGEdge>>();
+	public static Map<MethodInfo, Set<SuperGraph.SuperGraphEdge>> getAccessEdges(SuperGraph sg) {
+		Map<MethodInfo, Set<SuperGraph.SuperGraphEdge>> accessEdges =
+			new HashMap<MethodInfo, Set<SuperGraph.SuperGraphEdge>>();
 		for(Entry<SuperGraph.SuperInvokeEdge, SuperGraph.SuperReturnEdge> invokeSite: sg.getSuperEdgePairs().entrySet()) {
 			MethodInfo invoked = invokeSite.getKey().getInvokeNode().receiverFlowGraph().getMethodInfo();
 			addToSet(accessEdges, invoked, invokeSite.getKey());

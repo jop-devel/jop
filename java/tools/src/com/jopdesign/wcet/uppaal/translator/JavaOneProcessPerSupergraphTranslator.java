@@ -22,8 +22,8 @@ package com.jopdesign.wcet.uppaal.translator;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.SuperGraph.ContextCFG;
 import com.jopdesign.common.code.SuperGraph;
-import com.jopdesign.common.code.SuperGraphNode;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.BadGraphError;
 import com.jopdesign.common.misc.BadGraphException;
@@ -217,7 +217,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 	private void computeMethodNestingDepths() throws BadGraphException {
 		this.methodMNDs = new HashMap<MethodInfo,Integer>();
 		/* for super graph nodes in topological order */
-		for(SuperGraphNode n : superGraph.topologicalOrderIterator().getTopologicalTraversal()) {
+		for(ContextCFG n : superGraph.topologicalOrderIterator().getTopologicalTraversal()) {
 			MethodInfo methodInvoked = n.getCfg().getMethodInfo();
 			int maxCaller = 0;
 			for(Pair<SuperGraph.SuperInvokeEdge,SuperGraph.SuperReturnEdge> callSite : superGraph.getCallSites(n)) {

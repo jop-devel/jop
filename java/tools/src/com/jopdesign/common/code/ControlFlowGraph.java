@@ -259,9 +259,9 @@ public class ControlFlowGraph {
         }
     }
 
-    /**
-     * Invoke nodes (Basic block with exactly one invoke instruction).
-     */
+    /** Invoke nodes (Basic block with exactly one instruction)
+     * transfer control to a different method.
+	 */
     public class InvokeNode extends BasicBlockNode {
         private InvokeInstruction instr;
         private MethodRef referenced;
@@ -393,7 +393,8 @@ public class ControlFlowGraph {
     }
 
     /**
-     * Invoke nodes (Basic block with exactly one invoke instruction).
+     * SpecialInvokeNode represents target-specific invokes, e.g. bytecodes
+     * implemented in Java
      */
     public class SpecialInvokeNode extends InvokeNode {
         private InstructionHandle instr;
@@ -468,7 +469,7 @@ public class ControlFlowGraph {
         ENTRY_EDGE, EXIT_EDGE, NEXT_EDGE,
         GOTO_EDGE, SELECT_EDGE, BRANCH_EDGE, JSR_EDGE,
         DISPATCH_EDGE,
-        INVOKE_EDGE, RETURN_EDGE, FLOW_EDGE, LOW_LEVEL_EDGE
+        RETURN_EDGE, FLOW_EDGE, LOW_LEVEL_EDGE
     }
 
     /**

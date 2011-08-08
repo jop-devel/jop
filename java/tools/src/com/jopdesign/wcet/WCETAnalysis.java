@@ -148,9 +148,9 @@ public class WCETAnalysis {
             long total, distinctApprox = -1, distinct = -1;
             
             blocks = total = mca.countTotalCacheBlocks(scope);
-            if(total > availBlocks) {
+            if(total > availBlocks || true) {
             	blocks = distinctApprox = mca.countDistinctCacheBlocks(scope, false);
-                if(blocks > availBlocks && blocks < availBlocks*2) {
+                if(blocks > availBlocks && blocks < availBlocks*2 || true) {
                 	blocks = distinct = mca.countDistinctCacheBlocks(scope, true);                	
                 }
             }
