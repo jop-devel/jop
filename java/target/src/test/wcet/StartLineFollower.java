@@ -29,7 +29,6 @@ public class StartLineFollower {
 	/**
 	 * Set to false for the WCET analysis, true for measurement
 	 */
-	final static boolean MEASURE = false;
 	static int ts, te, to;
 
 	/**
@@ -42,16 +41,16 @@ public class StartLineFollower {
 		to = te-ts;
 		LineFollower.init();
 		invoke();
-		if (MEASURE) System.out.println(te-ts-to);
+		if (Config.MEASURE) { System.out.print("max: "); System.out.println(te-ts-to); }
 	}
 	
 	static void invoke() {
 		measure();
-		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 	}
 
 	static void measure() {
-		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		LineFollower.loop();
 	}
 	

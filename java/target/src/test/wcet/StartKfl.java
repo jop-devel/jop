@@ -20,6 +20,7 @@
 
 package wcet;
 
+import com.jopdesign.sys.Config;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
@@ -28,9 +29,8 @@ import jbe.kfl.Mast;
 public class StartKfl {
 
 	/**
-	 * Set to false for the WCET analysis, true for measurement
+	 * Set to false for the WCET analysis, true for Config.MEASUREment
 	 */
-	final static boolean MEASURE = false;
 	static int ts, te, to;
 
 
@@ -51,17 +51,17 @@ public class StartKfl {
 			if (val<min) min = val;
 			if (val>max) max = val;
 		}
-		if (MEASURE) System.out.println(min);
-		if (MEASURE) System.out.println(max);
+		if (Config.MEASURE) { System.out.print("min: "); System.out.println(min); }
+		if (Config.MEASURE) { System.out.print("max: "); System.out.println(max); }
 	}
 	
 	static void invoke() {
 		measure();
-		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 	}
 
 	static void measure() {
-		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		Mast.loop();
 	}
 			
