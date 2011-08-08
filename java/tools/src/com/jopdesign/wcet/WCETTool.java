@@ -233,7 +233,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         Config.checkDir(outDir, true);
     }
 
-    public void initialize() throws BadConfigurationException {
+    public void initialize(boolean loadLinkInfo) throws BadConfigurationException {
 
         if (projectConfig.saveResults()) {
             this.resultRecord = projectConfig.getResultFile();
@@ -247,13 +247,15 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
             }
         }
 
-        linkerInfo = new LinkerInfo(this);
-        try {
-            linkerInfo.loadLinkInfo();
-        } catch (IOException e) {
-            throw new BadConfigurationException("Could not load link infos", e);
-        } catch (ClassNotFoundException e) {
-            throw new BadConfigurationException("Could not load link infos", e);
+        if (loadLinkInfo) {
+            linkerInfo = new LinkerInfo(this);
+            try {
+                linkerInfo.loadLinkInfo();
+            } catch (IOException e) {
+                throw new BadConfigurationException("Could not load link infos", e);
+            } catch (ClassNotFoundException e) {
+                throw new BadConfigurationException("Could not load link infos", e);
+            }
         }
 
         /* run dataflow analysis */

@@ -121,7 +121,7 @@ public class PhaseExecutor {
         if (getJConfig().doOptimizeNormal()) {
             greedyConfig = new GreedyConfig(jcopter, getGreedyOptions());
         }
-        inlineConfig = new InlineConfig(getInlineOptions());
+        inlineConfig = new InlineConfig(jcopter, getInlineOptions());
     }
 
     public Config getConfig() {
@@ -242,6 +242,8 @@ public class PhaseExecutor {
         } else {
             DefaultCallgraphBuilder builder = new DefaultCallgraphBuilder();
             builder.setSkipNatives(true);
+            // rebuild without using the existing callgraph, because the callstrings are not updated by SimpleInliner
+            builder.setUseCallgraph(false);
             appInfo.buildCallGraph(builder);
             // reduce the callgraph old-school
             reduceCallGraph();

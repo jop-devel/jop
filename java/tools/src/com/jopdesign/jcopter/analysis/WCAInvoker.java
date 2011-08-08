@@ -104,7 +104,7 @@ public class WCAInvoker {
         setWCETOptions(wcaTargets.iterator().next(), false);
 
         // Init WCA tool
-        wcetTool.initialize();
+        wcetTool.initialize(false);
 
         IPETConfig ipetConfig = new IPETConfig(wcetTool.getConfig());
 

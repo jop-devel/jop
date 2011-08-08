@@ -3,10 +3,12 @@ package rttm.tests.manual;
 import static com.jopdesign.sys.Const.MEM_TM_MAGIC;
 import static com.jopdesign.sys.Const.TM_END_TRANSACTION;
 import static com.jopdesign.sys.Const.TM_START_TRANSACTION;
+import rttm.AbortException;
 
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 import com.jopdesign.sys.Native;
+import com.jopdesign.sys.RetryException;
 import com.jopdesign.sys.Startup;
 
 public class RunReferenceTransaction implements Runnable {
@@ -22,7 +24,19 @@ public class RunReferenceTransaction implements Runnable {
 		sys.signal = 1;
 		
 		while (true) {
-			int result = Transaction.atomicMethod(1);
+			int result = -1;
+			try {
+				result = Transaction.atomicMethod(1);
+			} catch (RetryException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (AbortException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (Throwable e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			
 			System.out.println(result);
 		}

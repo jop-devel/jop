@@ -556,12 +556,12 @@ public class InlineHelper {
 
         // check excluded packages
         // invoker method
-        if ( inlineConfig.doExcludeMethod(invoker) ) {
+        if ( inlineConfig.doExcludeInvoker(invoker) ) {
             return false;
         }
         // invoked method implementation
         // TODO we do not check the referenced receiver classname.. should we?
-        if ( inlineConfig.doExcludeMethod(invokee) ) {
+        if ( inlineConfig.doExcludeInvokee(invokee) ) {
             return false;
         }
 

@@ -1136,6 +1136,19 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
             return methods;
         }
 
+        // Constructors are only called by invokespecial
+        if ("<init>".equals(invokee.getName())) {
+            MethodInfo init = invokee.getMethodInfo();
+            if (init == null) {
+                throw new JavaClassFormatError("Constructor not found: "+invokee);
+            }
+            if (init.isAbstract()) {
+                throw new JavaClassFormatError("Found abstract constructor, this isn't right..: "+invokee);
+            }
+            methods.add(init);
+            return methods;
+        }
+
         boolean undefinedBaseMethod = false;
 
         // check if method is defined in the referenced class or in a superclass
@@ -1407,6 +1420,14 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
         InputStream is = classPath.getInputStream(className);
         JavaClass javaClass = new ClassParser(is, className).parse();
         is.close();
+
+        if (javaClass.getMajor() > 50) {
+            // TODO this requires some work: Java 7 introduces new Attributes (must be parsed correctly and
+            //      handled by the UsedCodeFinder etc), new constantpool entry types a new invokedynamic
+            //      instruction (requires patching of BCEL code similar to Classpath and InstructionFinder)
+            throw new JavaClassFormatError
+                    ("Classfiles with versions 51.0 (Java 7) and above are currently not supported!");
+        }
 
         return new ClassInfo(new ClassGen(javaClass));
     }

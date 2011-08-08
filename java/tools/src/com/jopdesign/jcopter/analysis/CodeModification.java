@@ -21,6 +21,7 @@
 package com.jopdesign.jcopter.analysis;
 
 import com.jopdesign.common.MethodInfo;
+import org.apache.bcel.generic.InstructionHandle;
 
 import java.util.Collection;
 
@@ -33,6 +34,18 @@ import java.util.Collection;
 public interface CodeModification {
 
     MethodInfo getMethod();
+
+    /**
+     * @return the first instruction in the instruction list which will be modified. After optimization this needs
+     *         to refer to the first modified or new instruction.
+     */
+    InstructionHandle getStart();
+
+    /**
+     * @return the last instruction in the instruction list which will be modified. After optimization this needs
+     *         to refer to the last modified or new instruction.
+     */
+    InstructionHandle getEnd();
 
     int getDeltaLocalCodesize();
 

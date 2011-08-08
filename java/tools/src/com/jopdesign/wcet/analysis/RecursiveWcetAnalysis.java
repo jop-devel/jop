@@ -289,8 +289,8 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 				if(basicBlock != null) {
 					TreeSet<Integer> lineRange = basicBlock.getSourceLineRange();
 					if(lineRange.isEmpty()) {
-						logger.error("No source code lines associated with basic block in "+basicBlock.getMethodInfo());
-						continue;
+						logger.error("No source code lines associated with basic block "+basicBlock+" in "+m+" ! ");
+                                                continue;
 					}
 					ClassInfo cli = basicBlock.getClassInfo();
 					ClassReport cr = getWCETTool().getReport().getClassReport(cli);

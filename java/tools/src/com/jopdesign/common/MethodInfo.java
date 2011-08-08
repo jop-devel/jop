@@ -249,6 +249,13 @@ public final class MethodInfo extends ClassMemberInfo {
             return false;
         }
 
+        MethodInfo sm = superMethod.getMethodInfo();
+
+        // special case: check if this method is the method which is inherited to the referenced class
+        if ( this.equals(sm) ) {
+            return true;
+        }
+
         if (checkSignature) {
             if ( !getMethodSignature().equals(superMethod.getMethodSignature()) ) {
                 return false;
@@ -257,8 +264,6 @@ public final class MethodInfo extends ClassMemberInfo {
                 return false;
             }
         }
-
-        MethodInfo sm = superMethod.getMethodInfo();
 
         if (sm == null) {
             throw new AppInfoError("Trying to check unknown method "+superMethod+", this is not supported.");
@@ -382,6 +387,14 @@ public final class MethodInfo extends ClassMemberInfo {
         if (checkAccess && (isPrivate() || isStatic())) {
             if (isAbstract()) {
                 throw new JavaClassFormatError("Method is private or static but abstract!: "+toString());
+            }
+            implementations.add(this);
+            return implementations;
+        }
+
+        if ("<init>".equals(getShortName())) {
+            if (isAbstract()) {
+                throw new JavaClassFormatError("Found abstract constructor, this isn't right..: "+toString());
             }
             implementations.add(this);
             return implementations;
