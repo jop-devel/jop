@@ -161,7 +161,9 @@ CALLSTRING_LENGTH=0
 # dataflow analysis
 #
 USE_DFA?=no
-
+ifeq (USE_DFA, yes)
+DFA_CACHE=--dfa-cache-dir java/target/wcet/dfa-cache
+endif
 
 #
 #	Application optimization with JCopter
@@ -768,7 +770,7 @@ wcet:
 		--classpath $(TARGET)/dist/lib/classes.zip --sp $(TARGET_SOURCE) \
 		--target-method $(WCET_METHOD) \
 		-o "$(TARGET)/wcet/\$${projectname}" \
-		--use-dfa $(WCET_DFA) \
+		--use-dfa $(WCET_DFA) $(DFA_CACHE) \
 		--uppaal $(WCET_UPPAAL) --uppaal-verifier $(WCET_VERIFYTA) \
 		--callstring-length $(CALLSTRING_LENGTH) \
 		$(WCET_OPTIONS) $(MAIN_CLASS)	
