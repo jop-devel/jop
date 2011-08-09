@@ -36,6 +36,15 @@ function logfile()
     fi
 }
 
+# sets MEASURE=true, so the same code can be used for measurements
+# and static analysis
+function make_java()
+{
+    assert_set P1 P2 P3
+    make MEASURE=true jop_config  >/dev/null 2>&1
+    make java_app P1=${P1} P2=${P2} P3=${P3} $@ >/dev/null 2>&1
+}
+
 # make_sim key expected-value jsim-args...
 #
 # @print    moet_${METHOD} ${ACTUAL} ${EXPECTED} ${DIFF}
@@ -50,17 +59,15 @@ function make_sim()
     assert_set LOGDIR P1 P2 P3
     LOG=$(logfile ${KEY})
 
-    make jop_config MEASURE=true >/dev/null 2>&1
+    echo make jsim P1=${P1} P2=${P2} P3=${P3} $@
     make jsim P1=${P1} P2=${P2} P3=${P3} $@ >"${LOG}" 2>&1
     SIMVAL=$(cat "${LOG}" | perl -n -e'/max:.*?(\d+)/ && print $1')
-    echo moet_${KEY} "${SIMVAL}" "${EXPC}" $((SIMVAL-EXPC))
+    DIFF=$((SIMVAL-EXPC))
+    if [ ! "${DIFF}" -eq 0 ] ; then
+        DIFF="\\033[31m ${DIFF} \\033[39m"
+    fi
+    echo -e moet_${KEY} "${SIMVAL}" "${EXPC}" ${DIFF}
     export SIMVAL
-}
-
-function make_java()
-{
-    make MEASURE=false jop_config  >/dev/null 2>&1
-    make java_app P1=${P1} P2=${P2} P3=${P3} $@ >/dev/null 2>&1
 }
 
 function make_wcet()
@@ -79,11 +86,15 @@ function make_wcet()
         tail "${LOG}" >&2
     else
         DIFFEXP=$((WCETVAL-EXPC))
+        if [ ! "${DIFFEXP}" -eq 0 ] ; then
+            DIFFEXP="\\033[31m ${DIFFEXP} \033[39m"
+        fi
         DIFFSIM=$((WCETVAL-SIMVAL))
         if [ ${DIFFSIM} -lt 0 ] ; then
-            echo "UNDERESTIMATION: ${WCETVAL} < ${SIMVAL}" >&2
+            echo -e "\\033[34m UNDERESTIMATION: "\
+                    "${WCETVAL} < ${SIMVAL}\033[31m " >&2
         fi
         RATIO=$(bc <<< "scale=2; ${DIFFSIM} / ${SIMVAL} + 1.0")
-        echo wcet_${KEY} "${WCETVAL}" "${EXPC}" ${DIFFEXP} ${RATIO}
+        echo -e wcet_${KEY} "${WCETVAL}" "${EXPC}" ${DIFFEXP} ${RATIO}
     fi
 }

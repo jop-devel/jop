@@ -169,7 +169,7 @@ endif
 #	Application optimization with JCopter
 #
 USE_JCOPTER?=no
-JCOPTER_OPT?=--use-dfa $(USE_DFA) --dump-callgraph merged --dump-jvm-callgraph off --callstring-length $(CALLSTRING_LENGTH) -O 2
+JCOPTER_OPT?=--use-dfa $(USE_DFA) --dump-callgraph merged --dump-jvm-callgraph off --callstring-length $(CALLSTRING_LENGTH)
 JCOPTER_USE_WCA?=no
 
 
