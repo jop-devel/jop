@@ -83,7 +83,7 @@ public abstract class Clock {
   @Allocate( { CURRENT })
   @SCJAllowed
   @SCJRestricted(maySelfSuspend = false)
-  public abstract AbsoluteTime getTime();
+  public abstract AbsoluteAbstractTime getTime();
   
   /**
    * Gets the current time in an existing object. The time
@@ -104,7 +104,7 @@ public abstract class Clock {
    */
   @SCJAllowed
   @SCJRestricted(mayAllocate = false, maySelfSuspend = false)
-  public abstract AbsoluteTime getTime(AbsoluteTime dest);
+  public abstract AbsoluteAbstractTime getTime(AbsoluteAbstractTime dest);
   
   /**
    * Constructor for the abstract class.
@@ -124,7 +124,7 @@ public abstract class Clock {
    */
   @SCJAllowed
   @SCJRestricted(maySelfSuspend = false)
-  public abstract RelativeTime getResolution();
+  public abstract RelativeAbstractTime getResolution();
 
   /**
    * Gets the resolution of the clock, the nominal interval between ticks. 
@@ -140,7 +140,7 @@ public abstract class Clock {
    */
   @SCJAllowed
   @SCJRestricted(mayAllocate = false, maySelfSuspend = false)
-  public abstract RelativeTime getResolution(RelativeTime dest);
+  public abstract RelativeAbstractTime getResolution(RelativeAbstractTime dest);
   
   /**
    * Returns the relative time of the offset of the epoch of this
@@ -154,7 +154,7 @@ public abstract class Clock {
   @Allocate( { CURRENT })
   @SCJAllowed
   @SCJRestricted(maySelfSuspend = false)
-  public abstract RelativeTime getEpochOffset();
+  public abstract RelativeAbstractTime getEpochOffset();
   
   /**
    * Returns true if and only if this Clock is able to trigger the
@@ -191,7 +191,7 @@ public abstract class Clock {
    */
   @SCJAllowed(LEVEL_1)
   @SCJRestricted(maySelfSuspend = false)
-  protected abstract void registerCallBack(AbsoluteTime time,
+  protected abstract void registerCallBack(AbsoluteAbstractTime time,
                                            ClockCallBack clockEvent);
   
   /**
@@ -203,7 +203,7 @@ public abstract class Clock {
    */
   @SCJAllowed(LEVEL_1)
   @SCJRestricted(maySelfSuspend = false)
-  protected abstract boolean resetTargetTime(AbsoluteTime time);
+  protected abstract boolean resetTargetTime(AbsoluteAbstractTime time);
   
   /**
    * Set the resolution of this. TBD: do we keep this in SCJ?

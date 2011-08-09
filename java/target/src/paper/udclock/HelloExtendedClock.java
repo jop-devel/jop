@@ -34,18 +34,17 @@ import javax.safetycritical.io.SimplePrintStream;
 
 /**
  * A minimal SCJ application to show a passive clock
- * according to the RTSJ 1.1 version of user defined
- * clocks.
+ * with the extended model of user defined clocks.
  * 
  * @author Martin Schoeberl
  * 
  */
-public class HelloClock extends Mission implements Safelet {
+public class HelloExtendedClock extends Mission implements Safelet {
 
 	// work around...
-	static HelloClock single;
+	static HelloExtendedClock single;
 	
-	static PassiveClock counter;
+	static PassiveExtendedClock counter;
 
 	static SimplePrintStream out;
 
@@ -61,14 +60,14 @@ public class HelloClock extends Mission implements Safelet {
 		}
 		out = new SimplePrintStream(os);
 		
-		counter = new PassiveClock();
+		counter = new PassiveExtendedClock();
 
 		PeriodicEventHandler peh = new PeriodicEventHandler(
 				new PriorityParameters(11), new PeriodicParameters(
 						new RelativeTime(0, 0), new RelativeTime(1000, 0)),
 				new StorageParameters(10000, 1000, 1000)) {
 			int cnt;
-			AbsoluteTime dest = new AbsoluteTime();
+			UserTick dest = new UserTick(0, counter);
 
 			public void handleAsyncEvent() {
 				// The following type conversion is needed as we have
@@ -77,7 +76,7 @@ public class HelloClock extends Mission implements Safelet {
 				AbsoluteTime time = (AbsoluteTime) Clock.getRealtimeClock().getTime();
 				out.print("It is " + time.getMilliseconds());
 				counter.getTime(dest);
-				out.println(" counter " + dest.getMilliseconds());
+				out.println(" counter " + dest.getTicks());
 				++cnt;
 				if (cnt > 5) {
 					// getCurrentMission is not yet working
@@ -109,7 +108,7 @@ public class HelloClock extends Mission implements Safelet {
 	 */
 	public static void main(String[] args) {
 		Terminal.getTerminal().writeln("Hello SCJ World!");
-		single = new HelloClock();
+		single = new HelloExtendedClock();
 		JopSystem.startMission(single);
 	}
 

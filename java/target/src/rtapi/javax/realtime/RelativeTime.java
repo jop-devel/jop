@@ -160,11 +160,11 @@ public class RelativeTime extends HighResolutionTime implements RelativeAbstract
 	 */
 	@SCJAllowed
 	@SCJRestricted(maySelfSuspend = false)
-	public RelativeTime add(RelativeTime time, RelativeTime dest) {
-		if (time == null || time.clock != clock)
+	public RelativeAbstractTime add(RelativeAbstractTime time, RelativeAbstractTime dest) {
+		if (time == null || ((RelativeTime) time).clock != clock)
 			throw new IllegalArgumentException("null arg or different clock");
 
-		return add(time.millis, time.nanos, dest);
+		return add(((RelativeTime) time).millis, ((RelativeTime) time).nanos, (RelativeTime) dest);
 	}
 	
 	/**
@@ -222,11 +222,11 @@ public class RelativeTime extends HighResolutionTime implements RelativeAbstract
 	 */
 	@SCJAllowed
 	@SCJRestricted(maySelfSuspend = false)
-	public RelativeTime subtract(RelativeTime time, RelativeTime dest) {
-		if (time == null || time.clock != this.clock)
+	public RelativeAbstractTime subtract(RelativeAbstractTime time, RelativeAbstractTime dest) {
+		if (time == null || ((RelativeTime) time).clock != clock)
 			throw new IllegalArgumentException("null arg or different clock");
 
-		return (RelativeTime) add(-time.millis, -time.nanos, dest);
+		return add(-((RelativeTime) time).millis, -((RelativeTime) time).nanos, (RelativeTime) dest);
 	}
 
 	/**
@@ -241,11 +241,11 @@ public class RelativeTime extends HighResolutionTime implements RelativeAbstract
 	@Allocate( { CURRENT })
 	@SCJAllowed
 	@SCJRestricted(maySelfSuspend = false)
-	public RelativeTime subtract(RelativeTime time) {
-		if (time == null || time.clock != clock)
-            throw new IllegalArgumentException("null arg or different clock");
+	public RelativeAbstractTime subtract(RelativeAbstractTime time) {
+		if (time == null || ((RelativeTime) time).clock != clock)
+			throw new IllegalArgumentException("null arg or different clock");
 
-        return add(-time.millis, -time.nanos);
+		return add(-((RelativeTime) time).millis, -((RelativeTime) time).nanos);
 	}
 
 	/************** unused RTSJ methods ******************************/

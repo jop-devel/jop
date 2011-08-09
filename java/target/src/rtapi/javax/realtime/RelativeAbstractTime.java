@@ -25,9 +25,9 @@ package javax.realtime;
  */
 public interface RelativeAbstractTime extends AbstractTime {
 	
-//	RelativeAbstractTime add(RelativeAbstractTime time);
-//	RelativeAbstractTime add(RelativeAbstractTime time, RelativeAbstractTime dest);
-//	RelativeAbstractTime subtract(RelativeAbstractTime time);
-//	RelativeAbstractTime subtract(RelativeAbstractTime time, RelativeAbstractTime dest);
+	RelativeAbstractTime add(RelativeAbstractTime time);
+	RelativeAbstractTime add(RelativeAbstractTime time, RelativeAbstractTime dest);
+	RelativeAbstractTime subtract(RelativeAbstractTime time);
+	RelativeAbstractTime subtract(RelativeAbstractTime time, RelativeAbstractTime dest);
 
 }

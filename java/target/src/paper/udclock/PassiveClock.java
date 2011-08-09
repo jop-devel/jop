@@ -19,15 +19,19 @@
 */
 package udclock;
 
+import javax.realtime.AbsoluteAbstractTime;
 import javax.realtime.AbsoluteTime;
 import javax.realtime.Clock;
 import javax.realtime.ClockCallBack;
+import javax.realtime.RelativeAbstractTime;
 import javax.realtime.RelativeTime;
 
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 
 /**
+ * A passive clock according to the RTSJ 1.1 version
+ * of user defined clocks.
  * @author martin
  *
  */
@@ -76,7 +80,7 @@ public class PassiveClock extends Clock {
 	 * @see javax.realtime.Clock#getResolution(javax.realtime.RelativeTime)
 	 */
 	@Override
-	public RelativeTime getResolution(RelativeTime dest) {
+	public RelativeTime getResolution(RelativeAbstractTime dest) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -96,17 +100,17 @@ public class PassiveClock extends Clock {
 	 * @see javax.realtime.Clock#getTime(javax.realtime.AbsoluteTime)
 	 */
 	@Override
-	public AbsoluteTime getTime(AbsoluteTime dest) {
+	public AbsoluteTime getTime(AbsoluteAbstractTime dest) {
 		int val = sys.cntInt;
-		dest.set(val/100000, val%100000);
-		return dest;
+		((AbsoluteTime) dest).set(val/100000, val%100000);
+		return (AbsoluteTime) dest;
 	}
 
 	/* (non-Javadoc)
 	 * @see javax.realtime.Clock#registerCallBack(javax.realtime.AbsoluteTime, javax.realtime.ClockCallBack)
 	 */
 	@Override
-	protected void registerCallBack(AbsoluteTime time, ClockCallBack clockEvent) {
+	protected void registerCallBack(AbsoluteAbstractTime time, ClockCallBack clockEvent) {
 		// TODO Auto-generated method stub
 
 	}
@@ -115,7 +119,7 @@ public class PassiveClock extends Clock {
 	 * @see javax.realtime.Clock#resetTargetTime(javax.realtime.AbsoluteTime)
 	 */
 	@Override
-	protected boolean resetTargetTime(AbsoluteTime time) {
+	protected boolean resetTargetTime(AbsoluteAbstractTime time) {
 		// TODO Auto-generated method stub
 		return false;
 	}

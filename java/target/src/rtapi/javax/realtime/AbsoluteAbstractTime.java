@@ -16,13 +16,27 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 package javax.realtime;
 
 /**
  * @author martin
- *
+ * 
  */
 public interface AbsoluteAbstractTime extends AbstractTime {
 
+	AbsoluteAbstractTime add(RelativeAbstractTime time);
+
+	AbsoluteAbstractTime add(RelativeAbstractTime time,
+			AbsoluteAbstractTime dest);
+
+	RelativeAbstractTime subtract(AbsoluteAbstractTime time);
+
+	RelativeAbstractTime subtract(AbsoluteAbstractTime time,
+			RelativeAbstractTime dest);
+
+	AbsoluteAbstractTime subtract(RelativeAbstractTime time);
+
+	AbsoluteAbstractTime subtract(RelativeAbstractTime time,
+			AbsoluteAbstractTime dest);
 }

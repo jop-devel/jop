@@ -17,24 +17,35 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-package javax.realtime;
+package udclock;
+
+import javax.realtime.AbsoluteAbstractTime;
+import javax.realtime.AbsoluteTime;
+import javax.realtime.Clock;
+import javax.realtime.ClockCallBack;
+import javax.realtime.RelativeAbstractTime;
+import javax.realtime.RelativeTime;
+
+import com.jopdesign.io.IOFactory;
+import com.jopdesign.io.SysDevice;
 
 /**
  * @author martin
  *
  */
-public class RealtimeClock extends Clock {
+public class PassiveExtendedClock extends Clock {
 
-	static Clock single = new RealtimeClock();
-
+	SysDevice sys = IOFactory.getFactory().getSysDevice();
+	
+	public PassiveExtendedClock() {
+		
+	}
 	/**
-	 * What is the maximum value of our real-time clock?
-	 * 
-	 * On JOP it is actually way smaller at the moment.
+	 * Our passive clock uses a 32-bit counter
 	 */
 	@Override
 	public long getMaxValue() {
-		return -1;
+		return 0xffffffff;
 	}
 
 	/* (non-Javadoc)
@@ -42,15 +53,15 @@ public class RealtimeClock extends Clock {
 	 */
 	@Override
 	protected boolean drivesEvents() {
-		return true;
+		return false;
 	}
 
 	/* (non-Javadoc)
 	 * @see javax.realtime.Clock#getEpochOffset()
 	 */
 	@Override
-	public RelativeAbstractTime getEpochOffset() {
-		return new RelativeTime(0L, 0);
+	public RelativeTime getEpochOffset() {
+		return new RelativeTime(0L, 0, this);
 	}
 
 	/* (non-Javadoc)
@@ -58,16 +69,16 @@ public class RealtimeClock extends Clock {
 	 */
 	@Override
 	public RelativeAbstractTime getResolution() {
-		return new RelativeTime(0L, 1000);
+		return new RelativeUserTick(1, this);
 	}
 
 	/* (non-Javadoc)
 	 * @see javax.realtime.Clock#getResolution(javax.realtime.RelativeTime)
 	 */
 	@Override
-	public RelativeAbstractTime getResolution(RelativeAbstractTime dest) {
-		((RelativeTime) dest).set(0L, 1000);
-		return dest;
+	public RelativeTime getResolution(RelativeAbstractTime dest) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	/* (non-Javadoc)
@@ -75,9 +86,8 @@ public class RealtimeClock extends Clock {
 	 */
 	@Override
 	public AbsoluteAbstractTime getTime() {
-		AbsoluteTime t = new AbsoluteTime();
-		t.set(System.currentTimeMillis());
-		return t;
+		int val = sys.cntInt;
+		return new UserTick(val, this);
 	}
 
 	/* (non-Javadoc)
@@ -85,7 +95,8 @@ public class RealtimeClock extends Clock {
 	 */
 	@Override
 	public AbsoluteAbstractTime getTime(AbsoluteAbstractTime dest) {
-		((AbsoluteTime) dest).set(System.currentTimeMillis());
+		int val = sys.cntInt;
+		dest.setTicks(val);
 		return dest;
 	}
 
@@ -115,6 +126,5 @@ public class RealtimeClock extends Clock {
 		// TODO Auto-generated method stub
 
 	}
-
 
 }

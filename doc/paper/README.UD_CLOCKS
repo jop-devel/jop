@@ -5,3 +5,23 @@ This README describes the experimental evaluation for the
 JTRES 2011 paper "User-Defined Clocks in the Real-Time
 Specification for Java".
 
+For the build of the JOP hardware please refere to the
+"JOP Reference Handbook".
+
+The evaluation can also be performed by the SW simulator
+JopSim for JOP, which only requires Java. However, the
+clock cycle counter in the simulation is only an estimation.
+The following describes the commands for the simulation.
+
+Build the tools:
+
+make init
+
+Run the RTSJ 1.1 passive clock example:
+
+make jsim -e P1=paper P2=udclock P3=HelloClock
+
+Run the extended passive clock example:
+
+make jsim -e P1=paper P2=udclock P3=HelloExtendedClock
+
