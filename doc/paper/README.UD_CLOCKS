@@ -1,11 +1,16 @@
-Split Cache Evaluation
------------------------
+User Defined Clocks Evaluation
+------------------------------
 
 This README describes the experimental evaluation for the
 JTRES 2011 paper "User-Defined Clocks in the Real-Time
 Specification for Java".
 
-For the build of the JOP hardware please refere to the
+The source of the examples can be found in the clock
+branch of the JOP git repository:
+
+git clone -b clock git://www.soc.tuwien.ac.at/jop.git
+
+For the build of the JOP hardware please refer to the
 "JOP Reference Handbook".
 
 The evaluation can also be performed by the SW simulator
@@ -24,4 +29,7 @@ make jsim -e P1=paper P2=udclock P3=HelloClock
 Run the extended passive clock example:
 
 make jsim -e P1=paper P2=udclock P3=HelloExtendedClock
+
+As mission termination is not yet implemented on JOP,
+the simulation has to be stopped with ^C.
 

@@ -87,7 +87,7 @@ public class PassiveExtendedClock extends Clock {
 	@Override
 	public AbsoluteAbstractTime getTime() {
 		int val = sys.cntInt;
-		return new UserTick(val, this);
+		return new AbsoluteUserTick(val, this);
 	}
 
 	/* (non-Javadoc)

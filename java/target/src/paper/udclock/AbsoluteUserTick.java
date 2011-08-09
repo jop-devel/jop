@@ -30,12 +30,12 @@ import javax.realtime.RelativeAbstractTime;
  * @author martin
  *
  */
-public class UserTick implements AbsoluteAbstractTime {
+public class AbsoluteUserTick implements AbsoluteAbstractTime {
 	
 	int tick;
 	Clock clock;
 	
-	public UserTick(int tick, Clock clock) {
+	public AbsoluteUserTick(int tick, Clock clock) {
 		this.tick = tick;
 		this.clock = clock;
 	}
@@ -63,7 +63,7 @@ public class UserTick implements AbsoluteAbstractTime {
 
 	@Override
 	public AbsoluteAbstractTime add(RelativeAbstractTime time) {
-		UserTick ut = (UserTick) time;
+		AbsoluteUserTick ut = (AbsoluteUserTick) time;
 		tick += ut.tick;
 		return this;
 	}

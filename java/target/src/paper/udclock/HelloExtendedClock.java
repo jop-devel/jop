@@ -67,7 +67,7 @@ public class HelloExtendedClock extends Mission implements Safelet {
 						new RelativeTime(0, 0), new RelativeTime(1000, 0)),
 				new StorageParameters(10000, 1000, 1000)) {
 			int cnt;
-			UserTick dest = new UserTick(0, counter);
+			AbsoluteUserTick dest = new AbsoluteUserTick(0, counter);
 
 			public void handleAsyncEvent() {
 				// The following type conversion is needed as we have
