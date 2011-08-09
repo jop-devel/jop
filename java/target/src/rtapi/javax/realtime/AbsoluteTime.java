@@ -45,7 +45,7 @@ import static javax.safetycritical.annotate.Allocate.Area.CURRENT;
  * zero. For add and subtract negative values behave as they do in arithmetic.
  */
 @SCJAllowed
-public class AbsoluteTime extends HighResolutionTime {
+public class AbsoluteTime extends HighResolutionTime implements AbsoluteAbstractTime {
 
 	/**
 	 * Construct an AbsoluteTime object with time millisecond and nanosecond

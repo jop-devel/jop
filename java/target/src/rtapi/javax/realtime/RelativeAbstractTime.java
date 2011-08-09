@@ -19,20 +19,15 @@
 */
 package javax.realtime;
 
-import javax.safetycritical.annotate.SCJAllowed;
-import javax.safetycritical.annotate.SCJRestricted;
-
 /**
  * @author martin
  *
  */
-public interface AbstractTime extends Comparable {
-
-	@SCJAllowed
-	@SCJRestricted(maySelfSuspend = false)
-	public Clock getClock();
-		
-	public long getTicks();
+public interface RelativeAbstractTime extends AbstractTime {
 	
-	public void setTicks(long l);
+//	RelativeAbstractTime add(RelativeAbstractTime time);
+//	RelativeAbstractTime add(RelativeAbstractTime time, RelativeAbstractTime dest);
+//	RelativeAbstractTime subtract(RelativeAbstractTime time);
+//	RelativeAbstractTime subtract(RelativeAbstractTime time, RelativeAbstractTime dest);
+
 }

@@ -41,7 +41,7 @@ import javax.safetycritical.annotate.SCJRestricted;
  * 
  */
 @SCJAllowed
-public class RelativeTime extends HighResolutionTime {
+public class RelativeTime extends HighResolutionTime implements RelativeAbstractTime {
 
 	/**
 	 * Equivalent to new RelativeTime(0,0).
@@ -137,7 +137,8 @@ public class RelativeTime extends HighResolutionTime {
 	@Allocate( { CURRENT })
 	@SCJAllowed
 	@SCJRestricted(maySelfSuspend = false)
-	public RelativeTime add(RelativeTime time) {
+	public RelativeAbstractTime add(RelativeAbstractTime tabstr) {
+		RelativeTime time = (RelativeTime) tabstr;
         if (time == null || time.clock != clock)
             throw new IllegalArgumentException("null arg or different clock");
 

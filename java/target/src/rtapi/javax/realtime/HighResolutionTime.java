@@ -38,7 +38,14 @@ import javax.safetycritical.annotate.SCJRestricted;
  * 
  */
 @SCJAllowed
-public abstract class HighResolutionTime extends AbstractTime  {
+public abstract class HighResolutionTime implements AbstractTime  {
+
+	/**
+	 * the clock associated with this time.
+	 * This is only interesting when user-defined clocks are
+	 * used, which are a Level 2 feature.
+	 */
+	protected Clock clock;
 
 	static final int NANOS_PER_MILLI = 1000 * 1000;
 	
@@ -67,6 +74,17 @@ public abstract class HighResolutionTime extends AbstractTime  {
 		set(millis, nanos);
 	}
 	
+	/**
+	 * At the moment just return the single real-time clock.
+	 * 
+	 * @return A reference to the clock associated with this.
+	 */
+	@SCJAllowed
+	@SCJRestricted(maySelfSuspend = false)
+	public Clock getClock() {
+		return clock;
+	}
+
 	/**
 	 * When we keep millis and nanos we're here
 	 * changing the resolution. Just use nano seconds
@@ -108,6 +126,27 @@ public abstract class HighResolutionTime extends AbstractTime  {
             return -1;
         else
             return nanos - time.nanos;
+	}
+//	public int compareTo(AbstractTime time) {
+//	       if (time == null)
+//	            throw new IllegalArgumentException("null parameter");
+//	        // We are missing reflection in JOP - Tórur 3/6/2011
+//	        /*if (getClass() != time.getClass())
+//	            throw new ClassCastException();*/
+//	        if (clock != time.clock)
+//	            throw new IllegalArgumentException("different clocks");
+//	        // as we're using longs this cannot be simplified
+//	        // to a simple subtraction :-(
+//	        if (getTicks() > time.getTicks())
+//	            return 1;
+//	        else if (getTicks() < time.getTicks())
+//	            return -1;
+//	        else
+//	            return 0;
+//	}
+
+	public boolean equals(AbstractTime t) {
+		return (t.getTicks() == getTicks());
 	}
 
 	/**
