@@ -23,51 +23,21 @@ package com.jopdesign.jcopter.greedy;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class WCETRebateSelector extends RebateSelector {
+public class WCETRebateSelector extends QueueSelector {
 
-    public WCETRebateSelector(AnalysisManager analyses, int maxGlobalSize) {
-        super(analyses, maxGlobalSize);
+    public WCETRebateSelector(AnalysisManager analyses, GainCalculator gc, int maxGlobalSize) {
+        super(analyses, gc, maxGlobalSize);
     }
 
     @Override
-    protected Collection<RebateRatio> calculateRatios(MethodInfo method, List<Candidate> candidates) {
-        List<RebateRatio> ratios = new ArrayList<RebateRatio>(candidates.size());
-
-        for (Candidate candidate : candidates) {
-
-            if (!checkWCPath(candidate)) continue;
-
-            float gain = calculateGain(candidate);
-            if (gain < 0) continue;
-
-            ratios.add(createRatio(candidate, gain));
-        }
-
-        return ratios;
-    }
-
-    private long calculateGain(Candidate candidate) {
-
-        // TODO depending on config, use WCA to calculate local or global WC gain
-
-        long gain = analyses.getExecCountAnalysis().getExecCount(candidate.getMethod(), candidate.getEntry())
-                    * candidate.getLocalGain();
-
-        gain -= analyses.getMethodCacheAnalysis().getMissCount(candidate.getMethod(), candidate.getEntry())
-                * candidate.getDeltaCacheMissCosts();
-
-        gain -= getCodesizeCacheCosts(candidate);
-
-        return gain;
+    protected boolean skipCandidate(Candidate candidate) {
+        return !checkWCPath(candidate);
     }
 
     private boolean checkWCPath(Candidate candidate) {
@@ -84,7 +54,7 @@ public class WCETRebateSelector extends RebateSelector {
         changeSet.addAll( analyses.getMethodCacheAnalysis().getMissCountChangeSet() );
 
         // WCA invoker checks analysis changesets itself
-        analyses.getWCAInvoker().updateWCA(optimizedMethods);
+        changeSet.addAll( analyses.getWCAInvoker().updateWCA(optimizedMethods) );
 
         return changeSet;
     }

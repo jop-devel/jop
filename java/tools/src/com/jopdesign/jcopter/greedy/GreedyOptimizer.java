@@ -106,9 +106,9 @@ public class GreedyOptimizer {
 
         CandidateSelector selector;
         if (config.useWCA()) {
-            selector = new WCETRebateSelector(analyses, config.getMaxCodesize());
+            selector = new WCETRebateSelector(analyses, new GainCalculator(analyses), config.getMaxCodesize());
         } else {
-            selector = new ACETRebateSelector(analyses, config.getMaxCodesize());
+            selector = new ACETRebateSelector(analyses, new GainCalculator(analyses), config.getMaxCodesize());
         }
 
         selector.initialize();
@@ -140,7 +140,7 @@ public class GreedyOptimizer {
 
             selector.printStatistics();
 
-            selector = new ACETRebateSelector(analyses, config.getMaxCodesize());
+            selector = new ACETRebateSelector(analyses, new GainCalculator(analyses), config.getMaxCodesize());
             selector.initialize();
 
             optimizeMethods(analyses, analyses.getExecCountAnalysis(), selector, others);

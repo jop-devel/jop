@@ -20,31 +20,38 @@
 
 package com.jopdesign.jcopter.greedy;
 
-import com.jopdesign.common.MethodInfo;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ACETRebateSelector extends QueueSelector {
+public class GainCalculator {
 
-    public ACETRebateSelector(AnalysisManager analyses, GainCalculator gc, int maxGlobalSize) {
-        super(analyses, gc, maxGlobalSize);
+    private final AnalysisManager analyses;
+
+    public GainCalculator(AnalysisManager analyses) {
+        this.analyses = analyses;
     }
 
-    @Override
-    protected boolean skipCandidate(Candidate candidate) {
-        return false;
+    public long calculateGain(Candidate candidate) {
+
+        // TODO depending on config, use WCA to calculate local or global WC gain
+
+        // TODO else add heuristic factor to prefer candidates outside IF-constructs
+
+        long gain = analyses.getExecCountAnalysis().getExecCount(candidate.getMethod(), candidate.getEntry())
+                    * candidate.getLocalGain();
+
+        gain -= analyses.getMethodCacheAnalysis().getMissCount(candidate.getMethod(), candidate.getEntry())
+                * candidate.getDeltaCacheMissCosts();
+
+        gain -= getCodesizeCacheCosts(candidate);
+
+        return gain;
     }
 
-    @Override
-    public Set<MethodInfo> updateChangeSet(Set<MethodInfo> optimizedMethods, Set<MethodInfo> candidateChanges) {
-        Set<MethodInfo> changeSet = new HashSet<MethodInfo>(candidateChanges);
-        changeSet.addAll( analyses.getExecCountAnalysis().getChangeSet() );
-        changeSet.addAll( analyses.getMethodCacheAnalysis().getMissCountChangeSet() );
-        return changeSet;
+    private long getCodesizeCacheCosts(Candidate candidate) {
+        return analyses.getMethodCacheAnalysis().getDeltaCacheMissCosts(candidate);
     }
+
 }

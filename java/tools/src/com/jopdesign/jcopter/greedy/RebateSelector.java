@@ -32,13 +32,11 @@ import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -124,8 +122,7 @@ public abstract class RebateSelector implements CandidateSelector {
     protected final AnalysisManager analyses;
     protected final ProcessorModel processorModel;
 
-    private final Map<MethodInfo, MethodData> methodData;
-    private final TreeSet<RebateRatio> queue;
+    protected final Map<MethodInfo, MethodData> methodData;
 
     private boolean usesCodeRemover;
     private int maxGlobalSize;
@@ -137,7 +134,6 @@ public abstract class RebateSelector implements CandidateSelector {
         this.processorModel = AppInfo.getSingleton().getProcessorModel();
 
         usesCodeRemover = analyses.getJCopter().getExecutor().useCodeRemover();
-        queue = new TreeSet<RebateRatio>();
         methodData = new HashMap<MethodInfo, MethodData>();
     }
 
@@ -164,7 +160,6 @@ public abstract class RebateSelector implements CandidateSelector {
 
     @Override
     public void clear() {
-        queue.clear();
         methodData.clear();
     }
 
@@ -190,7 +185,7 @@ public abstract class RebateSelector implements CandidateSelector {
     @Override
     public void removeCandidates(MethodInfo method) {
         MethodData data = methodData.remove(method);
-        queue.removeAll(data.getRatios());
+        onRemoveMethodData(data);
     }
 
     @Override
@@ -248,12 +243,6 @@ public abstract class RebateSelector implements CandidateSelector {
     }
 
     @Override
-    public void sortCandidates() {
-        queue.clear();
-        sortCandidates(methodData.keySet());
-    }
-
-    @Override
     public void sortCandidates(Set<MethodInfo> changedMethods) {
 
         for (MethodInfo method : changedMethods) {
@@ -267,29 +256,9 @@ public abstract class RebateSelector implements CandidateSelector {
                 continue;
             }
 
-            queue.removeAll(data.getRatios());
-            data.getRatios().clear();
-
-            Collection<RebateRatio> ratios = calculateRatios(method, data.getCandidates());
-
-            data.getRatios().addAll(ratios);
-            queue.addAll(ratios);
+            sortMethodData(method, data);
         }
 
-    }
-
-    @Override
-    public Collection<Candidate> selectNextCandidates() {
-        while (true) {
-            RebateRatio next = queue.pollLast();
-            if (next == null) return null;
-
-            if (!checkConstraints(next.getCandidate())) {
-                continue;
-            }
-
-            return Collections.singleton(next.getCandidate());
-        }
     }
 
     protected boolean checkConstraints(Candidate candidate) {
@@ -323,16 +292,12 @@ public abstract class RebateSelector implements CandidateSelector {
         return size;
     }
 
-    public long getCodesizeCacheCosts(Candidate candidate) {
-        return analyses.getMethodCacheAnalysis().getDeltaCacheMissCosts(candidate);
-    }
-
     protected RebateRatio createRatio(Candidate candidate, float gain) {
         float codesize = getDeltaGlobalCodesize(candidate);
 
         float ratio;
         if (codesize > 0) {
-            ratio = candidate.getHeuristicFactor() * gain / codesize;
+            ratio = (candidate.getHeuristicFactor() * gain) / codesize;
         } else {
             // little hack: if we have no codesize increase, use just the gain as factor
             ratio = candidate.getHeuristicFactor() * gain;
@@ -341,6 +306,8 @@ public abstract class RebateSelector implements CandidateSelector {
         return new RebateRatio(candidate, ratio);
     }
 
-    protected abstract Collection<RebateRatio> calculateRatios(MethodInfo method, List<Candidate> candidates);
+    protected abstract void onRemoveMethodData(MethodData data);
+
+    protected abstract void sortMethodData(MethodInfo method, MethodData data);
 
 }

@@ -149,8 +149,9 @@ public class WCAInvoker implements ExecCountProvider {
      * in the AnalysisManager are checked for changes too.
      *
      * @param changedMethods a set of methods of which the code has been modified.
+     * @return a set of all methods for which the path may have changed.
      */
-    public void updateWCA(Collection<MethodInfo> changedMethods) {
+    public Set<MethodInfo> updateWCA(Collection<MethodInfo> changedMethods) {
 
         // Now we need to clear all results for all callers of the modified methods as well as the modified methods,
         // and recalculate all results
@@ -187,20 +188,22 @@ public class WCAInvoker implements ExecCountProvider {
             rootNodes.addAll(callGraph.getNodes(method));
         }
 
-        runAnalysis(wcetTool.getCallGraph().createInvokeGraph(rootNodes, true));
+        return runAnalysis(wcetTool.getCallGraph().createInvokeGraph(rootNodes, true));
     }
 
     public Collection<CallGraph> getWCACallGraphs() {
         return Collections.singleton(wcetTool.getCallGraph());
     }
 
-    private void runAnalysis(DirectedGraph<ExecutionContext,ContextEdge> reversed) {
+    private Set<MethodInfo> runAnalysis(DirectedGraph<ExecutionContext,ContextEdge> reversed) {
         // Phew. The WCA only runs on acyclic callgraphs, we can therefore assume the
         // reversed graph to be a DAG
         TopologicalOrderIterator<ExecutionContext,ContextEdge> topOrder =
                 new TopologicalOrderIterator<ExecutionContext, ContextEdge>(reversed);
 
         MethodCacheAnalysis cacheAnalysis = analyses.getMethodCacheAnalysis();
+
+        Set<MethodInfo> changed = new HashSet<MethodInfo>();
 
         while (topOrder.hasNext()) {
             ExecutionContext node = topOrder.next();
@@ -216,7 +219,11 @@ public class WCAInvoker implements ExecCountProvider {
             if (node.getMethodInfo().equals(wcetTool.getTargetMethod())) {
                 logger.info("WCET: "+sol.getCost().getCost());
             }
+
+            changed.add(node.getMethodInfo());
         }
+
+        return changed;
     }
 
     private void setWCETOptions(MethodInfo targetMethod, boolean generateReports) {
