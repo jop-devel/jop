@@ -69,6 +69,8 @@ public class WCAInvoker implements ExecCountProvider {
     private WCETTool wcetTool;
     private RecursiveWcetAnalysis<AnalysisContextLocal> recursiveAnalysis;
 
+    private boolean provideWCAExecCount;
+
     private static final Logger logger = Logger.getLogger(JCopter.LOG_ANALYSIS+".WCAInvoker");
 
     public WCAInvoker(AnalysisManager analyses, Set<MethodInfo> wcaTargets) {
@@ -85,6 +87,14 @@ public class WCAInvoker implements ExecCountProvider {
 
     public Set<MethodInfo> getWcaTargets() {
         return wcaTargets;
+    }
+
+    public boolean doProvideWCAExecCount() {
+        return provideWCAExecCount;
+    }
+
+    public void setProvideWCAExecCount(boolean provideWCAExecCount) {
+        this.provideWCAExecCount = provideWCAExecCount;
     }
 
     public void initTool() throws BadConfigurationException {
@@ -124,6 +134,8 @@ public class WCAInvoker implements ExecCountProvider {
 
         // Perform initial analysis
         runAnalysis(wcetTool.getCallGraph().getReversedGraph());
+
+        updateWCEP();
     }
 
 
@@ -188,7 +200,11 @@ public class WCAInvoker implements ExecCountProvider {
             rootNodes.addAll(callGraph.getNodes(method));
         }
 
-        return runAnalysis(wcetTool.getCallGraph().createInvokeGraph(rootNodes, true));
+        Set<MethodInfo> changed = runAnalysis(wcetTool.getCallGraph().createInvokeGraph(rootNodes, true));
+
+        updateWCEP();
+
+        return changed;
     }
 
     public Collection<CallGraph> getWCACallGraphs() {
@@ -213,7 +229,7 @@ public class WCAInvoker implements ExecCountProvider {
                     recursiveAnalysis.computeSolution(node.getMethodInfo(),
                                 cacheAnalysis.getAnalysisContext(node.getCallString()));
 
-            wcaNodeFlow.put(node, sol.getNodeFlow());
+            wcaNodeFlow.put(node, sol.getNodeFlowVirtual());
 
             // TODO some logging would be nice, keep target-method WCET for comparison of speedup
             if (node.getMethodInfo().equals(wcetTool.getTargetMethod())) {
@@ -233,5 +249,11 @@ public class WCAInvoker implements ExecCountProvider {
         config.setOption(ProjectConfig.DO_GENERATE_REPORTS, false);
         config.setOption(ProjectConfig.DUMP_TARGET_CALLGRAPH, DUMPTYPE.off);
         config.setOption(IPETConfig.DUMP_ILP, false);
+    }
+
+    private void updateWCEP() {
+        if (!provideWCAExecCount) return;
+
+
     }
 }

@@ -25,12 +25,14 @@ import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.ipet.CostProvider;
 import com.jopdesign.wcet.ipet.IPETBuilder;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.report.ClassReport;
+import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 
@@ -127,6 +129,34 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		public Map<CFGNode, Long> getNodeFlow() {
 			return nodeFlow;
 		}
+
+            /**
+             * This merges the results for invokes and adds results for the virtual nodes. This
+             * is required if results for the virtual nodes are needed too, e.g. if
+             * {@link ControlFlowGraph#getHandleNode(InstructionHandle)} is used.
+             *
+             * @return the flow graph, including results for virtual blocks.
+             */
+            public Map<CFGNode, Long> getNodeFlowVirtual() {
+                Map<CFGNode,Long> flow = new HashMap<CFGNode, Long>(nodeFlow);
+                for (CFGNode node : nodeFlow.keySet()) {
+                    if (!(node instanceof InvokeNode)) continue;
+                    InvokeNode inv = (InvokeNode) node;
+
+                    InvokeNode virt = inv.getVirtualNode();
+                    if (virt != null) {
+                        Long val = flow.get(virt);
+                        if (val == null) {
+                            flow.put(virt, flow.get(inv));
+                        } else {
+                            flow.put(virt, flow.get(inv) + val);
+                        }
+                    }
+                }
+
+                return flow;
+            }
+
 		public Map<ControlFlowGraph.CFGEdge, Long> getEdgeFlow() {
 			return edgeFlow;
 		}

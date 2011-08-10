@@ -190,6 +190,8 @@ public class ControlFlowGraph {
 
         protected void register() { }
 
+        protected boolean isRegistered() { return false; }
+
         protected void dispose() { }
     }
 
@@ -227,7 +229,7 @@ public class ControlFlowGraph {
      * Flow graph nodes representing basic blocks
      */
     public class BasicBlockNode extends CFGNode {
-        protected BasicBlock block;
+        protected final BasicBlock block;
 
         public BasicBlockNode(BasicBlock block) {
             super(idGen++, "basic(" + blocks.indexOf(block) + ")");
@@ -240,6 +242,12 @@ public class ControlFlowGraph {
                 // TODO to support multiple registered CFGs per method, add a Map<ControlFlowGraph,BasicBlockNode> instead
                 ih.addAttribute(KEY_CFGNODE, this);
             }
+        }
+
+        @Override
+        protected boolean isRegistered() {
+            if (block.getInstructions().isEmpty()) return false;
+            return this.equals(getHandleNode(block.getFirstInstruction(),true));
         }
 
         @Override
@@ -388,6 +396,17 @@ public class ControlFlowGraph {
             if (instantiatedFrom == null) {
                 // only register the 'virtual' node, since we do not register multiple nodes per handle
                 super.register();
+            } else {
+                instantiatedFrom.register();
+            }
+        }
+
+        @Override
+        protected boolean isRegistered() {
+            if (instantiatedFrom == null) {
+                return super.isRegistered();
+            } else {
+                return instantiatedFrom.isRegistered();
             }
         }
     }
