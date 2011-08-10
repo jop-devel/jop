@@ -25,6 +25,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
+import com.jopdesign.jcopter.analysis.ExecCountProvider;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import com.jopdesign.jcopter.greedy.GreedyConfig.GreedyOrder;
 import org.apache.log4j.Logger;
@@ -113,19 +114,20 @@ public class GreedyOptimizer {
         GreedyOrder order = config.getOrder();
         if (order == GreedyOrder.Global || (order == GreedyOrder.WCAFirst && !config.useWCA())) {
 
-            optimizeMethods(analyses, selector, analyses.getTargetCallGraph().getMethodInfos());
+            optimizeMethods(analyses, analyses.getExecCountAnalysis(), selector,
+                            analyses.getTargetCallGraph().getMethodInfos());
 
         } else if (order == GreedyOrder.Targets) {
 
             for (MethodInfo target : config.getTargetMethods()) {
-                optimizeMethods(analyses, selector,
-                        analyses.getTargetCallGraph().getReachableImplementationsSet(target));
+                optimizeMethods(analyses, analyses.getExecCountAnalysis(), selector,
+                                analyses.getTargetCallGraph().getReachableImplementationsSet(target));
             }
 
         } else if (order == GreedyOrder.WCAFirst) {
 
             Set<MethodInfo> wcaMethods = analyses.getWCAMethods();
-            optimizeMethods(analyses, selector, wcaMethods);
+            optimizeMethods(analyses, analyses.getWCAInvoker(), selector, wcaMethods);
 
             // We do not want to include the wca methods in the second pass because inlining there could have negative
             // effects on the WCET path due to the cache
@@ -137,7 +139,7 @@ public class GreedyOptimizer {
             selector = new ACETRebateSelector(analyses, config.getMaxCodesize());
             selector.initialize();
 
-            optimizeMethods(analyses, selector, others);
+            optimizeMethods(analyses, analyses.getExecCountAnalysis(), selector, others);
 
         } else {
             // TODO implement bottom-up and top-down traversal (ignoring back-edges in callgraph)
@@ -162,7 +164,8 @@ public class GreedyOptimizer {
 
         AnalysisManager analyses = new AnalysisManager(jcopter);
 
-        analyses.initAnalyses(config.getTargetMethods(), config.getCacheAnalysisType(), config.getWCATargets());
+        analyses.initAnalyses(config.getTargetMethods(), config.getCacheAnalysisType(),
+                              config.useWCA() ? config.getWCATargets() : null);
 
         logger.info("Callgraph nodes: "+analyses.getTargetCallGraph().getNodes().size());
 
@@ -170,8 +173,9 @@ public class GreedyOptimizer {
     }
 
 
-    private void optimizeMethods(AnalysisManager analyses, CandidateSelector selector, Set<MethodInfo> methods) {
-
+    private void optimizeMethods(AnalysisManager analyses, ExecCountProvider ecp,
+                                 CandidateSelector selector, Set<MethodInfo> methods)
+    {
         Map<MethodInfo,MethodData> methodData = new HashMap<MethodInfo, MethodData>(methods.size());
 
         selector.clear();

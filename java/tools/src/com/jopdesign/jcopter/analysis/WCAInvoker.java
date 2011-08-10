@@ -59,7 +59,7 @@ import java.util.Set;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class WCAInvoker {
+public class WCAInvoker implements ExecCountProvider {
 
     private final JCopter jcopter;
     private final Collection<MethodInfo> wcaTargets;
@@ -90,6 +90,10 @@ public class WCAInvoker {
     }
 
     public void initialize() throws BadConfigurationException {
+
+        if (wcaTargets.isEmpty()) {
+            throw new BadConfigurationException("No WCA target method is given!");
+        }
 
         if (wcaTargets.size() != 1) {
             // TODO To support this, we would either need to split the WCA tool into the tool itself
