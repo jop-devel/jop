@@ -83,6 +83,10 @@ public class ExecCountAnalysis implements ExecCountProvider {
         }
     }
 
+    private static final int DEFAULT_ACET_LOOP_BOUND = 10;
+
+    private final AnalysisManager analyses;
+
     private final Map<ExecutionContext, Long> roots;
     private final CallGraph callGraph;
 
@@ -93,14 +97,16 @@ public class ExecCountAnalysis implements ExecCountProvider {
     // Construction, initialization
     ////////////////////////////////////////////////////////////////////////////////////
 
-    public ExecCountAnalysis(Map<ExecutionContext, Long> roots) {
+    public ExecCountAnalysis(AnalysisManager analyses, Map<ExecutionContext, Long> roots) {
+        this.analyses = analyses;
         this.roots = new HashMap<ExecutionContext, Long>(roots);
         callGraph = AppInfo.getSingleton().getCallGraph();
         nodeCount =  new HashMap<ExecutionContext, Long>();
         changeSet = new HashSet<MethodInfo>(1);
     }
 
-    public ExecCountAnalysis(CallGraph callGraph) {
+    public ExecCountAnalysis(AnalysisManager analyses, CallGraph callGraph) {
+        this.analyses = analyses;
         this.callGraph = callGraph;
         nodeCount =  new HashMap<ExecutionContext, Long>();
         changeSet = new HashSet<MethodInfo>(1);
@@ -176,11 +182,13 @@ public class ExecCountAnalysis implements ExecCountProvider {
 
             LoopBound lb = hol.getLoopBound();
             if (lb != null) {
-                // TODO we might want to choose between upper/lower bound or even use an average value
-                ef *= lb.getUpperBound(context);
+                if (lb.isDefaultBound() && !analyses.isWCAMethod(method)) {
+                    ef *= DEFAULT_ACET_LOOP_BOUND;
+                } else {
+                    ef *= lb.getUpperBound(context);
+                }
             } else {
-                // TODO magic number..
-                ef *= 10;
+                ef *= DEFAULT_ACET_LOOP_BOUND;
             }
 
         }

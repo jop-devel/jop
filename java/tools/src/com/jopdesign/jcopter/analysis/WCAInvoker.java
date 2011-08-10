@@ -68,7 +68,6 @@ public class WCAInvoker implements ExecCountProvider {
 
     private WCETTool wcetTool;
     private RecursiveWcetAnalysis<AnalysisContextLocal> recursiveAnalysis;
-    private boolean useMethodCacheStrategy;
 
     private static final Logger logger = Logger.getLogger(JCopter.LOG_ANALYSIS+".WCAInvoker");
 
@@ -77,7 +76,6 @@ public class WCAInvoker implements ExecCountProvider {
         this.jcopter = analyses.getJCopter();
         this.wcaTargets = wcaTargets;
         wcetTool = jcopter.getWcetTool();
-        useMethodCacheStrategy = true;
         wcaNodeFlow = new HashMap<ExecutionContext, Map<CFGNode, Long>>();
     }
 
@@ -89,7 +87,7 @@ public class WCAInvoker implements ExecCountProvider {
         return wcaTargets;
     }
 
-    public void initialize() throws BadConfigurationException {
+    public void initTool() throws BadConfigurationException {
 
         if (wcaTargets.isEmpty()) {
             throw new BadConfigurationException("No WCA target method is given!");
@@ -109,7 +107,9 @@ public class WCAInvoker implements ExecCountProvider {
 
         // Init WCA tool
         wcetTool.initialize(false);
+    }
 
+    public void initAnalysis(boolean useMethodCacheStrategy) {
         IPETConfig ipetConfig = new IPETConfig(wcetTool.getConfig());
 
         RecursiveStrategy<AnalysisContextLocal,WcetCost> strategy;

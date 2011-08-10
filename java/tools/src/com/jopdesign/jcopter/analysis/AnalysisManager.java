@@ -81,32 +81,12 @@ public class AnalysisManager {
         if (wcaRoots != null) {
             // Just make sure the WCA callgraph is contained in the target graph..
             allTargets.addAll(wcaRoots);
-        }
 
-        // TODO we could reuse the WCA callgraph if we only have a single wca target method as target
-        //      but we need to take care of the initialization order..
-
-        targetCallGraph = CallGraph.buildCallGraph(allTargets,
-                new DefaultCallgraphBuilder(AppInfo.getSingleton().getCallstringLength()));
-
-        // TODO we might want to classify methods depending on whether they are reachable from the wcaRoots
-        //      for all non-wca-methods we might want to use different initial analysis data, e.g.
-        //      if we use the WCA, we might want to use the IPET WCA to initialize the execCountAnalysis for
-        //      wca-methods
-
-        logger.info("Initializing ExecCountAnalysis");
-        execCountAnalysis = new ExecCountAnalysis(targetCallGraph);
-        execCountAnalysis.initialize();
-
-        logger.info("Initializing MethodCacheAnalysis");
-        methodCacheAnalysis = new MethodCacheAnalysis(this, cacheAnalysisType, targetCallGraph);
-        methodCacheAnalysis.initialize();
-
-        if (wcaRoots != null) {
             logger.info("Initializing WCAInvoker");
             wcaInvoker = new WCAInvoker(this, wcaRoots);
             try {
-                wcaInvoker.initialize();
+                // need to initialize the WCA Tool before the other analyses since we need the WCA callgraph
+                wcaInvoker.initTool();
             } catch (BadConfigurationException e) {
                 // TODO or maybe just throw the exception up a few levels more?
                 throw new BadConfigurationError(e.getMessage(), e);
@@ -116,6 +96,32 @@ public class AnalysisManager {
             //      used for the initial WCET analysis. Either handle this here or in wcaInvoker.initialize()?
             //      Letting the other analyses use the WCA results is the nicer option, something like
             //      execCountAnalysis.loadWCAResults(wcaInvoker);
+        }
+
+        if (wcaRoots != null && wcaRoots.equals(allTargets) && wcaInvoker.getWCACallGraphs().size() == 1) {
+            targetCallGraph = wcaInvoker.getWCACallGraphs().iterator().next();
+        } else {
+            logger.info("Initializing Target Callgraph");
+            targetCallGraph = CallGraph.buildCallGraph(allTargets,
+                new DefaultCallgraphBuilder(AppInfo.getSingleton().getCallstringLength()));
+        }
+
+        // TODO we might want to classify methods depending on whether they are reachable from the wcaRoots
+        //      for all non-wca-methods we might want to use different initial analysis data, e.g.
+        //      if we use the WCA, we might want to use the IPET WCA to initialize the execCountAnalysis for
+        //      wca-methods
+
+        logger.info("Initializing ExecCountAnalysis");
+        execCountAnalysis = new ExecCountAnalysis(this, targetCallGraph);
+        execCountAnalysis.initialize();
+
+        logger.info("Initializing MethodCacheAnalysis");
+        methodCacheAnalysis = new MethodCacheAnalysis(this, cacheAnalysisType, targetCallGraph);
+        methodCacheAnalysis.initialize();
+
+        if (wcaRoots != null) {
+            // Performing the initial WCA analysis.. we do this as last step since it might use the cache analysis
+            wcaInvoker.initAnalysis(true);
         }
     }
 
@@ -141,6 +147,12 @@ public class AnalysisManager {
         }
 
         return methods;
+    }
+
+    public boolean isWCAMethod(MethodInfo method) {
+        if (wcaInvoker == null) return false;
+
+        return wcaInvoker.isWCAMethod(method);
     }
 
     public Collection<CallGraph> getWCACallGraphs() {

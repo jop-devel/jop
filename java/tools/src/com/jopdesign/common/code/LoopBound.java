@@ -29,7 +29,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 /**
- *<p> Purpose: Instances represent execution frequency bounds for loops.
+ * <p> Purpose: Instances represent execution frequency bounds for loops.
  * Simple loop bounds are relative to the execution frequency
  * of the entry edges of the loop; for more elaborated kinds of
  * relative bounds see below. Note that you need at least one bound
@@ -52,7 +52,7 @@ import java.util.Set;
  * <p>TODO: maybe we also want to specify sums of (expr,marker) pairs</p>
  * <p>TODO: we also want to allow absolute execution bounds for the loop
  * as a whole. One idea would be to restrict the loop bound to 1, and then
- * add the absolute cost to continue edge. 
+ * add the absolute cost to continue edge.
  * </p>
  *
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
@@ -63,41 +63,50 @@ public class LoopBound {
     /* Invariant: There is always an entry for the marker LOOP_ENTRY */
     private Map<SymbolicMarker, LoopBoundExpr> markerBounds;
 
+    private final boolean isDefaultBound;
+
     private LoopBound(Map<SymbolicMarker, LoopBoundExpr> other) {
         markerBounds = new HashMap<SymbolicMarker, LoopBoundExpr>(other);
+        isDefaultBound = false;
     }
 
     public static LoopBound boundedAbove(long ub) {
-    	return new LoopBound(LoopBoundExpr.numUpperBound(ub));
+        return new LoopBound(LoopBoundExpr.numUpperBound(ub));
     }
-    
-	public static LoopBound simpleBound(LoopBoundExpr bound) {
-		if(bound == null) throw new AssertionError("loop bound expr: null");
-		return new LoopBound(bound);
-	}
-	/** Create a loop bound relative to the marker. If the marker is an outer loop,
-	 *  or the enclosing method, the loop bound is also a valid basic bound
-	 */
-	public static LoopBound markerBound(LoopBoundExpr bound, SymbolicMarker marker) {
-		LoopBoundExpr basicBound;
-		if(marker.inSameMethod()) {
-			basicBound = bound;
-		} else {
-			basicBound = LoopBoundExpr.ANY;
-		}
-		return markerBound(basicBound, bound, marker);
-	}
 
-	public static LoopBound markerBound(
-			LoopBoundExpr  basicBound,
-			LoopBoundExpr  markerBound,
-			SymbolicMarker marker) {
-		if(basicBound == null) throw new AssertionError("loop bound expr: null");
-		if(markerBound == null) throw new AssertionError("loop bound expr: null");
-		LoopBound bound = new LoopBound(basicBound);
-		bound.addBound(markerBound, marker);
-		return bound;
-	}
+    public static LoopBound defaultBound(long ub) {
+        return new LoopBound(LoopBoundExpr.numUpperBound(ub), true);
+    }
+
+    public static LoopBound simpleBound(LoopBoundExpr bound) {
+        if (bound == null) throw new AssertionError("loop bound expr: null");
+        return new LoopBound(bound);
+    }
+
+    /**
+     * Create a loop bound relative to the marker. If the marker is an outer loop,
+     * or the enclosing method, the loop bound is also a valid basic bound
+     */
+    public static LoopBound markerBound(LoopBoundExpr bound, SymbolicMarker marker) {
+        LoopBoundExpr basicBound;
+        if (marker.inSameMethod()) {
+            basicBound = bound;
+        } else {
+            basicBound = LoopBoundExpr.ANY;
+        }
+        return markerBound(basicBound, bound, marker);
+    }
+
+    public static LoopBound markerBound(
+            LoopBoundExpr basicBound,
+            LoopBoundExpr markerBound,
+            SymbolicMarker marker) {
+        if (basicBound == null) throw new AssertionError("loop bound expr: null");
+        if (markerBound == null) throw new AssertionError("loop bound expr: null");
+        LoopBound bound = new LoopBound(basicBound);
+        bound.addBound(markerBound, marker);
+        return bound;
+    }
 
 
 //    public static LoopBound markerBound(LoopBoundExpr bound, SymbolicMarker marker) {
@@ -113,6 +122,13 @@ public class LoopBound {
     private LoopBound(LoopBoundExpr loopBoundRelativeToEntry) {
         markerBounds = new HashMap<SymbolicMarker, LoopBoundExpr>();
         markerBounds.put(SymbolicMarker.LOOP_ENTRY, loopBoundRelativeToEntry);
+        isDefaultBound = false;
+    }
+
+    private LoopBound(LoopBoundExpr loopBoundRelativeToEntry, boolean isDefaultBound) {
+        markerBounds = new HashMap<SymbolicMarker, LoopBoundExpr>();
+        markerBounds.put(SymbolicMarker.LOOP_ENTRY, loopBoundRelativeToEntry);
+        this.isDefaultBound = isDefaultBound;
     }
 
     public void addBound(LoopBound other) {
@@ -125,15 +141,22 @@ public class LoopBound {
     public LoopBoundExpr getSimpleLoopBound() {
         return markerBounds.get(SymbolicMarker.LOOP_ENTRY);
     }
-    
-	public Long getLowerBound(ExecutionContext ctx) {
-		return getSimpleLoopBound().lowerBound(ctx);
-	}
 
-	public Long getUpperBound(ExecutionContext ctx) {
-		return getSimpleLoopBound().upperBound(ctx);
-	}
-	
+    public Long getLowerBound(ExecutionContext ctx) {
+        return getSimpleLoopBound().lowerBound(ctx);
+    }
+
+    public Long getUpperBound(ExecutionContext ctx) {
+        return getSimpleLoopBound().upperBound(ctx);
+    }
+
+    /**
+     * @return true if this bound was created as default (fallback) bound using {@link #defaultBound(long)}.
+     */
+    public boolean isDefaultBound() {
+        return isDefaultBound;
+    }
+
     public void addBound(LoopBoundExpr boundExpr, SymbolicMarker marker) {
         markerBounds.put(marker, boundExpr.intersect(markerBounds.get(marker)));
     }
@@ -142,7 +165,10 @@ public class LoopBound {
         StringBuffer sb = new StringBuffer();
         boolean first = true;
         for (Entry<SymbolicMarker, LoopBoundExpr> lbEntry : markerBounds.entrySet()) {
-            if(first) { sb.append("; "); first = false; }
+            if (first) {
+                sb.append("; ");
+                first = false;
+            }
             boundToString(sb, lbEntry.getValue(), lbEntry.getKey());
         }
         return sb.toString();
