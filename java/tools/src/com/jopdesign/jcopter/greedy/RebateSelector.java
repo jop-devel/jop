@@ -26,6 +26,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
+import com.jopdesign.jcopter.analysis.ExecCountProvider;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
@@ -224,7 +225,7 @@ public abstract class RebateSelector implements CandidateSelector {
     }
 
     @Override
-    public void updateCandidates(MethodInfo method, StacksizeAnalysis stacksizeAnalysis) {
+    public void updateCandidates(MethodInfo method, ExecCountProvider ecp, StacksizeAnalysis stacksizeAnalysis) {
         MethodData data = methodData.get(method);
         if (data == null) return;
 
@@ -243,7 +244,7 @@ public abstract class RebateSelector implements CandidateSelector {
     }
 
     @Override
-    public void sortCandidates(Set<MethodInfo> changedMethods) {
+    public void sortCandidates(ExecCountProvider ecp, Set<MethodInfo> changedMethods) {
 
         for (MethodInfo method : changedMethods) {
             MethodData data = methodData.get(method);
@@ -256,7 +257,7 @@ public abstract class RebateSelector implements CandidateSelector {
                 continue;
             }
 
-            sortMethodData(method, data);
+            sortMethodData(ecp, data);
         }
 
     }
@@ -308,6 +309,6 @@ public abstract class RebateSelector implements CandidateSelector {
 
     protected abstract void onRemoveMethodData(MethodData data);
 
-    protected abstract void sortMethodData(MethodInfo method, MethodData data);
+    protected abstract void sortMethodData(ExecCountProvider ecp, MethodData data);
 
 }

@@ -22,6 +22,7 @@ package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
+import com.jopdesign.jcopter.analysis.ExecCountProvider;
 
 import java.util.Collection;
 import java.util.Set;
@@ -43,15 +44,15 @@ public class WCEPRebateSelector extends RebateSelector {
     }
 
     @Override
-    protected void sortMethodData(MethodInfo method, MethodData data) {
+    protected void sortMethodData(ExecCountProvider ecp, MethodData data) {
     }
 
     @Override
-    public void sortCandidates() {
+    public void sortCandidates(ExecCountProvider ecp) {
     }
 
     @Override
-    public Collection<Candidate> selectNextCandidates() {
+    public Collection<Candidate> selectNextCandidates(ExecCountProvider ecp) {
 
         // TODO go down all methods in the callgraph which are on the WCET path, find best candidate
 

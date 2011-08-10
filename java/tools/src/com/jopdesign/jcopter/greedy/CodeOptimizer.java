@@ -38,9 +38,11 @@ public interface CodeOptimizer {
      */
     void initialize(AnalysisManager analyses, Collection<MethodInfo> roots);
 
-    Collection<Candidate> findCandidates(MethodInfo method, AnalysisManager analyses, StacksizeAnalysis stacksize, int maxLocals);
+    Collection<Candidate> findCandidates(MethodInfo method, AnalysisManager analyses,
+                                         StacksizeAnalysis stacksize, int maxLocals);
 
-    Collection<Candidate> findCandidates(MethodInfo method, AnalysisManager analyses, StacksizeAnalysis stacksize, int maxLocals,
+    Collection<Candidate> findCandidates(MethodInfo method, AnalysisManager analyses,
+                                         StacksizeAnalysis stacksize, int maxLocals,
                                          InstructionHandle start, InstructionHandle end);
 
     void printStatistics();

@@ -22,6 +22,7 @@ package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.EnumOption;
@@ -54,6 +55,9 @@ public class GreedyConfig {
                     "comma separated list of target methods for callgraph based optimizations or 'wca' for wca-targets or 'all' for whole app",
                     "main");
 
+    private static final BooleanOption USE_WCEP =
+            new BooleanOption("use-wcep", "Optimize only methods on the WCET path if WCA is enabled", false);
+
 
     private final AppInfo appInfo;
     private final JCopter jcopter;
@@ -65,6 +69,7 @@ public class GreedyConfig {
     public static void registerOptions(OptionGroup options) {
         options.addOption(GREEDY_ORDER);
         options.addOption(TARGETS);
+        options.addOption(USE_WCEP);
     }
 
     public GreedyConfig(JCopter jcopter, OptionGroup greedyOptions) throws BadConfigurationException {
@@ -128,6 +133,10 @@ public class GreedyConfig {
 
     public boolean useWCA() {
         return jcopter.useWCA();
+    }
+
+    public boolean useWCEP() {
+        return options.getOption(USE_WCEP);
     }
 
     public int getMaxCodesize() {

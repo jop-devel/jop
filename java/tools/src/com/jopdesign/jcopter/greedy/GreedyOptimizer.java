@@ -106,7 +106,12 @@ public class GreedyOptimizer {
 
         CandidateSelector selector;
         if (config.useWCA()) {
-            selector = new WCETRebateSelector(analyses, new GainCalculator(analyses), config.getMaxCodesize());
+            GainCalculator gc = new GainCalculator(analyses);
+            if (config.useWCEP()) {
+                selector = new WCEPRebateSelector(analyses, gc, config.getMaxCodesize());
+            } else {
+                selector = new WCETRebateSelector(analyses, gc, config.getMaxCodesize());
+            }
         } else {
             selector = new ACETRebateSelector(analyses, new GainCalculator(analyses), config.getMaxCodesize());
         }
@@ -179,6 +184,9 @@ public class GreedyOptimizer {
     }
 
     private void printStatistics() {
+        for (CodeOptimizer o : optimizers) {
+            o.printStatistics();
+        }
         logger.info("Candidates: "+countCandidates+", Optimized: "+countOptimized);
     }
 
@@ -225,12 +233,12 @@ public class GreedyOptimizer {
         }
 
         // now use the RebateSelector to order the candidates
-        selector.sortCandidates();
+        selector.sortCandidates(ecp);
 
         Set<MethodInfo> optimizedMethods = new HashSet<MethodInfo>();
         Set<MethodInfo> candidateChanges = new HashSet<MethodInfo>();
 
-        Collection<Candidate> candidates = selector.selectNextCandidates();
+        Collection<Candidate> candidates = selector.selectNextCandidates(ecp);
         while (candidates != null) {
 
             optimizedMethods.clear();
@@ -302,19 +310,19 @@ public class GreedyOptimizer {
             for (MethodInfo method : candidateChanges) {
                 // skip methods in changeset which are not being optimized
                 if (!methodData.containsKey(method)) continue;
-                selector.updateCandidates(method, analyses.getStacksizeAnalysis(method));
+                selector.updateCandidates(method, ecp, analyses.getStacksizeAnalysis(method));
             }
 
             // Finally use the set of methods for which something changed, and re-sort all candidates of those methods
             if (methods.size() == 1) {
-                selector.sortCandidates(methods);
+                selector.sortCandidates(ecp, methods);
             } else {
                 logger.info("Sort changes "+changeSet.size());
-                selector.sortCandidates(changeSet);
+                selector.sortCandidates(ecp, changeSet);
             }
 
             // Finally, select the next candidates
-            candidates = selector.selectNextCandidates();
+            candidates = selector.selectNextCandidates(ecp);
         }
 
     }

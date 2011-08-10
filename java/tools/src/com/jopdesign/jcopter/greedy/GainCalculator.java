@@ -21,6 +21,7 @@
 package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.jcopter.analysis.AnalysisManager;
+import com.jopdesign.jcopter.analysis.ExecCountProvider;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -33,7 +34,7 @@ public class GainCalculator {
         this.analyses = analyses;
     }
 
-    public long calculateGain(Candidate candidate) {
+    public long calculateGain(ExecCountProvider ecp, Candidate candidate) {
 
         // TODO depending on config, use WCA to calculate local or global WC gain
 
@@ -42,15 +43,14 @@ public class GainCalculator {
         long gain = analyses.getExecCountAnalysis().getExecCount(candidate.getMethod(), candidate.getEntry())
                     * candidate.getLocalGain();
 
-        gain -= analyses.getMethodCacheAnalysis().getMissCount(candidate.getMethod(), candidate.getEntry())
-                * candidate.getDeltaCacheMissCosts();
+        gain -= candidate.getDeltaCacheMissCosts(ecp);
 
-        gain -= getCodesizeCacheCosts(candidate);
+        gain -= getCodesizeCacheCosts(ecp, candidate);
 
         return gain;
     }
 
-    private long getCodesizeCacheCosts(Candidate candidate) {
+    private long getCodesizeCacheCosts(ExecCountProvider ecp, Candidate candidate) {
         return analyses.getMethodCacheAnalysis().getDeltaCacheMissCosts(candidate);
     }
 

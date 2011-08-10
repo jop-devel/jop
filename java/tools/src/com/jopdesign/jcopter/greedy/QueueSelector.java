@@ -20,8 +20,8 @@
 
 package com.jopdesign.jcopter.greedy;
 
-import com.jopdesign.common.MethodInfo;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
+import com.jopdesign.jcopter.analysis.ExecCountProvider;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,13 +50,13 @@ public abstract class QueueSelector extends RebateSelector {
     }
 
     @Override
-    public void sortCandidates() {
+    public void sortCandidates(ExecCountProvider ecp) {
         queue.clear();
-        sortCandidates(methodData.keySet());
+        sortCandidates(ecp, methodData.keySet());
     }
 
     @Override
-    public Collection<Candidate> selectNextCandidates() {
+    public Collection<Candidate> selectNextCandidates(ExecCountProvider ecp) {
         while (true) {
             RebateRatio next = queue.pollLast();
             if (next == null) return null;
@@ -75,24 +75,24 @@ public abstract class QueueSelector extends RebateSelector {
     }
 
     @Override
-    protected void sortMethodData(MethodInfo method, MethodData data) {
+    protected void sortMethodData(ExecCountProvider ecp, MethodData data) {
         queue.removeAll(data.getRatios());
         data.getRatios().clear();
 
-        Collection<RebateRatio> ratios = calculateRatios(method, data.getCandidates());
+        Collection<RebateRatio> ratios = calculateRatios(ecp, data.getCandidates());
 
         data.getRatios().addAll(ratios);
         queue.addAll(ratios);
     }
 
-    protected Collection<RebateRatio> calculateRatios(MethodInfo method, List<Candidate> candidates) {
+    protected Collection<RebateRatio> calculateRatios(ExecCountProvider ecp, List<Candidate> candidates) {
         List<RebateRatio> ratios = new ArrayList<RebateRatio>(candidates.size());
 
         for (Candidate candidate : candidates) {
 
             if (skipCandidate(candidate)) continue;
 
-            float gain = gainCalculator.calculateGain(candidate);
+            float gain = gainCalculator.calculateGain(ecp, candidate);
             if (gain < 0) continue;
 
             ratios.add(createRatio(candidate, gain));

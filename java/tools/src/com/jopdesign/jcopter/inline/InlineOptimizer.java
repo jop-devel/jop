@@ -33,6 +33,7 @@ import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.common.type.TypeHelper;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
+import com.jopdesign.jcopter.analysis.ExecCountProvider;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import com.jopdesign.jcopter.greedy.Candidate;
 import com.jopdesign.jcopter.greedy.CodeOptimizer;
@@ -431,20 +432,8 @@ public class InlineOptimizer implements CodeOptimizer {
         }
 
         private long calcDeltaCacheMissCosts(AnalysisManager analyses) {
-
             // we save the cache miss costs for the invoke and the return
-            long delta = -analyses.getMethodCacheAnalysis().getInvokeReturnMissCosts(invokeSite, invokee);
-
-
-            // TODO
-            // However, the costs increase because all invokes in the invokee will now have a higher return
-            // cache miss cost!
-            // Need to find out how many return misses there are in the new code, and how many return misses are in the
-            // old code, and how big the cache miss cost difference is..
-
-
-
-            return delta;
+            return -analyses.getMethodCacheAnalysis().getInvokeReturnMissCosts(invokeSite, invokee);
         }
 
         @Override
@@ -473,8 +462,18 @@ public class InlineOptimizer implements CodeOptimizer {
         }
 
         @Override
-        public long getDeltaCacheMissCosts() {
-            return deltaCacheMiss;
+        public long getDeltaCacheMissCosts(ExecCountProvider ecp) {
+
+            // TODO we save the invoke costs per invoke cache miss
+            long costs = deltaCacheMiss;
+
+            // TODO
+            // the costs increase because all invokes in the invokee will now have a higher return
+            // cache miss cost!
+            // Need to find out how many return misses there are in the new code, and how many return misses are in the
+            // old code, and how big the cache miss cost difference is..
+
+            return costs;
         }
 
         @Override
