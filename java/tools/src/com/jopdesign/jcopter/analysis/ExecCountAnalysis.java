@@ -52,7 +52,7 @@ import java.util.Set;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ExecCountAnalysis {
+public class ExecCountAnalysis implements ExecCountProvider {
 
     private class InlineEdgeProvider implements EdgeProvider<ExecutionContext,ContextEdge> {
 
