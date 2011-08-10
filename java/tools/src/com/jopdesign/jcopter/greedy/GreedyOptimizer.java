@@ -22,6 +22,8 @@ package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallGraph.InvokeEdge;
+import com.jopdesign.common.code.CallGraph.MethodNode;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
@@ -29,9 +31,11 @@ import com.jopdesign.jcopter.analysis.ExecCountProvider;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import com.jopdesign.jcopter.greedy.GreedyConfig.GreedyOrder;
 import org.apache.log4j.Logger;
+import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -141,9 +145,27 @@ public class GreedyOptimizer {
 
             optimizeMethods(analyses, analyses.getExecCountAnalysis(), selector, others);
 
-        } else {
-            // TODO implement bottom-up and top-down traversal (ignoring back-edges in callgraph)
+        } else if (order == GreedyOrder.TopDown || order == GreedyOrder.BottomUp) {
 
+            if (config.useWCA() && !analyses.hasWCATargetsOnly()) {
+                // TODO iterate over WCA and then non-wca graph or something in this case..
+                throw new AppInfoError("Order "+order+" currently only works with WCA if the target method is the WCA target");
+            }
+
+            TopologicalOrderIterator<MethodNode,InvokeEdge> topOrder =
+                    new TopologicalOrderIterator<MethodNode, InvokeEdge>(
+                            analyses.getTargetCallGraph().getAcyclicMergedGraph(order == GreedyOrder.BottomUp)
+                    );
+
+            ExecCountProvider ecp = config.useWCA() ? analyses.getWCAInvoker() : analyses.getExecCountAnalysis();
+
+            while (topOrder.hasNext()) {
+                MethodNode node = topOrder.next();
+
+                optimizeMethods(analyses, ecp, selector, Collections.singleton(node.getMethodInfo()));
+            }
+
+        } else {
             throw new AppInfoError("Order "+order+" not yet implemented.");
         }
 
@@ -164,8 +186,8 @@ public class GreedyOptimizer {
 
         AnalysisManager analyses = new AnalysisManager(jcopter);
 
-        analyses.initAnalyses(config.getTargetMethods(), config.getCacheAnalysisType(),
-                              config.useWCA() ? config.getWCATargets() : null);
+        analyses.initAnalyses(config.getTargetMethodSet(), config.getCacheAnalysisType(),
+                              config.useWCA() ? config.getWCATargetSet() : null);
 
         logger.info("Callgraph nodes: "+analyses.getTargetCallGraph().getNodes().size());
 

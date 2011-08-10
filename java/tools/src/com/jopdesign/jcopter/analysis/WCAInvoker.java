@@ -62,7 +62,7 @@ import java.util.Set;
 public class WCAInvoker implements ExecCountProvider {
 
     private final JCopter jcopter;
-    private final Collection<MethodInfo> wcaTargets;
+    private final Set<MethodInfo> wcaTargets;
     private final AnalysisManager analyses;
     private final Map<ExecutionContext, Map<CFGNode,Long>> wcaNodeFlow;
 
@@ -72,7 +72,7 @@ public class WCAInvoker implements ExecCountProvider {
 
     private static final Logger logger = Logger.getLogger(JCopter.LOG_ANALYSIS+".WCAInvoker");
 
-    public WCAInvoker(AnalysisManager analyses, Collection<MethodInfo> wcaTargets) {
+    public WCAInvoker(AnalysisManager analyses, Set<MethodInfo> wcaTargets) {
         this.analyses = analyses;
         this.jcopter = analyses.getJCopter();
         this.wcaTargets = wcaTargets;
@@ -85,7 +85,7 @@ public class WCAInvoker implements ExecCountProvider {
         return jcopter;
     }
 
-    public Collection<MethodInfo> getWcaTargets() {
+    public Set<MethodInfo> getWcaTargets() {
         return wcaTargets;
     }
 

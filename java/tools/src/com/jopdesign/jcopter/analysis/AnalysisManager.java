@@ -30,12 +30,10 @@ import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.MethodCacheAnalysis.AnalysisType;
 import org.apache.log4j.Logger;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -74,8 +72,8 @@ public class AnalysisManager {
      * @param cacheAnalysisType cache analysis type
      * @param wcaRoots if not null, initialize the WCA invoker with these roots.
      */
-    public void initAnalyses(Collection<MethodInfo> targets, AnalysisType cacheAnalysisType,
-                             Collection<MethodInfo> wcaRoots)
+    public void initAnalyses(Set<MethodInfo> targets, AnalysisType cacheAnalysisType,
+                             Set<MethodInfo> wcaRoots)
     {
         logger.info("Initializing analyses..");
 
@@ -84,6 +82,9 @@ public class AnalysisManager {
             // Just make sure the WCA callgraph is contained in the target graph..
             allTargets.addAll(wcaRoots);
         }
+
+        // TODO we could reuse the WCA callgraph if we only have a single wca target method as target
+        //      but we need to take care of the initialization order..
 
         targetCallGraph = CallGraph.buildCallGraph(allTargets,
                 new DefaultCallgraphBuilder(AppInfo.getSingleton().getCallstringLength()));
@@ -118,6 +119,11 @@ public class AnalysisManager {
         }
     }
 
+    public boolean hasWCATargetsOnly() {
+        if (wcaInvoker == null) return false;
+        return targetCallGraph.getRootMethods().equals(wcaInvoker.getWcaTargets());
+    }
+
     public CallGraph getTargetCallGraph() {
         return targetCallGraph;
     }
@@ -141,8 +147,11 @@ public class AnalysisManager {
         return wcaInvoker != null ? wcaInvoker.getWCACallGraphs() : Collections.<CallGraph>emptySet();
     }
 
-    public List<CallGraph> getCallGraphs() {
-        List<CallGraph> graphs = new ArrayList<CallGraph>(4);
+    /**
+     * @return all callgraphs used by the analyses (including the AppInfo callgraph) which are not backed by other callgraphs.
+     */
+    public Set<CallGraph> getCallGraphs() {
+        Set<CallGraph> graphs = new HashSet<CallGraph>(4);
         graphs.add(getAppInfoCallGraph());
         graphs.add(getTargetCallGraph());
         graphs.addAll(getWCACallGraphs());
@@ -176,4 +185,5 @@ public class AnalysisManager {
     public WCAInvoker getWCAInvoker() {
         return wcaInvoker;
     }
+
 }

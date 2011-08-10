@@ -32,8 +32,9 @@ import com.jopdesign.jcopter.JCopterConfig;
 import com.jopdesign.jcopter.analysis.MethodCacheAnalysis.AnalysisType;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -107,14 +108,22 @@ public class GreedyConfig {
         return targets;
     }
 
+    public Set<MethodInfo> getTargetMethodSet() {
+        return new HashSet<MethodInfo>(targets);
+    }
+
     public AnalysisType getCacheAnalysisType() {
         // TODO get from options
         return AnalysisType.ALWAYS_MISS_OR_HIT;
     }
 
-    public Collection<MethodInfo> getWCATargets() {
+    public List<MethodInfo> getWCATargets() {
         // we could override this for this optimization
         return jcopter.getJConfig().getWCATargets();
+    }
+
+    public Set<MethodInfo> getWCATargetSet() {
+        return new HashSet<MethodInfo>(getWCATargets());
     }
 
     public boolean useWCA() {
