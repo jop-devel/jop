@@ -258,7 +258,8 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
         try {
             info = loadClass(className, false, false);
         } catch (ClassInfoNotFoundException e) {
-            handleClassLoadFailure(e.getMessage(), e);
+        	String msg = "Failed to load class '"+className+"' from '"+getClassPath()+"' in '" + new File(".").getAbsolutePath() + "'";
+            handleClassLoadFailure(msg, e);
         }
         return info;
     }

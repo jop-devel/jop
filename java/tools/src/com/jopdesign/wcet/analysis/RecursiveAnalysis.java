@@ -177,7 +177,7 @@ public abstract class RecursiveAnalysis<Context extends AnalysisContext, Rval> {
     buildNodeCostMap(ControlFlowGraph fg, Context ctx) {
 
         HashMap<CFGNode, Rval> nodeCost = new HashMap<CFGNode, Rval>();
-        for (CFGNode n : fg.getGraph().vertexSet()) {
+        for (CFGNode n : fg.vertexSet()) {
             nodeCost.put(n, computeCostOfNode(n, ctx));
         }
         return nodeCost;

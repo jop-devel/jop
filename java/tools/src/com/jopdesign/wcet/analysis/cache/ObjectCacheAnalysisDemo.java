@@ -228,7 +228,10 @@ public class ObjectCacheAnalysisDemo {
 			cost.addCost(recursiveStrategy.recursiveCost(recursiveAnalysis, n, context));
 		}
 
-		public void visitSpecialNode(ControlFlowGraph.DedicatedNode n) {
+		public void visitVirtualNode(ControlFlowGraph.VirtualNode n) {
+		}
+		
+		public void visitReturnNode(ControlFlowGraph.ReturnNode n) {			
 		}
 
 		public void visitSummaryNode(ControlFlowGraph.SummaryNode n) {

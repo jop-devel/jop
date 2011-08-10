@@ -23,6 +23,7 @@ import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.CfgVisitor;
+import com.jopdesign.common.code.ControlFlowGraph.ReturnNode;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.graphutils.FlowGraph;
 import com.jopdesign.common.graphutils.LoopColoring;
@@ -70,31 +71,38 @@ public class MethodBuilder implements CfgVisitor {
 		this.methodAuto = methodAuto;
 		this.invokeBuilder = invokeBuilder;
 	}
+	
 	public void build() {
+
 		this.nodeTemplates = new HashMap<CFGNode, SubAutomaton>();
 		this.tBuilder.addDescription("Template for method "+cfg.getMethodInfo());
-		FlowGraph<CFGNode, ControlFlowGraph.CFGEdge> graph = cfg.getGraph();
 		/* Translate the CFGs nodes */
-		for(CFGNode node : graph.vertexSet()) {
+		for(CFGNode node : cfg.vertexSet()) {
 			node.accept(this);
 		}
 		/* Translate the CFGs edges */
-		for(ControlFlowGraph.CFGEdge edge : graph.edgeSet()) {
+		for(ControlFlowGraph.CFGEdge edge : cfg.edgeSet()) {
 			buildEdge(edge);
 		}
 	}
 
-	public void visitSpecialNode(ControlFlowGraph.DedicatedNode n) {
+	public void visitVirtualNode(ControlFlowGraph.VirtualNode n) {
 		SubAutomaton localTranslation = null;
 		switch(n.getKind()) {
-		case ENTRY: localTranslation = SubAutomaton.singleton(methodAuto.getEntry()); break;
-		case EXIT:  localTranslation = SubAutomaton.singleton(methodAuto.getExit()); break;
-		case SPLIT: localTranslation = createSpecialCommited("SPLIT_"+n.getId(), n);break;
-		case JOIN:  localTranslation = createSpecialCommited("JOIN_"+n.getId(), n);break;
+		case ENTRY:  localTranslation = SubAutomaton.singleton(methodAuto.getEntry()); break;
+		case EXIT:   localTranslation = SubAutomaton.singleton(methodAuto.getExit()); break;
+		case SPLIT:  localTranslation = createSpecialCommited("SPLIT_"+n.getId(), n);break;
+		case JOIN:   localTranslation = createSpecialCommited("JOIN_"+n.getId(), n);break;
+		case RETURN: localTranslation = createSpecialCommited("RETURN_"+n.getId(), n);break;
 		}
 		this.nodeTemplates.put(n,localTranslation);
 	}
-	private SubAutomaton createSpecialCommited(String name, ControlFlowGraph.DedicatedNode n) {
+	
+	public void visitReturnNode(ReturnNode n) {
+		visitVirtualNode(n);
+	}
+	
+	private SubAutomaton createSpecialCommited(String name, ControlFlowGraph.VirtualNode n) {
 		Location split = tBuilder.createLocation(name+"_"+this.mId+"_"+n.getId());
 		split.setCommited();
 		return SubAutomaton.singleton(split);
@@ -131,14 +139,15 @@ public class MethodBuilder implements CfgVisitor {
 		SubAutomaton sumLoc = createBasicBlock(n.getId(),cost.getCost());
 		this.nodeTemplates.put(n,sumLoc);
 	}
+
 	private void buildEdge(ControlFlowGraph.CFGEdge edge) {
-		FlowGraph<CFGNode, ControlFlowGraph.CFGEdge> graph = cfg.getGraph();
+
 		Set<CFGNode> hols = cfg.getLoopColoring().getHeadOfLoops();
 		Set<ControlFlowGraph.CFGEdge> backEdges = cfg.getLoopColoring().getBackEdges();
 		Map<ControlFlowGraph.CFGEdge, LoopColoring.IterationBranchLabel<CFGNode>> edgeColoring =
 			cfg.getLoopColoring().getIterationBranchEdges();
-		CFGNode src = graph.getEdgeSource(edge);
-		CFGNode target = graph.getEdgeTarget(edge);
+		CFGNode src = cfg.getEdgeSource(edge);
+		CFGNode target = cfg.getEdgeTarget(edge);
 		if(src == cfg.getEntry() && target == cfg.getExit()) return;
 		Transition transition = tBuilder.createTransition(
 				nodeTemplates.get(src).getExit(),

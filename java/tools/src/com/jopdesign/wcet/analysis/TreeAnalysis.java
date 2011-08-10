@@ -27,6 +27,7 @@ import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.CfgVisitor;
+import com.jopdesign.common.code.ControlFlowGraph.ReturnNode;
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.graphutils.ProgressMeasure;
 import com.jopdesign.common.graphutils.ProgressMeasure.RelativeProgress;
@@ -69,6 +70,11 @@ public class TreeAnalysis {
         public void visitBasicBlockNode(BasicBlockNode n) {
             cost.addLocalCost(project.getWCETProcessorModel().basicBlockWCET(ctx.getExecutionContext(n), n.getBasicBlock()));
         }
+
+		@Override
+		public void visitReturnNode(ReturnNode n) {
+			
+		}
     }
 
     private class ProgressVisitor implements CfgVisitor {
@@ -90,8 +96,12 @@ public class TreeAnalysis {
             progress = 1 + invokedProgress;
         }
 
-        public void visitSpecialNode(ControlFlowGraph.DedicatedNode n) {
+        public void visitVirtualNode(ControlFlowGraph.VirtualNode n) {
             progress = 1;
+        }
+
+        public void visitReturnNode(ControlFlowGraph.ReturnNode n) {
+        	visitVirtualNode(n);
         }
 
         public void visitSummaryNode(ControlFlowGraph.SummaryNode n) {
@@ -128,7 +138,7 @@ public class TreeAnalysis {
             ControlFlowGraph cfg = project.getFlowGraph(mi);
             Map<CFGNode, Long> localProgress = new HashMap<CFGNode, Long>();
             ProgressVisitor progressVisitor = new ProgressVisitor(maxProgress);
-            for (CFGNode n : cfg.getGraph().vertexSet()) {
+            for (CFGNode n : cfg.vertexSet()) {
                 localProgress.put(n, progressVisitor.getProgress(n));
             }
             ProgressMeasure<CFGNode, CFGEdge> pm =
@@ -175,7 +185,7 @@ public class TreeAnalysis {
             ControlFlowGraph cfg = project.getFlowGraph(mi);
             Map<CFGNode, Long> localCost = new HashMap<CFGNode, Long>();
             LocalCostVisitor lcv = new LocalCostVisitor(new AnalysisContextSimple(CallString.EMPTY), project);
-            for (CFGNode n : cfg.getGraph().vertexSet()) {
+            for (CFGNode n : cfg.vertexSet()) {
                 localCost.put(n, lcv.computeCost(n).getCost());
             }
             ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge> pm =

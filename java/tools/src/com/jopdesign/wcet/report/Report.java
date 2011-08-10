@@ -212,7 +212,7 @@ public class Report {
             }
             ControlFlowGraph flowGraph = project.getFlowGraph(m);
             Map<String, Object> stats = new TreeMap<String, Object>();
-            stats.put("#nodes", flowGraph.getGraph().vertexSet().size() - 2 /* entry+exit */);
+            stats.put("#nodes", flowGraph.vertexSet().size() - 2 /* entry+exit */);
             stats.put("number of words", flowGraph.getNumberOfWords());
             this.addDetailedReport(m,
                     new DetailedMethodReport(config, project, m, "CFG", stats, null, null),

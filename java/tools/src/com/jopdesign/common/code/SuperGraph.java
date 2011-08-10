@@ -23,22 +23,24 @@ package com.jopdesign.common.code;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
-import com.jopdesign.common.code.ControlFlowGraph.DedicatedNode;
-import com.jopdesign.common.code.ControlFlowGraph.DedicatedNodeName;
 import com.jopdesign.common.code.ControlFlowGraph.InvokeNode;
+import com.jopdesign.common.code.ControlFlowGraph.ReturnNode;
+import com.jopdesign.common.code.ControlFlowGraph.VirtualNode;
+import com.jopdesign.common.code.ControlFlowGraph.VirtualNodeKind;
+import com.jopdesign.common.code.SuperGraph.SuperGraphEdge.EdgeKind;
 import com.jopdesign.common.graphutils.AdvancedDOTExporter;
-import com.jopdesign.common.graphutils.FlowGraph;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.graphutils.TopOrder;
+import com.jopdesign.common.graphutils.AdvancedDOTExporter.DOTLabeller;
 import com.jopdesign.common.misc.BadGraphException;
+import com.jopdesign.common.misc.Filter;
+import com.jopdesign.common.misc.MappedIterable;
 
-import org.apache.log4j.Logger;
 import org.jgrapht.graph.DirectedMultigraph;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -215,6 +217,45 @@ public class SuperGraph {
     }
     
     /**
+     * Supergraph nodes are pairs(context-cfg, cfg-node).
+     * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
+     *
+     */
+    public static class SuperGraphNode {
+
+    	private ContextCFG ccfg;
+		private CFGNode node;
+
+		public SuperGraphNode(ContextCFG ccfg, CFGNode node) {
+    		this.ccfg = ccfg;
+    		this.node = node;
+    	}
+
+		public CFGNode getCFGNode() {
+			return node;
+		}
+
+		public ContextCFG getContextCFG() {
+			return this.ccfg;
+		}
+
+		@Override
+		public int hashCode() {
+			return ccfg.hashCode() * 31 + node.hashCode();
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			SuperGraphNode other = (SuperGraphNode) obj;
+			return (ccfg.equals(other.ccfg) && node.equals(other.node));
+		}
+
+    }
+    
+    /**
      * Edges in a supergraph, including interprocedural edges,
      * and CFG edges.
      */
@@ -369,8 +410,10 @@ public class SuperGraph {
     
 
     /**
+     * scheduled for removal; i'd like to reduce the complexity of the supergraph class a little bit
      * @return iterate over all CFG nodes in the supergraph
      */
+    @Deprecated
     public CFGNodeIteratorFactory allCFGNodes() {
         return new CFGNodeIteratorFactory();
     }
@@ -395,7 +438,7 @@ public class SuperGraph {
             } else {
                 ContextCFG firstNode = sgIterator.next();
                 cfgsVisited.add(firstNode.getCfg());
-                nodeIterator = firstNode.getCfg().getGraph().vertexSet().iterator();
+                nodeIterator = firstNode.getCfg().vertexSet().iterator();
             }
         }
 
@@ -411,10 +454,10 @@ public class SuperGraph {
             CFGNode next = nodeIterator.next();
             if (!nodeIterator.hasNext()) {    /* See if there are more CFGs to investigate */
                 while (sgIterator.hasNext()) { /* Find unvisited super graph nodes */
-                    ContextCFG nextSuperGraphNode = sgIterator.next();
-                    if (!cfgsVisited.contains(nextSuperGraphNode.getCfg())) { /* If CFG has not been visited */
-                        cfgsVisited.add(nextSuperGraphNode.getCfg());         /* Mark CFG as visited */
-                        nodeIterator = nextSuperGraphNode.getCfg().getGraph().vertexSet().iterator(); /* Reset Node iterator */
+                    ContextCFG nextCCFG = sgIterator.next();
+                    if (!cfgsVisited.contains(nextCCFG.getCfg())) { /* If CFG has not been visited */
+                        cfgsVisited.add(nextCCFG.getCfg());         /* Mark CFG as visited */
+                        nodeIterator = nextCCFG.getCfg().vertexSet().iterator(); /* Reset Node iterator */
                         break;
                     }
                 }
@@ -435,7 +478,7 @@ public class SuperGraph {
 
     /**
      * The JGraphT storage for the supergraph structure (build from CFGs and edges connecting control flow graphs)
-     * FIXME: should be replaced by a callgraph; to this end, we need to consolidate call context and call string in
+     * FIXME: should be replaced by a callgraph; to this end, we need to consolidate call context and callstring in
      * the CallGraph datastructure.
      */
     private DirectedMultigraph<ContextCFG, SuperEdge> superGraph;
@@ -462,13 +505,17 @@ public class SuperGraph {
         this.superEdgePairs = new HashMap<SuperInvokeEdge, SuperReturnEdge>();
         createSuperGraph(callstringLength);
     }
-
-    public Set<ContextCFG> getSuperGraphNodes() {
+    
+    public DirectedMultigraph<ContextCFG, SuperEdge> getCallGraph() {
+    	return superGraph;
+    }
+    
+    public Set<ContextCFG> getCallGraphNodes() {
 
         return superGraph.vertexSet();
     }
 
-    public Set<SuperEdge> getSuperEdges() {
+    public Set<SuperEdge> getCallGraphEdges() {
 
         return superGraph.edgeSet();
     }
@@ -477,119 +524,214 @@ public class SuperGraph {
 
         return superEdgePairs;
     }
-
-
     
-    public Collection<SuperInvokeEdge> outgoingInvokeEdgesOf(ContextCFG n, InvokeNode callSite) {
-    	
-    	return filterInvokeEdges(superGraph.outgoingEdgesOf(n), callSite);
-    }
-
-    public Collection<SuperInvokeEdge> incomingInvokeEdgesOf(ContextCFG n) {
-    	
-    	return filterInvokeEdges(superGraph.incomingEdgesOf(n), null);
-    }
-
-    private Vector<SuperInvokeEdge> filterInvokeEdges(Collection<? extends SuperEdge> coll, InvokeNode callSite) {
-
-        Vector<SuperInvokeEdge> invokeEdges = new Vector<SuperInvokeEdge>();
-        for (SuperGraphEdge edge : coll) {
-            if (! (edge instanceof SuperInvokeEdge)) continue;
-            SuperInvokeEdge invEdge = (SuperInvokeEdge) edge;
-            CallString callString = superGraph.getEdgeTarget(invEdge).getCallString();
-            if (callSite != null && ! callString.isEmpty()) {
-            	if(callString.first().getInstructionHandle() != callSite.getInstructionHandle()) continue;
-            }
-            invokeEdges.add(invEdge);
-        }
-        return invokeEdges;    	
-    }
-    
-    public Collection<SuperReturnEdge> outgoingReturnEdgesOf(ContextCFG n) {
-    	
-    	return filterReturnEdges(superGraph.outgoingEdgesOf(n));
-    }
-
-    private Vector<SuperReturnEdge> filterReturnEdges(Collection<? extends SuperEdge> coll) {
-
-        Vector<SuperReturnEdge> returnEdges = new Vector<SuperReturnEdge>();
-        for (SuperGraphEdge edge : coll) {
-            if (! (edge instanceof SuperReturnEdge)) continue;
-            returnEdges.add((SuperReturnEdge) edge);
-        }
-        return returnEdges;    	
-    }
-
-    /**
-	 * <p>Get inter- and intraprocedural successor edges</p>
-	 * The successors are generated as follows:
+	/**
+	 * The source of a supergraph edge.
 	 * <ul>
-	 * <li/>edge is intraprocedural, target is invoke node: superedge invoking the callee
-	 * <li/>edge is intraprocedural, target is exit node: superedge returning to the caller
-	 * <li/>edge is intraprocedural, other target: intraprocedural CFG edge
-	 * <li/>edge is interprocedural, invoke: entry edge of the invoked method
-	 * <li/>edge is interprocedural, return: outgoing edges of the return node
-	 * </ul>
-	 * @param edge the reference edge
-	 * @return all successors of the target of the given supergraph edge
+	 * <li/>For intraedges: the corresponding lifted source in the CFG
+	 * <li/>For invoke edges: the lifted node at the call site
+	 * <li/>For return edges: the lifted exit node in the invoked CFG
+	 * @param current
+	 * @return
 	 */
-	public Collection<SuperGraphEdge> getSuccessorEdges(SuperGraphEdge edge) {
-		
-		List<SuperGraphEdge> succEdges = new ArrayList<SuperGraphEdge>();
+	public SuperGraphNode edgeSource(SuperGraphEdge edge) {
+
 		switch(edge.getEdgeKind()) {
 		case CFG_EDGE:
 		{
-			/* successors of a control flow graph node */
+			/* the corresponding lifted target in the CFG */
 			IntraEdge intraEdge = (IntraEdge) edge;
 			ContextCFG ccfg = intraEdge.getContextCFG();
-			FlowGraph<CFGNode, CFGEdge> intraGraph = ccfg.getCfg().getGraph();
-			CFGNode succNode = intraGraph.getEdgeTarget(intraEdge.getCFGEdge());
-			
-			if(succNode instanceof InvokeNode) {
-				InvokeNode invNode = (InvokeNode) succNode;
-				/* invoke node: successors are SuperInvoke edges */
-				succEdges.addAll(outgoingInvokeEdgesOf(intraEdge.getContextCFG(), invNode));
-				
-			} else if(succNode instanceof DedicatedNode && ((DedicatedNode)succNode).getKind() == DedicatedNodeName.EXIT) {
-				/* exit node: successors are SuperReturn edges */
-				succEdges.addAll(outgoingReturnEdgesOf(intraEdge.getContextCFG()));				
-			} else {
-				/* standard edges: successors are outgoing edges of target node */
-				for(CFGEdge succEdge : intraGraph.outgoingEdgesOf(succNode)) {
-					succEdges.add(new IntraEdge(ccfg, succEdge));
-				}				
-			}
-			break;
+			CFGNode target = ccfg.getCfg().getEdgeSource(intraEdge.getCFGEdge());
+			return new SuperGraphNode(ccfg, target);
 		}
 		case INVOKE_EDGE:
 		{
-			/* successor is the entry edge of the invoked implementations */
+			/*  the lifted node at the call site */
 			SuperInvokeEdge invokeEdge = (SuperInvokeEdge) edge;
-			ContextCFG ccfg = superGraph.getEdgeTarget(invokeEdge);
-			for(CFGEdge e: ccfg.getCfg().getGraph().outgoingEdgesOf(ccfg.getCfg().getEntry())) {
-				succEdges.add(new IntraEdge(ccfg,e));
-			}
-			break;
+			ContextCFG ccfg = superGraph.getEdgeSource(invokeEdge);
+			return new SuperGraphNode(ccfg, invokeEdge.getInvokeNode());
 		}
 		case RETURN_EDGE:
+		{
+			/* the lifted exit node in the invoked CFG */
+			SuperReturnEdge returnEdge = (SuperReturnEdge) edge;
+			ContextCFG ccfg = superGraph.getEdgeSource(returnEdge);
+			return new SuperGraphNode(ccfg, ccfg.getCfg().getExit());
+		}
+		}
+		throw new AssertionError("unreachable");
+	}
+	/**
+	 * The target of a supergraph edge.
+	 * <ul>
+	 * <li/>For intraedges: the corresponding lifted target in the CFG
+	 * <li/>For invoke edges: the lifted entry node of the invoked function
+	 * <li/>For return edges: the lifted return node at the call site
+	 * @param current
+	 * @return
+	 */
+	public SuperGraphNode edgeTarget(SuperGraphEdge edge) {
+
+		switch(edge.getEdgeKind()) {
+		case CFG_EDGE:
+		{
+			/* the corresponding lifted target in the CFG */
+			IntraEdge intraEdge = (IntraEdge) edge;
+			ContextCFG ccfg = intraEdge.getContextCFG();
+			CFGNode target = ccfg.getCfg().getEdgeTarget(intraEdge.getCFGEdge());
+			return new SuperGraphNode(ccfg, target);
+		}
+		case INVOKE_EDGE:
+		{
+			/* the lifted entry node of the invoked function */
+			SuperInvokeEdge invokeEdge = (SuperInvokeEdge) edge;
+			ContextCFG ccfg = superGraph.getEdgeTarget(invokeEdge);
+			return new SuperGraphNode(ccfg, ccfg.getCfg().getEntry());
+		}
+		case RETURN_EDGE:
+		{
 			/* successors are the outgoing edges of the return node */
 			SuperReturnEdge returnEdge = (SuperReturnEdge) edge;
 			ContextCFG ccfg = superGraph.getEdgeTarget(returnEdge);
-			for(CFGEdge succ : ccfg.getCfg().getGraph().outgoingEdgesOf(returnEdge.getReturnNode())) {
-				succEdges.add(new IntraEdge(ccfg, succ));
-			}
-			break;
+			return new SuperGraphNode(ccfg, returnEdge.getReturnNode());
 		}
+		}
+		throw new AssertionError("unreachable");
+	}
+	
+	/**
+	 * The incoming edges are generated as follows:
+	 * <ul>
+	 * <li/>return node: superedge returning to the caller
+	 * <li/>entry  node: superedge invoking the node's method
+	 * <li/>other:       intraprocedural CFG edge
+	 * </ul>
+	 * @param node
+	 * @return
+	 */
+	public Iterable<SuperGraphEdge> incomingEdgesOf(SuperGraphNode node) {
 
-		return succEdges;
+		CFGNode cfgNode = node.getCFGNode();
+		if(cfgNode instanceof ReturnNode) {
+			final ReturnNode retNode = (ReturnNode) cfgNode;
+			
+			/* return node: incoming edges are SuperReturn edges of the ccfg */
+			return new Filter<SuperGraphEdge>() {
+				@Override
+				protected boolean include(SuperGraphEdge e) {
+					if(! (e instanceof SuperReturnEdge)) return false;
+					SuperReturnEdge retEdge = (SuperReturnEdge) e;
+					return retEdge.getReturnNode().equals(retNode);
+				}				
+			}.filter(superGraph.incomingEdgesOf(node.getContextCFG())); 
+
+		} else if(cfgNode instanceof VirtualNode && ((VirtualNode)cfgNode).getKind() == VirtualNodeKind.ENTRY) {
+
+			/* entry  node: superedge invoking the node's method */
+			return new Filter<SuperGraphEdge>() {
+				@Override
+				protected boolean include(SuperGraphEdge e) {
+					return e.getEdgeKind() == EdgeKind.RETURN_EDGE;
+				}				
+			}.filter(superGraph.outgoingEdgesOf(node.getContextCFG())); 
+
+		} else {
+			
+			/* standard edges: incoming edges of cfg node */
+			return liftCFGEdges(node.getContextCFG(), node.getContextCFG().getCfg().outgoingEdgesOf(cfgNode));
+		}
+	}
+    
+	/**
+	 * The outgoing edges are generated as follows:
+	 * <ul>
+	 * <li/>invoke node: superedge invoking the callee
+	 * <li/>exit node: superedge returning to the caller
+	 * <li/>other: intraprocedural CFG edge
+	 * </ul>
+	 * @param node
+	 * @return
+	 */
+	public Iterable<SuperGraphEdge> outgoingEdgesOf(SuperGraphNode node) {
+		
+		CFGNode cfgNode = node.getCFGNode();
+		if(cfgNode instanceof InvokeNode) {
+			final InvokeNode invNode = (InvokeNode) cfgNode;
+			
+			/* invoke node: outgoing SuperInvoke edges */
+			return new Filter<SuperGraphEdge>() {
+				@Override
+				protected boolean include(SuperGraphEdge e) {
+					if(! (e instanceof SuperInvokeEdge)) return false;
+					SuperInvokeEdge invoke = (SuperInvokeEdge) e;
+					return invoke.getInvokeNode().equals(invNode);
+				}				
+			}.filter(superGraph.outgoingEdgesOf(node.getContextCFG())); 
+
+		} else if(cfgNode instanceof VirtualNode && ((VirtualNode)cfgNode).getKind() == VirtualNodeKind.EXIT) {
+
+			/* exit node: outgoing SuperReturn edges */
+			return new Filter<SuperGraphEdge>() {
+				@Override
+				protected boolean include(SuperGraphEdge e) {
+					return e.getEdgeKind() == EdgeKind.RETURN_EDGE;
+				}				
+			}.filter(superGraph.outgoingEdgesOf(node.getContextCFG())); 
+
+		} else {
+			
+			/* standard edges: outgoing edges of cfg node */
+			node.getContextCFG().getCfg().outgoingEdgesOf(cfgNode).iterator().next().getKind();
+			return liftCFGEdges(node.getContextCFG(), node.getContextCFG().getCfg().outgoingEdgesOf(cfgNode));
+		}		
 	}
 
+    /**
+	 * <p>Get inter- and intraprocedural successor edges</p>
+	 * <p>The successors of the edge e are those edges which have e's target as source
+	 * @return all successors of the target of the given supergraph edge
+	 */
+	public Iterable<? extends SuperGraphEdge> getSuccessorEdges(SuperGraphEdge edge) {
+		
+		return outgoingEdgesOf(edgeTarget(edge));
+	}
+    
 
-    public DirectedMultigraph<ContextCFG, SuperEdge> getGraph() {
+	/**
+	 * Get the intraprocedural entry edges for the given callgraph node
+	 * @param node the callgraph node
+	 * @return the CFG edges which start the execution of the given node
+	 */
+	public Iterable<SuperGraphEdge> getCFGEntryEdges(ContextCFG ccfg) {
+		ControlFlowGraph cfg = ccfg.getCfg();
+		return liftCFGEdges(ccfg, cfg.outgoingEdgesOf(cfg.getEntry()));
+	}
 
-        return superGraph;
-    }
+	/**
+	 * Get the intraprocedural exit edges for the given callgraph node
+	 * @param node the callgraph node
+	 * @return the CFG edges which end the execution of the given node
+	 */
+	public Iterable<SuperGraphEdge> getCFGExitEdges(ContextCFG node) {
+		ControlFlowGraph cfg = node.getCfg();
+		return liftCFGEdges(node, cfg.incomingEdgesOf(cfg.getExit()));
+	}
 
+	static Iterable<SuperGraphEdge> liftCFGEdges(final ContextCFG node, final Iterable<? extends CFGEdge> iEdges) {
+		
+		return new MappedIterable<CFGEdge, SuperGraphEdge>(iEdges) {
+			@Override
+			public SuperGraphEdge map(CFGEdge e) {
+				return new IntraEdge(node, e);
+			}
+		};
+	}
+	
+	/** Get all call sites invoking the given cfg instance
+	 * @param ccfg the cfg instance invoked
+	 * @return all list of invoke/return super edges for the call site
+	 */
     public List<Pair<SuperInvokeEdge, SuperReturnEdge>> getCallSites(ContextCFG ccfg) {
         Vector<Pair<SuperInvokeEdge, SuperReturnEdge>> callSites =
                 new Vector<Pair<SuperInvokeEdge, SuperReturnEdge>>();
@@ -641,7 +783,7 @@ public class SuperGraph {
             
             CallString currentCS = current.getCallString();
 
-            for (CFGNode node : current.getCfg().getGraph().vertexSet()) {
+            for (CFGNode node : current.getCfg().vertexSet()) {
                 if (node instanceof ControlFlowGraph.InvokeNode) {
                     ControlFlowGraph.InvokeNode iNode = (ControlFlowGraph.InvokeNode) node;
                     Set<MethodInfo> impls = iNode.getImplementedMethods();
@@ -670,35 +812,65 @@ public class SuperGraph {
     	
         SuperInvokeEdge iEdge = new SuperInvokeEdge(invokeNode);
         superGraph.addEdge(invoker, invoked, iEdge);
-        FlowGraph<CFGNode, CFGEdge> invokerGraph = invoker.getCfg().getGraph();
 
-        if (invokerGraph.outDegreeOf(invokeNode) != 1) {
+        CFGEdge returnEdge = invoker.getCfg().outgoingEdgeOf(invokeNode);
+        if (returnEdge == null) {
             throw new AssertionError("SuperGraph: Outdegree of invoker node != 1 (Missing return node?)");
         }
-        CFGNode returnNode = invokerGraph.getEdgeTarget(invokerGraph.outgoingEdgesOf(invokeNode).iterator().next());
-        if (invokerGraph.inDegreeOf(returnNode) != 1) {
+        CFGNode returnNode = invoker.getCfg().getEdgeTarget(returnEdge);
+        if (invoker.getCfg().incomingEdgeOf(returnNode) == null) {
             throw new AssertionError("SuperGraph: Indegree of return node != 1 (Missing return node?)");
         }
+        
         SuperReturnEdge rEdge = new SuperReturnEdge(invokeNode, returnNode);
         superGraph.addEdge(invoked, invoker, rEdge);
 
         superEdgePairs.put(iEdge, rEdge);
     }
 
-    public void exportDOT(FileWriter dotWriter) throws IOException {
-    	
+    public void exportDOT(File dotFile) throws IOException {
+        FileWriter dotWriter = new FileWriter(dotFile);
         AdvancedDOTExporter.DOTNodeLabeller<ContextCFG> nodeLabeller =
                 new AdvancedDOTExporter.DefaultNodeLabeller<ContextCFG>() {
 
                     @Override
                     public String getLabel(ContextCFG node) {
-                        return node.toString();
+                    	StringBuilder sb = new StringBuilder();
+                    	sb.append(node.getCfg().getMethodInfo().getFQMethodName()+"\n");
+                    	int i = 1;
+                    	for(InvokeSite is : node.getContext().getCallString()) {
+                    		sb.append(" #"+i+" "+is.getInvoker().getFQMethodName()+" / "+is.getInstructionHandle().getPosition()+"\n");
+                    		i+=1;
+                    	}
+                        return sb.toString();
                     }
 
                 };
-        AdvancedDOTExporter<ContextCFG, SuperEdge> de = new AdvancedDOTExporter<ContextCFG, SuperEdge>(
-                nodeLabeller, null);
+
+        DOTLabeller<SuperEdge> edgeLabeller =
+        	new AdvancedDOTExporter.DefaultDOTLabeller<SuperEdge>() {
+
+				@Override
+				public String getLabel(SuperEdge edge) {
+					return "";
+				}
+
+				@Override
+				public boolean setAttributes(SuperEdge edge,
+						Map<String, String> ht) {
+		            super.setAttributes(edge, ht);
+		            if (edge instanceof SuperReturnEdge) { 
+		            	ht.put("style", "dotted");
+		            	ht.put("arrowhead", "empty");
+		            }
+		            return true;
+				}
+        	
+        };
+		AdvancedDOTExporter<ContextCFG, SuperEdge> de = new AdvancedDOTExporter<ContextCFG, SuperEdge>(
+                nodeLabeller, edgeLabeller );
         de.exportDOT(dotWriter, this.superGraph);
+        dotWriter.close();
     }
 
     /**
@@ -718,5 +890,6 @@ public class SuperGraph {
     public TopOrder<ContextCFG, SuperEdge> topologicalOrderIterator() throws BadGraphException {
         return new TopOrder<ContextCFG, SuperEdge>(superGraph, rootNode);
     }
+
 
 }

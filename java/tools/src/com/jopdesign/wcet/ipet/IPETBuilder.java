@@ -44,6 +44,11 @@ public class IPETBuilder<Ctx extends CallStringProvider> {
             this.model = e;
         }
 
+        public ExecutionEdge(CallStringProvider e) {
+            this.ctx = e;
+            this.model =  e;
+        }
+
         public Object getModel() {
             return this.model;
         }
@@ -90,6 +95,10 @@ public class IPETBuilder<Ctx extends CallStringProvider> {
     public IPETBuilder(WCETTool project, Ctx ctx) {
         this.project = project;
         this.ctx = ctx;
+    }
+
+    public IPETBuilder(WCETTool project) {
+    	this(project, null);
     }
 
     public Ctx getContext() {

@@ -813,7 +813,7 @@ public class MethodCode {
     public Set<InvokeSite> getInvokeSites() {
         Set<InvokeSite> invokes = new HashSet<InvokeSite>();
         if (hasCFG()) {
-            for (CFGNode node : cfg.getGraph().vertexSet()) {
+            for (CFGNode node : cfg.vertexSet()) {
                 if (node instanceof InvokeNode) {
                     invokes.add( ((InvokeNode)node).getInvokeSite() );
                 }

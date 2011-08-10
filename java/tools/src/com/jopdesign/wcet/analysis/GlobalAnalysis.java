@@ -22,10 +22,15 @@ package com.jopdesign.wcet.analysis;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.Segment;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ControlFlowGraph.ReturnNode;
 import com.jopdesign.common.code.SuperGraph.ContextCFG;
+import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
+import com.jopdesign.common.code.SuperGraph.SuperGraphNode;
 import com.jopdesign.common.code.SuperGraph;
+import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
@@ -78,38 +83,35 @@ public class GlobalAnalysis {
             throw new Exception("Global IPET: only ALWAYS_MISS and GLOBAL_ALL_FIT are supported" +
                     " as cache approximation strategies");
         }
-
+        
         String key = m.getFQMethodName() + "_global_" + cacheMode;
-        SuperGraph sg = new SuperGraph(project,
-                project.getFlowGraph(m),
-                project.getProjectConfig().callstringLength(),
-                ctx.getCallString());
+        return computeWCET(key, Segment.methodSegment(project,m,ctx.getCallString()), cacheMode);
+    }
 
-        /* Dump supergraph in debug mode */
-        if (project.getProjectConfig().isDebugMode()) {
-            try {
-                FileWriter fw = new FileWriter(project.getProjectConfig().getOutFile("graphs", key + ".dot"));
-                sg.exportDOT(fw);
-                fw.close();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        }
+    /**
+     * Compute WCET for a segment, using global IPET, and cache analysis results
+     */
+    public WcetCost computeWCET(String key, Segment segment, StaticCacheApproximation cacheMode) throws Exception {
 
-        /* create an IPET problem for all reachable methods */
-        IPETSolver ipetSolver = buildIpetProblem(project, key, sg, ipetConfig);
+        /* create an IPET problem for the segment */
+        IPETSolver<SuperGraphEdge> ipetSolver = buildIpetProblem(project, key, segment, ipetConfig);
 
         /* compute cost */
-        setExecutionCost(sg, cacheMode, ipetSolver);
+        setExecutionCost(segment, cacheMode, ipetSolver);
 
-        /* Add constraints for cache */
+        /* Add constraints for method cache */
         Set<ExecutionEdge> missEdges = new HashSet<ExecutionEdge>();
-        if (cacheMode == StaticCacheApproximation.GLOBAL_ALL_FIT) {
-            missEdges = addMissOnceCost(sg, ipetSolver);
+        if(project.getWCETProcessorModel().hasMethodCache()) {
+        	switch(cacheMode) {
+        	case ALWAYS_HIT:      break; /* no additional costs */
+        	case ALWAYS_MISS:     methodCacheAnalysis.addMissAlwaysCost(ipetSolver, segment); break;
+        	case ALL_FIT_SIMPLE:  methodCacheAnalysis.addMissOnceCost(ipetSolver, segment); break;
+        	case ALL_FIT_REGIONS: missEdges = methodCacheAnalysis.addMissOnceConstraints(ipetSolver, segment); break;
+        	}        	
         }
 
         /* Return variables */
-        Map<ExecutionEdge, Long> flowMap = new HashMap<ExecutionEdge, Long>();
+        Map<SuperGraphEdge, Long> flowMap = new HashMap<SuperGraphEdge, Long>();
 
         /* Solve */
         double lpCost = ipetSolver.solve(flowMap);
@@ -117,8 +119,8 @@ public class GlobalAnalysis {
         /* Cost extraction */
         WcetCost cost = new WcetCost();
         //System.err.println("=== Cost Summary ===");
-        for (Entry<ExecutionEdge, Long> flowEntry : flowMap.entrySet()) {
-            ExecutionEdge edge = flowEntry.getKey();
+        for (Entry<SuperGraphEdge, Long> flowEntry : flowMap.entrySet()) {
+        	SuperGraphEdge edge = flowEntry.getKey();
             long edgeCost = ipetSolver.getEdgeCost(edge);
             long flowCost = edgeCost * flowEntry.getValue();
             if (missEdges.contains(edge)) {
@@ -141,52 +143,36 @@ public class GlobalAnalysis {
         }
         return cost;
     }
-
+    
     /**
-     * Create an interprocedural max-cost max-flow problem for the given supergraph<br/>
+     * Create an interprocedural max-cost max-flow problem for the given segment<br/>
      * Notes:<ul>
      * <li/> super graph edges always have the callstring of the invoking method
      * </ul>
      *
      * @param wcetTool    A reference to the WCETTool
      * @param problemName A unique identifier for the problem (for reporting)
-     * @param sg          The supergraph to build the ILP for
+     * @param segment     The segment to build the ILP for
      * @param ipetConfig  Cost of nodes (or {@code null} if no cost is associated with nodes)
      * @return The max-cost maxflow problem
      */
-    public static IPETSolver buildIpetProblem(WCETTool wcetTool, String problemName, SuperGraph sg, IPETConfig ipetConfig) {
+    public static IPETSolver<SuperGraphEdge> buildIpetProblem(WCETTool wcetTool, String problemName, Segment segment, IPETConfig ipetConfig) {
 
-        IPETSolver ipetSolver = new IPETSolver(problemName, ipetConfig);
+        IPETSolver<SuperGraphEdge> ipetSolver = new IPETSolver<SuperGraphEdge>(problemName, ipetConfig);
 
-        IPETBuilder<SuperGraph.CallContext> ipetBuilder =
-                new IPETBuilder<SuperGraph.CallContext>(wcetTool, sg.getRootNode().getContext());
+        /* In- and Outflow */
+    	ipetSolver.addConstraint(IPETUtils.constantFlow(segment.getEntryEdges(), 1));
+        ipetSolver.addConstraint(IPETUtils.constantFlow(segment.getExitEdges(), 1));
 
-        for (ContextCFG n : sg.getSuperGraphNodes()) {
-
-            ControlFlowGraph cfg = n.getCfg();
-            ipetBuilder.changeContext(n.getContext());
-
-            if (n.equals(sg.getRootNode())) {
-                /* Root node : inflow(entry) = outflow(exit) = 1 */
-                ipetSolver.addConstraints(IPETUtils.structuralFlowConstraintsRoot(cfg.getGraph(), ipetBuilder));
-            } else {
-                /* Inner node: inputEdges = outputEdges = flow(superReturnEdges which have super graph node as source) */
-                List<ExecutionEdge> invokeEdges = new ArrayList<ExecutionEdge>();
-                for (SuperGraph.SuperInvokeEdge e : sg.incomingInvokeEdgesOf(n)) {
-                    invokeEdges.add(ipetBuilder.newEdgeInContext(e, e.getCaller().getContext()));
-                }
-                ipetSolver.addConstraints(IPETUtils.structuralFlowConstraints(cfg.getGraph(), invokeEdges, invokeEdges, ipetBuilder));
-            }
-            /* Flow constraints */
-            ipetSolver.addConstraints(IPETUtils.loopBoundConstraints(n.getCfg(), ipetBuilder));
-            ipetSolver.addConstraints(IPETUtils.infeasibleEdgeConstraints(n.getCfg(), ipetBuilder));
-
+        /* Structural flow constraints */
+        for (SuperGraphNode node: segment.getNodes()) {
+        	ipetSolver.addConstraints(IPETUtils.flowPreservation(segment.incomingEdgesOf(node), segment.outgoingEdgesOf(node)));
         }
 
-        /* Constraints for invoke/return super edge pairs */
-        for (Entry<SuperGraph.SuperInvokeEdge, SuperGraph.SuperReturnEdge> superEdgePair : sg.getSuperEdgePairs().entrySet()) {
-            ipetBuilder.changeContext(superEdgePair.getKey().getCaller().getContext());
-            ipetSolver.addConstraints(IPETUtils.invokeReturnConstraints(superEdgePair.getKey(), superEdgePair.getValue(), ipetBuilder));
+        /* Program Flow Constraints */
+        for (ContextCFG n : segment.getCallGraphNodes()) {
+            ipetSolver.addConstraints(IPETUtils.loopBoundConstraints(n.getCfg(), ipetBuilder));
+            ipetSolver.addConstraints(IPETUtils.infeasibleEdgeConstraints(n.getCfg(), ipetBuilder));
         }
 
         return ipetSolver;
@@ -196,32 +182,28 @@ public class GlobalAnalysis {
     /**
      * Compute the execution time of each edge in in the supergraph
      *
-     * @param sg       the supergraph, whose vertices are considered
+     * @param segment       the supergraph, whose vertices are considered
      * @param ipetInst the IPET instance
      * @return the cost map
      */
-    private Map<ExecutionEdge, WcetCost> setExecutionCost(SuperGraph sg, StaticCacheApproximation approx, IPETSolver ipetInst) {
+    private Map<ExecutionEdge, WcetCost> setExecutionCost(Segment segment, StaticCacheApproximation approx, IPETSolver ipetInst) {
 
         HashMap<ExecutionEdge, WcetCost> edgeCost = new HashMap<ExecutionEdge, WcetCost>();
         boolean alwaysMiss = (approx == StaticCacheApproximation.ALWAYS_MISS);
 
-        IPETBuilder<SuperGraph.CallContext> ipetBuilder = new IPETBuilder<SuperGraph.CallContext>(project, new SuperGraph.CallContext(CallString.EMPTY));
-
-        for (ContextCFG n : sg.getGraph().vertexSet()) {
-            ipetBuilder.changeContext(n.getContext());
+        for (ContextCFG n : segment.getCallGraphNodes()) {
 
             // FIXME: There is a discrepancy but also overlap between analysis contexts and execution contexts
             AnalysisContextLocal aCtx = new AnalysisContextLocal(approx, n.getCallString());
-            GlobalVisitor visitor = new GlobalVisitor(project, aCtx, alwaysMiss);
+            WcetVisitor visitor = new LocalCostVisitor(project, aCtx);
 
             /* For each CFG instance, consider CFG nodes
                           * Currently there is no need to attribute cost to callsites */
-            for (CFGNode cfgNode : n.getCfg().getGraph().vertexSet()) {
+            for (CFGNode cfgNode : n.getCfg().vertexSet()) {
                 WcetCost cost = visitor.computeCost(cfgNode);
-                for (ControlFlowGraph.CFGEdge edge : n.getCfg().getGraph().outgoingEdgesOf(cfgNode)) {
-                    ExecutionEdge e = ipetBuilder.newEdge(edge);
-                    edgeCost.put(e, cost);
-                    ipetInst.addEdgeCost(e, cost.getCost());
+                for (ControlFlowGraph.CFGEdge edge : n.getCfg().outgoingEdgesOf(cfgNode)) {
+                    edgeCost.put(segment.liftEdge(edge), cost);
+                    ipetInst.addEdgeCost(sEdge, cost.getCost());
                 }
             }
         }
@@ -269,7 +251,7 @@ public class GlobalAnalysis {
 
         Map<MethodInfo, List<SuperGraph.SuperEdge>> iMap =
                 new HashMap<MethodInfo, List<SuperGraph.SuperEdge>>();
-        for (SuperGraph.SuperEdge edge : superGraph.getSuperEdges()) {
+        for (SuperGraph.SuperEdge edge : superGraph.getCallGraphEdges()) {
             MethodInfo targetMethod = edge.getCallee().getCfg().getMethodInfo();
             List<SuperGraph.SuperEdge> edges = iMap.get(targetMethod);
             if (edges == null) edges = new ArrayList<SuperGraph.SuperEdge>();
@@ -340,28 +322,23 @@ public class GlobalAnalysis {
 
     }
 
-
-    public static class GlobalVisitor extends WcetVisitor {
+    public static class LocalCostVisitor extends WcetVisitor {
         private boolean addAlwaysMissCost;
         private AnalysisContextLocal ctx;
 
-        public GlobalVisitor(WCETTool p, AnalysisContextLocal ctx, boolean addAlwaysMissCost) {
+        public LocalCostVisitor(WCETTool p, AnalysisContextLocal ctx) {
             super(p);
             this.ctx = ctx;
-            this.addAlwaysMissCost = addAlwaysMissCost;
         }
 
         public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
             visitBasicBlockNode(n);
-            if (addAlwaysMissCost) {
-                WCETProcessorModel proc = project.getWCETProcessorModel();
-                this.cost.addCacheCost(proc.getInvokeReturnMissCost(
-                        n.invokerFlowGraph(),
-                        n.receiverFlowGraph()));
-            }
         }
 
-        @Override
+		@Override
+		public void visitReturnNode(ReturnNode n) {}
+
+		@Override
         public void visitBasicBlockNode(BasicBlockNode n) {
             cost.addLocalCost(project.getWCETProcessorModel().basicBlockWCET(ctx.getExecutionContext(n), n.getBasicBlock()));
         }

@@ -30,6 +30,7 @@ import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.code.SymbolicMarker;
+import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
 import com.jopdesign.common.code.SymbolicMarker.SymbolicMarkerType;
 import com.jopdesign.common.graphutils.FlowGraph;
 import com.jopdesign.common.graphutils.LoopColoring;
@@ -53,11 +54,52 @@ import java.util.Set;
  */
 public class IPETUtils {
 
-    /**
+	/**
+	 * [NEW-GLOBAL-ANALYSIS]
+	 * Build a constraint <pre>sum edges = C</pre>
+	 * @param edges
+	 * @param rhs
+	 * @return
+	 */
+	public static <E>
+	LinearConstraint<E>
+	constantFlow(Iterable<E> edges, int rhs) {
+
+		LinearConstraint<E> eq = new LinearConstraint<E>(ConstraintType.Equal);
+		eq.addRHS(rhs);
+        for (E ingoing : edges) {
+        	eq.addLHS(ingoing);
+        }
+        return eq;
+	}
+
+	/**
+	 * [NEW-GLOBAL-ANALYSIS]
+	 * Build a constraint <pre>sum es1 = sum es2</pre>
+	 * @param es1
+	 * @param es2
+	 * @return
+	 */
+	public static <E>
+	LinearConstraint<E>
+	flowPreservation(Iterable<E> es1, Iterable<E> es2) {
+
+		LinearConstraint<E> eq = new LinearConstraint<E>(ConstraintType.Equal);
+        for (E lhs : es1) {
+        	eq.addLHS(lhs);
+        }
+        for (E rhs : es2) {
+        	eq.addRHS(rhs);
+        }
+        return eq;
+	}
+
+	/**
      * Top level flow constraints: flow out of entry and flow into exit must be one.
      * <pre>sum (e_Entry_x) = 1</pre>
      * <pre>sum (e_y_Exit) = 1</pre>
      */
+	@Deprecated
     public static <V, E, C extends CallStringProvider>
     List<LinearConstraint<IPETBuilder.ExecutionEdge>>
     structuralFlowConstraintsRoot(FlowGraph<V, E> g, IPETBuilder<C> ctx) {
@@ -69,6 +111,8 @@ public class IPETUtils {
 
         return structuralFlowConstraints(g, entryLhsProto, exitRhsProto, ctx);
     }
+    
+
 
     /**
      * Structural flow constraints with given input and output edges.
@@ -274,7 +318,7 @@ public class IPETUtils {
             LinearConstraint<ExecutionEdge> invokeLocalCnstr = new LinearConstraint<ExecutionEdge>(ConstraintType.Equal);
             invokeLocalCnstr.addLHS(builder.newEdge(call));
             ControlFlowGraph.InvokeNode invokeNode = call.getInvokeNode();
-            Set<ControlFlowGraph.CFGEdge> localInvokeEdge = invokeNode.getControlFlowGraph().getGraph().outgoingEdgesOf(invokeNode);
+            Set<ControlFlowGraph.CFGEdge> localInvokeEdge = invokeNode.getControlFlowGraph().outgoingEdgesOf(invokeNode);
             if (localInvokeEdge.size() == 1) {
                 invokeLocalCnstr.addRHS(builder.newEdge(localInvokeEdge.iterator().next()));
             } else {
@@ -325,12 +369,14 @@ public class IPETUtils {
         ipetSolver.addConstraints(IPETUtils.loopBoundConstraints(cfg, builder));
         ipetSolver.addConstraints(IPETUtils.infeasibleEdgeConstraints(cfg, builder));
 
-        for (CFGNode n : cfg.getGraph().vertexSet()) {
+        for (CFGNode n : cfg.vertexSet()) {
             long nodeCost = nodeWCET.getCost(n);
-            for (ControlFlowGraph.CFGEdge e : cfg.getGraph().outgoingEdgesOf(n)) {
+            for (ControlFlowGraph.CFGEdge e : cfg.outgoingEdgesOf(n)) {
                 ipetSolver.addEdgeCost(builder.newEdge(e), nodeCost);
             }
         }
         return ipetSolver;
     }
+
+
 }

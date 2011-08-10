@@ -511,8 +511,8 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
 
     public int computeCyclomaticComplexity(MethodInfo m) {
         ControlFlowGraph g = getFlowGraph(m);
-        int nLocal = g.getGraph().vertexSet().size();
-        int eLocal = g.getGraph().edgeSet().size();
+        int nLocal = g.vertexSet().size();
+        int eLocal = g.edgeSet().size();
         int pLocal = g.buildLoopBoundMap().size();
         int ccLocal = eLocal - nLocal + 2 * pLocal;
         int ccGlobal = 0;
@@ -733,8 +733,9 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
             for (FlowEdge e : edges) {
                 BasicBlockNode head = cfg.getHandleNode(e.getHead());
                 BasicBlockNode tail = cfg.getHandleNode(e.getTail());
-                CFGEdge edge = cfg.getGraph().getEdge(tail, head);
+                CFGEdge edge = cfg.getEdge(tail, head);
                 if (edge != null) { // edge does not seem to exist any longer
+                	logger.warn("The infeasible edge between "+head+" and "+tail+" does not exist");
                     retval.add(edge);
                 }
             }

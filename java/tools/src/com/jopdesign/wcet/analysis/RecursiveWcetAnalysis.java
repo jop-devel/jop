@@ -79,6 +79,11 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 			}
 			cost.addCost(RecursiveWcetAnalysis.this.recursiveWCET.recursiveCost(RecursiveWcetAnalysis.this, n, ctx));
 		}
+		
+		@Override
+		public void visitReturnNode(ControlFlowGraph.ReturnNode n) {
+			
+		}
 		@Override
 		public void visitBasicBlockNode(BasicBlockNode n) {
 			cost.addLocalCost(project.getWCETProcessorModel().basicBlockWCET(ctx.getExecutionContext(n),n.getBasicBlock()));
@@ -247,7 +252,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 
 		Map<IPETBuilder.ExecutionEdge, Long> edgeFlowOut = new HashMap<IPETBuilder.ExecutionEdge, Long>();
 		long maxCost = runLocalComputation(key, cfg, ctx, costProvider, edgeFlowOut );
-		LocalWCETSolution sol = new LocalWCETSolution(cfg.getGraph(),nodeCosts);
+		LocalWCETSolution sol = new LocalWCETSolution(cfg.getGraph(), nodeCosts);
 		sol.setSolution(maxCost, edgeFlowOut);
 		return sol;
 	}
@@ -333,7 +338,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 			Map<CFGNode, WcetCost> nodeCosts,
 			long maxCost,
 			Map<IPETBuilder.ExecutionEdge, Long> edgeFlowOut) {
-		LocalWCETSolution sol = new LocalWCETSolution(cfg.getGraph(),nodeCosts);
+		LocalWCETSolution sol = new LocalWCETSolution(cfg.getGraph(), nodeCosts);
 		sol.setSolution(maxCost, edgeFlowOut);
 		return sol.getCost();
 	}
