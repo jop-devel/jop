@@ -80,11 +80,11 @@ public class SegmentTest implements CFGProvider {
 		MethodInfo mainMethod = appInfo.getMainMethod();		
 
 		/* count total number of CFG nodes */
-		SuperGraph sg2 = new SuperGraph(testInst, testInst.getFlowGraph(mainMethod), 2);
+		SuperGraph superGraph = new SuperGraph(testInst, testInst.getFlowGraph(mainMethod), 2);
 		Segment segment = Segment.methodSegment(testInst, mainMethod, CallString.EMPTY, 2);
 		
 		int count = 0;
-		for(ContextCFG cgNode : sg2.getCallGraphNodes()) {
+		for(ContextCFG cgNode : superGraph.getCallGraphNodes()) {
 			try {
 				cgNode.getCfg().exportDOT(new File("/tmp/cfg-"+cgNode.getCfg().getMethodInfo().getClassName()+"_"+cgNode.getCfg().getMethodInfo().getShortName()+".dot"));
 			} catch (IOException e) {}
@@ -99,31 +99,31 @@ public class SegmentTest implements CFGProvider {
 			e.printStackTrace();
 		}
 		/* root */
-		ContextCFG root = sg2.getRootNode();
+		ContextCFG root = superGraph.getRootNode();
 
 		/* Build a segment cuts all invokes in those methods invoked by run() */
 		Segment segment2;
 		
 		/* root entries */
 		Set<SuperGraphEdge> entries = new HashSet<SuperGraphEdge>();
-		IteratorUtilities.addAll(entries, SuperGraph.liftCFGEdges(root, root.getCfg().outgoingEdgesOf(root.getCfg().getEntry())));
+		IteratorUtilities.addAll(entries, superGraph.liftCFGEdges(root, root.getCfg().outgoingEdgesOf(root.getCfg().getEntry())));
 
 		Set<SuperGraphEdge> exits = new HashSet<SuperGraphEdge>();
 		int cfgNodeCandidateCount = root.getCfg().vertexSet().size();
 		
 		/* find callees */
-		for(SuperEdge superEdge : sg2.getCallGraph().outgoingEdgesOf(root)) {
+		for(SuperEdge superEdge : superGraph.getCallGraph().outgoingEdgesOf(root)) {
 			if(! (superEdge instanceof SuperInvokeEdge)) continue;
-			ContextCFG callee1 = sg2.getCallGraph().getEdgeTarget(superEdge);
+			ContextCFG callee1 = superGraph.getCallGraph().getEdgeTarget(superEdge);
 			cfgNodeCandidateCount += callee1.getCfg().vertexSet().size();
 			/* find all edges from invoke nodes */
 			for(CFGNode cfgNode : callee1.getCfg().vertexSet()) {
 				if(cfgNode instanceof InvokeNode) {					
-					IteratorUtilities.addAll(exits, sg2.outgoingEdgesOf(new SuperGraphNode(callee1, cfgNode)));
+					IteratorUtilities.addAll(exits, superGraph.outgoingEdgesOf(new SuperGraphNode(callee1, cfgNode)));
 				}
 			}			
 		}
-		segment2 = new Segment(sg2, entries, exits);
+		segment2 = new Segment(superGraph, entries, exits);
 		exits = segment2.getExitEdges(); /* reachable exits */
 		try {
 			segment2.exportDOT(new File("/tmp/cg1-segment2.dot"));
@@ -142,19 +142,19 @@ public class SegmentTest implements CFGProvider {
 		/* find callees */
 		
 		for(SuperGraphEdge superEdge : entries) {
-			SuperGraphNode node1 = sg2.edgeTarget(superEdge);
-			for(SuperEdge superEdge2 : sg2.getCallGraph().outgoingEdgesOf(node1.getContextCFG())) {
+			SuperGraphNode node1 = superEdge.getTarget();
+			for(SuperEdge superEdge2 : superGraph.getCallGraph().outgoingEdgesOf(node1.getContextCFG())) {
 				if(! (superEdge2 instanceof SuperInvokeEdge)) continue;
-				ContextCFG callee2 = sg2.getCallGraph().getEdgeTarget(superEdge2);
+				ContextCFG callee2 = superGraph.getCallGraph().getEdgeTarget(superEdge2);
 				/* find all edges from invoke nodes */
 				for(CFGNode cfgNode : callee2.getCfg().vertexSet()) {
 					if(cfgNode instanceof InvokeNode) {					
-						IteratorUtilities.addAll(exits, sg2.outgoingEdgesOf(new SuperGraphNode(callee2, cfgNode)));
+						IteratorUtilities.addAll(exits, superGraph.outgoingEdgesOf(new SuperGraphNode(callee2, cfgNode)));
 					}
 				}				
 			}			
 		}
-		segment3 = new Segment(sg2, entries, exits);
+		segment3 = new Segment(superGraph, entries, exits);
 		try {
 			segment3.exportDOT(new File("/tmp/cg1-segment3.dot"));
 		} catch (IOException e) {

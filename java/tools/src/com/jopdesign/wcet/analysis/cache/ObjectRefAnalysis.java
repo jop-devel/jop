@@ -272,7 +272,7 @@ public class ObjectRefAnalysis {
 	public HashSet<String> getSaturatedTypes(SuperGraph sg, LocalPointsToResult usedRefs) {
 		HashSet<String> topTypes =
 			new HashSet<String>(); 
-		for(CFGNode n : sg.allCFGNodes()) {
+		for(CFGNode n : sg.cfgNodeSet()) {
 			BasicBlock bb = n.getBasicBlock();
 			if(bb == null) continue;
 			for(InstructionHandle ih : bb.getInstructions()) {
@@ -350,7 +350,7 @@ public class ObjectRefAnalysis {
 		 * cost of 1.
 		 */
 		// FIXME: We should deal with subtyping (or better use storage based alias-analysis)
-		for(CFGNode node : sg.allCFGNodes()) {
+		for(CFGNode node : sg.cfgNodeSet()) {
 			/* Compute cost for basic block */
 			BasicBlock bb = node.getBasicBlock();
 			if(bb == null) continue;

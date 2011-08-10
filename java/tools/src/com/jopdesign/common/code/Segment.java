@@ -108,7 +108,7 @@ public class Segment {
 			edges.add(current); /* mark black */
 			for(SuperGraphEdge succ : sg.getSuccessorEdges(current)) {
 				if(! exits.contains(current)) {
-					nodes.add(sg.edgeTarget(current));
+					nodes.add(current.getTarget());
 					worklist.add(succ); /* (re-)mark grey */
 				} else {
 					actualExits.add(current);
@@ -231,11 +231,11 @@ public class Segment {
 				new AdvancedDOTExporter.GraphAdapter<SuperGraphNode, SuperGraphEdge>() {
 			@Override
 			public SuperGraphNode getEdgeSource(SuperGraphEdge e) {
-				return Segment.this.sg.edgeSource(e);
+				return e.getSource();
 			}
 			@Override
 			public SuperGraphNode getEdgeTarget(SuperGraphEdge e) {
-				return Segment.this.sg.edgeTarget(e);
+				return e.getTarget();
 			}
 		});
 		dotWriter.close();

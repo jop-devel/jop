@@ -895,30 +895,6 @@ public class ControlFlowGraph {
 		return graph.incomingEdgesOf(node);
 	}
 
-	/**
-	 * <b>Scheduled for removal: special purpose</b>
-	 * @param node the source node
-	 * @return the unique outgoing edge, or null, if there is no unique outgoing edge
-	 */
-	@Deprecated
-	public CFGEdge outgoingEdgeOf(CFGNode node) {
-
-		if(graph.outDegreeOf(node) != 1) return null;
-		else return graph.outgoingEdgesOf(node).iterator().next();
-	}
-
-	/**
-	 * <b>Scheduled for removal: special purpose</b>
-	 * @param node the source node
-	 * @return the unique incoming edge, or null, if there is no unique incoming edge
-	 */
-	@Deprecated
-	public CFGEdge incomingEdgeOf(CFGNode node) {
-
-		if(graph.inDegreeOf(node) != 1) return null;
-		else return graph.incomingEdgesOf(node).iterator().next();
-	}
-
     public List<BasicBlock> getBlocks() {
     	
         return blocks;
