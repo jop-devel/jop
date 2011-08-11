@@ -240,7 +240,7 @@ public class MethodCode {
     public LineNumberGen getLineNumberEntry(InstructionHandle ih, boolean checkPrevious) {
         InstructionHandle prev = ih;
         while (prev != null) {
-            InstructionTargeter[] targeter = ih.getTargeters();
+            InstructionTargeter[] targeter = prev.getTargeters();
             if (targeter != null) {
                 for (InstructionTargeter t : targeter) {
                     if (t instanceof LineNumberGen) {
