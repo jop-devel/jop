@@ -34,6 +34,7 @@ import com.jopdesign.jcopter.analysis.ValueMapAnalysis;
 import com.jopdesign.jcopter.optimizer.AbstractOptimizer;
 import org.apache.bcel.generic.ARRAYLENGTH;
 import org.apache.bcel.generic.ArithmeticInstruction;
+import org.apache.bcel.generic.CHECKCAST;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.ConversionInstruction;
 import org.apache.bcel.generic.DUP;
@@ -41,6 +42,7 @@ import org.apache.bcel.generic.DUP2;
 import org.apache.bcel.generic.FieldInstruction;
 import org.apache.bcel.generic.GETFIELD;
 import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.InstructionConstants;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.InvokeInstruction;
@@ -350,6 +352,7 @@ public class SimpleInliner extends AbstractOptimizer {
                      instruction instanceof StackInstruction ||
                      instruction instanceof LDC || instruction instanceof LDC2_W ||
                      instruction instanceof ARRAYLENGTH ||
+                     instruction instanceof CHECKCAST ||
                      instruction instanceof NOP)
             {
                 // nothing to do, just copy them
@@ -506,6 +509,10 @@ public class SimpleInliner extends AbstractOptimizer {
                 Instruction instr = oldPrologue.get(argNum - offset).copy();
 
                 inlineData.addPrologue(instr);
+
+            } else if (value.isNullReference()) {
+
+                inlineData.addPrologue(InstructionConstants.ACONST_NULL);
 
             } else if (value.isConstantValue() || value.isStaticFieldReference()) {
 

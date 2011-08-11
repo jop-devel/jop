@@ -28,11 +28,14 @@ import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.misc.AppInfoError;
+import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.misc.Ternary;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.common.type.TypeHelper;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
+import com.jopdesign.jcopter.analysis.ExecCountProvider;
+import com.jopdesign.jcopter.analysis.MethodCacheAnalysis;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import com.jopdesign.jcopter.greedy.Candidate;
 import com.jopdesign.jcopter.greedy.CodeOptimizer;
@@ -103,9 +106,12 @@ public class InlineOptimizer implements CodeOptimizer {
         private int deltaCodesize;
         private int deltaLocals;
         private long localGain;
-        private long deltaCacheMiss;
         private boolean isLastInvoke;
         private boolean isLastLocalInvoke;
+
+        private long invokeCacheCosts;
+        private long returnCacheCosts;
+        private long invokeeDeltaReturnCosts;
 
         protected InlineCandidate(InvokeSite invokeSite, MethodInfo invokee,
                                   boolean needsNPCheck, boolean needsEmptyStack, int maxLocals)
@@ -423,28 +429,30 @@ public class InlineOptimizer implements CodeOptimizer {
             // localGain: could have changed due to codesize changes, or cache-miss-count changes
             localGain = calcLocalGain(analyses);
 
-            deltaCacheMiss = calcDeltaCacheMissCosts(analyses);
+            calcCacheMissCosts(analyses, deltaCodesize);
 
             // TODO we might need to save the stack now if exception-handlers have been added, check this
 
             return true;
         }
 
-        private long calcDeltaCacheMissCosts(AnalysisManager analyses) {
+        private void calcCacheMissCosts(AnalysisManager analyses, int deltaBytes) {
+            WCETProcessorModel pm = analyses.getJCopter().getWCETProcessorModel();
 
-            // we save the cache miss costs for the invoke and the return
-            long delta = -analyses.getMethodCacheAnalysis().getInvokeReturnMissCosts(invokeSite, invokee);
+            int invokerBytes = invokeSite.getInvoker().getCode().getNumberOfBytes();
+            int invokerWords = MiscUtils.bytesToWords(invokerBytes);
+            int invokeeWords = invokee.getCode().getNumberOfWords();
 
+            // we save the cache miss costs for the invoke and the return of the old invoke
+            invokeCacheCosts = pm.getInvokeCacheMissPenalty(invokeSite, invokerWords);
+            returnCacheCosts = pm.getReturnCacheMissPenalty(invokeSite, invokeeWords);
 
-            // TODO
-            // However, the costs increase because all invokes in the invokee will now have a higher return
-            // cache miss cost!
-            // Need to find out how many return misses there are in the new code, and how many return misses are in the
-            // old code, and how big the cache miss cost difference is..
-
-
-
-            return delta;
+            // for every return in the inlined code, we have additional return cache miss costs
+            int newWords = MiscUtils.bytesToWords(invokerBytes + deltaBytes);
+            // TODO this is not quite correct, the old invoke return is the invokesite in the invokee, not the invoker,
+            //      but this currently returns the maximum value for all returns anyway
+            invokeeDeltaReturnCosts = pm.getReturnCacheMissPenalty(invokeSite, newWords) -
+                                      pm.getReturnCacheMissPenalty(invokeSite, invokeeWords);
         }
 
         @Override
@@ -473,8 +481,22 @@ public class InlineOptimizer implements CodeOptimizer {
         }
 
         @Override
-        public long getDeltaCacheMissCosts() {
-            return deltaCacheMiss;
+        public long getDeltaCacheMissCosts(AnalysisManager analyses, ExecCountProvider ecp) {
+
+            MethodCacheAnalysis mca = analyses.getMethodCacheAnalysis();
+
+            // we save the invoke costs per invoke and return cache miss
+            long costs = -mca.getInvokeReturnCacheCosts(ecp, invokeSite, invokeCacheCosts, returnCacheCosts);
+
+            // the costs increase because all invokes in the invokee will now have a higher return
+            // cache miss cost!
+            // Need to find out how many return misses there are in the new code, and how many return misses are in the
+            // old code, and how big the cache miss cost difference is..
+
+            costs += mca.getReturnMissCount(ecp, new ExecutionContext(invokee, new CallString(invokeSite))) *
+                     invokeeDeltaReturnCosts;
+
+            return costs;
         }
 
         @Override
@@ -484,7 +506,7 @@ public class InlineOptimizer implements CodeOptimizer {
 
         @Override
         public String toString() {
-            return invokeSite + " => " + invokee;
+            return invokeSite + " <= " + invokee;
         }
 
         private boolean checkStackAndLocals(StacksizeAnalysis stacksize) {

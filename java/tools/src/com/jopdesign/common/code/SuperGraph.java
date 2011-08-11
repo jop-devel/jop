@@ -762,6 +762,7 @@ public class SuperGraph {
             for (CFGNode node : current.getCfg().vertexSet()) {
                 if (node instanceof ControlFlowGraph.InvokeNode) {
                     ControlFlowGraph.InvokeNode iNode = (ControlFlowGraph.InvokeNode) node;
+<<<<<<< HEAD
                     Set<MethodInfo> impls = iNode.getImplementedMethods();
                     if(impls.size() == 0) {
                     	throw new AssertionError("No implementations for iNode available");
@@ -778,6 +779,16 @@ public class SuperGraph {
                     		todo.push(invoked);
                     	}
                         addEdge(iNode, current, invoked);
+=======
+                    MethodInfo impl = iNode.getImplementingMethod();
+                    ControlFlowGraph invokedCFG = cfgProvider.getFlowGraph(impl);
+                    CallString invokedCS = currentCS.push(iNode, callstringLength);
+                    SuperGraphNode invoked = new SuperGraphNode(invokedCFG, invokedCS);
+
+                    if (!superGraph.containsVertex(invoked)) {
+                        superGraph.addVertex(invoked);
+                        todo.push(invoked);
+>>>>>>> newtools
                     }
                 }
             }

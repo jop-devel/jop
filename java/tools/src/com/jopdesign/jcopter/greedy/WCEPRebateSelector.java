@@ -24,28 +24,44 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
 import com.jopdesign.jcopter.analysis.ExecCountProvider;
 
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.Set;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ACETRebateSelector extends QueueSelector {
+public class WCEPRebateSelector extends RebateSelector {
 
-    public ACETRebateSelector(AnalysisManager analyses, GainCalculator gc, int maxGlobalSize) {
-        super(analyses, gc, maxGlobalSize);
+    private final GainCalculator gainCalculator;
+
+    public WCEPRebateSelector(AnalysisManager analyses, GainCalculator gainCalculator, int maxGlobalSize) {
+        super(analyses, maxGlobalSize);
+        this.gainCalculator = gainCalculator;
     }
 
     @Override
-    protected boolean skipCandidate(Candidate candidate) {
-        return false;
+    protected void onRemoveMethodData(MethodData data) {
+    }
+
+    @Override
+    protected void sortMethodData(ExecCountProvider ecp, MethodData data) {
+    }
+
+    @Override
+    public void sortCandidates(ExecCountProvider ecp) {
+    }
+
+    @Override
+    public Collection<Candidate> selectNextCandidates(ExecCountProvider ecp) {
+
+        // TODO go down all methods in the callgraph which are on the WCET path, find best candidate
+
+        return null;
     }
 
     @Override
     public Set<MethodInfo> updateChangeSet(ExecCountProvider ecp, Set<MethodInfo> optimizedMethods, Set<MethodInfo> candidateChanges) {
-        Set<MethodInfo> changeSet = new HashSet<MethodInfo>(candidateChanges);
-        changeSet.addAll( analyses.getExecCountAnalysis().getChangeSet() );
-        changeSet.addAll( analyses.getMethodCacheAnalysis().getMissCountChangeSet(ecp) );
-        return changeSet;
+        // No need to add anything else, as we search the whole graph anyway..
+        return candidateChanges;
     }
 }

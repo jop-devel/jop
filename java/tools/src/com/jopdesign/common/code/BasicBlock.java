@@ -304,6 +304,32 @@ public class BasicBlock {
         return lines;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        BasicBlock that = (BasicBlock) o;
+
+        if (!instructions.equals(that.getInstructions())) return false;
+        if (!getMethodInfo().equals(that.getMethodInfo())) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = instructions.hashCode();
+        result = 31 * result + methodCode.hashCode();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "BasicBlock: " +
+                instructions;
+    }
+
     /*---------------------------------------------------------------------------
      *  Control flow graph construction, compilation
      *---------------------------------------------------------------------------

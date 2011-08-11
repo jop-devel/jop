@@ -25,6 +25,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.dfa.analyses.Interval;
 import com.jopdesign.wcet.WCETProcessorModel;
@@ -73,7 +74,17 @@ public abstract class AllocationWcetModel implements WCETProcessorModel {
 		return 0;
 	}
 
-	public MethodCache getMethodCache() {
+    @Override
+    public long getInvokeCacheMissPenalty(InvokeSite invokeSite, int invokeeWords) {
+        return 0;
+    }
+
+    @Override
+    public long getReturnCacheMissPenalty(InvokeSite invokeSite, int invokerWords) {
+        return 0;
+    }
+
+    public MethodCache getMethodCache() {
 		return NO_METHOD_CACHE;
 	}
 

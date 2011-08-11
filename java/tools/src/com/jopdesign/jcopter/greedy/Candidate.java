@@ -24,6 +24,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
 import com.jopdesign.jcopter.analysis.CodeModification;
+import com.jopdesign.jcopter.analysis.ExecCountProvider;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import org.apache.bcel.generic.InstructionHandle;
 
@@ -101,6 +102,7 @@ public abstract class Candidate implements CodeModification {
      * processor. This MAY return false if the new local codesize exceeds the limits of the processor (but this
      * will be checked anyway by the candidate selector).</p>
      *
+     *
      * @param analyses the analyses used by the optimizer.
      * @param stacksize the stack analysis for the method to optimize.
      * @return false if this is not a candidate anymore.
@@ -153,8 +155,10 @@ public abstract class Candidate implements CodeModification {
      *
      * @return the cache miss costs difference assuming an unknown cache state for a single execution for the invokes
      *         in the optimized code.
+     * @param analyses
+     * @param ecp
      */
-    public abstract long getDeltaCacheMissCosts();
+    public abstract long getDeltaCacheMissCosts(AnalysisManager analyses, ExecCountProvider ecp);
 
     @Override
     public String toString() {

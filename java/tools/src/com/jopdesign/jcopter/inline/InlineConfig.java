@@ -92,7 +92,7 @@ public class InlineConfig {
         // We never inline WCA targets, else they might be removed and are not available for analysis
         for (MethodInfo target : jcopter.getJConfig().getWCATargets()) {
             if (target.equals(invokee)) {
-                return false;
+                return true;
             }
         }
 

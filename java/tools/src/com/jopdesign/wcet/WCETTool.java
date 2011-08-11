@@ -82,6 +82,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
+<<<<<<< HEAD
  * <p>Purpose: This class provides the interface to JOP's WCET tool</p>
  * <p>
  * For a typical usage, you would
@@ -99,6 +100,14 @@ import java.util.Set;
  * </ul>
  * </p>
  * @see WCETAnalysis
+=======
+ * Purpose: This class provides the interface to JOP's WCET tool
+ *
+ * <p>Note that it is currently not possible to create multiple instances of this tool, because the
+ * annotation loader would be registered more than once in this case. To analyze multiple WCA targets,
+ * the WCA tool must support this feature itself (e.g. by creating one callgraph per target internally).</p>
+ *
+>>>>>>> newtools
  * @author Stefan Hepp (stefan@stefant.org)
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  */

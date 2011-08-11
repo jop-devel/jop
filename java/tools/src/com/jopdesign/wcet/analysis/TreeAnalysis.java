@@ -58,7 +58,7 @@ public class TreeAnalysis {
 
         @Override
         public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
-            MethodInfo method = n.getImplementedMethod();
+            MethodInfo method = n.getImplementingMethod();
             visitBasicBlockNode(n);
             cost.addCacheCost(project.getWCETProcessorModel().getInvokeReturnMissCost(
                     n.invokerFlowGraph(),
@@ -91,7 +91,7 @@ public class TreeAnalysis {
         }
 
         public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
-            Long aLong = subProgress.get(n.getImplementedMethod());
+            Long aLong = subProgress.get(n.getImplementingMethod());
             long invokedProgress = aLong;
             progress = 1 + invokedProgress;
         }

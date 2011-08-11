@@ -254,7 +254,7 @@ public class ObjectCacheAnalysisDemo {
 				RecursiveAnalysis<AnalysisContext,ObjectCacheCost> stagedAnalysis,
 				ControlFlowGraph.InvokeNode invocation,
 				AnalysisContext ctx) {
-			MethodInfo invoked = invocation.getImplementedMethod();
+			MethodInfo invoked = invocation.getImplementingMethod();
 			ObjectCacheCost cost;
 			if(allPersistent(invoked, ctx.getCallString())) {
 				cost  = getAllFitCost(invoked, ctx.getCallString());

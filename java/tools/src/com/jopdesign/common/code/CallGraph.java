@@ -32,6 +32,7 @@ import com.jopdesign.common.config.StringOption;
 import com.jopdesign.common.graphutils.AdvancedDOTExporter;
 import com.jopdesign.common.graphutils.BackEdgeFinder;
 import com.jopdesign.common.graphutils.DirectedCycleDetector;
+import com.jopdesign.common.graphutils.GraphUtils;
 import com.jopdesign.common.graphutils.InvokeDot;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.logger.LogConfig;
@@ -53,6 +54,7 @@ import org.jgrapht.graph.DirectedMaskSubgraph;
 import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.graph.ListenableDirectedGraph;
 import org.jgrapht.graph.MaskFunctor;
+import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.UnmodifiableDirectedGraph;
 import org.jgrapht.traverse.DepthFirstIterator;
 import org.jgrapht.traverse.TopologicalOrderIterator;
@@ -1114,6 +1116,15 @@ public class CallGraph implements ImplementationFinder {
         }
     }
 
+    public DirectedGraph<MethodNode,InvokeEdge> getMergedCallGraph(boolean reversed) {
+        buildMergedGraph();
+        return reversed ? new EdgeReversedGraph<MethodNode, InvokeEdge>(mergedCallGraph) : mergedCallGraph;
+    }
+
+    public SimpleDirectedGraph<MethodNode,InvokeEdge> getAcyclicMergedGraph(boolean reversed) {
+        return GraphUtils.createAcyclicGraph(getMergedCallGraph(reversed));
+    }
+
     public CallGraph getSubGraph(MethodInfo rootMethod) {
         MethodNode node = getMethodNode(rootMethod);
         return getSubGraph(node.getInstances());
@@ -1154,9 +1165,15 @@ public class CallGraph implements ImplementationFinder {
     }
 
     public DirectedGraph<ExecutionContext, ContextEdge> getReversedGraph() {
-        EdgeReversedGraph<ExecutionContext, ContextEdge> reversed =
-                new EdgeReversedGraph<ExecutionContext, ContextEdge>(callGraph);
-        return reversed;
+        return new EdgeReversedGraph<ExecutionContext, ContextEdge>(callGraph);
+    }
+
+    public DirectedGraph<ExecutionContext, ContextEdge> getAcyclicGraph(boolean reversed) {
+        DirectedGraph<ExecutionContext, ContextEdge> graph = reversed ? getReversedGraph() : getGraph();
+        if (acyclic == Ternary.TRUE) {
+            return new UnmodifiableDirectedGraph<ExecutionContext, ContextEdge>(graph);
+        }
+        return GraphUtils.createAcyclicGraph(graph);
     }
 
     public DirectedGraph<ExecutionContext, ContextEdge> createInvokeGraph(Collection<ExecutionContext> roots,
@@ -1228,6 +1245,30 @@ public class CallGraph implements ImplementationFinder {
         }
 
         return invokers;
+    }
+
+    public Set<InvokeSite> getInvokeSites(MethodInfo invokee) {
+        MethodNode node = getMethodNode(invokee);
+        Set<InvokeSite> invokeSites = new HashSet<InvokeSite>();
+
+        for (ExecutionContext ec : node.getInstances()) {
+            if (ec.getCallString().isEmpty()) {
+                // no callstring, need to search the invoker 'manually' for invokesites which may invoke this method
+                AppInfo appInfo = AppInfo.getSingleton();
+                for (ContextEdge edge : callGraph.incomingEdgesOf(ec)) {
+                    for (InvokeSite invokeSite : edge.getSource().getMethodInfo().getCode().getInvokeSites()) {
+                        if (invokeSite.canInvoke(invokee) == Ternary.TRUE) {
+                            invokeSites.add(invokeSite);
+                        }
+                    }
+                }
+            } else {
+                invokeSites.add(ec.getCallString().top());
+            }
+
+        }
+
+        return invokeSites;
     }
 
     public List<ExecutionContext> getInvokedNodes(ExecutionContext node, InvokeSite invokeSite, MethodInfo invokee) {

@@ -240,6 +240,8 @@ public class JCopter extends EmptyTool<JCopterManager> {
         }
         jcopter.setWcetTool(wcetTool);
 
+        wcetTool.getEventHandler().setIgnoreMissingLoopBounds(!jcopter.useWCA());
+
         // run optimizations
         jcopter.optimize();
 

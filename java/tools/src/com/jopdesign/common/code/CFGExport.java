@@ -141,7 +141,7 @@ public class CFGExport {
                 ControlFlowGraph.InvokeNode in = (ControlFlowGraph.InvokeNode) n;
                 infoHeader = "{invoke " + (in.isVirtual()
                         ? ("virtual " + in.getReferenced())
-                        : in.getImplementedMethod().getFQMethodName()) + "}";
+                        : in.getImplementingMethod().getFQMethodName()) + "}";
             } else if (isReturn) {
                 infoHeader = "{return}";
             } else if (codeBlock.getBranchInstruction() != null) {

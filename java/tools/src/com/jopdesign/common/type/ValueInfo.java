@@ -92,6 +92,10 @@ public class ValueInfo {
         return thisRef != null;
     }
 
+    public boolean isNullReference() {
+        return constantValue == null && Type.NULL.equals(type);
+    }
+
     public boolean isParamReference() {
         return paramNr != -1;
     }

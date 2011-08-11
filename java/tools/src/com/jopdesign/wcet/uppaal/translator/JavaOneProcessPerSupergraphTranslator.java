@@ -22,7 +22,11 @@ package com.jopdesign.wcet.uppaal.translator;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+<<<<<<< HEAD
 import com.jopdesign.common.code.SuperGraph.ContextCFG;
+=======
+import com.jopdesign.common.code.LoopBound;
+>>>>>>> newtools
 import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.BadGraphError;
@@ -33,7 +37,6 @@ import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
-import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;
@@ -107,11 +110,11 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 				Location endInvokeNode,
 				int invokedID,
 				ControlFlowGraph.InvokeNode n) {
-			MethodInfo invoked = n.getImplementedMethod();
+			MethodInfo invoked = n.getImplementingMethod();
 			if(n.receiverFlowGraph().isLeafMethod() && config.collapseLeaves) {
 				RecursiveWcetAnalysis<AnalysisContextLocal> ilpAn =
 					new RecursiveWcetAnalysis<AnalysisContextLocal>(project, new LocalAnalysis());
-				WcetCost wcet = ilpAn.computeCost(n.getImplementedMethod(),
+				WcetCost wcet = ilpAn.computeCost(n.getImplementingMethod(),
 						new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_HIT));
 				tBuilder.waitAtLocation(endInvokeNode, wcet.getCost());
 				tBuilder.createTransition(startInvokeNode, endInvokeNode);

@@ -132,6 +132,7 @@ public class UnusedCodeRemover {
                 if (mark == Mark.MARKED && !m.isNative() && !m.isAbstract()) {
                     logger.info("Making unused method "+m+" abstract");
                     m.setAbstract(true);
+                    m.getClassInfo().setAbstract(true);
                 }
             }
 

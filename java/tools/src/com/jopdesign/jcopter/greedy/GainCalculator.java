@@ -20,31 +20,38 @@
 
 package com.jopdesign.jcopter.greedy;
 
-import com.jopdesign.common.MethodInfo;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
-import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
-import org.apache.bcel.generic.InstructionHandle;
-
-import java.util.Collection;
+import com.jopdesign.jcopter.analysis.ExecCountProvider;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public interface CodeOptimizer {
+public class GainCalculator {
 
-    /**
-     * @param analyses the analyses used for optimizing
-     * @param roots the roots in the callgraph of all methods which should be optimized.
-     */
-    void initialize(AnalysisManager analyses, Collection<MethodInfo> roots);
+    private final AnalysisManager analyses;
 
-    Collection<Candidate> findCandidates(MethodInfo method, AnalysisManager analyses,
-                                         StacksizeAnalysis stacksize, int maxLocals);
+    public GainCalculator(AnalysisManager analyses) {
+        this.analyses = analyses;
+    }
 
-    Collection<Candidate> findCandidates(MethodInfo method, AnalysisManager analyses,
-                                         StacksizeAnalysis stacksize, int maxLocals,
-                                         InstructionHandle start, InstructionHandle end);
+    public long calculateGain(ExecCountProvider ecp, Candidate candidate) {
 
-    void printStatistics();
+        // TODO depending on config, use WCA to calculate local or global WC gain
+
+        // TODO else add heuristic factor to prefer candidates outside IF-constructs
+
+        long gain = ecp.getExecCount(candidate.getMethod(), candidate.getEntry())
+                    * candidate.getLocalGain();
+
+        gain -= candidate.getDeltaCacheMissCosts(analyses, ecp);
+
+        gain -= getCodesizeCacheCosts(ecp, candidate);
+
+        return gain;
+    }
+
+    private long getCodesizeCacheCosts(ExecCountProvider ecp, Candidate candidate) {
+        return analyses.getMethodCacheAnalysis().getDeltaCacheMissCosts(ecp, candidate);
+    }
 
 }

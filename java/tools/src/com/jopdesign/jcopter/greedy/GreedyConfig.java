@@ -22,6 +22,7 @@ package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.EnumOption;
@@ -32,8 +33,9 @@ import com.jopdesign.jcopter.JCopterConfig;
 import com.jopdesign.jcopter.analysis.MethodCacheAnalysis.AnalysisType;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Stefan Hepp (stefan@stefant.org)
@@ -53,6 +55,9 @@ public class GreedyConfig {
                     "comma separated list of target methods for callgraph based optimizations or 'wca' for wca-targets or 'all' for whole app",
                     "main");
 
+    private static final BooleanOption USE_WCEP =
+            new BooleanOption("use-wcep", "Optimize only methods on the WCET path if WCA is enabled", false);
+
 
     private final AppInfo appInfo;
     private final JCopter jcopter;
@@ -64,6 +69,7 @@ public class GreedyConfig {
     public static void registerOptions(OptionGroup options) {
         options.addOption(GREEDY_ORDER);
         options.addOption(TARGETS);
+        options.addOption(USE_WCEP);
     }
 
     public GreedyConfig(JCopter jcopter, OptionGroup greedyOptions) throws BadConfigurationException {
@@ -107,18 +113,30 @@ public class GreedyConfig {
         return targets;
     }
 
+    public Set<MethodInfo> getTargetMethodSet() {
+        return new HashSet<MethodInfo>(targets);
+    }
+
     public AnalysisType getCacheAnalysisType() {
         // TODO get from options
         return AnalysisType.ALWAYS_MISS_OR_HIT;
     }
 
-    public Collection<MethodInfo> getWCATargets() {
+    public List<MethodInfo> getWCATargets() {
         // we could override this for this optimization
         return jcopter.getJConfig().getWCATargets();
     }
 
+    public Set<MethodInfo> getWCATargetSet() {
+        return new HashSet<MethodInfo>(getWCATargets());
+    }
+
     public boolean useWCA() {
         return jcopter.useWCA();
+    }
+
+    public boolean useWCEP() {
+        return options.getOption(USE_WCEP);
     }
 
     public int getMaxCodesize() {

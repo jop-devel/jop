@@ -23,6 +23,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.common.processormodel.JOPModel;
 import com.jopdesign.common.processormodel.ProcessorModel;
@@ -133,4 +134,15 @@ public class JOPWcetModel implements WCETProcessorModel {
         return this.timing.getMethodCacheMissPenalty(words, loadOnInvoke);
     }
 
+    @Override
+    public long getInvokeCacheMissPenalty(InvokeSite invokeSite, int invokeeWords) {
+        // TODO we know the invoke instruction here, no need to check all possible instructions
+        return this.timing.getMethodCacheMissPenalty(invokeeWords, true);
+    }
+
+    @Override
+    public long getReturnCacheMissPenalty(InvokeSite invokeSite, int invokerWords) {
+        // TODO we can get the correct return instruction by looking at the return type of the invokee
+        return this.timing.getMethodCacheMissPenalty(invokerWords, false);
+    }
 }

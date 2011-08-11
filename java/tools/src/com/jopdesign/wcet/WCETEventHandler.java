@@ -66,7 +66,9 @@ public class WCETEventHandler extends EmptyAppEventHandler {
     private WCETTool project;
     private SourceAnnotationReader annotationReader;
 
-	private Set<BasicBlock> printedLoopBoundInfoMessage = new HashSet<BasicBlock>();
+    private Set<BasicBlock> printedLoopBoundInfoMessage = new HashSet<BasicBlock>();
+
+    private boolean ignoreMissingLoopBounds = false;
 
     public WCETEventHandler(WCETTool wcetTool) {
         this.project = wcetTool;
@@ -98,6 +100,10 @@ public class WCETEventHandler extends EmptyAppEventHandler {
         }
         return annots;
 
+    }
+
+    public void setIgnoreMissingLoopBounds(boolean ignoreMissingLoopBounds) {
+        this.ignoreMissingLoopBounds = ignoreMissingLoopBounds;
     }
 
     public void loadLoopAnnotations(ClassInfo classInfo) throws BadAnnotationException {
@@ -151,10 +157,21 @@ public class WCETEventHandler extends EmptyAppEventHandler {
             if (loopAnnot == null) {
 // 		throw new BadAnnotationException("No loop bound annotation",
 // 						 block,sourceRangeStart,sourceRangeStop);
-                logger.error("No loop bound annotation: " + method + ":" + n +
-                             " [line "+sourceRangeStart+"-"+sourceRangeStop+"]"+
-                             ".\nApproximating with " + DEFAULT_LOOP_BOUND + ", but result is not safe anymore.");
-                loopAnnot = LoopBound.boundedAbove(DEFAULT_LOOP_BOUND);
+                // Bit of a hack: if we load CFGs before the callgraph is constructed, this will log errors anyway
+                if (ignoreMissingLoopBounds) {
+                    logger.trace("No loop bound annotation: " + method + ":" + n +
+                                 " [line "+sourceRangeStart+"-"+sourceRangeStop+"]"+
+                                 ".\nApproximating with " + DEFAULT_LOOP_BOUND + ", but result is not safe anymore.");
+                } else if (project.getCallGraph() != null && !project.getCallGraph().containsMethod(method)) {
+                    logger.debug("No loop bound annotation for non-WCET method: " + method + ":" + n +
+                                 " [line "+sourceRangeStart+"-"+sourceRangeStop+"]"+
+                                 ".\nApproximating with " + DEFAULT_LOOP_BOUND);
+                } else {
+                    logger.error("No loop bound annotation: " + method + ":" + n +
+                                 " [line "+sourceRangeStart+"-"+sourceRangeStop+"]"+
+                                 ".\nApproximating with " + DEFAULT_LOOP_BOUND + ", but result is not safe anymore.");
+                }
+                loopAnnot = LoopBound.defaultBound(DEFAULT_LOOP_BOUND);
             }
             block.setLoopBound(loopAnnot);
         }

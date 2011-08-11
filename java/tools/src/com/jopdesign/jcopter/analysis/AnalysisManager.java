@@ -23,6 +23,7 @@ package com.jopdesign.jcopter.analysis;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
+import com.jopdesign.common.code.CallGraph.DUMPTYPE;
 import com.jopdesign.common.code.DefaultCallgraphBuilder;
 import com.jopdesign.common.config.Config.BadConfigurationError;
 import com.jopdesign.common.config.Config.BadConfigurationException;
@@ -30,12 +31,11 @@ import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.MethodCacheAnalysis.AnalysisType;
 import org.apache.log4j.Logger;
 
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -74,8 +74,8 @@ public class AnalysisManager {
      * @param cacheAnalysisType cache analysis type
      * @param wcaRoots if not null, initialize the WCA invoker with these roots.
      */
-    public void initAnalyses(Collection<MethodInfo> targets, AnalysisType cacheAnalysisType,
-                             Collection<MethodInfo> wcaRoots)
+    public void initAnalyses(Set<MethodInfo> targets, AnalysisType cacheAnalysisType,
+                             Set<MethodInfo> wcaRoots, boolean updateWCEP)
     {
         logger.info("Initializing analyses..");
 
@@ -83,39 +83,50 @@ public class AnalysisManager {
         if (wcaRoots != null) {
             // Just make sure the WCA callgraph is contained in the target graph..
             allTargets.addAll(wcaRoots);
+
+            wcaInvoker = new WCAInvoker(this, wcaRoots);
+            wcaInvoker.setProvideWCAExecCount(updateWCEP);
+            try {
+                // need to initialize the WCA Tool before the other analyses since we need the WCA callgraph
+                wcaInvoker.initTool();
+            } catch (BadConfigurationException e) {
+                // TODO or maybe just throw the exception up a few levels more?
+                throw new BadConfigurationError(e.getMessage(), e);
+            }
         }
 
-        targetCallGraph = CallGraph.buildCallGraph(allTargets,
+        if (wcaRoots != null && wcaRoots.equals(allTargets) && wcaInvoker.getWCACallGraphs().size() == 1) {
+            targetCallGraph = wcaInvoker.getWCACallGraphs().iterator().next();
+        } else {
+            logger.info("Initializing Target Callgraph");
+            targetCallGraph = CallGraph.buildCallGraph(allTargets,
                 new DefaultCallgraphBuilder(AppInfo.getSingleton().getCallstringLength()));
+        }
 
         // TODO we might want to classify methods depending on whether they are reachable from the wcaRoots
         //      for all non-wca-methods we might want to use different initial analysis data, e.g.
         //      if we use the WCA, we might want to use the IPET WCA to initialize the execCountAnalysis for
         //      wca-methods
 
-        logger.info("Initializing ExecCountAnalysis");
-        execCountAnalysis = new ExecCountAnalysis(targetCallGraph);
-        execCountAnalysis.initialize();
-
+        // We can do this as first step (after the callgraph has been created) since it does not use the ExecCountAnalysis
         logger.info("Initializing MethodCacheAnalysis");
-        methodCacheAnalysis = new MethodCacheAnalysis(this, cacheAnalysisType, targetCallGraph);
+        methodCacheAnalysis = new MethodCacheAnalysis(jcopter, cacheAnalysisType, targetCallGraph);
         methodCacheAnalysis.initialize();
 
         if (wcaRoots != null) {
             logger.info("Initializing WCAInvoker");
-            wcaInvoker = new WCAInvoker(this, wcaRoots);
-            try {
-                wcaInvoker.initialize();
-            } catch (BadConfigurationException e) {
-                // TODO or maybe just throw the exception up a few levels more?
-                throw new BadConfigurationError(e.getMessage(), e);
-            }
-
-            // TODO maybe we could use the initial WCA results to make other analyses more precise if IPET is
-            //      used for the initial WCET analysis. Either handle this here or in wcaInvoker.initialize()?
-            //      Letting the other analyses use the WCA results is the nicer option, something like
-            //      execCountAnalysis.loadWCAResults(wcaInvoker);
+            wcaInvoker.initAnalysis(true);
         }
+
+        // TODO in fact, we might not even need this if we only use the wcaInvoker as provider or some other provider
+        logger.info("Initializing ExecCountAnalysis");
+        execCountAnalysis = new ExecCountAnalysis(this, targetCallGraph);
+        execCountAnalysis.initialize();
+    }
+
+    public boolean hasWCATargetsOnly() {
+        if (wcaInvoker == null) return false;
+        return targetCallGraph.getRootMethods().equals(wcaInvoker.getWcaTargets());
     }
 
     public CallGraph getTargetCallGraph() {
@@ -137,16 +148,34 @@ public class AnalysisManager {
         return methods;
     }
 
+    public boolean isWCAMethod(MethodInfo method) {
+        if (wcaInvoker == null) return false;
+
+        return wcaInvoker.isWCAMethod(method);
+    }
+
     public Collection<CallGraph> getWCACallGraphs() {
         return wcaInvoker != null ? wcaInvoker.getWCACallGraphs() : Collections.<CallGraph>emptySet();
     }
 
-    public List<CallGraph> getCallGraphs() {
-        List<CallGraph> graphs = new ArrayList<CallGraph>(4);
+    /**
+     * @return all callgraphs used by the analyses (including the AppInfo callgraph) which are not backed by other callgraphs.
+     */
+    public Set<CallGraph> getCallGraphs() {
+        Set<CallGraph> graphs = new HashSet<CallGraph>(4);
         graphs.add(getAppInfoCallGraph());
         graphs.add(getTargetCallGraph());
         graphs.addAll(getWCACallGraphs());
         return graphs;
+    }
+
+    public void dumpTargetCallgraph(String name, boolean full) {
+        try {
+            targetCallGraph.dumpCallgraph(jcopter.getJConfig().getConfig(), name, full ? "full" : "merged",
+                    targetCallGraph.getRootNodes(), full ? DUMPTYPE.full : DUMPTYPE.merged, false);
+        } catch (IOException e) {
+            logger.warn(e);
+        }
     }
 
     public ExecCountAnalysis getExecCountAnalysis() {
@@ -176,4 +205,5 @@ public class AnalysisManager {
     public WCAInvoker getWCAInvoker() {
         return wcaInvoker;
     }
+
 }

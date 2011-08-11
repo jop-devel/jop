@@ -74,7 +74,7 @@ public class ExecuteOnceAnalysis {
                 if (!(node instanceof ControlFlowGraph.InvokeNode)) continue;
                 ControlFlowGraph.InvokeNode iNode = (ControlFlowGraph.InvokeNode) node;
                 if (!cfg.getLoopColoring().getLoopColor(node).isEmpty()) {
-                    for (MethodInfo impl : iNode.getImplementedMethods()) {
+                    for (MethodInfo impl : iNode.getImplementingMethods()) {
                         inLoop.add(impl);
                         inLoop.addAll(project.getCallGraph().getReachableImplementationsSet(impl));
                     }

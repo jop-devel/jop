@@ -36,7 +36,9 @@ import com.jopdesign.common.graphutils.EdgeProvider;
 import com.jopdesign.common.graphutils.GraphUtils;
 import com.jopdesign.common.graphutils.LoopColoring;
 import com.jopdesign.common.misc.Ternary;
+import com.jopdesign.jcopter.JCopter;
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
@@ -52,7 +54,7 @@ import java.util.Set;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ExecCountAnalysis {
+public class ExecCountAnalysis extends ExecCountProvider {
 
     private class InlineEdgeProvider implements EdgeProvider<ExecutionContext,ContextEdge> {
 
@@ -83,6 +85,12 @@ public class ExecCountAnalysis {
         }
     }
 
+    private static final Logger logger = Logger.getLogger(JCopter.LOG_ANALYSIS+".ExecCountAnalysis");
+
+    private static final int DEFAULT_ACET_LOOP_BOUND = 10;
+
+    private final AnalysisManager analyses;
+
     private final Map<ExecutionContext, Long> roots;
     private final CallGraph callGraph;
 
@@ -93,14 +101,16 @@ public class ExecCountAnalysis {
     // Construction, initialization
     ////////////////////////////////////////////////////////////////////////////////////
 
-    public ExecCountAnalysis(Map<ExecutionContext, Long> roots) {
+    public ExecCountAnalysis(AnalysisManager analyses, Map<ExecutionContext, Long> roots) {
+        this.analyses = analyses;
         this.roots = new HashMap<ExecutionContext, Long>(roots);
         callGraph = AppInfo.getSingleton().getCallGraph();
         nodeCount =  new HashMap<ExecutionContext, Long>();
         changeSet = new HashSet<MethodInfo>(1);
     }
 
-    public ExecCountAnalysis(CallGraph callGraph) {
+    public ExecCountAnalysis(AnalysisManager analyses, CallGraph callGraph) {
+        this.analyses = analyses;
         this.callGraph = callGraph;
         nodeCount =  new HashMap<ExecutionContext, Long>();
         changeSet = new HashSet<MethodInfo>(1);
@@ -126,29 +136,40 @@ public class ExecCountAnalysis {
     // Query the analysis results
     ////////////////////////////////////////////////////////////////////////////////////
 
+    @Override
     public long getExecCount(MethodInfo methodInfo) {
-        return getExecCount(new ExecutionContext(methodInfo));
-    }
-
-    public long getExecCount(ExecutionContext context) {
         long count = 0;
 
-        for (ExecutionContext ec : callGraph.getNodes(context)) {
+        for (ExecutionContext ec : callGraph.getNodes(methodInfo)) {
             Long c = nodeCount.get(ec);
-            if (c != null) {
-                count += c;
-            }
+            count += c;
         }
 
         return count;
     }
 
-    public long getExecCount(InvokeSite invokeSite) {
-        return getExecCount(invokeSite.getInvoker(), invokeSite.getInstructionHandle());
+    @Override
+    public long getExecCount(ExecutionContext context) {
+
+        Long c = nodeCount.get(context);
+        if (c != null) {
+            return c;
+        }
+
+        return super.getExecCount(context);
     }
 
-    public long getExecCount(MethodInfo method, InstructionHandle ih) {
-        return getExecCount(new ExecutionContext(method), ih);
+    @Override
+    public long getExecFrequency(MethodInfo method, InstructionHandle ih) {
+        return getExecFrequency(new ExecutionContext(method), ih);
+    }
+
+    @Override
+    public long getExecFrequency(InvokeSite invokeSite, MethodInfo invokee) {
+        // TODO we could check the nodes of the invokee, use only nodes with the invokeSite at the top
+        //      of the callstring, but we would not get a better result than this if we do not improve the
+        //      callgraph results first
+        return getExecFrequency(invokeSite);
     }
 
     public long getExecCount(ExecutionContext context, InstructionHandle ih) {
@@ -176,24 +197,18 @@ public class ExecCountAnalysis {
 
             LoopBound lb = hol.getLoopBound();
             if (lb != null) {
-                // TODO we might want to choose between upper/lower bound or even use an average value
-                ef *= lb.getUpperBound(context);
+                if (lb.isDefaultBound() && !analyses.isWCAMethod(method)) {
+                    ef *= DEFAULT_ACET_LOOP_BOUND;
+                } else {
+                    ef *= lb.getUpperBound(context);
+                }
             } else {
-                // TODO magic number..
-                ef *= 10;
+                ef *= DEFAULT_ACET_LOOP_BOUND;
             }
 
         }
 
         return ef;
-    }
-
-    public long getExecFrequency(InvokeSite invokeSite) {
-        return getExecFrequency(invokeSite.getInvoker(), invokeSite.getInstructionHandle());
-    }
-
-    public long getExecFrequency(MethodInfo method, InstructionHandle ih) {
-        return getExecFrequency(new ExecutionContext(method), ih);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -204,6 +219,7 @@ public class ExecCountAnalysis {
         changeSet.clear();
     }
 
+    @Override
     public Set<MethodInfo> getChangeSet() {
         return changeSet;
     }
@@ -225,7 +241,7 @@ public class ExecCountAnalysis {
                 if (child.getCallString().isEmpty() && child.getMethodInfo().equals(invokee)) {
                     // there can be at most one such node in the graph.. remove the total exec count of the
                     // inlined invokesite
-                    nodeCount.put(child, nodeCount.get(child) - getExecCount(invokeSite));
+                    nodeCount.put(child, nodeCount.get(child) - getExecCount(invokeSite, invokee));
                 }
                 else if (!child.getCallString().isEmpty() && newInvokeSites.contains(child.getCallString().top())) {
                     // This is a new node, sum up the execution counts of all invokesite instances
@@ -260,6 +276,7 @@ public class ExecCountAnalysis {
     ////////////////////////////////////////////////////////////////////////////////////
 
     private void addExecCount(ExecutionContext node, long count) {
+        // logger.info("Adding to " + node+": "+count);
         Long c = nodeCount.get(node);
         long val = (c == null) ? 0 : c;
         val += count;
@@ -277,9 +294,13 @@ public class ExecCountAnalysis {
         // for the rest of the graph, we can now use a topological order
         TopologicalOrderIterator<ExecutionContext,ContextEdge> topOrder =
                 new TopologicalOrderIterator<ExecutionContext, ContextEdge>(dag);
+
         while (topOrder.hasNext()) {
             ExecutionContext next = topOrder.next();
 
+            if (logger.isTraceEnabled()) {
+                logger.trace("Updating: " + next);
+            }
             updateChilds(next, callGraph.getChildren(next));
         }
     }

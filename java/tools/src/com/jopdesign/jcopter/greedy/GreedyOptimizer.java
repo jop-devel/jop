@@ -22,15 +22,20 @@ package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallGraph.InvokeEdge;
+import com.jopdesign.common.code.CallGraph.MethodNode;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
+import com.jopdesign.jcopter.analysis.ExecCountProvider;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import com.jopdesign.jcopter.greedy.GreedyConfig.GreedyOrder;
 import org.apache.log4j.Logger;
+import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -93,7 +98,7 @@ public class GreedyOptimizer {
         // initialization
         resetCounters();
 
-        AnalysisManager analyses = initializeAnalyses();
+        AnalysisManager analyses = initializeAnalyses(config.useWCEP());
 
         for (CodeOptimizer opt : optimizers) {
             opt.initialize(analyses, rootMethods);
@@ -101,9 +106,14 @@ public class GreedyOptimizer {
 
         CandidateSelector selector;
         if (config.useWCA()) {
-            selector = new WCETRebateSelector(analyses, config.getMaxCodesize());
+            GainCalculator gc = new GainCalculator(analyses);
+            if (config.useWCEP()) {
+                selector = new WCEPRebateSelector(analyses, gc, config.getMaxCodesize());
+            } else {
+                selector = new WCETRebateSelector(analyses, gc, config.getMaxCodesize());
+            }
         } else {
-            selector = new ACETRebateSelector(analyses, config.getMaxCodesize());
+            selector = new ACETRebateSelector(analyses, new GainCalculator(analyses), config.getMaxCodesize());
         }
 
         selector.initialize();
@@ -113,19 +123,20 @@ public class GreedyOptimizer {
         GreedyOrder order = config.getOrder();
         if (order == GreedyOrder.Global || (order == GreedyOrder.WCAFirst && !config.useWCA())) {
 
-            optimizeMethods(analyses, selector, analyses.getTargetCallGraph().getMethodInfos());
+            optimizeMethods(analyses, analyses.getExecCountAnalysis(), selector,
+                            analyses.getTargetCallGraph().getMethodInfos());
 
         } else if (order == GreedyOrder.Targets) {
 
             for (MethodInfo target : config.getTargetMethods()) {
-                optimizeMethods(analyses, selector,
-                        analyses.getTargetCallGraph().getReachableImplementationsSet(target));
+                optimizeMethods(analyses, analyses.getExecCountAnalysis(), selector,
+                                analyses.getTargetCallGraph().getReachableImplementationsSet(target));
             }
 
         } else if (order == GreedyOrder.WCAFirst) {
 
             Set<MethodInfo> wcaMethods = analyses.getWCAMethods();
-            optimizeMethods(analyses, selector, wcaMethods);
+            optimizeMethods(analyses, analyses.getWCAInvoker(), selector, wcaMethods);
 
             // We do not want to include the wca methods in the second pass because inlining there could have negative
             // effects on the WCET path due to the cache
@@ -134,14 +145,34 @@ public class GreedyOptimizer {
 
             selector.printStatistics();
 
-            selector = new ACETRebateSelector(analyses, config.getMaxCodesize());
+            //analyses.dumpTargetCallgraph("acet", true);
+
+            selector = new ACETRebateSelector(analyses, new GainCalculator(analyses), config.getMaxCodesize());
             selector.initialize();
 
-            optimizeMethods(analyses, selector, others);
+            optimizeMethods(analyses, analyses.getExecCountAnalysis(), selector, others);
+
+        } else if (order == GreedyOrder.TopDown || order == GreedyOrder.BottomUp) {
+
+            if (config.useWCA() && !analyses.hasWCATargetsOnly()) {
+                // TODO iterate over WCA and then non-wca graph or something in this case..
+                throw new AppInfoError("Order "+order+" currently only works with WCA if the target method is the WCA target");
+            }
+
+            TopologicalOrderIterator<MethodNode,InvokeEdge> topOrder =
+                    new TopologicalOrderIterator<MethodNode, InvokeEdge>(
+                            analyses.getTargetCallGraph().getAcyclicMergedGraph(order == GreedyOrder.BottomUp)
+                    );
+
+            ExecCountProvider ecp = config.useWCA() ? analyses.getWCAInvoker() : analyses.getExecCountAnalysis();
+
+            while (topOrder.hasNext()) {
+                MethodNode node = topOrder.next();
+
+                optimizeMethods(analyses, ecp, selector, Collections.singleton(node.getMethodInfo()));
+            }
 
         } else {
-            // TODO implement bottom-up and top-down traversal (ignoring back-edges in callgraph)
-
             throw new AppInfoError("Order "+order+" not yet implemented.");
         }
 
@@ -155,14 +186,18 @@ public class GreedyOptimizer {
     }
 
     private void printStatistics() {
+        for (CodeOptimizer o : optimizers) {
+            o.printStatistics();
+        }
         logger.info("Candidates: "+countCandidates+", Optimized: "+countOptimized);
     }
 
-    private AnalysisManager initializeAnalyses() {
+    private AnalysisManager initializeAnalyses(boolean updateWCEP) {
 
         AnalysisManager analyses = new AnalysisManager(jcopter);
 
-        analyses.initAnalyses(config.getTargetMethods(), config.getCacheAnalysisType(), config.getWCATargets());
+        analyses.initAnalyses(config.getTargetMethodSet(), config.getCacheAnalysisType(),
+                              config.useWCA() ? config.getWCATargetSet() : null, updateWCEP);
 
         logger.info("Callgraph nodes: "+analyses.getTargetCallGraph().getNodes().size());
 
@@ -170,8 +205,9 @@ public class GreedyOptimizer {
     }
 
 
-    private void optimizeMethods(AnalysisManager analyses, CandidateSelector selector, Set<MethodInfo> methods) {
-
+    private void optimizeMethods(AnalysisManager analyses, ExecCountProvider ecp,
+                                 CandidateSelector selector, Set<MethodInfo> methods)
+    {
         Map<MethodInfo,MethodData> methodData = new HashMap<MethodInfo, MethodData>(methods.size());
 
         selector.clear();
@@ -199,12 +235,12 @@ public class GreedyOptimizer {
         }
 
         // now use the RebateSelector to order the candidates
-        selector.sortCandidates();
+        selector.sortCandidates(ecp);
 
         Set<MethodInfo> optimizedMethods = new HashSet<MethodInfo>();
         Set<MethodInfo> candidateChanges = new HashSet<MethodInfo>();
 
-        Collection<Candidate> candidates = selector.selectNextCandidates();
+        Collection<Candidate> candidates = selector.selectNextCandidates(ecp);
         while (candidates != null) {
 
             optimizedMethods.clear();
@@ -268,7 +304,7 @@ public class GreedyOptimizer {
             }
 
             // Now let the selector update its analyses and find out which additional methods need sorting
-            Set<MethodInfo> changeSet = selector.updateChangeSet(optimizedMethods, candidateChanges);
+            Set<MethodInfo> changeSet = selector.updateChangeSet(ecp, optimizedMethods, candidateChanges);
 
             // for those methods with invokesites with cache-cost changes, recalculate the candidate-gains
             // (assuming that the candidates do not use the WCA results, else we would recalculate in changeSet too)
@@ -276,19 +312,21 @@ public class GreedyOptimizer {
             for (MethodInfo method : candidateChanges) {
                 // skip methods in changeset which are not being optimized
                 if (!methodData.containsKey(method)) continue;
-                selector.updateCandidates(method, analyses.getStacksizeAnalysis(method));
+                selector.updateCandidates(method, ecp, analyses.getStacksizeAnalysis(method));
             }
 
             // Finally use the set of methods for which something changed, and re-sort all candidates of those methods
             if (methods.size() == 1) {
-                selector.sortCandidates(methods);
+                selector.sortCandidates(ecp, methods);
             } else {
-                logger.info("Sort changes "+changeSet.size());
-                selector.sortCandidates(changeSet);
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Sort changes "+changeSet.size());
+                }
+                selector.sortCandidates(ecp, changeSet);
             }
 
             // Finally, select the next candidates
-            candidates = selector.selectNextCandidates();
+            candidates = selector.selectNextCandidates(ecp);
         }
 
     }

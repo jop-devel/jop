@@ -22,6 +22,7 @@ package com.jopdesign.wcet;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.wcet.jop.MethodCache;
 import org.apache.bcel.generic.InstructionHandle;
 
@@ -60,5 +61,19 @@ public interface WCETProcessorModel {
 	 * @return
 	 */
     long getInvokeReturnMissCost(ControlFlowGraph invokerFlowGraph, ControlFlowGraph receiverFlowGraph);
+
+    /**
+     * @param invokeSite invoke site
+     * @param invokeeWords the size of the invokee in words
+     * @return the number of additional cycles required by the invoke if the invoke is a cache miss.
+     */
+    long getInvokeCacheMissPenalty(InvokeSite invokeSite, int invokeeWords);
+
+    /**
+     * @param invokeSite the invoke site to which the invokee returns
+     * @param invokerWords the size of the invoker in words
+     * @return the number of additional cycles required by the return in the invokee if the return is a cache miss.
+     */
+    long getReturnCacheMissPenalty(InvokeSite invokeSite, int invokerWords);
 
 }

@@ -36,11 +36,6 @@ import java.util.Set;
  */
 public class GraphUtils {
 
-    public static <V,E> SimpleDirectedGraph<V,E> copyAcyclicGraph(DirectedGraph<V,E> graph) {
-        BackEdgeFinder<V,E> finder = new BackEdgeFinder<V, E>(graph);
-        return finder.createDAG();
-    }
-
     public static <V,E> DirectedGraph<V,E> copyGraph(DirectedGraph<V,E> graph,
                                                      Collection<V> roots,
                                                      final boolean includeBackedges)
@@ -71,6 +66,11 @@ public class GraphUtils {
         traverser.traverse(provider, roots);
 
         return newGraph;
+    }
+
+    public static <V,E> SimpleDirectedGraph<V,E> createAcyclicGraph(DirectedGraph<V, E> graph) {
+        BackEdgeFinder<V,E> finder = new BackEdgeFinder<V, E>(graph);
+        return finder.createDAG();
     }
 
     public static <V,E> SimpleDirectedGraph<V,E> createSimpleGraph(DirectedGraph<V,E> graph) {

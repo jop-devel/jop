@@ -21,6 +21,7 @@
 package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.jcopter.analysis.ExecCountProvider;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import org.apache.bcel.generic.InstructionHandle;
 
@@ -48,24 +49,26 @@ public interface CandidateSelector {
 
     void removeCandidates(MethodInfo method, InstructionHandle start, InstructionHandle end);
 
-    void sortCandidates();
+    void sortCandidates(ExecCountProvider ecp);
 
-    void sortCandidates(Set<MethodInfo> changedMethods);
+    void sortCandidates(ExecCountProvider ecp, Set<MethodInfo> changedMethods);
 
-    Collection<Candidate> selectNextCandidates();
+    Collection<Candidate> selectNextCandidates(ExecCountProvider ecp);
 
     Collection<Candidate> getCandidates(MethodInfo method);
 
     void onSuccessfulOptimize(Candidate optimized, List<Candidate> newCandidates);
 
-    void updateCandidates(MethodInfo method, StacksizeAnalysis stacksizeAnalysis);
+    void updateCandidates(MethodInfo method, ExecCountProvider ecp, StacksizeAnalysis stacksizeAnalysis);
 
     void clear();
 
     /**
+     *
+     * @param ecp
      * @param optimizedMethods methods which have been optimized
      * @param candidateChanges methods for which the candidates will be recalculated.
      * @return a set of methods for which the candidates need to be sorted again.
      */
-    Set<MethodInfo> updateChangeSet(Set<MethodInfo> optimizedMethods, Set<MethodInfo> candidateChanges);
+    Set<MethodInfo> updateChangeSet(ExecCountProvider ecp, Set<MethodInfo> optimizedMethods, Set<MethodInfo> candidateChanges);
 }

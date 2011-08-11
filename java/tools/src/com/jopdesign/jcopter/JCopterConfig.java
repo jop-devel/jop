@@ -126,6 +126,7 @@ public class JCopterConfig {
     public void initialize() throws BadConfigurationException {
         // need to do this here because main method class is not available on load
         if (useWCA()) {
+            wcaTargets = Config.parseMethodList(options.getOption(WCA_TARGETS));
         } else if (options.isSet(WCA_TARGETS)) {
             try {
                 wcaTargets = Config.parseMethodList(options.getOption(WCA_TARGETS));
