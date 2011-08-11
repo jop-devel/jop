@@ -19,6 +19,7 @@
  */
 package com.jopdesign.wcet.analysis.cache;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,7 +33,6 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.Segment;
-import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.code.CallGraph.ContextEdge;
 import com.jopdesign.common.code.SuperGraph.SuperEdge;
 import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
@@ -62,62 +62,6 @@ import com.jopdesign.wcet.jop.MethodCache;
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  */
 public class MethodCacheAnalysis {
-    /**
-     * Purpose: An <emph>model class</emph> for low-level method cache edges (used in the IPET calculations)
-     */
-    public static class MethodCacheSplitEdge {
-
-        private SuperGraph.SuperGraphEdge interProcEdge;
-        private boolean isHitEdge;
-
-        /**
-         * @param e        the corresponding supergraph edge
-         * @param isHitEdge whether the edge is a miss edge
-         */
-        public MethodCacheSplitEdge(SuperGraph.SuperGraphEdge e, boolean isHitEdge) {
-            this.interProcEdge = e;
-            this.isHitEdge = isHitEdge;
-        }
-
-        /* (non-Javadoc)
-                  * @see java.lang.Object#hashCode()
-                  */
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + (interProcEdge.hashCode());
-            result = prime * result + (isHitEdge ? 1231 : 1237);
-            return result;
-        }
-
-        /* (non-Javadoc)
-                  * @see java.lang.Object#equals(java.lang.Object)
-                  */
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) return true;
-            if (obj == null) return false;
-            if (getClass() != obj.getClass()) return false;
-            MethodCacheSplitEdge other = (MethodCacheSplitEdge) obj;
-            if (!interProcEdge.equals(other.interProcEdge)) return false;
-            if (isHitEdge != other.isHitEdge) return false;
-            return true;
-        }
-
-        /* (non-Javadoc)
-                  * @see java.lang.Object#toString()
-                  */
-
-        @Override
-        public String toString() {
-            return "MethodCacheSplitEdge ["
-                    + (isHitEdge ? "hit! " : "miss! ")
-                    + interProcEdge + "]";
-        }
-    }
 
     /**
      * Number of blocks needed to store the instructions of the given scope
@@ -194,29 +138,37 @@ public class MethodCacheAnalysis {
 	 * @throws InvalidFlowFactException 
 	 */
 	public long countDistinctCacheBlocks(ExecutionContext scope, boolean useILP) throws InvalidFlowFactException {
-
+		
+        Segment segment = Segment.methodSegment(wcetTool, scope.getMethodInfo(), scope.getCallString(),
+        		                                wcetTool.getProjectConfig().callstringLength());
+		return countDistinctCacheBlocks(segment, useILP);
+	}
+	
+	/**
+	 * Analyze the number of cache lines (ways) needed to guarantee that all methods
+	 * are persistent
+	 * @param segment the segment to analyze
+	 * @param use integer variables (more expensive, more accurate)
+	 * @return
+	 * @throws InvalidFlowFactException 
+	 */
+	public long countDistinctCacheBlocks(Segment segment, boolean useILP) throws InvalidFlowFactException {
+		
         IPETConfig ipetConfig = new IPETConfig(wcetTool.getConfig());
 
-		/* Create an analysis segment */
-		Segment segment = getAnalysisSegment(scope);
-
 		/* create an ILP graph for all reachable methods */
-		String key = String.format("method_cache_analysis:%s", scope.toString());
+		String key = String.format("method_cache_analysis:%s", segment.toString());
 
 		/* create an global IPET problem for the supergraph */
 		IPETSolver<SuperGraphEdge> ipetSolver = GlobalAnalysis.buildIpetProblem(wcetTool, key, segment, ipetConfig);
 
 		/* Collect all method cache accesses */
 		Iterable<SuperGraphEdge> cacheAccessEdges = collectCacheAccesses(segment);
-		
-		/* Group method cache access by method */
-		F1<SuperGraphEdge, MethodInfo> getMethodInfo = new F1<SuperGraphEdge, MethodInfo>() {
-			public MethodInfo apply(SuperGraphEdge v) { return v.getTarget().getContextCFG().getCfg().getMethodInfo(); }
-		};
-		Map<MethodInfo, List<SuperGraphEdge>> partition = MiscUtils.group(getMethodInfo, null, cacheAccessEdges);
+
+		Iterable<Entry<MethodInfo, List<SuperGraphEdge>>> partition = groupAccessEdges(cacheAccessEdges);
 		
 		/* Add decision variables for all invoked methods, cost (blocks) and constraints */
-	    for (Entry<MethodInfo, List<SuperGraphEdge>> entry : partition.entrySet()) {
+	    for (Entry<MethodInfo, List<SuperGraphEdge>> entry : partition) {
 	    		    		    	
 	    	MethodInfo mi = entry.getKey();
 	    	List<SuperGraphEdge> accesses = entry.getValue();
@@ -252,6 +204,20 @@ public class MethodCacheAnalysis {
 	}
 
 	/**
+	 * @param cacheAccessEdges
+	 * @return
+	 */
+	private Iterable<Entry<MethodInfo, List<SuperGraphEdge>>> groupAccessEdges(
+			Iterable<SuperGraphEdge> cacheAccessEdges) {
+		/* Group method cache access by method */
+		F1<SuperGraphEdge, MethodInfo> getMethodInfo = new F1<SuperGraphEdge, MethodInfo>() {
+			public MethodInfo apply(SuperGraphEdge v) { return v.getTarget().getContextCFG().getCfg().getMethodInfo(); }
+		};
+		Iterable<Entry<MethodInfo, List<SuperGraphEdge>>> partition = MiscUtils.group(getMethodInfo, null, cacheAccessEdges).entrySet();
+		return partition;
+	}
+
+	/**
 	 * Collect all method cache accesses in the segment: These are all supergraph edges,
 	 * plus all entry edges.
 	 * @param segment
@@ -281,22 +247,24 @@ public class MethodCacheAnalysis {
 	}
 
     public Map<ExecutionContext, Long> getBlockUsage() throws InvalidFlowFactException {
+    	
         if (blocksNeeded == null) countDistinctCacheBlocks();
         return blocksNeeded;
     }
 
 
-    private Segment getAnalysisSegment(ExecutionContext scope) {
-        MethodInfo m = scope.getMethodInfo();
-        return Segment.methodSegment(wcetTool, m, scope.getCallString(), wcetTool.getProjectConfig().callstringLength());
-    }
-
-    /**
-     * @return a CFGEdge representing the either the hit or miss edge of an invoke or return edge
+    /** Find a segment cover (i.e., a set of segments covering all execution paths)
+     *  where each segment in the set is persistent
+     *  FIXME: not yet implemented; which just return the segment itself
+     * @param segment the parent segment
+     * @param avoidOverlap 
+     * @return
      */
-    public static MethodCacheSplitEdge splitEdge(SuperGraph.SuperGraphEdge e, boolean isHitEdge) {
-        return new MethodCacheSplitEdge(e, isHitEdge);
-    }
+	private Iterable<Segment> findPersistenceSegmentCover(Segment segment, boolean avoidOverlap) {
+		List<Segment> cover = new ArrayList<Segment>();
+		cover.add(segment); /* optimal cache */
+		return cover;
+	}
 
 	/**
 	 * Add always miss cost: for each access to the method cache, add cost of access
@@ -309,23 +277,83 @@ public class MethodCacheAnalysis {
 		
 		Set<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
 		for(SuperGraphEdge accessEdge: collectCacheAccesses(segment)) {
-			SuperGraphNode accessed = accessEdge.getTarget();
-			SuperGraphEdge missEdge = SuperGraphSplitEdge.generateSplitEdges(accessEdge, this.getClass(), 1).iterator().next();
-			ipetSolver.addConstraint(IPETUtils.flowPreservation(Iterators.singleton(accessEdge), Iterators.singleton(missEdge)));
-
-			long cost = 0;
-			if(accessEdge instanceof SuperReturnEdge) {
-				/* return edge: return cost */
-				cost = methodCache.getMissOnReturnCost(accessed.getCfg());
-			} else {
-				/* entry edge of the segment, or invoke edge: invoke cost */
-				cost = methodCache.getMissOnInvokeCost(accessed.getCfg());
-			}
-			ipetSolver.addEdgeCost(missEdge, cost);
-			missEdges.add(missEdge);
+			missEdges.add(fixedAdditionalCostEdge(accessEdge, getMissCost(accessEdge), ipetSolver));
 		}
 		return missEdges;
 	}
 
+	/**
+	 * @param accessEdge
+	 * @return
+	 */
+	private long getMissCost(SuperGraphEdge accessEdge) {
+		SuperGraphNode accessed = accessEdge.getTarget();
+		if(accessEdge instanceof SuperReturnEdge) {
+			/* return edge: return cost */
+			return methodCache.getMissOnReturnCost(accessed.getCfg());
+		} else {
+			/* entry edge of the segment, or invoke edge: invoke cost */
+			return methodCache.getMissOnInvokeCost(accessed.getCfg());
+		}
+	}
 
+	/**
+	 * Add miss once cost: for each method cache persistence segment, add miss cost for the segment entries
+	 * @param segment
+	 * @param ipetSolver
+	 */
+	public Set<SuperGraphEdge> addMissOnceCost(Segment segment,
+			IPETSolver<SuperGraphEdge> ipetSolver) {
+
+		Set<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
+		for(Segment persistenceSegment : findPersistenceSegmentCover(segment, true)) {
+			long cost = 0;
+			for(MethodInfo mi : persistenceSegment.getMethods()) {
+				cost += methodCache.getMaxMissCost(wcetTool.getFlowGraph(mi));
+			}
+			for(SuperGraphEdge entryEdge : persistenceSegment.getEntryEdges()) {
+				missEdges.add(fixedAdditionalCostEdge(entryEdge, cost, ipetSolver));				
+			}
+		}
+		return missEdges;
+	}
+
+	private SuperGraphEdge fixedAdditionalCostEdge(SuperGraphEdge accessEdge,
+			long cost, IPETSolver<SuperGraphEdge> ipetSolver) {
+		
+		SuperGraphEdge missEdge = SuperGraphSplitEdge.generateSplitEdges(accessEdge, this.getClass(), 1).iterator().next();
+		ipetSolver.addConstraint(IPETUtils.flowPreservation(Iterators.singleton(accessEdge), Iterators.singleton(missEdge)));	
+		ipetSolver.addEdgeCost(missEdge, cost);
+		return missEdge;
+	}
+
+	/**
+	 * Add miss once constraints for all persistency regions in the segment
+	 * @param segment
+	 * @param ipetSolver
+	 * @return
+	 */
+	public Set<SuperGraphEdge> addMissOnceConstraints(Segment segment,
+			IPETSolver<SuperGraphEdge> ipetSolver) {
+
+		Set<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
+		for(Segment persistenceSegment : findPersistenceSegmentCover(segment, false)) {
+			
+			for(Entry<MethodInfo, List<SuperGraphEdge>> accessed : groupAccessEdges(collectCacheAccesses(persistenceSegment))) {
+				
+				List<SuperGraphEdge> missOnceEdges = new ArrayList<SuperGraphEdge>();
+				for(SuperGraphEdge accessEdge : accessed.getValue()) {
+
+					long cost = getMissCost(accessEdge);
+					SuperGraphEdge missEdge = SuperGraphSplitEdge.generateSplitEdges(accessEdge, this.getClass(), 1).iterator().next();
+					ipetSolver.addConstraint(IPETUtils.relativeBound(Iterators.singleton(missEdge), Iterators.singleton(accessEdge), 1));	
+					ipetSolver.addEdgeCost(missEdge, cost);
+					missOnceEdges.add(missEdge);
+				}
+				ipetSolver.addConstraint(IPETUtils.flowBound(missOnceEdges,1));
+				missEdges.addAll(missOnceEdges);
+			}
+		}
+		return missEdges;
+	}
 }

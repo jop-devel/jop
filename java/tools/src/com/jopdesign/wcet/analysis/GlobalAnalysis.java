@@ -35,7 +35,6 @@ import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.code.Segment;
-import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.code.SymbolicMarker;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
@@ -121,9 +120,9 @@ public class GlobalAnalysis {
         	case ALWAYS_HIT:      break; /* no additional costs */
         	/* TODO: Implement */
         	case ALWAYS_MISS:     missEdges = methodCacheAnalysis.addMissAlwaysCost(segment, ipetSolver); break;
-//        	case ALL_FIT_SIMPLE:  methodCacheAnalysis.addMissOnceCost(ipetSolver, segment); break;
-//        	case ALL_FIT_REGIONS: missEdges = methodCacheAnalysis.addMissOnceConstraints(ipetSolver, segment); break;
-        	default:              missEdges = methodCacheAnalysis.addMissAlwaysCost(segment, ipetSolver); break;
+        	case ALL_FIT_SIMPLE:  missEdges = methodCacheAnalysis.addMissOnceCost(segment, ipetSolver); break;
+        	case ALL_FIT_REGIONS: missEdges = methodCacheAnalysis.addMissOnceConstraints(segment, ipetSolver); break;
+        	default:              missEdges = methodCacheAnalysis.addMissOnceCost(segment, ipetSolver); break;
         	}        	
         }
 
@@ -395,28 +394,6 @@ public class GlobalAnalysis {
 //        }
 //        return missEdges;
 //    }
-
-
-    /**
-     * For each method, get all supergraph edges which switch the context to that method
-     *
-     * @param superGraph
-     * @return
-     */
-    private Map<MethodInfo, List<SuperGraph.SuperEdge>> getMethodSwitchEdges(SuperGraph superGraph) {
-
-        Map<MethodInfo, List<SuperGraph.SuperEdge>> iMap =
-                new HashMap<MethodInfo, List<SuperGraph.SuperEdge>>();
-        for (SuperGraph.SuperEdge edge : superGraph.getCallGraphEdges()) {
-            MethodInfo targetMethod = edge.getCallee().getCfg().getMethodInfo();
-            List<SuperGraph.SuperEdge> edges = iMap.get(targetMethod);
-            if (edges == null) edges = new ArrayList<SuperGraph.SuperEdge>();
-            edges.add(edge);
-            iMap.put(targetMethod, edges);
-        }
-        return iMap;
-    }
-
 
     public static class GlobalIPETStrategy
             implements RecursiveStrategy<AnalysisContextLocal, WcetCost> {

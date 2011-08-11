@@ -20,32 +20,30 @@
 
 package com.jopdesign.wcet.ipet;
 
-import com.jopdesign.common.AppInfo;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.Map.Entry;
+
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.CallStringProvider;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
-import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.code.SymbolicMarker;
+import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
 import com.jopdesign.common.code.SymbolicMarker.SymbolicMarkerType;
 import com.jopdesign.common.graphutils.FlowGraph;
 import com.jopdesign.common.graphutils.LoopColoring;
-import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.annotations.LoopBoundExpr;
 import com.jopdesign.wcet.ipet.IPETBuilder.ExecutionEdge;
 import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Set;
 
 /**
  * Purpose: This class provides utility functions to build +IPET models
@@ -75,6 +73,22 @@ public class IPETUtils {
 
 	/**
 	 * [NEW-GLOBAL-ANALYSIS]
+	 * @param edges a list of edges
+	 * @param ub an upper bound
+	 * @return a constraint {@code sum(edges) <= ub}
+	 */
+	public static<E>
+	LinearConstraint<E> 
+	flowBound(Iterable<E> es, long ub) {
+		
+		LinearConstraint<E> eq = new LinearConstraint<E>(ConstraintType.LessEqual);
+		eq.addLHS(es);
+		eq.addRHS(ub);
+		return eq;
+	}
+	
+	/**
+	 * [NEW-GLOBAL-ANALYSIS]
 	 * Build a constraint <pre>sum es1 = sum es2</pre>
 	 * @param es1
 	 * @param es2
@@ -93,6 +107,30 @@ public class IPETUtils {
         }
         return eq;
 	}
+
+	/**
+	 * [NEW-GLOBAL-ANALYSIS]
+	 * Build a constraint <pre>sum es1 &lt;= sum es2 * k</pre>
+	 * @param es1 lhs
+	 * @param es2 rhs
+	 * @param k   multiplier for the right hand side
+	 * @return a constraint that sum(es1) is less than or equal to sum(es2) * k
+	 */
+	public static <E>
+	LinearConstraint<E>
+	relativeBound(Iterable<E> es1, Iterable<E> es2, long k) {
+
+		LinearConstraint<E> eq = new LinearConstraint<E>(ConstraintType.LessEqual);
+        for (E lhs : es1) {
+        	eq.addLHS(lhs);
+        }
+        for (E rhs : es2) {
+        	eq.addRHS(rhs, k);
+        }
+        return eq;
+	}
+
+
 
 	/**
      * Top level flow constraints: flow out of entry and flow into exit must be one.
@@ -377,6 +415,5 @@ public class IPETUtils {
         }
         return ipetSolver;
     }
-
 
 }

@@ -646,7 +646,6 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         return dfaTool != null;
     }
 
-    @SuppressWarnings("unchecked")
     public void dataflowAnalysis() {
         int callstringLength = (int) projectConfig.callstringLength();
 
