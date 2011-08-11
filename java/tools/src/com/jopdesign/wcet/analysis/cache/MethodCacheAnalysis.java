@@ -19,38 +19,38 @@
  */
 package com.jopdesign.wcet.analysis.cache;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Map.Entry;
+
+import org.apache.log4j.Logger;
+import org.jgrapht.traverse.TopologicalOrderIterator;
+
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.code.CallGraph.ContextEdge;
-import com.jopdesign.common.code.SuperGraph.ContextCFG;
-import com.jopdesign.common.code.SuperGraph.SuperEdge;
-import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
-import com.jopdesign.common.code.SuperGraph.SuperReturnEdge;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.Segment;
 import com.jopdesign.common.code.SuperGraph;
-import com.jopdesign.common.graphutils.Pair;
+import com.jopdesign.common.code.CallGraph.ContextEdge;
+import com.jopdesign.common.code.SuperGraph.SuperEdge;
+import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
+import com.jopdesign.common.code.SuperGraph.SuperGraphNode;
+import com.jopdesign.common.code.SuperGraph.SuperReturnEdge;
 import com.jopdesign.common.misc.Filter;
+import com.jopdesign.common.misc.Iterators;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.misc.MiscUtils.F1;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.InvalidFlowFactException;
-import com.jopdesign.wcet.ipet.IPETBuilder;
-import com.jopdesign.wcet.ipet.IPETBuilder.ExecutionEdge;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETSolver;
 import com.jopdesign.wcet.ipet.IPETUtils;
 import com.jopdesign.wcet.ipet.LinearConstraint;
 import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
 import com.jopdesign.wcet.jop.MethodCache;
-import org.apache.log4j.Logger;
-import org.jgrapht.traverse.TopologicalOrderIterator;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Map.Entry;
 
 /**
  * Analysis of the variable block Method cache.
@@ -225,7 +225,7 @@ public class MethodCacheAnalysis {
 		    LinearConstraint<SuperGraphEdge> lv = new LinearConstraint<SuperGraphEdge>(ConstraintType.LessEqual);
 
 		    for (SuperGraphEdge access : accesses) {
-		    	List<SuperGraphEdge> cacheEdges = GlobalAnalysis.generateSplitEdges(access, this.getClass(), 2); 
+		    	List<SuperGraphEdge> cacheEdges = SuperGraphSplitEdge.generateSplitEdges(access, this.getClass(), 2); 
 		    	SuperGraphEdge missEdge = cacheEdges.get(0);
 		    	SuperGraphEdge hitEdge  = cacheEdges.get(1);
 		    	ipetSolver.addConstraint(IPETUtils.lowLevelEdgeSplit(access, missEdge, hitEdge));
@@ -297,6 +297,35 @@ public class MethodCacheAnalysis {
     public static MethodCacheSplitEdge splitEdge(SuperGraph.SuperGraphEdge e, boolean isHitEdge) {
         return new MethodCacheSplitEdge(e, isHitEdge);
     }
+
+	/**
+	 * Add always miss cost: for each access to the method cache, add cost of access
+	 * @param segment
+	 * @param ipetSolver
+	 */
+	public Set<SuperGraphEdge> addMissAlwaysCost(
+			Segment segment,			
+			IPETSolver<SuperGraphEdge> ipetSolver) {
+		
+		Set<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
+		for(SuperGraphEdge accessEdge: collectCacheAccesses(segment)) {
+			SuperGraphNode accessed = accessEdge.getTarget();
+			SuperGraphEdge missEdge = SuperGraphSplitEdge.generateSplitEdges(accessEdge, this.getClass(), 1).iterator().next();
+			ipetSolver.addConstraint(IPETUtils.flowPreservation(Iterators.singleton(accessEdge), Iterators.singleton(missEdge)));
+
+			long cost = 0;
+			if(accessEdge instanceof SuperReturnEdge) {
+				/* return edge: return cost */
+				cost = methodCache.getMissOnReturnCost(accessed.getCfg());
+			} else {
+				/* entry edge of the segment, or invoke edge: invoke cost */
+				cost = methodCache.getMissOnInvokeCost(accessed.getCfg());
+			}
+			ipetSolver.addEdgeCost(missEdge, cost);
+			missEdges.add(missEdge);
+		}
+		return missEdges;
+	}
 
 
 }

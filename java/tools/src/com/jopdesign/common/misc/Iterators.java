@@ -25,6 +25,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 
+import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
+
 /**
  * Purpose: Utilities to lift Collection functionality to Iterable s and Iterator s
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
@@ -35,7 +37,11 @@ public class Iterators {
 	/**
 	 * Purpose: An empty iterator
 	 */
-	public static class EmptyIterator<T> implements Iterator<T> {
+	public final static class EmptyIterator<T> implements Iterator<T> {
+
+		@SuppressWarnings("unchecked")
+		protected static final EmptyIterator ITERATOR = new EmptyIterator();
+		public static<T> Iterator<T> instance() { return ITERATOR; }
 
 		@Override
 		public boolean hasNext() {
@@ -95,12 +101,12 @@ public class Iterators {
 
 		public ConcatIterator(Iterable<T>[] cs) {
 			this.outerIterator = new ArrayIterator<Iterable<T>>(cs);
-			this.innerIterator = new EmptyIterator<T>();
+			this.innerIterator = EmptyIterator.instance();
 		}
 		
 		public ConcatIterator(Iterable<? extends Iterable<T>> cs) {
 			this.outerIterator = cs.iterator();
-			this.innerIterator = new EmptyIterator<T>();
+			this.innerIterator = EmptyIterator.instance();
 		}
 
 		@Override
@@ -149,6 +155,16 @@ public class Iterators {
 		return concat(listOfLists);
 	}
 
+	public static<T> Iterable<T> empty() {
+		
+		return new Iterable<T>() {
+			@Override
+			public Iterator<T> iterator() {
+				return EmptyIterator.instance();
+			}
+		};
+	}
+
 	public static<T> Iterable<T> singleton(T elem) {
 
 		return Collections.singleton(elem);
@@ -164,5 +180,6 @@ public class Iterators {
 		}
 		return i;
 	}
+
 
 }

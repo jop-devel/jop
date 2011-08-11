@@ -110,15 +110,17 @@ public abstract class MethodCache {
     /**
      * Get miss penalty for invoking the given method
      */
-    public long getMissOnInvokeCost(WCETProcessorModel proc, ControlFlowGraph cfg) {
-        return proc.getMethodCacheMissPenalty(cfg.getNumberOfWords(), true);
+    public long getMissOnInvokeCost(ControlFlowGraph cfg) {
+        return this.project.getWCETProcessorModel().getMethodCacheMissPenalty(
+        		cfg.getNumberOfWords(), true);
     }
 
     /**
      * Get miss penalty for returning to the given method
      */
-    public long getMissOnReturnCost(WCETProcessorModel proc, ControlFlowGraph cfg) {
-        return proc.getMethodCacheMissPenalty(cfg.getNumberOfWords(), false);
+    public long getMissOnReturnCost(ControlFlowGraph cfg) {
+        return this.project.getWCETProcessorModel().getMethodCacheMissPenalty(
+        		cfg.getNumberOfWords(), false);    	
     }
 
     /**
@@ -171,9 +173,10 @@ public abstract class MethodCache {
         return largestMethod;
     }
 
-    public long getMaxMissCost(WCETProcessorModel proc, ControlFlowGraph cfg) {
-        long invokeCost = proc.getMethodCacheMissPenalty(cfg.getNumberOfWords(), true);
-        if (!cfg.isLeafMethod()) return Math.max(invokeCost, getMissOnReturnCost(proc, cfg));
+    public long getMaxMissCost(ControlFlowGraph cfg) {
+    	
+        long invokeCost = project.getWCETProcessorModel().getMethodCacheMissPenalty(cfg.getNumberOfWords(), true);
+        if (!cfg.isLeafMethod()) return Math.max(invokeCost, getMissOnReturnCost(cfg));
         else return invokeCost;
     }
 

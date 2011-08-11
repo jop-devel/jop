@@ -237,7 +237,14 @@ public class SuperGraph {
 		}
 		@Override
 		public String toString() {
-			return ccfg.getCfg().getMethodInfo().getShortName() + "(" + node + ")";
+			return getCfg().getMethodInfo().getShortName() + "(" + node + ")";
+		}
+
+		/**
+		 * @return return the CFG represented by the supergraph node
+		 */
+		public ControlFlowGraph getCfg() {
+			return ccfg.getCfg();
 		}
     }
     

@@ -72,7 +72,7 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 		} else if(project.getCallGraph().isLeafMethod(invoked)) {
 			cacheCost = invokeReturnCost + nonLocalCacheCost;
 		} else if(cacheMode == StaticCacheApproximation.ALL_FIT_SIMPLE && allFit(cache,invoked,ctx.getCallString())) {
-			long returnCost = cache.getMissOnReturnCost(proc, project.getFlowGraph(invoker));
+			long returnCost = cache.getMissOnReturnCost(project.getFlowGraph(invoker));
 			/* Maybe its better not to apply the all-fit heuristic ... */
 			long noAllFitCost = recCost.getCost() + invokeReturnCost;
 			/* Compute cost without method cache */

@@ -26,21 +26,27 @@ import java.util.Set;
 public abstract class Filter<T> {
 
 	private abstract static class FilterIterator<T> implements Iterator<T> {
+
 		private Iterator<? extends T> src;
 		private T buf;
+
 		public abstract boolean include(T e);
+
 		public FilterIterator(Iterable<? extends T> source) {
 			this(source.iterator());
 		}
+		
 		public FilterIterator(Iterator<? extends T> source) {
 			this.src = source;
 			this.buf = null;
 		}
+		
 		@Override
 		public boolean hasNext() {
 			if(buf == null) buf = next();
 			return (buf != null);
 		}
+
 		@Override
 		public T next() {
 			T tmp = buf;

@@ -62,7 +62,7 @@ public class NoMethodCache extends MethodCache {
 		return 0;
 	}
 	@Override
-	public long getMissOnReturnCost(WCETProcessorModel proc, ControlFlowGraph invoker) {
+	public long getMissOnReturnCost(ControlFlowGraph invoker) {
 		return 0;		
 	}
 	@Override 

@@ -40,8 +40,8 @@ public class FIFOCacheBuilder extends DynamicCacheBuilder {
 	}
 	@Override
 	public long getWaitTime(WCETProcessorModel proc, ControlFlowGraph cfg, boolean isInvoke) {
-		if(isInvoke && assumeEmptyCache) return this.cache.getMissOnInvokeCost(proc, cfg);
-		else                             return this.cache.getMaxMissCost(proc, cfg);
+		if(isInvoke && assumeEmptyCache) return this.cache.getMissOnInvokeCost(cfg);
+		else                             return this.cache.getMaxMissCost(cfg);
 	}
 	@Override
 	public void appendDeclarations(NTASystem system,String NUM_METHODS) {
