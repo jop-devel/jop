@@ -23,6 +23,7 @@ package com.jopdesign.common.code;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
+import com.jopdesign.common.code.ControlFlowGraph.CfgVisitor;
 import com.jopdesign.common.code.ControlFlowGraph.InvokeNode;
 import com.jopdesign.common.code.ControlFlowGraph.ReturnNode;
 import com.jopdesign.common.code.ControlFlowGraph.VirtualNode;
@@ -234,20 +235,19 @@ public class SuperGraph {
 			SuperGraphNode other = (SuperGraphNode) obj;
 			return (ccfg.equals(other.ccfg) && node.equals(other.node));
 		}
-
+		@Override
+		public String toString() {
+			return ccfg.getCfg().getMethodInfo().getShortName() + "(" + node + ")";
+		}
     }
     
     /**
      * Edges in a supergraph, including interprocedural edges,
      * and CFG edges.
      */
-    public abstract class SuperGraphEdge {
+    public interface SuperGraphEdge {
         
-        private static final long serialVersionUID = 1L;
-
-        public SuperGraph getSuperGraph() {
-        	return SuperGraph.this;
-        }
+    	public SuperGraph getSuperGraph();
         
     	/**
     	 * The source of a supergraph edge.
@@ -276,7 +276,7 @@ public class SuperGraph {
     /**
      * Intraprocedural edges in the supergraph
      */
-    public class IntraEdge extends SuperGraphEdge {
+    public class IntraEdge implements SuperGraphEdge {
         private static final long serialVersionUID = 1L;
 		private ContextCFG ccfg;
 		private CFGEdge cfgEdge;
@@ -322,6 +322,11 @@ public class SuperGraph {
 			return new SuperGraphNode(ccfg, target);
 		}
 
+		@Override
+		public SuperGraph getSuperGraph() {
+         	return SuperGraph.this;
+        }
+		
         @Override
         public boolean equals(Object obj) {
 
@@ -338,6 +343,10 @@ public class SuperGraph {
         	return 31 * ccfg.hashCode() + cfgEdge.hashCode();
         }
 
+        @Override
+        public String toString() {
+        	return this.ccfg.getCfg().getMethodInfo().getShortName() + this.getCFGEdge().toString();
+        }
 
     }
 
@@ -345,7 +354,7 @@ public class SuperGraph {
      * Interprocedural edges representing a method invocation or a method return
      * There are explicitly represented in the supergraph
      */
-    public abstract class SuperEdge extends SuperGraphEdge {
+    public abstract class SuperEdge implements SuperGraphEdge {
         private static final long serialVersionUID = 1L;
         private ControlFlowGraph.InvokeNode invoker;
 
@@ -368,6 +377,10 @@ public class SuperGraph {
         	return superGraph.getEdgeTarget(this);
         }
 
+		@Override
+		public SuperGraph getSuperGraph() {
+         	return SuperGraph.this;
+        }
     }
 
     /**
@@ -566,12 +579,12 @@ public class SuperGraph {
 	 * @return
 	 */
 	public Iterable<SuperGraphEdge> incomingEdgesOf(SuperGraphNode node) {
-
 		CFGNode cfgNode = node.getCFGNode();
+		
 		if(cfgNode instanceof ReturnNode) {
-			final ReturnNode retNode = (ReturnNode) cfgNode;
-			
-			/* return node: incoming edges are SuperReturn edges of the ccfg */
+			/* return node: incoming edges are callgraph return edges */
+			final ReturnNode retNode = (ReturnNode) cfgNode;	
+			Set<SuperEdge> cgReturnEdges = superGraph.incomingEdgesOf(node.getContextCFG());
 			return new Filter<SuperGraphEdge>() {
 				@Override
 				protected boolean include(SuperGraphEdge e) {
@@ -579,22 +592,22 @@ public class SuperGraph {
 					SuperReturnEdge retEdge = (SuperReturnEdge) e;
 					return retEdge.getReturnNode().equals(retNode);
 				}				
-			}.filter(superGraph.incomingEdgesOf(node.getContextCFG())); 
+			}.<SuperGraphEdge>filter(cgReturnEdges); 
 
-		} else if(cfgNode instanceof VirtualNode && ((VirtualNode)cfgNode).getKind() == VirtualNodeKind.ENTRY) {
-
+		} else if(cfgNode instanceof VirtualNode && ((VirtualNode)cfgNode).getKind() == VirtualNodeKind.ENTRY) {			
 			/* entry  node: superedge invoking the node's method */
+			Set<SuperEdge> cgInvokeEdges = superGraph.incomingEdgesOf(node.getContextCFG());
 			return new Filter<SuperGraphEdge>() {
 				@Override
 				protected boolean include(SuperGraphEdge e) {
-					return (e instanceof SuperReturnEdge);
+					return (e instanceof SuperInvokeEdge);
 				}				
-			}.filter(superGraph.outgoingEdgesOf(node.getContextCFG())); 
+			}.<SuperGraphEdge>filter(cgInvokeEdges); 
 
 		} else {
 			
 			/* standard edges: incoming edges of cfg node */
-			return liftCFGEdges(node.getContextCFG(), node.getContextCFG().getCfg().outgoingEdgesOf(cfgNode));
+			return liftCFGEdges(node.getContextCFG(), node.getContextCFG().getCfg().incomingEdgesOf(cfgNode));
 		}
 	}
     
@@ -611,10 +624,12 @@ public class SuperGraph {
 	public Iterable<SuperGraphEdge> outgoingEdgesOf(SuperGraphNode node) {
 		
 		CFGNode cfgNode = node.getCFGNode();
+
 		if(cfgNode instanceof InvokeNode) {
-			final InvokeNode invNode = (InvokeNode) cfgNode;
-			
 			/* invoke node: outgoing SuperInvoke edges */
+			final InvokeNode invNode = (InvokeNode) cfgNode;
+			Set<SuperEdge> outgoingInvokeEdges = superGraph.outgoingEdgesOf(node.getContextCFG());
+			
 			return new Filter<SuperGraphEdge>() {
 				@Override
 				protected boolean include(SuperGraphEdge e) {
@@ -622,23 +637,22 @@ public class SuperGraph {
 					SuperInvokeEdge invoke = (SuperInvokeEdge) e;
 					return invoke.getInvokeNode().equals(invNode);
 				}				
-			}.filter(superGraph.outgoingEdgesOf(node.getContextCFG())); 
-
+			}.<SuperGraphEdge>filter(outgoingInvokeEdges); 
+			
 		} else if(cfgNode instanceof VirtualNode && ((VirtualNode)cfgNode).getKind() == VirtualNodeKind.EXIT) {
-
 			/* exit node: outgoing SuperReturn edges */
+			Set<SuperEdge> outgoingReturnEdges = superGraph.outgoingEdgesOf(node.getContextCFG());
 			return new Filter<SuperGraphEdge>() {
 				@Override
 				protected boolean include(SuperGraphEdge e) {
 					return (e instanceof SuperReturnEdge);
 				}				
-			}.filter(superGraph.outgoingEdgesOf(node.getContextCFG())); 
+			}.<SuperGraphEdge>filter(outgoingReturnEdges); 
 
-		} else {
-			
+		} else {			
 			/* standard edges: outgoing edges of cfg node */
-			node.getContextCFG().getCfg().outgoingEdgesOf(cfgNode).iterator().next().getKind();
-			return liftCFGEdges(node.getContextCFG(), node.getContextCFG().getCfg().outgoingEdgesOf(cfgNode));
+			Set<CFGEdge> outgoingCFGEdges = node.getContextCFG().getCfg().outgoingEdgesOf(cfgNode);
+			return liftCFGEdges(node.getContextCFG(), outgoingCFGEdges);
 		}		
 	}
 

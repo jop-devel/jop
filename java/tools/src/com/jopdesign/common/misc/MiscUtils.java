@@ -23,6 +23,9 @@ package com.jopdesign.common.misc;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -34,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -56,11 +60,11 @@ public class MiscUtils {
         boolean query(Arg a);
     }
     
-    public interface Function1<Arg, Ret> {
+    public interface F1<Arg, Ret> {
         Ret apply(Arg v);
     }
 
-    public interface Function2<Arg1, Arg2, Ret> {
+    public interface F2<Arg1, Arg2, Ret> {
         Ret apply(Arg1 v1, Arg2 v2);
     }
 
@@ -108,7 +112,7 @@ public class MiscUtils {
      */
     public static <K, V>
     TreeMap<K, List<V>> partialSort(
-            Collection<V> values, Function1<V, K> priority) {
+            Collection<V> values, F1<V, K> priority) {
 
         TreeMap<K, List<V>> buckets = new TreeMap<K, List<V>>();
         for (V v : values) {
@@ -239,7 +243,7 @@ public class MiscUtils {
     public static <K, V>
     void printMap(PrintStream out, Map<K, V> map, int fill) {
         final int _fill = fill;
-        printMap(out, map, new Function2<K, V, String>() {
+        printMap(out, map, new F2<K, V, String>() {
             public String apply(K v1, V v2) {
                 return String.format("%" + _fill + "s ==> %s", v1, v2);
             }
@@ -249,7 +253,7 @@ public class MiscUtils {
     public static <K, V>
     void printMap(PrintStream out,
                   Map<? extends K, ? extends V> map,
-                  Function2<K, V, String> printer) {
+                  F2<K, V, String> printer) {
         for (Entry<? extends K, ? extends V> entry : map.entrySet()) {
             out.println(printer.apply(entry.getKey(), entry.getValue()));
         }
@@ -408,6 +412,31 @@ public class MiscUtils {
 		FileInputStream fis = new FileInputStream(inFile);
 		ObjectInputStream ois = new ObjectInputStream(fis);
 		return ois.readObject();
+	}
+
+	/**
+	 * Group a list of objects by one of their attributes, updating
+	 * an existing map from keys to object lists
+     *
+	 * @param <T> the type of the objects
+	 * @param <A> the type of the object attribute
+	 * @param getAttribute function to extract the attribute from objects
+	 * @param groupMap an existing map from attributes to all objects with this attribute.
+	 *        if null, a new {@code HashMap} will be created.
+	 * @param objects
+	 * @return the updated map
+	 */
+	public static <T,A>
+	Map<A, List<T>> group(
+			F1<T, A> getAttribute,
+			Map<A, List<T>> groupMap,
+			Iterable<T> objects
+			) {
+		if(groupMap == null) groupMap = new HashMap<A, List<T>>();
+		for(T e : objects) {
+			addToList(groupMap, getAttribute.apply(e), e);
+		}
+		return groupMap;
 	}
 
 }

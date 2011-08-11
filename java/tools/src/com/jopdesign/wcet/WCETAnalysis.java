@@ -31,6 +31,7 @@ import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.Segment;
 import com.jopdesign.common.code.CallGraph.ContextEdge;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.misc.MiscUtils;
@@ -55,6 +56,8 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.io.IOException;
 import java.util.Properties;
+
+import lpsolve.LpSolveException;
 
 import static com.jopdesign.wcet.ExecHelper.timeDiff;
 
@@ -132,7 +135,7 @@ public class WCETAnalysis {
             return false;
         }
 
-        // Segment Cache Analysis: Experiments
+    	// Segment Cache Analysis: Experiments
         MethodCacheAnalysis mca = new MethodCacheAnalysis(wcetTool);
         /* iterate top down the scope graph (currently: the call graph) */
         TopologicalOrderIterator<ExecutionContext, ContextEdge> iter =
@@ -295,21 +298,33 @@ public class WCETAnalysis {
             long stop  = System.nanoTime();
             reportUppaal(wcet,start,stop,an.getSearchtime(),an.getSolvertimemax());
         } else if(preciseApprox == StaticCacheApproximation.ALL_FIT_REGIONS) {
-            RecursiveStrategy<AnalysisContextLocal, WcetCost> recStrategy =
-                new GlobalAnalysis.GlobalIPETStrategy(ipetConfig);
-            RecursiveWcetAnalysis<AnalysisContextLocal> an =
-                new RecursiveWcetAnalysis<AnalysisContextLocal>(
-                        wcetTool,
-                        ipetConfig,
-                        recStrategy);
+        	GlobalAnalysis an = new GlobalAnalysis(wcetTool, ipetConfig);
+        	
+//            RecursiveStrategy<AnalysisContextLocal, WcetCost> recStrategy =
+//                new GlobalAnalysis.GlobalIPETStrategy(ipetConfig);
+//            RecursiveWcetAnalysis<AnalysisContextLocal> an =
+//                new RecursiveWcetAnalysis<AnalysisContextLocal>(
+//                        wcetTool,
+//                        ipetConfig,
+//                        recStrategy);
+//            wcet = an.computeCost(wcetTool.getTargetMethod(),
+//                    new AnalysisContextLocal(preciseApprox));
 
-            /* Run global analysis */
+        	String targetName = wcetTool.getTargetName();
+        	Segment target = Segment.methodSegment(wcetTool, wcetTool.getTargetMethod(),
+        			CallString.EMPTY, wcetTool.getProjectConfig().callstringLength());
+
+        	/* Run global analysis */
             LpSolveWrapper.resetSolverTime();
-            long start = System.nanoTime();
-            wcet = an.computeCost(wcetTool.getTargetMethod(),
-                                  new AnalysisContextLocal(preciseApprox));
-            long stop  = System.nanoTime();
-            report(wcet,start,stop,LpSolveWrapper.getSolverTime());
+            try {
+                long start = System.nanoTime();
+				wcet = an.computeWCET(targetName, target, preciseApprox);
+	            long stop  = System.nanoTime();
+	            report(wcet,start,stop,LpSolveWrapper.getSolverTime());
+			} catch (LpSolveException e) {
+				e.printStackTrace();
+			}
+            
         } else {
             AnalysisContextLocal initialContext = new AnalysisContextLocal(preciseApprox);
             RecursiveStrategy<AnalysisContextLocal, WcetCost> recStrategy =

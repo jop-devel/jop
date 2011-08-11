@@ -331,16 +331,16 @@ public class IPETUtils {
     }
 
     /**
-     * Split an execution edge into a list of execution edges modelling low-level hardware decisions
+     * Split an edge into a list of edges modeling low-level hardware decisions
      *
      * @param parentEdge the high-level edge to be split
      * @param childEdges low-level edges
      * @return constraint asserting sum f(childEdges) = f(parentEdge)
      */
-    public static LinearConstraint<ExecutionEdge> lowLevelEdgeSplit(ExecutionEdge parentEdge, ExecutionEdge... childEdges) {
-        LinearConstraint<ExecutionEdge> lc = new LinearConstraint<ExecutionEdge>(ConstraintType.Equal);
+    public static<E> LinearConstraint<E> lowLevelEdgeSplit(E parentEdge, E... childEdges) {
+        LinearConstraint<E> lc = new LinearConstraint<E>(ConstraintType.Equal);
         lc.addLHS(parentEdge);
-        for (ExecutionEdge childEdge : childEdges) {
+        for (E childEdge : childEdges) {
             lc.addRHS(childEdge);
         }
         return lc;

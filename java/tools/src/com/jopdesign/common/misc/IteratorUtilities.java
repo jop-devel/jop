@@ -21,7 +21,12 @@
 package com.jopdesign.common.misc;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+
+import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
+import com.jopdesign.common.code.SuperGraph.SuperInvokeEdge;
 
 /**
  * Purpose: Utilities to lift Collection functionality to Iterable s and Iterator s
@@ -37,10 +42,13 @@ public class IteratorUtilities {
 		return i;
 	}
 
-	public static<T, C extends Collection<T>> C addAll(C coll, Iterable<T> addme) {
+	public static<T, C extends Collection<T>> C addAll(C coll, Iterable<? extends T> addme) {
 		
 		for(T e : addme) { coll.add(e); }
 		return coll;
 	}
 
+	public static<T> Iterable<T> singleton(T elem) {
+		return Collections.singleton(elem);
+	}
 }

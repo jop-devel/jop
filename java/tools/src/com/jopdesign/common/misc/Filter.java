@@ -62,13 +62,14 @@ public abstract class Filter<T> {
 		}	
 	}
 	
-	public Iterable<T> filter(final Iterable<? extends T> source) {
-		return new Iterable<T>() {
+	public <S extends T> Iterable<S> filter(final Iterable<? extends S> source) {
+		
+		return new Iterable<S>() {
 			@Override
-			public Iterator<T> iterator() {
-				return new Filter.FilterIterator<T>(source) {
+			public Iterator<S> iterator() {
+				return new Filter.FilterIterator<S>(source) {
 					@Override
-					public boolean include(T e) {
+					public boolean include(S e) {
 						return Filter.this.include(e);
 					}
 				};

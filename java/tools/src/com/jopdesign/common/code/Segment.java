@@ -23,13 +23,17 @@ package com.jopdesign.common.code;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.Map.Entry;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.SuperGraph.ContextCFG;
+import com.jopdesign.common.code.SuperGraph.SuperEdge;
 import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
 import com.jopdesign.common.code.SuperGraph.SuperGraphNode;
 import com.jopdesign.common.code.SuperGraph.SuperInvokeEdge;
@@ -38,6 +42,7 @@ import com.jopdesign.common.graphutils.AdvancedDOTExporter;
 import com.jopdesign.common.graphutils.AdvancedDOTExporter.DOTLabeller;
 import com.jopdesign.common.misc.Filter;
 import com.jopdesign.common.misc.IteratorUtilities;
+import com.jopdesign.common.misc.MiscUtils;
 
 /**
  * Purpose: A segment represents subsets of execution traces.
@@ -54,18 +59,17 @@ public class Segment {
 	private Set<SuperGraphEdge> entries;
 	private Set<SuperGraphEdge> exits;
 
+	private Map<MethodInfo, List<ContextCFG>> methods;
 	private Set<SuperGraphNode> nodes;
 	private Set<SuperGraphEdge> edges;
-	private Filter<SuperGraphEdge> edgeFilter;
-	
-	
+	private Filter<SuperGraphEdge> edgeFilter;	
 	
 	/** Construct a semi-closed segment (all exit edges are explicitly given and are part of the segment) */
 	public Segment(SuperGraph sg, Set<SuperGraphEdge> entries, Set<SuperGraphEdge> exits) {
 		this.sg = sg;
 		this.entries = entries;
 		this.exits = exits;
-		collectSegmentEdges();
+		buildSegment();
 		this.edgeFilter = Filter.isContainedIn(this.edges);
 	}
 
@@ -78,13 +82,29 @@ public class Segment {
 	}
 	
 	/**
+	 * @param e a supergraph edge
+	 * @return true, if the edge is an entry edge of the segment
+	 */
+	public boolean isEntryEdge(SuperGraphEdge e) {
+		return this.getEntryEdges().contains(e);
+	}
+
+	/**
 	 * @return the set of exit edges
 	 */
 	public Set<SuperGraphEdge> getExitEdges() {
 		return exits;
 	}
 	
-	public boolean includeEdge(SuperGraphEdge e) {
+	/**
+	 * @param e
+	 * @return true if the edge is an exit edge of the segment
+	 */
+	public boolean isExitEdge(SuperGraphEdge e) {
+		return getExitEdges().contains(e);
+	}
+
+	public boolean includesEdge(SuperGraphEdge e) {
 		return edges.contains(e);
 	}
 
@@ -94,9 +114,12 @@ public class Segment {
 	 * control flow graphs have return edges, and that return edges
 	 * are in the exit set if they are not part of the segment.
 	 */
-	private Set<SuperGraphEdge> collectSegmentEdges() {
-		edges = new HashSet<SuperGraphEdge>();
+	private Set<SuperGraphEdge> buildSegment() {
+
+		methods = new HashMap<MethodInfo, List<ContextCFG>>();
 		nodes = new HashSet<SuperGraphNode>();
+		edges = new HashSet<SuperGraphEdge>();
+		
 		HashSet<SuperGraphEdge> actualExits = new HashSet<SuperGraphEdge>();
 		Stack<SuperGraphEdge> worklist = new Stack<SuperGraphEdge>();
 
@@ -106,14 +129,17 @@ public class Segment {
 			SuperGraphEdge current = worklist.pop();
 			if(edges.contains(current)) continue; /* continue if marked black */
 			edges.add(current); /* mark black */
-			for(SuperGraphEdge succ : sg.getSuccessorEdges(current)) {
-				if(! exits.contains(current)) {
-					nodes.add(current.getTarget());
-					worklist.add(succ); /* (re-)mark grey */
-				} else {
-					actualExits.add(current);
-				}
+			
+			/* If this is an exit egde, remember that it has been visited, and continue */
+			if(exits.contains(current)) {
+				actualExits.add(current);
+				continue;
 			}
+			/* Otherwise add the target node and push all successors on the worklist */
+			SuperGraphNode target = current.getTarget();
+			nodes.add(target);
+			MiscUtils.addToList(methods, target.getContextCFG().getCfg().getMethodInfo(), target.getContextCFG());
+			IteratorUtilities.addAll(worklist, sg.getSuccessorEdges(current));
 		}
 		exits = actualExits;
 		return edges;
@@ -146,12 +172,30 @@ public class Segment {
 	}
 
 	/**
+	 * @return list of all methods
+	 */
+	public Iterable<MethodInfo> getMethods() {
+
+		return methods.keySet();
+	}
+
+	/**
+	 * @return all CFGs for the given method
+	 */
+	public Iterable<ContextCFG> getInstancesOf(MethodInfo mi) {
+
+		return methods.get(mi);
+	}
+	
+	/**
 	 * @return set of all edges in the segment
 	 */
 	public Iterable<SuperGraphEdge> getEdges() {
 
 		return edges;
 	}
+
+
 
 	/**
 	 * @param node
@@ -161,6 +205,16 @@ public class Segment {
 
 		return edgeFilter.filter(sg.incomingEdgesOf(node));
 	}
+	
+	/**
+	 * @param ccfg
+	 * @return
+	 */
+	public Iterable<SuperEdge> incomingSuperEdgesOf(ContextCFG ccfg) {
+
+		return edgeFilter.filter(sg.getCallGraph().incomingEdgesOf(ccfg));
+	}
+
 
 	/**
 	 * @param node
@@ -169,6 +223,20 @@ public class Segment {
 	public Iterable<SuperGraphEdge> outgoingEdgesOf(SuperGraphNode node) {
 
 		return edgeFilter.filter(sg.outgoingEdgesOf(node));
+	}
+
+	/**
+	 * @return
+	 */
+	public Iterable<Entry<SuperInvokeEdge, SuperReturnEdge>> getSuperEdgePairs() {
+		final Filter<Entry<SuperInvokeEdge, SuperReturnEdge>> pairFilter = 
+			new Filter<Entry<SuperInvokeEdge, SuperReturnEdge>>() {
+			@Override
+			protected boolean include(Entry<SuperInvokeEdge, SuperReturnEdge> e) {
+				return(edges.contains(e.getKey()) && edges.contains(e.getValue()));
+			}			
+		};
+		return pairFilter.filter(sg.getSuperEdgePairs().entrySet());
 	}
 
 	/**
@@ -240,7 +308,6 @@ public class Segment {
 		});
 		dotWriter.close();
 	}
-
 
 
 }

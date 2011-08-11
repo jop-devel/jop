@@ -299,7 +299,7 @@ public class ObjectCacheAnalysis {
 						timeDiff(start,stop),
 						LpSolveWrapper.getSolverTime()));        
 		Map<ExecutionContext, Long> blockUsage = mcAnalysis.getBlockUsage();
-		MiscUtils.printMap(System.out, blockUsage, new MiscUtils.Function2<ExecutionContext, Long, String>() {
+		MiscUtils.printMap(System.out, blockUsage, new MiscUtils.F2<ExecutionContext, Long, String>() {
             public String apply(ExecutionContext v1, Long maxBlocks) {
                 MethodCache mc = project.getWCETProcessorModel().getMethodCache();
                 return String.format("%-50s ==> %2d <= %2d",

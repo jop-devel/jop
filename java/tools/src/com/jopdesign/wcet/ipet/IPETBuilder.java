@@ -26,10 +26,12 @@ import com.jopdesign.common.code.SuperGraph.CallContext;
 import com.jopdesign.wcet.WCETTool;
 
 /**
+ * XXX: Not used any more in the new global analysis framework
  * Purpose: Build context-dependend constraints for IPET problems
  * Regardless of the underlying graphs, IPET graphs consist of ExecutionEdges,
  * and the IPETBuilder is a factory for those edges
  */
+@Deprecated
 public class IPETBuilder<Ctx extends CallStringProvider> {
     /**
      * One edge in the IPET model (distinguished by context and the represented model)

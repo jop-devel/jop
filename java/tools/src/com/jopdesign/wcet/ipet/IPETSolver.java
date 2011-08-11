@@ -22,6 +22,7 @@ package com.jopdesign.wcet.ipet;
 
 import com.jopdesign.common.graphutils.IDProvider;
 import com.jopdesign.common.misc.MiscUtils;
+
 import lpsolve.LpSolveException;
 
 import java.io.File;
@@ -115,7 +116,7 @@ public class IPETSolver<T> {
      * @return the cost of the solution
      * @throws Exception if the ILP solver fails
      */
-    public double solve(Map<T, Long> flowMapOut) throws Exception {
+    public double solve(Map<T, Long> flowMapOut) throws LpSolveException {
     	return solve(flowMapOut, true);
     }
 
@@ -125,9 +126,10 @@ public class IPETSolver<T> {
      * @param flowMapOut if not null, write solution into this map, assigning a flow to each edge
      * @param isILP      if false, assumes all variables are rational (relaxed problem)
      * @return the cost of the solution
+     * @throws LpSolveException 
      * @throws Exception if the ILP solver fails
      */
-     public double solve(Map<T, Long> flowMapOut, boolean isILP) throws Exception {
+     public double solve(Map<T, Long> flowMapOut, boolean isILP) throws LpSolveException {
         IDProvider<Object> idProvider = this.generateMapping();
         LpSolveWrapper<Object> wrapper = new LpSolveWrapper<Object>(edgeSet.size(), isILP, idProvider);
 
@@ -148,7 +150,11 @@ public class IPETSolver<T> {
         wrapper.freeze();
 
         if (this.outDir != null) {
-            dumpILP(wrapper);
+            try {
+				dumpILP(wrapper);
+			} catch (IOException e) {
+				throw new LpSolveException("Failed to write ILP: " + e.getMessage());
+			}
         }
 
         double sol;
@@ -252,6 +258,7 @@ public class IPETSolver<T> {
             }
         };
     }
+
 
 
 }

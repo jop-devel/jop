@@ -29,7 +29,7 @@ import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.AnalysisContext;
-import com.jopdesign.wcet.analysis.AnalysisContextSimple;
+import com.jopdesign.wcet.analysis.AnalysisContextCallString;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
@@ -303,7 +303,7 @@ public class ObjectCacheAnalysisDemo {
 			new RecursiveOCacheAnalysis(project, new IPETConfig(project.getConfig()),
 					new RecursiveWCETOCache());
 		
-		return recAna.computeCost(project.getTargetMethod(), new AnalysisContextSimple(CallString.EMPTY));
+		return recAna.computeCost(project.getTargetMethod(), new AnalysisContextCallString(CallString.EMPTY));
 	}
 
 	public long getMaxAccessedTags(MethodInfo invoked, CallString context) {

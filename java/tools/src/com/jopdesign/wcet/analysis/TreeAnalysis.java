@@ -184,7 +184,7 @@ public class TreeAnalysis {
         for (MethodInfo mi : reachable) {
             ControlFlowGraph cfg = project.getFlowGraph(mi);
             Map<CFGNode, Long> localCost = new HashMap<CFGNode, Long>();
-            LocalCostVisitor lcv = new LocalCostVisitor(new AnalysisContextSimple(CallString.EMPTY), project);
+            LocalCostVisitor lcv = new LocalCostVisitor(new AnalysisContextCallString(CallString.EMPTY), project);
             for (CFGNode n : cfg.vertexSet()) {
                 localCost.put(n, lcv.computeCost(n).getCost());
             }

@@ -19,41 +19,36 @@
  */
 package com.jopdesign.wcet.analysis;
 
-import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.common.code.Segment;
-import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
-import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
-import com.jopdesign.common.code.ControlFlowGraph.ReturnNode;
-import com.jopdesign.common.code.SuperGraph.ContextCFG;
-import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
-import com.jopdesign.common.code.SuperGraph.SuperGraphNode;
-import com.jopdesign.common.code.SuperGraph;
-import com.jopdesign.common.graphutils.Pair;
-import com.jopdesign.wcet.WCETProcessorModel;
-import com.jopdesign.wcet.WCETTool;
-import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
-import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
-import com.jopdesign.wcet.ipet.IPETBuilder;
-import com.jopdesign.wcet.ipet.IPETBuilder.ExecutionEdge;
-import com.jopdesign.wcet.ipet.IPETConfig;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
-import com.jopdesign.wcet.ipet.IPETSolver;
-import com.jopdesign.wcet.ipet.IPETUtils;
-import com.jopdesign.wcet.ipet.LinearConstraint;
-import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
-import com.jopdesign.wcet.jop.MethodCache;
-
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Map.Entry;
+
+import lpsolve.LpSolveException;
+
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.Segment;
+import com.jopdesign.common.code.SuperGraph;
+import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
+import com.jopdesign.common.code.ControlFlowGraph.ReturnNode;
+import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
+import com.jopdesign.common.code.SuperGraph.SuperGraphNode;
+import com.jopdesign.common.code.SuperGraph.SuperInvokeEdge;
+import com.jopdesign.common.code.SuperGraph.SuperReturnEdge;
+import com.jopdesign.common.misc.IteratorUtilities;
+import com.jopdesign.wcet.WCETProcessorModel;
+import com.jopdesign.wcet.WCETTool;
+import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
+import com.jopdesign.wcet.ipet.IPETConfig;
+import com.jopdesign.wcet.ipet.IPETSolver;
+import com.jopdesign.wcet.ipet.IPETUtils;
+import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.jop.MethodCache;
 
 /**
  * Global IPET-based analysis, supporting variable block caches (all fit region approximation).
@@ -62,6 +57,53 @@ import java.util.Set;
  */
 public class GlobalAnalysis {
 
+	public static class SuperGraphSplitEdge implements SuperGraphEdge {
+		
+		private int index;
+		private Object key;
+		private SuperGraphEdge parent;
+
+		public SuperGraphSplitEdge(SuperGraphEdge parent, Object key, int index) {
+			this.parent = parent;
+			this.key = key;
+			this.index = index;
+		}
+		
+		@Override
+		public SuperGraphNode getSource() {
+			return parent.getSource();
+		}
+
+		@Override
+		public SuperGraphNode getTarget() {
+			return parent.getTarget();
+		}
+
+		@Override
+		public SuperGraph getSuperGraph() {
+			return parent.getSuperGraph();
+		}
+
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			return prime * parent.hashCode() + key.hashCode() + index;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			SuperGraphSplitEdge other = (SuperGraphSplitEdge) obj;
+			if (index != other.index) return false;
+			if (!key.equals(other.key)) return false;
+			return parent.equals(other.parent);
+		}
+		
+	}
+	
     private WCETTool project;
 
     private IPETConfig ipetConfig;
@@ -73,7 +115,6 @@ public class GlobalAnalysis {
 
     /**
      * Compute WCET using global IPET, and either ALWAYS_MISS or GLOBAL_ALL_FIT
-     * TODO: Refactor and generalize cache analysis
      */
     public WcetCost computeWCET(MethodInfo m, AnalysisContextLocal ctx) throws Exception {
 
@@ -85,28 +126,31 @@ public class GlobalAnalysis {
         }
         
         String key = m.getFQMethodName() + "_global_" + cacheMode;
-        return computeWCET(key, Segment.methodSegment(project,m,ctx.getCallString()), cacheMode);
+        Segment segment = Segment.methodSegment(project, m,ctx.getCallString(), project.getAppInfo().getCallstringLength());
+        return computeWCET(key, segment, cacheMode);
     }
 
     /**
      * Compute WCET for a segment, using global IPET, and cache analysis results
      */
-    public WcetCost computeWCET(String key, Segment segment, StaticCacheApproximation cacheMode) throws Exception {
+    public WcetCost computeWCET(String key, Segment segment, StaticCacheApproximation cacheMode) throws LpSolveException {
 
         /* create an IPET problem for the segment */
         IPETSolver<SuperGraphEdge> ipetSolver = buildIpetProblem(project, key, segment, ipetConfig);
 
         /* compute cost */
-        setExecutionCost(segment, cacheMode, ipetSolver);
+        setExecutionCost(segment, ipetSolver);
 
         /* Add constraints for method cache */
-        Set<ExecutionEdge> missEdges = new HashSet<ExecutionEdge>();
+        Set<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
         if(project.getWCETProcessorModel().hasMethodCache()) {
         	switch(cacheMode) {
         	case ALWAYS_HIT:      break; /* no additional costs */
-        	case ALWAYS_MISS:     methodCacheAnalysis.addMissAlwaysCost(ipetSolver, segment); break;
-        	case ALL_FIT_SIMPLE:  methodCacheAnalysis.addMissOnceCost(ipetSolver, segment); break;
-        	case ALL_FIT_REGIONS: missEdges = methodCacheAnalysis.addMissOnceConstraints(ipetSolver, segment); break;
+        	/* TODO: Implement */
+//        	case ALWAYS_MISS:     methodCacheAnalysis.addMissAlwaysCost(ipetSolver, segment); break;
+//        	case ALL_FIT_SIMPLE:  methodCacheAnalysis.addMissOnceCost(ipetSolver, segment); break;
+//        	case ALL_FIT_REGIONS: missEdges = methodCacheAnalysis.addMissOnceConstraints(ipetSolver, segment); break;
+        	default: break; /* no additional cost */
         	}        	
         }
 
@@ -160,20 +204,35 @@ public class GlobalAnalysis {
 
         IPETSolver<SuperGraphEdge> ipetSolver = new IPETSolver<SuperGraphEdge>(problemName, ipetConfig);
 
+        /* DEBUGGING: Render segment */
+        try {
+			segment.exportDOT(wcetTool.getProjectConfig().getOutFile(problemName+".dot"));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+        
         /* In- and Outflow */
     	ipetSolver.addConstraint(IPETUtils.constantFlow(segment.getEntryEdges(), 1));
         ipetSolver.addConstraint(IPETUtils.constantFlow(segment.getExitEdges(), 1));
 
         /* Structural flow constraints */
         for (SuperGraphNode node: segment.getNodes()) {
-        	ipetSolver.addConstraints(IPETUtils.flowPreservation(segment.incomingEdgesOf(node), segment.outgoingEdgesOf(node)));
+        	ipetSolver.addConstraint(IPETUtils.flowPreservation(segment.incomingEdgesOf(node), segment.outgoingEdgesOf(node)));
         }
 
-        /* Program Flow Constraints */
-        for (ContextCFG n : segment.getCallGraphNodes()) {
-            ipetSolver.addConstraints(IPETUtils.loopBoundConstraints(n.getCfg(), ipetBuilder));
-            ipetSolver.addConstraints(IPETUtils.infeasibleEdgeConstraints(n.getCfg(), ipetBuilder));
+        /* Supergraph constraints */
+        for (Entry<SuperInvokeEdge, SuperReturnEdge> superEdgePair : segment.getSuperEdgePairs()) {
+        	Iterable<SuperGraphEdge> es1 = IteratorUtilities.<SuperGraphEdge>singleton(superEdgePair.getKey());
+        	Iterable<SuperGraphEdge> es2 = IteratorUtilities.<SuperGraphEdge>singleton(superEdgePair.getValue());
+        	ipetSolver.addConstraint(IPETUtils.flowPreservation(es1,es2));
         }
+        
+        /* Program Flow Constraints */
+        /* TODO: Implement */
+//        for (ContextCFG n : segment.getCallGraphNodes()) {
+//            ipetSolver.addConstraints(IPETUtils.loopBoundConstraints(n.getCfg(), ipetBuilder));
+//            ipetSolver.addConstraints(IPETUtils.infeasibleEdgeConstraints(n.getCfg(), ipetBuilder));
+//        }
 
         return ipetSolver;
     }
@@ -181,64 +240,72 @@ public class GlobalAnalysis {
 
     /**
      * Compute the execution time of each edge in in the supergraph
+     * 
+     * FIXME: There is both discrepancy and overlap between analysis contexts and execution contexts
      *
      * @param segment       the supergraph, whose vertices are considered
-     * @param ipetInst the IPET instance
+     * @param ipetInst      the IPET instance
      * @return the cost map
      */
-    private Map<ExecutionEdge, WcetCost> setExecutionCost(Segment segment, StaticCacheApproximation approx, IPETSolver ipetInst) {
+    private Map<SuperGraphEdge, WcetCost> setExecutionCost(Segment segment, IPETSolver<SuperGraphEdge> ipetInstance) {
 
-        HashMap<ExecutionEdge, WcetCost> edgeCost = new HashMap<ExecutionEdge, WcetCost>();
-        boolean alwaysMiss = (approx == StaticCacheApproximation.ALWAYS_MISS);
+        HashMap<SuperGraphEdge, WcetCost> edgeCost = new HashMap<SuperGraphEdge, WcetCost>();
 
-        for (ContextCFG n : segment.getCallGraphNodes()) {
-
-            // FIXME: There is a discrepancy but also overlap between analysis contexts and execution contexts
-            AnalysisContextLocal aCtx = new AnalysisContextLocal(approx, n.getCallString());
-            WcetVisitor visitor = new LocalCostVisitor(project, aCtx);
-
-            /* For each CFG instance, consider CFG nodes
-                          * Currently there is no need to attribute cost to callsites */
-            for (CFGNode cfgNode : n.getCfg().vertexSet()) {
-                WcetCost cost = visitor.computeCost(cfgNode);
-                for (ControlFlowGraph.CFGEdge edge : n.getCfg().outgoingEdgesOf(cfgNode)) {
-                    edgeCost.put(segment.liftEdge(edge), cost);
-                    ipetInst.addEdgeCost(sEdge, cost.getCost());
-                }
-            }
+        /* Attribute edge cost to edge source */
+        for (SuperGraphEdge e : segment.getEdges()) {
+        	
+        	/* ignore exit edges, because their target is per definitionem not part of the segment */
+        	if(segment.isExitEdge(e)) continue;
+        	
+        	SuperGraphNode sg = e.getTarget();
+        	
+            WcetCost cost = calculateCost(sg);
+            edgeCost.put(e, cost);
+            ipetInstance.addEdgeCost(e, cost.getCost());        	
         }
         return edgeCost;
     }
 
+	/**
+	 * @param access
+	 * @param class1
+	 * @param i
+	 * @return
+	 */
+	public static List<SuperGraphEdge> generateSplitEdges(SuperGraphEdge parent, Object key, int count) {
+		ArrayList<SuperGraphEdge> splitEdges = new ArrayList<SuperGraphEdge>();
+		for(int i = 0; i < count; i++) splitEdges.add(new SuperGraphSplitEdge(parent,key,i));
+		return splitEdges;
+	}
+
     /* add cost for missing each method once (ALL FIT) */
-
-    private Set<ExecutionEdge> addMissOnceCost(SuperGraph sg, IPETSolver ipetSolver) {
-        /* collect access sites */
-
-        Map<MethodInfo, List<SuperGraph.SuperEdge>> accessEdges = getMethodSwitchEdges(sg);
-        MethodCache cache = project.getWCETProcessorModel().getMethodCache();
-
-        Set<ExecutionEdge> missEdges = new HashSet<ExecutionEdge>();
-        /* For each  MethodInfo, create a binary decision variable */
-        for (Entry<MethodInfo, List<SuperGraph.SuperEdge>> entry : accessEdges.entrySet()) {
-            LinearConstraint<ExecutionEdge> lv = new LinearConstraint<ExecutionEdge>(ConstraintType.LessEqual);
-            /* sum(miss_edges) <= 1 */
-            for (SuperGraph.SuperEdge e : entry.getValue()) {
-                /* add hit and miss edges */
-                IPETBuilder<SuperGraph.CallContext> c = new IPETBuilder<SuperGraph.CallContext>(project, e.getCaller().getContext());
-                IPETBuilder.ExecutionEdge parentEdge = c.newEdge(e);
-                IPETBuilder.ExecutionEdge hitEdge = c.newEdge(MethodCacheAnalysis.splitEdge(e, true));
-                IPETBuilder.ExecutionEdge missEdge = c.newEdge(MethodCacheAnalysis.splitEdge(e, false));
-                ipetSolver.addConstraint(IPETUtils.lowLevelEdgeSplit(parentEdge, hitEdge, missEdge));
-                missEdges.add(missEdge);
-                ipetSolver.addEdgeCost(missEdge, cache.missOnceCost(entry.getKey(), ipetConfig.doAssumeMissOnceOnInvoke()));
-                lv.addLHS(missEdge, 1);
-            }
-            lv.addRHS(1);
-            ipetSolver.addConstraint(lv);
-        }
-        return missEdges;
-    }
+//    private Set<ExecutionEdge> addMissOnceCost(SuperGraph sg, IPETSolver ipetSolver) {
+//        /* collect access sites */
+//
+//        Map<MethodInfo, List<SuperGraph.SuperEdge>> accessEdges = getMethodSwitchEdges(sg);
+//        MethodCache cache = project.getWCETProcessorModel().getMethodCache();
+//
+//        Set<ExecutionEdge> missEdges = new HashSet<ExecutionEdge>();
+//        /* For each  MethodInfo, create a binary decision variable */
+//        for (Entry<MethodInfo, List<SuperGraph.SuperEdge>> entry : accessEdges.entrySet()) {
+//            LinearConstraint<ExecutionEdge> lv = new LinearConstraint<ExecutionEdge>(ConstraintType.LessEqual);
+//            /* sum(miss_edges) <= 1 */
+//            for (SuperGraph.SuperEdge e : entry.getValue()) {
+//                /* add hit and miss edges */
+//                IPETBuilder<SuperGraph.CallContext> c = new IPETBuilder<SuperGraph.CallContext>(project, e.getCaller().getContext());
+//                IPETBuilder.ExecutionEdge parentEdge = c.newEdge(e);
+//                IPETBuilder.ExecutionEdge hitEdge = c.newEdge(MethodCacheAnalysis.splitEdge(e, true));
+//                IPETBuilder.ExecutionEdge missEdge = c.newEdge(MethodCacheAnalysis.splitEdge(e, false));
+//                ipetSolver.addConstraint(IPETUtils.lowLevelEdgeSplit(parentEdge, hitEdge, missEdge));
+//                missEdges.add(missEdge);
+//                ipetSolver.addEdgeCost(missEdge, cache.missOnceCost(entry.getKey(), ipetConfig.doAssumeMissOnceOnInvoke()));
+//                lv.addLHS(missEdge, 1);
+//            }
+//            lv.addRHS(1);
+//            ipetSolver.addConstraint(lv);
+//        }
+//        return missEdges;
+//    }
 
 
     /**
@@ -321,12 +388,18 @@ public class GlobalAnalysis {
         }
 
     }
+    
+    /* cost calculation */
+    private WcetCost calculateCost(SuperGraphNode sgn) {
+        AnalysisContext ctx = new AnalysisContextCallString(sgn.getContextCFG().getCallString());
+        WcetVisitor costCalculator = new BasicBlockCost(project, ctx);
+        return costCalculator.computeCost(sgn.getCFGNode());    	
+    }
+    
+    private static class BasicBlockCost extends WcetVisitor {
+        private AnalysisContext ctx;
 
-    public static class LocalCostVisitor extends WcetVisitor {
-        private boolean addAlwaysMissCost;
-        private AnalysisContextLocal ctx;
-
-        public LocalCostVisitor(WCETTool p, AnalysisContextLocal ctx) {
+        public BasicBlockCost(WCETTool p, AnalysisContext ctx) {
             super(p);
             this.ctx = ctx;
         }
@@ -336,11 +409,14 @@ public class GlobalAnalysis {
         }
 
 		@Override
-		public void visitReturnNode(ReturnNode n) {}
+		public void visitReturnNode(ReturnNode n) {
+			
+		}
 
 		@Override
         public void visitBasicBlockNode(BasicBlockNode n) {
             cost.addLocalCost(project.getWCETProcessorModel().basicBlockWCET(ctx.getExecutionContext(n), n.getBasicBlock()));
         }
     }
+
 }

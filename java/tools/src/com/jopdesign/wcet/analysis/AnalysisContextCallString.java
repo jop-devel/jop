@@ -25,15 +25,15 @@ import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ExecutionContext;
 
 /**
- * Purpose:
+ * Purpose: Adapter for callstrings to be used as AnalysisContext
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  *
  */
-public class AnalysisContextSimple implements AnalysisContext {
+public class AnalysisContextCallString implements AnalysisContext {
 
 	private CallString callString;
 
-	public AnalysisContextSimple(CallString cs) {
+	public AnalysisContextCallString(CallString cs) {
 		this.callString = cs;
 	}
 	

@@ -21,9 +21,17 @@ package com.jopdesign.wcet.analysis.cache;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph.ContextEdge;
+import com.jopdesign.common.code.SuperGraph.ContextCFG;
+import com.jopdesign.common.code.SuperGraph.SuperEdge;
+import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
+import com.jopdesign.common.code.SuperGraph.SuperReturnEdge;
 import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.Segment;
 import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.graphutils.Pair;
+import com.jopdesign.common.misc.Filter;
+import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.common.misc.MiscUtils.F1;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.ipet.IPETBuilder;
@@ -40,6 +48,8 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.Map.Entry;
 
 /**
  * Analysis of the variable block Method cache.
@@ -184,35 +194,40 @@ public class MethodCacheAnalysis {
 
         IPETConfig ipetConfig = new IPETConfig(wcetTool.getConfig());
 
-		/* Create a supergraph */
-		SuperGraph sg = getScopeSuperGraph(scope);
+		/* Create an analysis segment */
+		Segment segment = getAnalysisSegment(scope);
 
 		/* create an ILP graph for all reachable methods */
 		String key = String.format("method_cache_analysis:%s", scope.toString());
 
 		/* create an global IPET problem for the supergraph */
-		IPETSolver ipetSolver = GlobalAnalysis.buildIpetProblem(wcetTool, key, sg, ipetConfig);
-		IPETBuilder<SuperGraph.CallContext> ipetBuilder = new IPETBuilder<SuperGraph.CallContext>(wcetTool, null);
+		IPETSolver<SuperGraphEdge> ipetSolver = GlobalAnalysis.buildIpetProblem(wcetTool, key, segment, ipetConfig);
 
+		/* Collect all method cache accesses */
+		Iterable<SuperGraphEdge> cacheAccessEdges = collectCacheAccesses(segment);
+		
+		/* Group method cache access by method */
+		F1<SuperGraphEdge, MethodInfo> getMethodInfo = new F1<SuperGraphEdge, MethodInfo>() {
+			public MethodInfo apply(SuperGraphEdge v) { return v.getTarget().getContextCFG().getCfg().getMethodInfo(); }
+		};
+		Map<MethodInfo, List<SuperGraphEdge>> partition = MiscUtils.group(getMethodInfo, null, cacheAccessEdges);
+		
 		/* Add decision variables for all invoked methods, cost (blocks) and constraints */
-		Map<MethodInfo, List<Pair<SuperGraph.SuperInvokeEdge, SuperGraph.SuperReturnEdge>>> callSites = sg.getAllCallSites();
+	    for (Entry<MethodInfo, List<SuperGraphEdge>> entry : partition.entrySet()) {
+	    		    		    	
+	    	MethodInfo mi = entry.getKey();
+	    	List<SuperGraphEdge> accesses = entry.getValue();
 
-		callSites.remove(scope.getMethodInfo());
+	    	/* sum(miss_edges) <= 1 */
+		    LinearConstraint<SuperGraphEdge> lv = new LinearConstraint<SuperGraphEdge>(ConstraintType.LessEqual);
 
-		for (MethodInfo mi : callSites.keySet()) {
-
-		    /* sum(load_edges) <= 1 */
-		    LinearConstraint<ExecutionEdge> lv = new LinearConstraint<ExecutionEdge>(ConstraintType.LessEqual);
-		    for (Pair<SuperGraph.SuperInvokeEdge, SuperGraph.SuperReturnEdge> callSite : callSites.get(mi)) {
-		        SuperGraph.SuperInvokeEdge invokeEdge = callSite.first();
-		        /* add load and use edges */
-		        ipetBuilder.changeContext(invokeEdge.getCallee().getContext());
-		        ExecutionEdge parentEdge = ipetBuilder.newEdge(invokeEdge);
-		        ExecutionEdge loadEdge = ipetBuilder.newEdge(MethodCacheAnalysis.splitEdge(invokeEdge, true));
-		        ExecutionEdge useEdge = ipetBuilder.newEdge(MethodCacheAnalysis.splitEdge(invokeEdge, false));
-		        ipetSolver.addConstraint(IPETUtils.lowLevelEdgeSplit(parentEdge, loadEdge, useEdge));
-		        ipetSolver.addEdgeCost(loadEdge, methodCache.requiredNumberOfBlocks(mi));
-		        lv.addLHS(loadEdge, 1);
+		    for (SuperGraphEdge access : accesses) {
+		    	List<SuperGraphEdge> cacheEdges = GlobalAnalysis.generateSplitEdges(access, this.getClass(), 2); 
+		    	SuperGraphEdge missEdge = cacheEdges.get(0);
+		    	SuperGraphEdge hitEdge  = cacheEdges.get(1);
+		    	ipetSolver.addConstraint(IPETUtils.lowLevelEdgeSplit(access, missEdge, hitEdge));
+		    	ipetSolver.addEdgeCost(missEdge, methodCache.requiredNumberOfBlocks(mi));
+		    	lv.addLHS(missEdge, 1);		    		
 		    }
 		    lv.addRHS(1);
 		    ipetSolver.addConstraint(lv);
@@ -227,8 +242,25 @@ public class MethodCacheAnalysis {
 		    throw new RuntimeException("LP Solver failed: " + e, e);
 		}
 		long neededBlocks = (long) (lpCost + 0.5);
-		neededBlocks += methodCache.requiredNumberOfBlocks(scope.getMethodInfo());
+		/* Not needed any more, we take the target method of all entry edges into account
+  		 * neededBlocks += methodCache.requiredNumberOfBlocks(scope.getMethodInfo());
+  		 */
 		return neededBlocks;
+	}
+
+	/**
+	 * Collect all method cache accesses in the segment: These are all supergraph edges,
+	 * plus all entry edges.
+	 * @param segment
+	 * @return
+	 */
+	private Iterable<SuperGraphEdge> collectCacheAccesses(final Segment segment) {
+		return new Filter<SuperGraphEdge>() {
+			@Override
+			protected boolean include(SuperGraphEdge e) {
+				return (e instanceof SuperEdge || segment.getEntryEdges().contains(e));
+			}				
+		}.filter(segment.getEdges()); 		
 	}
 
 	/**
@@ -251,9 +283,9 @@ public class MethodCacheAnalysis {
     }
 
 
-    private SuperGraph getScopeSuperGraph(ExecutionContext scope) {
+    private Segment getAnalysisSegment(ExecutionContext scope) {
         MethodInfo m = scope.getMethodInfo();
-        return new SuperGraph(wcetTool, wcetTool.getFlowGraph(m), wcetTool.getProjectConfig().callstringLength());
+        return Segment.methodSegment(wcetTool, m, scope.getCallString(), wcetTool.getProjectConfig().callstringLength());
     }
 
     /**
