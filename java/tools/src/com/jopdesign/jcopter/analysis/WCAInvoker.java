@@ -21,6 +21,7 @@
 package com.jopdesign.jcopter.analysis;
 
 import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallGraph.ContextEdge;
@@ -28,7 +29,9 @@ import com.jopdesign.common.code.CallGraph.DUMPTYPE;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ControlFlowGraph.InvokeNode;
 import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.graphutils.DFSTraverser;
@@ -59,12 +62,13 @@ import java.util.Set;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class WCAInvoker implements ExecCountProvider {
+public class WCAInvoker extends ExecCountProvider {
 
     private final JCopter jcopter;
     private final Set<MethodInfo> wcaTargets;
     private final AnalysisManager analyses;
     private final Map<ExecutionContext, Map<CFGNode,Long>> wcaNodeFlow;
+    private final Map<MethodInfo,Long> execCounts;
 
     private WCETTool wcetTool;
     private RecursiveWcetAnalysis<AnalysisContextLocal> recursiveAnalysis;
@@ -79,6 +83,7 @@ public class WCAInvoker implements ExecCountProvider {
         this.wcaTargets = wcaTargets;
         wcetTool = jcopter.getWcetTool();
         wcaNodeFlow = new HashMap<ExecutionContext, Map<CFGNode, Long>>();
+        execCounts = new HashMap<MethodInfo, Long>();
     }
 
     public JCopter getJcopter() {
@@ -89,13 +94,13 @@ public class WCAInvoker implements ExecCountProvider {
         return wcaTargets;
     }
 
-    public boolean doProvideWCAExecCount() {
-        return provideWCAExecCount;
+    public Collection<CallGraph> getWCACallGraphs() {
+        return Collections.singleton(wcetTool.getCallGraph());
     }
 
-    public void setProvideWCAExecCount(boolean provideWCAExecCount) {
-        this.provideWCAExecCount = provideWCAExecCount;
-    }
+    ///////////////////////////////////////////////////////////////////////////////
+    // Init WCA results, lookup WCA results
+    ///////////////////////////////////////////////////////////////////////////////
 
     public void initTool() throws BadConfigurationException {
 
@@ -143,7 +148,7 @@ public class WCAInvoker implements ExecCountProvider {
         return wcetTool.getCallGraph().containsMethod(method);
     }
 
-    public boolean isOnWCETPath(MethodInfo method, InstructionHandle ih) {
+    public boolean isOnLocalWCETPath(MethodInfo method, InstructionHandle ih) {
 
         ControlFlowGraph cfg = method.getCode().getControlFlowGraph(false);
         BasicBlockNode block = cfg.getHandleNode(ih);
@@ -155,6 +160,80 @@ public class WCAInvoker implements ExecCountProvider {
 
         return false;
     }
+
+
+    ///////////////////////////////////////////////////////////////////////////////
+    // Lookup on global WCET path, WCET-path exec counts of methods
+    ///////////////////////////////////////////////////////////////////////////////
+
+    public boolean doProvideWCAExecCount() {
+        return provideWCAExecCount;
+    }
+
+    public void setProvideWCAExecCount(boolean provideWCAExecCount) {
+        this.provideWCAExecCount = provideWCAExecCount;
+    }
+
+    public boolean isOnWCETPath(MethodInfo method) {
+        return getExecCount(method) > 0;
+    }
+
+    @Override
+    public long getExecCount(MethodInfo method) {
+        Long cnt = execCounts.get(method);
+        return cnt != null ? cnt : 0;
+    }
+
+    @Override
+    public long getExecFrequency(InvokeSite invokeSite, MethodInfo invokee) {
+
+        // if the CFG has been devirtualized, we can look up the frequency for a given invoke directly
+        if (!invokeSite.isJVMCall()) {
+            ControlFlowGraph cfg = invokeSite.getInvoker().getCode().getControlFlowGraph(false);
+
+            for (CFGNode node : cfg.getGraph().vertexSet()) {
+                if (!(node instanceof InvokeNode)) continue;
+                InvokeNode inv = (InvokeNode) node;
+
+                if (invokee.equals(inv.getImplementingMethod())) {
+                    return getExecFrequency(invokeSite.getInvoker(), inv);
+                }
+            }
+        }
+
+        // else we fall back to the virtual invoke node
+        return getExecFrequency(invokeSite);
+    }
+
+    @Override
+    public long getExecFrequency(MethodInfo method, InstructionHandle ih) {
+        ControlFlowGraph cfg = method.getCode().getControlFlowGraph(false);
+        BasicBlockNode block = cfg.getHandleNode(ih);
+
+        return getExecFrequency(method, block);
+    }
+
+    public long getExecFrequency(MethodInfo method, CFGNode block) {
+        long flow = 0;
+
+        for (ExecutionContext node : wcetTool.getCallGraph().getNodes(method)) {
+            Long value = wcaNodeFlow.get(node).get(block);
+            flow += value;
+        }
+
+        return flow;
+    }
+
+    @Override
+    public Set<MethodInfo> getChangeSet() {
+        // If this is used as exec count provider, everything is recalculated, so no need to keep track of changes
+        return Collections.emptySet();
+    }
+
+
+    ///////////////////////////////////////////////////////////////////////////////
+    // Update results
+    ///////////////////////////////////////////////////////////////////////////////
 
     /**
      * Update the WCA results after a set of methods have been changed. The changesets of analyses
@@ -207,9 +286,9 @@ public class WCAInvoker implements ExecCountProvider {
         return changed;
     }
 
-    public Collection<CallGraph> getWCACallGraphs() {
-        return Collections.singleton(wcetTool.getCallGraph());
-    }
+    ///////////////////////////////////////////////////////////////////////////////
+    // Private methods
+    ///////////////////////////////////////////////////////////////////////////////
 
     private Set<MethodInfo> runAnalysis(DirectedGraph<ExecutionContext,ContextEdge> reversed) {
         // Phew. The WCA only runs on acyclic callgraphs, we can therefore assume the
@@ -254,6 +333,63 @@ public class WCAInvoker implements ExecCountProvider {
     private void updateWCEP() {
         if (!provideWCAExecCount) return;
 
+        execCounts.clear();
+        for (MethodInfo root : getWcaTargets()) {
+            execCounts.put(root, 1L);
+        }
 
+        TopologicalOrderIterator<ExecutionContext,ContextEdge> topOrder = wcetTool.getCallGraph().topDownIterator();
+
+        while (topOrder.hasNext()) {
+            ExecutionContext context = topOrder.next();
+
+            MethodInfo method = context.getMethodInfo();
+            MethodCode code = method.getCode();
+
+            long ec = getExecCount(method);
+            // skip methods which are not on the WCET path.. we could ship iterating over the childs too..somehow
+            if (ec == 0) continue;
+
+            ControlFlowGraph cfg = method.getCode().getControlFlowGraph(false);
+            for (CFGNode node : cfg.getGraph().vertexSet()) {
+
+                if (node instanceof InvokeNode) {
+                    InvokeNode inv = (InvokeNode) node;
+
+                    long ef = getExecFrequency(method, node);
+
+                    if (!inv.isVirtual()) {
+                        addExecCount(inv.getImplementingMethod(), ec * ef);
+                    } else {
+                        for (MethodInfo invokee : ((InvokeNode)node).getImplementingMethods()) {
+                            addExecCount(invokee, ec * ef);
+                        }
+                    }
+
+                } else if (node instanceof BasicBlockNode) {
+                    // check if we have a JVM invoke here (or an invoke not in a dedicated node..)
+                    for (InstructionHandle ih : node.getBasicBlock().getInstructions()) {
+                        if (!code.isInvokeSite(ih)) continue;
+
+                        long ef = getExecFrequency(method, node);
+                        for (MethodInfo invokee : method.getAppInfo().findImplementations(code.getInvokeSite(ih))) {
+                            addExecCount(invokee, ec * ef);
+                        }
+
+                    }
+                }
+
+            }
+        }
     }
+
+    private void addExecCount(MethodInfo method, long ec) {
+        Long count = execCounts.get(method);
+        if (count == null) {
+            execCounts.put(method, ec);
+        } else {
+            execCounts.put(method, ec + count);
+        }
+    }
+
 }

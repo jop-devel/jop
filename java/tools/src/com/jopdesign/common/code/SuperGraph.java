@@ -375,7 +375,7 @@ public class SuperGraph {
             for (CFGNode node : current.getCfg().getGraph().vertexSet()) {
                 if (node instanceof ControlFlowGraph.InvokeNode) {
                     ControlFlowGraph.InvokeNode iNode = (ControlFlowGraph.InvokeNode) node;
-                    MethodInfo impl = iNode.getImplementedMethod();
+                    MethodInfo impl = iNode.getImplementingMethod();
                     ControlFlowGraph invokedCFG = cfgProvider.getFlowGraph(impl);
                     CallString invokedCS = currentCS.push(iNode, callstringLength);
                     SuperGraphNode invoked = new SuperGraphNode(invokedCFG, invokedCS);

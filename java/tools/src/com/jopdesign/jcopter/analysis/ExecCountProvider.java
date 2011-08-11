@@ -20,10 +20,62 @@
 
 package com.jopdesign.jcopter.analysis;
 
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.InvokeSite;
+import org.apache.bcel.generic.InstructionHandle;
+
+import java.util.Set;
+
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public interface ExecCountProvider {
+public abstract class ExecCountProvider {
 
+    public abstract long getExecCount(MethodInfo method);
+
+    public long getExecCount(ExecutionContext context) {
+
+        CallString cs = context.getCallString();
+
+        if (cs.isEmpty()) {
+            return getExecCount(context.getMethodInfo());
+        }
+
+        // if we have a callstring, we need to start at the beginning of the callstring, then multiply the
+        // frequencies up to the invoked method along the callstring
+        long count = getExecCount(cs.first().getInvoker());
+
+        for (int i = 0; i < cs.length(); i++) {
+            InvokeSite is = cs.get(i);
+            MethodInfo invokee = i+1 < cs.length() ? cs.get(i+1).getInvoker() : context.getMethodInfo();
+            count *= getExecFrequency(is, invokee);
+        }
+
+        return count;
+    }
+
+    public long getExecCount(InvokeSite invokeSite) {
+        return getExecCount(invokeSite.getInvoker(), invokeSite.getInstructionHandle());
+    }
+
+    public long getExecCount(InvokeSite invokeSite, MethodInfo invokee) {
+        return getExecCount(invokeSite.getInvoker()) * getExecFrequency(invokeSite, invokee);
+    }
+
+    public long getExecCount(MethodInfo method, InstructionHandle ih) {
+        return getExecCount(method) * getExecFrequency(method, ih);
+    }
+
+    public long getExecFrequency(InvokeSite invokeSite) {
+        return getExecFrequency(invokeSite.getInvoker(), invokeSite.getInstructionHandle());
+    }
+
+    public abstract long getExecFrequency(InvokeSite invokeSite, MethodInfo invokee);
+
+    public abstract long getExecFrequency(MethodInfo method, InstructionHandle ih);
+
+    public abstract Set<MethodInfo> getChangeSet();
 
 }

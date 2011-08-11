@@ -263,6 +263,10 @@ public class CallString implements CallStringProvider, Iterable<InvokeSite> {
         }
     }
 
+    public InvokeSite get(int pos) {
+        return callString[pos];
+    }
+
     /**
      * @param length must be between 0 and {@link #length()} inclusive.
      * @return return a callstring with the given length containing the {@code length} most recently pushed items.

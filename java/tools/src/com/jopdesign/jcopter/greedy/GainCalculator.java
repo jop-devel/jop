@@ -40,10 +40,10 @@ public class GainCalculator {
 
         // TODO else add heuristic factor to prefer candidates outside IF-constructs
 
-        long gain = analyses.getExecCountAnalysis().getExecCount(candidate.getMethod(), candidate.getEntry())
+        long gain = ecp.getExecCount(candidate.getMethod(), candidate.getEntry())
                     * candidate.getLocalGain();
 
-        gain -= candidate.getDeltaCacheMissCosts(ecp);
+        gain -= candidate.getDeltaCacheMissCosts(analyses, ecp);
 
         gain -= getCodesizeCacheCosts(ecp, candidate);
 
@@ -51,7 +51,7 @@ public class GainCalculator {
     }
 
     private long getCodesizeCacheCosts(ExecCountProvider ecp, Candidate candidate) {
-        return analyses.getMethodCacheAnalysis().getDeltaCacheMissCosts(candidate);
+        return analyses.getMethodCacheAnalysis().getDeltaCacheMissCosts(ecp, candidate);
     }
 
 }

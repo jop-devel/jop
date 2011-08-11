@@ -60,7 +60,7 @@ public class WCEPRebateSelector extends RebateSelector {
     }
 
     @Override
-    public Set<MethodInfo> updateChangeSet(Set<MethodInfo> optimizedMethods, Set<MethodInfo> candidateChanges) {
+    public Set<MethodInfo> updateChangeSet(ExecCountProvider ecp, Set<MethodInfo> optimizedMethods, Set<MethodInfo> candidateChanges) {
         // No need to add anything else, as we search the whole graph anyway..
         return candidateChanges;
     }

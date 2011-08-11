@@ -22,6 +22,7 @@ package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
+import com.jopdesign.jcopter.analysis.ExecCountProvider;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -44,17 +45,17 @@ public class WCETRebateSelector extends QueueSelector {
 
         if (!analyses.getWCAInvoker().isWCAMethod(candidate.getMethod())) return true;
 
-        return analyses.getWCAInvoker().isOnWCETPath(candidate.getMethod(), candidate.getEntry());
+        return analyses.getWCAInvoker().isOnLocalWCETPath(candidate.getMethod(), candidate.getEntry());
     }
 
     @Override
-    public Set<MethodInfo> updateChangeSet(Set<MethodInfo> optimizedMethods, Set<MethodInfo> candidateChanges) {
+    public Set<MethodInfo> updateChangeSet(ExecCountProvider ecp, Set<MethodInfo> optimizedMethods, Set<MethodInfo> candidateChanges) {
         Set<MethodInfo> changeSet = new HashSet<MethodInfo>(candidateChanges);
         changeSet.addAll( analyses.getExecCountAnalysis().getChangeSet() );
-        changeSet.addAll( analyses.getMethodCacheAnalysis().getMissCountChangeSet() );
+        changeSet.addAll( analyses.getMethodCacheAnalysis().getMissCountChangeSet(ecp) );
 
         // WCA invoker checks analysis changesets itself
-        changeSet.addAll( analyses.getWCAInvoker().updateWCA(optimizedMethods) );
+        changeSet.addAll(analyses.getWCAInvoker().updateWCA(optimizedMethods));
 
         return changeSet;
     }

@@ -1247,6 +1247,31 @@ public class CallGraph implements ImplementationFinder {
         return invokers;
     }
 
+    public Set<InvokeSite> getInvokeSites(MethodInfo invokee) {
+        MethodNode node = getMethodNode(invokee);
+        Set<InvokeSite> invokeSites = new HashSet<InvokeSite>();
+
+        for (ExecutionContext ec : node.getInstances()) {
+            if (ec.getCallString().isEmpty()) {
+                // no callstring, need to search the invoker 'manually' for invokesites which may invoke this method
+                AppInfo appInfo = AppInfo.getSingleton();
+                for (ContextEdge edge : callGraph.incomingEdgesOf(ec)) {
+                    for (InvokeSite invokeSite : edge.getSource().getMethodInfo().getCode().getInvokeSites()) {
+                        Set<MethodInfo> impl = appInfo.findImplementations(invokeSite);
+                        if (impl.contains(invokee)) {
+                            invokeSites.add(invokeSite);
+                        }
+                    }
+                }
+            } else {
+                invokeSites.add(ec.getCallString().top());
+            }
+
+        }
+
+        return invokeSites;
+    }
+
     public List<ExecutionContext> getInvokedNodes(ExecutionContext node, InvokeSite invokeSite, MethodInfo invokee) {
         List<ExecutionContext> invoked = new ArrayList<ExecutionContext>(1);
         for (ContextEdge edge : callGraph.outgoingEdgesOf(node)) {

@@ -126,7 +126,7 @@ public class UppaalAnalysis {
                 AnalysisContextUppaal ctx) {
             WCETTool project = stagedAnalysis.getWCETTool();
             MethodInfo invoker = n.getBasicBlock().getMethodInfo();
-            MethodInfo invoked = n.getImplementedMethod();
+            MethodInfo invoked = n.getImplementingMethod();
             WCETProcessorModel proc = project.getWCETProcessorModel();
             MethodCache cache = proc.getMethodCache();
             int cc = project.computeCyclomaticComplexity(invoked);

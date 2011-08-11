@@ -22,6 +22,7 @@ package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
+import com.jopdesign.jcopter.analysis.ExecCountProvider;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -41,10 +42,10 @@ public class ACETRebateSelector extends QueueSelector {
     }
 
     @Override
-    public Set<MethodInfo> updateChangeSet(Set<MethodInfo> optimizedMethods, Set<MethodInfo> candidateChanges) {
+    public Set<MethodInfo> updateChangeSet(ExecCountProvider ecp, Set<MethodInfo> optimizedMethods, Set<MethodInfo> candidateChanges) {
         Set<MethodInfo> changeSet = new HashSet<MethodInfo>(candidateChanges);
         changeSet.addAll( analyses.getExecCountAnalysis().getChangeSet() );
-        changeSet.addAll( analyses.getMethodCacheAnalysis().getMissCountChangeSet() );
+        changeSet.addAll( analyses.getMethodCacheAnalysis().getMissCountChangeSet(ecp) );
         return changeSet;
     }
 }

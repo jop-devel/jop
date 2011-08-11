@@ -155,9 +155,10 @@ public abstract class Candidate implements CodeModification {
      *
      * @return the cache miss costs difference assuming an unknown cache state for a single execution for the invokes
      *         in the optimized code.
+     * @param analyses
      * @param ecp
      */
-    public abstract long getDeltaCacheMissCosts(ExecCountProvider ecp);
+    public abstract long getDeltaCacheMissCosts(AnalysisManager analyses, ExecCountProvider ecp);
 
     @Override
     public String toString() {

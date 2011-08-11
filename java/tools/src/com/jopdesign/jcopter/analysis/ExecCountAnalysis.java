@@ -52,7 +52,7 @@ import java.util.Set;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ExecCountAnalysis implements ExecCountProvider {
+public class ExecCountAnalysis extends ExecCountProvider {
 
     private class InlineEdgeProvider implements EdgeProvider<ExecutionContext,ContextEdge> {
 
@@ -132,29 +132,40 @@ public class ExecCountAnalysis implements ExecCountProvider {
     // Query the analysis results
     ////////////////////////////////////////////////////////////////////////////////////
 
+    @Override
     public long getExecCount(MethodInfo methodInfo) {
-        return getExecCount(new ExecutionContext(methodInfo));
-    }
-
-    public long getExecCount(ExecutionContext context) {
         long count = 0;
 
-        for (ExecutionContext ec : callGraph.getNodes(context)) {
+        for (ExecutionContext ec : callGraph.getNodes(methodInfo)) {
             Long c = nodeCount.get(ec);
-            if (c != null) {
-                count += c;
-            }
+            count += c;
         }
 
         return count;
     }
 
-    public long getExecCount(InvokeSite invokeSite) {
-        return getExecCount(invokeSite.getInvoker(), invokeSite.getInstructionHandle());
+    @Override
+    public long getExecCount(ExecutionContext context) {
+
+        Long c = nodeCount.get(context);
+        if (c != null) {
+            return c;
+        }
+
+        return super.getExecCount(context);
     }
 
-    public long getExecCount(MethodInfo method, InstructionHandle ih) {
-        return getExecCount(new ExecutionContext(method), ih);
+    @Override
+    public long getExecFrequency(MethodInfo method, InstructionHandle ih) {
+        return getExecFrequency(new ExecutionContext(method), ih);
+    }
+
+    @Override
+    public long getExecFrequency(InvokeSite invokeSite, MethodInfo invokee) {
+        // TODO we could check the nodes of the invokee, use only nodes with the invokeSite at the top
+        //      of the callstring, but we would not get a better result than this if we do not improve the
+        //      callgraph results first
+        return getExecFrequency(invokeSite);
     }
 
     public long getExecCount(ExecutionContext context, InstructionHandle ih) {
@@ -196,14 +207,6 @@ public class ExecCountAnalysis implements ExecCountProvider {
         return ef;
     }
 
-    public long getExecFrequency(InvokeSite invokeSite) {
-        return getExecFrequency(invokeSite.getInvoker(), invokeSite.getInstructionHandle());
-    }
-
-    public long getExecFrequency(MethodInfo method, InstructionHandle ih) {
-        return getExecFrequency(new ExecutionContext(method), ih);
-    }
-
     ////////////////////////////////////////////////////////////////////////////////////
     // Notify of updates of the underlying callgraph, recalculate
     ////////////////////////////////////////////////////////////////////////////////////
@@ -212,6 +215,7 @@ public class ExecCountAnalysis implements ExecCountProvider {
         changeSet.clear();
     }
 
+    @Override
     public Set<MethodInfo> getChangeSet() {
         return changeSet;
     }

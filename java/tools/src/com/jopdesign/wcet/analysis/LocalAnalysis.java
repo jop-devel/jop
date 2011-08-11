@@ -55,7 +55,7 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 		}
 		WCETTool project   = stagedAnalysis.getWCETTool();
 		MethodInfo invoker = n.getBasicBlock().getMethodInfo();
-		MethodInfo invoked = n.getImplementedMethod();
+		MethodInfo invoked = n.getImplementingMethod();
 		WCETProcessorModel proc = project.getWCETProcessorModel();
 		MethodCache cache = proc.getMethodCache();
 		long cacheCost;

@@ -22,6 +22,7 @@ package com.jopdesign.wcet;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.timing.jamuth.JamuthInstructionInfo;
 import com.jopdesign.timing.jamuth.JamuthTimingTable;
 import com.jopdesign.wcet.jop.MethodCache;
@@ -97,4 +98,13 @@ public class JamuthWCETModel implements WCETProcessorModel {
 		return 0;
 	}
 
+    @Override
+    public long getInvokeCacheMissPenalty(InvokeSite invokeSite, int invokeeWords) {
+        return 0;
+    }
+
+    @Override
+    public long getReturnCacheMissPenalty(InvokeSite invokeSite, int invokerWords) {
+        return 0;
+    }
 }

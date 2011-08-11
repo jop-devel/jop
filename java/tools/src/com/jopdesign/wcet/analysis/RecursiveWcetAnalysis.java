@@ -71,8 +71,8 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 			// FIXME: [Bug #3] Hackish implementation of callgraph pruning
 			if(n.getVirtualNode() != null) {
 				Set<MethodInfo> actuallyReachable =
-					n.getVirtualNode().getImplementedMethods(ctx.getCallString(), project.getCallGraph());
-				if(! actuallyReachable.contains(n.getImplementedMethod())) return;
+					n.getVirtualNode().getImplementingMethods(ctx.getCallString(), project.getCallGraph());
+				if(! actuallyReachable.contains(n.getImplementingMethod())) return;
 			}
 
 			cost.addLocalCost(processor.getExecutionTime(ctx.getExecutionContext(n),n.getInstructionHandle()));

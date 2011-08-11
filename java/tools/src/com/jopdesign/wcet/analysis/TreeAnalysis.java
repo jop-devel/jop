@@ -22,11 +22,11 @@ package com.jopdesign.wcet.analysis;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.CfgVisitor;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.graphutils.ProgressMeasure;
 import com.jopdesign.common.graphutils.ProgressMeasure.RelativeProgress;
@@ -57,7 +57,7 @@ public class TreeAnalysis {
 
         @Override
         public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
-            MethodInfo method = n.getImplementedMethod();
+            MethodInfo method = n.getImplementingMethod();
             visitBasicBlockNode(n);
             cost.addCacheCost(project.getWCETProcessorModel().getInvokeReturnMissCost(
                     n.invokerFlowGraph(),
@@ -85,7 +85,7 @@ public class TreeAnalysis {
         }
 
         public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
-            Long aLong = subProgress.get(n.getImplementedMethod());
+            Long aLong = subProgress.get(n.getImplementingMethod());
             long invokedProgress = aLong;
             progress = 1 + invokedProgress;
         }

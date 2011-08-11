@@ -98,7 +98,7 @@ public class GreedyOptimizer {
         // initialization
         resetCounters();
 
-        AnalysisManager analyses = initializeAnalyses();
+        AnalysisManager analyses = initializeAnalyses(config.useWCEP());
 
         for (CodeOptimizer opt : optimizers) {
             opt.initialize(analyses, rootMethods);
@@ -190,12 +190,12 @@ public class GreedyOptimizer {
         logger.info("Candidates: "+countCandidates+", Optimized: "+countOptimized);
     }
 
-    private AnalysisManager initializeAnalyses() {
+    private AnalysisManager initializeAnalyses(boolean updateWCEP) {
 
         AnalysisManager analyses = new AnalysisManager(jcopter);
 
         analyses.initAnalyses(config.getTargetMethodSet(), config.getCacheAnalysisType(),
-                              config.useWCA() ? config.getWCATargetSet() : null);
+                              config.useWCA() ? config.getWCATargetSet() : null, updateWCEP);
 
         logger.info("Callgraph nodes: "+analyses.getTargetCallGraph().getNodes().size());
 
@@ -302,7 +302,7 @@ public class GreedyOptimizer {
             }
 
             // Now let the selector update its analyses and find out which additional methods need sorting
-            Set<MethodInfo> changeSet = selector.updateChangeSet(optimizedMethods, candidateChanges);
+            Set<MethodInfo> changeSet = selector.updateChangeSet(ecp, optimizedMethods, candidateChanges);
 
             // for those methods with invokesites with cache-cost changes, recalculate the candidate-gains
             // (assuming that the candidates do not use the WCA results, else we would recalculate in changeSet too)

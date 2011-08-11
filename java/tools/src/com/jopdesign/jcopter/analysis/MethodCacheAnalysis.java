@@ -71,34 +71,28 @@ public class MethodCacheAnalysis {
 
     private static final Logger logger = Logger.getLogger(JCopter.LOG_ANALYSIS+".MethodCacheAnalysis");
 
+    private final JCopter jcopter;
     private final MethodCache cache;
     private final CallGraph callGraph;
     private final Map<ExecutionContext,Integer> cacheBlocks;
     private final Map<ExecutionContext, Set<MethodInfo>> reachableMethods;
-    private final AnalysisManager analyses;
     private final AnalysisType analysisType;
 
     private final Set<MethodInfo> classifyChanges;
-    private final Set<MethodInfo> countChanges;
 
     ///////////////////////////////////////////////////////////////////////////////////
     // Constructors, initialization, standard getter
     ///////////////////////////////////////////////////////////////////////////////////
 
-    public MethodCacheAnalysis(AnalysisManager analyses, AnalysisType analysisType) {
-        this(analyses, analysisType, analyses.getTargetCallGraph());
-    }
-
-    public MethodCacheAnalysis(AnalysisManager analyses, AnalysisType analysisType, CallGraph callGraph) {
-        this.analyses = analyses;
+    public MethodCacheAnalysis(JCopter jcopter, AnalysisType analysisType, CallGraph callGraph) {
+        this.jcopter = jcopter;
         this.analysisType = analysisType;
-        this.cache = analyses.getJCopter().getMethodCache();
+        this.cache = jcopter.getMethodCache();
         this.callGraph = callGraph;
 
         cacheBlocks = new HashMap<ExecutionContext, Integer>(callGraph.getNodes().size());
         reachableMethods = new HashMap<ExecutionContext, Set<MethodInfo>>(callGraph.getNodes().size());
         classifyChanges = new HashSet<MethodInfo>();
-        countChanges = new HashSet<MethodInfo>();
     }
 
     public CallGraph getCallGraph() {
@@ -152,196 +146,202 @@ public class MethodCacheAnalysis {
         return cache.allFit(blocks);
     }
 
-    public long getInvokeMissCount(InvokeSite invokeSite) {
-        return getMissCount(invokeSite.getInvoker(), invokeSite.getInstructionHandle());
-    }
-
-    public long getInvokeMissCount(CallString context) {
-        return getMissCount(context.getExecutionContext(), context.top().getInstructionHandle());
-    }
-
-    public long getReturnMissCount(InvokeSite invokeSite) {
-        if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
-        if (analysisType == AnalysisType.ALWAYS_MISS || !allFit(invokeSite.getInvoker())) {
-            return analyses.getExecCountAnalysis().getExecCount(invokeSite);
-        }
-        if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT || cache.isLRU()) {
-            return 0;
-        }
-        // TODO for FIFO caches, return might cause cache misses in all-fit
-        return 0;
-    }
-
-    public long getReturnMissCount(CallString callString) {
-        if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
-        if (analysisType == AnalysisType.ALWAYS_MISS || !allFit(callString.top().getInvoker())) {
-            return analyses.getExecCountAnalysis().getExecCount(
-                    callString.getExecutionContext(), callString.top().getInstructionHandle());
-        }
-        if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT || cache.isLRU()) {
-            return 0;
-        }
-        // TODO for FIFO caches, return might cause cache misses in all-fit
-        return 0;
-    }
-
-    public long getTotalInvokeReturnMissCosts(InvokeSite invokeSite) {
-        return getTotalInvokeReturnMissCosts(new CallString(invokeSite));
-    }
-
-    public long getTotalInvokeReturnMissCosts(CallString callString) {
+    public long getInvokeReturnCacheCosts(ExecCountProvider ecp, InvokeSite invokeSite) {
         if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
 
         AppInfo appInfo = AppInfo.getSingleton();
         int size = 0;
-        for (MethodInfo method : appInfo.findImplementations(callString)) {
-            size = Math.max(size, method.getCode().getNumberOfWords());
+        for (MethodInfo method : appInfo.findImplementations(invokeSite)) {
+            size = Math.max(size, getMethodSize(method));
         }
+        size = MiscUtils.bytesToWords(size);
 
-        WCETProcessorModel pm = analyses.getJCopter().getWCETProcessorModel();
-        int sizeInvoker = callString.top().getInvoker().getCode().getNumberOfWords();
+        int sizeInvoker = getMethodSize(invokeSite.getInvoker());
+        sizeInvoker = MiscUtils.bytesToWords(sizeInvoker);
 
-        return getInvokeMissCount(callString) * pm.getMethodCacheMissPenalty(size, true)
-             - getReturnMissCount(callString) * pm.getMethodCacheMissPenalty(sizeInvoker, false);
+        WCETProcessorModel pm = jcopter.getWCETProcessorModel();
+        long invokeCosts = pm.getInvokeCacheMissPenalty(invokeSite, size);
+        long returnCosts = pm.getReturnCacheMissPenalty(invokeSite, sizeInvoker);
+
+        return getInvokeReturnCacheCosts(ecp, invokeSite, invokeCosts, returnCosts);
     }
 
     /**
-     * @param invokeSite the invokesite causing the cache misses
-     * @param invokee the invoked method
-     * @return the number of cycles for a cache miss for a single invoke, assuming an unknown cache state before the invoke.
+     * @param ecp exec count provider
+     * @param invokeSite the invoke site to check
+     * @param invokeCacheCosts additional cycles for a single cache miss on invoke
+     * @param returnCacheCosts additional cycles for a single cache miss on return
+     * @return the number of cache miss cycles for all executions of the invoke
      */
-    public long getInvokeReturnMissCosts(InvokeSite invokeSite, MethodInfo invokee) {
+    public long getInvokeReturnCacheCosts(ExecCountProvider ecp, InvokeSite invokeSite,
+                                         long invokeCacheCosts, long returnCacheCosts)
+    {
         if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
-
-        WCETProcessorModel pm = analyses.getJCopter().getWCETProcessorModel();
-        int size = invokee.getCode().getNumberOfWords();
-
-        // we do not know if the method is in the cache, so for a single invoke always assume a miss
-        long cycles = pm.getMethodCacheMissPenalty(size, true);
-
-        // for all-fit, the return is always cached for LRU caches
-        if (analysisType == AnalysisType.ALWAYS_MISS ||
-            !allFit(invokeSite.getInvoker()) ||
-            (analysisType == AnalysisType.ALL_FIT_REGIONS && !cache.isLRU()))
-        {
-            int sizeInvoker = invokeSite.getInvoker().getCode().getNumberOfWords();
-            cycles += pm.getMethodCacheMissPenalty(sizeInvoker, false);
-        }
-
-        return cycles;
-    }
-
-    /**
-     * @param node an execution context containing the instruction
-     * @param entry the instruction to check
-     * @return number of expected executions of the instruction where not all methods reachable from
-     *         the invoker (including the invoker) are in the cache.
-     */
-    public long getMissCount(ExecutionContext node, InstructionHandle entry) {
-        if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
-
-        if (analysisType == AnalysisType.ALWAYS_MISS || !allFit(node)) {
-            return analyses.getExecCountAnalysis().getExecCount(node, entry);
+        if (analysisType == AnalysisType.ALWAYS_MISS || !allFit(invokeSite.getInvoker())) {
+            // outside all-fit, every invoke is a miss
+            long count = ecp.getExecCount(invokeSite);
+            return count * (invokeCacheCosts + returnCacheCosts);
         }
         if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT) {
             return 0;
         }
+        // TODO count invoke and return cache misses for all-fit
+        return 0;
+    }
 
-        // TODO we would want the total number of invokes of the top-most all-fit methods in the callgraph which can reach
-        //      this method
+    public long getInvokeMissCount(ExecCountProvider ecp, InvokeSite invokeSite, MethodInfo invokee) {
+        if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
+        if (analysisType == AnalysisType.ALWAYS_MISS || !allFit(invokeSite.getInvoker())) {
+            // outside all-fit, every invoke is a miss
+            return ecp.getExecCount(invokeSite, invokee);
+        }
+        if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT || cache.isLRU()) {
+            return 0;
+        }
+        // TODO for FIFO caches, return might cause cache misses in all-fit
+        return 0;
+    }
 
+    public long getInvokeMissCount(ExecCountProvider ecp, MethodInfo invokee) {
+        long count = 0;
+
+        // get all invoke sites of the invokee
+        for (InvokeSite invokeSite : callGraph.getInvokeSites(invokee)) {
+            count += getInvokeMissCount(ecp, invokeSite, invokee);
+        }
+
+        return count;
+    }
+
+    /**
+     * @param ecp exec count provider
+     * @param context the method to calculate return cache misses for, and a context in which the method is invoked.
+     *        The cache missese are calculated only for the executions with the given context.
+     * @return the total cache misses for all returns to the given method
+     */
+    public long getReturnMissCount(ExecCountProvider ecp, ExecutionContext context) {
+        if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
+        if (analysisType == AnalysisType.ALWAYS_MISS || !allFit(context.getMethodInfo())) {
+            // outside all-fit, every invoke returns with a miss
+            long retCount = 0;
+            for (InvokeSite invokeSite : context.getMethodInfo().getCode().getInvokeSites()) {
+                retCount += ecp.getExecFrequency(invokeSite);
+            }
+            return ecp.getExecCount(context) * retCount;
+        }
+        if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT || cache.isLRU()) {
+            return 0;
+        }
+        // TODO for FIFO caches, return might cause cache misses in all-fit
+        return 0;
+    }
+
+    public long getReturnMissCount(ExecCountProvider ecp, CodeModification modification) {
+        if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
+        if (analysisType == AnalysisType.ALWAYS_MISS || !allFit(modification.getMethod())) {
+            // outside all-fit, every invoke returns with a miss
+            long retCount = 0;
+            for (InvokeSite invokeSite : modification.getMethod().getCode().getInvokeSites()) {
+                InstructionHandle ih = invokeSite.getInstructionHandle();
+                if (modification.getStart().getPosition() <= ih.getPosition() &&
+                    modification.getEnd().getPosition() >= ih.getPosition())
+                {
+                    continue;
+                }
+                retCount += ecp.getExecFrequency(invokeSite);
+            }
+            return ecp.getExecCount(modification.getMethod()) * retCount;
+        }
+        if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT || cache.isLRU()) {
+            return 0;
+        }
+        // TODO for FIFO caches, return might cause cache misses in all-fit
         return 0;
     }
 
     /**
-     * @param method method containing the instruction
-     * @param entry the instruction to check
-     * @return number of expected executions of the instruction where not all methods reachable from
-     *         the invoker (including the invoker) are in the cache.
-     */
-    public long getMissCount(MethodInfo method, InstructionHandle entry) {
-        return getMissCount(new ExecutionContext(method), entry);
-    }
-
-    /**
+     * @param ecp execution counts to use
      * @param modification the modifications which will be done
-     * @return the number of cache miss cycles due to the code size change
+     * @return the number of cache miss cycles due to the code size change, excluding the effects on the modified code
      */
-    public long getDeltaCacheMissCosts(CodeModification modification) {
-        int deltaBytes = modification.getDeltaLocalCodesize();
-        MethodInfo method = modification.getMethod();
-
-        if (deltaBytes == 0) return 0;
+    public long getDeltaCacheMissCosts(ExecCountProvider ecp, CodeModification modification) {
         if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
 
-        WCETProcessorModel pm = analyses.getJCopter().getWCETProcessorModel();
+        int deltaBytes = modification.getDeltaLocalCodesize();
+        if (deltaBytes == 0) return 0;
+
+        MethodInfo method = modification.getMethod();
+
+        WCETProcessorModel pm = jcopter.getWCETProcessorModel();
         int size = getMethodSize(method);
         int oldWords = MiscUtils.bytesToWords(size);
         int newWords = MiscUtils.bytesToWords(size+deltaBytes);
 
         int deltaBlocks = cache.requiredNumberOfBlocks(newWords) - cache.requiredNumberOfBlocks(oldWords);
-        int newBlocks = getRequiredBlocks(method) + deltaBlocks;
+        //int newBlocks = getRequiredBlocks(method) + deltaBlocks;
+
+        // calc various cache miss cost deltas
+        long deltaInvokeCacheMissCosts = pm.getMethodCacheMissPenalty(newWords, true) -
+                                         pm.getMethodCacheMissPenalty(oldWords, true);
+        long deltaReturnCacheMissCosts = pm.getMethodCacheMissPenalty(newWords, false) -
+                                         pm.getMethodCacheMissPenalty(oldWords, false);
 
         long costs = 0;
 
-        // if the method is not all-fit, we have a cache miss cost delta due to the codesize
-        // we do not worry about changing cache classifications here, those costs are added later
-        if (analysisType == AnalysisType.ALWAYS_MISS || !cache.allFit(newBlocks)) {
-            long oldCycles = pm.getMethodCacheMissPenalty(oldWords, true);
-            long newCycles = pm.getMethodCacheMissPenalty(newWords, true);
+        // we have cache costs due to invokes of the modified method
+        costs += getInvokeMissCount(ecp, modification.getMethod()) * deltaInvokeCacheMissCosts;
+        // .. and due to returns from invokees to the modified method
+        costs += getReturnMissCount(ecp, modification) * deltaReturnCacheMissCosts;
+        // .. and because other methods may not fit into the cache anymore
+        costs += getAllFitChangeCosts(ecp, modification, deltaBlocks);
 
-            // costs for invoke of the modified method
-            costs = analyses.getExecCountAnalysis().getExecCount(method) * (newCycles - oldCycles);
+        return costs;
+    }
 
-            // costs for all returns to this method
-            oldCycles = pm.getMethodCacheMissPenalty(oldWords, false);
-            newCycles = pm.getMethodCacheMissPenalty(newWords, false);
-            int startPos = modification.getStart().getPosition();
-            int endPos = modification.getEnd().getPosition();
-
-            for (InvokeSite invokeSite : method.getCode().getInvokeSites()) {
-                // skip invokesites within the modified code, since we do not know what the new code will be..
-                // must be handled by the optimizer itself.
-                int pos = invokeSite.getInstructionHandle().getPosition();
-                if (pos >= startPos && pos <= endPos) continue;
-
-                costs += analyses.getExecCountAnalysis().getExecCount(invokeSite) * (newCycles - oldCycles);
-            }
+    private long getAllFitChangeCosts(ExecCountProvider ecp, CodeModification modification, int deltaBlocks)
+    {
+        if (analysisType == AnalysisType.ALWAYS_HIT || analysisType == AnalysisType.ALWAYS_MISS) {
+            return 0;
         }
 
-        if (analysisType == AnalysisType.ALWAYS_MISS) {
-            return costs;
-        }
+        int deltaBytes = modification.getDeltaLocalCodesize();
+        MethodInfo method = modification.getMethod();
 
         // for ALWAYS_MISS_HIT oder MOST_ONCE we need to find out what has changed for all-fit
-        Set<ExecutionContext> changes = findClassificationChanges(method, deltaBytes,
-                                                                  modification.getRemovedInvokees(), false);
+        Set<MethodInfo> changes = findClassificationChanges(method, deltaBlocks,
+                                                            modification.getRemovedInvokees(), false);
+
+        AppInfo appInfo = AppInfo.getSingleton();
+        WCETProcessorModel pm = jcopter.getWCETProcessorModel();
 
         // In all nodes where we have changes, we need to sum up the new costs
-        AppInfo appInfo = AppInfo.getSingleton();
         long deltaCosts = 0;
-        for (ExecutionContext node : changes) {
+        for (MethodInfo node : changes) {
             // we do not need to count the invokes of the method itself
             // but all invokes in the method are now no longer always-hit/-miss
-            for (InvokeSite invokeSite : node.getMethodInfo().getCode().getInvokeSites()) {
-                // find max invokee size
-                int sizeWords = 0;
-                for (MethodInfo invokee : appInfo.findImplementations(node.getCallString().push(invokeSite))) {
-                    sizeWords = Math.max(sizeWords, invokee.getCode().getNumberOfWords());
-                }
+            for (InvokeSite invokeSite : node.getCode().getInvokeSites()) {
 
-                long count = analyses.getExecCountAnalysis().getExecCount(node, invokeSite.getInstructionHandle());
-                // every invoke is now/was before always-miss both on invoke and return
-                deltaCosts += count * pm.getMethodCacheMissPenalty(sizeWords, true);
-                deltaCosts += count * pm.getMethodCacheMissPenalty(oldWords, false);
+                // Note: this is very similar to getInvokeReturnCacheCosts(invokeSite), but we cannot use
+                //       this here, because that method uses allFit and does not honor our 'virtual' codesize change
+                int size = 0;
+                for (MethodInfo impl : appInfo.findImplementations(invokeSite)) {
+                    size = Math.max(size, getMethodSize(impl));
+                }
+                size = MiscUtils.bytesToWords(size);
+
+                int sizeInvoker = getMethodSize(invokeSite.getInvoker());
+                sizeInvoker = MiscUtils.bytesToWords(sizeInvoker);
+
+                long invokeCosts = pm.getInvokeCacheMissPenalty(invokeSite, size);
+                long returnCosts = pm.getReturnCacheMissPenalty(invokeSite, sizeInvoker);
+
+                long count = ecp.getExecCount(invokeSite);
+                deltaCosts += count * (invokeCosts + returnCosts);
             }
         }
+
         // if the code increased, the classification changed from always-hit to always-miss ..
-        if (deltaBytes > 0) {
-            costs += deltaCosts;
-        } else {
-            costs -= deltaCosts;
-        }
+        long costs = deltaBytes > 0 ? deltaCosts : -deltaCosts;
 
         if (analysisType == AnalysisType.ALL_FIT_REGIONS) {
 
@@ -359,17 +359,41 @@ public class MethodCacheAnalysis {
 
     public void clearChangeSet() {
         classifyChanges.clear();
-        countChanges.clear();
     }
 
     /**
      * @return all methods containing invokeSites for which the cache analysis changed
      */
-    public Collection<MethodInfo> getClassificationChangeSet() {
+    public Set<MethodInfo> getClassificationChangeSet() {
         return classifyChanges;
     }
 
-    public Collection<MethodInfo> getMissCountChangeSet() {
+    /**
+     * @param ecp exec count provider
+     * @return all methods for which the cache costs of the contained invoke sites changed, either due to classification
+     *         changes or due to execution count changes.
+     */
+    public Set<MethodInfo> getMissCountChangeSet(ExecCountProvider ecp) {
+        if (analysisType == AnalysisType.ALWAYS_HIT) return Collections.emptySet();
+
+        Set<MethodInfo> countChanges = new HashSet<MethodInfo>(classifyChanges);
+
+        // we check the exec analysis for changed exec counts,
+        // need to update change sets since cache miss counts changed for cache-misses
+        Set<MethodInfo> methods = ecp.getChangeSet();
+        if (analysisType == AnalysisType.ALWAYS_MISS) {
+            countChanges.addAll(methods);
+            return countChanges;
+        }
+
+        for (MethodInfo method : methods) {
+            if (!allFit(method)) {
+                countChanges.add(method);
+            }
+            // TODO if MOST_ONCE_MISS and not all invokers of this method are all-fit, we need to add
+            //      all reachable methods to the changeset too!
+        }
+
         return countChanges;
     }
 
@@ -413,8 +437,6 @@ public class MethodCacheAnalysis {
         // now go up from the modified method, remove invokee from reachable sets if last invoke was inlined
         // and update block counts
         findClassificationChanges(invoker, deltaBlocks, modification.getRemovedInvokees(), true);
-
-        onExecCountUpdate();
     }
 
     /**
@@ -433,27 +455,6 @@ public class MethodCacheAnalysis {
         TransitiveClosure.INSTANCE.closeSimpleDirectedGraph(closure);
 
         updateNodes(closure, nodes, true);
-    }
-
-    public void onExecCountUpdate() {
-        if (analysisType == AnalysisType.ALWAYS_HIT) return;
-
-        // we check the exec analysis for changed exec counts,
-        // need to update change sets since cache miss counts changed for cache-misses
-        Set<MethodInfo> methods = analyses.getExecCountAnalysis().getChangeSet();
-        if (analysisType == AnalysisType.ALWAYS_MISS) {
-            countChanges.addAll(methods);
-            return;
-        }
-
-        for (MethodInfo method : methods) {
-            if (!allFit(method)) {
-                countChanges.add(method);
-            }
-            // TODO if MOST_ONCE_MISS and not all invokers of this method are all-fit, we need to add
-            //      all reachable methods to the changeset too!
-        }
-
     }
 
     ///////////////////////////////////////////////////////////////////////////////////
@@ -545,7 +546,7 @@ public class MethodCacheAnalysis {
             reachableMethods.put(node, reachable);
         }
 
-        MethodCache cache = analyses.getJCopter().getMethodCache();
+        MethodCache cache = jcopter.getMethodCache();
 
         // now we can sum up the cache blocks for all nodes in the graph
         for (ExecutionContext node : nodes) {
@@ -563,8 +564,8 @@ public class MethodCacheAnalysis {
         }
     }
 
-    private Set<ExecutionContext> findClassificationChanges(MethodInfo method, final int deltaBlocks,
-                                                            Collection<MethodInfo> removed, final boolean update)
+    private Set<MethodInfo> findClassificationChanges(MethodInfo method, final int deltaBlocks,
+                                                      Collection<MethodInfo> removed, final boolean update)
     {
         if (analysisType == AnalysisType.ALWAYS_HIT || analysisType == AnalysisType.ALWAYS_MISS ||
                 (deltaBlocks == 0 && removed.isEmpty()) )
@@ -585,7 +586,7 @@ public class MethodCacheAnalysis {
         }
 
         // finally, go up all invokers, sum up reachable method set changes and deltaBlocks per node, check all-fit
-        final Set<ExecutionContext> changeSet = new HashSet<ExecutionContext>();
+        final Set<MethodInfo> changeSet = new HashSet<MethodInfo>();
 
         DFSVisitor<ExecutionContext,ContextEdge> visitor = new EmptyDFSVisitor<ExecutionContext, ContextEdge>() {
             @Override
@@ -612,10 +613,9 @@ public class MethodCacheAnalysis {
                 boolean newFit = cache.allFit(newBlocks);
 
                 if (oldFit != newFit) {
-                    changeSet.add(node);
+                    changeSet.add(node.getMethodInfo());
                     if (update) {
                         classifyChanges.add(node.getMethodInfo());
-                        countChanges.add(node.getMethodInfo());
                     }
                 }
             }
