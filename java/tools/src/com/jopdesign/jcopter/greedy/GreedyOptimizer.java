@@ -319,7 +319,9 @@ public class GreedyOptimizer {
             if (methods.size() == 1) {
                 selector.sortCandidates(ecp, methods);
             } else {
-                logger.info("Sort changes "+changeSet.size());
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Sort changes "+changeSet.size());
+                }
                 selector.sortCandidates(ecp, changeSet);
             }
 

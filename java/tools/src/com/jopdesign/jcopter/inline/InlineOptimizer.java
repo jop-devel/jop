@@ -506,7 +506,7 @@ public class InlineOptimizer implements CodeOptimizer {
 
         @Override
         public String toString() {
-            return invokeSite + " => " + invokee;
+            return invokeSite + " <= " + invokee;
         }
 
         private boolean checkStackAndLocals(StacksizeAnalysis stacksize) {
