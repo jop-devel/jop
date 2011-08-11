@@ -23,6 +23,7 @@ package com.jopdesign.jcopter.analysis;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
+import com.jopdesign.common.code.CallGraph.DUMPTYPE;
 import com.jopdesign.common.code.DefaultCallgraphBuilder;
 import com.jopdesign.common.config.Config.BadConfigurationError;
 import com.jopdesign.common.config.Config.BadConfigurationException;
@@ -30,6 +31,7 @@ import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.MethodCacheAnalysis.AnalysisType;
 import org.apache.log4j.Logger;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -165,6 +167,15 @@ public class AnalysisManager {
         graphs.add(getTargetCallGraph());
         graphs.addAll(getWCACallGraphs());
         return graphs;
+    }
+
+    public void dumpTargetCallgraph(String name, boolean full) {
+        try {
+            targetCallGraph.dumpCallgraph(jcopter.getJConfig().getConfig(), name, full ? "full" : "merged",
+                    targetCallGraph.getRootNodes(), full ? DUMPTYPE.full : DUMPTYPE.merged, false);
+        } catch (IOException e) {
+            logger.warn(e);
+        }
     }
 
     public ExecCountAnalysis getExecCountAnalysis() {

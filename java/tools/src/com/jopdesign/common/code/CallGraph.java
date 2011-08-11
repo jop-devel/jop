@@ -1257,8 +1257,7 @@ public class CallGraph implements ImplementationFinder {
                 AppInfo appInfo = AppInfo.getSingleton();
                 for (ContextEdge edge : callGraph.incomingEdgesOf(ec)) {
                     for (InvokeSite invokeSite : edge.getSource().getMethodInfo().getCode().getInvokeSites()) {
-                        Set<MethodInfo> impl = appInfo.findImplementations(invokeSite);
-                        if (impl.contains(invokee)) {
+                        if (invokeSite.canInvoke(invokee) == Ternary.TRUE) {
                             invokeSites.add(invokeSite);
                         }
                     }

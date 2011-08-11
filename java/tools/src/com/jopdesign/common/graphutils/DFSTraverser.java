@@ -174,7 +174,7 @@ public class DFSTraverser<V,E> {
         Collection<E> outEdges = provider.outgoingEdgesOf(node);
         boolean descend = visitor.visitNode(parent, edge, node, type, outEdges, depth);
 
-        if (ts == null) {
+        if (ts != null) {
             // skip non-white nodes
             return;
         }
@@ -187,7 +187,7 @@ public class DFSTraverser<V,E> {
             discovery.put(node, -currTime);
 
             for (E out : outEdges) {
-                traverse(provider, parent, out, provider.getEdgeTarget(out), depth+1);
+                traverse(provider, node, out, provider.getEdgeTarget(out), depth+1);
             }
         }
 

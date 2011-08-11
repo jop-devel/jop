@@ -36,7 +36,9 @@ import com.jopdesign.common.graphutils.EdgeProvider;
 import com.jopdesign.common.graphutils.GraphUtils;
 import com.jopdesign.common.graphutils.LoopColoring;
 import com.jopdesign.common.misc.Ternary;
+import com.jopdesign.jcopter.JCopter;
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
@@ -82,6 +84,8 @@ public class ExecCountAnalysis extends ExecCountProvider {
             return edge.getTarget();
         }
     }
+
+    private static final Logger logger = Logger.getLogger(JCopter.LOG_ANALYSIS+".ExecCountAnalysis");
 
     private static final int DEFAULT_ACET_LOOP_BOUND = 10;
 
@@ -237,7 +241,7 @@ public class ExecCountAnalysis extends ExecCountProvider {
                 if (child.getCallString().isEmpty() && child.getMethodInfo().equals(invokee)) {
                     // there can be at most one such node in the graph.. remove the total exec count of the
                     // inlined invokesite
-                    nodeCount.put(child, nodeCount.get(child) - getExecCount(invokeSite));
+                    nodeCount.put(child, nodeCount.get(child) - getExecCount(invokeSite, invokee));
                 }
                 else if (!child.getCallString().isEmpty() && newInvokeSites.contains(child.getCallString().top())) {
                     // This is a new node, sum up the execution counts of all invokesite instances
@@ -272,6 +276,7 @@ public class ExecCountAnalysis extends ExecCountProvider {
     ////////////////////////////////////////////////////////////////////////////////////
 
     private void addExecCount(ExecutionContext node, long count) {
+        // logger.info("Adding to " + node+": "+count);
         Long c = nodeCount.get(node);
         long val = (c == null) ? 0 : c;
         val += count;
@@ -289,9 +294,13 @@ public class ExecCountAnalysis extends ExecCountProvider {
         // for the rest of the graph, we can now use a topological order
         TopologicalOrderIterator<ExecutionContext,ContextEdge> topOrder =
                 new TopologicalOrderIterator<ExecutionContext, ContextEdge>(dag);
+
         while (topOrder.hasNext()) {
             ExecutionContext next = topOrder.next();
 
+            if (logger.isTraceEnabled()) {
+                logger.trace("Updating: " + next);
+            }
             updateChilds(next, callGraph.getChildren(next));
         }
     }

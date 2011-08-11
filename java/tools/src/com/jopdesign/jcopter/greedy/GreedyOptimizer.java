@@ -145,6 +145,8 @@ public class GreedyOptimizer {
 
             selector.printStatistics();
 
+            //analyses.dumpTargetCallgraph("acet", true);
+
             selector = new ACETRebateSelector(analyses, new GainCalculator(analyses), config.getMaxCodesize());
             selector.initialize();
 

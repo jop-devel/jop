@@ -38,6 +38,8 @@ import com.jopdesign.common.graphutils.DFSTraverser;
 import com.jopdesign.common.graphutils.DFSTraverser.DFSEdgeType;
 import com.jopdesign.common.graphutils.DFSTraverser.DFSVisitor;
 import com.jopdesign.common.graphutils.DFSTraverser.EmptyDFSVisitor;
+import com.jopdesign.common.graphutils.NodeVisitor;
+import com.jopdesign.common.graphutils.TopologicalTraverser;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.wcet.ProjectConfig;
 import com.jopdesign.wcet.WCETTool;
@@ -338,49 +340,55 @@ public class WCAInvoker extends ExecCountProvider {
             execCounts.put(root, 1L);
         }
 
-        TopologicalOrderIterator<ExecutionContext,ContextEdge> topOrder = wcetTool.getCallGraph().topDownIterator();
+        NodeVisitor<ExecutionContext> visitor = new NodeVisitor<ExecutionContext>() {
+            @Override
+            public boolean visitNode(ExecutionContext context) {
+                MethodInfo method = context.getMethodInfo();
+                MethodCode code = method.getCode();
 
-        while (topOrder.hasNext()) {
-            ExecutionContext context = topOrder.next();
+                long ec = getExecCount(method);
+                // skip methods which are not on the WCET path.. we can ship iterating over the childs too..
+                if (ec == 0) return false;
 
-            MethodInfo method = context.getMethodInfo();
-            MethodCode code = method.getCode();
+                // iterate over all blocks in the CFG, find all invokes and add block execution counts to invokees
+                ControlFlowGraph cfg = method.getCode().getControlFlowGraph(false);
+                for (CFGNode node : cfg.getGraph().vertexSet()) {
 
-            long ec = getExecCount(method);
-            // skip methods which are not on the WCET path.. we could ship iterating over the childs too..somehow
-            if (ec == 0) continue;
-
-            ControlFlowGraph cfg = method.getCode().getControlFlowGraph(false);
-            for (CFGNode node : cfg.getGraph().vertexSet()) {
-
-                if (node instanceof InvokeNode) {
-                    InvokeNode inv = (InvokeNode) node;
-
-                    long ef = getExecFrequency(method, node);
-
-                    if (!inv.isVirtual()) {
-                        addExecCount(inv.getImplementingMethod(), ec * ef);
-                    } else {
-                        for (MethodInfo invokee : ((InvokeNode)node).getImplementingMethods()) {
-                            addExecCount(invokee, ec * ef);
-                        }
-                    }
-
-                } else if (node instanceof BasicBlockNode) {
-                    // check if we have a JVM invoke here (or an invoke not in a dedicated node..)
-                    for (InstructionHandle ih : node.getBasicBlock().getInstructions()) {
-                        if (!code.isInvokeSite(ih)) continue;
+                    if (node instanceof InvokeNode) {
+                        InvokeNode inv = (InvokeNode) node;
 
                         long ef = getExecFrequency(method, node);
-                        for (MethodInfo invokee : method.getAppInfo().findImplementations(code.getInvokeSite(ih))) {
-                            addExecCount(invokee, ec * ef);
+
+                        if (!inv.isVirtual()) {
+                            addExecCount(inv.getImplementingMethod(), ec * ef);
+                        } else {
+                            for (MethodInfo invokee : ((InvokeNode)node).getImplementingMethods()) {
+                                addExecCount(invokee, ec * ef);
+                            }
                         }
 
-                    }
-                }
+                    } else if (node instanceof BasicBlockNode) {
+                        // check if we have a JVM invoke here (or an invoke not in a dedicated node..)
+                        for (InstructionHandle ih : node.getBasicBlock().getInstructions()) {
+                            if (!code.isInvokeSite(ih)) continue;
 
+                            long ef = getExecFrequency(method, node);
+                            for (MethodInfo invokee : method.getAppInfo().findImplementations(code.getInvokeSite(ih))) {
+                                addExecCount(invokee, ec * ef);
+                            }
+
+                        }
+                    }
+
+                }
+                return true;
             }
-        }
+        };
+
+        TopologicalTraverser<ExecutionContext,ContextEdge> topOrder =
+            new TopologicalTraverser<ExecutionContext, ContextEdge>(wcetTool.getCallGraph().getGraph(),visitor);
+
+        topOrder.traverse();
     }
 
     private void addExecCount(MethodInfo method, long ec) {
