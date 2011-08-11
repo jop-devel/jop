@@ -25,6 +25,7 @@ import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.dfa.analyses.SymbolicAddress;
+import com.jopdesign.wcet.analysis.InvalidFlowFactException;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
@@ -287,7 +288,7 @@ public class ObjectCacheAnalysis {
 		OCacheAnalysisResult.dumpLatex(samples, oStream);
 	} 
 	
-	private void testExactAllFit() {
+	private void testExactAllFit() throws InvalidFlowFactException {
 		long start,stop;
         start = System.nanoTime();
 		LpSolveWrapper.resetSolverTime();

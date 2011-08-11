@@ -41,6 +41,7 @@ import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
+import com.jopdesign.wcet.analysis.InvalidFlowFactException;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.TreeAnalysis;
 import com.jopdesign.wcet.analysis.UppaalAnalysis;
@@ -101,8 +102,12 @@ public class WCETAnalysis {
 
         WCETAnalysis inst = new WCETAnalysis(wcetTool, exec);
 
-        if(! inst.run()) exec.bail("Worst Case Analysis failed");
-        else             exec.info("Worst Case Analysis finished");        	
+        try {
+			inst.run();
+			exec.info("Worst Case Analysis finished");
+		} catch (Exception e) {
+			 exec.bail("Worst Case Analysis failed: " + e);
+		}  	
     }
 
     private Config config;
@@ -121,7 +126,7 @@ public class WCETAnalysis {
         this.exec   = e;
     }
 
-    private boolean run() {
+    private boolean run() throws InvalidFlowFactException {
         /* Initialize */
         try {
             wcetTool.setTopLevelLogger(exec.getExecLogger());
@@ -284,7 +289,7 @@ public class WCETAnalysis {
         }        
     }
 
-    private void computeWCET() throws IOException, DuplicateKeyException, XmlSerializationException, Config.BadConfigurationException {
+    private void computeWCET() throws IOException, DuplicateKeyException, XmlSerializationException, Config.BadConfigurationException, InvalidFlowFactException {
         StaticCacheApproximation preciseApprox = IPETConfig.getPreciseCacheApprox(config);
         wcetTool.setGenerateWCETReport(! reportGenerated);
 

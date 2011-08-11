@@ -18,37 +18,21 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package com.jopdesign.common.misc;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-
-import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
-import com.jopdesign.common.code.SuperGraph.SuperInvokeEdge;
+package com.jopdesign.wcet.analysis;
 
 /**
- * Purpose: Utilities to lift Collection functionality to Iterable s and Iterator s
+ * Purpose: Raised if an invalid flow fact is encountered
+ *
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  *
  */
-public class IteratorUtilities {
+public class InvalidFlowFactException extends Exception {
 
-	public static<T> int size(Iterable<T> nodes) {
-		
-		int i = 0;
-		for(T _ : nodes) i+=1;
-		return i;
+	private static final long serialVersionUID = 1L;
+	public InvalidFlowFactException() {
+		super();
 	}
-
-	public static<T, C extends Collection<T>> C addAll(C coll, Iterable<? extends T> addme) {
-		
-		for(T e : addme) { coll.add(e); }
-		return coll;
-	}
-
-	public static<T> Iterable<T> singleton(T elem) {
-		return Collections.singleton(elem);
+	public InvalidFlowFactException(String msg) {
+		super(msg);
 	}
 }

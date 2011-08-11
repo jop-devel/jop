@@ -40,7 +40,7 @@ import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
 import com.jopdesign.common.code.SuperGraph.SuperGraphNode;
 import com.jopdesign.common.code.SuperGraph.SuperInvokeEdge;
 import com.jopdesign.common.misc.BadGraphException;
-import com.jopdesign.common.misc.IteratorUtilities;
+import com.jopdesign.common.misc.Iterators;
 
 /**
  * Purpose:
@@ -90,7 +90,7 @@ public class SegmentTest implements CFGProvider {
 			} catch (IOException e) {}
 			count += cgNode.getCfg().vertexSet().size();
 		}
-		checkEquals("[Segment 1] Expected node count", (count-2), IteratorUtilities.size(segment.getNodes()));
+		checkEquals("[Segment 1] Expected node count", (count-2), Iterators.size(segment.getNodes()));
 		
 		
 		try {
@@ -106,7 +106,7 @@ public class SegmentTest implements CFGProvider {
 		
 		/* root entries */
 		Set<SuperGraphEdge> entries = new HashSet<SuperGraphEdge>();
-		IteratorUtilities.addAll(entries, superGraph.liftCFGEdges(root, root.getCfg().outgoingEdgesOf(root.getCfg().getEntry())));
+		Iterators.addAll(entries, superGraph.liftCFGEdges(root, root.getCfg().outgoingEdgesOf(root.getCfg().getEntry())));
 
 		Set<SuperGraphEdge> exits = new HashSet<SuperGraphEdge>();
 		int cfgNodeCandidateCount = root.getCfg().vertexSet().size();
@@ -119,7 +119,7 @@ public class SegmentTest implements CFGProvider {
 			/* find all edges from invoke nodes */
 			for(CFGNode cfgNode : callee1.getCfg().vertexSet()) {
 				if(cfgNode instanceof InvokeNode) {					
-					IteratorUtilities.addAll(exits, superGraph.outgoingEdgesOf(new SuperGraphNode(callee1, cfgNode)));
+					Iterators.addAll(exits, superGraph.outgoingEdgesOf(new SuperGraphNode(callee1, cfgNode)));
 				}
 			}			
 		}
@@ -130,9 +130,9 @@ public class SegmentTest implements CFGProvider {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		checkEquals("[Segment 2] Expected node count", 14, IteratorUtilities.size(segment2.getNodes())+2);
+		checkEquals("[Segment 2] Expected node count", 14, Iterators.size(segment2.getNodes())+2);
 		checkLessEqual("[Segment 2] Expected node count <= |root + directly invoked|", 
-				IteratorUtilities.size(segment2.getNodes()) + 2, cfgNodeCandidateCount);
+				Iterators.size(segment2.getNodes()) + 2, cfgNodeCandidateCount);
 		
 		/* Another segment, with entries the exits of the last segment, and exits all invokes in methods the entries */
 		Segment segment3;
@@ -149,7 +149,7 @@ public class SegmentTest implements CFGProvider {
 				/* find all edges from invoke nodes */
 				for(CFGNode cfgNode : callee2.getCfg().vertexSet()) {
 					if(cfgNode instanceof InvokeNode) {					
-						IteratorUtilities.addAll(exits, superGraph.outgoingEdgesOf(new SuperGraphNode(callee2, cfgNode)));
+						Iterators.addAll(exits, superGraph.outgoingEdgesOf(new SuperGraphNode(callee2, cfgNode)));
 					}
 				}				
 			}			

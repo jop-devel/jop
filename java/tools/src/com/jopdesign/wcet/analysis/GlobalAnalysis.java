@@ -31,23 +31,41 @@ import java.util.Map.Entry;
 import lpsolve.LpSolveException;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CFGProvider;
+import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.CallStringProvider;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.code.Segment;
 import com.jopdesign.common.code.SuperGraph;
+import com.jopdesign.common.code.SymbolicMarker;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
+import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.ReturnNode;
+import com.jopdesign.common.code.SuperGraph.CallContext;
+import com.jopdesign.common.code.SuperGraph.ContextCFG;
 import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
 import com.jopdesign.common.code.SuperGraph.SuperGraphNode;
 import com.jopdesign.common.code.SuperGraph.SuperInvokeEdge;
 import com.jopdesign.common.code.SuperGraph.SuperReturnEdge;
-import com.jopdesign.common.misc.IteratorUtilities;
+import com.jopdesign.common.code.SymbolicMarker.SymbolicMarkerType;
+import com.jopdesign.common.graphutils.LoopColoring;
+import com.jopdesign.common.misc.AppInfoError;
+import com.jopdesign.common.misc.Iterators;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
+import com.jopdesign.wcet.annotations.LoopBoundExpr;
+import com.jopdesign.wcet.ipet.IPETBuilder;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETSolver;
 import com.jopdesign.wcet.ipet.IPETUtils;
+import com.jopdesign.wcet.ipet.LinearConstraint;
+import com.jopdesign.wcet.ipet.IPETBuilder.ExecutionEdge;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
 import com.jopdesign.wcet.jop.MethodCache;
 
 /**
@@ -132,8 +150,10 @@ public class GlobalAnalysis {
 
     /**
      * Compute WCET for a segment, using global IPET, and cache analysis results
+     * @throws InvalidFlowFactException 
+     * @throws LpSolveException 
      */
-    public WcetCost computeWCET(String key, Segment segment, StaticCacheApproximation cacheMode) throws LpSolveException {
+    public WcetCost computeWCET(String key, Segment segment, StaticCacheApproximation cacheMode) throws InvalidFlowFactException, LpSolveException {
 
         /* create an IPET problem for the segment */
         IPETSolver<SuperGraphEdge> ipetSolver = buildIpetProblem(project, key, segment, ipetConfig);
@@ -199,8 +219,9 @@ public class GlobalAnalysis {
      * @param segment     The segment to build the ILP for
      * @param ipetConfig  Cost of nodes (or {@code null} if no cost is associated with nodes)
      * @return The max-cost maxflow problem
+     * @throws InvalidFlowFactException 
      */
-    public static IPETSolver<SuperGraphEdge> buildIpetProblem(WCETTool wcetTool, String problemName, Segment segment, IPETConfig ipetConfig) {
+    public static IPETSolver<SuperGraphEdge> buildIpetProblem(WCETTool wcetTool, String problemName, Segment segment, IPETConfig ipetConfig) throws InvalidFlowFactException {
 
         IPETSolver<SuperGraphEdge> ipetSolver = new IPETSolver<SuperGraphEdge>(problemName, ipetConfig);
 
@@ -222,23 +243,149 @@ public class GlobalAnalysis {
 
         /* Supergraph constraints */
         for (Entry<SuperInvokeEdge, SuperReturnEdge> superEdgePair : segment.getSuperEdgePairs()) {
-        	Iterable<SuperGraphEdge> es1 = IteratorUtilities.<SuperGraphEdge>singleton(superEdgePair.getKey());
-        	Iterable<SuperGraphEdge> es2 = IteratorUtilities.<SuperGraphEdge>singleton(superEdgePair.getValue());
+        	Iterable<SuperGraphEdge> es1 = Iterators.<SuperGraphEdge>singleton(superEdgePair.getKey());
+        	Iterable<SuperGraphEdge> es2 = Iterators.<SuperGraphEdge>singleton(superEdgePair.getValue());
         	ipetSolver.addConstraint(IPETUtils.flowPreservation(es1,es2));
         }
         
         /* Program Flow Constraints */
-        /* TODO: Implement */
-//        for (ContextCFG n : segment.getCallGraphNodes()) {
-//            ipetSolver.addConstraints(IPETUtils.loopBoundConstraints(n.getCfg(), ipetBuilder));
-//            ipetSolver.addConstraints(IPETUtils.infeasibleEdgeConstraints(n.getCfg(), ipetBuilder));
-//        }
-
+        for(LinearConstraint<SuperGraphEdge> flowFact : getFlowFacts(wcetTool, segment)) {
+        	ipetSolver.addConstraint(flowFact);
+        }
         return ipetSolver;
     }
 
 
     /**
+     * Get all flow facts (e.g. loop bounds, infeasible edges) for the given segment
+	 * @param segment
+	 * @return
+     * @throws InvalidFlowFactException 
+	 */
+	private  static Iterable<LinearConstraint<SuperGraphEdge>> getFlowFacts(
+			WCETTool wcetTool, Segment segment) throws InvalidFlowFactException {
+		return Iterators.concat(
+				getLoopBounds(wcetTool, segment),
+				getInfeasibleEdgeConstraints(wcetTool, segment));
+	}
+
+
+	/**
+	 * <p>Get all loop bounds for the given segment.</p>
+	 * <p>For each loop bound B for loop H relative to marker M:</p>
+	 * <p>sum(M) * B &lt;= sum(continue-edges-of(H))</p>
+     *
+	 * @param segment
+	 * @return
+	 * @throws InvalidFlowFactException 
+	 */
+	private static Iterable<LinearConstraint<SuperGraphEdge>> getLoopBounds(
+			WCETTool wcetTool, Segment segment) throws InvalidFlowFactException {
+
+		List<LinearConstraint<SuperGraphEdge>> constraints =
+			new ArrayList<LinearConstraint<SuperGraphEdge>>();
+
+		// For all CFG instances
+		for(ContextCFG ccfg : segment.getCallGraphNodes()) {
+
+	    	ControlFlowGraph cfg = ccfg.getCfg();
+
+	    	// for all loops in the method
+	        LoopColoring<CFGNode, ControlFlowGraph.CFGEdge> loops = cfg.getLoopColoring();
+	        for (CFGNode hol : loops.getHeadOfLoops()) {
+	        	
+	            LoopBound loopBound = wcetTool.getLoopBound(hol, ccfg.getContext().getCallString());
+
+	            if (loopBound == null) {
+	                throw new AppInfoError("No loop bound record for head of loop: " + hol + " : " + cfg.buildLoopBoundMap());
+	            }
+	            addLoopConstraints(constraints, segment, ccfg, hol, loops, loopBound);
+	        }
+		}
+        return constraints;	    	
+	}
+
+	/**
+	 * Add loop contraints
+	 * @param constraints the new constraints are added to this collection
+	 * @param segment
+	 * @param ccfg
+	 * @param headOfLoop
+	 * @param loops
+	 * @param loopBound
+	 * @throws InvalidFlowFactException 
+	 */
+	private static void addLoopConstraints(
+			List<LinearConstraint<SuperGraphEdge>> constraints,
+			Segment segment,
+			ContextCFG ccfg,
+			CFGNode headOfLoop,
+			LoopColoring<CFGNode, CFGEdge> loops,
+			LoopBound loopBound) throws InvalidFlowFactException {
+		
+        /* marker loop constraints */
+        for (Entry<SymbolicMarker, LoopBoundExpr> markerBound : loopBound.getLoopBounds()) {
+
+            /* loop constraint */
+            LinearConstraint<SuperGraphEdge> loopConstraint =
+            	new LinearConstraint<SuperGraphEdge>(ConstraintType.GreaterEqual);
+            /* rhs = sum(continue-edges(loop)) */
+            Iterable<SuperGraphEdge> continueEdges = 
+            	segment.liftCFGEdges(ccfg, loops.getBackEdgesTo(headOfLoop));
+            loopConstraint.addRHS( continueEdges );
+            
+            /* Multiplicities */
+            ExecutionContext executionContext = 
+            	new ExecutionContext(ccfg.getCfg().getMethodInfo(), ccfg.getCallString());
+			long lhsMultiplicity = markerBound.getValue().upperBound(executionContext);
+
+            SymbolicMarker marker = markerBound.getKey();
+            if (marker.getMarkerType() == SymbolicMarkerType.OUTER_LOOP_MARKER) {
+
+                CFGNode outerLoopHol;
+                outerLoopHol = loops.getLoopAncestor(headOfLoop, marker.getOuterLoopDistance());
+                if (outerLoopHol == null) {
+                	throw new InvalidFlowFactException("Bad outer loop annotation");
+                }
+                Iterable<SuperGraphEdge>  exitEdges =
+                	segment.liftCFGEdges(ccfg, loops.getExitEdgesOf(outerLoopHol));
+                for (SuperGraphEdge exitEdge : exitEdges) {
+                    loopConstraint.addLHS(exitEdge, lhsMultiplicity);
+                }
+            } else {
+                assert (marker.getMarkerType() == SymbolicMarkerType.METHOD_MARKER);
+                throw new AssertionError("ILPModelBuilder: method markers not yet supported, sorry");
+            }
+            constraints.add(loopConstraint);
+        }
+	}
+
+	/**
+	 * For each infeasible edge, assert that the edge has flow 0
+	 * @param wcetTool
+	 * @param segment
+	 * @return
+	 */
+	private static Iterable<LinearConstraint<SuperGraphEdge>> getInfeasibleEdgeConstraints(
+			WCETTool wcetTool, Segment segment) {
+
+		List<LinearConstraint<SuperGraphEdge>> constraints = new ArrayList<LinearConstraint<SuperGraphEdge>>();
+		// - for each infeasible edge
+		// -- edge = 0
+		for(ContextCFG ccfg : segment.getCallGraphNodes()) {
+			for (CFGEdge edge : wcetTool.getInfeasibleEdges(ccfg.getCfg(), ccfg.getCallString())) {
+				LinearConstraint<SuperGraphEdge> infeasibleConstraint =
+					new LinearConstraint<SuperGraphEdge>(ConstraintType.Equal);
+				infeasibleConstraint.addLHS(segment.liftCFGEdges(ccfg, Iterators.singleton(edge)));
+				infeasibleConstraint.addRHS(0);
+				constraints.add(infeasibleConstraint);
+			}
+		}
+		return constraints;
+	}
+
+
+	/**
      * Compute the execution time of each edge in in the supergraph
      * 
      * FIXME: There is both discrepancy and overlap between analysis contexts and execution contexts

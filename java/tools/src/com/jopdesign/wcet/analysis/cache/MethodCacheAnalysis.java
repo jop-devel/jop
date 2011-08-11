@@ -34,6 +34,7 @@ import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.misc.MiscUtils.F1;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
+import com.jopdesign.wcet.analysis.InvalidFlowFactException;
 import com.jopdesign.wcet.ipet.IPETBuilder;
 import com.jopdesign.wcet.ipet.IPETBuilder.ExecutionEdge;
 import com.jopdesign.wcet.ipet.IPETConfig;
@@ -156,8 +157,9 @@ public class MethodCacheAnalysis {
      * is greater than zero. Conversely, if for all invoke blocks {@code b_i = invoke M_k} the
      * frequency is 0, the method is never loaded. The method at the root of the scope graph is
      * always loaded.
+     * @throws InvalidFlowFactException 
      */
-    public void countDistinctCacheBlocks() {
+    public void countDistinctCacheBlocks() throws InvalidFlowFactException {
         /* Get Method Cache */
         if (!wcetTool.getWCETProcessorModel().hasMethodCache()) {
             throw new AssertionError(String.format("MethodCacheAnalysis: Processor %s has no method cache",
@@ -189,8 +191,9 @@ public class MethodCacheAnalysis {
 	 * @param scope the scope to analyze
 	 * @param use integer variables (more expensive, more accurate)
 	 * @return
+	 * @throws InvalidFlowFactException 
 	 */
-	public long countDistinctCacheBlocks(ExecutionContext scope, boolean useILP) {
+	public long countDistinctCacheBlocks(ExecutionContext scope, boolean useILP) throws InvalidFlowFactException {
 
         IPETConfig ipetConfig = new IPETConfig(wcetTool.getConfig());
 
@@ -277,7 +280,7 @@ public class MethodCacheAnalysis {
         return blocks;
 	}
 
-    public Map<ExecutionContext, Long> getBlockUsage() {
+    public Map<ExecutionContext, Long> getBlockUsage() throws InvalidFlowFactException {
         if (blocksNeeded == null) countDistinctCacheBlocks();
         return blocksNeeded;
     }

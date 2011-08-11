@@ -32,6 +32,7 @@ import java.util.Stack;
 import java.util.Map.Entry;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.SuperGraph.ContextCFG;
 import com.jopdesign.common.code.SuperGraph.SuperEdge;
 import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
@@ -41,7 +42,7 @@ import com.jopdesign.common.code.SuperGraph.SuperReturnEdge;
 import com.jopdesign.common.graphutils.AdvancedDOTExporter;
 import com.jopdesign.common.graphutils.AdvancedDOTExporter.DOTLabeller;
 import com.jopdesign.common.misc.Filter;
-import com.jopdesign.common.misc.IteratorUtilities;
+import com.jopdesign.common.misc.Iterators;
 import com.jopdesign.common.misc.MiscUtils;
 
 /**
@@ -139,7 +140,7 @@ public class Segment {
 			SuperGraphNode target = current.getTarget();
 			nodes.add(target);
 			MiscUtils.addToList(methods, target.getContextCFG().getCfg().getMethodInfo(), target.getContextCFG());
-			IteratorUtilities.addAll(worklist, sg.getSuccessorEdges(current));
+			Iterators.addAll(worklist, sg.getSuccessorEdges(current));
 		}
 		exits = actualExits;
 		return edges;
@@ -158,8 +159,8 @@ public class Segment {
 
 		SuperGraph sg = new SuperGraph(tool, tool.getFlowGraph(targetMethod), callStringLength);
 		ContextCFG rootNode = sg.getRootNode();
-		Set<SuperGraphEdge> entryEdges = IteratorUtilities.addAll(new HashSet<SuperGraphEdge>(), sg.getCFGEntryEdges(rootNode)),
-		                    exitEdges = IteratorUtilities.addAll(new HashSet<SuperGraphEdge>(), sg.getCFGExitEdges(rootNode));
+		Set<SuperGraphEdge> entryEdges = Iterators.addAll(new HashSet<SuperGraphEdge>(), sg.getCFGEntryEdges(rootNode)),
+		                    exitEdges = Iterators.addAll(new HashSet<SuperGraphEdge>(), sg.getCFGExitEdges(rootNode));
 		return new Segment(sg, entryEdges, exitEdges);
 	}
 
@@ -307,6 +308,18 @@ public class Segment {
 			}
 		});
 		dotWriter.close();
+	}
+
+	/* delegates to supergraph */
+
+	public Iterable<SuperGraphEdge> liftCFGEdges(ContextCFG node, Iterable<CFGEdge> cfgEdges) {
+		return sg.liftCFGEdges(node, cfgEdges);
+	}
+
+
+	public Iterable<ContextCFG> getCallGraphNodes() {
+		
+		return Iterators.concat(this.methods.values());
 	}
 
 

@@ -468,11 +468,11 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         return cfg;
     }
 
+	// TODO move somewhere else?
     public LoopBound getLoopBound(CFGNode node, CallString cs) {
 
     	LoopBound globalBound = node.getLoopBound();
         ExecutionContext eCtx = new ExecutionContext(node.getControlFlowGraph().getMethodInfo(), cs);
-    	// TODO move somewhere else?
         if (node.getBasicBlock() != null) {
             return this.getEventHandler().dfaLoopBound(node.getBasicBlock(), eCtx, globalBound);
         } else {
