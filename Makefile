@@ -403,7 +403,7 @@ cprog:
 ifeq (${JCOPTER_USE_WCA},no)
   JCOPTER_OPTIONS=--no-use-wca ${JCOPTER_OPT}
 else
-  JCOPTER_OPTIONS=--use-wca --wca-targets ${WCET_METHOD} ${JCOPTER_OPT}  
+  JCOPTER_OPTIONS=--use-wca --wca-target ${WCET_METHOD} ${JCOPTER_OPT}  
 endif
 
 jop_config:
@@ -433,7 +433,9 @@ endif
 # Optimize
 ifeq ($(USE_JCOPTER),yes)
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter \
-	   -c $(TARGET)/dist/classes -o $(TARGET)/dist --classdir $(TARGET)/dist/classes.opt \
+	   -c $(TARGET)/dist/classes -o $(TARGET)/dist \
+	   --classdir $(TARGET)/dist/classes.opt \
+	   --sp $(TARGET_SOURCE) \
 	   $(JCOPTER_OPTIONS) $(MAIN_CLASS)
 	mv $(TARGET)/dist/classes $(TARGET)/dist/classes.unopt
 	mv $(TARGET)/dist/classes.opt $(TARGET)/dist/classes
@@ -767,7 +769,8 @@ wcet:
 	-mkdir -p $(TARGET)/wcet
 	java -Xss16M -Xmx1280M $(JAVA_OPT) \
 	  $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis \
-		--classpath $(TARGET)/dist/lib/classes.zip --sp $(TARGET_SOURCE) \
+		--classpath $(TARGET)/dist/lib/classes.zip \
+		--sp $(TARGET_SOURCE) \
 		--target-method $(WCET_METHOD) \
 		-o "$(TARGET)/wcet/\$${projectname}" \
 		--use-dfa $(WCET_DFA) $(DFA_CACHE) \
