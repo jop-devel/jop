@@ -62,19 +62,6 @@ import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
 import com.jopdesign.wcet.jop.MethodCache;
 
-<<<<<<< HEAD
-=======
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
->>>>>>> newtools
 /**
  * Global IPET-based analysis, supporting variable block caches (all fit region approximation).
  *

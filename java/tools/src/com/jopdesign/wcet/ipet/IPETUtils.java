@@ -150,26 +150,6 @@ public class IPETUtils {
         return structuralFlowConstraints(g, entryLhsProto, exitRhsProto, ctx);
     }
     
-
-
-    /**
-     * Structural flow constraints with given input and output edges.
-     */
-    public static <V, E, C extends CallStringProvider>
-    List<LinearConstraint<IPETBuilder.ExecutionEdge>>
-    structuralFlowConstraints(FlowGraph<V, E> g,
-                              Collection<IPETBuilder.ExecutionEdge> inputEdges,
-                              Collection<IPETBuilder.ExecutionEdge> outputEdges,
-                              IPETBuilder<C> ctx) {
-
-        LinearConstraint<IPETBuilder.ExecutionEdge> entryLhsProto = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
-        for (IPETBuilder.ExecutionEdge e : inputEdges) entryLhsProto.addLHS(e);
-        LinearConstraint<IPETBuilder.ExecutionEdge> exitRhsProto = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
-        for (IPETBuilder.ExecutionEdge e : outputEdges) exitRhsProto.addRHS(e);
-
-        return structuralFlowConstraints(g, entryLhsProto, exitRhsProto, ctx);
-    }
-
     /**
      * Structural Flow Constraints:<ul>
      * <li/> The flow of entry and exit is constrained by the given left-hand resp. right-hand sides
@@ -292,20 +272,6 @@ public class IPETUtils {
     }
 
     /**
-     * Generate constraints for super graph edges
-     */
-    public static <C extends CallStringProvider>
-    LinearConstraint<IPETBuilder.ExecutionEdge>
-    superEdgeConstraint(SuperGraph.SuperInvokeEdge in, SuperGraph.SuperReturnEdge out, IPETBuilder<C> ctx) {
-
-        LinearConstraint<IPETBuilder.ExecutionEdge> pairConstraint = new LinearConstraint<IPETBuilder.ExecutionEdge>(ConstraintType.Equal);
-        pairConstraint.addLHS(ctx.newEdge(in));
-        pairConstraint.addRHS(ctx.newEdge(out));
-        return pairConstraint;
-    }
-
-
-    /**
      * Compute flow constraints: Infeasible edge constraints
      *
      * @param g   the flow graph
@@ -328,45 +294,6 @@ public class IPETUtils {
         return constraints;
     }
 
-    /**
-     * Compute flow constraints: invoke and return flow have to be equal
-     *
-     * @param call    the invoke edge
-     * @param ret     the return edge
-     * @param builder the IPET context
-     * @return the linear constraints ensuring that each flow following the invoke is matched
-     *         by one returning, and that non-local and local invoke flow coincide
-     */
-    public static <C extends CallStringProvider>
-    List<LinearConstraint<ExecutionEdge>>
-    invokeReturnConstraints(SuperGraph.SuperInvokeEdge call, SuperGraph.SuperReturnEdge ret, IPETBuilder<C> builder) {
-
-
-        ExecutionEdge callEdge = builder.newEdge(call);
-        List<LinearConstraint<ExecutionEdge>> constraints = new ArrayList<LinearConstraint<ExecutionEdge>>();
-
-        {
-            LinearConstraint<ExecutionEdge> invokeRetCnstr = new LinearConstraint<ExecutionEdge>(ConstraintType.Equal);
-            invokeRetCnstr.addLHS(callEdge);
-            invokeRetCnstr.addRHS(builder.newEdge(ret));
-            constraints.add(invokeRetCnstr);
-        }
-
-        {
-            LinearConstraint<ExecutionEdge> invokeLocalCnstr = new LinearConstraint<ExecutionEdge>(ConstraintType.Equal);
-            invokeLocalCnstr.addLHS(builder.newEdge(call));
-            ControlFlowGraph.InvokeNode invokeNode = call.getInvokeNode();
-            Set<ControlFlowGraph.CFGEdge> localInvokeEdge = invokeNode.getControlFlowGraph().outgoingEdgesOf(invokeNode);
-            if (localInvokeEdge.size() == 1) {
-                invokeLocalCnstr.addRHS(builder.newEdge(localInvokeEdge.iterator().next()));
-            } else {
-                throw new AssertionError("More than one outgoing local edge from an invoke node");
-            }
-            constraints.add(invokeLocalCnstr);
-        }
-
-        return constraints;
-    }
 
     /**
      * Split an edge into a list of edges modeling low-level hardware decisions

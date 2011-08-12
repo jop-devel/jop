@@ -21,12 +21,9 @@ package com.jopdesign.wcet.uppaal.translator;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
-<<<<<<< HEAD
-import com.jopdesign.common.code.SuperGraph.ContextCFG;
-=======
 import com.jopdesign.common.code.LoopBound;
->>>>>>> newtools
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.SuperGraph.ContextCFG;
 import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.BadGraphError;

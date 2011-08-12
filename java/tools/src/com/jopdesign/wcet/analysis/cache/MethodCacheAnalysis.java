@@ -254,8 +254,15 @@ public class MethodCacheAnalysis {
 
 
     /** Find a segment cover (i.e., a set of segments covering all execution paths)
-     *  where each segment in the set is persistent
-     *  FIXME: not yet implemented; which just return the segment itself
+     *  where each segment in the set is persistent (a cache persistence region (CPR))
+     *  
+     *  <h2>A simple algorithm for a segment S (for acyclic callgraphs)</h2>
+     *   <ul><li/>Check whether S itself is CPR; if so, return S
+     *       <li/>Otherwise, create segments for each direct subsegment S' for
+     *     <ul><li/>Loops (not nested inside other loops, in the same method)
+     *         <li/>Invoke nodes (not contained in loops, in the same method)
+     *   </ul>
+     *  FIXME: not yet implemented; we just return the segment itself
      * @param segment the parent segment
      * @param avoidOverlap 
      * @return
@@ -348,7 +355,7 @@ public class MethodCacheAnalysis {
 					SuperGraphEdge missEdge = SuperGraphSplitEdge.generateSplitEdges(accessEdge, this.getClass(), 1).iterator().next();
 					ipetSolver.addConstraint(IPETUtils.relativeBound(Iterators.singleton(missEdge), Iterators.singleton(accessEdge), 1));	
 					ipetSolver.addEdgeCost(missEdge, cost);
-					missOnceEdges.add(missEdge);
+					missOnceEdges.add(missEdge);	
 				}
 				ipetSolver.addConstraint(IPETUtils.flowBound(missOnceEdges,1));
 				missEdges.addAll(missOnceEdges);

@@ -46,10 +46,6 @@ public class IPETBuilder<Ctx extends CallStringProvider> {
             this.model = e;
         }
 
-        public ExecutionEdge(CallStringProvider e) {
-            this.ctx = e;
-            this.model =  e;
-        }
 
         public Object getModel() {
             return this.model;
@@ -99,10 +95,6 @@ public class IPETBuilder<Ctx extends CallStringProvider> {
         this.ctx = ctx;
     }
 
-    public IPETBuilder(WCETTool project) {
-    	this(project, null);
-    }
-
     public Ctx getContext() {
         return ctx;
     }
@@ -120,13 +112,6 @@ public class IPETBuilder<Ctx extends CallStringProvider> {
      */
     public IPETBuilder.ExecutionEdge newEdge(Object model) {
         return new IPETBuilder.ExecutionEdge(ctx, model);
-    }
-
-    /**
-     * Create a new execution edge in a different context
-     */
-    public IPETBuilder.ExecutionEdge newEdgeInContext(Object model, CallContext otherContext) {
-        return new IPETBuilder.ExecutionEdge(otherContext, model);
     }
 
     /**
