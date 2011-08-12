@@ -119,7 +119,7 @@ public class WCETAnalysis {
         try {
             project.setTopLevelLogger(exec.getExecLogger());
             exec.info("Loading project");
-            project.initialize(true);
+            project.initialize(project.getProjectConfig().doLoadLinkInfo());
             MethodInfo largestMethod = project.getWCETProcessorModel().getMethodCache().checkCache();
             int minWords = MiscUtils.bytesToWords(largestMethod.getCode().getNumberOfBytes());
             reportMetric("min-cache-size",largestMethod.getFQMethodName(),minWords);
