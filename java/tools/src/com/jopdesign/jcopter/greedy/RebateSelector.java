@@ -33,6 +33,7 @@ import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -44,18 +45,24 @@ import java.util.Set;
  */
 public abstract class RebateSelector implements CandidateSelector {
 
-    protected static class RebateRatio implements Comparable<RebateRatio> {
+    public static class RebateRatio implements Comparable<RebateRatio> {
 
         private final Candidate candidate;
+        private final long gain;
         private final float ratio;
 
-        protected RebateRatio(Candidate candidate, float ratio) {
+        protected RebateRatio(Candidate candidate, long gain, float ratio) {
             this.candidate = candidate;
+            this.gain = gain;
             this.ratio = ratio;
         }
 
         public Candidate getCandidate() {
             return candidate;
+        }
+
+        public long getGain() {
+            return gain;
         }
 
         public float getRatio() {
@@ -88,6 +95,10 @@ public abstract class RebateSelector implements CandidateSelector {
                 return candidate.hashCode() < o.getCandidate().hashCode() ? -1 : 1;
             }
             return ratio < o.getRatio() ? -1 : 1;
+        }
+
+        public Collection<Candidate> getCandidates() {
+            return Collections.singleton(candidate);
         }
     }
 
@@ -278,6 +289,20 @@ public abstract class RebateSelector implements CandidateSelector {
         return true;
     }
 
+    protected RebateRatio createRatio(GainCalculator gc, ExecCountProvider ecp, Candidate candidate, long gain) {
+        float codesize = getDeltaGlobalCodesize(candidate);
+
+        float ratio;
+        if (codesize > 0) {
+            ratio = gc.improveGain(ecp, candidate, gain) / codesize;
+        } else {
+            // little hack: if we have no codesize increase, use just the gain as factor
+            ratio = gc.improveGain(ecp, candidate, gain);
+        }
+
+        return new RebateRatio(candidate, gain, ratio);
+    }
+
     public int getDeltaGlobalCodesize(Candidate candidate) {
         int size = candidate.getDeltaLocalCodesize();
 
@@ -291,20 +316,6 @@ public abstract class RebateSelector implements CandidateSelector {
         }
 
         return size;
-    }
-
-    protected RebateRatio createRatio(Candidate candidate, float gain) {
-        float codesize = getDeltaGlobalCodesize(candidate);
-
-        float ratio;
-        if (codesize > 0) {
-            ratio = (candidate.getHeuristicFactor() * gain) / codesize;
-        } else {
-            // little hack: if we have no codesize increase, use just the gain as factor
-            ratio = candidate.getHeuristicFactor() * gain;
-        }
-
-        return new RebateRatio(candidate, ratio);
     }
 
     protected abstract void onRemoveMethodData(MethodData data);

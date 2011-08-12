@@ -25,7 +25,6 @@ import com.jopdesign.jcopter.analysis.ExecCountProvider;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.TreeSet;
 
@@ -65,7 +64,7 @@ public abstract class QueueSelector extends RebateSelector {
                 continue;
             }
 
-            return Collections.singleton(next.getCandidate());
+            return next.getCandidates();
         }
     }
 
@@ -92,10 +91,10 @@ public abstract class QueueSelector extends RebateSelector {
 
             if (skipCandidate(candidate)) continue;
 
-            float gain = gainCalculator.calculateGain(ecp, candidate);
+            long gain = gainCalculator.calculateGain(ecp, candidate);
             if (gain < 0) continue;
 
-            ratios.add(createRatio(candidate, gain));
+            ratios.add(createRatio(gainCalculator, ecp, candidate, gain));
         }
 
         return ratios;

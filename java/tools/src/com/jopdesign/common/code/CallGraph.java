@@ -1286,6 +1286,27 @@ public class CallGraph implements ImplementationFinder {
         return invoked;
     }
 
+    public Set<MethodInfo> getInvokedMethods(MethodInfo method) {
+        MethodNode node = getMethodNode(method);
+
+        Set<MethodInfo> invokees = new HashSet<MethodInfo>();
+
+        if (mergedCallGraph != null) {
+            for (InvokeEdge edge : mergedCallGraph.outgoingEdgesOf(node)) {
+                MethodNode invokee = mergedCallGraph.getEdgeTarget(edge);
+                invokees.add(invokee.getMethodInfo());
+            }
+        } else {
+            for (ExecutionContext context : node.getInstances()) {
+                for (ContextEdge edge : callGraph.outgoingEdgesOf(context)) {
+                    invokees.add(edge.getTarget().getMethodInfo());
+                }
+            }
+        }
+
+        return invokees;
+    }
+
     public Collection<ContextEdge> getInvokeEdges(MethodInfo invoker, MethodInfo invokee) {
         MethodNode node = getMethodNode(invoker);
         List<ContextEdge> edges = new ArrayList<ContextEdge>();
