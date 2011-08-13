@@ -167,7 +167,7 @@ USE_DFA?=no
 #	Application optimization with JCopter
 #
 USE_JCOPTER?=no
-JCOPTER_OPT?=--use-dfa $(USE_DFA) --dump-callgraph merged --dump-jvm-callgraph off --callstring-length $(CALLSTRING_LENGTH) -O 2
+JCOPTER_OPT?=--dump-callgraph merged --dump-jvm-callgraph off -O 2
 JCOPTER_USE_WCA?=no
 
 
@@ -313,7 +313,7 @@ japp:
 # configure the FPGA
 config:
 ifeq ($(USB),true)
-	make config_usb
+	make config_usb -e USB=true
 else
 ifeq ($(XFPGA),true)
 	make config_xilinx
@@ -399,9 +399,9 @@ cprog:
 #	compile and JOPize the application
 #
 ifeq (${JCOPTER_USE_WCA},no)
-  JCOPTER_OPTIONS=--no-use-wca ${JCOPTER_OPT}
+  JCOPTER_OPTIONS=--no-use-wca --use-dfa $(USE_DFA) --callstring-length $(CALLSTRING_LENGTH) ${JCOPTER_OPT}
 else
-  JCOPTER_OPTIONS=--use-wca --wca-targets ${WCET_METHOD} ${JCOPTER_OPT}  
+  JCOPTER_OPTIONS=--use-wca --wca-targets ${WCET_METHOD} --use-dfa $(USE_DFA) --callstring-length $(CALLSTRING_LENGTH) ${JCOPTER_OPT}   
 endif
 
 jop_config:
@@ -449,7 +449,6 @@ endif
 jcopter_help:
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter --help
 	@echo "[make] Default JCopter options:"
-	@echo "[make] JCOPTER_OPT=--dump-callgraph merged --dump-jvm-callgraph merged --use-dfa \$$(USE_DFA) --dump-callgraph merged --dump-jvm-callgraph off --callstring-length \$$(CALLSTRING_LENGTH) --wca-targets \$$(WCET_METHOD)"
 	@echo "[make] JCOPTER_OPT=$(JCOPTER_OPT)"
 	@echo ""
 

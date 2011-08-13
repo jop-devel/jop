@@ -144,3 +144,64 @@ do_oldwcet:
 	cp -a $(OLDTOOLS_ROOT)/java/target/wcet/test/report $(resultdir)/
 	cp -a $(OLDTOOLS_ROOT)/java/target/wcet/test/report.csv $(csvdir)/$(result).csv
 	
+
+
+bench_lift_wcet_opt:
+	$(MAKE) -e P1=test P2=wcet P3=StartLift WCET_METHOD=measure USE_DFA=no USE_JCOPTER=yes 
+		JCOPTER_USE_WCA=$(USE_WCA) OPTS=$(OPTS) do_bench_wcet
+
+bench_lift_acet_opt:
+	$(MAKE) -e P1=test P2=wcet P3=StartLift WCET_METHOD=measure USE_DFA=no USE_JCOPTER=yes 
+		JCOPTER_USE_WCA=$(USE_WCA) OPTS=$(OPTS) do_bench_acet
+		
+bench_lift_wcet:
+	$(MAKE) -e P1=test P2=wcet P3=StartLift WCET_METHOD=measure USE_DFA=no USE_JCOPTER=no do_bench_wcet 
+		
+bench_lift_acet:
+	$(MAKE) -e P1=test P2=wcet P3=StartLift WCET_METHOD=measure USE_DFA=no USE_JCOPTER=no do_bench_acet 
+
+
+bench_kfl_wcet_opt:
+	$(MAKE) -e P1=test P2=wcet P3=StartKfl WCET_METHOD=measure USE_DFA=no USE_JCOPTER=yes 
+		JCOPTER_USE_WCA=$(USE_WCA) OPTS=$(OPTS) do_bench_wcet
+
+bench_kfl_acet_opt:
+	$(MAKE) -e P1=test P2=wcet P3=StartKfl WCET_METHOD=measure USE_DFA=no USE_JCOPTER=yes 
+		JCOPTER_USE_WCA=$(USE_WCA) OPTS=$(OPTS) do_bench_acet
+		
+bench_kfl_wcet:
+	$(MAKE) -e P1=test P2=wcet P3=StartKfl WCET_METHOD=measure USE_DFA=no USE_JCOPTER=no do_bench_wcet 
+		
+bench_kfl_acet:
+	$(MAKE) -e P1=test P2=wcet P3=StartKfl WCET_METHOD=measure USE_DFA=no USE_JCOPTER=no do_bench_acet 
+
+
+bench_udp_wcet_opt:
+	$(MAKE) -e P1=test P2=wcet P3=StartBenchUdpIp WCET_METHOD=measure USE_DFA=no USE_JCOPTER=yes 
+		JCOPTER_USE_WCA=$(USE_WCA) OPTS=$(OPTS) do_bench_wcet
+
+bench_udp_acet_opt:
+	$(MAKE) -e P1=test P2=wcet P3=StartBenchUdpIp WCET_METHOD=measure USE_DFA=no USE_JCOPTER=yes 
+		JCOPTER_USE_WCA=$(USE_WCA) OPTS=$(OPTS) do_bench_acet
+		
+bench_udp_wcet:
+	$(MAKE) -e P1=test P2=wcet P3=StartBenchUdpIp WCET_METHOD=measure USE_DFA=no USE_JCOPTER=no do_bench_wcet 
+		
+bench_udp_acet:
+	$(MAKE) -e P1=test P2=wcet P3=StartBenchUdpIp WCET_METHOD=measure USE_DFA=no USE_JCOPTER=no do_bench_acet 
+
+
+
+
+do_bench_wcet:
+	cd $(NEWTOOLS_ROOT) && $(MAKE) -e P1=$(P1) P2=$(P2) P3=$(P3) WCET_METHOD=$(WCET_METHOD) \
+		USE_DFA=$(USE_DFA) JCOPTER_USE_WCA=$(USE_WCA) USE_JCOPTER=$(JCOPTER) \
+		CALLSTRING_LENGTH=1 USB=true MEASURE=false JCOPTER_OPT="-O 3 $(OPTS)" java_app
+	cd $(NEWTOOLS_ROOT) && $(MAKE) -e P1=$(P1) P2=$(P2) P3=$(P3) WCET_METHOD=$(WCET_METHOD) \
+		USE_DFA=$(USE_DFA) wcet 
+
+do_bench_acet:
+	cd $(NEWTOOLS_ROOT) && $(MAKE) -e P1=$(P1) P2=$(P2) P3=$(P3) WCET_METHOD=$(WCET_METHOD) \
+		USE_DFA=$(USE_DFA) JCOPTER_USE_WCA=$(USE_WCA) USE_JCOPTER=$(JCOPTER) \
+		CALLSTRING_LENGTH=1 USB=true MEASURE=true BLASTER_TYPE=USB-Blaster \
+		JCOPTER_OPT="-O 3 $(OPTS)" DOWN=./down.exe java_app config download
