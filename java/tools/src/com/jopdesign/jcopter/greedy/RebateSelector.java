@@ -23,6 +23,11 @@ package com.jopdesign.jcopter.greedy;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallGraph.ContextEdge;
+import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.graphutils.DFSTraverser;
+import com.jopdesign.common.graphutils.DFSTraverser.DFSVisitor;
+import com.jopdesign.common.graphutils.DFSTraverser.EmptyDFSVisitor;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
@@ -30,6 +35,7 @@ import com.jopdesign.jcopter.analysis.ExecCountProvider;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
+import org.jgrapht.DirectedGraph;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -45,16 +51,18 @@ import java.util.Set;
  */
 public abstract class RebateSelector implements CandidateSelector {
 
-    public static class RebateRatio implements Comparable<RebateRatio> {
+    public class RebateRatio implements Comparable<RebateRatio> {
 
         private final Candidate candidate;
         private final long gain;
         private final float ratio;
+        private final int order;
 
         protected RebateRatio(Candidate candidate, long gain, float ratio) {
             this.candidate = candidate;
             this.gain = gain;
             this.ratio = ratio;
+            this.order = depthMap.get(candidate.getMethod());
         }
 
         public Candidate getCandidate() {
@@ -67,6 +75,10 @@ public abstract class RebateSelector implements CandidateSelector {
 
         public float getRatio() {
             return ratio;
+        }
+
+        public int getOrder() {
+            return order;
         }
 
         @Override
@@ -91,8 +103,11 @@ public abstract class RebateSelector implements CandidateSelector {
             if (ratio == o.getRatio()) {
                 // since we want to keep different entries with the same ratio, use candidate as tiebreaker
                 if (candidate.equals(o.getCandidate())) return 0;
-                // TODO two candidates could still have the same hashCode .. we might want to use something else
-                return candidate.hashCode() < o.getCandidate().hashCode() ? -1 : 1;
+                if (order == o.getOrder()) {
+                    // same method, use candidate as tie-breaker
+                    return candidate.hashCode() < o.getCandidate().hashCode() ? -1 : 1;
+                }
+                return order < o.getOrder() ? -1 : 1;
             }
             return ratio < o.getRatio() ? -1 : 1;
         }
@@ -135,6 +150,8 @@ public abstract class RebateSelector implements CandidateSelector {
     protected final ProcessorModel processorModel;
 
     protected final Map<MethodInfo, MethodData> methodData;
+    // The death-map..
+    private final Map<MethodInfo,Integer> depthMap;
 
     private boolean usesCodeRemover;
     private int maxGlobalSize;
@@ -147,6 +164,7 @@ public abstract class RebateSelector implements CandidateSelector {
 
         usesCodeRemover = analyses.getJCopter().getExecutor().useCodeRemover();
         methodData = new HashMap<MethodInfo, MethodData>();
+        depthMap = new HashMap<MethodInfo, Integer>();
     }
 
     @Override
@@ -166,6 +184,21 @@ public abstract class RebateSelector implements CandidateSelector {
                 }
             }
         }
+
+        // we need a tie-breaker for the candidate selection, and to make the results deterministic
+        // so we use a topological order of the (initial) callgraph
+        DFSVisitor<ExecutionContext,ContextEdge> visitor = new EmptyDFSVisitor<ExecutionContext, ContextEdge>() {
+            private int counter = 1;
+
+            @Override
+            public void postorder(ExecutionContext node) {
+                depthMap.put(node.getMethodInfo(), counter++);
+            }
+        };
+
+        DirectedGraph<ExecutionContext,ContextEdge> graph = analyses.getTargetCallGraph().getReversedGraph();
+        DFSTraverser<ExecutionContext,ContextEdge> traverser = new DFSTraverser<ExecutionContext, ContextEdge>(visitor);
+        traverser.traverse(graph);
 
         logger.info("Initial codesize: " + globalCodesize + " bytes");
     }

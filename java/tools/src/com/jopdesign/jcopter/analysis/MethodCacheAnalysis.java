@@ -37,6 +37,7 @@ import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
+import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
@@ -398,6 +399,8 @@ public class MethodCacheAnalysis {
     }
 
     public void inline(CodeModification modification, InvokeSite invokeSite, MethodInfo invokee) {
+        if (analysisType == AnalysisType.ALWAYS_HIT || analysisType == AnalysisType.ALWAYS_MISS) return;
+
         Set<ExecutionContext> nodes = new HashSet<ExecutionContext>();
 
         // We need to go down first, find all new nodes
@@ -462,8 +465,13 @@ public class MethodCacheAnalysis {
     ///////////////////////////////////////////////////////////////////////////////////
 
     public RecursiveStrategy<AnalysisContextLocal,WcetCost>
-           createRecursiveStrategy(WCETTool tool, IPETConfig ipetConfig)
+           createRecursiveStrategy(WCETTool tool, IPETConfig ipetConfig, StaticCacheApproximation cacheApprox)
     {
+        if (cacheApprox.needsInterProcIPET()) {
+            // TODO use method-cache for all-fit
+            return new GlobalAnalysis.GlobalIPETStrategy(ipetConfig);
+        }
+
         return new LocalAnalysis(tool, ipetConfig) {
             @Override
             public WcetCost recursiveCost(RecursiveAnalysis<AnalysisContextLocal, WcetCost> stagedAnalysis,
@@ -485,29 +493,13 @@ public class MethodCacheAnalysis {
         };
     }
 
-    public AnalysisContextLocal getRootContext() {
-        return getAnalysisContext(CallString.EMPTY);
-    }
-
-    public AnalysisContextLocal getAnalysisContext(CallString callString) {
-        if (analysisType == AnalysisType.ALWAYS_HIT) {
-            return new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_HIT, callString);
-        }
-        if (analysisType == AnalysisType.ALWAYS_MISS) {
-            return new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_MISS, callString);
-        }
-        if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT) {
-            return new AnalysisContextLocal(StaticCacheApproximation.ALL_FIT_SIMPLE, callString);
-        }
-        return new AnalysisContextLocal(StaticCacheApproximation.ALL_FIT_SIMPLE, callString);
-    }
-
     ///////////////////////////////////////////////////////////////////////////////////
     // Private stuff
     ///////////////////////////////////////////////////////////////////////////////////
 
     private int getMethodSize(MethodInfo method) {
         // TODO should we use Java size to make things faster?
+        if (method.isNative()) return 0;
         return method.getCode().getNumberOfBytes();
     }
 

@@ -197,6 +197,7 @@ public class GreedyOptimizer {
         AnalysisManager analyses = new AnalysisManager(jcopter);
 
         analyses.initAnalyses(config.getTargetMethodSet(), config.getCacheAnalysisType(),
+                              config.getCacheApproximation(), config.useMethodCacheStrategy(),
                               config.useWCA() ? config.getWCATargetSet() : null, updateWCEP);
 
         logger.info("Callgraph nodes: "+analyses.getTargetCallGraph().getNodes().size());
