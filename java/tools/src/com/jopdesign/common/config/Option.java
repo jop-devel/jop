@@ -191,24 +191,53 @@ public abstract class Option<T> {
         } else {
             s.append("   --");
         }
-        s.append(options.getConfigKey(this));
+        String configKey = options.getConfigKey(this);
+        s.append(configKey);
 
-        for (int i = key.length(); i < lAdjust; i++) {
+        for (int i = configKey.length(); i < lAdjust; i++) {
             s.append(' ');
         }
         s.append("  ");
-        s.append(descrString(options));
+        s.append(descrString(9+lAdjust, 100-lAdjust, options));
         return s.toString();
     }
 
-    public String descrString(OptionGroup options) {
+    public String descrString(int lAdjust, int cols, OptionGroup options) {
 
         String defaultValue = options.getDefaultValueText(this);
 
-        StringBuilder s = new StringBuilder(this.description);
-        s.append(" ");
-        s.append(getDefaultsText(defaultValue));
-        return s.toString();
+        StringBuilder s = new StringBuilder();
+        for (int i = 0; i < lAdjust; i++) {
+            s.append(' ');
+        }
+
+        String newline = System.getProperty("line.separator") + s.toString();
+        String defaults = getDefaultsText(defaultValue);
+
+        StringBuilder text = new StringBuilder();
+        int pos = 0;
+        while (description.length() - pos > cols) {
+            int space = description.lastIndexOf(' ', pos+cols);
+            if (space <= pos) {
+                space = description.indexOf(' ',pos+cols);
+            }
+            if (space == -1) {
+                text.append(description.substring(pos));
+                pos = description.length();
+            } else {
+                text.append(description.substring(pos,space)).append(newline);
+                pos = space+1;
+            }
+        }
+        text.append(description.substring(pos));
+
+        if (description.length()-pos+defaults.length() > cols) {
+            text.append(newline).append(defaults);
+        } else {
+            text.append(' ').append(defaults);
+        }
+
+        return text.toString();
     }
 
     protected String getDefaultsText(String defaultValue) {
