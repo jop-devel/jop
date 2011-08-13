@@ -81,6 +81,7 @@ public class StacksizeAnalysis {
     public StacksizeAnalysis(MethodInfo method) {
         this.method = method;
         interpreter = new InstructionInterpreter<Integer>(method, new StackAnalysis());
+        interpreter.setStartAtExceptionHandlers(true);
     }
 
     public MethodInfo getMethod() {
