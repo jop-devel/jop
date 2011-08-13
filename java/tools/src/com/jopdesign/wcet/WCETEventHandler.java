@@ -39,10 +39,10 @@ import com.jopdesign.wcet.annotations.BadAnnotationException;
 import com.jopdesign.wcet.annotations.LoopBoundExpr;
 import com.jopdesign.wcet.annotations.SourceAnnotationReader;
 import com.jopdesign.wcet.annotations.SourceAnnotations;
+import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -135,22 +135,47 @@ public class WCETEventHandler extends EmptyAppEventHandler {
                 // or at least check if the source-annotation is tighter than what is currently set?
                 continue;
             }
-            try {
-                wcaMap = getAnnotations(method.getCode().getSourceClassInfo(block.getFirstInstruction()));
-            } catch (IOException e) {
-                throw new BadAnnotationException("IO Error reading annotation: " + e.getMessage(), e);
+
+            Set<LoopBound> bounds = new HashSet<LoopBound>(2);
+
+            InstructionHandle first = block.getFirstInstruction();
+            InstructionHandle last = first;
+            ClassInfo sourceInfo = method.getCode().getSourceClassInfo(block.getFirstInstruction());
+
+            // TODO we only dump the last line numbers in error messages
+            //      use line and source class of first and last handle instead
+            int sourceRangeStart = -1;
+            int sourceRangeStop = -1;
+
+            for (InstructionHandle ih : block.getInstructions()) {
+                ClassInfo cls = method.getCode().getSourceClassInfo(ih);
+                boolean isLast = ih.equals(block.getLastInstruction());
+                if (!cls.equals(sourceInfo) || isLast) {
+                    try {
+                        wcaMap = getAnnotations(method.getCode().getSourceClassInfo(block.getFirstInstruction()));
+                    } catch (IOException e) {
+                        throw new BadAnnotationException("IO Error reading annotation: " + e.getMessage(), e);
+                    }
+                    if (isLast) {
+                        last = ih;
+                    }
+                    // search for loop annotation in range
+                    sourceRangeStart = code.getLineNumber(first);
+                    sourceRangeStop = code.getLineNumber(last);
+                    bounds.addAll(wcaMap.annotationsForLineRange(sourceRangeStart, sourceRangeStop + 1));
+
+                    first = ih;
+                }
+                last = ih;
             }
-            // search for loop annotation in range
-            int sourceRangeStart = code.getLineNumber(block.getFirstInstruction());
-            int sourceRangeStop = code.getLineNumber(block.getLastInstruction());
-            Collection<LoopBound> annots = wcaMap.annotationsForLineRange(sourceRangeStart, sourceRangeStop + 1);
-            if (annots.size() > 1) {
-                String reason = "Ambiguous Annotation [" + annots + "]";
+
+            if (bounds.size() > 1) {
+                String reason = "Ambiguous Annotation [" + bounds + "]";
                 throw new BadAnnotationException(reason, block, sourceRangeStart, sourceRangeStop);
             }
             LoopBound loopAnnot = null;
-            if (annots.size() == 1) {
-                loopAnnot = annots.iterator().next();
+            if (bounds.size() == 1) {
+                loopAnnot = bounds.iterator().next();
             }
             // if we have loop bounds from DFA analysis, use them
             loopAnnot = dfaLoopBound(block, eCtx, loopAnnot);
@@ -160,8 +185,8 @@ public class WCETEventHandler extends EmptyAppEventHandler {
                 // Bit of a hack: if we load CFGs before the callgraph is constructed, this will log errors anyway
                 if (ignoreMissingLoopBounds) {
                     logger.trace("No loop bound annotation: " + method + ":" + n +
-                                 " [line "+sourceRangeStart+"-"+sourceRangeStop+"]"+
-                                 ".\nApproximating with " + DEFAULT_LOOP_BOUND + ", but result is not safe anymore.");
+                            " [line " + sourceRangeStart + "-" + sourceRangeStop + "]" +
+                            ".\nApproximating with " + DEFAULT_LOOP_BOUND + ", but result is not safe anymore.");
                 } else if (project.getCallGraph() != null && !project.getCallGraph().containsMethod(method)) {
                     logger.debug("No loop bound annotation for non-WCET method: " + method + ":" + n +
                                  " [line "+sourceRangeStart+"-"+sourceRangeStop+"]"+

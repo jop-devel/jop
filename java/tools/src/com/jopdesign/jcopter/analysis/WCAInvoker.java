@@ -56,6 +56,7 @@ import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -281,7 +282,7 @@ public class WCAInvoker extends ExecCountProvider {
                 };
 
         DFSTraverser<ExecutionContext,ContextEdge> traverser = new DFSTraverser<ExecutionContext, ContextEdge>(visitor);
-        traverser.traverse(callGraph.getGraph(), rootNodes);
+        traverser.traverse(callGraph.getGraph(), new ArrayList<ExecutionContext>(rootNodes));
 
         // since we use the cache analysis for the WCA, we need to update all methods for which the
         // classification changed too
