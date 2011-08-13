@@ -29,9 +29,11 @@ import com.jopdesign.common.code.ControlFlowGraph.InvokeNode;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.graphutils.DFSTraverser;
+import com.jopdesign.common.graphutils.DFSTraverser.DFSEdgeType;
 import com.jopdesign.common.graphutils.DFSTraverser.DFSVisitor;
 import com.jopdesign.common.graphutils.DFSTraverser.EmptyDFSVisitor;
 import com.jopdesign.common.graphutils.GraphUtils;
+import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.wcet.WCETProcessorModel;
@@ -186,8 +188,14 @@ public class MethodCacheAnalysis {
         if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT) {
             return 0;
         }
-        // TODO count invoke and return cache misses for all-fit
-        return 0;
+        // invoke cache misses
+        long misses = getPersistentMisses(ecp, callGraph.getNodes(invokeSite.getInvoker()));
+        if (cache.isLRU()) {
+            // we only have cache costs at the invoke, we can assume the return is always a hit
+            return misses * invokeCacheCosts;
+        }
+        // we may have return cache misses too, over-approximate
+        return misses * (invokeCacheCosts + returnCacheCosts);
     }
 
     public long getInvokeMissCount(ExecCountProvider ecp, InvokeSite invokeSite, MethodInfo invokee) {
@@ -199,8 +207,7 @@ public class MethodCacheAnalysis {
         if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT || cache.isLRU()) {
             return 0;
         }
-        // TODO for FIFO caches, return might cause cache misses in all-fit
-        return 0;
+        return getPersistentMisses(ecp, callGraph.getNodes(invokeSite.getInvoker()));
     }
 
     public long getInvokeMissCount(ExecCountProvider ecp, MethodInfo invokee) {
@@ -233,8 +240,8 @@ public class MethodCacheAnalysis {
         if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT || cache.isLRU()) {
             return 0;
         }
-        // TODO for FIFO caches, return might cause cache misses in all-fit
-        return 0;
+        // we have at most one return miss of invokes in this method
+        return getPersistentMisses(ecp, Collections.singleton(context));
     }
 
     public long getReturnMissCount(ExecCountProvider ecp, CodeModification modification) {
@@ -256,8 +263,8 @@ public class MethodCacheAnalysis {
         if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT || cache.isLRU()) {
             return 0;
         }
-        // TODO for FIFO caches, return might cause cache misses in all-fit
-        return 0;
+        // we have at most one return miss of invokes in this method
+        return getPersistentMisses(ecp, callGraph.getNodes(modification.getMethod()));
     }
 
     /**
@@ -346,9 +353,44 @@ public class MethodCacheAnalysis {
 
         if (analysisType == AnalysisType.ALL_FIT_REGIONS) {
 
-            // TODO we need to add changed cache costs of all methods reachable from changeset since the
-            //      number of cache misses (i.e number of invokes of top-most all-fit methods) changed
+            // find out how many additional persistent cache misses we have
+            // find out border of new all-fit region
+            int deltaCount = 0;
+            Set<ExecutionContext> border = new HashSet<ExecutionContext>();
 
+            if (deltaBlocks < 0) {
+                throw new AppInfoError("Not implemented");
+            } else {
+
+                for (MethodInfo miss : changes) {
+                    for (ExecutionContext context : callGraph.getNodes(miss)) {
+                        for (ExecutionContext invokee : callGraph.getChildren(context)) {
+                            // not all-fit if in changeset
+                            if (changes.contains(invokee.getMethodInfo())) continue;
+                            // invokee is all-fit
+                            if (border.add(invokee)) {
+                                deltaCount += ecp.getExecCount(invokee);
+                            }
+                        }
+                    }
+                }
+
+                // remove old miss count
+                deltaCount -= getPersistentMisses(ecp, border);
+            }
+
+            // find out cache miss costs of new all-fit region
+            int regionCosts = 0;
+            Set<MethodInfo> visited = new HashSet<MethodInfo>();
+            for (ExecutionContext context : border) {
+                for (MethodInfo reachable : reachableMethods.get(context)) {
+                    if (visited.add(reachable)) {
+                        regionCosts += pm.getMethodCacheMissPenalty(reachable.getCode().getNumberOfWords(), cache.isLRU());
+                    }
+                }
+            }
+
+            costs += deltaCount * regionCosts;
         }
 
         return costs;
@@ -391,8 +433,19 @@ public class MethodCacheAnalysis {
             if (!allFit(method)) {
                 countChanges.add(method);
             }
-            // TODO if MOST_ONCE_MISS and not all invokers of this method are all-fit, we need to add
-            //      all reachable methods to the changeset too!
+        }
+
+        if (analysisType == AnalysisType.ALL_FIT_REGIONS) {
+            for (MethodInfo method : ecp.getChangeSet()) {
+                if (!classifyChanges.contains(method)) {
+                    continue;
+                }
+                // all methods for which the classification changed and for which the exe count changed..
+                for (ExecutionContext context : callGraph.getNodes(method)) {
+                    // add all reachable methods
+                    countChanges.addAll(reachableMethods.get(context));
+                }
+            }
         }
 
         return countChanges;
@@ -681,6 +734,41 @@ public class MethodCacheAnalysis {
         }
 
         return removeMethods;
+    }
+
+    private Set<ExecutionContext> findAllFitBorder(Collection<ExecutionContext> nodes) {
+        final Set<ExecutionContext> border = new HashSet<ExecutionContext>();
+
+        DFSVisitor<ExecutionContext,ContextEdge> visitor = new EmptyDFSVisitor<ExecutionContext, ContextEdge>() {
+            @Override
+            public boolean visitNode(ExecutionContext parent, ContextEdge edge, ExecutionContext node, DFSEdgeType type, Collection<ContextEdge> outEdges, int depth) {
+                if (type == DFSEdgeType.ROOT || type == DFSEdgeType.BACK_EDGE) {
+                    // skip the root, ignore back edges
+                    return true;
+                }
+                if (!allFit(node)) {
+                    // we do not go up from always-miss nodes, so the 'parent' must be all-fit
+                    border.add(parent);
+                    return false;
+                }
+                return true;
+            }
+        };
+
+        DFSTraverser<ExecutionContext,ContextEdge> traverser = new DFSTraverser<ExecutionContext, ContextEdge>(visitor);
+        traverser.traverse(callGraph.getReversedGraph(), nodes);
+
+        return border;
+    }
+
+    private long getPersistentMisses(ExecCountProvider ecp, Collection<ExecutionContext> nodes) {
+        long count = 0;
+
+        for (ExecutionContext border : findAllFitBorder(nodes)) {
+            count += ecp.getExecCount(border);
+        }
+
+        return count;
     }
 
 }
