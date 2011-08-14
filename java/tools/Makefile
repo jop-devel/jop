@@ -150,7 +150,9 @@ do_oldwcet:
 #   Required options: P3=<StartLift|...>
 #
 
-DEFAULT_OPTS=--greedy.targets wca --greedy.use-wcep true --greedy.cache-analysis ALWAYS_MISS 
+DEFAULT_OPTS=--greedy.targets wca --greedy.use-wcep true \
+	     --greedy.cache-analysis ALL_FIT_REGIONS \
+	     --greedy.wca-cache-analysis ALL_FIT_REGIONS 
 
 bench_wcet_opt:
 	$(MAKE) -e P1=test P2=wcet P3=$(P3) WCET_METHOD=measure USE_DFA=no USE_JCOPTER=yes \
@@ -173,7 +175,7 @@ do_bench_wcet:
 		CALLSTRING_LENGTH=1 USB=true MEASURE=false JCOPTER_OPT="-O 3 $(DEFAULT_OPTS) $(OPTS)" java_app
 	cd $(NEWTOOLS_ROOT) && $(MAKE) -e P1=$(P1) P2=$(P2) P3=$(P3) WCET_METHOD=$(WCET_METHOD) \
 		USE_DFA=$(USE_DFA) WCET_OPTIONS="--no-load-linkinfo" wcet
-	@echo "Options: " $(P3) " --use-wca " $USE_WCA $(DEFAULT_OPTS) $(OPTS) 
+	@echo "Options: " $(P3) " --use-wca " $(USE_WCA) $(DEFAULT_OPTS) $(OPTS) 
 
 do_bench_acet:
 	cd $(NEWTOOLS_ROOT) && $(MAKE) -e P1=$(P1) P2=$(P2) P3=$(P3) WCET_METHOD=$(WCET_METHOD) \

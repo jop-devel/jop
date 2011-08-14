@@ -142,11 +142,6 @@ public class WCETEventHandler extends EmptyAppEventHandler {
             InstructionHandle last = first;
             ClassInfo sourceInfo = method.getCode().getSourceClassInfo(block.getFirstInstruction());
 
-            // TODO we only dump the last line numbers in error messages
-            //      use line and source class of first and last handle instead
-            int sourceRangeStart = -1;
-            int sourceRangeStop = -1;
-
             for (InstructionHandle ih : block.getInstructions()) {
                 ClassInfo cls = method.getCode().getSourceClassInfo(ih);
                 boolean isLast = ih.equals(block.getLastInstruction());
@@ -160,8 +155,8 @@ public class WCETEventHandler extends EmptyAppEventHandler {
                         last = ih;
                     }
                     // search for loop annotation in range
-                    sourceRangeStart = code.getLineNumber(first);
-                    sourceRangeStop = code.getLineNumber(last);
+                    int sourceRangeStart = code.getLineNumber(first);
+                    int sourceRangeStop = code.getLineNumber(last);
                     bounds.addAll(wcaMap.annotationsForLineRange(sourceRangeStart, sourceRangeStop + 1));
 
                     first = ih;
@@ -171,7 +166,7 @@ public class WCETEventHandler extends EmptyAppEventHandler {
 
             if (bounds.size() > 1) {
                 String reason = "Ambiguous Annotation [" + bounds + "]";
-                throw new BadAnnotationException(reason, block, sourceRangeStart, sourceRangeStop);
+                throw new BadAnnotationException(reason, code, block);
             }
             LoopBound loopAnnot = null;
             if (bounds.size() == 1) {
@@ -185,21 +180,26 @@ public class WCETEventHandler extends EmptyAppEventHandler {
                 // Bit of a hack: if we load CFGs before the callgraph is constructed, this will log errors anyway
                 if (ignoreMissingLoopBounds) {
                     logger.trace("No loop bound annotation: " + method + ":" + n +
-                            " [line " + sourceRangeStart + "-" + sourceRangeStop + "]" +
+                            " " + getLineRangeText(code, block) +
                             ".\nApproximating with " + DEFAULT_LOOP_BOUND + ", but result is not safe anymore.");
                 } else if (project.getCallGraph() != null && !project.getCallGraph().containsMethod(method)) {
                     logger.debug("No loop bound annotation for non-WCET method: " + method + ":" + n +
-                                 " [line "+sourceRangeStart+"-"+sourceRangeStop+"]"+
+                                 " " + getLineRangeText(code, block) +
                                  ".\nApproximating with " + DEFAULT_LOOP_BOUND);
                 } else {
                     logger.error("No loop bound annotation: " + method + ":" + n +
-                                 " [line "+sourceRangeStart+"-"+sourceRangeStop+"]"+
+                                 " " + getLineRangeText(code, block) +
                                  ".\nApproximating with " + DEFAULT_LOOP_BOUND + ", but result is not safe anymore.");
                 }
                 loopAnnot = LoopBound.defaultBound(DEFAULT_LOOP_BOUND);
             }
             block.setLoopBound(loopAnnot);
         }
+    }
+
+    private String getLineRangeText(MethodCode code, BasicBlock block) {
+        return "[line " + code.getLineString(block.getFirstInstruction()) + "-" +
+                          code.getLineString(block.getLastInstruction()) + "]";
     }
 
     /**
