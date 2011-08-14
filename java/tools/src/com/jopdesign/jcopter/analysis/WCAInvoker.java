@@ -128,7 +128,7 @@ public class WCAInvoker extends ExecCountProvider {
         setWCETOptions(wcaTargets.iterator().next(), false);
 
         // Init WCA tool
-        wcetTool.initialize(false);
+        wcetTool.initialize(false, false);
     }
 
     public void initAnalysis(boolean useMethodCacheStrategy) {
