@@ -336,6 +336,16 @@ public abstract class RebateSelector implements CandidateSelector {
         return new RebateRatio(candidate, gain, ratio);
     }
 
+    protected void logSelection(ExecCountProvider ecp, RebateRatio ratio) {
+        if (ratio == null) return;
+        logger.info("Selected ratio " + ratio.getRatio() + ", gain " + ratio.getGain() +
+                    " local " + ratio.getCandidate().getLocalGain() +
+                    " cache local " + ratio.getCandidate().getDeltaCacheMissCosts(analyses, ecp) +
+                    " cache " + analyses.getMethodCacheAnalysis().getDeltaCacheMissCosts(ecp, ratio.getCandidate()) +
+                    " codesize " + ratio.getCandidate().getDeltaLocalCodesize() +
+                    " cnt " + ecp.getExecCount(ratio.getCandidate().getMethod(), ratio.getCandidate().getEntry()));
+    }
+
     public int getDeltaGlobalCodesize(Candidate candidate) {
         int size = candidate.getDeltaLocalCodesize();
 

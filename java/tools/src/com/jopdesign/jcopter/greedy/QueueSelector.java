@@ -64,6 +64,7 @@ public abstract class QueueSelector extends RebateSelector {
                 continue;
             }
 
+            logSelection(ecp, next);
             return next.getCandidates();
         }
     }
@@ -92,7 +93,7 @@ public abstract class QueueSelector extends RebateSelector {
             if (skipCandidate(candidate)) continue;
 
             long gain = gainCalculator.calculateGain(ecp, candidate);
-            if (gain < 0) continue;
+            if (gain <= 0) continue;
 
             ratios.add(createRatio(gainCalculator, ecp, candidate, gain));
         }

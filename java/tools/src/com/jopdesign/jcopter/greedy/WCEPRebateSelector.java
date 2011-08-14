@@ -25,9 +25,11 @@ import com.jopdesign.jcopter.analysis.AnalysisManager;
 import com.jopdesign.jcopter.analysis.ExecCountProvider;
 import com.jopdesign.jcopter.analysis.WCAInvoker;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -91,6 +93,7 @@ public class WCEPRebateSelector extends RebateSelector {
 
         }
 
+        logSelection(ecp, next);
         return next != null ? next.getCandidates() : null;
     }
 
@@ -104,15 +107,30 @@ public class WCEPRebateSelector extends RebateSelector {
 
     private RebateRatio selectCandidate(ExecCountProvider ecp, MethodData data, RebateRatio next) {
 
+        List<Candidate> remove = new ArrayList<Candidate>();
+
         for (Candidate candidate : data.getCandidates()) {
 
+            if (!checkConstraints(candidate)) {
+                remove.add(candidate);
+                continue;
+            }
+
+            if (!analyses.getWCAInvoker().isOnLocalWCETPath(candidate.getMethod(), candidate.getEntry())) {
+                continue;
+            }
+
             long gain = gainCalculator.calculateGain(ecp, candidate);
-            if (gain < 0) continue;
+            if (gain <= 0) continue;
 
             RebateRatio ratio = createRatio(gainCalculator, ecp, candidate, gain);
             if (next == null || ratio.getRatio() > next.getRatio()) {
                 next = ratio;
             }
+        }
+
+        for (Candidate candidate : remove) {
+            removeCandidate(candidate);
         }
 
         return next;

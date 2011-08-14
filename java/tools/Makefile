@@ -147,11 +147,11 @@ do_oldwcet:
 
 # 
 # Benchmark targets
-#   Required options: P3=<StartLift|...>
+#   Required options: P3=<StartLift|...> USE_WCA=yes|no
 #
 
-DEFAULT_OPTS=--greedy.targets wca --greedy.use-wcep true \
-	     --greedy.cache-analysis ALL_FIT_REGIONS \
+DEFAULT_OPTS=--greedy.targets wca --greedy.use-wcep false \
+	     --greedy.cache-analysis ALWAYS_MISS \
 	     --greedy.wca-cache-analysis ALL_FIT_REGIONS 
 
 bench_wcet_opt:

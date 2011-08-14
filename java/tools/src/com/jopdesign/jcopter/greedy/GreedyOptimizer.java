@@ -98,7 +98,23 @@ public class GreedyOptimizer {
         // initialization
         resetCounters();
 
-        AnalysisManager analyses = initializeAnalyses(config.useWCEP());
+        boolean useWCAProvider = config.useWCA() && config.useWCAExecCount();
+        GreedyOrder order = config.getOrder();
+
+        if (order != GreedyOrder.WCAFirst) {
+            // TODO for now we require that for this to work the target must be the WCA root
+            //      for this to work the WCAInvoker would need to use the ExecCountAnalysis to
+            //      multiply its results with the number of executions of the target-method for all
+            //      WCA methods and use the ExecCountAnalysis for everything else. Changesets must be
+            //      updated as well.
+            if (!config.getTargetMethodSet().equals(config.getWCATargetSet())) {
+                logger.warn("Using the WCA for exec frequencies is currently only supported if order is WCAFirst "+
+                            "or if the target method is the WCA target method");
+                useWCAProvider = false;
+            }
+        }
+
+        AnalysisManager analyses = initializeAnalyses(config.useWCEP() || useWCAProvider);
 
         for (CodeOptimizer opt : optimizers) {
             opt.initialize(analyses, rootMethods);
@@ -118,25 +134,26 @@ public class GreedyOptimizer {
 
         selector.initialize();
 
+        ExecCountProvider ecp = useWCAProvider ? analyses.getWCAInvoker() : analyses.getExecCountAnalysis();
+
         // iterate over regions in callgraph
 
-        GreedyOrder order = config.getOrder();
         if (order == GreedyOrder.Global || (order == GreedyOrder.WCAFirst && !config.useWCA())) {
 
-            optimizeMethods(analyses, analyses.getExecCountAnalysis(), selector,
+            optimizeMethods(analyses, ecp, selector,
                             analyses.getTargetCallGraph().getMethodInfos());
 
         } else if (order == GreedyOrder.Targets) {
 
             for (MethodInfo target : config.getTargetMethods()) {
-                optimizeMethods(analyses, analyses.getExecCountAnalysis(), selector,
+                optimizeMethods(analyses, ecp, selector,
                                 analyses.getTargetCallGraph().getReachableImplementationsSet(target));
             }
 
         } else if (order == GreedyOrder.WCAFirst) {
 
             Set<MethodInfo> wcaMethods = analyses.getWCAMethods();
-            optimizeMethods(analyses, analyses.getWCAInvoker(), selector, wcaMethods);
+            optimizeMethods(analyses, ecp, selector, wcaMethods);
 
             // We do not want to include the wca methods in the second pass because inlining there could have negative
             // effects on the WCET path due to the cache
@@ -163,8 +180,6 @@ public class GreedyOptimizer {
                     new TopologicalOrderIterator<MethodNode, InvokeEdge>(
                             analyses.getTargetCallGraph().getAcyclicMergedGraph(order == GreedyOrder.BottomUp)
                     );
-
-            ExecCountProvider ecp = config.useWCA() ? analyses.getWCAInvoker() : analyses.getExecCountAnalysis();
 
             while (topOrder.hasNext()) {
                 MethodNode node = topOrder.next();

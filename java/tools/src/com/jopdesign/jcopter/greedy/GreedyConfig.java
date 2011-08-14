@@ -59,6 +59,9 @@ public class GreedyConfig {
     private static final BooleanOption USE_WCEP =
             new BooleanOption("use-wcep", "Optimize only methods on the WCET path if WCA is enabled", false);
 
+    private static final BooleanOption USE_WCA_EXEC_COUNT =
+            new BooleanOption("use-wcep-ef", "Use execution frequencies from the WCA if the WCA is enabled", true);
+
     private static final EnumOption<AnalysisType> CACHE_ANALYSIS_TYPE =
             new EnumOption<AnalysisType>("cache-analysis",
                     "Select the cache analysis type: ALWAYS_MISS, ALWAYS_HIT, ALWAYS_HIT_OR_MISS, ALL_FIT_REGIONS",
@@ -80,6 +83,7 @@ public class GreedyConfig {
         options.addOption(GREEDY_ORDER);
         options.addOption(TARGETS);
         options.addOption(USE_WCEP);
+        options.addOption(USE_WCA_EXEC_COUNT);
         options.addOption(CACHE_ANALYSIS_TYPE);
         options.addOption(WCA_CACHE_APPROXIMATION);
     }
@@ -170,6 +174,10 @@ public class GreedyConfig {
 
     public boolean useWCEP() {
         return options.getOption(USE_WCEP);
+    }
+
+    public boolean useWCAExecCount() {
+        return options.getOption(USE_WCA_EXEC_COUNT);
     }
 
     public int getMaxCodesize() {
