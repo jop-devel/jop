@@ -136,6 +136,10 @@ public class GreedyOptimizer {
 
         ExecCountProvider ecp = useWCAProvider ? analyses.getWCAInvoker() : analyses.getExecCountAnalysis();
 
+        // dump initial callgraph
+        analyses.getTargetCallGraph().dumpCallgraph(jcopter.getJConfig().getConfig(),
+                  "greedy-target", config.getTargetCallgraphDumpType(), true);
+
         // iterate over regions in callgraph
 
         if (order == GreedyOrder.Global || (order == GreedyOrder.WCAFirst && !config.useWCA())) {
@@ -190,6 +194,10 @@ public class GreedyOptimizer {
         } else {
             throw new AppInfoError("Order "+order+" not yet implemented.");
         }
+
+        // dump final callgraph
+        analyses.getTargetCallGraph().dumpCallgraph(jcopter.getJConfig().getConfig(),
+                  "greedy-target-opt", config.getTargetCallgraphDumpType(), true);
 
         selector.printStatistics();
         printStatistics();

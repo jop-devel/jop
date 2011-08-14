@@ -22,6 +22,7 @@ package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallGraph.DUMPTYPE;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
@@ -72,6 +73,9 @@ public class GreedyConfig {
                     "Optionally set a different cache analysis type to be used by the WCA",
                     StaticCacheApproximation.class, true);
 
+    private static final EnumOption<DUMPTYPE> DUMP_TARGET_CALLGRAPH =
+            new EnumOption<DUMPTYPE>("dump-target-callgraph", "Dump the callgraph of the target methods", DUMPTYPE.off);
+
     private final AppInfo appInfo;
     private final JCopter jcopter;
 
@@ -86,6 +90,7 @@ public class GreedyConfig {
         options.addOption(USE_WCA_EXEC_COUNT);
         options.addOption(CACHE_ANALYSIS_TYPE);
         options.addOption(WCA_CACHE_APPROXIMATION);
+        options.addOption(DUMP_TARGET_CALLGRAPH);
     }
 
     public GreedyConfig(JCopter jcopter, OptionGroup greedyOptions) throws BadConfigurationException {
@@ -183,5 +188,9 @@ public class GreedyConfig {
     public int getMaxCodesize() {
         // TODO make this configurable, set default maxCodesize in constructor
         return jcopter.getJConfig().getMaxCodesize();
+    }
+
+    public DUMPTYPE getTargetCallgraphDumpType() {
+        return options.getOption(DUMP_TARGET_CALLGRAPH);
     }
 }

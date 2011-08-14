@@ -55,7 +55,10 @@ public class InlineConfig {
             new BooleanOption("inline-libs", "Allow inlining of library code", false);
 
     public static final BooleanOption EXCLUDE_WCA_TARGETS =
-            new BooleanOption("exclude-wca-targets", "Do not inline into WCA target methods", true);
+            new BooleanOption("exclude-wca-targets",
+                    "Do not inline into WCA target methods. This is required for measure "+"" +
+                    "methods so that the initial invoke is not removed. The WCA target method " +
+                    "is never inlined even if this is set to false", true);
 
     private final JCopter jcopter;
     private final OptionGroup options;
