@@ -150,9 +150,9 @@ do_oldwcet:
 #   Required options: P3=<StartLift|...> USE_WCA=yes|no
 #
 
-DEFAULT_OPTS=--greedy.targets wca --greedy.use-wcep false \
+DEFAULT_OPTS=--greedy.targets wca --greedy.use-wcep true \
 	     --greedy.use-wcep-ef true \
-	     --greedy.cache-analysis ALWAYS_MISS \
+	     --greedy.cache-analysis ALWAYS_MISS_OR_HIT \
 	     --greedy.wca-cache-analysis ALL_FIT_REGIONS 
 
 USE_DFA?=yes

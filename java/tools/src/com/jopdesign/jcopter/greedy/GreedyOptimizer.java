@@ -28,6 +28,7 @@ import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
 import com.jopdesign.jcopter.analysis.ExecCountProvider;
+import com.jopdesign.jcopter.analysis.LocalExecCountProvider;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import com.jopdesign.jcopter.greedy.GreedyConfig.GreedyOrder;
 import org.apache.log4j.Logger;
@@ -136,6 +137,10 @@ public class GreedyOptimizer {
 
         ExecCountProvider ecp = useWCAProvider ? analyses.getWCAInvoker() : analyses.getExecCountAnalysis();
 
+        if (config.useLocalExecCount()) {
+            ecp = new LocalExecCountProvider(ecp);
+        }
+
         // dump initial callgraph
         analyses.getTargetCallGraph().dumpCallgraph(jcopter.getJConfig().getConfig(),
                   "greedy-target", config.getTargetCallgraphDumpType(), true);
@@ -171,7 +176,12 @@ public class GreedyOptimizer {
             selector = new ACETRebateSelector(analyses, new GainCalculator(analyses), config.getMaxCodesize());
             selector.initialize();
 
-            optimizeMethods(analyses, analyses.getExecCountAnalysis(), selector, others);
+            ecp = analyses.getExecCountAnalysis();
+            if (config.useLocalExecCount()) {
+                ecp = new LocalExecCountProvider(ecp);
+            }
+
+            optimizeMethods(analyses, ecp, selector, others);
 
         } else if (order == GreedyOrder.TopDown || order == GreedyOrder.BottomUp) {
 
