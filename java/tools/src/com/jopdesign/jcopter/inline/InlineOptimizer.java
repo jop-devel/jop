@@ -413,13 +413,13 @@ public class InlineOptimizer implements CodeOptimizer {
             // deltaLocals: maxLocals may change in invokee, so we need to update
             deltaLocals = invokee.getCode().getMaxLocals();
 
-            // check if max locals and stacksize still checks out (codesize is checked by the CandidateSelector)
-            if (!checkStackAndLocals(stacksize)) {
-                return false;
-            }
-
             // deltaCodesize: codesize of invokee may have changed
             deltaCodesize = calcDeltaCodesize(analyses);
+
+            // check if max locals and stacksize still checks out (codesize is checked by the CandidateSelector)
+            if (!checkConstraints(stacksize)) {
+                return false;
+            }
 
             // isLastInvoke,isLastLocalInvoke: may have changed due to previous inlining
             isLastLocalInvoke = checkIsLastLocalInvoke();
@@ -509,7 +509,12 @@ public class InlineOptimizer implements CodeOptimizer {
             return invokeSite + " <= " + invokee;
         }
 
-        private boolean checkStackAndLocals(StacksizeAnalysis stacksize) {
+        private boolean checkConstraints(StacksizeAnalysis stacksize) {
+
+            int codeSize = getMethod().getCode().getNumberOfBytes() + deltaCodesize;
+            if (codeSize > processorModel.getMaxMethodSize()) {
+                return false;
+            }
 
             if (processorModel.getMaxLocals() < maxLocals + deltaLocals) {
                 return false;

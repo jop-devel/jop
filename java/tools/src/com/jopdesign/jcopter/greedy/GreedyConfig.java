@@ -22,6 +22,7 @@ package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallGraph.DUMPTYPE;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
@@ -31,6 +32,7 @@ import com.jopdesign.common.config.StringOption;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.JCopterConfig;
 import com.jopdesign.jcopter.analysis.MethodCacheAnalysis.AnalysisType;
+import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -58,6 +60,21 @@ public class GreedyConfig {
     private static final BooleanOption USE_WCEP =
             new BooleanOption("use-wcep", "Optimize only methods on the WCET path if WCA is enabled", false);
 
+    private static final BooleanOption USE_WCA_EXEC_COUNT =
+            new BooleanOption("use-wcep-ef", "Use execution frequencies from the WCA if the WCA is enabled", true);
+
+    private static final EnumOption<AnalysisType> CACHE_ANALYSIS_TYPE =
+            new EnumOption<AnalysisType>("cache-analysis",
+                    "Select the cache analysis type: ALWAYS_MISS, ALWAYS_HIT, ALWAYS_HIT_OR_MISS, ALL_FIT_REGIONS",
+                    AnalysisType.ALWAYS_MISS);
+
+    private static final EnumOption<StaticCacheApproximation> WCA_CACHE_APPROXIMATION =
+            new EnumOption<StaticCacheApproximation>("wca-cache-analysis",
+                    "Optionally set a different cache analysis type to be used by the WCA",
+                    StaticCacheApproximation.class, true);
+
+    private static final EnumOption<DUMPTYPE> DUMP_TARGET_CALLGRAPH =
+            new EnumOption<DUMPTYPE>("dump-target-callgraph", "Dump the callgraph of the target methods", DUMPTYPE.off);
 
     private final AppInfo appInfo;
     private final JCopter jcopter;
@@ -70,6 +87,10 @@ public class GreedyConfig {
         options.addOption(GREEDY_ORDER);
         options.addOption(TARGETS);
         options.addOption(USE_WCEP);
+        options.addOption(USE_WCA_EXEC_COUNT);
+        options.addOption(CACHE_ANALYSIS_TYPE);
+        options.addOption(WCA_CACHE_APPROXIMATION);
+        options.addOption(DUMP_TARGET_CALLGRAPH);
     }
 
     public GreedyConfig(JCopter jcopter, OptionGroup greedyOptions) throws BadConfigurationException {
@@ -118,8 +139,29 @@ public class GreedyConfig {
     }
 
     public AnalysisType getCacheAnalysisType() {
-        // TODO get from options
-        return AnalysisType.ALWAYS_MISS_OR_HIT;
+        return options.getOption(CACHE_ANALYSIS_TYPE);
+    }
+
+    public boolean useMethodCacheStrategy() {
+        return !options.hasValue(WCA_CACHE_APPROXIMATION);
+    }
+
+    public StaticCacheApproximation getCacheApproximation() {
+        StaticCacheApproximation defaultValue = options.getOption(WCA_CACHE_APPROXIMATION);
+        if (defaultValue != null) {
+            return defaultValue;
+        }
+        AnalysisType analysisType = getCacheAnalysisType();
+        if (analysisType == AnalysisType.ALWAYS_HIT) {
+            return StaticCacheApproximation.ALWAYS_HIT;
+        }
+        if (analysisType == AnalysisType.ALWAYS_MISS) {
+            return StaticCacheApproximation.ALWAYS_MISS;
+        }
+        if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT) {
+            return StaticCacheApproximation.ALL_FIT_SIMPLE;
+        }
+        return StaticCacheApproximation.ALL_FIT_REGIONS;
     }
 
     public List<MethodInfo> getWCATargets() {
@@ -139,8 +181,16 @@ public class GreedyConfig {
         return options.getOption(USE_WCEP);
     }
 
+    public boolean useWCAExecCount() {
+        return options.getOption(USE_WCA_EXEC_COUNT);
+    }
+
     public int getMaxCodesize() {
         // TODO make this configurable, set default maxCodesize in constructor
         return jcopter.getJConfig().getMaxCodesize();
+    }
+
+    public DUMPTYPE getTargetCallgraphDumpType() {
+        return options.getOption(DUMP_TARGET_CALLGRAPH);
     }
 }

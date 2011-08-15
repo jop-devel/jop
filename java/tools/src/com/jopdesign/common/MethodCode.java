@@ -279,6 +279,19 @@ public class MethodCode {
         return entry != null ? entry.getSourceLine() : -1;
     }
 
+    public String getLineString(InstructionHandle ih) {
+        InstructionHandle handle = findLineNumberHandle(ih);
+        if (handle == null) {
+            return "<none>";
+        }
+        String className = getSourceClassAttribute(handle);
+        if (className != null) {
+            return className + ":" + getLineNumber(handle);
+        }
+        LineNumberGen lg = getLineNumberEntry(handle, false);
+        return String.valueOf( lg.getSourceLine() );
+    }
+
     /**
      * @param ih the *first* instruction which should be assigned to this source line.
      *        Use {@link #clearLineNumber(InstructionHandle)} for all following instructions which have the same line.
@@ -576,6 +589,8 @@ public class MethodCode {
 
     /**
      * Retarget all targeters (jumps, branches, exception ranges, linenumbers,..) of a handle to a new handle.
+     * If both the old and the new handle have a line number attached, the old line number is removed.
+     *
      * @param oldHandle the old target
      * @param newHandle the new target
      */
@@ -583,6 +598,12 @@ public class MethodCode {
         InstructionTargeter[] it = oldHandle.getTargeters();
         if (it == null) return;
         for (InstructionTargeter targeter : it) {
+            if (targeter instanceof LineNumberGen) {
+                // check if the target already has a line number attached to it..
+                if (getLineNumberEntry(newHandle, false) != null) {
+                    removeLineNumber((LineNumberGen) targeter);
+                }
+            }
             targeter.updateTarget(oldHandle, newHandle);
         }
     }
@@ -590,10 +611,7 @@ public class MethodCode {
     public void retarget(TargetLostException e, InstructionHandle newTarget) {
         InstructionHandle[] targets = e.getTargets();
         for (InstructionHandle target : targets) {
-            InstructionTargeter[] targeters = target.getTargeters();
-            for (InstructionTargeter targeter : targeters) {
-                targeter.updateTarget(target, newTarget);
-            }
+            retarget(target, newTarget);
         }
     }
 

@@ -169,7 +169,7 @@ endif
 #	Application optimization with JCopter
 #
 USE_JCOPTER?=no
-JCOPTER_OPT?=--use-dfa $(USE_DFA) --dump-callgraph merged --dump-jvm-callgraph off --callstring-length $(CALLSTRING_LENGTH)
+JCOPTER_OPT?=--dump-callgraph merged --dump-jvm-callgraph off -O 2
 JCOPTER_USE_WCA?=no
 
 
@@ -315,7 +315,7 @@ japp:
 # configure the FPGA
 config:
 ifeq ($(USB),true)
-	make config_usb
+	make config_usb -e USB=true
 else
 ifeq ($(XFPGA),true)
 	make config_xilinx
@@ -400,8 +400,9 @@ cprog:
 #
 #	compile and JOPize the application
 #
+JCOPTER_DEFAULT_OPTS=--use-dfa $(USE_DFA) --callstring-length $(CALLSTRING_LENGTH) --sp $(TARGET_SOURCE) 
 ifeq (${JCOPTER_USE_WCA},no)
-  JCOPTER_OPTIONS=--no-use-wca ${JCOPTER_OPT}
+  JCOPTER_OPTIONS=--no-use-wca $(JCOPTER_DEFAULT_OPTS) ${JCOPTER_OPT} 
 else
   JCOPTER_OPTIONS=--use-wca --wca-target ${WCET_METHOD} ${JCOPTER_OPT}  
 endif
@@ -453,7 +454,6 @@ endif
 jcopter_help:
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter --help
 	@echo "[make] Default JCopter options:"
-	@echo "[make] JCOPTER_OPT=--dump-callgraph merged --dump-jvm-callgraph merged --use-dfa \$$(USE_DFA) --dump-callgraph merged --dump-jvm-callgraph off --callstring-length \$$(CALLSTRING_LENGTH) --wca-targets \$$(WCET_METHOD)"
 	@echo "[make] JCOPTER_OPT=$(JCOPTER_OPT)"
 	@echo ""
 
@@ -767,10 +767,10 @@ WCET_UPPAAL?=no
 WCET_VERIFYTA?=verifyta	 # only needed if WCET_UPPAAL=yes
 wcet:
 	-mkdir -p $(TARGET)/wcet
+	# Reading the classes.zip does not work correctly for optimized code because we need the sourcelines.txt
 	java -Xss16M -Xmx1280M $(JAVA_OPT) \
 	  $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis \
-		--classpath $(TARGET)/dist/lib/classes.zip \
-		--sp $(TARGET_SOURCE) \
+		--classpath $(TARGET)/dist/classes --sp $(TARGET_SOURCE) \
 		--target-method $(WCET_METHOD) \
 		-o "$(TARGET)/wcet/\$${projectname}" \
 		--use-dfa $(WCET_DFA) $(DFA_CACHE) \

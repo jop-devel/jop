@@ -34,6 +34,7 @@ import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
 import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.graphutils.EmptyClassVisitor;
 import com.jopdesign.common.misc.AppInfoError;
+import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.common.type.FieldRef;
 import com.jopdesign.common.type.MemberID;
 import com.jopdesign.common.type.MethodRef;
@@ -105,14 +106,16 @@ public class InlineHelper {
         this.jcopter = jcopter;
         this.inlineConfig = inlineConfig;
 
-        // TODO get this from config 
+        // TODO get this from config
 
         maxInlineSize = 0;
         maxRecursiveInlining = 0;
 
-        maxCodesize = 0;
-        maxLocals = 0;
-        maxStacksize = 0;
+        ProcessorModel pm = AppInfo.getSingleton().getProcessorModel();
+
+        maxCodesize = pm.getMaxMethodSize();
+        maxLocals = pm.getMaxLocals();
+        maxStacksize = pm.getMaxStackSize();
     }
 
     /**

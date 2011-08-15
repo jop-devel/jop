@@ -44,16 +44,19 @@ import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.wcet.ProjectConfig;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
+import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.ipet.IPETConfig;
+import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -74,15 +77,17 @@ public class WCAInvoker extends ExecCountProvider {
 
     private WCETTool wcetTool;
     private RecursiveWcetAnalysis<AnalysisContextLocal> recursiveAnalysis;
+    private StaticCacheApproximation cacheApproximation;
 
     private boolean provideWCAExecCount;
 
     private static final Logger logger = Logger.getLogger(JCopter.LOG_ANALYSIS+".WCAInvoker");
 
-    public WCAInvoker(AnalysisManager analyses, Set<MethodInfo> wcaTargets) {
+    public WCAInvoker(AnalysisManager analyses, Set<MethodInfo> wcaTargets, StaticCacheApproximation defaultApproximation) {
         this.analyses = analyses;
         this.jcopter = analyses.getJCopter();
         this.wcaTargets = wcaTargets;
+        cacheApproximation = defaultApproximation;
         wcetTool = jcopter.getWcetTool();
         wcaNodeFlow = new HashMap<ExecutionContext, Map<CFGNode, Long>>();
         execCounts = new HashMap<MethodInfo, Long>();
@@ -123,7 +128,7 @@ public class WCAInvoker extends ExecCountProvider {
         setWCETOptions(wcaTargets.iterator().next(), false);
 
         // Init WCA tool
-        wcetTool.initialize(false);
+        wcetTool.initialize(false, false);
     }
 
     public void initAnalysis(boolean useMethodCacheStrategy) {
@@ -131,9 +136,13 @@ public class WCAInvoker extends ExecCountProvider {
 
         RecursiveStrategy<AnalysisContextLocal,WcetCost> strategy;
         if (useMethodCacheStrategy) {
-            strategy = analyses.getMethodCacheAnalysis().createRecursiveStrategy(wcetTool, ipetConfig);
+            strategy = analyses.getMethodCacheAnalysis().createRecursiveStrategy(wcetTool, ipetConfig, cacheApproximation);
         } else {
-            strategy = new LocalAnalysis(wcetTool, ipetConfig);
+            if (cacheApproximation.needsInterProcIPET()) {
+                strategy = new GlobalAnalysis.GlobalIPETStrategy(ipetConfig);
+            } else {
+                strategy = new LocalAnalysis(wcetTool, ipetConfig);
+            }
         }
 
         recursiveAnalysis = new RecursiveWcetAnalysis<AnalysisContextLocal>(
@@ -232,7 +241,6 @@ public class WCAInvoker extends ExecCountProvider {
         return Collections.emptySet();
     }
 
-
     ///////////////////////////////////////////////////////////////////////////////
     // Update results
     ///////////////////////////////////////////////////////////////////////////////
@@ -273,7 +281,7 @@ public class WCAInvoker extends ExecCountProvider {
                 };
 
         DFSTraverser<ExecutionContext,ContextEdge> traverser = new DFSTraverser<ExecutionContext, ContextEdge>(visitor);
-        traverser.traverse(callGraph.getGraph(), rootNodes);
+        traverser.traverse(callGraph.getGraph(), new ArrayList<ExecutionContext>(rootNodes));
 
         // since we use the cache analysis for the WCA, we need to update all methods for which the
         // classification changed too
@@ -298,8 +306,6 @@ public class WCAInvoker extends ExecCountProvider {
         TopologicalOrderIterator<ExecutionContext,ContextEdge> topOrder =
                 new TopologicalOrderIterator<ExecutionContext, ContextEdge>(reversed);
 
-        MethodCacheAnalysis cacheAnalysis = analyses.getMethodCacheAnalysis();
-
         Set<MethodInfo> changed = new HashSet<MethodInfo>();
 
         while (topOrder.hasNext()) {
@@ -308,7 +314,7 @@ public class WCAInvoker extends ExecCountProvider {
             // At times like this I really wish Java would have type aliases ..
             RecursiveWcetAnalysis<AnalysisContextLocal>.LocalWCETSolution sol =
                     recursiveAnalysis.computeSolution(node.getMethodInfo(),
-                                cacheAnalysis.getAnalysisContext(node.getCallString()));
+                                new AnalysisContextLocal(cacheApproximation, node.getCallString()));
 
             wcaNodeFlow.put(node, sol.getNodeFlowVirtual());
 

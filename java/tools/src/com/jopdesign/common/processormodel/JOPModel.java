@@ -26,7 +26,6 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.tools.JopInstr;
-
 import org.apache.bcel.generic.ANEWARRAY;
 import org.apache.bcel.generic.ATHROW;
 import org.apache.bcel.generic.BasicType;
@@ -215,7 +214,7 @@ public class JOPModel implements ProcessorModel {
     @Override
     public int getMaxMethodSize() {
         // TODO get this from cache config
-        return 65535;
+        return 512;
     }
 
     @Override

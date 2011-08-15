@@ -36,10 +36,6 @@ public class GainCalculator {
 
     public long calculateGain(ExecCountProvider ecp, Candidate candidate) {
 
-        // TODO depending on config, use WCA to calculate local or global WC gain
-
-        // TODO else add heuristic factor to prefer candidates outside IF-constructs
-
         long gain = ecp.getExecCount(candidate.getMethod(), candidate.getEntry())
                     * candidate.getLocalGain();
 
@@ -48,6 +44,14 @@ public class GainCalculator {
         gain -= getCodesizeCacheCosts(ecp, candidate);
 
         return gain;
+    }
+
+    public long improveGain(ExecCountProvider ecp, Candidate candidate, long gain) {
+        // TODO depending on config, use WCA to calculate local or global WC gain
+
+        // TODO else add heuristic factor to prefer candidates outside IF-constructs
+
+        return (long) (candidate.getHeuristicFactor() * gain);
     }
 
     private long getCodesizeCacheCosts(ExecCountProvider ecp, Candidate candidate) {

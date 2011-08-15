@@ -85,8 +85,8 @@ public class GraphUtils {
             V source = graph.getEdgeSource(edge);
             V target = graph.getEdgeTarget(edge);
 
-            if (source.equals(target)) {
-                graph.addEdge(source, target, edge);
+            if (!source.equals(target)) {
+                simpleGraph.addEdge(source, target, edge);
             }
         }
 

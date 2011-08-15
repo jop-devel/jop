@@ -300,53 +300,55 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		getWCETTool().getReport().addDetailedReport(m,"WCET_"+key.ctx.toString(),stats,nodeFlowCostDescrs,sol.getEdgeFlow());
 	}
 
-	/**
-	 * Update class report (cost per line number)
-	 * @param key
-	 * @param sol
-	 * FIXME: Currently only reported once per method
-	 */
-	private void updateClassReport(CacheKey key, LocalWCETSolution sol) {
-		MethodInfo m = key.m;
-		if(costsPerLineReported .contains(m)) return;
-		costsPerLineReported.add(m);
+    /**
+     * Update class report (cost per line number)
+     *
+     * @param key
+     * @param sol FIXME: Currently only reported once per method
+     */
+    private void updateClassReport(CacheKey key, LocalWCETSolution sol) {
+        MethodInfo m = key.m;
+        if (costsPerLineReported.contains(m)) return;
+        costsPerLineReported.add(m);
 
-		Map<CFGNode,WcetCost> nodeCosts = sol.getNodeCostMap();
-		HashMap<CFGNode, String> nodeFlowCostDescrs = new HashMap<CFGNode, String>();
+        Map<CFGNode, WcetCost> nodeCosts = sol.getNodeCostMap();
+        HashMap<CFGNode, String> nodeFlowCostDescrs = new HashMap<CFGNode, String>();
 
-		for(Entry<CFGNode, WcetCost> entry: nodeCosts.entrySet()) {
-			CFGNode n = entry.getKey();
-			WcetCost cost = entry.getValue();
-			if(sol.getNodeFlow(n) > 0) {
-				nodeFlowCostDescrs.put(n,cost.toString());
-				BasicBlock basicBlock = n.getBasicBlock();
-				/* prototyping */
-				if(basicBlock != null) {
-					TreeSet<Integer> lineRange = basicBlock.getSourceLineRange();
-					if(lineRange.isEmpty()) {
-						logger.error("No source code lines associated with basic block "+basicBlock+" in "+m+" ! ");
-                                                continue;
-					}
-					ClassInfo cli = basicBlock.getClassInfo();
-					ClassReport cr = getWCETTool().getReport().getClassReport(cli);
-					Long oldCost = (Long) cr.getLineProperty(lineRange.first(), "cost");
-					if(oldCost == null) oldCost = 0L;
-					long newCost = sol.getNodeFlow(n)*nodeCosts.get(n).getCost();
+        for (Entry<CFGNode, WcetCost> entry : nodeCosts.entrySet()) {
+            CFGNode n = entry.getKey();
+            WcetCost cost = entry.getValue();
+            if (sol.getNodeFlow(n) > 0) {
+                nodeFlowCostDescrs.put(n, cost.toString());
+                BasicBlock basicBlock = n.getBasicBlock();
+                /* prototyping */
+                if (basicBlock != null) {
+                    Map<ClassInfo,TreeSet<Integer>> lineMap = basicBlock.getSourceLines();
+                    if (lineMap.isEmpty()) {
+                        logger.error("No source code lines associated with basic block " + basicBlock + " in " + m + " ! ");
+                        continue;
+                    }
+                    for (ClassInfo cli : lineMap.keySet()) {
+                        TreeSet<Integer> lineRange = lineMap.get(cli);
+                        ClassReport cr = getWCETTool().getReport().getClassReport(cli);
 
-					if(logger.isTraceEnabled()) {
-						logger.trace("Attaching cost "+oldCost + " + " +
-								newCost+" ( " + sol.getNodeFlow(n)+ " * " + nodeCosts.get(n).getCost() + " )" +
-								" to line "+lineRange.first() + " in " + basicBlock.getMethodInfo());
-					}
+                        Long oldCost = (Long) cr.getLineProperty(lineRange.first(), "cost");
+                        if (oldCost == null) oldCost = 0L;
+                        long newCost = sol.getNodeFlow(n) * nodeCosts.get(n).getCost();
 
-					cr.addLineProperty(lineRange.first(), "cost", oldCost + newCost);
-					for(int i : lineRange) {
-						cr.addLineProperty(i, "color", "red");
+                        if (logger.isTraceEnabled()) {
+                            logger.trace("Attaching cost " + oldCost + " + " +
+                                    newCost + " ( " + sol.getNodeFlow(n) + " * " + nodeCosts.get(n).getCost() + " )" +
+                                    " to line " + lineRange.first() + " in " + basicBlock.getMethodInfo());
+                        }
+						cr.addLineProperty(lineRange.first(), "cost", oldCost + newCost);
+						for(int i : lineRange) {
+							cr.addLineProperty(i, "color", "red");
+						}
 					}
 				}
-			} else {
-				nodeFlowCostDescrs.put(n, ""+nodeCosts.get(n).getCost());
-			}
+			}  else {
+			    nodeFlowCostDescrs.put(n, ""+nodeCosts.get(n).getCost());
+		    }
 		}
 	}
 

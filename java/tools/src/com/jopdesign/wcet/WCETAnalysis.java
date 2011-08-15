@@ -131,7 +131,7 @@ public class WCETAnalysis {
         try {
             wcetTool.setTopLevelLogger(exec.getExecLogger());
             exec.info("Loading project"); // TODO: Maybe exec can be replaced by something stefan's framework?
-            wcetTool.initialize(true);
+            wcetTool.initialize(wcetTool.getProjectConfig().doLoadLinkInfo(), true);
             MethodInfo largestMethod = wcetTool.getWCETProcessorModel().getMethodCache().checkCache();
             int minWords = MiscUtils.bytesToWords(largestMethod.getCode().getNumberOfBytes());
             reportMetric("min-cache-size",largestMethod.getFQMethodName(),minWords);

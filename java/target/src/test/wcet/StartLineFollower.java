@@ -26,9 +26,6 @@ import com.jopdesign.sys.*;
 
 public class StartLineFollower {
 
-	/**
-	 * Set to false for the WCET analysis, true for measurement
-	 */
 	static int ts, te, to;
 
 	/**

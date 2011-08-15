@@ -187,7 +187,9 @@ public class InstructionInterpreter<T> {
                     // check for exception handler entry
                     if (ih.hasTargeters()) {
                         for (InstructionTargeter targeter : ih.getTargeters()) {
-                            if (targeter instanceof CodeExceptionGen) {
+                            if (targeter instanceof CodeExceptionGen &&
+                                ((CodeExceptionGen)targeter).getHandlerPC().equals(ih))
+                            {
                                 results.put(ih, analysis.initial((CodeExceptionGen) targeter));
                                 break;
                             }

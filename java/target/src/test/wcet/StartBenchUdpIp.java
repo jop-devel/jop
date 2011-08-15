@@ -31,9 +31,6 @@ public class StartBenchUdpIp {
     final static int CACHE_FLUSH = -51;
     final static int CACHE_DUMP = -53;
 
-	/**
-	 * Set to false for the WCET analysis, true for measurement
-	 */
 	final static boolean MEASURE_CACHE = false;
 	static int ts, te, to;
 

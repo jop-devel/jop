@@ -23,8 +23,13 @@ package com.jopdesign.jcopter.greedy;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
 import com.jopdesign.jcopter.analysis.ExecCountProvider;
+import com.jopdesign.jcopter.analysis.WCAInvoker;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -54,14 +59,82 @@ public class WCEPRebateSelector extends RebateSelector {
     @Override
     public Collection<Candidate> selectNextCandidates(ExecCountProvider ecp) {
 
-        // TODO go down all methods in the callgraph which are on the WCET path, find best candidate
+        WCAInvoker wcaInvoker = analyses.getWCAInvoker();
 
-        return null;
+        Set<MethodInfo> visited = new HashSet<MethodInfo>();
+        LinkedList<MethodInfo> queue = new LinkedList<MethodInfo>();
+
+        // go down all methods in the callgraph which are on the WCET path, find best candidate
+        RebateRatio next = null;
+
+        queue.addAll(wcaInvoker.getWcaTargets());
+        visited.addAll(queue);
+
+        while (!queue.isEmpty()) {
+            MethodInfo method = queue.removeFirst();
+
+            MethodData data = methodData.get(method);
+            if (data == null) continue;
+
+            // skip methods not on the WCET path
+            if (!wcaInvoker.isOnWCETPath(method)) {
+                continue;
+            }
+
+            // select best candidate from method or use previous method
+            next = selectCandidate(ecp, data, next);
+
+            // add childs to queue if not already visited
+            for (MethodInfo child : analyses.getTargetCallGraph().getInvokedMethods(method)) {
+                if (visited.add(child)) {
+                    queue.add(child);
+                }
+            }
+
+        }
+
+        logSelection(ecp, next);
+        return next != null ? next.getCandidates() : null;
     }
 
     @Override
     public Set<MethodInfo> updateChangeSet(ExecCountProvider ecp, Set<MethodInfo> optimizedMethods, Set<MethodInfo> candidateChanges) {
         // No need to add anything else, as we search the whole graph anyway..
+        analyses.getWCAInvoker().updateWCA(optimizedMethods);
+
         return candidateChanges;
     }
+
+    private RebateRatio selectCandidate(ExecCountProvider ecp, MethodData data, RebateRatio next) {
+
+        List<Candidate> remove = new ArrayList<Candidate>();
+
+        for (Candidate candidate : data.getCandidates()) {
+
+            if (!checkConstraints(candidate)) {
+                remove.add(candidate);
+                continue;
+            }
+
+            if (!analyses.getWCAInvoker().isOnLocalWCETPath(candidate.getMethod(), candidate.getEntry())) {
+                continue;
+            }
+
+            long gain = gainCalculator.calculateGain(ecp, candidate);
+            if (gain <= 0) continue;
+
+            RebateRatio ratio = createRatio(gainCalculator, ecp, candidate, gain);
+            if (next == null || ratio.getRatio() > next.getRatio()) {
+                next = ratio;
+            }
+        }
+
+        for (Candidate candidate : remove) {
+            removeCandidate(candidate);
+        }
+
+        return next;
+    }
+
+
 }

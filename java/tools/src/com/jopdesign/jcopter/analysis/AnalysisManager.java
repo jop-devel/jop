@@ -29,6 +29,7 @@ import com.jopdesign.common.config.Config.BadConfigurationError;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.MethodCacheAnalysis.AnalysisType;
+import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -73,8 +74,10 @@ public class AnalysisManager {
      * @param targets the root methods to use for all analyses and the callgraph.
      * @param cacheAnalysisType cache analysis type
      * @param wcaRoots if not null, initialize the WCA invoker with these roots.
+     * @param updateWCEP if true, let the wcaInvoker provide a global WCET path and keep it up-to-date
      */
     public void initAnalyses(Set<MethodInfo> targets, AnalysisType cacheAnalysisType,
+                             StaticCacheApproximation cacheApproximation, boolean useMethodCacheStrategy,
                              Set<MethodInfo> wcaRoots, boolean updateWCEP)
     {
         logger.info("Initializing analyses..");
@@ -84,7 +87,7 @@ public class AnalysisManager {
             // Just make sure the WCA callgraph is contained in the target graph..
             allTargets.addAll(wcaRoots);
 
-            wcaInvoker = new WCAInvoker(this, wcaRoots);
+            wcaInvoker = new WCAInvoker(this, wcaRoots, cacheApproximation);
             wcaInvoker.setProvideWCAExecCount(updateWCEP);
             try {
                 // need to initialize the WCA Tool before the other analyses since we need the WCA callgraph
@@ -115,7 +118,7 @@ public class AnalysisManager {
 
         if (wcaRoots != null) {
             logger.info("Initializing WCAInvoker");
-            wcaInvoker.initAnalysis(true);
+            wcaInvoker.initAnalysis(useMethodCacheStrategy);
         }
 
         // TODO in fact, we might not even need this if we only use the wcaInvoker as provider or some other provider

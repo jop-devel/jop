@@ -1286,6 +1286,27 @@ public class CallGraph implements ImplementationFinder {
         return invoked;
     }
 
+    public Set<MethodInfo> getInvokedMethods(MethodInfo method) {
+        MethodNode node = getMethodNode(method);
+
+        Set<MethodInfo> invokees = new HashSet<MethodInfo>();
+
+        if (mergedCallGraph != null) {
+            for (InvokeEdge edge : mergedCallGraph.outgoingEdgesOf(node)) {
+                MethodNode invokee = mergedCallGraph.getEdgeTarget(edge);
+                invokees.add(invokee.getMethodInfo());
+            }
+        } else {
+            for (ExecutionContext context : node.getInstances()) {
+                for (ContextEdge edge : callGraph.outgoingEdgesOf(context)) {
+                    invokees.add(edge.getTarget().getMethodInfo());
+                }
+            }
+        }
+
+        return invokees;
+    }
+
     public Collection<ContextEdge> getInvokeEdges(MethodInfo invoker, MethodInfo invokee) {
         MethodNode node = getMethodNode(invoker);
         List<ContextEdge> edges = new ArrayList<ContextEdge>();
@@ -1611,6 +1632,14 @@ public class CallGraph implements ImplementationFinder {
      * Export methods
      *---------------------------------------------------------------------------*/
 
+    public void dumpCallgraph(Config config, String graphName, DUMPTYPE type, boolean skipNoim) {
+        try {
+            dumpCallgraph(config, graphName, null, null, type, skipNoim);
+        } catch (IOException e) {
+            logger.warn("Could not dump callgraph '"+graphName+"': "+e.getMessage(), e);
+        }
+    }
+
     /**
      * Dump this callgraph or a subgraph to a file and create a png image.
      * If you use this method, add {@link #CALLGRAPH_DIR} to the options.
@@ -1627,6 +1656,7 @@ public class CallGraph implements ImplementationFinder {
                                DUMPTYPE type, boolean skipNoim)
             throws IOException
     {
+        if (type == DUMPTYPE.off) return;
         if (roots != null && roots.isEmpty()) return;
 
         File outDir;
@@ -1697,7 +1727,8 @@ public class CallGraph implements ImplementationFinder {
     private void dumpCallgraph(Config config, File outDir, String graphName, String type, CallGraph graph,
                                boolean merged, boolean skipNoim) throws IOException
     {
-        String suffix = (merged) ? type+"-merged" : type+"-full";
+        String suffix = type != null ? type + "-" : "";
+        suffix += (merged) ? "merged" : "full";
 
         File dotFile = new File(outDir, graphName+"-"+suffix+".dot");
         File pngFile = new File(outDir, graphName+"-"+suffix+".png");

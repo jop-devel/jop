@@ -94,9 +94,13 @@ public class DFSTraverser<V,E> {
 
         @Override
         public void finishNode(V parent, E edge, V node, DFSEdgeType type, Collection<E> outEdges, int depth) {
+            postorder(node);
         }
 
         public void preorder(V node) {
+        }
+
+        public void postorder(V node) {
         }
     }
 

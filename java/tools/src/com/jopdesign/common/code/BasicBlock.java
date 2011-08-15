@@ -38,7 +38,6 @@ import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.JsrInstruction;
-import org.apache.bcel.generic.LineNumberGen;
 import org.apache.bcel.generic.PUTFIELD;
 import org.apache.bcel.generic.PUTSTATIC;
 import org.apache.bcel.generic.ReturnInstruction;
@@ -48,10 +47,12 @@ import org.apache.bcel.generic.UnconditionalBranch;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
 
 /**
@@ -293,16 +294,25 @@ public class BasicBlock {
     /**
      * @return all source code lines this basic block maps to
      */
-    public TreeSet<Integer> getSourceLineRange() {
-        TreeSet<Integer> lines = new TreeSet<Integer>();
+    public Map<ClassInfo,TreeSet<Integer>> getSourceLines() {
+        Map<ClassInfo,TreeSet<Integer>> map = new HashMap<ClassInfo, TreeSet<Integer>>(2);
+
         for (InstructionHandle ih : instructions) {
-            // TODO for now we just ignore lines from other classes
-            LineNumberGen gen = methodCode.getLineNumberEntry(ih, ih == instructions.getFirst());
-            int sourceLine = gen != null ? gen.getSourceLine() : -1;
-            if (sourceLine >= 0) lines.add(sourceLine);
+            ClassInfo cls = methodCode.getSourceClassInfo(ih);
+            TreeSet<Integer> lines = map.get(cls);
+            if (lines == null) {
+                lines = new TreeSet<Integer>();
+                map.put(cls,lines);
+            }
+
+            int line = methodCode.getLineNumber(ih);
+            if (line >= 0) lines.add(line);
         }
-        return lines;
+
+        return map;
     }
+
+
 
     @Override
     public boolean equals(Object o) {

@@ -28,9 +28,6 @@ import jbe.kfl.Mast;
 
 public class StartKfl {
 
-	/**
-	 * Set to false for the WCET analysis, true for Config.MEASUREment
-	 */
 	static int ts, te, to;
 
 

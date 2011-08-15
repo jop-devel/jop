@@ -54,6 +54,12 @@ public class InlineConfig {
     public static final BooleanOption INLINE_LIBARIES =
             new BooleanOption("inline-libs", "Allow inlining of library code", false);
 
+    public static final BooleanOption EXCLUDE_WCA_TARGETS =
+            new BooleanOption("exclude-wca-targets",
+                    "Do not inline into WCA target methods. This is required for measure "+"" +
+                    "methods so that the initial invoke is not removed. The WCA target method " +
+                    "is never inlined even if this is set to false", true);
+
     private final JCopter jcopter;
     private final OptionGroup options;
     private final List<String> ignorePrefix;
@@ -64,6 +70,7 @@ public class InlineConfig {
         options.addOption(SKIP_NP_CHECKS);
         options.addOption(INLINE_JVM);
         options.addOption(INLINE_LIBARIES);
+        options.addOption(EXCLUDE_WCA_TARGETS);
     }
 
     public InlineConfig(JCopter jcopter, OptionGroup options) {
@@ -83,12 +90,21 @@ public class InlineConfig {
     }
 
     public boolean doExcludeInvoker(MethodInfo invoker) {
-        return false;
+
+        // TODO we could instead skip wca targets named 'measure', but this is not so robust..
+        if (options.getOption(EXCLUDE_WCA_TARGETS)) {
+            for (MethodInfo target : jcopter.getJConfig().getWCATargets()) {
+                if (target.equals(invoker)) {
+                    return true;
+                }
+            }
+        }
+
+        // NOTICE maybe separate configs for ignore from and ignore to?
+        return checkExclude(invoker, ignorePrefix);
     }
 
     public boolean doExcludeInvokee(MethodInfo invokee) {
-        String className = invokee.getClassName();
-
         // We never inline WCA targets, else they might be removed and are not available for analysis
         for (MethodInfo target : jcopter.getJConfig().getWCATargets()) {
             if (target.equals(invokee)) {
@@ -97,13 +113,24 @@ public class InlineConfig {
         }
 
         // NOTICE maybe separate configs for ignore from and ignore to?
-        for (String prefix : ignorePrefix) {
+        return checkExclude(invokee, ignorePrefix);
+    }
+
+    private boolean checkExclude(MethodInfo method, List<String> exclude) {
+        String className = method.getClassName();
+
+        for (String prefix : exclude) {
+            // TODO check method signature,..
             if ( className.startsWith(prefix+".") || className.equals(prefix)
-                 || prefix.equals(className+"."+invokee.getShortName())
-                 || prefix.equals(className + "#" +invokee.getShortName())) {
+                 || prefix.equals(className+"."+method.getShortName())
+                 || prefix.equals(className + "#" +method.getShortName())
+                 || prefix.equals(method.getShortName())
+                 || prefix.equals("#"+method.getShortName()))
+            {
                 return true;
             }
         }
+
         return false;
     }
 

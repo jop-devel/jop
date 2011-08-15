@@ -23,6 +23,11 @@ package com.jopdesign.jcopter.greedy;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallGraph.ContextEdge;
+import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.graphutils.DFSTraverser;
+import com.jopdesign.common.graphutils.DFSTraverser.DFSVisitor;
+import com.jopdesign.common.graphutils.DFSTraverser.EmptyDFSVisitor;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
@@ -30,9 +35,11 @@ import com.jopdesign.jcopter.analysis.ExecCountProvider;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
+import org.jgrapht.DirectedGraph;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -44,22 +51,34 @@ import java.util.Set;
  */
 public abstract class RebateSelector implements CandidateSelector {
 
-    protected static class RebateRatio implements Comparable<RebateRatio> {
+    public class RebateRatio implements Comparable<RebateRatio> {
 
         private final Candidate candidate;
+        private final long gain;
         private final float ratio;
+        private final int order;
 
-        protected RebateRatio(Candidate candidate, float ratio) {
+        protected RebateRatio(Candidate candidate, long gain, float ratio) {
             this.candidate = candidate;
+            this.gain = gain;
             this.ratio = ratio;
+            this.order = depthMap.get(candidate.getMethod());
         }
 
         public Candidate getCandidate() {
             return candidate;
         }
 
+        public long getGain() {
+            return gain;
+        }
+
         public float getRatio() {
             return ratio;
+        }
+
+        public int getOrder() {
+            return order;
         }
 
         @Override
@@ -84,10 +103,17 @@ public abstract class RebateSelector implements CandidateSelector {
             if (ratio == o.getRatio()) {
                 // since we want to keep different entries with the same ratio, use candidate as tiebreaker
                 if (candidate.equals(o.getCandidate())) return 0;
-                // TODO two candidates could still have the same hashCode .. we might want to use something else
-                return candidate.hashCode() < o.getCandidate().hashCode() ? -1 : 1;
+                if (order == o.getOrder()) {
+                    // same method, use candidate as tie-breaker
+                    return candidate.hashCode() < o.getCandidate().hashCode() ? -1 : 1;
+                }
+                return order < o.getOrder() ? -1 : 1;
             }
             return ratio < o.getRatio() ? -1 : 1;
+        }
+
+        public Collection<Candidate> getCandidates() {
+            return Collections.singleton(candidate);
         }
     }
 
@@ -124,6 +150,8 @@ public abstract class RebateSelector implements CandidateSelector {
     protected final ProcessorModel processorModel;
 
     protected final Map<MethodInfo, MethodData> methodData;
+    // The death-map..
+    private final Map<MethodInfo,Integer> depthMap;
 
     private boolean usesCodeRemover;
     private int maxGlobalSize;
@@ -136,6 +164,7 @@ public abstract class RebateSelector implements CandidateSelector {
 
         usesCodeRemover = analyses.getJCopter().getExecutor().useCodeRemover();
         methodData = new HashMap<MethodInfo, MethodData>();
+        depthMap = new HashMap<MethodInfo, Integer>();
     }
 
     @Override
@@ -155,6 +184,21 @@ public abstract class RebateSelector implements CandidateSelector {
                 }
             }
         }
+
+        // we need a tie-breaker for the candidate selection, and to make the results deterministic
+        // so we use a topological order of the (initial) callgraph
+        DFSVisitor<ExecutionContext,ContextEdge> visitor = new EmptyDFSVisitor<ExecutionContext, ContextEdge>() {
+            private int counter = 1;
+
+            @Override
+            public void postorder(ExecutionContext node) {
+                depthMap.put(node.getMethodInfo(), counter++);
+            }
+        };
+
+        DirectedGraph<ExecutionContext,ContextEdge> graph = analyses.getTargetCallGraph().getReversedGraph();
+        DFSTraverser<ExecutionContext,ContextEdge> traverser = new DFSTraverser<ExecutionContext, ContextEdge>(visitor);
+        traverser.traverse(graph);
 
         logger.info("Initial codesize: " + globalCodesize + " bytes");
     }
@@ -278,6 +322,30 @@ public abstract class RebateSelector implements CandidateSelector {
         return true;
     }
 
+    protected RebateRatio createRatio(GainCalculator gc, ExecCountProvider ecp, Candidate candidate, long gain) {
+        float codesize = getDeltaGlobalCodesize(candidate);
+
+        float ratio;
+        if (codesize > 0) {
+            ratio = gc.improveGain(ecp, candidate, gain) / codesize;
+        } else {
+            // little hack: if we have no codesize increase, use just the gain as factor
+            ratio = gc.improveGain(ecp, candidate, gain);
+        }
+
+        return new RebateRatio(candidate, gain, ratio);
+    }
+
+    protected void logSelection(ExecCountProvider ecp, RebateRatio ratio) {
+        if (ratio == null) return;
+        logger.info("Selected ratio " + ratio.getRatio() + ", gain " + ratio.getGain() +
+                    " local " + ratio.getCandidate().getLocalGain() +
+                    " cache local " + ratio.getCandidate().getDeltaCacheMissCosts(analyses, ecp) +
+                    " cache " + analyses.getMethodCacheAnalysis().getDeltaCacheMissCosts(ecp, ratio.getCandidate()) +
+                    " codesize " + ratio.getCandidate().getDeltaLocalCodesize() +
+                    " cnt " + ecp.getExecCount(ratio.getCandidate().getMethod(), ratio.getCandidate().getEntry()));
+    }
+
     public int getDeltaGlobalCodesize(Candidate candidate) {
         int size = candidate.getDeltaLocalCodesize();
 
@@ -291,20 +359,6 @@ public abstract class RebateSelector implements CandidateSelector {
         }
 
         return size;
-    }
-
-    protected RebateRatio createRatio(Candidate candidate, float gain) {
-        float codesize = getDeltaGlobalCodesize(candidate);
-
-        float ratio;
-        if (codesize > 0) {
-            ratio = (candidate.getHeuristicFactor() * gain) / codesize;
-        } else {
-            // little hack: if we have no codesize increase, use just the gain as factor
-            ratio = candidate.getHeuristicFactor() * gain;
-        }
-
-        return new RebateRatio(candidate, ratio);
     }
 
     protected abstract void onRemoveMethodData(MethodData data);

@@ -43,6 +43,7 @@ public class WCETRebateSelector extends QueueSelector {
 
     private boolean checkWCPath(Candidate candidate) {
 
+        // if the method is not in the WCA callgraph, do not check the WCET path
         if (!analyses.getWCAInvoker().isWCAMethod(candidate.getMethod())) return true;
 
         return analyses.getWCAInvoker().isOnLocalWCETPath(candidate.getMethod(), candidate.getEntry());

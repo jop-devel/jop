@@ -238,7 +238,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         Config.checkDir(outDir, true);
     }
 
-    public void initialize(boolean loadLinkInfo) throws BadConfigurationException {
+    public void initialize(boolean loadLinkInfo, boolean initDFA) throws BadConfigurationException {
 
         if (projectConfig.saveResults()) {
             this.resultRecord = projectConfig.getResultFile();
@@ -264,7 +264,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         }
 
         /* run dataflow analysis */
-        if (doDataflowAnalysis()) {
+        if (doDataflowAnalysis() && initDFA) {
             topLevelLogger.info("Starting DFA analysis");
             dataflowAnalysis();
             topLevelLogger.info("DFA analysis finished");
