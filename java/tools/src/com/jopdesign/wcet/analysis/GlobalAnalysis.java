@@ -96,7 +96,7 @@ public class GlobalAnalysis {
         }
         
         String key = m.getFQMethodName() + "_global_" + cacheMode;
-        Segment segment = Segment.methodSegment(project, m,ctx.getCallString(), project.getAppInfo().getCallstringLength());
+        Segment segment = Segment.methodSegment(project, m,ctx.getCallString(), project.getAppInfo().getCallstringLength(), project);
         return computeWCET(key, segment, cacheMode);
     }
 

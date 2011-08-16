@@ -37,6 +37,7 @@ import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.DefaultCallgraphBuilder;
 import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.InfeasibleEdgeDetector;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.config.Config;
@@ -107,7 +108,7 @@ import java.util.Set;
  * @author Stefan Hepp (stefan@stefant.org)
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  */
-public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider {
+public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider, InfeasibleEdgeDetector {
 
     public static final String VERSION = "1.0.1";
 
@@ -652,7 +653,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
     }
 
     public void dataflowAnalysis() {
-        int callstringLength = (int) projectConfig.callstringLength();
+        int callstringLength = projectConfig.callstringLength();
 
         // Moved DFA tool cache config to the DFA tool, but still ...
         // FIXME: At the moment, we do not have a nice directory structure respecting
@@ -738,9 +739,11 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
                 BasicBlockNode head = cfg.getHandleNode(e.getHead());
                 BasicBlockNode tail = cfg.getHandleNode(e.getTail());
                 CFGEdge edge = cfg.getEdge(tail, head);
-                if (edge != null) { // edge does not seem to exist any longer
-                	logger.warn("The infeasible edge between "+head+" and "+tail+" does not exist");
-                    retval.add(edge);
+                if (edge != null) { 
+                    retval.add(edge); 
+                } else {
+                	// edge does was removed from the CFG
+                	// logger.warn("The infeasible edge between "+head+" and "+tail+" does not exist");                	
                 }
             }
         }

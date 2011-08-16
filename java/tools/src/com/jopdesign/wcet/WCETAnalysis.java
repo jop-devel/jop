@@ -157,10 +157,14 @@ public class WCETAnalysis {
             
             blocks = total = mca.countTotalCacheBlocks(scope);
             if(total > availBlocks || true) {
-            	blocks = distinctApprox = mca.countDistinctCacheBlocks(scope, false);
-                if(blocks > availBlocks && blocks < availBlocks*2 || true) {
-                	blocks = distinct = mca.countDistinctCacheBlocks(scope, true);                	
-                }
+            	try {
+					blocks = distinctApprox = mca.countDistinctCacheBlocks(scope, false);
+	                if(blocks > availBlocks && blocks < availBlocks*2 || true) {
+                		blocks = distinct = mca.countDistinctCacheBlocks(scope, true);                	
+	                }
+				} catch (LpSolveException e) {
+            		System.err.println((distinctApprox>=0 ? "I" : "Relaxed ")+"LP Problem too difficult, giving up: "+e);                		
+				}
             }
             System.out.println(String.format("block-count < %2d [%2d,%2d,%2d] for %-30s @ %s", blocks,
             		total, distinctApprox, distinct,
@@ -317,7 +321,7 @@ public class WCETAnalysis {
 
         	String targetName = wcetTool.getTargetName();
         	Segment target = Segment.methodSegment(wcetTool, wcetTool.getTargetMethod(),
-        			CallString.EMPTY, wcetTool.getProjectConfig().callstringLength());
+        			CallString.EMPTY, wcetTool.getProjectConfig().callstringLength(), wcetTool);
 
         	/* Run global analysis */
             LpSolveWrapper.resetSolverTime();

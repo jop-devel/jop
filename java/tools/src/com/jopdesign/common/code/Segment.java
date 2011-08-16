@@ -155,9 +155,9 @@ public class Segment {
 	 * @return
 	 */
 	public static Segment methodSegment(CFGProvider tool, MethodInfo targetMethod,
-			CallString callString, int callStringLength) {
+			CallString callString, int callStringLength, InfeasibleEdgeDetector infeasibles) {
 
-		SuperGraph sg = new SuperGraph(tool, tool.getFlowGraph(targetMethod), callStringLength);
+		SuperGraph sg = new SuperGraph(tool, tool.getFlowGraph(targetMethod), callString, callStringLength, infeasibles);
 		ContextCFG rootNode = sg.getRootNode();
 		Set<SuperGraphEdge> entryEdges = Iterators.addAll(new HashSet<SuperGraphEdge>(), sg.getCFGEntryEdges(rootNode)),
 		                    exitEdges = Iterators.addAll(new HashSet<SuperGraphEdge>(), sg.getCFGExitEdges(rootNode));

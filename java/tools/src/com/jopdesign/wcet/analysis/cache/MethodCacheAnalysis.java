@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
+import lpsolve.LpSolveException;
+
 import org.apache.log4j.Logger;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
@@ -56,8 +58,6 @@ import com.jopdesign.wcet.jop.MethodCache;
  * Analysis of the variable block Method cache.
  * Goal: Detect persistence scopes.
  * This is not really important, but a good demonstration of the technique.
- * <p/>
- * TODO: [cache-analysis] Use a scopegraph instead of a callgraph
  *
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  */
@@ -121,7 +121,12 @@ public class MethodCacheAnalysis {
         while (iter.hasNext()) {
             ExecutionContext scope = iter.next();
 
-            long neededBlocks = countDistinctCacheBlocks(scope, true);
+            long neededBlocks;
+			try {
+				neededBlocks = countDistinctCacheBlocks(scope, true);
+			} catch (LpSolveException e) {
+				throw new RuntimeException("countDistinctCacheBlocks failed: "+e);
+			}
     		Logger.getLogger(this.getClass()).info("Maximum number of distinct cache tags for " +
     				scope.getMethodInfo() + " is " + neededBlocks);
     		this.blocksNeeded.put(scope, neededBlocks);
@@ -136,11 +141,13 @@ public class MethodCacheAnalysis {
 	 * @param use integer variables (more expensive, more accurate)
 	 * @return
 	 * @throws InvalidFlowFactException 
+	 * @throws LpSolveException 
 	 */
-	public long countDistinctCacheBlocks(ExecutionContext scope, boolean useILP) throws InvalidFlowFactException {
+	public long countDistinctCacheBlocks(ExecutionContext scope, boolean useILP) 
+			throws InvalidFlowFactException, LpSolveException {
 		
         Segment segment = Segment.methodSegment(wcetTool, scope.getMethodInfo(), scope.getCallString(),
-        		                                wcetTool.getProjectConfig().callstringLength());
+        		                                wcetTool.getProjectConfig().callstringLength(), wcetTool);
 		return countDistinctCacheBlocks(segment, useILP);
 	}
 	
@@ -151,8 +158,9 @@ public class MethodCacheAnalysis {
 	 * @param use integer variables (more expensive, more accurate)
 	 * @return
 	 * @throws InvalidFlowFactException 
+	 * @throws LpSolveException 
 	 */
-	public long countDistinctCacheBlocks(Segment segment, boolean useILP) throws InvalidFlowFactException {
+	public long countDistinctCacheBlocks(Segment segment, boolean useILP) throws InvalidFlowFactException, LpSolveException {
 		
         IPETConfig ipetConfig = new IPETConfig(wcetTool.getConfig());
 
@@ -190,12 +198,7 @@ public class MethodCacheAnalysis {
 
 		/* Solve */
 		double lpCost;
-		try {
-		    lpCost = ipetSolver.solve(null, useILP);
-		} catch (Exception e) {
-		    e.printStackTrace();
-		    throw new RuntimeException("LP Solver failed: " + e, e);
-		}
+	    lpCost = ipetSolver.solve(null, useILP);
 		long neededBlocks = (long) (lpCost + 0.5);
 		/* Not needed any more, we take the target method of all entry edges into account
   		 * neededBlocks += methodCache.requiredNumberOfBlocks(scope.getMethodInfo());

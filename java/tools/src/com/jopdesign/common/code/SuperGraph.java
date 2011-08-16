@@ -23,7 +23,6 @@ package com.jopdesign.common.code;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
-import com.jopdesign.common.code.ControlFlowGraph.CfgVisitor;
 import com.jopdesign.common.code.ControlFlowGraph.InvokeNode;
 import com.jopdesign.common.code.ControlFlowGraph.ReturnNode;
 import com.jopdesign.common.code.ControlFlowGraph.VirtualNode;
@@ -41,6 +40,8 @@ import org.jgrapht.graph.DirectedMultigraph;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -284,7 +285,6 @@ public class SuperGraph {
      * Intraprocedural edges in the supergraph
      */
     public class IntraEdge implements SuperGraphEdge {
-        private static final long serialVersionUID = 1L;
 		private ContextCFG ccfg;
 		private CFGEdge cfgEdge;
 
@@ -362,7 +362,6 @@ public class SuperGraph {
      * There are explicitly represented in the supergraph
      */
     public abstract class SuperEdge implements SuperGraphEdge {
-        private static final long serialVersionUID = 1L;
         private ControlFlowGraph.InvokeNode invoker;
 
         
@@ -540,20 +539,28 @@ public class SuperGraph {
     private Map<SuperInvokeEdge, SuperReturnEdge> superEdgePairs;
 
     public SuperGraph(CFGProvider cfgProvider, ControlFlowGraph rootFlowGraph, int callstringLength) {
-        this(cfgProvider, rootFlowGraph, callstringLength, CallString.EMPTY);
+    	
+        this(cfgProvider, rootFlowGraph, CallString.EMPTY, callstringLength, new InfeasibleEdgeDetector() {
+			@Override
+			public List<CFGEdge> getInfeasibleEdges(ControlFlowGraph cfg,CallString cs) {
+				return new ArrayList<CFGEdge>();
+			}			
+		});
     }
 
     public SuperGraph(CFGProvider cfgProvider,
-                      ControlFlowGraph rootFlowGraph,
-                      int callstringLength,
-                      CallString initialCallString) {
-    	
-        this.cfgProvider = cfgProvider;
-        this.rootNode = new ContextCFG(rootFlowGraph, initialCallString);
-        this.superGraph = new DirectedMultigraph<ContextCFG, SuperEdge>(SuperEdge.class);
-        this.superEdgePairs = new HashMap<SuperInvokeEdge, SuperReturnEdge>();
-        createSuperGraph(callstringLength);
+            ControlFlowGraph rootCFG,
+            CallString rootCallString,
+            int callstringLength,
+            InfeasibleEdgeDetector infeasibles) {
+
+    	this.cfgProvider = cfgProvider;
+    	this.rootNode = new ContextCFG(rootCFG, rootCallString);
+    	this.superGraph = new DirectedMultigraph<ContextCFG, SuperEdge>(SuperEdge.class);
+    	this.superEdgePairs = new HashMap<SuperInvokeEdge, SuperReturnEdge>();
+    	createSuperGraph(callstringLength, infeasibles);
     }
+
     
     public DirectedMultigraph<ContextCFG, SuperEdge> getCallGraph() {
     	return superGraph;
@@ -743,7 +750,7 @@ public class SuperGraph {
 
 
 
-    private void createSuperGraph(int callstringLength) {
+    private void createSuperGraph(int callstringLength, InfeasibleEdgeDetector infeasibles) {
 
         Stack<ContextCFG> todo = new Stack<ContextCFG>();
 
@@ -756,11 +763,22 @@ public class SuperGraph {
         	if(! current.getCfg().areVirtualInvokesResolved()) {
         		throw new AssertionError("Virtual dispatch nodes not yet supported for supergraph (file a bug)");                    		
         	}
-            
+
+        	ControlFlowGraph currentCFG = current.getCfg();
             CallString currentCS = current.getCallString();
+            Collection<CFGEdge> infeasibleEdges = infeasibles.getInfeasibleEdges(currentCFG, currentCS); 
 
             for (CFGNode node : current.getCfg().vertexSet()) {
                 if (node instanceof ControlFlowGraph.InvokeNode) {
+                	/* skip node if all incoming edges are infeasible in the current call context */
+                	boolean infeasible = true;
+                	for(CFGEdge e : current.getCfg().incomingEdgesOf(node)) {
+                		if(! infeasibleEdges.contains(e)) {
+                			infeasible = false;
+                		}
+                	}
+                	if(infeasible) continue;
+                	
                     ControlFlowGraph.InvokeNode iNode = (ControlFlowGraph.InvokeNode) node;
                     Set<MethodInfo> impls = iNode.getImplementingMethods();
                     if(impls.size() == 0) {
