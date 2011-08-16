@@ -438,13 +438,14 @@ public class InlineHelper {
                     // TODO generate a new name, rename method
 
                     if (method.isPrivate()) {
-                        // TODO check the class for invokers
+                        // TODO check the class for invokers, change to invokevirtual
 
                     } else {
-                        // Since prepareInvoke may be executed after we inlined some code, the method may
-                        // be public then and used in inlined code in some other class when prepareInvoke
-                        // is called so we need to check the whole application if it is public
-                        // TODO check the callgraph for invokers
+                        // if the method is package visible, we need to rename all overriding methods
+                        // too (but not methods from subclasses in different packages which do not override this)
+                        // TODO update overriding methods
+
+                        // TODO need to update all possible call sites
 
                     }
 
@@ -534,6 +535,7 @@ public class InlineHelper {
         MethodInfo invoker = invokeSite.getInvoker();
 
         // invocation of synchronized or unknown method not supported
+        // TODO support synchronized methods, simply insert monitorenter and monitorexit (and exception handler)
         if ( invokee.isSynchronized() || invokee.isAbstract() || invokee.isNative() ) {
             return false;
         }
@@ -692,26 +694,17 @@ public class InlineHelper {
                                            ClassInfo classInfo, MethodInfo method)
     {
         // TODO we could skip inlining <init> and stuff like that, but why bother?
+        if ("<init>".equals(method.getShortName())) {
+            // constructors are never resolved as super methods
+            return checkNeedsPublic(invoker, invokee, classInfo, method);
+        }
 
-        if (invokeSite.isInvokeSuper()) {
-            if (invoker.getClassInfo().isExtensionOf(classInfo)) {
-                // We inline an invokesuper into a subclass, this won't work since the super invoke will
-                // resolve to the inlined method now
-                return CheckResult.SKIP;
-            }
-
-            // In this case, the super invoke becomes a normal nonvirtual invoke. We need to check
-            // if it refers to the correct method
-            MethodRef ref = invokeSite.getInvokeeRef(false);
-            if (!method.equals(ref.getMethodInfo())) {
-                return CheckResult.SKIP;
-            }
-        } else {
-            // We must check that we do not change a (private) method invoke to a super invoke by inlining
-            // (e.g. if we inline a method from a superclass which calls a private method)
-            if (invoker.getClassInfo().isExtensionOf(classInfo)) {
-                return CheckResult.SKIP;
-            }
+        // We simply assume that the class hierarchy does not change and no new methods override the invoked methods..
+        if (invoker.getClassInfo().isExtensionOf(classInfo) &&
+            !method.equals(invoker.getSuperMethod(true, true)))
+        {
+            // We could only inline if we remove the ACC_SUPER flag of the invoker class..
+            return CheckResult.SKIP;
         }
 
         return checkNeedsPublic(invoker, invokee, classInfo, method);
@@ -761,15 +754,12 @@ public class InlineHelper {
 
                 MethodInfo subMethod = cls.getMethodInfo(method.getMethodSignature());
                 if ( subMethod != null ) {
-                    // cannot set to public if another method with same signature is found and any of them are private
-                    if ( method.isPrivate() || subMethod.isPrivate() ) {
-
-                        if (method.isPrivate() && inlineConfig.allowRename()) {
-                            return CheckResult.NEEDS_PUBLIC_RENAME;
-                        }
-
-                        // If subMethod is private but not method, this is an invalid code and we do not inline.
-                        return CheckResult.SKIP;
+                    // We can simply make private methods public, but we must not change call sites to invokevirtual
+                    if (method.getAccessType() == AccessType.ACC_PACKAGE &&
+                        !subMethod.overrides(method,false))
+                    {
+                        // Need to rename method and all its overriding methods, but not the not-overriding subMethod (or vice-versa)
+                        return inlineConfig.allowRename() ? CheckResult.NEEDS_PUBLIC_RENAME : CheckResult.SKIP;
                     }
                 }
             }
