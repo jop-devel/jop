@@ -139,7 +139,7 @@ public class FlowEdge {
 			this.cs         = new CallString.CallStringSerialization(e.getContext().callString);
 			this.methodName = e.getContext().getMethodInfo().getFQMethodName();
 			this.headIns    = e.head.getPosition();
-			this.tailIns    = e.head.getPosition();
+			this.tailIns    = e.tail.getPosition();
 		}
 		
 		public FlowEdge toFlowEdge(AppInfo appInfo) throws MethodNotFoundException {
