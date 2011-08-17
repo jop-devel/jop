@@ -23,13 +23,13 @@ package com.jopdesign.common.code;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-import java.util.Map.Entry;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
@@ -41,6 +41,7 @@ import com.jopdesign.common.code.SuperGraph.SuperInvokeEdge;
 import com.jopdesign.common.code.SuperGraph.SuperReturnEdge;
 import com.jopdesign.common.graphutils.AdvancedDOTExporter;
 import com.jopdesign.common.graphutils.AdvancedDOTExporter.DOTLabeller;
+import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.Filter;
 import com.jopdesign.common.misc.Iterators;
 import com.jopdesign.common.misc.MiscUtils;
@@ -109,6 +110,15 @@ public class Segment {
 		return edges.contains(e);
 	}
 
+
+	/**
+	 * @return the underlying supergraph, which may include many more methods
+	 */
+	public SuperGraph getSuperGraph() {
+		
+		return sg;
+	}
+
 	/**
 	 * Collect all supergraph edges which are part of the segment.
 	 * As segments are allowed to be interprocedural, we require that
@@ -148,21 +158,56 @@ public class Segment {
 
 	/**
 	 * Create an interprocedural segment for a method
-	 *
-	 * @param project      Reference to the wcet tool
 	 * @param targetMethod The method to build a segment for
 	 * @param callString   The context for the method
+	 * @param cfgProvider A control flow graph provider
+	 * @param callStringLength Length of the callstrings
+	 * @param infeasibles Information about infeasible edges
+	 *
+	 * @return a segment representing executions of the method (not including the virtual entry and exit nodes)
+	 */
+	public static Segment methodSegment(MethodInfo targetMethod, CallString callString,
+			CFGProvider cfgProvider, int callStringLength, InfeasibleEdgeProvider infeasibles) {
+		
+		SuperGraph superGraph = new SuperGraph(cfgProvider, cfgProvider.getFlowGraph(targetMethod), callString, callStringLength, infeasibles);
+		ContextCFG rootMethod = superGraph.getRootNode();
+		Set<SuperGraphEdge> entryEdges = Iterators.addAll(new HashSet<SuperGraphEdge>(), superGraph.getCFGEntryEdges(rootMethod)),
+                exitEdges = Iterators.addAll(new HashSet<SuperGraphEdge>(), superGraph.getCFGExitEdges(rootMethod));
+		return new Segment(superGraph, entryEdges, exitEdges);
+	}
+
+	/**
+	 * Create a (sub-)segment for a method invocation (in a certain context)<br/>
+	 * FIXME: Currently, this is terribly inefficient. We need to work on a good and
+	 * fast support for subsegments.
+	 * 
+	 * @param callee root node
+	 * @param supergraph The supergraph we are operating on
+	 * @return a segment representing executions of the method 
+	 * (neither including the invoke instruction and the return to the caller)
 	 * @return
 	 */
-	public static Segment methodSegment(CFGProvider tool, MethodInfo targetMethod,
-			CallString callString, int callStringLength, InfeasibleEdgeDetector infeasibles) {
-
-		SuperGraph sg = new SuperGraph(tool, tool.getFlowGraph(targetMethod), callString, callStringLength, infeasibles);
-		ContextCFG rootNode = sg.getRootNode();
-		Set<SuperGraphEdge> entryEdges = Iterators.addAll(new HashSet<SuperGraphEdge>(), sg.getCFGEntryEdges(rootNode)),
-		                    exitEdges = Iterators.addAll(new HashSet<SuperGraphEdge>(), sg.getCFGExitEdges(rootNode));
-		return new Segment(sg, entryEdges, exitEdges);
+	public static Segment methodSegment(ContextCFG callee, SuperGraph superGraph) {
+		return methodSegment(callee.getCfg().getMethodInfo(), callee.getCallString(),
+				superGraph.getCFGProvider(), superGraph.getCallStringLength(), superGraph.getInfeasibleEdgeProvider());
 	}
+
+	/**
+	 * An intraprocedural segment for a single node
+	 * FIXME: horribly inefficient
+	 * @param node The node to create the segment for
+	 * @param supergraph The supergraph we are operating on
+	 * @return a segment representing executions of the node
+	 */
+	public static Segment nodeSegment(SuperGraphNode target, SuperGraph supergraph) {
+
+		SuperGraph superGraph = new SuperGraph(supergraph.getCFGProvider(), target.getCfg(), target.getContextCFG().getCallString(), 
+				supergraph.getCallStringLength(), supergraph.getInfeasibleEdgeProvider());
+		Set<SuperGraphEdge> entryEdges = Iterators.addAll(new HashSet<SuperGraphEdge>(), supergraph.incomingEdgesOf(target)),
+                exitEdges = Iterators.addAll(new HashSet<SuperGraphEdge>(), supergraph.outgoingEdgesOf(target));
+		return new Segment(superGraph, entryEdges, exitEdges);
+	}
+
 
 	/**
 	 * @return set of all nodes in the segment
@@ -226,19 +271,32 @@ public class Segment {
 		return edgeFilter.filter(sg.outgoingEdgesOf(node));
 	}
 
-	/**
-	 * @return
-	 */
-	public Iterable<Entry<SuperInvokeEdge, SuperReturnEdge>> getSuperEdgePairs() {
-		final Filter<Entry<SuperInvokeEdge, SuperReturnEdge>> pairFilter = 
-			new Filter<Entry<SuperInvokeEdge, SuperReturnEdge>>() {
+	final Filter<Pair<SuperInvokeEdge, SuperReturnEdge>> superEdgePairFilter = 
+			new Filter<Pair<SuperInvokeEdge, SuperReturnEdge>>() {
 			@Override
-			protected boolean include(Entry<SuperInvokeEdge, SuperReturnEdge> e) {
-				return(edges.contains(e.getKey()) && edges.contains(e.getValue()));
+			protected boolean include(Pair<SuperInvokeEdge, SuperReturnEdge> e) {
+				return(edges.contains(e.first()) && edges.contains(e.second()));
 			}			
 		};
-		return pairFilter.filter(sg.getSuperEdgePairs().entrySet());
+
+	/**
+	 * @return all pairs of invoke/return superedges
+	 */
+	public Iterable<Pair<SuperInvokeEdge, SuperReturnEdge>> getCallSites() {
+
+		Iterable<Pair<SuperInvokeEdge, SuperReturnEdge>> callSites = Iterators.concat(sg.getCallSites().values());
+		return superEdgePairFilter.filter(callSites);
 	}
+	
+	/**
+	 * @param caller restriction on the call site
+	 * @return those pairs of invoke/return superedges with the specified caller
+	 */
+    public Iterable<Pair<SuperInvokeEdge, SuperReturnEdge>> getCallSitesFrom(ContextCFG caller) {
+
+    	return superEdgePairFilter.filter(sg.getCallSitesFrom(caller));
+	}
+
 
 	/**
 	 * Export to DOT file
@@ -321,6 +379,19 @@ public class Segment {
 		
 		return Iterators.concat(this.methods.values());
 	}
+
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("Segment@");
+		sb.append(super.hashCode());
+		sb.append("(");
+		sb.append(this.getEntryEdges());
+		sb.append(" -- ");
+		sb.append(this.getExitEdges());
+		sb.append(")");
+		return sb.toString();
+	}
+
 
 
 }

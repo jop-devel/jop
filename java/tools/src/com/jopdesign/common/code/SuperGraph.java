@@ -51,6 +51,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Stack;
 import java.util.Vector;
+import java.util.logging.Logger;
 
 /**
  * <p>A supergraph merges call graph and control flow graph representations.
@@ -284,7 +285,7 @@ public class SuperGraph {
     /**
      * Intraprocedural edges in the supergraph
      */
-    public class IntraEdge implements SuperGraphEdge {
+    public final class IntraEdge implements SuperGraphEdge {
 		private ContextCFG ccfg;
 		private CFGEdge cfgEdge;
 
@@ -362,9 +363,9 @@ public class SuperGraph {
      * There are explicitly represented in the supergraph
      */
     public abstract class SuperEdge implements SuperGraphEdge {
-        private ControlFlowGraph.InvokeNode invoker;
 
-        
+    	private final ControlFlowGraph.InvokeNode invoker;
+
         private SuperEdge(ControlFlowGraph.InvokeNode invokeNode) {
             this.invoker = invokeNode;
         }
@@ -375,13 +376,9 @@ public class SuperGraph {
             return invoker;
         }        
 
-        public ContextCFG getCaller() {
-        	return superGraph.getEdgeSource(this);
-        }
-        
-        public ContextCFG getCallee() {
-        	return superGraph.getEdgeTarget(this);
-        }
+        public abstract ContextCFG getCaller();
+
+        public abstract ContextCFG getCallee();
 
 		@Override
 		public SuperGraph getSuperGraph() {
@@ -392,11 +389,15 @@ public class SuperGraph {
     /**
      * Edge representing a method invocation
      */
-    public class SuperInvokeEdge extends SuperEdge {
+    public final class SuperInvokeEdge extends SuperEdge {
 
-		public SuperInvokeEdge(ControlFlowGraph.InvokeNode invokeNode) {
+		private final int hashCode;
+
+		public SuperInvokeEdge(ControlFlowGraph.InvokeNode invokeNode, ContextCFG invoker, ContextCFG invoked) {
             super(invokeNode);
+            hashCode = calculateHashCode(invoker, invoked);
         }
+
 
 		@Override
 		public boolean isReturnEdge() {
@@ -417,17 +418,66 @@ public class SuperGraph {
 			return new SuperGraphNode(ccfg, ccfg.getCfg().getEntry());
 		}
     	
+        public ContextCFG getCaller() {
+        	return superGraph.getEdgeSource(this);
+        }
+        
+        public ContextCFG getCallee() {
+        	return superGraph.getEdgeTarget(this);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+
+        	if (this == obj) return true;
+            if (obj == null) return false;
+            if (getClass() != obj.getClass()) return false;
+
+            SuperInvokeEdge other = (SuperInvokeEdge) obj;
+            if (hashCode != other.hashCode) return false;
+            /* Should almost always be true */
+            return(this.getInvokeNode().equals(other.getInvokeNode()) &&
+            	   this.getCallee().equals(other.getCallee()) &&
+            	   this.getCaller().equals(other.getCaller()));
+        }
+        
+		private int calculateHashCode(ContextCFG invoker, ContextCFG invoked) {
+			int hashCode = invoker.hashCode() ;
+			hashCode = hashCode * 37 + invoked.hashCode();
+			hashCode = hashCode * 37 + getInvokeNode().hashCode();
+			return hashCode;
+		}
+
+        @Override
+        public int hashCode() {
+        	return hashCode;
+        }
+
+		@Override
+		public String toString() {
+			StringBuilder sb = new StringBuilder();
+			sb.append("SupInvEdge@");
+			sb.append(hashCode());
+			sb.append("(");
+			sb.append(this.getCaller());
+			sb.append(" -> ");
+			sb.append(this.getCallee());
+			sb.append(")");
+			return sb.toString();
+		}
     }
     
     /**
      * Edge representing return to the invoking method
      */
-    public class SuperReturnEdge extends SuperEdge {
-    	private CFGNode returnNode;
+    public final class SuperReturnEdge extends SuperEdge {
+    	private final CFGNode returnNode;
+		private final int hashCode;
 
-		public SuperReturnEdge(ControlFlowGraph.InvokeNode invokeNode, ControlFlowGraph.CFGNode returnNode) {
+		public SuperReturnEdge(ControlFlowGraph.InvokeNode invokeNode, ControlFlowGraph.CFGNode returnNode, ContextCFG invoker, ContextCFG invoked) {
             super(invokeNode);
             this.returnNode = returnNode;
+            this.hashCode = calculateHashCode(invoker, invoked);
         }
 
         /** 
@@ -456,6 +506,57 @@ public class SuperGraph {
 			return new SuperGraphNode(ccfg, this.getReturnNode());
 		}
     	
+        public ContextCFG getCaller() {
+        	return superGraph.getEdgeTarget(this);
+        }
+        
+        public ContextCFG getCallee() {
+        	return superGraph.getEdgeSource(this);
+        }
+    	
+        @Override
+        public boolean equals(Object obj) {
+
+        	if (this == obj) return true;
+            if (obj == null) return false;
+            if (getClass() != obj.getClass()) return false;
+
+            SuperReturnEdge other = (SuperReturnEdge) obj;
+            if (hashCode != other.hashCode) return false;
+            boolean r = (this.getReturnNode().equals(other.getReturnNode()) &&
+            	   this.getCallee().equals(other.getCallee()) &&
+            	   this.getCaller().equals(other.getCaller()));
+            if(! r) {
+            	Logger.getAnonymousLogger().warning("Same hash code, but different - lucky chance?: "+this+" vs "+other);
+            }
+            return r;
+        }
+        
+		private int calculateHashCode(ContextCFG invoker, ContextCFG invoked) {
+			int hashCode = invoker.hashCode() ;
+			hashCode = hashCode * 37 + invoked.hashCode();
+			hashCode = hashCode * 37 + getReturnNode().hashCode();
+			return hashCode;
+		}
+
+        @Override
+        public int hashCode() {
+        	return hashCode;
+        }
+
+		@Override
+		public String toString() {
+			StringBuilder sb = new StringBuilder();
+			sb.append("SupRetEdge@");
+			sb.append(hashCode());
+			sb.append("(");
+			sb.append(this.getCallee());
+			sb.append(" -> ");
+			sb.append(this.getCaller());
+			sb.append(")");
+			return sb.toString();
+		}
+
     }
     
 
@@ -538,9 +639,13 @@ public class SuperGraph {
      */
     private Map<SuperInvokeEdge, SuperReturnEdge> superEdgePairs;
 
+	private int callstringLength;
+
+	private InfeasibleEdgeProvider infeasibleEdgeProvider;
+
     public SuperGraph(CFGProvider cfgProvider, ControlFlowGraph rootFlowGraph, int callstringLength) {
     	
-        this(cfgProvider, rootFlowGraph, CallString.EMPTY, callstringLength, new InfeasibleEdgeDetector() {
+        this(cfgProvider, rootFlowGraph, CallString.EMPTY, callstringLength, new InfeasibleEdgeProvider() {
 			@Override
 			public List<CFGEdge> getInfeasibleEdges(ControlFlowGraph cfg,CallString cs) {
 				return new ArrayList<CFGEdge>();
@@ -552,16 +657,43 @@ public class SuperGraph {
             ControlFlowGraph rootCFG,
             CallString rootCallString,
             int callstringLength,
-            InfeasibleEdgeDetector infeasibles) {
+            InfeasibleEdgeProvider infeasibles) {
 
     	this.cfgProvider = cfgProvider;
+    	this.infeasibleEdgeProvider = infeasibles;
+    	this.callstringLength = callstringLength;
+
     	this.rootNode = new ContextCFG(rootCFG, rootCallString);
     	this.superGraph = new DirectedMultigraph<ContextCFG, SuperEdge>(SuperEdge.class);
     	this.superEdgePairs = new HashMap<SuperInvokeEdge, SuperReturnEdge>();
-    	createSuperGraph(callstringLength, infeasibles);
+    	createSuperGraph();
     }
 
-    
+	/**
+	 * @return the CFG provider used for building the supergraph
+	 */
+	public CFGProvider getCFGProvider() {
+		return this.cfgProvider;
+	}
+	
+
+	/**
+	 * @return the infeasible edge provider used in this supergraph
+	 */
+	public InfeasibleEdgeProvider getInfeasibleEdgeProvider() {
+
+		return this.infeasibleEdgeProvider;
+	}
+
+	/**
+	 * @return the maximum length of a callstring
+	 */
+	public int getCallStringLength() {
+
+		return this.callstringLength;
+	}
+
+
     public DirectedMultigraph<ContextCFG, SuperEdge> getCallGraph() {
     	return superGraph;
     }
@@ -711,11 +843,27 @@ public class SuperGraph {
 		};
 	}
 	
-	/** Get all call sites invoking the given cfg instance
+	/** Get all call sites located in the given cfg instance
+	 * @param ccfg the calling cfg instance
+	 * @return all list of invoke/return super edges from the given cfg instance
+	 */
+    public List<Pair<SuperInvokeEdge, SuperReturnEdge>> getCallSitesFrom(ContextCFG ccfg) {
+        Vector<Pair<SuperInvokeEdge, SuperReturnEdge>> callSites =
+                new Vector<Pair<SuperInvokeEdge, SuperReturnEdge>>();
+        for (SuperEdge e : superGraph.outgoingEdgesOf(ccfg)) {
+            if (e instanceof SuperInvokeEdge) {
+                SuperInvokeEdge ei = (SuperInvokeEdge) e;
+                callSites.add(new Pair<SuperInvokeEdge, SuperReturnEdge>(ei, superEdgePairs.get(ei)));
+            }
+        }
+        return callSites;
+    }
+
+    /** Get all call sites invoking the given cfg instance
 	 * @param ccfg the cfg instance invoked
 	 * @return all list of invoke/return super edges for the call site
 	 */
-    public List<Pair<SuperInvokeEdge, SuperReturnEdge>> getCallSites(ContextCFG ccfg) {
+    public List<Pair<SuperInvokeEdge, SuperReturnEdge>> getCallSitesInvoking(ContextCFG ccfg) {
         Vector<Pair<SuperInvokeEdge, SuperReturnEdge>> callSites =
                 new Vector<Pair<SuperInvokeEdge, SuperReturnEdge>>();
         for (SuperEdge e : superGraph.incomingEdgesOf(ccfg)) {
@@ -730,13 +878,13 @@ public class SuperGraph {
     /**
      * @return return all callsite invoke/return superedge pairs, grouped by the invoked method
      */
-    public Map<MethodInfo, List<Pair<SuperInvokeEdge, SuperReturnEdge>>> getAllCallSites() {
+    public Map<MethodInfo, List<Pair<SuperInvokeEdge, SuperReturnEdge>>> getCallSites() {
 
         Map<MethodInfo, List<Pair<SuperInvokeEdge, SuperReturnEdge>>> iMap =
                 new HashMap<MethodInfo, List<Pair<SuperInvokeEdge, SuperReturnEdge>>>();
         for (ContextCFG node : superGraph.vertexSet()) {
 
-            List<Pair<SuperInvokeEdge, SuperReturnEdge>> callSites = getCallSites(node);
+            List<Pair<SuperInvokeEdge, SuperReturnEdge>> callSites = getCallSitesInvoking(node);
             MethodInfo invoked = node.getCfg().getMethodInfo();
             if (iMap.containsKey(invoked)) {
                 callSites.addAll(iMap.get(invoked));
@@ -748,9 +896,7 @@ public class SuperGraph {
     }
 
 
-
-
-    private void createSuperGraph(int callstringLength, InfeasibleEdgeDetector infeasibles) {
+    private void createSuperGraph() {
 
         Stack<ContextCFG> todo = new Stack<ContextCFG>();
 
@@ -766,7 +912,7 @@ public class SuperGraph {
 
         	ControlFlowGraph currentCFG = current.getCfg();
             CallString currentCS = current.getCallString();
-            Collection<CFGEdge> infeasibleEdges = infeasibles.getInfeasibleEdges(currentCFG, currentCS); 
+            Collection<CFGEdge> infeasibleEdges = infeasibleEdgeProvider.getInfeasibleEdges(currentCFG, currentCS); 
 
             for (CFGNode node : current.getCfg().vertexSet()) {
                 if (node instanceof ControlFlowGraph.InvokeNode) {
@@ -805,9 +951,8 @@ public class SuperGraph {
 
     private void addEdge(ControlFlowGraph.InvokeNode invokeNode, ContextCFG invoker, ContextCFG invoked) {
     	
-        SuperInvokeEdge iEdge = new SuperInvokeEdge(invokeNode);
+        SuperInvokeEdge iEdge = new SuperInvokeEdge(invokeNode, invoker, invoked);
         superGraph.addEdge(invoker, invoked, iEdge);
-
         CFGEdge returnEdge;
         Set<CFGEdge> outEdges = invoker.getCfg().outgoingEdgesOf(invokeNode);
         if (outEdges.size() != 1) {
@@ -820,7 +965,7 @@ public class SuperGraph {
             throw new AssertionError("SuperGraph: Indegree of return node != 1 (Missing return node?)");
         }
         
-        SuperReturnEdge rEdge = new SuperReturnEdge(invokeNode, returnNode);
+        SuperReturnEdge rEdge = new SuperReturnEdge(invokeNode, returnNode, invoker, invoked);
         superGraph.addEdge(invoked, invoker, rEdge);
 
         superEdgePairs.put(iEdge, rEdge);

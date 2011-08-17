@@ -395,11 +395,13 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         return mi;
     }
 
-    public Map<InstructionHandle, ContextMap<CallString, Set<String>>>  runReceiverAnalysis(int callstringLength) {
+    @SuppressWarnings("unchecked")
+	public Map<InstructionHandle, ContextMap<CallString, Set<String>>>  runReceiverAnalysis(int callstringLength) {
+    	
         CallStringReceiverTypes recTys = new CallStringReceiverTypes(callstringLength);
-        @SuppressWarnings({"unchecked"})
-        Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults = runAnalysis(recTys);
-
+        Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults;
+        
+        receiverResults = runAnalysis(recTys);
         setReceivers(receiverResults);
         return receiverResults;
     }

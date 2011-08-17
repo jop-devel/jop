@@ -149,9 +149,10 @@ public class IPETSolver<T> {
         wrapper.setObjective(costVec, true);
         wrapper.freeze();
 
+        File dumpFile = null;
         if (this.outDir != null) {
             try {
-				dumpILP(wrapper);
+				dumpFile = dumpILP(wrapper);
 			} catch (IOException e) {
 				throw new LpSolveException("Failed to write ILP: " + e.getMessage());
 			}
@@ -165,12 +166,16 @@ public class IPETSolver<T> {
                 flowMapOut.put(idEdgeMap.get(i + 1), Math.round(objVec[i]));
             }
         } else {
-        	sol = Math.round(wrapper.solve(true));
+        	try {
+        		sol = Math.round(wrapper.solve(true));
+        	} catch(LpSolveException ex) {
+        		throw new LpSolveException(ex.getMessage() + ". ILP dump: "+dumpFile);
+        	}
         }
         return sol;
     }
 
-    private void dumpILP(LpSolveWrapper<?> wrapper) throws LpSolveException, IOException {
+    private File dumpILP(LpSolveWrapper<?> wrapper) throws LpSolveException, IOException {
         outDir.mkdirs();
         File outFile = File.createTempFile(MiscUtils.sanitizeFileName(this.problemName), ".lp", outDir);
         wrapper.dumpToFile(outFile);
@@ -196,6 +201,7 @@ public class IPETSolver<T> {
                 throw new LpSolveException("Failed to close ILP file: "+e.getMessage());
             }
         }
+        return outFile;
     }
 
     @Override

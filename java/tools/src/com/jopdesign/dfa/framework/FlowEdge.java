@@ -27,6 +27,8 @@ import org.apache.bcel.generic.InstructionList;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.CallString.CallStringSerialization;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.type.MemberID;
 
@@ -123,16 +125,18 @@ public class FlowEdge {
 
 	public static class SerializedFlowEdge implements Serializable {
 		
-		private static final long serialVersionUID = 1L;
+		private static final long serialVersionUID = 2L;
 
 		private int type;
 		private String methodName;
+		private CallStringSerialization cs;
 		private int headIns;
 		private int tailIns;
 
 		public SerializedFlowEdge(FlowEdge e) {
 
 			this.type       = e.type;
+			this.cs         = new CallString.CallStringSerialization(e.getContext().callString);
 			this.methodName = e.getContext().getMethodInfo().getFQMethodName();
 			this.headIns    = e.head.getPosition();
 			this.tailIns    = e.head.getPosition();
@@ -144,7 +148,7 @@ public class FlowEdge {
 			InstructionList instructions = method.getCode().getInstructionList(false, false);
 			Context ctx = new Context();
 			ctx.setMethodInfo(method);
-
+			ctx.callString = cs.getCallString(appInfo);
 			return new FlowEdge(instructions.findHandle(tailIns),
 					instructions.findHandle(headIns), this.type, ctx);
 		}

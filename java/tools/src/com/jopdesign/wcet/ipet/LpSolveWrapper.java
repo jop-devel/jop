@@ -261,7 +261,7 @@ public class LpSolveWrapper<T> {
 
 	    SolverThread thr = new SolverThread();
 		thr.start();
-    	int cnt=1;
+    	int cnt=0;
 	    while(true) {
 	    	boolean interrupted = false;
 		    try {
@@ -269,11 +269,21 @@ public class LpSolveWrapper<T> {
 			} catch (InterruptedException e) {
 				interrupted = true;
 			}
-		    if(! thr.isAlive()) break;
+		    if(! thr.isAlive()) {
+		    	break;
+		    }
 		    if(!interrupted) {
-		    	System.err.println("LP Solve: Hard Problem, calculating ("+(cnt++)+"s)");
+		    	if(++cnt == 1) {		    		
+			    	System.err.print("LP Solve: Hard Problem, calculating: .");
+			    	System.err.flush();
+		    	} else {
+		    		System.err.print(".");
+			    	System.err.flush();
+		    	}
 		    }
 	    }
+	    if(cnt>0) System.err.println(cnt+" seconds");
+
 		LpSolveWrapper.solverTime += (thr.solverTime);
 		SolverStatus st = getSolverStatus(thr.result);
 		if(objVec != null) this.lpsolve.getVariables(objVec);

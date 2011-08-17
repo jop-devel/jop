@@ -149,18 +149,21 @@ public class WCETAnalysis {
         LpSolveWrapper.resetSolverTime();
         long blocks = 0;
         long start = System.nanoTime();
-        while (iter.hasNext()) {
+        while (false && iter.hasNext()) {
+        	
             ExecutionContext scope = iter.next();
+            Segment segment = Segment.methodSegment(scope.getMethodInfo(), scope.getCallString(), wcetTool,
+            		wcetTool.getProjectConfig().callstringLength(), wcetTool);
             
             int availBlocks = wcetTool.getWCETProcessorModel().getMethodCache().getNumBlocks();
             long total, distinctApprox = -1, distinct = -1;
             
-            blocks = total = mca.countTotalCacheBlocks(scope);
+            blocks = total = mca.countTotalCacheBlocks(segment);
             if(total > availBlocks || true) {
             	try {
-					blocks = distinctApprox = mca.countDistinctCacheBlocks(scope, false);
+					blocks = distinctApprox = mca.countDistinctCacheBlocks(segment, false);
 	                if(blocks > availBlocks && blocks < availBlocks*2 || true) {
-                		blocks = distinct = mca.countDistinctCacheBlocks(scope, true);                	
+                		blocks = distinct = mca.countDistinctCacheBlocks(segment, true);                	
 	                }
 				} catch (LpSolveException e) {
             		System.err.println((distinctApprox>=0 ? "I" : "Relaxed ")+"LP Problem too difficult, giving up: "+e);                		
@@ -309,27 +312,19 @@ public class WCETAnalysis {
         } else if(preciseApprox == StaticCacheApproximation.ALL_FIT_REGIONS) {
         	GlobalAnalysis an = new GlobalAnalysis(wcetTool, ipetConfig);
         	
-//            RecursiveStrategy<AnalysisContextLocal, WcetCost> recStrategy =
-//                new GlobalAnalysis.GlobalIPETStrategy(ipetConfig);
-//            RecursiveWcetAnalysis<AnalysisContextLocal> an =
-//                new RecursiveWcetAnalysis<AnalysisContextLocal>(
-//                        wcetTool,
-//                        ipetConfig,
-//                        recStrategy);
-//            wcet = an.computeCost(wcetTool.getTargetMethod(),
-//                    new AnalysisContextLocal(preciseApprox));
-
         	String targetName = wcetTool.getTargetName();
-        	Segment target = Segment.methodSegment(wcetTool, wcetTool.getTargetMethod(),
-        			CallString.EMPTY, wcetTool.getProjectConfig().callstringLength(), wcetTool);
+        	Segment target = Segment.methodSegment(wcetTool.getTargetMethod(), CallString.EMPTY,
+        			wcetTool, wcetTool.getProjectConfig().callstringLength(), wcetTool);
 
         	/* Run global analysis */
-            LpSolveWrapper.resetSolverTime();
             try {
-                long start = System.nanoTime();
-				wcet = an.computeWCET(targetName, target, preciseApprox);
-	            long stop  = System.nanoTime();
-	            report(wcet,start,stop,LpSolveWrapper.getSolverTime());
+            	for(StaticCacheApproximation cacheApprox : StaticCacheApproximation.values()) {
+                    LpSolveWrapper.resetSolverTime();
+                    long start = System.nanoTime();
+    				wcet = an.computeWCET(targetName, target, cacheApprox);
+    	            long stop  = System.nanoTime();
+    	            reportSpecial(cacheApprox.toString(),wcet,start,stop,LpSolveWrapper.getSolverTime());
+            	}
 			} catch (LpSolveException e) {
 				e.printStackTrace();
 			}

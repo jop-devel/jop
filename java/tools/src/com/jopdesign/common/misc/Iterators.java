@@ -25,8 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 
-import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
-
 /**
  * Purpose: Utilities to lift Collection functionality to Iterable s and Iterator s
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
@@ -39,8 +37,9 @@ public class Iterators {
 	 */
 	public final static class EmptyIterator<T> implements Iterator<T> {
 
-		@SuppressWarnings("unchecked")
+		@SuppressWarnings("rawtypes")
 		protected static final EmptyIterator ITERATOR = new EmptyIterator();
+		@SuppressWarnings("unchecked")
 		public static<T> Iterator<T> instance() { return ITERATOR; }
 
 		@Override

@@ -47,6 +47,7 @@ import com.jopdesign.common.code.SuperGraph.SuperInvokeEdge;
 import com.jopdesign.common.code.SuperGraph.SuperReturnEdge;
 import com.jopdesign.common.code.SymbolicMarker.SymbolicMarkerType;
 import com.jopdesign.common.graphutils.LoopColoring;
+import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.Iterators;
 import com.jopdesign.wcet.WCETProcessorModel;
@@ -96,7 +97,7 @@ public class GlobalAnalysis {
         }
         
         String key = m.getFQMethodName() + "_global_" + cacheMode;
-        Segment segment = Segment.methodSegment(project, m,ctx.getCallString(), project.getAppInfo().getCallstringLength(), project);
+        Segment segment = Segment.methodSegment(m, ctx.getCallString(),project, project.getAppInfo().getCallstringLength(), project);
         return computeWCET(key, segment, cacheMode);
     }
 
@@ -118,11 +119,10 @@ public class GlobalAnalysis {
         if(project.getWCETProcessorModel().hasMethodCache()) {
         	switch(cacheMode) {
         	case ALWAYS_HIT:      break; /* no additional costs */
-        	/* TODO: Implement */
         	case ALWAYS_MISS:     missEdges = methodCacheAnalysis.addMissAlwaysCost(segment, ipetSolver); break;
         	case ALL_FIT_SIMPLE:  missEdges = methodCacheAnalysis.addMissOnceCost(segment, ipetSolver); break;
         	case ALL_FIT_REGIONS: missEdges = methodCacheAnalysis.addMissOnceConstraints(segment, ipetSolver); break;
-        	default:              missEdges = methodCacheAnalysis.addMissOnceCost(segment, ipetSolver); break;
+        	case GLOBAL_ALL_FIT:  missEdges = methodCacheAnalysis.addGlobalAllFitConstraints(segment, ipetSolver); break;
         	}        	
         }
 
@@ -130,7 +130,12 @@ public class GlobalAnalysis {
         Map<SuperGraphEdge, Long> flowMap = new HashMap<SuperGraphEdge, Long>();
 
         /* Solve */
-        double lpCost = ipetSolver.solve(flowMap);
+        long _start = System.currentTimeMillis();
+        double relaxedCost = ipetSolver.solve(null, false);
+        long _time_rlp = System.currentTimeMillis() - _start;
+        double ilpCost = ipetSolver.solve(flowMap);
+        long _time_ilp = System.currentTimeMillis() - _start;
+        WCETTool.logger.info(String.format("LP (%d ms) %d | %d ILP (%d ms)",_time_rlp, Math.round(relaxedCost), Math.round(ilpCost), _time_ilp));
 
         /* Cost extraction */
         WcetCost cost = new WcetCost();
@@ -153,7 +158,10 @@ public class GlobalAnalysis {
         }
 
         /* Sanity Check, and Return */
-        long objValue = (long) (lpCost + 0.5);
+        if(Double.isInfinite(ilpCost)) {
+            throw new AssertionError("[GlobalAnalysis] Unbounded (infinite lp cost)");        	
+        }
+        long objValue = (long) (ilpCost + 0.5);
         if (cost.getCost() != objValue) {
             throw new AssertionError("[GlobalAnalysis] Inconsistency: lpValue vs. extracted value: " + objValue + " / " + cost.getCost());
         }
@@ -194,9 +202,9 @@ public class GlobalAnalysis {
         }
 
         /* Supergraph constraints */
-        for (Entry<SuperInvokeEdge, SuperReturnEdge> superEdgePair : segment.getSuperEdgePairs()) {
-        	Iterable<SuperGraphEdge> es1 = Iterators.<SuperGraphEdge>singleton(superEdgePair.getKey());
-        	Iterable<SuperGraphEdge> es2 = Iterators.<SuperGraphEdge>singleton(superEdgePair.getValue());
+        for (Pair<SuperInvokeEdge, SuperReturnEdge> superEdgePair : segment.getCallSites()) {
+        	Iterable<SuperGraphEdge> es1 = Iterators.<SuperGraphEdge>singleton(superEdgePair.first());
+        	Iterable<SuperGraphEdge> es2 = Iterators.<SuperGraphEdge>singleton(superEdgePair.second());
         	ipetSolver.addConstraint(IPETUtils.flowPreservation(es1,es2));
         }
         

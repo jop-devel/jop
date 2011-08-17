@@ -29,6 +29,6 @@ import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
  * to filter control flow graph edges which are infeasible in a certain (call) context
  *
  */
-public interface InfeasibleEdgeDetector {
+public interface InfeasibleEdgeProvider {
     public Collection<CFGEdge> getInfeasibleEdges(ControlFlowGraph cfg, CallString cs);
 }

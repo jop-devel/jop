@@ -37,7 +37,7 @@ import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.DefaultCallgraphBuilder;
 import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.common.code.InfeasibleEdgeDetector;
+import com.jopdesign.common.code.InfeasibleEdgeProvider;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.config.Config;
@@ -108,7 +108,7 @@ import java.util.Set;
  * @author Stefan Hepp (stefan@stefant.org)
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  */
-public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider, InfeasibleEdgeDetector {
+public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider, InfeasibleEdgeProvider {
 
     public static final String VERSION = "1.0.1";
 
