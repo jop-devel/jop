@@ -135,7 +135,7 @@ public class FlowEdge {
 			this.type       = e.type;
 			this.methodName = e.getContext().getMethodInfo().getFQMethodName();
 			this.headIns    = e.head.getPosition();
-			this.tailIns    = e.head.getPosition();
+			this.tailIns    = e.tail.getPosition();
 		}
 		
 		public FlowEdge toFlowEdge(AppInfo appInfo) throws MethodNotFoundException {
