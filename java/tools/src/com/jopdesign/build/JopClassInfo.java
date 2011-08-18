@@ -751,14 +751,18 @@ public class JopClassInfo extends OldClassInfo implements Serializable {
         out.println("//\t" + classRefAddress + ": " + clazz.getClassName()+" class info");
         out.println("//");
         out.println("\t\t" + instSize + ",\t//\tinstance size");
-        for (i = 0; i < clft.len; ++i) {
-            if (!clft.isStatic[i]) {
-                out.println("\t\t\t\t//\t" + clft.idx[i] + " " + clft.key[i]);
-            }
-        }
+
         // link info: class addresses
         outLinkInfo.println("class "+clazz.getClassName()+" "+methodsAddress+" "+cpoolAddress);
         outLinkInfo.println(" -instSize "+instSize);
+        
+        for (i = 0; i < clft.len; ++i) {
+            if (!clft.isStatic[i]) {
+                out.println("\t\t\t\t//\t" + clft.idx[i] + " " + clft.key[i]);
+                /* link info: field offset */
+                outLinkInfo.println(" -field " + clft.key[i] + " " +clft.idx[i]);
+            }
+        }
 
         out.println("\t\t" + staticValueVarAddress
                 + ",\t//\tpointer to static primitive fields");

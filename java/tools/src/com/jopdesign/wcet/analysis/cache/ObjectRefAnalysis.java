@@ -34,6 +34,7 @@ import lpsolve.LpSolveException;
 import org.apache.bcel.generic.ARRAYLENGTH;
 import org.apache.bcel.generic.ArrayInstruction;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.FieldGen;
 import org.apache.bcel.generic.FieldInstruction;
 import org.apache.bcel.generic.GETFIELD;
 import org.apache.bcel.generic.INVOKEINTERFACE;
@@ -44,6 +45,7 @@ import org.apache.bcel.generic.PUTFIELD;
 import org.apache.bcel.generic.ReferenceType;
 import org.apache.log4j.Logger;
 
+import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.CallString;
@@ -716,7 +718,8 @@ public class ObjectRefAnalysis {
 			FieldInstruction fieldInstr = (FieldInstruction) instr;
 			String klassName = fieldInstr.getClassName(constPool);
 			String fieldName = fieldInstr.getFieldName(constPool);
-			return p.getLinkerInfo().getFieldIndex(klassName, fieldName);
+			String fieldSig  = fieldInstr.getSignature(constPool);
+			return p.getLinkerInfo().getFieldIndex(klassName, fieldName+fieldSig);
 		} else {
 			return 0;			
 		}
