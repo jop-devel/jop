@@ -907,7 +907,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			ContextMap<CallString,SymbolicAddressMap> input,
 			ContextMap<CallString,SymbolicAddressMap> retval) {
 		
-		String methodId = method.getMemberID().toString();
+		String methodId = method.getMemberID().toString(false);
 
 		SymbolicAddressMap in = input.get(context.callString);
 		SymbolicAddressMap out;

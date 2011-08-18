@@ -49,8 +49,8 @@ public class LinkerInfo {
 		private int instSize;
 		private int superAddress;
 
-		private Map <String,Integer> staticAddresses = new HashMap<String,Integer>();;
-		private Map <String,Integer> fieldOffsets = new HashMap<String,Integer>();
+		private Map <String,Integer> staticAddresses = new HashMap<String,Integer>();
+		private Map <String,Integer> fieldOffsets = new HashMap<String,Integer>();    // ID (name+signature) to field index */
 		private Map <String,Integer> codeAddresses = new HashMap<String,Integer>();
 		private Map <String,Integer> mtabAddresses = new HashMap<String,Integer>();
 		private Map <Integer,Integer> constMap = new TreeMap<Integer,Integer>();
