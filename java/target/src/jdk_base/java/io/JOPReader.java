@@ -43,7 +43,7 @@ public class JOPReader extends JOPInputStream implements Runnable {
 	}
 
 	public String readLine() throws IOException {
-		StringBuilder sb = new StringBuilder();
+		BoundedStringBuffer sb = new BoundedStringBuffer(buf.capacity());
 		boolean eol = false;
 		while (!eol) {
 			// wait until data becomes available

@@ -6,6 +6,9 @@ public class Main {
 		Main m = new Main();
 		for(int i = 0; i < 100; i++) {
 			m.run();
+//			te = Native.rdMem(Const.IO_CNT);
+			System.out.print("Iteration finished.");
+			//System.out.println(te-ts-to);
 		}
 		System.out.println("Benchmark finished");
 	}
