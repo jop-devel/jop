@@ -65,7 +65,7 @@ public class RelativeUserTick implements RelativeAbstractTime {
 	@Override
 	public Clock getClock() {
 		// TODO Auto-generated method stub
-		return null;
+		return clock;
 	}
 
 	@Override

@@ -107,7 +107,7 @@ public class HelloExtendedClock extends Mission implements Safelet {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		Terminal.getTerminal().writeln("Hello SCJ World!");
+		Terminal.getTerminal().writeln("A extended model user clock example.");
 		single = new HelloExtendedClock();
 		JopSystem.startMission(single);
 	}

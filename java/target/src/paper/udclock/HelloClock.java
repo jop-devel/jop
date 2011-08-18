@@ -108,7 +108,7 @@ public class HelloClock extends Mission implements Safelet {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		Terminal.getTerminal().writeln("Hello SCJ World!");
+		Terminal.getTerminal().writeln("A RTSJ 1.1 based user clock.");
 		single = new HelloClock();
 		JopSystem.startMission(single);
 	}
