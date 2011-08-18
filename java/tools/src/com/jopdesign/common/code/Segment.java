@@ -23,7 +23,6 @@ package com.jopdesign.common.code;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -64,7 +63,8 @@ public class Segment {
 	private Map<MethodInfo, List<ContextCFG>> methods;
 	private Set<SuperGraphNode> nodes;
 	private Set<SuperGraphEdge> edges;
-	private Filter<SuperGraphEdge> edgeFilter;	
+	private Filter<SuperGraphEdge> edgeFilter;
+	private HashSet<SuperGraphEdge> otherEntries;	
 	
 	/** Construct a semi-closed segment (all exit edges are explicitly given and are part of the segment) */
 	public Segment(SuperGraph sg, Set<SuperGraphEdge> entries, Set<SuperGraphEdge> exits) {
@@ -130,6 +130,7 @@ public class Segment {
 		methods = new HashMap<MethodInfo, List<ContextCFG>>();
 		nodes = new HashSet<SuperGraphNode>();
 		edges = new HashSet<SuperGraphEdge>();
+		otherEntries = new HashSet<SuperGraphEdge>();
 		
 		HashSet<SuperGraphEdge> actualExits = new HashSet<SuperGraphEdge>();
 		Stack<SuperGraphEdge> worklist = new Stack<SuperGraphEdge>();
@@ -153,6 +154,14 @@ public class Segment {
 			Iterators.addAll(worklist, sg.getSuccessorEdges(current));
 		}
 		exits = actualExits;
+		for(SuperGraphNode node : nodes) {
+			for(SuperGraphEdge edge: sg.incomingEdgesOf(node)) {
+				if(! edges.contains(edge)) {
+					otherEntries.add(edge);
+				}
+			}
+		}
+		/* for all nodes find entries which are not part of the segment; this are "otherEntries" */
 		return edges;
 	}
 
