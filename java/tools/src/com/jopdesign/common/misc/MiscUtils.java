@@ -23,9 +23,6 @@ package com.jopdesign.common.misc;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
-import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -64,6 +61,15 @@ public class MiscUtils {
         Ret apply(Arg v);
     }
 
+    public static<A,R> F1<A,R> const1(final R c) {
+    	return new F1<A, R>() {
+			@Override
+			public R apply(A v) {
+				return c;
+			}
+		};
+    }
+    
     public interface F2<Arg1, Arg2, Ret> {
         Ret apply(Arg1 v1, Arg2 v2);
     }
@@ -330,10 +336,10 @@ public class MiscUtils {
      * @param max maximum number of entries to print
      * @return a string representation of this collection with up to max entries. 
      */
-    public static String toString(Collection entries, int max) {
+    public static String toString(Collection<?> entries, int max) {
         StringBuffer sb = new StringBuffer("[");
         int cnt = Math.min(entries.size(), max);
-        Iterator it = entries.iterator();
+        Iterator<?> it = entries.iterator();
         for (int i = 0; i < cnt; i++) {
             if (i > 0) sb.append(",");
             sb.append(it.next().toString());

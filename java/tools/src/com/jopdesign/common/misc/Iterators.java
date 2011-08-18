@@ -25,12 +25,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 
+import com.jopdesign.common.misc.MiscUtils.F1;
+
 /**
  * Purpose: Utilities to lift Collection functionality to Iterable s and Iterator s
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  *
  */
 public class Iterators {
+
 
 	/**
 	 * Purpose: An empty iterator
@@ -129,6 +132,42 @@ public class Iterators {
 		}
 		
 	}
+	
+	/**
+	 * Purpose: An iterator which applies a transformation to each input
+	 *
+	 */
+	public static class MapEntriesIterator<S,T> implements Iterator<T> {
+
+		private Iterator<S> sourceIterator;
+		private F1<S, T> f;
+
+		public MapEntriesIterator(Iterable<S> source, F1<S,T> f) {
+			this.sourceIterator = source.iterator();
+			this.f = f;
+		}
+		
+
+		@Override
+		public boolean hasNext() {
+
+			return sourceIterator.hasNext();
+		}
+		
+		@Override
+		public T next() {
+			
+			if(! hasNext()) return null;
+			return f.apply(sourceIterator.next());
+		}
+
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException("remove() not supported by MapEntriesIterator");
+		}
+		
+	}
+
 
 	public static<T, C extends Collection<T>> C addAll(C coll, Iterable<? extends T> addme) {
 		
@@ -164,6 +203,15 @@ public class Iterators {
 		};
 	}
 
+	public static <S,T> Iterable<T> mapEntries(final Iterable<S> input, final F1<S,T> f) {
+		
+		return new Iterable<T>() {
+			@Override
+			public Iterator<T> iterator() {
+				return new MapEntriesIterator<S, T>(input,f);
+			}
+		};
+	}
 	public static<T> Iterable<T> singleton(T elem) {
 
 		return Collections.singleton(elem);
