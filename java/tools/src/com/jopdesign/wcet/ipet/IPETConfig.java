@@ -113,7 +113,7 @@ public class IPETConfig {
         return ipc;
     }
 
-    public static StaticCacheApproximation getPreciseCacheApprox(Config config) {
+    public static StaticCacheApproximation getRequestedCacheApprox(Config config) {
         return config.getOption(STATIC_CACHE_APPROX);
     }
 

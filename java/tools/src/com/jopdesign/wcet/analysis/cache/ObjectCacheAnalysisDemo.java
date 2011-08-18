@@ -30,6 +30,7 @@ import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.AnalysisContext;
 import com.jopdesign.wcet.analysis.AnalysisContextCallString;
+import com.jopdesign.wcet.analysis.InvalidFlowFactException;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
@@ -43,6 +44,8 @@ import org.apache.bcel.generic.InstructionHandle;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import lpsolve.LpSolveException;
 
 /** A demonstration of the persistence analysis for the object cache
  *  <p>
@@ -210,7 +213,7 @@ public class ObjectCacheAnalysisDemo {
 		public void visitBasicBlockNode(BasicBlockNode n) {
 			long worstCaseMissCost = jopconfig.getObjectCacheLoadBlockCycles();
 			for(InstructionHandle ih : n.getBasicBlock().getInstructions()) {
-				if(ObjectRefAnalysis.getHandleType(project, n, ih) == null) continue;
+				if(ObjectRefAnalysis.getHandleType(project, n.getControlFlowGraph(), ih) == null) continue;
 				if(! ObjectRefAnalysis.isFieldCached(project, n.getControlFlowGraph(), ih, jopconfig.getObjectCacheMaxCachedFieldIndex())) {
 					cost.addBypassCost(worstCaseMissCost,1);
 				} else {
@@ -256,14 +259,21 @@ public class ObjectCacheAnalysisDemo {
 				AnalysisContext ctx) {
 			MethodInfo invoked = invocation.getImplementingMethod();
 			ObjectCacheCost cost;
-			if(allPersistent(invoked, ctx.getCallString())) {
-				cost  = getAllFitCost(invoked, ctx.getCallString());
+			try {
+				if(allPersistent(invoked, ctx.getCallString())) {
+					cost  = getAllFitCost(invoked, ctx.getCallString());
+				}
 				//System.out.println("Cost for: "+invocation.getImplementedMethod()+" [all fit]: "+cost);
-			} else {
-				// FIXME: callstring missing
-				// AnalysisContext recCtx = ctx.withCallString(ctx.getCallString().push(invocation,project.getProjectConfig().callstringLength()));
-				cost = stagedAnalysis.computeCost(invoked, ctx);
-				//System.out.println("Cost for: "+invocation.getImplementedMethod()+" [recursive]: "+cost);
+				else {
+					// FIXME: callstring missing
+					// AnalysisContext recCtx = ctx.withCallString(ctx.getCallString().push(invocation,project.getProjectConfig().callstringLength()));
+					cost = stagedAnalysis.computeCost(invoked, ctx);
+					//System.out.println("Cost for: "+invocation.getImplementedMethod()+" [recursive]: "+cost);
+				}
+			} catch (InvalidFlowFactException e) {
+				throw new RuntimeException(e);
+			} catch (LpSolveException e) {
+				throw new RuntimeException(e);
 			}
 			return cost;
 		}
@@ -306,14 +316,14 @@ public class ObjectCacheAnalysisDemo {
 		return recAna.computeCost(project.getTargetMethod(), new AnalysisContextCallString(CallString.EMPTY));
 	}
 
-	public long getMaxAccessedTags(MethodInfo invoked, CallString context) {
+	public long getMaxAccessedTags(MethodInfo invoked, CallString context) throws InvalidFlowFactException, LpSolveException {
 		if(! context.isEmpty()) {
 			throw new AssertionError("Callstrings are not yet supported for object cache analysis");
 		}
 		return objRefAnalysis.getMaxCachedTags(new ExecutionContext(invoked, context));
 	}
  
-	private ObjectCacheCost getAllFitCost(MethodInfo invoked, CallString context) {
+	private ObjectCacheCost getAllFitCost(MethodInfo invoked, CallString context) throws InvalidFlowFactException, LpSolveException {
 		if(! context.isEmpty()) {
 			throw new AssertionError("Callstrings are not yet supported for object cache analysis");
 		}
@@ -321,7 +331,7 @@ public class ObjectCacheAnalysisDemo {
 	}
 
 
-	private boolean allPersistent(MethodInfo invoked, CallString context) {
+	private boolean allPersistent(MethodInfo invoked, CallString context) throws InvalidFlowFactException, LpSolveException {
 		if(assumeAllMiss) return false;
 		return getMaxAccessedTags(invoked, context) <= jopconfig.getObjectCacheAssociativity();
 	}		

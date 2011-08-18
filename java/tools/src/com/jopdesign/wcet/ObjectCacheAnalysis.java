@@ -44,6 +44,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import lpsolve.LpSolveException;
+
 import static com.jopdesign.wcet.ExecHelper.timeDiff;
 
 public class ObjectCacheAnalysis {
@@ -134,11 +136,19 @@ public class ObjectCacheAnalysis {
 	}
 	
 	public boolean run() {
-		evaluateObjectCache();		
-		return true;
+		try {
+			evaluateObjectCache();
+			return true;
+		} catch (InvalidFlowFactException e) {
+			e.printStackTrace();
+			return false;			
+		} catch (LpSolveException e) {
+			e.printStackTrace();
+			return false;			
+		}		
 	}
 
-	private void evaluateObjectCache() {
+	private void evaluateObjectCache() throws InvalidFlowFactException, LpSolveException {
 		long start,stop;
 
         // TODO check if we can/need to get jopconfig elsewhere
@@ -288,27 +298,4 @@ public class ObjectCacheAnalysis {
 		OCacheAnalysisResult.dumpLatex(samples, oStream);
 	} 
 	
-	private void testExactAllFit() throws InvalidFlowFactException {
-		long start,stop;
-        start = System.nanoTime();
-		LpSolveWrapper.resetSolverTime();
-		MethodCacheAnalysis mcAnalysis = new MethodCacheAnalysis(project);
-		mcAnalysis.countDistinctCacheBlocks();
-        stop  = System.nanoTime();
-		System.err.println(
-				String.format("[Method Cache Analysis]: Total time: %.2f s / Total solver time: %.2f s",
-						timeDiff(start,stop),
-						LpSolveWrapper.getSolverTime()));        
-		Map<ExecutionContext, Long> blockUsage = mcAnalysis.getBlockUsage();
-		MiscUtils.printMap(System.out, blockUsage, new MiscUtils.F2<ExecutionContext, Long, String>() {
-            public String apply(ExecutionContext v1, Long maxBlocks) {
-                MethodCache mc = project.getWCETProcessorModel().getMethodCache();
-                return String.format("%-50s ==> %2d <= %2d",
-                        v1.getMethodInfo().getFQMethodName(),
-                        maxBlocks,
-                        mc.getAllFitCacheBlocks(v1.getMethodInfo(), null));
-            }
-        });
-	}
-
 }

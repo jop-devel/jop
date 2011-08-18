@@ -89,13 +89,7 @@ public class GlobalAnalysis {
      */
     public WcetCost computeWCET(MethodInfo m, AnalysisContextLocal ctx) throws Exception {
 
-        StaticCacheApproximation cacheMode = ctx.getCacheApproxMode();
-        if (cacheMode != StaticCacheApproximation.ALWAYS_MISS &&
-                cacheMode != StaticCacheApproximation.GLOBAL_ALL_FIT) {
-            throw new Exception("Global IPET: only ALWAYS_MISS and GLOBAL_ALL_FIT are supported" +
-                    " as cache approximation strategies");
-        }
-        
+        StaticCacheApproximation cacheMode = ctx.getCacheApproxMode();        
         String key = m.getFQMethodName() + "_global_" + cacheMode;
         Segment segment = Segment.methodSegment(m, ctx.getCallString(),project, project.getAppInfo().getCallstringLength(), project);
         return computeWCET(key, segment, cacheMode);
@@ -181,8 +175,10 @@ public class GlobalAnalysis {
      * @return The max-cost maxflow problem
      * @throws InvalidFlowFactException 
      */
+    private static int nameCounter = 0;
     public static IPETSolver<SuperGraphEdge> buildIpetProblem(WCETTool wcetTool, String problemName, Segment segment, IPETConfig ipetConfig) throws InvalidFlowFactException {
 
+    	problemName = problemName + (nameCounter++);
         IPETSolver<SuperGraphEdge> ipetSolver = new IPETSolver<SuperGraphEdge>(problemName, ipetConfig);
 
         /* DEBUGGING: Render segment */
