@@ -24,6 +24,8 @@
 
 package com.jopdesign.sys;
 
+import javax.realtime.RelativeAbstractTime;
+
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 
@@ -168,6 +170,7 @@ public class RtThreadImpl {
 			init();
 		}
 
+		System.out.println(us);
 		stack = new int[Const.STACK_SIZE-Const.STACK_OFF];
 		sp = Const.STACK_OFF;	// default empty stack for GC before startMission()
 		
@@ -203,6 +206,16 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		} else {
 			head = this;
 		}
+	}
+
+	// Here comes the special handling for
+	// user defined clock based threads
+	RelativeAbstractTime udclockPeriod;
+	public RtThreadImpl(RtThread rtThread, int prio,
+			RelativeAbstractTime period) {
+		this(rtThread, prio, 2000000, 0);
+		System.out.println("special thread");
+		udclockPeriod = period;
 	}
 
 	/**

@@ -103,7 +103,15 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 				}
 			};
 		} else {
-			System.out.println("Implement ud clock scheduling");
+			thread = new RtThread(priority.getPriority(), per) {
+
+				public void run() {
+					while (!MissionSequencer.terminationRequest) {
+						handleAsyncEvent();
+						waitForNextPeriod();
+					}
+				}
+			};
 		}
 
 	}

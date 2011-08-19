@@ -24,6 +24,8 @@
 
 package joprt;
 
+import javax.realtime.RelativeAbstractTime;
+
 import com.jopdesign.sys.RtThreadImpl;
 
 public class RtThread implements Runnable {
@@ -52,6 +54,10 @@ public class RtThread implements Runnable {
 	public RtThread(Runnable runner, int prio, int us, int off) {
 		this.runner = runner;
 		thr = new RtThreadImpl(this, prio, us, off);
+	}
+	
+	public RtThread(int prio, RelativeAbstractTime period) {
+		thr = new RtThreadImpl(this, prio, period);
 	}
 
 	public void run() {
