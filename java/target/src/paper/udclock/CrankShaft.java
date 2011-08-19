@@ -32,8 +32,12 @@ import javax.realtime.RelativeTime;
 import javax.safetycritical.*;
 import javax.safetycritical.io.SimplePrintStream;
 
+import com.jopdesign.io.IOFactory;
+import com.jopdesign.io.SysDevice;
+import com.jopdesign.sys.JVMHelp;
+
 /**
- * A minimal SCJ application to show a passive clock
+ * A minimal SCJ application to show the crankshaft clock
  * with the extended model of user defined clocks.
  * 
  * @author Martin Schoeberl
@@ -47,6 +51,8 @@ public class CrankShaft extends Mission implements Safelet {
 	static CrankshaftClock clock;
 
 	static SimplePrintStream out;
+	
+
 
 	// From Mission
 	@Override
@@ -61,7 +67,25 @@ public class CrankShaft extends Mission implements Safelet {
 		out = new SimplePrintStream(os);
 		
 		clock = new CrankshaftClock();
+		// the clock is also an interrupt handler
+		JVMHelp.addInterruptHandler(1, clock);
+		// a helper handler to trigger the SW interrupt
+		// and simulate an external interrupt source
+		PeriodicEventHandler helper = new PeriodicEventHandler(
+				new PriorityParameters(11), new PeriodicParameters(
+						new RelativeTime(0, 0), new RelativeTime(100, 0)),
+				new StorageParameters(10000, 1000, 1000)) {
 
+			SysDevice sys = IOFactory.getFactory().getSysDevice();
+
+			public void handleAsyncEvent() {
+				// generate a SW interrupt
+				sys.intNr = 1;
+			}
+		};
+		helper.register();
+
+		
 		PeriodicEventHandler peh = new PeriodicEventHandler(
 				new PriorityParameters(11), new PeriodicParameters(
 						new RelativeTime(0, 0), new RelativeTime(1000, 0)),
@@ -76,9 +100,9 @@ public class CrankShaft extends Mission implements Safelet {
 				AbsoluteTime time = (AbsoluteTime) Clock.getRealtimeClock().getTime();
 				out.print("It is " + time.getMilliseconds());
 				clock.getTime(dest);
-				out.println(" counter " + dest.getTicks());
+				out.println(" rotations " + dest.getRotations() + " degrees " + dest.getDegrees());
 				++cnt;
-				if (cnt > 5) {
+				if (cnt > 10) {
 					// getCurrentMission is not yet working
 					single.requestTermination();
 				}

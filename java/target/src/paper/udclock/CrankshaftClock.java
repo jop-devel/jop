@@ -30,22 +30,35 @@ import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 
 /**
+ * The crankshaft clock, that also contains the interrupt handler.
  * @author martin
  *
  */
-public class CrankshaftClock extends Clock {
+public class CrankshaftClock extends Clock implements Runnable {
 
-	SysDevice sys = IOFactory.getFactory().getSysDevice();
+
+	long now = 0;
+	long nextTime = 0;
+	ClockCallBack cback;
 	
 	public CrankshaftClock() {
 		
 	}
+	
 	/**
-	 * Our passive clock uses a 32-bit counter
+	 * We tick in 10 degrees
+	 */
+	synchronized void tick() {
+		now += 10;
+		
+	}
+	
+	/**
+	 * 
 	 */
 	@Override
 	public long getMaxValue() {
-		return 0xffffffff;
+		return 0xffffffffffffffffL;
 	}
 
 	/* (non-Javadoc)
@@ -69,7 +82,7 @@ public class CrankshaftClock extends Clock {
 	 */
 	@Override
 	public RelativeAbstractTime getResolution() {
-		return new RelativeRotationalTime(0, 1, this);
+		return new RelativeRotationalTime(0, 10, this);
 	}
 
 	/* (non-Javadoc)
@@ -94,8 +107,7 @@ public class CrankshaftClock extends Clock {
 	 */
 	@Override
 	public AbsoluteAbstractTime getTime(AbsoluteAbstractTime dest) {
-		int val = sys.cntInt;
-		dest.setTicks(val);
+		dest.setTicks(now);
 		return dest;
 	}
 
@@ -124,6 +136,13 @@ public class CrankshaftClock extends Clock {
 	protected void setResolution(RelativeTime resolution) {
 		// TODO Auto-generated method stub
 
+	}
+	/**
+	 * On JOP an interrupt handler is just a simple Runnable.
+	 */
+	@Override
+	public void run() {
+		tick();
 	}
 
 }
