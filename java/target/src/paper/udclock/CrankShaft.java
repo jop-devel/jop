@@ -72,7 +72,7 @@ public class CrankShaft extends Mission implements Safelet {
 		// a helper handler to trigger the SW interrupt
 		// and simulate an external interrupt source
 		PeriodicEventHandler helper = new PeriodicEventHandler(
-				new PriorityParameters(11), new PeriodicParameters(
+				new PriorityParameters(12), new PeriodicParameters(
 						new RelativeTime(0, 0), new RelativeTime(100, 0)),
 				new StorageParameters(10000, 1000, 1000)) {
 
@@ -85,7 +85,8 @@ public class CrankShaft extends Mission implements Safelet {
 		};
 		helper.register();
 
-		
+
+		// A PEH that reads out the standard clock and the crankshaft clock
 		PeriodicEventHandler peh = new PeriodicEventHandler(
 				new PriorityParameters(11), new PeriodicParameters(
 						new RelativeTime(0, 0), new RelativeTime(1000, 0)),
@@ -109,6 +110,21 @@ public class CrankShaft extends Mission implements Safelet {
 			}
 		};
 		peh.register();
+		
+		// This is our periodic event handler that shall be
+		// scheduled by the crankshaft clock
+		PeriodicEventHandler rotation = new PeriodicEventHandler(
+				new PriorityParameters(10), new PeriodicParameters(
+						new RelativeTime(0, 0), new RelativeTime(1000, 0)),
+				new StorageParameters(10000, 1000, 1000)) {
+			int cnt;
+			AbsoluteRotationalTime dest = new AbsoluteRotationalTime(clock);
+
+			public void handleAsyncEvent() {
+				out.println("Rotation tick");
+			}
+		};
+		rotation.register();
 	}
 
 	// Safelet methods
