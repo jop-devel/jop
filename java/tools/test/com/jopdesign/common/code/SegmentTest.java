@@ -81,7 +81,7 @@ public class SegmentTest implements CFGProvider {
 
 		/* count total number of CFG nodes */
 		SuperGraph superGraph = new SuperGraph(testInst, testInst.getFlowGraph(mainMethod), 2);
-		Segment segment = Segment.methodSegment(testInst, mainMethod, CallString.EMPTY, 2);
+		Segment segment = Segment.methodSegment(mainMethod, CallString.EMPTY, testInst, 2, superGraph.getInfeasibleEdgeProvider());
 		
 		int count = 0;
 		for(ContextCFG cgNode : superGraph.getCallGraphNodes()) {

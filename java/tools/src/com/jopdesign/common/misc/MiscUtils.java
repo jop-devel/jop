@@ -23,6 +23,8 @@ package com.jopdesign.common.misc;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
+import com.jopdesign.common.code.SuperGraph.SuperGraphNode;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -93,6 +95,24 @@ public class MiscUtils {
         }
         set.add(val);
     }
+
+	/**
+	 * Increment the counter for the given key, inserting the default if the key if it is not present
+	 * @param counters a dictionary of counters
+	 * @param key the key to modify
+	 * @param defCounter the default value to insert if the key is not present
+	 * @return the new value for the key
+	 */
+	public static<T> long increment(Map<T, Long> counters, T key, int defCounter) {
+		long val;
+		if(! counters.containsKey(key)) {
+			val = defCounter;
+		} else {
+			val = counters.get(key) + 1;
+		}
+		counters.put(key, val);
+		return val;
+	}
 
     public static <T> T[] concat(T val, T[] vals) {
         List<T> v = new ArrayList<T>(vals.length+1);
@@ -247,11 +267,12 @@ public class MiscUtils {
      * @param fill minimal length of the key, filled with whitespace
      */
     public static <K, V>
-    void printMap(PrintStream out, Map<K, V> map, int fill) {
-        final int _fill = fill;
+    void printMap(PrintStream out, Map<K, V> map, int fill, int indent) {
+
+    	final String formatString = "%"+((indent>0) ? indent:"")+"s"+"%" + ((fill>0) ? fill:"") + "s ==> %s";
         printMap(out, map, new F2<K, V, String>() {
             public String apply(K v1, V v2) {
-                return String.format("%" + _fill + "s ==> %s", v1, v2);
+                return String.format(formatString, "", v1, v2);
             }
         });
     }
@@ -444,5 +465,7 @@ public class MiscUtils {
 		}
 		return groupMap;
 	}
+
+
 
 }

@@ -23,6 +23,8 @@ package com.jopdesign.common.code;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +46,7 @@ import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.Filter;
 import com.jopdesign.common.misc.Iterators;
 import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.common.misc.MiscUtils.F1;
 
 /**
  * Purpose: A segment represents subsets of execution traces.
@@ -90,6 +93,20 @@ public class Segment {
 	public boolean isEntryEdge(SuperGraphEdge e) {
 		return this.getEntryEdges().contains(e);
 	}
+
+	/**
+	 * @return The set { method (target e) | e <- entry-edges }
+	 */
+	public Set<MethodInfo> getEntryMethods() {
+		Iterable<MethodInfo> entryMethods = Iterators.mapEntries(getEntryEdges(), new F1<SuperGraphEdge, MethodInfo>() {
+			@Override
+			public MethodInfo apply(SuperGraphEdge v) {
+				return v.getTarget().getCfg().getMethodInfo();
+			}			
+		});
+		return Iterators.addAll(new HashSet<MethodInfo>(), entryMethods);
+	}
+
 
 	/**
 	 * @return the set of exit edges
@@ -171,12 +188,21 @@ public class Segment {
 	 * @param callString   The context for the method
 	 * @param cfgProvider A control flow graph provider
 	 * @param callStringLength Length of the callstrings
-	 * @param infeasibles Information about infeasible edges
+	 * @param infeasibles Information about infeasible edges (null if no information available)
 	 *
 	 * @return a segment representing executions of the method (not including the virtual entry and exit nodes)
 	 */
 	public static Segment methodSegment(MethodInfo targetMethod, CallString callString,
 			CFGProvider cfgProvider, int callStringLength, InfeasibleEdgeProvider infeasibles) {
+		
+		if(infeasibles == null) {
+			infeasibles = new InfeasibleEdgeProvider() {
+				@Override
+				public Collection<CFGEdge> getInfeasibleEdges(ControlFlowGraph cfg, CallString cs) {
+					return new ArrayList<CFGEdge>();
+				}
+			};
+		}
 		
 		SuperGraph superGraph = new SuperGraph(cfgProvider, cfgProvider.getFlowGraph(targetMethod), callString, callStringLength, infeasibles);
 		ContextCFG rootMethod = superGraph.getRootNode();
