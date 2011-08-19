@@ -45,6 +45,7 @@ import com.jopdesign.common.misc.MiscUtils.F1;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.InvalidFlowFactException;
 import com.jopdesign.wcet.ipet.IPETSolver;
+import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.jop.MethodCache;
 
 /**
@@ -80,6 +81,29 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
     	this.wcetTool = wcetTool;
         this.methodCache = wcetTool.getWCETProcessorModel().getMethodCache();        
     }
+
+	/**
+	 * Add method cache cost to ipet problem
+	 * @param segment
+	 * @param ipetSolver
+	 * @return
+	 * @throws LpSolveException 
+	 * @throws InvalidFlowFactException 
+	 */
+	public Set<SuperGraphEdge> addCacheCost(Segment segment, IPETSolver<SuperGraphEdge> ipetSolver,
+			StaticCacheApproximation cacheCalculation) throws InvalidFlowFactException, LpSolveException {
+		
+		Set<SuperGraphEdge> missEdges;
+		switch(cacheCalculation) {
+		case ALWAYS_HIT:      missEdges = new HashSet<SuperGraphEdge>(); break; /* no additional costs */
+		case ALWAYS_MISS:     missEdges = addMissAlwaysCost(segment, ipetSolver); break;
+		case ALL_FIT_SIMPLE:  missEdges = addMissOnceCost(segment, ipetSolver); break;
+		case ALL_FIT_REGIONS: missEdges = addMissOnceConstraints(segment, ipetSolver); break;
+		case GLOBAL_ALL_FIT:  missEdges = addGlobalAllFitConstraints(segment, ipetSolver); break;
+		default: throw new RuntimeException("addCacheCost(): Unexpected cache approximation mode "+cacheCalculation);
+		}        	
+		return missEdges;
+	}
 
 	/**
 	 * Perform a heuristic check whether in the given segment all methods are persistent
@@ -332,5 +356,6 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
 			return methodCache.getMissOnInvokeCost(accessed.getCfg());
 		}
 	}
+
 
 }

@@ -22,6 +22,7 @@ package com.jopdesign.wcet.analysis.cache;
 import static com.jopdesign.common.misc.MiscUtils.addToSet;
 
 import java.io.PrintStream;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -67,6 +68,7 @@ import com.jopdesign.wcet.analysis.InvalidFlowFactException;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETSolver;
+import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 
 /** Analysis of the used object references.
  *  Goal: Detect persistence scopes.
@@ -425,6 +427,30 @@ public class ObjectRefAnalysis {
 		saturatedTypes = new HashMap<ExecutionContext, Set<String>>();
 		maxCachedTagsAccessed = new HashMap<ExecutionContext, Long>();
 		tagSet = new HashMap<ExecutionContext, Set<SymbolicAddress>>();
+	}
+	
+	/**
+	 * Add method cache cost to ipet problem
+	 * @param segment
+	 * @param ipetSolver
+	 * @return
+	 * @throws LpSolveException 
+	 * @throws InvalidFlowFactException 
+	 */
+	public Set<SuperGraphEdge> addCacheCost(Segment segment, IPETSolver<SuperGraphEdge> ipetSolver,
+			StaticCacheApproximation cacheCalculation) throws InvalidFlowFactException, LpSolveException {
+		
+		Set<SuperGraphEdge> missEdges;
+		switch(cacheCalculation) {
+		default:              missEdges = new HashSet<SuperGraphEdge>(); break; /* no additional costs */
+//		case ALWAYS_HIT:      missEdges = new HashSet<SuperGraphEdge>(); break; /* no additional costs */
+//		case ALWAYS_MISS:     missEdges = addMissAlwaysCost(segment, ipetSolver); break;
+//		case ALL_FIT_SIMPLE:  missEdges = addMissOnceCost(segment, ipetSolver); break;
+//		case ALL_FIT_REGIONS: missEdges = addMissOnceConstraints(segment, ipetSolver); break;
+//		case GLOBAL_ALL_FIT:  missEdges = addGlobalAllFitConstraints(segment, ipetSolver); break;
+//		default: throw new RuntimeException("addCacheCost(): Unexpected cache approximation mode "+cacheCalculation);
+		}        	
+		return missEdges;
 	}
 	
 	public LocalPointsToResult getUsedRefs(ExecutionContext scope) {
@@ -832,6 +858,7 @@ public class ObjectRefAnalysis {
 		}
 		return null;
 	}
+
 
 
 }

@@ -55,6 +55,7 @@ import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
+import com.jopdesign.wcet.analysis.cache.ObjectRefAnalysis;
 import com.jopdesign.wcet.annotations.LoopBoundExpr;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETSolver;
@@ -113,15 +114,15 @@ public class GlobalAnalysis {
         /* Add constraints for method cache */
         Set<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
         if(project.getWCETProcessorModel().hasMethodCache()) {
-        	switch(cacheMode) {
-        	case ALWAYS_HIT:      break; /* no additional costs */
-        	case ALWAYS_MISS:     missEdges = methodCacheAnalysis.addMissAlwaysCost(segment, ipetSolver); break;
-        	case ALL_FIT_SIMPLE:  missEdges = methodCacheAnalysis.addMissOnceCost(segment, ipetSolver); break;
-        	case ALL_FIT_REGIONS: missEdges = methodCacheAnalysis.addMissOnceConstraints(segment, ipetSolver); break;
-        	case GLOBAL_ALL_FIT:  missEdges = methodCacheAnalysis.addGlobalAllFitConstraints(segment, ipetSolver); break;
-        	}        	
+        	missEdges.addAll(methodCacheAnalysis.addCacheCost(segment, ipetSolver, cacheMode));
         }
-
+        
+        /* Add constraints for object cache */
+        if(/* project.getWCETProcessorModel.hasObjectCache() */ true) {
+        	ObjectRefAnalysis objectCacheAnalysis = new ObjectRefAnalysis(project, false, 4, 8, 4);
+        	missEdges.addAll(objectCacheAnalysis.addCacheCost(segment, ipetSolver, cacheMode));
+        }
+        
         /* Return variables */
         Map<SuperGraphEdge, Long> flowMap = new HashMap<SuperGraphEdge, Long>();
 
