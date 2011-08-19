@@ -437,7 +437,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 
 		nxt = s.next[nr] + period;
 		if (udclockPeriod!=null) {
-			s.next[nr] = s.next[nr] + (int) udclockPeriod.getTicks();;
+			s.next[nr] = s.next[nr] + (int) udclockPeriod.getTicks();
 		} else {
 			now = Native.rd(Const.IO_US_CNT);
 			if (nxt-now < 0) {					// missed time!

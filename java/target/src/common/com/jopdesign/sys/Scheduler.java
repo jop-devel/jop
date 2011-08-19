@@ -1,5 +1,10 @@
 package com.jopdesign.sys;
 
+import javax.realtime.AbsoluteAbstractTime;
+import javax.realtime.AbsoluteTime;
+import javax.realtime.AbstractTime;
+import javax.realtime.HighResolutionTime;
+
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 
@@ -23,6 +28,9 @@ class Scheduler implements Runnable {
 	final static int EV_WAITING = 2;
 	final static int EV_UDCLOCK = 3;
 	int event[];				// state of an event
+	
+	// can be any time, we are only using the ticks
+	AbsoluteAbstractTime nowUdClock = new AbsoluteTime();
 
 	int cnt;					// number of threads
 	int active;					// active thread number
@@ -121,7 +129,13 @@ class Scheduler implements Runnable {
 					k = diff;				// next interrupt time of higher priority thread
 				}
 			} else if (event[i] == EV_UDCLOCK) {
-				
+				ref[i].udclockPeriod.getClock().getTime(nowUdClock);
+				if ((next[i] - ((int) nowUdClock.getTicks())) < 0) {
+					break;	// found a user defined ready task
+				} else {
+					// clock set next time should be called here
+				}
+
 			}
 		}
 		// i is next ready thread (index into the list)

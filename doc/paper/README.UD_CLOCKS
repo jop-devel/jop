@@ -30,7 +30,8 @@ Run the extended passive clock example:
 
 make jsim -e P1=paper P2=udclock P3=HelloExtendedClock
 
-Run the cranckshaft example:
+Run the cranckshaft example with the periodic thread
+based on a user defined clock:
 
 make jsim -e P1=paper P2=udclock P3=CrankShaft
 
