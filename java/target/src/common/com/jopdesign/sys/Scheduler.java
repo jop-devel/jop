@@ -3,6 +3,8 @@ package com.jopdesign.sys;
 import javax.realtime.AbsoluteAbstractTime;
 import javax.realtime.AbsoluteTime;
 import javax.realtime.AbstractTime;
+import javax.realtime.Clock;
+import javax.realtime.ClockCallBack;
 import javax.realtime.HighResolutionTime;
 
 import com.jopdesign.io.IOFactory;
@@ -31,6 +33,17 @@ class Scheduler implements Runnable {
 	
 	// can be any time, we are only using the ticks
 	AbsoluteAbstractTime nowUdClock = new AbsoluteTime();
+	ClockCallBack clockEvent = new ClockCallBack() {
+		
+		@Override
+		public void discontinuity(Clock clock, AbsoluteTime updatedTime) {
+		}
+		
+		@Override
+		public void atTime(Clock clock) {
+			RtThreadImpl.genInt();
+		}
+	};
 
 	int cnt;					// number of threads
 	int active;					// active thread number
@@ -94,6 +107,7 @@ class Scheduler implements Runnable {
 		int diff;
 		Scheduler s;
 		RtThreadImpl th;
+		Clock clock;
 		
 		// we have not called doInit(), which means
 		// we have only one thread => just return
@@ -129,11 +143,15 @@ class Scheduler implements Runnable {
 					k = diff;				// next interrupt time of higher priority thread
 				}
 			} else if (event[i] == EV_UDCLOCK) {
-				ref[i].udclockPeriod.getClock().getTime(nowUdClock);
+				// this is a very quick hack for the prototype
+				clock = ref[i].udclockPeriod.getClock();
+				clock.getTime(nowUdClock);
 				if ((next[i] - ((int) nowUdClock.getTicks())) < 0) {
 					break;	// found a user defined ready task
 				} else {
-					// clock set next time should be called here
+					// clock set next time
+					// clock.registerCallBack(nowUdClock, clockEvent);
+					// let's don't do it here, but in wFNP
 				}
 
 			}

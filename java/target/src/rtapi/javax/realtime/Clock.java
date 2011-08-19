@@ -191,7 +191,8 @@ public abstract class Clock {
    */
   @SCJAllowed(LEVEL_1)
   @SCJRestricted(maySelfSuspend = false)
-  protected abstract void registerCallBack(AbsoluteAbstractTime time,
+public
+  abstract void registerCallBack(AbsoluteAbstractTime time,
                                            ClockCallBack clockEvent);
   
   /**

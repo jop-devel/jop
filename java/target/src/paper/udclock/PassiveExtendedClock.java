@@ -104,7 +104,7 @@ public class PassiveExtendedClock extends Clock {
 	 * @see javax.realtime.Clock#registerCallBack(javax.realtime.AbsoluteTime, javax.realtime.ClockCallBack)
 	 */
 	@Override
-	protected void registerCallBack(AbsoluteAbstractTime time, ClockCallBack clockEvent) {
+	public void registerCallBack(AbsoluteAbstractTime time, ClockCallBack clockEvent) {
 		// TODO Auto-generated method stub
 
 	}

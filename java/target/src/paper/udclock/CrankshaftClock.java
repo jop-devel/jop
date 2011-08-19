@@ -50,7 +50,10 @@ public class CrankshaftClock extends Clock implements Runnable {
 	 */
 	synchronized void tick() {
 		now += 10;
-		
+		if (nextTime-now < 0 && cback!=null) {
+			cback.atTime(this);
+			System.out.println("call back");
+		}
 	}
 	
 	/**
@@ -115,8 +118,10 @@ public class CrankshaftClock extends Clock implements Runnable {
 	 * @see javax.realtime.Clock#registerCallBack(javax.realtime.AbsoluteTime, javax.realtime.ClockCallBack)
 	 */
 	@Override
-	protected void registerCallBack(AbsoluteAbstractTime time, ClockCallBack clockEvent) {
-		// TODO Auto-generated method stub
+	public void registerCallBack(AbsoluteAbstractTime time, ClockCallBack clockEvent) {
+		
+		cback = clockEvent;
+		nextTime = time.getTicks();
 
 	}
 

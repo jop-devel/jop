@@ -24,6 +24,8 @@
 
 package com.jopdesign.sys;
 
+import javax.realtime.AbsoluteAbstractTime;
+import javax.realtime.AbsoluteTime;
 import javax.realtime.RelativeAbstractTime;
 
 import com.jopdesign.io.IOFactory;
@@ -224,7 +226,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		cpuId = id;
 	}
 
-	private static void genInt() {
+	 static void genInt() {
 		
 		// just schedule an interrupt
 		// schedule() gets called.
@@ -427,6 +429,8 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		Native.wr(1, Const.IO_INT_ENA);
 	}
 
+	AbsoluteAbstractTime tmp = new AbsoluteTime();
+
 
 	public boolean waitForNextPeriod() {
 
@@ -438,6 +442,8 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		nxt = s.next[nr] + period;
 		if (udclockPeriod!=null) {
 			s.next[nr] = s.next[nr] + (int) udclockPeriod.getTicks();
+			tmp.setTicks(s.next[nr]);
+			udclockPeriod.getClock().registerCallBack(tmp, s.clockEvent);
 		} else {
 			now = Native.rd(Const.IO_US_CNT);
 			if (nxt-now < 0) {					// missed time!
