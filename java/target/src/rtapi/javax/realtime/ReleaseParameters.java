@@ -75,7 +75,7 @@ public abstract class ReleaseParameters { // implements java.lang.Cloneable {
 	 */
 	@SCJRestricted(maySelfSuspend = false)
 	@SCJAllowed(LEVEL_1)
-	public RelativeTime getDeadline() {
+	public RelativeAbstractTime getDeadline() {
 		return null;
 	}
 }

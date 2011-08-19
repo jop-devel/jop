@@ -28,8 +28,8 @@ import javax.safetycritical.annotate.MemoryAreaEncloses;
 @SCJAllowed
 public class PeriodicParameters extends ReleaseParameters {
 
-	RelativeTime start;
-	RelativeTime period;
+	RelativeAbstractTime start;
+	RelativeAbstractTime period;
 
 	/**
 	 * TODO: is this a legal SCJ constructor? It is not part of the spec source.
@@ -37,7 +37,7 @@ public class PeriodicParameters extends ReleaseParameters {
 	 * @param start
 	 * @param period
 	 */
-	public PeriodicParameters(RelativeTime start, RelativeTime period) {
+	public PeriodicParameters(RelativeAbstractTime start, RelativeAbstractTime period) {
 		if(start == null) {
 			this.start = new RelativeTime();
 		}
@@ -67,7 +67,7 @@ public class PeriodicParameters extends ReleaseParameters {
 	 */
 	@SCJAllowed
 	@BlockFree
-	public PeriodicParameters(AbstractTime start, RelativeTime period) {
+	public PeriodicParameters(AbsoluteAbstractTime start, RelativeAbstractTime period) {
 		throw new Error("implement me");
 	}
 
@@ -113,7 +113,7 @@ public class PeriodicParameters extends ReleaseParameters {
 	 */
 	@BlockFree
 	@SCJAllowed
-	public RelativeTime getPeriod() {
+	public RelativeAbstractTime getPeriod() {
 		return period;
 	}
 
@@ -123,7 +123,7 @@ public class PeriodicParameters extends ReleaseParameters {
 	 */
 	@BlockFree
 	@SCJAllowed
-	public RelativeTime getDeadline() {
+	public RelativeAbstractTime getDeadline() {
 		return null;
 	}
 

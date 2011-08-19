@@ -115,7 +115,9 @@ public class CrankShaft extends Mission implements Safelet {
 		// scheduled by the crankshaft clock
 		PeriodicEventHandler rotation = new PeriodicEventHandler(
 				new PriorityParameters(10), new PeriodicParameters(
-						new RelativeTime(0, 0), new RelativeTime(1000, 0)),
+						new RelativeRotationalTime(0, 0, clock),
+						new RelativeRotationalTime(1, 0, clock)
+						),
 				new StorageParameters(10000, 1000, 1000)) {
 			int cnt;
 			AbsoluteRotationalTime dest = new AbsoluteRotationalTime(clock);
