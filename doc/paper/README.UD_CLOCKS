@@ -30,6 +30,12 @@ Run the extended passive clock example:
 
 make jsim -e P1=paper P2=udclock P3=HelloExtendedClock
 
+Run the cranckshaft example:
+
+make jsim -e P1=paper P2=udclock P3=CrankShaft
+
 As mission termination is not yet implemented on JOP,
 the simulation has to be stopped with ^C.
+
+
 
