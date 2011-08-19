@@ -16,9 +16,12 @@ class Scheduler implements Runnable {
 	int next[];					// next time to change to state running
 	RtThreadImpl[] ref;			// references to threads
 
+	// missuse the event array for the user defined clock
+	// scheduling
 	final static int NO_EVENT = 0;
 	final static int EV_FIRED = 1;
 	final static int EV_WAITING = 2;
+	final static int EV_UDCLOCK = 3;
 	int event[];				// state of an event
 
 	int cnt;					// number of threads
@@ -117,6 +120,8 @@ class Scheduler implements Runnable {
 				} else if (diff < k) {
 					k = diff;				// next interrupt time of higher priority thread
 				}
+			} else if (event[i] == EV_UDCLOCK) {
+				
 			}
 		}
 		// i is next ready thread (index into the list)

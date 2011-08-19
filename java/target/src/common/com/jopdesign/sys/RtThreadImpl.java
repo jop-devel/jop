@@ -170,7 +170,6 @@ public class RtThreadImpl {
 			init();
 		}
 
-		System.out.println(us);
 		stack = new int[Const.STACK_SIZE-Const.STACK_OFF];
 		sp = Const.STACK_OFF;	// default empty stack for GC before startMission()
 		
@@ -214,7 +213,6 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 	public RtThreadImpl(RtThread rtThread, int prio,
 			RelativeAbstractTime period) {
 		this(rtThread, prio, 2000000, 0);
-		System.out.println("special thread");
 		udclockPeriod = period;
 	}
 
@@ -360,6 +358,9 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 			} else {
 				s.event[s.tmp] = Scheduler.NO_EVENT;
 			}
+			if (th.udclockPeriod!=null) {
+				s.event[s.tmp] = Scheduler.EV_UDCLOCK;
+			}
 			s.tmp--;
 		}
 
@@ -376,11 +377,15 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		}
 
 		// wait 10 ms for the real start if the mission
-		startTime = Native.rd(Const.IO_US_CNT)+10000;		
+		startTime = Native.rd(Const.IO_US_CNT)+10000;
 		for (i=0; i<sys.nrCpu; ++i) {
 			s = Scheduler.sched[i];
 			for (j=0; j<s.cnt; ++j) {
 				s.next[j] = startTime+s.ref[j].offset;
+				th = s.ref[j];
+				if (th.udclockPeriod!=null) {
+					s.next[j] = (int) (th.udclockPeriod.getClock().getTime().getTicks() + 10);
+				}
 			}
 		}
 		
@@ -431,16 +436,21 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		Native.wr(0, Const.IO_INT_ENA);
 
 		nxt = s.next[nr] + period;
-
-		now = Native.rd(Const.IO_US_CNT);
-		if (nxt-now < 0) {					// missed time!
-			s.next[nr] = now;				// correct next
-//			next[nr] = nxt;					// without correction!
-			Native.wr(1, Const.IO_INT_ENA);
-			return false;
+		if (udclockPeriod!=null) {
+			s.next[nr] = s.next[nr] + (int) udclockPeriod.getTicks();;
 		} else {
-			s.next[nr] = nxt;
+			now = Native.rd(Const.IO_US_CNT);
+			if (nxt-now < 0) {					// missed time!
+				s.next[nr] = now;				// correct next
+//				next[nr] = nxt;					// without correction!
+				Native.wr(1, Const.IO_INT_ENA);
+				return false;
+			} else {
+				s.next[nr] = nxt;
+			}			
 		}
+
+
 		// state is not used in scheduling!
 		// state = WAITING;
 
