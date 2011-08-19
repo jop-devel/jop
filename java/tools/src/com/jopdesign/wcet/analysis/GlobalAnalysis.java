@@ -50,6 +50,7 @@ import com.jopdesign.common.graphutils.LoopColoring;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.Iterators;
+import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
@@ -90,7 +91,7 @@ public class GlobalAnalysis {
     public WcetCost computeWCET(MethodInfo m, AnalysisContextLocal ctx) throws Exception {
 
         StaticCacheApproximation cacheMode = ctx.getCacheApproxMode();        
-        String key = m.getFQMethodName() + "_global_" + cacheMode;
+        String key = "global" + "_" + cacheMode;
         Segment segment = Segment.methodSegment(m, ctx.getCallString(),project, project.getAppInfo().getCallstringLength(), project);
         return computeWCET(key, segment, cacheMode);
     }
@@ -103,7 +104,8 @@ public class GlobalAnalysis {
     public WcetCost computeWCET(String key, Segment segment, StaticCacheApproximation cacheMode) throws InvalidFlowFactException, LpSolveException {
 
         /* create an IPET problem for the segment */
-        IPETSolver<SuperGraphEdge> ipetSolver = buildIpetProblem(project, key, segment, ipetConfig);
+    	String problemId = formatProblemName(key, segment.getEntryMethods().toString());
+    	IPETSolver<SuperGraphEdge> ipetSolver = buildIpetProblem(project, problemId, segment, ipetConfig);
 
         /* compute cost */
         setExecutionCost(segment, ipetSolver);
@@ -175,10 +177,8 @@ public class GlobalAnalysis {
      * @return The max-cost maxflow problem
      * @throws InvalidFlowFactException 
      */
-    private static int nameCounter = 0;
     public static IPETSolver<SuperGraphEdge> buildIpetProblem(WCETTool wcetTool, String problemName, Segment segment, IPETConfig ipetConfig) throws InvalidFlowFactException {
 
-    	problemName = problemName + (nameCounter++);
         IPETSolver<SuperGraphEdge> ipetSolver = new IPETSolver<SuperGraphEdge>(problemName, ipetConfig);
 
         /* DEBUGGING: Render segment */
@@ -489,5 +489,29 @@ public class GlobalAnalysis {
             cost.addLocalCost(project.getWCETProcessorModel().basicBlockWCET(ctx.getExecutionContext(n), n.getBasicBlock()));
         }
     }
+
+	/**
+	 * Generate a suitable 'problem name' for reporting (unique, no longer than 80 characters)
+	 * @param key The key of the problem generator (e.g. method-cache-analysis). <b>Has to have less than 60 characters</b>
+	 * @param description A (potentially long) description
+	 * @return A string {@code key + '_' + unique(key) + '_' + description}, truncated so has at most 80 characters (filenames!)
+	 */
+	public static String formatProblemName(String key, String description) {
+		
+		if(key.length() > 60) throw new AssertionError("formatProblemName: precondition violation: |key|>60");
+		
+		StringBuffer sb = new StringBuffer();
+		sb.append(key);
+		sb.append('_');
+		sb.append(generateProblemId(key));
+		sb.append('_');
+		sb.append(description);
+		return sb.substring(0, Math.min(80, sb.length()));
+	}
+
+    private static Map<String,Long> problemCounter = new HashMap<String,Long>();
+	private static long generateProblemId(String key) {
+		return MiscUtils.increment(problemCounter,key,1);
+	}
 
 }

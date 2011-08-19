@@ -21,39 +21,37 @@ package com.jopdesign.wcet.analysis.cache;
 
 import static com.jopdesign.common.misc.MiscUtils.addToSet;
 
-import java.util.ArrayList;
+import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import lpsolve.LpSolveException;
 
 import org.apache.bcel.generic.ARRAYLENGTH;
 import org.apache.bcel.generic.ArrayInstruction;
 import org.apache.bcel.generic.ConstantPoolGen;
-import org.apache.bcel.generic.FieldGen;
 import org.apache.bcel.generic.FieldInstruction;
 import org.apache.bcel.generic.GETFIELD;
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKEVIRTUAL;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.ObjectType;
 import org.apache.bcel.generic.PUTFIELD;
 import org.apache.bcel.generic.ReferenceType;
 import org.apache.log4j.Logger;
 
-import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.Segment;
 import com.jopdesign.common.code.SuperGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
 import com.jopdesign.common.code.SuperGraph.SuperGraphNode;
 import com.jopdesign.common.misc.Iterators;
@@ -61,8 +59,8 @@ import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.analyses.SymbolicAddress;
 import com.jopdesign.dfa.analyses.SymbolicPointsTo;
-import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 import com.jopdesign.dfa.framework.ContextMap;
+import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.InvalidFlowFactException;
@@ -224,6 +222,15 @@ public class ObjectRefAnalysis {
 		}
 
 		/**
+		 * @param node
+		 * @return 
+		 * @return always miss and bypass cost for the node
+		 */
+		public long getStaticCost(SuperGraphNode node) {
+			if(! staticCostMap.containsKey(node)) return 0;
+			return staticCostMap.get(node);
+		}
+		/**
 		 * @return set of all referenced object names
 		 */
 		public Set<SymbolicAddress> getReferencedObjectNames() {
@@ -281,7 +288,7 @@ public class ObjectRefAnalysis {
 		 * @param segment 
 		 * @return
 		 */
-		public 	Set<Entry<SymbolicAddress, List<SuperGraphEdge>>> getRefAccesses(Segment segment) {
+		public 	Set<Entry<SymbolicAddress, Set<SuperGraphEdge>>> getRefAccesses(Segment segment) {
 			
 			return accessEdges(segment, refAccessSets).entrySet();
 		}
@@ -290,7 +297,7 @@ public class ObjectRefAnalysis {
 		 * @param segment
 		 * @return
 		 */
-		public Set<Entry<SymbolicAddress, List<SuperGraphEdge>>> getBlockAccesses(
+		public Set<Entry<SymbolicAddress, Set<SuperGraphEdge>>> getBlockAccesses(
 				Segment segment) {
 
 			return accessEdges(segment, blockAccessSets).entrySet();
@@ -301,15 +308,14 @@ public class ObjectRefAnalysis {
 		 * @param acccessSet
 		 * @return
 		 */
-		private Map<SymbolicAddress, List<SuperGraphEdge>> accessEdges(
+		private Map<SymbolicAddress, Set<SuperGraphEdge>> accessEdges(
 				Segment segment, HashMap<SymbolicAddress, Map<SuperGraphNode, Integer>> accessSet) {
 
-			Map<SymbolicAddress, List<SuperGraphEdge>> accessesByAddress = 
-					new HashMap<SymbolicAddress, List<SuperGraphEdge>>();
-			ArrayList<SuperGraphEdge> accessEdges;
+			Map<SymbolicAddress, Set<SuperGraphEdge>> accessesByAddress = 
+					new HashMap<SymbolicAddress, Set<SuperGraphEdge>>();
 			for(Entry<SymbolicAddress, Map<SuperGraphNode, Integer>> accesses : accessSet.entrySet()) {
 				
-				accessEdges = new ArrayList<SuperGraphEdge>();
+				Set<SuperGraphEdge> accessEdges = new HashSet<SuperGraphEdge>();
 				accessesByAddress.put(accesses.getKey(), accessEdges);
 				for( Entry<SuperGraphNode, Integer> access : accesses.getValue().entrySet()) {
 					Iterators.addAll(accessEdges, segment.incomingEdgesOf(access.getKey()));
@@ -318,6 +324,40 @@ public class ObjectRefAnalysis {
 			return accessesByAddress;
 		}
 
+		/**
+		 * Dump the information to the given stream
+		 * @param out a print stream for output
+		 */		
+		public void dump(PrintStream out, int indentAmount) {
+
+			String indent = (indentAmount>0?String.format("%"+indentAmount+"s",""):"");
+			out.println(indent+"Accessed References: ");
+			dumpAccessMap(out, indentAmount+2, refAccessSets);
+			out.println(indent+"Accessed Blocks: ");
+			dumpAccessMap(out, indentAmount+2, blockAccessSets);
+			out.println(indent+"Static Cost Map: ");
+			dumpCostMap(out, indentAmount+4,staticCostMap);
+			out.println(indent+"Bypass Cost Map: ");
+			dumpCostMap(out, indentAmount+4,bypassCostMap);
+		}
+
+		private void dumpCostMap(PrintStream out, int indentAmount, Map<SuperGraphNode, Long> costMap) {
+			for(Entry<SuperGraphNode, Long> costEntry : costMap.entrySet()) {
+				if(costEntry.getValue() == 0) continue;
+				out.printf("%"+indentAmount+"s%-40s: %d", "", costEntry.getKey(), costEntry.getValue());
+			}
+		}
+
+		private void dumpAccessMap(PrintStream out, int indentAmount,
+				HashMap<SymbolicAddress, Map<SuperGraphNode, Integer>> accessMap) {
+			for(Entry<SymbolicAddress, Map<SuperGraphNode, Integer>> entry : accessMap.entrySet()) {
+				out.printf("%"+indentAmount+"s%-30s:", "", entry.getKey());
+				for(Entry<SuperGraphNode, Integer> node : entry.getValue().entrySet()) {
+					out.printf(" %s [%d]",node.getKey(), node.getValue());
+				}
+				out.println();
+			}			
+		}
 
 	}
 
@@ -493,9 +533,10 @@ public class ObjectRefAnalysis {
 	}
 
 	/**
-	 * Compute object cache cost for the given segment
+	 * Compute object cache cost for the given persistence segment
 	 * @param segment the segment to consider
-	 * @param usedRefs the results from the DFA analysis
+	 * @param usedRefs DFA result: the set of objects a reference might point to during one execution
+	 *        of the segment
 	 * @param costModel The object cost model to use
 	 * @param usedSetOut <b>out</b> set of all symbolic objects names in the segment (pass in empty set)
 	 * @return the object cache cost for the specified segment
@@ -508,14 +549,25 @@ public class ObjectRefAnalysis {
 								  HashSet<SymbolicAddress> usedSetOut)
 										  throws InvalidFlowFactException, LpSolveException {
 
-		AccessCostInfo accessCostInfo = extractAccessesAndCosts(segment, usedRefs, costModel);
+		final AccessCostInfo accessCostInfo = extractAccessesAndCosts(segment, usedRefs, costModel);
 
 		/* create an ILP graph for all reachable methods */
-		String key = KEY+segment.toString();
+		String key = GlobalAnalysis.formatProblemName(KEY, segment.getEntryMethods().toString());
 		
 		IPETSolver<SuperGraphEdge> ipetSolver = GlobalAnalysis.buildIpetProblem(project, key, segment, new IPETConfig(project.getConfig()));
 
-		/* We have to add miss edges for each incoming edge of the node, which are constrained by the corresponding supergraph edge frequency */
+		/* cache cost edges (bypass/always miss) */
+		@SuppressWarnings("unused")
+		Set<SuperGraphEdge> staticCostEdges =
+			   CachePersistenceAnalysis.addFixedCostEdges(segment.getEdges(), ipetSolver, new MiscUtils.F1<SuperGraphEdge, Long>() {
+				@Override
+				public Long apply(SuperGraphEdge v) {
+					return accessCostInfo.getStaticCost(v.getTarget());
+				}
+			   }, KEY+"_static", 0);
+					   
+		
+		/* cache cost edges (miss once) */
 		
 		/* for references */
 		Set<SuperGraphEdge> refMissEdges = 
@@ -594,6 +646,10 @@ public class ObjectRefAnalysis {
 			aci.putBypassCost(node, bypassCost);
 			aci.putStaticCost(node, bypassCost + alwaysMissCost);
 		}
+		/*
+		System.out.println("Access/Cost Info for "+segment);
+		aci.dump(System.out, 2);
+		*/
 		return aci;
 	}
 
@@ -669,9 +725,9 @@ public class ObjectRefAnalysis {
 		totalMissCost += costModel.getLoadCacheBlockCost() * totalBlockMisses;
 		missCount += totalBlockMisses;
 
-		if(totalMissCost != lpCost - totalBypassCost) {
-			throw new AssertionError(
-					String.format("Error in calculating missCost in all fit-area (misscount = %d): %d but should be %d (%d - %d)",
+		if(totalMissCost + totalBypassCost != lpCost) {
+			
+			WCETTool.logger.warn(String.format("Error in calculating missCost in all fit-area (misscount = %d): %d but should be %d (%d - %d)",
 							missCount, totalMissCost,lpCost-totalBypassCost,lpCost,totalBypassCost));
 		}
 
@@ -716,7 +772,12 @@ public class ObjectRefAnalysis {
 		Instruction instr = ih.getInstruction();
 		if(instr instanceof FieldInstruction) {
 			FieldInstruction fieldInstr = (FieldInstruction) instr;
-			String klassName = fieldInstr.getClassName(constPool);
+			ReferenceType refType = fieldInstr.getReferenceType(constPool);
+			if(!(refType instanceof ObjectType)) {
+				throw new RuntimeException("getFieldIndex(): Unsupported object kind: "+refType.getClass());
+			}
+			ObjectType objType = (ObjectType)refType;
+			String klassName = objType.getClassName();			
 			String fieldName = fieldInstr.getFieldName(constPool);
 			String fieldSig  = fieldInstr.getSignature(constPool);
 			return p.getLinkerInfo().getFieldIndex(klassName, fieldName+fieldSig);

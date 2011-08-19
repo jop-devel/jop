@@ -36,8 +36,8 @@ import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.cache.ObjectRefAnalysis.ObjectCacheCostModel;
 import com.jopdesign.wcet.ipet.CostProvider;
-import com.jopdesign.wcet.ipet.CostProvider.MapCostProvider;
 import com.jopdesign.wcet.ipet.IPETBuilder;
+import com.jopdesign.wcet.ipet.CostProvider.MapCostProvider;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import org.apache.bcel.generic.InstructionHandle;
 

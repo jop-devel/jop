@@ -74,27 +74,80 @@ import com.jopdesign.wcet.ipet.IPETUtils;
  */
 public abstract class CachePersistenceAnalysis<T> {
 
+	
 	/**
-	 * @param persistenceSegment
+	 * Add extra costs for all edges in segment. We use extra cost edges,
+	 * so that it easier to reconstruct the cache cost. For performance reasons,
+	 * we might consider just adding costs for the super graph edges themselves.
+	 * 
+	 * @param edges
 	 * @param ipetSolver
-	 * @param missEdgesOut
+	 * @param costModel 
+	 * @param key
+	 * @param tag
+	 * @return
 	 */
-	public static <T> Set<SuperGraphEdge> addPersistenceSegmentConstraints(
+	public static Set<SuperGraphEdge> addFixedCostEdges(Iterable<SuperGraphEdge> edges,
+			IPETSolver<SuperGraphEdge> ipetSolver, F1<SuperGraphEdge, Long> costModel,
+			Object key, Object tag) {
+
+		Set<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
+		for(SuperGraphEdge accessEdge: edges) {
+			long cost = costModel.apply(accessEdge);
+			if(cost != 0) {
+				missEdges.add(fixedAdditionalCostEdge(accessEdge, key, tag, cost, ipetSolver));
+			}
+		}
+		return missEdges;
+	}
+	
+	/**
+	 * Generate extra cost edge with fixed additional cost
+	 * @param accessEdge the corresponding flow edge (key-1)
+	 * @param key the access category (key-2)
+	 * @param tag the accessed tag    (key-3)
+	 * @param cost the extra cost when executing the edge
+	 * @param ipetSolver the ipet solver to operate on
+	 * @return
+	 */
+	public static SuperGraphEdge fixedAdditionalCostEdge(SuperGraphEdge accessEdge, Object key, Object tag, long cost,
+			IPETSolver<SuperGraphEdge> ipetSolver) {
+		
+		SuperGraphEdge missEdge = SuperGraphExtraCostEdge.generateExtraCostEdge(accessEdge, key, tag);
+		ipetSolver.addConstraint(IPETUtils.relativeBound(Iterators.singleton(missEdge), Iterators.singleton(accessEdge),1));	
+		ipetSolver.addEdgeCost(missEdge, cost);
+		return missEdge;
+	}
+	
+	/**
+	 * Add constraints for a persistence segment
+	 * @param <T> cache tag type
+	 * @param <C> access edge collection type
+	 * @param persistenceSegment
+	 * @param partition
+	 * @param ipetSolver
+	 * @param costModel
+	 * @param analysisKey
+	 * @return
+	 */
+	public static <T,C extends Iterable<SuperGraphEdge>>
+	  Set<SuperGraphEdge> addPersistenceSegmentConstraints(
+			  
 			Segment persistenceSegment,
-			Iterable<Entry<T, List<SuperGraphEdge>>> partition,
+			Iterable<Entry<T, C>> partition,
 			IPETSolver<SuperGraphEdge> ipetSolver,
 			F1<SuperGraphEdge,Long> costModel,
 			Object analysisKey) {
 		
 		HashSet<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
 		
-		for(Entry<T, List<SuperGraphEdge>> accessed : partition) {
+		for(Entry<T, C> accessed : partition) {
 			
 			List<SuperGraphEdge> missOnceEdges = new ArrayList<SuperGraphEdge>();
 			for(SuperGraphEdge accessEdge : accessed.getValue()) {
 
 				long cost = costModel.apply(accessEdge);
-				SuperGraphEdge missEdge = SuperGraphSplitEdge.generateSplitEdges(accessEdge, analysisKey, 1).iterator().next();
+				SuperGraphEdge missEdge = SuperGraphExtraCostEdge.generateExtraCostEdge(accessEdge, analysisKey, accessed.getKey());
 				ipetSolver.addConstraint(IPETUtils.relativeBound(Iterators.singleton(missEdge), Iterators.singleton(accessEdge), 1));	
 				ipetSolver.addEdgeCost(missEdge, cost);
 				missOnceEdges.add(missEdge);	
@@ -131,8 +184,10 @@ public abstract class CachePersistenceAnalysis<T> {
 		
         IPETConfig ipetConfig = new IPETConfig(wcetTool.getConfig());
 
+        String problemKey = GlobalAnalysis.formatProblemName(analysisKey, segment.getEntryMethods().toString());
+        
 		/* create an global IPET problem for the supergraph */
-		IPETSolver<SuperGraphEdge> ipetSolver = GlobalAnalysis.buildIpetProblem(wcetTool, analysisKey, segment, ipetConfig);
+		IPETSolver<SuperGraphEdge> ipetSolver = GlobalAnalysis.buildIpetProblem(wcetTool, problemKey, segment, ipetConfig);
 		
 		/* add persistence constraints */
 		addPersistenceSegmentConstraints(segment, partition, ipetSolver, costModel, analysisKey);
@@ -142,6 +197,5 @@ public abstract class CachePersistenceAnalysis<T> {
 		long maxCacheCost = (long) (lpCost + 0.5);
 		return maxCacheCost;
 	}
-
 
 }

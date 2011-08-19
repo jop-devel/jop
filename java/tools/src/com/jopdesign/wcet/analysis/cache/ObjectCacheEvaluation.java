@@ -132,7 +132,6 @@ public class ObjectCacheEvaluation {
 			for(Entry<Integer, List<OCacheAnalysisResult>> entryConfig : partitionByConfig(samples).entrySet()) {
 				int config = entryConfig.getKey();				
 				/* Bar Plot for Blocksize=1 : Group By Line Size, Associtativity on X, CMC on Y */
-				boolean first = true;
 				out.println("# PLOT DATA for config= " + config +" with block size 1 ");
 				for(Entry<Integer, List<OCacheAnalysisResult>> entry : partitionByLineSize(entryConfig.getValue()).entrySet()) {
 					int lineSize = entry.getKey();

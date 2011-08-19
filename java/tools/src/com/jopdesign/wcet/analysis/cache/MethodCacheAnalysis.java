@@ -40,13 +40,11 @@ import com.jopdesign.common.code.SuperGraph.SuperInvokeEdge;
 import com.jopdesign.common.code.SuperGraph.SuperReturnEdge;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.Filter;
-import com.jopdesign.common.misc.Iterators;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.misc.MiscUtils.F1;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.InvalidFlowFactException;
 import com.jopdesign.wcet.ipet.IPETSolver;
-import com.jopdesign.wcet.ipet.IPETUtils;
 import com.jopdesign.wcet.jop.MethodCache;
 
 /**
@@ -245,16 +243,14 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
 	public Set<SuperGraphEdge> addMissAlwaysCost(
 			Segment segment,			
 			IPETSolver<SuperGraphEdge> ipetSolver) {
-		
-		Set<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
-		for(SuperGraphEdge accessEdge: collectCacheAccesses(segment)) {
+
+		Iterable<SuperGraphEdge> accessEdges = collectCacheAccesses(segment);
+		for(SuperGraphEdge accessEdge: accessEdges) {
 			if(! segment.includesEdge(accessEdge)) {
 				throw new AssertionError("Subsegment edge not in segment!: "+accessEdge);
-			} else {
-				missEdges.add(fixedAdditionalCostEdge(accessEdge, getMissCost(accessEdge), ipetSolver));
 			}
 		}
-		return missEdges;
+		return CachePersistenceAnalysis.addFixedCostEdges(accessEdges, ipetSolver, EDGE_MISS_COST, KEY+"_am",0);
 	}
 
 	/**
@@ -268,31 +264,23 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
 			IPETSolver<SuperGraphEdge> ipetSolver) throws InvalidFlowFactException, LpSolveException {
 
 		Set<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
-
+		int tag = 0;
+		
 		for(Segment persistenceSegment : findPersistenceSegmentCover(segment, true)) {
-			
+
+			tag++;
 			/* Collect all cache accesses */
 			long cost = computeMissOnceCost(persistenceSegment, getCacheAccessesByTag(persistenceSegment).entrySet(), 
 					EDGE_MISS_COST, true, KEY, wcetTool);
-			System.err.println("miss once cost for segment: "+persistenceSegment+": "+cost);
-			for(SuperGraphEdge entryEdge : persistenceSegment.getEntryEdges()) {
-				if(! persistenceSegment.includesEdge(entryEdge)) {
-					throw new AssertionError("Subsegment edge not in segment!: "+entryEdge);
-				} else {
-					missEdges.add(fixedAdditionalCostEdge(entryEdge, cost, ipetSolver));
-				}
-			}
+			WCETTool.logger.debug("miss once cost for segment: "+persistenceSegment+": "+cost);
+
+			F1<SuperGraphEdge, Long> costModel = MiscUtils.const1(cost);			
+			Set<SuperGraphEdge> costEdges = CachePersistenceAnalysis.addFixedCostEdges(persistenceSegment.getEntryEdges(), ipetSolver,
+					costModel, KEY + "_miss_once", tag);
+			missEdges.addAll(costEdges);
+			
 		}
 		return missEdges;
-	}
-
-	private SuperGraphEdge fixedAdditionalCostEdge(SuperGraphEdge accessEdge,
-			long cost, IPETSolver<SuperGraphEdge> ipetSolver) {
-		
-		SuperGraphEdge missEdge = SuperGraphSplitEdge.generateSplitEdges(accessEdge, this.getClass(), 1).iterator().next();
-		ipetSolver.addConstraint(IPETUtils.relativeBound(Iterators.singleton(missEdge), Iterators.singleton(accessEdge),1));	
-		ipetSolver.addEdgeCost(missEdge, cost);
-		return missEdge;
 	}
 
 	/**

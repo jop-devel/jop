@@ -231,7 +231,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 			if(oldValue == null) oldValue = 0;
 			methodMNDs.put(methodInvoked, Math.max(oldValue, maxCaller));
 		}
-		if(config.debug) MiscUtils.printMap(System.out, methodMNDs,30);
+		if(config.debug) MiscUtils.printMap(System.out, methodMNDs,30,0);
 	}
 	
 	private void computeCallSiteIDs() {
