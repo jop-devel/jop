@@ -25,6 +25,7 @@ import java.util.TreeMap;
 import java.util.Vector;
 
 import com.jopdesign.timing.InstructionInfo;
+import com.jopdesign.timing.MethodCacheTiming;
 import com.jopdesign.timing.TimingTable;
 import com.jopdesign.timing.jop.MicrocodeAnalysis.MicrocodeVerificationException;
 
@@ -32,10 +33,10 @@ import com.jopdesign.timing.jop.MicrocodeAnalysis.MicrocodeVerificationException
  * Before generating the timing table do not forget to run e.g.
  * {@code make gen_mem -e ASM_SRC=jvm JVM_TYPE=USB @}
  */
-public abstract class JOPTimingTable extends TimingTable<JOPInstructionInfo> {
+public abstract class JOPTimingTable extends TimingTable<JOPInstructionInfo> implements MethodCacheTiming {
 
 	protected MicropathTable micropathTable;
-	protected HashSet<Integer> bytecodeAccessInstructions = new HashSet<Integer>();
+	protected HashSet<Short> bytecodeAccessInstructions = new HashSet<Short>();
 	protected int readWaitStates;
 	protected int writeWaitStates;
 	protected TreeMap<Integer, MicrocodeVerificationException> analysisErrors;
@@ -55,7 +56,7 @@ public abstract class JOPTimingTable extends TimingTable<JOPInstructionInfo> {
 		analysisErrors = new TreeMap<Integer,MicrocodeVerificationException>(mpt.getAnalysisErrors());
 		this.readWaitStates = this.writeWaitStates = -1; // not configured
 
-		for(int i = 0; i < 256; i++) {
+		for(short i = 0; i < 256; i++) {
 			if(mpt.hasTiming(i) && mpt.hasBytecodeLoad(i)) {
 				this.bytecodeAccessInstructions.add(i);
 			}
@@ -95,20 +96,32 @@ public abstract class JOPTimingTable extends TimingTable<JOPInstructionInfo> {
 		return false;
 	}
 
-	/** FIXME: This is not the optimal way to compute cache penalties.
-	 *  It should be sound, though.
+	/*
+	 * (non-Javadoc)
+	 * @see com.jopdesign.timing.MethodCacheTiming#getMethodCacheMissPenalty(int, boolean)
 	 */
+	@Override
 	public long getMethodCacheMissPenalty(int words, boolean loadOnInvoke) {
 		long maxDiff = Long.MIN_VALUE;
-		for(int opcode : bytecodeAccessInstructions) {
+		for(short opcode : bytecodeAccessInstructions) {
 			if(loadOnInvoke && InstructionInfo.isReturnOpcode(opcode)) continue;
-			long onHit = getCycles(opcode,true,words);
-			long onMiss = getCycles(opcode,false,words);
-			long diff = onMiss - onHit;
-			if(diff < 0) throw new AssertionError("Miss is cheaper than hit ? - Not on JOP !");
+			long diff = getMethodCacheMissPenalty(words, opcode); 
 			maxDiff = Math.max(diff, maxDiff);
 		}
 		return maxDiff;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.jopdesign.timing.MethodCacheTiming#getMethodCacheMissPenalty(int, short)
+	 */
+	@Override
+	public long getMethodCacheMissPenalty(int words, short opcode) {
+
+		long onHit = getCycles(opcode,true,words);
+		long onMiss = getCycles(opcode,false,words);
+		long diff = onMiss - onHit;
+		if(diff < 0) throw new AssertionError("Miss is cheaper than hit ? - Not on JOP !");
+		return diff;
 	}
 
 }
