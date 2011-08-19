@@ -52,7 +52,6 @@ public class CrankshaftClock extends Clock implements Runnable {
 		now += 10;
 		if (nextTime-now < 0 && cback!=null) {
 			cback.atTime(this);
-			System.out.println("call back");
 		}
 	}
 	

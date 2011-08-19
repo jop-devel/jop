@@ -69,21 +69,22 @@ public class CrankShaft extends Mission implements Safelet {
 		clock = new CrankshaftClock();
 		// the clock is also an interrupt handler
 		JVMHelp.addInterruptHandler(1, clock);
+		
 		// a helper handler to trigger the SW interrupt
 		// and simulate an external interrupt source
-		PeriodicEventHandler helper = new PeriodicEventHandler(
-				new PriorityParameters(12), new PeriodicParameters(
-						new RelativeTime(0, 0), new RelativeTime(100, 0)),
-				new StorageParameters(10000, 1000, 1000)) {
-
-			SysDevice sys = IOFactory.getFactory().getSysDevice();
-
-			public void handleAsyncEvent() {
-				// generate a SW interrupt
-				sys.intNr = 1;
-			}
-		};
-		helper.register();
+//		PeriodicEventHandler helper = new PeriodicEventHandler(
+//				new PriorityParameters(12), new PeriodicParameters(
+//						new RelativeTime(0, 0), new RelativeTime(100, 0)),
+//				new StorageParameters(10000, 1000, 1000)) {
+//
+//			SysDevice sys = IOFactory.getFactory().getSysDevice();
+//
+//			public void handleAsyncEvent() {
+//				// generate a SW interrupt
+//				sys.intNr = 1;
+//			}
+//		};
+//		helper.register();
 
 
 		// A PEH that reads out the standard clock and the crankshaft clock
@@ -152,6 +153,16 @@ public class CrankShaft extends Mission implements Safelet {
 		Terminal.getTerminal().writeln("The crankshaft example with an active clock.");
 		single = new CrankShaft();
 		JopSystem.startMission(single);
+		// Simulate the crankshaft interrupt in this main thread
+		SysDevice sys = IOFactory.getFactory().getSysDevice();
+		long time = System.currentTimeMillis()+100;
+		for (;;) {
+			if (time - System.currentTimeMillis() < 0) {
+				time += 100;
+				// generte a SW interrupt
+				sys.intNr = 1;
+			}
+		}
 	}
 
 }

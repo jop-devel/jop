@@ -443,6 +443,8 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		if (udclockPeriod!=null) {
 			s.next[nr] = s.next[nr] + (int) udclockPeriod.getTicks();
 			tmp.setTicks(s.next[nr]);
+			// but it should be checked if an earlier callback is
+			// already registered
 			udclockPeriod.getClock().registerCallBack(tmp, s.clockEvent);
 		} else {
 			now = Native.rd(Const.IO_US_CNT);
