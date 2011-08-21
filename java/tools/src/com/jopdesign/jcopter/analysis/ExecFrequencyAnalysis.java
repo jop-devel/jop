@@ -54,7 +54,7 @@ import java.util.Set;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class ExecCountAnalysis extends ExecCountProvider {
+public class ExecFrequencyAnalysis extends ExecFrequencyProvider {
 
     private class InlineEdgeProvider implements EdgeProvider<ExecutionContext,ContextEdge> {
 
@@ -85,7 +85,7 @@ public class ExecCountAnalysis extends ExecCountProvider {
         }
     }
 
-    private static final Logger logger = Logger.getLogger(JCopter.LOG_ANALYSIS+".ExecCountAnalysis");
+    private static final Logger logger = Logger.getLogger(JCopter.LOG_ANALYSIS+".ExecFrequencyAnalysis");
 
     private static final int DEFAULT_ACET_LOOP_BOUND = 10;
 
@@ -101,7 +101,7 @@ public class ExecCountAnalysis extends ExecCountProvider {
     // Construction, initialization
     ////////////////////////////////////////////////////////////////////////////////////
 
-    public ExecCountAnalysis(AnalysisManager analyses, Map<ExecutionContext, Long> roots) {
+    public ExecFrequencyAnalysis(AnalysisManager analyses, Map<ExecutionContext, Long> roots) {
         this.analyses = analyses;
         this.roots = new HashMap<ExecutionContext, Long>(roots);
         callGraph = AppInfo.getSingleton().getCallGraph();
@@ -109,7 +109,7 @@ public class ExecCountAnalysis extends ExecCountProvider {
         changeSet = new HashSet<MethodInfo>(1);
     }
 
-    public ExecCountAnalysis(AnalysisManager analyses, CallGraph callGraph) {
+    public ExecFrequencyAnalysis(AnalysisManager analyses, CallGraph callGraph) {
         this.analyses = analyses;
         this.callGraph = callGraph;
         nodeCount =  new HashMap<ExecutionContext, Long>();
@@ -225,7 +225,7 @@ public class ExecCountAnalysis extends ExecCountProvider {
     }
 
     /**
-     * Update the execution counts after inlining.
+     * Update the execution frequencies after inlining.
      * This must be called after the underlying callgraph has been updated!
      *
      * @param invokeSite the inlined invokesite.
@@ -252,8 +252,8 @@ public class ExecCountAnalysis extends ExecCountProvider {
             }
         }
 
-        // update exec counts for all new nodes. A node is new if it contains one of the new invoke sites
-        // We do not need to remove exec counts, since all nodes containing the old invokesite are now no
+        // update exec frequencies for all new nodes. A node is new if it contains one of the new invoke sites
+        // We do not need to remove exec frequencies, since all nodes containing the old invokesite are now no
         // longer in the callgraph. We could however remove those nodes from our data structures in a
         // separate step before the callgraph is updated.
 
@@ -283,7 +283,7 @@ public class ExecCountAnalysis extends ExecCountProvider {
         nodeCount.put(node, val);
     }
 
-    private void updateExecCounts(DirectedGraph<ExecutionContext,ContextEdge> dag) {
+    private void updateExecCounts(DirectedGraph<ExecutionContext, ContextEdge> dag) {
 
         // For now, we just require the graph to be a DAG.
 

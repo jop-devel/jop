@@ -31,7 +31,7 @@ import com.jopdesign.common.graphutils.DFSTraverser.EmptyDFSVisitor;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
-import com.jopdesign.jcopter.analysis.ExecCountProvider;
+import com.jopdesign.jcopter.analysis.ExecFrequencyProvider;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
@@ -107,7 +107,7 @@ public abstract class RebateSelector implements CandidateSelector {
                     // same method, use candidate as tie-breaker
                     return candidate.hashCode() < o.getCandidate().hashCode() ? -1 : 1;
                 }
-                return order < o.getOrder() ? -1 : 1;
+                return order > o.getOrder() ? -1 : 1;
             }
             return ratio < o.getRatio() ? -1 : 1;
         }
@@ -269,7 +269,7 @@ public abstract class RebateSelector implements CandidateSelector {
     }
 
     @Override
-    public void updateCandidates(MethodInfo method, ExecCountProvider ecp, StacksizeAnalysis stacksizeAnalysis) {
+    public void updateCandidates(MethodInfo method, ExecFrequencyProvider ecp, StacksizeAnalysis stacksizeAnalysis) {
         MethodData data = methodData.get(method);
         if (data == null) return;
 
@@ -288,7 +288,7 @@ public abstract class RebateSelector implements CandidateSelector {
     }
 
     @Override
-    public void sortCandidates(ExecCountProvider ecp, Set<MethodInfo> changedMethods) {
+    public void sortCandidates(ExecFrequencyProvider ecp, Set<MethodInfo> changedMethods) {
 
         for (MethodInfo method : changedMethods) {
             MethodData data = methodData.get(method);
@@ -322,7 +322,7 @@ public abstract class RebateSelector implements CandidateSelector {
         return true;
     }
 
-    protected RebateRatio createRatio(GainCalculator gc, ExecCountProvider ecp, Candidate candidate, long gain) {
+    protected RebateRatio createRatio(GainCalculator gc, ExecFrequencyProvider ecp, Candidate candidate, long gain) {
         float codesize = getDeltaGlobalCodesize(candidate);
 
         float ratio;
@@ -336,7 +336,7 @@ public abstract class RebateSelector implements CandidateSelector {
         return new RebateRatio(candidate, gain, ratio);
     }
 
-    protected void logSelection(ExecCountProvider ecp, RebateRatio ratio) {
+    protected void logSelection(ExecFrequencyProvider ecp, RebateRatio ratio) {
         if (ratio == null) return;
         logger.info("Selected ratio " + ratio.getRatio() + ", gain " + ratio.getGain() +
                     " local " + ratio.getCandidate().getLocalGain() +
@@ -363,6 +363,6 @@ public abstract class RebateSelector implements CandidateSelector {
 
     protected abstract void onRemoveMethodData(MethodData data);
 
-    protected abstract void sortMethodData(ExecCountProvider ecp, MethodData data);
+    protected abstract void sortMethodData(ExecFrequencyProvider ecp, MethodData data);
 
 }

@@ -149,7 +149,7 @@ public class MethodCacheAnalysis {
         return cache.allFit(blocks);
     }
 
-    public long getInvokeReturnCacheCosts(ExecCountProvider ecp, InvokeSite invokeSite) {
+    public long getInvokeReturnCacheCosts(ExecFrequencyProvider ecp, InvokeSite invokeSite) {
         if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
 
         AppInfo appInfo = AppInfo.getSingleton();
@@ -176,7 +176,7 @@ public class MethodCacheAnalysis {
      * @param returnCacheCosts additional cycles for a single cache miss on return
      * @return the number of cache miss cycles for all executions of the invoke
      */
-    public long getInvokeReturnCacheCosts(ExecCountProvider ecp, InvokeSite invokeSite,
+    public long getInvokeReturnCacheCosts(ExecFrequencyProvider ecp, InvokeSite invokeSite,
                                          long invokeCacheCosts, long returnCacheCosts)
     {
         if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
@@ -198,7 +198,7 @@ public class MethodCacheAnalysis {
         return misses * (invokeCacheCosts + returnCacheCosts);
     }
 
-    public long getInvokeMissCount(ExecCountProvider ecp, InvokeSite invokeSite, MethodInfo invokee) {
+    public long getInvokeMissCount(ExecFrequencyProvider ecp, InvokeSite invokeSite, MethodInfo invokee) {
         if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
         if (analysisType == AnalysisType.ALWAYS_MISS || !allFit(invokeSite.getInvoker())) {
             // outside all-fit, every invoke is a miss
@@ -210,7 +210,7 @@ public class MethodCacheAnalysis {
         return getPersistentMisses(ecp, callGraph.getNodes(invokeSite.getInvoker()));
     }
 
-    public long getInvokeMissCount(ExecCountProvider ecp, MethodInfo invokee) {
+    public long getInvokeMissCount(ExecFrequencyProvider ecp, MethodInfo invokee) {
         long count = 0;
 
         // get all invoke sites of the invokee
@@ -227,7 +227,7 @@ public class MethodCacheAnalysis {
      *        The cache missese are calculated only for the executions with the given context.
      * @return the total cache misses for all returns to the given method
      */
-    public long getReturnMissCount(ExecCountProvider ecp, ExecutionContext context) {
+    public long getReturnMissCount(ExecFrequencyProvider ecp, ExecutionContext context) {
         if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
         if (analysisType == AnalysisType.ALWAYS_MISS || !allFit(context.getMethodInfo())) {
             // outside all-fit, every invoke returns with a miss
@@ -244,7 +244,7 @@ public class MethodCacheAnalysis {
         return getPersistentMisses(ecp, Collections.singleton(context));
     }
 
-    public long getReturnMissCount(ExecCountProvider ecp, CodeModification modification) {
+    public long getReturnMissCount(ExecFrequencyProvider ecp, CodeModification modification) {
         if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
         if (analysisType == AnalysisType.ALWAYS_MISS || !allFit(modification.getMethod())) {
             // outside all-fit, every invoke returns with a miss
@@ -272,7 +272,7 @@ public class MethodCacheAnalysis {
      * @param modification the modifications which will be done
      * @return the number of cache miss cycles due to the code size change, excluding the effects on the modified code
      */
-    public long getDeltaCacheMissCosts(ExecCountProvider ecp, CodeModification modification) {
+    public long getDeltaCacheMissCosts(ExecFrequencyProvider ecp, CodeModification modification) {
         if (analysisType == AnalysisType.ALWAYS_HIT) return 0;
 
         int deltaBytes = modification.getDeltaLocalCodesize();
@@ -306,7 +306,7 @@ public class MethodCacheAnalysis {
         return costs;
     }
 
-    private long getAllFitChangeCosts(ExecCountProvider ecp, CodeModification modification, int deltaBlocks)
+    private long getAllFitChangeCosts(ExecFrequencyProvider ecp, CodeModification modification, int deltaBlocks)
     {
         if (analysisType == AnalysisType.ALWAYS_HIT || analysisType == AnalysisType.ALWAYS_MISS) {
             return 0;
@@ -416,7 +416,7 @@ public class MethodCacheAnalysis {
      * @return all methods for which the cache costs of the contained invoke sites changed, either due to classification
      *         changes or due to execution count changes.
      */
-    public Set<MethodInfo> getMissCountChangeSet(ExecCountProvider ecp) {
+    public Set<MethodInfo> getMissCountChangeSet(ExecFrequencyProvider ecp) {
         if (analysisType == AnalysisType.ALWAYS_HIT) return Collections.emptySet();
 
         Set<MethodInfo> countChanges = new HashSet<MethodInfo>(classifyChanges);
@@ -761,7 +761,7 @@ public class MethodCacheAnalysis {
         return border;
     }
 
-    private long getPersistentMisses(ExecCountProvider ecp, Collection<ExecutionContext> nodes) {
+    private long getPersistentMisses(ExecFrequencyProvider ecp, Collection<ExecutionContext> nodes) {
         long count = 0;
 
         for (ExecutionContext border : findAllFitBorder(nodes)) {

@@ -722,6 +722,7 @@ public class MethodCode {
             } else {
                 instr = currSource.getInstruction();
             }
+            // TODO support branch instructions! need to replace the IH too
             current.setInstruction(instr);
 
             if (copyCustomValues) {

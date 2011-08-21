@@ -30,11 +30,11 @@ import java.util.Set;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class LocalExecCountProvider extends ExecCountProvider {
+public class LocalExecFrequencyProvider extends ExecFrequencyProvider {
 
-    private final ExecCountProvider ecp;
+    private final ExecFrequencyProvider ecp;
 
-    public LocalExecCountProvider(ExecCountProvider ecp) {
+    public LocalExecFrequencyProvider(ExecFrequencyProvider ecp) {
         this.ecp = ecp;
     }
 

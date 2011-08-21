@@ -27,8 +27,8 @@ import com.jopdesign.common.code.CallGraph.MethodNode;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
-import com.jopdesign.jcopter.analysis.ExecCountProvider;
-import com.jopdesign.jcopter.analysis.LocalExecCountProvider;
+import com.jopdesign.jcopter.analysis.ExecFrequencyProvider;
+import com.jopdesign.jcopter.analysis.LocalExecFrequencyProvider;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import com.jopdesign.jcopter.greedy.GreedyConfig.GreedyOrder;
 import org.apache.log4j.Logger;
@@ -104,9 +104,9 @@ public class GreedyOptimizer {
 
         if (order != GreedyOrder.WCAFirst) {
             // TODO for now we require that for this to work the target must be the WCA root
-            //      for this to work the WCAInvoker would need to use the ExecCountAnalysis to
+            //      for this to work the WCAInvoker would need to use the ExecFrequencyAnalysis to
             //      multiply its results with the number of executions of the target-method for all
-            //      WCA methods and use the ExecCountAnalysis for everything else. Changesets must be
+            //      WCA methods and use the ExecFrequencyAnalysis for everything else. Changesets must be
             //      updated as well.
             if (!config.getTargetMethodSet().equals(config.getWCATargetSet())) {
                 logger.warn("Using the WCA for exec frequencies is currently only supported if order is WCAFirst "+
@@ -135,10 +135,10 @@ public class GreedyOptimizer {
 
         selector.initialize();
 
-        ExecCountProvider ecp = useWCAProvider ? analyses.getWCAInvoker() : analyses.getExecCountAnalysis();
+        ExecFrequencyProvider ecp = useWCAProvider ? analyses.getWCAInvoker() : analyses.getExecFrequencyAnalysis();
 
         if (config.useLocalExecCount()) {
-            ecp = new LocalExecCountProvider(ecp);
+            ecp = new LocalExecFrequencyProvider(ecp);
         }
 
         // dump initial callgraph
@@ -176,9 +176,9 @@ public class GreedyOptimizer {
             selector = new ACETRebateSelector(analyses, new GainCalculator(analyses), config.getMaxCodesize());
             selector.initialize();
 
-            ecp = analyses.getExecCountAnalysis();
+            ecp = analyses.getExecFrequencyAnalysis();
             if (config.useLocalExecCount()) {
-                ecp = new LocalExecCountProvider(ecp);
+                ecp = new LocalExecFrequencyProvider(ecp);
             }
 
             optimizeMethods(analyses, ecp, selector, others);
@@ -239,7 +239,7 @@ public class GreedyOptimizer {
     }
 
 
-    private void optimizeMethods(AnalysisManager analyses, ExecCountProvider ecp,
+    private void optimizeMethods(AnalysisManager analyses, ExecFrequencyProvider ecp,
                                  CandidateSelector selector, Set<MethodInfo> methods)
     {
         Map<MethodInfo,MethodData> methodData = new HashMap<MethodInfo, MethodData>(methods.size());
