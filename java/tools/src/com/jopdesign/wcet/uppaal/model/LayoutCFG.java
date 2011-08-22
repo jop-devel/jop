@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.Vector;
 
 /* BROKEN */
 public class LayoutCFG {

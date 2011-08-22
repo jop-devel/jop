@@ -28,6 +28,7 @@ import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
+import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.ipet.CostProvider;
 import com.jopdesign.wcet.ipet.IPETBuilder;
 import com.jopdesign.wcet.ipet.IPETConfig;
@@ -296,7 +297,9 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		Map<String,Object> stats = new HashMap<String, Object>();
 		stats.put("WCET",sol.getCost());
 		stats.put("mode",key.ctx);
-		stats.put("all-methods-fit-in-cache", getWCETTool().getWCETProcessorModel().getMethodCache().allFit(m,null));
+		MethodCacheAnalysis mca = new MethodCacheAnalysis(getWCETTool());
+		stats.put("all-methods-fit-in-cache", mca.isPersistenceRegion(getWCETTool(), m, 
+				key.ctx.getCallString(), MethodCacheAnalysis.CHECK_COUNT_PRECISE));
 		getWCETTool().getReport().addDetailedReport(m,"WCET_"+key.ctx.toString(),stats,nodeFlowCostDescrs,sol.getEdgeFlow());
 	}
 

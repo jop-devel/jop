@@ -19,61 +19,32 @@
  */
 package com.jopdesign.wcet;
 
-import com.jopdesign.common.code.BasicBlock;
-import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.common.code.InvokeSite;
-import com.jopdesign.wcet.jop.MethodCache;
 import org.apache.bcel.generic.InstructionHandle;
+
+import com.jopdesign.common.code.BasicBlock;
+import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.wcet.jop.MethodCache;
 
 public interface WCETProcessorModel {
 
 	/** A human readable name of the Processor Model */
     String getName();
 
+    /** get execution time for the instruction handle in the given execution context (callstring+method)*/
 	long getExecutionTime(ExecutionContext context, InstructionHandle i);
 
+	/** get execution time for the basic block in the given execution context */
 	long basicBlockWCET(ExecutionContext context, BasicBlock codeBlock);
 
+	/**
+	 * @return whether there is a method cache.
+	 */
 	boolean hasMethodCache();
 
 	/**
-	 * return method cache, or NoMethodCache if the processor does not have a method cache
-	 * @return
+	 * Get method cache model
+	 * @return the method cache
 	 */
     MethodCache getMethodCache();
-
-	/**
-	 * get the miss penalty (method cache)
-	 * FIXME: We have to rewrite this portion of the analyzer - hardcoding miss penalties
-	 * is to inflexible
-	 * @param numberOfWords ... size of the method
-	 * @param loadOnInvoke  ... whether the method is loaded on invoke
-	 * @return
-	 */
-    long getMethodCacheMissPenalty(int numberOfWords, boolean loadOnInvoke);
-
-	/**
-	 * FIXME: We have to rewrite this portion of the analyzer - hardcoding miss penalties
-	 * is to inflexible
-	 * @param invokerFlowGraph
-	 * @param receiverFlowGraph
-	 * @return
-	 */
-    long getInvokeReturnMissCost(ControlFlowGraph invokerFlowGraph, ControlFlowGraph receiverFlowGraph);
-
-    /**
-     * @param invokeSite invoke site
-     * @param invokeeWords the size of the invokee in words
-     * @return the number of additional cycles required by the invoke if the invoke is a cache miss.
-     */
-    long getInvokeCacheMissPenalty(InvokeSite invokeSite, int invokeeWords);
-
-    /**
-     * @param invokeSite the invoke site to which the invokee returns
-     * @param invokerWords the size of the invoker in words
-     * @return the number of additional cycles required by the return in the invokee if the return is a cache miss.
-     */
-    long getReturnCacheMissPenalty(InvokeSite invokeSite, int invokerWords);
 
 }

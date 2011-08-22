@@ -91,6 +91,9 @@ public class Descriptor {
         return arguments;
     }
 
+    /**
+     * @return the return type
+     */
     public Type getType() {
         return type;
     }

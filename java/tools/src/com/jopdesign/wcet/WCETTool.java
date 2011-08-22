@@ -313,6 +313,12 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
     public Config getConfig() {
         return projectConfig.getConfig();
     }
+    
+	public int getCallstringLength() {
+
+		return appInfo.getCallstringLength();
+	}
+
 
     /**
      * Rebuild the WCET callgraph, starting at the target method.
@@ -321,6 +327,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
      * @return the new callgraph.
      */
     public CallGraph rebuildCallGraph() {
+    	
     	/* This would be the ideal solution, but this way the root
     	 * does NOT have an empty callstring
     	 */
@@ -331,7 +338,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
          * callstring, using the callstring length configured for the WCET tool (which is currently the same
          * as the global setting).
          */
-        DefaultCallgraphBuilder callGraphBuilder = new CFGCallgraphBuilder(projectConfig.callstringLength());
+        DefaultCallgraphBuilder callGraphBuilder = new CFGCallgraphBuilder(getCallstringLength());
         callGraphBuilder.setSkipNatives(true); // we do not want natives in the callgraph
         callGraph = CallGraph.buildCallGraph(getTargetMethod(), callGraphBuilder);
 
@@ -653,9 +660,8 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
     }
 
     public void dataflowAnalysis() {
-        int callstringLength = projectConfig.callstringLength();
 
-        // Moved DFA tool cache config to the DFA tool, but still ...
+    	// Moved DFA tool cache config to the DFA tool, but still ...
         // FIXME: At the moment, we do not have a nice directory structure respecting
         //        the fact that we perform many WCET analyses for one Application
 
@@ -663,10 +669,10 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         dfaTool.load();
         
         topLevelLogger.info("Receiver analysis");
-        dfaTool.runReceiverAnalysis(callstringLength);
+        dfaTool.runReceiverAnalysis(getCallstringLength());
 
         topLevelLogger.info("Loop bound analysis");
-        dfaTool.runLoopboundAnalysis(callstringLength);
+        dfaTool.runLoopboundAnalysis(getCallstringLength());
 
         this.hasDfaResults = true;
     }
@@ -749,5 +755,6 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         }
         return retval;
     }
+
 
 }

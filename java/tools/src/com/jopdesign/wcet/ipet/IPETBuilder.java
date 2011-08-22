@@ -22,7 +22,6 @@ package com.jopdesign.wcet.ipet;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.CallStringProvider;
 import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.common.code.SuperGraph.CallContext;
 import com.jopdesign.wcet.WCETTool;
 
 /**

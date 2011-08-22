@@ -132,7 +132,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 
 	public JavaOneProcessPerSupergraphTranslator(UppAalConfig c, WCETTool p,MethodInfo root) {
 		super(c, p, root);
-		this.superGraph =  new SuperGraph(project, project.getFlowGraph(root), p.getProjectConfig().callstringLength());
+		this.superGraph =  new SuperGraph(project, project.getFlowGraph(root), p.getCallstringLength());
 	}
 
 	@Override

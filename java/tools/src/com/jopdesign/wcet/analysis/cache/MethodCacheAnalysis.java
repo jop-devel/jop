@@ -23,14 +23,25 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+
+import org.apache.bcel.generic.InvokeInstruction;
+import org.apache.bcel.generic.Type;
+import org.apache.log4j.Logger;
 
 import lpsolve.LpSolveException;
 
+import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.code.Segment;
 import com.jopdesign.common.code.SuperGraph.ContextCFG;
 import com.jopdesign.common.code.SuperGraph.SuperEdge;
@@ -39,13 +50,18 @@ import com.jopdesign.common.code.SuperGraph.SuperGraphNode;
 import com.jopdesign.common.code.SuperGraph.SuperInvokeEdge;
 import com.jopdesign.common.code.SuperGraph.SuperReturnEdge;
 import com.jopdesign.common.graphutils.Pair;
+import com.jopdesign.common.misc.AppInfoException;
 import com.jopdesign.common.misc.Filter;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.misc.MiscUtils.F1;
 import com.jopdesign.wcet.WCETTool;
+import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.InvalidFlowFactException;
+import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETSolver;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.LinearConstraint;
+import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
 import com.jopdesign.wcet.jop.MethodCache;
 
 /**
@@ -57,6 +73,21 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
 
     private static final String KEY = MethodCacheAnalysis.class.getCanonicalName();
 
+    public static enum PersistenceCheck {
+        /** check persistence by counting the total number of distinct methods (cheap) */
+        CountTotal,
+        
+        /** check persistence by maximizing the number of distinct blocks accessed (LP relaxation)  */
+        CountRelaxed,
+        
+        /** check persistence by maximizing the number of distinct blocks accessed (LP relaxation)  */
+        CountILP 
+    	
+    };
+    
+    public static final EnumSet<PersistenceCheck> CHECK_COUNT_FAST    = EnumSet.of(PersistenceCheck.CountTotal);
+    public static final EnumSet<PersistenceCheck> CHECK_COUNT_PRECISE = EnumSet.allOf(PersistenceCheck.class);
+        
     protected final WCETTool wcetTool;
 	private MethodCache methodCache;
 
@@ -82,6 +113,11 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
         this.methodCache = wcetTool.getWCETProcessorModel().getMethodCache();        
     }
 
+	public MethodCache getMethodCache() {
+
+		return methodCache;
+	}
+
 	/**
 	 * Add method cache cost to ipet problem
 	 * @param segment
@@ -104,40 +140,57 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
 		}        	
 		return missEdges;
 	}
+	
+	public boolean isPersistenceRegion(WCETTool wcetTool, MethodInfo m, CallString cs, EnumSet<PersistenceCheck> tests) {
+
+		/* fast path for the optimizer (segments are still slow) */
+		if(tests == CHECK_COUNT_FAST) {
+			List<MethodInfo> methods = wcetTool.getCallGraph().getReachableImplementations(m, cs);
+	        long blocks = 0;
+			for (MethodInfo reachable : methods) {
+	        	blocks  += methodCache.requiredNumberOfBlocks(reachable);
+	        }
+	        return methodCache.allFit(blocks);
+		}
+		Segment segment = Segment.methodSegment(m, cs, wcetTool, wcetTool.getCallstringLength(), wcetTool);
+		return isPersistenceRegion(segment, tests);
+	}
 
 	/**
 	 * Perform a heuristic check whether in the given segment all methods are persistent
 	 * @param segment
+	 * @param tests which checks to perform
 	 * @return true if all methods are persistent in the method cache, false if not sure
 	 * @throws LpSolveException 
 	 * @throws InvalidFlowFactException 
 	 */
-	protected boolean isPersistenceRegionHeuristic(Segment segment)  {
+	public boolean isPersistenceRegion(Segment segment,  EnumSet<PersistenceCheck> tests)  {
 
 		int cacheBlocks = methodCache.getNumBlocks();
-		String technique = "count";
-		long usedBlocks = countTotalCacheBlocks(segment);
-		if(usedBlocks <= cacheBlocks) return true;
-		try {
-			technique = "Relaxed LP";
-			// usedBlocks = countDistinctCacheBlocks(segment, false);
-			if(usedBlocks <= cacheBlocks) return true;
-			if(usedBlocks >= cacheBlocks*2) return false;
-			technique = "ILP";
-			return countDistinctCacheBlocks(segment, true) <= cacheBlocks;
-		} catch (Exception e) {
-			WCETTool.logger.error("Count Distinct Cache Blocks: "+technique+" failed: "+e);
-			try {
-				File dumpFile = new File(wcetTool.getOutDir("segments"),"segment_"+(keygen++)+".dot");
-				WCETTool.logger.error("Count Distinct Cache Blocks failed, dumping segment to "+dumpFile+": "+e);
-				segment.exportDOT(dumpFile);
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-			return false;
+		long usedBlocks = cacheBlocks + 1;
+		if(tests.contains(PersistenceCheck.CountTotal)) {
+			usedBlocks = countTotalCacheBlocks(segment);
+			if(usedBlocks <= cacheBlocks) return true;			
 		}
+		if(tests.contains(PersistenceCheck.CountRelaxed)) {
+			try {
+				usedBlocks = countDistinctCacheBlocks(segment, false);
+				if(usedBlocks <= cacheBlocks) return true;
+				if(usedBlocks >= cacheBlocks*2) return false;
+			} catch(Exception ex) {
+				WCETTool.logger.error("Count Distinct Cache Blocks (Relaxed LP) failed: "+ex);				
+			}
+		}
+		if(tests.contains(PersistenceCheck.CountILP)) {
+			try {
+				usedBlocks = countDistinctCacheBlocks(segment, true);
+				if(usedBlocks <= cacheBlocks) return true;
+			} catch(Exception ex) {
+				WCETTool.logger.error("Count Distinct Cache Blocks (Relaxed LP) failed: "+ex);				
+			}
+		}
+		return false;
 	}
-    private static int keygen = 0;
    	
 	/**
 	 * Analyze the number of cache lines (ways) needed to guarantee that all methods
@@ -151,7 +204,7 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
 	public long countDistinctCacheBlocks(Segment segment, boolean useILP) throws InvalidFlowFactException, LpSolveException {
 		
 		return computeMissOnceCost(segment, getCacheAccessesByTag(segment).entrySet(), 
-					NUMBER_OF_BLOCKS, true, KEY, wcetTool);
+					NUMBER_OF_BLOCKS, useILP, KEY, wcetTool);
 	}
 
 	protected Map<MethodInfo, List<SuperGraphEdge>> getCacheAccessesByTag(Segment segment) {
@@ -232,7 +285,7 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
 		if(entryMethods.size() != 1) {
 			throw new AssertionError("findPersistenceSegmentCover: only supporting segments with unique entry method");
 		}
-		if(this.isPersistenceRegionHeuristic(segment)) {
+		if(this.isPersistenceRegion(segment, CHECK_COUNT_PRECISE)) {
 			// System.err.println("Adding cover segment for: "+entryMethods);
 			cover.add(segment);
 		} else {
@@ -343,19 +396,126 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
 
 
 	/**
-	 * @param accessEdge
-	 * @return
+	 * Get miss cost for an edge accessing the method cache
+	 * @param accessEdge either a SuperInvoke or SuperReturn edge, or an entry edge of the segment analyzed
+	 * @return maximum miss penalty (in cycles)
 	 */
 	private long getMissCost(SuperGraphEdge accessEdge) {
+		
 		SuperGraphNode accessed = accessEdge.getTarget();
+		ControlFlowGraph cfg = accessed.getCfg();
 		if(accessEdge instanceof SuperReturnEdge) {
 			/* return edge: return cost */
-			return methodCache.getMissOnReturnCost(accessed.getCfg());
+			Type returnType = accessEdge.getSource().getCfg().getMethodInfo().getType();
+			return methodCache.getMissPenaltyOnReturn(cfg.getNumberOfWords(), returnType);
+		} else if(accessEdge instanceof SuperInvokeEdge) {
+			InvokeInstruction invokeIns = ((SuperInvokeEdge) accessEdge).getInvokeNode().getInvokeSite().getInvokeInstruction();
+			return methodCache.getMissPenaltyOnInvoke(cfg.getNumberOfWords(), invokeIns);			
 		} else {
-			/* entry edge of the segment, or invoke edge: invoke cost */
-			return methodCache.getMissOnInvokeCost(accessed.getCfg());
+			/* entry edge of the segment: can be invoke or return cost */
+			return methodCache.getMissPenalty(cfg.getNumberOfWords(), false);
 		}
 	}
 
+	/* utility functions */
+
+	/**
+	 * Get the maximum method cache miss penalty for invoking {@code invoked} and returning to {@code invoker}.<br/>
+	 * Also works with virtual invokes (taking the maximum cost)
+	 * @param invokeSite the invoke site
+	 * @param context call context
+	 * @return miss penalty in cycles
+	 */
+	public long getInvokeReturnMissCost(InvokeSite invokeSite, CallString context) {
+
+		ControlFlowGraph invokerCfg = wcetTool.getFlowGraph(invokeSite.getInvoker());
+		long rMiss = methodCache.getMissPenaltyOnReturn(invokerCfg.getNumberOfWords(), invokeSite.getInvokeeRef().getDescriptor().getType());
+		long iMissMax = 0;
+		for(MethodInfo target : wcetTool.findImplementations(invokeSite.getInvoker(), invokeSite.getInstructionHandle(), context)) {
+			ControlFlowGraph invokedCfg = wcetTool.getFlowGraph(target);
+			long iMiss = methodCache.getMissPenaltyOnInvoke(invokedCfg.getNumberOfWords(), invokeSite.getInvokeInstruction());
+			if(iMiss > iMissMax) iMissMax = iMiss;
+		}
+		return iMissMax + rMiss;
+	}
+	
+    /**
+     * Check that cache is big enough to hold any method possibly invoked
+     * Return largest method
+     * TODO: move to method cache analysis
+     */
+    public static MethodInfo checkCache(WCETTool wcetTool, Iterable<MethodInfo> methods) throws AppInfoException {
+		MethodCache methodCache = wcetTool.getWCETProcessorModel().getMethodCache();
+        int maxWords = 0;
+        MethodInfo largestMethod = null;
+        // It is inconvenient for testing to take all methods into account
+        // for (ClassInfo ci : project.getAppInfo().getClassInfos()) {
+        for (MethodInfo mi : methods) {
+            MethodCode code = mi.getCode();
+            if (code == null) continue;
+            // FIXME: using getNumberOfBytes(false) here to be compatible to old behaviour.
+            //        should probably be getNumberOfBytes()
+            int size = code.getNumberOfBytes(false);
+            int words = MiscUtils.bytesToWords(size);
+            if (!methodCache.fitsInCache(words)) {
+                throw new AppInfoException("Cache to small for target method: " + mi.getFQMethodName() + " / " + words + " words");
+            }
+            if (words >= maxWords) {
+                largestMethod = mi;
+                maxWords = words;
+            }
+        }
+
+        return largestMethod;
+    }
+
+    /**
+     * Compute the maximal total cache-miss penalty for <strong>invoking and executing</strong>
+     * m.
+     * <p>
+     * Precondition: The set of all methods reachable from <code>m</code> fit into the cache
+     * </p><p>
+     * Algorithm: If all methods reachable from <code>m</code> (including <code>m</code>) fit
+     * into the cache, we can compute the WCET of <m> using the {@code ALWAYS_HIT} cache
+     * approximation, and then add the sum of cache miss penalties for every reachable method.
+     * </p><p>
+     * Note that when using this approximation, we attribute the
+     * total cache miss cost to the invocation of that method.
+     * </p><p>
+     * Explanation: We know that there is only one cache miss per method, but for FIFO caches we
+     * do not know when the cache miss will occur (on return or invoke), except for leaf methods.
+     * Let <code>h</code> be the number of cycles hidden by <strong>any</strong> return or
+     * invoke instructions. Then the cache miss penalty is bounded by <code>(b-h)</code> per
+     * method.
+     * </p>
+     * @param m The method invoked
+     * @return the cache miss penalty
+     * @deprecated ported from the old method cache analysis framework
+     */
+    @Deprecated
+    public long getMissOnceCummulativeCacheCost(MethodInfo m, boolean assumeOnInvoke) {
+        long miss = 0;
+        for (MethodInfo reachable : wcetTool.getCallGraph().getReachableImplementationsSet(m)) {
+            miss += getMissOnceCost(reachable, assumeOnInvoke);
+        }
+        Logger.getLogger(this.getClass()).debug("getMissOnceCummulativeCacheCost for " + m + "/" + (assumeOnInvoke ? "invoke" : "return") + ":" + miss);
+        return miss;
+    }
+
+	/**
+	 * @param mi the method info invoked
+	 * @param assumeOnInvoke whether we may assume the miss happens on invoke
+	 * @return miss penalty in cycles
+	 */
+	public long getMissOnceCost(MethodInfo mi, boolean assumeOnInvoke) {
+
+		int words = wcetTool.getFlowGraph(mi).getNumberOfWords();
+		long missCycles = methodCache.getMissPenalty(words, true);		
+		if(! assumeOnInvoke) {
+			long rMissCycles = methodCache.getMissPenalty(words, false);
+			missCycles = Math.max( missCycles, rMissCycles );
+		}
+		return missCycles;
+	}
 
 }

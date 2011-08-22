@@ -22,31 +22,24 @@ package com.jopdesign.wcet;
 import com.jopdesign.common.code.CallGraph.ContextEdge;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.dfa.analyses.SymbolicAddress;
 import com.jopdesign.wcet.analysis.InvalidFlowFactException;
-import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation.OCacheAnalysisResult;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation.OCacheMode;
 import com.jopdesign.wcet.analysis.cache.ObjectRefAnalysis;
-import com.jopdesign.wcet.ipet.LpSolveWrapper;
-import com.jopdesign.wcet.jop.MethodCache;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import lpsolve.LpSolveException;
-
-import static com.jopdesign.wcet.ExecHelper.timeDiff;
 
 public class ObjectCacheAnalysis {
 	/* generator for object cache timings */

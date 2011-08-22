@@ -21,9 +21,7 @@
 package com.jopdesign.wcet.ipet;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.Map.Entry;
 
 import com.jopdesign.common.code.CallString;
@@ -31,11 +29,9 @@ import com.jopdesign.common.code.CallStringProvider;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.LoopBound;
-import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.code.SymbolicMarker;
 import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
-import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
 import com.jopdesign.common.code.SymbolicMarker.SymbolicMarkerType;
 import com.jopdesign.common.graphutils.FlowGraph;
 import com.jopdesign.common.graphutils.LoopColoring;

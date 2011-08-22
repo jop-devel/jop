@@ -40,6 +40,8 @@ import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import com.jopdesign.jcopter.greedy.Candidate;
 import com.jopdesign.jcopter.greedy.CodeOptimizer;
 import com.jopdesign.wcet.WCETProcessorModel;
+import com.jopdesign.wcet.jop.MethodCache;
+
 import org.apache.bcel.generic.ASTORE;
 import org.apache.bcel.generic.ATHROW;
 import org.apache.bcel.generic.BranchInstruction;
@@ -437,22 +439,25 @@ public class InlineOptimizer implements CodeOptimizer {
         }
 
         private void calcCacheMissCosts(AnalysisManager analyses, int deltaBytes) {
-            WCETProcessorModel pm = analyses.getJCopter().getWCETProcessorModel();
+
+        	MethodCache cache = analyses.getJCopter().getMethodCache();
 
             int invokerBytes = invokeSite.getInvoker().getCode().getNumberOfBytes();
             int invokerWords = MiscUtils.bytesToWords(invokerBytes);
             int invokeeWords = invokee.getCode().getNumberOfWords();
 
             // we save the cache miss costs for the invoke and the return of the old invoke
-            invokeCacheCosts = pm.getInvokeCacheMissPenalty(invokeSite, invokerWords);
-            returnCacheCosts = pm.getReturnCacheMissPenalty(invokeSite, invokeeWords);
+            invokeCacheCosts = cache.getMissPenaltyOnInvoke(invokerWords, invokeSite.getInvokeInstruction());
+            returnCacheCosts = cache.getMissPenaltyOnReturn(invokeeWords, invokeSite.getInvokeeRef().getDescriptor().getType());
 
             // for every return in the inlined code, we have additional return cache miss costs
             int newWords = MiscUtils.bytesToWords(invokerBytes + deltaBytes);
             // TODO this is not quite correct, the old invoke return is the invokesite in the invokee, not the invoker,
             //      but this currently returns the maximum value for all returns anyway
-            invokeeDeltaReturnCosts = pm.getReturnCacheMissPenalty(invokeSite, newWords) -
-                                      pm.getReturnCacheMissPenalty(invokeSite, invokeeWords);
+            // XXX [bh] now we do use the instruction information: therefore switched to use other form which
+            //     ignores the instruction
+            invokeeDeltaReturnCosts = cache.getMissPenalty(newWords, false) -
+            						  cache.getMissPenalty(invokeeWords, false);
         }
 
         @Override

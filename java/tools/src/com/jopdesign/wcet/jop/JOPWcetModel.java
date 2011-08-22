@@ -21,9 +21,7 @@ package com.jopdesign.wcet.jop;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
-import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.common.processormodel.JOPModel;
 import com.jopdesign.common.processormodel.ProcessorModel;
@@ -48,6 +46,7 @@ public class JOPWcetModel implements WCETProcessorModel {
 
     /* TODO: add configuration stuff */
     public JOPWcetModel(WCETTool p) throws IOException {
+    	
         StringBuffer key = new StringBuffer();
         this.processorModel = p.getProcessorModel();
         if (processorModel instanceof JOPModel) {
@@ -55,10 +54,10 @@ public class JOPWcetModel implements WCETProcessorModel {
         } else {
             this.config = new JOPConfig(p.getConfig());
         }
-        this.cache = MethodCache.getCacheModel(p);
+
         if(config.isCmp()) {
             this.timing = JOPCmpTimingTable.getCmpTimingTable(
-            config.getAsmFile(), config.rws(), config.wws(), config.getCpus(), config.getTimeslot());
+            		config.getAsmFile(), config.rws(), config.wws(), config.getCpus(), config.getTimeslot());
         } else {
             this.timing = SingleCoreTiming.getTimingTable(config.getAsmFile());
             timing.configureWaitStates(config.rws(), config.wws());
@@ -67,6 +66,8 @@ public class JOPWcetModel implements WCETProcessorModel {
         if(config.isCmp()) key.append("-cmp");
         key.append("-").append(cache);
         identifier = key.toString();
+
+        this.cache = MethodCacheImplementation.getCacheModel(p, timing);
     }
     
     /** return true if we are not able to compute a WCET for the given bytecode */
@@ -110,39 +111,11 @@ public class JOPWcetModel implements WCETProcessorModel {
         return wcet;
     }
 
-//
-//    public int getMethodCacheLoadTime(int words, boolean loadOnInvoke) {
-//        long hidden = timing.methodCacheHiddenAccessCycles(loadOnInvoke);
-//        long loadTime = timing.methodCacheAccessCycles(false, words);
-//        return (int) Math.max(0,loadTime - hidden);
-//    }
-
     public MethodCache getMethodCache() {
         return cache;
     }
 
     public boolean hasMethodCache() {
-        if(this.cache.cacheSizeWords <= 0) throw new AssertionError("Bad cache");
-        return this.cache.cacheSizeWords > 0;
-    }
-
-    public long getInvokeReturnMissCost(ControlFlowGraph invoker,ControlFlowGraph invokee) {
-        return cache.getInvokeReturnMissCost(this, invoker, invokee);
-    }
-
-    public long getMethodCacheMissPenalty(int words, boolean loadOnInvoke) {
-        return this.timing.getMethodCacheMissPenalty(words, loadOnInvoke);
-    }
-
-    @Override
-    public long getInvokeCacheMissPenalty(InvokeSite invokeSite, int invokeeWords) {
-        // TODO we know the invoke instruction here, no need to check all possible instructions
-        return this.timing.getMethodCacheMissPenalty(invokeeWords, true);
-    }
-
-    @Override
-    public long getReturnCacheMissPenalty(InvokeSite invokeSite, int invokerWords) {
-        // TODO we can get the correct return instruction by looking at the return type of the invokee
-        return this.timing.getMethodCacheMissPenalty(invokerWords, false);
+        return this.cache.getNumBlocks() > 0;
     }
 }

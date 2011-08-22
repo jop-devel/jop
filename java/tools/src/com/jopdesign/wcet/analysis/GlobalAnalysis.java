@@ -25,45 +25,42 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import lpsolve.LpSolveException;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.common.code.LoopBound;
-import com.jopdesign.common.code.Segment;
-import com.jopdesign.common.code.SymbolicMarker;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.ReturnNode;
+import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.LoopBound;
+import com.jopdesign.common.code.Segment;
 import com.jopdesign.common.code.SuperGraph.ContextCFG;
 import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
 import com.jopdesign.common.code.SuperGraph.SuperGraphNode;
 import com.jopdesign.common.code.SuperGraph.SuperInvokeEdge;
 import com.jopdesign.common.code.SuperGraph.SuperReturnEdge;
+import com.jopdesign.common.code.SymbolicMarker;
 import com.jopdesign.common.code.SymbolicMarker.SymbolicMarkerType;
 import com.jopdesign.common.graphutils.LoopColoring;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.Iterators;
 import com.jopdesign.common.misc.MiscUtils;
-import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
-import com.jopdesign.wcet.analysis.cache.ObjectRefAnalysis;
 import com.jopdesign.wcet.annotations.LoopBoundExpr;
 import com.jopdesign.wcet.ipet.IPETConfig;
+import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.ipet.IPETSolver;
 import com.jopdesign.wcet.ipet.IPETUtils;
 import com.jopdesign.wcet.ipet.LinearConstraint;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
-import com.jopdesign.wcet.jop.MethodCache;
 
 /**
  * Global IPET-based analysis, supporting variable block caches (all fit region approximation).
@@ -76,14 +73,10 @@ public class GlobalAnalysis {
 
     private IPETConfig ipetConfig;
 
-	private MethodCacheAnalysis methodCacheAnalysis;
-
     public GlobalAnalysis(WCETTool p, IPETConfig ipetConfig) {
-        this.ipetConfig = ipetConfig;
+
+    	this.ipetConfig = ipetConfig;
         this.project = p;
-        if(p.getWCETProcessorModel().hasMethodCache()) {
-            this.methodCacheAnalysis = new MethodCacheAnalysis(p);        	
-        }
     }
 
     /**
@@ -111,17 +104,21 @@ public class GlobalAnalysis {
         /* compute cost */
         setExecutionCost(segment, ipetSolver);
 
-        /* Add constraints for method cache */
+        /* Add constraints for caches */
         Set<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
+        MethodCacheAnalysis methodCacheAnalysis = new MethodCacheAnalysis(project);
         if(project.getWCETProcessorModel().hasMethodCache()) {
         	missEdges.addAll(methodCacheAnalysis.addCacheCost(segment, ipetSolver, cacheMode));
         }
-        
+
+//        for(CacheModel cacheModel : project.getWCETProcessorModel().getCaches()) {
+//        	CacheAnalysis cpa = CacheAnalysis.getCacheAnalysisFor(cacheModel);
+//        	CacheIPETModel cpi = cpa.addCacheCost(segment, ipetSolver, cacheMode);
+//        	modelledCaches.add(cpi);
+//        }
+//        
         /* Add constraints for object cache */
-        if(/* project.getWCETProcessorModel.hasObjectCache() */ true) {
-        	ObjectRefAnalysis objectCacheAnalysis = new ObjectRefAnalysis(project, false, 4, 8, 4);
-        	missEdges.addAll(objectCacheAnalysis.addCacheCost(segment, ipetSolver, cacheMode));
-        }
+    	// ObjectRefAnalysis objectCacheAnalysis = new ObjectRefAnalysis(project, false, 4, 8, 4);
         
         /* Return variables */
         Map<SuperGraphEdge, Long> flowMap = new HashMap<SuperGraphEdge, Long>();
@@ -420,20 +417,20 @@ public class GlobalAnalysis {
                         " _mixed_ local/global IPET strategy");
             }
             WCETTool project = stagedAnalysis.getWCETTool();
-            int callStringLength = project.getProjectConfig().callstringLength();
+            MethodCacheAnalysis mca = new MethodCacheAnalysis(project);
+            int callStringLength = project.getCallstringLength();
+
             MethodInfo invoker = n.getBasicBlock().getMethodInfo();
             MethodInfo invoked = n.getImplementingMethod();
-            WCETProcessorModel proc = project.getWCETProcessorModel();
-            MethodCache cache = proc.getMethodCache();
-            long returnCost = cache.getMissOnReturnCost(project.getFlowGraph(invoker));
-            long invokeReturnCost = cache.getInvokeReturnMissCost(
-                    proc,
-                    project.getFlowGraph(invoker),
-                    project.getFlowGraph(invoked));
+            long returnCost       = mca.getMissOnceCost(invoker, false);
+            long invokeReturnCost = mca.getInvokeReturnMissCost(n.getInvokeSite(), ctx.getCallString());
             WcetCost cost = new WcetCost();
 
             AnalysisContextLocal recCtx = ctx.withCallString(ctx.getCallString().push(n, callStringLength));
-            if (cache.allFit(invoked, recCtx.getCallString()) && !project.getCallGraph().isLeafMethod(invoked)) {
+            Segment segment = Segment.methodSegment(invoked, recCtx.getCallString(), project, callStringLength, project);
+
+            if (!project.getCallGraph().isLeafMethod(invoked) &&
+            	mca.isPersistenceRegion(segment,MethodCacheAnalysis.CHECK_COUNT_PRECISE)) {
 
                 /* Perform a GLOBAL-ALL-FIT analysis */
                 GlobalAnalysis ga = new GlobalAnalysis(project, ipetConfig);
@@ -475,7 +472,8 @@ public class GlobalAnalysis {
             super(p);
             this.ctx = ctx;
         }
-
+        
+        @Override
         public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
             visitBasicBlockNode(n);
         }

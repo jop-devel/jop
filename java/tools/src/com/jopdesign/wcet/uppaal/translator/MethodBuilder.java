@@ -19,13 +19,13 @@
 */
 package com.jopdesign.wcet.uppaal.translator;
 
+import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.CfgVisitor;
 import com.jopdesign.common.code.ControlFlowGraph.ReturnNode;
 import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.common.graphutils.FlowGraph;
 import com.jopdesign.common.graphutils.LoopColoring;
 import com.jopdesign.common.graphutils.ProgressMeasure.RelativeProgress;
 import com.jopdesign.wcet.WCETProcessorModel;
@@ -33,6 +33,7 @@ import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
+import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.uppaal.model.Location;
 import com.jopdesign.wcet.uppaal.model.Transition;
@@ -116,12 +117,14 @@ public class MethodBuilder implements CfgVisitor {
 	}
 
 	public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
+
 		ExecutionContext ctx = new ExecutionContext(n.getBasicBlock().getMethodInfo());
+		MethodCacheAnalysis mca = new MethodCacheAnalysis(jTrans.getProject());
 		WCETProcessorModel proc = jTrans.getProject().getWCETProcessorModel();
 		SubAutomaton invokeAuto;
 		long staticWCET = proc.basicBlockWCET(ctx, n.getBasicBlock());
 		if(jTrans.getCacheSim().isAlwaysMiss()) {
-			staticWCET+=proc.getInvokeReturnMissCost(n.invokerFlowGraph(),n.receiverFlowGraph());
+			staticWCET += mca.getInvokeReturnMissCost(n.getInvokeSite(),CallString.EMPTY);
 		}
 		invokeAuto = invokeBuilder.translateInvoke(this,n,staticWCET);
 		this.nodeTemplates.put(n,invokeAuto);

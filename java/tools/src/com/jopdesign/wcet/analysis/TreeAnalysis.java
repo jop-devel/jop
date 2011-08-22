@@ -32,6 +32,7 @@ import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.graphutils.ProgressMeasure;
 import com.jopdesign.common.graphutils.ProgressMeasure.RelativeProgress;
 import com.jopdesign.wcet.WCETTool;
+import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -50,19 +51,20 @@ import java.util.Map.Entry;
 public class TreeAnalysis {
     private class LocalCostVisitor extends WcetVisitor {
         private AnalysisContext ctx;
+		private MethodCacheAnalysis mca;
 
         public LocalCostVisitor(AnalysisContext c, WCETTool p) {
             super(p);
+            mca = new MethodCacheAnalysis(p);
             ctx = c;
         }
 
         @Override
         public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
-            MethodInfo method = n.getImplementingMethod();
+
+        	MethodInfo method = n.getImplementingMethod();
             visitBasicBlockNode(n);
-            cost.addCacheCost(project.getWCETProcessorModel().getInvokeReturnMissCost(
-                    n.invokerFlowGraph(),
-                    n.receiverFlowGraph()));
+            cost.addCacheCost(mca.getInvokeReturnMissCost(n.getInvokeSite(), ctx.getCallString()));
             cost.addNonLocalCost(methodWCET.get(method));
         }
 

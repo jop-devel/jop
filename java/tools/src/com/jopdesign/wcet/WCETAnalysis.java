@@ -56,6 +56,7 @@ import org.apache.log4j.Logger;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Properties;
 
 import lpsolve.LpSolveException;
@@ -104,6 +105,8 @@ public class WCETAnalysis {
         try {
 			inst.run();
 			exec.info("Worst Case Analysis finished");
+			exec.info("Cumulative LP/ILP solver time: "+LpSolveWrapper.getTotalSolverTime());
+			exec.info("Cumulative WCET Calculation time: "+inst.totalWCETCalculationTime);
 		} catch (Exception e) {
 			 exec.bail("Worst Case Analysis failed: " + e);
 		}  	
@@ -116,8 +119,8 @@ public class WCETAnalysis {
     private WcetCost alwaysMissCost;
     private WcetCost alwaysHitCost;
 	private WcetCost approxCost;
-    private WcetCost minCacheCost;
     private IPETConfig ipetConfig;
+	private double totalWCETCalculationTime = 0.0;
 
     public WCETAnalysis(WCETTool wcetTool, ExecHelper e) {
         this.wcetTool = wcetTool;
@@ -131,7 +134,8 @@ public class WCETAnalysis {
             wcetTool.setTopLevelLogger(exec.getExecLogger());
             exec.info("Loading project"); // TODO: Maybe exec can be replaced by something stefan's framework?
             wcetTool.initialize(wcetTool.getProjectConfig().doLoadLinkInfo(), true);
-            MethodInfo largestMethod = wcetTool.getWCETProcessorModel().getMethodCache().checkCache();
+            List<MethodInfo> allMethods = wcetTool.getCallGraph().getReachableImplementations(wcetTool.getTargetMethod());
+            MethodInfo largestMethod = MethodCacheAnalysis.checkCache(wcetTool, allMethods); 
             int minWords = MiscUtils.bytesToWords(largestMethod.getCode().getNumberOfBytes());
             reportMetric("min-cache-size",largestMethod.getFQMethodName(),minWords);
         } catch (Exception e) {
@@ -163,58 +167,10 @@ public class WCETAnalysis {
         
     }
 
-	/**
-	 * @param mca
-	 * @param iter
-	 * @throws InvalidFlowFactException
-	 */
-	@SuppressWarnings("unused")
-	private void exploreCacheAnalysis()
-			throws InvalidFlowFactException {
-
-    	// Segment Cache Analysis: Experiments
-        MethodCacheAnalysis mca = new MethodCacheAnalysis(wcetTool);
-        /* iterate top down the scope graph (currently: the call graph) */
-        TopologicalOrderIterator<ExecutionContext, ContextEdge> iter =
-                wcetTool.getCallGraph().reverseTopologicalOrder();
-
-        LpSolveWrapper.resetSolverTime();
-        long blocks = 0;
-        long start = System.nanoTime();
-        while (iter.hasNext()) {
-        	
-            ExecutionContext scope = iter.next();
-            Segment segment = Segment.methodSegment(scope.getMethodInfo(), scope.getCallString(), wcetTool,
-            		wcetTool.getProjectConfig().callstringLength(), wcetTool);
-            
-            int availBlocks = wcetTool.getWCETProcessorModel().getMethodCache().getNumBlocks();
-            long total, distinctApprox = -1, distinct = -1;
-            
-            blocks = total = mca.countTotalCacheBlocks(segment);
-            if(total > availBlocks || true) {
-            	try {
-					blocks = distinctApprox = mca.countDistinctCacheBlocks(segment, false);
-	                if(blocks > availBlocks && blocks < availBlocks*2 || true) {
-                		blocks = distinct = mca.countDistinctCacheBlocks(segment, true);                	
-	                }
-				} catch (LpSolveException e) {
-            		System.err.println((distinctApprox>=0 ? "I" : "Relaxed ")+"LP Problem too difficult, giving up: "+e);                		
-				}
-            }
-            System.out.println(String.format("block-count < %2d [%2d,%2d,%2d] for %-30s @ %s", blocks,
-            		total, distinctApprox, distinct,
-            		scope.getMethodInfo().getFQMethodName(), scope.getCallString().toStringVerbose(false)));
-        }
-        long stop  = System.nanoTime();
-        reportSpecial("block-count",WcetCost.totalCost(blocks),start,stop,LpSolveWrapper.getSolverTime());
-        System.out.println("solver-time: "+LpSolveWrapper.getSolverTime());
-	}
-    
-    private boolean runWCETAnalysis() {
+	private boolean runWCETAnalysis() {
         /* Run */
         ipetConfig = new IPETConfig(config);
 
-        boolean succeed = true;
         try {
             /* Analysis */
             /* some metrics, some cheap analysis for comparison and report logging (not supported by global/uppaal) */
@@ -230,13 +186,14 @@ public class WCETAnalysis {
             	runGlobal();
             }
             exec.info("WCET analysis finished: "+wcet);
+            
+            /* report generation */
+            return generateReport();
+
         } catch (Exception e) {
             exec.logException("analysis", e);
-            succeed = false;
+            return false;
         }
-
-        succeed = succeed && generateReport();
-        return succeed;
     }
 
 	private void runMetrics() throws Exception {
@@ -252,7 +209,7 @@ public class WCETAnalysis {
 	    if(! wcetTool.getWCETProcessorModel().hasMethodCache()) {
 	    	cacheApprox = StaticCacheApproximation.ALWAYS_MISS;
 	    } else {
-	    	cacheApprox = StaticCacheApproximation.ALWAYS_MISS; /* FIXME: ALL_FIT_SIMPLE is broken at the moment */
+	    	cacheApprox = StaticCacheApproximation.ALL_FIT_SIMPLE;
 	    }
 	    
 	    /* Perform a few standard analysis (MIN_CACHE_COST, ALWAYS_HIT, ALWAYS_MISS) without call strings */
@@ -293,14 +250,13 @@ public class WCETAnalysis {
 	        start = System.nanoTime();
 	        approxCost = an.computeCost(wcetTool.getTargetMethod(),new AnalysisContextLocal(cacheApprox));
 	        stop  = System.nanoTime();
-	        reportSpecial("recursive-report",alwaysMissCost,start,stop,LpSolveWrapper.getSolverTime());
+	        reportSpecial("recursive-report",approxCost,start,stop,LpSolveWrapper.getSolverTime());
 	        wcetTool.setGenerateWCETReport(false);
 	
 	    }        
 	}
 
-	private void runGlobal() 
-			throws IOException, DuplicateKeyException, XmlSerializationException, Config.BadConfigurationException, InvalidFlowFactException {
+	private void runGlobal() throws InvalidFlowFactException, LpSolveException  {
 		
 	    StaticCacheApproximation requestedCacheApprox = IPETConfig.getRequestedCacheApprox(config);
 	
@@ -308,24 +264,20 @@ public class WCETAnalysis {
 	
 	    String targetName = wcetTool.getTargetName();
 	    Segment target = Segment.methodSegment(wcetTool.getTargetMethod(), CallString.EMPTY,
-	    		wcetTool, wcetTool.getProjectConfig().callstringLength(), wcetTool);
+	    		wcetTool, wcetTool.getCallstringLength(), wcetTool);
 	
 	    /* Run global analysis */
-	    try {
-	    	for(StaticCacheApproximation cacheApprox : StaticCacheApproximation.values()) {
-	    		LpSolveWrapper.resetSolverTime();
-	    		long start = System.nanoTime();
-	    		wcet = an.computeWCET(targetName, target, cacheApprox);
-	    		long stop  = System.nanoTime();
-	    		if(cacheApprox == requestedCacheApprox) {
-	    			report(wcet, start, stop, LpSolveWrapper.getSolverTime());
-	    		} else {
-	    			reportSpecial(cacheApprox.toString(),wcet,start,stop,LpSolveWrapper.getSolverTime());
-	    		}
-	    	}
-	    } catch (LpSolveException e) {
-	    	e.printStackTrace();
-	    }
+    	for(StaticCacheApproximation cacheApprox : StaticCacheApproximation.values()) {
+    		LpSolveWrapper.resetSolverTime();
+    		long start = System.nanoTime();
+    		wcet = an.computeWCET(targetName, target, cacheApprox);
+    		long stop  = System.nanoTime();
+    		if(cacheApprox == requestedCacheApprox) {
+    			report(wcet, start, stop, LpSolveWrapper.getSolverTime());
+    		} else {
+    			reportSpecial(cacheApprox.toString(),wcet,start,stop,LpSolveWrapper.getSolverTime());
+    		}
+    	}
 	}
 
 	/**
@@ -343,6 +295,53 @@ public class WCETAnalysis {
 	    wcet = an.computeWCET(wcetTool.getTargetMethod(),alwaysMissCost.getCost());
 	    long stop  = System.nanoTime();
 	    reportUppaal(wcet,start,stop,an.getSearchtime(),an.getSolvertimemax());
+	}
+
+	/**
+	 * @param mca
+	 * @param iter
+	 * @throws InvalidFlowFactException
+	 */
+	@SuppressWarnings("unused")
+	private void exploreCacheAnalysis()
+			throws InvalidFlowFactException {
+	
+		// Segment Cache Analysis: Experiments
+	    MethodCacheAnalysis mca = new MethodCacheAnalysis(wcetTool);
+	    /* iterate top down the scope graph (currently: the call graph) */
+	    TopologicalOrderIterator<ExecutionContext, ContextEdge> iter =
+	            wcetTool.getCallGraph().reverseTopologicalOrder();
+	
+	    LpSolveWrapper.resetSolverTime();
+	    long blocks = 0;
+	    long start = System.nanoTime();
+	    while (iter.hasNext()) {
+	    	
+	        ExecutionContext scope = iter.next();
+	        Segment segment = Segment.methodSegment(scope.getMethodInfo(), scope.getCallString(), wcetTool,
+	        		wcetTool.getCallstringLength(), wcetTool);
+	        
+	        int availBlocks = wcetTool.getWCETProcessorModel().getMethodCache().getNumBlocks();
+	        long total, distinctApprox = -1, distinct = -1;
+	        
+	        blocks = total = mca.countTotalCacheBlocks(segment);
+	        if(total > availBlocks || true) {
+	        	try {
+					blocks = distinctApprox = mca.countDistinctCacheBlocks(segment, false);
+	                if(blocks > availBlocks && blocks < availBlocks*2 || true) {
+	            		blocks = distinct = mca.countDistinctCacheBlocks(segment, true);                	
+	                }
+				} catch (LpSolveException e) {
+	        		System.err.println((distinctApprox>=0 ? "I" : "Relaxed ")+"LP Problem too difficult, giving up: "+e);                		
+				}
+	        }
+	        System.out.println(String.format("block-count < %2d [%2d,%2d,%2d] for %-30s @ %s", blocks,
+	        		total, distinctApprox, distinct,
+	        		scope.getMethodInfo().getFQMethodName(), scope.getCallString().toStringVerbose(false)));
+	    }
+	    long stop  = System.nanoTime();
+	    reportSpecial("block-count",WcetCost.totalCost(blocks),start,stop,LpSolveWrapper.getSolverTime());
+	    System.out.println("solver-time: "+LpSolveWrapper.getSolverTime());
 	}
 
 	/**
@@ -381,6 +380,7 @@ public class WCETAnalysis {
         String key = "wcet";
         System.out.println(key+": "+wcet);
         System.out.println(key+".time: " + timeDiff(start,stop));
+    	totalWCETCalculationTime  += timeDiff(start,stop);
         System.out.println(key+".solvertime: " + solverTime);
         wcetTool.recordResult(wcet,timeDiff(start,stop),solverTime);
         wcetTool.getReport().addStat(key, wcet.toString());
@@ -391,6 +391,7 @@ public class WCETAnalysis {
         String key = "wcet";
         System.out.println(key+": "+wcet);
         System.out.println(key+".time: " + timeDiff(start,stop));
+    	totalWCETCalculationTime  += timeDiff(start,stop);
         System.out.println(key+".searchtime: " + searchtime);
         System.out.println(key+".solvertimemax: " + solvertimemax);
         wcetTool.recordResultUppaal(wcet,timeDiff(start,stop),searchtime,solvertimemax);
@@ -401,7 +402,8 @@ public class WCETAnalysis {
     	
         String key = "wcet."+metric;
         System.out.println(key+": "+cost);
-        if(start != stop) System.out.println(key+".time: " + timeDiff(start,stop));
+    	System.out.println(key+".time: " + timeDiff(start,stop));
+    	totalWCETCalculationTime  += timeDiff(start,stop);
         if(solverTime != 0) System.out.println(key+".solvertime: " + solverTime);
         wcetTool.recordSpecialResult(metric,cost);
         if (wcetTool.reportGenerationActive()) {

@@ -20,6 +20,7 @@
 package com.jopdesign.wcet.ipet;
 
 import com.jopdesign.common.graphutils.IDProvider;
+import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
 import lpsolve.LpSolve;
 import lpsolve.LpSolveException;
@@ -68,20 +69,22 @@ public class LpSolveWrapper<T> {
 			this.statusCode = c;
 		}
 	}
-	private static final long LP_SOLVE_SEC_TIMEOUT = 20;
-	private static long solverTime = 0;
+	private static final long LP_SOLVE_SEC_TIMEOUT = 1200;
+	private static long solverTime = 0, resetSolverTime = 0;
 
 	/**
 	 * Get time spend in the solver since the last call to {@link #resetSolverTime()}
      *
 	 * @return the time spend in the solver in seconds
 	 */
-	public static double getSolverTime() { return ((double)solverTime)/1.0E9; }
+	public static double getSolverTime() { return solverTime/1.0E9; }
 
+	public static double getTotalSolverTime() { return (resetSolverTime+solverTime)/1.0E9; }
+	
 	/**
-	 * Reset the cummulative solver time to 0.
+	 * Reset the solver time statistic to 0 (does not affect totalSolverTime).
 	 */
-	public static void resetSolverTime() { solverTime = 0; }
+	public static void resetSolverTime() { resetSolverTime += solverTime; solverTime = 0; }
 
 	
 	private static Map<Integer,SolverStatus> readMap = null;
@@ -245,7 +248,7 @@ public class LpSolveWrapper<T> {
 	 * @throws LpSolveException
 	 */
 	public double solve(boolean preSolve) throws LpSolveException {
-		return solve(null, true);
+		return solve(null, preSolve);
 	}
 
 	/* either presolving, or a solution vector (at the moment) */

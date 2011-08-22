@@ -55,6 +55,8 @@ public class IPETSolver<T> {
      */
     public static final long BIGM = Long.MAX_VALUE;
 
+	private static final boolean USE_PRESOLVE = true;
+
     private List<LinearConstraint<T>> edgeConstraints = new ArrayList<LinearConstraint<T>>();
     private Map<T, Long> edgeCost = new HashMap<T, Long>();
     private Set<T> edgeSet = new HashSet<T>();
@@ -108,6 +110,14 @@ public class IPETSolver<T> {
         if (edgeCost.containsKey(key)) return edgeCost.get(key);
         else return 0;
     }
+
+	public Map<T, Long> getCostVector() {		
+		return this.edgeCost;
+	}
+
+	public void setCostVector(Map<T, Long> edgeCost) {
+		this.edgeCost = edgeCost;
+	}
 
     /**
      * Solve the max cost network flow problem using {@link LpSolveWrapper}.
@@ -167,7 +177,7 @@ public class IPETSolver<T> {
             }
         } else {
         	try {
-        		sol = Math.round(wrapper.solve(true));
+        		sol = Math.round(wrapper.solve(USE_PRESOLVE));
         	} catch(LpSolveException ex) {
         		throw new LpSolveException(ex.getMessage() + ". ILP dump: "+dumpFile);
         	}

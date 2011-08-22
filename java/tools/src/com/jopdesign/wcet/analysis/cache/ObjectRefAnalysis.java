@@ -22,7 +22,6 @@ package com.jopdesign.wcet.analysis.cache;
 import static com.jopdesign.common.misc.MiscUtils.addToSet;
 
 import java.io.PrintStream;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -458,7 +457,7 @@ public class ObjectRefAnalysis {
 		ExecuteOnceAnalysis eoAna = new ExecuteOnceAnalysis(project);
 		DFATool dfa = project.getDfaTool();
 		SymbolicPointsTo spt = new SymbolicPointsTo(maxSetSize,
-				project.getProjectConfig().callstringLength(), 
+				project.getCallstringLength(), 
 				new ExecOnceQuery(eoAna,scope));
 		dfa.runLocalAnalysis(spt,scope.getMethodInfo());
 		LocalPointsToResult lpt = new LocalPointsToResult(spt.getResult());
@@ -516,7 +515,7 @@ public class ObjectRefAnalysis {
 
 		/* Create an analysis segment */
 		Segment segment = Segment.methodSegment(scope.getMethodInfo(), scope.getCallString(), 
-				project, project.getProjectConfig().callstringLength(), project);
+				project, project.getCallstringLength(), project);
 		
 		this.saturatedTypes.put(scope, getSaturatedTypes(segment,usedRefs));
 
@@ -552,7 +551,7 @@ public class ObjectRefAnalysis {
 		
 		LocalPointsToResult usedRefs = getUsedRefs(scope);
 		Segment segment = Segment.methodSegment(scope.getMethodInfo(), scope.getCallString(), 
-				project, project.getProjectConfig().callstringLength(), project);
+				project, project.getCallstringLength(), project);
 		/* Compute worst-case cost */
 		HashSet<SymbolicAddress> usedObjectsSet = new HashSet<SymbolicAddress>();
         return computeCacheCost(segment, usedRefs, costModel, usedObjectsSet);
