@@ -270,7 +270,7 @@ public class WCETAnalysis {
     	for(StaticCacheApproximation cacheApprox : StaticCacheApproximation.values()) {
     		LpSolveWrapper.resetSolverTime();
     		long start = System.nanoTime();
-    		wcet = an.computeWCET(targetName, target, cacheApprox);
+    		wcet = an.computeWCET(wcetTool.getTargetMethod().getShortName()+"_"+cacheApprox, target, cacheApprox);
     		long stop  = System.nanoTime();
     		if(cacheApprox == requestedCacheApprox) {
     			report(wcet, start, stop, LpSolveWrapper.getSolverTime());

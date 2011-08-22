@@ -69,22 +69,6 @@ public class IPETUtils {
 
 	/**
 	 * [NEW-GLOBAL-ANALYSIS]
-	 * @param edges a list of edges
-	 * @param ub an upper bound
-	 * @return a constraint {@code sum(edges) <= ub}
-	 */
-	public static<E>
-	LinearConstraint<E> 
-	flowBound(Iterable<E> es, long ub) {
-		
-		LinearConstraint<E> eq = new LinearConstraint<E>(ConstraintType.LessEqual);
-		eq.addLHS(es);
-		eq.addRHS(ub);
-		return eq;
-	}
-	
-	/**
-	 * [NEW-GLOBAL-ANALYSIS]
 	 * Build a constraint <pre>sum es1 = sum es2</pre>
 	 * @param es1
 	 * @param es2

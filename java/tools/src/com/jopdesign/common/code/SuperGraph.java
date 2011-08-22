@@ -114,7 +114,11 @@ public class SuperGraph {
 
         @Override
         public String toString() {
-            return "CallContext [cs=" + cs + ((ccid == 0) ? "]" : (", ccid=" + ccid + "]"));
+        	if(ccid == 0) {
+        		return cs.toString();
+        	} else {
+        		return cs.toString()+"/"+ccid;
+        	}
         }
 
 
@@ -197,7 +201,7 @@ public class SuperGraph {
 
         @Override
         public String toString() {
-            return "ContextCFG [" + cfg.getMethodInfo() + ", context=" + context + "]";
+            return "CFG{" + cfg.getMethodInfo() + "," + context + "}";
         }
     }
     
@@ -418,10 +422,12 @@ public class SuperGraph {
 			return new SuperGraphNode(ccfg, ccfg.getCfg().getEntry());
 		}
     	
+		@Override
         public ContextCFG getCaller() {
         	return superGraph.getEdgeSource(this);
         }
         
+		@Override
         public ContextCFG getCallee() {
         	return superGraph.getEdgeTarget(this);
         }
@@ -506,10 +512,12 @@ public class SuperGraph {
 			return new SuperGraphNode(ccfg, this.getReturnNode());
 		}
     	
+		@Override
         public ContextCFG getCaller() {
         	return superGraph.getEdgeTarget(this);
         }
         
+		@Override
         public ContextCFG getCallee() {
         	return superGraph.getEdgeSource(this);
         }

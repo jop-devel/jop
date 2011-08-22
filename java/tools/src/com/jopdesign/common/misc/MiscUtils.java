@@ -23,8 +23,6 @@ package com.jopdesign.common.misc;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
-import com.jopdesign.common.code.SuperGraph.SuperGraphNode;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -100,21 +98,36 @@ public class MiscUtils {
 	 * Increment the counter for the given key, inserting the default if the key if it is not present
 	 * @param counters a dictionary of counters
 	 * @param key the key to modify
-	 * @param defCounter the default value to insert if the key is not present
+	 * @param startValue the start value for the counter if the key is not present
 	 * @return the new value for the key
 	 */
-	public static<T> long increment(Map<T, Long> counters, T key, int defCounter) {
+	public static<T> long increment(Map<T, Long> counters, T key, long startValue) {
+
+		return incrementBy(counters, key, 1, startValue);
+	}
+
+	/**
+	 * Increment the counter by step for the given key, inserting the default if the key if it is not present
+	 * @param counters a dictionary of counters
+	 * @param key the key to modify
+	 * @param step the amount to increment
+	 * @param startValue the start value for the counter if the key is not present
+	 * @return the new value for the key
+	 */
+	public static<T> long incrementBy(Map<T, Long> counters, T key, long step, long startValue) {
+		
 		long val;
 		if(! counters.containsKey(key)) {
-			val = defCounter;
+			val = startValue + step;
 		} else {
-			val = counters.get(key) + 1;
+			val = counters.get(key) + step;
 		}
 		counters.put(key, val);
 		return val;
 	}
 
-    public static <T> T[] concat(T val, T[] vals) {
+
+	public static <T> T[] concat(T val, T[] vals) {
         List<T> v = new ArrayList<T>(vals.length+1);
         v.add(val);
         v.addAll(Arrays.asList(vals));

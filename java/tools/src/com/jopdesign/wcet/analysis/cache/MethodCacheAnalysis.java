@@ -71,7 +71,7 @@ import com.jopdesign.wcet.jop.MethodCache;
  */
 public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
 
-    private static final String KEY = MethodCacheAnalysis.class.getCanonicalName();
+    private static final String KEY = "wcet.MethodCacheAnalysis";
 
     public static enum PersistenceCheck {
         /** check persistence by counting the total number of distinct methods (cheap) */
@@ -349,7 +349,7 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
 			/* Collect all cache accesses */
 			long cost = computeMissOnceCost(persistenceSegment, getCacheAccessesByTag(persistenceSegment).entrySet(), 
 					EDGE_MISS_COST, true, KEY, wcetTool);
-			WCETTool.logger.debug("miss once cost for segment: "+persistenceSegment+": "+cost);
+			//WCETTool.logger.info("miss once cost for segment: "+persistenceSegment+": "+cost);
 
 			F1<SuperGraphEdge, Long> costModel = MiscUtils.const1(cost);			
 			Set<SuperGraphEdge> costEdges = CachePersistenceAnalysis.addFixedCostEdges(persistenceSegment.getEntryEdges(), ipetSolver,

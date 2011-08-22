@@ -19,8 +19,12 @@
  */
 package com.jopdesign.wcet.analysis;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -54,6 +58,7 @@ import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
+import com.jopdesign.wcet.analysis.cache.SuperGraphExtraCostEdge;
 import com.jopdesign.wcet.annotations.LoopBoundExpr;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
@@ -132,24 +137,10 @@ public class GlobalAnalysis {
         WCETTool.logger.info(String.format("LP (%d ms) %d | %d ILP (%d ms)",_time_rlp, Math.round(relaxedCost), Math.round(ilpCost), _time_ilp));
 
         /* Cost extraction */
-        WcetCost cost = new WcetCost();
-        //System.err.println("=== Cost Summary ===");
-        for (Entry<SuperGraphEdge, Long> flowEntry : flowMap.entrySet()) {
-        	SuperGraphEdge edge = flowEntry.getKey();
-            long edgeCost = ipetSolver.getEdgeCost(edge);
-            long flowCost = edgeCost * flowEntry.getValue();
-            if (missEdges.contains(edge)) {
-            	if(WCETTool.logger.isTraceEnabled() && flowEntry.getValue() > 0) {
-            		WCETTool.logger.trace("Execution Cost [cache]: "+ edge + " = " + flowCost + " ( " + flowEntry.getValue() + " * " + edgeCost + " )");
-            	}
-                cost.addCacheCost(flowCost);
-            } else {
-            	if(WCETTool.logger.isTraceEnabled() && flowEntry.getValue() > 0) {
-            		WCETTool.logger.trace("Execution Cost [flow]: "+ edge + " = " + flowCost);
-            	}
-                cost.addNonLocalCost(flowCost);
-            }
-        }
+        WcetCost cost;
+        
+        /* extract cost and generate a profile in 'profiles' */
+    	cost = exportCostProfile(flowMap, ipetSolver, problemId);
 
         /* Sanity Check, and Return */
         if(Double.isInfinite(ilpCost)) {
@@ -180,11 +171,11 @@ public class GlobalAnalysis {
         IPETSolver<SuperGraphEdge> ipetSolver = new IPETSolver<SuperGraphEdge>(problemName, ipetConfig);
 
         /* DEBUGGING: Render segment */
-        try {
-			segment.exportDOT(wcetTool.getProjectConfig().getOutFile(problemName+".dot"));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+//        try {
+//			segment.exportDOT(wcetTool.getProjectConfig().getOutFile(problemName+".dot"));
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
         
         /* In- and Outflow */
     	ipetSolver.addConstraint(IPETUtils.constantFlow(segment.getEntryEdges(), 1));
@@ -368,36 +359,65 @@ public class GlobalAnalysis {
     }
 
 
-    /* add cost for missing each method once (ALL FIT) */
-//    private Set<ExecutionEdge> addMissOnceCost(SuperGraph sg, IPETSolver ipetSolver) {
-//        /* collect access sites */
-//
-//        Map<MethodInfo, List<SuperGraph.SuperEdge>> accessEdges = getMethodSwitchEdges(sg);
-//        MethodCache cache = project.getWCETProcessorModel().getMethodCache();
-//
-//        Set<ExecutionEdge> missEdges = new HashSet<ExecutionEdge>();
-//        /* For each  MethodInfo, create a binary decision variable */
-//        for (Entry<MethodInfo, List<SuperGraph.SuperEdge>> entry : accessEdges.entrySet()) {
-//            LinearConstraint<ExecutionEdge> lv = new LinearConstraint<ExecutionEdge>(ConstraintType.LessEqual);
-//            /* sum(miss_edges) <= 1 */
-//            for (SuperGraph.SuperEdge e : entry.getValue()) {
-//                /* add hit and miss edges */
-//                IPETBuilder<SuperGraph.CallContext> c = new IPETBuilder<SuperGraph.CallContext>(project, e.getCaller().getContext());
-//                IPETBuilder.ExecutionEdge parentEdge = c.newEdge(e);
-//                IPETBuilder.ExecutionEdge hitEdge = c.newEdge(MethodCacheAnalysis.splitEdge(e, true));
-//                IPETBuilder.ExecutionEdge missEdge = c.newEdge(MethodCacheAnalysis.splitEdge(e, false));
-//                ipetSolver.addConstraint(IPETUtils.lowLevelEdgeSplit(parentEdge, hitEdge, missEdge));
-//                missEdges.add(missEdge);
-//                ipetSolver.addEdgeCost(missEdge, cache.missOnceCost(entry.getKey(), ipetConfig.doAssumeMissOnceOnInvoke()));
-//                lv.addLHS(missEdge, 1);
-//            }
-//            lv.addRHS(1);
-//            ipetSolver.addConstraint(lv);
-//        }
-//        return missEdges;
-//    }
+    /**
+	 * @param flowMap 
+	 * @param ipetSolver 
+	 * @param problemId
+	 */
+	private WcetCost exportCostProfile(Map<SuperGraphEdge, Long> flowMap, IPETSolver<SuperGraphEdge> ipetSolver, String problemId) {
+	
+		File profileFile = new File(project.getOutDir("profiles"),problemId+".txt");
+		WcetCost cost = new WcetCost();
+		HashMap<SuperGraphEdge,Long> costProfile = new HashMap<SuperGraphEdge,Long>();
+		HashMap<SuperGraphEdge,Long> cacheCostProfile = new HashMap<SuperGraphEdge,Long>();
+	
+		for (Entry<SuperGraphEdge, Long> flowEntry : flowMap.entrySet()) {
+	    	SuperGraphEdge edge = flowEntry.getKey();
+	        long edgeCost = ipetSolver.getEdgeCost(edge);
+	        long flowCost = edgeCost * flowEntry.getValue();
+	        if(edge instanceof SuperGraphExtraCostEdge) {
+	        	edge = ((SuperGraphExtraCostEdge)edge).getParent(); /* attach cost to the flow edge */
+	        	cost.addCacheCost(flowCost);
+	        	MiscUtils.incrementBy(cacheCostProfile, edge, flowCost, 0);
+	        } else {
+	        	cost.addLocalCost(flowCost);            	
+	        }
+	    	MiscUtils.incrementBy(costProfile, edge, flowCost, 0);
+	    }
+		/* export profile */
+		try {
+			ArrayList<Entry<SuperGraphEdge,Long>> profile = new ArrayList<Entry<SuperGraphEdge,Long>>(costProfile.entrySet());
+			Collections.sort(profile, new Comparator<Entry<SuperGraphEdge,Long>>() {
+				@Override
+				public int compare(Entry<SuperGraphEdge, Long> o1, Entry<SuperGraphEdge, Long> o2) {
+					return o2.getValue().compareTo(o1.getValue());
+				}
+			});
+			FileWriter fw = new FileWriter(profileFile);
+			fw.append("Profile\n");
+			fw.append(problemId+"\n");
+			fw.append("------------------------------------------------------\n");
+			long totalCost = cost.getCost();
+			for(Entry<SuperGraphEdge, Long> entry : profile) {
+				Long flowCost = entry.getValue();
+				double contribution = (100.0 * flowCost) / totalCost;
+				fw.append(String.format("  %-50s %8d %.2f%%",entry.getKey(), flowCost,contribution));
+				if(cacheCostProfile.containsKey(entry.getKey())) {
+					fw.append(String.format(" cache{%d}",cacheCostProfile.get(entry.getKey())));
+				}
+				fw.append(String.format(" flow{%d}",flowMap.get(entry.getKey())));
+				fw.append('\n');
+			}
+			fw.close();
+		} catch (IOException ex) {
+			
+			WCETTool.logger.error("Generating profile file failed: "+ex);
+		}
+		return cost;
+	}
 
-    public static class GlobalIPETStrategy
+
+	public static class GlobalIPETStrategy
             implements RecursiveStrategy<AnalysisContextLocal, WcetCost> {
         private IPETConfig ipetConfig;
 
@@ -510,7 +530,7 @@ public class GlobalAnalysis {
 
     private static Map<String,Long> problemCounter = new HashMap<String,Long>();
 	private static long generateProblemId(String key) {
-		return MiscUtils.increment(problemCounter,key,1);
+		return MiscUtils.increment(problemCounter,key,0);
 	}
 
 }

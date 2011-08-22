@@ -53,6 +53,11 @@ public class SuperGraphExtraCostEdge implements SuperGraphEdge {
 		this.index = index;
 	}
 	
+	public SuperGraphEdge getParent() {
+		
+		return parent;
+	}
+
 	@Override
 	public SuperGraphNode getSource() {
 		

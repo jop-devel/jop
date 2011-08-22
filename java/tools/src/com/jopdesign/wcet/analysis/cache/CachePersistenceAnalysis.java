@@ -152,7 +152,7 @@ public abstract class CachePersistenceAnalysis<T> {
 				ipetSolver.addEdgeCost(missEdge, cost);
 				missOnceEdges.add(missEdge);	
 			}
-			ipetSolver.addConstraint(IPETUtils.flowBound(missOnceEdges,1));
+			ipetSolver.addConstraint(IPETUtils.relativeBound(missOnceEdges,persistenceSegment.getEntryEdges(),1));
 			missEdges.addAll(missOnceEdges);
 		}
 		return missEdges;
