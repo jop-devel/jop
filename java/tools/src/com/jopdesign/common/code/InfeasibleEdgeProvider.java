@@ -20,8 +20,11 @@
 
 package com.jopdesign.common.code;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
+import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 
 /**
@@ -30,5 +33,31 @@ import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
  *
  */
 public interface InfeasibleEdgeProvider {
+	
+	public InfeasibleEdgeProvider NO_INFEASIBLES = new InfeasibleEdgeProvider() {
+		@Override
+		public List<CFGEdge> getInfeasibleEdges(ControlFlowGraph cfg,CallString cs) {
+			return new ArrayList<CFGEdge>();
+		}
+		@Override
+		public boolean isInfeasibleReceiver(MethodInfo method, CallString cs) {
+			return false;
+		}			
+	};
+
+	/** 
+	 * Get list of infeasible edges for the given control flow graph
+	 * @param cfg
+	 * @param cs
+	 * @return
+	 */
     public Collection<CFGEdge> getInfeasibleEdges(ControlFlowGraph cfg, CallString cs);
+
+	/**
+	 * Return true if the virtual invocation of the given method is infeasible in the specified call context
+	 * @param method
+	 * @param cs
+	 * @return
+	 */
+	public boolean isInfeasibleReceiver(MethodInfo method, CallString cs);
 }

@@ -35,12 +35,12 @@ import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.Filter;
 import com.jopdesign.common.misc.MappedIterable;
 
+import org.apache.log4j.Logger;
 import org.jgrapht.graph.DirectedMultigraph;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -51,7 +51,6 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Stack;
 import java.util.Vector;
-import java.util.logging.Logger;
 
 /**
  * <p>A supergraph merges call graph and control flow graph representations.
@@ -534,9 +533,6 @@ public class SuperGraph {
             boolean r = (this.getReturnNode().equals(other.getReturnNode()) &&
             	   this.getCallee().equals(other.getCallee()) &&
             	   this.getCaller().equals(other.getCaller()));
-            if(! r) {
-            	Logger.getAnonymousLogger().warning("Same hash code, but different - lucky chance?: "+this+" vs "+other);
-            }
             return r;
         }
         
@@ -653,12 +649,7 @@ public class SuperGraph {
 
     public SuperGraph(CFGProvider cfgProvider, ControlFlowGraph rootFlowGraph, int callstringLength) {
     	
-        this(cfgProvider, rootFlowGraph, CallString.EMPTY, callstringLength, new InfeasibleEdgeProvider() {
-			@Override
-			public List<CFGEdge> getInfeasibleEdges(ControlFlowGraph cfg,CallString cs) {
-				return new ArrayList<CFGEdge>();
-			}			
-		});
+        this(cfgProvider, rootFlowGraph, CallString.EMPTY, callstringLength, InfeasibleEdgeProvider.NO_INFEASIBLES);
     }
 
     public SuperGraph(CFGProvider cfgProvider,
@@ -940,11 +931,19 @@ public class SuperGraph {
                     } else if(impls.size() != 1) {
                     	throw new AssertionError("Unresolved virtual Dispatch for " + iNode + ": " + impls);
                     }
+                                        
                     for(MethodInfo impl : impls) {
+                    	
                     	ControlFlowGraph invokedCFG = cfgProvider.getFlowGraph(impl);
                     	CallString invokedCS = currentCS.push(iNode, callstringLength);
-                    	ContextCFG invoked = new ContextCFG(invokedCFG, invokedCS);
+                    	
+                        /* skip node if receiver is infeasible in current call context */
+                        if(infeasibleEdgeProvider.isInfeasibleReceiver(impl, invokedCS)) {
+                        	Logger.getLogger(this.getClass()).info("createSuperGraph(): infeasible receiver "+impl);
+                        	continue;
+                        }
 
+                    	ContextCFG invoked = new ContextCFG(invokedCFG, invokedCS);                    	
                     	if (!superGraph.containsVertex(invoked)) {
                     		superGraph.addVertex(invoked);
                     		todo.push(invoked);

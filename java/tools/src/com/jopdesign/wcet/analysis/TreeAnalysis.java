@@ -63,6 +63,12 @@ public class TreeAnalysis {
         public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
 
         	MethodInfo method = n.getImplementingMethod();
+            /* deal with pruned (infeasible) receivers */
+        	if(! methodWCET.containsKey(method)) {
+        		WCETTool.logger.info("Pruned InvokeNode: "+n.getImplementingMethod());
+        		cost.addNonLocalCost(Long.MIN_VALUE);
+        		return;
+        	}        	
             visitBasicBlockNode(n);
             cost.addCacheCost(mca.getInvokeReturnMissCost(n.getInvokeSite(), ctx.getCallString()));
             cost.addNonLocalCost(methodWCET.get(method));
@@ -93,6 +99,12 @@ public class TreeAnalysis {
         }
 
         public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
+            /* deal with pruned (infeasible) receivers */
+        	if(! subProgress.containsKey(n.getImplementingMethod())) {
+        		WCETTool.logger.info("Pruned InvokeNode: "+n.getImplementingMethod());
+        		progress = Long.MIN_VALUE; /* not possible */
+        		return;
+        	}
             Long aLong = subProgress.get(n.getImplementingMethod());
             long invokedProgress = aLong;
             progress = 1 + invokedProgress;
@@ -126,15 +138,15 @@ public class TreeAnalysis {
     public TreeAnalysis(WCETTool p, boolean filterLeafMethods) {
         this.project = p;
         this.filterLeafMethods = filterLeafMethods;
-        computeProgress(p.getTargetMethod());
+        computeProgress(p.getTargetMethod(), CallString.EMPTY);
     }
 
     /* FIXME: filter leaf methods is really a ugly hack,
          * but needs some work to play nice with uppaal eliminate-leaf-methods optimizations
          */
 
-    public void computeProgress(MethodInfo targetMethod) {
-        List<MethodInfo> reachable = project.getCallGraph().getReachableImplementations(targetMethod);
+    public void computeProgress(MethodInfo targetMethod, CallString cs) {
+        List<MethodInfo> reachable = project.getCallGraph().getReachableImplementations(targetMethod,cs);
         Collections.reverse(reachable);
         for (MethodInfo mi : reachable) {
             ControlFlowGraph cfg = project.getFlowGraph(mi);

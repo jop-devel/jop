@@ -729,6 +729,12 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         return edges;
     }
 
+	@Override
+	public boolean isInfeasibleReceiver(MethodInfo method, CallString cs) {
+		
+		return ! this.getCallGraph().hasNode(method, cs);
+	}
+
     /**
      * Get infeasible edges for certain basic block call string
      * @param cfg the CFG containing the block
@@ -755,6 +761,5 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         }
         return retval;
     }
-
 
 }

@@ -69,11 +69,13 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		@Override
 		public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
 
-			// FIXME: [Bug #3] Hackish implementation of callgraph pruning
+			//[Bug #3] Callgraph Pruning
 			if(n.getVirtualNode() != null) {
-				Set<MethodInfo> actuallyReachable =
-					n.getVirtualNode().getImplementingMethods(ctx.getCallString(), project.getCallGraph());
-				if(! actuallyReachable.contains(n.getImplementingMethod())) return;
+				
+				if(project.isInfeasibleReceiver(n.getImplementingMethod(), ctx.getCallString().push(n.getInvokeSite()))) {
+	        		WCETTool.logger.info("RecursiveWcetAnalayis: Pruned InvokeNode: "+n.getImplementingMethod());					
+	        		return;
+				}
 			}
 
 			cost.addLocalCost(processor.getExecutionTime(ctx.getExecutionContext(n),n.getInstructionHandle()));

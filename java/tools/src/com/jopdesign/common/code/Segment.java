@@ -196,12 +196,7 @@ public class Segment {
 			CFGProvider cfgProvider, int callStringLength, InfeasibleEdgeProvider infeasibles) {
 		
 		if(infeasibles == null) {
-			infeasibles = new InfeasibleEdgeProvider() {
-				@Override
-				public Collection<CFGEdge> getInfeasibleEdges(ControlFlowGraph cfg, CallString cs) {
-					return new ArrayList<CFGEdge>();
-				}
-			};
+			infeasibles = InfeasibleEdgeProvider.NO_INFEASIBLES; 
 		}
 		
 		SuperGraph superGraph = new SuperGraph(cfgProvider, cfgProvider.getFlowGraph(targetMethod), callString, callStringLength, infeasibles);
