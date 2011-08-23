@@ -161,9 +161,11 @@ CALLSTRING_LENGTH=0
 # dataflow analysis
 #
 USE_DFA?=no
+
 ifeq (USE_DFA, yes)
 DFA_CACHE=--dfa-cache-dir java/target/wcet/dfa-cache
 endif
+
 
 #
 #	Application optimization with JCopter
@@ -404,7 +406,7 @@ JCOPTER_DEFAULT_OPTS=--use-dfa $(USE_DFA) --callstring-length $(CALLSTRING_LENGT
 ifeq (${JCOPTER_USE_WCA},no)
   JCOPTER_OPTIONS=--no-use-wca $(JCOPTER_DEFAULT_OPTS) ${JCOPTER_OPT} 
 else
-  JCOPTER_OPTIONS=--use-wca --wca-target ${WCET_METHOD} ${JCOPTER_OPT}  
+  JCOPTER_OPTIONS=--use-wca --wca-target ${WCET_METHOD} $(JCOPTER_DEFAULT_OPTS) ${JCOPTER_OPT}   
 endif
 
 jop_config:
@@ -434,9 +436,7 @@ endif
 # Optimize
 ifeq ($(USE_JCOPTER),yes)
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter \
-	   -c $(TARGET)/dist/classes -o $(TARGET)/dist \
-	   --classdir $(TARGET)/dist/classes.opt \
-	   --sp $(TARGET_SOURCE) \
+	   -c $(TARGET)/dist/classes -o $(TARGET)/dist --classdir $(TARGET)/dist/classes.opt \
 	   $(JCOPTER_OPTIONS) $(MAIN_CLASS)
 	mv $(TARGET)/dist/classes $(TARGET)/dist/classes.unopt
 	mv $(TARGET)/dist/classes.opt $(TARGET)/dist/classes
@@ -783,9 +783,11 @@ wcet_help:
 	java $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis --help
 
 
-# dotgraph works for wcet.WCETAnalyser
-dotgraph:
-	cd $(TARGET)/wcet/$(P2).$(P3)_$(WCET_METHOD)/report && make
+# report works for wcet.WCETAnalyser
+WCET_REPORT_DIR=$(TARGET)/wcet/$(subst /,_,$(P2))_$(P3)_$(WCET_METHOD)/report
+wcet_report:
+	cd  $(WCET_REPORT_DIR) && make
+	firefox $(WCET_REPORT_DIR)/index.html
 
 dfa:
 	java -Xss16M $(TOOLS_CP) com.jopdesign.dfa.Main \

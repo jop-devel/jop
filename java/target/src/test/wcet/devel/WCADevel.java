@@ -1,5 +1,5 @@
 // Temp test code
-package wcet.wcadevel;
+package wcet.devel;
 
 public class WCADevel {
 
