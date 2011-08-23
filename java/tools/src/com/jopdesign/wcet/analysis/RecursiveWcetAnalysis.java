@@ -72,7 +72,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 			//[Bug #3] Callgraph Pruning
 			if(n.getVirtualNode() != null) {
 				
-				if(project.isInfeasibleReceiver(n.getImplementingMethod(), ctx.getCallString().push(n.getInvokeSite()))) {
+				if(project.isInfeasibleReceiver(n.getImplementingMethod(), ctx.getCallString().push(n.getInvokeSite(),project.getCallstringLength()))) {
 	        		WCETTool.logger.info("RecursiveWcetAnalayis: Pruned InvokeNode: "+n.getImplementingMethod());					
 	        		return;
 				}
