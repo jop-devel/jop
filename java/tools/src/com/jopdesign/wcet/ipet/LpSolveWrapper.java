@@ -20,14 +20,12 @@
 package com.jopdesign.wcet.ipet;
 
 import com.jopdesign.common.graphutils.IDProvider;
-import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
 import lpsolve.LpSolve;
 import lpsolve.LpSolveException;
 import org.apache.log4j.Logger;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
@@ -297,8 +295,8 @@ public class LpSolveWrapper<T> {
 					System.out.println(String.format("Objective entry %d: %.2f",i++,obj));
 				}
 			}
-			throw new LpSolveException("Failed to solve LP problem: "+st+" // "+
-					(objVec != null ? Arrays.toString(objVec) : " no info "));
+			throw new LpSolveException("Failed to solve LP problem: status="+st+", exc="+thr.exception);
+			//		(objVec != null ? Arrays.toString(objVec) : " no info "));
 		}
 		return this.lpsolve.getObjective();
 	}

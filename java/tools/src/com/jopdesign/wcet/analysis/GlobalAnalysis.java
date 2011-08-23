@@ -130,7 +130,12 @@ public class GlobalAnalysis {
 
         /* Solve */
         long _start = System.currentTimeMillis();
-        double relaxedCost = ipetSolver.solve(null, false);
+    	double relaxedCost = 0;
+        try {
+        	relaxedCost = ipetSolver.solve(null, false);
+        } catch(LpSolveException ex) {
+        	WCETTool.logger.error("Solving the relaxed problem failed - bug in lp solving lib?");
+        }
         long _time_rlp = System.currentTimeMillis() - _start;
         double ilpCost = ipetSolver.solve(flowMap);
         long _time_ilp = System.currentTimeMillis() - _start;
