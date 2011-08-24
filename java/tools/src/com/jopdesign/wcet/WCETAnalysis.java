@@ -40,6 +40,7 @@ import com.jopdesign.dfa.DFATool;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
+import com.jopdesign.wcet.analysis.cache.CacheAnalysis.UnsupportedCacheModelException;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.analysis.InvalidFlowFactException;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
@@ -47,7 +48,7 @@ import com.jopdesign.wcet.analysis.TreeAnalysis;
 import com.jopdesign.wcet.analysis.UppaalAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.ipet.IPETConfig;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 import com.jopdesign.wcet.ipet.LpSolveWrapper;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;
@@ -205,69 +206,60 @@ public class WCETAnalysis {
 		exec.info("Cyclomatic complexity: " + wcetTool.computeCyclomaticComplexity(wcetTool.getTargetMethod()));
 	    
 		/* Fast, useful cache approximationx */
-		StaticCacheApproximation cacheApprox;
-	    if(! wcetTool.getWCETProcessorModel().hasMethodCache()) {
-	    	cacheApprox = StaticCacheApproximation.ALWAYS_MISS;
-	    } else {
-	    	cacheApprox = StaticCacheApproximation.ALL_FIT_SIMPLE;
-	    }
+		CacheCostCalculationMethod cacheApprox = CacheCostCalculationMethod.ALL_FIT_SIMPLE;
 	    
-	    /* Perform a few standard analysis (MIN_CACHE_COST, ALWAYS_HIT, ALWAYS_MISS) without call strings */
-	    if(wcetTool.getWCETProcessorModel().hasMethodCache()) {
-	        long start,stop;
-	
-	        /* Tree based WCET analysis - has to be equal to ALWAYS_MISS if no flow facts are used */
-	        {
-	            start = System.nanoTime();
-	            TreeAnalysis treeAna = new TreeAnalysis(wcetTool, false);
-	            long treeWCET = treeAna.computeWCET(wcetTool.getTargetMethod());
-	            stop = System.nanoTime();
-	            reportMetric("progress-measure",treeAna.getMaxProgress(wcetTool.getTargetMethod()));
-	            reportSpecial("wcet.tree",WcetCost.totalCost(treeWCET),start,stop,0.0);
-	        }
-	
-	        RecursiveWcetAnalysis<AnalysisContextLocal> an =
-	            new RecursiveWcetAnalysis<AnalysisContextLocal>(
-	                    wcetTool, ipetConfig,
-	                    new LocalAnalysis(wcetTool,ipetConfig));
-	
-	
-	        /* always miss */
-	        start = System.nanoTime();
-	        alwaysMissCost = an.computeCost(wcetTool.getTargetMethod(),new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_MISS));
-	        stop  = System.nanoTime();
-	        reportSpecial("always-miss",alwaysMissCost,start,stop,LpSolveWrapper.getSolverTime());
-	
-	        /* always hit */
-	        LpSolveWrapper.resetSolverTime();
-	        start = System.nanoTime();
-	        alwaysHitCost = an.computeCost(wcetTool.getTargetMethod(), new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_HIT));
-	        stop  = System.nanoTime();
-	        reportSpecial("always-hit",alwaysHitCost,start,stop,LpSolveWrapper.getSolverTime());
-	
-	        /* simple approx */
-	        wcetTool.setGenerateWCETReport(true);
-	        start = System.nanoTime();
-	        approxCost = an.computeCost(wcetTool.getTargetMethod(),new AnalysisContextLocal(cacheApprox));
-	        stop  = System.nanoTime();
-	        reportSpecial("recursive-report",approxCost,start,stop,LpSolveWrapper.getSolverTime());
-	        wcetTool.setGenerateWCETReport(false);
-	
-	    }        
+	    /* Perform a few standard analysis (MIN_CACHE_COSdT, ALWAYS_HIT, ALWAYS_MISS) without call strings */
+		long start,stop;
+
+		/* Tree based WCET analysis - has to be equal to ALWAYS_MISS if no flow facts are used */
+		{
+			start = System.nanoTime();
+			TreeAnalysis treeAna = new TreeAnalysis(wcetTool, false);
+			long treeWCET = treeAna.computeWCET(wcetTool.getTargetMethod());
+			stop = System.nanoTime();
+			reportMetric("progress-measure",treeAna.getMaxProgress(wcetTool.getTargetMethod()));
+			reportSpecial("wcet.tree",WcetCost.totalCost(treeWCET),start,stop,0.0);
+		}
+
+		RecursiveWcetAnalysis<AnalysisContextLocal> an =
+				new RecursiveWcetAnalysis<AnalysisContextLocal>(
+						wcetTool, ipetConfig,
+						new LocalAnalysis(wcetTool,ipetConfig));
+
+
+		/* always miss */
+		start = System.nanoTime();
+		alwaysMissCost = an.computeCost(wcetTool.getTargetMethod(),new AnalysisContextLocal(CacheCostCalculationMethod.ALWAYS_MISS));
+		stop  = System.nanoTime();
+		reportSpecial("always-miss",alwaysMissCost,start,stop,LpSolveWrapper.getSolverTime());
+
+		/* always hit */
+		LpSolveWrapper.resetSolverTime();
+		start = System.nanoTime();
+		alwaysHitCost = an.computeCost(wcetTool.getTargetMethod(), new AnalysisContextLocal(CacheCostCalculationMethod.ALWAYS_HIT));
+		stop  = System.nanoTime();
+		reportSpecial("always-hit",alwaysHitCost,start,stop,LpSolveWrapper.getSolverTime());
+
+		/* simple approx */
+		wcetTool.setGenerateWCETReport(true);
+		start = System.nanoTime();
+		approxCost = an.computeCost(wcetTool.getTargetMethod(),new AnalysisContextLocal(cacheApprox));
+		stop  = System.nanoTime();
+		reportSpecial("recursive-report",approxCost,start,stop,LpSolveWrapper.getSolverTime());
+		wcetTool.setGenerateWCETReport(false);
 	}
 
-	private void runGlobal() throws InvalidFlowFactException, LpSolveException  {
+	private void runGlobal() throws InvalidFlowFactException, LpSolveException, UnsupportedCacheModelException  {
 		
-	    StaticCacheApproximation requestedCacheApprox = IPETConfig.getRequestedCacheApprox(config);
+	    CacheCostCalculationMethod requestedCacheApprox = IPETConfig.getRequestedCacheApprox(config);
 	
 	    GlobalAnalysis an = new GlobalAnalysis(wcetTool, ipetConfig);
 	
-	    String targetName = wcetTool.getTargetName();
 	    Segment target = Segment.methodSegment(wcetTool.getTargetMethod(), CallString.EMPTY,
 	    		wcetTool, wcetTool.getCallstringLength(), wcetTool);
 	
 	    /* Run global analysis */
-    	for(StaticCacheApproximation cacheApprox : StaticCacheApproximation.values()) {
+    	for(CacheCostCalculationMethod cacheApprox : CacheCostCalculationMethod.values()) {
     		LpSolveWrapper.resetSolverTime();
     		long start = System.nanoTime();
     		wcet = an.computeWCET(wcetTool.getTargetMethod().getShortName()+"_"+cacheApprox, target, cacheApprox);

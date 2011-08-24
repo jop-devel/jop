@@ -68,9 +68,16 @@ public abstract class MethodCacheImplementation implements MethodCache {
     	this.timing = timing;
         this.cacheSizeWords = cacheSizeWords;
     }
+    
+    @Override
+    public long getSizeInWords() {
+    	
+    	return cacheSizeWords;
+    }
 
     @Override
     public int requiredNumberOfBlocks(MethodInfo mi) {
+    	
         return requiredNumberOfBlocks(project.getSizeInWords(mi));
     }
 
@@ -81,23 +88,11 @@ public abstract class MethodCacheImplementation implements MethodCache {
         else return invokeCost;
     }
 
-
-    public long getMissOnceCost(MethodInfo mi, boolean assumeOnInvoke) {
-        int words = mi.getCode().getNumberOfWords();
-        boolean loadOnInvoke = project.getCallGraph().isLeafMethod(mi)
-                || this.isLRU()
-                || assumeOnInvoke;
-        long thisMiss = getMissPenalty(words, loadOnInvoke);
-        if (logger.isDebugEnabled()) {
-            logger.debug("Cache miss penalty to cumulative cache cost: " + mi + ": " + thisMiss);
-        }
-        return thisMiss;
-    }
-
     /**
      * Get miss penalty for invoking the given method
      */
     public long getMissOnInvokeCost(ControlFlowGraph cfg) {
+    	
         return this.getMissPenalty(cfg.getNumberOfWords(), true);
     }
 
@@ -105,6 +100,7 @@ public abstract class MethodCacheImplementation implements MethodCache {
      * Get miss penalty for returning to the given method
      */
     public long getMissOnReturnCost(ControlFlowGraph cfg) {
+    	
         return getMissPenalty(cfg.getNumberOfWords(), false);    	
     }
 
@@ -118,6 +114,7 @@ public abstract class MethodCacheImplementation implements MethodCache {
      * @return the maximal cache miss penalty for the invoke/return
      */
     public long getInvokeReturnMissCost(WCETProcessorModel proc, ControlFlowGraph invoker, ControlFlowGraph invoked) {
+    	
         return getMissPenalty(invoked.getNumberOfWords(), true) +
         		getMissPenalty(invoker.getNumberOfWords(), false);
     }

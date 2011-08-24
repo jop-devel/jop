@@ -34,7 +34,7 @@ import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;
 import com.jopdesign.wcet.uppaal.model.Location;
@@ -112,7 +112,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 				RecursiveWcetAnalysis<AnalysisContextLocal> ilpAn =
 					new RecursiveWcetAnalysis<AnalysisContextLocal>(project, new LocalAnalysis());
 				WcetCost wcet = ilpAn.computeCost(n.getImplementingMethod(),
-						new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_HIT));
+						new AnalysisContextLocal(CacheCostCalculationMethod.ALWAYS_HIT));
 				tBuilder.waitAtLocation(endInvokeNode, wcet.getCost());
 				tBuilder.createTransition(startInvokeNode, endInvokeNode);
 			} else {

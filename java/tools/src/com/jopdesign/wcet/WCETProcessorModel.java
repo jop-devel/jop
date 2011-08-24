@@ -23,6 +23,7 @@ import org.apache.bcel.generic.InstructionHandle;
 
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.wcet.jop.CacheModel;
 import com.jopdesign.wcet.jop.MethodCache;
 
 public interface WCETProcessorModel {
@@ -37,14 +38,14 @@ public interface WCETProcessorModel {
 	long basicBlockWCET(ExecutionContext context, BasicBlock codeBlock);
 
 	/**
-	 * @return whether there is a method cache.
-	 */
-	boolean hasMethodCache();
-
-	/**
-	 * Get method cache model
+	 * Get method cache model, or NO_METHOD_CACHE if there is no method cache in this model
 	 * @return the method cache
 	 */
     MethodCache getMethodCache();
+
+	/**
+	 * @return a list of all caches implemented in the processor model
+	 */
+	Iterable<CacheModel> getCaches();
 
 }

@@ -57,15 +57,18 @@ import com.jopdesign.common.misc.Iterators;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
+import com.jopdesign.wcet.analysis.cache.CacheAnalysis;
+import com.jopdesign.wcet.analysis.cache.CacheAnalysis.UnsupportedCacheModelException;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.analysis.cache.SuperGraphExtraCostEdge;
 import com.jopdesign.wcet.annotations.LoopBoundExpr;
 import com.jopdesign.wcet.ipet.IPETConfig;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 import com.jopdesign.wcet.ipet.IPETSolver;
 import com.jopdesign.wcet.ipet.IPETUtils;
 import com.jopdesign.wcet.ipet.LinearConstraint;
 import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
+import com.jopdesign.wcet.jop.CacheModel;
 
 /**
  * Global IPET-based analysis, supporting variable block caches (all fit region approximation).
@@ -89,7 +92,7 @@ public class GlobalAnalysis {
      */
     public WcetCost computeWCET(MethodInfo m, AnalysisContextLocal ctx) throws Exception {
 
-        StaticCacheApproximation cacheMode = ctx.getCacheApproxMode();        
+        CacheCostCalculationMethod cacheMode = ctx.getCacheApproxMode();        
         String key = "global" + "_" + cacheMode;
         Segment segment = Segment.methodSegment(m, ctx.getCallString(),project, project.getAppInfo().getCallstringLength(), project);
         return computeWCET(key, segment, cacheMode);
@@ -99,8 +102,9 @@ public class GlobalAnalysis {
      * Compute WCET for a segment, using global IPET, and cache analysis results
      * @throws InvalidFlowFactException 
      * @throws LpSolveException 
+     * @throws UnsupportedCacheModelException 
      */
-    public WcetCost computeWCET(String key, Segment segment, StaticCacheApproximation cacheMode) throws InvalidFlowFactException, LpSolveException {
+    public WcetCost computeWCET(String key, Segment segment, CacheCostCalculationMethod cacheMode) throws InvalidFlowFactException, LpSolveException, UnsupportedCacheModelException {
 
         /* create an IPET problem for the segment */
     	String problemId = formatProblemName(key, segment.getEntryMethods().toString());
@@ -110,18 +114,15 @@ public class GlobalAnalysis {
         setExecutionCost(segment, ipetSolver);
 
         /* Add constraints for caches */
-        Set<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
-        MethodCacheAnalysis methodCacheAnalysis = new MethodCacheAnalysis(project);
-        if(project.getWCETProcessorModel().hasMethodCache()) {
-        	missEdges.addAll(methodCacheAnalysis.addCacheCost(segment, ipetSolver, cacheMode));
-        }
+        Set<SuperGraphEdge> costMissEdges = new HashSet<SuperGraphEdge>();
 
-//        for(CacheModel cacheModel : project.getWCETProcessorModel().getCaches()) {
-//        	CacheAnalysis cpa = CacheAnalysis.getCacheAnalysisFor(cacheModel);
-//        	CacheIPETModel cpi = cpa.addCacheCost(segment, ipetSolver, cacheMode);
-//        	modelledCaches.add(cpi);
-//        }
-//        
+        for(CacheModel cacheModel : project.getWCETProcessorModel().getCaches()) {
+        	
+        	CacheAnalysis cpa = CacheAnalysis.getCacheAnalysisFor(cacheModel, project);
+        	Set<SuperGraphEdge> edges = cpa.addCacheCost(segment, ipetSolver, cacheMode);
+        	costMissEdges.addAll(edges);
+        }
+        
         /* Add constraints for object cache */
     	// ObjectRefAnalysis objectCacheAnalysis = new ObjectRefAnalysis(project, false, 4, 8, 4);
         
@@ -338,8 +339,6 @@ public class GlobalAnalysis {
 	/**
      * Compute the execution time of each edge in in the supergraph
      * 
-     * FIXME: There is both discrepancy and overlap between analysis contexts and execution contexts
-     *
      * @param segment       the supergraph, whose vertices are considered
      * @param ipetInst      the IPET instance
      * @return the cost map
@@ -381,7 +380,7 @@ public class GlobalAnalysis {
 	        long edgeCost = ipetSolver.getEdgeCost(edge);
 	        long flowCost = edgeCost * flowEntry.getValue();
 	        if(edge instanceof SuperGraphExtraCostEdge) {
-	        	edge = ((SuperGraphExtraCostEdge)edge).getParent(); /* attach cost to the flow edge */
+	        	// edge = ((SuperGraphExtraCostEdge)edge).getParent(); /* attach cost to the flow edge */
 	        	cost.addCacheCost(flowCost);
 	        	MiscUtils.incrementBy(cacheCostProfile, edge, flowCost, 0);
 	        } else {
@@ -421,7 +420,8 @@ public class GlobalAnalysis {
 		return cost;
 	}
 
-
+    // FIXME: Remove? I think it is not needed any more
+	@Deprecated
 	public static class GlobalIPETStrategy
             implements RecursiveStrategy<AnalysisContextLocal, WcetCost> {
         private IPETConfig ipetConfig;
@@ -429,15 +429,13 @@ public class GlobalAnalysis {
         public GlobalIPETStrategy(IPETConfig ipetConfig) {
             this.ipetConfig = ipetConfig;
         }
-        // TODO: [cache-analysis] Generalize/Refactor Cache Analysis
-        // FIXME: Proper Call Context Support!
 
         public WcetCost recursiveCost(
                 RecursiveAnalysis<AnalysisContextLocal, WcetCost> stagedAnalysis,
                 ControlFlowGraph.InvokeNode n,
                 AnalysisContextLocal ctx) {
         	
-            if (ctx.getCacheApproxMode() != StaticCacheApproximation.ALL_FIT_REGIONS) {
+            if (ctx.getCacheApproxMode() != CacheCostCalculationMethod.ALL_FIT_REGIONS) {
                 throw new AssertionError("Cache Mode " + ctx.getCacheApproxMode() + " not supported using" +
                         " _mixed_ local/global IPET strategy");
             }
@@ -461,7 +459,7 @@ public class GlobalAnalysis {
                 GlobalAnalysis ga = new GlobalAnalysis(project, ipetConfig);
                 WcetCost allFitCost = null;
                 try {
-                    allFitCost = ga.computeWCET(invoked, recCtx.withCacheApprox(StaticCacheApproximation.GLOBAL_ALL_FIT));
+                    allFitCost = ga.computeWCET(invoked, recCtx.withCacheApprox(CacheCostCalculationMethod.GLOBAL_ALL_FIT));
                 }
                 catch (Exception e) {
                     throw new AssertionError(e);

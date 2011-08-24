@@ -24,7 +24,6 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallGraph.ContextEdge;
-import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph.InvokeNode;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
@@ -44,7 +43,7 @@ import com.jopdesign.wcet.analysis.RecursiveAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.ipet.IPETConfig;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 import com.jopdesign.wcet.jop.MethodCache;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
@@ -514,7 +513,7 @@ public class MethodCacheAnalysis {
     ///////////////////////////////////////////////////////////////////////////////////
 
     public RecursiveStrategy<AnalysisContextLocal,WcetCost>
-           createRecursiveStrategy(WCETTool tool, IPETConfig ipetConfig, StaticCacheApproximation cacheApprox)
+           createRecursiveStrategy(WCETTool tool, IPETConfig ipetConfig, CacheCostCalculationMethod cacheApprox)
     {
         if (cacheApprox.needsInterProcIPET()) {
             // TODO use method-cache for all-fit
@@ -530,7 +529,7 @@ public class MethodCacheAnalysis {
                 if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT &&
                         allFit(stagedAnalysis.getWCETTool(), n.getInvokeSite().getInvoker(), ctx.getCallString()))
                 {
-                    newCtx = ctx.withCacheApprox(StaticCacheApproximation.ALWAYS_HIT);
+                    newCtx = ctx.withCacheApprox(CacheCostCalculationMethod.ALWAYS_HIT);
                 }
                 return super.recursiveCost(stagedAnalysis, n, newCtx);
             }

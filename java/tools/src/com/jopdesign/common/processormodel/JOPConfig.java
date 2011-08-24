@@ -112,7 +112,8 @@ public class JOPConfig {
     private int timeslot;
     private File asmFile;
 
-    private CacheImplementation objectCacheName;
+    private CacheImplementation methodCacheName;
+    
     private int objectCacheAssociativity;
     private int objectCacheBlockSize;
     private boolean objectCacheFieldTag;
@@ -140,7 +141,7 @@ public class JOPConfig {
         this.cpus = jopConfig.getOption(CMP_CPUS).intValue();
         this.timeslot = jopConfig.getOption(CMP_TIMESLOT).intValue();
 
-        this.objectCacheName = jopConfig.getOption(CACHE_IMPL);
+        this.methodCacheName = jopConfig.getOption(CACHE_IMPL);
 
         this.objectCacheAssociativity = jopConfig.getOption(OBJECT_CACHE_ASSOCIATIVITY).intValue();
         this.objectCacheBlockSize = jopConfig.getOption(OBJECT_CACHE_BLOCK_SIZE).intValue();
@@ -176,6 +177,10 @@ public class JOPConfig {
         return asmFile;
     }
 
+    public CacheImplementation getMethodCacheImpl() {
+        return methodCacheName ;
+    }
+
     public boolean isObjectCacheFieldTag() {
         return objectCacheFieldTag;
     }
@@ -184,9 +189,10 @@ public class JOPConfig {
         return objectCacheHitCycles;
     }
 
-    public CacheImplementation getCacheName() {
-        return objectCacheName;
-    }
+	public boolean hasObjectCache() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 
     /**
      * @return the associativity of the object cache
@@ -250,6 +256,7 @@ public class JOPConfig {
     public void setObjectCacheLoadBlockCycles(long objectCacheLoadBlockCycles) {
         this.objectCacheLoadBlockCycles = objectCacheLoadBlockCycles;
     }
+
 
     /* Removed for now, as is not flexible enough */
 //	public long getObjectCacheAccessTime(int words) {

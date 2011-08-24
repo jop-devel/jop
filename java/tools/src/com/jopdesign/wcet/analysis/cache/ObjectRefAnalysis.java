@@ -67,7 +67,7 @@ import com.jopdesign.wcet.analysis.InvalidFlowFactException;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETSolver;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 
 /** Analysis of the used object references.
  *  Goal: Detect persistence scopes.
@@ -437,7 +437,7 @@ public class ObjectRefAnalysis {
 	 * @throws InvalidFlowFactException 
 	 */
 	public Set<SuperGraphEdge> addCacheCost(Segment segment, IPETSolver<SuperGraphEdge> ipetSolver,
-			StaticCacheApproximation cacheCalculation) throws InvalidFlowFactException, LpSolveException {
+			CacheCostCalculationMethod cacheCalculation) throws InvalidFlowFactException, LpSolveException {
 		
 		Set<SuperGraphEdge> missEdges;
 		switch(cacheCalculation) {

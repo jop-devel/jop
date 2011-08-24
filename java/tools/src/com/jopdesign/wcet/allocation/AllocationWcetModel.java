@@ -29,6 +29,7 @@ import com.jopdesign.dfa.analyses.Interval;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.annotations.SourceAnnotations;
+import com.jopdesign.wcet.jop.CacheModel;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.jop.NoMethodCache;
 
@@ -40,6 +41,7 @@ import org.apache.bcel.generic.NEWARRAY;
 import org.apache.bcel.generic.ObjectType;
 import org.apache.bcel.generic.Type;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -62,16 +64,7 @@ public abstract class AllocationWcetModel implements WCETProcessorModel {
 		}
 		return size;
 	}
-
-    public MethodCache getMethodCache() {
-    	return new NoMethodCache();
-	}
-
-
-	public boolean hasMethodCache() {
-		return false;
-	}
-
+	
 	public long getExecutionTime(ExecutionContext context, InstructionHandle ih) {
 
 		int opcode = ih.getInstruction().getOpcode();
@@ -196,5 +189,16 @@ public abstract class AllocationWcetModel implements WCETProcessorModel {
 		}
 		return size;
 	}
+
+	@Override
+    public MethodCache getMethodCache() {
+    	return new NoMethodCache();
+	}
+
+	@Override
+	public List<CacheModel> getCaches() {
+		return Collections.emptyList();
+	}
+	
 
 }

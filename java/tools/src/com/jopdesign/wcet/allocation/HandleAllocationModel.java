@@ -27,10 +27,12 @@ public class HandleAllocationModel extends AllocationWcetModel {
 		super(p);
 	}
 	
+	@Override
 	public long computeObjectSize(long raw) {
 		return raw;
 	}
 
+	@Override
 	public long computeArraySize(long raw) {
 		return raw;
 	}

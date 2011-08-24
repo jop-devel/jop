@@ -44,20 +44,21 @@ public class IPETConfig {
      * <li/> LRU CACHE: If all fit, assume miss (at most) once on invoke
      * </ul>
      */
-    public enum StaticCacheApproximation {
-        ALL_FIT_REGIONS, ALL_FIT_SIMPLE, ALWAYS_MISS, GLOBAL_ALL_FIT, ALWAYS_HIT;
+    public enum CacheCostCalculationMethod {
+        ALL_FIT_REGIONS, ALL_FIT_COST, ALL_FIT_SIMPLE, ALWAYS_MISS,
+        /* unsafe */ GLOBAL_ALL_FIT, ALWAYS_HIT;
 
         public boolean needsInterProcIPET() {
-            return this == StaticCacheApproximation.ALL_FIT_REGIONS ||
-                    this == StaticCacheApproximation.GLOBAL_ALL_FIT;
+            return this == CacheCostCalculationMethod.ALL_FIT_REGIONS ||
+                   this == CacheCostCalculationMethod.GLOBAL_ALL_FIT;
         }
     }
 
-    public static final EnumOption<StaticCacheApproximation> STATIC_CACHE_APPROX =
-            new EnumOption<StaticCacheApproximation>(
+    public static final EnumOption<CacheCostCalculationMethod> STATIC_CACHE_APPROX =
+            new EnumOption<CacheCostCalculationMethod>(
                     "ipet-cache-approx",
                     "cache approximation for IPET",
-                    StaticCacheApproximation.ALL_FIT_REGIONS);
+                    CacheCostCalculationMethod.ALL_FIT_REGIONS);
 
     public static final BooleanOption ASSUME_MISS_ONCE_ON_INVOKE =
             new BooleanOption("ipet-assume-miss-once-on-invoke",
@@ -113,7 +114,7 @@ public class IPETConfig {
         return ipc;
     }
 
-    public static StaticCacheApproximation getRequestedCacheApprox(Config config) {
+    public static CacheCostCalculationMethod getRequestedCacheApprox(Config config) {
         return config.getOption(STATIC_CACHE_APPROX);
     }
 

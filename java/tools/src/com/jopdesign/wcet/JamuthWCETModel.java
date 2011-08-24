@@ -24,12 +24,15 @@ import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.timing.jamuth.JamuthInstructionInfo;
 import com.jopdesign.timing.jamuth.JamuthTimingTable;
+import com.jopdesign.wcet.jop.CacheModel;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.jop.NoMethodCache;
 import org.apache.bcel.generic.BranchHandle;
 import org.apache.bcel.generic.InstructionHandle;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class JamuthWCETModel implements WCETProcessorModel {
 	private JamuthTimingTable tt;
@@ -84,7 +87,9 @@ public class JamuthWCETModel implements WCETProcessorModel {
 		return NO_METHOD_CACHE;
 	}
 
-	public boolean hasMethodCache() {
-		return false;
+	@Override
+	public List<CacheModel> getCaches() {
+		return Collections.emptyList();
 	}
+
 }

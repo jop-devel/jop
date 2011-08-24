@@ -23,8 +23,8 @@ package com.jopdesign.wcet.analysis.cache;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import lpsolve.LpSolveException;
 
@@ -72,7 +72,7 @@ import com.jopdesign.wcet.ipet.IPETUtils;
  * is greater than zero. Conversely, if for all edges accessing the tag the
  * frequency is 0, the corresponding data is never loaded into the cache.
  */
-public abstract class CachePersistenceAnalysis<T> {
+public final class CachePersistenceAnalysis {
 
 	
 	/**
@@ -140,9 +140,9 @@ public abstract class CachePersistenceAnalysis<T> {
 			Object analysisKey) {
 		
 		HashSet<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
-		
+
 		for(Entry<T, C> accessed : partition) {
-			
+
 			List<SuperGraphEdge> missOnceEdges = new ArrayList<SuperGraphEdge>();
 			for(SuperGraphEdge accessEdge : accessed.getValue()) {
 
@@ -191,9 +191,9 @@ public abstract class CachePersistenceAnalysis<T> {
 		
 		/* add persistence constraints */
 		addPersistenceSegmentConstraints(segment, partition, ipetSolver, costModel, analysisKey);
-
 		/* Solve */
 		double lpCost = ipetSolver.solve(null, useILP);		
+
 		long maxCacheCost = (long) (lpCost + 0.5);
 		return maxCacheCost;
 	}

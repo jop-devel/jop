@@ -30,6 +30,17 @@ public class NoMethodCache implements MethodCache {
 	public NoMethodCache() {
 	}
 
+
+	@Override
+	public CacheImplementation getName() {
+		return CacheImplementation.NO_METHOD_CACHE;
+	}
+
+    @Override
+    public long getSizeInWords() {    	
+    	return 0;
+    }
+
     @Override
     public boolean allFit(long blocks) {
         return false;
@@ -53,11 +64,6 @@ public class NoMethodCache implements MethodCache {
 	@Override
 	public int requiredNumberOfBlocks(int sizeInWords) {
 		return 0;
-	}
-
-	@Override
-	public CacheImplementation getName() {
-		return CacheImplementation.NO_METHOD_CACHE;
 	}
 
 	@Override

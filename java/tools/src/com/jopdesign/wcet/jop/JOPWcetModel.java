@@ -22,6 +22,7 @@ package com.jopdesign.wcet.jop;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.misc.Iterators;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.common.processormodel.JOPModel;
 import com.jopdesign.common.processormodel.ProcessorModel;
@@ -35,14 +36,17 @@ import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class JOPWcetModel implements WCETProcessorModel {
 
     private final String identifier;
-    private MethodCache cache;
+    private MethodCache methodCache;
     private JOPTimingTable timing;
     private final JOPConfig config;
     private final ProcessorModel processorModel;
+	private ObjectCache objectCache;
 
     /* TODO: add configuration stuff */
     public JOPWcetModel(WCETTool p) throws IOException {
@@ -62,12 +66,16 @@ public class JOPWcetModel implements WCETProcessorModel {
             this.timing = SingleCoreTiming.getTimingTable(config.getAsmFile());
             timing.configureWaitStates(config.rws(), config.wws());
         }
+        
+        this.methodCache = MethodCacheImplementation.getCacheModel(p, timing);
+        if(config.hasObjectCache()) {
+        	this.objectCache = new ObjectCache(p, timing);
+        }
         key.append("jop");
         if(config.isCmp()) key.append("-cmp");
-        key.append("-").append(cache);
+        key.append("-").append(config.getMethodCacheImpl());
         identifier = key.toString();
 
-        this.cache = MethodCacheImplementation.getCacheModel(p, timing);
     }
     
     /** return true if we are not able to compute a WCET for the given bytecode */
@@ -112,10 +120,19 @@ public class JOPWcetModel implements WCETProcessorModel {
     }
 
     public MethodCache getMethodCache() {
-        return cache;
+        return methodCache;
     }
 
     public boolean hasMethodCache() {
-        return this.cache.getNumBlocks() > 0;
+        return this.methodCache.getNumBlocks() > 0;
     }
+
+	@Override
+	public Iterable<CacheModel> getCaches() {
+		
+		List<CacheModel> list = new ArrayList<CacheModel>(2);
+		if(hasMethodCache())    list.add(methodCache);
+		if(objectCache != null) list.add(objectCache);
+		return list;
+	}
 }

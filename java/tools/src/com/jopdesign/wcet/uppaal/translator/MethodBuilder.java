@@ -34,7 +34,7 @@ import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 import com.jopdesign.wcet.uppaal.model.Location;
 import com.jopdesign.wcet.uppaal.model.Transition;
 import com.jopdesign.wcet.uppaal.model.TransitionAttributes;
@@ -137,7 +137,7 @@ public class MethodBuilder implements CfgVisitor {
 					new LocalAnalysis());
 		WcetCost cost = an.runWCETComputation("SUBGRAPH"+n.getId(),
 				n.getSubGraph(),
-				new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_MISS)
+				new AnalysisContextLocal(CacheCostCalculationMethod.ALWAYS_MISS)
 		).getTotalCost();
 		SubAutomaton sumLoc = createBasicBlock(n.getId(),cost.getCost());
 		this.nodeTemplates.put(n,sumLoc);

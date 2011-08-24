@@ -8,7 +8,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.processormodel.JOPConfig.CacheImplementation;
 import com.jopdesign.wcet.WCETTool;
 
-public interface MethodCache {
+public interface MethodCache extends CacheModel {
 
     public static final Logger logger = Logger.getLogger(WCETTool.LOG_WCET_CACHE+".MethodCache");
 

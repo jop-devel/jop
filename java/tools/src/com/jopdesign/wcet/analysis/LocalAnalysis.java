@@ -28,7 +28,7 @@ import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.ipet.IPETConfig;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 import org.apache.log4j.Logger;
 
 public class LocalAnalysis 
@@ -59,7 +59,7 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 			ControlFlowGraph.InvokeNode n,
 			AnalysisContextLocal ctx) {
 		
-		StaticCacheApproximation cacheMode = ctx.getCacheApproxMode();
+		CacheCostCalculationMethod cacheMode = ctx.getCacheApproxMode();
 		if(cacheMode.needsInterProcIPET()) {
 			throw new AssertionError("Error: Cache Mode "+cacheMode+" not supported using local IPET strategy - " +
 					"it needs an interprocedural IPET analysis");
@@ -80,7 +80,7 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 		long nonLocalCacheCost = recCost.getCacheCost();
 		long invokeReturnCost = mca.getInvokeReturnMissCost(n.getInvokeSite(), ctx.getCallString());
 						
-		if(! proc.hasMethodCache() || cacheMode == StaticCacheApproximation.ALWAYS_HIT) {
+		if(proc.getMethodCache().getNumBlocks() == 0 || cacheMode == CacheCostCalculationMethod.ALWAYS_HIT) {
 			cacheCost = 0;
 		}
 		
@@ -88,7 +88,7 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 			cacheCost = invokeReturnCost + nonLocalCacheCost;
 		}
 		
-		else if(cacheMode == StaticCacheApproximation.ALL_FIT_SIMPLE && allFit(project, invoked,recCtx.getCallString())) {
+		else if(cacheMode == CacheCostCalculationMethod.ALL_FIT_SIMPLE && allFit(project, invoked,recCtx.getCallString())) {
 			
 			long returnCost = mca.getMissOnceCost(invoker, false);
 
@@ -96,7 +96,7 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 			long noAllFitCost = recCost.getCost() + invokeReturnCost;
 			
 			/* Compute cost without method cache */
-			AnalysisContextLocal ahCtx = recCtx.withCacheApprox(StaticCacheApproximation.ALWAYS_HIT);
+			AnalysisContextLocal ahCtx = recCtx.withCacheApprox(CacheCostCalculationMethod.ALWAYS_HIT);
 			long alwaysHitCost = stagedAnalysis.computeCost(invoked, ahCtx).getCost();
 			
 			/* Compute penalty for loading each method exactly once */

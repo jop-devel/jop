@@ -29,7 +29,7 @@ import com.jopdesign.common.config.Config.BadConfigurationError;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.MethodCacheAnalysis.AnalysisType;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -77,7 +77,7 @@ public class AnalysisManager {
      * @param updateWCEP if true, let the wcaInvoker provide a global WCET path and keep it up-to-date
      */
     public void initAnalyses(Set<MethodInfo> targets, AnalysisType cacheAnalysisType,
-                             StaticCacheApproximation cacheApproximation, boolean useMethodCacheStrategy,
+                             CacheCostCalculationMethod cacheApproximation, boolean useMethodCacheStrategy,
                              Set<MethodInfo> wcaRoots, boolean updateWCEP)
     {
         logger.info("Initializing analyses..");

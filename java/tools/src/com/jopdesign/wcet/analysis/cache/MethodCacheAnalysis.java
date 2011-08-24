@@ -19,23 +19,19 @@
  */
 package com.jopdesign.wcet.analysis.cache;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+
+import lpsolve.LpSolveException;
 
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
-
-import lpsolve.LpSolveException;
 
 import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
@@ -55,13 +51,9 @@ import com.jopdesign.common.misc.Filter;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.misc.MiscUtils.F1;
 import com.jopdesign.wcet.WCETTool;
-import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.InvalidFlowFactException;
-import com.jopdesign.wcet.ipet.IPETConfig;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 import com.jopdesign.wcet.ipet.IPETSolver;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
-import com.jopdesign.wcet.ipet.LinearConstraint;
-import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
 import com.jopdesign.wcet.jop.MethodCache;
 
 /**
@@ -69,9 +61,9 @@ import com.jopdesign.wcet.jop.MethodCache;
  * @throws InvalidFlowFactException 
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  */
-public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
+public class MethodCacheAnalysis extends CacheAnalysis {
 
-    private static final String KEY = "wcet.MethodCacheAnalysis";
+    static final String KEY = "wcet.MethodCacheAnalysis";
 
     public static enum PersistenceCheck {
         /** check persistence by counting the total number of distinct methods (cheap) */
@@ -118,25 +110,20 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
 		return methodCache;
 	}
 
-	/**
-	 * Add method cache cost to ipet problem
-	 * @param segment
-	 * @param ipetSolver
-	 * @return
-	 * @throws LpSolveException 
-	 * @throws InvalidFlowFactException 
-	 */
+	@Override
 	public Set<SuperGraphEdge> addCacheCost(Segment segment, IPETSolver<SuperGraphEdge> ipetSolver,
-			StaticCacheApproximation cacheCalculation) throws InvalidFlowFactException, LpSolveException {
+			CacheCostCalculationMethod cacheCostCalc) throws InvalidFlowFactException, LpSolveException {
 		
 		Set<SuperGraphEdge> missEdges;
-		switch(cacheCalculation) {
-		case ALWAYS_HIT:      missEdges = new HashSet<SuperGraphEdge>(); break; /* no additional costs */
-		case ALWAYS_MISS:     missEdges = addMissAlwaysCost(segment, ipetSolver); break;
-		case ALL_FIT_SIMPLE:  missEdges = addMissOnceCost(segment, ipetSolver); break;
+		if(this.getMethodCache().getNumBlocks() == 0) return new HashSet<SuperGraphEdge>();
+		switch(cacheCostCalc) {
 		case ALL_FIT_REGIONS: missEdges = addMissOnceConstraints(segment, ipetSolver); break;
+		case ALL_FIT_COST:    missEdges = addMissOnceCost(segment, ipetSolver, CHECK_COUNT_PRECISE); break;
+		case ALL_FIT_SIMPLE:  missEdges = addMissOnceCost(segment, ipetSolver, CHECK_COUNT_FAST); break;
+		case ALWAYS_MISS:     missEdges = addMissAlwaysCost(segment, ipetSolver); break;
 		case GLOBAL_ALL_FIT:  missEdges = addGlobalAllFitConstraints(segment, ipetSolver); break;
-		default: throw new RuntimeException("addCacheCost(): Unexpected cache approximation mode "+cacheCalculation);
+		case ALWAYS_HIT:      missEdges = new HashSet<SuperGraphEdge>(); break; /* no additional costs */
+		default: throw new RuntimeException("addCacheCost(): Unexpected cache cost calculation mode "+cacheCostCalc);
 		}        	
 		return missEdges;
 	}
@@ -203,8 +190,8 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
 	 */
 	public long countDistinctCacheBlocks(Segment segment, boolean useILP) throws InvalidFlowFactException, LpSolveException {
 		
-		return computeMissOnceCost(segment, getCacheAccessesByTag(segment).entrySet(), 
-					NUMBER_OF_BLOCKS, useILP, KEY, wcetTool);
+		return CachePersistenceAnalysis.computeMissOnceCost(segment, getCacheAccessesByTag(segment).entrySet(), 
+					NUMBER_OF_BLOCKS, useILP, KEY+".countDistinctCacheBlocks", wcetTool);
 	}
 
 	protected Map<MethodInfo, List<SuperGraphEdge>> getCacheAccessesByTag(Segment segment) {
@@ -267,12 +254,12 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
      *       <li/>Otherwise, create subsegments S' for each invoked method,
      *       <li/>and single node segments for each access
      *   </ul>
-     *  FIXME: currently returns always-miss segments
      * @param segment the parent segment
      * @param avoidOverlap 
      * @return
      */
-	private Collection<Segment> findPersistenceSegmentCover(Segment segment, boolean avoidOverlap) {
+	private Collection<Segment> findPersistenceSegmentCover(Segment segment, EnumSet<PersistenceCheck> checks, 
+			boolean avoidOverlap) {
 		
 		List<Segment> cover = new ArrayList<Segment>();
 
@@ -285,7 +272,7 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
 		if(entryMethods.size() != 1) {
 			throw new AssertionError("findPersistenceSegmentCover: only supporting segments with unique entry method");
 		}
-		if(this.isPersistenceRegion(segment, CHECK_COUNT_PRECISE)) {
+		if(this.isPersistenceRegion(segment, checks)) {
 			// System.err.println("Adding cover segment for: "+entryMethods);
 			cover.add(segment);
 		} else {
@@ -293,7 +280,8 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
 				ContextCFG callee = invocation.first().getCallee();
 				// System.err.println("Recursively analyzing: "+callee);
 				
-				cover.addAll(findPersistenceSegmentCover(Segment.methodSegment(callee, segment.getSuperGraph()), avoidOverlap)); 
+				Segment subSegment = Segment.methodSegment(callee, segment.getSuperGraph());
+				cover.addAll(findPersistenceSegmentCover(subSegment, checks, avoidOverlap)); 
 				// System.err.println("Adding return segment for: "+entryMethods);
 				cover.add(Segment.nodeSegment(invocation.second().getTarget(), segment.getSuperGraph()));
 			}
@@ -334,21 +322,23 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
 	 * Add miss once cost: for each method cache persistence segment, add maximum miss cost to the segment entries
 	 * @param segment
 	 * @param ipetSolver
+	 * @param , persistenceChecks 
 	 * @throws LpSolveException 
 	 * @throws InvalidFlowFactException 
 	 */
 	public Set<SuperGraphEdge> addMissOnceCost(Segment segment,
-			IPETSolver<SuperGraphEdge> ipetSolver) throws InvalidFlowFactException, LpSolveException {
+			IPETSolver<SuperGraphEdge> ipetSolver, EnumSet<PersistenceCheck> persistenceChecks)
+					throws InvalidFlowFactException, LpSolveException {
 
 		Set<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
 		int tag = 0;
 		
-		for(Segment persistenceSegment : findPersistenceSegmentCover(segment, true)) {
+		for(Segment persistenceSegment : findPersistenceSegmentCover(segment, persistenceChecks, true)) {
 
 			tag++;
 			/* Collect all cache accesses */
-			long cost = computeMissOnceCost(persistenceSegment, getCacheAccessesByTag(persistenceSegment).entrySet(), 
-					EDGE_MISS_COST, true, KEY, wcetTool);
+			long cost = CachePersistenceAnalysis.computeMissOnceCost(persistenceSegment, getCacheAccessesByTag(persistenceSegment).entrySet(), 
+					EDGE_MISS_COST, true, KEY+".addMissOnceCost", wcetTool);
 			//WCETTool.logger.info("miss once cost for segment: "+persistenceSegment+": "+cost);
 
 			F1<SuperGraphEdge, Long> costModel = MiscUtils.const1(cost);			
@@ -370,15 +360,17 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
 			IPETSolver<SuperGraphEdge> ipetSolver) {
 
 		Set<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
-		for(Segment persistenceSegment : findPersistenceSegmentCover(segment, false)) {
-			
+		int segmentCounter = 0;
+		for(Segment persistenceSegment : findPersistenceSegmentCover(segment, CHECK_COUNT_PRECISE, false)) {
+			/* we need to distinguish edges which are shared between persistence segments */
+			String key = KEY +"_" + (++segmentCounter);
 			missEdges.addAll(
-			    addPersistenceSegmentConstraints(
+					CachePersistenceAnalysis.addPersistenceSegmentConstraints(
 			    		persistenceSegment,
 			    		getCacheAccessesByTag(persistenceSegment).entrySet(),
 						ipetSolver,
 						EDGE_MISS_COST,
-						KEY));
+						key));
 		}
 		return missEdges;
 	}
@@ -387,7 +379,7 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
 	public Set<SuperGraphEdge> addGlobalAllFitConstraints(Segment segment,
 			IPETSolver<SuperGraphEdge> ipetSolver) {
 		
-		return addPersistenceSegmentConstraints(segment,
+		return CachePersistenceAnalysis.addPersistenceSegmentConstraints(segment,
 				getCacheAccessesByTag(segment).entrySet(),
 				ipetSolver,
 				EDGE_MISS_COST,
@@ -442,7 +434,6 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis<MethodInfo> {
     /**
      * Check that cache is big enough to hold any method possibly invoked
      * Return largest method
-     * TODO: move to method cache analysis
      */
     public static MethodInfo checkCache(WCETTool wcetTool, Iterable<MethodInfo> methods) throws AppInfoException {
 		MethodCache methodCache = wcetTool.getWCETProcessorModel().getMethodCache();

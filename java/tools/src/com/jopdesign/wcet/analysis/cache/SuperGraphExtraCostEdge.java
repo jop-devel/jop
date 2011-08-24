@@ -84,7 +84,7 @@ public class SuperGraphExtraCostEdge implements SuperGraphEdge {
 		hash = index;
 		hash = parent.hashCode() + hash*prime;
 		hash = key.hashCode() + hash*prime;
-		if(tag != null) hash = tag.hashCode() + hash*prime;
+		if(tag != null) hash = 1+tag.hashCode() + hash*prime;
 		return hash;
 	}
 	private int hash;
@@ -100,6 +100,11 @@ public class SuperGraphExtraCostEdge implements SuperGraphEdge {
 		if (!key.equals(other.key)) return false;
 		if (tag != null && !tag.equals(other.tag)) return false;
 		return parent.equals(other.parent);
+	}
+	
+	@Override
+	public String toString() {
+		return "{ExtraCostEdge" + this.getParent() + "/"+key+"/"+tag+"}";		
 	}
 
 	/**

@@ -32,7 +32,7 @@ import com.jopdesign.common.config.StringOption;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.JCopterConfig;
 import com.jopdesign.jcopter.analysis.MethodCacheAnalysis.AnalysisType;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -71,10 +71,10 @@ public class GreedyConfig {
                     "Select the cache analysis type: ALWAYS_MISS, ALWAYS_HIT, ALWAYS_HIT_OR_MISS, ALL_FIT_REGIONS",
                     AnalysisType.ALWAYS_MISS);
 
-    private static final EnumOption<StaticCacheApproximation> WCA_CACHE_APPROXIMATION =
-            new EnumOption<StaticCacheApproximation>("wca-cache-analysis",
+    private static final EnumOption<CacheCostCalculationMethod> WCA_CACHE_APPROXIMATION =
+            new EnumOption<CacheCostCalculationMethod>("wca-cache-analysis",
                     "Optionally set a different cache analysis type to be used by the WCA",
-                    StaticCacheApproximation.class, true);
+                    CacheCostCalculationMethod.class, true);
 
     private static final EnumOption<DUMPTYPE> DUMP_TARGET_CALLGRAPH =
             new EnumOption<DUMPTYPE>("dump-target-callgraph", "Dump the callgraph of the target methods", DUMPTYPE.off);
@@ -150,22 +150,22 @@ public class GreedyConfig {
         return !options.hasValue(WCA_CACHE_APPROXIMATION);
     }
 
-    public StaticCacheApproximation getCacheApproximation() {
-        StaticCacheApproximation defaultValue = options.getOption(WCA_CACHE_APPROXIMATION);
+    public CacheCostCalculationMethod getCacheApproximation() {
+        CacheCostCalculationMethod defaultValue = options.getOption(WCA_CACHE_APPROXIMATION);
         if (defaultValue != null) {
             return defaultValue;
         }
         AnalysisType analysisType = getCacheAnalysisType();
         if (analysisType == AnalysisType.ALWAYS_HIT) {
-            return StaticCacheApproximation.ALWAYS_HIT;
+            return CacheCostCalculationMethod.ALWAYS_HIT;
         }
         if (analysisType == AnalysisType.ALWAYS_MISS) {
-            return StaticCacheApproximation.ALWAYS_MISS;
+            return CacheCostCalculationMethod.ALWAYS_MISS;
         }
         if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT) {
-            return StaticCacheApproximation.ALL_FIT_SIMPLE;
+            return CacheCostCalculationMethod.ALL_FIT_SIMPLE;
         }
-        return StaticCacheApproximation.ALL_FIT_REGIONS;
+        return CacheCostCalculationMethod.ALL_FIT_REGIONS;
     }
 
     public List<MethodInfo> getWCATargets() {
