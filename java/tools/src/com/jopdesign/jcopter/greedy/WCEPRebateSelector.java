@@ -22,7 +22,7 @@ package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
-import com.jopdesign.jcopter.analysis.ExecCountProvider;
+import com.jopdesign.jcopter.analysis.ExecFrequencyProvider;
 import com.jopdesign.jcopter.analysis.WCAInvoker;
 
 import java.util.ArrayList;
@@ -49,15 +49,15 @@ public class WCEPRebateSelector extends RebateSelector {
     }
 
     @Override
-    protected void sortMethodData(ExecCountProvider ecp, MethodData data) {
+    protected void sortMethodData(ExecFrequencyProvider ecp, MethodData data) {
     }
 
     @Override
-    public void sortCandidates(ExecCountProvider ecp) {
+    public void sortCandidates(ExecFrequencyProvider ecp) {
     }
 
     @Override
-    public Collection<Candidate> selectNextCandidates(ExecCountProvider ecp) {
+    public Collection<Candidate> selectNextCandidates(ExecFrequencyProvider ecp) {
 
         WCAInvoker wcaInvoker = analyses.getWCAInvoker();
 
@@ -98,14 +98,14 @@ public class WCEPRebateSelector extends RebateSelector {
     }
 
     @Override
-    public Set<MethodInfo> updateChangeSet(ExecCountProvider ecp, Set<MethodInfo> optimizedMethods, Set<MethodInfo> candidateChanges) {
+    public Set<MethodInfo> updateChangeSet(ExecFrequencyProvider ecp, Set<MethodInfo> optimizedMethods, Set<MethodInfo> candidateChanges) {
         // No need to add anything else, as we search the whole graph anyway..
         analyses.getWCAInvoker().updateWCA(optimizedMethods);
 
         return candidateChanges;
     }
 
-    private RebateRatio selectCandidate(ExecCountProvider ecp, MethodData data, RebateRatio next) {
+    private RebateRatio selectCandidate(ExecFrequencyProvider ecp, MethodData data, RebateRatio next) {
 
         List<Candidate> remove = new ArrayList<Candidate>();
 

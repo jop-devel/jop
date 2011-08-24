@@ -21,7 +21,7 @@
 package com.jopdesign.jcopter.greedy;
 
 import com.jopdesign.jcopter.analysis.AnalysisManager;
-import com.jopdesign.jcopter.analysis.ExecCountProvider;
+import com.jopdesign.jcopter.analysis.ExecFrequencyProvider;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,13 +49,13 @@ public abstract class QueueSelector extends RebateSelector {
     }
 
     @Override
-    public void sortCandidates(ExecCountProvider ecp) {
+    public void sortCandidates(ExecFrequencyProvider ecp) {
         queue.clear();
         sortCandidates(ecp, methodData.keySet());
     }
 
     @Override
-    public Collection<Candidate> selectNextCandidates(ExecCountProvider ecp) {
+    public Collection<Candidate> selectNextCandidates(ExecFrequencyProvider ecp) {
         while (true) {
             RebateRatio next = queue.pollLast();
             if (next == null) return null;
@@ -75,7 +75,7 @@ public abstract class QueueSelector extends RebateSelector {
     }
 
     @Override
-    protected void sortMethodData(ExecCountProvider ecp, MethodData data) {
+    protected void sortMethodData(ExecFrequencyProvider ecp, MethodData data) {
         queue.removeAll(data.getRatios());
         data.getRatios().clear();
 
@@ -85,7 +85,7 @@ public abstract class QueueSelector extends RebateSelector {
         queue.addAll(ratios);
     }
 
-    protected Collection<RebateRatio> calculateRatios(ExecCountProvider ecp, List<Candidate> candidates) {
+    protected Collection<RebateRatio> calculateRatios(ExecFrequencyProvider ecp, List<Candidate> candidates) {
         List<RebateRatio> ratios = new ArrayList<RebateRatio>(candidates.size());
 
         for (Candidate candidate : candidates) {

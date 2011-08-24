@@ -24,7 +24,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
 import com.jopdesign.jcopter.analysis.CodeModification;
-import com.jopdesign.jcopter.analysis.ExecCountProvider;
+import com.jopdesign.jcopter.analysis.ExecFrequencyProvider;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import org.apache.bcel.generic.InstructionHandle;
 
@@ -158,7 +158,7 @@ public abstract class Candidate implements CodeModification {
      * @param analyses
      * @param ecp
      */
-    public abstract long getDeltaCacheMissCosts(AnalysisManager analyses, ExecCountProvider ecp);
+    public abstract long getDeltaCacheMissCosts(AnalysisManager analyses, ExecFrequencyProvider ecp);
 
     @Override
     public String toString() {

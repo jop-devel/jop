@@ -31,7 +31,7 @@ import java.util.Set;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public abstract class ExecCountProvider {
+public abstract class ExecFrequencyProvider {
 
     public abstract long getExecCount(MethodInfo method);
 

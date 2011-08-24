@@ -34,7 +34,7 @@ import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.common.type.TypeHelper;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
-import com.jopdesign.jcopter.analysis.ExecCountProvider;
+import com.jopdesign.jcopter.analysis.ExecFrequencyProvider;
 import com.jopdesign.jcopter.analysis.MethodCacheAnalysis;
 import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import com.jopdesign.jcopter.greedy.Candidate;
@@ -398,7 +398,7 @@ public class InlineOptimizer implements CodeOptimizer {
 
         private void updateAnalyses(AnalysisManager analyses, Map<InvokeSite,InvokeSite> invokeMap) {
 
-            analyses.getExecCountAnalysis().inline(invokeSite, invokee, new HashSet<InvokeSite>(invokeMap.values()) );
+            analyses.getExecFrequencyAnalysis().inline(invokeSite, invokee, new HashSet<InvokeSite>(invokeMap.values()) );
 
             analyses.getMethodCacheAnalysis().inline(this, invokeSite, invokee);
 
@@ -486,7 +486,7 @@ public class InlineOptimizer implements CodeOptimizer {
         }
 
         @Override
-        public long getDeltaCacheMissCosts(AnalysisManager analyses, ExecCountProvider ecp) {
+        public long getDeltaCacheMissCosts(AnalysisManager analyses, ExecFrequencyProvider ecp) {
 
             MethodCacheAnalysis mca = analyses.getMethodCacheAnalysis();
 
@@ -500,6 +500,9 @@ public class InlineOptimizer implements CodeOptimizer {
 
             costs += mca.getReturnMissCount(ecp, new ExecutionContext(invokee, new CallString(invokeSite))) *
                      invokeeDeltaReturnCosts;
+
+            // TODO the number of invoke and return misses can also change, we need to add those costs too!
+
 
             return costs;
         }
@@ -592,7 +595,7 @@ public class InlineOptimizer implements CodeOptimizer {
                     if (instr instanceof IINC) {
                         delta += maxLocals + idx > 255 ? 6 : 3;
                     } else {
-                        delta += getLoadStoreSize(idx);
+                        delta += getLoadStoreSize(maxLocals + idx);
                     }
                 } else {
                     delta += processorModel.getNumberOfBytes(invokee, instr);

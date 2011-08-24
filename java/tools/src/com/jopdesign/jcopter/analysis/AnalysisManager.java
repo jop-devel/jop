@@ -52,7 +52,7 @@ public class AnalysisManager {
     private final JCopter jcopter;
 
     private WCAInvoker wcaInvoker;
-    private ExecCountAnalysis execCountAnalysis;
+    private ExecFrequencyAnalysis execFreqAnalysis;
     private MethodCacheAnalysis methodCacheAnalysis;
     private Map<MethodInfo,StacksizeAnalysis> stacksizeMap;
 
@@ -111,7 +111,7 @@ public class AnalysisManager {
         //      if we use the WCA, we might want to use the IPET WCA to initialize the execCountAnalysis for
         //      wca-methods
 
-        // We can do this as first step (after the callgraph has been created) since it does not use the ExecCountAnalysis
+        // We can do this as first step (after the callgraph has been created) since it does not use the ExecFrequencyAnalysis
         logger.info("Initializing MethodCacheAnalysis");
         methodCacheAnalysis = new MethodCacheAnalysis(jcopter, cacheAnalysisType, targetCallGraph);
         methodCacheAnalysis.initialize();
@@ -122,9 +122,9 @@ public class AnalysisManager {
         }
 
         // TODO in fact, we might not even need this if we only use the wcaInvoker as provider or some other provider
-        logger.info("Initializing ExecCountAnalysis");
-        execCountAnalysis = new ExecCountAnalysis(this, targetCallGraph);
-        execCountAnalysis.initialize();
+        logger.info("Initializing ExecFrequencyAnalysis");
+        execFreqAnalysis = new ExecFrequencyAnalysis(this, targetCallGraph);
+        execFreqAnalysis.initialize();
     }
 
     public boolean hasWCATargetsOnly() {
@@ -181,8 +181,8 @@ public class AnalysisManager {
         }
     }
 
-    public ExecCountAnalysis getExecCountAnalysis() {
-        return execCountAnalysis;
+    public ExecFrequencyAnalysis getExecFrequencyAnalysis() {
+        return execFreqAnalysis;
     }
 
     public MethodCacheAnalysis getMethodCacheAnalysis() {
@@ -201,7 +201,7 @@ public class AnalysisManager {
     }
 
     public void clearChangeSets() {
-        if (execCountAnalysis != null) execCountAnalysis.clearChangeSet();
+        if (execFreqAnalysis != null) execFreqAnalysis.clearChangeSet();
         if (methodCacheAnalysis != null) methodCacheAnalysis.clearChangeSet();
     }
 

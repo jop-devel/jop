@@ -61,7 +61,7 @@ public class GreedyConfig {
             new BooleanOption("use-wcep", "Optimize only methods on the WCET path if WCA is enabled", false);
 
     private static final BooleanOption USE_WCA_EXEC_COUNT =
-            new BooleanOption("use-wcep-ef", "Use execution frequencies from the WCA if the WCA is enabled", true);
+            new BooleanOption("use-wcep-ef", "Use execution frequencies from the WCA if the WCA is enabled", false);
 
     private static final BooleanOption USE_FREQUENCY_ONLY =
             new BooleanOption("use-freq-only", "Assume an execution count of 1 for every method", false);

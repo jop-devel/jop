@@ -67,7 +67,7 @@ import java.util.Set;
 /**
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public class WCAInvoker extends ExecCountProvider {
+public class WCAInvoker extends ExecFrequencyProvider {
 
     private final JCopter jcopter;
     private final Set<MethodInfo> wcaTargets;
