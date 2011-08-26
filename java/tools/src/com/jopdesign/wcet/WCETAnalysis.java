@@ -160,7 +160,7 @@ public class WCETAnalysis {
 
         
         if(wcetTool.getProjectConfig().doObjectCacheAnalysis()) {
-            ObjectCacheAnalysis oca = new ObjectCacheAnalysis(wcetTool);
+            ObjectCacheEvaluation oca = new ObjectCacheEvaluation(wcetTool);
             return oca.run();
         } else {
             return runWCETAnalysis();

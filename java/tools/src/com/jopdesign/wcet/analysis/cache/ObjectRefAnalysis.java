@@ -64,10 +64,11 @@ import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.InvalidFlowFactException;
-import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETSolver;
 import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
+import com.jopdesign.wcet.jop.ObjectCache;
+import com.jopdesign.wcet.jop.ObjectCache.ObjectCacheCost;
 
 /** Analysis of the used object references.
  *  Goal: Detect persistence scopes.
@@ -382,18 +383,14 @@ public class ObjectRefAnalysis {
 		}		
 	}
 	
+	/* Whether to use a 'single field' cache, i.e., use fields as tags */
+	private boolean fieldAsTag;
+
 	/* The maximum index for cached fields */
 	private int maxCachedFieldIndex;
 
-	/* Size of a cache block */
-	@SuppressWarnings("unused")
-	private int blockSize;
-
 	/* ld(blockSize) */
 	private int blockIndexBits;
-
-	/* Whether to use a 'single field' cache, i.e., use fields as tags */
-	private boolean fieldAsTag;
 
 	/* Maximum number of objects tracked for one reference */
 	private int maxSetSize;
@@ -410,16 +407,19 @@ public class ObjectRefAnalysis {
 
 
 	private WCETTool project;
+	@SuppressWarnings("unused")
+	private ObjectCache objectCache;
 	
-	public ObjectRefAnalysis(WCETTool p,  boolean fieldAsTag, int blockSize, int maxCachedIndex, int setSize) {
+	public ObjectRefAnalysis(WCETTool p,  ObjectCache oc) {
 		this.project = p;
-		this.fieldAsTag = fieldAsTag;
-		this.blockSize = blockSize;
-		this.maxSetSize = setSize;
-		this.maxCachedFieldIndex = maxCachedIndex;
+		this.objectCache = oc;
+
+		this.fieldAsTag = oc.isFieldCache();
+		this.maxSetSize = oc.getAssociativity();
+		this.maxCachedFieldIndex = oc.getMaxCachedFieldIndex();
 
 		this.blockIndexBits = 0; 
-		for(int i = 1; i < blockSize; i<<=1) {
+		for(int i = 1; i < oc.getBlockSize(); i<<=1) {
 			blockIndexBits++;
 		}
 
@@ -429,7 +429,7 @@ public class ObjectRefAnalysis {
 	}
 	
 	/**
-	 * Add method cache cost to ipet problem
+	 * Add object cache  cache cost to ipet problem
 	 * @param segment
 	 * @param ipetSolver
 	 * @return
@@ -447,7 +447,7 @@ public class ObjectRefAnalysis {
 //		case ALL_FIT_SIMPLE:  missEdges = addMissOnceCost(segment, ipetSolver); break;
 //		case ALL_FIT_REGIONS: missEdges = addMissOnceConstraints(segment, ipetSolver); break;
 //		case GLOBAL_ALL_FIT:  missEdges = addGlobalAllFitConstraints(segment, ipetSolver); break;
-//		default: throw new RuntimeException("addCacheCost(): Unexpected cache approximation mode "+cacheCalculation);
+//		default: throw new RuntimeException("addCacheCost(): Unexpected cache calculation mode "+cacheCalculation);
 		}        	
 		return missEdges;
 	}
@@ -499,7 +499,7 @@ public class ObjectRefAnalysis {
 	}
 
 	/**
-	 * return number of distinct tags which might be cached in the given scope
+	 * return number of distinct cached tags which might be accessed in the given scope
 	 * FIXME: use segment instead of scope
 	 * @param scope
 	 * @return
@@ -546,7 +546,7 @@ public class ObjectRefAnalysis {
 	 * @throws InvalidFlowFactException 
 	 * @throws LpSolveException 
 	 */
-	public ObjectCacheCost getMaxCacheCost(ExecutionContext scope, ObjectCacheCostModel costModel)
+	public ObjectCache.ObjectCacheCost getMaxCacheCost(ExecutionContext scope, ObjectCacheCostModel costModel)
 			throws InvalidFlowFactException, LpSolveException {
 		
 		LocalPointsToResult usedRefs = getUsedRefs(scope);
@@ -568,7 +568,7 @@ public class ObjectRefAnalysis {
 	 * @throws InvalidFlowFactException 
 	 * @throws LpSolveException 
 	 */
-	private ObjectCacheCost computeCacheCost(Segment segment, 
+	private ObjectCache.ObjectCacheCost computeCacheCost(Segment segment, 
 								  LocalPointsToResult usedRefs, 
 								  ObjectCacheCostModel costModel,
 								  HashSet<SymbolicAddress> usedSetOut)
@@ -689,7 +689,7 @@ public class ObjectRefAnalysis {
 	 * @param blockMissEdges the object cache cost edges for blocks
 	 * @return
 	 */
-	private ObjectCacheCost extractCost(Segment segment,
+	private ObjectCache.ObjectCacheCost extractCost(Segment segment,
 			long lpCost,
 			Map<SuperGraphEdge, Long> flowMap,
 			AccessCostInfo accessCostInfo,
@@ -756,7 +756,7 @@ public class ObjectRefAnalysis {
 							missCount, totalMissCost,lpCost-totalBypassCost,lpCost,totalBypassCost));
 		}
 
-		ObjectCacheCost ocCost = new ObjectCacheCost(missCount, totalMissCost,bypassAccesses, totalBypassCost, fieldAccesses);
+		ObjectCache.ObjectCacheCost ocCost = new ObjectCache.ObjectCacheCost(missCount, totalMissCost,bypassAccesses, totalBypassCost, fieldAccesses);
 		return ocCost;
 	}
 

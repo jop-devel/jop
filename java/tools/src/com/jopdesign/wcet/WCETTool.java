@@ -54,6 +54,8 @@ import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.framework.DFACallgraphBuilder;
 import com.jopdesign.dfa.framework.FlowEdge;
+import com.jopdesign.timing.TimingTable;
+import com.jopdesign.timing.jop.JOPTimingTable;
 import com.jopdesign.wcet.allocation.BlockAllocationModel;
 import com.jopdesign.wcet.allocation.HandleAllocationModel;
 import com.jopdesign.wcet.allocation.HeaderAllocationModel;
@@ -761,5 +763,6 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         }
         return retval;
     }
+
 
 }

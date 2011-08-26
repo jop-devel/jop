@@ -25,6 +25,7 @@ import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.wcet.jop.CacheModel;
 import com.jopdesign.wcet.jop.MethodCache;
+import com.jopdesign.wcet.jop.ObjectCache;
 
 public interface WCETProcessorModel {
 
@@ -44,8 +45,15 @@ public interface WCETProcessorModel {
     MethodCache getMethodCache();
 
 	/**
+	 * Obtain the object cache model
+	 * @return The model, or {@code null} if there is no object cache in this model
+	 */
+	ObjectCache getObjectCache();
+
+	/**
 	 * @return a list of all caches implemented in the processor model
 	 */
 	Iterable<CacheModel> getCaches();
+
 
 }

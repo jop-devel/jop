@@ -119,20 +119,23 @@ public class JOPWcetModel implements WCETProcessorModel {
         return wcet;
     }
 
+	@Override
     public MethodCache getMethodCache() {
         return methodCache;
     }
 
-    public boolean hasMethodCache() {
-        return this.methodCache.getNumBlocks() > 0;
-    }
+	@Override
+	public ObjectCache getObjectCache() {
+
+		return objectCache;
+	}
 
 	@Override
 	public Iterable<CacheModel> getCaches() {
 		
 		List<CacheModel> list = new ArrayList<CacheModel>(2);
-		if(hasMethodCache())    list.add(methodCache);
-		if(objectCache != null) list.add(objectCache);
+		if(methodCache.getNumBlocks() > 0) list.add(methodCache);
+		if(objectCache != null)            list.add(objectCache);
 		return list;
 	}
 }

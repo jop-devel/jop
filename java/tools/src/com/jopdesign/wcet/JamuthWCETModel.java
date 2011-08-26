@@ -27,6 +27,8 @@ import com.jopdesign.timing.jamuth.JamuthTimingTable;
 import com.jopdesign.wcet.jop.CacheModel;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.jop.NoMethodCache;
+import com.jopdesign.wcet.jop.ObjectCache;
+
 import org.apache.bcel.generic.BranchHandle;
 import org.apache.bcel.generic.InstructionHandle;
 
@@ -83,13 +85,20 @@ public class JamuthWCETModel implements WCETProcessorModel {
 		return 0;
 	}
 
+	@Override
 	public MethodCache getMethodCache() {
 		return NO_METHOD_CACHE;
+	}
+
+	@Override
+	public ObjectCache getObjectCache() {
+		return null;
 	}
 
 	@Override
 	public List<CacheModel> getCaches() {
 		return Collections.emptyList();
 	}
+
 
 }
