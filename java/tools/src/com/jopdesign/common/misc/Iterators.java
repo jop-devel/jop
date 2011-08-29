@@ -228,5 +228,18 @@ public class Iterators {
 		return i;
 	}
 
+	/**
+	 * @param values a list of integers
+	 * @return the sum of the given values
+	 */
+	public static long sum(Iterable<Long> values) {
+		
+		long sum = 0;
+		for(long v : values) {
+			sum +=v;
+		}
+		return sum;
+	}
+
 
 }

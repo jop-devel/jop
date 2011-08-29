@@ -23,7 +23,6 @@ package com.jopdesign.common.code;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -63,8 +62,7 @@ public class Segment {
 	private Set<SuperGraphEdge> entries;
 	private Set<SuperGraphEdge> exits;
 
-	private Map<MethodInfo, List<ContextCFG>> methods;
-	private Set<SuperGraphNode> nodes;
+	private Map<ContextCFG, List<SuperGraphNode>> nodes;
 	private Set<SuperGraphEdge> edges;
 	private Filter<SuperGraphEdge> edgeFilter;
 	private HashSet<SuperGraphEdge> otherEntries;	
@@ -95,16 +93,16 @@ public class Segment {
 	}
 
 	/**
-	 * @return The set { method (target e) | e <- entry-edges }
+	 * @return The set { contextCfg (target e) | e <- entry-edges }
 	 */
-	public Set<MethodInfo> getEntryMethods() {
-		Iterable<MethodInfo> entryMethods = Iterators.mapEntries(getEntryEdges(), new F1<SuperGraphEdge, MethodInfo>() {
+	public Set<ContextCFG> getEntryCFGs() {
+		Iterable<ContextCFG> entryCFGs = Iterators.mapEntries(getEntryEdges(), new F1<SuperGraphEdge, ContextCFG>() {
 			@Override
-			public MethodInfo apply(SuperGraphEdge v) {
-				return v.getTarget().getCfg().getMethodInfo();
+			public ContextCFG apply(SuperGraphEdge v) {
+				return v.getTarget().getContextCFG();
 			}			
 		});
-		return Iterators.addAll(new HashSet<MethodInfo>(), entryMethods);
+		return Iterators.addAll(new HashSet<ContextCFG>(), entryCFGs);
 	}
 
 
@@ -144,8 +142,7 @@ public class Segment {
 	 */
 	private Set<SuperGraphEdge> buildSegment() {
 
-		methods = new HashMap<MethodInfo, List<ContextCFG>>();
-		nodes = new HashSet<SuperGraphNode>();
+		nodes = new HashMap<SuperGraph.ContextCFG, List<SuperGraphNode>>();
 		edges = new HashSet<SuperGraphEdge>();
 		otherEntries = new HashSet<SuperGraphEdge>();
 		
@@ -166,12 +163,11 @@ public class Segment {
 			}
 			/* Otherwise add the target node and push all successors on the worklist */
 			SuperGraphNode target = current.getTarget();
-			nodes.add(target);
-			MiscUtils.addToList(methods, target.getContextCFG().getCfg().getMethodInfo(), target.getContextCFG());
+			MiscUtils.addToList(nodes, target.getContextCFG(), target);
 			Iterators.addAll(worklist, sg.getSuccessorEdges(current));
 		}
 		exits = actualExits;
-		for(SuperGraphNode node : nodes) {
+		for(SuperGraphNode node : getNodes()) {
 			for(SuperGraphEdge edge: sg.incomingEdgesOf(node)) {
 				if(! edges.contains(edge)) {
 					otherEntries.add(edge);
@@ -244,24 +240,18 @@ public class Segment {
 	 */
 	public Iterable<SuperGraphNode> getNodes() {
 
-		return nodes;
+		return Iterators.concat(nodes.values());
 	}
 
 	/**
-	 * @return list of all methods
+	 * @param ccfg a cfg instance
+	 * @return all supergraph nodes for the CFG instances
 	 */
-	public Iterable<MethodInfo> getMethods() {
+	public Collection<SuperGraphNode> getNodes(ContextCFG ccfg) {
 
-		return methods.keySet();
+		return nodes.get(ccfg);
 	}
 
-	/**
-	 * @return all CFGs for the given method
-	 */
-	public Iterable<ContextCFG> getInstancesOf(MethodInfo mi) {
-
-		return methods.get(mi);
-	}
 	
 	/**
 	 * @return set of all edges in the segment
@@ -407,9 +397,10 @@ public class Segment {
 
 	public Iterable<ContextCFG> getCallGraphNodes() {
 		
-		return Iterators.concat(this.methods.values());
+		return nodes.keySet();
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Segment@");

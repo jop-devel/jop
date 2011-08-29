@@ -19,6 +19,8 @@
  */
 package com.jopdesign.wcet.analysis;
 
+import java.util.EnumSet;
+
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
@@ -26,6 +28,8 @@ import com.jopdesign.common.code.Segment;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
+import com.jopdesign.wcet.analysis.cache.CachePersistenceAnalysis;
+import com.jopdesign.wcet.analysis.cache.CachePersistenceAnalysis.PersistenceCheck;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
@@ -134,6 +138,6 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 
 	protected boolean allFit(WCETTool wcetTool, MethodInfo invoked,CallString callString) {
 
-		return new MethodCacheAnalysis(wcetTool).isPersistenceRegion(wcetTool, invoked, callString, MethodCacheAnalysis.CHECK_COUNT_FAST);
+		return new MethodCacheAnalysis(wcetTool).isPersistenceRegion(wcetTool, invoked, callString, EnumSet.of(PersistenceCheck.CountTotal));
 	}
 }

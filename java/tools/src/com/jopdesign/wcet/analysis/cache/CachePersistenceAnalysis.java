@@ -21,21 +21,28 @@
 package com.jopdesign.wcet.analysis.cache;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
 import lpsolve.LpSolveException;
 
+import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.Segment;
 import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
+import com.jopdesign.common.code.SuperGraph.SuperGraphNode;
 import com.jopdesign.common.misc.Iterators;
+import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.misc.MiscUtils.F1;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.InvalidFlowFactException;
 import com.jopdesign.wcet.ipet.IPETConfig;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 import com.jopdesign.wcet.ipet.IPETSolver;
 import com.jopdesign.wcet.ipet.IPETUtils;
 
@@ -72,8 +79,54 @@ import com.jopdesign.wcet.ipet.IPETUtils;
  * is greater than zero. Conversely, if for all edges accessing the tag the
  * frequency is 0, the corresponding data is never loaded into the cache.
  */
-public final class CachePersistenceAnalysis {
+public abstract class CachePersistenceAnalysis extends CacheAnalysis {
 
+    public static enum PersistenceCheck {
+        /** check persistence by counting the total number of distinct methods (cheap) */
+        CountTotal,
+        
+        /** check persistence by maximizing the number of distinct blocks accessed (LP relaxation)  */
+        CountRelaxed,
+        
+        /** check persistence by maximizing the number of distinct blocks accessed (LP relaxation)  */
+        CountILP 
+    	
+    };
+    
+	@Override
+	public Set<SuperGraphEdge> addCacheCost(Segment segment, IPETSolver<SuperGraphEdge> ipetSolver,
+			CacheCostCalculationMethod cacheCostCalc) throws InvalidFlowFactException, LpSolveException {
+		
+		Set<SuperGraphEdge> missEdges;
+		switch(cacheCostCalc) {
+		case ALL_FIT_REGIONS: missEdges = addMissOnceConstraints(segment, ipetSolver); break;
+		case ALL_FIT_COST:    missEdges = addMissOnceCost(segment, ipetSolver, EnumSet.allOf(PersistenceCheck.class)); break;
+		case ALL_FIT_SIMPLE:  missEdges = addMissOnceCost(segment, ipetSolver, EnumSet.of(PersistenceCheck.CountTotal)); break;
+		case ALWAYS_MISS:     missEdges = addMissAlwaysCost(segment, ipetSolver); break;
+		case GLOBAL_ALL_FIT:  missEdges = addGlobalAllFitConstraints(segment, ipetSolver); break;
+		case ALWAYS_HIT:      missEdges = new HashSet<SuperGraphEdge>(); break; /* no additional costs */
+		default: throw new RuntimeException("addCacheCost(): Unexpected cache cost calculation mode "+cacheCostCalc);
+		}        	
+		return missEdges;
+	}
+	
+
+	protected abstract Set<SuperGraphEdge> addMissAlwaysCost(Segment segment, IPETSolver<SuperGraphEdge> ipetSolver);
+
+	protected abstract Set<SuperGraphEdge> addMissOnceCost(Segment segment, IPETSolver<SuperGraphEdge> ipetSolver, EnumSet<PersistenceCheck> enumSet)
+			throws InvalidFlowFactException, LpSolveException;
+
+	protected abstract Set<SuperGraphEdge> addMissOnceConstraints(Segment segment,IPETSolver<SuperGraphEdge> ipetSolver)
+			throws InvalidFlowFactException, LpSolveException;
+
+	protected abstract Set<SuperGraphEdge> addGlobalAllFitConstraints(Segment segment, IPETSolver<SuperGraphEdge> ipetSolver);
+
+	/* strategies */
+	/* ---------- */
+	
+
+	/* utilities */
+	/* --------- */
 	
 	/**
 	 * Add extra costs for all edges in segment. We use extra cost edges,
@@ -87,7 +140,7 @@ public final class CachePersistenceAnalysis {
 	 * @param tag
 	 * @return
 	 */
-	public static Set<SuperGraphEdge> addFixedCostEdges(Iterable<SuperGraphEdge> edges,
+	protected Set<SuperGraphEdge> addFixedCostEdges(Iterable<SuperGraphEdge> edges,
 			IPETSolver<SuperGraphEdge> ipetSolver, F1<SuperGraphEdge, Long> costModel,
 			Object key, Object tag) {
 
@@ -110,7 +163,7 @@ public final class CachePersistenceAnalysis {
 	 * @param ipetSolver the ipet solver to operate on
 	 * @return
 	 */
-	public static SuperGraphEdge fixedAdditionalCostEdge(SuperGraphEdge accessEdge, Object key, Object tag, long cost,
+	protected SuperGraphEdge fixedAdditionalCostEdge(SuperGraphEdge accessEdge, Object key, Object tag, long cost,
 			IPETSolver<SuperGraphEdge> ipetSolver) {
 		
 		SuperGraphEdge missEdge = SuperGraphExtraCostEdge.generateExtraCostEdge(accessEdge, key, tag);
@@ -130,7 +183,7 @@ public final class CachePersistenceAnalysis {
 	 * @param analysisKey
 	 * @return
 	 */
-	public static <T,C extends Iterable<SuperGraphEdge>>
+	protected <T,C extends Iterable<SuperGraphEdge>>
 	  Set<SuperGraphEdge> addPersistenceSegmentConstraints(
 			  
 			Segment persistenceSegment,
@@ -173,7 +226,7 @@ public final class CachePersistenceAnalysis {
 	 * @throws InvalidFlowFactException 
 	 * @throws LpSolveException 
 	 */
-	public static<T> long computeMissOnceCost(
+	protected <T> long computeMissOnceCost(
 			Segment segment, 
 			Iterable<Entry<T, List<SuperGraphEdge>>> partition,
 			F1<SuperGraphEdge,Long> costModel,
@@ -184,7 +237,7 @@ public final class CachePersistenceAnalysis {
 		
         IPETConfig ipetConfig = new IPETConfig(wcetTool.getConfig());
 
-        String problemKey = GlobalAnalysis.formatProblemName(analysisKey, segment.getEntryMethods().toString());
+        String problemKey = GlobalAnalysis.formatProblemName(analysisKey, segment.getEntryCFGs().toString());
         
 		/* create an global IPET problem for the supergraph */
 		IPETSolver<SuperGraphEdge> ipetSolver = GlobalAnalysis.buildIpetProblem(wcetTool, problemKey, segment, ipetConfig);
@@ -197,5 +250,24 @@ public final class CachePersistenceAnalysis {
 		long maxCacheCost = (long) (lpCost + 0.5);
 		return maxCacheCost;
 	}
+	
+	/* convenience utilities */
+
+	/**
+	 * Convert costs per node, to costs per incoming edge
+	 * @param nodeCostMap costs per node
+	 * @return costs per incoming edge
+	 */
+	public Map<SuperGraphEdge, Long> nodeToEdgeCost(Segment segment, Map<SuperGraphNode, Long> nodeCostMap) {
+		
+		Map<SuperGraphEdge, Long> edgeCostMap = new HashMap<SuperGraphEdge, Long>();
+		for(Entry<SuperGraphNode, Long> entry : nodeCostMap.entrySet()) {
+			for(SuperGraphEdge edge : segment.incomingEdgesOf(entry.getKey())) {
+				MiscUtils.incrementBy(edgeCostMap , edge, entry.getValue(), 0);
+			}
+		}
+		return edgeCostMap;
+	}
+	
 
 }

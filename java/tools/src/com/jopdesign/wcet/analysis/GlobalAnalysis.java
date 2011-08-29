@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -59,6 +60,7 @@ import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.cache.CacheAnalysis;
 import com.jopdesign.wcet.analysis.cache.CacheAnalysis.UnsupportedCacheModelException;
+import com.jopdesign.wcet.analysis.cache.CachePersistenceAnalysis.PersistenceCheck;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.analysis.cache.SuperGraphExtraCostEdge;
 import com.jopdesign.wcet.annotations.LoopBoundExpr;
@@ -107,20 +109,20 @@ public class GlobalAnalysis {
     public WcetCost computeWCET(String key, Segment segment, CacheCostCalculationMethod cacheMode) throws InvalidFlowFactException, LpSolveException, UnsupportedCacheModelException {
 
         /* create an IPET problem for the segment */
-    	String problemId = formatProblemName(key, segment.getEntryMethods().toString());
+    	String problemId = formatProblemName(key, segment.getEntryCFGs().toString());
     	IPETSolver<SuperGraphEdge> ipetSolver = buildIpetProblem(project, problemId, segment, ipetConfig);
 
         /* compute cost */
         setExecutionCost(segment, ipetSolver);
 
         /* Add constraints for caches */
-        Set<SuperGraphEdge> costMissEdges = new HashSet<SuperGraphEdge>();
+        HashMap<String, Set<SuperGraphEdge>> costMissEdges = new HashMap<String, Set<SuperGraphEdge>>();
 
         for(CacheModel cacheModel : project.getWCETProcessorModel().getCaches()) {
         	
         	CacheAnalysis cpa = CacheAnalysis.getCacheAnalysisFor(cacheModel, project);
         	Set<SuperGraphEdge> edges = cpa.addCacheCost(segment, ipetSolver, cacheMode);
-        	costMissEdges.addAll(edges);
+        	costMissEdges.put(cacheModel.toString(), edges);
         }
         
         /* Add constraints for object cache */
@@ -146,7 +148,7 @@ public class GlobalAnalysis {
         WcetCost cost;
         
         /* extract cost and generate a profile in 'profiles' */
-    	cost = exportCostProfile(flowMap, ipetSolver, problemId);
+    	cost = exportCostProfile(flowMap, costMissEdges, ipetSolver, problemId);
 
         /* Sanity Check, and Return */
         if(Double.isInfinite(ilpCost)) {
@@ -365,24 +367,36 @@ public class GlobalAnalysis {
 
     /**
 	 * @param flowMap 
+     * @param costMissEdges 
 	 * @param ipetSolver 
 	 * @param problemId
 	 */
-	private WcetCost exportCostProfile(Map<SuperGraphEdge, Long> flowMap, IPETSolver<SuperGraphEdge> ipetSolver, String problemId) {
+	private WcetCost exportCostProfile(Map<SuperGraphEdge, Long> flowMap, 
+			HashMap<String, Set<SuperGraphEdge>> costMissEdges, 
+			IPETSolver<SuperGraphEdge> ipetSolver, 
+			String problemId) {
 	
 		File profileFile = new File(project.getOutDir("profiles"),problemId+".txt");
 		WcetCost cost = new WcetCost();
 		HashMap<SuperGraphEdge,Long> costProfile = new HashMap<SuperGraphEdge,Long>();
 		HashMap<SuperGraphEdge,Long> cacheCostProfile = new HashMap<SuperGraphEdge,Long>();
-	
+
+		/* extra cost lookup map */
+		HashMap<SuperGraphEdge, String> extraCostKeys = new HashMap<SuperGraphEdge, String>();
+		for(Entry<String, Set<SuperGraphEdge>> cacheEntry: costMissEdges.entrySet()) {
+			String key = cacheEntry.getKey();
+			for(SuperGraphEdge costEdge : cacheEntry.getValue()) {
+				extraCostKeys.put(costEdge, key);
+			}
+		}
+		
 		for (Entry<SuperGraphEdge, Long> flowEntry : flowMap.entrySet()) {
 	    	SuperGraphEdge edge = flowEntry.getKey();
 	        long edgeCost = ipetSolver.getEdgeCost(edge);
 	        long flowCost = edgeCost * flowEntry.getValue();
-	        if(edge instanceof SuperGraphExtraCostEdge) {
-	        	// edge = ((SuperGraphExtraCostEdge)edge).getParent(); /* attach cost to the flow edge */
-	        	cost.addCacheCost(flowCost);
-	        	MiscUtils.incrementBy(cacheCostProfile, edge, flowCost, 0);
+	        if(extraCostKeys.containsKey(edge)) {
+	        	cost.addCacheCost(extraCostKeys.get(edge), flowCost);
+	        	MiscUtils.incrementBy(cacheCostProfile, edge, flowCost, 0);	        	
 	        } else {
 	        	cost.addLocalCost(flowCost);            	
 	        }
@@ -453,7 +467,7 @@ public class GlobalAnalysis {
             Segment segment = Segment.methodSegment(invoked, recCtx.getCallString(), project, callStringLength, project);
 
             if (!project.getCallGraph().isLeafMethod(invoked) &&
-            	mca.isPersistenceRegion(segment,MethodCacheAnalysis.CHECK_COUNT_PRECISE)) {
+            	mca.isPersistenceRegion(segment,EnumSet.allOf(PersistenceCheck.class))) {
 
                 /* Perform a GLOBAL-ALL-FIT analysis */
                 GlobalAnalysis ga = new GlobalAnalysis(project, ipetConfig);

@@ -73,7 +73,7 @@ public abstract class CacheAnalysis {
 		if(cacheModel instanceof MethodCache) {
 			return new MethodCacheAnalysis(wcetTool);
 		} else if(cacheModel instanceof ObjectCache) {
-			throw new UnsupportedCacheModelException("No analysis for: "+cacheModel);			
+			return new ObjectCacheAnalysis(wcetTool, (ObjectCache) cacheModel);
 		} else {
 			throw new AssertionError("getCacheAnalysisFor: unknown cache:"+cacheModel);
 		}

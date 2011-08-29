@@ -21,10 +21,11 @@
 package com.jopdesign.wcet.jop;
 
 import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.timing.jop.JOPTimingTable;
 import com.jopdesign.wcet.WCETTool;
-import com.jopdesign.wcet.analysis.cache.ObjectRefAnalysis.ObjectCacheCostModel;
+import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysis.ObjectCacheCostModel;
 
 /**
  * Purpose:
@@ -128,16 +129,15 @@ public class ObjectCache implements CacheModel {
 	 */
 	public ObjectCache(WCETTool p, JOPTimingTable timing) {
 		
-		Config config = p.getConfig();
-		
-        this.associativity = config.getOption(JOPConfig.OBJECT_CACHE_ASSOCIATIVITY).intValue();
-        this.blockSize = config.getOption(JOPConfig.OBJECT_CACHE_BLOCK_SIZE).intValue();
+		OptionGroup options = JOPConfig.getOptions(p.getConfig());
+        this.associativity = options.getOption(JOPConfig.OBJECT_CACHE_ASSOCIATIVITY).intValue();
+        this.blockSize = options.getOption(JOPConfig.OBJECT_CACHE_BLOCK_SIZE).intValue();
         this.fieldAsTag = false;
-        this.lineSize = config.getOption(JOPConfig.OBJECT_CACHE_WORDS_PER_LINE).intValue();
+        this.lineSize = options.getOption(JOPConfig.OBJECT_CACHE_WORDS_PER_LINE).intValue();
 
-        this.hitCycles = config.getOption(JOPConfig.OBJECT_CACHE_HIT_CYCLES);
-        this.loadFieldCycles = config.getOption(JOPConfig.OBJECT_CACHE_LOAD_FIELD_CYCLES);
-        this.loadBlockCycles = config.getOption(JOPConfig.OBJECT_CACHE_LOAD_BLOCK_CYCLES);
+        this.hitCycles = options.getOption(JOPConfig.OBJECT_CACHE_HIT_CYCLES);
+        this.loadFieldCycles = options.getOption(JOPConfig.OBJECT_CACHE_LOAD_FIELD_CYCLES);
+        this.loadBlockCycles = options.getOption(JOPConfig.OBJECT_CACHE_LOAD_BLOCK_CYCLES);
 	}
 
 	public ObjectCache(WCETTool p, int associativity, int blockSize, int lineSize,
@@ -198,6 +198,10 @@ public class ObjectCache implements CacheModel {
         return blockSize;
     }
 
+    public int getBlocksPerLine() {
+    	return lineSize / blockSize;
+    }
+
     public long getHitCycles() {
         return hitCycles;
     }
@@ -230,6 +234,14 @@ public class ObjectCache implements CacheModel {
         this.loadBlockCycles = loadBlockCycles;
     }
 
+    @Override
+    public String toString() {
+    	if(this.isFieldCache()) {
+        	return "f$-N"+getAssociativity();
+    	} else {
+        	return "o$-N"+getAssociativity()+"-"+getBlocksPerLine()+"x"+getBlockSize();
+    	}
+    }
     /* Removed for now, as is not flexible enough */
 //	public long getAccessTime(int words) {
 //		int  burstLength = this.MaxBurst;

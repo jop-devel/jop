@@ -22,11 +22,15 @@ package com.jopdesign.wcet.analysis.cache;
 import static com.jopdesign.common.misc.MiscUtils.addToSet;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import lpsolve.LpSolveException;
 
@@ -48,25 +52,31 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.Segment;
 import com.jopdesign.common.code.SuperGraph;
-import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.SuperGraph.ContextCFG;
 import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
 import com.jopdesign.common.code.SuperGraph.SuperGraphNode;
+import com.jopdesign.common.code.SuperGraph.SuperInvokeEdge;
+import com.jopdesign.common.code.SuperGraph.SuperReturnEdge;
+import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.Iterators;
 import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.common.misc.MiscUtils.F1;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.analyses.SymbolicAddress;
 import com.jopdesign.dfa.analyses.SymbolicPointsTo;
-import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
+import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.InvalidFlowFactException;
+import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysis.AccessCostInfo;
+import com.jopdesign.wcet.annotations.BadAnnotationException;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.ipet.IPETSolver;
-import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 import com.jopdesign.wcet.jop.ObjectCache;
 import com.jopdesign.wcet.jop.ObjectCache.ObjectCacheCost;
 
@@ -98,64 +108,20 @@ import com.jopdesign.wcet.jop.ObjectCache.ObjectCacheCost;
  *       and add corresponding constraints.
  * </ol>
  * 
- *  <ul><li/>TODO: [cache-analysis] Use a scopegraph instead of a callgraph
- *  <li/>FIXME: [cache-analysis] Extract common code
+ *  <ul>
  *  <li/>FIXME: [cache-analysis] Handle subtyping when dealing with aliases, or use a store-based approach
  *  </ul>
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  *
  */
-public class ObjectRefAnalysis {
+public class ObjectCacheAnalysis extends CachePersistenceAnalysis {
 	
-	private static final String KEY = ObjectRefAnalysis.class.getCanonicalName();
+	private static final String KEY = "wcet.ObjectCacheAnalysis";
 
 	/* Only consider getfield (false) or all handle accesses */
 	private static boolean ALL_HANDLE_ACCESSES = false; 
 		
 	
-	/* Simple Cost Models for our Object Cache */
-	public static class ObjectCacheCostModel {
-		public static final ObjectCacheCostModel COUNT_REF_TAGS = new ObjectCacheCostModel(0,1,0);;
-		public static final ObjectCacheCostModel COUNT_FIELD_TAGS = new ObjectCacheCostModel(1,0,0);
-		private long loadCacheBlockCost;
-		private long replaceLineCost;
-		private long fieldAccessCostBypass;
-
-		public ObjectCacheCostModel(long loadCacheBlockCost, long replaceLineCost, long fieldAccessCostBypass)
-		{
-			this.loadCacheBlockCost = loadCacheBlockCost;
-			this.replaceLineCost = replaceLineCost;
-			this.fieldAccessCostBypass = fieldAccessCostBypass;
-		}
-		/**
-		 * @return the loadFieldCost
-		 */
-		public long getCacheBlockCost() {
-			return loadCacheBlockCost;
-		}
-
-		/**
-		 * @return the loadCacheLineCost
-		 */
-		public long getReplaceLineCost() {
-			return replaceLineCost;
-		}
-
-		/**
-		 * @return the fieldAccessCostBypass
-		 */
-		public long getFieldAccessCostBypass() {
-			return fieldAccessCostBypass;
-		}
-		/**
-		 * @return
-		 */
-		public long getLoadCacheBlockCost() {
-			return this.loadCacheBlockCost;
-		}
-	}
-
-
 	/**
 	 * Purpose: This class encapsulates the results from the object reference DFA 
 	 */
@@ -191,6 +157,70 @@ public class ObjectRefAnalysis {
 		
 	}
 	
+	/* class for checking whether a basic block is executed as most once in a scope */
+	private class ExecOnceQuery implements MiscUtils.Query<InstructionHandle> {
+		private ExecuteOnceAnalysis eoAna;
+		private ExecutionContext scope;
+		public ExecOnceQuery(ExecuteOnceAnalysis eoAnalysis, ExecutionContext scope) {
+		    this.eoAna = eoAnalysis;
+		    this.scope = scope;
+		}
+		public boolean query(InstructionHandle a) {
+	                ControlFlowGraph cfg = project.getFlowGraph(scope.getMethodInfo());
+		    CFGNode n = cfg.getHandleNode(a);
+		    if(n == null) {
+		        Logger.getLogger("Object Cache Analysis").info("No node for instruction "+a);
+		        return false;
+		    } else {
+		        return eoAna.isExecutedOnce(scope, n);
+		    }
+		}		
+	}
+
+
+	/* Simple Cost Models for our Object Cache */
+	public static class ObjectCacheCostModel {
+		public static final ObjectCacheCostModel COUNT_REF_TAGS = new ObjectCacheCostModel(0,1,0);;
+		public static final ObjectCacheCostModel COUNT_FIELD_TAGS = new ObjectCacheCostModel(1,0,0);
+		private long loadCacheBlockCost;
+		private long replaceLineCost;
+		private long fieldAccessCostBypass;
+	
+		public ObjectCacheCostModel(long loadCacheBlockCost, long replaceLineCost, long fieldAccessCostBypass)
+		{
+			this.loadCacheBlockCost = loadCacheBlockCost;
+			this.replaceLineCost = replaceLineCost;
+			this.fieldAccessCostBypass = fieldAccessCostBypass;
+		}
+		/**
+		 * @return the loadFieldCost
+		 */
+		public long getCacheBlockCost() {
+			return loadCacheBlockCost;
+		}
+	
+		/**
+		 * @return the loadCacheLineCost
+		 */
+		public long getReplaceLineCost() {
+			return replaceLineCost;
+		}
+	
+		/**
+		 * @return the fieldAccessCostBypass
+		 */
+		public long getFieldAccessCostBypass() {
+			return fieldAccessCostBypass;
+		}
+		/**
+		 * @return
+		 */
+		public long getLoadCacheBlockCost() {
+			return this.loadCacheBlockCost;
+		}
+	}
+
+
 	public static class AccessCostInfo {
 		
 		HashMap<SymbolicAddress, Map<SuperGraphNode, Integer>> refAccessSets;
@@ -232,6 +262,11 @@ public class ObjectRefAnalysis {
 			if(! staticCostMap.containsKey(node)) return 0;
 			return staticCostMap.get(node);
 		}
+		public Map<SuperGraphNode, Long> getStaticCostMap() {
+		
+			return staticCostMap;
+		}
+
 		/**
 		 * @return set of all referenced object names
 		 */
@@ -362,27 +397,16 @@ public class ObjectRefAnalysis {
 		}
 
 	}
-
-	/* class for checking whether a basic block is executed as most once in a scope */
-	private class ExecOnceQuery implements MiscUtils.Query<InstructionHandle> {
-		private ExecuteOnceAnalysis eoAna;
-		private ExecutionContext scope;
-		public ExecOnceQuery(ExecuteOnceAnalysis eoAnalysis, ExecutionContext scope) {
-		    this.eoAna = eoAnalysis;
-		    this.scope = scope;
-		}
-		public boolean query(InstructionHandle a) {
-                    ControlFlowGraph cfg = project.getFlowGraph(scope.getMethodInfo());
-		    CFGNode n = cfg.getHandleNode(a);
-		    if(n == null) {
-		        Logger.getLogger("Object Cache Analysis").info("No node for instruction "+a);
-		        return false;
-		    } else {
-		        return eoAna.isExecutedOnce(scope, n);
-		    }
-		}		
-	}
 	
+	private static class ObjectCacheIPETModel {
+
+		public Set<SuperGraphEdge> staticCostEdges;
+		public AccessCostInfo accessCostInfo;
+		public Set<SuperGraphEdge> refMissEdges;
+		public Set<SuperGraphEdge> blockMissEdges;
+		
+	}
+
 	/* Whether to use a 'single field' cache, i.e., use fields as tags */
 	private boolean fieldAsTag;
 
@@ -407,10 +431,9 @@ public class ObjectRefAnalysis {
 
 
 	private WCETTool project;
-	@SuppressWarnings("unused")
 	private ObjectCache objectCache;
 	
-	public ObjectRefAnalysis(WCETTool p,  ObjectCache oc) {
+	public ObjectCacheAnalysis(WCETTool p,  ObjectCache oc) {
 		this.project = p;
 		this.objectCache = oc;
 
@@ -429,29 +452,329 @@ public class ObjectRefAnalysis {
 	}
 	
 	/**
-	 * Add object cache  cache cost to ipet problem
+	 * Add always miss cost: for each access to the method cache, add cost of access
+	 * @param segment
+	 * @param ipetSolver
+	 */
+	@Override
+	public Set<SuperGraphEdge> addMissAlwaysCost(
+			Segment segment,			
+			IPETSolver<SuperGraphEdge> ipetSolver) {
+	
+		/* get always miss cost */
+		AccessCostInfo missCostInfo = extractAccessesAndCosts(segment, null, objectCache.getCostModel());
+		return addStaticCost(segment, missCostInfo, ipetSolver);
+	}
+
+	private Set<SuperGraphEdge> addStaticCost(
+			Segment segment,
+			AccessCostInfo accessInfo,
+			IPETSolver<SuperGraphEdge> ipetSolver) {
+		
+		HashSet<SuperGraphEdge> costEdges = new HashSet<SuperGraphEdge>();
+		for(Entry<SuperGraphEdge, Long> entry: nodeToEdgeCost(segment, accessInfo.getStaticCostMap()).entrySet()) {
+			costEdges.add(fixedAdditionalCostEdge(entry.getKey(), KEY+"_"+"am", 0, entry.getValue(), ipetSolver));
+		}
+		return costEdges;
+	}
+
+	/**
+	 * Add miss once cost: for each method cache persistence segment, add maximum miss cost to the segment entries
+	 * @param segment
+	 * @param ipetSolver
+	 * @param checks
+	 * @throws LpSolveException 
+	 * @throws InvalidFlowFactException 
+	 */
+	@Override
+	public Set<SuperGraphEdge> addMissOnceCost(Segment segment,
+			IPETSolver<SuperGraphEdge> ipetSolver, EnumSet<PersistenceCheck> checks)
+					throws InvalidFlowFactException, LpSolveException {
+
+		
+		Set<SuperGraphEdge> missCostEdges = new HashSet<SuperGraphEdge>();
+		Set<SuperGraphNode> alwaysMissNodes = new HashSet<SuperGraphNode>(); 
+		
+		Collection<Segment> cover =
+				findPersistenceSegmentCover(segment, EnumSet.allOf(PersistenceCheck.class), false, alwaysMissNodes);
+		
+		int tag = 0;
+		for(Segment persistenceSegment : cover) {
+
+			tag++;
+			/* Compute cost for persistence segment */
+			HashSet<SymbolicAddress> usedSetOut = new HashSet<SymbolicAddress>();
+			ObjectCacheCost cost =
+					computeCacheCost(persistenceSegment, getUsedRefs(persistenceSegment),
+							objectCache.getCostModel(), usedSetOut ); 
+			WCETTool.logger.info("O$-addMissOnceCost: "+cost.toString());
+			F1<SuperGraphEdge, Long> costModel = MiscUtils.const1(cost.getCost());			
+			Set<SuperGraphEdge> costEdges = addFixedCostEdges(persistenceSegment.getEntryEdges(), ipetSolver,
+					costModel, KEY + "_miss_once", tag);
+			missCostEdges.addAll(costEdges);
+		}
+		
+		AccessCostInfo alwaysMissAccessInfo =
+				extractAccessesAndCosts(alwaysMissNodes, null, objectCache.getCostModel());
+		missCostEdges.addAll(addStaticCost(segment, alwaysMissAccessInfo, ipetSolver));
+		return missCostEdges;
+	}
+	
+	/**
+	 * Add miss once constraints for all subsegments in the persistence cover of the given segment
 	 * @param segment
 	 * @param ipetSolver
 	 * @return
 	 * @throws LpSolveException 
 	 * @throws InvalidFlowFactException 
 	 */
-	public Set<SuperGraphEdge> addCacheCost(Segment segment, IPETSolver<SuperGraphEdge> ipetSolver,
-			CacheCostCalculationMethod cacheCalculation) throws InvalidFlowFactException, LpSolveException {
+	@Override
+	public Set<SuperGraphEdge> addMissOnceConstraints(Segment segment,
+			IPETSolver<SuperGraphEdge> ipetSolver) throws InvalidFlowFactException, LpSolveException {
+	
+		Set<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
+		Set<SuperGraphNode> alwaysMissNodes = new HashSet<SuperGraphNode>(); 
 		
-		Set<SuperGraphEdge> missEdges;
-		switch(cacheCalculation) {
-		default:              missEdges = new HashSet<SuperGraphEdge>(); break; /* no additional costs */
-//		case ALWAYS_HIT:      missEdges = new HashSet<SuperGraphEdge>(); break; /* no additional costs */
-//		case ALWAYS_MISS:     missEdges = addMissAlwaysCost(segment, ipetSolver); break;
-//		case ALL_FIT_SIMPLE:  missEdges = addMissOnceCost(segment, ipetSolver); break;
-//		case ALL_FIT_REGIONS: missEdges = addMissOnceConstraints(segment, ipetSolver); break;
-//		case GLOBAL_ALL_FIT:  missEdges = addGlobalAllFitConstraints(segment, ipetSolver); break;
-//		default: throw new RuntimeException("addCacheCost(): Unexpected cache calculation mode "+cacheCalculation);
-		}        	
+		Collection<Segment> cover =
+				findPersistenceSegmentCover(segment, EnumSet.allOf(PersistenceCheck.class), false, alwaysMissNodes);
+		
+		int segmentCounter = 0;
+		for(Segment persistenceSegment : cover) {
+			/* we need to distinguish edges which are shared between persistence segments */
+			String key = KEY +"_" + (++segmentCounter);
+			
+			LocalPointsToResult usedRefs = getUsedRefs(persistenceSegment);
+			/* Compute worst-case cost */
+			HashSet<SymbolicAddress> usedObjectsSet = new HashSet<SymbolicAddress>();
+			
+			ObjectCacheIPETModel ocim =
+					addObjectCacheCostEdges(persistenceSegment, usedRefs, objectCache.getCostModel(), ipetSolver);
+
+			missEdges.addAll(ocim.staticCostEdges);
+			missEdges.addAll(ocim.refMissEdges);
+			missEdges.addAll(ocim.blockMissEdges);
+		}
+		
+		AccessCostInfo alwaysMissAccessInfo =
+				extractAccessesAndCosts(alwaysMissNodes, null, objectCache.getCostModel());
+		missEdges.addAll(addStaticCost(segment, alwaysMissAccessInfo, ipetSolver));
+
 		return missEdges;
 	}
 	
+
+	@Override
+	public Set<SuperGraphEdge> addGlobalAllFitConstraints(Segment segment,
+			IPETSolver<SuperGraphEdge> ipetSolver) {
+		
+		Set<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
+		LocalPointsToResult usedRefs = getUsedRefs(segment);
+		/* Compute worst-case cost */		
+		ObjectCacheIPETModel ocim =
+				addObjectCacheCostEdges(segment, usedRefs, objectCache.getCostModel(), ipetSolver);
+
+		missEdges.addAll(ocim.staticCostEdges);
+		missEdges.addAll(ocim.refMissEdges);
+		missEdges.addAll(ocim.blockMissEdges);		
+		return missEdges;
+	}
+
+	/**
+	 * Compute object cache cost for the given persistence segment
+	 * @param segment the segment to consider
+	 * @param usedRefs DFA result: the set of objects a reference might point to during one execution
+	 *        of the segment
+	 * @param costModel The object cost model to use
+	 * @param usedSetOut <b>out</b> set of all symbolic objects names in the segment (pass in empty set)
+	 * @return the object cache cost for the specified segment
+	 * @throws InvalidFlowFactException 
+	 * @throws LpSolveException 
+	 */
+	private ObjectCacheCost computeCacheCost(Segment segment, 
+								  LocalPointsToResult usedRefs, 
+								  ObjectCacheCostModel costModel,
+								  HashSet<SymbolicAddress> usedSetOut)
+										  throws InvalidFlowFactException, LpSolveException {
+	
+		/* create an ILP graph for all reachable methods */
+		String key = GlobalAnalysis.formatProblemName(KEY, segment.getEntryCFGs().toString());
+		
+		IPETSolver<SuperGraphEdge> ipetSolver = GlobalAnalysis.buildIpetProblem(project, key, segment, new IPETConfig(project.getConfig()));
+	
+		ObjectCacheIPETModel ocim = addObjectCacheCostEdges(segment, usedRefs, costModel, ipetSolver);		
+	
+		/* solve */
+		double lpCost;
+		Map<SuperGraphEdge, Long> flowMap = new HashMap<SuperGraphEdge,Long>();
+		lpCost = ipetSolver.solve(flowMap ,true);
+		long cost = (long) (lpCost+0.5);
+	
+		return extractCost(segment, cost,flowMap, ocim.accessCostInfo, costModel, ocim.refMissEdges, ocim.blockMissEdges);
+	}
+
+	/**
+	 * @param segment
+	 * @param usedRefs
+	 * @param costModel
+	 * @param ipetSolver
+	 * @return
+	 */
+	private ObjectCacheIPETModel addObjectCacheCostEdges(Segment segment,
+			LocalPointsToResult usedRefs, ObjectCacheCostModel costModel,
+			IPETSolver<SuperGraphEdge> ipetSolver) {
+	
+		final AccessCostInfo accessCostInfo = extractAccessesAndCosts(segment, usedRefs, costModel);
+	
+		ObjectCacheIPETModel model = new ObjectCacheIPETModel();
+		model.accessCostInfo = accessCostInfo;
+		
+		/* cache cost edges (bypass/always miss) */
+		model.staticCostEdges =
+			   addFixedCostEdges(segment.getEdges(), ipetSolver, new MiscUtils.F1<SuperGraphEdge, Long>() {
+				@Override
+				public Long apply(SuperGraphEdge v) {
+					return accessCostInfo.getStaticCost(v.getTarget());
+				}
+			   }, KEY+"_static", 0);
+					   
+		
+		/* cache cost edges (miss once) */		
+		/* for references */
+		model.refMissEdges = 
+				addPersistenceSegmentConstraints(segment, accessCostInfo.getRefAccesses(segment), 
+						ipetSolver, MiscUtils.<SuperGraphEdge,Long>const1(costModel.getReplaceLineCost()), KEY+"_ref");
+	
+		/* and for blocks */
+		model.blockMissEdges = 
+				addPersistenceSegmentConstraints(segment, accessCostInfo.getBlockAccesses(segment), 
+						ipetSolver, MiscUtils.<SuperGraphEdge,Long>const1(costModel.getLoadCacheBlockCost()), KEY+"_block");
+	
+		return model;
+	}
+
+	/** Find a segment cover (i.e., a set of segments covering all execution paths)
+	 *  where each segment in the set is persistent (a cache persistence region (CPR))
+	 *  
+	 *  <h2>The simplest algorithm for a segment S (for acyclic callgraphs)</h2>
+	 *   <ul><li/>Check whether S itself is CPR; if so, return S
+	 *       <li/>Otherwise, create subsegments S' for each invoked method,
+	 *       <li/>and single node segments for each access
+	 *   </ul>
+	 * @param segment the parent segment
+	 * @param checks the strategy to use to determine whether a segment is a persistence region
+	 * @param avoidOverlap whether overlapping segments should be avoided
+	 * @param alwaysMissNodes additional node set considered to be always miss
+	 * @return
+	 * @throws LpSolveException 
+	 * @throws InvalidFlowFactException 
+	 */
+	protected Collection<Segment> findPersistenceSegmentCover(Segment segment, EnumSet<PersistenceCheck> checks, 
+			boolean avoidOverlap, Set<SuperGraphNode> alwaysMissNodes) throws InvalidFlowFactException, LpSolveException {
+		
+		List<Segment> cover = new ArrayList<Segment>();
+	
+		/* We currently only support entries to one CFG */
+		Set<ContextCFG> entryMethods = new HashSet<ContextCFG>();
+		for(SuperGraphEdge entryEdge : segment.getEntryEdges()) {
+			entryMethods.add(entryEdge.getTarget().getContextCFG());
+		}
+		
+		ContextCFG entryMethod;
+		if(entryMethods.size() != 1) {
+			throw new AssertionError("findPersistenceSegmentCover: only supporting segments with unique entry method");
+		} else {
+			entryMethod = entryMethods.iterator().next();
+		}
+		if(this.isPersistenceRegion(segment, checks)) {
+			cover.add(segment);
+		} else {
+			/* method sub segments */
+			for(Pair<SuperInvokeEdge, SuperReturnEdge> invocation : segment.getCallSitesFrom(entryMethod)) {
+				ContextCFG callee = invocation.first().getCallee();
+				// System.err.println("Recursively analyzing: "+callee);
+				
+				Segment subSegment = Segment.methodSegment(callee, segment.getSuperGraph());
+				cover.addAll(findPersistenceSegmentCover(subSegment, checks, avoidOverlap, alwaysMissNodes)); 
+			}
+			/* always miss nodes (not covered) */
+			alwaysMissNodes.addAll(segment.getNodes(entryMethod));
+		}
+		return cover;
+	}
+
+	/**
+	 * @param segment
+	 * @param checks
+	 * @return
+	 * @throws LpSolveException 
+	 * @throws InvalidFlowFactException 
+	 */
+	private boolean isPersistenceRegion(Segment segment, EnumSet<PersistenceCheck> _checks)
+			throws InvalidFlowFactException, LpSolveException {
+				
+		long distinctCachedTagsAccessed = countDistinctCachedTagsAccessed(contextForSegment(segment));
+		WCETTool.logger.info("isPersistenceRegion(): accessing "+distinctCachedTagsAccessed+" distinct tags in "+
+				segment+" / N="+getNumberOfWays());
+		return distinctCachedTagsAccessed <= getNumberOfWays();
+	}
+
+	protected int getNumberOfWays() {
+				
+		return objectCache.getAssociativity();
+	}
+
+	/**
+	 * return number of distinct cached tags which might be accessed in the given scope
+	 * <p>XXX: use segment instead of scope</p>
+	 * @param scope
+	 * @return the maximum number of distinct cached tags accessed
+	 * @throws InvalidFlowFactException 
+	 * @throws LpSolveException 
+	 */
+	public long countDistinctCachedTagsAccessed(ExecutionContext scope) throws InvalidFlowFactException, LpSolveException {
+		
+		Long maxCachedTags = this.maxCachedTagsAccessed.get(scope);
+		if(maxCachedTags != null) return maxCachedTags;
+	
+		LocalPointsToResult usedRefs = getUsedRefs(scope);
+	
+		/* Create an analysis segment */
+		Segment segment = Segment.methodSegment(scope.getMethodInfo(), scope.getCallString(), 
+				project, project.getCallstringLength(), project);
+		
+		this.saturatedTypes.put(scope, getSaturatedTypes(segment,usedRefs));
+	
+		/* Compute worst-case number of objects/fields accessed */
+		HashSet<SymbolicAddress> usedObjectsSet = new HashSet<SymbolicAddress>();
+		ObjectCacheCostModel costModel;
+		if(this.fieldAsTag) {
+			costModel = ObjectCacheCostModel.COUNT_FIELD_TAGS;			
+		} else {
+			costModel = ObjectCacheCostModel.COUNT_REF_TAGS;			
+		}
+		maxCachedTags = computeCacheCost(segment, usedRefs, costModel, usedObjectsSet).getCost();
+		
+		this.tagSet.put(scope, usedObjectsSet);
+	
+		maxCachedTagsAccessed.put(scope,maxCachedTags);
+		return maxCachedTags;
+	}
+
+	/**
+	 * @param segment
+	 * @return the results of the symbolic address DFA for the given segment
+	 */
+	public LocalPointsToResult getUsedRefs(Segment segment) {
+		
+		return getUsedRefs(contextForSegment(segment));
+	}
+
+	/**
+	 * Get DFA results on symbolic reference names for the given scope
+	 * XXX: proper segment support
+	 * @param scope
+	 * @return
+	 */
 	public LocalPointsToResult getUsedRefs(ExecutionContext scope) {
 		
 		ExecuteOnceAnalysis eoAna = new ExecuteOnceAnalysis(project);
@@ -464,6 +787,7 @@ public class ObjectRefAnalysis {
 		return lpt;
 	}
 	
+
 	public Set<SymbolicAddress> getAddressSet(ExecutionContext scope) {
 		
 		LocalPointsToResult lpt = getUsedRefs(scope);
@@ -499,54 +823,17 @@ public class ObjectRefAnalysis {
 	}
 
 	/**
-	 * return number of distinct cached tags which might be accessed in the given scope
-	 * FIXME: use segment instead of scope
-	 * @param scope
-	 * @return
-	 * @throws InvalidFlowFactException 
-	 * @throws LpSolveException 
-	 */
-	public long getMaxCachedTags(ExecutionContext scope) throws InvalidFlowFactException, LpSolveException {
-		
-		Long maxCachedTags = this.maxCachedTagsAccessed.get(scope);
-		if(maxCachedTags != null) return maxCachedTags;
-
-		LocalPointsToResult usedRefs = getUsedRefs(scope);
-
-		/* Create an analysis segment */
-		Segment segment = Segment.methodSegment(scope.getMethodInfo(), scope.getCallString(), 
-				project, project.getCallstringLength(), project);
-		
-		this.saturatedTypes.put(scope, getSaturatedTypes(segment,usedRefs));
-
-		/* Compute worst-case number of objects/fields accessed */
-		HashSet<SymbolicAddress> usedObjectsSet = new HashSet<SymbolicAddress>();
-		ObjectCacheCostModel costModel;
-		if(this.fieldAsTag) {
-			costModel = ObjectCacheCostModel.COUNT_FIELD_TAGS;			
-		} else {
-			costModel = ObjectCacheCostModel.COUNT_REF_TAGS;			
-		}
-		maxCachedTags = computeCacheCost(segment, usedRefs, costModel, usedObjectsSet).getCost();
-		
-		this.tagSet.put(scope, usedObjectsSet);
-
-		maxCachedTagsAccessed.put(scope,maxCachedTags);
-		return maxCachedTags;
-	} 
-	
-	/**
 	 * Get maximum cost due to the object cache in the given scope.
 	 * Using special cost models such as COUNT_FIELD_TAGS and COUNT_REF_TAGS, this
 	 * method can be used to calculate different metrics as well.
-	 * FIXME: Use segment instead of scope
+	 * <p> XXX: Use segment instead of scope </p>
 	 * @param scope
 	 * @param costModel The object cache cost model
 	 * @return
 	 * @throws InvalidFlowFactException 
 	 * @throws LpSolveException 
 	 */
-	public ObjectCache.ObjectCacheCost getMaxCacheCost(ExecutionContext scope, ObjectCacheCostModel costModel)
+	public ObjectCacheCost getMaxCacheCost(ExecutionContext scope, ObjectCacheCostModel costModel)
 			throws InvalidFlowFactException, LpSolveException {
 		
 		LocalPointsToResult usedRefs = getUsedRefs(scope);
@@ -557,125 +844,14 @@ public class ObjectRefAnalysis {
         return computeCacheCost(segment, usedRefs, costModel, usedObjectsSet);
 	}
 
-	/**
-	 * Compute object cache cost for the given persistence segment
-	 * @param segment the segment to consider
-	 * @param usedRefs DFA result: the set of objects a reference might point to during one execution
-	 *        of the segment
-	 * @param costModel The object cost model to use
-	 * @param usedSetOut <b>out</b> set of all symbolic objects names in the segment (pass in empty set)
-	 * @return the object cache cost for the specified segment
-	 * @throws InvalidFlowFactException 
-	 * @throws LpSolveException 
-	 */
-	private ObjectCache.ObjectCacheCost computeCacheCost(Segment segment, 
-								  LocalPointsToResult usedRefs, 
-								  ObjectCacheCostModel costModel,
-								  HashSet<SymbolicAddress> usedSetOut)
-										  throws InvalidFlowFactException, LpSolveException {
-
-		final AccessCostInfo accessCostInfo = extractAccessesAndCosts(segment, usedRefs, costModel);
-
-		/* create an ILP graph for all reachable methods */
-		String key = GlobalAnalysis.formatProblemName(KEY, segment.getEntryMethods().toString());
-		
-		IPETSolver<SuperGraphEdge> ipetSolver = GlobalAnalysis.buildIpetProblem(project, key, segment, new IPETConfig(project.getConfig()));
-
-		/* cache cost edges (bypass/always miss) */
-		@SuppressWarnings("unused")
-		Set<SuperGraphEdge> staticCostEdges =
-			   CachePersistenceAnalysis.addFixedCostEdges(segment.getEdges(), ipetSolver, new MiscUtils.F1<SuperGraphEdge, Long>() {
-				@Override
-				public Long apply(SuperGraphEdge v) {
-					return accessCostInfo.getStaticCost(v.getTarget());
-				}
-			   }, KEY+"_static", 0);
-					   
-		
-		/* cache cost edges (miss once) */
-		
-		/* for references */
-		Set<SuperGraphEdge> refMissEdges = 
-				CachePersistenceAnalysis.addPersistenceSegmentConstraints(segment, accessCostInfo.getRefAccesses(segment), 
-						ipetSolver, MiscUtils.<SuperGraphEdge,Long>const1(costModel.getReplaceLineCost()), KEY+"_ref");
-
-		/* and for blocks */
-		Set<SuperGraphEdge> blockMissEdges = 
-				CachePersistenceAnalysis.addPersistenceSegmentConstraints(segment, accessCostInfo.getBlockAccesses(segment), 
-						ipetSolver, MiscUtils.<SuperGraphEdge,Long>const1(costModel.getLoadCacheBlockCost()), KEY+"_block");
-
-		
-
-		/* solve */
-		double lpCost;
-		Map<SuperGraphEdge, Long> flowMap = new HashMap<SuperGraphEdge,Long>();
-		lpCost = ipetSolver.solve(flowMap ,true);
-		long cost = (long) (lpCost+0.5);
-
-		return extractCost(segment, cost,flowMap, accessCostInfo, costModel,refMissEdges,blockMissEdges);
+	public Object getSaturatedTypes(ExecutionContext scope) throws InvalidFlowFactException, LpSolveException {
+		if(! this.saturatedTypes.containsKey(scope)) countDistinctCachedTagsAccessed(scope);
+		return this.saturatedTypes.get(scope);
 	}
 
-	/** Traverse vertex set.
-	 * <p>Add vertex to access set of referenced addresses
-	 * For references whose type cannot be fully resolved, add a
-	 * cost of 1.</p>
-	 * FIXME: We should deal with subtyping (or better use storage based alias-analysis)
-	 *
-	 * @param segment
-	 * @param usedRefs
-	 * @param costModel
-	 */
-	private AccessCostInfo extractAccessesAndCosts(
-			Segment segment,
-			LocalPointsToResult usedRefs,
-			ObjectCacheCostModel costModel) {
-		
-		AccessCostInfo aci = new AccessCostInfo();
-		
-		for(SuperGraphNode node : segment.getNodes()) {
-			/* Compute cost for basic block */
-			BasicBlock bb = node.getCFGNode().getBasicBlock();
-			if(bb == null) continue;
-			long bypassCost = 0;
-			long alwaysMissCost = 0;
-			CallString cs = node.getContextCFG().getCallString();
-
-			for(InstructionHandle ih : bb.getInstructions()) {
-				BoundedSet<SymbolicAddress> refs;
-
-				String handleType = getHandleType(project, node.getCfg(), ih); 				
-				if(handleType == null) continue; /* No getfield/handle access */
-				if(usedRefs.containsKey(ih)) {					
-
-					int fieldIndex = getFieldIndex(project, node.getCfg(), ih);
-					int blockIndex = getBlockIndex(fieldIndex);
-					
-					if(fieldIndex > this.maxCachedFieldIndex) {
-						bypassCost += costModel.getFieldAccessCostBypass();
-						continue;
-					}
-										
-					refs = usedRefs.get(ih,cs);		
-					if(refs.isSaturated()) {
-						alwaysMissCost += costModel.getReplaceLineCost() + costModel.getLoadCacheBlockCost();
-					} else {
-						for(SymbolicAddress ref : refs.getSet()) {
-							aci.addRefAccess(ref,node);
-							aci.addBlockAccess(ref.accessArray(blockIndex), node);
-						}
-					}
-				} else {
-					WCETTool.logger.error("No DFA results for: "+ih.getInstruction() + " with field " + ((FieldInstruction)ih.getInstruction()).getFieldName(bb.cpg()));
-				}
-			}
-			aci.putBypassCost(node, bypassCost);
-			aci.putStaticCost(node, bypassCost + alwaysMissCost);
-		}
-		/*
-		System.out.println("Access/Cost Info for "+segment);
-		aci.dump(System.out, 2);
-		*/
-		return aci;
+	public Set<SymbolicAddress> getUsedSymbolicNames(ExecutionContext scope) throws InvalidFlowFactException, LpSolveException {
+		if(! tagSet.containsKey(scope)) countDistinctCachedTagsAccessed(scope);
+		return tagSet.get(scope);		
 	}
 
 	/**
@@ -759,7 +935,110 @@ public class ObjectRefAnalysis {
 		ObjectCache.ObjectCacheCost ocCost = new ObjectCache.ObjectCacheCost(missCount, totalMissCost,bypassAccesses, totalBypassCost, fieldAccesses);
 		return ocCost;
 	}
+	
+	/* Helpers */
+	/* ------- */
 
+	/** Traverse vertex set.
+	 * <p>Add vertex to access set of referenced addresses
+	 * For references whose type cannot be fully resolved, add a
+	 * cost of 1.</p>
+	 * <p>FIXME: We should deal with subtyping (or better use storage based alias-analysis)</p>
+	 *
+	 * @param segment
+	 * @param usedRefs the results of the local points-to analysis, or {@code null} for always miss costs
+	 * @param costModel
+	 */
+	private AccessCostInfo extractAccessesAndCosts(
+			Segment segment,
+			LocalPointsToResult usedRefs,
+			ObjectCacheCostModel costModel) {
+		
+		return extractAccessesAndCosts(segment.getNodes(), usedRefs, costModel);
+	}
+
+	/** Traverse vertex set.
+	 * <p>Add vertex to access set of referenced addresses
+	 * For references whose type cannot be fully resolved, add a
+	 * cost of 1.</p>
+	 * <p>FIXME: We should deal with subtyping (or better use storage based alias-analysis)</p>
+	 *
+	 * @param nodes
+	 * @param usedRefs the results of the local points-to analysis, or {@code null} for always miss costs
+	 * @param costModel
+	 */
+	private AccessCostInfo extractAccessesAndCosts(
+			Iterable<SuperGraphNode> nodes, LocalPointsToResult usedRefs,
+			ObjectCacheCostModel costModel) {
+
+		AccessCostInfo aci = new AccessCostInfo();
+		
+		for(SuperGraphNode node : nodes) {
+			/* Compute cost for basic block */
+			BasicBlock bb = node.getCFGNode().getBasicBlock();
+			if(bb == null) continue;
+			long bypassCost = 0;
+			long alwaysMissCost = 0;
+			CallString cs = node.getContextCFG().getCallString();
+	
+			for(InstructionHandle ih : bb.getInstructions()) {
+	
+				String handleType = getHandleType(project, node.getCfg(), ih); 				
+				if(handleType == null) continue; /* No getfield/handle access */
+				int fieldIndex = getFieldIndex(project, node.getCfg(), ih);
+				int blockIndex = getBlockIndex(fieldIndex);
+				
+				if(fieldIndex > this.maxCachedFieldIndex) {
+					bypassCost += costModel.getFieldAccessCostBypass();
+					continue;
+				}
+				
+				BoundedSet<SymbolicAddress> refs = null;
+				if(usedRefs != null) {
+					if(! usedRefs.containsKey(ih)) {					
+						usedRefs = null;
+						WCETTool.logger.error("No DFA results for: "+ih.getInstruction() +
+								" with field " + ((FieldInstruction)ih.getInstruction()).getFieldName(bb.cpg()));						
+					} else {
+						refs = usedRefs.get(ih,cs);	
+						if(refs.isSaturated()) refs = null;						
+					}
+				}
+				if(refs == null) {
+					alwaysMissCost += costModel.getReplaceLineCost() + costModel.getLoadCacheBlockCost();
+				} else {
+					for(SymbolicAddress ref : refs.getSet()) {
+						aci.addRefAccess(ref,node);
+						aci.addBlockAccess(ref.accessArray(blockIndex), node);
+					}
+				}
+			}
+			aci.putBypassCost(node, bypassCost);
+			aci.putStaticCost(node, bypassCost + alwaysMissCost);
+		}
+		return aci;
+	}
+
+	/**
+	 * XXX: temporary helper to bridge gap between two representations (segment and scope)
+	 * @param segment
+	 * @return the corresponding execution context
+	 * @throws RuntimeException if the conversion is impossible
+	 */
+	private ExecutionContext contextForSegment(Segment segment) {
+
+		ContextCFG entry;
+		Set<ContextCFG> entries = segment.getEntryCFGs();
+		if(entries.size() != 1) {
+			throw new RuntimeException("contextForSegment(): Currently we only support a single entry method");
+		}
+		entry = entries.iterator().next();
+		return new ExecutionContext(entry.getCfg().getMethodInfo(), entry.getCallString());
+	}
+
+	private int getBlockIndex(int fieldIndex) {
+		return fieldIndex >> blockIndexBits;
+	}
 
 	/** Get all access sites per method */
 	public static Map<MethodInfo, Set<SuperGraph.SuperGraphEdge>> getAccessEdges(SuperGraph sg) {
@@ -773,20 +1052,6 @@ public class ObjectRefAnalysis {
 		}
 		return accessEdges;
 	}
-		
-	public Set<SymbolicAddress> getUsedSymbolicNames(ExecutionContext scope) throws InvalidFlowFactException, LpSolveException {
-		if(! tagSet.containsKey(scope)) getMaxCachedTags(scope);
-		return tagSet.get(scope);		
-	}
-	
-
-	public Object getSaturatedTypes(ExecutionContext scope) throws InvalidFlowFactException, LpSolveException {
-		if(! this.saturatedTypes.containsKey(scope)) getMaxCachedTags(scope);
-		return this.saturatedTypes.get(scope);
-	}
-	
-	/* Helpers */
-	/* ------- */
 
 	/**
 	 * @return the index of the field accessed by the instruction, or 0 if the instruction
@@ -811,16 +1076,12 @@ public class ObjectRefAnalysis {
 		}
 	}
 	
-	private int getBlockIndex(int fieldIndex) {
-		return fieldIndex >> blockIndexBits;
-	}
-
 	/**
 	 * @param maxCachedFieldIndex 
 	 * @return whether the field accessed by the given instruction handle is cached
 	 */
 	public static boolean isFieldCached(WCETTool project, ControlFlowGraph cfg, InstructionHandle ih, int maxCachedFieldIndex) {
-		int index = ObjectRefAnalysis.getFieldIndex(project, cfg,ih);
+		int index = ObjectCacheAnalysis.getFieldIndex(project, cfg,ih);
 		
 		/* Uncached fields are treated separately */ 
 		return (index <= maxCachedFieldIndex);

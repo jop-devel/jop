@@ -80,4 +80,13 @@ public class VarBlockCache extends MethodCacheImplementation {
 	public int getNumBlocks() {
 		return this.blockCount;
 	}
+	
+	@Override
+	public String toString() {
+		if(isLRU()) {
+			return "m$-LRU-" + blockCount + "x" + blockSize;
+		} else {
+			return "m$-" + blockCount + "x" + blockSize;
+		}
+	}
 }

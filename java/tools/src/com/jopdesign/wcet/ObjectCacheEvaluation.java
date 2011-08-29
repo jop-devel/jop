@@ -29,7 +29,7 @@ import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluationResult;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluationResult.OCacheAnalysisResult;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluationResult.OCacheMode;
-import com.jopdesign.wcet.analysis.cache.ObjectRefAnalysis;
+import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysis;
 import com.jopdesign.wcet.jop.ObjectCache;
 import com.jopdesign.wcet.jop.ObjectCache.ObjectCacheCost;
 
@@ -154,7 +154,7 @@ public class ObjectCacheEvaluation {
 		if(objectCache == null) {
 			throw new AssertionError("Cannot evaluate object cache on a processor without object cache");
 		}
-		ObjectRefAnalysis ocAnalysis = new ObjectRefAnalysis(project, objectCache);
+		ObjectCacheAnalysis ocAnalysis = new ObjectCacheAnalysis(project, objectCache);
 		// ocAnalysis.false, 1, 65536, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE);
 		TopologicalOrderIterator<ExecutionContext, ContextEdge> cgIter = this.project.getCallGraph().topDownIterator();
 		while(cgIter.hasNext()) {

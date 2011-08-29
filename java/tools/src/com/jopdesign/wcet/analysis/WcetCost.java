@@ -20,11 +20,18 @@
 package com.jopdesign.wcet.analysis;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import com.jopdesign.common.misc.Iterators;
+import com.jopdesign.common.misc.MiscUtils;
 
 public class WcetCost implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private long localCost = 0;
-	private long cacheCost = 0;
+	private Map<String, Long> cacheCost = new HashMap<String, Long>();
+	private long totalCacheCost = 0;
 	private long nonLocalCost = 0;
 	private int potCacheFlushes = 0;
 	public WcetCost() {
@@ -48,46 +55,72 @@ public class WcetCost implements Serializable {
 	public void addCost(WcetCost cost) {
 		this.localCost += cost.getLocalCost();
 		this.nonLocalCost += cost.getNonLocalCost();
-		this.cacheCost += cost.getCacheCost();
+		addCacheCost(cost.cacheCost);
 		this.potCacheFlushes += cost.getPotentialCacheFlushes();
 	}
 
 
-	public long getCost() { return localCost+cacheCost+nonLocalCost; }
+	public long getCost() { return localCost+getCacheCost()+nonLocalCost; }
 	
 	public long getLocalCost() { return localCost; }
-	public long getCacheCost() { return cacheCost; }
 	public long getNonLocalCost() { return nonLocalCost; }
+	public long getCacheCost() { 
+		return Iterators.sum(cacheCost.values());
+	}
 	
 	public void addLocalCost(long c) { this.localCost += c; }
-	public void addNonLocalCost(long c) { this.nonLocalCost += c; }
-	public void addCacheCost(long c) { this.cacheCost += c; }
+	public void addNonLocalCost(long c) { this.nonLocalCost += c; }	
+	public void addCacheCost(long unclassifiedCacheCost) { 
+		addCacheCost("cache",unclassifiedCacheCost);
+	}
+	public void addCacheCost(String cache, long cost) {
+		MiscUtils.incrementBy(cacheCost, cache, cost, 0);		
+	}
+	public void addCacheCost(Map<String,Long> cacheCost) { 
+		for(Entry<String, Long> entry : cacheCost.entrySet()) {
+			MiscUtils.incrementBy(cacheCost, entry.getKey(), entry.getValue(), 0);
+		}
+	}
 	
 	@Override public String toString() {
-		if(getCost() == 0) return "0";
-		String s;
-		if(localCost == 0 && cacheCost == 0) {
-			s = "(cost: "+getCost();
-		} else if(localCost == 0) { 
-			s = "(cost: "+getCost()+", execution: "+nonLocalCost+", cache: "+cacheCost;
-		} else { 
-			s = ""+getCost()+" (local: "+localCost+",cache: "+cacheCost+",non-local: "+nonLocalCost;
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append(getCost());
+		sb.append(" (");
+		sb.append("local: ");
+		sb.append(this.getLocalCost());
+		for(Entry<String, Long> cacheEntry : this.cacheCost.entrySet()) {
+			sb.append(", ");
+			sb.append(cacheEntry.getKey());
+			sb.append(": ");
+			sb.append(cacheEntry.getValue());
 		}
-		if(this.potCacheFlushes > 0) s+= ", potentialCacheFlushes: "+potCacheFlushes;
-		s+=")";
-		return s;
+		if(this.getNonLocalCost() > 0) {
+			sb.append(", non-local: ");
+			sb.append(this.getNonLocalCost());
+		}
+		if(this.potCacheFlushes > 0) {
+			sb.append(", potentialCacheFlushes: ");
+			sb.append(potCacheFlushes);
+		}
+		sb.append(')');
+		return sb.toString();
 	}
+	
 	public WcetCost getFlowCost(Long flow) {
 		WcetCost flowcost = new WcetCost();
 		if(this.getCost() == 0 || flow == 0) return flowcost;
 		flowcost.localCost = localCost*flow;
-		flowcost.cacheCost = cacheCost*flow;
+		for(Entry<String, Long> cacheEntry : cacheCost.entrySet()) {
+			flowcost.addCacheCost(cacheEntry.getKey(), cacheEntry.getValue()*flow);			
+		}
 		flowcost.nonLocalCost = nonLocalCost*flow;
 		if(flowcost.getCost() / flow != getCost()) {
 			throw new ArithmeticException("getFlowCost: Arithmetic Error");
 		}
 		return flowcost;
 	}
+
 	public void moveLocalToGlobalCost() {
 		this.nonLocalCost += this.localCost;
 		this.localCost = 0;

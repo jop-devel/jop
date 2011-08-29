@@ -132,8 +132,8 @@ public class ObjectCacheAnalysisDemo {
 		public void visitBasicBlockNode(BasicBlockNode n) {
 			long worstCaseMissCost = objectCache.getLoadBlockCycles();
 			for(InstructionHandle ih : n.getBasicBlock().getInstructions()) {
-				if(ObjectRefAnalysis.getHandleType(project, n.getControlFlowGraph(), ih) == null) continue;
-				if(! ObjectRefAnalysis.isFieldCached(project, n.getControlFlowGraph(), ih, objectCache.getMaxCachedFieldIndex())) {
+				if(ObjectCacheAnalysis.getHandleType(project, n.getControlFlowGraph(), ih) == null) continue;
+				if(! ObjectCacheAnalysis.isFieldCached(project, n.getControlFlowGraph(), ih, objectCache.getMaxCachedFieldIndex())) {
 					cost.addBypassCost(worstCaseMissCost,1);
 				} else {
 					cost.addMissCost(worstCaseMissCost,1);
@@ -200,14 +200,14 @@ public class ObjectCacheAnalysisDemo {
 	}
 
 	private WCETTool project;
-	private ObjectRefAnalysis objRefAnalysis;
+	private ObjectCacheAnalysis objRefAnalysis;
 	private boolean assumeAllMiss;
 	private ObjectCache objectCache;
 
 	public ObjectCacheAnalysisDemo(WCETTool p, ObjectCache objectCache) {
 		this.project = p;
 		this.objectCache = objectCache;
-		this.objRefAnalysis = new ObjectRefAnalysis(project, objectCache);
+		this.objRefAnalysis = new ObjectCacheAnalysis(project, objectCache);
 	}
 	
 	public void setAssumeAlwaysMiss() {
@@ -227,7 +227,7 @@ public class ObjectCacheAnalysisDemo {
 		if(! context.isEmpty()) {
 			throw new AssertionError("Callstrings are not yet supported for object cache analysis");
 		}
-		return objRefAnalysis.getMaxCachedTags(new ExecutionContext(invoked, context));
+		return objRefAnalysis.countDistinctCachedTagsAccessed(new ExecutionContext(invoked, context));
 	}
  
 	private ObjectCache.ObjectCacheCost getAllFitCost(MethodInfo invoked, CallString context) throws InvalidFlowFactException, LpSolveException {

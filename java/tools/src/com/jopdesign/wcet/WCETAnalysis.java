@@ -316,12 +316,12 @@ public class WCETAnalysis {
 	        int availBlocks = wcetTool.getWCETProcessorModel().getMethodCache().getNumBlocks();
 	        long total, distinctApprox = -1, distinct = -1;
 	        
-	        blocks = total = mca.countTotalCacheBlocks(segment);
+	        blocks = total = mca.countDistinctBlocksUsed(segment);
 	        if(total > availBlocks || true) {
 	        	try {
-					blocks = distinctApprox = mca.countDistinctCacheBlocks(segment, false);
+					blocks = distinctApprox = mca.countDistinctBlocksAccessed(segment, false);
 	                if(blocks > availBlocks && blocks < availBlocks*2 || true) {
-	            		blocks = distinct = mca.countDistinctCacheBlocks(segment, true);                	
+	            		blocks = distinct = mca.countDistinctBlocksAccessed(segment, true);                	
 	                }
 				} catch (LpSolveException e) {
 	        		System.err.println((distinctApprox>=0 ? "I" : "Relaxed ")+"LP Problem too difficult, giving up: "+e);                		
