@@ -471,7 +471,6 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
             cfg.resolveVirtualInvokes();
             cfg.insertReturnNodes();
             cfg.insertContinueLoopNodes();
-
 //    	    cfg.insertSplitNodes();
 //    	    cfg.insertSummaryNodes();
 

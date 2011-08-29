@@ -85,6 +85,8 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		new HashMap<InstructionHandle, ContextMap<CallString,BoundedSet<SymbolicAddress>>>();
 	private Query<InstructionHandle> executedOnce;
 
+	private CallString initialCallString;
+
 	// optional extra info: Max flow for each instruction handle
 	
 	public SymbolicPointsTo(int maxSetSize, int callStringLength) {		
@@ -134,7 +136,6 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 					new Context(),
 					new HashMap<CallString, SymbolicAddressMap>());
 		
-		CallString l = CallString.EMPTY;
 		SymbolicAddressMap init = new SymbolicAddressMap(bsFactory);
 		// Add symbolic stack names
 		int stackPtr = 0;
@@ -150,12 +151,13 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			}
 			stackPtr += ty.getSize();
 		}
-		retval.put(l, init);
+		retval.put(initialCallString, init);
 		return retval;
 	}
 	
 	public void initialize(MethodInfo mi, Context context) {
 		entryMethod = mi;
+		initialCallString = context.callString;
 	}
 	
 	public ContextMap<CallString, SymbolicAddressMap> join(

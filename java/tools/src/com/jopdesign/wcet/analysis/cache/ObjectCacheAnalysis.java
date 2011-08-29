@@ -57,6 +57,7 @@ import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.Segment;
 import com.jopdesign.common.code.SuperGraph;
 import com.jopdesign.common.code.SuperGraph.ContextCFG;
+import com.jopdesign.common.code.SuperGraph.IntraEdge;
 import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
 import com.jopdesign.common.code.SuperGraph.SuperGraphNode;
 import com.jopdesign.common.code.SuperGraph.SuperInvokeEdge;
@@ -508,7 +509,7 @@ public class ObjectCacheAnalysis extends CachePersistenceAnalysis {
 					computeCacheCost(persistenceSegment, getUsedRefs(persistenceSegment),
 							objectCache.getCostModel(), usedSetOut ); 
 			WCETTool.logger.info("O$-addMissOnceCost: "+cost.toString());
-			F1<SuperGraphEdge, Long> costModel = MiscUtils.const1(cost.getCost());			
+			F1<SuperGraphEdge, Long> costModel = MiscUtils.const1(cost.getCost());
 			Set<SuperGraphEdge> costEdges = addFixedCostEdges(persistenceSegment.getEntryEdges(), ipetSolver,
 					costModel, KEY + "_miss_once", tag);
 			missCostEdges.addAll(costEdges);
@@ -782,7 +783,7 @@ public class ObjectCacheAnalysis extends CachePersistenceAnalysis {
 		SymbolicPointsTo spt = new SymbolicPointsTo(maxSetSize,
 				project.getCallstringLength(), 
 				new ExecOnceQuery(eoAna,scope));
-		dfa.runLocalAnalysis(spt,scope.getMethodInfo());
+		dfa.runLocalAnalysis(spt,scope);
 		LocalPointsToResult lpt = new LocalPointsToResult(spt.getResult());
 		return lpt;
 	}

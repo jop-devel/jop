@@ -351,12 +351,16 @@ public class CallString implements CallStringProvider, Iterable<InvokeSite> {
         if (this.isEmpty()) return "CallString.EMPTY";
         long hash = hashCode();
         if (hash < 0) hash += Integer.MAX_VALUE;
-        return String.format("CallString[|%d|%x]", callString.length, hash);
+        if (callString.length == 1) {
+        	return String.format("CallString[%s]", callString[0].toString());        	
+        } else {
+        	return String.format("CallString[|%d|%x]", callString.length, hash);
+        }
     }
 
     public String toStringVerbose(boolean newlines) {
-        if (this.isEmpty()) return "CALLCTX[]";
-        StringBuffer sb = new StringBuffer("CALLCTX[");
+        if (this.isEmpty()) return "CallString.Empty";
+        StringBuffer sb = new StringBuffer("CallString[");
         boolean first = true;
         for (int i = callString.length-1; i >= 0; i--) {
             if (first) first = false;
