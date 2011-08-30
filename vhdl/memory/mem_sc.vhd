@@ -450,7 +450,7 @@ end process;
 --
 process(state, mem_in, sc_mem_in,
 	mcache_rdy, mcache_in_cache, bc_len, value, index, 
-	addr_reg, cp_stopbit, was_a_store, ocout)
+	addr_reg, cp_stopbit, was_a_store, ocout, putref_reg, dest_level_reg)
 begin
 
 	next_state <= state;
