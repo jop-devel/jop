@@ -178,21 +178,6 @@ public class JCopter extends EmptyTool<JCopterManager> {
         // - Now we have full DFA results (if enabled) and an updated callgraph, now would be the time
         //   for some cleanup optimizations before we start the WCA (but we may not have Loopbounds yet)
 
-        // - perform WCET analysis, select methods for inlining
-        if (useWCA()) {
-            // First, rebuild the WCET-Tool callgraph, since we modified the appInfo graph already
-            wcetTool.rebuildCallGraph();
-
-            // TODO call WCET analysis, use WCET-oriented inline selector
-
-
-        } else {
-            logger.info("WCA tool is disabled, not performing WCET-driven optimizations.");
-
-            // use non-WCET-based inline selector
-
-        }
-
         // - perform inlining (check previous analysis results to avoid creating nullpointer checks),
         //   duplicate/rename/.. methods, perform method extraction/splitting too?
         executor.performGreedyOptimizer();

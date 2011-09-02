@@ -64,6 +64,7 @@ public class TypeHelper {
     public static StoreInstruction createStoreInstruction(Type type, int slot) {
         switch (type.getType()) {
             case Constants.T_BOOLEAN:
+            case Constants.T_BYTE:
             case Constants.T_CHAR:
             case Constants.T_SHORT:
             case Constants.T_INT:
@@ -85,6 +86,7 @@ public class TypeHelper {
     public static LoadInstruction createLoadInstruction(Type type, int slot) {
         switch (type.getType()) {
             case Constants.T_BOOLEAN:
+            case Constants.T_BYTE:
             case Constants.T_CHAR:
             case Constants.T_SHORT:
             case Constants.T_INT:

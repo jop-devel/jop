@@ -753,8 +753,10 @@ public class ControlFlowGraph {
             for (CFGEdge e : graph.outgoingEdgesOf(bbn)) {
                 if (e.getKind() != EdgeKind.NEXT_EDGE) continue;
                 BasicBlock target = graph.getEdgeTarget(e).getBasicBlock();
+                // TODO edge targets a SPLIT node, handle correctly ..
+                if (target == null) continue;
                 if (blocks.get(i+1) != target) {
-                    throw new ControlFlowError("Block "+i+" does not fallthrough to the next block in "+methodInfo);
+                    throw new ControlFlowError("Block "+i+" does not fall through to the next block in "+methodInfo);
                 }
             }
         }
