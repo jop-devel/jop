@@ -26,7 +26,7 @@
 #
 #	Set USB to true for an FTDI chip based board (dspio, usbmin, lego)
 #
-USB=false
+USB=true
 
 #
 #	com1 is the usual serial port
@@ -75,7 +75,7 @@ ifeq ($(WINDIR),)
 	USBRUNNER=./USBRunner
 	S=:
 else
-	DOWN=down.exe
+	DOWN=./down.exe
 	USBRUNNER=USBRunner.exe
 	S=\;
 endif
