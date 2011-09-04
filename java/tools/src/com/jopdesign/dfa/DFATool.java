@@ -76,6 +76,8 @@ import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -193,9 +195,15 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         updateChecksum(prologue, md);
 
         // Now we need to process all classes (for DFA's internal flow graph)
-        for (ClassInfo ci : appInfo.getClassInfos()) {
+        List<String> classNames = new ArrayList<String>(appInfo.getClassNames());
+        // We iterate in lexical order to make MD5 checksum a bit more deterministic ..
+        Collections.sort(classNames);
+        for (String name : classNames) {
+            ClassInfo ci = appInfo.getClassInfo(name);
         	updateCheckSum(ci.getConstantPoolGen().getConstantPool(), md);
-            for (MethodInfo mi : ci.getMethods()) {
+            List<String> methodNames = new ArrayList<String>(ci.getMethodSignatures());
+            for (String method : methodNames) {
+                MethodInfo mi = ci.getMethodInfo(method);
                 if (mi.hasCode()) {
                     loadMethod(mi);
                     updateChecksum(mi, md);
