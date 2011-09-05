@@ -1520,8 +1520,17 @@ public class CallGraph implements ImplementationFinder {
                 // check if the target callstring matches the given callstring
                 if (cgString.isEmpty()) {
                     // target has no callstring, must at least override the invoked method
-                    if (outEdge.getTarget().getMethodInfo().overrides(invokeeRef, true)) {
-                        methods.add(outEdge.getTarget());
+                    if (invokeeRef.isInterfaceMethod() == Ternary.TRUE) {
+                        // for interface methods we have a problem, because we only have the
+                        // implementations in the call graph, not the receivers, we cannot
+                        // check if the receiver implements the interface..
+                        if (outEdge.getTarget().getMethodInfo().implementsMethod(invokeeRef)) {
+                            methods.add(outEdge.getTarget());
+                        }
+                    } else {
+                        if (outEdge.getTarget().getMethodInfo().overrides(invokeeRef, true)) {
+                            methods.add(outEdge.getTarget());
+                        }
                     }
                 } else {
                     // if one of the callstrings is a suffix of the other, this context is a possible invocation
