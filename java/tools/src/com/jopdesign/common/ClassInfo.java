@@ -808,6 +808,10 @@ public final class ClassInfo extends MemberInfo {
         return Collections.unmodifiableCollection(methods.values());
     }
 
+    public Collection<String> getMethodSignatures() {
+        return Collections.unmodifiableCollection(methods.keySet());
+    }
+
     /**
      * Find a method of this class or in the superclasses of this class.
      * If no such method is found, look in the interfaces too and return the first found method.

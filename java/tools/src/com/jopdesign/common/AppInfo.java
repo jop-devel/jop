@@ -541,6 +541,10 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
         return Collections.unmodifiableCollection(classes.values());
     }
 
+    public Collection<String> getClassNames() {
+        return Collections.unmodifiableCollection(classes.keySet());
+    }
+
     public void iterate(ClassVisitor visitor) {
         for (ClassInfo c : classes.values()) {
             if (!visitor.visitClass(c)) {

@@ -125,11 +125,14 @@ public class GreedyOptimizer {
         if (config.useWCA()) {
             GainCalculator gc = new GainCalculator(analyses);
             if (config.useWCEP()) {
+                logger.info("Using WCEP driven selector");
                 selector = new WCEPRebateSelector(analyses, gc, config.getMaxCodesize());
             } else {
+                logger.info("Using WCA driven selector");
                 selector = new WCETRebateSelector(analyses, gc, config.getMaxCodesize());
             }
         } else {
+            logger.info("WCA is disabled, not using WCA for optimization.");
             selector = new ACETRebateSelector(analyses, new GainCalculator(analyses), config.getMaxCodesize());
         }
 
@@ -161,16 +164,19 @@ public class GreedyOptimizer {
 
         } else if (order == GreedyOrder.WCAFirst) {
 
+            logger.info("Optimizing WCA target");
+
             Set<MethodInfo> wcaMethods = analyses.getWCAMethods();
             optimizeMethods(analyses, ecp, selector, wcaMethods);
+
+            selector.printStatistics();
 
             // We do not want to include the wca methods in the second pass because inlining there could have negative
             // effects on the WCET path due to the cache
             Set<MethodInfo> others = new HashSet<MethodInfo>(analyses.getTargetCallGraph().getMethodInfos());
             others.removeAll(wcaMethods);
 
-            selector.printStatistics();
-
+            logger.info("Optimizing non-WCA code");
             //analyses.dumpTargetCallgraph("acet", true);
 
             selector = new ACETRebateSelector(analyses, new GainCalculator(analyses), config.getMaxCodesize());

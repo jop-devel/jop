@@ -166,36 +166,23 @@ public class JCopter extends EmptyTool<JCopterManager> {
         // - perform simple inlining: guaranteed not to increase worst case
         executor.performSimpleInline();
 
-        // - Rebuild callgraph and rerun DFA analyses since SimpleInliner changed the callstrings
-        //   and we do not have an implementation for Callgraph#merge and a framework to notify analyses
-        //   of callstring/callgraph changes (yet..)
-        if (useDFA()) {
-            executor.dataflowAnalysis(true);
+        if (getJConfig().doOptimizeNormal()) {
+            // - Rebuild callgraph and rerun DFA analyses since SimpleInliner changed the callstrings
+            //   and we do not have an implementation for Callgraph#merge and a framework to notify analyses
+            //   of callstring/callgraph changes (yet..)
+            if (useDFA()) {
+                executor.dataflowAnalysis(true);
+            }
+
+            executor.buildCallGraph(useDFA());
+
+            // - Now we have full DFA results (if enabled) and an updated callgraph, now would be the time
+            //   for some cleanup optimizations before we start the WCA (but we may not have Loopbounds yet)
+
+            // - perform inlining (check previous analysis results to avoid creating nullpointer checks),
+            //   duplicate/rename/.. methods, perform method extraction/splitting too?
+            executor.performGreedyOptimizer();
         }
-
-        executor.buildCallGraph(useDFA());
-
-        // - Now we have full DFA results (if enabled) and an updated callgraph, now would be the time
-        //   for some cleanup optimizations before we start the WCA (but we may not have Loopbounds yet)
-
-        // - perform WCET analysis, select methods for inlining
-        if (useWCA()) {
-            // First, rebuild the WCET-Tool callgraph, since we modified the appInfo graph already
-            wcetTool.rebuildCallGraph();
-
-            // TODO call WCET analysis, use WCET-oriented inline selector
-
-
-        } else {
-            logger.info("WCA tool is disabled, not performing WCET-driven optimizations.");
-
-            // use non-WCET-based inline selector
-
-        }
-
-        // - perform inlining (check previous analysis results to avoid creating nullpointer checks),
-        //   duplicate/rename/.. methods, perform method extraction/splitting too?
-        executor.performGreedyOptimizer();
 
         // - perform code cleanup optimizations (load/store/param-passing, constantpool cleanup,
         //   remove unused members, constant folding, dead-code elimination (remove some more NP-checks,..),
