@@ -182,6 +182,10 @@ public class JCopter extends EmptyTool<JCopterManager> {
             // - perform inlining (check previous analysis results to avoid creating nullpointer checks),
             //   duplicate/rename/.. methods, perform method extraction/splitting too?
             executor.performGreedyOptimizer();
+        } else {
+            // we need an up-to-date call graph for code cleanup, but we skip the second full-blown DFA run if
+            // we only optimize at O1
+            executor.buildCallGraph(false);
         }
 
         // - perform code cleanup optimizations (load/store/param-passing, constantpool cleanup,
