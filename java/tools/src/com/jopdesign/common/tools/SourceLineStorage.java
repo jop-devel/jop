@@ -26,6 +26,7 @@ import com.jopdesign.common.EmptyAppEventHandler;
 import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.logger.LogConfig;
+import com.jopdesign.common.misc.ClassInfoNotFoundException;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.type.MemberID;
 import org.apache.bcel.generic.InstructionHandle;
@@ -114,9 +115,15 @@ public class SourceLineStorage extends EmptyAppEventHandler {
         }
 
         public void applyEntry(MethodCode code, InstructionHandle[] il) {
-            ClassInfo cls = AppInfo.getSingleton().getClassInfo(className);
+            ClassInfo cls = null;
+            try {
+                cls = AppInfo.getSingleton().getClassInfo(className,false);
+            } catch (ClassInfoNotFoundException e) {
+                logger.error("Could not find class " + className + ", skipping source line entry.", e);
+                return;
+            }
             if (cls == null) {
-                logger.error("Could not find class " + className + ", skipping source line entry.");
+                logger.info("Could not find class " + className + ", skipping. Maybe no longer used?");
                 return;
             }
             code.setLineNumber(il[start], cls, line);

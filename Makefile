@@ -126,7 +126,7 @@ IPDEST=192.168.0.123
 ################################################################################
 
 # Jop RTS configuration
-USE_SCOPES=false
+USE_SCOPES=true
 USE_SCOPECHECKS=false
 ADD_REF_INFO=false
 MEASURE=true
@@ -431,7 +431,7 @@ endif
            -c $(TARGET)/dist/classes -o $(TARGET)/dist $(MAIN_CLASS)
 # Optimize
 ifeq ($(USE_JCOPTER),yes)
-	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter \
+	java -Xmx1280M $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter \
 	   -c $(TARGET)/dist/classes -o $(TARGET)/dist --classdir $(TARGET)/dist/classes.opt \
 	   $(JCOPTER_OPTIONS) $(MAIN_CLASS)
 	mv $(TARGET)/dist/classes $(TARGET)/dist/classes.unopt
