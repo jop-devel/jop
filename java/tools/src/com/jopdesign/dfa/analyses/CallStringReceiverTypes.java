@@ -989,6 +989,13 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
                     if (impl == null) {
                         throw new AppInfoError("Could not find implementation for: " + receiver + "#" + signature);
                     }
+                    if (impl.isAbstract()) {
+                        // has been made abstract by JCopter or is a call to an abstract method with unknown receivers
+                        continue;
+                    }
+                    if (impl.isNative()) {
+                        throw new AppInfoError("Invoking native virtual methods is not supported right now..");
+                    }
                     doInvokeVirtual(receiver, impl, stmt, context, input, interpreter, state, retval);
                 }
 

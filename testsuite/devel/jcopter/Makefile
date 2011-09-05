@@ -36,7 +36,7 @@ DEFAULT_OPTS=--greedy.targets wca \
 	     --greedy.use-wcep-ef true \
 	     --greedy.cache-analysis ALWAYS_MISS_OR_HIT \
 	     --greedy.wca-cache-analysis ALL_FIT_REGIONS 
-OPTS?=
+OPTS?=--greedy.wca-cache-analysis ALWAYS_MISS
 
 # Options for JCopter and WCETAnalysis
 P1?=test
