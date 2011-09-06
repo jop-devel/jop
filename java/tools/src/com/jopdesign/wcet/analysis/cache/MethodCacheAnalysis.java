@@ -31,6 +31,7 @@ import java.util.Set;
 
 import lpsolve.LpSolveException;
 
+import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
@@ -389,8 +390,8 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis {
 			Type returnType = accessEdge.getSource().getCfg().getMethodInfo().getType();
 			return methodCache.getMissPenaltyOnReturn(cfg.getNumberOfWords(), returnType);
 		} else if(accessEdge instanceof SuperInvokeEdge) {
-			InvokeInstruction invokeIns = ((SuperInvokeEdge) accessEdge).getInvokeNode().getInvokeSite().getInvokeInstruction();
-			return methodCache.getMissPenaltyOnInvoke(cfg.getNumberOfWords(), invokeIns);			
+			InstructionHandle invokeIns = ((SuperInvokeEdge) accessEdge).getInvokeNode().getInvokeSite().getInstructionHandle();
+			return methodCache.getMissPenaltyOnInvoke(cfg.getNumberOfWords(), invokeIns.getInstruction());			
 		} else {
 			/* entry edge of the segment: can be invoke or return cost */
 			return methodCache.getMissPenalty(cfg.getNumberOfWords(), false);
@@ -413,7 +414,7 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis {
 		long iMissMax = 0;
 		for(MethodInfo target : wcetTool.findImplementations(invokeSite.getInvoker(), invokeSite.getInstructionHandle(), context)) {
 			ControlFlowGraph invokedCfg = wcetTool.getFlowGraph(target);
-			long iMiss = methodCache.getMissPenaltyOnInvoke(invokedCfg.getNumberOfWords(), invokeSite.getInvokeInstruction());
+			long iMiss = methodCache.getMissPenaltyOnInvoke(invokedCfg.getNumberOfWords(), invokeSite.getInstructionHandle().getInstruction());
 			if(iMiss > iMissMax) iMissMax = iMiss;
 		}
 		return iMissMax + rMiss;

@@ -467,14 +467,17 @@ public class ControlFlowGraph {
             v.visitInvokeNode(this);
         }
 
+        @Override
         public InstructionHandle getInstructionHandle() {
             return instr;
         }
 
+        @Override
         public MethodInfo getImplementingMethod() {
             return this.receiverImpl;
         }
 
+        @Override
         public ControlFlowGraph receiverFlowGraph() {
             // TODO if context and implementationFinder is set, use them instead
             return receiverImpl.getCode().getControlFlowGraph(false);
@@ -483,6 +486,7 @@ public class ControlFlowGraph {
         /**
          * @return true if the invokation denotes an interface, not an implementation
          */
+        @Override
         public boolean isVirtual() {
             return receiverImpl == null;
         }
@@ -804,12 +808,14 @@ public class ControlFlowGraph {
             for (CFGEdge e : graph.outgoingEdgesOf(bbn)) {
                 if (e.getKind() != EdgeKind.NEXT_EDGE) continue;
                 BasicBlock target = graph.getEdgeTarget(e).getBasicBlock();
+
+                // TODO edge targets a SPLIT node, handle correctly ..
                 if(target == null) {
                     throw new ControlFlowError("Block "+i+" does fallthrough to a virtual node of type " +
                     		((VirtualNode) graph.getEdgeTarget(e)).getKind() + " in " + methodInfo);
                 }
                 if (blocks.get(i+1) != target) {
-                    throw new ControlFlowError("Block "+i+" does not fallthrough to the next block in "+methodInfo);
+                    throw new ControlFlowError("Block "+i+" does not fall through to the next block in "+methodInfo);
                 }
             }
         }

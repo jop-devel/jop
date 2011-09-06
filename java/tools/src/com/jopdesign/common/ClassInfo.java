@@ -565,17 +565,17 @@ public final class ClassInfo extends MemberInfo {
         Set<ClassInfo> sc = new HashSet<ClassInfo>();
         List<ClassInfo> queue = new LinkedList<ClassInfo>();
 
+        sc.add(this);
         queue.add(this);
         while (!queue.isEmpty()) {
             ClassInfo cls = queue.remove(0);
-            sc.add(cls);
 
             ClassInfo superClass = cls.getSuperClassInfo();
-            if ( superClass != null && !sc.contains(superClass) ) {
+            if ( superClass != null && sc.add(superClass) ) {
                 queue.add(superClass);
             }
             for (ClassInfo i : cls.getInterfaces()) {
-                if ( !sc.contains(i) ) {
+                if ( sc.add(i) ) {
                     queue.add(i);
                 }
             }
@@ -806,6 +806,10 @@ public final class ClassInfo extends MemberInfo {
      */
     public Collection<MethodInfo> getMethods() {
         return Collections.unmodifiableCollection(methods.values());
+    }
+
+    public Collection<String> getMethodSignatures() {
+        return Collections.unmodifiableCollection(methods.keySet());
     }
 
     /**

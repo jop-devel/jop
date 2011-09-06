@@ -19,6 +19,7 @@
  */
 package com.jopdesign.wcet.jop;
 
+import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.Type;
 
@@ -74,7 +75,7 @@ public class NoMethodCache implements MethodCache {
 
 	@Override
 	public long getMissPenaltyOnInvoke(int invokeeWords,
-			InvokeInstruction invokeInstruction) {
+			Instruction invokeInstruction) {
 		
 		return 0;
 	}

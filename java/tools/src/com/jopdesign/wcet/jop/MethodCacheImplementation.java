@@ -21,6 +21,7 @@
 package com.jopdesign.wcet.jop;
 
 import org.apache.bcel.Constants;
+import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.Type;
 
@@ -146,7 +147,7 @@ public abstract class MethodCacheImplementation implements MethodCache {
 	 * @param invokeInstruction the invoke instruction
 	 * @return the maximum miss penalty for loading {@code words} words from method cache during {@code invokeInstruction}
 	 */
-	public long getMissPenaltyOnInvoke(int invokeeWords, InvokeInstruction invokeInstruction) {
+	public long getMissPenaltyOnInvoke(int invokeeWords, Instruction invokeInstruction) {
 
 		return timing.getMethodCacheMissPenalty(invokeeWords, invokeInstruction.getOpcode());
 	}

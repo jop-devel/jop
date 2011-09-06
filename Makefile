@@ -26,7 +26,7 @@
 #
 #	Set USB to true for an FTDI chip based board (dspio, usbmin, lego)
 #
-USB=false
+USB=true
 
 #
 #	com1 is the usual serial port
@@ -75,7 +75,7 @@ ifeq ($(WINDIR),)
 	USBRUNNER=./USBRunner
 	S=:
 else
-	DOWN=down.exe
+	DOWN=./down.exe
 	USBRUNNER=USBRunner.exe
 	S=\;
 endif
@@ -435,7 +435,7 @@ endif
            -c $(TARGET)/dist/classes -o $(TARGET)/dist $(MAIN_CLASS)
 # Optimize
 ifeq ($(USE_JCOPTER),yes)
-	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter \
+	java -Xmx1280M $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter \
 	   -c $(TARGET)/dist/classes -o $(TARGET)/dist --classdir $(TARGET)/dist/classes.opt \
 	   $(JCOPTER_OPTIONS) $(MAIN_CLASS)
 	mv $(TARGET)/dist/classes $(TARGET)/dist/classes.unopt

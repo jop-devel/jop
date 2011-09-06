@@ -162,7 +162,12 @@ public class WCAInvoker extends ExecFrequencyProvider {
     public boolean isOnLocalWCETPath(MethodInfo method, InstructionHandle ih) {
 
         ControlFlowGraph cfg = method.getCode().getControlFlowGraph(false);
-        BasicBlockNode block = cfg.getHandleNode(ih);
+        BasicBlockNode block = cfg.getHandleNode(ih, true);
+
+        // we do not have a block.. this is some exception handling path (hopefully..)
+        if (block == null) {
+            return false;
+        }
 
         for (ExecutionContext node : wcetTool.getCallGraph().getNodes(method)) {
             Long flow = wcaNodeFlow.get(node).get(block);

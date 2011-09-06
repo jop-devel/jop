@@ -155,7 +155,7 @@ public class SimpleInliner extends AbstractOptimizer {
     private int codesizeTooLarge;
 
     public SimpleInliner(JCopter jcopter, InlineConfig inlineConfig) {
-        super(jcopter);
+        super(jcopter, true);
         helper = new InlineHelper(jcopter, inlineConfig);
     }
 

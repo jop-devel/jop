@@ -1,5 +1,6 @@
 package com.jopdesign.wcet.jop;
 
+import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
@@ -32,7 +33,7 @@ public interface MethodCache extends CacheModel {
 	 * @param invokeInstruction the invoke instruction
 	 * @return the maximum miss penalty for loading {@code words} words from method cache during {@code invokeInstruction}
 	 */
-	public long getMissPenaltyOnInvoke(int invokeeWords, InvokeInstruction invokeInstruction);
+	public long getMissPenaltyOnInvoke(int invokeeWords, Instruction invokeInstruction);
 
 	/**
 	 * Compute the delay (in cycles) caused by a method cache miss

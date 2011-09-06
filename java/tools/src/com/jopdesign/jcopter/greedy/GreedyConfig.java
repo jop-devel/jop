@@ -68,7 +68,7 @@ public class GreedyConfig {
 
     private static final EnumOption<AnalysisType> CACHE_ANALYSIS_TYPE =
             new EnumOption<AnalysisType>("cache-analysis",
-                    "Select the cache analysis type: ALWAYS_MISS, ALWAYS_HIT, ALWAYS_HIT_OR_MISS, ALL_FIT_REGIONS",
+                    "Select the cache analysis type",
                     AnalysisType.ALWAYS_MISS);
 
     private static final EnumOption<CacheCostCalculationMethod> WCA_CACHE_APPROXIMATION =
