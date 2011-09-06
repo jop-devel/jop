@@ -27,6 +27,7 @@ import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.JavaClassFormatError;
+import com.jopdesign.common.misc.Ternary;
 import com.jopdesign.common.type.MemberID;
 import com.jopdesign.common.type.MethodRef;
 import org.apache.bcel.classfile.Attribute;
@@ -216,11 +217,27 @@ public final class MethodInfo extends ClassMemberInfo {
     }
 
     /**
+     * @param interfaceMethod A method within an interface.
+     * @return true if this method implements the interface method, even if the class does not implement the interface.
+     */
+    public boolean implementsMethod(MethodRef interfaceMethod) {
+        if (interfaceMethod.isInterfaceMethod() != Ternary.TRUE) return false;
+        if (!getMethodSignature().equals(interfaceMethod.getMethodSignature())) {
+            return false;
+        }
+        // no need for access checks, interfaces are always public.
+        return true;
+    }
+
+    /**
      * Check if this method is the same as or overrides a given method.
      * <p>
      * This checks the class of the reference if checkSignature is true, so even if the reference resolves
      * to this method, this returns false if the reference refers to a subclass of this method's class.
      * </p>
+     * <p>This might not work as expected for interface methods. To check if this method implements
+     * an interface method even if the class of this method does not implement the interface, use
+     * {@link #implementsMethod(MethodRef)} instead.</p>
      *
      * @param superMethod the superMethod to check, must refer to a known class.
      * @param checkSignature if true, check if the given method has the same signature and if the reference refers to
@@ -230,13 +247,13 @@ public final class MethodInfo extends ClassMemberInfo {
      */
     public boolean overrides(MethodRef superMethod, boolean checkSignature) {
 
-        ClassInfo classRef = superMethod.getClassInfo();
-        if (classRef == null) {
+        ClassInfo superClass = superMethod.getClassInfo();
+        if (superClass == null) {
             // No need to check if the classname is equal to this method's class, in this case we would have a ClassInfo
             throw new AppInfoError("Trying to lookup unknown class for " + superMethod+", not supported.");
         }
 
-        if (classRef.equals(getClassInfo())) {
+        if (superClass.equals(getClassInfo())) {
             // refers to same class.. Must be the same method if the signature matches
             if ( checkSignature && !getMethodSignature().equals(superMethod.getMethodSignature()) ) {
                 return false;
@@ -260,7 +277,7 @@ public final class MethodInfo extends ClassMemberInfo {
             if ( !getMethodSignature().equals(superMethod.getMethodSignature()) ) {
                 return false;
             }
-            if ( !getClassInfo().isSubclassOf(superMethod.getClassInfo()) ) {
+            if ( !getClassInfo().isSubclassOf(superClass) ) {
                 return false;
             }
         }

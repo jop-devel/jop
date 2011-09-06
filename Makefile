@@ -126,7 +126,7 @@ IPDEST=192.168.0.123
 ################################################################################
 
 # Jop RTS configuration
-USE_SCOPES=true
+USE_SCOPES=false
 USE_SCOPECHECKS=false
 ADD_REF_INFO=false
 MEASURE=true

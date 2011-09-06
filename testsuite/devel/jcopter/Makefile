@@ -36,7 +36,7 @@ DEFAULT_OPTS=--greedy.targets wca \
 	     --greedy.use-wcep-ef true \
 	     --greedy.cache-analysis ALWAYS_MISS_OR_HIT \
 	     --greedy.wca-cache-analysis ALL_FIT_REGIONS 
-OPTS?=
+OPTS?=--greedy.wca-cache-analysis ALWAYS_MISS
 
 # Options for JCopter and WCETAnalysis
 P1?=test
@@ -44,6 +44,20 @@ P2?=wcet
 WCET_METHOD?=measure
 USE_DFA?=yes
 CS_LENGTH?=1
+
+papa_opt:
+	$(MAKE) -e P1=bench P2=papabench/jop P3=PapaBenchJopApplication \
+		WCET_METHOD=papabench.core.fbw.tasks.handlers.CheckMega128ValuesTaskHandler.run \
+		OPTS="$(OPTS)" USE_WCA=$(USE_WCA) CS_LENGTH=0 bench_opt
+				
+papa_orig:
+	$(MAKE) -e P1=bench P2=papabench/jop P3=PapaBenchJopApplication \
+		WCET_METHOD=papabench.core.fbw.tasks.handlers.CheckMega128ValuesTaskHandler.run \
+		OPTS="$(OPTS)" USE_WCA=$(USE_WCA) CS_LENGTH=0 bench_orig
+
+papa_down:
+	$(MAKE) -e P1=bench P2=papabench/jop P3=PapaBenchJopApplication down
+
 
 debie_opt:
 	$(MAKE) -e P1=bench P2=debie/harness P3=Harness WCET_METHOD=$(WCET_METHOD) USE_DFA=$(USE_DFA)\
@@ -113,7 +127,7 @@ down:
 do_bench_wcet:
 	cd $(GIT_ROOT) && $(MAKE) -e P1=$(P1) P2=$(P2) P3=$(P3) WCET_METHOD=$(WCET_METHOD) \
 		USE_DFA=$(USE_DFA) JCOPTER_USE_WCA=$(USE_WCA) USE_JCOPTER=$(USE_JCOPTER) \
-		CALLSTRING_LENGTH=$(CS_LENGTH) MEASURE=false \
+		CALLSTRING_LENGTH=$(CS_LENGTH) USE_SCOPES=true MEASURE=false \
 		JCOPTER_OPT="-O 3 --dfa-cache-dir $(DFA_CACHE_DIR) $(DEFAULT_OPTS) $(OPTS)" java_app
 	cd $(GIT_ROOT) && $(MAKE) -e P1=$(P1) P2=$(P2) P3=$(P3) WCET_METHOD=$(WCET_METHOD) \
 		USE_DFA=$(USE_DFA) WCET_OPTIONS="--no-load-linkinfo --dfa-cache-dir $(DFA_CACHE_DIR)" \
@@ -123,7 +137,7 @@ do_bench_wcet:
 do_bench_acet:
 	cd $(GIT_ROOT) && $(MAKE) -e P1=$(P1) P2=$(P2) P3=$(P3) WCET_METHOD=$(WCET_METHOD) \
 		USE_DFA=$(USE_DFA) JCOPTER_USE_WCA=$(USE_WCA) USE_JCOPTER=$(USE_JCOPTER) \
-		CALLSTRING_LENGTH=$(CS_LENGTH) MEASURE=true \
+		CALLSTRING_LENGTH=$(CS_LENGTH) USE_SCOPES=true MEASURE=true \
 		JCOPTER_OPT="-O 3 --dfa-cache-dir $(DFA_CACHE_DIR) $(DEFAULT_OPTS) $(OPTS)" java_app
 	cd $(GIT_ROOT) && $(MAKE) -e P1=$(P1) P2=$(P2) P3=$(P3) USB=true BLASTER_TYPE=USB-Blaster \
 		config download 
