@@ -43,102 +43,78 @@ P1?=test
 P2?=wcet
 WCET_METHOD?=measure
 USE_DFA?=yes
-CS_LENGTH?=1
+CALLSTRING_LENGTH?=1
 
 papa_opt:
-	$(MAKE) -e P1=bench P2=papabench/jop P3=PapaBenchJopApplication \
+	$(MAKE) P1=bench P2=papabench/jop P3=PapaBenchJopApplication \
 		WCET_METHOD=papabench.core.fbw.tasks.handlers.CheckMega128ValuesTaskHandler.run \
-		OPTS="$(OPTS)" USE_WCA=$(USE_WCA) CS_LENGTH=0 bench_opt
+		CALLSTRING_LENGTH=0 bench_opt
 				
 papa_orig:
-	$(MAKE) -e P1=bench P2=papabench/jop P3=PapaBenchJopApplication \
+	$(MAKE) P1=bench P2=papabench/jop P3=PapaBenchJopApplication \
 		WCET_METHOD=papabench.core.fbw.tasks.handlers.CheckMega128ValuesTaskHandler.run \
-		OPTS="$(OPTS)" USE_WCA=$(USE_WCA) CS_LENGTH=0 bench_orig
+		CALLSTRING_LENGTH=0 bench_orig
 
 papa_down:
-	$(MAKE) -e P1=bench P2=papabench/jop P3=PapaBenchJopApplication down
+	$(MAKE) P1=bench P2=papabench/jop P3=PapaBenchJopApplication down
 
 
 debie_opt:
-	$(MAKE) -e P1=bench P2=debie/harness P3=Harness WCET_METHOD=$(WCET_METHOD) USE_DFA=$(USE_DFA)\
-		OPTS="$(OPTS)" USE_WCA=$(USE_WCA) CS_LENGTH=0 bench_opt  
+	$(MAKE) P1=bench P2=debie/harness P3=Harness CALLSTRING_LENGTH=0 bench_opt  
 
 debie_orig:
-	$(MAKE) -e P1=bench P2=debie/harness P3=Harness WCET_METHOD=$(WCET_METHOD) USE_DFA=$(USE_DFA)\
-		OPTS="$(OPTS)" USE_WCA=$(USE_WCA) CS_LENGTH=0 bench_orig  
+	$(MAKE) P1=bench P2=debie/harness P3=Harness CALLSTRING_LENGTH=0 bench_orig  
 
 debie_down:
-	$(MAKE) -e P1=bench P2=debie/harness P3=Harness down
+	$(MAKE) P1=bench P2=debie/harness P3=Harness down
 
 debie_opt_1:
-	$(MAKE) -e WCET_METHOD=debie.telecommand.TelecommandExecutionTask.tcInterruptService \
-		USE_DFA=$(USE_DFA) OPTS="$(OPTS)" USE_WCA=$(USE_WCA) debie_opt
+	$(MAKE) WCET_METHOD=debie.telecommand.TelecommandExecutionTask.tcInterruptService debie_opt
 debie_opt_2:
-	$(MAKE) -e WCET_METHOD=debie.telecommand.TelecommandExecutionTask.tmInterruptService \
-		USE_DFA=$(USE_DFA) OPTS="$(OPTS)" USE_WCA=$(USE_WCA) debie_opt
+	$(MAKE) WCET_METHOD=debie.telecommand.TelecommandExecutionTask.tmInterruptService debie_opt
 debie_opt_3:
-	$(MAKE) -e WCET_METHOD=debie.particles.AcquisitionTask.handleHitTrigger  \
-		USE_DFA=$(USE_DFA) OPTS="$(OPTS)" USE_WCA=$(USE_WCA) debie_opt
+	$(MAKE) WCET_METHOD=debie.particles.AcquisitionTask.handleHitTrigger debie_opt
 debie_opt_4:
-	$(MAKE) -e WCET_METHOD=debie.telecommand.TelecommandExecutionTask.handleTelecommand \
-		USE_DFA=$(USE_DFA) OPTS="$(OPTS)" USE_WCA=$(USE_WCA) debie_opt
+	$(MAKE) WCET_METHOD=debie.telecommand.TelecommandExecutionTask.handleTelecommand debie_opt
 debie_opt_5:
-	$(MAKE) -e WCET_METHOD=debie.particles.AcquisitionTask.handleAcquisition  \
-		USE_DFA=$(USE_DFA) OPTS="$(OPTS)" USE_WCA=$(USE_WCA) debie_opt
+	$(MAKE) WCET_METHOD=debie.particles.AcquisitionTask.handleAcquisition  debie_opt
 debie_orig_1:
-	$(MAKE) -e WCET_METHOD=debie.telecommand.TelecommandExecutionTask.tcInterruptService \
-		USE_DFA=$(USE_DFA) OPTS="$(OPTS)" USE_WCA=$(USE_WCA) debie_orig
+	$(MAKE) WCET_METHOD=debie.telecommand.TelecommandExecutionTask.tcInterruptService debie_orig
 debie_orig_2:
-	$(MAKE) -e WCET_METHOD=debie.telecommand.TelecommandExecutionTask.tmInterruptService \
-		USE_DFA=$(USE_DFA) OPTS="$(OPTS)" USE_WCA=$(USE_WCA) debie_orig
+	$(MAKE) WCET_METHOD=debie.telecommand.TelecommandExecutionTask.tmInterruptService debie_orig
 debie_orig_3:
-	$(MAKE) -e WCET_METHOD=debie.particles.AcquisitionTask.handleHitTrigger  \
-		USE_DFA=$(USE_DFA) OPTS="$(OPTS)" USE_WCA=$(USE_WCA) debie_orig
+	$(MAKE) WCET_METHOD=debie.particles.AcquisitionTask.handleHitTrigger debie_orig
 debie_orig_4:
-	$(MAKE) -e WCET_METHOD=debie.telecommand.TelecommandExecutionTask.handleTelecommand \
-		USE_DFA=$(USE_DFA) OPTS="$(OPTS)" USE_WCA=$(USE_WCA) debie_orig
+	$(MAKE) WCET_METHOD=debie.telecommand.TelecommandExecutionTask.handleTelecommand debie_orig
 debie_orig_5:
-	$(MAKE) -e WCET_METHOD=debie.particles.AcquisitionTask.handleAcquisition  \
-		USE_DFA=$(USE_DFA) OPTS="$(OPTS)" USE_WCA=$(USE_WCA) debie_orig
+	$(MAKE) WCET_METHOD=debie.particles.AcquisitionTask.handleAcquisition debie_orig
 
 
 bench_opt:
-	$(MAKE) -e P1=$(P1) P2=$(P2) P3=$(P3) WCET_METHOD=$(WCET_METHOD) USE_DFA=$(USE_DFA) USE_JCOPTER=yes \
-		JCOPTER_USE_WCA=$(USE_WCA) OPTS="$(OPTS)" CS_LENGTH=$(CS_LENGTH) do_bench_wcet
+	$(MAKE) USE_JCOPTER=yes JCOPTER_USE_WCA=$(USE_WCA) do_bench_wcet
 
 bench_orig:
-	$(MAKE) -e P1=$(P1) P2=$(P2) P3=$(P3) WCET_METHOD=$(WCET_METHOD) USE_DFA=$(USE_DFA) USE_JCOPTER=no \
-		CS_LENGTH=$(CS_LENGTH) do_bench_wcet 
+	$(MAKE) USE_JCOPTER=no do_bench_wcet 
 
 down_opt:
-	$(MAKE) -e P1=$(P1) P2=$(P2) P3=$(P3) WCET_METHOD=$(WCET_METHOD) USE_DFA=$(USE_DFA) USE_JCOPTER=yes \
-		JCOPTER_USE_WCA=$(USE_WCA) OPTS="$(OPTS)" CS_LENGTH=$(CS_LENGTH) do_bench_acet
+	$(MAKE) USE_JCOPTER=yes JCOPTER_USE_WCA=$(USE_WCA) do_bench_acet
 
 down_orig:
-	$(MAKE) -e P1=$(P1) P2=$(P2) P3=$(P3) WCET_METHOD=$(WCET_METHOD) USE_DFA=$(USE_DFA) USE_JCOPTER=no \
-		CS_LENGTH=$(CS_LENGTH) do_bench_acet 
+	$(MAKE) USE_JCOPTER=no do_bench_acet 
 
 down:
-	cd $(GIT_ROOT) && $(MAKE) -e P1=$(P1) P2=$(P2) P3=$(P3) USB=true BLASTER_TYPE=USB-Blaster \
-		config download 
+	cd $(GIT_ROOT) && $(MAKE) USB=true BLASTER_TYPE=USB-Blaster config download 
 
 # Internal targets
 		
 do_bench_wcet:
-	cd $(GIT_ROOT) && $(MAKE) -e P1=$(P1) P2=$(P2) P3=$(P3) WCET_METHOD=$(WCET_METHOD) \
-		USE_DFA=$(USE_DFA) JCOPTER_USE_WCA=$(USE_WCA) USE_JCOPTER=$(USE_JCOPTER) \
-		CALLSTRING_LENGTH=$(CS_LENGTH) USE_SCOPES=true MEASURE=false \
+	cd $(GIT_ROOT) && $(MAKE) JCOPTER_USE_WCA=$(USE_WCA) USE_SCOPES=true MEASURE=false \
 		JCOPTER_OPT="-O 3 --dfa-cache-dir $(DFA_CACHE_DIR) $(DEFAULT_OPTS) $(OPTS)" java_app
-	cd $(GIT_ROOT) && $(MAKE) -e P1=$(P1) P2=$(P2) P3=$(P3) WCET_METHOD=$(WCET_METHOD) \
-		USE_DFA=$(USE_DFA) WCET_OPTIONS="--no-load-linkinfo --dfa-cache-dir $(DFA_CACHE_DIR)" \
-		CALLSTRING_LENGTH=$(CS_LENGTH) wcet
+	cd $(GIT_ROOT) && $(MAKE) WCET_OPTIONS="--no-load-linkinfo --dfa-cache-dir $(DFA_CACHE_DIR)" wcet
 	@echo "Options: " $(P3) " --use-wca " $(USE_WCA) $(DEFAULT_OPTS) $(OPTS) 
 
 do_bench_acet:
-	cd $(GIT_ROOT) && $(MAKE) -e P1=$(P1) P2=$(P2) P3=$(P3) WCET_METHOD=$(WCET_METHOD) \
-		USE_DFA=$(USE_DFA) JCOPTER_USE_WCA=$(USE_WCA) USE_JCOPTER=$(USE_JCOPTER) \
-		CALLSTRING_LENGTH=$(CS_LENGTH) USE_SCOPES=true MEASURE=true \
+	cd $(GIT_ROOT) && $(MAKE) JCOPTER_USE_WCA=$(USE_WCA) USE_SCOPES=true MEASURE=true \
 		JCOPTER_OPT="-O 3 --dfa-cache-dir $(DFA_CACHE_DIR) $(DEFAULT_OPTS) $(OPTS)" java_app
-	cd $(GIT_ROOT) && $(MAKE) -e P1=$(P1) P2=$(P2) P3=$(P3) USB=true BLASTER_TYPE=USB-Blaster \
-		config download 
+	cd $(GIT_ROOT) && $(MAKE) USB=true BLASTER_TYPE=USB-Blaster config download 
 	@echo "Options: " $(P3) " --use-wca " $(USE_WCA) $(DEFAULT_OPTS) $(OPTS) 

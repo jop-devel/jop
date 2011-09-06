@@ -302,7 +302,7 @@ init:
 	make directories
 	make tools
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SERIAL
-	make jop_config -e MEASURE=$(MEASURE) USE_SCOPES=$(USE_SCOPES) USE_SCOPECHECKS=$(USE_SCOPECHECKS) 
+	make jop_config 
 
 # build the Java application and download it
 japp:
@@ -313,7 +313,7 @@ japp:
 # configure the FPGA
 config:
 ifeq ($(USB),true)
-	make config_usb -e USB=true
+	make config_usb
 else
 ifeq ($(XFPGA),true)
 	make config_xilinx
@@ -415,7 +415,7 @@ java_app:
 	-mkdir $(TARGET)/dist/lib
 	-mkdir $(TARGET)/dist/bin
 
-	make jop_config -e MEASURE=$(MEASURE) USE_SCOPES=$(USE_SCOPES) USE_SCOPECHECKS=$(USE_SCOPECHECKS)
+	make jop_config
 
 	javac $(TARGET_JFLAGS) $(TARGET_SRC_PATH)/common/com/jopdesign/sys/*.java
 ifeq ($(CLDC11),false)
