@@ -216,6 +216,8 @@ public class InvokeSite {
     /**
      * @param methodInfo a possible invokee
      * @return true if this invokeSite may invoke the method. Does not use the callgraph to check.
+     *   For interface invoke sites this can return UNKNOWN if the class of the given method implementation
+     *   does not implement the referenced interface.
      */
     public Ternary canInvoke(MethodInfo methodInfo) {
         MethodRef invokeeRef = getInvokeeRef();
@@ -232,6 +234,16 @@ public class InvokeSite {
         }
 
         if (!methodInfo.getClassInfo().isSubclassOf(invokeeRef.getClassInfo())) {
+            if (isInvokeInterface() && !methodInfo.getClassInfo().isInterface()) {
+                // for interface invokes, this is slightly different, since the class of the method
+                // might not be the receiver and might not implement the referenced interface.. we can only
+                // check the signature..
+                if (!invokeeRef.getMethodSignature().equals(methodInfo.getMethodSignature())) {
+                    return Ternary.FALSE;
+                }
+                return Ternary.UNKNOWN;
+            }
+
             return Ternary.FALSE;
         }
 

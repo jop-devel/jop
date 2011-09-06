@@ -334,7 +334,7 @@ public class ExecFrequencyAnalysis extends ExecFrequencyProvider {
 
             // for all methods which could be invoked, add the exec count
             for (ExecutionContext child : emptyCSNodes) {
-                if (invokeSite.canInvoke(child.getMethodInfo()) == Ternary.TRUE) {
+                if (invokeSite.canInvoke(child.getMethodInfo()) != Ternary.FALSE) {
                     addExecCount(child, count);
                 }
             }

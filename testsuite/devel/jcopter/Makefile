@@ -39,8 +39,8 @@ DEFAULT_OPTS=--greedy.targets wca \
 OPTS?=--greedy.wca-cache-analysis ALWAYS_MISS
 
 # Options for JCopter and WCETAnalysis
-P1?=test
-P2?=wcet
+P1=test
+P2=wcet
 WCET_METHOD?=measure
 USE_DFA?=yes
 CALLSTRING_LENGTH?=1
@@ -103,18 +103,26 @@ down_orig:
 	$(MAKE) USE_JCOPTER=no do_bench_acet 
 
 down:
-	cd $(GIT_ROOT) && $(MAKE) USB=true BLASTER_TYPE=USB-Blaster config download 
+	cd $(GIT_ROOT) && $(MAKE) USB=true BLASTER_TYPE=USB-Blaster \
+	        P1=$(P1) P2=$(P2) P3=$(P3) CALLSTRING_LENGTH=$(CALLSTRING_LENGTH) USE_DFA=$(USE_DFA) \
+		config download 
 
 # Internal targets
 		
 do_bench_wcet:
 	cd $(GIT_ROOT) && $(MAKE) JCOPTER_USE_WCA=$(USE_WCA) USE_SCOPES=true MEASURE=false \
+	        P1=$(P1) P2=$(P2) P3=$(P3) CALLSTRING_LENGTH=$(CALLSTRING_LENGTH) USE_DFA=$(USE_DFA) \
 		JCOPTER_OPT="-O 3 --dfa-cache-dir $(DFA_CACHE_DIR) $(DEFAULT_OPTS) $(OPTS)" java_app
-	cd $(GIT_ROOT) && $(MAKE) WCET_OPTIONS="--no-load-linkinfo --dfa-cache-dir $(DFA_CACHE_DIR)" wcet
+	cd $(GIT_ROOT) && $(MAKE) WCET_OPTIONS="--no-load-linkinfo --dfa-cache-dir $(DFA_CACHE_DIR)" \
+        	P1=$(P1) P2=$(P2) P3=$(P3) CALLSTRING_LENGTH=$(CALLSTRING_LENGTH) USE_DFA=$(USE_DFA) \
+		wcet
 	@echo "Options: " $(P3) " --use-wca " $(USE_WCA) $(DEFAULT_OPTS) $(OPTS) 
 
 do_bench_acet:
-	cd $(GIT_ROOT) && $(MAKE) JCOPTER_USE_WCA=$(USE_WCA) USE_SCOPES=true MEASURE=true \
+	cd $(GIT_ROOT) && $(MAKE) JCOPTER_USE_WCA=$(USE_WCA) USE_SCOPES=true MEASURE=true \ 
+	        P1=$(P1) P2=$(P2) P3=$(P3) CALLSTRING_LENGTH=$(CALLSTRING_LENGTH) USE_DFA=$(USE_DFA) \
 		JCOPTER_OPT="-O 3 --dfa-cache-dir $(DFA_CACHE_DIR) $(DEFAULT_OPTS) $(OPTS)" java_app
-	cd $(GIT_ROOT) && $(MAKE) USB=true BLASTER_TYPE=USB-Blaster config download 
+	cd $(GIT_ROOT) && $(MAKE) USB=true BLASTER_TYPE=USB-Blaster \
+		P1=$(P1) P2=$(P2) P3=$(P3) CALLSTRING_LENGTH=$(CALLSTRING_LENGTH) USE_DFA=$(USE_DFA) \
+		config download 
 	@echo "Options: " $(P3) " --use-wca " $(USE_WCA) $(DEFAULT_OPTS) $(OPTS) 
