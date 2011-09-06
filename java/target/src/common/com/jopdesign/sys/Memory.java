@@ -35,7 +35,7 @@ public class Memory {
 
 	// TODO should be set at some time, before the first
 	// scope (e.g. mission memory) is created
-	final static int IM_SIZE = 10000;
+	final static int IM_SIZE = 32*1024;
 
 	int cnt;
 	/** Start address of memory area */
