@@ -23,6 +23,12 @@ make jsim -e P1=grinder P2=org/eembc/grinderbench P3=CmdlineWrapper
 
 simulate jPapaBench
 
+simulate jPapaBench
+
+Set SLOWDOWN to 50 to avoid overflowing the message queue on
+a slower simulation. Stack size needs to be set to 512 (in
+Const.java)
+
 make jsim P1=bench P2=papabench/jop P3=PapaBenchJopApplication USE_SCOPES=true
 
 
