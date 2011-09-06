@@ -302,7 +302,7 @@ init:
 	make directories
 	make tools
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SERIAL
-	make jop_config
+	make jop_config -e MEASURE=$(MEASURE) USE_SCOPES=$(USE_SCOPES) USE_SCOPECHECKS=$(USE_SCOPECHECKS) 
 
 # build the Java application and download it
 japp:
@@ -415,7 +415,7 @@ java_app:
 	-mkdir $(TARGET)/dist/lib
 	-mkdir $(TARGET)/dist/bin
 
-	make jop_config
+	make jop_config -e MEASURE=$(MEASURE) USE_SCOPES=$(USE_SCOPES) USE_SCOPECHECKS=$(USE_SCOPECHECKS)
 
 	javac $(TARGET_JFLAGS) $(TARGET_SRC_PATH)/common/com/jopdesign/sys/*.java
 ifeq ($(CLDC11),false)
