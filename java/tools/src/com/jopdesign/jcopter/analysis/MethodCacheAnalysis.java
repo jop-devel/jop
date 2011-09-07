@@ -241,7 +241,7 @@ public class MethodCacheAnalysis {
             return 0;
         }
         // we have at most one return miss of invokes in this method
-        return getPersistentMisses(ecp, Collections.singleton(context));
+        return getPersistentMisses(ecp, callGraph.getNodes(context));
     }
 
     public long getReturnMissCount(ExecFrequencyProvider ecp, CodeModification modification) {
