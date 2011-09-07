@@ -71,11 +71,14 @@ begin
 end process;
 
 process
+	variable ix: unsigned(7 downto 0);
+	
 begin
 	acin.handle <= (others => '0');
 	acin.index <= (others => '0');
 	acin.gf_val <= (others => '0');
 	acin.pf_val <= (others => '0');
+	acin.wr_gf_idx <= (others => '0');
 	acin.chk_gf <= '0';
 	acin.chk_pf <= '0';
 	acin.wr_gf <= '0';
@@ -87,24 +90,49 @@ begin
 	-- first field access
 	wait for 10 ns;
 	acin.handle(15 downto 0) <= X"1234";
-	acin.index(7 downto 0) <= X"00";
+	acin.index(7 downto 0) <= X"01";
 	acin.chk_gf <= '1';
 	
 	wait for 10 ns;
 	acin.handle <= (others => '0');
 	acin.chk_gf <= '0';
 	
+	-- should be a miss, we need to fill the cache line
+
+	ix := to_unsigned(0, 8);
+	for i in 0 to (2**ACACHE_FIELD_BITS)-1 loop
+
+--		ix := std_logic_vector(unsigned(i, 8));
+		wait for 10 ns;
+		acin.handle(15 downto 0) <= X"1234";
+		acin.index(7 downto 0) <= std_logic_vector(ix); -- should be ix
+		acin.gf_val <= X"00" & std_logic_vector(ix) & X"00abcd";
+		-- index is registerd on chk_gf in acache
+		--	either register it here again or just do
+		--	an the counter internal in the cache
+		acin.wr_gf <= '1';
+		
+		wait for 10 ns;
+		acin.handle <= (others => '0');
+		acin.gf_val <= (others => '0');
+		acin.wr_gf <= '0';
+		
+		ix := ix+1;
+
+	end loop;
+
+	-- this should now be a hit
 	wait for 10 ns;
 	acin.handle(15 downto 0) <= X"1234";
-	acin.index(7 downto 0) <= X"00";
-	acin.gf_val <= X"0000abcd";
-	acin.wr_gf <= '1';
-	
+	acin.index(7 downto 0) <= X"01";
+	acin.chk_gf <= '1';
+
 	wait for 10 ns;
 	acin.handle <= (others => '0');
 	acin.gf_val <= (others => '0');
-	acin.wr_gf <= '0';
-
+	acin.chk_gf <= '0';
+	
+	-- this should now be a spatial hit
 	wait for 10 ns;
 	acin.handle(15 downto 0) <= X"1234";
 	acin.index(7 downto 0) <= X"00";

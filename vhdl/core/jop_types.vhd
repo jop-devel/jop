@@ -186,15 +186,18 @@ package jop_types is
 	end record;
 
 	-- array cache types
+	-- TODO: names should be changed when I have a Sigasi license again
+	-- what about handle and len?
 
 	type acache_in_type is record
 		handle	: std_logic_vector(ACACHE_ADDR_BITS-1 downto 0);
 		index	: std_logic_vector(ACACHE_MAX_INDEX_BITS-1 downto 0);
-		gf_val	: std_logic_vector(31 downto 0);
-		pf_val	: std_logic_vector(31 downto 0);
+		gf_val	: std_logic_vector(31 downto 0); -- from memory
+		pf_val	: std_logic_vector(31 downto 0); -- to memory (write through)
 		chk_gf	: std_logic;
 		chk_pf	: std_logic;
 		wr_gf	: std_logic;
+		wr_gf_idx : std_logic_vector(ACACHE_FIELD_BITS-1 downto 0);
 		wr_pf	: std_logic;
 		inval	: std_logic;
 	end record;

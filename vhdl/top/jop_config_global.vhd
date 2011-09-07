@@ -61,14 +61,10 @@ package jop_config_global is
 	-- should be SC_ADDR_SIZE, but the file order would
 	-- need to be changed
 	constant ACACHE_ADDR_BITS : integer := SC_ADDR_SIZE; -- 23;
+	constant ACACHE_MAX_INDEX_BITS : integer := SC_ADDR_SIZE;
 	constant ACACHE_WAY_BITS : integer := 4;
-	-- current field index is 8 bit, but JOPizer allows only 32 fields
-	-- assume that the number of maximum fields per object will not
-	-- grow beyond 256 in the next years
-	-- that should go from array cache
-	constant ACACHE_MAX_INDEX_BITS : integer := 8;
 	-- number of fields per cache line
-	constant ACACHE_INDEX_BITS : integer := 3;
+	constant ACACHE_FIELD_BITS : integer := 2;
 	
 end package jop_config_global;
 

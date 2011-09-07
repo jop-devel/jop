@@ -22,7 +22,7 @@
 --
 --	acache.vhd
 --
---	Object cache
+--	Array cache
 --
 --	2011-09-07  first version adapted from ocache
 --
@@ -63,7 +63,7 @@ end ac_types;
 --
 --	Tag memory for a full associative cache with FIFO replacement
 --
---	Used by the object cache, should also be used by the general
+--	Used by the array cache, should also be used by the general
 --	SimpCon based fifo cache and the RTTM buffer (use invalidate
 --	for transaction start).
 --
@@ -82,6 +82,7 @@ end ac_types;
 --		
 
 -- TODO: this should be shared by O$, A$, and M$
+-- but it is a little bit different between those three
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -101,19 +102,21 @@ end ac_tag;
 architecture rtl of ac_tag is 
 
 	constant line_cnt: integer := 2**ACACHE_WAY_BITS;
-	constant FIELD_CNT: integer := 2**ACACHE_INDEX_BITS;
-	constant VALID_ZERO: std_logic_vector(FIELD_CNT-1 downto 0) := (others => '0');
+	constant FIELD_CNT: integer := 2**ACACHE_FIELD_BITS;
 	
 
---	signal hit: std_logic;
 	signal line: unsigned(ACACHE_WAY_BITS-1 downto 0);
-	signal idx, wridx: unsigned(ACACHE_INDEX_BITS-1 downto 0);
+
+	-- part of index that is in the tag memory
+	signal idx_upper, wr_idx_upper: std_logic_vector(ACACHE_MAX_INDEX_BITS-FIELD_CNT-1 downto 0);
 
 	-- tag_width can be used to reduce cachable area - saves a lot in the comperators
 	type tag_array is array (0 to line_cnt-1) of std_logic_vector(ACACHE_ADDR_BITS-1 downto 0);
 	signal tag: tag_array;
+	type tag_idx_array is array (0 to line_cnt-1) of std_logic_vector(ACACHE_MAX_INDEX_BITS-FIELD_CNT-1 downto 0);
+	signal tag_idx: tag_idx_array;
 	
-	type valid_array is array (0 to line_cnt-1) of std_logic_vector(FIELD_CNT-1 downto 0);
+	type valid_array is array (0 to line_cnt-1) of std_logic;
 	signal valid: valid_array;
 
 	-- pointer to next block to be used on a miss
@@ -125,34 +128,29 @@ begin
 	tag_out.hit_line <= line;
 	tag_out.nxt_line <= nxt;
 	
-	idx <= unsigned(tag_in.index(ACACHE_INDEX_BITS-1 downto 0));
-	wridx <= unsigned(tag_in.wrindex(ACACHE_INDEX_BITS-1 downto 0));
+	idx_upper <= tag_in.index(ACACHE_MAX_INDEX_BITS-1 downto FIELD_CNT);
+	wr_idx_upper <= tag_in.wrindex(ACACHE_MAX_INDEX_BITS-1 downto FIELD_CNT);
 
-	process(tag, tag_in.addr, valid, idx)
+	process(tag, tag_idx, tag_in.addr, idx_upper, valid)
 		variable h: std_logic_vector(line_cnt-1 downto 0);
 		variable h_or: std_logic;
 		variable th: std_logic_vector(line_cnt-1 downto 0);
 		variable th_or: std_logic;
 		variable n: unsigned(ACACHE_WAY_BITS-1 downto 0);
-		variable v: std_logic_vector(FIELD_CNT-1 downto 0);
+		variable v: std_logic;
 	begin
 
 		-- hit detection
-		-- TODO: tag and valid detection
 		h := (others => '0');
 		th := (others => '0');
 		for i in 0 to line_cnt-1 loop
-			-- TODO: we can remove v again and
-			-- use valid(i)(to_integer(idx))
 			v := valid(i);
-			if tag(i)= tag_in.addr then
-				-- hit on valid field
-				if v(to_integer(idx))='1' then
+			if tag(i)=tag_in.addr and valid(i)='1' then
+				-- tag hit, might be useful for handle and len caching
+				th(i) := '1';
+				-- field hit
+				if tag_idx(i)=idx_upper then
 					h(i) := '1';
-				end if;
-				-- tag is valid if any field is valid
-				if v /= VALID_ZERO then
-					th(i) := '1';
 				end if;
 			end if;
 		end loop;
@@ -163,17 +161,9 @@ begin
 			h_or := h_or or h(i);
 			th_or := th_or or th(i);
 		end loop;
-		-- ignore uncacheable index values, it is checked in ocache
 		tag_out.hit <= h_or;
 		tag_out.hit_tag <= th_or;
 		
-		-- check if index is in the cachable area
---		if tag_in.index(ACACHE_MAX_INDEX_BITS-1 downto ACACHE_INDEX_BITS) = (others => '0') then
---			hit <= h_or;
---		else
---			hit <= '0';
---		end if;
-
 		-- encoder without priority
 		line <= (others => '0');
 		for i in 0 to ACACHE_WAY_BITS-1 loop
@@ -188,7 +178,6 @@ begin
 	end process;
 
 	process(clk, reset)
-		variable v: std_logic_vector(FIELD_CNT-1 downto 0);
 	begin
 
 		if reset='1' then
@@ -197,7 +186,8 @@ begin
 			
 			for i in 0 to line_cnt-1 loop
 				tag(i) <= (others => '0');
-				valid(i) <= (others => '0');
+				tag_idx(i) <= (others => '0');
+				valid(i) <= '0';
 			end loop;
 
 		elsif rising_edge(clk) then
@@ -205,13 +195,8 @@ begin
 			-- update tag memory when data is available
 			if tag_in.wr='1' then
 				tag(to_integer(tag_in.wrline)) <= tag_in.wraddr;
-				v := valid(to_integer(tag_in.wrline));
-				-- only reset other valid signals on a new tag
-				if tag_in.inc_nxt='1' then
-					v := (others => '0');
-				end if;
-				v(to_integer(wridx)) := '1';
-				valid(to_integer(tag_in.wrline)) <= v; 
+				tag_idx(to_integer(tag_in.wrline)) <= wr_idx_upper;
+				valid(to_integer(tag_in.wrline)) <= '1'; 
 			end if;
 			if tag_in.inc_nxt='1' then
 				nxt <= nxt + 1;
@@ -220,7 +205,7 @@ begin
 			if tag_in.invalidate = '1' then
 				nxt <= (others => '0'); -- shall we reset nxt?
 				for i in 0 to line_cnt-1 loop
-					valid(i) <= (others => '0');
+					valid(i) <= '0';
 				end loop;	
 			end if;
 			
@@ -230,7 +215,7 @@ begin
 end;
 
 --
---	Object cache
+--	Array cache
 --
 
 Library IEEE;
@@ -254,7 +239,7 @@ end acache;
 
 architecture rtl of acache is
 
-	constant INDEX_ZERO: std_logic_vector(ACACHE_MAX_INDEX_BITS-ACACHE_INDEX_BITS-1 downto 0)
+	constant INDEX_ZERO: std_logic_vector(ACACHE_MAX_INDEX_BITS-ACACHE_FIELD_BITS-1 downto 0)
 		:= (others => '0');
 	signal acin_reg: acache_in_type;
 	signal line_reg: unsigned(ACACHE_WAY_BITS-1 downto 0);
@@ -274,12 +259,12 @@ architecture rtl of acache is
 	
 
 	-- RAM signals
-	constant nwords : integer := 2 ** (ACACHE_WAY_BITS+ACACHE_INDEX_BITS);
+	constant nwords : integer := 2 ** (ACACHE_WAY_BITS+ACACHE_FIELD_BITS);
 	type ram_type is array(0 to nwords-1) of std_logic_vector(31 downto 0);
 
 	signal ram : ram_type;
 	signal ram_din, ram_dout : std_logic_vector(31 downto 0);
-	signal ram_wraddr: unsigned(ACACHE_WAY_BITS+ACACHE_INDEX_BITS-1 downto 0);
+	signal ram_wraddr: unsigned(ACACHE_WAY_BITS+ACACHE_FIELD_BITS-1 downto 0);
 
 begin
 
@@ -304,7 +289,7 @@ process(acin, hit_reg, hit_tag_reg, inc_nxt_reg, cacheable_reg)
 begin
 
 	cacheable <= '0';
-	if acin.index(ACACHE_MAX_INDEX_BITS-1 downto ACACHE_INDEX_BITS) = INDEX_ZERO then
+	if acin.index(ACACHE_MAX_INDEX_BITS-1 downto ACACHE_FIELD_BITS) = INDEX_ZERO then
 		cacheable <= '1';
 	end if;
 
@@ -414,7 +399,7 @@ end process;
 
 -- RAM for the ocache
 
-	ram_wraddr <= line_reg & unsigned(acin_reg.index(ACACHE_INDEX_BITS-1 downto 0));
+	ram_wraddr <= line_reg & unsigned(acin_reg.index(ACACHE_FIELD_BITS-1 downto 0));
 -- RAM write data mux
 process(acin)
 begin
@@ -432,7 +417,7 @@ process (clk)
 begin
 	if rising_edge(clk) then
 		ram_dout <= ram(to_integer(unsigned(ac_tag_out.hit_line &
-						unsigned(acin.index(ACACHE_INDEX_BITS-1 downto 0)))));
+						unsigned(acin.index(ACACHE_FIELD_BITS-1 downto 0)))));
 		if update_cache='1' then
 			ram(to_integer(unsigned(ram_wraddr))) <= ram_din;
 		end if;
