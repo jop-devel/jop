@@ -1,0 +1,443 @@
+--
+--
+--  This file is a part of JOP, the Java Optimized Processor
+--
+--  Copyright (C) 2009, Martin Schoeberl (martin@jopdesign.com)
+--
+--  This program is free software: you can redistribute it and/or modify
+--  it under the terms of the GNU General Public License as published by
+--  the Free Software Foundation, either version 3 of the License, or
+--  (at your option) any later version.
+--
+--  This program is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+--
+
+
+--
+--	acache.vhd
+--
+--	Object cache
+--
+--	2011-09-07  first version adapted from ocache
+--
+
+--
+--	package for array cache types
+--
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+use work.jop_config_global.all;
+
+package ac_types is
+
+	type ac_tag_in_type is record
+		invalidate	: std_logic; -- flush the cache
+		addr        : std_logic_vector(ACACHE_ADDR_BITS-1 downto 0);
+		index		: std_logic_vector(ACACHE_MAX_INDEX_BITS-1 downto 0);
+		wraddr      : std_logic_vector(ACACHE_ADDR_BITS-1 downto 0);
+		wrline      : unsigned(ACACHE_WAY_BITS-1 downto 0);
+		wrindex		: std_logic_vector(ACACHE_MAX_INDEX_BITS-1 downto 0);
+		wr          : std_logic; -- update the tag memory
+		inc_nxt     : std_logic; -- increment nxt pointer (was a miss) 
+	end record;
+
+	type ac_tag_out_type is record
+		hit         : std_logic; -- field hit
+		hit_tag		: std_logic; -- tag hit
+		hit_line    : unsigned(ACACHE_WAY_BITS-1 downto 0); -- cache line on a hit
+		nxt_line    : unsigned(ACACHE_WAY_BITS-1 downto 0); -- next cache line to use on a miss
+		
+	end record;
+end ac_types;
+
+
+--
+--	Tag memory for a full associative cache with FIFO replacement
+--
+--	Used by the object cache, should also be used by the general
+--	SimpCon based fifo cache and the RTTM buffer (use invalidate
+--	for transaction start).
+--
+--	Should also be used by the method cache as it is smaller.
+--
+--	Could be reduced by a few bits, as the handle area uses some words
+--	and lower bits need not be compared. However, take care as the handle
+--	area for strings is shorter!
+--
+--	Cyclone 1 fmax (with 24 address bits):
+--		 8 entries 202 MHz
+--		16 entries 168 MHz
+--		32 entries 150 MHz
+--		64 entries 123 MHz
+--		128 entries 104 MHz
+--		
+
+-- TODO: this should be shared by O$, A$, and M$
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+use work.jop_config_global.all;
+use work.ac_types.all;
+
+entity ac_tag is 
+	port (
+		clk, reset	: in std_logic;
+		tag_in		: in ac_tag_in_type;
+		tag_out		: out ac_tag_out_type
+		);
+end ac_tag;
+
+architecture rtl of ac_tag is 
+
+	constant line_cnt: integer := 2**ACACHE_WAY_BITS;
+	constant FIELD_CNT: integer := 2**ACACHE_INDEX_BITS;
+	constant VALID_ZERO: std_logic_vector(FIELD_CNT-1 downto 0) := (others => '0');
+	
+
+--	signal hit: std_logic;
+	signal line: unsigned(ACACHE_WAY_BITS-1 downto 0);
+	signal idx, wridx: unsigned(ACACHE_INDEX_BITS-1 downto 0);
+
+	-- tag_width can be used to reduce cachable area - saves a lot in the comperators
+	type tag_array is array (0 to line_cnt-1) of std_logic_vector(ACACHE_ADDR_BITS-1 downto 0);
+	signal tag: tag_array;
+	
+	type valid_array is array (0 to line_cnt-1) of std_logic_vector(FIELD_CNT-1 downto 0);
+	signal valid: valid_array;
+
+	-- pointer to next block to be used on a miss
+	signal nxt: unsigned(ACACHE_WAY_BITS-1 downto 0);
+
+
+begin
+
+	tag_out.hit_line <= line;
+	tag_out.nxt_line <= nxt;
+	
+	idx <= unsigned(tag_in.index(ACACHE_INDEX_BITS-1 downto 0));
+	wridx <= unsigned(tag_in.wrindex(ACACHE_INDEX_BITS-1 downto 0));
+
+	process(tag, tag_in.addr, valid, idx)
+		variable h: std_logic_vector(line_cnt-1 downto 0);
+		variable h_or: std_logic;
+		variable th: std_logic_vector(line_cnt-1 downto 0);
+		variable th_or: std_logic;
+		variable n: unsigned(ACACHE_WAY_BITS-1 downto 0);
+		variable v: std_logic_vector(FIELD_CNT-1 downto 0);
+	begin
+
+		-- hit detection
+		-- TODO: tag and valid detection
+		h := (others => '0');
+		th := (others => '0');
+		for i in 0 to line_cnt-1 loop
+			-- TODO: we can remove v again and
+			-- use valid(i)(to_integer(idx))
+			v := valid(i);
+			if tag(i)= tag_in.addr then
+				-- hit on valid field
+				if v(to_integer(idx))='1' then
+					h(i) := '1';
+				end if;
+				-- tag is valid if any field is valid
+				if v /= VALID_ZERO then
+					th(i) := '1';
+				end if;
+			end if;
+		end loop;
+
+		h_or := '0';
+		th_or := '0';
+		for i in 0 to line_cnt-1 loop
+			h_or := h_or or h(i);
+			th_or := th_or or th(i);
+		end loop;
+		-- ignore uncacheable index values, it is checked in ocache
+		tag_out.hit <= h_or;
+		tag_out.hit_tag <= th_or;
+		
+		-- check if index is in the cachable area
+--		if tag_in.index(ACACHE_MAX_INDEX_BITS-1 downto ACACHE_INDEX_BITS) = (others => '0') then
+--			hit <= h_or;
+--		else
+--			hit <= '0';
+--		end if;
+
+		-- encoder without priority
+		line <= (others => '0');
+		for i in 0 to ACACHE_WAY_BITS-1 loop
+			for j in 0 to line_cnt-1 loop
+				n := to_unsigned(j, ACACHE_WAY_BITS);
+				if n(i)='1' and th(j)='1' then
+					line(i) <= '1';
+				end if;
+			end loop;
+		end loop;
+
+	end process;
+
+	process(clk, reset)
+		variable v: std_logic_vector(FIELD_CNT-1 downto 0);
+	begin
+
+		if reset='1' then
+
+			nxt <= (others => '0');
+			
+			for i in 0 to line_cnt-1 loop
+				tag(i) <= (others => '0');
+				valid(i) <= (others => '0');
+			end loop;
+
+		elsif rising_edge(clk) then
+
+			-- update tag memory when data is available
+			if tag_in.wr='1' then
+				tag(to_integer(tag_in.wrline)) <= tag_in.wraddr;
+				v := valid(to_integer(tag_in.wrline));
+				-- only reset other valid signals on a new tag
+				if tag_in.inc_nxt='1' then
+					v := (others => '0');
+				end if;
+				v(to_integer(wridx)) := '1';
+				valid(to_integer(tag_in.wrline)) <= v; 
+			end if;
+			if tag_in.inc_nxt='1' then
+				nxt <= nxt + 1;
+			end if;
+			
+			if tag_in.invalidate = '1' then
+				nxt <= (others => '0'); -- shall we reset nxt?
+				for i in 0 to line_cnt-1 loop
+					valid(i) <= (others => '0');
+				end loop;	
+			end if;
+			
+		end if;
+	end process;
+
+end;
+
+--
+--	Object cache
+--
+
+Library IEEE;
+use IEEE.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+use work.jop_config_global.all;
+use work.jop_types.all;
+use work.sc_pack.all;
+use work.ac_types.all;
+
+entity acache is
+
+port (
+	clk, reset	: in std_logic;
+
+	acin	: in acache_in_type;
+	acout	: out acache_out_type
+);
+end acache;
+
+architecture rtl of acache is
+
+	constant INDEX_ZERO: std_logic_vector(ACACHE_MAX_INDEX_BITS-ACACHE_INDEX_BITS-1 downto 0)
+		:= (others => '0');
+	signal acin_reg: acache_in_type;
+	signal line_reg: unsigned(ACACHE_WAY_BITS-1 downto 0);
+	signal hit_reg, hit_tag_reg: std_logic;
+	signal inc_nxt_reg: std_logic;
+
+	signal cacheable, cacheable_reg: std_logic;
+
+	signal update_cache: std_logic;
+	
+	signal chk_gf_dly: std_logic;
+	signal ram_dout_store: std_logic_vector(31 downto 0);
+	
+	
+	signal ac_tag_in: ac_tag_in_type;
+	signal ac_tag_out: ac_tag_out_type;
+	
+
+	-- RAM signals
+	constant nwords : integer := 2 ** (ACACHE_WAY_BITS+ACACHE_INDEX_BITS);
+	type ram_type is array(0 to nwords-1) of std_logic_vector(31 downto 0);
+
+	signal ram : ram_type;
+	signal ram_din, ram_dout : std_logic_vector(31 downto 0);
+	signal ram_wraddr: unsigned(ACACHE_WAY_BITS+ACACHE_INDEX_BITS-1 downto 0);
+
+begin
+
+	tag: entity work.ac_tag
+		port map(
+			clk => clk,
+			reset => reset,
+			tag_in => ac_tag_in,
+			tag_out => ac_tag_out
+		);
+		
+	ac_tag_in.addr <= acin.handle(ACACHE_ADDR_BITS-1 downto 0);
+	ac_tag_in.index <= acin.index;
+	
+	ac_tag_in.wraddr <= acin_reg.handle;
+	ac_tag_in.wrindex <= acin_reg.index;
+	ac_tag_in.wrline <= line_reg;
+	ac_tag_in.wr <= update_cache;
+	
+-- check for cachable fields 
+process(acin, hit_reg, hit_tag_reg, inc_nxt_reg, cacheable_reg)
+begin
+
+	cacheable <= '0';
+	if acin.index(ACACHE_MAX_INDEX_BITS-1 downto ACACHE_INDEX_BITS) = INDEX_ZERO then
+		cacheable <= '1';
+	end if;
+
+	-- TODO: tag update only needed on a (tag) miss, not on a wr_pf
+	-- valid update needed by multi word cache line
+	-- update_cache is used by the data memory too
+	-- we could split into: update_data, update_tag, update_valid
+	update_cache <= '0';
+	if acin.wr_gf='1' or (acin.wr_pf='1' and hit_tag_reg='1') then
+		-- update only on valid index
+		if cacheable_reg='1' then
+			update_cache <= '1';
+		end if;
+	end if;
+	-- increment nxt pointer on a miss
+	-- TODO: change when caching several fields
+	--		should be ok now as it is in inc_nxt_reg considered
+	-- TODO: adaption needed for write allocate
+	ac_tag_in.inc_nxt <= '0';
+	if acin.wr_gf='1' and cacheable_reg='1' then -- that's a getfield miss (now)
+		ac_tag_in.inc_nxt <= inc_nxt_reg;
+	end if;
+end process;
+
+-- Cache update:
+--	getfield => there was a miss, use nxt and increment
+--		!! with several fields it could be a handle (tag) hit
+--			=> no nxt increment, use line from tag hit
+--	putfield => was a hit, use line from hit and don't increment nxt
+--
+
+	acout.hit <= ac_tag_out.hit and cacheable and USE_ACACHE;
+
+	-- Make sure that data stays valid after a hit till
+	-- the next request
+	-- This should be ok	
+	-- that's very late. Can we do better on a hit?
+	acout.dout <= ram_dout_store;
+
+
+-- main signals:
+--
+--	chk_gf, chk_pf: hit detection on get/putfield - also on *non-cached* fields
+--		=> no cache state update at this stage!
+--	wr_gf: set when the cache should be updated on a missed getfield
+--	wr_pf: set on a cacheable putfield, but also on a missed write
+--		=> decide on write allocation in the cache depending on the
+--		former chk_pf (hit_reg)
+--
+--	On non-cachable access (HWO, native get/putField) no wr_gf or
+--	wr_pf is generated (check is in mem_sc).
+
+process(clk, reset)
+begin
+	if reset='1' then
+		ac_tag_in.invalidate <= '1';
+		chk_gf_dly <= '0';
+		hit_reg <= '0';
+		hit_tag_reg <= '0';
+		cacheable_reg <= '0';
+		line_reg <= (others => '0');
+		ram_dout_store <= (others => '0');
+	elsif rising_edge(clk) then
+
+		-- store data from RAM that is one cycle later		
+		chk_gf_dly <= acin.chk_gf;
+		if chk_gf_dly='1' then
+			ram_dout_store <= ram_dout;
+		end if;
+		
+		-- remember handle, index, and if it was a hit
+		if acin.chk_gf='1' or acin.chk_pf='1' then
+			hit_reg <= ac_tag_out.hit and cacheable;
+			hit_tag_reg <= ac_tag_out.hit_tag and cacheable;
+			acin_reg <= acin;
+			cacheable_reg <= cacheable;
+		end if;
+		-- decide on line address:
+		-- chk_gf will result (at the moment) in a wr_gf on
+		-- a miss
+		if acin.chk_gf='1' then
+			if ac_tag_out.hit_tag='1' then
+				line_reg <= ac_tag_out.hit_line;
+				inc_nxt_reg <= '0';
+			else
+				line_reg <= ac_tag_out.nxt_line;
+				-- nxt increment only on a tag miss
+				inc_nxt_reg <= '1';
+			end if;
+		end if;
+		-- putfield update only on a hit
+		-- TODO: needs adaption for write allocate
+		if acin.chk_pf='1' then
+			line_reg <= ac_tag_out.hit_line;
+			inc_nxt_reg <= '0';
+		end if;
+		-- invalidate the cache (e.g. on jopsys_get/putfield)
+		-- TODO: also on monitorenter (or exit?) and GC start?
+		if acin.inval='1' then
+			ac_tag_in.invalidate <= '1';
+		else
+			ac_tag_in.invalidate <= '0';
+		end if;
+		
+	end if;
+end process;
+
+-- RAM for the ocache
+
+	ram_wraddr <= line_reg & unsigned(acin_reg.index(ACACHE_INDEX_BITS-1 downto 0));
+-- RAM write data mux
+process(acin)
+begin
+	-- update on a getfield miss
+	if acin.wr_gf='1' then
+		ram_din <= acin.gf_val;
+	-- update on a putfield hit
+	else
+		ram_din <= acin.pf_val;
+	end if;
+end process;
+
+-- RAM
+process (clk)
+begin
+	if rising_edge(clk) then
+		ram_dout <= ram(to_integer(unsigned(ac_tag_out.hit_line &
+						unsigned(acin.index(ACACHE_INDEX_BITS-1 downto 0)))));
+		if update_cache='1' then
+			ram(to_integer(unsigned(ram_wraddr))) <= ram_din;
+		end if;
+	end if;
+end process;
+
+
+end rtl;

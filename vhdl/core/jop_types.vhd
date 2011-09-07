@@ -185,4 +185,23 @@ package jop_types is
 		dout	: std_logic_vector(31 downto 0);
 	end record;
 
+	-- array cache types
+
+	type acache_in_type is record
+		handle	: std_logic_vector(ACACHE_ADDR_BITS-1 downto 0);
+		index	: std_logic_vector(ACACHE_MAX_INDEX_BITS-1 downto 0);
+		gf_val	: std_logic_vector(31 downto 0);
+		pf_val	: std_logic_vector(31 downto 0);
+		chk_gf	: std_logic;
+		chk_pf	: std_logic;
+		wr_gf	: std_logic;
+		wr_pf	: std_logic;
+		inval	: std_logic;
+	end record;
+
+	type acache_out_type is record
+		hit		: std_logic;
+		-- just handle hit
+		dout	: std_logic_vector(31 downto 0);
+	end record;
 end jop_types;

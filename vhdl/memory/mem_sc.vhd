@@ -262,8 +262,7 @@ end process;
 			ocout => ocout
 		);
 
-	-- TODO: what about larger field indexes?
-	-- at least we need to signal a miss....
+	-- maximum fields is restricted to 8 bits, but just 32 fields currently allowed
 	ocin.index <= mem_in.bcopd(OCACHE_MAX_INDEX_BITS-1 downto 0);
 	ocin.handle <= ain(SC_ADDR_SIZE-1 downto 0);
 	-- putfield has the handle in bin...
