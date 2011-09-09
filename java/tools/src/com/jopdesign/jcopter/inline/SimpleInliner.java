@@ -351,7 +351,7 @@ public class SimpleInliner extends AbstractOptimizer {
             }
             else if (instruction instanceof FieldInstruction) {
                 if (instruction instanceof GETFIELD) {
-                    hasNPCheck |= values.getValueTable().top(1).isThisReference();
+                    hasNPCheck |= values.getValueTable().top().isThisReference();
                 }
                 if (instruction instanceof PUTFIELD) {
                     int down = values.getValueTable().top().isContinued() ? 2 : 1;

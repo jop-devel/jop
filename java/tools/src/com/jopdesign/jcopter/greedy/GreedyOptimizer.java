@@ -78,6 +78,7 @@ public class GreedyOptimizer {
 
     private int countCandidates;
     private int countOptimized;
+    private int maxSteps;
 
     private static final Logger logger = Logger.getLogger(JCopter.LOG_OPTIMIZER+".GreedyOptimizer");
 
@@ -222,6 +223,7 @@ public class GreedyOptimizer {
     private void resetCounters() {
         countCandidates = 0;
         countOptimized = 0;
+        maxSteps = config.getMaxSteps();
     }
 
     private void printStatistics() {
@@ -251,6 +253,10 @@ public class GreedyOptimizer {
         Map<MethodInfo,MethodData> methodData = new HashMap<MethodInfo, MethodData>(methods.size());
 
         selector.clear();
+
+        if (maxSteps > 0 && countOptimized >= maxSteps) {
+            return;
+        }
 
         // first find and initialize all candidates
         for (MethodInfo method : methods) {
@@ -296,6 +302,10 @@ public class GreedyOptimizer {
                 logger.info("Optimizing "+c.toString());
                 if (!c.optimize(analyses, stacksize)) continue;
                 countOptimized++;
+
+                if (maxSteps > 0 && countOptimized >= maxSteps) {
+                    return;
+                }
 
                 // to update maxStack and positions
                 method.getCode().compile();

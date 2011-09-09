@@ -113,7 +113,7 @@ do_bench_wcet:
 	cd $(GIT_ROOT) && $(MAKE) JCOPTER_USE_WCA=$(USE_WCA) USE_SCOPES=true MEASURE=false \
 	        P1=$(P1) P2=$(P2) P3=$(P3) CALLSTRING_LENGTH=$(CALLSTRING_LENGTH) USE_DFA=$(USE_DFA) \
 		JCOPTER_OPT="-O 3 --dfa-cache-dir $(DFA_CACHE_DIR) $(DEFAULT_OPTS) $(OPTS)" java_app
-	cd $(GIT_ROOT) && $(MAKE) WCET_OPTIONS="--no-load-linkinfo --dfa-cache-dir $(DFA_CACHE_DIR)" \
+	cd $(GIT_ROOT) && $(MAKE) WCET_OPTIONS="--no-load-linkinfo --no-ipet-dump-ilp --dfa-cache-dir $(DFA_CACHE_DIR)" \
         	P1=$(P1) P2=$(P2) P3=$(P3) CALLSTRING_LENGTH=$(CALLSTRING_LENGTH) USE_DFA=$(USE_DFA) \
 		wcet
 	@echo "Options: " $(P3) " --use-wca " $(USE_WCA) $(DEFAULT_OPTS) $(OPTS) 

@@ -27,6 +27,7 @@ import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.EnumOption;
+import com.jopdesign.common.config.IntegerOption;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
 import com.jopdesign.jcopter.JCopter;
@@ -79,6 +80,10 @@ public class GreedyConfig {
     private static final EnumOption<DUMPTYPE> DUMP_TARGET_CALLGRAPH =
             new EnumOption<DUMPTYPE>("dump-target-callgraph", "Dump the callgraph of the target methods", DUMPTYPE.off);
 
+    // This is for debugging, to find bad optimizations in log n iterations
+    private static final IntegerOption MAX_STEPS =
+            new IntegerOption("max-steps", "Optimize at most n candidates", true);
+
     private final AppInfo appInfo;
     private final JCopter jcopter;
 
@@ -95,6 +100,7 @@ public class GreedyConfig {
         options.addOption(CACHE_ANALYSIS_TYPE);
         options.addOption(WCA_CACHE_APPROXIMATION);
         options.addOption(DUMP_TARGET_CALLGRAPH);
+        options.addOption(MAX_STEPS);
     }
 
     public GreedyConfig(JCopter jcopter, OptionGroup greedyOptions) throws BadConfigurationException {
@@ -200,5 +206,9 @@ public class GreedyConfig {
 
     public DUMPTYPE getTargetCallgraphDumpType() {
         return options.getOption(DUMP_TARGET_CALLGRAPH);
+    }
+
+    public int getMaxSteps() {
+        return (options.getOption(MAX_STEPS, 0L)).intValue();
     }
 }
