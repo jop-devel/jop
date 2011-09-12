@@ -51,7 +51,6 @@ import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.Flow;
 import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.dfa.framework.Interpreter;
-import org.apache.bcel.classfile.ConstantPool;
 import org.apache.bcel.generic.ACONST_NULL;
 import org.apache.bcel.generic.BranchInstruction;
 import org.apache.bcel.generic.ConstantPoolGen;
@@ -68,16 +67,10 @@ import org.apache.bcel.generic.UnconditionalBranch;
 import org.apache.log4j.Logger;
 
 import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -103,13 +96,14 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     private static final Logger logger = Logger.getLogger(LOG_DFA + ".DFATool");
 
     private AppInfo appInfo;
+    private MethodInfo prologue;
 
     private boolean analyzeBootMethod;
 
     private List<InstructionHandle> statements;
     private Flow flow;
-    private Map<InstructionHandle, ContextMap<CallString, Set<String>>> receivers;
 
+    private CallStringReceiverTypes receivers;
     private LoopBounds loopBounds;
 
     /**
@@ -117,7 +111,6 @@ public class DFATool extends EmptyTool<AppEventHandler> {
      * the result state of a method.
      */
     private CustomKey KEY_NOP;
-    private byte[] digest = null;
     private File cacheDir = null;
 
     public DFATool() {
@@ -126,7 +119,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         this.statements = new LinkedList<InstructionHandle>();
         this.flow = new Flow();
         this.receivers = null;
-        this.analyzeBootMethod = false;
+        this.analyzeBootMethod = true;
     }
 
     public AppInfo getAppInfo() {
@@ -158,6 +151,10 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         this.analyzeBootMethod = analyzeBootMethod;
     }
 
+    public boolean doUseCache() {
+        return cacheDir != null;
+    }
+
     /**
      * Load the methods into the internal DFA structures and initialize the DFA tool for a new analysis.
      * You need to call this method before starting the first analysis and before starting an analysis after
@@ -170,6 +167,23 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         flow.clear();
         receivers = null;
 
+        prologue = createPrologue();
+
+        // Now we need to process all classes (for DFA's internal flow graph)
+        for (ClassInfo cls : appInfo.getClassInfos()) {
+            for (MethodInfo mi : cls.getMethods()) {
+                if (mi.hasCode()) {
+                    loadMethod(mi);
+                }
+            }
+        }
+
+        if (cacheDir != null && !appInfo.updateCheckSum(prologue)) {
+            cacheDir = null;
+        }
+    }
+
+    private MethodInfo createPrologue() {
         // find ordering for class initializers
         ClinitOrder c = new ClinitOrder();
         appInfo.iterate(c);
@@ -178,71 +192,8 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
         MethodInfo mainClass = appInfo.getMainMethod();
 
-        // Also compute SHA-1 checksum for this DFA problem
-        // (for caching purposes)
-        // TODO: Maybe this is interesting for other parties as well,
-        // and we should move checksums to common
-        MessageDigest md;
-        try {
-            md = MessageDigest.getInstance("SHA1");
-        } catch (NoSuchAlgorithmException e) {
-            md = null;
-        }
-
         // create prologue
-        MethodInfo prologue =
-                buildPrologue(mainClass, statements, flow, order);
-        updateChecksum(prologue, md);
-
-        // Now we need to process all classes (for DFA's internal flow graph)
-        List<String> classNames = new ArrayList<String>(appInfo.getClassNames());
-        // We iterate in lexical order to make MD5 checksum a bit more deterministic ..
-        Collections.sort(classNames);
-        for (String name : classNames) {
-            ClassInfo ci = appInfo.getClassInfo(name);
-            updateCheckSum(ci.getConstantPoolGen().getConstantPool(), md);
-            List<String> methodNames = new ArrayList<String>(ci.getMethodSignatures());
-            for (String method : methodNames) {
-                MethodInfo mi = ci.getMethodInfo(method);
-                if (mi.hasCode()) {
-                    loadMethod(mi);
-                    updateChecksum(mi, md);
-                }
-            }
-        }
-        this.digest = md.digest();
-        logger.info("DFA problem has checksum: " + this.getDigestString());
-    }
-
-    /* constant pool to checksum */
-    private void updateCheckSum(ConstantPool cp, MessageDigest md) {
-
-        if (md == null) return;
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(bos);
-        try {
-            cp.dump(dos);
-        } catch (IOException e) {
-            logger.error("Dumping the constant pool (checksum calculation) failed: " +
-                    e.getMessage());
-            throw new RuntimeException(e);
-        }
-        md.update(bos.toByteArray());
-    }
-
-    private static void updateChecksum(MethodInfo mi, MessageDigest md) {
-        if (md == null) return;
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        OutputStreamWriter writer = new OutputStreamWriter(bos);
-        try {
-            writer.append(mi.getFQMethodName());
-            writer.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        md.update(bos.toByteArray());
-        // finally, also add the code
-        md.update(mi.getCode().getInstructionList().getByteCode());
+        return buildPrologue(mainClass, statements, flow, order);
     }
 
     /**
@@ -408,7 +359,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         @SuppressWarnings({"unchecked"})
         Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults = runAnalysis(recTys);
 
-        setReceivers(receiverResults);
+        setReceivers(recTys);
         return receiverResults;
     }
 
@@ -475,7 +426,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     }
 
     public Set<String> getReceivers(InstructionHandle stmt, CallString cs) {
-        ContextMap<CallString, Set<String>> map = receivers.get(stmt);
+        ContextMap<CallString, Set<String>> map = receivers.getResult().get(stmt);
         if (map == null) {
             return null;
         }
@@ -498,7 +449,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         return methods;
     }
 
-    public void setReceivers(Map<InstructionHandle, ContextMap<CallString, Set<String>>> receivers) {
+    public void setReceivers(CallStringReceiverTypes receivers) {
         this.receivers = receivers;
     }
 
@@ -579,6 +530,23 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         }
     }
 
+    /* Updating DFA results iteratively */
+    /* -------------------------------- */
+
+    /**
+     * @param newHandles key is old handle, value is new handle
+     */
+    public void copyResults(Map<InstructionHandle,InstructionHandle> newHandles) {
+        // TODO this is sort of a hack for now .. We should support updating call strings as well
+        if (receivers != null) {
+            receivers.copyResults(newHandles);
+        }
+        if (loopBounds != null) {
+            loopBounds.copyResults(newHandles);
+        }
+    }
+
+
     /* Caching DFA results */
     /* ------------------- */
 
@@ -587,9 +555,26 @@ public class DFATool extends EmptyTool<AppEventHandler> {
                     "be cached, specify a cache dir to store the results in", true);
 
     /**
+     * Recalculate the checksum and write all results to the cache files.
+     * @param recreatePrologue if true, reconstruct the prologue
+     */
+    public void writeCachedResults(boolean recreatePrologue) {
+        if (recreatePrologue) {
+            // TODO this is a BIG hack, we should remove the prologue from the cache key
+            //      recreation is needed because the optimizer removes the prologue
+            //      and we need to create the correct constant-pool entries
+            cleanup();
+            prologue = createPrologue();
+        }
+        appInfo.updateCheckSum(prologue);
+        writeCachedResults(loopBounds);
+        writeCachedResults(receivers);
+    }
+
+    /**
      * If caching is enabled, safe the cached results for the given analysis
      */
-    private void writeCachedResults(Analysis analysis) {
+    public void writeCachedResults(Analysis analysis) {
         if (cacheDir == null) return;
         try {
             analysis.serializeResult(getCacheFile(analysis));
@@ -621,21 +606,9 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         if (cacheDir == null) {
             throw new AssertionError("Invariant violated: getCacheFile should only be called if cacheDir is non-null");
         }
-        String key = analysis.getId() + "-" + getDigestString();
+        String key = analysis.getId() + "-" + appInfo.getDigestString();
         String cacheFile = "dfa-" + key + ".dat";
         return new File(cacheDir, cacheFile);
-    }
-
-    private static final char[] digits = "0123456789abcdef".toCharArray();
-
-    private String getDigestString() {
-        StringBuffer sb = new StringBuffer();
-        for (byte b : digest) {
-            int v = b < 0 ? (256 + b) : b;
-            sb.append(digits[v >> 4]);
-            sb.append(digits[v & 0xF]);
-        }
-        return sb.toString();
     }
 
 }

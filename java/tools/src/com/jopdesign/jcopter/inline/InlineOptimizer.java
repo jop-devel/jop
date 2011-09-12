@@ -92,6 +92,8 @@ public class InlineOptimizer implements CodeOptimizer {
     private int checkNPCycles;
     private int deltaReturnCycles;
 
+    private boolean updateDFA;
+
     protected class InlineCandidate extends Candidate {
 
         // TODO having a context with a callstring != EMPTY is not yet fully supported (callgraph/analysis-updating!)
@@ -255,6 +257,11 @@ public class InlineOptimizer implements CodeOptimizer {
             }
 
             remapTargets(instrMap, next);
+
+            // update dataflow results
+            if (updateDFA) {
+                jcopter.getDfaTool().copyResults(instrMap);
+            }
 
             return invokeMap;
         }
@@ -692,6 +699,14 @@ public class InlineOptimizer implements CodeOptimizer {
         // TODO get from config, preciseCycleEstimate is not yet fully implemented
         preciseSizeEstimate = true;
         preciseCycleEstimate = false;
+    }
+
+    public void setUpdateDFA(boolean updateDFA) {
+        this.updateDFA = updateDFA;
+    }
+
+    public boolean doUpdateDFA() {
+        return updateDFA;
     }
 
     @Override

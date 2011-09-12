@@ -66,6 +66,9 @@ public class PhaseExecutor {
     public static final BooleanOption REMOVE_UNUSED_MEMBERS =
             new BooleanOption("remove-unused-members", "Remove unreachable code", true);
 
+    public static final BooleanOption CLEANUP_CONSTANT_POOL =
+            new BooleanOption("cleanup-cp", "Remove unused constant pool entries", true);
+
     public static final EnumOption<DUMPTYPE> DUMP_CALLGRAPH =
             new EnumOption<DUMPTYPE>("dump-callgraph", "Dump the app callgraph (with or without callstrings)", CallGraph.DUMPTYPE.merged);
 
@@ -80,7 +83,8 @@ public class PhaseExecutor {
             DUMP_CALLGRAPH, DUMP_JVM_CALLGRAPH, DUMP_NOIM_CALLS, CallGraph.CALLGRAPH_DIR,
         };
     public static final Option[] optimizeOptions = {
-            REMOVE_UNUSED_MEMBERS
+            REMOVE_UNUSED_MEMBERS,
+            CLEANUP_CONSTANT_POOL
         };
 
     public static final String GROUP_OPTIMIZE = "opt";
@@ -106,6 +110,8 @@ public class PhaseExecutor {
     private final JCopter jcopter;
     private final OptionGroup options;
     private final AppInfo appInfo;
+
+    private boolean updateDFA;
 
     private GreedyConfig greedyConfig;
     private InlineConfig inlineConfig;
@@ -150,6 +156,11 @@ public class PhaseExecutor {
 
     public boolean useCodeRemover() {
         return getOptimizeOptions().getOption(REMOVE_UNUSED_MEMBERS) && !getJConfig().doAssumeReflection();
+    }
+
+    public void setUpdateDFA(boolean updateDFA) {
+        // TODO bit of a hack, we currently only support updating if callstrings are empty
+        this.updateDFA = updateDFA && appInfo.getCallstringLength() == 0;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
@@ -303,7 +314,10 @@ public class PhaseExecutor {
             // we do not have any other CodeOptimizers for now, remove return when we have some more
             return;
         } else {
-            optimizer.addOptimizer( new InlineOptimizer(jcopter, inlineConfig ) );
+            InlineOptimizer inliner = new InlineOptimizer(jcopter, inlineConfig);
+            inliner.setUpdateDFA(updateDFA);
+
+            optimizer.addOptimizer(inliner);
         }
         logger.info("Starting greedy optimizer");
 
@@ -360,7 +374,11 @@ public class PhaseExecutor {
 
         logger.info("Starting removal of unused members");
 
-        new UnusedCodeRemover(jcopter, getOptimizeOptions()).execute();
+        UnusedCodeRemover codeRemover = new UnusedCodeRemover(jcopter, getOptimizeOptions());
+        if (useCodeRemover()) {
+
+        }
+        codeRemover.execute();
 
         logger.info("Finished removal of unused members");
     }
@@ -369,11 +387,29 @@ public class PhaseExecutor {
      * Rebuild all constant pools.
      */
     public void cleanupConstantPool() {
+        if (!getOptimizeOptions().getOption(CLEANUP_CONSTANT_POOL)) {
+            return;
+        }
+
         logger.info("Starting cleanup of constant pools");
 
         appInfo.iterate(new ConstantPoolRebuilder());
 
         logger.info("Finished cleanup of constant pools");
+    }
+
+    public void writeResults() {
+        if (updateDFA) {
+            if (getOptimizeOptions().getOption(CLEANUP_CONSTANT_POOL)) {
+                logger.warn("Dumping DFA results, but this only works if cleanup-cp is disabled.");
+            }
+            logger.info("Writing updated DFA results to cache");
+            // TODO recreating the prologue after we cleaned up the code is a big messy hack
+            //      we could remove the prologue afterwards again
+            //      but we need it while the checksum is calculated, because we need the constant-pool
+            //      entries in place, the same way as in the WCA later, else the key is different.
+            jcopter.getDfaTool().writeCachedResults(true);
+        }
     }
 
 }

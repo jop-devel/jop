@@ -196,6 +196,9 @@ public class GreedyOptimizer {
                 // TODO iterate over WCA and then non-wca graph or something in this case..
                 throw new AppInfoError("Order "+order+" currently only works with WCA if the target method is the WCA target");
             }
+            if (config.useWCEP()) {
+                throw new AppInfoError("Order "+order+" currently only works with ACET or WCET selector, not with WCEP selector");
+            }
 
             TopologicalOrderIterator<MethodNode,InvokeEdge> topOrder =
                     new TopologicalOrderIterator<MethodNode, InvokeEdge>(

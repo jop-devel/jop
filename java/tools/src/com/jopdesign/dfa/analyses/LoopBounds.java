@@ -31,15 +31,14 @@ import com.jopdesign.common.type.MemberID;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.framework.Analysis;
 import com.jopdesign.dfa.framework.AnalysisResultSerialization;
+import com.jopdesign.dfa.framework.AnalysisResultSerialization.ResultFormatter;
+import com.jopdesign.dfa.framework.AnalysisResultSerialization.Serializer;
 import com.jopdesign.dfa.framework.Context;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.FlowEdge;
+import com.jopdesign.dfa.framework.FlowEdge.SerializedFlowEdge;
 import com.jopdesign.dfa.framework.Interpreter;
 import com.jopdesign.dfa.framework.MethodHelper;
-import com.jopdesign.dfa.framework.AnalysisResultSerialization.ResultFormatter;
-import com.jopdesign.dfa.framework.AnalysisResultSerialization.Serializer;
-import com.jopdesign.dfa.framework.FlowEdge.SerializedFlowEdge;
-
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.generic.ANEWARRAY;
@@ -67,7 +66,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -1904,4 +1902,43 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
     	return this.getResult();
 	}
 
+    @Override
+    public void copyResults(Map<InstructionHandle,InstructionHandle> newHandles) {
+        for (Map.Entry<InstructionHandle,InstructionHandle> entry : newHandles.entrySet()) {
+            InstructionHandle oldHandle = entry.getKey();
+            InstructionHandle newHandle = entry.getValue();
+
+            ContextMap<CallString, Pair<ValueMapping, ValueMapping>> value = bounds.get(oldHandle);
+            if (value != null) bounds.put(newHandle, value);
+
+            ContextMap<CallString, Interval> value1 = arrayIndices.get(oldHandle);
+            if (value1 != null) arrayIndices.put(newHandle, value1);
+
+            ContextMap<CallString, Integer> value2 = scopes.get(oldHandle);
+            if (value2 != null) scopes.put(newHandle, value2);
+
+            ContextMap<CallString, Interval[]> value3 = sizes.get(oldHandle);
+            if (value3 != null) sizes.put(newHandle, value3);
+
+            ContextMap<CallString,Set<FlowEdge>> old = infeasibles.get(oldHandle);
+            if (old != null) {
+                Map<CallString,Set<FlowEdge>> map = new HashMap<CallString, Set<FlowEdge>>(old.size());
+                for (CallString cs : old.keySet()) {
+                    Set<FlowEdge> newSet = new HashSet<FlowEdge>();
+                    for (FlowEdge edge : old.get(cs)) {
+                        InstructionHandle newHead = newHandles.get(edge.getHead());
+                        InstructionHandle newTail = newHandles.get(edge.getTail());
+                        if (newHead != null && newTail != null) {
+                            newSet.add(new FlowEdge(newTail, newHead, edge.getType()));
+                        }
+                    }
+                    map.put(cs,newSet);
+                }
+
+                ContextMap<CallString,Set<FlowEdge>> edges =
+                        new ContextMap<CallString, Set<FlowEdge>>(old.getContext(), map);
+                infeasibles.put(newHandle, edges);
+            }
+        }
+    }
 }

@@ -230,7 +230,9 @@ public abstract class RebateSelector implements CandidateSelector {
     @Override
     public void removeCandidates(MethodInfo method) {
         MethodData data = methodData.remove(method);
-        onRemoveMethodData(data);
+        if (data != null) {
+            onRemoveMethodData(data);
+        }
     }
 
     @Override

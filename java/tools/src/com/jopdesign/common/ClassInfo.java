@@ -978,6 +978,10 @@ public final class ClassInfo extends MemberInfo {
     public MethodInfo createMethod(MemberID memberID, String[] argNames, InstructionList code) {
         MethodInfo method = methods.get(memberID.getMethodSignature());
         if ( method != null ) {
+            method.setAbstract(code == null);
+            if (code != null) {
+                method.getCode().setInstructionList(code);
+            }
             return method;
         }
 
@@ -1137,11 +1141,9 @@ public final class ClassInfo extends MemberInfo {
      */
     public void rebuildConstantPool(ConstantPoolRebuilder rebuilder) {
 
-        ConstantPoolGen newPool = new ConstantPoolGen();
-
         // this will compile the classInfo
         Set<Integer> usedIndices = ConstantPoolReferenceFinder.findPoolReferences(this, true);
-        rebuilder.createNewConstantPool(cpg, usedIndices);
+        cpg = rebuilder.createNewConstantPool(cpg, usedIndices);
 
         rebuilder.updateClassGen(this, classGen);
 
@@ -1151,8 +1153,6 @@ public final class ClassInfo extends MemberInfo {
         for (FieldInfo f : fields.values()) {
             rebuilder.updateFieldGen(f, f.getInternalFieldGen());
         }
-
-        cpg = newPool;
     }
 
     /**

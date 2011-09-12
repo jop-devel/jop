@@ -48,6 +48,7 @@ import org.apache.bcel.Constants;
 import org.apache.bcel.Repository;
 import org.apache.bcel.classfile.ClassFormatException;
 import org.apache.bcel.classfile.ClassParser;
+import org.apache.bcel.classfile.ConstantPool;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.generic.ClassGen;
 import org.apache.bcel.generic.Type;
@@ -55,10 +56,16 @@ import org.apache.bcel.util.ClassPath;
 import org.apache.bcel.util.ClassPath.ClassFile;
 import org.apache.log4j.Logger;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -106,6 +113,8 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
 
     private int callstringLength;
     private CallGraph callGraph;
+
+    private byte[] digest = null;
 
     //////////////////////////////////////////////////////////////////////////////
     // Singleton
@@ -1369,6 +1378,133 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
     public boolean isHwObject(String className) {
         return matchClassName(className, hwObjectClasses, true);
     }
+
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Caching support
+    //////////////////////////////////////////////////////////////////////////////
+
+
+    public boolean updateCheckSum(MethodInfo prologue) {
+
+        // Also compute SHA-1 checksum for this DFA problem
+        // (for caching purposes)
+        MessageDigest md, md2;
+        try {
+            md = MessageDigest.getInstance("SHA1");
+            md2 = MessageDigest.getInstance("SHA1");
+        } catch (NoSuchAlgorithmException e) {
+            logger.info("No digest algorithm found", e);
+            digest = null;
+            return false;
+        }
+
+        PrintWriter writer = null;
+        if (true) {
+            try {
+                File file = new File("dump-temp.txt");
+                writer = new PrintWriter(file);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (prologue != null) {
+            // TODO the prologue method is a hack, we should not use it in the checksum
+            //      instead we should only hash the required infos (entry-method, clinit-order?,..)
+            updateChecksum(prologue, md);
+        }
+
+        List<String> classNames = new ArrayList<String>(getClassNames());
+        // We iterate in lexical order to make MD5 checksum a bit more deterministic ..
+        Collections.sort(classNames);
+        for (String name : classNames) {
+            ClassInfo ci = getClassInfo(name);
+
+            List<String> methodNames = new ArrayList<String>(ci.getMethodSignatures());
+            Collections.sort(methodNames);
+            for (String method : methodNames) {
+                MethodInfo mi = ci.getMethodInfo(method);
+
+                if (mi.hasCode()) {
+                    updateChecksum(mi, md);
+
+                    if (writer != null) {
+                        writer.print("M "+mi+": ");
+                        updateChecksum(mi, md2);
+                        this.digest = md2.digest();
+                        writer.println(getDigestString());
+                    }
+                }
+            }
+
+            ConstantPool cp = ci.getConstantPoolGen().getFinalConstantPool();
+            updateCheckSum(cp, md);
+
+            if (writer != null) {
+                writer.print("CP " + ci + ": ");
+                updateCheckSum(cp, md2);
+                this.digest = md2.digest();
+                writer.print(cp.getLength()+" ");
+                writer.println(getDigestString());
+            }
+        }
+
+        this.digest = md.digest();
+        logger.info("AppInfo has checksum: " + getDigestString());
+
+        if (writer != null) {
+            writer.close();
+            File dest = new File("dump-" + getDigestString() + ".txt");
+            dest.delete();
+            new File("dump-temp.txt").renameTo(dest);
+        }
+
+        return true;
+    }
+
+    private static final char[] digits = "0123456789abcdef".toCharArray();
+
+    public String getDigestString() {
+        StringBuffer sb = new StringBuffer();
+        for (byte b : digest) {
+            int v = b < 0 ? (256 + b) : b;
+            sb.append(digits[v >> 4]);
+            sb.append(digits[v & 0xF]);
+        }
+        return sb.toString();
+    }
+
+    private void updateCheckSum(ConstantPool cp, MessageDigest md) {
+
+        if (md == null) return;
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        try {
+            cp.dump(dos);
+        } catch (IOException e) {
+            logger.error("Dumping the constant pool (checksum calculation) failed: " +
+                    e.getMessage());
+            throw new AppInfoError(e);
+        }
+        md.update(bos.toByteArray());
+    }
+
+    private static void updateChecksum(MethodInfo mi, MessageDigest md) {
+        if (md == null) return;
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        OutputStreamWriter writer = new OutputStreamWriter(bos);
+        try {
+            writer.append(mi.getFQMethodName());
+            writer.close();
+        } catch (IOException e) {
+            throw new AppInfoError(e);
+        }
+        md.update(bos.toByteArray());
+        // finally, also add the code
+        md.update(mi.getCode().getInstructionList().getByteCode());
+    }
+
 
     //////////////////////////////////////////////////////////////////////////////
     // Internal Affairs
