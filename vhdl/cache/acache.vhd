@@ -245,6 +245,7 @@ architecture rtl of acache is
 	signal line_reg: unsigned(ACACHE_WAY_BITS-1 downto 0);
 	signal hit_reg, hit_tag_reg: std_logic;
 	signal inc_nxt_reg: std_logic;
+	signal idx_reg: std_logic_vector(ACACHE_FIELD_BITS-1 downto 0);
 
 	signal cacheable, cacheable_reg: std_logic;
 
@@ -288,17 +289,15 @@ begin
 process(acin, hit_reg, hit_tag_reg, inc_nxt_reg, cacheable_reg)
 begin
 
-	cacheable <= '0';
-	if acin.index(ACACHE_MAX_INDEX_BITS-1 downto ACACHE_FIELD_BITS) = INDEX_ZERO then
-		cacheable <= '1';
-	end if;
+	-- cachable useless here - remove it
+	cacheable <= '1';
 
 	-- TODO: tag update only needed on a (tag) miss, not on a wr_pf
 	-- valid update needed by multi word cache line
 	-- update_cache is used by the data memory too
 	-- we could split into: update_data, update_tag, update_valid
 	update_cache <= '0';
-	if acin.wr_gf='1' or (acin.wr_pf='1' and hit_tag_reg='1') then
+	if acin.wr_ial='1' or (acin.wr_ias='1' and hit_tag_reg='1') then
 		-- update only on valid index
 		if cacheable_reg='1' then
 			update_cache <= '1';
@@ -309,16 +308,16 @@ begin
 	--		should be ok now as it is in inc_nxt_reg considered
 	-- TODO: adaption needed for write allocate
 	ac_tag_in.inc_nxt <= '0';
-	if acin.wr_gf='1' and cacheable_reg='1' then -- that's a getfield miss (now)
+	if acin.wr_ial='1' and cacheable_reg='1' then -- that's a getfield miss (now)
 		ac_tag_in.inc_nxt <= inc_nxt_reg;
 	end if;
 end process;
 
 -- Cache update:
---	getfield => there was a miss, use nxt and increment
+--	iaload => there was a miss, use nxt and increment
 --		!! with several fields it could be a handle (tag) hit
 --			=> no nxt increment, use line from tag hit
---	putfield => was a hit, use line from hit and don't increment nxt
+--	iastore => was a hit, use line from hit and don't increment nxt
 --
 
 	acout.hit <= ac_tag_out.hit and cacheable and USE_ACACHE;
@@ -332,15 +331,17 @@ end process;
 
 -- main signals:
 --
---	chk_gf, chk_pf: hit detection on get/putfield - also on *non-cached* fields
+--	chk_ial, chk_ias: hit detection on iaload/store - also on *non-cached* fields
 --		=> no cache state update at this stage!
---	wr_gf: set when the cache should be updated on a missed getfield
---	wr_pf: set on a cacheable putfield, but also on a missed write
+--	wr_ial: set when the cache should be updated on a missed field
+--		will fill a complete cache line with individual wr_gf signals
+--	wr_ias: set on a cacheable array store, but also on a missed write
 --		=> decide on write allocation in the cache depending on the
 --		former chk_pf (hit_reg)
 --
 --	On non-cachable access (HWO, native get/putField) no wr_gf or
---	wr_pf is generated (check is in mem_sc).
+--	wr_pf is generated (check is in mem_sc). TODO: need ot be checked
+--	for array access
 
 process(clk, reset)
 begin
@@ -352,25 +353,29 @@ begin
 		cacheable_reg <= '0';
 		line_reg <= (others => '0');
 		ram_dout_store <= (others => '0');
+		idx_reg <= (others => '0');
 	elsif rising_edge(clk) then
 
 		-- store data from RAM that is one cycle later		
-		chk_gf_dly <= acin.chk_gf;
+		chk_gf_dly <= acin.chk_ial;
 		if chk_gf_dly='1' then
 			ram_dout_store <= ram_dout;
 		end if;
 		
 		-- remember handle, index, and if it was a hit
-		if acin.chk_gf='1' or acin.chk_pf='1' then
+		if acin.chk_ial='1' or acin.chk_ias='1' then
 			hit_reg <= ac_tag_out.hit and cacheable;
 			hit_tag_reg <= ac_tag_out.hit_tag and cacheable;
 			acin_reg <= acin;
 			cacheable_reg <= cacheable;
 		end if;
+		if acin.chk_ias='1' then
+			idx_reg <= acin.index(ACACHE_FIELD_BITS-1 downto 0);
+		end if;
 		-- decide on line address:
 		-- chk_gf will result (at the moment) in a wr_gf on
 		-- a miss
-		if acin.chk_gf='1' then
+		if acin.chk_ial='1' then
 			if ac_tag_out.hit_tag='1' then
 				line_reg <= ac_tag_out.hit_line;
 				inc_nxt_reg <= '0';
@@ -379,10 +384,15 @@ begin
 				-- nxt increment only on a tag miss
 				inc_nxt_reg <= '1';
 			end if;
+			idx_reg <= (others => '0');
+		end if;
+		-- increment field address
+		if acin.wr_ial='1' then
+			idx_reg <= std_logic_vector(unsigned(idx_reg)+1);
 		end if;
 		-- putfield update only on a hit
 		-- TODO: needs adaption for write allocate
-		if acin.chk_pf='1' then
+		if acin.chk_ias='1' then
 			line_reg <= ac_tag_out.hit_line;
 			inc_nxt_reg <= '0';
 		end if;
@@ -399,16 +409,16 @@ end process;
 
 -- RAM for the ocache
 
-	ram_wraddr <= line_reg & unsigned(acin_reg.index(ACACHE_FIELD_BITS-1 downto 0));
+	ram_wraddr <= line_reg & unsigned(idx_reg);
 -- RAM write data mux
 process(acin)
 begin
-	-- update on a getfield miss
-	if acin.wr_gf='1' then
-		ram_din <= acin.gf_val;
-	-- update on a putfield hit
+	-- update on a iaload miss
+	if acin.wr_ial='1' then
+		ram_din <= acin.ial_val;
+	-- update on a iastore hit
 	else
-		ram_din <= acin.pf_val;
+		ram_din <= acin.ias_val;
 	end if;
 end process;
 

@@ -192,13 +192,13 @@ package jop_types is
 	type acache_in_type is record
 		handle	: std_logic_vector(ACACHE_ADDR_BITS-1 downto 0);
 		index	: std_logic_vector(ACACHE_MAX_INDEX_BITS-1 downto 0);
-		gf_val	: std_logic_vector(31 downto 0); -- from memory
-		pf_val	: std_logic_vector(31 downto 0); -- to memory (write through)
-		chk_gf	: std_logic;
-		chk_pf	: std_logic;
-		wr_gf	: std_logic;
-		wr_gf_idx : std_logic_vector(ACACHE_FIELD_BITS-1 downto 0);
-		wr_pf	: std_logic;
+		ial_val	: std_logic_vector(31 downto 0); -- from memory
+		ias_val	: std_logic_vector(31 downto 0); -- to memory (write through)
+		chk_ial	: std_logic;
+		chk_ias	: std_logic;
+		wr_ial	: std_logic;
+		wr_ial_idx : std_logic_vector(ACACHE_FIELD_BITS-1 downto 0);
+		wr_ias	: std_logic;
 		inval	: std_logic;
 	end record;
 

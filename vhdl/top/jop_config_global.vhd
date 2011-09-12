@@ -55,7 +55,7 @@ package jop_config_global is
 	constant OCACHE_INDEX_BITS : integer := 3;
 
 	-- enable or disable the array cache
-	constant USE_ACACHE : std_logic := '0';
+	constant USE_ACACHE : std_logic := '1';
 	
 	-- depends on main memory size (sc_pack)
 	-- should be SC_ADDR_SIZE, but the file order would

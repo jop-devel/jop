@@ -76,13 +76,13 @@ process
 begin
 	acin.handle <= (others => '0');
 	acin.index <= (others => '0');
-	acin.gf_val <= (others => '0');
-	acin.pf_val <= (others => '0');
-	acin.wr_gf_idx <= (others => '0');
-	acin.chk_gf <= '0';
-	acin.chk_pf <= '0';
-	acin.wr_gf <= '0';
-	acin.wr_pf <= '0';
+	acin.ial_val <= (others => '0');
+	acin.ias_val <= (others => '0');
+	acin.wr_ial_idx <= (others => '0');
+	acin.chk_ial <= '0';
+	acin.chk_ias <= '0';
+	acin.wr_ial <= '0';
+	acin.wr_ias <= '0';
 	acin.inval <= '0';
 	
 	wait for 21 ns;
@@ -91,11 +91,11 @@ begin
 	wait for 10 ns;
 	acin.handle(15 downto 0) <= X"1234";
 	acin.index(7 downto 0) <= X"01";
-	acin.chk_gf <= '1';
+	acin.chk_ial <= '1';
 	
 	wait for 10 ns;
 	acin.handle <= (others => '0');
-	acin.chk_gf <= '0';
+	acin.chk_ial <= '0';
 	
 	-- should be a miss, we need to fill the cache line
 
@@ -106,16 +106,16 @@ begin
 		wait for 10 ns;
 		acin.handle(15 downto 0) <= X"1234";
 		acin.index(7 downto 0) <= std_logic_vector(ix); -- should be ix
-		acin.gf_val <= X"00" & std_logic_vector(ix) & X"00abcd";
+		acin.ial_val <= std_logic_vector(ix) & X"00abcd";
 		-- index is registerd on chk_gf in acache
 		--	either register it here again or just do
 		--	an the counter internal in the cache
-		acin.wr_gf <= '1';
+		acin.wr_ial <= '1';
 		
 		wait for 10 ns;
 		acin.handle <= (others => '0');
-		acin.gf_val <= (others => '0');
-		acin.wr_gf <= '0';
+		acin.ial_val <= (others => '0');
+		acin.wr_ial <= '0';
 		
 		ix := ix+1;
 
@@ -125,64 +125,64 @@ begin
 	wait for 10 ns;
 	acin.handle(15 downto 0) <= X"1234";
 	acin.index(7 downto 0) <= X"01";
-	acin.chk_gf <= '1';
+	acin.chk_ial <= '1';
 
 	wait for 10 ns;
 	acin.handle <= (others => '0');
-	acin.gf_val <= (others => '0');
-	acin.chk_gf <= '0';
+	acin.ial_val <= (others => '0');
+	acin.chk_ial <= '0';
 	
 	-- this should now be a spatial hit
 	wait for 10 ns;
 	acin.handle(15 downto 0) <= X"1234";
 	acin.index(7 downto 0) <= X"00";
-	acin.chk_gf <= '1';
+	acin.chk_ial <= '1';
 
 	wait for 10 ns;
 	acin.handle <= (others => '0');
-	acin.gf_val <= (others => '0');
-	acin.chk_gf <= '0';
+	acin.ial_val <= (others => '0');
+	acin.chk_ial <= '0';
 
 	-- different object field access
 	wait for 10 ns;
 	acin.handle(15 downto 0) <= X"3344";
 	acin.index(7 downto 0) <= X"00";
-	acin.chk_gf <= '1';
+	acin.chk_ial <= '1';
 	
 	wait for 10 ns;
 	acin.handle <= (others => '0');
-	acin.chk_gf <= '0';
+	acin.chk_ial <= '0';
 	
 	wait for 10 ns;
 	acin.handle(15 downto 0) <= X"3344";
 	acin.index(7 downto 0) <= X"00";
-	acin.gf_val <= X"00004444";
-	acin.wr_gf <= '1';
+	acin.ial_val <= X"00004444";
+	acin.wr_ial <= '1';
 	
 	wait for 10 ns;
 	acin.handle <= (others => '0');
-	acin.gf_val <= (others => '0');
-	acin.wr_gf <= '0';
+	acin.ial_val <= (others => '0');
+	acin.wr_ial <= '0';
 
 	wait for 10 ns;
 	acin.handle(15 downto 0) <= X"1234";
 	acin.index(7 downto 0) <= X"00";
-	acin.chk_gf <= '1';
+	acin.chk_ial <= '1';
 
 	wait for 10 ns;
 	acin.handle <= (others => '0');
-	acin.gf_val <= (others => '0');
-	acin.chk_gf <= '0';
+	acin.ial_val <= (others => '0');
+	acin.chk_ial <= '0';
 
 	wait for 10 ns;
 	acin.handle(15 downto 0) <= X"3344";
 	acin.index(7 downto 0) <= X"00";
-	acin.chk_gf <= '1';
+	acin.chk_ial <= '1';
 
 	wait for 10 ns;
 	acin.handle <= (others => '0');
-	acin.gf_val <= (others => '0');
-	acin.chk_gf <= '0';
+	acin.ial_val <= (others => '0');
+	acin.chk_ial <= '0';
 
 	wait;
 
