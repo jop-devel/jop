@@ -75,6 +75,9 @@ public class JopPeriodicTask extends RtThread {
 			if (Config.MEASURE) endMeasurement();			
 
 			if (papabench.jopgc.PapaBenchJopGcImpl.halt) {
+				for (int i = 0; i < 10; i++) {
+					waitForNextPeriod();
+				}
 				if (Config.MEASURE) printInstrumentation();
 				for(;;) {
 					/* stop doing anything */
@@ -172,6 +175,10 @@ public class JopPeriodicTask extends RtThread {
 	}
 
 	static class EmptyRunnable implements Runnable {
+		static EmptyRunnable instance = new EmptyRunnable();
+		static EmptyRunnable getInstance() {
+			return instance;
+		}
 		public void run() {
 		};
 	}
@@ -186,7 +193,7 @@ public class JopPeriodicTask extends RtThread {
 		/* initialize statistics */
 		problemStats = new MeasurementStatistic(name, 0);
 		/* create a dummy runnable */
-		emptyRunnable = new EmptyRunnable();
+		emptyRunnable = EmptyRunnable.getInstance();
 		/* measure overhead for empty call */
 		Native.lock();
 		startMeasurement();
