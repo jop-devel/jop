@@ -330,7 +330,7 @@ public final class Math {
 	  
 	  public static double tan(double a)
 	  {
-		  return sin(a) / cos(a);
+		  return (float)sin(a) / (float)cos(a);
 	  }
 	  
 	  public static double atan(double a)
@@ -360,7 +360,7 @@ public final class Math {
 //		  ax = x < 0 ? -x : x;
 //		  ay = y < 0 ? -y : y;
 //		  // TODO: check for small numbers
-		  val = atan(y/x);
+		  val = atan((float)y/(float)x);
 		  if (x > 0) {
 			  return val;
 		  }

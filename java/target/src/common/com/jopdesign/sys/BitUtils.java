@@ -61,11 +61,12 @@ final class BitUtils {
    * bit of x.
    */
   static int countLeadingZeros(long x) {
-    int c = countLeadingZeros((int) (x >> 32));
-    if (c == 32) {
-      return countLeadingZeros((int) x) + 32;
-    }
-    return c;
+	  int hi = (int)(x >> 32);
+	  if (hi != 0) {
+		  return countLeadingZeros(hi);
+	  } else {
+		  return countLeadingZeros((int)x)+32;
+	  }
   }
 
   /**

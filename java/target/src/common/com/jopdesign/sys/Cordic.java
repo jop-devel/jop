@@ -81,7 +81,7 @@ public class Cordic {
    */
   private static double cordic(double  phi, final boolean  sin) {
 
-    phi %= 2*Math.PI;
+	phi = (float)phi % (float)(2*Math.PI);
     if     (phi < -Math.PI)  phi += 2*Math.PI;
     else if(phi >  Math.PI)  phi -= 2*Math.PI;
     int  x; {

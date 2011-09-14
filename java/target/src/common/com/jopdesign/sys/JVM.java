@@ -331,13 +331,14 @@ class JVM {
 		for (int i=0; i<64; ++i) { // @WCA loop=64 
 			c <<= 1;
 			r <<= 1;
-			if (a < 0) {
+			if ((int)(a>>32) < 0) {
 				r |= 1;
 			}
 			a <<= 1;
-			if ((r-1)>=(b-1)) //over/underflow problem - other testcases??
-			{
-				r -= b;
+			long d = r-b;
+			int hid = (int)(d>>32);
+			if ((hid > 0) || (hid == 0 && (int)d >= 0)) {
+				r = d;
 				c |= 1;
 			}
 //			System.out.println("c="+((int)(c>>32))+" "+((int)c));
@@ -435,12 +436,14 @@ class JVM {
 		long r = 0;
 		for (int i=0; i<64; ++i) { // @WCA loop=64
 			r <<= 1;
-			if (a < 0) {
+			if ((int)(a>>32) < 0) {
 				r |= 1;
 			}
 			a <<= 1;
-			if (r>=b) {
-				r -= b;
+			long d = r-b;
+			int hid = (int)(d>>32);
+			if ((hid > 0) || (hid == 0 && (int)d >= 0)) {
+				r = d;
 			}
 	//		System.out.println("r="+((int)(r>>32))+" "+((int)r));
 
