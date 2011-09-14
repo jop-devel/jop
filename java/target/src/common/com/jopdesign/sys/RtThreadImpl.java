@@ -472,7 +472,11 @@ public class RtThreadImpl {
 		// if prio higher...
 		// should not be allowed before startMission
 		// Generate the interrupt for the appropriate core
-		genXInt(this.cpuId);
+		if (sys.cpuId != this.cpuId) {
+			genXInt(this.cpuId);
+		} else {
+			genInt();
+		}
 	}
 	
 	public void blockEvent() {
