@@ -915,12 +915,12 @@ public class GC {
 		}
 		public void run() {
 			for (;;) {
-				JVMHelp.wr('<');
+				// JVMHelp.wr('<');
 				// System.out.print(System.nanoTime());
 				// JVMHelp.wr('|');
 				GC.gc();
-				JVMHelp.wr('>');
-				JVMHelp.wr('\n');
+				// JVMHelp.wr('>');
+				// JVMHelp.wr('\n');
 				waitForNextPeriod();
 			}
 		}

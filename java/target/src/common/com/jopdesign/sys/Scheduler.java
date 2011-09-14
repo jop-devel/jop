@@ -67,7 +67,7 @@ class Scheduler implements Runnable {
 	// after monitorexit in this method and the new thread
 	// has a minimum time to run.
 //	private final static int TIM_OFF = 200;
-	private final static int TIM_OFF = 10;
+	private final static int TIM_OFF = 20;
 //	private final static int TIM_OFF = 2; // for 100 MHz version 20 or even lower
 										 // 2 is minimum
 	/**
