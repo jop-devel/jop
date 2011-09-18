@@ -769,6 +769,52 @@ public class CallGraph implements ImplementationFinder {
         return childs;
     }
 
+    public Map<InvokeSite, Set<ExecutionContext>> getChildsPerInvokeSite(ExecutionContext node) {
+        Map<InvokeSite,Set<ExecutionContext>> map = new HashMap<InvokeSite, Set<ExecutionContext>>();
+
+        List<ExecutionContext> emptyCSNodes = new LinkedList<ExecutionContext>();
+
+        for (ContextEdge edge : callGraph.outgoingEdgesOf(node)) {
+            long count;
+            ExecutionContext child = edge.getTarget();
+
+            if (!child.getCallString().isEmpty()) {
+                // simple case: if we have a callstring, the top entry is the invokesite in the invoker
+
+                Set<ExecutionContext> childs = map.get(child.getCallString().top());
+                if (childs == null) {
+                    childs = new HashSet<ExecutionContext>();
+                    map.put(child.getCallString().top(), childs);
+                }
+                childs.add(child);
+
+            } else {
+                // tricky case: no callstring, we need to find all invokesites in the invoker
+                emptyCSNodes.add(child);
+            }
+        }
+
+        if (emptyCSNodes.isEmpty()) return map;
+
+        for (InvokeSite invokeSite : node.getMethodInfo().getCode().getInvokeSites()) {
+
+            Set<ExecutionContext> childs = map.get(invokeSite);
+            if (childs == null) {
+                childs = new HashSet<ExecutionContext>();
+                map.put(invokeSite, childs);
+            }
+
+            for (ExecutionContext child : emptyCSNodes) {
+
+                if (invokeSite.canInvoke(child.getMethodInfo()) != Ternary.FALSE) {
+                    childs.add(child);
+                }
+            }
+        }
+
+        return map;
+    }
+
     public List<ExecutionContext> getParents(ExecutionContext node) {
         Set<ContextEdge> in = callGraph.incomingEdgesOf(node);
         List<ExecutionContext> parents = new ArrayList<ExecutionContext>(in.size());

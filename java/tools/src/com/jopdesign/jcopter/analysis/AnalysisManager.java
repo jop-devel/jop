@@ -132,6 +132,10 @@ public class AnalysisManager {
         return targetCallGraph.getRootMethods().equals(wcaInvoker.getWcaTargets());
     }
 
+    public boolean useWCAInvoker() {
+        return wcaInvoker != null;
+    }
+
     public CallGraph getTargetCallGraph() {
         return targetCallGraph;
     }

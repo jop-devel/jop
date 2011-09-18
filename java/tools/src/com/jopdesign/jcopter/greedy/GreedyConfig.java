@@ -36,6 +36,7 @@ import com.jopdesign.jcopter.analysis.MethodCacheAnalysis.AnalysisType;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import org.apache.log4j.Logger;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -85,6 +86,9 @@ public class GreedyConfig {
     private static final IntegerOption MAX_STEPS =
             new IntegerOption("max-steps", "Optimize at most n candidates", true);
 
+    private static final StringOption DUMP_STATS =
+            new StringOption("dump-stats", "Filename of a CSV file to dump optimization stats into", true);
+
     private static final Logger logger = Logger.getLogger(JCopter.LOG_OPTIMIZER+".GreedyConfig");
 
     private final AppInfo appInfo;
@@ -105,6 +109,7 @@ public class GreedyConfig {
         options.addOption(WCA_CACHE_APPROXIMATION);
         options.addOption(DUMP_TARGET_CALLGRAPH);
         options.addOption(MAX_STEPS);
+        options.addOption(DUMP_STATS);
     }
 
     public GreedyConfig(JCopter jcopter, OptionGroup greedyOptions) throws BadConfigurationException {
@@ -129,7 +134,7 @@ public class GreedyConfig {
         useWCEP = useWCA() && options.getOption(USE_WCEP);
 
         GreedyOrder order = getOrder();
-        if (order == GreedyOrder.BottomUp || order == GreedyOrder.TopDown) {
+        if (useWCEP && (order == GreedyOrder.BottomUp || order == GreedyOrder.TopDown)) {
             logger.warn("WCEP selector does not work with order "+order+", falling back to local WCET selector");
             useWCEP = false;
         }
@@ -221,5 +226,13 @@ public class GreedyConfig {
 
     public int getMaxSteps() {
         return (options.getOption(MAX_STEPS, 0L)).intValue();
+    }
+
+    public boolean doDumpStats() {
+        return options.isSet(DUMP_STATS);
+    }
+
+    public File getStatsFile() {
+        return (doDumpStats()) ? new File(options.getOption(DUMP_STATS)) : null;
     }
 }
