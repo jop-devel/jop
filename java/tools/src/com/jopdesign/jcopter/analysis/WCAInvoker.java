@@ -339,8 +339,8 @@ public class WCAInvoker extends ExecFrequencyProvider {
         config.setOption(ProjectConfig.TARGET_METHOD, targetMethod.getMemberID().toString());
         config.setOption(ProjectConfig.DO_GENERATE_REPORTS, generateReports);
         config.setOption(ProjectConfig.DO_GENERATE_REPORTS, false);
-        config.setOption(ProjectConfig.DUMP_TARGET_CALLGRAPH, DUMPTYPE.off);
         config.setOption(IPETConfig.DUMP_ILP, false);
+        config.getDebugGroup().setOption(ProjectConfig.DUMP_TARGET_CALLGRAPH, DUMPTYPE.off);
     }
 
     private void updateWCEP() {

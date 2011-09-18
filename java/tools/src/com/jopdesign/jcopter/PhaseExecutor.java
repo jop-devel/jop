@@ -79,21 +79,29 @@ public class PhaseExecutor {
             new BooleanOption("dump-noim-calls", "Include calls to JVMHelp.noim() in the jvm callgraph dump", false);
 
 
-    private static final Option[] phaseOptions = {
-            DUMP_CALLGRAPH, DUMP_JVM_CALLGRAPH, DUMP_NOIM_CALLS, CallGraph.CALLGRAPH_DIR,
-        };
     private static final Option[] optimizeOptions = {
             REMOVE_UNUSED_MEMBERS,
             CLEANUP_CONSTANT_POOL
+        };
+
+    private static final Option[] debugOptions = {
+            DUMP_CALLGRAPH, DUMP_JVM_CALLGRAPH, DUMP_NOIM_CALLS,
         };
 
     private static final String GROUP_OPTIMIZE = "opt";
     private static final String GROUP_GREEDY = "greedy";
     private static final String GROUP_INLINE   = "inline";
 
-    public static void registerOptions(OptionGroup options) {
+    public static void registerOptions(Config config) {
+        OptionGroup options = config.getOptions();
+
+        CallGraph.registerOptions(config);
+
         // Add phase options
-        options.addOptions(phaseOptions);
+        // .. nothing to configure yet ..
+
+        // add debug options
+        config.getDebugGroup().addOptions(debugOptions);
 
         // Add options of all used optimizations
         OptionGroup opt = options.getGroup(GROUP_OPTIMIZE);
@@ -142,6 +150,10 @@ public class PhaseExecutor {
         return options.getConfig();
     }
 
+    public OptionGroup getDebugConfig() {
+        return jcopter.getJConfig().getConfig().getDebugGroup();
+    }
+
     public JCopterConfig getJConfig() {
         return jcopter.getJConfig();
     }
@@ -181,8 +193,8 @@ public class PhaseExecutor {
     /////////////////////////////////////////////////////////////////////////////////////
 
     public void dumpCallgraph(String graphName) {
-        if (getConfig().getOption(DUMP_CALLGRAPH) == CallGraph.DUMPTYPE.off &&
-            getConfig().getOption(DUMP_JVM_CALLGRAPH) == CallGraph.DUMPTYPE.off)
+        if (getDebugConfig().getOption(DUMP_CALLGRAPH) == CallGraph.DUMPTYPE.off &&
+            getDebugConfig().getOption(DUMP_JVM_CALLGRAPH) == CallGraph.DUMPTYPE.off)
         {
             return;
         }
@@ -214,15 +226,15 @@ public class PhaseExecutor {
                 }
             }
 
-            Config config = getConfig();
+            OptionGroup debug = getDebugConfig();
 
             // TODO to keep the CG size down, we could add options to exclude methods (like '<init>') or packages
             // from dumping and skip dumping methods reachable only over excluded methods
 
-            graph.dumpCallgraph(config, graphName, "app", appRoots, config.getOption(DUMP_CALLGRAPH), false);
-            graph.dumpCallgraph(config, graphName, "clinit", clinitRoots, config.getOption(DUMP_CALLGRAPH), false);
-            graph.dumpCallgraph(config, graphName, "jvm", jvmRoots, config.getOption(DUMP_JVM_CALLGRAPH),
-                                                                   !config.getOption(DUMP_NOIM_CALLS));
+            graph.dumpCallgraph(getConfig(), graphName, "app", appRoots, debug.getOption(DUMP_CALLGRAPH), false);
+            graph.dumpCallgraph(getConfig(), graphName, "clinit", clinitRoots, debug.getOption(DUMP_CALLGRAPH), false);
+            graph.dumpCallgraph(getConfig(), graphName, "jvm", jvmRoots, debug.getOption(DUMP_JVM_CALLGRAPH),
+                                                                   !debug.getOption(DUMP_NOIM_CALLS));
 
         } catch (IOException e) {
             throw new AppInfoError("Unable to export to .dot file", e);

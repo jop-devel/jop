@@ -112,13 +112,19 @@ public class CallGraph implements ImplementationFinder {
 
     public enum DUMPTYPE { off, full, merged, both }
 
-    public static final StringOption CALLGRAPH_DIR =
+    // This option should always be added to Config.getDebugGroup()
+    private static final StringOption CALLGRAPH_DIR =
             new StringOption("cgdir", "Directory to put the callgraph files into", "${outdir}/callgraph");
 
     /**
-     * Needs to be added to the root optiongroup if the dumpCallgraph method is used.
+     * Needs to be added to the debug optiongroup if the dumpCallgraph method is used.
      */
-    public static final Option[] dumpOptions = { CALLGRAPH_DIR };
+    private static final Option[] dumpOptions = { CALLGRAPH_DIR };
+
+    public static void registerOptions(Config config) {
+        config.getDebugGroup().addOptions(dumpOptions);
+        InvokeDot.registerOptions(config);
+    }
 
     /**
      * Interface for a callgraph construction.
@@ -1670,10 +1676,10 @@ public class CallGraph implements ImplementationFinder {
 
         File outDir;
         try {
-            outDir = config.getOutDir(CallGraph.CALLGRAPH_DIR);
+            outDir = config.getOutDir(config.getDebugGroup(), CallGraph.CALLGRAPH_DIR);
         } catch (BadConfigurationException e) {
             throw new BadConfigurationError("Could not create output dir "+
-                        config.getOption(CallGraph.CALLGRAPH_DIR), e);
+                        config.getDebugGroup().getOption(CallGraph.CALLGRAPH_DIR), e);
         }
 
         CallGraph subGraph = roots == null ? this : getSubGraph(roots);

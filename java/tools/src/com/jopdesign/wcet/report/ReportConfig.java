@@ -24,6 +24,7 @@ import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.StringOption;
+import com.jopdesign.common.graphutils.InvokeDot;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.wcet.WCETTool;
@@ -39,7 +40,7 @@ public class ReportConfig {
             new StringOption("wcet-reportdir", "directory to write wcet reports to", "${reportdir}");
 
     public static final Option<?>[] reportOptions =
-            {TEMPLATEDIR, WCET_REPORTDIR, Config.PROGRAM_DOT};
+            {TEMPLATEDIR, WCET_REPORTDIR};
 
     /* dynamic configuration */
     private Config config;
@@ -88,17 +89,8 @@ public class ReportConfig {
                 MiscUtils.sanitizeFileName(method.getFQMethodName() + extension));
     }
 
-    public String getDotBinary() {
-        return config.getOption(Config.PROGRAM_DOT);
-    }
-
     public boolean doInvokeDot() {
-        return (getDotBinary() != null) && !"".equals(getDotBinary());
-    }
-
-    public boolean hasDotBinary() {
-        if (getDotBinary() == null) return false;
-        return new File(getDotBinary()).exists();
+        return InvokeDot.doInvokeDot(config);
     }
 
     public File getErrorLogFile() {

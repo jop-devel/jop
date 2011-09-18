@@ -74,7 +74,7 @@ public class JCopter extends EmptyTool<JCopterManager> {
         // TODO add options/profiles/.. to this so that only a subset of
         //      optimizations/analyses are initialized ? Overwrite PhaseExecutor for this?
         //      Or user simply uses phaseExecutor directly
-        PhaseExecutor.registerOptions(options);
+        PhaseExecutor.registerOptions(config);
     }
 
     @Override

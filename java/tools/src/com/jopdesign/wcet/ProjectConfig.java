@@ -101,7 +101,6 @@ public class ProjectConfig {
     {
             TARGET_METHOD,
             WCET_PREPROCESS,
-            DUMP_TARGET_CALLGRAPH,
             OBJECT_CACHE_ANALYSIS,
             LOAD_LINKINFO
     };
@@ -115,6 +114,9 @@ public class ProjectConfig {
             DO_GENERATE_REPORTS,
             RESULT_FILE, RESULTS_APPEND, RESULTS_PERFORMANCE
     };
+    private static final Option<?>[] debugOptions = {
+            DUMP_TARGET_CALLGRAPH,
+    };
 
     private Config config;
     private AppInfo appInfo;
@@ -124,6 +126,7 @@ public class ProjectConfig {
         config.addOption (USE_UPPAAL, uppaal);
         config.addOptions(projectOptions);
         config.addOptions(reportOptions, reports);
+        config.getDebugGroup().addOptions(debugOptions, standalone);
     }
 
     public ProjectConfig(Config config) {

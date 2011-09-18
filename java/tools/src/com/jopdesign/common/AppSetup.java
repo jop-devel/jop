@@ -185,6 +185,10 @@ public class AppSetup {
         return config;
     }
 
+    public OptionGroup getDebugGroup() {
+        return config.getDebugGroup();
+    }
+
     public LogConfig getLoggerConfig() {
         return logConfig;
     }
@@ -295,7 +299,7 @@ public class AppSetup {
 
             addProcessorModelOptions();
 
-            config.addOption(Config.DUMP_CACHEKEY);
+            getDebugGroup().addOptions(Config.debugOptions);
         }
 
         if (setupReports) {
@@ -527,8 +531,8 @@ public class AppSetup {
             appInfo.addHwObjectName(hwObject);
         }
 
-        if (config.isSet(Config.DUMP_CACHEKEY)) {
-            appInfo.setDumpCacheKeyFile(config.getOption(Config.DUMP_CACHEKEY));
+        if (getDebugGroup().isSet(Config.DUMP_CACHEKEY)) {
+            appInfo.setDumpCacheKeyFile(getDebugGroup().getOption(Config.DUMP_CACHEKEY));
         }
 
         // register handler

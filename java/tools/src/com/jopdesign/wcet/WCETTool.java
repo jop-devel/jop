@@ -163,7 +163,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
 
     @Override
     public void registerOptions(Config config) {
-        config.addOptions(CallGraph.dumpOptions);
+        CallGraph.registerOptions(config);
         // TODO maybe put some of the options into OptionGroups to make '--help' a bit clearer
         ProjectConfig.registerOptions(config, standaloneOptions, uppaalOptions, reportOptions);
         config.addOptions(IPETConfig.ipetOptions, ipetOptions);
@@ -337,7 +337,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
 
         try {
             callGraph.dumpCallgraph(config, graphName, "target", null,
-                    config.getOption(ProjectConfig.DUMP_TARGET_CALLGRAPH), false);
+                    config.getDebugGroup().getOption(ProjectConfig.DUMP_TARGET_CALLGRAPH), false);
         } catch (IOException e) {
             logger.warn("Unable to dump the target method callgraph", e);
         }
