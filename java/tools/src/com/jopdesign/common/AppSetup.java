@@ -294,6 +294,8 @@ public class AppSetup {
             config.addOption(Config.HW_OBJECTS);
 
             addProcessorModelOptions();
+
+            config.addOption(Config.DUMP_CACHEKEY);
         }
 
         if (setupReports) {
@@ -523,6 +525,10 @@ public class AppSetup {
 
         for (String hwObject : Config.splitStringList(config.getOption(Config.HW_OBJECTS))) {
             appInfo.addHwObjectName(hwObject);
+        }
+
+        if (config.isSet(Config.DUMP_CACHEKEY)) {
+            appInfo.setDumpCacheKeyFile(config.getOption(Config.DUMP_CACHEKEY));
         }
 
         // register handler

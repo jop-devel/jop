@@ -63,33 +63,33 @@ public class PhaseExecutor {
 
     public static final Logger logger = Logger.getLogger(JCopter.LOG_ROOT + ".PhaseExecutor");
 
-    public static final BooleanOption REMOVE_UNUSED_MEMBERS =
+    private static final BooleanOption REMOVE_UNUSED_MEMBERS =
             new BooleanOption("remove-unused-members", "Remove unreachable code", true);
 
-    public static final BooleanOption CLEANUP_CONSTANT_POOL =
+    private static final BooleanOption CLEANUP_CONSTANT_POOL =
             new BooleanOption("cleanup-cp", "Remove unused constant pool entries", true);
 
-    public static final EnumOption<DUMPTYPE> DUMP_CALLGRAPH =
+    private static final EnumOption<DUMPTYPE> DUMP_CALLGRAPH =
             new EnumOption<DUMPTYPE>("dump-callgraph", "Dump the app callgraph (with or without callstrings)", CallGraph.DUMPTYPE.merged);
 
-    public static final EnumOption<DUMPTYPE> DUMP_JVM_CALLGRAPH =
+    private static final EnumOption<DUMPTYPE> DUMP_JVM_CALLGRAPH =
             new EnumOption<DUMPTYPE>("dump-jvm-callgraph", "Dump the jvm callgraph (with or without callstrings)", CallGraph.DUMPTYPE.off);
 
-    public static final BooleanOption DUMP_NOIM_CALLS =
+    private static final BooleanOption DUMP_NOIM_CALLS =
             new BooleanOption("dump-noim-calls", "Include calls to JVMHelp.noim() in the jvm callgraph dump", false);
 
 
-    public static final Option[] phaseOptions = {
+    private static final Option[] phaseOptions = {
             DUMP_CALLGRAPH, DUMP_JVM_CALLGRAPH, DUMP_NOIM_CALLS, CallGraph.CALLGRAPH_DIR,
         };
-    public static final Option[] optimizeOptions = {
+    private static final Option[] optimizeOptions = {
             REMOVE_UNUSED_MEMBERS,
             CLEANUP_CONSTANT_POOL
         };
 
-    public static final String GROUP_OPTIMIZE = "opt";
-    public static final String GROUP_GREEDY = "greedy";
-    public static final String GROUP_INLINE   = "inline";
+    private static final String GROUP_OPTIMIZE = "opt";
+    private static final String GROUP_GREEDY = "greedy";
+    private static final String GROUP_INLINE   = "inline";
 
     public static void registerOptions(OptionGroup options) {
         // Add phase options
@@ -128,6 +128,14 @@ public class PhaseExecutor {
             greedyConfig = new GreedyConfig(jcopter, getGreedyOptions());
         }
         inlineConfig = new InlineConfig(jcopter, getInlineOptions());
+
+        if (getOptimizeOptions().getOption(REMOVE_UNUSED_MEMBERS) &&
+           !getOptimizeOptions().getOption(CLEANUP_CONSTANT_POOL))
+        {
+            // we cannot remove members if we do not cleanup the constantpool, this would
+            // break the transitive-hull loader
+            logger.warn("Disabling unused code remover because constant-pool cleanup is disabled.");
+        }
     }
 
     public Config getConfig() {
@@ -155,7 +163,12 @@ public class PhaseExecutor {
     }
 
     public boolean useCodeRemover() {
-        return getOptimizeOptions().getOption(REMOVE_UNUSED_MEMBERS) && !getJConfig().doAssumeReflection();
+        return getOptimizeOptions().getOption(REMOVE_UNUSED_MEMBERS) &&
+                !getJConfig().doAssumeReflection() && useConstantPoolCleanup();
+    }
+
+    public boolean useConstantPoolCleanup() {
+        return getOptimizeOptions().getOption(CLEANUP_CONSTANT_POOL);
     }
 
     public void setUpdateDFA(boolean updateDFA) {
@@ -363,7 +376,7 @@ public class PhaseExecutor {
      */
     public void removeUnusedMembers() {
 
-        if (!getOptimizeOptions().getOption(REMOVE_UNUSED_MEMBERS)) {
+        if (!useCodeRemover()) {
             return;
         }
         // If reflection is used, we cannot remove unreferenced code since we might miss references by reflection
@@ -387,7 +400,7 @@ public class PhaseExecutor {
      * Rebuild all constant pools.
      */
     public void cleanupConstantPool() {
-        if (!getOptimizeOptions().getOption(CLEANUP_CONSTANT_POOL)) {
+        if (!useConstantPoolCleanup()) {
             return;
         }
 
@@ -400,7 +413,7 @@ public class PhaseExecutor {
 
     public void writeResults() {
         if (updateDFA) {
-            if (getOptimizeOptions().getOption(CLEANUP_CONSTANT_POOL)) {
+            if (useConstantPoolCleanup()) {
                 logger.warn("Dumping DFA results, but this only works if cleanup-cp is disabled.");
             }
             logger.info("Writing updated DFA results to cache");

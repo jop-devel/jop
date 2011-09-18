@@ -201,10 +201,12 @@ public class JCopter extends EmptyTool<JCopterManager> {
 
         executor.cleanupConstantPool();
 
-        // We need to write the DFA results first. This modifies the CP and creates new entries
-        // due to DAMN bcel creating debug attributes, but we need them in the class files, else the CP will
-        // not match up, since they might be created in a different order on load
-        executor.writeResults();
+        if (getJConfig().doOptimizeNormal()) {
+            // We need to write the DFA results first. This modifies the CP and creates new entries
+            // due to dumb bcel creating debug attributes, but we need them in the class files, else the CP will
+            // not match up, since they might be created in a different order on load
+            executor.writeResults();
+        }
     }
 
 

@@ -131,6 +131,10 @@ public class Config {
     public static final StringOption WRITE_SOURCELINES =
         new StringOption("write-sourcelines", "Write source line infos to a file", "${classdir}/sourcelines.txt");
 
+    public static final StringOption DUMP_CACHEKEY =
+        new StringOption("dump-cachekey", "Set a filename prefix to dump the checksums of the elements in the cache " +
+                "key into a file",true);
+
     //
     // Some common options, which are not added by default, but can be added by other programs
     //

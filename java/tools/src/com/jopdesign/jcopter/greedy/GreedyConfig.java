@@ -34,6 +34,7 @@ import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.JCopterConfig;
 import com.jopdesign.jcopter.analysis.MethodCacheAnalysis.AnalysisType;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -84,12 +85,15 @@ public class GreedyConfig {
     private static final IntegerOption MAX_STEPS =
             new IntegerOption("max-steps", "Optimize at most n candidates", true);
 
+    private static final Logger logger = Logger.getLogger(JCopter.LOG_OPTIMIZER+".GreedyConfig");
+
     private final AppInfo appInfo;
     private final JCopter jcopter;
 
     private final OptionGroup options;
 
     private List<MethodInfo> targets;
+    private boolean useWCEP;
 
     public static void registerOptions(OptionGroup options) {
         options.addOption(GREEDY_ORDER);
@@ -122,6 +126,13 @@ public class GreedyConfig {
             targets = Config.parseMethodList(targetNames);
         }
 
+        useWCEP = useWCA() && options.getOption(USE_WCEP);
+
+        GreedyOrder order = getOrder();
+        if (order == GreedyOrder.BottomUp || order == GreedyOrder.TopDown) {
+            logger.warn("WCEP selector does not work with order "+order+", falling back to local WCET selector");
+            useWCEP = false;
+        }
     }
 
     public AppInfo getAppInfo() {
@@ -188,7 +199,7 @@ public class GreedyConfig {
     }
 
     public boolean useWCEP() {
-        return options.getOption(USE_WCEP);
+        return useWCEP;
     }
 
     public boolean useWCAExecCount() {

@@ -114,6 +114,7 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
     private int callstringLength;
     private CallGraph callGraph;
 
+    private String dumpCacheKeyFile = null;
     private byte[] digest = null;
 
     //////////////////////////////////////////////////////////////////////////////
@@ -1385,6 +1386,10 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
     //////////////////////////////////////////////////////////////////////////////
 
 
+    public void setDumpCacheKeyFile(String dumpCacheKeyFile) {
+        this.dumpCacheKeyFile = dumpCacheKeyFile;
+    }
+
     public boolean updateCheckSum(MethodInfo prologue) {
 
         // Also compute SHA-1 checksum for this DFA problem
@@ -1400,10 +1405,11 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
         }
 
         PrintWriter writer = null;
-        if (true) {
+        File tempFile = null;
+        if (dumpCacheKeyFile != null) {
             try {
-                File file = new File("dump-temp.txt");
-                writer = new PrintWriter(file);
+                tempFile = new File(dumpCacheKeyFile +"-temp.txt");
+                writer = new PrintWriter(tempFile);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
@@ -1453,11 +1459,12 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
         this.digest = md.digest();
         logger.info("AppInfo has checksum: " + getDigestString());
 
-        if (writer != null) {
+        if (tempFile != null && writer != null) {
             writer.close();
-            File dest = new File("dump-" + getDigestString() + ".txt");
+            File dest = new File(dumpCacheKeyFile + "-" + getDigestString() + ".txt");
+            //noinspection ResultOfMethodCallIgnored
             dest.delete();
-            new File("dump-temp.txt").renameTo(dest);
+            tempFile.renameTo(dest);
         }
 
         return true;
@@ -1466,7 +1473,7 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
     private static final char[] digits = "0123456789abcdef".toCharArray();
 
     public String getDigestString() {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (byte b : digest) {
             int v = b < 0 ? (256 + b) : b;
             sb.append(digits[v >> 4]);
