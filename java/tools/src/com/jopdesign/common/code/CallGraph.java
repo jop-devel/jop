@@ -769,6 +769,12 @@ public class CallGraph implements ImplementationFinder {
         return childs;
     }
 
+    /**
+     * @param node the invoker
+     * @return the keys are the invoke sites in the invoker, the values the set of successors of the invoker node
+     *     than can be invoked by that invoke site. If the callgraph is context sensitive, the map might not contain
+     *     all invoke sites for which there are no invokees.
+     */
     public Map<InvokeSite, Set<ExecutionContext>> getChildsPerInvokeSite(ExecutionContext node) {
         Map<InvokeSite,Set<ExecutionContext>> map = new HashMap<InvokeSite, Set<ExecutionContext>>();
 

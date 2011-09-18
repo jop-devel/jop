@@ -137,7 +137,7 @@ public class GreedyOptimizer {
             selector = new ACETRebateSelector(analyses, new GainCalculator(analyses), config.getMaxCodesize());
         }
 
-        selector.initialize(config);
+        selector.initialize(config, true);
 
         ExecFrequencyProvider ecp = useWCAProvider ? analyses.getWCAInvoker() : analyses.getExecFrequencyAnalysis();
 
@@ -181,7 +181,7 @@ public class GreedyOptimizer {
             //analyses.dumpTargetCallgraph("acet", true);
 
             selector = new ACETRebateSelector(analyses, new GainCalculator(analyses), config.getMaxCodesize());
-            selector.initialize(config);
+            selector.initialize(config, false);
 
             ecp = analyses.getExecFrequencyAnalysis();
             if (config.useLocalExecCount()) {

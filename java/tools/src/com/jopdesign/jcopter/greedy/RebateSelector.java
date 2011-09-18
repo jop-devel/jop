@@ -38,6 +38,7 @@ import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -173,7 +174,7 @@ public abstract class RebateSelector implements CandidateSelector {
     }
 
     @Override
-    public void initialize(GreedyConfig config) {
+    public void initialize(GreedyConfig config, boolean dumpStats) {
         // calculate current global codesize
         globalCodesize = 0;
         if (usesCodeRemover) {
@@ -207,9 +208,10 @@ public abstract class RebateSelector implements CandidateSelector {
 
         logger.info("Initial codesize: " + globalCodesize + " bytes");
 
-        if (config.doDumpStats()) {
+        if (config.doDumpStats() && dumpStats) {
             try {
-                dump = new PrintWriter(config.getStatsFile());
+                File statsFile = config.getStatsFile();
+                dump = new PrintWriter(statsFile);
                 dump.print("total codesize, ");
                 if (analyses.useWCAInvoker()) dump.print("WCET, ");
                 dump.println("candidate, ratio, gain, local gain, cache, local cache, delta codesize, frequency");
