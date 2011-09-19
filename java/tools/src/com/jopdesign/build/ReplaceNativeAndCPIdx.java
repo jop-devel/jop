@@ -21,12 +21,38 @@
 
 package com.jopdesign.build;
 
-import java.util.Iterator;
-
-import org.apache.bcel.classfile.*;
-import org.apache.bcel.generic.*;
-import org.apache.bcel.util.InstructionFinder;
 import com.jopdesign.tools.JopInstr;
+import org.apache.bcel.classfile.Constant;
+import org.apache.bcel.classfile.ConstantClass;
+import org.apache.bcel.classfile.ConstantFieldref;
+import org.apache.bcel.classfile.ConstantNameAndType;
+import org.apache.bcel.classfile.ConstantPool;
+import org.apache.bcel.classfile.Field;
+import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.classfile.Method;
+import org.apache.bcel.generic.ACONST_NULL;
+import org.apache.bcel.generic.BasicType;
+import org.apache.bcel.generic.CPInstruction;
+import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.FieldInstruction;
+import org.apache.bcel.generic.GETFIELD;
+import org.apache.bcel.generic.GETSTATIC;
+import org.apache.bcel.generic.INVOKESPECIAL;
+import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InstructionList;
+import org.apache.bcel.generic.InvokeInstruction;
+import org.apache.bcel.generic.MONITORENTER;
+import org.apache.bcel.generic.MONITOREXIT;
+import org.apache.bcel.generic.MethodGen;
+import org.apache.bcel.generic.NOP;
+import org.apache.bcel.generic.PUTFIELD;
+import org.apache.bcel.generic.PUTSTATIC;
+import org.apache.bcel.generic.ReferenceType;
+import org.apache.bcel.generic.Type;
+import org.apache.bcel.util.InstructionFinder;
+
+import java.util.Iterator;
 
 /**
  * @author Flavius, Martin
@@ -109,13 +135,30 @@ public class ReplaceNativeAndCPIdx extends JOPizerVisitor {
  			if (ii instanceof INVOKESPECIAL) {			    
  				// not an initializer
  				if (!ii.getMethodName(cpoolgen).equals("<init>")) {
- 					// not in the same class, must be super
- 					if (!getCli().clazz.getClassName().equals(ii.getClassName(cpoolgen))) {
-						Integer idx = new Integer(ii.getIndex());
-						int new_index = getCli().cpoolUsed.indexOf(idx) + 1;
- 						first.setInstruction(new JOPSYS_INVOKESUPER((short)new_index));
- 						// System.err.println("invokesuper "+ii.getClassName(cpoolgen)+"."+ii.getMethodName(cpoolgen));
- 					}
+                                     // check if this is a super invoke
+                                     // TODO this is just a hack, use InvokeSite.isInvokeSuper() when this is ported to the new framework!
+                                     boolean isSuper = false;
+
+                                     String declaredType = ii.getClassName(cpoolgen);
+                                     JopClassInfo cls = getCli();
+                                     OldClassInfo superClass = cls.superClass;
+                                     while (superClass != null) {
+                                         if (superClass.clazz.getClassName().equals(declaredType)) {
+                                             isSuper = true;
+                                             break;
+                                         }
+                                         if ("java.lang.Object".equals(superClass.clazz.getClassName())) {
+                                             break;
+                                         }
+                                         superClass = superClass.superClass;
+                                     }
+
+                                     if (isSuper) {
+                                            Integer idx = ii.getIndex();
+                                            int new_index = getCli().cpoolUsed.indexOf(idx) + 1;
+                                            first.setInstruction(new JOPSYS_INVOKESUPER((short)new_index));
+                                            // System.err.println("invokesuper "+ii.getClassName(cpoolgen)+"."+ii.getMethodName(cpoolgen));
+                                     }
 				}
  			}
 
