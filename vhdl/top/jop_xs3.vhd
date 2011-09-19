@@ -75,11 +75,6 @@ port (
 	ser_rxd			: in std_logic;
 
 --
---	watchdog
---
-	wd		: out std_logic;
-
---
 --	two ram banks
 --
 	ram_addr	: out std_logic_vector(17 downto 0);
@@ -93,7 +88,12 @@ port (
 	ramb_d		: inout std_logic_vector(15 downto 0);
 	ramb_ncs	: out std_logic;
 	ramb_nlb	: out std_logic;
-	ramb_nub	: out std_logic
+	ramb_nub	: out std_logic;
+
+--
+--	Status LEDs: 1, Link Activity, 00000, Watchdog
+--
+        led : out std_logic_vector(7 downto 0)
 
 --
 --	I/O pins of board TODO: change this and io for xilinx board!
@@ -171,11 +171,19 @@ begin
 end process;
 
 --
---	components of jop
+--      Status Output
 --
-	clk_int <= clk;
+        led(7) <= '1';                       -- Design Programmed
+        led(6) <= '1' when sc_io_out.address(5 downto 4) = "01"
+                       and sc_io_out.address(0) = '1' else
+                  '0';                       -- Serial Link Activity
+        led(5 downto 1) <= (others => '0');  -- unused
+        led(0)          <= wd_out;           -- Watchdog
 
-	wd <= wd_out;
+--
+--      components of jop
+--
+        clk_int         <= clk;
 
 	cpu: entity work.jopcpu
 		generic map(
