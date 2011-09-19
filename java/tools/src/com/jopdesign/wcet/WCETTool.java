@@ -637,11 +637,13 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
 
     @SuppressWarnings("unchecked")
     public void dataflowAnalysis() {
-        int callstringLength = (int) projectConfig.callstringLength();
+        int callstringLength = projectConfig.callstringLength();
 
         // Moved DFA tool cache config to the DFA tool, but still ...
         // FIXME: At the moment, we do not have a nice directory structure respecting
         //        the fact that we perform many WCET analyses for one Application
+
+        dfaTool.setAnalyzeBootMethod(projectConfig.doAnalyzeBootMethod());
 
         // TODO this is the same code as in JCopter PhaseExecutor
         dfaTool.load();

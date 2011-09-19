@@ -119,7 +119,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         this.statements = new LinkedList<InstructionHandle>();
         this.flow = new Flow();
         this.receivers = null;
-        this.analyzeBootMethod = true;
+        this.analyzeBootMethod = false;
     }
 
     public AppInfo getAppInfo() {

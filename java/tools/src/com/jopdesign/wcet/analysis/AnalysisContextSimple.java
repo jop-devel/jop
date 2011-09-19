@@ -47,4 +47,9 @@ public class AnalysisContextSimple implements AnalysisContext {
 	public ExecutionContext getExecutionContext(CFGNode n) {
 		return new ExecutionContext(n.getControlFlowGraph().getMethodInfo(), callString);
 	}
+
+    @Override
+    public String getKey() {
+        return toString();
+    }
 }

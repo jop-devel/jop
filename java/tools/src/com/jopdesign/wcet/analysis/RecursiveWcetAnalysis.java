@@ -292,7 +292,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		stats.put("WCET",sol.getCost());
 		stats.put("mode",key.ctx);
 		stats.put("all-methods-fit-in-cache", getWCETTool().getWCETProcessorModel().getMethodCache().allFit(m,null));
-		getWCETTool().getReport().addDetailedReport(m,"WCET_"+key.ctx.toString(),stats,nodeFlowCostDescrs,sol.getEdgeFlow());
+		getWCETTool().getReport().addDetailedReport(m,"WCET_"+key.ctx.getKey(),stats,nodeFlowCostDescrs,sol.getEdgeFlow());
 	}
 
     /**
