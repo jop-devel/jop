@@ -1866,7 +1866,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 				Set<FlowEdge> edges) {
 			List<SerializedFlowEdge> serializedEdges = new ArrayList<SerializedFlowEdge>();
 			for(FlowEdge fe : edges) {
-				serializedEdges.add(new FlowEdge.SerializedFlowEdge(fe));
+                            if (!SerializedFlowEdge.exists(fe)) continue;
+		            serializedEdges.add(new FlowEdge.SerializedFlowEdge(fe));
 			}
 			return serializedEdges;
 		}
@@ -1933,7 +1934,9 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                         InstructionHandle newHead = newHandles.get(edge.getHead());
                         InstructionHandle newTail = newHandles.get(edge.getTail());
                         if (newHead != null && newTail != null) {
-                            newSet.add(new FlowEdge(newTail, newHead, edge.getType()));
+                            Context ctx = new Context(edge.getContext());
+                            ctx.setMethodInfo(newContainer);
+                            newSet.add(new FlowEdge(newTail, newHead, edge.getType(), ctx));
                         }
                     }
                     map.put(cs,newSet);
