@@ -1907,6 +1907,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
         for (Map.Entry<InstructionHandle,InstructionHandle> entry : newHandles.entrySet()) {
             InstructionHandle oldHandle = entry.getKey();
             InstructionHandle newHandle = entry.getValue();
+            if (newHandle == null) continue;
 
             ContextMap<CallString, Pair<ValueMapping, ValueMapping>> value = bounds.get(oldHandle);
             if (value != null) bounds.put(newHandle, value);

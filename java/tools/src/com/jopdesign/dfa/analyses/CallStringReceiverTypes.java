@@ -1401,6 +1401,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
         for (Map.Entry<InstructionHandle,InstructionHandle> entry : newHandles.entrySet()) {
             InstructionHandle oldHandle = entry.getKey();
             InstructionHandle newHandle = entry.getValue();
+            if (newHandle == null) continue;
 
             ContextMap<CallString, Set<String>> value = targets.get(oldHandle);
             if (value != null) targets.put(newHandle, value);

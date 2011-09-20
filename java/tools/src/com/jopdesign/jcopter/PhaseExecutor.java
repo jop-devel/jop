@@ -185,6 +185,9 @@ public class PhaseExecutor {
 
     public void setUpdateDFA(boolean updateDFA) {
         // TODO bit of a hack, we currently only support updating if callstrings are empty
+        if (updateDFA && appInfo.getCallstringLength() != 0) {
+            logger.warn("Not updating DFA cache since callstrings are not of zero length");
+        }
         this.updateDFA = updateDFA && appInfo.getCallstringLength() == 0;
     }
 
