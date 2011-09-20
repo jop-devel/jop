@@ -30,20 +30,28 @@ GIT_ROOT=../../..
 DFA_CACHE_DIR=../dfa-cache
 
 # Options for JCopter
-USE_WCA?=yes
+USE_WCA=yes
 DEFAULT_OPTS=--greedy.targets wca \
+             --greedy.dump-stats greedy.csv \
+             --opt.cleanup-cp false \
+             --opt.remove-unused-members false \
+             --greedy.order WCAFirst \
              --greedy.use-wcep true \
-	     --greedy.use-wcep-ef true \
+	     --greedy.use-wcep-ef false \
 	     --greedy.cache-analysis ALWAYS_MISS_OR_HIT \
 	     --greedy.wca-cache-analysis ALL_FIT_REGIONS 
-OPTS?=--greedy.wca-cache-analysis ALWAYS_MISS
+#OPTS=--greedy.wca-cache-analysis ALL_FIT_REGIONS --greedy.cache-analysis ALL_FIT_REGIONS
+#OPTS=--greedy.order TopDown --greedy.use-wcep false
+#OPTS=--greedy.order BottomUp --greedy.use-wcep false 
+#OPTS=-O 1  
 
 # Options for JCopter and WCETAnalysis
 P1=test
 P2=wcet
 WCET_METHOD?=measure
 USE_DFA?=yes
-CALLSTRING_LENGTH?=1
+CALLSTRING_LENGTH=1
+USE_SCOPES=true
 
 papa_opt:
 	$(MAKE) P1=bench P2=papabench/jop P3=PapaBenchJopApplication \
@@ -60,10 +68,10 @@ papa_down:
 
 
 debie_opt:
-	$(MAKE) P1=bench P2=debie/harness P3=Harness CALLSTRING_LENGTH=0 bench_opt  
+	$(MAKE) P1=bench P2=debie/harness P3=Harness CALLSTRING_LENGTH=0 USE_SCOPES=false bench_opt  
 
 debie_orig:
-	$(MAKE) P1=bench P2=debie/harness P3=Harness CALLSTRING_LENGTH=0 bench_orig  
+	$(MAKE) P1=bench P2=debie/harness P3=Harness CALLSTRING_LENGTH=0 USE_SCOPES=false bench_orig  
 
 debie_down:
 	$(MAKE) P1=bench P2=debie/harness P3=Harness down
@@ -110,18 +118,18 @@ down:
 # Internal targets
 		
 do_bench_wcet:
-	cd $(GIT_ROOT) && $(MAKE) JCOPTER_USE_WCA=$(USE_WCA) USE_SCOPES=true MEASURE=false \
+	cd $(GIT_ROOT) && $(MAKE) JCOPTER_USE_WCA=$(USE_WCA) USE_SCOPES=$(USE_SCOPES) MEASURE=false \
 	        P1=$(P1) P2=$(P2) P3=$(P3) CALLSTRING_LENGTH=$(CALLSTRING_LENGTH) USE_DFA=$(USE_DFA) \
-		JCOPTER_OPT="-O 3 --dfa-cache-dir $(DFA_CACHE_DIR) $(DEFAULT_OPTS) $(OPTS)" java_app
-	cd $(GIT_ROOT) && $(MAKE) WCET_OPTIONS="--no-load-linkinfo --no-ipet-dump-ilp --dfa-cache-dir $(DFA_CACHE_DIR)" \
+		JCOPTER_OPT="-O 3 --dfa-cache-dir $(DFA_CACHE_DIR) --use-wca $(USE_WCA) $(DEFAULT_OPTS) $(OPTS)" java_app
+	cd $(GIT_ROOT) && $(MAKE) WCET_OPTIONS="--no-load-linkinfo --no-ipet-dump-ilp --dfa-cache-dir $(DFA_CACHE_DIR) --dfa-analyze-boot true" \
         	P1=$(P1) P2=$(P2) P3=$(P3) CALLSTRING_LENGTH=$(CALLSTRING_LENGTH) USE_DFA=$(USE_DFA) \
 		wcet
 	@echo "Options: " $(P3) " --use-wca " $(USE_WCA) $(DEFAULT_OPTS) $(OPTS) 
 
 do_bench_acet:
-	cd $(GIT_ROOT) && $(MAKE) JCOPTER_USE_WCA=$(USE_WCA) USE_SCOPES=true MEASURE=true \ 
+	cd $(GIT_ROOT) && $(MAKE) JCOPTER_USE_WCA=$(USE_WCA) USE_SCOPES=$(USE_SCOPES) MEASURE=true \
 	        P1=$(P1) P2=$(P2) P3=$(P3) CALLSTRING_LENGTH=$(CALLSTRING_LENGTH) USE_DFA=$(USE_DFA) \
-		JCOPTER_OPT="-O 3 --dfa-cache-dir $(DFA_CACHE_DIR) $(DEFAULT_OPTS) $(OPTS)" java_app
+		JCOPTER_OPT="-O 3 --dfa-cache-dir $(DFA_CACHE_DIR) --use-wca $(USE_WCA) $(DEFAULT_OPTS) $(OPTS)" java_app
 	cd $(GIT_ROOT) && $(MAKE) USB=true BLASTER_TYPE=USB-Blaster \
 		P1=$(P1) P2=$(P2) P3=$(P3) CALLSTRING_LENGTH=$(CALLSTRING_LENGTH) USE_DFA=$(USE_DFA) \
 		config download 
