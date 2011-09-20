@@ -1,5 +1,14 @@
 package com.jopdesign.dfa.framework;
 
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.CallString.CallStringSerialization;
+import com.jopdesign.common.misc.MethodNotFoundException;
+import com.jopdesign.common.type.MemberID;
+import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InstructionList;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,23 +18,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
 import java.util.Map.Entry;
-
-import org.apache.bcel.classfile.LineNumberTable;
-import org.apache.bcel.generic.InstructionHandle;
-
-import com.jopdesign.common.AppInfo;
-import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.code.CallString.CallStringSerialization;
-import com.jopdesign.common.misc.MethodNotFoundException;
-import com.jopdesign.common.type.MemberID;
-import com.jopdesign.dfa.analyses.Interval;
-import com.jopdesign.dfa.framework.FlowEdge.SerializedFlowEdge;
+import java.util.TreeMap;
 
 
 /** Helper class to dump analysis results.
@@ -83,8 +78,14 @@ public class AnalysisResultSerialization<R> {
 		for (InstructionHandle instr : result.keySet()) {
 			ContextMap<CallString, T> r = result.get(instr);
 			Context c = r.getContext();
+                    InstructionList il = c.getMethodInfo().getCode().getInstructionList(true, false);
 			for (CallString cs : r.keySet()) {
 				Integer position = instr.getPosition();
+
+                            // skip stuff that is not used anymore
+                            if (position < 0) continue;
+                            if (il.findHandle(position) != instr) continue;
+
 				if(serializer != null) {
 					T rValue = r.get(cs);
 					R sValue = serializer.serializedRepresentation(rValue);

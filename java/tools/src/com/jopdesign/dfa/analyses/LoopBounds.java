@@ -1903,23 +1903,26 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 	}
 
     @Override
-    public void copyResults(Map<InstructionHandle,InstructionHandle> newHandles) {
+    public void copyResults(MethodInfo newContainer, Map<InstructionHandle, InstructionHandle> newHandles) {
         for (Map.Entry<InstructionHandle,InstructionHandle> entry : newHandles.entrySet()) {
             InstructionHandle oldHandle = entry.getKey();
             InstructionHandle newHandle = entry.getValue();
             if (newHandle == null) continue;
 
+            // TODO support updating the callstrings too
+            // TODO this does NOT update stackPtr,.. in the new context!
+
             ContextMap<CallString, Pair<ValueMapping, ValueMapping>> value = bounds.get(oldHandle);
-            if (value != null) bounds.put(newHandle, value);
+            if (value != null) bounds.put(newHandle, value.copy(newContainer));
 
             ContextMap<CallString, Interval> value1 = arrayIndices.get(oldHandle);
-            if (value1 != null) arrayIndices.put(newHandle, value1);
+            if (value1 != null) arrayIndices.put(newHandle, value1.copy(newContainer));
 
             ContextMap<CallString, Integer> value2 = scopes.get(oldHandle);
-            if (value2 != null) scopes.put(newHandle, value2);
+            if (value2 != null) scopes.put(newHandle, value2.copy(newContainer));
 
             ContextMap<CallString, Interval[]> value3 = sizes.get(oldHandle);
-            if (value3 != null) sizes.put(newHandle, value3);
+            if (value3 != null) sizes.put(newHandle, value3.copy(newContainer));
 
             ContextMap<CallString,Set<FlowEdge>> old = infeasibles.get(oldHandle);
             if (old != null) {
@@ -1936,8 +1939,10 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                     map.put(cs,newSet);
                 }
 
+                Context c = old.getContext();
+                c.setMethodInfo(newContainer);
                 ContextMap<CallString,Set<FlowEdge>> edges =
-                        new ContextMap<CallString, Set<FlowEdge>>(old.getContext(), map);
+                        new ContextMap<CallString, Set<FlowEdge>>(c, map);
                 infeasibles.put(newHandle, edges);
             }
         }

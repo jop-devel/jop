@@ -539,15 +539,16 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     /* -------------------------------- */
 
     /**
-     * @param newHandles key is old handle, value is new handle
+     * @param method the method containing the new instructions
+     * @param newHandles key is old handle, value is new handle. Value can be null.
      */
-    public void copyResults(Map<InstructionHandle,InstructionHandle> newHandles) {
+    public void copyResults(MethodInfo method, Map<InstructionHandle,InstructionHandle> newHandles) {
         // TODO this is sort of a hack for now .. We should support updating call strings as well
         if (receivers != null) {
-            receivers.copyResults(newHandles);
+            receivers.copyResults(method, newHandles);
         }
         if (loopBounds != null) {
-            loopBounds.copyResults(newHandles);
+            loopBounds.copyResults(method, newHandles);
         }
     }
 

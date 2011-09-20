@@ -1032,7 +1032,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 	}
 
     @Override
-    public void copyResults(Map<InstructionHandle,InstructionHandle> newHandles) {
+    public void copyResults(MethodInfo newContainer, Map<InstructionHandle, InstructionHandle> newHandles) {
         throw new AppInfoError("Not yet implemented!");
     }
 }

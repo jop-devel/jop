@@ -263,7 +263,7 @@ public class InlineOptimizer implements CodeOptimizer {
 
             // update dataflow results
             if (updateDFA) {
-                jcopter.getDfaTool().copyResults(instrMap);
+                jcopter.getDfaTool().copyResults(invokeSite.getInvoker(), instrMap);
             }
 
             return invokeMap;

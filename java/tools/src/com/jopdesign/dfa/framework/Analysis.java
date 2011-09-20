@@ -92,7 +92,8 @@ public interface Analysis<K, V> {
 
     /**
      * Copy results to a new instruction handle.
+     * @param newContainer
      * @param newHandles keys are old handles, values are corresponding new handles
      */
-    void copyResults(Map<InstructionHandle,InstructionHandle> newHandles);
+    void copyResults(MethodInfo newContainer, Map<InstructionHandle, InstructionHandle> newHandles);
 }
