@@ -657,6 +657,10 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         this.hasDfaResults = true;
     }
 
+    public void setHasDfaResults(boolean hasDfaResults) {
+        this.hasDfaResults = hasDfaResults;
+    }
+
     /**
      * @return the loop bounds found by dataflow analysis
      */

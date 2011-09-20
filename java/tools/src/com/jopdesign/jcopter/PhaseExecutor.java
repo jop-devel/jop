@@ -263,6 +263,11 @@ public class PhaseExecutor {
         if (loopBounds) {
             logger.info("Loop bound analysis");
             dfaTool.runLoopboundAnalysis(callstringLength);
+
+            // need to tell this to the WCA tool
+            if (jcopter.useWCA()) {
+                jcopter.getWcetTool().setHasDfaResults(true);
+            }
         }
 
         dfaTool.cleanup();

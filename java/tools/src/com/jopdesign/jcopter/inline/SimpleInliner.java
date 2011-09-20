@@ -155,6 +155,8 @@ public class SimpleInliner extends AbstractOptimizer {
     private int requiresNPCheck;
     private int signatureMismatch;
     private int codesizeTooLarge;
+    private int countInvokeSites;
+    private int countDevirtualized;
 
     public SimpleInliner(JCopter jcopter, InlineConfig inlineConfig) {
         super(jcopter, true);
@@ -169,12 +171,12 @@ public class SimpleInliner extends AbstractOptimizer {
         requiresNPCheck = 0;
         signatureMismatch = 0;
         codesizeTooLarge = 0;
+        countInvokeSites = 0;
+        countDevirtualized = 0;
     }
 
     @Override
     public void optimizeMethod(MethodInfo method) {
-        ConstantPoolGen cpg = method.getConstantPoolGen();
-        InstructionList il = method.getCode().getInstructionList();
         InlineData inlineData = new InlineData();
 
         List<InvokeSite> invokes = new ArrayList<InvokeSite>( method.getCode().getInvokeSites() );
@@ -193,7 +195,12 @@ public class SimpleInliner extends AbstractOptimizer {
             CallString cs = new CallString(invoke);
 
             while (invoke != null) {
+                countInvokeSites++;
+
                 MethodInfo invokee = helper.devirtualize(cs);
+                if (invokee == null) break;
+
+                countDevirtualized++;
 
                 // Preliminary checks
                 if (checkInvoke(invoke, cs, invokee, inlineData)) {
@@ -227,6 +234,8 @@ public class SimpleInliner extends AbstractOptimizer {
     @Override
     public void printStatistics() {
         logger.info("Inlined "+inlineCounter+" invoke sites.");
+        logger.info("Found invoke sites: "+countInvokeSites+
+                    ", not devirtualized: "+(countInvokeSites-countDevirtualized));
         logger.info("Candidates: "+candidates+"; need NP check: "+ requiresNPCheck +", uncorrectable signature mismatch: "+
                 signatureMismatch +", unhandled instruction: "+unhandledInstructions+", codesize: "+codesizeTooLarge);
     }

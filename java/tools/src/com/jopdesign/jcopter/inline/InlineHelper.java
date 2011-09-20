@@ -62,6 +62,7 @@ import org.apache.bcel.generic.Type;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * This class provides methods to check if invokesites can be inlined and also to perform
@@ -78,6 +79,8 @@ import java.util.Set;
  * @author Stefan Hepp (stefan@stefant.org)
  */
 public class InlineHelper {
+
+    private static final Logger logger = Logger.getLogger(JCopter.LOG_INLINE+".InlineHelper");
 
     private enum CheckResult {
         SKIP, OK, NEEDS_PUBLIC, NEEDS_PUBLIC_RENAME;

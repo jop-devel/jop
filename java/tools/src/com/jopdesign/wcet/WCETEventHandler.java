@@ -220,7 +220,7 @@ public class WCETEventHandler extends EmptyAppEventHandler {
         try {
         	dfaUpperBound = lbAnalysis.getBound(headOfLoopBlock.getLastInstruction(),eCtx.getCallString());
         } catch(NullPointerException ex) {
-        	ex.printStackTrace();
+        	logger.error("Failed to retrieve DFA loop bound values", ex);
         	dfaUpperBound = -1;
         }
         if(dfaUpperBound < 0) {

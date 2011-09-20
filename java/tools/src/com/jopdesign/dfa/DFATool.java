@@ -39,6 +39,7 @@ import com.jopdesign.common.config.StringOption;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.tools.ClinitOrder;
+import com.jopdesign.common.tools.UpdatePositions;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MemberID;
 import com.jopdesign.dfa.analyses.CallStringReceiverTypes;
@@ -223,7 +224,11 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         this.getStatements().add(exit);
 
         // We do not modify the code, so we leave existing CFGs alone, just make sure the instruction list is uptodate
-        for (Iterator<?> l = mcode.getInstructionList(true, false).iterator(); l.hasNext(); ) {
+        InstructionList il = mcode.getInstructionList(true, false);
+        // we need correct positions for the DFA cache serialization stuff
+        il.setPositions();
+
+        for (Iterator<?> l = il.iterator(); l.hasNext(); ) {
             InstructionHandle handle = (InstructionHandle) l.next();
             this.getStatements().add(handle);
 
@@ -566,6 +571,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
             cleanup();
             prologue = createPrologue();
         }
+        appInfo.iterate(new UpdatePositions());
         appInfo.updateCheckSum(prologue);
         writeCachedResults(loopBounds);
         writeCachedResults(receivers);

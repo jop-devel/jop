@@ -94,6 +94,9 @@ public class InlineOptimizer implements CodeOptimizer {
 
     private boolean updateDFA;
 
+    private int countInvokeSites;
+    private int countDevirtualized;
+
     protected class InlineCandidate extends Candidate {
 
         // TODO having a context with a callstring != EMPTY is not yet fully supported (callgraph/analysis-updating!)
@@ -729,6 +732,9 @@ public class InlineOptimizer implements CodeOptimizer {
             deltaReturnCycles  = (int) pm.getExecutionTime(dummy, il.append(new RETURN()));
             deltaReturnCycles -= (int) pm.getExecutionTime(dummy, il.append(new GOTO(il.getEnd())));
         }
+
+        countInvokeSites = 0;
+        countDevirtualized = 0;
     }
 
     @Override
@@ -756,8 +762,12 @@ public class InlineOptimizer implements CodeOptimizer {
                 // inlined methods
                 CallString cs = new CallString(site);
 
+                countInvokeSites++;
+
                 MethodInfo invokee = helper.devirtualize(cs);
                 if (invokee == null) continue;
+
+                countDevirtualized++;
 
                 // for the initial check and the DFA lookup we need the old callstring
                 cs = getInlineCallString(code, ih).push(site);
@@ -780,6 +790,8 @@ public class InlineOptimizer implements CodeOptimizer {
 
     @Override
     public void printStatistics() {
+        logger.info("Found invoke sites: "+countInvokeSites+
+                    ", not devirtualized: "+(countInvokeSites-countDevirtualized));
     }
 
     private Candidate checkInvoke(MethodCode code, CallString cs, InvokeSite invokeSite, MethodInfo invokee,
