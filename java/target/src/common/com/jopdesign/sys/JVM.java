@@ -117,13 +117,13 @@ class JVM {
 			
 		synchronized (GC.mutex) {
 			if (Config.USE_SCOPES) {
-				//if (Config.USE_SCOPECHECKS) {
+				if (Config.USE_SCOPECHECKS) {
 				if (((value & 0x3E000000) >>> 25) > ((ref & 0x3E000000) >>> 25)){
 					GC.log("Illegal array reference");
 				}
 
 //					JVMHelp.scopeCheck(ref, value);
-				//}
+				}
 			} else {
 				// snapshot-at-beginning barrier
 				int oldVal = Native.arrayLoad(ref, index);
@@ -1108,7 +1108,7 @@ class JVM {
 		
 		synchronized (GC.mutex) {
 			if (Config.USE_SCOPES) {
-//				if (Config.USE_SCOPECHECKS) {
+				if (Config.USE_SCOPECHECKS) {
 					/**
 					 * val cannot be in a scoped region because if the scoped area is freed, then
 					 * we get a dangling reference in the modified static field
@@ -1116,7 +1116,7 @@ class JVM {
 					if (((val & 0x3E000000) >>> 25) != 0){
 						GC.log("Illegal static reference");
 					}
-//				}
+				}
 			} else {
 				// snapshot-at-beginning barrier
 				int oldVal = Native.getStatic(addr);
@@ -1138,11 +1138,11 @@ class JVM {
 		
 		synchronized (GC.mutex) {			
 			if (Config.USE_SCOPES) {
-//				if (Config.USE_SCOPECHECKS) {
+				if (Config.USE_SCOPECHECKS) {
 					if (((value & 0x3E000000) >>> 25) > ((ref & 0x3E000000) >>> 25)){
 						GC.log("Illegal field reference");
 					}
-//				}
+				}
 			} else {
 				// snapshot-at-beginning barrier
 				int oldVal = Native.getField(ref, index);
