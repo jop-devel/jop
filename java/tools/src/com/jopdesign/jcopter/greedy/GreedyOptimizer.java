@@ -146,6 +146,9 @@ public class GreedyOptimizer {
         }
 
         // dump initial callgraph
+        logger.info("Initial number of methods in target callgraph: "+
+                analyses.getTargetCallGraph().getMethodInfos().size());
+
         analyses.getTargetCallGraph().dumpCallgraph(jcopter.getJConfig().getConfig(),
                   "greedy-target", config.getTargetCallgraphDumpType(), true);
 

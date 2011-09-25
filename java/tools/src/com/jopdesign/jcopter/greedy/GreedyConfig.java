@@ -61,7 +61,7 @@ public class GreedyConfig {
                     "main");
 
     private static final BooleanOption USE_WCEP =
-            new BooleanOption("use-wcep", "Optimize only methods on the WCET path if WCA is enabled", false);
+            new BooleanOption("use-wcep", "Optimize only methods on the WCET path if WCA is enabled", true);
 
     private static final BooleanOption USE_WCA_EXEC_COUNT =
             new BooleanOption("use-wcep-ef", "Use execution frequencies from the WCA if the WCA is enabled", false);
@@ -135,7 +135,9 @@ public class GreedyConfig {
 
         GreedyOrder order = getOrder();
         if (useWCEP && (order == GreedyOrder.BottomUp || order == GreedyOrder.TopDown)) {
-            logger.warn("WCEP selector does not work with order "+order+", falling back to local WCET selector");
+            if (options.isSet(USE_WCEP)) {
+                logger.warn("WCEP selector does not work with order "+order+", falling back to local WCET selector");
+            }
             useWCEP = false;
         }
     }

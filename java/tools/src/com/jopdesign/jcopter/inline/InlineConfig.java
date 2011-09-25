@@ -27,6 +27,7 @@ import com.jopdesign.common.config.EnumOption;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
 import com.jopdesign.jcopter.JCopter;
+import org.apache.log4j.Logger;
 
 import java.util.List;
 
@@ -58,7 +59,9 @@ public class InlineConfig {
             new BooleanOption("exclude-wca-targets",
                     "Do not inline into WCA target methods. This is required for measure "+"" +
                     "methods so that the initial invoke is not removed. The WCA target method " +
-                    "is never inlined even if this is set to false", true);
+                    "is never inlined even if this is set to false", false);
+
+    private static final Logger logger = Logger.getLogger(JCopter.LOG_INLINE+".InlineConfig");
 
     private final JCopter jcopter;
     private final OptionGroup options;
@@ -77,6 +80,20 @@ public class InlineConfig {
         this.jcopter = jcopter;
         this.options = options;
         this.ignorePrefix = Config.splitStringList(options.getOption(EXCLUDE));
+
+        boolean hasMeasureTarget = false;
+        for (MethodInfo target : jcopter.getJConfig().getWCATargets()) {
+            if ("measure".equals(target.getShortName())) {
+                hasMeasureTarget = true;
+            }
+        }
+
+        if (hasMeasureTarget && !options.getOption(EXCLUDE_WCA_TARGETS)) {
+            logger.warn("Inlining into measure method. Check that "+EXCLUDE_WCA_TARGETS.getKey()+" is set correctly.");
+        }
+        if (!hasMeasureTarget && options.getOption(EXCLUDE_WCA_TARGETS)) {
+            logger.warn("Not inlining into wca-targets, but wca-target is not called 'measure'. Check that "+EXCLUDE_WCA_TARGETS.getKey()+" is set correctly.");
+        }
     }
 
     public boolean allowChangeAccess() {

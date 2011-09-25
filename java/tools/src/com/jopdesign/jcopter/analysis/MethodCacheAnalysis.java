@@ -344,6 +344,10 @@ public class MethodCacheAnalysis {
                 long returnCosts = pm.getReturnCacheMissPenalty(invokeSite, sizeInvoker);
 
                 long count = ecp.getExecCount(invokeSite);
+                if (analysisType == AnalysisType.ALL_FIT_REGIONS) {
+                    // for this analysis we already have one miss in the original cost estimation
+                    count--;
+                }
                 deltaCosts += count * (invokeCosts + returnCosts);
             }
         }
@@ -355,6 +359,7 @@ public class MethodCacheAnalysis {
 
             // find out how many additional persistent cache misses we have
             // find out border of new all-fit region
+            Map<MethodInfo,Integer> deltaExec = new HashMap<MethodInfo, Integer>();
             int deltaCount = 0;
             Set<ExecutionContext> border = new HashSet<ExecutionContext>();
 
@@ -378,6 +383,13 @@ public class MethodCacheAnalysis {
                 // remove old miss count
                 deltaCount -= getPersistentMisses(ecp, border);
             }
+
+            // TODO this is not quite correct: instead of joining the reachable sets and multiplying
+            //  with the delta count for the whole region, we should:
+            //  - for every node in the reachable sets of the new border, sum up exec-counts of border nodes
+            //    which contain that node in the reachable set
+            //  - for every node in the reachable sets of the old border, subtract the exec counts of those border nodes
+            //  - sum up invoke miss costs times calculates delta counts per node
 
             // find out cache miss costs of new all-fit region
             int regionCosts = 0;
@@ -695,6 +707,7 @@ public class MethodCacheAnalysis {
                 set = new HashSet<MethodInfo>(removed.size());
                 removeMethods.put(node, set);
                 for (MethodInfo m : removed) {
+                    // initially add method to remove set if it is reachable from this node
                     if (reachableMethods.get(node).contains(m)) {
                         set.add(m);
                     }
@@ -710,11 +723,13 @@ public class MethodCacheAnalysis {
                 if (!set.contains(r)) continue;
 
                 for (ExecutionContext child : callGraph.getChildren(node)) {
+                    // we ignore native methods in the cache analysis
                     if (child.getMethodInfo().isNative()) continue;
 
                     // skip childs which will be removed
                     if (isRoot && removed.contains(child.getMethodInfo())) continue;
 
+                    // TODO this is incorrect for cyclic call graphs.. need to fix this!
                     if (reachableMethods.get(child).contains(r)) {
                         set.remove(r);
                         changed = true;
