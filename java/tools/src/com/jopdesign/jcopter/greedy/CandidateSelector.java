@@ -39,7 +39,7 @@ import java.util.Set;
  */
 public interface CandidateSelector {
 
-    void initialize();
+    void initialize(GreedyConfig config, boolean dumpStats);
 
     void printStatistics();
 

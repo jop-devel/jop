@@ -112,13 +112,19 @@ public class CallGraph implements ImplementationFinder {
 
     public enum DUMPTYPE { off, full, merged, both }
 
-    public static final StringOption CALLGRAPH_DIR =
+    // This option should always be added to Config.getDebugGroup()
+    private static final StringOption CALLGRAPH_DIR =
             new StringOption("cgdir", "Directory to put the callgraph files into", "${outdir}/callgraph");
 
     /**
-     * Needs to be added to the root optiongroup if the dumpCallgraph method is used.
+     * Needs to be added to the debug optiongroup if the dumpCallgraph method is used.
      */
-    public static final Option[] dumpOptions = { CALLGRAPH_DIR };
+    private static final Option[] dumpOptions = { CALLGRAPH_DIR };
+
+    public static void registerOptions(Config config) {
+        config.getDebugGroup().addOptions(dumpOptions);
+        InvokeDot.registerOptions(config);
+    }
 
     /**
      * Interface for a callgraph construction.
@@ -763,6 +769,58 @@ public class CallGraph implements ImplementationFinder {
         return childs;
     }
 
+    /**
+     * @param node the invoker
+     * @return the keys are the invoke sites in the invoker, the values the set of successors of the invoker node
+     *     than can be invoked by that invoke site. If the callgraph is context sensitive, the map might not contain
+     *     all invoke sites for which there are no invokees.
+     */
+    public Map<InvokeSite, Set<ExecutionContext>> getChildsPerInvokeSite(ExecutionContext node) {
+        Map<InvokeSite,Set<ExecutionContext>> map = new HashMap<InvokeSite, Set<ExecutionContext>>();
+
+        List<ExecutionContext> emptyCSNodes = new LinkedList<ExecutionContext>();
+
+        for (ContextEdge edge : callGraph.outgoingEdgesOf(node)) {
+            long count;
+            ExecutionContext child = edge.getTarget();
+
+            if (!child.getCallString().isEmpty()) {
+                // simple case: if we have a callstring, the top entry is the invokesite in the invoker
+
+                Set<ExecutionContext> childs = map.get(child.getCallString().top());
+                if (childs == null) {
+                    childs = new HashSet<ExecutionContext>();
+                    map.put(child.getCallString().top(), childs);
+                }
+                childs.add(child);
+
+            } else {
+                // tricky case: no callstring, we need to find all invokesites in the invoker
+                emptyCSNodes.add(child);
+            }
+        }
+
+        if (emptyCSNodes.isEmpty()) return map;
+
+        for (InvokeSite invokeSite : node.getMethodInfo().getCode().getInvokeSites()) {
+
+            Set<ExecutionContext> childs = map.get(invokeSite);
+            if (childs == null) {
+                childs = new HashSet<ExecutionContext>();
+                map.put(invokeSite, childs);
+            }
+
+            for (ExecutionContext child : emptyCSNodes) {
+
+                if (invokeSite.canInvoke(child.getMethodInfo()) != Ternary.FALSE) {
+                    childs.add(child);
+                }
+            }
+        }
+
+        return map;
+    }
+
     public List<ExecutionContext> getParents(ExecutionContext node) {
         Set<ContextEdge> in = callGraph.incomingEdgesOf(node);
         List<ExecutionContext> parents = new ArrayList<ExecutionContext>(in.size());
@@ -1257,7 +1315,7 @@ public class CallGraph implements ImplementationFinder {
                 AppInfo appInfo = AppInfo.getSingleton();
                 for (ContextEdge edge : callGraph.incomingEdgesOf(ec)) {
                     for (InvokeSite invokeSite : edge.getSource().getMethodInfo().getCode().getInvokeSites()) {
-                        if (invokeSite.canInvoke(invokee) == Ternary.TRUE) {
+                        if (invokeSite.canInvoke(invokee) != Ternary.FALSE) {
                             invokeSites.add(invokeSite);
                         }
                     }
@@ -1670,10 +1728,10 @@ public class CallGraph implements ImplementationFinder {
 
         File outDir;
         try {
-            outDir = config.getOutDir(CallGraph.CALLGRAPH_DIR);
+            outDir = config.getOutDir(config.getDebugGroup(), CallGraph.CALLGRAPH_DIR);
         } catch (BadConfigurationException e) {
             throw new BadConfigurationError("Could not create output dir "+
-                        config.getOption(CallGraph.CALLGRAPH_DIR), e);
+                        config.getDebugGroup().getOption(CallGraph.CALLGRAPH_DIR), e);
         }
 
         CallGraph subGraph = roots == null ? this : getSubGraph(roots);

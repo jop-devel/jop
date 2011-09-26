@@ -20,17 +20,17 @@
 
 package com.jopdesign.dfa.framework;
 
-import java.io.Serializable;
-
-import org.apache.bcel.generic.InstructionHandle;
-import org.apache.bcel.generic.InstructionList;
-
 import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.CallString.CallStringSerialization;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.type.MemberID;
+import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InstructionList;
+
+import java.io.Serializable;
 
 public class FlowEdge {
 
@@ -53,7 +53,7 @@ public class FlowEdge {
     	this(f.tail,f.head,f.type,c);
     }
 
-    private FlowEdge(InstructionHandle tail, InstructionHandle head, int type, Context ctx) {
+    public FlowEdge(InstructionHandle tail, InstructionHandle head, int type, Context ctx) {
         this.tail = tail;
         this.head = head;
         this.context = ctx;
@@ -133,13 +133,25 @@ public class FlowEdge {
 		private int headIns;
 		private int tailIns;
 
+            public static boolean exists(FlowEdge e) {
+                MethodCode code = e.getContext().getMethodInfo().getCode();
+                InstructionList il = code.getInstructionList(true, false);
+
+                if (e.getHead().getPosition() == -1 || e.getHead().getPosition() == -1) return false;
+
+                if (il.findHandle(e.getHead().getPosition()) != e.getHead()) return false;
+                if (il.findHandle(e.getTail().getPosition()) != e.getTail()) return false;
+
+                return true;
+            }
+
 		public SerializedFlowEdge(FlowEdge e) {
 
 			this.type       = e.type;
 			this.cs         = new CallString.CallStringSerialization(e.getContext().callString);
 			this.methodName = e.getContext().getMethodInfo().getFQMethodName();
-			this.headIns    = e.head.getPosition();
-			this.tailIns    = e.tail.getPosition();
+			this.headIns    = e.getHead().getPosition();
+			this.tailIns    = e.getTail().getPosition();
 		}
 		
 		public FlowEdge toFlowEdge(AppInfo appInfo) throws MethodNotFoundException {

@@ -1396,5 +1396,17 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
     	return targets;
 	}
 
+    @Override
+    public void copyResults(MethodInfo newContainer, Map<InstructionHandle, InstructionHandle> newHandles) {
+        for (Map.Entry<InstructionHandle,InstructionHandle> entry : newHandles.entrySet()) {
+            InstructionHandle oldHandle = entry.getKey();
+            InstructionHandle newHandle = entry.getValue();
+            if (newHandle == null) continue;
 
+            ContextMap<CallString, Set<String>> value = targets.get(oldHandle);
+            // TODO support updating the callstrings too
+            // TODO this does NOT update stackPtr,.. in the new context!
+            if (value != null) targets.put(newHandle, value.copy(newContainer));
+        }
+    }
 }

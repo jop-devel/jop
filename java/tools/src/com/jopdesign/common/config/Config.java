@@ -55,7 +55,6 @@ public class Config {
     /* Options which are always present
      * TODO maybe move the class loading and entry-point related options to AppInfo?
      */
-
     public static final BooleanOption SHOW_HELP =
             new BooleanOption("help", "show help", 'h', true);
 
@@ -131,18 +130,18 @@ public class Config {
     public static final StringOption WRITE_SOURCELINES =
         new StringOption("write-sourcelines", "Write source line infos to a file", "${classdir}/sourcelines.txt");
 
-    //
-    // Some common options, which are not added by default, but can be added by other programs
-    //
-    public static final StringOption PROGRAM_DOT =
-            new StringOption("program-dot", "if graphs should be generated from java, the path to the 'dot' binary", true);
+    public static final StringOption DUMP_CACHEKEY =
+        new StringOption("dump-cachekey", "Set a filename prefix to dump the checksums of the elements in the cache " +
+                "key into a file",true);
 
-    
+
 
     public static final Option<?>[] standardOptions =
             { SHOW_HELP, SHOW_VERSION, SHOW_CONFIG, DEBUG, QUIET, VERBOSE,
               SHOW_WARN_ONLY, SHOW_INFO_ONLY };
 
+    public static final Option<?>[] debugOptions =
+            { DUMP_CACHEKEY };
 
     /////////////////////////////////////////////////////////////////////////////////////////////
     // Helper Functions
@@ -318,14 +317,22 @@ public class Config {
         return new File(getOutDir(), file);
     }
 
-    public File getOutDir(StringOption option) throws BadConfigurationException {
-        File outDir = new File(getOption(option));
+    public File getOutDir(OptionGroup group, StringOption option) throws BadConfigurationException {
+        File outDir = new File(group.getOption(option));
         checkDir(outDir, true);
         return outDir;
     }
 
+    public File getOutDir(StringOption option) throws BadConfigurationException {
+        return getOutDir(options, option);
+    }
+
     public OptionGroup getOptions() {
         return options;
+    }
+
+    public OptionGroup getDebugGroup() {
+        return getOptions().getGroup("debug");
     }
 
     public Properties getProperties() {

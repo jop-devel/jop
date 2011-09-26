@@ -35,4 +35,9 @@ public class InvalidFlowFactException extends Exception {
 	public InvalidFlowFactException(String msg) {
 		super(msg);
 	}
+
+    @Override
+    public String getKey() {
+        return toString();
+    }
 }

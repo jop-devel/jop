@@ -23,14 +23,14 @@ package com.jopdesign.dfa.analyses;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.graphutils.Pair;
+import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils.Query;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.framework.Analysis;
+import com.jopdesign.dfa.framework.AnalysisResultSerialization;
 import com.jopdesign.dfa.framework.BoundedSetFactory;
 import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
-import com.jopdesign.dfa.framework.AnalysisResultSerialization;
 import com.jopdesign.dfa.framework.Context;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.FlowEdge;
@@ -1032,4 +1032,9 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			ClassNotFoundException, MethodNotFoundException {
     	return AnalysisResultSerialization.fromSerialization(cacheFile).toContextMapResult(appInfo, null);
 	}
+
+    @Override
+    public void copyResults(MethodInfo newContainer, Map<InstructionHandle, InstructionHandle> newHandles) {
+        throw new AppInfoError("Not yet implemented!");
+    }
 }

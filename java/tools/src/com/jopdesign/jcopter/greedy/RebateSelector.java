@@ -28,6 +28,7 @@ import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.graphutils.DFSTraverser;
 import com.jopdesign.common.graphutils.DFSTraverser.DFSVisitor;
 import com.jopdesign.common.graphutils.DFSTraverser.EmptyDFSVisitor;
+import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
@@ -37,6 +38,9 @@ import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -157,6 +161,8 @@ public abstract class RebateSelector implements CandidateSelector {
     private int maxGlobalSize;
     private int globalCodesize;
 
+    private PrintWriter dump = null;
+
     public RebateSelector(AnalysisManager analyses, int maxGlobalSize) {
         this.analyses = analyses;
         this.maxGlobalSize = maxGlobalSize;
@@ -168,7 +174,7 @@ public abstract class RebateSelector implements CandidateSelector {
     }
 
     @Override
-    public void initialize() {
+    public void initialize(GreedyConfig config, boolean dumpStats) {
         // calculate current global codesize
         globalCodesize = 0;
         if (usesCodeRemover) {
@@ -201,6 +207,18 @@ public abstract class RebateSelector implements CandidateSelector {
         traverser.traverse(graph);
 
         logger.info("Initial codesize: " + globalCodesize + " bytes");
+
+        if (config.doDumpStats() && dumpStats) {
+            try {
+                File statsFile = config.getStatsFile();
+                dump = new PrintWriter(statsFile);
+                dump.print("total codesize, ");
+                if (analyses.useWCAInvoker()) dump.print("WCET, ");
+                dump.println("candidate, ratio, gain, local gain, cache, local cache, delta codesize, frequency");
+            } catch (FileNotFoundException e) {
+                throw new AppInfoError("Could not initialize dump file", e);
+            }
+        }
     }
 
     @Override
@@ -211,6 +229,20 @@ public abstract class RebateSelector implements CandidateSelector {
     @Override
     public void printStatistics() {
         logger.info("Codesize after optimization: " + globalCodesize + " bytes");
+
+        dumpStats();
+        if (dump != null) {
+            dump.close();
+        }
+    }
+
+    private void dumpStats() {
+        if (dump == null) return;
+
+        dump.print(globalCodesize+", ");
+        if (analyses.useWCAInvoker()) {
+            dump.print(analyses.getWCAInvoker().getLastWCET());
+        }
     }
 
     public void addCandidates(MethodInfo method, Collection<Candidate> candidates) {
@@ -230,7 +262,9 @@ public abstract class RebateSelector implements CandidateSelector {
     @Override
     public void removeCandidates(MethodInfo method) {
         MethodData data = methodData.remove(method);
-        onRemoveMethodData(data);
+        if (data != null) {
+            onRemoveMethodData(data);
+        }
     }
 
     @Override
@@ -338,12 +372,27 @@ public abstract class RebateSelector implements CandidateSelector {
 
     protected void logSelection(ExecFrequencyProvider ecp, RebateRatio ratio) {
         if (ratio == null) return;
+
+        long localGain = ratio.getCandidate().getLocalGain();
+        long cache = analyses.getMethodCacheAnalysis().getDeltaCacheMissCosts(ecp, ratio.getCandidate());
+        long localCache = ratio.getCandidate().getDeltaCacheMissCosts(analyses, ecp);
+        int codesize = ratio.getCandidate().getDeltaLocalCodesize();
+        long execCount = ecp.getExecCount(ratio.getCandidate().getMethod(), ratio.getCandidate().getEntry());
+
         logger.info("Selected ratio " + ratio.getRatio() + ", gain " + ratio.getGain() +
-                    " local " + ratio.getCandidate().getLocalGain() +
-                    " cache local " + ratio.getCandidate().getDeltaCacheMissCosts(analyses, ecp) +
-                    " cache " + analyses.getMethodCacheAnalysis().getDeltaCacheMissCosts(ecp, ratio.getCandidate()) +
-                    " codesize " + ratio.getCandidate().getDeltaLocalCodesize() +
-                    " cnt " + ecp.getExecCount(ratio.getCandidate().getMethod(), ratio.getCandidate().getEntry()));
+                    " local " + localGain + " cache " + cache + " cache local " + localCache +
+                    " codesize " + codesize + " freq " + execCount);
+
+        // logging stats from last iteration/initial stats
+        dumpStats();
+
+        // logging selection
+        if (dump != null) {
+            dump.print(", "+ratio.getCandidate().toString());
+            dump.print(", "+ratio.getRatio()+", "+ratio.getGain()+", "+ localGain);
+            dump.print(", "+cache +", "+localCache+", "+codesize+", "+execCount);
+            dump.println();
+        }
     }
 
     public int getDeltaGlobalCodesize(Candidate candidate) {

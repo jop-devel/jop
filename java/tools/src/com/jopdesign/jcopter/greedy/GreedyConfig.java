@@ -27,13 +27,16 @@ import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.EnumOption;
+import com.jopdesign.common.config.IntegerOption;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.JCopterConfig;
 import com.jopdesign.jcopter.analysis.MethodCacheAnalysis.AnalysisType;
 import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
+import org.apache.log4j.Logger;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -58,7 +61,7 @@ public class GreedyConfig {
                     "main");
 
     private static final BooleanOption USE_WCEP =
-            new BooleanOption("use-wcep", "Optimize only methods on the WCET path if WCA is enabled", false);
+            new BooleanOption("use-wcep", "Optimize only methods on the WCET path if WCA is enabled", true);
 
     private static final BooleanOption USE_WCA_EXEC_COUNT =
             new BooleanOption("use-wcep-ef", "Use execution frequencies from the WCA if the WCA is enabled", false);
@@ -79,12 +82,22 @@ public class GreedyConfig {
     private static final EnumOption<DUMPTYPE> DUMP_TARGET_CALLGRAPH =
             new EnumOption<DUMPTYPE>("dump-target-callgraph", "Dump the callgraph of the target methods", DUMPTYPE.off);
 
+    // This is for debugging, to find bad optimizations in log n iterations
+    private static final IntegerOption MAX_STEPS =
+            new IntegerOption("max-steps", "Optimize at most n candidates", true);
+
+    private static final StringOption DUMP_STATS =
+            new StringOption("dump-stats", "Filename of a CSV file to dump optimization stats into", true);
+
+    private static final Logger logger = Logger.getLogger(JCopter.LOG_OPTIMIZER+".GreedyConfig");
+
     private final AppInfo appInfo;
     private final JCopter jcopter;
 
     private final OptionGroup options;
 
     private List<MethodInfo> targets;
+    private boolean useWCEP;
 
     public static void registerOptions(OptionGroup options) {
         options.addOption(GREEDY_ORDER);
@@ -95,6 +108,8 @@ public class GreedyConfig {
         options.addOption(CACHE_ANALYSIS_TYPE);
         options.addOption(WCA_CACHE_APPROXIMATION);
         options.addOption(DUMP_TARGET_CALLGRAPH);
+        options.addOption(MAX_STEPS);
+        options.addOption(DUMP_STATS);
     }
 
     public GreedyConfig(JCopter jcopter, OptionGroup greedyOptions) throws BadConfigurationException {
@@ -116,6 +131,15 @@ public class GreedyConfig {
             targets = Config.parseMethodList(targetNames);
         }
 
+        useWCEP = useWCA() && options.getOption(USE_WCEP);
+
+        GreedyOrder order = getOrder();
+        if (useWCEP && (order == GreedyOrder.BottomUp || order == GreedyOrder.TopDown)) {
+            if (options.isSet(USE_WCEP)) {
+                logger.warn("WCEP selector does not work with order "+order+", falling back to local WCET selector");
+            }
+            useWCEP = false;
+        }
     }
 
     public AppInfo getAppInfo() {
@@ -182,7 +206,7 @@ public class GreedyConfig {
     }
 
     public boolean useWCEP() {
-        return options.getOption(USE_WCEP);
+        return useWCEP;
     }
 
     public boolean useWCAExecCount() {
@@ -200,5 +224,17 @@ public class GreedyConfig {
 
     public DUMPTYPE getTargetCallgraphDumpType() {
         return options.getOption(DUMP_TARGET_CALLGRAPH);
+    }
+
+    public int getMaxSteps() {
+        return (options.getOption(MAX_STEPS, 0L)).intValue();
+    }
+
+    public boolean doDumpStats() {
+        return options.isSet(DUMP_STATS);
+    }
+
+    public File getStatsFile() {
+        return (doDumpStats()) ? new File(options.getOption(DUMP_STATS)) : null;
     }
 }

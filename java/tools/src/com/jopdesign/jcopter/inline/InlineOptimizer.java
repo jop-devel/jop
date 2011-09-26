@@ -94,6 +94,11 @@ public class InlineOptimizer implements CodeOptimizer {
     private int checkNPCycles;
     private int deltaReturnCycles;
 
+    private boolean updateDFA;
+
+    private int countInvokeSites;
+    private int countDevirtualized;
+
     protected class InlineCandidate extends Candidate {
 
         // TODO having a context with a callstring != EMPTY is not yet fully supported (callgraph/analysis-updating!)
@@ -160,11 +165,17 @@ public class InlineOptimizer implements CodeOptimizer {
                 // if we inline an empty static method with no arguments at the beginning of the code, end is null
                 start = null;
             }
+            if (end == invoke) {
+                // inlined an empty method .. tricky
+                start = null;
+                end = null;
+            }
 
+            InstructionHandle tmp = invoke.getNext();
             try {
                 il.delete(invoke);
             } catch (TargetLostException e) {
-                code.retarget(e, start);
+                code.retarget(e, tmp);
             }
 
             // Not really needed, but makes debugging easier
@@ -257,6 +268,11 @@ public class InlineOptimizer implements CodeOptimizer {
             }
 
             remapTargets(instrMap, next);
+
+            // update dataflow results
+            if (updateDFA) {
+                jcopter.getDfaTool().copyResults(invokeSite.getInvoker(), instrMap);
+            }
 
             return invokeMap;
         }
@@ -699,6 +715,14 @@ public class InlineOptimizer implements CodeOptimizer {
         preciseCycleEstimate = false;
     }
 
+    public void setUpdateDFA(boolean updateDFA) {
+        this.updateDFA = updateDFA;
+    }
+
+    public boolean doUpdateDFA() {
+        return updateDFA;
+    }
+
     @Override
     public void initialize(AnalysisManager analyses, Collection<MethodInfo> roots) {
 
@@ -719,6 +743,9 @@ public class InlineOptimizer implements CodeOptimizer {
             deltaReturnCycles  = (int) pm.getExecutionTime(dummy, il.append(new RETURN()));
             deltaReturnCycles -= (int) pm.getExecutionTime(dummy, il.append(new GOTO(il.getEnd())));
         }
+
+        countInvokeSites = 0;
+        countDevirtualized = 0;
     }
 
     @Override
@@ -746,8 +773,12 @@ public class InlineOptimizer implements CodeOptimizer {
                 // inlined methods
                 CallString cs = new CallString(site);
 
+                countInvokeSites++;
+
                 MethodInfo invokee = helper.devirtualize(cs);
                 if (invokee == null) continue;
+
+                countDevirtualized++;
 
                 // for the initial check and the DFA lookup we need the old callstring
                 cs = getInlineCallString(code, ih).push(site);
@@ -770,6 +801,8 @@ public class InlineOptimizer implements CodeOptimizer {
 
     @Override
     public void printStatistics() {
+        logger.info("Found invoke sites: "+countInvokeSites+
+                    ", not devirtualized: "+(countInvokeSites-countDevirtualized));
     }
 
     private Candidate checkInvoke(MethodCode code, CallString cs, InvokeSite invokeSite, MethodInfo invokee,

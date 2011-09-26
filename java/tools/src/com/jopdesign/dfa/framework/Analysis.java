@@ -22,23 +22,20 @@ package com.jopdesign.dfa.framework;
 
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.dfa.DFATool;
-
 import org.apache.bcel.generic.InstructionHandle;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 
 public interface Analysis<K, V> {
 
-	/**
-	 * @return Unique ID for this analysis instance
-	 */
-	String getId();
+    /**
+     * @return Unique ID for this analysis instance
+     */
+    String getId();
 
     ContextMap<K, V> bottom();
 
@@ -59,7 +56,7 @@ public interface Analysis<K, V> {
                               Map<InstructionHandle, ContextMap<K, V>> state);
 
     /**
-     * {@code compare(s1,s2)} returns {@code true} if and only if both s1 and s2 have the same context
+     * {@code compare(s1, s2)} returns {@code true} if and only if both s1 and s2 have the same context
      * and s1 \subseteq s2 (s1 `join` s2 = s2)
      *
      * @param s1
@@ -74,17 +71,29 @@ public interface Analysis<K, V> {
 
     void printResult(DFATool program);
 
-    /** serialize the analysis results to the given file. 
-     *  precondition: {@link getResult()} returns non-null value.
-     *  @param cacheFile the file to serialize to
-     *  @throws IOException */
-	void serializeResult(File cacheFile) throws IOException;
+    /**
+     * serialize the analysis results to the given file.
+     * precondition: {@link #getResult()} returns non-null value.
+     *
+     * @param cacheFile the file to serialize to
+     * @throws IOException
+     */
+    void serializeResult(File cacheFile) throws IOException;
 
-    /** deserialize the analysis results from the given file. 
-     *  precondition: {@link getResult()} returns non-null value.
-     *  @param cacheFile the file to serialize to
-     *  @throws IOException */
-	Map deSerializeResult(AppInfo appInfo, File cacheFile) throws
-		IOException, ClassNotFoundException, MethodNotFoundException;
-	
+    /**
+     * deserialize the analysis results from the given file.
+     * precondition: {@link #getResult()} returns non-null value.
+     *
+     * @param cacheFile the file to serialize to
+     * @throws IOException
+     */
+    Map deSerializeResult(AppInfo appInfo, File cacheFile) throws
+            IOException, ClassNotFoundException, MethodNotFoundException;
+
+    /**
+     * Copy results to a new instruction handle.
+     * @param newContainer
+     * @param newHandles keys are old handles, values are corresponding new handles
+     */
+    void copyResults(MethodInfo newContainer, Map<InstructionHandle, InstructionHandle> newHandles);
 }

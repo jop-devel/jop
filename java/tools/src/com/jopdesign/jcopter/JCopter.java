@@ -74,7 +74,7 @@ public class JCopter extends EmptyTool<JCopterManager> {
         // TODO add options/profiles/.. to this so that only a subset of
         //      optimizations/analyses are initialized ? Overwrite PhaseExecutor for this?
         //      Or user simply uses phaseExecutor directly
-        PhaseExecutor.registerOptions(options);
+        PhaseExecutor.registerOptions(config);
     }
 
     @Override
@@ -141,6 +141,8 @@ public class JCopter extends EmptyTool<JCopterManager> {
      */
     public void optimize() {
 
+        executor.setUpdateDFA(useDFA() && dfaTool.doUseCache() );
+
         // - (optional) perform receiver type DFA: reduce callgraph, maybe eliminate
         //   some nullpointer-checks. This is used only for the SimpleInliner since this will
         //   invalidate the results (see Callgraph#merge). We skip this for -O1 to save some time.
@@ -198,6 +200,13 @@ public class JCopter extends EmptyTool<JCopterManager> {
         executor.relinkInvokesuper();
 
         executor.cleanupConstantPool();
+
+        if (getJConfig().doOptimizeNormal()) {
+            // We need to write the DFA results first. This modifies the CP and creates new entries
+            // due to dumb bcel creating debug attributes, but we need them in the class files, else the CP will
+            // not match up, since they might be created in a different order on load
+            executor.writeResults();
+        }
     }
 
 

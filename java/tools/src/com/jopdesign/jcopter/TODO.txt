@@ -1,0 +1,11 @@
+TODOs
+------
+
+o) MethodCacheAnalysis
+- findRemovedMethods(): Current implementation not correct, needs fixing
+- make cache cost estimation for ALL_FIT_REGIONS approximation more precise when region changes
+- handle case when region increases
+
+o) EjipCmp benchmark does not work
+- We need to remove Tcp.run() from callee set of Runnable.run(), else it will try to invoke
+  TcpHandler.*, which has no implementations since the benchmark does not use Tcp implementation classes

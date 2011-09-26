@@ -81,6 +81,8 @@ public class WCAInvoker extends ExecFrequencyProvider {
 
     private boolean provideWCAExecCount;
 
+    private long lastWCET;
+
     private static final Logger logger = Logger.getLogger(JCopter.LOG_ANALYSIS+".WCAInvoker");
 
     public WCAInvoker(AnalysisManager analyses, Set<MethodInfo> wcaTargets, CacheCostCalculationMethod defaultApproximation) {
@@ -103,6 +105,10 @@ public class WCAInvoker extends ExecFrequencyProvider {
 
     public Collection<CallGraph> getWCACallGraphs() {
         return Collections.singleton(wcetTool.getCallGraph());
+    }
+
+    public long getLastWCET() {
+        return lastWCET;
     }
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -325,7 +331,8 @@ public class WCAInvoker extends ExecFrequencyProvider {
 
             // TODO some logging would be nice, keep target-method WCET for comparison of speedup
             if (node.getMethodInfo().equals(wcetTool.getTargetMethod())) {
-                logger.info("WCET: "+sol.getCost().getCost());
+                lastWCET = sol.getCost().getCost();
+                logger.info("WCET: "+ lastWCET);
             }
 
             changed.add(node.getMethodInfo());
@@ -339,8 +346,8 @@ public class WCAInvoker extends ExecFrequencyProvider {
         config.setOption(ProjectConfig.TARGET_METHOD, targetMethod.getMemberID().toString());
         config.setOption(ProjectConfig.DO_GENERATE_REPORTS, generateReports);
         config.setOption(ProjectConfig.DO_GENERATE_REPORTS, false);
-        config.setOption(ProjectConfig.DUMP_TARGET_CALLGRAPH, DUMPTYPE.off);
         config.setOption(IPETConfig.DUMP_ILP, false);
+        config.getDebugGroup().setOption(ProjectConfig.DUMP_TARGET_CALLGRAPH, DUMPTYPE.off);
     }
 
     private void updateWCEP() {

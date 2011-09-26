@@ -40,6 +40,7 @@ import com.jopdesign.common.config.StringOption;
 import com.jopdesign.common.graphutils.Pair;
 import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.tools.ClinitOrder;
+import com.jopdesign.common.tools.UpdatePositions;
 import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MemberID;
 import com.jopdesign.dfa.analyses.CallStringReceiverTypes;
@@ -53,7 +54,6 @@ import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.Flow;
 import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.dfa.framework.Interpreter;
-import org.apache.bcel.classfile.ConstantPool;
 import org.apache.bcel.generic.ACONST_NULL;
 import org.apache.bcel.generic.BranchInstruction;
 import org.apache.bcel.generic.ConstantPoolGen;
@@ -70,16 +70,10 @@ import org.apache.bcel.generic.UnconditionalBranch;
 import org.apache.log4j.Logger;
 
 import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -102,16 +96,17 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     public static final String LOG_DFA_ANALYSES = "dfa.analyses";
     public static final String LOG_DFA_FRAMEWORK = "dfa.framework";
 
-    private static final Logger logger = Logger.getLogger(LOG_DFA+".DFATool");
+    private static final Logger logger = Logger.getLogger(LOG_DFA + ".DFATool");
 
     private AppInfo appInfo;
+    private MethodInfo prologue;
 
     private boolean analyzeBootMethod;
 
     private List<InstructionHandle> statements;
     private Flow flow;
-    private Map<InstructionHandle, ContextMap<CallString, Set<String>>> receivers;
 
+    private CallStringReceiverTypes receivers;
     private LoopBounds loopBounds;
 
     /**
@@ -119,8 +114,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
      * the result state of a method.
      */
     private CustomKey KEY_NOP;
-	private byte[] digest = null;
-	private File cacheDir = null; 
+    private File cacheDir = null;
 
     public DFATool() {
         super("head");
@@ -137,20 +131,20 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
     @Override
     public void registerOptions(Config config) {
-    	config.addOption(OPT_DFA_CACHE_DIR);
+        config.addOption(OPT_DFA_CACHE_DIR);
     }
 
     @Override
     public void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException {
 
-    	if(setup.getConfig().getOption(OPT_DFA_CACHE_DIR) != null) {
-    		this.cacheDir = new File(setup.getConfig().getOption(OPT_DFA_CACHE_DIR));
-    	}
+        if (setup.getConfig().getOption(OPT_DFA_CACHE_DIR) != null) {
+            this.cacheDir = new File(setup.getConfig().getOption(OPT_DFA_CACHE_DIR));
+        }
     }
 
     @Override
     public void onSetupAppInfo(AppSetup setup, AppInfo appInfo) throws BadConfigurationException {
-    	
+
         // We do not call load() here, because some other tool might want to modify the code before
         // running the DFA the first tool..
         KEY_NOP = appInfo.getKeyManager().registerKey(KeyType.STRUCT, "dfa.nop");
@@ -158,6 +152,10 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
     public void setAnalyzeBootMethod(boolean analyzeBootMethod) {
         this.analyzeBootMethod = analyzeBootMethod;
+    }
+
+    public boolean doUseCache() {
+        return cacheDir != null;
     }
 
     /**
@@ -172,6 +170,23 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         flow.clear();
         receivers = null;
 
+        prologue = createPrologue();
+
+        // Now we need to process all classes (for DFA's internal flow graph)
+        for (ClassInfo cls : appInfo.getClassInfos()) {
+            for (MethodInfo mi : cls.getMethods()) {
+                if (mi.hasCode()) {
+                    loadMethod(mi);
+                }
+            }
+        }
+
+        if (cacheDir != null && !appInfo.updateCheckSum(prologue)) {
+            cacheDir = null;
+        }
+    }
+
+    private MethodInfo createPrologue() {
         // find ordering for class initializers
         ClinitOrder c = new ClinitOrder();
         appInfo.iterate(c);
@@ -180,74 +195,11 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
         MethodInfo mainClass = appInfo.getMainMethod();
 
-        // Also compute SHA-1 checksum for this DFA problem
-        // (for caching purposes)
-        // TODO: Maybe this is interesting for other parties as well,
-        // and we should move checksums to common
-        MessageDigest md;
-		try {
-			md = MessageDigest.getInstance("SHA1");
-		} catch (NoSuchAlgorithmException e) {
-			md = null;
-		}
-        
         // create prologue
-        MethodInfo prologue =
-            buildPrologue(mainClass, statements, flow, order);
-        updateChecksum(prologue, md);
-
-        // Now we need to process all classes (for DFA's internal flow graph)
-        List<String> classNames = new ArrayList<String>(appInfo.getClassNames());
-        // We iterate in lexical order to make MD5 checksum a bit more deterministic ..
-        Collections.sort(classNames);
-        for (String name : classNames) {
-            ClassInfo ci = appInfo.getClassInfo(name);
-        	updateCheckSum(ci.getConstantPoolGen().getConstantPool(), md);
-            List<String> methodNames = new ArrayList<String>(ci.getMethodSignatures());
-            for (String method : methodNames) {
-                MethodInfo mi = ci.getMethodInfo(method);
-                if (mi.hasCode()) {
-                    loadMethod(mi);
-                    updateChecksum(mi, md);
-                }
-            }
-        }
-        this.digest = md.digest();
-        logger.info("DFA problem has checksum: "+this.getDigestString());
+        return buildPrologue(mainClass, statements, flow, order);
     }
 
-    /* constant pool to checksum */
-    private void updateCheckSum(ConstantPool cp, MessageDigest md) {
-    	
-    	if(md == null) return;
-    	ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    	DataOutputStream dos = new DataOutputStream(bos);
-    	try {
-    		cp.dump(dos);
-    	} catch (IOException e) {
-    		logger.error("Dumping the constant pool (checksum calculation) failed: "+
-    				e.getMessage());
-    		throw new RuntimeException(e);
-    	}
-    	md.update(bos.toByteArray());		
-	}
-
-	private static void updateChecksum(MethodInfo mi, MessageDigest md) {
-    	if(md == null) return;
-    	ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    	OutputStreamWriter writer = new OutputStreamWriter(bos);
-    	try {
-			writer.append(mi.getFQMethodName());
-			writer.close();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-    	md.update(bos.toByteArray());
-    	// finally, also add the code
-    	md.update(mi.getCode().getInstructionList().getByteCode());
-	}
-
-	/**
+    /**
      * Remove all helper objects. You need to run {@link #load()} again before performing a new analysis.
      */
     public void cleanup() {
@@ -274,7 +226,11 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         this.getStatements().add(exit);
 
         // We do not modify the code, so we leave existing CFGs alone, just make sure the instruction list is uptodate
-        for (Iterator<?> l = mcode.getInstructionList(true, false).iterator(); l.hasNext();) {
+        InstructionList il = mcode.getInstructionList(true, false);
+        // we need correct positions for the DFA cache serialization stuff
+        il.setPositions();
+
+        for (Iterator<?> l = il.iterator(); l.hasNext(); ) {
             InstructionHandle handle = (InstructionHandle) l.next();
             this.getStatements().add(handle);
 
@@ -285,7 +241,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
                     InstructionHandle[] target = s.getTargets();
                     for (InstructionHandle aTarget : target) {
                         this.getFlow().addEdge(new FlowEdge(handle, aTarget,
-                            FlowEdge.TRUE_EDGE));
+                                FlowEdge.TRUE_EDGE));
                     }
                     this.getFlow().addEdge(new FlowEdge(handle, s.getTarget(),
                             FlowEdge.FALSE_EDGE));
@@ -308,7 +264,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
             }
             if (instr instanceof ReturnInstruction) {
                 this.getFlow().addEdge(new FlowEdge(handle, exit,
-                            FlowEdge.NORMAL_EDGE));
+                        FlowEdge.NORMAL_EDGE));
             }
         }
     }
@@ -321,7 +277,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     }
 
     public InstructionHandle getExitHandle(MethodInfo method) {
-        return (InstructionHandle) method.getCustomValue(KEY_NOP); 
+        return (InstructionHandle) method.getCustomValue(KEY_NOP);
     }
 
     private MethodInfo buildPrologue(MethodInfo mainMethod, List<InstructionHandle> statements, Flow flow, List<ClassInfo> clinits) {
@@ -387,7 +343,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 //      System.out.println(prologue);
 
         // add prologue to program structure
-        for (Iterator l = prologue.iterator(); l.hasNext();) {
+        for (Iterator l = prologue.iterator(); l.hasNext(); ) {
             InstructionHandle handle = (InstructionHandle) l.next();
             statements.add(handle);
             if (handle.getInstruction() instanceof GOTO) {
@@ -405,34 +361,32 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         return mi;
     }
 
-    @SuppressWarnings("unchecked")
-	public Map<InstructionHandle, ContextMap<CallString, Set<String>>>  runReceiverAnalysis(int callstringLength) {
-    	
+    public Map<InstructionHandle, ContextMap<CallString, Set<String>>> runReceiverAnalysis(int callstringLength) {
         CallStringReceiverTypes recTys = new CallStringReceiverTypes(callstringLength);
-        Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults;
-        
-        receiverResults = runAnalysis(recTys);
-        setReceivers(receiverResults);
+        @SuppressWarnings({"unchecked"})
+        Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverResults = runAnalysis(recTys);
+
+        setReceivers(recTys);
         return receiverResults;
     }
 
     public void runLoopboundAnalysis(int callstringLength) {
         LoopBounds dfaLoopBounds = new LoopBounds(callstringLength);
         runAnalysis(dfaLoopBounds);
-        setLoopBounds(dfaLoopBounds);        
+        setLoopBounds(dfaLoopBounds);
     }
 
     @SuppressWarnings("unchecked")
     public Map runAnalysis(Analysis analysis) {
-	
-    	/* use cached results if possible */
-    	Map results;
-    	if((results = getCachedResults(analysis)) != null) {
-    		logger.warn("Analysis "+analysis.getId()+": Using cached DFA analysis results");
-    		return results;
-    	}
 
-    	Interpreter interpreter = new Interpreter(analysis, this);
+        /* use cached results if possible */
+        Map results;
+        if ((results = getCachedResults(analysis)) != null) {
+            logger.warn("Analysis " + analysis.getId() + ": Using cached DFA analysis results");
+            return results;
+        }
+
+        Interpreter interpreter = new Interpreter(analysis, this);
 
         MethodInfo main = appInfo.getMainMethod();
         MethodInfo prologue = main.getClassInfo().getMethodInfo(prologueName + prologueSig);
@@ -452,7 +406,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         return analysis.getResult();
     }
 
-	public <K, V>
+    public <K, V>
     Map runLocalAnalysis(Analysis<K,V> localAnalysis, ExecutionContext scope) {
 
         Interpreter<K, V> interpreter = new Interpreter<K, V>(localAnalysis, this);
@@ -486,7 +440,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     }
 
     public Set<String> getReceivers(InstructionHandle stmt, CallString cs) {
-        ContextMap<CallString, Set<String>> map = receivers.get(stmt);
+        ContextMap<CallString, Set<String>> map = receivers.getResult().get(stmt);
         if (map == null) {
             return null;
         }
@@ -509,7 +463,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         return methods;
     }
 
-    public void setReceivers(Map<InstructionHandle, ContextMap<CallString, Set<String>>> receivers) {
+    public void setReceivers(CallStringReceiverTypes receivers) {
         this.receivers = receivers;
     }
 
@@ -567,81 +521,110 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         }
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream os = new PrintStream( baos );
+        PrintStream os = new PrintStream(baos);
         Map<InstructionHandle, ContextMap<CallString, Pair<ValueMapping, ValueMapping>>> results = getLoopBounds().getResult();
         if (results == null) return "n/a";
 
-        AnalysisResultSerialization<Pair<ValueMapping,ValueMapping>> printer = 
-        	new AnalysisResultSerialization<Pair<ValueMapping,ValueMapping>>();
-        for(Entry<InstructionHandle, ContextMap<CallString, Pair<ValueMapping, ValueMapping>>> ihEntry : 
-        	results.entrySet()) {
-        	for(Entry<CallString, Pair<ValueMapping, ValueMapping>> csEntry : 
-        		ihEntry.getValue().entrySet()) {
-        			if(ihEntry.getValue().getContext().getMethodInfo().equals(method)) {
-        				printer.addResult(method, ihEntry.getKey().getPosition(), csEntry.getKey(), csEntry.getValue());
-        			}
-        	}
+        AnalysisResultSerialization<Pair<ValueMapping, ValueMapping>> printer =
+                new AnalysisResultSerialization<Pair<ValueMapping, ValueMapping>>();
+        for (Entry<InstructionHandle, ContextMap<CallString, Pair<ValueMapping, ValueMapping>>> ihEntry :
+                results.entrySet()) {
+            for (Entry<CallString, Pair<ValueMapping, ValueMapping>> csEntry :
+                    ihEntry.getValue().entrySet()) {
+                if (ihEntry.getValue().getContext().getMethodInfo().equals(method)) {
+                    printer.addResult(method, ihEntry.getKey().getPosition(), csEntry.getKey(), csEntry.getValue());
+                }
+            }
         }
         printer.dump(os);
         try {
-			return baos.toString("UTF-8");
-		} catch (UnsupportedEncodingException e) {
-			return baos.toString();
-		}
+            return baos.toString("UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            return baos.toString();
+        }
     }
-    
+
+    /* Updating DFA results iteratively */
+    /* -------------------------------- */
+
+    /**
+     * @param method the method containing the new instructions
+     * @param newHandles key is old handle, value is new handle. Value can be null.
+     */
+    public void copyResults(MethodInfo method, Map<InstructionHandle,InstructionHandle> newHandles) {
+        // TODO this is sort of a hack for now .. We should support updating call strings as well
+        if (receivers != null) {
+            receivers.copyResults(method, newHandles);
+        }
+        if (loopBounds != null) {
+            loopBounds.copyResults(method, newHandles);
+        }
+    }
+
+
     /* Caching DFA results */
     /* ------------------- */
-    
-    public static final StringOption OPT_DFA_CACHE_DIR = 
-    	new StringOption("dfa-cache-dir","If dataflow analysis results should " +
-    			"be cached, specify a cache dir to store the results in",true);
-	
-	/** If caching is enabled, safe the cached results for the given analysis*/
-    private void writeCachedResults(Analysis analysis) {
-    	if(cacheDir == null) return;
-    	try {
-        	analysis.serializeResult(getCacheFile(analysis));
-		} catch (IOException e) {
-			logger.error("Failed to serialize analysis results: "+e);
-		}
-	}
 
-    /** If caching is enabled, look for cached results for the given analysis*/
-	private Map getCachedResults(Analysis analysis) {
-		if(cacheDir == null) return null;
-		File cacheFile = getCacheFile(analysis);
-		try {
-			if(! cacheFile.exists()) return null;
-			return analysis.deSerializeResult(appInfo, cacheFile);
-		} catch(IOException ex) {
-			logger.error("Deserialization of " + analysis.getId() + " result failed",ex);
-		} catch (ClassNotFoundException ex) {
-			logger.error("Deserialization of " + analysis.getId() + " result failed",ex);
-		} catch (MethodNotFoundException ex) {
-			logger.error("Deserialization of " + analysis.getId() + " result failed",ex);
-		}
-		return null;
-	}
+    public static final StringOption OPT_DFA_CACHE_DIR =
+            new StringOption("dfa-cache-dir", "If dataflow analysis results should " +
+                    "be cached, specify a cache dir to store the results in", true);
+
+    /**
+     * Recalculate the checksum and write all results to the cache files.
+     * @param recreatePrologue if true, reconstruct the prologue
+     */
+    public void writeCachedResults(boolean recreatePrologue) {
+        if (recreatePrologue) {
+            // TODO this is a BIG hack, we should remove the prologue from the cache key
+            //      recreation is needed because the optimizer removes the prologue
+            //      and we need to create the correct constant-pool entries
+            cleanup();
+            prologue = createPrologue();
+        }
+        appInfo.iterate(new UpdatePositions());
+        appInfo.updateCheckSum(prologue);
+        writeCachedResults(loopBounds);
+        writeCachedResults(receivers);
+    }
+
+    /**
+     * If caching is enabled, safe the cached results for the given analysis
+     */
+    public void writeCachedResults(Analysis analysis) {
+        if (cacheDir == null) return;
+        try {
+            analysis.serializeResult(getCacheFile(analysis));
+        } catch (IOException e) {
+            logger.error("Failed to serialize analysis results: " + e);
+        }
+    }
+
+    /**
+     * If caching is enabled, look for cached results for the given analysis
+     */
+    private Map getCachedResults(Analysis analysis) {
+        if (cacheDir == null) return null;
+        File cacheFile = getCacheFile(analysis);
+        try {
+            if (!cacheFile.exists()) return null;
+            return analysis.deSerializeResult(appInfo, cacheFile);
+        } catch (IOException ex) {
+            logger.error("Deserialization of " + analysis.getId() + " result failed", ex);
+        } catch (ClassNotFoundException ex) {
+            logger.error("Deserialization of " + analysis.getId() + " result failed", ex);
+        } catch (MethodNotFoundException ex) {
+            logger.error("Deserialization of " + analysis.getId() + " result failed", ex);
+        }
+        return null;
+    }
 
     private File getCacheFile(Analysis analysis) {
-    	if(cacheDir == null) {
-    		throw new AssertionError("Invariant violated: getCacheFile should only be called if cacheDir is non-null");
-		}
-    	String key = analysis.getId() + "-" + getDigestString();
-		String cacheFile = "dfa-" + key + ".dat";
-		return new File(cacheDir , cacheFile);
-	}
-    
-	private static final char[] digits = "0123456789abcdef".toCharArray();
-    private String getDigestString() {
-    	StringBuffer sb = new StringBuffer();
-    	for(byte b : digest) {
-    		int v = b < 0 ? (256 + b) : b;
-    		sb.append(digits[v >> 4]);
-    		sb.append(digits[v & 0xF]);
-    	}
-    	return sb.toString();
+        if (cacheDir == null) {
+            throw new AssertionError("Invariant violated: getCacheFile should only be called if cacheDir is non-null");
+        }
+        String key = analysis.getId() + "-" + appInfo.getDigestString();
+        String cacheFile = "dfa-" + key + ".dat";
+        return new File(cacheDir, cacheFile);
     }
 
 }

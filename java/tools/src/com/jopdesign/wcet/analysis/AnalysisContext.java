@@ -33,4 +33,10 @@ import com.jopdesign.common.code.ExecutionContext;
 public interface AnalysisContext {
 	CallString getCallString();
 	ExecutionContext getExecutionContext(CFGNode n);
+
+    /**
+     * @return a short key for this context used for filename generation. The name must not be too long, else
+     *    we run into problems with dot on windows.
+     */
+    String getKey();
 }

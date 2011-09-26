@@ -78,6 +78,7 @@ public class GreedyOptimizer {
 
     private int countCandidates;
     private int countOptimized;
+    private int maxSteps;
 
     private static final Logger logger = Logger.getLogger(JCopter.LOG_OPTIMIZER+".GreedyOptimizer");
 
@@ -136,7 +137,7 @@ public class GreedyOptimizer {
             selector = new ACETRebateSelector(analyses, new GainCalculator(analyses), config.getMaxCodesize());
         }
 
-        selector.initialize();
+        selector.initialize(config, true);
 
         ExecFrequencyProvider ecp = useWCAProvider ? analyses.getWCAInvoker() : analyses.getExecFrequencyAnalysis();
 
@@ -145,6 +146,9 @@ public class GreedyOptimizer {
         }
 
         // dump initial callgraph
+        logger.info("Initial number of methods in target callgraph: "+
+                analyses.getTargetCallGraph().getMethodInfos().size());
+
         analyses.getTargetCallGraph().dumpCallgraph(jcopter.getJConfig().getConfig(),
                   "greedy-target", config.getTargetCallgraphDumpType(), true);
 
@@ -180,7 +184,7 @@ public class GreedyOptimizer {
             //analyses.dumpTargetCallgraph("acet", true);
 
             selector = new ACETRebateSelector(analyses, new GainCalculator(analyses), config.getMaxCodesize());
-            selector.initialize();
+            selector.initialize(config, false);
 
             ecp = analyses.getExecFrequencyAnalysis();
             if (config.useLocalExecCount()) {
@@ -222,6 +226,7 @@ public class GreedyOptimizer {
     private void resetCounters() {
         countCandidates = 0;
         countOptimized = 0;
+        maxSteps = config.getMaxSteps();
     }
 
     private void printStatistics() {
@@ -251,6 +256,10 @@ public class GreedyOptimizer {
         Map<MethodInfo,MethodData> methodData = new HashMap<MethodInfo, MethodData>(methods.size());
 
         selector.clear();
+
+        if (maxSteps > 0 && countOptimized >= maxSteps) {
+            return;
+        }
 
         // first find and initialize all candidates
         for (MethodInfo method : methods) {
@@ -297,26 +306,33 @@ public class GreedyOptimizer {
                 if (!c.optimize(analyses, stacksize)) continue;
                 countOptimized++;
 
+                if (maxSteps > 0 && countOptimized >= maxSteps) {
+                    return;
+                }
+
                 // to update maxStack and positions
                 method.getCode().compile();
 
                 // Now we need to update the stackAnalysis and find new candidates in the optimized code
-                stacksize.analyze(c.getStart(), c.getEnd());
-
-                int locals = c.getMaxLocalsInRegion();
-
-                // find new candidates in optimized code
                 List<Candidate> newCandidates = new ArrayList<Candidate>();
-                for (CodeOptimizer optimizer : optimizers) {
-                    Collection<Candidate> found;
-                    found = optimizer.findCandidates(method, analyses, stacksize, locals, c.getStart(), c.getEnd());
-                    newCandidates.addAll(found);
+                if (c.getStart() != null) {
+                    stacksize.analyze(c.getStart(), c.getEnd());
+
+                    int locals = c.getMaxLocalsInRegion();
+
+                    // find new candidates in optimized code
+                    for (CodeOptimizer optimizer : optimizers) {
+                        Collection<Candidate> found;
+                        found = optimizer.findCandidates(method, analyses, stacksize, locals, c.getStart(), c.getEnd());
+                        newCandidates.addAll(found);
+                    }
+
+                    countCandidates += newCandidates.size();
                 }
 
                 // Notify selector to update codesize, remove unreachable methods and to replace
                 // old candidates with new ones
                 selector.onSuccessfulOptimize(c, newCandidates);
-                countCandidates += newCandidates.size();
 
                 optimizedMethods.add(method);
             }

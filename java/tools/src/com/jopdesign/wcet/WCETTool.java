@@ -179,7 +179,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
 
     @Override
     public void registerOptions(Config config) {
-        config.addOptions(CallGraph.dumpOptions);
+        CallGraph.registerOptions(config);
         // TODO maybe put some of the options into OptionGroups to make '--help' a bit clearer
         ProjectConfig.registerOptions(config, standaloneOptions, uppaalOptions, reportOptions);
         config.addOptions(IPETConfig.ipetOptions, ipetOptions);
@@ -360,7 +360,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
 
         try {
             callGraph.dumpCallgraph(config, graphName, "target", null,
-                    config.getOption(ProjectConfig.DUMP_TARGET_CALLGRAPH), false);
+                    config.getDebugGroup().getOption(ProjectConfig.DUMP_TARGET_CALLGRAPH), false);
         } catch (IOException e) {
             logger.warn("Unable to dump the target method callgraph", e);
         }
@@ -666,6 +666,8 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         // FIXME: At the moment, we do not have a nice directory structure respecting
         //        the fact that we perform many WCET analyses for one Application
 
+        dfaTool.setAnalyzeBootMethod(projectConfig.doAnalyzeBootMethod());
+
         // TODO this is the same code as in JCopter PhaseExecutor
         dfaTool.load();
         
@@ -676,6 +678,10 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         dfaTool.runLoopboundAnalysis(getCallstringLength());
 
         this.hasDfaResults = true;
+    }
+
+    public void setHasDfaResults(boolean hasDfaResults) {
+        this.hasDfaResults = hasDfaResults;
     }
 
     /**

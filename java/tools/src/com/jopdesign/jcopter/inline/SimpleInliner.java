@@ -60,6 +60,8 @@ import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -153,6 +155,8 @@ public class SimpleInliner extends AbstractOptimizer {
     private int requiresNPCheck;
     private int signatureMismatch;
     private int codesizeTooLarge;
+    private int countInvokeSites;
+    private int countDevirtualized;
 
     public SimpleInliner(JCopter jcopter, InlineConfig inlineConfig) {
         super(jcopter, true);
@@ -167,22 +171,36 @@ public class SimpleInliner extends AbstractOptimizer {
         requiresNPCheck = 0;
         signatureMismatch = 0;
         codesizeTooLarge = 0;
+        countInvokeSites = 0;
+        countDevirtualized = 0;
     }
 
     @Override
     public void optimizeMethod(MethodInfo method) {
-        ConstantPoolGen cpg = method.getConstantPoolGen();
-        InstructionList il = method.getCode().getInstructionList();
         InlineData inlineData = new InlineData();
 
-        for (InvokeSite invoke : method.getCode().getInvokeSites()) {
+        List<InvokeSite> invokes = new ArrayList<InvokeSite>( method.getCode().getInvokeSites() );
+        // we iterate over the invoke sites in a sorted order for the single reason that the DFA cache hack works
+        // (else the order of the entries in the constantpool can differ)
+        Collections.sort(invokes, new Comparator<InvokeSite>() {
+            @Override
+            public int compare(InvokeSite o1, InvokeSite o2) {
+                return o1.getInstructionHandle().getPosition() - o2.getInstructionHandle().getPosition();
+            }
+        });
+        for (InvokeSite invoke : invokes) {
 
             // The callstring contains 'original' invokesites from the unmodified callgraph,
             // 'invoke' refers to the new invokesite in the modified code
             CallString cs = new CallString(invoke);
 
             while (invoke != null) {
+                countInvokeSites++;
+
                 MethodInfo invokee = helper.devirtualize(cs);
+                if (invokee == null) break;
+
+                countDevirtualized++;
 
                 // Preliminary checks
                 if (checkInvoke(invoke, cs, invokee, inlineData)) {
@@ -216,6 +234,8 @@ public class SimpleInliner extends AbstractOptimizer {
     @Override
     public void printStatistics() {
         logger.info("Inlined "+inlineCounter+" invoke sites.");
+        logger.info("Found invoke sites: "+countInvokeSites+
+                    ", not devirtualized: "+(countInvokeSites-countDevirtualized));
         logger.info("Candidates: "+candidates+"; need NP check: "+ requiresNPCheck +", uncorrectable signature mismatch: "+
                 signatureMismatch +", unhandled instruction: "+unhandledInstructions+", codesize: "+codesizeTooLarge);
     }
@@ -340,7 +360,7 @@ public class SimpleInliner extends AbstractOptimizer {
             }
             else if (instruction instanceof FieldInstruction) {
                 if (instruction instanceof GETFIELD) {
-                    hasNPCheck |= values.getValueTable().top(1).isThisReference();
+                    hasNPCheck |= values.getValueTable().top().isThisReference();
                 }
                 if (instruction instanceof PUTFIELD) {
                     int down = values.getValueTable().top().isContinued() ? 2 : 1;

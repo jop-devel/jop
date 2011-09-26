@@ -306,7 +306,7 @@ init:
 	make directories
 	make tools
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SERIAL
-	make jop_config
+	make jop_config 
 
 # build the Java application and download it
 japp:
@@ -317,7 +317,7 @@ japp:
 # configure the FPGA
 config:
 ifeq ($(USB),true)
-	make config_usb -e USB=true
+	make config_usb
 else
 ifeq ($(XFPGA),true)
 	make config_xilinx
@@ -403,11 +403,7 @@ cprog:
 #	compile and JOPize the application
 #
 JCOPTER_DEFAULT_OPTS=--use-dfa $(USE_DFA) --callstring-length $(CALLSTRING_LENGTH) --sp $(TARGET_SOURCE) 
-ifeq (${JCOPTER_USE_WCA},no)
-  JCOPTER_OPTIONS=--no-use-wca $(JCOPTER_DEFAULT_OPTS) ${JCOPTER_OPT} 
-else
-  JCOPTER_OPTIONS=--use-wca --wca-target ${WCET_METHOD} $(JCOPTER_DEFAULT_OPTS) ${JCOPTER_OPT}   
-endif
+JCOPTER_OPTIONS=$(JCOPTER_DEFAULT_OPTS) ${JCOPTER_OPT} 
 
 jop_config:
 	java $(TOOLS_CP) com.jopdesign.tools.GenJopConfig $(JOP_CONF_STR) > $(TARGET)/src/common/com/jopdesign/sys/Config.java
@@ -435,11 +431,20 @@ endif
            -c $(TARGET)/dist/classes -o $(TARGET)/dist $(MAIN_CLASS)
 # Optimize
 ifeq ($(USE_JCOPTER),yes)
+ifeq (${JCOPTER_USE_WCA},no)
+	mv $(TARGET)/dist/classes $(TARGET)/dist/classes.unopt
 	java -Xmx1280M $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter \
 	   -c $(TARGET)/dist/classes -o $(TARGET)/dist --classdir $(TARGET)/dist/classes.opt \
-	   $(JCOPTER_OPTIONS) $(MAIN_CLASS)
-	mv $(TARGET)/dist/classes $(TARGET)/dist/classes.unopt
-	mv $(TARGET)/dist/classes.opt $(TARGET)/dist/classes
+	   --no-use-wca $(JCOPTER_OPTIONS) $(MAIN_CLASS)
+else
+	for target in ${WCET_METHOD}; do \
+	  rm -rf $(TARGET)/dist/classes.unopt; \
+	  mv $(TARGET)/dist/classes $(TARGET)/dist/classes.unopt; \
+	  java -Xmx1280M $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter \
+	   -c $(TARGET)/dist/classes.unopt -o $(TARGET)/dist --classdir $(TARGET)/dist/classes \
+	   --use-wca --wca-target $${target} $(JCOPTER_OPTIONS) $(MAIN_CLASS) || exit 1; \
+	done
+endif
 endif 
 	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
 # use SymbolManager for Paulo's version of JOPizer instead
@@ -768,15 +773,17 @@ WCET_VERIFYTA?=verifyta	 # only needed if WCET_UPPAAL=yes
 wcet:
 	-mkdir -p $(TARGET)/wcet
 	# Reading the classes.zip does not work correctly for optimized code because we need the sourcelines.txt
-	java -Xss16M -Xmx1280M $(JAVA_OPT) \
-	  $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis \
+	for target in $(WCET_METHOD); do \
+	  java -Xss16M -Xmx1280M $(JAVA_OPT) \
+	    $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis \
 		--classpath $(TARGET)/dist/classes --sp $(TARGET_SOURCE) \
-		--target-method $(WCET_METHOD) \
+		--target-method $${target} \
 		-o "$(TARGET)/wcet/\$${projectname}" \
 		--use-dfa $(WCET_DFA) $(DFA_CACHE) \
 		--uppaal $(WCET_UPPAAL) --uppaal-verifier $(WCET_VERIFYTA) \
 		--callstring-length $(CALLSTRING_LENGTH) \
-		$(WCET_OPTIONS) $(MAIN_CLASS)	
+		$(WCET_OPTIONS) $(MAIN_CLASS) || exit 1; \
+	done	
 
 # WCET help
 wcet_help:

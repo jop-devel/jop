@@ -63,33 +63,48 @@ public class PhaseExecutor {
 
     public static final Logger logger = Logger.getLogger(JCopter.LOG_ROOT + ".PhaseExecutor");
 
-    public static final BooleanOption REMOVE_UNUSED_MEMBERS =
+    private static final BooleanOption REMOVE_UNUSED_MEMBERS =
             new BooleanOption("remove-unused-members", "Remove unreachable code", true);
 
-    public static final EnumOption<DUMPTYPE> DUMP_CALLGRAPH =
+    private static final BooleanOption CLEANUP_CONSTANT_POOL =
+            new BooleanOption("cleanup-cp", "Remove unused constant pool entries", true);
+
+    private static final EnumOption<DUMPTYPE> DUMP_CALLGRAPH =
             new EnumOption<DUMPTYPE>("dump-callgraph", "Dump the app callgraph (with or without callstrings)", CallGraph.DUMPTYPE.merged);
 
-    public static final EnumOption<DUMPTYPE> DUMP_JVM_CALLGRAPH =
+    private static final EnumOption<DUMPTYPE> DUMP_JVM_CALLGRAPH =
             new EnumOption<DUMPTYPE>("dump-jvm-callgraph", "Dump the jvm callgraph (with or without callstrings)", CallGraph.DUMPTYPE.off);
 
-    public static final BooleanOption DUMP_NOIM_CALLS =
+    private static final BooleanOption DUMP_NOIM_CALLS =
             new BooleanOption("dump-noim-calls", "Include calls to JVMHelp.noim() in the jvm callgraph dump", false);
 
+    private static final BooleanOption SIMPLE_INLINER =
+            new BooleanOption("simple-inliner", "Use fast inliner to inline getter,setter and wrapper", true);
 
-    public static final Option[] phaseOptions = {
-            DUMP_CALLGRAPH, DUMP_JVM_CALLGRAPH, DUMP_NOIM_CALLS, CallGraph.CALLGRAPH_DIR,
+    private static final Option[] optimizeOptions = {
+            SIMPLE_INLINER,
+            REMOVE_UNUSED_MEMBERS,
+            CLEANUP_CONSTANT_POOL
         };
-    public static final Option[] optimizeOptions = {
-            REMOVE_UNUSED_MEMBERS
+
+    private static final Option[] debugOptions = {
+            DUMP_CALLGRAPH, DUMP_JVM_CALLGRAPH, DUMP_NOIM_CALLS,
         };
 
-    public static final String GROUP_OPTIMIZE = "opt";
-    public static final String GROUP_GREEDY = "greedy";
-    public static final String GROUP_INLINE   = "inline";
+    private static final String GROUP_OPTIMIZE = "opt";
+    private static final String GROUP_GREEDY = "greedy";
+    private static final String GROUP_INLINE   = "inline";
 
-    public static void registerOptions(OptionGroup options) {
+    public static void registerOptions(Config config) {
+        OptionGroup options = config.getOptions();
+
+        CallGraph.registerOptions(config);
+
         // Add phase options
-        options.addOptions(phaseOptions);
+        // .. nothing to configure yet ..
+
+        // add debug options
+        config.getDebugGroup().addOptions(debugOptions);
 
         // Add options of all used optimizations
         OptionGroup opt = options.getGroup(GROUP_OPTIMIZE);
@@ -107,6 +122,8 @@ public class PhaseExecutor {
     private final OptionGroup options;
     private final AppInfo appInfo;
 
+    private boolean updateDFA;
+
     private GreedyConfig greedyConfig;
     private InlineConfig inlineConfig;
 
@@ -122,10 +139,22 @@ public class PhaseExecutor {
             greedyConfig = new GreedyConfig(jcopter, getGreedyOptions());
         }
         inlineConfig = new InlineConfig(jcopter, getInlineOptions());
+
+        if (getOptimizeOptions().getOption(REMOVE_UNUSED_MEMBERS) &&
+           !getOptimizeOptions().getOption(CLEANUP_CONSTANT_POOL))
+        {
+            // we cannot remove members if we do not cleanup the constantpool, this would
+            // break the transitive-hull loader
+            logger.warn("Disabling unused code remover because constant-pool cleanup is disabled.");
+        }
     }
 
     public Config getConfig() {
         return options.getConfig();
+    }
+
+    public OptionGroup getDebugConfig() {
+        return jcopter.getJConfig().getConfig().getDebugGroup();
     }
 
     public JCopterConfig getJConfig() {
@@ -149,7 +178,20 @@ public class PhaseExecutor {
     }
 
     public boolean useCodeRemover() {
-        return getOptimizeOptions().getOption(REMOVE_UNUSED_MEMBERS) && !getJConfig().doAssumeReflection();
+        return getOptimizeOptions().getOption(REMOVE_UNUSED_MEMBERS) &&
+                !getJConfig().doAssumeReflection() && useConstantPoolCleanup();
+    }
+
+    public boolean useConstantPoolCleanup() {
+        return getOptimizeOptions().getOption(CLEANUP_CONSTANT_POOL);
+    }
+
+    public void setUpdateDFA(boolean updateDFA) {
+        // TODO bit of a hack, we currently only support updating if callstrings are empty
+        if (updateDFA && appInfo.getCallstringLength() != 0) {
+            logger.warn("Not updating DFA cache since callstrings are not of zero length");
+        }
+        this.updateDFA = updateDFA && appInfo.getCallstringLength() == 0;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
@@ -157,8 +199,8 @@ public class PhaseExecutor {
     /////////////////////////////////////////////////////////////////////////////////////
 
     public void dumpCallgraph(String graphName) {
-        if (getConfig().getOption(DUMP_CALLGRAPH) == CallGraph.DUMPTYPE.off &&
-            getConfig().getOption(DUMP_JVM_CALLGRAPH) == CallGraph.DUMPTYPE.off)
+        if (getDebugConfig().getOption(DUMP_CALLGRAPH) == CallGraph.DUMPTYPE.off &&
+            getDebugConfig().getOption(DUMP_JVM_CALLGRAPH) == CallGraph.DUMPTYPE.off)
         {
             return;
         }
@@ -190,15 +232,15 @@ public class PhaseExecutor {
                 }
             }
 
-            Config config = getConfig();
+            OptionGroup debug = getDebugConfig();
 
             // TODO to keep the CG size down, we could add options to exclude methods (like '<init>') or packages
             // from dumping and skip dumping methods reachable only over excluded methods
 
-            graph.dumpCallgraph(config, graphName, "app", appRoots, config.getOption(DUMP_CALLGRAPH), false);
-            graph.dumpCallgraph(config, graphName, "clinit", clinitRoots, config.getOption(DUMP_CALLGRAPH), false);
-            graph.dumpCallgraph(config, graphName, "jvm", jvmRoots, config.getOption(DUMP_JVM_CALLGRAPH),
-                                                                   !config.getOption(DUMP_NOIM_CALLS));
+            graph.dumpCallgraph(getConfig(), graphName, "app", appRoots, debug.getOption(DUMP_CALLGRAPH), false);
+            graph.dumpCallgraph(getConfig(), graphName, "clinit", clinitRoots, debug.getOption(DUMP_CALLGRAPH), false);
+            graph.dumpCallgraph(getConfig(), graphName, "jvm", jvmRoots, debug.getOption(DUMP_JVM_CALLGRAPH),
+                                                                   !debug.getOption(DUMP_NOIM_CALLS));
 
         } catch (IOException e) {
             throw new AppInfoError("Unable to export to .dot file", e);
@@ -227,6 +269,11 @@ public class PhaseExecutor {
         if (loopBounds) {
             logger.info("Loop bound analysis");
             dfaTool.runLoopboundAnalysis(callstringLength);
+
+            // need to tell this to the WCA tool
+            if (jcopter.useWCA()) {
+                jcopter.getWcetTool().setHasDfaResults(true);
+            }
         }
 
         dfaTool.cleanup();
@@ -275,6 +322,11 @@ public class PhaseExecutor {
      */
     public void performSimpleInline() {
         // We never increase codesize, we do not copy methods, we are quite fast.. so just do this always ..
+        // .. almost
+        if (!getOptimizeOptions().getOption(SIMPLE_INLINER)) {
+            logger.info("SimpleInliner has been disabled.");
+            return;
+        }
 
         // .. well, almost always.
         if (getJConfig().doAssumeDynamicClassLoader()) {
@@ -303,7 +355,10 @@ public class PhaseExecutor {
             // we do not have any other CodeOptimizers for now, remove return when we have some more
             return;
         } else {
-            optimizer.addOptimizer( new InlineOptimizer(jcopter, inlineConfig ) );
+            InlineOptimizer inliner = new InlineOptimizer(jcopter, inlineConfig);
+            inliner.setUpdateDFA(updateDFA);
+
+            optimizer.addOptimizer(inliner);
         }
         logger.info("Starting greedy optimizer");
 
@@ -349,7 +404,7 @@ public class PhaseExecutor {
      */
     public void removeUnusedMembers() {
 
-        if (!getOptimizeOptions().getOption(REMOVE_UNUSED_MEMBERS)) {
+        if (!useCodeRemover()) {
             return;
         }
         // If reflection is used, we cannot remove unreferenced code since we might miss references by reflection
@@ -360,7 +415,11 @@ public class PhaseExecutor {
 
         logger.info("Starting removal of unused members");
 
-        new UnusedCodeRemover(jcopter, getOptimizeOptions()).execute();
+        UnusedCodeRemover codeRemover = new UnusedCodeRemover(jcopter, getOptimizeOptions());
+        if (useCodeRemover()) {
+
+        }
+        codeRemover.execute();
 
         logger.info("Finished removal of unused members");
     }
@@ -369,11 +428,29 @@ public class PhaseExecutor {
      * Rebuild all constant pools.
      */
     public void cleanupConstantPool() {
+        if (!useConstantPoolCleanup()) {
+            return;
+        }
+
         logger.info("Starting cleanup of constant pools");
 
         appInfo.iterate(new ConstantPoolRebuilder());
 
         logger.info("Finished cleanup of constant pools");
+    }
+
+    public void writeResults() {
+        if (updateDFA) {
+            if (useConstantPoolCleanup()) {
+                logger.warn("Dumping DFA results, but this only works if cleanup-cp is disabled.");
+            }
+            logger.info("Writing updated DFA results to cache");
+            // TODO recreating the prologue after we cleaned up the code is a big messy hack
+            //      we could remove the prologue afterwards again
+            //      but we need it while the checksum is calculated, because we need the constant-pool
+            //      entries in place, the same way as in the WCA later, else the key is different.
+            jcopter.getDfaTool().writeCachedResults(true);
+        }
     }
 
 }

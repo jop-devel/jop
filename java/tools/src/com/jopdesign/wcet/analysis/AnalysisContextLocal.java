@@ -85,9 +85,11 @@ public class AnalysisContextLocal implements AnalysisContext {
 	 */
 	@Override
 	public String toString() {
-		return "AnalysisContextLocal [callString=" + callString + ", mode="
-				+ mode + "]";
+		return "AnalysisContextLocal [callstring=" + callString + ", mode=" + mode + "]";
 	}
 
-	
+    @Override
+    public String getKey() {
+        return callString+","+mode;
+    }
 }

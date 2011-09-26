@@ -301,6 +301,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		Map<String,Object> stats = new HashMap<String, Object>();
 		stats.put("WCET",sol.getCost());
 		stats.put("mode",key.ctx);
+
 		MethodCacheAnalysis mca = new MethodCacheAnalysis(getWCETTool());
 		stats.put("all-methods-fit-in-cache", mca.isPersistenceRegion(getWCETTool(), m, 
 				key.ctx.getCallString(), EnumSet.allOf(PersistenceCheck.class)));

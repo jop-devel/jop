@@ -77,7 +77,7 @@ public class Report {
         this.project = p;
         this.config = new ReportConfig(p, logConfig);
         if (config.doInvokeDot()) {
-            this.dotInvoker = new InvokeDot(config.getDotBinary(), config.getReportDir());
+            this.dotInvoker = new InvokeDot(InvokeDot.getDotBinary(p.getConfig()), config.getReportDir());
         }
     }
 

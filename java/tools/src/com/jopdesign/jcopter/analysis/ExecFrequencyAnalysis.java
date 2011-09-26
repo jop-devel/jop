@@ -35,7 +35,6 @@ import com.jopdesign.common.graphutils.BackEdgeFinder;
 import com.jopdesign.common.graphutils.EdgeProvider;
 import com.jopdesign.common.graphutils.GraphUtils;
 import com.jopdesign.common.graphutils.LoopColoring;
-import com.jopdesign.common.misc.Ternary;
 import com.jopdesign.jcopter.JCopter;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
@@ -46,7 +45,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -301,44 +299,24 @@ public class ExecFrequencyAnalysis extends ExecFrequencyProvider {
             if (logger.isTraceEnabled()) {
                 logger.trace("Updating: " + next);
             }
-            updateChilds(next, callGraph.getChildren(next));
+            updateChilds(next);
         }
     }
 
-    private void updateChilds(ExecutionContext context, List<ExecutionContext> childs) {
+    private void updateChilds(ExecutionContext context) {
 
         long ecCount = nodeCount.get(context);
-        List<ExecutionContext> emptyCSNodes = new LinkedList<ExecutionContext>();
 
-        for (ExecutionContext child : childs) {
-            long count;
+        for (Map.Entry<InvokeSite,Set<ExecutionContext>> entry :
+                callGraph.getChildsPerInvokeSite(context).entrySet())
+        {
+            InvokeSite invokeSite = entry.getKey();
 
-            if (!child.getCallString().isEmpty()) {
-                // simple case: if we have a callstring, the top entry is the invokesite in the invoker
+            long count = ecCount * getExecFrequency(context, invokeSite.getInstructionHandle());
 
-                //long count = getExecCount(context, child.getCallString().top().getInstructionHandle());
-                // This is faster but needs to be changed if we make getExecCount more precise for instructions
-                count = ecCount * getExecFrequency(context, child.getCallString().top().getInstructionHandle());
-
+            for (ExecutionContext child : entry.getValue()) {
                 addExecCount(child, count);
-            } else {
-                // tricky case: no callstring, we need to find all invokesites in the invoker and sum up all exec counts
-                emptyCSNodes.add(child);
             }
-        }
-
-        if (emptyCSNodes.isEmpty()) return;
-
-        for (InvokeSite invokeSite : context.getMethodInfo().getCode().getInvokeSites()) {
-            long count = getExecCount(context, invokeSite.getInstructionHandle());
-
-            // for all methods which could be invoked, add the exec count
-            for (ExecutionContext child : emptyCSNodes) {
-                if (invokeSite.canInvoke(child.getMethodInfo()) == Ternary.TRUE) {
-                    addExecCount(child, count);
-                }
-            }
-
         }
     }
 
