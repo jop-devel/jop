@@ -41,11 +41,12 @@ DEFAULT_OPTS=--greedy.targets wca \
 	     --greedy.use-wcep-ef false \
 	     --greedy.cache-analysis ALL_FIT_REGIONS \
 	     --greedy.wca-cache-analysis ALL_FIT_REGIONS 
-OPTS=--greedy.cache-analysis ALWAYS_MISS --greedy.wca-cache-analysis ALWAYS_MISS
-OPTS=--greedy.cache-analysis ALWAYS_MISS_OR_HIT
+#OPTS=--greedy.cache-analysis ALWAYS_MISS --greedy.wca-cache-analysis ALWAYS_MISS
+#OPTS=--greedy.cache-analysis ALWAYS_MISS_OR_HIT
 #OPTS=--greedy.order TopDown
 #OPTS=--greedy.order BottomUp 
 #OPTS=-O 1  
+OPTS=--opt.simple-inliner false
 
 # Options for JCopter and WCETAnalysis
 P1=test
@@ -77,8 +78,30 @@ debie_orig:
 	$(MAKE) P1=bench P2=debie/harness P3=Harness CALLSTRING_LENGTH=0 USE_SCOPES=false bench_orig  
 
 debie_down:
-	$(MAKE) P1=bench P2=debie/harness P3=Harness down
+	$(MAKE) P1=bench P2=debie/harness P3=Harness CALLSTRING_LENGTH=0 USE_SCOPES=false down_orig	
 
+debie_aopt:
+	$(MAKE) P1=bench P2=debie/harness P3=Harness CALLSTRING_LENGTH=0 USE_SCOPES=false \
+		OPTS="${OPTS} --inline.exclude-wca-targets false" down_opt	
+
+debie_dopt_all:
+	$(MAKE) WCET_METHOD="debie.telecommand.TelecommandExecutionTask.tcInterruptService \
+	                     debie.telecommand.TelecommandExecutionTask.tmInterruptService \
+			     debie.particles.AcquisitionTask.handleHitTrigger              \
+			     debie.telecommand.TelecommandExecutionTask.handleTelecommand  \
+			     debie.particles.AcquisitionTask.handleAcquisition" debie_aopt
+
+debie_opt_all:
+	$(MAKE) WCET_METHOD="debie.telecommand.TelecommandExecutionTask.tcInterruptService \
+	                     debie.telecommand.TelecommandExecutionTask.tmInterruptService \
+			     debie.particles.AcquisitionTask.handleHitTrigger              \
+			     debie.telecommand.TelecommandExecutionTask.handleTelecommand  \
+			     debie.particles.AcquisitionTask.handleAcquisition" debie_opt
+
+#debie_down:
+#	$(MAKE) P1=bench P2=debie/harness P3=Harness down
+
+# I am sure there is a nicer way to do this but I am too lazy now to think of something .. 
 debie_opt_1:
 	$(MAKE) WCET_METHOD=debie.telecommand.TelecommandExecutionTask.tcInterruptService debie_opt
 debie_opt_2:
@@ -99,6 +122,16 @@ debie_orig_4:
 	$(MAKE) WCET_METHOD=debie.telecommand.TelecommandExecutionTask.handleTelecommand debie_orig
 debie_orig_5:
 	$(MAKE) WCET_METHOD=debie.particles.AcquisitionTask.handleAcquisition debie_orig
+debie_dopt_1:
+	$(MAKE) WCET_METHOD=debie.telecommand.TelecommandExecutionTask.tcInterruptService debie_aopt
+debie_dopt_2:
+	$(MAKE) WCET_METHOD=debie.telecommand.TelecommandExecutionTask.tmInterruptService debie_aopt
+debie_dopt_3:
+	$(MAKE) WCET_METHOD=debie.particles.AcquisitionTask.handleHitTrigger debie_aopt
+debie_dopt_4:
+	$(MAKE) WCET_METHOD=debie.telecommand.TelecommandExecutionTask.handleTelecommand debie_aopt
+debie_dopt_5:
+	$(MAKE) WCET_METHOD=debie.particles.AcquisitionTask.handleAcquisition debie_aopt
 
 
 bench_opt:
