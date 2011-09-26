@@ -163,11 +163,17 @@ public class InlineOptimizer implements CodeOptimizer {
                 // if we inline an empty static method with no arguments at the beginning of the code, end is null
                 start = null;
             }
+            if (end == invoke) {
+                // inlined an empty method .. tricky
+                start = null;
+                end = null;
+            }
 
+            InstructionHandle tmp = invoke.getNext();
             try {
                 il.delete(invoke);
             } catch (TargetLostException e) {
-                code.retarget(e, start);
+                code.retarget(e, tmp);
             }
 
             // Not really needed, but makes debugging easier

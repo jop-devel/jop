@@ -78,8 +78,11 @@ public class PhaseExecutor {
     private static final BooleanOption DUMP_NOIM_CALLS =
             new BooleanOption("dump-noim-calls", "Include calls to JVMHelp.noim() in the jvm callgraph dump", false);
 
+    private static final BooleanOption SIMPLE_INLINER =
+            new BooleanOption("simple-inliner", "Use fast inliner to inline getter,setter and wrapper", true);
 
     private static final Option[] optimizeOptions = {
+            SIMPLE_INLINER,
             REMOVE_UNUSED_MEMBERS,
             CLEANUP_CONSTANT_POOL
         };
@@ -319,6 +322,11 @@ public class PhaseExecutor {
      */
     public void performSimpleInline() {
         // We never increase codesize, we do not copy methods, we are quite fast.. so just do this always ..
+        // .. almost
+        if (!getOptimizeOptions().getOption(SIMPLE_INLINER)) {
+            logger.info("SimpleInliner has been disabled.");
+            return;
+        }
 
         // .. well, almost always.
         if (getJConfig().doAssumeDynamicClassLoader()) {

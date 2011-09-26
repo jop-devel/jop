@@ -314,22 +314,25 @@ public class GreedyOptimizer {
                 method.getCode().compile();
 
                 // Now we need to update the stackAnalysis and find new candidates in the optimized code
-                stacksize.analyze(c.getStart(), c.getEnd());
-
-                int locals = c.getMaxLocalsInRegion();
-
-                // find new candidates in optimized code
                 List<Candidate> newCandidates = new ArrayList<Candidate>();
-                for (CodeOptimizer optimizer : optimizers) {
-                    Collection<Candidate> found;
-                    found = optimizer.findCandidates(method, analyses, stacksize, locals, c.getStart(), c.getEnd());
-                    newCandidates.addAll(found);
+                if (c.getStart() != null) {
+                    stacksize.analyze(c.getStart(), c.getEnd());
+
+                    int locals = c.getMaxLocalsInRegion();
+
+                    // find new candidates in optimized code
+                    for (CodeOptimizer optimizer : optimizers) {
+                        Collection<Candidate> found;
+                        found = optimizer.findCandidates(method, analyses, stacksize, locals, c.getStart(), c.getEnd());
+                        newCandidates.addAll(found);
+                    }
+
+                    countCandidates += newCandidates.size();
                 }
 
                 // Notify selector to update codesize, remove unreachable methods and to replace
                 // old candidates with new ones
                 selector.onSuccessfulOptimize(c, newCandidates);
-                countCandidates += newCandidates.size();
 
                 optimizedMethods.add(method);
             }
