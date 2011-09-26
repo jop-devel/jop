@@ -372,6 +372,8 @@ public class MethodCacheAnalysis {
                         for (ExecutionContext invokee : callGraph.getChildren(context)) {
                             // not all-fit if in changeset
                             if (changes.contains(invokee.getMethodInfo())) continue;
+                            // we ignore native stuff
+                            if (invokee.getMethodInfo().isNative()) continue;
                             // invokee is all-fit
                             if (border.add(invokee)) {
                                 deltaCount += ecp.getExecCount(invokee);
