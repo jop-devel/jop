@@ -398,7 +398,12 @@ cprog:
 #
 #	compile and JOPize the application
 #
-JCOPTER_DEFAULT_OPTS=--use-dfa $(USE_DFA) --callstring-length $(CALLSTRING_LENGTH) --sp $(TARGET_SOURCE) 
+ifeq (${WCET_METHOD},measure)
+   JCOPTER_DEFAULT_OPTS=--inline.exclude-wca-targets true
+else
+   JCOPTER_DEFAULT_OPTS=
+endif 
+JCOPTER_DEFAULT_OPTS+= --use-dfa $(USE_DFA) --callstring-length $(CALLSTRING_LENGTH) --sp $(TARGET_SOURCE)
 JCOPTER_OPTIONS=$(JCOPTER_DEFAULT_OPTS) ${JCOPTER_OPT} 
 
 jop_config:

@@ -45,8 +45,9 @@ DEFAULT_OPTS=--greedy.targets wca \
 #OPTS=--greedy.cache-analysis ALWAYS_MISS_OR_HIT
 #OPTS=--greedy.order TopDown
 #OPTS=--greedy.order BottomUp 
+#OPTS=--use-wca false
 #OPTS=-O 1  
-OPTS=--opt.simple-inliner false
+#OPTS=--opt.simple-inliner false
 
 # Options for JCopter and WCETAnalysis
 P1=test
