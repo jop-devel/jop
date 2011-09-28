@@ -284,6 +284,11 @@ public class InlineHelper {
         // TODO check the DFA results if available
         if (jcopter.useDFA()) {
             
+        } else if ("<init>".equals(invokee.getShortName())) {
+            // this is a slight hack .. constructors cannot be called explicitly by the programmer
+            // and javac always calls constructors on a new object, that is never null, so we can skip
+            // the NP check in this case (and hope that compilers for languages other than Java do the same..)
+            return false;
         }
 
         if (!analyzeCode) {

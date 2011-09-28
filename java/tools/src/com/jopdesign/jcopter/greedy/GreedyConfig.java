@@ -72,12 +72,12 @@ public class GreedyConfig {
     private static final EnumOption<AnalysisType> CACHE_ANALYSIS_TYPE =
             new EnumOption<AnalysisType>("cache-analysis",
                     "Select the cache analysis type",
-                    AnalysisType.ALL_FIT_REGIONS);
+                    AnalysisType.ALWAYS_HIT);
 
     private static final EnumOption<StaticCacheApproximation> WCA_CACHE_APPROXIMATION =
             new EnumOption<StaticCacheApproximation>("wca-cache-analysis",
-                    "Optionally set a different cache analysis type to be used by the WCA",
-                    StaticCacheApproximation.class, true);
+                    "Set the cache analysis type to be used by the WCA",
+                    StaticCacheApproximation.ALL_FIT_REGIONS);
 
     private static final EnumOption<DUMPTYPE> DUMP_TARGET_CALLGRAPH =
             new EnumOption<DUMPTYPE>("dump-target-callgraph", "Dump the callgraph of the target methods", DUMPTYPE.off);
