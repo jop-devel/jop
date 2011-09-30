@@ -387,8 +387,8 @@ synchronized (o) {
 //			val_level = (val & 0x3E000000) >>> 25;
 //			
 //		} else {
-//			ref_level = Native.rdMem(ref + GC.OFF_SCOPE);
-//			val_level = Native.rdMem(val + GC.OFF_SCOPE);
+//			ref_level = Native.rdMem(ref + GC.OFF_SPACE);
+//			val_level = Native.rdMem(val + GC.OFF_SPACE);
 //		}
 //			
 //		if (val_level == 0){

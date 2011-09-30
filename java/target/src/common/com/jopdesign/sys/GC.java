@@ -62,11 +62,8 @@ public class GC {
 	 */
 	public static final int OFF_PTR = 0;
 	public static final int OFF_MTAB_ALEN = 1;
-	public static final int OFF_SIZE = 2;
+	// public static final int OFF_SIZE = 2;
 	public static final int OFF_TYPE = 3;
-	// reuse the size field for the scope level, as the size
-	// field is (hopefully) only used by the GC
-	public static final int OFF_SCOPE = 2;
 	
 	// size != array length (think about long/double)
 	
@@ -91,7 +88,7 @@ public class GC {
 	 */
 	static final int GREY_END = -1;
 	/**
-	 * Denote in which space the object is
+	 * Denote in which space or scope the object is
 	 */
 	static final int OFF_SPACE = 6;
 		
@@ -356,11 +353,11 @@ public class GC {
 			// allready moved
 			// can this happen? - yes, as we do not check it in mark
 			// TODO: no, it's checked in push()
-			// What happens when the actuall scanning object is
+			// What happens when the actual scanning object is
 			// again pushed on the gray stack by the mutator?
 			if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
 				// it happens 
-//				log("mark/copy allready in toSpace");
+//				log("mark/copy already in toSpace");
 				continue;
 			}
 			
@@ -368,10 +365,9 @@ public class GC {
 //			if (Native.rdMem(ref+OFF_PTR)==0) {
 //				log("mark/copy OFF_PTR=0!!!");
 //				continue; 
-//			}
-			
+//			}			
 				
-			// push all childs
+			// push all children
 				
 			// get pointer to object
 			int addr = Native.rdMem(ref);
@@ -396,13 +392,29 @@ public class GC {
 					flags >>>= 1;
 				}				
 			}
-			
+
+			// Do not copy objects from somewhere else than fromspace
+			if (Native.rdMem(ref+OFF_SPACE)!=fromSpace) {
+//				log("mark/copy not in fromSpace");
+				continue;
+			}
+
 			// now copy it - color it BLACK			
 			int size;
 			int dest;
 
+			if (flags==IS_OBJ) {
+				// plain object
+				size = Native.rdMem(Native.rdMem(ref+OFF_MTAB_ALEN)-Const.CLASS_HEADR);
+			} else if (flags==7 || flags==11) {
+				// long or double array
+				size = Native.rdMem(ref+OFF_MTAB_ALEN) << 1;
+			} else {
+				// other array
+				size = Native.rdMem(ref+OFF_MTAB_ALEN);
+			}
+
 			synchronized(mutex) {
-				size = Native.rdMem(ref+OFF_SIZE);
 				dest = copyPtr;
 				copyPtr += size;			
 
@@ -562,7 +574,7 @@ public class GC {
 					ptr = ptr | (sc.level << 25);	
 				}
 				//Add scope info to object's handler field
-				Native.wrMem(sc.level , ptr+OFF_SCOPE);
+				Native.wrMem(sc.level, ptr+OFF_SPACE);
 			}
 			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
 			Native.wrMem(cons+Const.CLASS_HEADR, ptr+OFF_MTAB_ALEN);
@@ -625,8 +637,6 @@ public class GC {
 			useList = ref;
 			// pointer to real object, also marks it as non free
 			Native.wrMem(allocPtr, ref); // +OFF_PTR
-			// should be from the class info
-			Native.wrMem(size, ref+OFF_SIZE);
 			// mark it as BLACK - means it will be in toSpace
 			Native.wrMem(toSpace, ref+OFF_SPACE);
 			// TODO: should not be necessary - now just for sure
@@ -683,7 +693,7 @@ public class GC {
 					ptr = ptr | (sc.level << 25);	
 				}
 				//Add scope info to array's handler field
-				Native.wrMem(sc.level , ptr+OFF_SCOPE);
+				Native.wrMem(sc.level, ptr+OFF_SPACE);
 			}
 			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
 			Native.wrMem(arrayLength, ptr+OFF_MTAB_ALEN);
@@ -742,8 +752,6 @@ public class GC {
 			useList = ref;
 			// pointer to real object, also marks it as non free
 			Native.wrMem(allocPtr, ref); // +OFF_PTR
-			// should be from the class info
-			Native.wrMem(size, ref+OFF_SIZE);
 			// mark it as BLACK - means it will be in toSpace
 			Native.wrMem(toSpace, ref+OFF_SPACE);
 			// TODO: should not be necessary - now just for sure
