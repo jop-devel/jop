@@ -36,6 +36,7 @@ import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 
 import java.io.IOException;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -138,4 +139,5 @@ public class JOPWcetModel implements WCETProcessorModel {
 		if(objectCache != null)            list.add(objectCache);
 		return list;
 	}
+
 }

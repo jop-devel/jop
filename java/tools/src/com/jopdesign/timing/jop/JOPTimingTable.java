@@ -20,7 +20,9 @@
 
 package com.jopdesign.timing.jop;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.Vector;
 
@@ -41,15 +43,9 @@ public abstract class JOPTimingTable extends TimingTable<JOPInstructionInfo> imp
 	protected int writeWaitStates;
 	protected TreeMap<Integer, MicrocodeVerificationException> analysisErrors;
 
-	@Override
-	public long getCycles(JOPInstructionInfo instrInfo) {
-		return getCycles(instrInfo.getOpcode(), instrInfo.hit, instrInfo.wordsLoaded);
-	}
+	// custom timings for experiments
+	public Map<Integer,Integer> customTiming = new HashMap<Integer,Integer>();
 
-	public long getLocalCycles(int opcode) {
-		return getCycles(opcode, false, 0);
-	}
-	public abstract long getCycles(int opcode, boolean isHit, int words);
 
 	protected JOPTimingTable(MicropathTable mpt) {
 		this.micropathTable = mpt;
@@ -63,6 +59,27 @@ public abstract class JOPTimingTable extends TimingTable<JOPInstructionInfo> imp
 		}
 	}
 
+	/** Override timing for certain instructions (for experiments) */
+	public void setCustomTiming(int opcode, int cycles) {
+		this.customTiming.put(opcode, cycles);
+	}
+
+	@Override
+	public long getCycles(JOPInstructionInfo instrInfo) {
+		
+		// see whether a custom timing is configured for this opcode
+		if(customTiming.containsKey(instrInfo.getOpcode())) {
+			return customTiming.get(instrInfo.getOpcode());
+		}
+		return getCycles(instrInfo.getOpcode(), instrInfo.hit, instrInfo.wordsLoaded);
+	}
+
+	public long getLocalCycles(int opcode) {
+		return getCycles(opcode, false, 0);
+	}
+	
+	protected abstract long getCycles(int opcode, boolean isHit, int words);
+
 	public MicrocodeVerificationException getAnalysisError(int opcode) {
 		return analysisErrors.get(opcode);
 	}
@@ -71,9 +88,9 @@ public abstract class JOPTimingTable extends TimingTable<JOPInstructionInfo> imp
 		return micropathTable.hasMicrocodeImpl(opcode);
 	}
 
-
 	@Override
 	public boolean hasTimingInfo(int opcode) {
+		if(customTiming.containsKey(opcode)) return true;
 		return micropathTable.hasTiming(opcode);
 	}
 

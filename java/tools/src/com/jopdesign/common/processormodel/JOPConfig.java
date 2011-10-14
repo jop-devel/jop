@@ -26,8 +26,8 @@ import com.jopdesign.common.config.IntegerOption;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
-import com.jopdesign.timing.WCETInstruction;
 import com.jopdesign.timing.jop.MicrocodeAnalysis;
+import com.jopdesign.timing.jop.WCETInstruction;
 
 import java.io.File;
 
@@ -39,15 +39,15 @@ public class JOPConfig {
     // FIXME: default values are fetched from WCETInstruction until transition to
     // new timing system is complete
     public static final IntegerOption READ_WAIT_STATES =
-            new IntegerOption("jop-rws", "JOP read wait states", WCETInstruction.r);
+            new IntegerOption("jop-rws", "JOP read wait states", WCETInstruction.DEFAULT_R);
     public static final IntegerOption WRITE_WAIT_STATES =
-            new IntegerOption("jop-wws", "JOP write wait states", WCETInstruction.w);
+            new IntegerOption("jop-wws", "JOP write wait states", WCETInstruction.DEFAULT_W);
     public static final BooleanOption MULTIPROCESSOR =
-            new BooleanOption("jop-cmp", "JOP multiprocessor configuration", WCETInstruction.CMP_WCET);
+            new BooleanOption("jop-cmp", "JOP multiprocessor configuration", false);
     public static final IntegerOption CMP_CPUS =
-            new IntegerOption("jop-cmp-cpus", "JOP number of processors", WCETInstruction.CPUS);
+            new IntegerOption("jop-cmp-cpus", "JOP number of processors", WCETInstruction.DEFAULT_CPUS);
     public static final IntegerOption CMP_TIMESLOT =
-            new IntegerOption("jop-cmp-timeslot", "JOP arbiter timeslot cycles", WCETInstruction.TIMESLOT);
+            new IntegerOption("jop-cmp-timeslot", "JOP arbiter timeslot cycles", WCETInstruction.DEFAULT_TIMESLOT);
 
     public static final BooleanOption OBJECT_CACHE =
             new BooleanOption("jop-object-cache", "JOP object cache configuration", false);

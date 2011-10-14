@@ -19,6 +19,8 @@
  */
 package com.jopdesign.wcet;
 
+import java.io.Writer;
+
 import org.apache.bcel.generic.InstructionHandle;
 
 import com.jopdesign.common.code.BasicBlock;
@@ -38,6 +40,9 @@ public interface WCETProcessorModel {
 	/** get execution time for the basic block in the given execution context */
 	long basicBlockWCET(ExecutionContext context, BasicBlock codeBlock);
 
+	/** TODO: print timing table to the given stream */
+	// void printTimingTable(Writer out);
+	
 	/**
 	 * Get method cache model, or NO_METHOD_CACHE if there is no method cache in this model
 	 * @return the method cache
