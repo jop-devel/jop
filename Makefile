@@ -162,7 +162,7 @@ CALLSTRING_LENGTH=0
 #
 USE_DFA?=no
 
-ifeq (USE_DFA, yes)
+ifeq ($(USE_DFA),yes)
 DFA_CACHE=--dfa-cache-dir java/target/wcet/dfa-cache
 endif
 
