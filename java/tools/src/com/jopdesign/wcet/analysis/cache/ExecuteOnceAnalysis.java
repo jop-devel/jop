@@ -86,10 +86,10 @@ public class ExecuteOnceAnalysis {
 
     public boolean isExecutedOnce(ExecutionContext scope, CFGNode node) {
         ControlFlowGraph cfg = node.getControlFlowGraph();
+        scope = new ExecutionContext(scope.getMethodInfo()); /* Remove call string */
         Set<MethodInfo> inLoopMethods = inLoopSet.get(scope);
         if (inLoopMethods == null) {
-            Logger.getLogger("Object Cache Analysis").warning("No loop information for " + scope.getMethodInfo().getFQMethodName() + " @ " +
-                    scope.getCallString().toString());
+            Logger.getLogger("Object Cache Analysis").warning("No loop information for " + scope.getMethodInfo().getFQMethodName());
             return false;
         }
         if (!inLoopMethods.contains(cfg.getMethodInfo())) {

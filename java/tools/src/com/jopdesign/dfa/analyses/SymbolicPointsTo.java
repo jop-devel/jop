@@ -934,7 +934,11 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			out.putStack(context.stackPtr - 1, bsFactory.top());
 		} else if (methodId.equals("com.jopdesign.sys.Native.getSP()I")) {
 			out = in.cloneFilterStack(nextStackPtr+1);
-		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")) {
+		} else if (methodId.equals("com.jopdesign.sys.Native.getField(II)I")) {
+			out = in.cloneFilterStack(nextStackPtr-1);
+	    } else if(methodId.equals("com.jopdesign.sys.Native.putField(III)V")) {
+			out = in.cloneFilterStack(nextStackPtr-3);
+	    } else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")) {
 			out = in.cloneFilterStack(nextStackPtr);
 		} else if (methodId.equals("com.jopdesign.sys.Native.condMove(IIZ)I")) {
 			out = in.cloneFilterStack(nextStackPtr-2);
