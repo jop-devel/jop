@@ -43,9 +43,11 @@ DEFAULT_OPTS=--greedy.targets wca \
 	     --greedy.wca-cache-analysis ALL_FIT_REGIONS 
 #OPTS=--greedy.cache-analysis ALWAYS_MISS --greedy.wca-cache-analysis ALWAYS_MISS
 #OPTS=--greedy.cache-analysis ALWAYS_MISS_OR_HIT
+#OPTS=--greedy.cache-analysis ALWAYS_HIT
 #OPTS=--greedy.order TopDown
 #OPTS=--greedy.order BottomUp 
 #OPTS=--use-wca false
+#OPTS=--use-wca false --greedy.cache-analysis ALWAYS_HIT
 #OPTS=-O 1  
 #OPTS=--opt.simple-inliner false
 
