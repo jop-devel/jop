@@ -44,7 +44,7 @@ public abstract class JOPTimingTable extends TimingTable<JOPInstructionInfo> imp
 	protected TreeMap<Integer, MicrocodeVerificationException> analysisErrors;
 
 	// custom timings for experiments
-	public Map<Integer,Integer> customTiming = new HashMap<Integer,Integer>();
+	public Map<Integer,Long> customTiming = new HashMap<Integer,Long>();
 
 
 	protected JOPTimingTable(MicropathTable mpt) {
@@ -60,8 +60,8 @@ public abstract class JOPTimingTable extends TimingTable<JOPInstructionInfo> imp
 	}
 
 	/** Override timing for certain instructions (for experiments) */
-	public void setCustomTiming(int opcode, int cycles) {
-		this.customTiming.put(opcode, cycles);
+	public void setCustomTiming(int opcode, long l) {
+		this.customTiming.put(opcode, l);
 	}
 
 	@Override
@@ -75,6 +75,11 @@ public abstract class JOPTimingTable extends TimingTable<JOPInstructionInfo> imp
 	}
 
 	public long getLocalCycles(int opcode) {
+
+		// see whether a custom timing is configured for this opcode
+		if(customTiming.containsKey(opcode)) {
+			return customTiming.get(opcode);
+		}
 		return getCycles(opcode, false, 0);
 	}
 	

@@ -31,6 +31,8 @@ import com.jopdesign.timing.jop.JOPTimingTable;
 import com.jopdesign.timing.jop.SingleCoreTiming;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
+
+import org.apache.bcel.Constants;
 import org.apache.bcel.generic.ATHROW;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
@@ -59,7 +61,6 @@ public class JOPWcetModel implements WCETProcessorModel {
         } else {
             this.config = new JOPConfig(p.getConfig());
         }
-
         if(config.isCmp()) {
             this.timing = JOPCmpTimingTable.getCmpTimingTable(
             		config.getAsmFile(), config.rws(), config.wws(), config.getCpus(), config.getTimeslot());
@@ -69,8 +70,11 @@ public class JOPWcetModel implements WCETProcessorModel {
         }
         
         this.methodCache = MethodCacheImplementation.getCacheModel(p, timing);
+    	// FIXME: Hackish
         if(config.hasObjectCache()) {
         	this.objectCache = new ObjectCache(p, timing);
+        	// set hit cycles for getfield
+        	this.timing.setCustomTiming(Constants.GETFIELD, objectCache.getHitCycles());
         }
         key.append("jop");
         if(config.isCmp()) key.append("-cmp");

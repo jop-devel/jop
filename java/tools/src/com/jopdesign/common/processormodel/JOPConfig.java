@@ -55,14 +55,19 @@ public class JOPConfig {
             new IntegerOption("jop-ocache-associativity", "JOP object associativity", 16);
     public static final IntegerOption OBJECT_CACHE_WORDS_PER_LINE =
             new IntegerOption("jop-ocache-words-per-line", "JOP object cache: words per line", 16);
+    
+    // Timing defaults according to ms implementation
+    // Block Size: 1 word
+    // Hit: 5 cycles
+    // Miss: 6+2r cycles (10 on dspio)
     public static final IntegerOption OBJECT_CACHE_BLOCK_SIZE =
             new IntegerOption("jop-ocache-fill", "JOP object cache: size of a cache block in words (burst)", 1);
     public static final IntegerOption OBJECT_CACHE_HIT_CYCLES =
-            new IntegerOption("jop-ocache-hit-cycles", "JOP object access cycles on cache hit", 1);
+            new IntegerOption("jop-ocache-hit-cycles", "JOP object access cycles on cache hit", 5);
     public static final IntegerOption OBJECT_CACHE_LOAD_FIELD_CYCLES =
-            new IntegerOption("jop-ocache-load-field-cycles", "JOP object cache load cycles for field (bypass)", 2);
+            new IntegerOption("jop-ocache-load-field-cycles", "JOP object cache load cycles for field (bypass)", 6+2*WCETInstruction.DEFAULT_R);
     public static final IntegerOption OBJECT_CACHE_LOAD_BLOCK_CYCLES =
-            new IntegerOption("jop-ocache-load-line-cycles", "JOP object cache load cycles for cache block (miss)", 2);
+            new IntegerOption("jop-ocache-load-block-cycles", "JOP object cache load cycles for cache block (miss)", 6+2*WCETInstruction.DEFAULT_R);
 
     /**
      * Supported method cache implementations:

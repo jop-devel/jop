@@ -20,7 +20,6 @@
 
 package com.jopdesign.wcet.jop;
 
-import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.timing.jop.JOPTimingTable;
@@ -103,6 +102,7 @@ public class ObjectCache implements CacheModel {
 			addAccessToCachedField(occ.fieldAccesses);
 		}
 		
+		@Override
 		public String toString() {
 			return String.format("missCycles = %d [miss-cost=%d, bypass-cost = %d, relevant-accesses=%d]",getCost(),this.missCost,this.bypassCost,this.fieldAccesses);
 		}
@@ -217,7 +217,9 @@ public class ObjectCache implements CacheModel {
     /* preliminary cost model */
 	public ObjectCacheCostModel getCostModel() {
 
-		return new ObjectCacheCostModel(getLoadBlockCycles(), 0,  getBypassTime());
+		return new ObjectCacheCostModel(
+				Math.max(0, getLoadBlockCycles() - getHitCycles()), 0,  
+				Math.max(0, getBypassTime() - getHitCycles()));
 	}
 
  

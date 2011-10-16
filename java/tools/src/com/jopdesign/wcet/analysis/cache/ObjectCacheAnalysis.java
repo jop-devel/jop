@@ -894,8 +894,9 @@ public class ObjectCacheAnalysis extends CachePersistenceAnalysis {
 
 			/* Calculate number of unpredictable always-miss accesses, and record them */
 			long alwaysMissCost = costModel.getReplaceLineCost() + costModel.getLoadCacheBlockCost();
-			missCount  +=  missCost / alwaysMissCost;
-			
+			if(alwaysMissCost > 0) {
+				missCount  +=  missCost / alwaysMissCost;
+			}
 			/* count normal and bypass accesses in the basic block */
 			for(InstructionHandle ih : bb.getInstructions()) {
 				
