@@ -22,13 +22,13 @@ package com.jopdesign.wcet.jop;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.common.misc.Iterators;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.common.processormodel.JOPModel;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.timing.jop.JOPCmpTimingTable;
 import com.jopdesign.timing.jop.JOPTimingTable;
 import com.jopdesign.timing.jop.SingleCoreTiming;
+import com.jopdesign.tools.JopInstr;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 
@@ -38,7 +38,6 @@ import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 
 import java.io.IOException;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -75,6 +74,7 @@ public class JOPWcetModel implements WCETProcessorModel {
         	this.objectCache = new ObjectCache(p, timing);
         	// set hit cycles for getfield
         	this.timing.setCustomTiming(Constants.GETFIELD, objectCache.getHitCycles());
+        	this.timing.setCustomTiming(JopInstr.get("getfield_ref"), objectCache.getHitCycles());        	
         }
         key.append("jop");
         if(config.isCmp()) key.append("-cmp");
@@ -102,7 +102,6 @@ public class JOPWcetModel implements WCETProcessorModel {
         MethodInfo mctx = context.getMethodInfo();
         int jopcode = processorModel.getNativeOpCode(mctx, i);
         long cycles = timing.getLocalCycles(jopcode);
-
         if(isUnboundedBytecode(i)){
                WCETTool.logger.error("[FATAL] Unsupported (unbounded) bytecode: "+i.getName()+
                                             " in " + mctx.getFQMethodName()+
