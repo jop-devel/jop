@@ -3,8 +3,8 @@ TIMING_OPTS="--jop.jop-rws 1 --jop.jop-wws 2"
 TIMING_OPTS="--jop.jop-ocache-words-per-line 16 ${TIMING_OPTS}"
 TIMING_OPTS="--jop.jop-ocache-fill 1 ${TIMING_OPTS}"
 TIMING_OPTS="--jop.jop-ocache-hit-cycles 5 ${TIMING_OPTS}"
-TIMING_OPTS="--jop.jop-ocache-load-field-cycles 8 ${TIMING_OPTS}"
-TIMING_OPTS="--jop.jop-ocache-load-block-cycles 8 ${TIMING_OPTS}"
+TIMING_OPTS="--jop.jop-ocache-load-field-cycles 10 ${TIMING_OPTS}"
+TIMING_OPTS="--jop.jop-ocache-load-block-cycles 10 ${TIMING_OPTS}"
 # varying:
 # jop.jop-object-cache false|true
 # jop.jop-ocache-associativity no|0|4|8|16|64
