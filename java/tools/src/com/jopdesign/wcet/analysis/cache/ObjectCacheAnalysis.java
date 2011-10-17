@@ -46,6 +46,7 @@ import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.ObjectType;
 import org.apache.bcel.generic.PUTFIELD;
 import org.apache.bcel.generic.ReferenceType;
+import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
 import com.jopdesign.common.MethodInfo;
@@ -984,11 +985,13 @@ public class ObjectCacheAnalysis extends CachePersistenceAnalysis {
 			CallString cs = node.getContextCFG().getCallString();
 	
 			for(InstructionHandle ih : bb.getInstructions()) {
-	
+
 				String handleType = getHandleType(project, node.getCfg(), ih); 				
 				if(handleType == null) continue; /* No getfield/handle access */
 				int fieldIndex = getFieldIndex(project, node.getCfg(), ih);
 				int blockIndex = getBlockIndex(fieldIndex);
+
+//				System.err.println("Processing getfield "+ih+ " with field type "+getCachedType(project, node.getCfg(), ih));
 				
 				if(fieldIndex > this.maxCachedFieldIndex) {
 					bypassCost += costModel.getFieldAccessCostBypass();
@@ -1012,6 +1015,15 @@ public class ObjectCacheAnalysis extends CachePersistenceAnalysis {
 					for(SymbolicAddress ref : refs.getSet()) {
 						aci.addRefAccess(ref,node);
 						aci.addBlockAccess(ref.accessArray(blockIndex), node);
+						// Handle getfield_long / getfield_double
+						if(getCachedType(project, node.getCfg(), ih) == Type.LONG ||
+						   getCachedType(project, node.getCfg(), ih) == Type.DOUBLE) {
+							if(blockIndex+1 > this.maxCachedFieldIndex) {
+								bypassCost += costModel.getFieldAccessCostBypass();
+							} else {
+								aci.addBlockAccess(ref.accessArray(blockIndex+1), node);								
+							}
+						}
 					}
 				}
 			}
@@ -1088,7 +1100,21 @@ public class ObjectCacheAnalysis extends CachePersistenceAnalysis {
 		/* Uncached fields are treated separately */ 
 		return (index <= maxCachedFieldIndex);
 	}
-
+	
+	public static Type getCachedType(WCETTool project, ControlFlowGraph cfg, InstructionHandle ih) {
+		ConstantPoolGen constPool = cfg.getMethodInfo().getConstantPoolGen();
+		Instruction instr = ih.getInstruction();
+		if(instr instanceof GETFIELD) {
+			GETFIELD gf = (GETFIELD) instr;
+			return gf.getFieldType(constPool);
+		}
+		if(! ALL_HANDLE_ACCESSES) {
+			return null;
+		} else {
+			throw new AssertionError("For O$, only getfield is supported right now");		
+		}
+	}
+	
 	public static String getHandleType(WCETTool project, ControlFlowGraph cfg, InstructionHandle ih) {
 		ConstantPoolGen constPool = cfg.getMethodInfo().getConstantPoolGen();
 		Instruction instr = ih.getInstruction();
