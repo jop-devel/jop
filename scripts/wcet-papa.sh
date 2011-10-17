@@ -18,7 +18,7 @@ papabench.core.fbw.tasks.handlers.CheckFailsafeTaskHandler.run \
 #papabench.core.simulator.tasks.handlers.SimulatorGPSTaskHandler.run \
 #papabench.core.simulator.tasks.handlers.SimulatorIRTaskHandler.run
 do
-	ant -Dp1=bench -Dp2=papabench/jop -Dp3=PapaBenchJopApplication -DUSE_SCOPES=true -DMEASURE=false -Dwcet-method=$f jop-config wcet
+	make jop_config wcet -e P1=bench P2=papabench/jop P3=PapaBenchJopApplication USE_SCOPES=true MEASURE=false WCET_METHOD=$f
 done
 
-ant -Dp1=bench -Dp2=papabench/jop -Dp3=PapaBenchJopApplication -DUSE_SCOPES=true -DMEASURE=true jop-config japp > papa.log
+# ant -Dp1=bench -Dp2=papabench/jop -Dp3=PapaBenchJopApplication -DUSE_SCOPES=true -DMEASURE=true jop-config japp > papa.log
