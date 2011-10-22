@@ -26,16 +26,38 @@ for N in old 0 4 8 16 64; do
     WCET_METHOD=$4 USE_DFA=yes CALLSTRING_LENGTH=${CALLSTRING_LENGTH} ${MAKE_OPTS} \
     WCET_OPTIONS="${OPTS} ${WCET_OPTS}" 2>&1 | \
     tee /dev/stderr | grep '^wcet:') 
-  echo "$1.$2.$3 ; ${N} ; $(echo ${R} | cut -d' ' -f 2) ; ${R} ;"
+  echo "$1.$2.$3.$4 ; ${N} ; $(echo ${R} | cut -d' ' -f 2) ; ${R} ;"
 done  
 }
+
+MAKE_OPTS="USE_SCOPES=true"
 
 # lift
 run_eval test wcet StartLift measure
 # updip
-MAKE_OPTS="USE_SCOPES=true"
 run_eval test wcet StartBenchUdpIp measure
 # ejip (without TCP)
 patch -p1 < scripts/ejip.patch 
 run_eval test wcet StartEjipCmp measure
 git checkout java/target/src/common/ejip/Ejip.java
+# papabench
+for f in \
+papabench.core.fbw.tasks.handlers.CheckMega128ValuesTaskHandler.run \
+papabench.core.autopilot.tasks.handlers.NavigationTaskHandler.courseComputation \
+papabench.core.autopilot.tasks.handlers.NavigationTaskHandler.update \
+papabench.core.autopilot.tasks.handlers.RadioControlTaskHandler.run \
+papabench.core.autopilot.tasks.handlers.NavigationTaskHandler.run \
+papabench.core.autopilot.tasks.handlers.AltitudeControlTaskHandler.run \
+papabench.core.autopilot.tasks.handlers.ClimbControlTaskHandler.run \
+papabench.core.autopilot.tasks.handlers.StabilizationTaskHandler.run \
+papabench.core.autopilot.tasks.handlers.LinkFBWSendTaskHandler.run \
+papabench.core.autopilot.tasks.handlers.ReportingTaskHandler.run \
+papabench.core.fbw.tasks.handlers.SendDataToAutopilotTaskHandler.run \
+papabench.core.fbw.tasks.handlers.TestPPMTaskHandler.run \
+papabench.core.fbw.tasks.handlers.CheckFailsafeTaskHandler.run \
+#papabench.core.simulator.tasks.handlers.SimulatorFlightModelTaskHandler.run \
+#papabench.core.simulator.tasks.handlers.SimulatorGPSTaskHandler.run \
+#papabench.core.simulator.tasks.handlers.SimulatorIRTaskHandler.run
+do
+	run_eval bench papabench/jop PapaBenchJopApplication $f
+done
