@@ -26,7 +26,7 @@
 #
 #	Set USB to true for an FTDI chip based board (dspio, usbmin, lego)
 #
-USB=true
+USB=false
 
 #
 #	com1 is the usual serial port
