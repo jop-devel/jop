@@ -351,11 +351,11 @@ public class CallString implements CallStringProvider, Iterable<InvokeSite> {
         if (this.isEmpty()) return "CallString.EMPTY";
         long hash = hashCode();
         if (hash < 0) hash += Integer.MAX_VALUE;
-        if (callString.length == 1) {
-        	return String.format("CallString[%s]", callString[0].toString());        	
-        } else {
+        //if (callString.length == 1) {
+        //	return String.format("CallString[%s|%x]", callString[0].toString().substring(arg0, arg1), hash);        	
+        //} else {
         	return String.format("CallString[|%d|%x]", callString.length, hash);
-        }
+        //}
     }
 
     public String toStringVerbose(boolean newlines) {

@@ -32,6 +32,9 @@ import com.jopdesign.wcet.WCETTool;
 import java.io.File;
 
 public class ReportConfig {
+	
+	public static final int MAX_FILENAME_LENGTH = 255;
+	
     public static final StringOption TEMPLATEDIR =
             new StringOption("templatedir",
                     "directory with custom templates for report generation", "java/tools/src");
@@ -78,15 +81,33 @@ public class ReportConfig {
     }
 
     /**
-     * get the filename for output files
+     * get the filename for output files. The basename is
+     * guaranteed to have less than MAX_FILENAME_LENGTH characters)
      *
      * @param method    the method the outputfile should be created for
      * @param extension the filename extension (e.g. .xml)
      * @return the filename
      */
     public File getOutFile(MethodInfo method, String extension) {
-        return new File(reportDir,
-                MiscUtils.sanitizeFileName(method.getFQMethodName() + extension));
+    	String fileName = MiscUtils.sanitizeFileName(method.getFQMethodName() + extension);
+    	if(fileName.length() > MAX_FILENAME_LENGTH) {
+    		String shortString= MiscUtils.sanitizeFileName(method.getShortName());
+    		String h1 = "|"+method.getShortName().hashCode();
+    		String h2 = extension.hashCode()+"|";
+    		int remaining = MAX_FILENAME_LENGTH - h1.length() - h2.length();
+    		if(remaining < 0) {
+    			throw new AssertionError("MAX_FILENAME_LENGTH to short to hold two hashcodes");
+    		}
+    		fileName = shortString.substring(0, Math.min(shortString.length(),remaining)) + h1;
+    		fileName += h1;
+    		fileName += h2;
+    		remaining = MAX_FILENAME_LENGTH - fileName.length();
+    		if(remaining > 0) {
+    			String extString = MiscUtils.sanitizeFileName(extension);
+    			fileName += extString.substring(Math.max(0,extString.length()-remaining), extString.length());
+    		}
+    	}
+        return getReportFile(fileName);
     }
 
     public boolean doInvokeDot() {
