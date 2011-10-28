@@ -926,7 +926,13 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			out = in.cloneFilterStack(nextStackPtr);
 		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(F)I")) {
 			out = in.cloneFilterStack(nextStackPtr);
-		} else if (methodId.equals("com.jopdesign.sys.Native.makeLong(II)J")) {
+		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")) {
+			out = in.cloneFilterStack(nextStackPtr);
+		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")) {
+			out = in.cloneFilterStack(nextStackPtr);
+		} else if (methodId.equals("com.jopdesign.sys.Native.toLong(D)J")) {
+			out = in.cloneFilterStack(nextStackPtr);			
+		} else if (methodId.equals("com.jopdesign.sys.Native.toDouble(J)D")) {
 			out = in.cloneFilterStack(nextStackPtr);			
 		} else if (methodId.equals("com.jopdesign.sys.Native.toObject(I)Ljava/lang/Object;")
 				|| methodId.equals("com.jopdesign.sys.Native.toIntArray(I)[I")) {
@@ -938,9 +944,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			out = in.cloneFilterStack(nextStackPtr-1);
 	    } else if(methodId.equals("com.jopdesign.sys.Native.putField(III)V")) {
 			out = in.cloneFilterStack(nextStackPtr-3);
-	    } else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")) {
-			out = in.cloneFilterStack(nextStackPtr);
-		} else if (methodId.equals("com.jopdesign.sys.Native.condMove(IIZ)I")) {
+	    } else if (methodId.equals("com.jopdesign.sys.Native.condMove(IIZ)I")) {
 			out = in.cloneFilterStack(nextStackPtr-2);
 		} else if(methodId.equals("com.jopdesign.sys.Native.arrayLoad(II)I")) {
 			out = in.cloneFilterStack(nextStackPtr-1);
