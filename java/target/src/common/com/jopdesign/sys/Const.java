@@ -213,6 +213,12 @@ public class Const {
 	// Ethernet interface on DE2
 	public static final int DM9000 = IO_BASE+0x50;
 	
+	/* "Sensors" on hwScope Example.
+	 */
+	public static final int SENSA_BASE = IO_BASE+0x30;
+	public static final int SENSB_BASE = IO_BASE+0x50;
+
+	
 	// Keyboard
 	public static final int KB_CTRL = IO_BASE+0x30+0;
 	public static final int KB_DATA = IO_BASE+0x30+1;
