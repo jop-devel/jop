@@ -57,7 +57,7 @@ public class HelloSCJ extends Mission implements Safelet {
 
 		PeriodicEventHandler peh = new PeriodicEventHandler(
 				new PriorityParameters(11), new PeriodicParameters(
-						new RelativeTime(0, 0), new RelativeTime(1000, 0)),
+						new RelativeTime(0, 0), new RelativeTime(500, 0)),
 				new StorageParameters(10000, 1000, 1000)) {
 			int cnt;
 
@@ -98,8 +98,9 @@ public class HelloSCJ extends Mission implements Safelet {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		// in SCJ we don't have System.out,
+		// but for now it's nice for debugging
 		System.out.println("Hello");
-		Terminal.getTerminal().writeln("Hello SCJ World!");
 		single = new HelloSCJ();
 		JopSystem.startMission(single);
 	}

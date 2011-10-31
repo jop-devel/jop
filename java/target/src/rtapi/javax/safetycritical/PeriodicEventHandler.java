@@ -33,6 +33,8 @@ import javax.safetycritical.annotate.SCJRestricted;
 
 import javax.safetycritical.*;
 
+import com.jopdesign.sys.Memory;
+
 import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 
 import joprt.RtThread;
@@ -52,8 +54,11 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 
 	PriorityParameters priority;
 	RelativeTime start, period;
+	StorageParameters sp;
 	// ThreadConfiguration tconf;
 	String name;
+	
+	Memory privMem; 
 
 	RtThread thread;
 
@@ -74,6 +79,7 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 		// TODO: what are we doing with this Managed thing?
 		super(priority, release, scp, name);
 		this.priority = priority;
+		
 
 		start = (RelativeTime)release.getStart();
 		period = release.getPeriod();
@@ -90,11 +96,24 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 		if(off < 0) { // Overflow
 			off = Integer.MAX_VALUE;
 		}
+		
+		// TODO: this is a very quick hack to get privat memory
+		// working. The StorageParameters is incomplete. Was this
+		// updated in the spec?
+		privMem = new Memory((int) scp.getTotalBackingStoreSize());
+
+		final Runnable runner = new Runnable() {
+			@Override
+			public void run() {
+				handleAsyncEvent();
+			}	
+		};
+
 		thread = new RtThread(priority.getPriority(), p, off) {
 
 			public void run() {
 				while (!MissionSequencer.terminationRequest) {
-					handleAsyncEvent();
+					privMem.enter(runner);
 					waitForNextPeriod();
 				}
 			}
