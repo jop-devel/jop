@@ -340,6 +340,8 @@ System.out.println("Logic.initVals()");
 				// Stillstand: Enable checkMove
 				if (Gps.speed<Gps.MIN_SPEED && Logic.state!=Logic.ERLAUBNIS) {
 					checkMove = p.checkMove;
+					// also enable alarm again, even after a first quit
+					alarmFaehrtQuit = false;
 				}					
 			}
 		}
@@ -460,14 +462,16 @@ System.out.println("Logic.initVals()");
 			Logic.state!=Logic.NOTHALT && Logic.state!=Logic.NOTHALT_OK &&
 			Logic.state!=Logic.INFO && Logic.state!=Logic.LERN &&
 			Logic.state!=Logic.ES_VERSCHUB &&
-			checkMove && Gps.speed>Gps.MIN_SPEED && !alarmFaehrtQuit &&
+			checkMove && Gps.speed>Gps.MIN_SPEED && !alarmFaehrtQuit) {
 			// the following should not be necessary, but for sure
-			start==end) {
+			// && start==end) {
 			
 			stateAfterQuit = Logic.state;
 			Logic.state = Logic.ALARM;
 			alarmType = State.ALARM_FAEHRT;
-			checkMove = false;		// disable further Alarms
+			// 13.11.2011 disable the disable....
+			// => Alarm bei jedem Melderaumwechsel
+//			checkMove = false;		// disable further Alarms
 			return false;
 		}
 		// check Verschub
