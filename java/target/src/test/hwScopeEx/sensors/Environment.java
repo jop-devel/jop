@@ -2,15 +2,18 @@ package hwScopeEx.sensors;
 
 import java.util.Random;
 
-import com.jopdesign.io.HWSensorA;
+import com.jopdesign.io.HWSensorM;
+import com.jopdesign.io.HWSensorC;
 import com.jopdesign.io.HwScopeEnvironmentFactory;
 
 public class Environment {
 	
-	int sensAval;
+	int sensMval;
+	int sensCval;
 	
 	HwScopeEnvironmentFactory hwScopeEnvFactory;
-	HWSensorA sensA;
+	HWSensorM sensM;
+	HWSensorC sensC;
 	
 	Random random;
 	
@@ -22,41 +25,33 @@ public class Environment {
 
 		if (Monitor.USE_HW_SENSORS){
 			hwScopeEnvFactory = HwScopeEnvironmentFactory.getEnvironmentFactory();
-			sensA = hwScopeEnvFactory.getSensA();	
+			sensM = hwScopeEnvFactory.getSensM();
+			sensC = hwScopeEnvFactory.getSensC();
 
 		}else {
 			random = new Random();
 		}
 	}
 
-	public int getSensorData(){
+	public int getMSensorData(){
 		
 		if (Monitor.USE_HW_SENSORS){
-			sensAval = sensA.hwSensorA;
+			sensMval = sensM.hwSensorM;
 
-			return sensAval;
+			return sensMval;
+		}else{
+			return random.nextInt(500);
+		}
+	}
+	
+	public int getCSensorData(){
+		
+		if (Monitor.USE_HW_SENSORS){
+			sensCval = sensC.hwSensorC;
+
+			return sensCval;
 		}else{
 			return random.nextInt(500);
 		}
 	}
 }
-
-
-	//	public static int[] temperature = {2, 4 , 6, 8, 10, 12, 14, 16, 18, 20};
-//	private static int index = -1;
-	
-	 
-//	public int getTemp(){
-//		
-//		if (index < temperature.length-1){
-//			index++;
-//			}
-//		else{
-//			index = 0;
-//			}
-		
-//		return temperature[index];
-//		
-//	}
-
-
