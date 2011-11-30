@@ -154,7 +154,8 @@ architecture rtl of scio is
 	constant SYS_SLAVE 		: integer := 0;
 	constant UART_SLAVE 	: integer := 1;
 	constant LEDSW_SLAVE 	: integer := 4;
-	constant HW_SENSOR_A	: integer := 3;
+	constant HW_SENSOR_M	: integer := 3;
+	constant HW_SENSOR_C	: integer := 5;
 --	constant I2C			: integer := 4;
 -- 	constant PRBS_SLAVE 	: integer := 4;
 -- 	constant COUNTER_SLAVE 	: integer := 5;
@@ -283,15 +284,27 @@ begin
 		iSW => iSW
 	);
 		
-	hwsA: entity work.sc_hwScopeSensorA(rtl)
+	hwsM: entity work.sc_hwScopeSensorM(rtl)
 	port map (
 		clk => clk,
 		reset => reset,
-		sc_rd => sc_rd(HW_SENSOR_A),
-		sc_rd_data => sc_dout(HW_SENSOR_A),
-		sc_wr => sc_wr(HW_SENSOR_A),
+		sc_rd => sc_rd(HW_SENSOR_M),
+		sc_rd_data => sc_dout(HW_SENSOR_M),
+		sc_wr => sc_wr(HW_SENSOR_M),
 		sc_wr_data => sc_io_out.wr_data,
-		sc_rdy_cnt => sc_rdy_cnt(HW_SENSOR_A)
+		sc_rdy_cnt => sc_rdy_cnt(HW_SENSOR_M)
 		);
+		
+	hwsC: entity work.sc_hwScopeSensorC(rtl)
+	port map (
+		clk => clk,
+		reset => reset,
+		sc_rd => sc_rd(HW_SENSOR_C),
+		sc_rd_data => sc_dout(HW_SENSOR_C),
+		sc_wr => sc_wr(HW_SENSOR_C),
+		sc_wr_data => sc_io_out.wr_data,
+		sc_rdy_cnt => sc_rdy_cnt(HW_SENSOR_C)
+		);
+		
 	
 end rtl;
