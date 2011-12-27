@@ -19,15 +19,20 @@
  */
 package com.jopdesign.wcet.analysis;
 
+import java.util.EnumSet;
+
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.Segment;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
+import com.jopdesign.wcet.analysis.cache.CachePersistenceAnalysis;
+import com.jopdesign.wcet.analysis.cache.CachePersistenceAnalysis.PersistenceCheck;
+import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.ipet.IPETConfig;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
-import com.jopdesign.wcet.jop.MethodCache;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 import org.apache.log4j.Logger;
 
 public class LocalAnalysis 
@@ -35,52 +40,73 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 	private boolean assumeMissOnceOnInvoke;
 	private int maxCallstringLength;
 
-        private static final Logger logger = Logger.getLogger(WCETTool.LOG_WCET_ANALYSIS+".LocalAnalysis");
+    private static final Logger logger = Logger.getLogger(WCETTool.LOG_WCET_ANALYSIS+".LocalAnalysis");
 
 	public LocalAnalysis(WCETTool p, IPETConfig ipetConfig) {
-		this.assumeMissOnceOnInvoke = ipetConfig.doAssumeMissOnceOnInvoke();
-		this.maxCallstringLength = (int)p.getProjectConfig().callstringLength();
+		
+		this(ipetConfig.doAssumeMissOnceOnInvoke(), p.getCallstringLength());
 	}
+	
 	public LocalAnalysis() {
-		this.assumeMissOnceOnInvoke = false;
+		
+		this(false, 0);
 	}
+	
+	public LocalAnalysis(boolean doAssumeMissOnceOnInvoke, int callstringLength) {
+
+		this.assumeMissOnceOnInvoke = doAssumeMissOnceOnInvoke;
+		this.maxCallstringLength = callstringLength;
+	}
+
 	public WcetCost recursiveCost(
 			RecursiveAnalysis<AnalysisContextLocal,WcetCost> stagedAnalysis,
 			ControlFlowGraph.InvokeNode n,
 			AnalysisContextLocal ctx) {
-		StaticCacheApproximation cacheMode = ctx.getCacheApproxMode();
+		
+		CacheCostCalculationMethod cacheMode = ctx.getCacheApproxMode();
 		if(cacheMode.needsInterProcIPET()) {
 			throw new AssertionError("Error: Cache Mode "+cacheMode+" not supported using local IPET strategy - " +
 					"it needs an interprocedural IPET analysis");
 		}
+		
 		WCETTool project   = stagedAnalysis.getWCETTool();
 		MethodInfo invoker = n.getBasicBlock().getMethodInfo();
 		MethodInfo invoked = n.getImplementingMethod();
 		WCETProcessorModel proc = project.getWCETProcessorModel();
-		MethodCache cache = proc.getMethodCache();
+		MethodCacheAnalysis mca = new MethodCacheAnalysis(project);
+		
 		long cacheCost;
 		AnalysisContextLocal recCtx = ctx.withCallString(ctx.getCallString().push(n,maxCallstringLength));
 		WcetCost recCost = stagedAnalysis.computeCost(invoked, recCtx);
+		
+		
 		long nonLocalExecCost = recCost.getCost() - recCost.getCacheCost();
 		long nonLocalCacheCost = recCost.getCacheCost();
-		long invokeReturnCost = cache.getInvokeReturnMissCost(
-				proc,
-				project.getFlowGraph(invoker),
-                project.getFlowGraph(invoked));
-		if(! proc.hasMethodCache() || cacheMode == StaticCacheApproximation.ALWAYS_HIT) {
+		long invokeReturnCost = mca.getInvokeReturnMissCost(n.getInvokeSite(), ctx.getCallString());
+						
+		if(proc.getMethodCache().getNumBlocks() == 0 || cacheMode == CacheCostCalculationMethod.ALWAYS_HIT) {
 			cacheCost = 0;
-		} else if(project.getCallGraph().isLeafMethod(invoked)) {
+		}
+		
+		else if(project.getCallGraph().isLeafMethod(invoked)) {
 			cacheCost = invokeReturnCost + nonLocalCacheCost;
-		} else if(cacheMode == StaticCacheApproximation.ALL_FIT_SIMPLE && allFit(cache,invoked,ctx.getCallString())) {
-			long returnCost = cache.getMissOnReturnCost(proc, project.getFlowGraph(invoker));
+		}
+		
+		else if(cacheMode == CacheCostCalculationMethod.ALL_FIT_SIMPLE && allFit(project, invoked,recCtx.getCallString())) {
+			
+			long returnCost = mca.getMissOnceCost(invoker, false);
+
 			/* Maybe its better not to apply the all-fit heuristic ... */
 			long noAllFitCost = recCost.getCost() + invokeReturnCost;
+			
 			/* Compute cost without method cache */
-			AnalysisContextLocal ahCtx = recCtx.withCacheApprox(StaticCacheApproximation.ALWAYS_HIT);
+			AnalysisContextLocal ahCtx = recCtx.withCacheApprox(CacheCostCalculationMethod.ALWAYS_HIT);
 			long alwaysHitCost = stagedAnalysis.computeCost(invoked, ahCtx).getCost();
+			
 			/* Compute penalty for loading each method exactly once */
-			long allFitPenalty = cache.getMissOnceCummulativeCacheCost(invoked,assumeMissOnceOnInvoke);
+			long allFitPenalty = mca.getMissOnceCummulativeCacheCost(invoked,assumeMissOnceOnInvoke);
 			long allFitCacheCost = allFitPenalty  + returnCost;
+			
 			/* Cost All-Fit: recursive + penalty for loading once + return to caller */
 			long allFitCost = alwaysHitCost + allFitCacheCost;
 
@@ -94,7 +120,9 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 			} else {
 				cacheCost = invokeReturnCost + nonLocalCacheCost;
 			}
-		} else { /* ALWAYS MISS or doesn't fit */
+		} 
+		
+		else { /* ALWAYS MISS or doesn't fit */
 			cacheCost = invokeReturnCost + nonLocalCacheCost;
 		}
 		WcetCost cost = new WcetCost();
@@ -108,7 +136,8 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 		return cost;
 	}
 
-    protected boolean allFit(MethodCache cache, MethodInfo method, CallString callString) {
-        return cache.allFit(method, callString);
-    }
+	protected boolean allFit(WCETTool wcetTool, MethodInfo invoked,CallString callString) {
+
+		return new MethodCacheAnalysis(wcetTool).isPersistenceRegion(wcetTool, invoked, callString, EnumSet.of(PersistenceCheck.CountTotal));
+	}
 }

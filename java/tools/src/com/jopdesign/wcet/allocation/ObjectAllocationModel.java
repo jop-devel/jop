@@ -27,10 +27,12 @@ public class ObjectAllocationModel extends AllocationWcetModel {
 		super(p);
 	}
 	
+	@Override
 	public long computeObjectSize(long raw) {
 		return 1;
 	}
 
+	@Override
 	public long computeArraySize(long raw) {
 		return 1;
 	}

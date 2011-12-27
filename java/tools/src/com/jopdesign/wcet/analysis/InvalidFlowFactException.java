@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2010, Benedikt Huber (benedikt@vmars.tuwien.ac.at)
+  Copyright (C) 2011, Benedikt Huber (benedikt@vmars.tuwien.ac.at)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,36 +20,20 @@
 
 package com.jopdesign.wcet.analysis;
 
-import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
-import com.jopdesign.common.code.ExecutionContext;
-
 /**
- * Purpose:
+ * Purpose: Raised if an invalid flow fact is encountered
+ *
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  *
  */
-public class AnalysisContextSimple implements AnalysisContext {
+public class InvalidFlowFactException extends Exception {
 
-	private CallString callString;
-
-	public AnalysisContextSimple(CallString cs) {
-		this.callString = cs;
+	private static final long serialVersionUID = 1L;
+	public InvalidFlowFactException() {
+		super();
 	}
-	
-	@Override
-	public CallString getCallString()
-	{
-		return callString;
+	public InvalidFlowFactException(String msg) {
+		super(msg);
 	}
 
-	@Override
-	public ExecutionContext getExecutionContext(CFGNode n) {
-		return new ExecutionContext(n.getControlFlowGraph().getMethodInfo(), callString);
-	}
-
-    @Override
-    public String getKey() {
-        return toString();
-    }
 }

@@ -50,7 +50,7 @@ import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.ipet.IPETConfig;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
@@ -77,7 +77,7 @@ public class WCAInvoker extends ExecFrequencyProvider {
 
     private WCETTool wcetTool;
     private RecursiveWcetAnalysis<AnalysisContextLocal> recursiveAnalysis;
-    private StaticCacheApproximation cacheApproximation;
+    private CacheCostCalculationMethod cacheApproximation;
 
     private boolean provideWCAExecCount;
 
@@ -85,7 +85,7 @@ public class WCAInvoker extends ExecFrequencyProvider {
 
     private static final Logger logger = Logger.getLogger(JCopter.LOG_ANALYSIS+".WCAInvoker");
 
-    public WCAInvoker(AnalysisManager analyses, Set<MethodInfo> wcaTargets, StaticCacheApproximation defaultApproximation) {
+    public WCAInvoker(AnalysisManager analyses, Set<MethodInfo> wcaTargets, CacheCostCalculationMethod defaultApproximation) {
         this.analyses = analyses;
         this.jcopter = analyses.getJCopter();
         this.wcaTargets = wcaTargets;

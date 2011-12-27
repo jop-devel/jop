@@ -19,35 +19,24 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package com.jopdesign.timing;
+package com.jopdesign.timing.jop;
 
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.tools.JopInstr;
-import org.apache.bcel.generic.Instruction; 
-import org.apache.bcel.generic.InstructionHandle;
 
 import java.util.HashMap;
 import java.util.Map;
 
 
 /**
- * It has wcet info on byte code instruction granularity. Should we consider
- * making a class that wraps the microcodes into objects?
+ * WCETInstruction provides WCET info on byte code granularity, using a hardcoded
+ * lookup table. For implemented architectures, it is deprecated in favor of
+ * implemenations based on microcode timing analysis, {@see SingleCoreTiming}
  */
-@Deprecated
 public class WCETInstruction {
 
 	// indicate that wcet is not available for this bytecode
 	public static final int WCETNOTAVAILABLE = -1;
-
-	// the read and write wait states, ram_cnt - 1
-	// DE2 Board: r=3, w=5
-	// dspio Board: r=1, w=2
-	public static final int r = 1;
-	public static final int w = 2;
-	// cache read wait state (r-1)
-	//public static final int c = 0; // if read wait state <= 1
-	public static final int c = r-1; // if read wait state > 1
 
 	// hidden load cycles
 	public static final int INVOKE_HIDDEN_LOAD_CYCLES = 37;
@@ -58,63 +47,98 @@ public class WCETInstruction {
 	public static final int LRETURN_HIDDEN_LOAD_CYCLES = 11;
 	public static final int DRETURN_HIDDEN_LOAD_CYCLES = 11;
 	public static final int MIN_HIDDEN_LOAD_CYCLES = RETURN_HIDDEN_LOAD_CYCLES; 
+	
+	// Default configuration
+	// dspio Board: r=1, w=2
+	// DE2 Board: r=3, w=5
+	public static final int DEFAULT_R = 1;
+	public static final int DEFAULT_W = 2;
+
+	public static int DEFAULT_CPUS = 8;
+	public static int DEFAULT_TIMESLOT = 10; // has to be greater r !!
+
+	// the read and write wait states, ram_cnt - 1
+	public int r;
+	public int w;
+	// cache read wait state (r-1)
+	public int c() { return r - 1; }
+	
 	// CMP: Multiprocessing with time sliced memory access (christof)
-	public static boolean CMP_WCET = false;
+	public static boolean cmp = false;
 
 	// Arbitration
-	public static int CPUS = 8;
-	public static int TIMESLOT = 10; // has to be greater r !!
+	public int cpus = 8;
+	public int timeslot = 10; // has to be greater r !!
+
+	// Arbitration Array
+	public boolean [] arbiter;
+
 	// bh: max cycles seems unnecessary: you should check statically whether
 	//     the configuration is valid (e.g. timeslot > delay)
 	public static final int MAX_CYCLES = 1000000;
-	public static int getArbiterPeriod() { return CPUS*TIMESLOT; }
+	public int getArbiterPeriod() { return cpus*timeslot; }
 	
 	// Build Instructions
 	public static final int NOP = 0;
 	public static final int RD = 1;
 	public static final int WR = 2;
 	
-	// Arbitration Array
-	public static boolean [] arbiter;
-	
 	// Static Instruction patterns
-	public static WCETMemInstruction ldc;
-	public static WCETMemInstruction ldc_w;
-	public static WCETMemInstruction ldc2_w;
-	public static WCETMemInstruction xaload;
-	public static WCETMemInstruction xastore;
-	public static WCETMemInstruction getstaticx;
-	public static WCETMemInstruction putstatic;
-	public static WCETMemInstruction getfield;
-	public static WCETMemInstruction putfield;
-	public static WCETMemInstruction arraylength;
-	public static WCETMemInstruction jopsys_rdx;
-	public static WCETMemInstruction jopsys_wrx;
+	public WCETMemInstruction ldc;
+	public WCETMemInstruction ldc_w;
+	public WCETMemInstruction ldc2_w;
+	public WCETMemInstruction xaload;
+	public WCETMemInstruction xastore;
+	public WCETMemInstruction getstaticx;
+	public WCETMemInstruction putstatic;
+	public WCETMemInstruction getfield;
+	public WCETMemInstruction putfield;
+	public WCETMemInstruction arraylength;
+	public WCETMemInstruction jopsys_rdx;
+	public WCETMemInstruction jopsys_wrx;
 	
 	// Dynamic Instruction pattern dependent on cache
-	public static WCETMemInstruction ireturn; 
-	public static WCETMemInstruction freturn;
-	public static WCETMemInstruction areturn;
-	public static WCETMemInstruction lreturn;
-	public static WCETMemInstruction dreturn;
-	public static WCETMemInstruction returnx; // return
-	public static WCETMemInstruction invokevirtual;
-	public static WCETMemInstruction invokespecial; 
-	public static WCETMemInstruction invokestatic; // same as invokespecial
-	public static WCETMemInstruction invokeinterface;
+	public WCETMemInstruction ireturn; 
+	public WCETMemInstruction freturn;
+	public WCETMemInstruction areturn;
+	public WCETMemInstruction lreturn;
+	public WCETMemInstruction dreturn;
+	public WCETMemInstruction returnx; // return
+	public WCETMemInstruction invokevirtual;
+	public WCETMemInstruction invokespecial; 
+	public WCETMemInstruction invokestatic; // same as invokespecial
+	public WCETMemInstruction invokeinterface;
 
-	static {
-		if (CMP_WCET){
-			initCMP(CPUS, TIMESLOT);
-		}
+	/** Single-Core timing */
+	public WCETInstruction(int rws, int wws) {
+		configure(rws,wws);
 	}
 	
-	// FIXME: Workaround for the transition to the new timing system
-	public static void initCMP(int cpus, int timeslot) {
+	/** Multi-Core timing */
+	public WCETInstruction(int cpus, int timeslot, int rws, int wws) {
+		configureCMP(cpus, timeslot, rws, wws);		
+	}
+	
+	public void configure(int rws, int wws) {
+		cmp = false;
+		r = rws;
+		w = wws;
+	}
+
+	public void configureCMP(int cpuCount, int timeslot, int rws, int wws) {
+
+		if(cpuCount < 1) throw new AssertionError("WCETInstruction: cpus < 1");
+		if(timeslot < r) throw new AssertionError("WCETInstruction (cmp): timeslot < r");
+		cmp = true;
+		r = rws;
+		w = wws;
+		cpus = cpuCount;
+		initCMP(timeslot);		
+	}
+
+	private void initCMP(int timeslot) {
 		// Initialize 
-		CMP_WCET = true;
-		CPUS = cpus;
-		TIMESLOT = timeslot;
+		this.timeslot = timeslot;
 		initArbiter();
 		generateStaticInstr();		
 	}
@@ -207,26 +231,12 @@ public class WCETInstruction {
 	// reachable?)
 
 	/**
-	 * Same as getWCET, but using the handle.
-	 *
-	 * @param ih
-	 * @param pmiss true if the cache is missed and false if there is a cache hit
-	 * @return wcet or WCETNOTAVAILABLE (-1)
-	 */
-	public static int getCyclesFromHandle(InstructionHandle ih, boolean pmiss, int n) {
-		Instruction ins = ih.getInstruction();
-		int opcode = ins.getOpcode();
-
-		return getCycles(opcode, pmiss, n);
-	}
-
-	/**
 	 * Get the name using the opcode. Used when WCA toWCAString().
 	 * 
 	 * @param opcode
 	 * @return name or "ILLEGAL_OPCODE"
 	 */
-	static String getNameFromOpcode(int opcode) {
+	public static String getNameFromOpcode(int opcode) {
 		return OPCODE_NAMES[opcode];
 	}
 
@@ -235,7 +245,7 @@ public class WCETInstruction {
 	 * @return table body of opcodes with info
 	 */
 
-	public static String toWCAString() {
+	public String toWCAString() {
 		StringBuffer sb = new StringBuffer();
 
 		sb.append("Table of WCETInstruction cycles\n");
@@ -266,7 +276,7 @@ public class WCETInstruction {
 		}
 		sb
 				.append("=============================================================\n");
-		sb.append("Info: b(n=1000)=" + calculateB(false, 1000) + " c=" + c + " r=" + r
+		sb.append("Info: b(n=1000)=" + calculateB(false, 1000) + " c=" + c() + " r=" + r
 				+ " w=" + w + "\n");
 		sb
 				.append("Signatures: V void, Z boolean, B byte, C char, S short, I int, J long, F float, D double, L class, [ array\n");
@@ -275,8 +285,9 @@ public class WCETInstruction {
 
 	public static void main(String[] args) {
 					
+		WCETInstruction inst = new WCETInstruction(DEFAULT_R, DEFAULT_W);
 		for (int i=0; i<256; ++i) {
-			int cnt = getCycles(i, false, 0);
+			int cnt = inst.getCycles(i, false, 0);
 			if (cnt==-1) cnt = 1000;
 			System.out.println(i+"\t"+cnt);
 		}
@@ -287,13 +298,13 @@ public class WCETInstruction {
 	 * 
 	 * @see table D.1 in ms thesis
 	 * @param opcode
-	 * @param pmiss <code>true</code> if the invoke/return instruction referenced by 
+	 * @param pmiss <code>true</code> if the instruction referenced by 
 	 * 		  <code>opcode</code> causes a cache miss, and <code>false</code> otherwise 
 	 * @param n for invoke/return instructions, the length of the receiver/caller in words,
 	 * 		  0 otherwise
 	 * @return wcet cycle count or -1 if wcet not available
 	 */
-	public static int getCycles(int opcode, boolean pmiss, int n) {
+	public int getCycles(int opcode, boolean pmiss, int n) {
 		int wcet = -1;
 		// cache load time
 		int loadTime = calculateB(!pmiss, n);
@@ -373,13 +384,13 @@ public class WCETInstruction {
 		// LDC = 18
 		case org.apache.bcel.Constants.LDC:
 			wcet = 7 + r;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = ldc.wcet;
 			break;
 		// LDC_W = 19
 		case org.apache.bcel.Constants.LDC_W:
 			wcet = 8 + r;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = ldc_w.wcet;
 			break;
 		// LDC2_W = 20
@@ -391,7 +402,7 @@ public class WCETInstruction {
 			if (r > 1) {
 				wcet += r - 1;
 			}
-			if (CMP_WCET==true){
+			if (cmp==true){
 				wcet = ldc2_w.wcet;
 			}
 			break;
@@ -498,13 +509,13 @@ public class WCETInstruction {
 		// IALOAD = 46
 		case org.apache.bcel.Constants.IALOAD:
 			wcet = 6 + 3*r;			
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = xaload.wcet;
 			break;
 			
 		// LALOAD = 47
 		case org.apache.bcel.Constants.LALOAD:
-			if(CMP_WCET==false){
+			if(cmp==false){
 				wcet = 43+4*r;}
 			else{
 				wcet = -1;} // not yet implemented
@@ -512,12 +523,12 @@ public class WCETInstruction {
 		// FALOAD = 48
 		case org.apache.bcel.Constants.FALOAD:
 			wcet = 6 + 3*r;			
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = xaload.wcet;
 			break;
 		// DALOAD = 49
 		case org.apache.bcel.Constants.DALOAD:
-			if(CMP_WCET==false){
+			if(cmp==false){
 				wcet = 43+4*r;}
 			else{
 				wcet = -1;} // not yet implemented
@@ -525,25 +536,25 @@ public class WCETInstruction {
 		// AALOAD = 50
 		case org.apache.bcel.Constants.AALOAD:
 			wcet = 6 + 3*r;			
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = xaload.wcet;
 			break;
 		// BALOAD = 51
 		case org.apache.bcel.Constants.BALOAD:
 			wcet = 6 + 3*r;			
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = xaload.wcet;
 			break;
 		// CALOAD = 52
 		case org.apache.bcel.Constants.CALOAD:
 			wcet = 6 + 3*r;			
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = xaload.wcet;
 			break;
 		// SALOAD = 53
 		case org.apache.bcel.Constants.SALOAD:
 			wcet = 6 + 3*r;			
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = xaload.wcet;
 			break;
 		// ISTORE = 54
@@ -649,12 +660,12 @@ public class WCETInstruction {
 		// IASTORE = 79
 		case org.apache.bcel.Constants.IASTORE:
 			wcet = 10+2*r+w;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = xastore.wcet;
 			break;
 		// LASTORE = 80
 		case org.apache.bcel.Constants.LASTORE:
-			if(CMP_WCET==false){
+			if(cmp==false){
 				wcet = 48+2*r+w;
 				if (w > 3) {
 					wcet += w - 3;}
@@ -665,12 +676,12 @@ public class WCETInstruction {
 		// FASTORE = 81
 		case org.apache.bcel.Constants.FASTORE:
 			wcet = 10+2*r+w;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = xastore.wcet;
 			break;
 		// DASTORE = 82
 		case org.apache.bcel.Constants.DASTORE:
-			if(CMP_WCET==false){
+			if(cmp==false){
 				wcet = 48+2*r+w;
 				if (w > 3) {
 					wcet += w - 3;}
@@ -687,19 +698,19 @@ public class WCETInstruction {
 		// BASTORE = 84
 		case org.apache.bcel.Constants.BASTORE:
 			wcet = 10+2*r+w;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = xastore.wcet;
 			break;
 		// CASTORE = 85
 		case org.apache.bcel.Constants.CASTORE:
 			wcet = 10+2*r+w;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = xastore.wcet;
 			break;
 		// SASTORE = 86
 		case org.apache.bcel.Constants.SASTORE:
 			wcet = 10+2*r+w;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = xastore.wcet;
 			break;
 		// POP = 87
@@ -1058,7 +1069,7 @@ public class WCETInstruction {
 				wcet += loadTime - IRETURN_HIDDEN_LOAD_CYCLES;
 			}
 			
-			if(CMP_WCET==true){
+			if(cmp==true){
 				WCETMemInstruction ireturn = new WCETMemInstruction();
 				ireturn.microcode = new int [wcet];
 				ireturn.opcode = 172;
@@ -1075,7 +1086,7 @@ public class WCETInstruction {
 			if (loadTime > LRETURN_HIDDEN_LOAD_CYCLES) {
 				wcet += loadTime - LRETURN_HIDDEN_LOAD_CYCLES;
 			}
-			if(CMP_WCET==true){
+			if(cmp==true){
 				wcet = -1;}
 			break;
 		// FRETURN = 174
@@ -1087,7 +1098,7 @@ public class WCETInstruction {
 			if (loadTime > FRETURN_HIDDEN_LOAD_CYCLES) {
 				wcet += loadTime - FRETURN_HIDDEN_LOAD_CYCLES;
 			}
-			if(CMP_WCET==true){
+			if(cmp==true){
 				WCETMemInstruction freturn = new WCETMemInstruction();
 				freturn.microcode = new int [wcet];
 				freturn.opcode = 174;
@@ -1103,7 +1114,7 @@ public class WCETInstruction {
 			if (loadTime > DRETURN_HIDDEN_LOAD_CYCLES) {
 				wcet += loadTime - DRETURN_HIDDEN_LOAD_CYCLES;
 			}
-			if(CMP_WCET==true){
+			if(cmp==true){
 				wcet = -1;}
 			break;
 		// ARETURN = 176
@@ -1115,7 +1126,7 @@ public class WCETInstruction {
 			if (loadTime > ARETURN_HIDDEN_LOAD_CYCLES) {
 				wcet += loadTime - ARETURN_HIDDEN_LOAD_CYCLES;
 			}
-			if(CMP_WCET==true){
+			if(cmp==true){
 				WCETMemInstruction areturn = new WCETMemInstruction();
 				areturn.microcode = new int [wcet];
 				areturn.opcode = 176;
@@ -1132,7 +1143,7 @@ public class WCETInstruction {
 				wcet += loadTime - RETURN_HIDDEN_LOAD_CYCLES;
 			}
 			
-			if(CMP_WCET==true){
+			if(cmp==true){
 				WCETMemInstruction returnx = new WCETMemInstruction();
 				returnx.microcode = new int [wcet];
 				returnx.opcode = 177;
@@ -1143,25 +1154,25 @@ public class WCETInstruction {
 		// GETSTATIC = 178
 		case org.apache.bcel.Constants.GETSTATIC:
 			wcet = 5 + r;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = getstaticx.wcet; 
 			break;
 		// PUTSTATIC = 179
 		case org.apache.bcel.Constants.PUTSTATIC:
 			wcet = 5 + w;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = putstatic.wcet;
 			break;
 		// GETFIELD = 180
 		case org.apache.bcel.Constants.GETFIELD:
 			wcet = 8 + 2 * r;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = getfield.wcet;
 			break;
 		// PUTFIELD = 181
 		case org.apache.bcel.Constants.PUTFIELD:
 			wcet = 9 + r + w;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = putfield.wcet;
 			break;
 		// INVOKEVIRTUAL = 182
@@ -1176,7 +1187,7 @@ public class WCETInstruction {
 			if (loadTime > INVOKE_HIDDEN_LOAD_CYCLES) {
 				wcet += loadTime - INVOKE_HIDDEN_LOAD_CYCLES;
 			}
-			if(CMP_WCET==true){
+			if(cmp==true){
 				WCETMemInstruction invokevirtual = new WCETMemInstruction();
 				invokevirtual.microcode = new int [wcet];
 				invokevirtual.opcode = 182;
@@ -1197,7 +1208,7 @@ public class WCETInstruction {
 			if (loadTime > INVOKE_HIDDEN_LOAD_CYCLES) {
 				wcet += loadTime - INVOKE_HIDDEN_LOAD_CYCLES;
 			}
-			if(CMP_WCET==true){
+			if(cmp==true){
 				WCETMemInstruction invokespecial = new WCETMemInstruction();
 				invokespecial.microcode = new int [wcet];
 				invokespecial.opcode = 183;
@@ -1218,7 +1229,7 @@ public class WCETInstruction {
 			if (loadTime > INVOKE_HIDDEN_LOAD_CYCLES) {
 				wcet += loadTime - INVOKE_HIDDEN_LOAD_CYCLES;
 			}
-			if(CMP_WCET==true){
+			if(cmp==true){
 				WCETMemInstruction invokestatic = new WCETMemInstruction();
 				invokestatic.microcode = new int [wcet];
 				invokestatic.opcode = 184;
@@ -1237,7 +1248,7 @@ public class WCETInstruction {
 			if (loadTime > INVOKE_HIDDEN_LOAD_CYCLES) {
 				wcet += loadTime - INVOKE_HIDDEN_LOAD_CYCLES;
 			}
-			if(CMP_WCET==true){
+			if(cmp==true){
 				wcet = -1;}
 			break;
 		// NEW = 187
@@ -1255,7 +1266,7 @@ public class WCETInstruction {
 		// ARRAYLENGTH = 190
 		case org.apache.bcel.Constants.ARRAYLENGTH:
 			wcet = 6 + r;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = arraylength.wcet;
 			break;
 		// ATHROW = 191
@@ -1305,25 +1316,25 @@ public class WCETInstruction {
 		// JOPSYS_RD = 209   
 		case JOPSYS_RD:
 			wcet = 4 + r;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = jopsys_rdx.wcet;
 			break;
 		// JOPSYS_WR = 210
 		case JOPSYS_WR:
 			wcet = 5 + w;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = jopsys_wrx.wcet;
 			break;
 		// JOPSYS_RDMEM = 211
 		case JOPSYS_RDMEM:
 			wcet = 4 + r;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = jopsys_rdx.wcet;
 			break;
 		// JOPSYS_WRMEM = 212
 		case JOPSYS_WRMEM:
 			wcet = 5 + w;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = jopsys_wrx.wcet;
 			break;
 		// JOPSYS_RDINT = 213
@@ -1352,7 +1363,7 @@ public class WCETInstruction {
 			break;
 		// JOPSYS_INT2EXT = 219
 		case JOPSYS_INT2EXT:
-			if(CMP_WCET==false){
+			if(cmp==false){
 				int wt = 0;
 				if (w>8) wt = w-8;
 				wcet = 14+r+ n*(23+wt);}
@@ -1361,7 +1372,7 @@ public class WCETInstruction {
 			break;
 		// JOPSYS_EXT2INT = 220
 		case JOPSYS_EXT2INT:
-			if(CMP_WCET==false){
+			if(cmp==false){
 				int rt = 0;
 				if (r>10) rt = r-10;
 				wcet = 14+r+ n*(23+rt);}
@@ -1380,14 +1391,14 @@ public class WCETInstruction {
 		// GETSTATIC_REF = 224
 		case GETSTATIC_REF:
 			wcet = 5 + r;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = getstaticx.wcet;
 			break;
 			
 		// GETFIELD_REF = 226
 		case GETFIELD_REF:
 			wcet = 8 + 2 * r;
-			if (CMP_WCET==true){
+			if (cmp==true){
 				WCETMemInstruction getfield_ref = new WCETMemInstruction();
 				getfield_ref.microcode = new int [wcet];
 				getfield_ref.opcode = 226;
@@ -1402,16 +1413,16 @@ public class WCETInstruction {
 			if (r > 3) {
 				wcet += r - 3;
 			}			
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = -1;
 			break;
 		// PUTSTATIC_LONG = 229
 		case PUTSTATIC_LONG:
 			wcet = 17 + w;
 			if (w > 2) {
-				wcet += w - 1;
+				wcet += w - 2; // bh, 28.9.11: s/w-1/w-2/ according to micropath analysis
 			}			
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = -1;
 			break;
 
@@ -1421,7 +1432,7 @@ public class WCETInstruction {
 			if (r > 3) {
 				wcet += r - 3;
 			}			
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = -1;
 			break;
 		// PUTFIELD_LONG = 231
@@ -1430,7 +1441,7 @@ public class WCETInstruction {
 			if (w > 1) {
 				wcet += w - 1;
 			}			
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = -1;
 			break;
 
@@ -1439,28 +1450,28 @@ public class WCETInstruction {
 			// FIXME: perhaps it is 9 + 2r?
 			// But MS should check in the HW!
 			wcet = 9 + 2*r;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = -1;
 			break;
 
 		// JOPSYS_PUTFIELD = 234
 		case JOPSYS_PUTFIELD:
 			wcet = 12 + r + w;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = -1;
 			break;
 
 		// JOPSYS_GETSTATIC = 238
 		case JOPSYS_GETSTATIC:
 			wcet = 6 + r;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = -1;
 			break;
 
 		// JOPSYS_PUTSTATIC = 239
 		case JOPSYS_PUTSTATIC:
 			wcet = 6 + w;
-			if (CMP_WCET==true)
+			if (cmp==true)
 				wcet = -1;
 			break;
 
@@ -1510,7 +1521,7 @@ public class WCETInstruction {
 	 * @param opcode
 	 * @return true if there is a valid wcet value
 	 */
-	public static boolean wcetAvailable(int opcode) {
+	public boolean wcetAvailable(int opcode) {
 		if (getCycles(opcode, false, 0) == WCETNOTAVAILABLE)
 			return false;
 		else
@@ -1526,7 +1537,7 @@ public class WCETInstruction {
 	 * @param n
 	 * @return
 	 */
-	public static int getCyclesEstimate(int opcode, boolean pmiss, int n) {
+	public int getCyclesEstimate(int opcode, boolean pmiss, int n) {
 
 		int ret = getCycles(opcode, pmiss, n);
 		// VERY rough estimate
@@ -1536,9 +1547,9 @@ public class WCETInstruction {
 		return ret;
 	}
 
-	public static int getNoImplDispatchCycles() {
+	public  int getNoImplDispatchCycles() {
 		// FIXME (CMP_WCET): invokevirtual should be a conservative approximation to sys_noim for now
-		if(CMP_WCET) return getCycles(org.apache.bcel.Constants.INVOKEVIRTUAL,false,0);
+		if(cmp) return getCycles(org.apache.bcel.Constants.INVOKEVIRTUAL,false,0);
 		else return 85 + Math.max(0,r-3) + Math.max(0,r-2);
 	}
 
@@ -1547,7 +1558,7 @@ public class WCETInstruction {
 	 * 
 	 * @see ms thesis p 232
 	 */
-	public static int calculateB(boolean hit, int n) {
+	public int calculateB(boolean hit, int n) {
 		int b = -1;
 		if (n == -1) {
 			System.err.println("n not set!");
@@ -1556,7 +1567,7 @@ public class WCETInstruction {
 			if (hit) {
 				b = 4;
 			} else {
-				b = 6 + (n+1) * (2+c);
+				b = 6 + (n+1) * (2+c());
 			}
 		}
 		return b;
@@ -1565,14 +1576,14 @@ public class WCETInstruction {
 	// Initializes a couple of periods, where one timeslot is true and the
 	// other ones are false
 	
-	public static void initArbiter(){
+	public void initArbiter(){
 		
 		int i;
 		int arb_period = getArbiterPeriod();
 		arbiter = new boolean [MAX_CYCLES];
 		
 		for(i=0;i<MAX_CYCLES;i++){
-			if( (i % arb_period) < TIMESLOT ){
+			if( (i % arb_period) < timeslot ){
 				arbiter[i]=true;}
 			else{
 				arbiter[i]=false;}
@@ -1580,7 +1591,7 @@ public class WCETInstruction {
 	}
 	
 	// generates all static instruction patterns and WCETs
-	public static void generateStaticInstr()
+	public void generateStaticInstr()
 	{
 		ldc = new WCETMemInstruction();
 		ldc_w = new WCETMemInstruction();
@@ -1667,9 +1678,8 @@ public class WCETInstruction {
 	
 	// Generates the Instruction patterns
 	
-	public static void generateInstruction(WCETMemInstruction instruction, boolean pmiss, int n, int b){
+	public void generateInstruction(WCETMemInstruction instruction, boolean pmiss, int n, int b){
 		
-		boolean nop = false;
 		int cnt = 0;
 		int x = 0;
 		int y = 0;
@@ -1836,7 +1846,7 @@ public class WCETInstruction {
 					if (pmiss == false || n==0)
 						instruction.microcode[i]=NOP;
 					else{
-						if (cnt<(2+c)*(n+1)){ 
+						if (cnt<(2+c())*(n+1)){ 
 							if (cnt % (r+1) == 0){
 								instruction.microcode[i]=RD;
 								cnt++;}
@@ -1874,7 +1884,7 @@ public class WCETInstruction {
 					if (pmiss == false || n==0)
 						instruction.microcode[i]=NOP;
 					else{
-						if (cnt<(2+c)*(n+1)){ 
+						if (cnt<(2+c())*(n+1)){ 
 							if (cnt % (r+1) == 0){
 								instruction.microcode[i]=RD;
 								cnt++;}
@@ -1914,7 +1924,7 @@ public class WCETInstruction {
 						if (pmiss == false)
 							instruction.microcode[i]=NOP;
 						else{
-							if (cnt<(2+c)*(n+1)){ 
+							if (cnt<(2+c())*(n+1)){ 
 								if (cnt % (r+1) == 0){
 									instruction.microcode[i]=RD;
 									cnt++;}
@@ -1951,7 +1961,7 @@ public class WCETInstruction {
 					if (pmiss == false || n==0)
 						instruction.microcode[i]=NOP;
 					else{
-						if (cnt<(2+c)*(n+1)){ 
+						if (cnt<(2+c())*(n+1)){ 
 							if (cnt % (r+1) == 0){
 								instruction.microcode[i]=RD;
 								cnt++;}
@@ -1978,7 +1988,7 @@ public class WCETInstruction {
 	}
 	
 	// calculates WCET of instruction
-	public static int wcetOfInstruction(int [] microcode){
+	public int wcetOfInstruction(int [] microcode){
 		
 		int i = 0;
 		int j = 0;
@@ -2000,7 +2010,7 @@ public class WCETInstruction {
 	// Calculates execution time of instruction, starting at a certain position of the
 	// arbitration period
 	
-	public static int calcExecTime(int arb_position,  int [] microcode){	
+	public int calcExecTime(int arb_position,  int [] microcode){	
 		int arb_period = getArbiterPeriod();
 		int i=0;
 		int exec_time=0;
@@ -2017,8 +2027,8 @@ public class WCETInstruction {
 					
 			case RD:				
 				while( (arbiter[arb_position]==false) || 
-					   (((arb_position % arb_period ) >=TIMESLOT-r) && 
-					    ((arb_position % arb_period ) <=TIMESLOT)) ){
+					   (((arb_position % arb_period ) >=timeslot-r) && 
+					    ((arb_position % arb_period ) <=timeslot)) ){
 					exec_time++;
 					arb_position++;
 					//System.out.println("Blocking RD: " + exec_time);
@@ -2033,8 +2043,8 @@ public class WCETInstruction {
 					
 			case WR:
 				while( (arbiter[arb_position]==false) || 
-					   (((arb_position % arb_period)>=TIMESLOT-w) && 
-					    ((arb_position % arb_period)<=TIMESLOT)) ){
+					   (((arb_position % arb_period)>=timeslot-w) && 
+					    ((arb_position % arb_period)<=timeslot)) ){
 					exec_time++;
 					arb_position++;
 				}
@@ -2073,4 +2083,5 @@ public class WCETInstruction {
 		}
 		return map;
 	}
+
 }

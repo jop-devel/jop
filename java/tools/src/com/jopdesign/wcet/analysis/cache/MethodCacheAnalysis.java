@@ -19,220 +19,483 @@
  */
 package com.jopdesign.wcet.analysis.cache;
 
-import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.code.CallGraph.ContextEdge;
-import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.common.code.SuperGraph;
-import com.jopdesign.common.graphutils.Pair;
-import com.jopdesign.wcet.WCETTool;
-import com.jopdesign.wcet.analysis.GlobalAnalysis;
-import com.jopdesign.wcet.ipet.IPETBuilder;
-import com.jopdesign.wcet.ipet.IPETBuilder.ExecutionEdge;
-import com.jopdesign.wcet.ipet.IPETConfig;
-import com.jopdesign.wcet.ipet.IPETSolver;
-import com.jopdesign.wcet.ipet.IPETUtils;
-import com.jopdesign.wcet.ipet.LinearConstraint;
-import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
-import com.jopdesign.wcet.jop.MethodCache;
-import org.apache.log4j.Logger;
-import org.jgrapht.traverse.TopologicalOrderIterator;
-
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import lpsolve.LpSolveException;
+
+import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InvokeInstruction;
+import org.apache.bcel.generic.Type;
+import org.apache.log4j.Logger;
+
+import com.jopdesign.common.MethodCode;
+import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.InvokeSite;
+import com.jopdesign.common.code.Segment;
+import com.jopdesign.common.code.SuperGraph.ContextCFG;
+import com.jopdesign.common.code.SuperGraph.SuperEdge;
+import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
+import com.jopdesign.common.code.SuperGraph.SuperGraphNode;
+import com.jopdesign.common.code.SuperGraph.SuperInvokeEdge;
+import com.jopdesign.common.code.SuperGraph.SuperReturnEdge;
+import com.jopdesign.common.graphutils.Pair;
+import com.jopdesign.common.misc.AppInfoException;
+import com.jopdesign.common.misc.Filter;
+import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.common.misc.MiscUtils.F1;
+import com.jopdesign.wcet.WCETTool;
+import com.jopdesign.wcet.analysis.InvalidFlowFactException;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
+import com.jopdesign.wcet.ipet.IPETSolver;
+import com.jopdesign.wcet.jop.MethodCache;
 
 /**
- * Analysis of the variable block Method cache.
- * Goal: Detect persistence scopes.
- * This is not really important, but a good demonstration of the technique.
- * <p/>
- * TODO: [cache-analysis] Use a scopegraph instead of a callgraph
- *
+ * <p>Cache persistence analysis for the variable block Method cache.</p>
+ * @throws InvalidFlowFactException 
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  */
-public class MethodCacheAnalysis {
-    /**
-     * Purpose: An <emph>model class</emph> for low-level method cache edges (used in the IPET calculations)
-     */
-    public static class MethodCacheSplitEdge {
+public class MethodCacheAnalysis extends CachePersistenceAnalysis {
 
-        private SuperGraph.SuperGraphEdge interProcEdge;
-        private boolean isHitEdge;
+    static final String KEY = "wcet.MethodCacheAnalysis";
 
-        /**
-         * @param e        the corresponding supergraph edge
-         * @param isHitEdge whether the edge is a miss edge
-         */
-        public MethodCacheSplitEdge(SuperGraph.SuperGraphEdge e, boolean isHitEdge) {
-            this.interProcEdge = e;
-            this.isHitEdge = isHitEdge;
-        }
+    protected final WCETTool wcetTool;
+	private MethodCache methodCache;
 
-        /* (non-Javadoc)
-                  * @see java.lang.Object#hashCode()
-                  */
+	private final F1<SuperGraphEdge, Long> NUMBER_OF_BLOCKS = 
+			new F1<SuperGraphEdge,Long>() {
+				@Override
+				public Long apply(SuperGraphEdge e) {
+					MethodInfo mi = e.getTarget().getCfg().getMethodInfo();
+					return (long) methodCache.requiredNumberOfBlocks(mi);
+				}			
+	};
+	
+    private final F1<SuperGraphEdge, Long> EDGE_MISS_COST = new F1<SuperGraphEdge,Long>() {
+		@Override
+		public Long apply(SuperGraphEdge accessEdge) {
+			return getMissCost(accessEdge);			
+		}			
+	};
 
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + (interProcEdge.hashCode());
-            result = prime * result + (isHitEdge ? 1231 : 1237);
-            return result;
-        }
+	public MethodCacheAnalysis(WCETTool wcetTool) {
 
-        /* (non-Javadoc)
-                  * @see java.lang.Object#equals(java.lang.Object)
-                  */
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) return true;
-            if (obj == null) return false;
-            if (getClass() != obj.getClass()) return false;
-            MethodCacheSplitEdge other = (MethodCacheSplitEdge) obj;
-            if (!interProcEdge.equals(other.interProcEdge)) return false;
-            if (isHitEdge != other.isHitEdge) return false;
-            return true;
-        }
-
-        /* (non-Javadoc)
-                  * @see java.lang.Object#toString()
-                  */
-
-        @Override
-        public String toString() {
-            return "MethodCacheSplitEdge ["
-                    + (isHitEdge ? "hit! " : "miss! ")
-                    + interProcEdge + "]";
-        }
+    	this.wcetTool = wcetTool;
+        this.methodCache = wcetTool.getWCETProcessorModel().getMethodCache();        
     }
 
+	public MethodCache getMethodCache() {
+
+		return methodCache;
+	}
+
+	@Override
+	public Set<SuperGraphEdge> addCacheCost(Segment segment, IPETSolver<SuperGraphEdge> ipetSolver,
+			CacheCostCalculationMethod cacheCostCalc) throws InvalidFlowFactException, LpSolveException {
+		
+		if(this.getMethodCache().getNumBlocks() == 0) return new HashSet<SuperGraphEdge>();
+		return super.addCacheCost(segment, ipetSolver, cacheCostCalc);
+	}
+	
+	/**
+	 * Add always miss cost: for each access to the method cache, add cost of access
+	 * @param segment
+	 * @param ipetSolver
+	 */
+	@Override
+	public Set<SuperGraphEdge> addMissAlwaysCost(
+			Segment segment,			
+			IPETSolver<SuperGraphEdge> ipetSolver) {
+	
+		Iterable<SuperGraphEdge> accessEdges = collectCacheAccesses(segment);
+		for(SuperGraphEdge accessEdge: accessEdges) {
+			if(! segment.includesEdge(accessEdge)) {
+				throw new AssertionError("Subsegment edge not in segment!: "+accessEdge);
+			}
+		}
+		return addFixedCostEdges(accessEdges, ipetSolver, EDGE_MISS_COST, KEY+"_am",0);
+	}
+
+	
+	/**
+	 * Add miss once cost: for each method cache persistence segment, add maximum miss cost to the segment entries
+	 * @param segment
+	 * @param ipetSolver
+	 * @param peristenceChecks which checks to perform
+	 * @throws LpSolveException 
+	 * @throws InvalidFlowFactException 
+	 */
+	@Override
+	public Set<SuperGraphEdge> addMissOnceCost(Segment segment,
+			IPETSolver<SuperGraphEdge> ipetSolver, EnumSet<PersistenceCheck> checks)
+					throws InvalidFlowFactException, LpSolveException {	
+		
+		Set<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
+		Map<SuperGraphEdge, Long> extraCost = new HashMap<SuperGraphEdge, Long>();
+		Collection<Segment> cover = findPersistenceSegmentCover(segment, checks, true, extraCost);
+		
+		int tag = 0;
+		for(Segment persistenceSegment : cover) {
+	
+			tag++;
+			/* Collect all cache accesses */
+			long cost = computeMissOnceCost(persistenceSegment, getCacheAccessesByTag(persistenceSegment).entrySet(), 
+					EDGE_MISS_COST, true, KEY+".addMissOnceCost", wcetTool);
+			F1<SuperGraphEdge, Long> costModel = MiscUtils.const1(cost);			
+			Set<SuperGraphEdge> costEdges = addFixedCostEdges(persistenceSegment.getEntryEdges(), ipetSolver,
+					costModel, KEY + "_miss_once", tag);
+			missEdges.addAll(costEdges);
+			
+		}
+		
+		for(Entry<SuperGraphEdge, Long> entry : extraCost.entrySet()) {
+			missEdges.add(fixedAdditionalCostEdge(entry.getKey(), KEY+"_am", 0, entry.getValue(), ipetSolver));
+		}
+		
+		return missEdges;
+	}
+	
+	/**
+	 * Add miss once constraints for all subsegments in the persistence cover of the given segment
+	 * @param segment
+	 * @param ipetSolver
+	 * @return
+	 */
+	@Override
+	public Set<SuperGraphEdge> addMissOnceConstraints(Segment segment,
+			IPETSolver<SuperGraphEdge> ipetSolver) {
+	
+		Set<SuperGraphEdge> missEdges = new HashSet<SuperGraphEdge>();
+		Map<SuperGraphEdge, Long> extraCost = new HashMap<SuperGraphEdge, Long>();
+		Collection<Segment> cover = findPersistenceSegmentCover(segment, EnumSet.allOf(PersistenceCheck.class), false, extraCost);
+		int segmentCounter = 0;
+		for(Segment persistenceSegment : cover) {
+			/* we need to distinguish edges which are shared between persistence segments */
+			String key = KEY +"_" + (++segmentCounter);
+			missEdges.addAll(addPersistenceSegmentConstraints(
+			    		persistenceSegment,
+			    		getCacheAccessesByTag(persistenceSegment).entrySet(),
+						ipetSolver,
+						EDGE_MISS_COST,
+						key));
+		}
+		for(Entry<SuperGraphEdge, Long> entry : extraCost.entrySet()) {
+			missEdges.add(fixedAdditionalCostEdge(entry.getKey(), KEY+"_am", 0, entry.getValue(), ipetSolver));
+		}
+		
+		return missEdges;
+	}
+	
+	@Override
+	public Set<SuperGraphEdge> addGlobalAllFitConstraints(Segment segment,
+			IPETSolver<SuperGraphEdge> ipetSolver) {
+		
+		return addPersistenceSegmentConstraints(segment,
+				getCacheAccessesByTag(segment).entrySet(),
+				ipetSolver,
+				EDGE_MISS_COST,
+				KEY);
+	}
+
+	/** Find a segment cover (i.e., a set of segments covering all execution paths)
+	 *  where each segment in the set is persistent (a cache persistence region (CPR))
+	 *  
+	 *  <h2>The simplest algorithm for a segment S (for acyclic callgraphs)</h2>
+	 *   <ul><li/>Check whether S itself is CPR; if so, return S
+	 *       <li/>Otherwise, create subsegments S' for each invoked method,
+	 *       <li/>and single node segments for each access
+	 *   </ul>
+	 * @param segment the parent segment
+	 * @param checks the strategy to use to determine whether a segment is a persistence region
+	 * @param avoidOverlap whether overlapping segments should be avoided
+	 * @param extraCostOut additional cost for edges which are considered as always-miss or not-cached
+	 * @return
+	 */
+	protected Collection<Segment> findPersistenceSegmentCover(Segment segment, EnumSet<PersistenceCheck> checks, 
+			boolean avoidOverlap, Map<SuperGraphEdge, Long> extraCostOut) {
+		
+		List<Segment> cover = new ArrayList<Segment>();
+	
+		/* We currently only support entries to one CFG */
+		Set<ContextCFG> entryMethods = new HashSet<ContextCFG>();
+		for(SuperGraphEdge entryEdge : segment.getEntryEdges()) {
+			entryMethods.add(entryEdge.getTarget().getContextCFG());
+		}
+		
+		if(entryMethods.size() != 1) {
+			throw new AssertionError("findPersistenceSegmentCover: only supporting segments with unique entry method");
+		}
+		if(this.isPersistenceRegion(segment, checks)) {
+			// System.err.println("Adding cover segment for: "+entryMethods);
+			cover.add(segment);
+		} else {
+			for(Pair<SuperInvokeEdge, SuperReturnEdge> invocation : segment.getCallSitesFrom(entryMethods.iterator().next())) {
+				ContextCFG callee = invocation.first().getCallee();
+				// System.err.println("Recursively analyzing: "+callee);
+				
+				Segment subSegment = Segment.methodSegment(callee, segment.getSuperGraph());
+				Collection<Segment> subRegions = findPersistenceSegmentCover(subSegment, checks, avoidOverlap, extraCostOut);
+				cover.addAll(subRegions);
+				SuperReturnEdge rEdge = invocation.second();
+				MiscUtils.incrementBy(extraCostOut, rEdge, getMissCost(rEdge), 0);
+			}
+		}
+		return cover;
+	}
+
+	public boolean isPersistenceRegion(WCETTool wcetTool, MethodInfo m, CallString cs, EnumSet<PersistenceCheck> tests) {
+
+		/* fast path for the optimizer (segments are still slow) */
+		if(tests == EnumSet.of(PersistenceCheck.CountTotal)) {
+			List<MethodInfo> methods = wcetTool.getCallGraph().getReachableImplementations(m, cs);
+	        long blocks = 0;
+			for (MethodInfo reachable : methods) {
+	        	blocks  += methodCache.requiredNumberOfBlocks(reachable);
+	        }
+	        return methodCache.allFit(blocks);
+		}
+		Segment segment = Segment.methodSegment(m, cs, wcetTool, wcetTool.getCallstringLength(), wcetTool);
+		return isPersistenceRegion(segment, tests);
+	}
+
+	/**
+	 * Perform a heuristic check whether in the given segment all methods are persistent
+	 * @param segment
+	 * @param tests which checks to perform
+	 * @return true if all methods are persistent in the method cache, false if not sure
+	 * @throws LpSolveException 
+	 * @throws InvalidFlowFactException 
+	 */
+	public boolean isPersistenceRegion(Segment segment,  EnumSet<PersistenceCheck> tests)  {
+
+		int cacheWays = getNumberOfWays();
+		long usedWays = cacheWays + 1;
+		if(tests.contains(PersistenceCheck.CountTotal)) {
+			usedWays = countDistinctBlocksUsed(segment);
+			if(usedWays <= cacheWays) return true;			
+		}
+		if(tests.contains(PersistenceCheck.CountRelaxed)) {
+			try {
+				usedWays = countDistinctBlocksAccessed(segment, false);
+				if(usedWays <= cacheWays) return true;
+				if(usedWays >= cacheWays*2) return false;
+			} catch(Exception ex) {
+				WCETTool.logger.error("Count Distinct Cache Blocks (Relaxed LP) failed: "+ex);				
+			}
+		}
+		if(tests.contains(PersistenceCheck.CountILP)) {
+			try {
+				usedWays = countDistinctBlocksAccessed(segment, true);
+				if(usedWays <= cacheWays) return true;
+			} catch(Exception ex) {
+				WCETTool.logger.error("Count Distinct Cache Blocks (Relaxed LP) failed: "+ex);				
+			}
+		}
+		return false;
+	}
+
+	protected int getNumberOfWays() {
+		/* used by the isPersistenceRegion strategy */
+		return methodCache.getNumBlocks();
+	}
+   	
+	/**
+	 * Calculate the total number of distinct method cache blocks possibly accessed in this
+	 * segment (not restricted to one execution)
+	 * @param segment The segment to consider
+	 * @return
+	 */
+	public long countDistinctBlocksUsed(Segment segment) {
+		
+	    long blocks = 0;
+		for (MethodInfo reachable : this.getCacheAccessesByTag(segment).keySet()) {
+	    	blocks  += methodCache.requiredNumberOfBlocks(reachable);
+	    }
+	    return blocks;
+	}
+
+	/**
+	 * Analyze the maximum number of distinct cache lines (ways) possibly accessed during
+	 * one execution of the segment
+	 * @param segment the segment to analyze
+	 * @param use integer variables (more expensive, more accurate)
+	 * @return
+	 * @throws InvalidFlowFactException 
+	 * @throws LpSolveException 
+	 */
+	public long countDistinctBlocksAccessed(Segment segment, boolean useILP) throws InvalidFlowFactException, LpSolveException {
+		
+		return computeMissOnceCost(segment, getCacheAccessesByTag(segment).entrySet(), 
+					NUMBER_OF_BLOCKS, useILP, KEY+".countDistinctCacheBlocks", wcetTool);
+	}
+
+	protected Map<MethodInfo, List<SuperGraphEdge>> getCacheAccessesByTag(Segment segment) {
+
+		/* Collect all method cache accesses */
+		Iterable<SuperGraphEdge> cacheAccessEdges = collectCacheAccesses(segment);
+		return groupAccessEdges(cacheAccessEdges);
+	}
+
+	/**
+	 * @param cacheAccessEdges
+	 * @return
+	 */
+	private Map<MethodInfo, List<SuperGraphEdge>> groupAccessEdges(
+			Iterable<SuperGraphEdge> cacheAccessEdges) {
+
+		/* Group method cache access by method */
+		F1<SuperGraphEdge, MethodInfo> getMethodInfo = new F1<SuperGraphEdge, MethodInfo>() {
+			public MethodInfo apply(SuperGraphEdge v) { return v.getTarget().getContextCFG().getCfg().getMethodInfo(); }
+		};
+		return MiscUtils.group(getMethodInfo, null, cacheAccessEdges);
+	}
+
+	/**
+	 * Collect all method cache accesses in the segment: These are all supergraph edges,
+	 * plus all entry edges.
+	 * @param segment
+	 * @return
+	 */
+	private Iterable<SuperGraphEdge> collectCacheAccesses(final Segment segment) {
+		
+		return new Filter<SuperGraphEdge>() {
+			@Override
+			protected boolean include(SuperGraphEdge e) {
+				return (e instanceof SuperEdge || segment.getEntryEdges().contains(e));
+			}				
+		}.filter(segment.getEdges()); 		
+	}
+
+
+	/**
+	 * Get miss cost for an edge accessing the method cache
+	 * @param accessEdge either a SuperInvoke or SuperReturn edge, or an entry edge of the segment analyzed
+	 * @return maximum miss penalty (in cycles)
+	 */
+	private long getMissCost(SuperGraphEdge accessEdge) {
+		
+		SuperGraphNode accessed = accessEdge.getTarget();
+		ControlFlowGraph cfg = accessed.getCfg();
+		if(accessEdge instanceof SuperReturnEdge) {
+			/* return edge: return cost */
+			Type returnType = accessEdge.getSource().getCfg().getMethodInfo().getType();
+			return methodCache.getMissPenaltyOnReturn(cfg.getNumberOfWords(), returnType);
+		} else if(accessEdge instanceof SuperInvokeEdge) {
+			InstructionHandle invokeIns = ((SuperInvokeEdge) accessEdge).getInvokeNode().getInvokeSite().getInstructionHandle();
+			return methodCache.getMissPenaltyOnInvoke(cfg.getNumberOfWords(), invokeIns.getInstruction());			
+		} else {
+			/* entry edge of the segment: can be invoke or return cost */
+			return methodCache.getMissPenalty(cfg.getNumberOfWords(), false);
+		}
+	}
+
+	/* utility functions */
+
+	/**
+	 * Get the maximum method cache miss penalty for invoking {@code invoked} and returning to {@code invoker}.<br/>
+	 * Also works with virtual invokes (taking the maximum cost)
+	 * @param invokeSite the invoke site
+	 * @param context call context
+	 * @return miss penalty in cycles
+	 */
+	public long getInvokeReturnMissCost(InvokeSite invokeSite, CallString context) {
+
+		ControlFlowGraph invokerCfg = wcetTool.getFlowGraph(invokeSite.getInvoker());
+		long rMiss = methodCache.getMissPenaltyOnReturn(invokerCfg.getNumberOfWords(), invokeSite.getInvokeeRef().getDescriptor().getType());
+		long iMissMax = 0;
+		for(MethodInfo target : wcetTool.findImplementations(invokeSite.getInvoker(), invokeSite.getInstructionHandle(), context)) {
+			ControlFlowGraph invokedCfg = wcetTool.getFlowGraph(target);
+			long iMiss = methodCache.getMissPenaltyOnInvoke(invokedCfg.getNumberOfWords(), invokeSite.getInstructionHandle().getInstruction());
+			if(iMiss > iMissMax) iMissMax = iMiss;
+		}
+		return iMissMax + rMiss;
+	}
+	
     /**
-     * Number of blocks needed to store the instructions of the given scope
+     * Check that cache is big enough to hold any method possibly invoked
+     * Return largest method
      */
-    private Map<ExecutionContext, Long> blocksNeeded;
-    /**
-     * The project analyzed
-     */
-    private WCETTool project;
-
-    public MethodCacheAnalysis(WCETTool p) {
-        this.project = p;
-    }
-
-    /**
-     * Analyze the number of blocks needed by each scope.
-     * <h2>Technique</h2>
-     * <p>Traverse the scope graph, create a local ILP, and find maximum number of blocks</p>
-     * <ol>
-     * <li/> Create an IPET-problem for this scope (structural constraints, flow constraints)
-     * <li/> Add Block Usage Constraints.
-     * <ol>
-     * <li/> Split each invoke edge {@code inv(c,m)} for method {@code m} at callsite {@code c}
-     * into {@code invload(c,m))} and {@code invothers(c,m)}, with
-     * {@code inv(c,m) = invload(c,m) + invothers(c,m)}
-     * <li/> For all invoke edges for method {@code m}, {@code sum invload(c_i, m) &lt;= 1}
-     * </ol>
-     * <li/> The cost for each {@code invload(c_i,m)} variable is the number of blocks used by {@code m}.
-     * </ol>
-     * <h2>Explanation</h2>
-     * <p>Short Proof: Assume that at most {@code N} blocks used, and those {@code N} blocks
-     * correspond to methods {@code M_1} through {@code M_n}. Then there is a path, s.t.
-     * for each method {@code M_k} the frequency of one invoke block {@code b_i = invoke M_k}
-     * is greater than zero. Conversely, if for all invoke blocks {@code b_i = invoke M_k} the
-     * frequency is 0, the method is never loaded. The method at the root of the scope graph is
-     * always loaded.
-     */
-    public void analyzeBlockUsage() {
-        /* Get Method Cache */
-        if (!project.getWCETProcessorModel().hasMethodCache()) {
-            throw new AssertionError(String.format("MethodCacheAnalysis: Processor %s has no method cache",
-                    project.getWCETProcessorModel().getName()));
-        }
-
-        MethodCache methodCache = project.getWCETProcessorModel().getMethodCache();
-        IPETConfig ipetConfig = new IPETConfig(project.getConfig());
-
-        /* initialize result data */
-        blocksNeeded = new HashMap<ExecutionContext, Long>();
-
-        /* iterate top down the scope graph (currently: the call graph) */
-        TopologicalOrderIterator<ExecutionContext, ContextEdge> iter =
-                project.getCallGraph().topDownIterator();
-
-        while (iter.hasNext()) {
-            ExecutionContext scope = iter.next();
-
-            /* Create a supergraph */
-            SuperGraph sg = getScopeSuperGraph(scope);
-
-            /* create an ILP graph for all reachable methods */
-            String key = String.format("method_cache_analysis:%s", scope.toString());
-
-            /* create an global IPET problem for the supergraph */
-            IPETSolver ipetSolver = GlobalAnalysis.buildIpetProblem(project, key, sg, ipetConfig);
-            IPETBuilder<SuperGraph.CallContext> ipetBuilder = new IPETBuilder<SuperGraph.CallContext>(project, null);
-
-            /* Add decision variables for all invoked methods, cost (blocks) and constraints */
-            Map<MethodInfo, List<Pair<SuperGraph.SuperInvokeEdge, SuperGraph.SuperReturnEdge>>> callSites = sg.getAllCallSites();
-
-            callSites.remove(scope.getMethodInfo());
-
-            for (MethodInfo mi : callSites.keySet()) {
-
-                /* sum(load_edges) <= 1 */
-                LinearConstraint<ExecutionEdge> lv = new LinearConstraint<ExecutionEdge>(ConstraintType.LessEqual);
-                for (Pair<SuperGraph.SuperInvokeEdge, SuperGraph.SuperReturnEdge> callSite : callSites.get(mi)) {
-                    SuperGraph.SuperInvokeEdge invokeEdge = callSite.first();
-                    /* add load and use edges */
-                    ipetBuilder.changeContext(invokeEdge.getCallContext());
-                    ExecutionEdge parentEdge = ipetBuilder.newEdge(invokeEdge);
-                    ExecutionEdge loadEdge = ipetBuilder.newEdge(MethodCacheAnalysis.splitEdge(invokeEdge, true));
-                    ExecutionEdge useEdge = ipetBuilder.newEdge(MethodCacheAnalysis.splitEdge(invokeEdge, false));
-                    ipetSolver.addConstraint(IPETUtils.lowLevelEdgeSplit(parentEdge, loadEdge, useEdge));
-                    ipetSolver.addEdgeCost(loadEdge, methodCache.requiredNumberOfBlocks(mi));
-                    lv.addLHS(loadEdge, 1);
-                }
-                lv.addRHS(1);
-                ipetSolver.addConstraint(lv);
+    public static MethodInfo checkCache(WCETTool wcetTool, Iterable<MethodInfo> methods) throws AppInfoException {
+		MethodCache methodCache = wcetTool.getWCETProcessorModel().getMethodCache();
+        int maxWords = 0;
+        MethodInfo largestMethod = null;
+        // It is inconvenient for testing to take all methods into account
+        // for (ClassInfo ci : project.getAppInfo().getClassInfos()) {
+        for (MethodInfo mi : methods) {
+            MethodCode code = mi.getCode();
+            if (code == null) continue;
+            // FIXME: using getNumberOfBytes(false) here to be compatible to old behaviour.
+            //        should probably be getNumberOfBytes()
+            int size = code.getNumberOfBytes(false);
+            int words = MiscUtils.bytesToWords(size);
+            if (!methodCache.fitsInCache(words)) {
+                throw new AppInfoException("Cache to small for target method: " + mi.getFQMethodName() + " / " + words + " words");
             }
-
-            /* Return variables */
-            Map<ExecutionEdge, Long> flowMap = new HashMap<ExecutionEdge, Long>();
-
-            /* Solve */
-            double lpCost;
-            try {
-                lpCost = ipetSolver.solve(flowMap);
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new RuntimeException("LP Solver failed: " + e, e);
+            if (words >= maxWords) {
+                largestMethod = mi;
+                maxWords = words;
             }
-            long neededBlocks = (long) (lpCost + 0.5);
-            neededBlocks += methodCache.requiredNumberOfBlocks(scope.getMethodInfo());
-            Logger.getLogger(this.getClass()).info("Number of Blocks for " + scope.getMethodInfo() + " is " + neededBlocks);
-            this.blocksNeeded.put(scope, neededBlocks);
         }
-    }
 
-    public Map<ExecutionContext, Long> getBlockUsage() {
-        if (blocksNeeded == null) analyzeBlockUsage();
-        return blocksNeeded;
-    }
-
-
-    private SuperGraph getScopeSuperGraph(ExecutionContext scope) {
-        MethodInfo m = scope.getMethodInfo();
-        return new SuperGraph(project.getAppInfo(), project.getFlowGraph(m), project.getProjectConfig().callstringLength());
+        return largestMethod;
     }
 
     /**
-     * @return a CFGEdge representing the either the hit or miss edge of an invoke or return edge
+     * Compute the maximal total cache-miss penalty for <strong>invoking and executing</strong>
+     * m.
+     * <p>
+     * Precondition: The set of all methods reachable from <code>m</code> fit into the cache
+     * </p><p>
+     * Algorithm: If all methods reachable from <code>m</code> (including <code>m</code>) fit
+     * into the cache, we can compute the WCET of <m> using the {@code ALWAYS_HIT} cache
+     * approximation, and then add the sum of cache miss penalties for every reachable method.
+     * </p><p>
+     * Note that when using this approximation, we attribute the
+     * total cache miss cost to the invocation of that method.
+     * </p><p>
+     * Explanation: We know that there is only one cache miss per method, but for FIFO caches we
+     * do not know when the cache miss will occur (on return or invoke), except for leaf methods.
+     * Let <code>h</code> be the number of cycles hidden by <strong>any</strong> return or
+     * invoke instructions. Then the cache miss penalty is bounded by <code>(b-h)</code> per
+     * method.
+     * </p>
+     * @param m The method invoked
+     * @return the cache miss penalty
+     * @deprecated ported from the old method cache analysis framework
      */
-    public static MethodCacheSplitEdge splitEdge(SuperGraph.SuperGraphEdge e, boolean isHitEdge) {
-        return new MethodCacheSplitEdge(e, isHitEdge);
+    @Deprecated
+    public long getMissOnceCummulativeCacheCost(MethodInfo m, boolean assumeOnInvoke) {
+        long miss = 0;
+        for (MethodInfo reachable : wcetTool.getCallGraph().getReachableImplementationsSet(m)) {
+            miss += getMissOnceCost(reachable, assumeOnInvoke);
+        }
+        Logger.getLogger(this.getClass()).debug("getMissOnceCummulativeCacheCost for " + m + "/" + (assumeOnInvoke ? "invoke" : "return") + ":" + miss);
+        return miss;
     }
 
+	/**
+	 * @param mi the method info invoked
+	 * @param assumeOnInvoke whether we may assume the miss happens on invoke
+	 * @return miss penalty in cycles
+	 */
+	public long getMissOnceCost(MethodInfo mi, boolean assumeOnInvoke) {
+
+		int words = wcetTool.getFlowGraph(mi).getNumberOfWords();
+		long missCycles = methodCache.getMissPenalty(words, true);		
+		if(! assumeOnInvoke) {
+			long rMissCycles = methodCache.getMissPenalty(words, false);
+			missCycles = Math.max( missCycles, rMissCycles );
+		}
+		return missCycles;
+	}
 
 }

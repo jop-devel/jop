@@ -30,11 +30,13 @@ public class BlockAllocationModel extends AllocationWcetModel {
 		super(p);
 	}
 	
+	@Override
 	public long computeObjectSize(long raw) {
 		int blocks = (int)Math.ceil((float)(HEADER_SIZE+raw)/BLOCK_SIZE);
 		return BLOCK_SIZE*blocks;
 	}
 
+	@Override
 	public long computeArraySize(long raw) {
 		int depth = (int)Math.ceil(Math.log(raw)/Math.log(BLOCK_SIZE));
 		int blocks = (int)Math.ceil((float)HEADER_SIZE/BLOCK_SIZE);

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+source "${DIR}/wcet.sh"
+
+# Load on Return
+export P1=test;export P2=wcet/devel;export P3=LoadOnReturn
+echo "[LoadOnReturn] $(logfile '$KEY')" >&2
+
+make_java
+make_sim jsim 26636
+make_wcet cs-0-dfa-yes 32882 CALLSTRING_LENGTH=0 USE_DFA=yes
+make_wcet cs-2-dfa-yes 32882 CALLSTRING_LENGTH=2 USE_DFA=yes

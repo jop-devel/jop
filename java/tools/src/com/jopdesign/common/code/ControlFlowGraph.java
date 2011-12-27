@@ -118,8 +118,14 @@ public class ControlFlowGraph {
      * Visitor for flow graph nodes
      */
     public interface CfgVisitor {
-        void visitSpecialNode(DedicatedNode n);
+    	/**
+    	 * visit a special kind of node without basic blocks
+    	 */
+        void visitVirtualNode(VirtualNode n);
 
+    	/**
+    	 * visit a basic block node
+    	 */
         void visitBasicBlockNode(BasicBlockNode n);
 
         /**
@@ -128,6 +134,16 @@ public class ControlFlowGraph {
          */
         void visitInvokeNode(InvokeNode n);
 
+        /**
+         * visit a return node. Return ndoes won't call visitSpecialNode.
+         * @param n the visited node
+         */
+        void visitReturnNode(ReturnNode n);
+
+        /**
+         * visit a summary node
+         * @param n the visited node
+         */
         void visitSummaryNode(SummaryNode n);
     }
 
@@ -155,9 +171,7 @@ public class ControlFlowGraph {
             return name;
         }
 
-        public BasicBlock getBasicBlock() {
-            return null;
-        }
+        public abstract BasicBlock getBasicBlock();
 
         /**
          * This is a helper function to access {@link BasicBlock#getLoopBound()}.
@@ -196,31 +210,53 @@ public class ControlFlowGraph {
     }
 
     /**
-     * Names for dedicated nodes (entry node, exit node)
+     * Names for special purpose nodes (entry node, exit node, split and join nodes, return nodes)
      */
-    public enum DedicatedNodeName { ENTRY, EXIT, SPLIT, JOIN }
+    public enum VirtualNodeKind { ENTRY, EXIT, SPLIT, JOIN, RETURN }
 
     /**
-     * Dedicated flow graph nodes
+     * Special purpose virtual nodes (without basic blocks attached)
      */
-    public class DedicatedNode extends CFGNode {
-        private DedicatedNodeName kind;
+    public class VirtualNode extends CFGNode {
+        private VirtualNodeKind kind;
 
-        public DedicatedNodeName getKind() {
+        public VirtualNodeKind getKind() {
             return kind;
         }
 
-        private DedicatedNode(DedicatedNodeName kind) {
+        private VirtualNode(VirtualNodeKind kind) {
             super(idGen++, kind.toString());
             this.kind = kind;
         }
 
         @Override
+        public BasicBlock getBasicBlock() {
+            return null;
+        }
+
+        @Override
         public void accept(CfgVisitor v) {
-            v.visitSpecialNode(this);
+            v.visitVirtualNode(this);
         }
     }
 
+    /**
+     * Dedicated flow graph nodes
+     */
+    public class ReturnNode extends VirtualNode {
+
+        private InvokeNode invokeNode;
+
+		private ReturnNode(InvokeNode invNode) {
+            super(VirtualNodeKind.RETURN);
+            this.invokeNode = invNode; 
+        }
+
+        @Override
+        public void accept(CfgVisitor v) {
+            v.visitReturnNode(this);
+        }
+    }
     /*---------------------------------------------------------------------------*
      * CFG BasicBlock node classes
      *---------------------------------------------------------------------------*/
@@ -267,9 +303,9 @@ public class ControlFlowGraph {
         }
     }
 
-    /**
-     * Invoke nodes (Basic block with exactly one invoke instruction).
-     */
+    /** Invoke nodes (Basic block with exactly one instruction)
+     * transfer control to a different method.
+	 */
     public class InvokeNode extends BasicBlockNode {
         private InvokeInstruction instr;
         private MethodRef referenced;
@@ -412,7 +448,8 @@ public class ControlFlowGraph {
     }
 
     /**
-     * Invoke nodes (Basic block with exactly one invoke instruction).
+     * SpecialInvokeNode represents target-specific invokes, e.g. bytecodes
+     * implemented in Java
      */
     public class SpecialInvokeNode extends InvokeNode {
         private InstructionHandle instr;
@@ -430,14 +467,17 @@ public class ControlFlowGraph {
             v.visitInvokeNode(this);
         }
 
+        @Override
         public InstructionHandle getInstructionHandle() {
             return instr;
         }
 
+        @Override
         public MethodInfo getImplementingMethod() {
             return this.receiverImpl;
         }
 
+        @Override
         public ControlFlowGraph receiverFlowGraph() {
             // TODO if context and implementationFinder is set, use them instead
             return receiverImpl.getCode().getControlFlowGraph(false);
@@ -446,6 +486,7 @@ public class ControlFlowGraph {
         /**
          * @return true if the invokation denotes an interface, not an implementation
          */
+        @Override
         public boolean isVirtual() {
             return receiverImpl == null;
         }
@@ -473,6 +514,11 @@ public class ControlFlowGraph {
         public void accept(CfgVisitor v) {
             v.visitSummaryNode(this);
         }
+        
+        @Override
+        public BasicBlock getBasicBlock() {
+        	throw new UnsupportedOperationException("getBasicBlock() is meaningless for SummaryNode");
+        }
 
     }
 
@@ -487,7 +533,7 @@ public class ControlFlowGraph {
         ENTRY_EDGE, EXIT_EDGE, NEXT_EDGE,
         GOTO_EDGE, SELECT_EDGE, BRANCH_EDGE, JSR_EDGE,
         DISPATCH_EDGE,
-        INVOKE_EDGE, RETURN_EDGE, FLOW_EDGE, LOW_LEVEL_EDGE
+        RETURN_EDGE, FLOW_EDGE, LOW_LEVEL_EDGE
     }
 
     /**
@@ -584,6 +630,14 @@ public class ControlFlowGraph {
         sendCreateGraphEvent();
     }
 
+
+	/**
+	 * @return true if there virtual dispatch nodes have been removed
+	 */
+	public boolean areVirtualInvokesResolved() {		
+		return virtualInvokesResolved;
+	}
+	
     /**
      * @param ignore true to disable ATHROW warnings during callgraph creation.
      */
@@ -593,8 +647,8 @@ public class ControlFlowGraph {
 
     private ControlFlowGraph(AppInfo appInfo) {
         this.appInfo = appInfo;
-        CFGNode subEntry = new DedicatedNode(DedicatedNodeName.ENTRY);
-        CFGNode subExit = new DedicatedNode(DedicatedNodeName.EXIT);
+        CFGNode subEntry = new VirtualNode(VirtualNodeKind.ENTRY);
+        CFGNode subExit = new VirtualNode(VirtualNodeKind.EXIT);
         this.graph =
                 new DefaultFlowGraph<CFGNode, CFGEdge>(CFGEdge.class, subEntry, subExit);
         this.deadNodes = new HashSet<CFGNode>();
@@ -610,8 +664,8 @@ public class ControlFlowGraph {
                 new HashMap<Integer, BasicBlockNode>();
         graph = new DefaultFlowGraph<CFGNode, CFGEdge>(
                 CFGEdge.class,
-                new DedicatedNode(DedicatedNodeName.ENTRY),
-                new DedicatedNode(DedicatedNodeName.EXIT));
+                new VirtualNode(VirtualNodeKind.ENTRY),
+                new VirtualNode(VirtualNodeKind.EXIT));
         blocks = new ArrayList<BasicBlock>();
 
         /* Create basic block vertices */
@@ -624,7 +678,7 @@ public class ControlFlowGraph {
         /* entry edge */
         graph.addEdge(graph.getEntry(),
                 nodeTable.get(blocks.get(0).getFirstInstruction().getPosition()),
-                entryEdge());
+                createEntryEdge());
         /* flow edges */
         hasThrowEdges = false;
         for (BasicBlockNode bbNode : nodeTable.values()) {
@@ -645,7 +699,7 @@ public class ControlFlowGraph {
                     }
                     hasThrowEdges = true;
                 } else {
-                    graph.addEdge(bbNode, graph.getExit(), exitEdge());
+                    graph.addEdge(bbNode, graph.getExit(), createExitEdge());
                 }
             } else if (!bbf.isAlwaysTaken()) { // next block edge
                 BasicBlockNode bbSucc = nodeTable.get(bbNode.getBasicBlock().getLastInstruction().getNext().getPosition());
@@ -665,7 +719,8 @@ public class ControlFlowGraph {
                         new CFGEdge(target.getEdgeKind()));
             }
         }
-        this.graph.addEdge(graph.getEntry(), graph.getExit(), exitEdge());
+        // FIXME: Is this really sensible? I cannot remember we I added this edge
+        // this.graph.addEdge(graph.getEntry(), graph.getExit(), createExitEdge());
     }
 
     private void sendCreateGraphEvent() {
@@ -723,7 +778,7 @@ public class ControlFlowGraph {
     }
 
     /**
-     * Compile the callgraph back into an instruction list and store it in the associated
+     * Compile the CFG back into an instruction list and store it in the associated
      * MethodCode.
      * <p>
      * We do not order the blocks here, this is a separate optimization
@@ -753,8 +808,12 @@ public class ControlFlowGraph {
             for (CFGEdge e : graph.outgoingEdgesOf(bbn)) {
                 if (e.getKind() != EdgeKind.NEXT_EDGE) continue;
                 BasicBlock target = graph.getEdgeTarget(e).getBasicBlock();
+
                 // TODO edge targets a SPLIT node, handle correctly ..
-                if (target == null) continue;
+                if(target == null) {
+                    throw new ControlFlowError("Block "+i+" does fallthrough to a virtual node of type " +
+                    		((VirtualNode) graph.getEdgeTarget(e)).getKind() + " in " + methodInfo);
+                }
                 if (blocks.get(i+1) != target) {
                     throw new ControlFlowError("Block "+i+" does not fall through to the next block in "+methodInfo);
                 }
@@ -822,10 +881,47 @@ public class ControlFlowGraph {
      * @return Get the actual flow graph
      */
     public FlowGraph<CFGNode, CFGEdge> getGraph() {
-        return graph;
+
+    	return graph;
     }
 
+    public Set<CFGNode> vertexSet() {
+		
+		return graph.vertexSet();
+	}
+
+	public Set<CFGEdge> edgeSet() {
+
+		return graph.edgeSet();
+	}
+
+	public CFGEdge getEdge(BasicBlockNode source, BasicBlockNode target) {
+
+		return graph.getEdge(source, target);
+	}
+	
+	public CFGNode getEdgeSource(CFGEdge edge) {
+		
+		return graph.getEdgeSource(edge);
+	}
+
+	public CFGNode getEdgeTarget(CFGEdge edge) {
+		
+		return graph.getEdgeTarget(edge);
+	}
+		
+	public Set<CFGEdge> outgoingEdgesOf(CFGNode node) {
+
+		return graph.outgoingEdgesOf(node);
+	}
+
+	public Set<CFGEdge> incomingEdgesOf(CFGNode node) {
+
+		return graph.incomingEdgesOf(node);
+	}
+
     public List<BasicBlock> getBlocks() {
+    	
         return blocks;
     }
 
@@ -906,6 +1002,10 @@ public class ControlFlowGraph {
         if (virtualInvokesResolved) return;
         virtualInvokesResolved = true;
         clean = false;
+        
+        if(hasReturnNodes) {
+        	throw new AssertionError("Virtuals need to be resolved before inserting return nodes (file a bug)");
+        }
 
         List<InvokeNode> virtualInvokes = new ArrayList<InvokeNode>();
         /* find virtual invokes */
@@ -922,7 +1022,7 @@ public class ControlFlowGraph {
             // Magic: this uses the context and the implementation finder passed to the constructor of this graph.
             Set<MethodInfo> impls = inv.getImplementingMethods();
 
-            if (impls.size() == 0) internalError("No implementations for " + inv.referenced);
+            if (impls.size() == 0) internalError("No implementations for " + inv.referenced + " possibly invoked from " + inv.getBasicBlock().getMethodInfo());
             if (impls.size() == 1) {
                 InvokeNode implNode = inv.createImplNode(impls.iterator().next(), inv);
                 graph.addVertex(implNode);
@@ -933,12 +1033,12 @@ public class ControlFlowGraph {
                     graph.addEdge(implNode, graph.getEdgeTarget(outEdge), new CFGEdge(outEdge.kind));
                 }
             } else { /* more than one impl, create split/join nodes */
-                CFGNode split = splitNode();
+                CFGNode split = createSplitNode();
                 graph.addVertex(split);
                 for (CFGEdge inEdge : graph.incomingEdgesOf(inv)) {
                     graph.addEdge(graph.getEdgeSource(inEdge), split, new CFGEdge(inEdge.kind));
                 }
-                CFGNode join = joinNode();
+                CFGNode join = createJoinNode();
                 graph.addVertex(join);
                 for (CFGEdge outEdge : graph.outgoingEdgesOf(inv)) {
                     graph.addEdge(join, graph.getEdgeTarget(outEdge), new CFGEdge(outEdge.kind));
@@ -973,7 +1073,7 @@ public class ControlFlowGraph {
         List<CFGNode> trav = this.getTopOrder().getTopologicalTraversal();
         for (CFGNode n : trav) {
             if (n instanceof BasicBlockNode && graph.outDegreeOf(n) > 1) {
-                DedicatedNode splitNode = this.splitNode();
+                VirtualNode splitNode = this.createSplitNode();
                 graph.addVertex(splitNode);
                 /* copy, as the iterators don't work when removing elements while iterating */
                 List<CFGEdge> outEdges = new ArrayList<CFGEdge>(graph.outgoingEdgesOf(n));
@@ -1004,7 +1104,7 @@ public class ControlFlowGraph {
         List<CFGNode> trav = this.getTopOrder().getTopologicalTraversal();
         for (CFGNode n : trav) {
             if (n instanceof InvokeNode) {
-                DedicatedNode returnNode = this.splitNode();
+                ReturnNode returnNode = new ReturnNode((InvokeNode) n);
                 graph.addVertex(returnNode);
                 /* copy, as the iterators don't work when removing elements while iterating */
                 List<CFGEdge> outEdges = new ArrayList<CFGEdge>(graph.outgoingEdgesOf(n));
@@ -1039,7 +1139,7 @@ public class ControlFlowGraph {
             if (getLoopColoring().getHeadOfLoops().contains(n)) {
                 List<CFGEdge> backEdges = getLoopColoring().getBackEdgesTo(n);
                 if (backEdges.size() > 1) {
-                    DedicatedNode splitNode = this.splitNode();
+                    VirtualNode splitNode = this.createSplitNode();
                     graph.addVertex(splitNode);
                     /* move edges */
                     for (CFGEdge e : backEdges) {
@@ -1124,7 +1224,7 @@ public class ControlFlowGraph {
         }
         for (CFGNode n : loopNodes) {
             if (n == hol) {
-                subGraph.addEdge(subGraph.getEntry(), n, subCFG.entryEdge());
+                subGraph.addEdge(subGraph.getEntry(), n, subCFG.createEntryEdge());
                 for (CFGEdge e : getLoopColoring().getBackEdgesByHOL().get(hol)) {
                     subGraph.addEdge(graph.getEdgeSource(e), hol, e.clone());
                 }
@@ -1292,12 +1392,35 @@ public class ControlFlowGraph {
         /* now checks should succeed */
         try {
             TopOrder.checkIsFlowGraph(graph, getEntry(), getExit());
+            checkInvokeNodes();
         } catch (BadGraphException ex) {
             debugDumpGraph();
             throw ex;
         }
     }
 
+    /* check invoke and return nodes */
+    private void checkInvokeNodes() throws BadGraphException  {
+    	
+    	for(CFGNode n :this.getGraph().vertexSet()) {
+    		if(n instanceof InvokeNode) {
+    			if(hasReturnNodes) {
+    				if(this.getGraph().outDegreeOf(n) != 1) {
+    					throw new BadGraphException("CFG with return nodes but outdegree of invoke node != 1");
+    				}
+    				CFGEdge re = getGraph().outgoingEdgesOf(n).iterator().next();
+    				if(re.getKind() != EdgeKind.RETURN_EDGE) {
+    					throw new BadGraphException("CFG with return nodes but return edge has wrong kind");    					
+    				}
+    				CFGNode r = getGraph().getEdgeTarget(re);
+    				if(getGraph().inDegreeOf(r) != 1) {
+    					throw new BadGraphException("CFG with return nodes but indegree of return node != 1");    					
+    				}
+    			}
+    		}
+    	}
+    }
+    
     private void invalidate() {
         this.topOrder = null;
         this.loopColoring = null;
@@ -1350,24 +1473,25 @@ public class ControlFlowGraph {
         }
     }
 
-    private DedicatedNode splitNode() {
-        return new DedicatedNode(DedicatedNodeName.SPLIT);
+    private VirtualNode createSplitNode() {
+        return new VirtualNode(VirtualNodeKind.SPLIT);
     }
 
-    private DedicatedNode joinNode() {
-        return new DedicatedNode(DedicatedNodeName.JOIN);
+    private VirtualNode createJoinNode() {
+        return new VirtualNode(VirtualNodeKind.JOIN);
     }
 
-    private CFGEdge entryEdge() {
+    private CFGEdge createEntryEdge() {
         return new CFGEdge(EdgeKind.ENTRY_EDGE);
     }
 
-    private CFGEdge exitEdge() {
+    private CFGEdge createExitEdge() {
         return new CFGEdge(EdgeKind.EXIT_EDGE);
     }
 
-    private CFGEdge nextEdge() {
+    private CFGEdge createNextEdge() {
         return new CFGEdge(EdgeKind.NEXT_EDGE);
     }
+
 
 }

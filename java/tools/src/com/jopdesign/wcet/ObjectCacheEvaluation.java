@@ -22,34 +22,32 @@ package com.jopdesign.wcet;
 import com.jopdesign.common.code.CallGraph.ContextEdge;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.dfa.analyses.SymbolicAddress;
-import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
+import com.jopdesign.wcet.analysis.InvalidFlowFactException;
 import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo;
-import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
-import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation;
-import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation.OCacheAnalysisResult;
-import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluation.OCacheMode;
-import com.jopdesign.wcet.analysis.cache.ObjectRefAnalysis;
-import com.jopdesign.wcet.ipet.LpSolveWrapper;
-import com.jopdesign.wcet.jop.MethodCache;
+import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluationResult;
+import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluationResult.OCacheAnalysisResult;
+import com.jopdesign.wcet.analysis.cache.ObjectCacheEvaluationResult.OCacheMode;
+import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysis;
+import com.jopdesign.wcet.jop.ObjectCache;
+import com.jopdesign.wcet.jop.ObjectCache.ObjectCacheCost;
+
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-import static com.jopdesign.wcet.ExecHelper.timeDiff;
+import lpsolve.LpSolveException;
 
-public class ObjectCacheAnalysis {
+public class ObjectCacheEvaluation {
 	/* generator for object cache timings */
 	private interface ObjectCacheTiming {
 		int  loadTime(int words);
-		void setObjectCacheTiming(JOPConfig jopConfig, int lineSize);
+		void setObjectCacheTiming(ObjectCache objectCache, int lineSize);
 	}
 	
 	private static class OCTimingUni implements ObjectCacheTiming {
@@ -67,10 +65,10 @@ public class ObjectCacheAnalysis {
 			return delay + words * cyclesPerWord;			
 		}
 		
-		public void setObjectCacheTiming(JOPConfig jopConfig, int blockSize) {
-			jopConfig.setObjectCacheHitCycles(accessCycles);
-			jopConfig.setObjectCacheLoadFieldCycles(accessCycles + loadTime(1));
-			jopConfig.setObjectCacheLoadBlockCycles(accessCycles + loadTime(blockSize));
+		public void setObjectCacheTiming(ObjectCache objectCache, int blockSize) {
+			objectCache.setHitCycles(accessCycles);
+			objectCache.setLoadFieldCycles(accessCycles + loadTime(1));
+			objectCache.setLoadBlockCycles(accessCycles + loadTime(blockSize));
 		}
 		
 		public String toString() {
@@ -112,10 +110,10 @@ public class ObjectCacheAnalysis {
 			return (s-1) + cores * s * maxRounds;
 		}
 
-		public void setObjectCacheTiming(JOPConfig jopConfig, int cacheBlockSize) {			
-			jopConfig.setObjectCacheHitCycles(accessCycles);
-			jopConfig.setObjectCacheLoadFieldCycles(accessCycles + loadTime(1));
-			jopConfig.setObjectCacheLoadBlockCycles(accessCycles + loadTime(cacheBlockSize));
+		public void setObjectCacheTiming(ObjectCache objectCache, int blockSize) {
+			objectCache.setHitCycles(accessCycles);
+			objectCache.setLoadFieldCycles(accessCycles + loadTime(1));
+			objectCache.setLoadBlockCycles(accessCycles + loadTime(blockSize));
 		}
 		
 		public String toString() {
@@ -128,36 +126,45 @@ public class ObjectCacheAnalysis {
 	
 	private WCETTool project;
 
-	public ObjectCacheAnalysis(WCETTool project) {
+	public ObjectCacheEvaluation(WCETTool project) {
 		this.project = project;
 	}
 	
 	public boolean run() {
-		evaluateObjectCache();		
-		return true;
+		try {
+			evaluateObjectCache();
+			return true;
+		} catch (InvalidFlowFactException e) {
+			e.printStackTrace();
+			return false;			
+		} catch (LpSolveException e) {
+			e.printStackTrace();
+			return false;			
+		}		
 	}
 
-	private void evaluateObjectCache() {
+	private void evaluateObjectCache() throws InvalidFlowFactException, LpSolveException {
 		long start,stop;
-
-        // TODO check if we can/need to get jopconfig elsewhere
-		JOPConfig jopconfig = new JOPConfig(project.getConfig());
 
 		// Method Cache
 		//testExactAllFit();
 
 		// Object Cache (debugging)
-
-		ObjectRefAnalysis orefAnalysis = new ObjectRefAnalysis(project, false, 1, 65536, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE);
+		ObjectCache objectCache  = project.getWCETProcessorModel().getObjectCache();
+		if(objectCache == null) {
+			throw new AssertionError("Cannot evaluate object cache on a processor without object cache");
+		}
+		ObjectCacheAnalysis ocAnalysis = new ObjectCacheAnalysis(project, objectCache);
+		// ocAnalysis.false, 1, 65536, ObjectCacheAnalysisDemo.DEFAULT_SET_SIZE);
 		TopologicalOrderIterator<ExecutionContext, ContextEdge> cgIter = this.project.getCallGraph().topDownIterator();
 		while(cgIter.hasNext()) {
 			ExecutionContext scope = cgIter.next();
-			Set<SymbolicAddress> addresses = orefAnalysis.getAddressSet(scope);
+			Set<SymbolicAddress> addresses = ocAnalysis.getAddressSet(scope);
 			String entryString = String.format("%-50s ==> |%d|%s ; Saturated Types: (%s)",
 						scope,
 						addresses.size(),
-						orefAnalysis.getAddressSet(scope),
-						orefAnalysis.getSaturatedTypes(scope));
+						ocAnalysis.getAddressSet(scope),
+						ocAnalysis.getSaturatedTypes(scope));
 			System.out.println("  "+entryString);
 		}
 		
@@ -212,7 +219,6 @@ public class ObjectCacheAnalysis {
 							if(blockSize > 1) continue;
 						}
 						/* Configure object cache timing */
-						ocConfig.setObjectCacheTiming(jopconfig, blockSize);
 
 						/* We have to take field access count of cache size = 0; our analysis otherwise does not assign
 						 * sensible field access counts (thats the fault of the IPET method)
@@ -224,14 +230,18 @@ public class ObjectCacheAnalysis {
 
 						// assume cacheSizes are in ascending order
 						for(int ways : cacheWays) {
-							jopconfig.setObjectCacheAssociativity(ways);
-							jopconfig.setObjectCacheBlockSize(blockSize);				
-							jopconfig.setObjectCacheFieldTag(mode == OCacheMode.SINGLE_FIELD);
-							jopconfig.setObjectCacheLineSize(lineSize);
-							oca = new ObjectCacheAnalysisDemo(project, jopconfig);
+							
+							ocConfig.setObjectCacheTiming(objectCache, blockSize);
+							if(mode == OCacheMode.SINGLE_FIELD) {
+								objectCache = ObjectCache.createFieldCache(project, ways, 0, 0, 0);
+							} else {
+								objectCache = new ObjectCache(project, ways, blockSize, lineSize, 0, 0, 0);
+							}
+							ocConfig.setObjectCacheTiming(objectCache, blockSize);
+							oca = new ObjectCacheAnalysisDemo(project, objectCache);
 
 							double cyclesPerAccess, hitRate;
-							ObjectCacheCost ocCost = oca.computeCost(); 
+							ObjectCache.ObjectCacheCost ocCost = oca.computeCost(); 
 							long cost = ocCost.getCost();
 							if(cost < bestCostPerConfig) bestCostPerConfig = cost;
 
@@ -273,7 +283,7 @@ public class ObjectCacheAnalysis {
 							oStream.println(report);
 							if(mode != OCacheMode.SINGLE_FIELD) {
 								OCacheAnalysisResult sample =
-									new ObjectCacheEvaluation.OCacheAnalysisResult(ways, lineSize, blockSize, configId, 
+									new ObjectCacheEvaluationResult.OCacheAnalysisResult(ways, lineSize, blockSize, configId, 
 																				   bestHitRate, bestCyclesPerAccessForConfig, ocCost);
 								samples.add(sample);
 							}
@@ -287,27 +297,4 @@ public class ObjectCacheAnalysis {
 		OCacheAnalysisResult.dumpLatex(samples, oStream);
 	} 
 	
-	private void testExactAllFit() {
-		long start,stop;
-        start = System.nanoTime();
-		LpSolveWrapper.resetSolverTime();
-		MethodCacheAnalysis mcAnalysis = new MethodCacheAnalysis(project);
-		mcAnalysis.analyzeBlockUsage();
-        stop  = System.nanoTime();
-		System.err.println(
-				String.format("[Method Cache Analysis]: Total time: %.2f s / Total solver time: %.2f s",
-						timeDiff(start,stop),
-						LpSolveWrapper.getSolverTime()));        
-		Map<ExecutionContext, Long> blockUsage = mcAnalysis.getBlockUsage();
-		MiscUtils.printMap(System.out, blockUsage, new MiscUtils.Function2<ExecutionContext, Long, String>() {
-            public String apply(ExecutionContext v1, Long maxBlocks) {
-                MethodCache mc = project.getWCETProcessorModel().getMethodCache();
-                return String.format("%-50s ==> %2d <= %2d",
-                        v1.getMethodInfo().getFQMethodName(),
-                        maxBlocks,
-                        mc.getAllFitCacheBlocks(v1.getMethodInfo(), null));
-            }
-        });
-	}
-
 }

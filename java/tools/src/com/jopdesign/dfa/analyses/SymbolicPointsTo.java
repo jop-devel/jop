@@ -85,6 +85,8 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		new HashMap<InstructionHandle, ContextMap<CallString,BoundedSet<SymbolicAddress>>>();
 	private Query<InstructionHandle> executedOnce;
 
+	private CallString initialCallString;
+
 	// optional extra info: Max flow for each instruction handle
 	
 	public SymbolicPointsTo(int maxSetSize, int callStringLength) {		
@@ -134,7 +136,6 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 					new Context(),
 					new HashMap<CallString, SymbolicAddressMap>());
 		
-		CallString l = CallString.EMPTY;
 		SymbolicAddressMap init = new SymbolicAddressMap(bsFactory);
 		// Add symbolic stack names
 		int stackPtr = 0;
@@ -150,12 +151,13 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			}
 			stackPtr += ty.getSize();
 		}
-		retval.put(l, init);
+		retval.put(initialCallString, init);
 		return retval;
 	}
 	
 	public void initialize(MethodInfo mi, Context context) {
 		entryMethod = mi;
+		initialCallString = context.callString;
 	}
 	
 	public ContextMap<CallString, SymbolicAddressMap> join(
@@ -907,7 +909,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			ContextMap<CallString,SymbolicAddressMap> input,
 			ContextMap<CallString,SymbolicAddressMap> retval) {
 		
-		String methodId = method.getMemberID().toString();
+		String methodId = method.getMemberID().toString(false);
 
 		SymbolicAddressMap in = input.get(context.callString);
 		SymbolicAddressMap out;
@@ -924,7 +926,13 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			out = in.cloneFilterStack(nextStackPtr);
 		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(F)I")) {
 			out = in.cloneFilterStack(nextStackPtr);
-		} else if (methodId.equals("com.jopdesign.sys.Native.makeLong(II)J")) {
+		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")) {
+			out = in.cloneFilterStack(nextStackPtr);
+		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")) {
+			out = in.cloneFilterStack(nextStackPtr);
+		} else if (methodId.equals("com.jopdesign.sys.Native.toLong(D)J")) {
+			out = in.cloneFilterStack(nextStackPtr);			
+		} else if (methodId.equals("com.jopdesign.sys.Native.toDouble(J)D")) {
 			out = in.cloneFilterStack(nextStackPtr);			
 		} else if (methodId.equals("com.jopdesign.sys.Native.toObject(I)Ljava/lang/Object;")
 				|| methodId.equals("com.jopdesign.sys.Native.toIntArray(I)[I")) {
@@ -932,9 +940,11 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			out.putStack(context.stackPtr - 1, bsFactory.top());
 		} else if (methodId.equals("com.jopdesign.sys.Native.getSP()I")) {
 			out = in.cloneFilterStack(nextStackPtr+1);
-		} else if (methodId.equals("com.jopdesign.sys.Native.toInt(Ljava/lang/Object;)I")) {
-			out = in.cloneFilterStack(nextStackPtr);
-		} else if (methodId.equals("com.jopdesign.sys.Native.condMove(IIZ)I")) {
+		} else if (methodId.equals("com.jopdesign.sys.Native.getField(II)I")) {
+			out = in.cloneFilterStack(nextStackPtr-1);
+	    } else if(methodId.equals("com.jopdesign.sys.Native.putField(III)V")) {
+			out = in.cloneFilterStack(nextStackPtr-3);
+	    } else if (methodId.equals("com.jopdesign.sys.Native.condMove(IIZ)I")) {
 			out = in.cloneFilterStack(nextStackPtr-2);
 		} else if(methodId.equals("com.jopdesign.sys.Native.arrayLoad(II)I")) {
 			out = in.cloneFilterStack(nextStackPtr-1);

@@ -2,8 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2006-2008, Martin Schoeberl (martin@jopdesign.com)
-  Copyright (C) 2006, Rasmus Ulslev Pedersen
+  Copyright (C) 2011, Benedikt Huber (benedikt@vmars.tuwien.ac.at)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,12 +17,14 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-package com.jopdesign.timing;
 
-public class WCETMemInstruction{
-	
-	public int opcode;
-	public int [] microcode;
-	public int wcet;
-	
+package com.jopdesign.wcet.jop;
+
+/**
+ * Purpose: Common superclass for models of java processor caches
+ *
+ */
+public interface CacheModel {
+
+	public long getSizeInWords();
 }

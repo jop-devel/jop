@@ -265,10 +265,6 @@ public class ProjectConfig {
         return config.getOption(DO_GENERATE_REPORTS);
     }
 
-    public int callstringLength() {
-        return appInfo.getCallstringLength();
-    }
-
     public boolean doObjectCacheAnalysis() {
         return this.config.getOption(OBJECT_CACHE_ANALYSIS);
     }

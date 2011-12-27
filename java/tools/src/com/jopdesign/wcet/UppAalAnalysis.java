@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Properties;
 
 public class UppAalAnalysis {
-    private static final String CONFIG_FILE_PROP = "wcetanalysis.properties";
+
     private static final Logger tlLogger = Logger.getLogger(UppAalAnalysis.class);
     private static final int ECC_TRESHOLD = 400;
 
@@ -75,7 +75,8 @@ public class UppAalAnalysis {
         setup.registerTool("dfa", dfaTool, true, false);
         setup.registerTool("wcet", wcetTool);
 
-        AppInfo appInfo = setup.initAndLoad(args, true, false, false);
+        @SuppressWarnings("unused")
+		AppInfo appInfo = setup.initAndLoad(args, true, false, false);
 
         if (setup.useTool("dfa")) {
             wcetTool.setDfaTool(dfaTool);
@@ -138,5 +139,5 @@ public class UppAalAnalysis {
         }
         return true;
     }
-
+    
 }

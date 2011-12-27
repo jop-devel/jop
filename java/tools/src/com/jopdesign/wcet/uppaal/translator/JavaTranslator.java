@@ -90,7 +90,7 @@ public abstract class JavaTranslator {
         /* Get callgraph */
         CallGraph callGraph = project.getCallGraph();
         // logger.info("Call stack depth: "+callGraph.getMaxHeight());
-        if (p.getProjectConfig().callstringLength() != 0) {
+        if (p.getCallstringLength() != 0) {
             throw new AssertionError("Callstrings are not support for UppAal translation");
         }
         this.methodInfos = callGraph.getReachableImplementations(root, CallString.EMPTY);

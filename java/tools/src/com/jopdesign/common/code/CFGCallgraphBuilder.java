@@ -54,7 +54,7 @@ public class CFGCallgraphBuilder extends DefaultCallgraphBuilder {
 
         // dead nodes are always removed from the CFG, so no need to traverse down from entry, just visit all nodes
         // Basic blocks however are not removed from the block list..
-        for (CFGNode node : cfg.getGraph().vertexSet()) {
+        for (CFGNode node : cfg.vertexSet()) {
             BasicBlock bb = node.getBasicBlock();
             if (bb == null) continue;
             // if resolveVirtualInvokes has been called, we might visit the same block multiple times,

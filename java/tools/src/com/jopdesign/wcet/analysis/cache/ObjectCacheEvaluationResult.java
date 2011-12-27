@@ -19,7 +19,8 @@
 */
 package com.jopdesign.wcet.analysis.cache;
 
-import com.jopdesign.wcet.analysis.cache.ObjectCacheAnalysisDemo.ObjectCacheCost;
+import com.jopdesign.wcet.jop.ObjectCache;
+import com.jopdesign.wcet.jop.ObjectCache.ObjectCacheCost;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -38,7 +39,7 @@ import java.util.Vector;
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  *
  */
-public class ObjectCacheEvaluation {
+public class ObjectCacheEvaluationResult {
 	/* small helper for partitioning result data */
 	private interface Selector<S,T> {
 		T getKey(S obj);
@@ -66,7 +67,7 @@ public class ObjectCacheEvaluation {
 		public double hitrate;
 		public int configId;
 		public double cyclesPerAccess;
-		private ObjectCacheCost ocCost;
+		private ObjectCache.ObjectCacheCost ocCost;
 		private int blockSize;		
 		/**
 		 * @param ways
@@ -83,7 +84,7 @@ public class ObjectCacheEvaluation {
 				                    int configId, 
 				                    double hitRate,
 				                    double cyclesPerAccess, 
-				                    ObjectCacheCost ocCost) {
+				                    ObjectCache.ObjectCacheCost ocCost) {
 			this.ways = ways;
 			this.lineWords = lineSize;
 			this.blockSize = blockSize;
@@ -132,7 +133,6 @@ public class ObjectCacheEvaluation {
 			for(Entry<Integer, List<OCacheAnalysisResult>> entryConfig : partitionByConfig(samples).entrySet()) {
 				int config = entryConfig.getKey();				
 				/* Bar Plot for Blocksize=1 : Group By Line Size, Associtativity on X, CMC on Y */
-				boolean first = true;
 				out.println("# PLOT DATA for config= " + config +" with block size 1 ");
 				for(Entry<Integer, List<OCacheAnalysisResult>> entry : partitionByLineSize(entryConfig.getValue()).entrySet()) {
 					int lineSize = entry.getKey();

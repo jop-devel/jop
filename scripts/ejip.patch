@@ -1,0 +1,13 @@
+diff --git a/java/target/src/common/ejip/Ejip.java b/java/target/src/common/ejip/Ejip.java
+index a907170..9c1d4ce 100644
+--- a/java/target/src/common/ejip/Ejip.java
++++ b/java/target/src/common/ejip/Ejip.java
+@@ -41,7 +41,7 @@ public class Ejip {
+ 	/**
+ 	 * Enable the experimental TCP implementation
+ 	 */
+-	public static final boolean TCP_ENABLED = true;
++	public static final boolean TCP_ENABLED = false;
+ 
+ 	// default values
+ 	private final static int MAX = 1500;		// maximum Packet length in bytes

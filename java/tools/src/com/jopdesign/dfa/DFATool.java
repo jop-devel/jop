@@ -33,6 +33,7 @@ import com.jopdesign.common.MemberInfo.AccessType;
 import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.StringOption;
@@ -44,6 +45,7 @@ import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MemberID;
 import com.jopdesign.dfa.analyses.CallStringReceiverTypes;
 import com.jopdesign.dfa.analyses.LoopBounds;
+import com.jopdesign.dfa.analyses.SymbolicPointsTo;
 import com.jopdesign.dfa.analyses.ValueMapping;
 import com.jopdesign.dfa.framework.Analysis;
 import com.jopdesign.dfa.framework.AnalysisResultSerialization;
@@ -405,20 +407,27 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     }
 
     public <K, V>
-    Map runLocalAnalysis(Analysis<K, V> analysis, MethodInfo start) {
+    Map runLocalAnalysis(Analysis<K,V> localAnalysis, ExecutionContext scope) {
 
-        Interpreter<K, V> interpreter = new Interpreter<K, V>(analysis, this);
+        Interpreter<K, V> interpreter = new Interpreter<K, V>(localAnalysis, this);
 
-        if (start == null) throw new AssertionError("No such method: " + start);
+        if (scope == null) throw new AssertionError("No such method: " + scope);
         Context context = new Context();
-        context.stackPtr = start.getCode().getMaxLocals();
-        context.setMethodInfo(start);
-
-        analysis.initialize(start, context);
-        InstructionHandle entry = start.getCode().getInstructionList().getStart();
+        MethodCode entryCode = scope.getMethodInfo().getCode();
+        context.stackPtr = entryCode.getMaxLocals();
+        context.setMethodInfo(scope.getMethodInfo());
+        context.setCallString(scope.getCallString());
+        localAnalysis.initialize(scope.getMethodInfo(), context);
+        
+        /* Here used to be a extremely-hard-to-trackdown bug!
+         * Without the boolean parameters, getInstructionList() will dispose
+         * the CFG, a very bad idea during WCET analysis which relies on
+         * pointer equality for CFG edges :(
+         */
+        InstructionHandle entry = entryCode.getInstructionList(false,false).getStart();
         interpreter.interpret(context, entry, new HashMap<InstructionHandle, ContextMap<K, V>>(), true);
 
-        return analysis.getResult();
+        return localAnalysis.getResult();
     }
 
 

@@ -23,16 +23,17 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.FieldInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
-import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.dfa.analyses.Interval;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.annotations.SourceAnnotations;
+import com.jopdesign.wcet.jop.CacheModel;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.jop.NoMethodCache;
+import com.jopdesign.wcet.jop.ObjectCache;
+
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.MULTIANEWARRAY;
@@ -41,17 +42,16 @@ import org.apache.bcel.generic.NEWARRAY;
 import org.apache.bcel.generic.ObjectType;
 import org.apache.bcel.generic.Type;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 public abstract class AllocationWcetModel implements WCETProcessorModel {
 
-	private final MethodCache NO_METHOD_CACHE;
 	protected WCETTool project;
 
 	public AllocationWcetModel(WCETTool p) {
 		project = p;
-		NO_METHOD_CACHE = new NoMethodCache(p);
 	}
 	
 	public String getName() {
@@ -65,34 +65,7 @@ public abstract class AllocationWcetModel implements WCETProcessorModel {
 		}
 		return size;
 	}
-
-	public long getInvokeReturnMissCost(ControlFlowGraph invokerFlowGraph, ControlFlowGraph receiverFlowGraph) {
-		return 0;
-	}
-
-	public long getMethodCacheMissPenalty(int numberOfWords, boolean loadOnInvoke) {
-		return 0;
-	}
-
-    @Override
-    public long getInvokeCacheMissPenalty(InvokeSite invokeSite, int invokeeWords) {
-        return 0;
-    }
-
-    @Override
-    public long getReturnCacheMissPenalty(InvokeSite invokeSite, int invokerWords) {
-        return 0;
-    }
-
-    public MethodCache getMethodCache() {
-		return NO_METHOD_CACHE;
-	}
-
-
-	public boolean hasMethodCache() {
-		return false;
-	}
-
+	
 	public long getExecutionTime(ExecutionContext context, InstructionHandle ih) {
 
 		int opcode = ih.getInstruction().getOpcode();
@@ -218,5 +191,21 @@ public abstract class AllocationWcetModel implements WCETProcessorModel {
 		}
 		return size;
 	}
+
+	@Override
+    public MethodCache getMethodCache() {
+    	return new NoMethodCache();
+	}
+
+	@Override
+	public ObjectCache getObjectCache() {
+		return null;
+	}
+
+	@Override
+	public List<CacheModel> getCaches() {
+		return Collections.emptyList();
+	}
+	
 
 }

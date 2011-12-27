@@ -37,6 +37,7 @@ import joprt.*;
 public class PJPeriodicTask extends RtThread {
 	
 	public static final int INSTRUMENTATION_RUNS = 100;
+	public static final int TOTAL_RUNS = 500;
 
 	private Runnable taskHandler;
 	private int priority;
@@ -66,6 +67,7 @@ public class PJPeriodicTask extends RtThread {
 		
 		if (Config.MEASURE) initInstrumentation();
 		int cnt = 0;
+		int total_cnt = 0;
 
 		for (;;) {
 
@@ -82,6 +84,11 @@ public class PJPeriodicTask extends RtThread {
 				&& ++cnt == INSTRUMENTATION_RUNS) {
 				printInstrumentation();
 				cnt = 0;
+			}
+
+			if (++total_cnt == TOTAL_RUNS) {
+				System.out.println("JVM exit!");
+				System.exit(0);				
 			}
 
 			waitForNextPeriod();

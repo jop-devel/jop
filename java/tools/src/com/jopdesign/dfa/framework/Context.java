@@ -42,7 +42,7 @@ public class Context {
         method = null;
         callString = CallString.EMPTY;
     }
-
+    
     public Context(Context c) {
         stackPtr = c.stackPtr;
         syncLevel = c.syncLevel;
@@ -56,6 +56,10 @@ public class Context {
         cpg = method.getConstantPoolGen();
         methodName = method.toString();
     }
+
+	public void setCallString(CallString cs) {
+		this.callString = cs;
+	}
 
     public MethodInfo getMethodInfo() {
         return method;
@@ -93,5 +97,6 @@ public class Context {
         }
         return false;
     }
+
 
 }

@@ -61,9 +61,12 @@ public class StartLift {
 			if (val<min) min = val;
 			if (val>max) max = val;
 		}
-            System.out.println("Hello World!");
-		if (Config.MEASURE) System.out.println(min);
-		if (Config.MEASURE) System.out.println(max);
+		if (Config.MEASURE) {
+			System.out.print("min: ");
+			System.out.println(min);
+			System.out.print("max: ");
+			System.out.println(max);
+		}
 	}
 	
 	static void invoke() {

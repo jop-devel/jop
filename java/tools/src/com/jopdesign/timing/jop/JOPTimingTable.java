@@ -20,11 +20,14 @@
 
 package com.jopdesign.timing.jop;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.Vector;
 
 import com.jopdesign.timing.InstructionInfo;
+import com.jopdesign.timing.MethodCacheTiming;
 import com.jopdesign.timing.TimingTable;
 import com.jopdesign.timing.jop.MicrocodeAnalysis.MicrocodeVerificationException;
 
@@ -32,35 +35,55 @@ import com.jopdesign.timing.jop.MicrocodeAnalysis.MicrocodeVerificationException
  * Before generating the timing table do not forget to run e.g.
  * {@code make gen_mem -e ASM_SRC=jvm JVM_TYPE=USB @}
  */
-public abstract class JOPTimingTable extends TimingTable<JOPInstructionInfo> {
+public abstract class JOPTimingTable extends TimingTable<JOPInstructionInfo> implements MethodCacheTiming {
 
 	protected MicropathTable micropathTable;
-	protected HashSet<Integer> bytecodeAccessInstructions = new HashSet<Integer>();
+	protected HashSet<Short> bytecodeAccessInstructions = new HashSet<Short>();
 	protected int readWaitStates;
 	protected int writeWaitStates;
 	protected TreeMap<Integer, MicrocodeVerificationException> analysisErrors;
 
-	@Override
-	public long getCycles(JOPInstructionInfo instrInfo) {
-		return getCycles(instrInfo.getOpcode(), instrInfo.hit, instrInfo.wordsLoaded);
-	}
+	// custom timings for experiments
+	public Map<Integer,Long> customTiming = new HashMap<Integer,Long>();
 
-	public long getLocalCycles(int opcode) {
-		return getCycles(opcode, false, 0);
-	}
-	public abstract long getCycles(int opcode, boolean isHit, int words);
 
 	protected JOPTimingTable(MicropathTable mpt) {
 		this.micropathTable = mpt;
 		analysisErrors = new TreeMap<Integer,MicrocodeVerificationException>(mpt.getAnalysisErrors());
 		this.readWaitStates = this.writeWaitStates = -1; // not configured
 
-		for(int i = 0; i < 256; i++) {
+		for(short i = 0; i < 256; i++) {
 			if(mpt.hasTiming(i) && mpt.hasBytecodeLoad(i)) {
 				this.bytecodeAccessInstructions.add(i);
 			}
 		}
 	}
+
+	/** Override timing for certain instructions (for experiments) */
+	public void setCustomTiming(int opcode, long l) {
+		this.customTiming.put(opcode, l);
+	}
+
+	@Override
+	public long getCycles(JOPInstructionInfo instrInfo) {
+		
+		// see whether a custom timing is configured for this opcode
+		if(customTiming.containsKey(instrInfo.getOpcode())) {
+			return customTiming.get(instrInfo.getOpcode());
+		}
+		return getCycles(instrInfo.getOpcode(), instrInfo.hit, instrInfo.wordsLoaded);
+	}
+
+	public long getLocalCycles(int opcode) {
+
+		// see whether a custom timing is configured for this opcode
+		if(customTiming.containsKey(opcode)) {
+			return customTiming.get(opcode);
+		}
+		return getCycles(opcode, false, 0);
+	}
+	
+	protected abstract long getCycles(int opcode, boolean isHit, int words);
 
 	public MicrocodeVerificationException getAnalysisError(int opcode) {
 		return analysisErrors.get(opcode);
@@ -70,9 +93,9 @@ public abstract class JOPTimingTable extends TimingTable<JOPInstructionInfo> {
 		return micropathTable.hasMicrocodeImpl(opcode);
 	}
 
-
 	@Override
 	public boolean hasTimingInfo(int opcode) {
+		if(customTiming.containsKey(opcode)) return true;
 		return micropathTable.hasTiming(opcode);
 	}
 
@@ -95,20 +118,32 @@ public abstract class JOPTimingTable extends TimingTable<JOPInstructionInfo> {
 		return false;
 	}
 
-	/** FIXME: This is not the optimal way to compute cache penalties.
-	 *  It should be sound, though.
+	/*
+	 * (non-Javadoc)
+	 * @see com.jopdesign.timing.MethodCacheTiming#getMethodCacheMissPenalty(int, boolean)
 	 */
+	@Override
 	public long getMethodCacheMissPenalty(int words, boolean loadOnInvoke) {
 		long maxDiff = Long.MIN_VALUE;
-		for(int opcode : bytecodeAccessInstructions) {
+		for(short opcode : bytecodeAccessInstructions) {
 			if(loadOnInvoke && InstructionInfo.isReturnOpcode(opcode)) continue;
-			long onHit = getCycles(opcode,true,words);
-			long onMiss = getCycles(opcode,false,words);
-			long diff = onMiss - onHit;
-			if(diff < 0) throw new AssertionError("Miss is cheaper than hit ? - Not on JOP !");
+			long diff = getMethodCacheMissPenalty(words, opcode); 
 			maxDiff = Math.max(diff, maxDiff);
 		}
 		return maxDiff;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.jopdesign.timing.MethodCacheTiming#getMethodCacheMissPenalty(int, short)
+	 */
+	@Override
+	public long getMethodCacheMissPenalty(int words, short opcode) {
+
+		long onHit = getCycles(opcode,true,words);
+		long onMiss = getCycles(opcode,false,words);
+		long diff = onMiss - onHit;
+		if(diff < 0) throw new AssertionError("Miss is cheaper than hit ? - Not on JOP !");
+		return diff;
 	}
 
 }

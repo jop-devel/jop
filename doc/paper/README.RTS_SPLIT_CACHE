@@ -1,0 +1,81 @@
+Split Cache Evaluation
+-----------------------
+
+This README describes the experimental evaluation for the
+major revision of the paper "Data Cache Organization for
+Accurate Timing Analysis" submitted to RTS.
+
+The version of JOP used is:
+8fdcee2e1e9a02070e6e3a30aaab864bb3e525d2 .... todo update
+
+Get the GrinderBench from EEMBC, copy the src folder into
+the JOP Java target folder, change the name to grinder, and apply grinder.diff.
+Enable individual benchmarks in ???
+
+Changes for Chess:
+max method size to 4 KB
+max stack size to 512 words
+max memory to 8 MB (in JopSim) to avoid running the GC
+
+simulate Chess:
+
+make jsim -e P1=grinder P2=org/eembc/grinderbench P3=CmdlineWrapper
+
+simulate jPapaBench
+
+simulate jPapaBench
+
+Set SLOWDOWN to 50 to avoid overflowing the message queue on
+a slower simulation. Stack size needs to be set to 512 (in
+Const.java)
+
+make jsim P1=bench P2=papabench/jop P3=PapaBenchJopApplication USE_SCOPES=true
+
+
+.... update, this is a copy from the O$ journal
+
+Tested Benchmarks
+----------------
+standard
+ P1=test P2=wcet P3=Start{Lift|BenchUdpIp}
+
+jolden (needs privately distributed jolden patch)
+ P1=test P2=wcet P3=StartJolden{MST|BH|EM3D}
+
+trading
+ P1=...
+
+<nonfunc>
+  ejipcmp, scd_micro
+
+Simulation
+----------
+
+
+Analysis
+--------
+
+.... update ....
+
+Type wcet_help to get an overview of object cache options.
+In the evaluation currently implemented, assocativity and line fill
+mode are varied without further options.
+
+> Cache Objects, update on getfield only
+make java_app wcet P1=test P2=wcet P3=StartLift WCET_METHOD=measure \
+  WCET_OPTIONS="-dataflow-analysis -object-cache-analysis"
+
+> More elaborated example
+make java_app wcet P1=paper/trading/plain P2=com/sun/oss/trader P3=Main \
+  WCET_METHOD=com.sun.oss.trader.tradingengine.OrderManager.checkForTrade \
+  WCET_OPTIONS="-dataflow-analysis -object-cache-analysis -jop-ocache-words-per-line 4" \
+  TARGET_JDK=jdk16mod
+
+Unsolved and Solved Problems
+----------------------------
+    throw new Exception("A"+b);
+==> do not consider dead code
+
+Notes
+-----
+Support for Write Allocate is currently disabled, as the model is unclear: Should we assume a cache miss (a)always or (b)not for write-after-read? The second option is more difficult to implement.

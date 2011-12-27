@@ -24,7 +24,6 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallGraph.ContextEdge;
-import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph.InvokeNode;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
@@ -36,7 +35,6 @@ import com.jopdesign.common.graphutils.GraphUtils;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.jcopter.JCopter;
-import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
@@ -45,7 +43,7 @@ import com.jopdesign.wcet.analysis.RecursiveAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.ipet.IPETConfig;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 import com.jopdesign.wcet.jop.MethodCache;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
@@ -162,9 +160,8 @@ public class MethodCacheAnalysis {
         int sizeInvoker = getMethodSize(invokeSite.getInvoker());
         sizeInvoker = MiscUtils.bytesToWords(sizeInvoker);
 
-        WCETProcessorModel pm = jcopter.getWCETProcessorModel();
-        long invokeCosts = pm.getInvokeCacheMissPenalty(invokeSite, size);
-        long returnCosts = pm.getReturnCacheMissPenalty(invokeSite, sizeInvoker);
+        long invokeCosts = cache.getMissPenaltyOnInvoke(size, invokeSite.getInvokeInstruction());
+        long returnCosts = cache.getMissPenaltyOnReturn(sizeInvoker,invokeSite.getInvokeeRef().getDescriptor().getType());
 
         return getInvokeReturnCacheCosts(ecp, invokeSite, invokeCosts, returnCosts);
     }
@@ -280,7 +277,6 @@ public class MethodCacheAnalysis {
 
         MethodInfo method = modification.getMethod();
 
-        WCETProcessorModel pm = jcopter.getWCETProcessorModel();
         int size = getMethodSize(method);
         int oldWords = MiscUtils.bytesToWords(size);
         int newWords = MiscUtils.bytesToWords(size+deltaBytes);
@@ -289,10 +285,10 @@ public class MethodCacheAnalysis {
         //int newBlocks = getRequiredBlocks(method) + deltaBlocks;
 
         // calc various cache miss cost deltas
-        long deltaInvokeCacheMissCosts = pm.getMethodCacheMissPenalty(newWords, true) -
-                                         pm.getMethodCacheMissPenalty(oldWords, true);
-        long deltaReturnCacheMissCosts = pm.getMethodCacheMissPenalty(newWords, false) -
-                                         pm.getMethodCacheMissPenalty(oldWords, false);
+        long deltaInvokeCacheMissCosts = cache.getMissPenalty(newWords, true) -
+                                         cache.getMissPenalty(oldWords, true);
+        long deltaReturnCacheMissCosts = cache.getMissPenalty(newWords, false) -
+                                         cache.getMissPenalty(oldWords, false);
 
         long costs = 0;
 
@@ -320,7 +316,6 @@ public class MethodCacheAnalysis {
                                                             modification.getRemovedInvokees(), false);
 
         AppInfo appInfo = AppInfo.getSingleton();
-        WCETProcessorModel pm = jcopter.getWCETProcessorModel();
 
         // In all nodes where we have changes, we need to sum up the new costs
         long deltaCosts = 0;
@@ -340,8 +335,8 @@ public class MethodCacheAnalysis {
                 int sizeInvoker = getMethodSize(invokeSite.getInvoker());
                 sizeInvoker = MiscUtils.bytesToWords(sizeInvoker);
 
-                long invokeCosts = pm.getInvokeCacheMissPenalty(invokeSite, size);
-                long returnCosts = pm.getReturnCacheMissPenalty(invokeSite, sizeInvoker);
+                long invokeCosts = cache.getMissPenaltyOnInvoke(size, invokeSite.getInvokeInstruction());
+                long returnCosts = cache.getMissPenaltyOnReturn(sizeInvoker,invokeSite.getInvokeeRef().getDescriptor().getType());
 
                 long count = ecp.getExecCount(invokeSite);
                 if (analysisType == AnalysisType.ALL_FIT_REGIONS) {
@@ -399,7 +394,7 @@ public class MethodCacheAnalysis {
             for (ExecutionContext context : border) {
                 for (MethodInfo reachable : reachableMethods.get(context)) {
                     if (visited.add(reachable)) {
-                        regionCosts += pm.getMethodCacheMissPenalty(reachable.getCode().getNumberOfWords(), cache.isLRU());
+                        regionCosts += cache.getMissPenalty(reachable.getCode().getNumberOfWords(), cache.isLRU());
                     }
                 }
             }
@@ -532,7 +527,7 @@ public class MethodCacheAnalysis {
     ///////////////////////////////////////////////////////////////////////////////////
 
     public RecursiveStrategy<AnalysisContextLocal,WcetCost>
-           createRecursiveStrategy(WCETTool tool, IPETConfig ipetConfig, StaticCacheApproximation cacheApprox)
+           createRecursiveStrategy(WCETTool tool, IPETConfig ipetConfig, CacheCostCalculationMethod cacheApprox)
     {
         if (cacheApprox.needsInterProcIPET()) {
             // TODO use method-cache for all-fit
@@ -543,19 +538,14 @@ public class MethodCacheAnalysis {
             @Override
             public WcetCost recursiveCost(RecursiveAnalysis<AnalysisContextLocal, WcetCost> stagedAnalysis,
                                           InvokeNode n, AnalysisContextLocal ctx) {
-                AnalysisContextLocal newCtx = ctx;
 
+            	AnalysisContextLocal newCtx = ctx;
                 if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT &&
-                        allFit(cache, n.getInvokeSite().getInvoker(), ctx.getCallString()))
+                        allFit(stagedAnalysis.getWCETTool(), n.getInvokeSite().getInvoker(), ctx.getCallString()))
                 {
-                    newCtx = ctx.withCacheApprox(StaticCacheApproximation.ALWAYS_HIT);
+                    newCtx = ctx.withCacheApprox(CacheCostCalculationMethod.ALWAYS_HIT);
                 }
                 return super.recursiveCost(stagedAnalysis, n, newCtx);
-            }
-
-            @Override
-            protected boolean allFit(MethodCache cache, MethodInfo method, CallString callString) {
-                return MethodCacheAnalysis.this.allFit(new ExecutionContext(method, callString));
             }
         };
     }
@@ -568,14 +558,6 @@ public class MethodCacheAnalysis {
         // TODO should we use Java size to make things faster?
         if (method.isNative()) return 0;
         return method.getCode().getNumberOfBytes();
-    }
-
-    private int getRequiredBlocks(MethodInfo method) {
-        int blocks = 0;
-        for (ExecutionContext node : callGraph.getNodes(method)) {
-            blocks = Math.max(blocks, cacheBlocks.get(node));
-        }
-        return blocks;
     }
 
     private void updateNodes(SimpleDirectedGraph<ExecutionContext,ContextEdge> closure,

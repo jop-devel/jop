@@ -28,6 +28,8 @@ import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
+import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
+import com.jopdesign.wcet.analysis.cache.CachePersistenceAnalysis.PersistenceCheck;
 import com.jopdesign.wcet.ipet.CostProvider;
 import com.jopdesign.wcet.ipet.IPETBuilder;
 import com.jopdesign.wcet.ipet.IPETConfig;
@@ -36,6 +38,7 @@ import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -68,11 +71,13 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		@Override
 		public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
 
-			// FIXME: [Bug #3] Hackish implementation of callgraph pruning
+			//[Bug #3] Callgraph Pruning
 			if(n.getVirtualNode() != null) {
-				Set<MethodInfo> actuallyReachable =
-					n.getVirtualNode().getImplementingMethods(ctx.getCallString(), project.getCallGraph());
-				if(! actuallyReachable.contains(n.getImplementingMethod())) return;
+				
+				if(project.isInfeasibleReceiver(n.getImplementingMethod(), ctx.getCallString().push(n.getInvokeSite(),project.getCallstringLength()))) {
+	        		WCETTool.logger.info("RecursiveWcetAnalayis: Pruned InvokeNode: "+n.getImplementingMethod());					
+	        		return;
+				}
 			}
 
 			cost.addLocalCost(processor.getExecutionTime(ctx.getExecutionContext(n),n.getInstructionHandle()));
@@ -80,6 +85,11 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 				throw new AssertionError("Invoke node "+n.getReferenced()+" without implementation in WCET analysis - did you preprocess virtual methods ?");
 			}
 			cost.addCost(RecursiveWcetAnalysis.this.recursiveWCET.recursiveCost(RecursiveWcetAnalysis.this, n, ctx));
+		}
+		
+		@Override
+		public void visitReturnNode(ControlFlowGraph.ReturnNode n) {
+			
 		}
 		@Override
 		public void visitBasicBlockNode(BasicBlockNode n) {
@@ -277,7 +287,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 
 		Map<IPETBuilder.ExecutionEdge, Long> edgeFlowOut = new HashMap<IPETBuilder.ExecutionEdge, Long>();
 		long maxCost = runLocalComputation(key, cfg, ctx, costProvider, edgeFlowOut );
-		LocalWCETSolution sol = new LocalWCETSolution(cfg.getGraph(),nodeCosts);
+		LocalWCETSolution sol = new LocalWCETSolution(cfg.getGraph(), nodeCosts);
 		sol.setSolution(maxCost, edgeFlowOut);
 		return sol;
 	}
@@ -291,8 +301,11 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		Map<String,Object> stats = new HashMap<String, Object>();
 		stats.put("WCET",sol.getCost());
 		stats.put("mode",key.ctx);
-		stats.put("all-methods-fit-in-cache", getWCETTool().getWCETProcessorModel().getMethodCache().allFit(m,null));
-		getWCETTool().getReport().addDetailedReport(m,"WCET_"+key.ctx.getKey(),stats,nodeFlowCostDescrs,sol.getEdgeFlow());
+
+		MethodCacheAnalysis mca = new MethodCacheAnalysis(getWCETTool());
+		stats.put("all-methods-fit-in-cache", mca.isPersistenceRegion(getWCETTool(), m, 
+				key.ctx.getCallString(), EnumSet.allOf(PersistenceCheck.class)));
+		getWCETTool().getReport().addDetailedReport(m,"WCET_"+key.ctx.toString(),stats,nodeFlowCostDescrs,sol.getEdgeFlow());
 	}
 
     /**
@@ -335,18 +348,17 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
                                     newCost + " ( " + sol.getNodeFlow(n) + " * " + nodeCosts.get(n).getCost() + " )" +
                                     " to line " + lineRange.first() + " in " + basicBlock.getMethodInfo());
                         }
-
-                        cr.addLineProperty(lineRange.first(), "cost", oldCost + newCost);
-                        for (int i : lineRange) {
-                            cr.addLineProperty(i, "color", "red");
-                        }
-                    }
-                }
-            } else {
-                nodeFlowCostDescrs.put(n, "" + nodeCosts.get(n).getCost());
-            }
-        }
-    }
+						cr.addLineProperty(lineRange.first(), "cost", oldCost + newCost);
+						for(int i : lineRange) {
+							cr.addLineProperty(i, "color", "red");
+						}
+					}
+				}
+			}  else {
+			    nodeFlowCostDescrs.put(n, ""+nodeCosts.get(n).getCost());
+		    }
+		}
+	}
 
 	@Override
 	public WcetCost computeCostOfNode(CFGNode n ,Context ctx) {
@@ -366,7 +378,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 			Map<CFGNode, WcetCost> nodeCosts,
 			long maxCost,
 			Map<IPETBuilder.ExecutionEdge, Long> edgeFlowOut) {
-		LocalWCETSolution sol = new LocalWCETSolution(cfg.getGraph(),nodeCosts);
+		LocalWCETSolution sol = new LocalWCETSolution(cfg.getGraph(), nodeCosts);
 		sol.setSolution(maxCost, edgeFlowOut);
 		return sol.getCost();
 	}

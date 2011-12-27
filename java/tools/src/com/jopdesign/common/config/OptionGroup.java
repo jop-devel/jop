@@ -426,7 +426,11 @@ public class OptionGroup {
      */
     public <T> T getOption(Option<T> option) throws BadConfigurationError {
         if (!containsOption(option)) {
-            throw new BadConfigurationError("Option "+option.getKey()+" is not known in group "+prefix);
+        	if(prefix != null) {
+        		throw new BadConfigurationError("Option "+option.getKey()+" is not known in group "+prefix);
+        	} else {
+        		throw new BadConfigurationError("Global option "+option.getKey()+" is not known");
+        	}
         }
         T opt;
         try {

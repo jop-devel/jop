@@ -19,12 +19,17 @@
  */
 package com.jopdesign.wcet.analysis;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.apache.log4j.Logger;
+
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
-import com.jopdesign.wcet.jop.MethodCache;
+import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.uppaal.AnalysisContextUppaal;
 import com.jopdesign.wcet.uppaal.Translator;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
@@ -32,10 +37,6 @@ import com.jopdesign.wcet.uppaal.UppAalConfig.UppaalCacheApproximation;
 import com.jopdesign.wcet.uppaal.WcetSearch;
 import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;
 import com.jopdesign.wcet.uppaal.model.XmlSerializationException;
-import org.apache.log4j.Logger;
-
-import java.io.File;
-import java.io.IOException;
 
 public class UppaalAnalysis {
 
@@ -46,7 +47,7 @@ public class UppaalAnalysis {
     private UppAalConfig uppaalConfig;
 
     public UppaalAnalysis(Logger logger, WCETTool project, File outDir) {
-        if (project.getProjectConfig().callstringLength() > 0) {
+        if (project.getCallstringLength() > 0) {
             throw new AssertionError("Callstrings for UPPAAL analysis are not supported");
         }
         this.uppaalConfig = new UppAalConfig(project.getConfig(), outDir);
@@ -92,7 +93,7 @@ public class UppaalAnalysis {
             long start = System.nanoTime();
             long wcet = search.searchWCET(upperBound);
             long end = System.nanoTime();
-            searchtime += ((double) (end - start)) / 1E9;
+            searchtime += (end - start) / 1E9;
             solvertimemax = Math.max(solvertimemax, search.getMaxSolverTime());
             return WcetCost.totalCost(wcet);
         } else {
@@ -124,13 +125,13 @@ public class UppaalAnalysis {
                 RecursiveAnalysis<AnalysisContextUppaal, WcetCost> stagedAnalysis,
                 ControlFlowGraph.InvokeNode n,
                 AnalysisContextUppaal ctx) {
+        	
             WCETTool project = stagedAnalysis.getWCETTool();
-            MethodInfo invoker = n.getBasicBlock().getMethodInfo();
             MethodInfo invoked = n.getImplementingMethod();
-            WCETProcessorModel proc = project.getWCETProcessorModel();
-            MethodCache cache = proc.getMethodCache();
+            MethodCacheAnalysis mca = new MethodCacheAnalysis(project);
+            
             int cc = project.computeCyclomaticComplexity(invoked);
-            long invokeReturnCost = cache.getInvokeReturnMissCost(proc, project.getFlowGraph(invoker), project.getFlowGraph(invoked));
+            long invokeReturnCost = mca.getInvokeReturnMissCost(n.getInvokeSite(), CallString.EMPTY);
             long cacheCost, nonLocalExecCost;
             if (cc <= treshold
                     && ctx.getCacheApprox() != UppaalCacheApproximation.ALWAYS_MISS
