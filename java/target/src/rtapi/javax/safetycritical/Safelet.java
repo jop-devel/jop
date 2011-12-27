@@ -25,7 +25,6 @@ import javax.safetycritical.annotate.SCJRestricted;
 
 import static javax.safetycritical.annotate.Level.SUPPORT;
 
-import static javax.safetycritical.annotate.Phase.CLEANUP;
 import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 
 /**
@@ -41,13 +40,7 @@ public interface Safelet<MissionLevel extends Mission> {
 	@SCJAllowed(SUPPORT)
 	@SCJRestricted(phase = INITIALIZATION)
 	public MissionSequencer<MissionLevel> getSequencer();
-	
-	// according to the 2011 Reading meeting this is gone
-	// @SCJAllowed(SUPPORT)
-	// @SCJRestricted(phase = INITIALIZATION)
-	// public void setUp();
-	//  
-	// @SCJAllowed(SUPPORT)
-	// @SCJRestricted(phase = CLEANUP)
-	// public void tearDown();
+
+	@SCJAllowed(SUPPORT)
+	public long immortalMemorySize();
 }

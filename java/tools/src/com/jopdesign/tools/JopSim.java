@@ -126,6 +126,10 @@ public class JopSim {
 		int getWrCnt() {
 			return wrCnt;
 		}
+		
+		void reset() {
+			rdCnt = wrCnt = 0;
+		}
 	};
 
 	static final int MAX_MEM = 1024*1024/4;
@@ -244,7 +248,7 @@ public class JopSim {
 	}
 
 	/**
-	 * An extrat (re)start method to test several cache strategies.
+	 * An extra (re)start method to test several cache strategies.
 	 */
 	void start() {
 
@@ -1752,6 +1756,27 @@ System.out.println("new heap: "+heap);
 		}
 	}
 
+	/**
+	 * Reset all simulation counters. We are not interested in the
+	 * startup code (GC memory clean). Maybe in class initializers?
+	 * Invoked due to an I/O access just before invoking main().
+	 */
+	void resetStat() {
+		
+		for (Access a : Access.values()) {
+			a.reset();
+		}
+		for (int i=0; i<bcStat.length; ++i) {
+			bcStat[i] = 0;
+		}
+		instrCnt = 0;
+		rdMemCnt = 0;
+		wrMemCnt = 0;
+		cache.resetCnt();
+	}
+	/**
+	 * Print execution statistics.
+	 */
 	void stat() {
 
 		System.out.println();
@@ -1790,16 +1815,21 @@ System.out.println("new heap: "+heap);
 		System.out.println(insByte+" Instructions bytes");
 		System.out.println(((float) insByte/instrCnt)+" average Instruction length");
 		
-//		System.out.println();
-//		System.out.println("\tType \t&       Load &      &      Store &      \\\\");
-//		int ld = 0, st=0;
-//		for (Access a : Access.values()) {
-//			ld += a.rdCnt; st += a.wrCnt;
+		System.out.println();
+		System.out.println("\tType \t&       Load &        &      Store &        \\\\");
+		int ld = 0, st=0;
+		for (Access a : Access.values()) {
+			ld += a.rdCnt; st += a.wrCnt;
 //			System.out.printf("\t%s\t& %10d & %2d\\%% & %10d & %2d\\%% \\\\%n",
 //					a.name(), a.rdCnt, (a.rdCnt*1000/rdMemCnt+5)/10, a.wrCnt, (a.wrCnt*1000/wrMemCnt+5)/10);
-//		}
-//		System.out.println("\t\\midrule");
-//		System.out.printf("\tSum\t& %10d &      & %10d &      \\\\%n", ld, st);
+			int rdPerc = (int) ((double) a.rdCnt/(rdMemCnt + wrMemCnt)*1000);
+			int wrPerc = (int) ((double) a.wrCnt/(rdMemCnt + wrMemCnt)*1000);
+			System.out.printf("\t%s\t& %10d & %2d.%1d\\%% & %10d & %2d.%1d\\%% \\\\%n",
+					a.name(), a.rdCnt, rdPerc/10, rdPerc%10, 
+					a.wrCnt, wrPerc/10, wrPerc%10);
+		}
+		System.out.println("\t\\midrule");
+		System.out.printf("\tSum\t& %10d &        & %10d &        \\\\%n", ld, st);
 		
 		System.out.println();
 		System.out.println("memory word: "+rdMemCnt+" load "+wrMemCnt+" store");

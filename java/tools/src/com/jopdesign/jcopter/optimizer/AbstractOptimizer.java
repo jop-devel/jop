@@ -27,8 +27,11 @@ import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.JCopterConfig;
 
+import java.util.Collection;
+import java.util.TreeMap;
+
 /**
- * This is the root class for optimizations, which provides some basic checks
+ * This is the root class for simple intraprocedural optimizations, which provides some basic checks
  * if classes and methods should be optimized and iterates over all non-abstract methods.
  *
  * @author Stefan Hepp (stefan@stefant.org)
@@ -36,10 +39,16 @@ import com.jopdesign.jcopter.JCopterConfig;
 public abstract class AbstractOptimizer implements ClassVisitor {
 
     private final JCopter jcopter;
+    private final boolean iterateSorted;
     private final AppInfo appInfo;
 
     public AbstractOptimizer(JCopter jcopter) {
+        this(jcopter, false);
+    }
+
+    public AbstractOptimizer(JCopter jcopter, boolean iterateSorted) {
         this.jcopter = jcopter;
+        this.iterateSorted = iterateSorted;
         this.appInfo = AppInfo.getSingleton();
     }
 
@@ -53,8 +62,18 @@ public abstract class AbstractOptimizer implements ClassVisitor {
 
     public void optimize() {
         initialize();
+
         if (appInfo.hasCallGraph()) {
-            for (MethodInfo method : appInfo.getCallGraph().getMethodInfos()) {
+            Collection<MethodInfo> methods = appInfo.getCallGraph().getMethodInfos();
+            if (iterateSorted) {
+                // little hack to make the DFA cache hack more deterministic
+                TreeMap<String, MethodInfo> temp = new TreeMap<String, MethodInfo>();
+                for (MethodInfo method : methods) {
+                    temp.put(method.getFQMethodName(), method);
+                }
+                methods = temp.values();
+            }
+            for (MethodInfo method : methods) {
                 if (appInfo.isHwObject(method.getClassInfo())) {
                     // Do not optimize Hardware Objects, leave them alone!
                     continue;
@@ -64,7 +83,17 @@ public abstract class AbstractOptimizer implements ClassVisitor {
                 }
             }
         } else {
-            appInfo.iterate(this);
+            if (iterateSorted) {
+                TreeMap<String, ClassInfo> temp = new TreeMap<String, ClassInfo>();
+                for (ClassInfo cls : appInfo.getClassInfos()) {
+                    temp.put(cls.getClassName(), cls);
+                }
+                for (ClassInfo cls: temp.values()) {
+                    visitClass(cls);
+                }
+            } else {
+                appInfo.iterate(this);
+            }
         }
         printStatistics();
     }
@@ -75,7 +104,17 @@ public abstract class AbstractOptimizer implements ClassVisitor {
             // Do not optimize Hardware Objects, leave them alone!
             return false;
         }
-        for (MethodInfo method : classInfo.getMethods()) {
+
+        Collection<MethodInfo> methods = classInfo.getMethods();
+        if (iterateSorted) {
+            // little hack to make the DFA cache hack more deterministic
+            TreeMap<String, MethodInfo> temp = new TreeMap<String, MethodInfo>();
+            for (MethodInfo method : methods) {
+                temp.put(method.getMethodSignature(), method);
+            }
+            methods = temp.values();
+        }
+        for (MethodInfo method : methods) {
             if (method.hasCode()) {
                 optimizeMethod(method);
             }

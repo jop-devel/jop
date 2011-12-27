@@ -1,6 +1,11 @@
 package javax.safetycritical.test;
 
-import com.jopdesign.sys.RtThreadImpl;
+import javax.safetycritical.JopSystem;
+import javax.safetycritical.MissionSequencer;
+
+import edu.purdue.scjtck.bench.clock.ClockAccuracy;
+import joprt.RtThread;
+
 
 public class Minimal {
 
@@ -8,10 +13,22 @@ public class Minimal {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		SafeletImpl si = new SafeletImpl();
-		si.getSequencer().getNextMission();
+		/*final ClockAccuracy test = new ClockAccuracy();
+		test.setup();
+		MissionSequencer seq = test.getSequencer();
+		new RtThread(5, 10000) {
+			private ClockAccuracy tester = test;
+			
+			public void run() {
+				while (!MissionSequencer.cleanupDidRun) {
+					waitForNextPeriod();
+				}
+				tester.teardown();
+			}
+		};
 		System.out.println("Hello SCJ World");
-		RtThreadImpl.startMission();
+		seq.handleAsyncEvent(); // Starts the tests*/
+		JopSystem.startMission(new ScopeTest());
 	}
 
 }

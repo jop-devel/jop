@@ -81,10 +81,10 @@ public interface ProcessorModel {
     int getNumberOfBytes(MethodInfo context, Instruction instruction);
 
     /**
-     * Get all classes, which contain methods invoked by the JVM.
-     * Used for Java implemented bytecodes, exceptions. The classes returned here
-     * will be added as roots so that no method in those classes is removed. 
+     * Get all classes, which contain methods directly invoked by the processor.
+     * Used for Java implemented bytecodes, exceptions, startup, etc.
      *
+     * @see #getJVMRoots()
      * @return a list of fully qualified class names used by the JVM or an empty list
      */
     List<String> getJVMClasses();
@@ -96,5 +96,38 @@ public interface ProcessorModel {
      * @return a list of fully qualified class names used by the JVM or an empty list
      */
     List<String> getNativeClasses();
+
+    /**
+     * Get member IDs of all methods which should be used as additional roots.
+     * <p>
+     * Everything reachable from the roots will never be removed and will be found by optimizers and analyses which
+     * work on all methods in the AppInfo callgraph.
+     *</p>
+     * This should return all methods which are directly invoked by the processor (excluding methods which are
+     * returned by {@link #getJavaImplementation(AppInfo, MethodInfo, Instruction)} and are only needed if the
+     * corresponding instructions appear in the code).
+     *
+     * @return a list of fully qualified member IDs of methods or classes to use as roots of the JVM or an empty list.
+     */
+    List<String> getJVMRoots();
+
+    /**
+     * TODO maybe return a list of memberIds here too
+     *
+     * @return true if no methods or fields should be removed from classes returned by {@link #getJVMClasses()}, or
+     *         false if only members returned by {@link #getJVMRoots()} should be kept (including everything reachable
+     *         from there).
+     */
+    boolean keepJVMClasses();
+
+    /////////////////////////////////////////////////////////////////////////////////////
+    // Information about the processor and cache configuration
+    /////////////////////////////////////////////////////////////////////////////////////
+
+    int getMaxMethodSize();
+
+    int getMaxStackSize();
+
+    int getMaxLocals();
 
 }

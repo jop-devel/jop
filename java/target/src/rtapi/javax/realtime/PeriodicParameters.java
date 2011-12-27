@@ -38,8 +38,18 @@ public class PeriodicParameters extends ReleaseParameters {
 	 * @param period
 	 */
 	public PeriodicParameters(RelativeTime start, RelativeTime period) {
-		this.start = start;
-		this.period = period;
+		if(start == null) {
+			this.start = new RelativeTime();
+		}
+		else {
+			this.start = start;
+		}
+		if(period == null) {
+			this.period = new RelativeTime();
+		}
+		else {
+			this.period = period;
+		}
 	}
 
 	/**
@@ -94,7 +104,7 @@ public class PeriodicParameters extends ReleaseParameters {
 	@BlockFree
 	@SCJAllowed
 	public HighResolutionTime getStart() {
-		return null;
+		return start;
 	}
 
 	/**

@@ -21,8 +21,13 @@
 
 package com.jopdesign.common.config;
 
+import com.jopdesign.common.AppInfo;
+import com.jopdesign.common.ClassInfo;
+import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.misc.AppInfoError;
+import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.processormodel.ProcessorModel.Model;
+import com.jopdesign.common.type.MemberID;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -30,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -49,7 +55,6 @@ public class Config {
     /* Options which are always present
      * TODO maybe move the class loading and entry-point related options to AppInfo?
      */
-
     public static final BooleanOption SHOW_HELP =
             new BooleanOption("help", "show help", 'h', true);
 
@@ -119,18 +124,28 @@ public class Config {
     public static final StringOption INFO_LOG_FILE =
         new StringOption("info-log","the info log file, placed in the report dir","info.log.html");
 
-    //
-    // Some common options, which are not added by default, but can be added by other programs
-    //
-    public static final StringOption PROGRAM_DOT =
-            new StringOption("program-dot", "if graphs should be generated from java, the path to the 'dot' binary", true);
+    public static final StringOption LOAD_SOURCELINES =
+        new StringOption("read-sourcelines", "Read source line infos from file if file exists", "${classpath}/sourcelines.txt");
 
-    
+    public static final StringOption WRITE_SOURCELINES =
+        new StringOption("write-sourcelines", "Write source line infos to a file", "${classdir}/sourcelines.txt");
+
+    public static final StringOption DUMP_CACHEKEY =
+        new StringOption("dump-cachekey", "Set a filename prefix to dump the checksums of the elements in the cache " +
+                "key into a file",true);
+
+
 
     public static final Option<?>[] standardOptions =
             { SHOW_HELP, SHOW_VERSION, SHOW_CONFIG, DEBUG, QUIET, VERBOSE,
               SHOW_WARN_ONLY, SHOW_INFO_ONLY };
 
+    public static final Option<?>[] debugOptions =
+            { DUMP_CACHEKEY };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////
+    // Helper Functions
+    /////////////////////////////////////////////////////////////////////////////////////////////
 
     public static String mergePaths(String[] paths) {
         if (paths.length == 0) return "";
@@ -149,10 +164,47 @@ public class Config {
         return paths.split(File.pathSeparator);
     }
 
-    /*
-    * Exception classes
-    * ~~~~~~~~~~~~~~~~~
-    */
+    /**
+     * @param methodNames comma separated list of method names, either fully qualified with or without descriptor, or
+     *        method names of methods in the main class.
+     * @return the set of methods represented by these names
+     * @throws BadConfigurationException if a name is not resolvable
+     */
+    public static List<MethodInfo> parseMethodList(String methodNames) throws BadConfigurationException {
+
+        List<String> names = splitStringList(methodNames);
+        List<MethodInfo> methods = new ArrayList<MethodInfo>(names.size());
+
+        for (String name : names) {
+            MemberID id = MemberID.parse(name);
+
+            if (!id.hasClassName()) {
+                ClassInfo main = AppInfo.getSingleton().getMainMethod().getClassInfo();
+                Set<MethodInfo> m = main.getMethodInfos(id);
+                if (m.isEmpty()) {
+                    throw new BadConfigurationException("Cannot find method '"+name+"' in main class "+main);
+                }
+                methods.addAll(m);
+            } else {
+                try {
+                    Collection<MethodInfo> infos = AppInfo.getSingleton().getMethodInfos(id);
+                    if (infos.isEmpty()) {
+                        throw new BadConfigurationException("Cannot find methods for "+name);
+                    }
+                    methods.addAll(infos);
+                } catch (MethodNotFoundException e) {
+                    throw new BadConfigurationException("Cannot find class for "+name, e);
+                }
+            }
+        }
+
+        return methods;
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////
+    // Exceptions
+    /////////////////////////////////////////////////////////////////////////////////////////////
+
     @SuppressWarnings({"UncheckedExceptionClass"})
     public static class BadConfigurationError extends Error {
         private static final long serialVersionUID = 1L;
@@ -265,14 +317,22 @@ public class Config {
         return new File(getOutDir(), file);
     }
 
-    public File getOutDir(StringOption option) throws BadConfigurationException {
-        File outDir = new File(getOption(option));
+    public File getOutDir(OptionGroup group, StringOption option) throws BadConfigurationException {
+        File outDir = new File(group.getOption(option));
         checkDir(outDir, true);
         return outDir;
     }
 
+    public File getOutDir(StringOption option) throws BadConfigurationException {
+        return getOutDir(options, option);
+    }
+
     public OptionGroup getOptions() {
         return options;
+    }
+
+    public OptionGroup getDebugGroup() {
+        return getOptions().getGroup("debug");
     }
 
     public Properties getProperties() {
@@ -489,6 +549,11 @@ public class Config {
         options.addOption(option);
     }
 
+    public void addOption(Option<?> option, boolean available) {
+            options.addOption(option, available);
+    }
+
+
     /**
      * This is a shortcut to add a list of options to the main option group.
      *
@@ -497,6 +562,10 @@ public class Config {
      */
     public void addOptions(Option<?>[] options) {
         this.options.addOptions(options);
+    }
+
+    public void addOptions(Option<?>[] options, boolean available) {
+        this.options.addOptions(options, available);
     }
 
     /**

@@ -20,6 +20,8 @@
 
 package com.jopdesign.sys;
 
+import util.Timer;
+
 class JVM {
 
 	private static void f_nop() { JVMHelp.noim(); /* jvm.asm */ }

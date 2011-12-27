@@ -75,4 +75,8 @@ public class AnalysisContextUppaal implements AnalysisContext {
 		return "AnalysisContextUppaal [cacheApprox=" + cacheApprox + "]";
 	}
 
+    @Override
+    public String getKey() {
+        return toString();
+    }
 }

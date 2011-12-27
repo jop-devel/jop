@@ -71,6 +71,7 @@ port (
 
 	np_exc		: out std_logic;
 	ab_exc		: out std_logic;
+	ia_exc		: out std_logic;	-- Illegal assignment flag, for scoped memory in scj.
 
 -- extension connection (now within jopcpu)
 	mem_in		: in mem_in_type;
@@ -128,7 +129,7 @@ end component;
 							pf0, pf1, pf2, pf3, pf4,
 							cp0, cp1, cp2, cp3, cp4, cpstop,
 							last,
-							npexc, abexc, excw
+							npexc, abexc, iaexc, excw
 						);
 	signal state 		: state_type;
 	signal next_state	: state_type;
@@ -200,6 +201,13 @@ end component;
 	signal ocout		: ocache_out_type;
 
 	signal read_ocache	: std_logic;	-- read data MUX
+	
+--	scj: signals for hw scope check
+	signal putref_reg : std_logic; 
+	signal putref_next: std_logic;
+	signal dest_level : unsigned(6 downto 0);
+	signal dest_level_reg: unsigned(6 downto 0);
+	signal illegal_assignment : std_logic;
 
 begin
 
@@ -220,6 +228,9 @@ end process;
 
 	np_exc <= null_pointer;
 	ab_exc <= bounds_error;
+	
+	-- scj: flag that indicates an illegal memory assignment
+	ia_exc <= illegal_assignment;
 
 	-- change byte order for jbc memory (high byte first)
 	bc_wr_data <= sc_mem_in.rd_data(7 downto 0) &
@@ -251,8 +262,7 @@ end process;
 			ocout => ocout
 		);
 
-	-- TODO: what about larger field indexes?
-	-- at least we need to signal a miss....
+	-- maximum fields is restricted to 8 bits, but just 32 fields currently allowed
 	ocin.index <= mem_in.bcopd(OCACHE_MAX_INDEX_BITS-1 downto 0);
 	ocin.handle <= ain(SC_ADDR_SIZE-1 downto 0);
 	-- putfield has the handle in bin...
@@ -348,11 +358,13 @@ end process;
 --
 -- prepare RAM address registering
 --
-process(addr_reg, sc_mem_in, mem_in, ain, bin, state, inc_addr_reg, index, pos_reg, offset_reg, was_a_stidx)
+process(addr_reg, ain, bin, dest_level_reg, inc_addr_reg, index, mem_in, offset_reg, pos_reg, putref_reg, sc_mem_in, state, was_a_stidx)
 begin
 
 	-- default values
-	addr_next <= addr_reg;	
+	addr_next <= addr_reg;
+	putref_next <= putref_reg;
+	dest_level	<= dest_level_reg;
 
 	if inc_addr_reg='1' then
 		addr_next <= addr_reg+1;
@@ -389,11 +401,18 @@ begin
 
 	if mem_in.putfield='1' then
 		addr_next <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+		dest_level <= unsigned(bin(31 downto SC_ADDR_SIZE+2));
+	end if;
+	
+	--
+	if mem_in.putref='1' then
+		putref_next <= '1';
 	end if;
 
 	-- computations that depend on the state
 	if state=iast0 then
 		addr_next <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+		dest_level <= unsigned(bin(31 downto SC_ADDR_SIZE+2));
 	end if;
 
 	-- get/putfield could be optimized for faster memory (e.g. SPM or SimpCon cache - see mem_sc_new)
@@ -431,7 +450,7 @@ end process;
 --
 process(state, mem_in, sc_mem_in,
 	mcache_rdy, mcache_in_cache, bc_len, value, index, 
-	addr_reg, cp_stopbit, was_a_store, ocout)
+	addr_reg, cp_stopbit, was_a_store, ocout, putref_reg, dest_level_reg)
 begin
 
 	next_state <= state;
@@ -491,7 +510,13 @@ begin
 			end if;
 
 		when ps1 =>
-			next_state <= last;
+			-- perform the scope check
+			if (putref_reg='1') and (unsigned(value(31 downto SC_ADDR_SIZE+2)) /= 0) then
+				--test failed
+				next_state <= iaexc;
+			else
+				next_state <= last;
+			end if;
 
 		when gs1 =>
 			next_state <= last;
@@ -560,10 +585,14 @@ begin
 		-- iald0 to iald3 are shared with iastore
 		--
 		when iald0 =>
+
 			if addr_reg=0 then
 				next_state <= npexc;
 			elsif index(SC_ADDR_SIZE-1)='1' then
 				next_state <= abexc;
+			elsif (putref_reg='1') and (dest_level_reg < unsigned(value(31 downto SC_ADDR_SIZE+2))) then
+ 				--test failed
+ 				next_state <= iaexc;
 			else
 				next_state <= iald1;
 				-- shortcut
@@ -571,6 +600,7 @@ begin
 					next_state <= iald2;
 				end if;
 			end if;
+			
 			
 		when iald1 =>
 			-- w. pipeline level 2
@@ -676,7 +706,11 @@ begin
 		when pf1 =>
 			if addr_reg=0 then
 				next_state <= npexc;
-			else
+			--perform the scope check
+ 			elsif (putref_reg='1') and (dest_level_reg < unsigned(value(31 downto SC_ADDR_SIZE+2))) then
+ 				--test failed
+ 				next_state <= iaexc;
+ 			else
 				next_state <= pf2;
 			end if;
 		when pf2 =>
@@ -721,6 +755,9 @@ begin
 
 		when abexc =>
 			next_state <= excw;
+			
+		when iaexc =>
+			next_state <= excw;
 
 		when excw =>
 			if sc_mem_in.rdy_cnt="00" then
@@ -761,6 +798,9 @@ begin
 		base_reg <= (others => '0');
 		pos_reg <= (others => '0');
 		offset_reg <= (others => '0');
+		
+		putref_reg <= '0';
+		dest_level_reg <= (others => '0');
 
 		-- state machine and registered outputs
 		state <= idl;
@@ -771,6 +811,7 @@ begin
 		state_bsy <= '0';
 		null_pointer <= '0';
 		bounds_error <= '0';
+		illegal_assignment <= '0';
 		state_wr <= '0';
 		sc_mem_out.atomic <= '0';
 		sc_mem_out.tm_cache <= '1';
@@ -849,7 +890,10 @@ begin
 		else
 			translate_bit <= '0';
 		end if;
+		
 		addr_reg <= addr_next;
+		putref_reg <= putref_next;
+		dest_level_reg <= dest_level;
 		
 		-- set flag for state sharing
 		if mem_in.iaload='1' or mem_in.getfield='1' then
@@ -895,11 +939,14 @@ begin
 		ocin.chk_pf <= '0';
 		ocin.wr_pf <= '0';
 		
+		illegal_assignment <= '0';
+		
 
 		case next_state is
 
 			when idl =>
 				state_bsy <= '0';
+				putref_reg <='0';
 				-- update object cache on a missed getfield
 				-- only valid on first idle cycle when comming
 				-- from a 'real' getfield (no preceeding stidx)
@@ -1073,6 +1120,9 @@ begin
 
 			when abexc =>
 				bounds_error <= '1';
+				
+			when iaexc =>
+				illegal_assignment <= '1';
 
 			when excw =>
 

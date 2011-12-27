@@ -19,7 +19,7 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
   
-  @authors  Martin Schoeberl, Lei Zhao, Ales Plsek, Tórur Strøm
+  @authors  Martin Schoeberl, Lei Zhao, Ales Plsek, TÃ³rur StrÃ¸m
  */
 
 package javax.realtime;
@@ -87,7 +87,7 @@ public abstract class HighResolutionTime { // implements Comparable {
 	public int compareTo(HighResolutionTime time) {
         if (time == null)
             throw new IllegalArgumentException("null parameter");
-        // We are missing reflection in JOP - Tórur 3/6/2011
+        // We are missing reflection in JOP - Tï¿½rur 3/6/2011
         /*if (getClass() != time.getClass())
             throw new ClassCastException();*/
         if (clock != time.clock)
@@ -229,7 +229,7 @@ public abstract class HighResolutionTime { // implements Comparable {
             } else { // watch for overflow
                 long tmp = millis + millis_in_nanos;
                 if (tmp <= 0) {
-                    // What should we do in case of overflow? - Tórur 3/6/2011
+                    // What should we do in case of overflow? - TÃ³rur 3/6/2011
                 	throw new ArithmeticException("overflow");
                 	//return false
                 }
@@ -240,7 +240,7 @@ public abstract class HighResolutionTime { // implements Comparable {
             if (nanos < 0) { // watch for negative overflow
                 long tmp = millis + millis_in_nanos;
                 if (tmp >= 0) {
-                	// What should we do in case of overflow? - Tórur 3/6/2011
+                	// What should we do in case of overflow? - TÃ³rur 3/6/2011
                 	throw new ArithmeticException("overflow");
                 	//return false
                 }
@@ -287,28 +287,28 @@ public abstract class HighResolutionTime { // implements Comparable {
 	 *            wait indefinitely. If it is null then wait indefinitely.
 	 * @throws java.lang.InterruptedException
 	 */
-	@SCJAllowed(LEVEL_2)
-    public static void waitForObject(java.lang.Object target,
-            HighResolutionTime time) throws java.lang.InterruptedException {
-        if (target == null)
-            throw new NullPointerException("null target");
-
-        if (time != null) {
-            if (time.clock != Clock.single)
-                throw new UnsupportedOperationException("Incompatible clock");
-
-            if (time instanceof AbsoluteTime) {
-                time = ((AbsoluteTime) time).subtract(Clock.single.getTime());
-                //target.wait(time.getMilliseconds(), time.getNanoseconds());
-            } else {
-                /*if (time.isNegative())
-                    throw new IllegalArgumentException("negative relative time");
-                else
-                    target.wait(time.getMilliseconds(), time.getNanoseconds());*/
-            }
-        } else
-            target.wait();
-    }
+//	@SCJAllowed(LEVEL_2)
+//    public static void waitForObject(java.lang.Object target,
+//            HighResolutionTime time) throws java.lang.InterruptedException {
+//        if (target == null)
+//            throw new NullPointerException("null target");
+//
+//        if (time != null) {
+//            if (time.clock != Clock.single)
+//                throw new UnsupportedOperationException("Incompatible clock");
+//
+//            if (time instanceof AbsoluteTime) {
+//                time = ((AbsoluteTime) time).subtract(Clock.single.getTime());
+//                //target.wait(time.getMilliseconds(), time.getNanoseconds());
+//            } else {
+//                /*if (time.isNegative())
+//                    throw new IllegalArgumentException("negative relative time");
+//                else
+//                    target.wait(time.getMilliseconds(), time.getNanoseconds());*/
+//            }
+//        } else
+//            target.wait();
+//    }
 	
 	HighResolutionTime add(long millis, int nanos, HighResolutionTime dest) {
 //        if (!

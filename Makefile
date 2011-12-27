@@ -75,7 +75,7 @@ ifeq ($(WINDIR),)
 	USBRUNNER=./USBRunner
 	S=:
 else
-	DOWN=down.exe
+	DOWN=./down.exe
 	USBRUNNER=USBRunner.exe
 	S=\;
 endif
@@ -89,6 +89,22 @@ CLDC11=false
 #	Whether to use JDK 1.6
 #
 JDK16=false
+
+# Currently same hardware is used so all three cannot be "yes" at the same time
+# Remember to edit decode.vhd file and uncomment/comment the appropriate microcode
+#
+# STPSR = start put static reference
+# STPFR = start put filed reference
+# STASTR = start array store reference
+# 
+# The same should be done in Instruction.java and uncomment/comment the lines where 
+# stpfr, stsr, stastr are defined
+#
+# After that a full make is necessary
+
+USE_HW_PUTFIELD_REF=no
+USE_HW_PUTSTATIC_REF=no
+USE_HW_AASTORE=no
 
 #
 # Number of cores for JopSim and RTTM simulation
@@ -151,8 +167,10 @@ USE_DFA?=no
 #	Application optimization with JCopter
 #
 USE_JCOPTER?=no
-JCOPTER_OPT?=--use-dfa=$(USE_DFA) --dump-callgraph merged --dump-jvm-callgraph off --callstring-length $(CALLSTRING_LENGTH)
+JCOPTER_OPT?=--dump-callgraph merged --dump-jvm-callgraph off -O 2
 JCOPTER_USE_WCA?=no
+
+
 #
 #       WCET analysis
 #
@@ -284,7 +302,7 @@ init:
 	make directories
 	make tools
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SERIAL
-	make jop_config
+	make jop_config 
 
 # build the Java application and download it
 japp:
@@ -380,11 +398,13 @@ cprog:
 #
 #	compile and JOPize the application
 #
-ifeq (${JCOPTER_USE_WCA},no)
-  JCOPTER_OPTIONS=--no-use-wca ${JCOPTER_OPT}
+ifeq (${WCET_METHOD},measure)
+   JCOPTER_DEFAULT_OPTS=--inline.exclude-wca-targets true
 else
-  JCOPTER_OPTIONS=--target-method ${WCET_METHOD} ${JCOPTER_OPT}  
-endif
+   JCOPTER_DEFAULT_OPTS=
+endif 
+JCOPTER_DEFAULT_OPTS+= --use-dfa $(USE_DFA) --callstring-length $(CALLSTRING_LENGTH) --sp $(TARGET_SOURCE)
+JCOPTER_OPTIONS=$(JCOPTER_DEFAULT_OPTS) ${JCOPTER_OPT} 
 
 jop_config:
 	java $(TOOLS_CP) com.jopdesign.tools.GenJopConfig $(JOP_CONF_STR) > $(TARGET)/src/common/com/jopdesign/sys/Config.java
@@ -412,11 +432,20 @@ endif
            -c $(TARGET)/dist/classes -o $(TARGET)/dist $(MAIN_CLASS)
 # Optimize
 ifeq ($(USE_JCOPTER),yes)
-	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter \
-	   -c $(TARGET)/dist/classes -o $(TARGET)/dist --classdir $(TARGET)/dist/classes.opt \
-	   $(JCOPTER_OPTIONS) $(MAIN_CLASS)
+ifeq (${JCOPTER_USE_WCA},no)
 	mv $(TARGET)/dist/classes $(TARGET)/dist/classes.unopt
-	mv $(TARGET)/dist/classes.opt $(TARGET)/dist/classes
+	java -Xmx1280M $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter \
+	   -c $(TARGET)/dist/classes -o $(TARGET)/dist --classdir $(TARGET)/dist/classes.opt \
+	   --no-use-wca $(JCOPTER_OPTIONS) $(MAIN_CLASS)
+else
+	for target in ${WCET_METHOD}; do \
+	  rm -rf $(TARGET)/dist/classes.unopt; \
+	  mv $(TARGET)/dist/classes $(TARGET)/dist/classes.unopt; \
+	  java -Xmx1280M $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter \
+	   -c $(TARGET)/dist/classes.unopt -o $(TARGET)/dist --classdir $(TARGET)/dist/classes \
+	   --use-wca --wca-target $${target} $(JCOPTER_OPTIONS) $(MAIN_CLASS) || exit 1; \
+	done
+endif
 endif 
 	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
 # use SymbolManager for Paulo's version of JOPizer instead
@@ -431,7 +460,6 @@ endif
 jcopter_help:
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter --help
 	@echo "[make] Default JCopter options:"
-	@echo "[make] JCOPTER_OPT=--dump-callgraph merged --dump-jvm-callgraph merged --use-dfa=\$$(USE_DFA) --dump-callgraph merged --dump-jvm-callgraph off --callstring-length \$$(CALLSTRING_LENGTH) --target-method \$$(WCET_METHOD)"
 	@echo "[make] JCOPTER_OPT=$(JCOPTER_OPT)"
 	@echo ""
 
@@ -745,15 +773,18 @@ WCET_UPPAAL?=no
 WCET_VERIFYTA?=verifyta	 # only needed if WCET_UPPAAL=yes
 wcet:
 	-mkdir -p $(TARGET)/wcet
-	java -Xss16M -Xmx1280M $(JAVA_OPT) \
-	  $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis \
-		--classpath $(TARGET)/dist/lib/classes.zip --sp $(TARGET_SOURCE) \
-		--target-method $(WCET_METHOD) \
+	# Reading the classes.zip does not work correctly for optimized code because we need the sourcelines.txt
+	for target in $(WCET_METHOD); do \
+	  java -Xss16M -Xmx1280M $(JAVA_OPT) \
+	    $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis \
+		--classpath $(TARGET)/dist/classes --sp $(TARGET_SOURCE) \
+		--target-method $${target} \
 		-o "$(TARGET)/wcet/\$${projectname}" \
 		--use-dfa $(WCET_DFA) \
 		--uppaal $(WCET_UPPAAL) --uppaal-verifier $(WCET_VERIFYTA) \
 		--callstring-length $(CALLSTRING_LENGTH) \
-		$(WCET_OPTIONS) $(MAIN_CLASS)	
+		$(WCET_OPTIONS) $(MAIN_CLASS) || exit 1; \
+	done	
 
 # WCET help
 wcet_help:

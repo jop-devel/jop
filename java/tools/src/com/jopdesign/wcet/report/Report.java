@@ -77,7 +77,7 @@ public class Report {
         this.project = p;
         this.config = new ReportConfig(p, logConfig);
         if (config.doInvokeDot()) {
-            this.dotInvoker = new InvokeDot(config.getDotBinary(), config.getReportDir());
+            this.dotInvoker = new InvokeDot(InvokeDot.getDotBinary(p.getConfig()), config.getReportDir());
         }
     }
 
@@ -210,7 +210,7 @@ public class Report {
             if (logger.isDebugEnabled()) {
                 logger.debug("Generating report for method: " + m);
             }
-            ControlFlowGraph flowGraph = m.getCode().getControlFlowGraph(false);
+            ControlFlowGraph flowGraph = project.getFlowGraph(m);
             Map<String, Object> stats = new TreeMap<String, Object>();
             stats.put("#nodes", flowGraph.getGraph().vertexSet().size() - 2 /* entry+exit */);
             stats.put("number of words", flowGraph.getNumberOfWords());

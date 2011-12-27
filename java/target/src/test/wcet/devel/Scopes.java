@@ -25,8 +25,8 @@ import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 import com.jopdesign.sys.Memory;
 /**
- * Purpose: Analyze {@link Scope#enter(Runnable)}
- * Requires that in {@link com.jopdesign.sys.GC.USE_SCOPES} is set to {@code true}. 
+ * Purpose: Analyze {@link Memory#enter(Runnable)}
+ * Requires that in {@link com.jopdesign.sys.GC#USE_SCOPES} is set to {@code true}.
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  *
  */
@@ -71,7 +71,7 @@ public class Scopes {
 	public Scopes() {
 		// scope overhead
 		scope = new Memory(5000);
-		empty = new Empty();		
+		empty = new Empty();
 		bigMethod = new BigMethod();
 		alloc = new Alloc();
 	}

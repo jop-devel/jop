@@ -54,6 +54,34 @@ public class JamuthModel implements ProcessorModel {
         return new ArrayList<String>(0);
     }
 
+    @Override
+    public List<String> getJVMRoots() {
+        // TODO define root methods
+        return new ArrayList<String>(0);
+    }
+
+    @Override
+    public boolean keepJVMClasses() {
+        // TODO should we keep jvm classes?
+        return false;
+    }
+
+    @Override
+    public int getMaxMethodSize() {
+        return 65535;
+    }
+
+    @Override
+    public int getMaxStackSize() {
+        return 65535;
+    }
+
+    @Override
+    public int getMaxLocals() {
+        // TODO do we have some limitations here?
+        return 65535;
+    }
+
     // FIXME: Java implemented bytecodes ?
 
     public MethodInfo getJavaImplementation(AppInfo ai,

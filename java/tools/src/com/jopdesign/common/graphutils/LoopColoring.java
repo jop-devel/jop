@@ -359,7 +359,7 @@ public class LoopColoring<V, E> {
     }
 
     public Set<V> getLoopColor(V node) {
-        if (this.getHeadOfLoops().isEmpty()) new HashSet<V>();
+        if (this.getHeadOfLoops().isEmpty()) return new HashSet<V>();
         Set<V> color = getLoopColors().get(node);
         if (color == null) {
             /* Unreachable Code */

@@ -38,9 +38,14 @@ import javax.safetycritical.annotate.SCJAllowed;
  */
 @SCJAllowed(LEVEL_1)
 public class AperiodicParameters extends ReleaseParameters {
+	
+	private RelativeTime deadline;
+	private AsyncEventHandler missHandler;
+	
 	@SCJAllowed(LEVEL_1)
 	public AperiodicParameters(RelativeTime deadline,
 			AsyncEventHandler missHandler) {
-		throw new Error("implement me");
+		this.deadline = deadline;
+		this.missHandler = missHandler;
 	}
 }

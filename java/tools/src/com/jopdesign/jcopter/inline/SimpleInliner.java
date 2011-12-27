@@ -30,9 +30,11 @@ import com.jopdesign.common.type.StackHelper;
 import com.jopdesign.common.type.TypeHelper;
 import com.jopdesign.common.type.ValueInfo;
 import com.jopdesign.jcopter.JCopter;
-import com.jopdesign.jcopter.analysis.ValueAnalysis;
+import com.jopdesign.jcopter.analysis.ValueMapAnalysis;
 import com.jopdesign.jcopter.optimizer.AbstractOptimizer;
+import org.apache.bcel.generic.ARRAYLENGTH;
 import org.apache.bcel.generic.ArithmeticInstruction;
+import org.apache.bcel.generic.CHECKCAST;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.ConversionInstruction;
 import org.apache.bcel.generic.DUP;
@@ -40,9 +42,12 @@ import org.apache.bcel.generic.DUP2;
 import org.apache.bcel.generic.FieldInstruction;
 import org.apache.bcel.generic.GETFIELD;
 import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.InstructionConstants;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.InvokeInstruction;
+import org.apache.bcel.generic.LDC;
+import org.apache.bcel.generic.LDC2_W;
 import org.apache.bcel.generic.NOP;
 import org.apache.bcel.generic.POP;
 import org.apache.bcel.generic.POP2;
@@ -55,6 +60,8 @@ import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -148,9 +155,11 @@ public class SimpleInliner extends AbstractOptimizer {
     private int requiresNPCheck;
     private int signatureMismatch;
     private int codesizeTooLarge;
+    private int countInvokeSites;
+    private int countDevirtualized;
 
     public SimpleInliner(JCopter jcopter, InlineConfig inlineConfig) {
-        super(jcopter);
+        super(jcopter, true);
         helper = new InlineHelper(jcopter, inlineConfig);
     }
 
@@ -162,22 +171,36 @@ public class SimpleInliner extends AbstractOptimizer {
         requiresNPCheck = 0;
         signatureMismatch = 0;
         codesizeTooLarge = 0;
+        countInvokeSites = 0;
+        countDevirtualized = 0;
     }
 
     @Override
     public void optimizeMethod(MethodInfo method) {
-        ConstantPoolGen cpg = method.getConstantPoolGen();
-        InstructionList il = method.getCode().getInstructionList();
         InlineData inlineData = new InlineData();
 
-        for (InvokeSite invoke : method.getCode().getInvokeSites()) {
+        List<InvokeSite> invokes = new ArrayList<InvokeSite>( method.getCode().getInvokeSites() );
+        // we iterate over the invoke sites in a sorted order for the single reason that the DFA cache hack works
+        // (else the order of the entries in the constantpool can differ)
+        Collections.sort(invokes, new Comparator<InvokeSite>() {
+            @Override
+            public int compare(InvokeSite o1, InvokeSite o2) {
+                return o1.getInstructionHandle().getPosition() - o2.getInstructionHandle().getPosition();
+            }
+        });
+        for (InvokeSite invoke : invokes) {
 
             // The callstring contains 'original' invokesites from the unmodified callgraph,
             // 'invoke' refers to the new invokesite in the modified code
             CallString cs = new CallString(invoke);
 
             while (invoke != null) {
+                countInvokeSites++;
+
                 MethodInfo invokee = helper.devirtualize(cs);
+                if (invokee == null) break;
+
+                countDevirtualized++;
 
                 // Preliminary checks
                 if (checkInvoke(invoke, cs, invokee, inlineData)) {
@@ -211,6 +234,8 @@ public class SimpleInliner extends AbstractOptimizer {
     @Override
     public void printStatistics() {
         logger.info("Inlined "+inlineCounter+" invoke sites.");
+        logger.info("Found invoke sites: "+countInvokeSites+
+                    ", not devirtualized: "+(countInvokeSites-countDevirtualized));
         logger.info("Candidates: "+candidates+"; need NP check: "+ requiresNPCheck +", uncorrectable signature mismatch: "+
                 signatureMismatch +", unhandled instruction: "+unhandledInstructions+", codesize: "+codesizeTooLarge);
     }
@@ -234,6 +259,7 @@ public class SimpleInliner extends AbstractOptimizer {
             return false;
         }
 
+        // initial checks
         if (!helper.canInline(cs, invokeSite, invokee)) {
             return false;
         }
@@ -249,17 +275,26 @@ public class SimpleInliner extends AbstractOptimizer {
         // check the invokee, the invoke site and the new code size and store the results into inlineData
         inlineData.reset();
 
+        // We do not check stacksize and maxLocals here, because we do not inline store instructions and we simply
+        // assume that for simple invokees stacksize is never a problem ..
+
         if (!analyzeInvokee(cs, invokee, inlineData)) {
             return false;
         }
 
         if (!analyzeInvokeSite(invokeSite, invokee, inlineData)) {
             signatureMismatch++;
+            if (logger.isTraceEnabled()) {
+                logger.trace("Not inlining "+invokee+" at "+invokeSite+" because of signature mismatch.");
+            }
             return false;
         }
 
         if (!analyzeCodeSize(invokeSite, invokee, inlineData)) {
             codesizeTooLarge++;
+            if (logger.isTraceEnabled()) {
+                logger.trace("Not inlining "+invokee+" at "+invokeSite+" because of codesize.");
+            }
             return false;
         }
 
@@ -275,7 +310,7 @@ public class SimpleInliner extends AbstractOptimizer {
     private boolean analyzeInvokee(CallString cs, MethodInfo invokee, InlineData inlineData) {
 
         // we allow loading of parameters, loading of constants, some instruction, and a return
-        ValueAnalysis values = new ValueAnalysis(invokee);
+        ValueMapAnalysis values = new ValueMapAnalysis(invokee);
         values.loadParameters();
 
         InstructionList il = invokee.getCode().getInstructionList(true, false);
@@ -324,11 +359,20 @@ public class SimpleInliner extends AbstractOptimizer {
                 hasNPCheck |= !is.isInvokeStatic();
             }
             else if (instruction instanceof FieldInstruction) {
-                hasNPCheck |= (instruction instanceof GETFIELD || instruction instanceof PUTFIELD);
+                if (instruction instanceof GETFIELD) {
+                    hasNPCheck |= values.getValueTable().top().isThisReference();
+                }
+                if (instruction instanceof PUTFIELD) {
+                    int down = values.getValueTable().top().isContinued() ? 2 : 1;
+                    hasNPCheck |= values.getValueTable().top(down).isThisReference();
+                }
             }
             else if (instruction instanceof ArithmeticInstruction ||
                      instruction instanceof ConversionInstruction ||
                      instruction instanceof StackInstruction ||
+                     instruction instanceof LDC || instruction instanceof LDC2_W ||
+                     instruction instanceof ARRAYLENGTH ||
+                     instruction instanceof CHECKCAST ||
                      instruction instanceof NOP)
             {
                 // nothing to do, just copy them
@@ -337,6 +381,9 @@ public class SimpleInliner extends AbstractOptimizer {
                 if (needsNPCheck && !hasNPCheck) {
                     // We were nearly finished.. but NP check test failed
                     this.requiresNPCheck++;
+                    if (logger.isTraceEnabled()) {
+                        logger.trace("Not inlining "+invokee+" because it requires a NP check.");
+                    }
                     return false;
                 }
 
@@ -371,6 +418,10 @@ public class SimpleInliner extends AbstractOptimizer {
             else {
                 // if we encounter an instruction which we do not handle, we do not inline
                 unhandledInstructions++;
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Not inlining "+invokee+" because of unhandled instruction "+
+                            instruction.toString(invokee.getClassInfo().getConstantPoolGen().getConstantPool()));
+                }
                 return false;
             }
 
@@ -450,7 +501,7 @@ public class SimpleInliner extends AbstractOptimizer {
                 ValueInfo value = params.get(i);
 
                 int argNum = value.getParamNr();
-                if (invokee.isStatic()) {
+                if (!invokee.isStatic()) {
                     argNum++;
                 }
                 if (argNum != i) {
@@ -478,6 +529,10 @@ public class SimpleInliner extends AbstractOptimizer {
                 Instruction instr = oldPrologue.get(argNum - offset).copy();
 
                 inlineData.addPrologue(instr);
+
+            } else if (value.isNullReference()) {
+
+                inlineData.addPrologue(InstructionConstants.ACONST_NULL);
 
             } else if (value.isConstantValue() || value.isStaticFieldReference()) {
 
@@ -573,15 +628,24 @@ public class SimpleInliner extends AbstractOptimizer {
                 start = start.getPrev();
             }
 
+            // invokeSite is not a target in this case, no need to worry about targets here
             invokerCode.replace(start, inlineData.getOldPrologueLength(), inlineData.getPrologue(), false);
+
         } else if (inlineData.getPrologue().getLength() > 0) {
+
+            // old-prologue is empty, invokeSite may be a target.. Need to update the targets to the new prologue
+            if (invoke.hasTargeters()) {
+                invokerCode.retarget(invoke, inlineData.getPrologue().getStart());
+            }
+
             InstructionList il = invokerCode.getInstructionList();
             il.insert(invoke, inlineData.getPrologue());
         }
 
         // Replace the invoke
-        InstructionList il = invokee.getCode().getInstructionList();
-        InstructionHandle start = invokee.getCode().getInstructionHandle(inlineData.getInlineStart());
+        MethodCode invokeeCode = invokee.getCode();
+        InstructionList il = invokeeCode.getInstructionList();
+        InstructionHandle start = invokeeCode.getInstructionHandle(inlineData.getInlineStart());
 
         int cnt = il.getLength() - inlineData.getInlineStart();
         if (il.getEnd().getInstruction() instanceof ReturnInstruction) {
@@ -589,7 +653,17 @@ public class SimpleInliner extends AbstractOptimizer {
             cnt--;
         }
 
-        InstructionHandle end = invokerCode.replace(invoke, 1, invokee, il, start, cnt, false);
+        InstructionHandle end = invokerCode.replace(invoke, 1, invokee, start, cnt, true);
+
+        // copy source line number for first inlined instruction separately, since we skipped some instructions in
+        // the invokee
+        if (cnt > 0) {
+            InstructionHandle ih = end;
+            for (int i = 0; i < cnt; i++) {
+                ih = ih.getPrev();
+            }
+            invokerCode.setLineNumber(ih, invokeeCode.getSourceClassInfo(start), invokeeCode.getLineNumber(start));
+        }
 
         // insert epilogue
         invokerCode.getInstructionList().insert(end, inlineData.getEpilogue());

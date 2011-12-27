@@ -99,6 +99,9 @@ public class Startup {
 		// set global enable
 		Native.wr(1, Const.IO_INT_ENA);
 		
+		// reset any performance counter
+		Native.wr(-1, Const.IO_PERFCNT);
+		
 		// request CPU id
 		val = Native.rdMem(Const.IO_CPU_ID);
 		

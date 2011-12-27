@@ -40,7 +40,7 @@ public class MethodReport {
 
     public MethodReport(WCETTool p, MethodInfo m, String page) {
         this.info = m;
-        fg = info.getCode().getControlFlowGraph(false);
+        fg = p.getFlowGraph(info);
         this.loopBounds = fg.buildLoopBoundMap().values();
         this.sizeInWords = fg.getNumberOfWords();
         this.referenced = new TreeSet<String>();

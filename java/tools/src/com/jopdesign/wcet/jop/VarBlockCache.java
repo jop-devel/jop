@@ -59,10 +59,15 @@ public class VarBlockCache extends MethodCache {
 
 	@Override
 	public boolean allFit(MethodInfo m, CallString cs) {
-		return super.getAllFitCacheBlocks(m, cs) <= this.blockCount;
+		return allFit(super.getAllFitCacheBlocks(m, cs));
 	}
 
-	@Override
+    @Override
+    public boolean allFit(long blocks) {
+        return blocks <= blockCount;
+    }
+
+    @Override
 	public boolean fitsInCache(int sizeInWords) {
 		return (requiredNumberOfBlocks(sizeInWords) <= this.blockCount);
 	}

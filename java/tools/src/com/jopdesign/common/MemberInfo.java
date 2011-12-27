@@ -467,6 +467,7 @@ public abstract class MemberInfo {
 
     @Override
     public boolean equals(Object obj) {
+        if (obj==null) return false;
         if ( !(obj instanceof MemberInfo) ) {
             return false;
         }
@@ -475,7 +476,7 @@ public abstract class MemberInfo {
 
     @Override
     public String toString() {
-        return memberId.toString();
+        return memberId.toString(false);
     }
 
     ////////////////////////////////////////////////////////////////////////////

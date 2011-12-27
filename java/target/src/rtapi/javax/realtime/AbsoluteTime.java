@@ -19,7 +19,7 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-  @authors  Martin Schoeberl, Lei Zhao, Ales Plsek, Tórur Strøm
+  @authors  Martin Schoeberl, Lei Zhao, Ales Plsek, TÃ³rur StrÃ¸m
  */
 
 package javax.realtime;
@@ -247,7 +247,7 @@ public class AbsoluteTime extends HighResolutionTime {
 		if (time == null || time.clock != clock)
 			throw new IllegalArgumentException("null arg or different clock");
 
-		return add(time.millis, time.nanos, dest);
+		return add(-time.millis, -time.nanos, dest);
 	}
 	
 	/**

@@ -51,10 +51,14 @@ public abstract class EmptyAppEventHandler implements AppEventHandler {
     }
 
     @Override
-    public void onCreateControlFlowGraph(ControlFlowGraph cfg, boolean clear) {
+    public void onCreateControlFlowGraph(ControlFlowGraph cfg) {
     }
 
     @Override
-    public void onMethodModified(MethodInfo methodInfo) {
+    public void onCreateMethodControlFlowGraph(ControlFlowGraph cfg, boolean clear) {
+    }
+
+    @Override
+    public void onMethodCodeModify(MethodCode methodCode, boolean beforeModification) {
     }
 }

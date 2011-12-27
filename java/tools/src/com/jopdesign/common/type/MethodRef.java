@@ -102,7 +102,7 @@ public class MethodRef {
         return methodInfo != null ? methodInfo.getDescriptor() : descriptor;
     }
 
-    public MemberID getSignature() {
+    public MemberID getMemberID() {
         if (classRef != null && methodInfo != null && !classRef.getClassName().equals(methodInfo.getClassName())) {
             // we have a MethodRef to a method which is inherited
             return new MemberID(classRef.getClassName(), methodInfo.getShortName(), methodInfo.getDescriptor());
@@ -178,6 +178,6 @@ public class MethodRef {
 
     @Override
     public String toString() {
-        return getSignature().toString();
+        return getMemberID().toString();
     }
 }

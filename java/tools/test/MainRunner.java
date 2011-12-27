@@ -21,6 +21,7 @@
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.Cmdline;
+import com.sun.servicetag.SystemEnvironment;
 
 import java.lang.reflect.Method;
 import java.security.Permission;
@@ -103,6 +104,8 @@ public class MainRunner {
                 }
                 
                 // cleanup for next invoke
+                System.out.flush();
+                System.err.flush();
                 AppInfo.getSingleton().clear(true);
                 LogConfig.stopLogger();
             }

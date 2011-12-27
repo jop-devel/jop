@@ -19,20 +19,20 @@
 */
 package com.jopdesign.wcet.analysis;
 
-import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
-import com.jopdesign.wcet.analysis.RecursiveAnalysis.CacheKey;
 import com.jopdesign.wcet.ipet.CostProvider;
 import com.jopdesign.wcet.ipet.IPETBuilder;
 import com.jopdesign.wcet.ipet.IPETConfig;
 import com.jopdesign.wcet.report.ClassReport;
+import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 
@@ -54,7 +54,7 @@ import java.util.TreeSet;
 public class RecursiveWcetAnalysis<Context extends AnalysisContext>
              extends RecursiveAnalysis<Context, WcetCost> {
 
-	/** Visitor for computing the WCET of CFG nodes */
+    /** Visitor for computing the WCET of CFG nodes */
 	private class LocalWcetVisitor extends WcetVisitor {
 		Context ctx;
 		public LocalWcetVisitor(WCETTool project, Context ctx) {
@@ -71,10 +71,10 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 			// FIXME: [Bug #3] Hackish implementation of callgraph pruning
 			if(n.getVirtualNode() != null) {
 				Set<MethodInfo> actuallyReachable =
-					n.getVirtualNode().getImplementedMethods(ctx.getCallString());
-				if(! actuallyReachable.contains(n.getImplementedMethod())) return;
+					n.getVirtualNode().getImplementingMethods(ctx.getCallString(), project.getCallGraph());
+				if(! actuallyReachable.contains(n.getImplementingMethod())) return;
 			}
-			
+
 			cost.addLocalCost(processor.getExecutionTime(ctx.getExecutionContext(n),n.getInstructionHandle()));
 			if(n.isVirtual()) {
 				throw new AssertionError("Invoke node "+n.getReferenced()+" without implementation in WCET analysis - did you preprocess virtual methods ?");
@@ -95,7 +95,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		private WcetCost cost;
 		private Map<CFGNode,Long> nodeFlow;
 		private Map<ControlFlowGraph.CFGEdge,Long> edgeFlow;
-		
+
 		private Map<CFGNode, WcetCost> nodeCosts;
 
 		public LocalWCETSolution(DirectedGraph<CFGNode,ControlFlowGraph.CFGEdge> g, Map<CFGNode,WcetCost> nodeCosts) {
@@ -129,11 +129,39 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		public Map<CFGNode, Long> getNodeFlow() {
 			return nodeFlow;
 		}
+
+            /**
+             * This merges the results for invokes and adds results for the virtual nodes. This
+             * is required if results for the virtual nodes are needed too, e.g. if
+             * {@link ControlFlowGraph#getHandleNode(InstructionHandle)} is used.
+             *
+             * @return the flow graph, including results for virtual blocks.
+             */
+            public Map<CFGNode, Long> getNodeFlowVirtual() {
+                Map<CFGNode,Long> flow = new HashMap<CFGNode, Long>(nodeFlow);
+                for (CFGNode node : nodeFlow.keySet()) {
+                    if (!(node instanceof InvokeNode)) continue;
+                    InvokeNode inv = (InvokeNode) node;
+
+                    InvokeNode virt = inv.getVirtualNode();
+                    if (virt != null) {
+                        Long val = flow.get(virt);
+                        if (val == null) {
+                            flow.put(virt, flow.get(inv));
+                        } else {
+                            flow.put(virt, flow.get(inv) + val);
+                        }
+                    }
+                }
+
+                return flow;
+            }
+
 		public Map<ControlFlowGraph.CFGEdge, Long> getEdgeFlow() {
 			return edgeFlow;
 		}
 		/** Safety check: compare flow*cost to actual solution */
-		public void checkConsistentency() {
+		public void checkConsistency() {
 			if(cost.getCost() != lpCost) {
 				throw new AssertionError("The solution implies that the flow graph cost is "
 										 + cost.getCost() + ", but the ILP solver reported "+lpCost);
@@ -179,7 +207,6 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 	}
 
 	static final Logger logger = Logger.getLogger(WCETTool.LOG_WCET_ANALYSIS+".RecursiveWcetAnalysis");
-	private AppInfo appInfo;
 	private WCETProcessorModel processor;
 	private RecursiveAnalysis.RecursiveStrategy<Context, WcetCost> recursiveWCET;
 	private Set<MethodInfo> costsPerLineReported = new HashSet<MethodInfo>();
@@ -193,12 +220,11 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 			                 IPETConfig ipetConfig,
 			                 RecursiveAnalysis.RecursiveStrategy<Context,WcetCost> recursiveStrategy) {
 		super(project, ipetConfig);
-		this.appInfo = project.getAppInfo();
 		this.processor = project.getWCETProcessorModel();
 
 		this.recursiveWCET = recursiveStrategy;
 	}
-	
+
 	/**
 	 * WCET analysis of the given method, using some strategy for recursive WCET calculation and cache
 	 * approximation.cache approximation scheme.
@@ -208,12 +234,12 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 	 * <p>FIXME: Logging/Report is somewhat broken and messy </p>
 	 */
 	public WcetCost computeCost(MethodInfo m, Context ctx) {
-		/* use memoization to speed up analysis */
+		/* use memorization to speed up analysis */
 		CacheKey key = new CacheKey(m,ctx);
 		if(isCached(key)) return getCached(key);
 		/* compute solution */
 		LocalWCETSolution sol = runWCETComputation(key.toString(), getWCETTool().getFlowGraph(m), ctx);
-		sol.checkConsistentency();
+		sol.checkConsistency();
 		recordCost(key, sol.getCost());
 		/* Logging and Report */
 		logger.debug("WCET for " + key + ": "+sol.getCost());
@@ -224,9 +250,27 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		return sol.getTotalCost();
 	}
 
+    public LocalWCETSolution computeSolution(MethodInfo m, Context ctx) {
+        /* just compute the solution using cached results, and also place the result into the cache,
+           but always return the complete solution. Also, no reports are generated here..
+         */
+        // TODO return type could be made more generic and this method could be moved to RecursiveAnalysis
+
+        CacheKey key = new CacheKey(m,ctx);
+        /* compute solution */
+        ControlFlowGraph cfg = getWCETTool().getFlowGraph(m);
+        LocalWCETSolution sol = runWCETComputation(key.toString(), cfg, ctx);
+        sol.checkConsistency();
+        recordCost(key, sol.getCost());
+        /* Logging */
+        logger.debug("WCET for " + key + ": "+sol.getCost());
+
+        return sol;
+    }
+
 	public LocalWCETSolution runWCETComputation(
 			String key,
-			ControlFlowGraph cfg, 
+			ControlFlowGraph cfg,
 			Context ctx) {
 		Map<CFGNode,WcetCost> nodeCosts = buildNodeCostMap(cfg,ctx);
 		CostProvider<CFGNode> costProvider = getCostProvider(nodeCosts);
@@ -237,7 +281,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		sol.setSolution(maxCost, edgeFlowOut);
 		return sol;
 	}
-	
+
 	// FIXME: [recursive-wcet-analysis] Report generation is a big mess
 	// FIXME: [recursive-wcet-analysis] For now, we only add line costs once per method
 	private void updateReport(CacheKey key, LocalWCETSolution sol) {
@@ -248,58 +292,61 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 		stats.put("WCET",sol.getCost());
 		stats.put("mode",key.ctx);
 		stats.put("all-methods-fit-in-cache", getWCETTool().getWCETProcessorModel().getMethodCache().allFit(m,null));
-		getWCETTool().getReport().addDetailedReport(m,"WCET_"+key.ctx.toString(),stats,nodeFlowCostDescrs,sol.getEdgeFlow());
+		getWCETTool().getReport().addDetailedReport(m,"WCET_"+key.ctx.getKey(),stats,nodeFlowCostDescrs,sol.getEdgeFlow());
 	}
 
-	/**
-	 * Update class report (cost per line number)
-	 * @param key
-	 * @param sol
-	 * FIXME: Currently only reported once per method
-	 */
-	private void updateClassReport(CacheKey key, LocalWCETSolution sol) {
-		MethodInfo m = key.m;
-		if(costsPerLineReported .contains(m)) return;
-		costsPerLineReported.add(m);
-		
-		Map<CFGNode,WcetCost> nodeCosts = sol.getNodeCostMap();
-		HashMap<CFGNode, String> nodeFlowCostDescrs = new HashMap<CFGNode, String>();
+    /**
+     * Update class report (cost per line number)
+     *
+     * @param key
+     * @param sol FIXME: Currently only reported once per method
+     */
+    private void updateClassReport(CacheKey key, LocalWCETSolution sol) {
+        MethodInfo m = key.m;
+        if (costsPerLineReported.contains(m)) return;
+        costsPerLineReported.add(m);
 
-		for(Entry<CFGNode, WcetCost> entry: nodeCosts.entrySet()) {
-			CFGNode n = entry.getKey();
-			WcetCost cost = entry.getValue();
-			if(sol.getNodeFlow(n) > 0) {
-				nodeFlowCostDescrs.put(n,cost.toString());
-				BasicBlock basicBlock = n.getBasicBlock();
-				/* prototyping */
-				if(basicBlock != null) {
-					TreeSet<Integer> lineRange = basicBlock.getSourceLineRange();
-					if(lineRange.isEmpty()) {
-						logger.error("No source code lines associated with basic block ! ");
-						continue;
-					}
-					ClassInfo cli = basicBlock.getClassInfo();
-					ClassReport cr = getWCETTool().getReport().getClassReport(cli);
-					Long oldCost = (Long) cr.getLineProperty(lineRange.first(), "cost");
-					if(oldCost == null) oldCost = 0L;
-					long newCost = sol.getNodeFlow(n)*nodeCosts.get(n).getCost();
+        Map<CFGNode, WcetCost> nodeCosts = sol.getNodeCostMap();
+        HashMap<CFGNode, String> nodeFlowCostDescrs = new HashMap<CFGNode, String>();
 
-					if(logger.isTraceEnabled()) {
-						logger.trace("Attaching cost "+oldCost + " + " + 
-								newCost+" ( " + sol.getNodeFlow(n)+ " * " + nodeCosts.get(n).getCost() + " )" + 
-								" to line "+lineRange.first() + " in " + basicBlock.getMethodInfo());
-					}
-					
-					cr.addLineProperty(lineRange.first(), "cost", oldCost + newCost);
-					for(int i : lineRange) {
-						cr.addLineProperty(i, "color", "red");
-					}
-				}
-			} else {
-				nodeFlowCostDescrs.put(n, ""+nodeCosts.get(n).getCost());
-			}
-		}		
-	}
+        for (Entry<CFGNode, WcetCost> entry : nodeCosts.entrySet()) {
+            CFGNode n = entry.getKey();
+            WcetCost cost = entry.getValue();
+            if (sol.getNodeFlow(n) > 0) {
+                nodeFlowCostDescrs.put(n, cost.toString());
+                BasicBlock basicBlock = n.getBasicBlock();
+                /* prototyping */
+                if (basicBlock != null) {
+                    Map<ClassInfo,TreeSet<Integer>> lineMap = basicBlock.getSourceLines();
+                    if (lineMap.isEmpty()) {
+                        logger.error("No source code lines associated with basic block " + basicBlock + " in " + m + " ! ");
+                        continue;
+                    }
+                    for (ClassInfo cli : lineMap.keySet()) {
+                        TreeSet<Integer> lineRange = lineMap.get(cli);
+                        ClassReport cr = getWCETTool().getReport().getClassReport(cli);
+
+                        Long oldCost = (Long) cr.getLineProperty(lineRange.first(), "cost");
+                        if (oldCost == null) oldCost = 0L;
+                        long newCost = sol.getNodeFlow(n) * nodeCosts.get(n).getCost();
+
+                        if (logger.isTraceEnabled()) {
+                            logger.trace("Attaching cost " + oldCost + " + " +
+                                    newCost + " ( " + sol.getNodeFlow(n) + " * " + nodeCosts.get(n).getCost() + " )" +
+                                    " to line " + lineRange.first() + " in " + basicBlock.getMethodInfo());
+                        }
+
+                        cr.addLineProperty(lineRange.first(), "cost", oldCost + newCost);
+                        for (int i : lineRange) {
+                            cr.addLineProperty(i, "color", "red");
+                        }
+                    }
+                }
+            } else {
+                nodeFlowCostDescrs.put(n, "" + nodeCosts.get(n).getCost());
+            }
+        }
+    }
 
 	@Override
 	public WcetCost computeCostOfNode(CFGNode n ,Context ctx) {
@@ -347,10 +394,10 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
 	}
 
 	public static Map<CFGNode, Long> edgeToNodeFlow(DirectedGraph<CFGNode,ControlFlowGraph.CFGEdge> graph, Map<ControlFlowGraph.CFGEdge, Long> cfgEdgeFlow) {
-		
+
 		HashMap<CFGNode, Long> nodeFlow = new HashMap<CFGNode, Long>();
 		for(CFGNode n : graph.vertexSet()) {
-		
+
 			if(graph.inDegreeOf(n) == 0) nodeFlow.put(n, 0L); // ENTRY and DEAD CODE (no flow)
 			else {
 				long flow = 0;

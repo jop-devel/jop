@@ -565,17 +565,17 @@ public final class ClassInfo extends MemberInfo {
         Set<ClassInfo> sc = new HashSet<ClassInfo>();
         List<ClassInfo> queue = new LinkedList<ClassInfo>();
 
+        sc.add(this);
         queue.add(this);
         while (!queue.isEmpty()) {
             ClassInfo cls = queue.remove(0);
-            sc.add(cls);
 
             ClassInfo superClass = cls.getSuperClassInfo();
-            if ( superClass != null && !sc.contains(superClass) ) {
+            if ( superClass != null && sc.add(superClass) ) {
                 queue.add(superClass);
             }
             for (ClassInfo i : cls.getInterfaces()) {
-                if ( !sc.contains(i) ) {
+                if ( sc.add(i) ) {
                     queue.add(i);
                 }
             }
@@ -725,7 +725,7 @@ public final class ClassInfo extends MemberInfo {
     //////////////////////////////////////////////////////////////////////////////
 
     public ClassMemberInfo getMemberInfo(MemberID memberID) {
-        return getMemberInfo(memberID.getMethodSignature());
+        return getMemberInfo(memberID.hasMethodSignature() ? memberID.getMethodSignature() : memberID.getMemberName());
     }
 
     /**
@@ -749,7 +749,23 @@ public final class ClassInfo extends MemberInfo {
     }
 
     public MethodInfo getMethodInfo(MemberID memberID) {
-        return getMethodInfo(memberID.getMethodSignature());
+        if (memberID.hasMethodSignature()) {
+            return getMethodInfo(memberID.getMethodSignature());
+        }
+        Set<MethodInfo> methods = getMethodByName(memberID.getMemberName());
+        if (methods.size() == 1) {
+            return methods.iterator().next();
+        }
+        // not found or not unique
+        return null;
+    }
+
+    public Set<MethodInfo> getMethodInfos(MemberID memberID) {
+        if (memberID.hasMethodSignature()) {
+            MethodInfo method = getMethodInfo(memberID.getMethodSignature());
+            return method != null ? Collections.singleton(method) : Collections.<MethodInfo>emptySet();
+        }
+        return getMethodByName(memberID.getMemberName());
     }
 
     /**
@@ -790,6 +806,10 @@ public final class ClassInfo extends MemberInfo {
      */
     public Collection<MethodInfo> getMethods() {
         return Collections.unmodifiableCollection(methods.values());
+    }
+
+    public Collection<String> getMethodSignatures() {
+        return Collections.unmodifiableCollection(methods.keySet());
     }
 
     /**
@@ -958,6 +978,10 @@ public final class ClassInfo extends MemberInfo {
     public MethodInfo createMethod(MemberID memberID, String[] argNames, InstructionList code) {
         MethodInfo method = methods.get(memberID.getMethodSignature());
         if ( method != null ) {
+            method.setAbstract(code == null);
+            if (code != null) {
+                method.getCode().setInstructionList(code);
+            }
             return method;
         }
 
@@ -1117,11 +1141,9 @@ public final class ClassInfo extends MemberInfo {
      */
     public void rebuildConstantPool(ConstantPoolRebuilder rebuilder) {
 
-        ConstantPoolGen newPool = new ConstantPoolGen();
-
         // this will compile the classInfo
         Set<Integer> usedIndices = ConstantPoolReferenceFinder.findPoolReferences(this, true);
-        rebuilder.createNewConstantPool(cpg, usedIndices);
+        cpg = rebuilder.createNewConstantPool(cpg, usedIndices);
 
         rebuilder.updateClassGen(this, classGen);
 
@@ -1131,8 +1153,6 @@ public final class ClassInfo extends MemberInfo {
         for (FieldInfo f : fields.values()) {
             rebuilder.updateFieldGen(f, f.getInternalFieldGen());
         }
-
-        cpg = newPool;
     }
 
     /**

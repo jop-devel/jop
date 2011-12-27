@@ -1,0 +1,21 @@
+TODOs
+------
+
+o) MethodCacheAnalysis
+- findRemovedMethods(): Current implementation not correct, needs fixing
+- make cache cost estimation for ALL_FIT_REGIONS approximation more precise when region changes
+- handle case when region increases
+
+o) EjipCmp benchmark does not work
+- We need to remove Tcp.run() from callee set of Runnable.run(), else it will try to invoke
+  TcpHandler.*, which has no implementations since the benchmark does not use Tcp implementation classes
+
+o) Strange behaviour with dfa-cache
+- Debie-benchmark WCA usually throws nullpointer if analyzed the first time after optimization, works
+  when cache is used and analyzed a second time
+
+o) Strange results in target/wcet/
+- For some reason there are wcet-result versions with '.' instead of '_' in package name like
+  target/wcet/wcet.StartBenchUdpIP_measure
+  which have uncorrect results (no loop bounds). Possibly generated during optimization, should be disabled.
+

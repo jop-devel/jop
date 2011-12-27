@@ -21,9 +21,11 @@
 package com.jopdesign.common;
 
 import com.jopdesign.common.bcel.BcelRepositoryWrapper;
+import com.jopdesign.common.code.CFGProvider;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallGraph.CallgraphBuilder;
 import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.DefaultCallgraphBuilder;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
@@ -46,6 +48,7 @@ import org.apache.bcel.Constants;
 import org.apache.bcel.Repository;
 import org.apache.bcel.classfile.ClassFormatException;
 import org.apache.bcel.classfile.ClassParser;
+import org.apache.bcel.classfile.ConstantPool;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.generic.ClassGen;
 import org.apache.bcel.generic.Type;
@@ -53,10 +56,16 @@ import org.apache.bcel.util.ClassPath;
 import org.apache.bcel.util.ClassPath.ClassFile;
 import org.apache.log4j.Logger;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -74,7 +83,7 @@ import java.util.Set;
  *
  * @author Stefan Hepp (stefan@stefant.org)
  */
-public final class AppInfo {
+public final class AppInfo implements ImplementationFinder, CFGProvider {
 
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_STRUCT + ".AppInfo");
     private static final Logger loadLogger = Logger.getLogger(LogConfig.LOG_LOADING + ".AppInfo");
@@ -104,6 +113,9 @@ public final class AppInfo {
 
     private int callstringLength;
     private CallGraph callGraph;
+
+    private String dumpCacheKeyFile = null;
+    private byte[] digest = null;
 
     //////////////////////////////////////////////////////////////////////////////
     // Singleton
@@ -538,6 +550,10 @@ public final class AppInfo {
         return Collections.unmodifiableCollection(classes.values());
     }
 
+    public Collection<String> getClassNames() {
+        return Collections.unmodifiableCollection(classes.keySet());
+    }
+
     public void iterate(ClassVisitor visitor) {
         for (ClassInfo c : classes.values()) {
             if (!visitor.visitClass(c)) {
@@ -722,6 +738,25 @@ public final class AppInfo {
     }
 
     /**
+     * @param memberID at least a class name.
+     * @return a set of all matching methods.
+     * @throws MethodNotFoundException if the base class cannot be found
+     */
+    public Collection<MethodInfo> getMethodInfos(MemberID memberID) throws MethodNotFoundException {
+        String className = memberID.getClassName();
+        ClassInfo classInfo = classes.get(className);
+        if (classInfo == null) {
+            throw new MethodNotFoundException("Could not find class for method "+memberID);
+        }
+
+        if (!memberID.hasMemberName()) {
+            // We could filter out methods by descriptor if it is set
+            return classInfo.getMethods();
+        }
+        return classInfo.getMethodInfos(memberID);
+    }
+
+    /**
      * Find a MethodInfo using a class name and the given signature of a method.
      * Only methods which are are accessible (i.e. inherited) by the class are returned.
      *
@@ -748,6 +783,18 @@ public final class AppInfo {
         ClassInfo classInfo = getClassInfo(memberID.getClassName());
         if (classInfo == null) return null;
         return classInfo.getMethodInfoInherited(memberID, true);
+    }
+
+    /**
+     * Convenience method to implement CFGProvider.
+     *
+     * @param method the method to get the CFG for.
+     * @return the CFG attached to the method's code.
+     */
+    @Override
+    public ControlFlowGraph getFlowGraph(MethodInfo method) {
+        if (!method.hasCode()) return null;
+        return method.getCode().getControlFlowGraph(false);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -1057,12 +1104,15 @@ public final class AppInfo {
             // we do not have a callgraph, so just use typegraph info
             return findImplementations(invokeSite.getInvokeeRef());
         }
-        if (!callGraph.hasMethod(invokeSite.getInvoker())) {
-            logger.info("Could not find method "+invokeSite.getInvoker()+" in the callgraph, falling back to typegraph");
+        if (!callGraph.containsMethod(invokeSite.getInvoker())) {
+            if (logger.isTraceEnabled()) {
+                logger.trace("Could not find method "+invokeSite.getInvoker()+
+                             " in the callgraph, falling back to typegraph");
+            }
             return findImplementations(invokeSite.getInvokeeRef());
         }
 
-        return callGraph.findImplementingMethods(cs);
+        return callGraph.findImplementations(cs);
     }
 
     /**
@@ -1077,6 +1127,7 @@ public final class AppInfo {
      * instead.</p>
      *
      * @see #findImplementations(InvokeSite)
+     * @see MethodInfo#overrides(MethodRef, boolean)
      * @param invokee the method to resolve.
      * @return all possible implementations, including native methods.
      */
@@ -1096,6 +1147,19 @@ public final class AppInfo {
         if (invokeeClass == null) {
             // ok, now, if the target class is unknown, there is not much we can do, so return an empty set
             logger.debug("Trying to find implementations of a method in an unknown class "+invokee.toString());
+            return methods;
+        }
+
+        // Constructors are only called by invokespecial
+        if ("<init>".equals(invokee.getName())) {
+            MethodInfo init = invokee.getMethodInfo();
+            if (init == null) {
+                throw new JavaClassFormatError("Constructor not found: "+invokee);
+            }
+            if (init.isAbstract()) {
+                throw new JavaClassFormatError("Found abstract constructor, this isn't right..: "+invokee);
+            }
+            methods.add(init);
             return methods;
         }
 
@@ -1316,6 +1380,139 @@ public final class AppInfo {
         return matchClassName(className, hwObjectClasses, true);
     }
 
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Caching support
+    //////////////////////////////////////////////////////////////////////////////
+
+
+    public void setDumpCacheKeyFile(String dumpCacheKeyFile) {
+        this.dumpCacheKeyFile = dumpCacheKeyFile;
+    }
+
+    public boolean updateCheckSum(MethodInfo prologue) {
+
+        // Also compute SHA-1 checksum for this DFA problem
+        // (for caching purposes)
+        MessageDigest md, md2;
+        try {
+            md = MessageDigest.getInstance("SHA1");
+            md2 = MessageDigest.getInstance("SHA1");
+        } catch (NoSuchAlgorithmException e) {
+            logger.info("No digest algorithm found", e);
+            digest = null;
+            return false;
+        }
+
+        PrintWriter writer = null;
+        File tempFile = null;
+        if (dumpCacheKeyFile != null) {
+            try {
+                tempFile = new File(dumpCacheKeyFile +"-temp.txt");
+                writer = new PrintWriter(tempFile);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (prologue != null) {
+            // TODO the prologue method is a hack, we should not use it in the checksum
+            //      instead we should only hash the required infos (entry-method, clinit-order?,..)
+            updateChecksum(prologue, md);
+        }
+
+        List<String> classNames = new ArrayList<String>(getClassNames());
+        // We iterate in lexical order to make MD5 checksum a bit more deterministic ..
+        Collections.sort(classNames);
+        for (String name : classNames) {
+            ClassInfo ci = getClassInfo(name);
+
+            List<String> methodNames = new ArrayList<String>(ci.getMethodSignatures());
+            Collections.sort(methodNames);
+            for (String method : methodNames) {
+                MethodInfo mi = ci.getMethodInfo(method);
+
+                if (mi.hasCode()) {
+                    updateChecksum(mi, md);
+
+                    if (writer != null) {
+                        writer.print("M "+mi+": ");
+                        updateChecksum(mi, md2);
+                        this.digest = md2.digest();
+                        writer.println(getDigestString());
+                    }
+                }
+            }
+
+            ConstantPool cp = ci.getConstantPoolGen().getFinalConstantPool();
+            updateCheckSum(cp, md);
+
+            if (writer != null) {
+                writer.print("CP " + ci + ": ");
+                updateCheckSum(cp, md2);
+                this.digest = md2.digest();
+                writer.print(cp.getLength()+" ");
+                writer.println(getDigestString());
+            }
+        }
+
+        this.digest = md.digest();
+        logger.info("AppInfo has checksum: " + getDigestString());
+
+        if (tempFile != null && writer != null) {
+            writer.close();
+            File dest = new File(dumpCacheKeyFile + "-" + getDigestString() + ".txt");
+            //noinspection ResultOfMethodCallIgnored
+            dest.delete();
+            tempFile.renameTo(dest);
+        }
+
+        return true;
+    }
+
+    private static final char[] digits = "0123456789abcdef".toCharArray();
+
+    public String getDigestString() {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : digest) {
+            int v = b < 0 ? (256 + b) : b;
+            sb.append(digits[v >> 4]);
+            sb.append(digits[v & 0xF]);
+        }
+        return sb.toString();
+    }
+
+    private void updateCheckSum(ConstantPool cp, MessageDigest md) {
+
+        if (md == null) return;
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        try {
+            cp.dump(dos);
+        } catch (IOException e) {
+            logger.error("Dumping the constant pool (checksum calculation) failed: " +
+                    e.getMessage());
+            throw new AppInfoError(e);
+        }
+        md.update(bos.toByteArray());
+    }
+
+    private static void updateChecksum(MethodInfo mi, MessageDigest md) {
+        if (md == null) return;
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        OutputStreamWriter writer = new OutputStreamWriter(bos);
+        try {
+            writer.append(mi.getFQMethodName());
+            writer.close();
+        } catch (IOException e) {
+            throw new AppInfoError(e);
+        }
+        md.update(bos.toByteArray());
+        // finally, also add the code
+        md.update(mi.getCode().getInstructionList().getByteCode());
+    }
+
+
     //////////////////////////////////////////////////////////////////////////////
     // Internal Affairs
     //////////////////////////////////////////////////////////////////////////////
@@ -1370,6 +1567,14 @@ public final class AppInfo {
         InputStream is = classPath.getInputStream(className);
         JavaClass javaClass = new ClassParser(is, className).parse();
         is.close();
+
+        if (javaClass.getMajor() > 50) {
+            // TODO this requires some work: Java 7 introduces new Attributes (must be parsed correctly and
+            //      handled by the UsedCodeFinder etc), new constantpool entry types a new invokedynamic
+            //      instruction (requires patching of BCEL code similar to Classpath and InstructionFinder)
+            throw new JavaClassFormatError
+                    ("Classfiles with versions 51.0 (Java 7) and above are currently not supported!");
+        }
 
         return new ClassInfo(new ClassGen(javaClass));
     }

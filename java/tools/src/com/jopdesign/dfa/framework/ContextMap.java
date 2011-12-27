@@ -20,6 +20,8 @@
 
 package com.jopdesign.dfa.framework;
 
+import com.jopdesign.common.MethodInfo;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,5 +52,11 @@ public class ContextMap<K, V> extends HashMap<K, V> {
     @SuppressWarnings("unchecked")
     public void add(Object elem) {
         put((K) elem, (V) elem);
+    }
+
+    public ContextMap<K, V> copy(MethodInfo newMethod) {
+        Context c = new Context(context);
+        c.setMethodInfo(newMethod);
+        return new ContextMap<K,V>(c, new HashMap<K, V>(this));
     }
 }

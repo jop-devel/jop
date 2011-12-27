@@ -23,7 +23,7 @@ public class Raytrace extends ParallelBenchmark { // implements Runnable {
 			cam = new Camera(10,0,0,0,0,0,0,0,1,70,20,SCREEN_WIDTH,SCREEN_HEIGHT,tris,spheres,recDepth);
 	  }
 	  
-	  protected Runnable getWorker(){
+	  public Runnable getWorker(){
 		  cam.curX=0;
 		  cam.curY=0;
 		  return cam.getRenderThread();

@@ -26,6 +26,8 @@ import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.EnumOption;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
+import com.jopdesign.jcopter.JCopter;
+import org.apache.log4j.Logger;
 
 import java.util.List;
 
@@ -45,11 +47,23 @@ public class InlineConfig {
     public static final BooleanOption SKIP_NP_CHECKS =
             new BooleanOption("skip-np-checks", "Do not generate any nullpointer checks", false);
 
-    public static final EnumOption<JVMInline> JVM_INLINE =
+    public static final EnumOption<JVMInline> INLINE_JVM =
             new EnumOption<JVMInline>("jvm-calls",
                     "Allow inlining of JVM calls: disabled, only if result is verifiable, all calls",
                     JVMInline.SAFE);
 
+    public static final BooleanOption INLINE_LIBARIES =
+            new BooleanOption("inline-libs", "Allow inlining of library code", false);
+
+    public static final BooleanOption EXCLUDE_WCA_TARGETS =
+            new BooleanOption("exclude-wca-targets",
+                    "Do not inline into WCA target methods. This is required for measure "+"" +
+                    "methods so that the initial invoke is not removed. The WCA target method " +
+                    "is never inlined even if this is set to false", false);
+
+    private static final Logger logger = Logger.getLogger(JCopter.LOG_INLINE+".InlineConfig");
+
+    private final JCopter jcopter;
     private final OptionGroup options;
     private final List<String> ignorePrefix;
 
@@ -57,12 +71,29 @@ public class InlineConfig {
         options.addOption(EXCLUDE);
         options.addOption(ALLOW_CODEMODIFY);
         options.addOption(SKIP_NP_CHECKS);
-        options.addOption(JVM_INLINE);
+        options.addOption(INLINE_JVM);
+        options.addOption(INLINE_LIBARIES);
+        options.addOption(EXCLUDE_WCA_TARGETS);
     }
 
-    public InlineConfig(OptionGroup options) {
+    public InlineConfig(JCopter jcopter, OptionGroup options) {
+        this.jcopter = jcopter;
         this.options = options;
         this.ignorePrefix = Config.splitStringList(options.getOption(EXCLUDE));
+
+        boolean hasMeasureTarget = false;
+        for (MethodInfo target : jcopter.getJConfig().getWCATargets()) {
+            if ("measure".equals(target.getShortName())) {
+                hasMeasureTarget = true;
+            }
+        }
+
+        if (hasMeasureTarget && !options.getOption(EXCLUDE_WCA_TARGETS)) {
+            logger.warn("Inlining into measure method. Check that "+EXCLUDE_WCA_TARGETS.getKey()+" is set correctly.");
+        }
+        if (!hasMeasureTarget && options.getOption(EXCLUDE_WCA_TARGETS)) {
+            logger.warn("Not inlining into wca-targets, but wca-target is not called 'measure'. Check that "+EXCLUDE_WCA_TARGETS.getKey()+" is set correctly.");
+        }
     }
 
     public boolean allowChangeAccess() {
@@ -75,25 +106,60 @@ public class InlineConfig {
         return false;
     }
 
-    public boolean doExcludeMethod(MethodInfo method) {
-        String className = method.getClassName();
+    public boolean doExcludeInvoker(MethodInfo invoker) {
 
-        // NOTICE maybe separate configs for ignore from and ignore to?
-        for (String prefix : ignorePrefix) {
-            if ( className.startsWith(prefix+".") || className.equals(prefix)
-                 || prefix.equals(className+"."+method.getShortName())
-                 || prefix.equals(className+"#"+method.getShortName())) {
-                return false;
+        // TODO we could instead skip wca targets named 'measure', but this is not so robust..
+        if (options.getOption(EXCLUDE_WCA_TARGETS)) {
+            for (MethodInfo target : jcopter.getJConfig().getWCATargets()) {
+                if (target.equals(invoker)) {
+                    return true;
+                }
             }
         }
-        return true;
+
+        // NOTICE maybe separate configs for ignore from and ignore to?
+        return checkExclude(invoker, ignorePrefix);
+    }
+
+    public boolean doExcludeInvokee(MethodInfo invokee) {
+        // We never inline WCA targets, else they might be removed and are not available for analysis
+        for (MethodInfo target : jcopter.getJConfig().getWCATargets()) {
+            if (target.equals(invokee)) {
+                return true;
+            }
+        }
+
+        // NOTICE maybe separate configs for ignore from and ignore to?
+        return checkExclude(invokee, ignorePrefix);
+    }
+
+    private boolean checkExclude(MethodInfo method, List<String> exclude) {
+        String className = method.getClassName();
+
+        for (String prefix : exclude) {
+            // TODO check method signature,..
+            if ( className.startsWith(prefix+".") || className.equals(prefix)
+                 || prefix.equals(className+"."+method.getShortName())
+                 || prefix.equals(className + "#" +method.getShortName())
+                 || prefix.equals(method.getShortName())
+                 || prefix.equals("#"+method.getShortName()))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public boolean skipNullpointerChecks() {
         return options.getOption(SKIP_NP_CHECKS);
     }
 
-    public JVMInline allowJVMCalls() {
-        return options.getOption(JVM_INLINE);
+    public JVMInline doInlineJVMCalls() {
+        return options.getOption(INLINE_JVM);
+    }
+
+    public boolean doInlineLibraries() {
+        return options.getOption(INLINE_LIBARIES);
     }
 }

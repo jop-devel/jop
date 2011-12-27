@@ -80,7 +80,14 @@ public class FieldRef {
     }
 
     public Type getType() {
-        return fieldInfo != null ? fieldInfo.getType() : type;
+        if (fieldInfo == null && type == null) {
+            ClassInfo classInfo = classRef.getClassInfo();
+            if (classInfo != null) {
+                fieldInfo = classInfo.getFieldInfoInherited(name, true);
+            }
+        }
+        if (fieldInfo != null) return fieldInfo.getType();
+        return type;
     }
 
     public String toString() {

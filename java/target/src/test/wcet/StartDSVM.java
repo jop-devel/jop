@@ -4,6 +4,7 @@
 // WCET_METHOD=main
 package wcet;
 
+import com.jopdesign.sys.Config;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
@@ -12,10 +13,6 @@ import wcet.dsvmfp.*;
 
 public class StartDSVM {
 
-	/**
-	 * Set to false for the WCET analysis, true for measurement
-	 */
-	final static boolean MEASURE = false;
 	static int ts, te, to;
 
 	public static void main(String[] args) {
@@ -25,18 +22,18 @@ public class StartDSVM {
 		Dbg.initSer();
 		TestSMO.init();
 		invoke();
-		if (MEASURE) System.out.println(te-ts-to);
+		if (Config.MEASURE) System.out.println(te-ts-to);
 
 		// TestSMO.report();
 	}
 
 	static void invoke() {
 		measure();
-		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 	}
 
 	static void measure() {
-		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		TestSMO.deployRT();
 	}
 

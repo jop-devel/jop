@@ -319,6 +319,9 @@ public class IOSimMin {
 		case Const.IO_INTCLEARALL:
 			interrupt = 0;
 			break;
+		case Const.IO_PERFCNT:
+			js.resetStat();
+			break;
 		case SIM_CACHE_COST:
 			js.cacheCost = val;
 			break;

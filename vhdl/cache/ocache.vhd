@@ -109,7 +109,6 @@ architecture rtl of oc_tag is
 	constant VALID_ZERO: std_logic_vector(FIELD_CNT-1 downto 0) := (others => '0');
 	
 
---	signal hit: std_logic;
 	signal line: unsigned(OCACHE_WAY_BITS-1 downto 0);
 	signal idx, wridx: unsigned(OCACHE_INDEX_BITS-1 downto 0);
 

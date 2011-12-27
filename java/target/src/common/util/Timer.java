@@ -39,7 +39,7 @@ public class Timer {
 
 	private static SysDevice sys = IOFactory.getFactory().getSysDevice();
 
-	private static boolean blink;
+	private static boolean blink = true;
 
 	public static int cnt() {
 

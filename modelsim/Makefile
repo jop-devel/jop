@@ -8,11 +8,11 @@ JOPDIR=../vhdl
 OPTIONS=-93 -quiet
 
 ifeq ($(WINDIR),)
-	WINE=wine
+	WINE=
 	S=:
 else
 	WINE=
-	S=\;
+	S=:
 endif
 
 all: clean base
@@ -68,6 +68,7 @@ base:
 	$(WINE) vcom $(OPTIONS) $(JOPDIR)/jtbl.vhd
 	$(WINE) vcom $(OPTIONS) $(JOPDIR)/core/cache.vhd
 	$(WINE) vcom $(OPTIONS) $(JOPDIR)/cache/ocache.vhd
+	$(WINE) vcom $(OPTIONS) $(JOPDIR)/cache/acache.vhd
 	$(WINE) vcom $(OPTIONS) $(JOPDIR)/memory/sc_sram32_flash.vhd
 	$(WINE) vcom $(OPTIONS) $(JOPDIR)/memory/mem_sc.vhd
 	$(WINE) vcom $(OPTIONS) $(JOPDIR)/memory/sdpram.vhd

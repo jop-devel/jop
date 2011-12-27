@@ -89,6 +89,10 @@ public class ValueTable {
         }
     }
 
+    /**
+     * @param down number of slots down from the top slot
+     * @return the value on the stack counted down from the top
+     */
     public ValueInfo top(int down) {
         if (stack.size()-down-1<0) return ValueInfo.UNUSED;
         return stack.get(stack.size()-down-1);

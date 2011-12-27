@@ -32,6 +32,10 @@ public class EnumOption<T extends Enum<T>> extends Option<T> {
         super(key, clazz, descr, false);
     }
 
+    public EnumOption(String key, String descr, Class<T> clazz, boolean optional) {
+        super(key, clazz, descr, optional);
+    }
+
     public EnumOption(String key, String descr, T def) {
         super(key, descr + " " + enumDescr(def), def);
     }

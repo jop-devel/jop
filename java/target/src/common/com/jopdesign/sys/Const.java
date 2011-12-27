@@ -193,6 +193,7 @@ public class Const {
 	public static final int IO_DEADLINE = IO_BASE+10;
 
 	public static final int IO_CPUCNT = IO_BASE+11;
+	public static final int IO_PERFCNT = IO_BASE+12;
 
 	/**
 	 * Cross-core interrupt
@@ -222,6 +223,12 @@ public class Const {
 	public static final int LS_BASE = IO_BASE+0x40;
 	// Ethernet interface on DE2
 	public static final int DM9000 = IO_BASE+0x50;
+	
+	/* "Sensors" on hwScope Example.
+	 */
+	public static final int SENSA_BASE = IO_BASE+0x30;
+	public static final int SENSB_BASE = IO_BASE+0x50;
+
 	
 	// Keyboard
 	public static final int KB_CTRL = IO_BASE+0x30+0;

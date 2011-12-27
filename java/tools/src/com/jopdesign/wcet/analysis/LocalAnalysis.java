@@ -20,6 +20,7 @@
 package com.jopdesign.wcet.analysis;
 
 import com.jopdesign.common.MethodInfo;
+import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
@@ -54,7 +55,7 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 		}
 		WCETTool project   = stagedAnalysis.getWCETTool();
 		MethodInfo invoker = n.getBasicBlock().getMethodInfo();
-		MethodInfo invoked = n.getImplementedMethod();
+		MethodInfo invoked = n.getImplementingMethod();
 		WCETProcessorModel proc = project.getWCETProcessorModel();
 		MethodCache cache = proc.getMethodCache();
 		long cacheCost;
@@ -70,7 +71,7 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 			cacheCost = 0;
 		} else if(project.getCallGraph().isLeafMethod(invoked)) {
 			cacheCost = invokeReturnCost + nonLocalCacheCost;
-		} else if(cacheMode == StaticCacheApproximation.ALL_FIT_SIMPLE && cache.allFit(invoked,ctx.getCallString())) {
+		} else if(cacheMode == StaticCacheApproximation.ALL_FIT_SIMPLE && allFit(cache,invoked,ctx.getCallString())) {
 			long returnCost = cache.getMissOnReturnCost(proc, project.getFlowGraph(invoker));
 			/* Maybe its better not to apply the all-fit heuristic ... */
 			long noAllFitCost = recCost.getCost() + invokeReturnCost;
@@ -107,4 +108,7 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 		return cost;
 	}
 
+    protected boolean allFit(MethodCache cache, MethodInfo method, CallString callString) {
+        return cache.allFit(method, callString);
+    }
 }

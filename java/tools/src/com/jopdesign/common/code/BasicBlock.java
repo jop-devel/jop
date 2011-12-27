@@ -47,10 +47,12 @@ import org.apache.bcel.generic.UnconditionalBranch;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
 
 /**
@@ -292,13 +294,50 @@ public class BasicBlock {
     /**
      * @return all source code lines this basic block maps to
      */
-    public TreeSet<Integer> getSourceLineRange() {
-        TreeSet<Integer> lines = new TreeSet<Integer>();
+    public Map<ClassInfo,TreeSet<Integer>> getSourceLines() {
+        Map<ClassInfo,TreeSet<Integer>> map = new HashMap<ClassInfo, TreeSet<Integer>>(2);
+
         for (InstructionHandle ih : instructions) {
-            int sourceLine = methodCode.getLineNumber(ih);
-            if (sourceLine >= 0) lines.add(sourceLine);
+            ClassInfo cls = methodCode.getSourceClassInfo(ih);
+            TreeSet<Integer> lines = map.get(cls);
+            if (lines == null) {
+                lines = new TreeSet<Integer>();
+                map.put(cls,lines);
+            }
+
+            int line = methodCode.getLineNumber(ih);
+            if (line >= 0) lines.add(line);
         }
-        return lines;
+
+        return map;
+    }
+
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        BasicBlock that = (BasicBlock) o;
+
+        if (!instructions.equals(that.getInstructions())) return false;
+        if (!getMethodInfo().equals(that.getMethodInfo())) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = instructions.hashCode();
+        result = 31 * result + methodCode.hashCode();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "BasicBlock: " +
+                instructions;
     }
 
     /*---------------------------------------------------------------------------
@@ -413,7 +452,11 @@ public class BasicBlock {
     static List<BasicBlock> buildBasicBlocks(MethodCode methodCode) {
         InstructionTargetVisitor itv = new InstructionTargetVisitor(methodCode);
         List<BasicBlock> basicBlocks = new LinkedList<BasicBlock>();
-        InstructionList il = methodCode.getInstructionList();
+        // We do want to have the latest code, so we compile any existing, *attached* CFG first.
+        // However, we do NOT want to remove this CFG, and we do *NOT* want to trigger the onBeforeCodeModify event,
+        // else we might remove all CFGs for this method, which we want to avoid if we only modify the graph but do not
+        // compile it (the event will be triggered when CFG#compile() is called).
+        InstructionList il = methodCode.getInstructionList(true, false);
         il.setPositions(true);
 
         /* Step 1: compute flow info */
@@ -458,18 +501,26 @@ public class BasicBlock {
 
     /**
      * Append the instructions of this block to an instruction list.
+     *
+     * @see MethodCode#copyCustomValues(MethodInfo, InstructionHandle, InstructionHandle)
+     * @param sourceInfo the method info containing the source instructions, used to copy custom values.
      * @param il the instruction list to append to.
      * @param attributes a list of attribute keys to copy in addition to those managed by MethodCode and BasicBlock.
      */
-    public void appendTo(InstructionList il, Object[] attributes) {
+    public void appendTo(MethodInfo sourceInfo, InstructionList il, Object[] attributes) {
         List<InstructionHandle> old = new ArrayList<InstructionHandle>(instructions);
         instructions.clear();
         for (InstructionHandle ih : old) {
-            InstructionHandle newIh = il.append(ih.getInstruction());
+            InstructionHandle newIh;
+            if (ih.getInstruction() instanceof BranchInstruction) {
+                newIh = il.append((BranchInstruction)ih.getInstruction());
+            } else {
+                newIh = il.append(ih.getInstruction());
+            }
             // link to new handles, find first and last handle
             instructions.add(newIh);
             // we need to copy all attributes. FlowInfo should not be needed.
-            methodCode.copyCustomValues(newIh, ih);
+            methodCode.copyCustomValues(sourceInfo, newIh, ih);
             for (Object key : attributes) {
                 Object value = ih.getAttribute(key);
                 if (value != null) newIh.addAttribute(key, value);

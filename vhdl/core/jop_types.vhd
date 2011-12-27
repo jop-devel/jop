@@ -45,7 +45,12 @@ package jop_types is
 	constant STALD	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0100"; 
 	constant STAST	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0101"; 
 	constant STGF	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0110"; 
-	constant STPF	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0111"; 
+	constant STPF	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0111";
+--
+    constant STPFR	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1111";	 
+    constant STPSR	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1111";	 
+    constant STASTR	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1111";
+	
 	constant STCP	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1000"; 
 	constant STBCR	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1001"; 
 	constant STIDX	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1010"; 
@@ -78,6 +83,7 @@ package jop_types is
 		putfield    : std_logic;
 		getstatic   : std_logic;
 		putstatic   : std_logic;
+		putref		: std_logic;	-- indicates a putfield with references to objects
 		rdc         : std_logic;	-- read with possible constant cache
 		rdf         : std_logic;	-- read with coherent cache (fully assoc)
 		wrf         : std_logic;	-- write into coherente cache
@@ -179,4 +185,26 @@ package jop_types is
 		dout	: std_logic_vector(31 downto 0);
 	end record;
 
+	-- array cache types
+	-- TODO: names should be changed when I have a Sigasi license again
+	-- what about handle and len?
+
+	type acache_in_type is record
+		handle	: std_logic_vector(ACACHE_ADDR_BITS-1 downto 0);
+		index	: std_logic_vector(ACACHE_MAX_INDEX_BITS-1 downto 0);
+		ial_val	: std_logic_vector(31 downto 0); -- from memory
+		ias_val	: std_logic_vector(31 downto 0); -- to memory (write through)
+		chk_ial	: std_logic;
+		chk_ias	: std_logic;
+		wr_ial	: std_logic;
+		wr_ial_idx : std_logic_vector(ACACHE_FIELD_BITS-1 downto 0);
+		wr_ias	: std_logic;
+		inval	: std_logic;
+	end record;
+
+	type acache_out_type is record
+		hit		: std_logic;
+		-- just handle hit
+		dout	: std_logic_vector(31 downto 0);
+	end record;
 end jop_types;
