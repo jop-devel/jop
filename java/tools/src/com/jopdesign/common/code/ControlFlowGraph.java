@@ -35,7 +35,9 @@ import com.jopdesign.common.graphutils.TopOrder;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.HashedString;
+import com.jopdesign.common.misc.Iterators;
 import com.jopdesign.common.misc.MiscUtils;
+import com.jopdesign.common.misc.MiscUtils.F1;
 import com.jopdesign.common.type.MethodRef;
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.Instruction;
@@ -914,7 +916,7 @@ public class ControlFlowGraph {
 
 		return graph.outgoingEdgesOf(node);
 	}
-
+	
 	public Set<CFGEdge> incomingEdgesOf(CFGNode node) {
 
 		return graph.incomingEdgesOf(node);
@@ -925,6 +927,17 @@ public class ControlFlowGraph {
         return blocks;
     }
 
+	public Iterable<CFGNode> getSuccessors(CFGNode currentBlock) {
+
+		return Iterators.mapEntries(graph.outgoingEdgesOf(currentBlock), new F1<CFGEdge, CFGNode>() {
+			@Override
+			public CFGNode apply(CFGEdge e) {
+				return graph.getEdgeTarget(e);
+			}
+			
+		});
+	}
+	
     public Map<BasicBlock, BasicBlockNode> buildBlockNodeMap() {
         Map<BasicBlock, BasicBlockNode> map = new HashMap<BasicBlock, BasicBlockNode>(blocks.size());
         for (CFGNode node : graph.vertexSet()) {

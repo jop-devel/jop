@@ -23,16 +23,26 @@ package com.jopdesign.common.code;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.Vector;
+
+import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.MONITORENTER;
+import org.apache.bcel.generic.MONITOREXIT;
 
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.SuperGraph.ContextCFG;
 import com.jopdesign.common.code.SuperGraph.SuperEdge;
 import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
@@ -46,6 +56,7 @@ import com.jopdesign.common.misc.Filter;
 import com.jopdesign.common.misc.Iterators;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.misc.MiscUtils.F1;
+import com.jopdesign.wcet.WCETTool;
 
 /**
  * Purpose: A segment represents subsets of execution traces.
@@ -61,7 +72,7 @@ public class Segment {
 	private SuperGraph sg;
 	private Set<SuperGraphEdge> entries;
 	private Set<SuperGraphEdge> exits;
-
+	
 	private Map<ContextCFG, List<SuperGraphNode>> nodes;
 	private Set<SuperGraphEdge> edges;
 	private Filter<SuperGraphEdge> edgeFilter;
@@ -203,6 +214,94 @@ public class Segment {
 	}
 
 	/**
+	 * Create an interprocedural segment for a synchronized block. Currently we do
+	 * not split basic blocks here, so either you are happy with basic block granularity,
+	 * or you split the basic block while loading.
+	 * @param targetBlock The block containing the monitorenter instruction
+	 * @param monitorEnter The monitor enter instruction
+	 * @param callString   The context for the method
+	 * @param cfgProvider A control flow graph provider
+	 * @param callStringLength Length of the callstrings
+	 * @param infeasibles Information about infeasible edges (null if no information available)
+	 *
+	 * @return a segment representing executions of the synchronized block
+	 */
+	public static Segment synchronizedSegment(ContextCFG ccfg, CFGNode entryNode, InstructionHandle monitorEnter,
+			CFGProvider cfgProvider, int callStringLength, InfeasibleEdgeProvider infeasibles) {
+
+		if(infeasibles == null) {
+			infeasibles = InfeasibleEdgeProvider.NO_INFEASIBLES;                                                 
+		}
+		ControlFlowGraph cfg = ccfg.getCfg();                                      
+		SuperGraph superGraph = new SuperGraph(cfgProvider, cfg, ccfg.getCallString(), callStringLength, infeasibles);
+		ContextCFG rootMethod = superGraph.getRootNode();                                                    
+
+		/* lift entry edges */
+		Set<SuperGraphEdge> entryEdges = Iterators.addAll(new HashSet<SuperGraphEdge>(), 
+				superGraph.liftCFGEdges(rootMethod, cfg.incomingEdgesOf(entryNode)));
+
+
+		/* find exit blocks (might also be in the same block) */
+		/* monitorenter followed bei monitorexit in same block => segment only contains this block */
+		Set<CFGEdge> monitorExitEdges = new HashSet<CFGEdge>();
+		CFGNode currentNode = entryNode;
+		int currentNestingLevel = 1;
+		Iterator<InstructionHandle> insIter = currentNode.getBasicBlock().getInstructions().iterator();
+		while(insIter.hasNext()) {
+			if(insIter.next() == monitorEnter) break;
+		}
+		Stack<Pair<CFGNode,Integer>> todo = new Stack<Pair<CFGNode,Integer>>();
+		Set<CFGNode> visited = new HashSet<CFGNode>();
+		do {
+			boolean isExit = false;
+			while(insIter.hasNext()) {
+				InstructionHandle ih = insIter.next();
+				if(ih.getInstruction() instanceof MONITOREXIT) {
+					/* blocks outgoing edges terminate segment */
+					currentNestingLevel--;
+					if(currentNestingLevel == 0) {
+						isExit = true;
+						Iterators.addAll(monitorExitEdges, cfg.outgoingEdgesOf(currentNode));
+						break;
+					}
+				} else if(ih.getInstruction() instanceof MONITORENTER) {
+					currentNestingLevel++;
+				}
+			}
+			if(! isExit) {
+				for(CFGNode node : cfg.getSuccessors(currentNode)) {
+					todo.add(new Pair<CFGNode, Integer>(node, currentNestingLevel));
+				}
+			}
+			currentNode = null;
+			while(! todo.isEmpty()) {
+				Pair<CFGNode, Integer> nextPair = todo.pop();
+				CFGNode nextNode = nextPair.first();
+				if(! visited.contains(nextNode)) {
+					visited.add(nextNode);
+					if(cfg.outgoingEdgesOf(nextNode).isEmpty()) {
+						throw new AssertionError("Found monitor-exit free path from monitorenter to the end of a function. In: "+cfg);						
+					} else if(nextNode.getBasicBlock() == null) {
+						for(CFGNode node : cfg.getSuccessors(nextNode)) {
+							todo.add(new Pair<CFGNode, Integer>(node, nextPair.second()));
+						}
+					} else {
+						currentNode = nextNode;
+						currentNestingLevel = nextPair.second();
+						insIter = currentNode.getBasicBlock().getInstructions().iterator();
+						break;
+					}
+				}
+			}
+		} while(currentNode != null);
+		
+		Set<SuperGraphEdge> exitEdges = Iterators.addAll(new HashSet<SuperGraphEdge>(), 
+				superGraph.liftCFGEdges(rootMethod, monitorExitEdges));
+		return new Segment(superGraph, entryEdges, exitEdges);                                               
+	}
+
+
+	/**
 	 * Create a (sub-)segment for a method invocation (in a certain context)<br/>
 	 * FIXME: Currently, this is terribly inefficient. We need to work on a good and
 	 * fast support for subsegments.
@@ -317,7 +416,31 @@ public class Segment {
     	return superEdgePairFilter.filter(sg.getCallSitesFrom(caller));
 	}
 
+	/* delegates to supergraph */
 
+	public Iterable<SuperGraphEdge> liftCFGEdges(ContextCFG node, Iterable<CFGEdge> cfgEdges) {
+
+		return sg.liftCFGEdges(node, cfgEdges);
+	}
+
+
+	public Iterable<ContextCFG> getCallGraphNodes() {
+		
+		return nodes.keySet();
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("Segment@");
+		sb.append(super.hashCode());
+		sb.append("(");
+		sb.append(this.getEntryEdges());
+		sb.append(" -- ");
+		sb.append(this.getExitEdges());
+		sb.append(")");
+		return sb.toString();
+	}
 	/**
 	 * Export to DOT file
 	 * @param dotFile
@@ -387,32 +510,5 @@ public class Segment {
 		});
 		dotWriter.close();
 	}
-
-	/* delegates to supergraph */
-
-	public Iterable<SuperGraphEdge> liftCFGEdges(ContextCFG node, Iterable<CFGEdge> cfgEdges) {
-		return sg.liftCFGEdges(node, cfgEdges);
-	}
-
-
-	public Iterable<ContextCFG> getCallGraphNodes() {
-		
-		return nodes.keySet();
-	}
-
-	@Override
-	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		sb.append("Segment@");
-		sb.append(super.hashCode());
-		sb.append("(");
-		sb.append(this.getEntryEdges());
-		sb.append(" -- ");
-		sb.append(this.getExitEdges());
-		sb.append(")");
-		return sb.toString();
-	}
-
-
 
 }

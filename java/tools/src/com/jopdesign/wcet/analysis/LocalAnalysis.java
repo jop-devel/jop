@@ -138,6 +138,7 @@ implements RecursiveStrategy<AnalysisContextLocal,WcetCost> {
 
 	protected boolean allFit(WCETTool wcetTool, MethodInfo invoked,CallString callString) {
 
-		return new MethodCacheAnalysis(wcetTool).isPersistenceRegion(wcetTool, invoked, callString, EnumSet.of(PersistenceCheck.CountTotal));
+		return new MethodCacheAnalysis(wcetTool).
+				isPersistenceRegion(wcetTool, invoked, callString, EnumSet.of(PersistenceCheck.CountTotal));
 	}
 }
