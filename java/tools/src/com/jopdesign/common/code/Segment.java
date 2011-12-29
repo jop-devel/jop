@@ -43,6 +43,9 @@ import org.apache.bcel.generic.MONITOREXIT;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.ControlFlowGraph.InvokeNode;
+import com.jopdesign.common.code.ControlFlowGraph.ReturnNode;
+import com.jopdesign.common.code.ControlFlowGraph.SpecialInvokeNode;
 import com.jopdesign.common.code.SuperGraph.ContextCFG;
 import com.jopdesign.common.code.SuperGraph.SuperEdge;
 import com.jopdesign.common.code.SuperGraph.SuperGraphEdge;
@@ -231,7 +234,7 @@ public class Segment {
 
 		if(infeasibles == null) {
 			infeasibles = InfeasibleEdgeProvider.NO_INFEASIBLES;                                                 
-		}
+		}		
 		ControlFlowGraph cfg = ccfg.getCfg();                                      
 		SuperGraph superGraph = new SuperGraph(cfgProvider, cfg, ccfg.getCallString(), callStringLength, infeasibles);
 		ContextCFG rootMethod = superGraph.getRootNode();                                                    
@@ -261,7 +264,13 @@ public class Segment {
 					currentNestingLevel--;
 					if(currentNestingLevel == 0) {
 						isExit = true;
-						Iterators.addAll(monitorExitEdges, cfg.outgoingEdgesOf(currentNode));
+						// Deal with java-implemented monitorexit
+						if(currentNode instanceof SpecialInvokeNode) {
+							currentNode = cfg.getSuccessors(currentNode).iterator().next();
+							if(! (currentNode instanceof ReturnNode))
+								throw new AssertionError("synchronizedSegment: monitorexit is java-implemented, but has no RETURN node successor");
+						} 
+						Iterators.addAll(monitorExitEdges, cfg.outgoingEdgesOf(currentNode));							
 						break;
 					}
 				} else if(ih.getInstruction() instanceof MONITORENTER) {

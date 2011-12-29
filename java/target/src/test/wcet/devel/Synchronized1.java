@@ -70,6 +70,7 @@ public class Synchronized1 {
                 ts = Native.rdMem(Const.IO_CNT);
                 te = Native.rdMem(Const.IO_CNT);
                 to = te-ts;
+                run0();
                 run1();
                 run2();
                 run3();
@@ -115,6 +116,13 @@ public class Synchronized1 {
 			RtThread.sleepMs(1000);
 		}
 	}
+        /* For run0(), we expect one blocking time, namely the small synchronized block */
+        public static void run0() {
+            synchronized(monitor1) {
+                shared1+=1;
+            }
+        }
+        
         /* For run1(), we expect one blocking time, namely Mon#check */
         public static void run1() {
             monitor1.check();

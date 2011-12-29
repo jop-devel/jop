@@ -66,6 +66,7 @@ import org.apache.bcel.generic.MONITOREXIT;
 import org.apache.log4j.Logger;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -323,8 +324,19 @@ public class WCETAnalysis {
 					if (ih.getInstruction() instanceof MONITORENTER) {
 						/* compute synchronized block WCET */
 						Segment synchronizedSegment = Segment.synchronizedSegment(ccfg, cfgNode, ih,
-								wcetTool,wcetTool.getCallstringLength(), wcetTool);                                                                                                
-						wcet = an.computeWCET(targetMethod.getShortName(), synchronizedSegment, requestedCacheApprox); 
+								wcetTool,wcetTool.getCallstringLength(), wcetTool);  
+						try {
+							wcet = an.computeWCET(targetMethod.getShortName(), synchronizedSegment, requestedCacheApprox); 
+						} catch(LpSolveException ex) {
+							wcet = new WcetCost();
+							wcet.addLocalCost(1000000000);
+							try {
+								System.out.println(synchronizedSegment);
+								synchronizedSegment.exportDOT(new File("/tmp/sync.dot"));
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+						}
 						sBlocks.add(new SynchronizedBlockResult(sBlocks.size(), synchronizedSegment, cfgNode, ih, wcet));
 					}
 				}

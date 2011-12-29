@@ -39,6 +39,7 @@ import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.JsrInstruction;
 import org.apache.bcel.generic.MONITORENTER;
+import org.apache.bcel.generic.MONITOREXIT;
 import org.apache.bcel.generic.PUTFIELD;
 import org.apache.bcel.generic.PUTSTATIC;
 import org.apache.bcel.generic.ReturnInstruction;
@@ -451,6 +452,10 @@ public class BasicBlock {
         @Override
         public void visitMONITORENTER(MONITORENTER obj) {
             flowInfo.splitBefore = true;
+        }        
+        @Override
+        public void visitMONITOREXIT(MONITOREXIT obj) {
+            flowInfo.splitAfter = true;
         }
         
         @Override
