@@ -78,7 +78,7 @@ public class WcetCost implements Serializable {
 	}
 	public void addCacheCost(Map<String,Long> cacheCost) { 
 		for(Entry<String, Long> entry : cacheCost.entrySet()) {
-			MiscUtils.incrementBy(cacheCost, entry.getKey(), entry.getValue(), 0);
+			MiscUtils.incrementBy(this.cacheCost, entry.getKey(), entry.getValue(), 0);
 		}
 	}
 	
