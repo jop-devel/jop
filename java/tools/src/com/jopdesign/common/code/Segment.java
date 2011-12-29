@@ -234,7 +234,8 @@ public class Segment {
 
 		if(infeasibles == null) {
 			infeasibles = InfeasibleEdgeProvider.NO_INFEASIBLES;                                                 
-		}		
+		}
+		
 		ControlFlowGraph cfg = ccfg.getCfg();                                      
 		SuperGraph superGraph = new SuperGraph(cfgProvider, cfg, ccfg.getCallString(), callStringLength, infeasibles);
 		ContextCFG rootMethod = superGraph.getRootNode();                                                    
@@ -303,9 +304,15 @@ public class Segment {
 				}
 			}
 		} while(currentNode != null);
-		
 		Set<SuperGraphEdge> exitEdges = Iterators.addAll(new HashSet<SuperGraphEdge>(), 
 				superGraph.liftCFGEdges(rootMethod, monitorExitEdges));
+		// Add all return edges to nodes outside the segment to the exit edge set
+		for(Pair<SuperInvokeEdge, SuperReturnEdge> callsite : superGraph.getCallSitesFrom(ccfg)) {
+			SuperReturnEdge retEdge = callsite.second();
+			if(! visited.contains(retEdge.getReturnNode())) {
+				exitEdges.add(retEdge);
+			}
+		}
 		return new Segment(superGraph, entryEdges, exitEdges);                                               
 	}
 

@@ -325,18 +325,7 @@ public class WCETAnalysis {
 						/* compute synchronized block WCET */
 						Segment synchronizedSegment = Segment.synchronizedSegment(ccfg, cfgNode, ih,
 								wcetTool,wcetTool.getCallstringLength(), wcetTool);  
-						try {
-							wcet = an.computeWCET(targetMethod.getShortName(), synchronizedSegment, requestedCacheApprox); 
-						} catch(LpSolveException ex) {
-							wcet = new WcetCost();
-							wcet.addLocalCost(1000000000);
-							try {
-								System.out.println(synchronizedSegment);
-								synchronizedSegment.exportDOT(new File("/tmp/sync.dot"));
-							} catch (IOException e) {
-								e.printStackTrace();
-							}
-						}
+						wcet = an.computeWCET(targetMethod.getShortName(), synchronizedSegment, requestedCacheApprox); 
 						sBlocks.add(new SynchronizedBlockResult(sBlocks.size(), synchronizedSegment, cfgNode, ih, wcet));
 					}
 				}
