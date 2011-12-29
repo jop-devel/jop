@@ -41,6 +41,9 @@ import com.jopdesign.common.misc.MethodNotFoundException;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.common.misc.Ternary;
 import com.jopdesign.common.type.MethodRef;
+
+import org.apache.bcel.classfile.Method;
+import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.EdgeFactory;
@@ -416,6 +419,10 @@ public class CallGraph implements ImplementationFinder {
     private Map<ExecutionContext, Integer> subgraphHeight = null;
     private ExecutionContext maxCallStackLeaf = null;
     private Map<MethodInfo,Boolean> leafNodeCache;
+
+    private Map<ExecutionContext, Integer> maxStackToRoot = null;
+    private ExecutionContext maxStackHeightLeaf = null;
+    private Integer maxStackHeight = null;
 
     /*---------------------------------------------------------------------------*
      * Constructor methods
@@ -1834,7 +1841,11 @@ public class CallGraph implements ImplementationFinder {
         this.maxCallStackLeaf = rootNode;
         this.maxCallstackDAG  = new HashMap<ExecutionContext,ExecutionContext>();
         this.subgraphHeight = new HashMap<ExecutionContext, Integer>();
-
+        
+        this.maxStackToRoot = new HashMap<ExecutionContext, Integer>();
+        this.maxStackHeightLeaf = rootNode;
+        this.maxStackHeight = 0;
+        
         /* calculate longest distance to root and max call stack DAG */
         List<ExecutionContext> toList = new ArrayList<ExecutionContext>();
         TopologicalOrderIterator<ExecutionContext, ContextEdge> toIter =
@@ -1844,6 +1855,7 @@ public class CallGraph implements ImplementationFinder {
         while(toIter.hasNext()) {
             ExecutionContext node = toIter.next();
             toList.add(node);
+
             int maxDist = 0;
             ExecutionContext maxCallStackPred = null;
             for(ContextEdge e : callGraph.incomingEdgesOf(node)) {
@@ -1857,7 +1869,39 @@ public class CallGraph implements ImplementationFinder {
             this.maxDistanceToRoot.put(node,maxDist);
             if(maxCallStackPred != null) this.maxCallstackDAG.put(node,maxCallStackPred);
             if(maxDist > globalMaxDist) this.maxCallStackLeaf = node;
+
+
+            Method m = node.getMethodInfo().getMethod(false);
+            // Compute size of arguments
+            Type at[] = m.getArgumentTypes();
+            int args = 0;
+            for (int i = 0; i < at.length; ++i) {
+                args += at[i].getSize();
+            }
+            // Additional argument for non-static methods
+            if (!m.isStatic()) {
+    			args++;
+    		}
+
+            // Compute maximum stack usage of current method 
+            // local variables - arguments + frame info + operand stack
+            final int maxLocal = m.getCode().getMaxLocals()-args+5+m.getCode().getMaxStack();
+            int maxStack = maxLocal;
+            for(ContextEdge e : callGraph.incomingEdgesOf(node)) {
+                ExecutionContext pred = callGraph.getEdgeSource(e);                
+                int stackViaPred = maxStackToRoot.get(pred) + maxLocal;
+                if (stackViaPred > maxStack) {
+                	maxStack = stackViaPred;                 	
+                }
+            }
+            this.maxStackToRoot.put(node, maxStack);
+            if (maxStack > this.maxStackHeight) {
+            	this.maxStackHeight = maxStack;
+            	this.maxStackHeightLeaf = node;
+            }
         }
+        
+        logger.info("Maximum stack height: "+maxStackHeight+" (+ offset) at "+maxStackHeightLeaf);
 
         /* calculate subgraph height */
         Collections.reverse(toList);
