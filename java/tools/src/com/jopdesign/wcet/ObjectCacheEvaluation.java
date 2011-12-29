@@ -19,6 +19,7 @@
  */
 package com.jopdesign.wcet;
 
+import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph.ContextEdge;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ExecutionContext;
@@ -130,9 +131,9 @@ public class ObjectCacheEvaluation {
 		this.project = project;
 	}
 	
-	public boolean run() {
+	public boolean run(MethodInfo targetMethod) {
 		try {
-			evaluateObjectCache();
+			evaluateObjectCache(targetMethod);
 			return true;
 		} catch (InvalidFlowFactException e) {
 			e.printStackTrace();
@@ -143,7 +144,7 @@ public class ObjectCacheEvaluation {
 		}		
 	}
 
-	private void evaluateObjectCache() throws InvalidFlowFactException, LpSolveException {
+	private void evaluateObjectCache(MethodInfo targetMethod) throws InvalidFlowFactException, LpSolveException {
 		long start,stop;
 
 		// Method Cache
@@ -270,7 +271,7 @@ public class ObjectCacheEvaluation {
 							if(first) {
 								oStream.println(String.format("***** ***** MODE = %s ***** *****\n",modeString));
 								oStream.println(String.format(" - max tags accessed (upper bound) = %d, max fields accesses = %d",
-										oca.getMaxAccessedTags(project.getTargetMethod(), CallString.EMPTY), totalFieldAccesses)
+										oca.getMaxAccessedTags(targetMethod, CallString.EMPTY), totalFieldAccesses)
 								);						
 								first = false;
 							}					

@@ -40,6 +40,7 @@ import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.code.Segment;
 import com.jopdesign.common.code.SuperGraph.ContextCFG;
@@ -69,7 +70,6 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis {
     static final String KEY = "wcet.MethodCacheAnalysis";
 
     protected final WCETTool wcetTool;
-	private MethodCache methodCache;
 
 	private final F1<SuperGraphEdge, Long> NUMBER_OF_BLOCKS = 
 			new F1<SuperGraphEdge,Long>() {
@@ -86,6 +86,8 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis {
 			return getMissCost(accessEdge);			
 		}			
 	};
+
+	private MethodCache methodCache;
 
 	public MethodCacheAnalysis(WCETTool wcetTool) {
 
@@ -361,16 +363,23 @@ public class MethodCacheAnalysis extends CachePersistenceAnalysis {
 
 	/**
 	 * Collect all method cache accesses in the segment: These are all supergraph edges,
-	 * plus all entry edges.
+	 * plus all entry edges from the CFG entry.
 	 * @param segment
 	 * @return
 	 */
 	private Iterable<SuperGraphEdge> collectCacheAccesses(final Segment segment) {
 		
 		return new Filter<SuperGraphEdge>() {
+
 			@Override
 			protected boolean include(SuperGraphEdge e) {
-				return (e instanceof SuperEdge || segment.getEntryEdges().contains(e));
+				if(e instanceof SuperEdge) {
+					return true;
+				} else if(segment.getEntryEdges().contains(e)) {
+					return true;
+				} else {
+					return false;
+				}
 			}				
 		}.filter(segment.getEdges()); 		
 	}
