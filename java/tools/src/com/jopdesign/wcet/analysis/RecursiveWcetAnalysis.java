@@ -337,6 +337,10 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
                     }
                     for (ClassInfo cli : lineMap.keySet()) {
                         TreeSet<Integer> lineRange = lineMap.get(cli);
+						if (lineRange.isEmpty()) {
+							logger.error("No source code lines associated with class info " + cli + " in " + m + " ! ");
+							continue;
+						}
                         ClassReport cr = getWCETTool().getReport().getClassReport(cli);
 
                         Long oldCost = (Long) cr.getLineProperty(lineRange.first(), "cost");
