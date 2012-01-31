@@ -377,12 +377,8 @@ public class WCAInvoker extends ExecFrequencyProvider {
 
                         long ef = getExecFrequency(method, node);
 
-                        if (!inv.isVirtual()) {
-                            addExecCount(inv.getImplementingMethod(), ec * ef);
-                        } else {
-                            for (MethodInfo invokee : ((InvokeNode)node).getImplementingMethods()) {
-                                addExecCount(invokee, ec * ef);
-                            }
+                        for (MethodInfo invokee : inv.getImplementingMethods()) {
+                            addExecCount(invokee, ec * ef);
                         }
 
                     } else if (node instanceof BasicBlockNode) {

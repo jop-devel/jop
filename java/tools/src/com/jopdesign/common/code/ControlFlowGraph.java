@@ -356,17 +356,24 @@ public class ControlFlowGraph {
         }
 
         /**
-         * @return true if the invokation denotes an interface, not an implementation
+         * @return true if the invocation denotes an interface, not an implementation
          */
         public boolean isVirtual() {
             return receiverImpl == null;
         }
 
         /**
+         * @return true if this node is a nonvirtual instance of a virtual node, false if this node is either virtual or statically resolved.
+         */
+        public boolean isVirtualInstance() {
+            return instantiatedFrom != null;
+        }
+
+        /**
          * If this is the implementation of a virtual/interface invoke instruction,
          * return the InvokeNode for the virtual invoke instruction.
          * TODO: This can be removed, if we ever remove {@link ControlFlowGraph#resolveVirtualInvokes()}
-         * @return the node representing the virtual invoke or null if not instanciated from a virtual invoke.
+         * @return the node representing the virtual invoke or null if not instantiated from a virtual invoke.
          */
         public InvokeNode getVirtualNode() {
             if (this.instantiatedFrom != null) return this.instantiatedFrom;

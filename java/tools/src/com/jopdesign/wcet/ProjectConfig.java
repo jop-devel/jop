@@ -65,7 +65,13 @@ public class ProjectConfig {
                     }));
 
     public static final StringOption TARGET_SOURCEPATH =
-            new StringOption("sp","the sourcepath","${splib};java/target/src/app");
+            new StringOption("sp","the sourcepath",
+                    Config.mergePaths(new String[]{
+                            "${splib}",
+                            "java/target/src/app",
+                            "java/target/src/bench",
+                            "java/target/src/test"
+                    }));
 
     public static final StringOption TARGET_BINPATH =
             new StringOption("linkinfo-path", "directory holding linker info (.link.txt)","java/target/dist/bin");

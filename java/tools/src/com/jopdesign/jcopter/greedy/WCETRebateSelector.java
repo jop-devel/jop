@@ -52,7 +52,7 @@ public class WCETRebateSelector extends QueueSelector {
     @Override
     public Set<MethodInfo> updateChangeSet(ExecFrequencyProvider ecp, Set<MethodInfo> optimizedMethods, Set<MethodInfo> candidateChanges) {
         Set<MethodInfo> changeSet = new HashSet<MethodInfo>(candidateChanges);
-        changeSet.addAll( analyses.getExecFrequencyAnalysis().getChangeSet() );
+        changeSet.addAll( ecp.getChangeSet() );
         changeSet.addAll( analyses.getMethodCacheAnalysis().getMissCountChangeSet(ecp) );
 
         // WCA invoker checks analysis changesets itself
