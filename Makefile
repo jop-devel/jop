@@ -216,7 +216,7 @@ else
 	TARGET_SOURCE=$(TARGET_SRC_PATH)/common$(S)$(TARGET_SRC_PATH)/jdk_base$(S)$(TARGET_SRC_PATH)/jdk11$(S)$(TARGET_SRC_PATH)/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
 endif
 endif
-TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5 -encoding Latin1
+TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5 -target 1.5 -encoding Latin1
 GCC_PARAMS=
 
 # uncomment this to use RTTM
@@ -433,9 +433,10 @@ endif
 # Optimize
 ifeq ($(USE_JCOPTER),yes)
 ifeq (${JCOPTER_USE_WCA},no)
+	rm -rf $(TARGET)/dist/classes.unopt; \
 	mv $(TARGET)/dist/classes $(TARGET)/dist/classes.unopt
 	java -Xmx1280M $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter \
-	   -c $(TARGET)/dist/classes -o $(TARGET)/dist --classdir $(TARGET)/dist/classes.opt \
+	   -c $(TARGET)/dist/classes.unopt -o $(TARGET)/dist --classdir $(TARGET)/dist/classes \
 	   --no-use-wca $(JCOPTER_OPTIONS) $(MAIN_CLASS)
 else
 	for target in ${WCET_METHOD}; do \

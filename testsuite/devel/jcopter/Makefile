@@ -31,6 +31,7 @@ DFA_CACHE_DIR=../dfa-cache
 
 # Options for JCopter
 USE_WCA=yes
+WCEP_EF?=false
 DEFAULT_OPTS=--greedy.targets wca \
              --greedy.dump-stats greedy.csv \
              --inline.exclude-wca-targets true \
@@ -38,7 +39,7 @@ DEFAULT_OPTS=--greedy.targets wca \
              --opt.remove-unused-members false \
              --greedy.order WCAFirst \
              --greedy.use-wcep true \
-	     --greedy.use-wcep-ef false \
+	     --greedy.use-wcep-ef $(WCEP_EF) \
 	     --greedy.cache-analysis ALL_FIT_REGIONS \
 	     --greedy.wca-cache-analysis ALL_FIT_REGIONS 
 #OPTS=--greedy.cache-analysis ALWAYS_MISS --greedy.wca-cache-analysis ALWAYS_MISS
@@ -138,13 +139,13 @@ debie_dopt_5:
 
 
 bench_opt:
-	$(MAKE) USE_JCOPTER=yes JCOPTER_USE_WCA=$(USE_WCA) do_bench_wcet
+	$(MAKE) USE_JCOPTER=yes do_bench_wcet
 
 bench_orig:
 	$(MAKE) USE_JCOPTER=no do_bench_wcet 
 
 down_opt:
-	$(MAKE) USE_JCOPTER=yes JCOPTER_USE_WCA=$(USE_WCA) do_bench_acet
+	$(MAKE) USE_JCOPTER=yes do_bench_acet
 
 down_orig:
 	$(MAKE) USE_JCOPTER=no do_bench_acet 
