@@ -1,0 +1,3 @@
+set -tmpdir out/tmp
+set -xsthdpdir out/xst
+run -p xc5vfx70t-1-ff1136 -top jop -ofn out/ml50x_iic -ifn ml50x_iic.prj -lso ml50x_iic.lso
