@@ -30,6 +30,8 @@ use std.textio.all;
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+
+library work;
 use work.i2c_pkg.all;
 
 entity tb_jop is
@@ -37,7 +39,7 @@ end;
 
 architecture tb of tb_jop is
 
-component jop is
+component jop_iic is
 
 port (
 	clk		: in std_logic;
@@ -188,7 +190,7 @@ begin
 	sda_int <= 'H';
 	scl_int <= 'H';
 
-	joptop: jop port map(
+	joptop: jop_iic port map(
 		clk => clk,
 		ser_rxd => ser_rxd,
 		ser_ncts => '0',

@@ -22,12 +22,13 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library work;
 use work.jop_types.all;
 use work.sc_pack.all;
 use work.jop_config.all;
 
 
-entity jop is
+entity jop_iic is
 
 generic (
 	ram_cnt		: integer := 2;		-- clock cycles for external ram
@@ -101,17 +102,17 @@ port (
 	
 	--i2c
 	sda : inout std_logic;
-	scl : inout std_logic;
+	scl : inout std_logic
 --
 --	dummy input pins for EP1C6 on board with EP1C12 pinout
 --	EP1C12 has additional GND and VCCINT pins.
 --
-	dummy_gnd		: out std_logic_vector(5 downto 0);
-	dummy_vccint	: out std_logic_vector(5 downto 0)
+--	dummy_gnd		: out std_logic_vector(5 downto 0);
+--	dummy_vccint	: out std_logic_vector(5 downto 0)
 );
-end jop;
+end jop_iic;
 
-architecture rtl of jop is
+architecture rtl of jop_iic is
 
 --
 --	components:
@@ -210,10 +211,10 @@ end process;
 			sc_io_out, sc_io_in,
 			irq_in, irq_out, exc_req);
 
-	io: entity work.scio 
+	io: entity work.scio
 		port map (clk_int, int_res,
 			sc_io_out, sc_io_in,
-			irq_in, irq_out, exc_req,
+			irq_in, irq_out, exc_req, 
 
 			txd => ser_txd,
 			rxd => ser_rxd,
@@ -294,8 +295,8 @@ end process;
 --
 --	EP1C12 additional power pins as tristatet output on EP1C6
 --
-	dummy_gnd <= (others => 'Z');
-	dummy_vccint <= (others => 'Z');
-	freeio <= 'Z';
+--	dummy_gnd <= (others => 'Z');
+--	dummy_vccint <= (others => 'Z');
+--	freeio <= 'Z';
 
 end rtl;

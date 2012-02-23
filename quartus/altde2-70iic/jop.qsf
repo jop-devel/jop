@@ -596,6 +596,26 @@ set_location_assignment PIN_AD15 -to clk
 set_location_assignment PIN_AA24 -to wd
 set_location_assignment PIN_D21 -to ser_rxd
 set_location_assignment PIN_E21 -to ser_txd
+
+set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
+
+set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS OUTPUT DRIVING AN UNSPECIFIED SIGNAL"
+
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name OUTPUT_PIN_LOAD 5 -section_id "3.3-V LVCMOS"
+set_global_assignment -name OUTPUT_PIN_LOAD 10 -section_id "3.3-V PCI"
+set_global_assignment -name OUTPUT_PIN_LOAD 10 -section_id "3.3-V PCI-X"
+
+
+
+
+
+
+
+
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/i2c.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/scl_sm_sync.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/main_i2c_sm_sync.vhd
 set_global_assignment -name SDC_FILE jop.sdc
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_global.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_de2.vhd
@@ -625,17 +645,6 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
-
-set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
-
-set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS OUTPUT DRIVING AN UNSPECIFIED SIGNAL"
-
-set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
-set_global_assignment -name OUTPUT_PIN_LOAD 5 -section_id "3.3-V LVCMOS"
-set_global_assignment -name OUTPUT_PIN_LOAD 10 -section_id "3.3-V PCI"
-set_global_assignment -name OUTPUT_PIN_LOAD 10 -section_id "3.3-V PCI-X"
-
-
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/async_fifo_syn.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/counter_synth.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/dual_port_ram_alt.vhd
@@ -644,15 +653,6 @@ set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/FIFO_write_contro
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/synchronizer_synth.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/fifo_pkg.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/i2c_pkg.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/i2c_sm.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/master_sm.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/scl_sm.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/slave_sm.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_i2c.vhd
-
-
-
-
-
-
+set_global_assignment -name MISC_FILE "/home/jrri/Documents/DTU/phd/jop/quartus/altde2-70iic/jop.dpf"
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

@@ -1,7 +1,9 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.i2c_pkg.all;
+
+library work;
+use work.i2c_pkg.all; 
 
 entity i2c is
   port(
@@ -62,8 +64,9 @@ architecture i2c_rtl of i2c is
 	      sda_ctrl        : out std_logic;
 	      masl            : in  std_logic;
 	      strt            : in  std_logic;
-	      t_const         : in  timming;
-	      scl_monitor     : out std_logic_vector (10 downto 0));
+	      t_const         : in  timming
+	      --scl_monitor     : out std_logic_vector (10 downto 0)
+	      );
 	end component scl_sm_sync;
 
   component main_i2c_sm_sync
@@ -87,8 +90,9 @@ architecture i2c_rtl of i2c is
 	      tx_fifo_empty    : in  std_logic;
 	      rx_fifo_wr_ena   : out std_logic;
 	      data_out         : out std_logic_vector (7 downto 0);
-	      rx_fifo_full     : in  std_logic;
-	      main_i2c_monitor : out std_logic_vector (7 downto 0));
+	      rx_fifo_full     : in  std_logic
+	      --main_i2c_monitor : out std_logic_vector (7 downto 0)
+	      );
 	end component main_i2c_sm_sync;
 
   component async_fifo
@@ -141,32 +145,32 @@ architecture i2c_rtl of i2c is
   
   --- BEGIN CHIPSCOPE -----
   
-  component chipscope_icon
-  PORT (
-    CONTROL0 : INOUT STD_LOGIC_VECTOR(35 DOWNTO 0)
-	 );
-
-end component;
-
-component chipscope_ila
-  PORT (
-    CONTROL : INOUT STD_LOGIC_VECTOR(35 DOWNTO 0);
-    CLK : IN STD_LOGIC;
-    TRIG0 : IN STD_LOGIC_VECTOR(31 DOWNTO 0));
-
-end component;
-
-signal trig : std_logic_vector(31 downto 0);
-signal control_int : STD_LOGIC_VECTOR(35 DOWNTO 0);
-
--- Synplicity black box declaration
-attribute syn_black_box : boolean;
-attribute syn_black_box of chipscope_icon: component is true;
-attribute syn_black_box of chipscope_ila: component is true;
-
-signal scl_monitor_int: std_logic_vector (10 downto 0);
-signal master_monitor_int: std_logic_vector (7 downto 0);
-
+--  component chipscope_icon
+--  PORT (
+--    CONTROL0 : INOUT STD_LOGIC_VECTOR(35 DOWNTO 0)
+--	 );
+--
+--end component;
+--
+--component chipscope_ila
+--  PORT (
+--    CONTROL : INOUT STD_LOGIC_VECTOR(35 DOWNTO 0);
+--    CLK : IN STD_LOGIC;
+--    TRIG0 : IN STD_LOGIC_VECTOR(31 DOWNTO 0));
+--
+--end component;
+--
+--signal trig : std_logic_vector(31 downto 0);
+--signal control_int : STD_LOGIC_VECTOR(35 DOWNTO 0);
+--
+---- Synplicity black box declaration
+--attribute syn_black_box : boolean;
+--attribute syn_black_box of chipscope_icon: component is true;
+--attribute syn_black_box of chipscope_ila: component is true;
+--
+--signal scl_monitor_int: std_logic_vector (10 downto 0);
+--signal master_monitor_int: std_logic_vector (7 downto 0);
+--
   --- END CHIPSCOPE -----
   
 	
@@ -176,35 +180,35 @@ begin
 
   --- BEGIN CHIPSCOPE -----
   
-  trig(0) <= sda;
-  trig(1) <= scl;
-  trig(2) <= sda_oe;
-  trig(3) <= scl_oe_int;
-  trig(4) <= sda_ctrl_int;
-  trig(5) <= sda_scl_int;
-  trig(6) <= sda_masl_int;
---   trig(7) <= tx_fifo_read;
-  trig(7) <= rx_fifo_rd_ena;
-  trig(8) <= rx_fifo_full_int;
-  --trig(8) <= rx_fifo_rd_ena;
-  trig(9) <= master_stop_int;
-  trig(10) <= busy_int;
-  trig(11) <= masl;
-  trig(12) <= strt;
-  trig(23 downto 13) <=  scl_monitor_int;
-  trig(31 downto 24) <= master_monitor_int; 
-
+--  trig(0) <= sda;
+--  trig(1) <= scl;
+--  trig(2) <= sda_oe;
+--  trig(3) <= scl_oe_int;
+--  trig(4) <= sda_ctrl_int;
+--  trig(5) <= sda_scl_int;
+--  trig(6) <= sda_masl_int;
+----   trig(7) <= tx_fifo_read;
+--  trig(7) <= rx_fifo_rd_ena;
+--  trig(8) <= rx_fifo_full_int;
+--  --trig(8) <= rx_fifo_rd_ena;
+--  trig(9) <= master_stop_int;
+--  trig(10) <= busy_int;
+--  trig(11) <= masl;
+--  trig(12) <= strt;
+--  trig(23 downto 13) <=  scl_monitor_int;
+--  trig(31 downto 24) <= master_monitor_int; 
+--
   
-  CHS_0 : chipscope_icon
-  port map (
-    CONTROL0 => control_int);
-  
-  CHS_1 : chipscope_ila
-  port map (
-    CONTROL => control_int,
-    CLK => clk,
-    TRIG0 => trig);
-  
+--  CHS_0 : chipscope_icon
+--  port map (
+--    CONTROL0 => control_int);
+--  
+--  CHS_1 : chipscope_ila
+--  port map (
+--    CONTROL => control_int,
+--    CLK => clk,
+--    TRIG0 => trig);
+--  
   
  --- END CHIPSCOPE -----
  
@@ -244,8 +248,8 @@ end process sample_scl;
       sda_ctrl    => sda_ctrl_int,
       masl        => masl,
       strt        => strt,
-      t_const     => t_const,
-      scl_monitor  => scl_monitor_int
+      t_const     => t_const
+      --scl_monitor  => scl_monitor_int
       );
 
 
@@ -274,8 +278,8 @@ end process sample_scl;
       tx_fifo_empty  => tx_fifo_empty_int,
       rx_fifo_wr_ena => rx_fifo_wr_ena_int,
       data_out       => i2c_data_out,
-      rx_fifo_full   => rx_fifo_full_int,
-      main_i2c_monitor => master_monitor_int
+      rx_fifo_full   => rx_fifo_full_int
+      --main_i2c_monitor => master_monitor_int
       );
 
   scl    <= '0'         when scl_oe_int = '0'   else 'Z';

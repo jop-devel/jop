@@ -68,8 +68,10 @@ port (
 	wd				: out std_logic;
 	
 	--i2c
-	sda			: inout std_logic;
-	scl			: inout std_logic;
+	I2C_SDAT 			: inout std_logic;
+	--sda			: inout std_logic;
+	oI2C_SCLK			: inout std_logic;
+	--scl			: inout std_logic;
 
 --
 --	only one ram bank
@@ -228,6 +230,9 @@ end process;
 			-- remove the comment for RAM access counting
 			-- ram_cnt => ram_count
 			
+			-- Uncomment this lines to use the I2C bus in the DE-70 board
+			--sda => I2C_SDAT, 
+			--scl => oI2C_SCLK
 
 		);
 
