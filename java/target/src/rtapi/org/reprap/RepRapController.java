@@ -39,26 +39,101 @@ import com.jopdesign.io.*;
 
 public class RepRapController extends PeriodicEventHandler
 {
-	ExpansionHeaderFactory EHF = ExpansionHeaderFactory.getExpansionHeaderFactory();
-	ExpansionHeader EH = EHF.getExpansionHeader();
-	LedSwitchFactory LSF = LedSwitchFactory.getLedSwitchFactory();
-	LedSwitch LS = LSF.getLedSwitch();
+	private static RepRapController instance;
 	
-	int oldvalue = 0x01040412;
-	boolean Stepping = false;
+	public static RepRapController getInstance()
+	{
+		if(instance == null)
+		{
+			instance = new RepRapController();
+		}
+		return instance;
+	}
 	
-	RepRapController()
+	private RepRapController()
 	{
 		super(new PriorityParameters(1),
 			  new PeriodicParameters(null, new RelativeTime(1,0)),
 			  new StorageParameters(300, null, 0, 0));
 	}
 	
+	ExpansionHeaderFactory EHF = ExpansionHeaderFactory.getExpansionHeaderFactory();
+	ExpansionHeader EH = EHF.getExpansionHeader();
+	LedSwitchFactory LSF = LedSwitchFactory.getLedSwitchFactory();
+	public LedSwitch LS = LSF.getLedSwitch();
+	
+	private int X = 0;
+	private int Y = 0;
+	private int Z = 0;
+	private int E = 0;
+	private int F = 0;
+	private int targetX = 0;
+	private int targetY = 0;
+	private int targetZ = 0;
+	private int targetE = 0;
+	private int targetF = 0;
+	private boolean inPosition = true;
+	
+	private Object lockTarget = new Object();
+	private Object lockPosition = new Object();
+	
+	public boolean inPosition()
+	{
+		synchronized (lockPosition) 
+		{
+			return inPosition;
+		}
+	}
+	
+	public void setTarget(boolean XSet, boolean YSet, boolean ZSet, boolean ESet, boolean FSet, int X, int Y, int Z, int E, int F)
+	{
+		synchronized (lockTarget) 
+		{
+			if(XSet)
+			{
+				targetX = X;
+			}
+			if(YSet)
+			{
+				targetY = Y;
+			}
+			if(ZSet)
+			{
+				targetZ = Z;
+			}
+			if(ESet)
+			{
+				targetE = E;
+			}
+			if(FSet)
+			{
+				targetF = F;
+			}
+		}
+	}
+	
+	int oldvalue = 0x01040412;
+	boolean Stepping = false;
+	
 	@Override
 	public void handleAsyncEvent()
 	{
+		boolean inPosition = true;
 		int value = oldvalue;
 		int switchvalue = LS.ledSwitch;
+		int tempX;
+		int tempY;
+		int tempZ;
+		int tempE;
+		int tempF;
+		synchronized (lockTarget) 
+		{
+			tempX = targetX;
+			tempY = targetY;
+			tempZ = targetZ;
+			tempE = targetE;
+			tempF = targetF;
+		}
 		if(Stepping)
 		{
 			value = setBit(value,0,false);
@@ -70,31 +145,80 @@ public class RepRapController extends PeriodicEventHandler
 		}
 		else
 		{
+			//Feeder
 			value = setBit(value,0,getBitValue(switchvalue,0));
-			value = setBit(value,6,getBitValue(switchvalue,2));
-			value = setBit(value,12,getBitValue(switchvalue,4));
-			value = setBit(value,20,getBitValue(switchvalue,6));
-			value = setBit(value,26,getBitValue(switchvalue,6));
+			value = setBit(value,2,getBitValue(switchvalue,1));
+			//Heater
+			value = setBit(value,23,getBitValue(switchvalue,17));
+			value = setBit(value,25,getBitValue(switchvalue,17));
+			if(X != tempX)
+			{
+				inPosition = false;
+				value = setBit(value,6,true);
+				boolean direction = false;
+				if(X < tempX)
+				{
+					X++;
+					direction = true;
+				}
+				else
+				{
+					X--;
+				}
+				value = setBit(value,8,direction);
+			}
+			
+			if(Y != tempY)
+			{
+				inPosition = false;
+				value = setBit(value,12,true);
+				boolean direction = false;
+				if(Y < tempY)
+				{
+					Y++;
+					direction = true;
+				}
+				else
+				{
+					Y--;
+				}
+				value = setBit(value,16,direction);
+			}
+			
+			if(Z != tempZ)
+			{
+				inPosition = false;
+				value = setBit(value,20,true);
+				value = setBit(value,26,true);
+				boolean direction = false;
+				if(Z < tempZ)
+				{
+					Z++;
+					direction = true;
+				}
+				else
+				{
+					Z--;
+				}
+				value = setBit(value,22,direction);
+				value = setBit(value,28,direction);
+			}
 			Stepping = true;
 		}
-		value = setBit(value,2,getBitValue(switchvalue,1));
-		value = setBit(value,8,getBitValue(switchvalue,3));
-		value = setBit(value,16,getBitValue(switchvalue,5));
-		value = setBit(value,22,getBitValue(switchvalue,7));
-		value = setBit(value,28,getBitValue(switchvalue,7));
-		value = setBit(value,23,getBitValue(switchvalue,17));
-		value = setBit(value,25,getBitValue(switchvalue,17));
-		
 		EH.expansionHeader = value;
 		oldvalue = value;
+		synchronized (lockPosition) 
+		{
+			this.inPosition = inPosition;
+		}
 	}
 	
-	private boolean getBitValue(int Value, int BitNumber)
+	private static boolean getBitValue(int Value, int BitNumber)
 	{
 		return (Value & (1 << BitNumber)) != 0;
 	}
 	
-	private int setBit(int Number, int BitNumber, boolean Value)
+	private static int setBit(int Number, int BitNumber, boolean Value)
 	{
 		if(Value)
 		{

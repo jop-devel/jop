@@ -81,6 +81,8 @@ public class Main implements Safelet
 		{
 			PeriodicEventHandler peh1 = null;
 			PeriodicEventHandler peh2 = null;
+			PeriodicEventHandler peh3 = null;
+			PeriodicEventHandler peh4 = null;
 			
 			@Override
 			public long missionMemorySize()
@@ -93,11 +95,20 @@ public class Main implements Safelet
 			{
 				if(peh1 == null)
 				{
-					peh1 = new RepRapController();
+					peh1 = RepRapController.getInstance();
 				}
 				if(peh2 == null)
 				{
-					peh2 = new SerialController();
+					peh2 = SerialController.getInstance();
+					//peh2 = new IICController();
+				}
+				if(peh3 == null)
+				{
+					peh3 = CommandController.getInstance();
+				}
+				if(peh4 == null)
+				{
+					peh4 = Command.getInstance();
 				}
 			}
 		}

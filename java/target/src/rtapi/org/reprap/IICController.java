@@ -36,8 +36,19 @@ import javax.safetycritical.StorageParameters;
 import javax.safetycritical.JopSystem;
 import com.jopdesign.io.*;
 
-public class RepRapIIC extends PeriodicEventHandler
+public class IICController extends PeriodicEventHandler
 {
+	private static IICController instance;
+	
+	public static IICController getInstance()
+	{
+		if(instance == null)
+		{
+			instance = new IICController();
+		}
+		return instance;
+	}
+	
 	ExpansionHeaderFactory EHF = ExpansionHeaderFactory.getExpansionHeaderFactory();
 	ExpansionHeader EH = EHF.getExpansionHeader();
 	IICFactory fact = IICFactory.getIICFactory();
@@ -46,7 +57,7 @@ public class RepRapIIC extends PeriodicEventHandler
 	int rdcnt = 0;
 	int slave_cnt = 0;
 	
-	RepRapIIC()
+	IICController()
 	{
 		super(new PriorityParameters(1),
 			  new PeriodicParameters(null, new RelativeTime(500,0)),
@@ -72,14 +83,18 @@ public class RepRapIIC extends PeriodicEventHandler
 		{
 			System.out.println("Busy bus");
 		}
-		System.out.print("state");
-		System.out.print(status);
-		System.out.print(":");
+		if((iic.CR_SR & 0x00000001) > 0) // Interrupt
+		{
+			System.out.println("Interrupt");
+		}
+		//System.out.print("state");
+		//System.out.print(status);
+		//System.out.print(":");
 		
 		switch(status)
 		{
 			case 0:
-				iic.PRERlo = 120; // set clk to 100 kHz
+				iic.PRERlo = 239;//120; // set clk to 50/100 kHz
 				iic.CTR = 0x00000080; // start i2c core
 				status = 1;
 				break;
@@ -91,6 +106,7 @@ public class RepRapIIC extends PeriodicEventHandler
 			case 2:
 				iic.TXR_RXR = 0x00000000; // data to transmit register
 				iic.CR_SR = 0x00000010; // write bit
+				status = 0;
 				break;
 			case 3:
 				iic.TXR_RXR = 0x00000091; // slave address to transmit register
@@ -111,17 +127,18 @@ public class RepRapIIC extends PeriodicEventHandler
 					status = 4;
 					break;
 				}
+				status = 6;
 			default:
-				status = 3;
-				rdcnt = 0;
+				//status = 3;
+				//rdcnt = 0;
 				break;
 		}
 		
-		System.out.print(iic.TXR_RXR);
+		/*System.out.print(iic.TXR_RXR);
 		System.out.print(" ");
 		System.out.print(iic.CR_DEBUG);
 		System.out.print(" ");
 		System.out.print(iic.PRERlo);
-		System.out.println();
+		System.out.println();*/
 	}
 }
