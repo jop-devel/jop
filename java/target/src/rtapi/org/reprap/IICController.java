@@ -26,14 +26,8 @@ package org.reprap;
 import javax.realtime.PeriodicParameters;
 import javax.realtime.PriorityParameters;
 import javax.realtime.RelativeTime;
-import javax.realtime.ThrowBoundaryError;
-import javax.safetycritical.ManagedMemory;
-import javax.safetycritical.Mission;
-import javax.safetycritical.MissionSequencer;
 import javax.safetycritical.PeriodicEventHandler;
-import javax.safetycritical.Safelet;
 import javax.safetycritical.StorageParameters;
-import javax.safetycritical.JopSystem;
 import com.jopdesign.io.*;
 
 public class IICController extends PeriodicEventHandler

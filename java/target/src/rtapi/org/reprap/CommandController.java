@@ -26,15 +26,8 @@ package org.reprap;
 import javax.realtime.PeriodicParameters;
 import javax.realtime.PriorityParameters;
 import javax.realtime.RelativeTime;
-import javax.realtime.ThrowBoundaryError;
-import javax.safetycritical.ManagedMemory;
-import javax.safetycritical.Mission;
-import javax.safetycritical.MissionSequencer;
 import javax.safetycritical.PeriodicEventHandler;
-import javax.safetycritical.Safelet;
 import javax.safetycritical.StorageParameters;
-import javax.safetycritical.JopSystem;
-import com.jopdesign.io.*;
 
 public class CommandController extends PeriodicEventHandler
 {
@@ -53,8 +46,8 @@ public class CommandController extends PeriodicEventHandler
 	private CommandController()
 	{
 		super(new PriorityParameters(1),
-			  new PeriodicParameters(null, new RelativeTime(1,0)),
-			  new StorageParameters(300, null, 0, 0));
+			  new PeriodicParameters(null, new RelativeTime(10,0)),
+			  new StorageParameters(50, null, 0, 0));
 	}
 	
 	private int lineNumber = 0;
@@ -68,7 +61,15 @@ public class CommandController extends PeriodicEventHandler
 			//No commands to process
 			return;
 		}
-		
+		/*for (int i = 0; i < cb.length; i++) 
+		{
+			System.out.print(cb.chars[i]);
+			if(i == cb.length-1)
+			{
+				cb.returnToPool();
+				return;
+			}
+		}*/
 		int index = 0;
 		
 		boolean seenNCommand = false;
@@ -102,13 +103,6 @@ public class CommandController extends PeriodicEventHandler
 		while(index < cb.length)
 		{
 			char character = cb.chars[index];
-			if(character != 'N' && character != 'G' && character != 'M' && character != 'X' 
-					&& character != 'Y' && character != 'Z' && character != 'F'
-					&& character != 'E' && character != 'S' && character != '*')
-			{
-				resendCommand("Incorrect command",lineNumber);
-				return;
-			}
 			char command = character;
 			index++;
 			int numberLength = 0;
@@ -118,10 +112,9 @@ public class CommandController extends PeriodicEventHandler
 			while(index < cb.length)
 			{
 				character = cb.chars[index];
-				
-				if(Character.digit(character, 10) != -1)
+				if(Character.digit(character, 10) > -1)
 				{
-					value = value * 10 + character;
+					value = value * 10 + character-48;//Numbers start at character position 48
 					numberLength++;
 					if(decimalpoint)
 					{
@@ -129,19 +122,10 @@ public class CommandController extends PeriodicEventHandler
 						if(decimals > DECIMALS)
 						{
 							resendCommand("To many decimals in number",lineNumber);
+							cb.returnToPool();
 							return;
 						}
 					}
-					if((index + 1) == cb.length)
-					{
-						//End of command line
-						break;
-					}
-				}
-				else if(character == ' ' && numberLength > 0)
-				{
-					//Command delimiter
-					break;
 				}
 				else if(character == '.')
 				{
@@ -149,11 +133,16 @@ public class CommandController extends PeriodicEventHandler
 				}
 				else
 				{
-					resendCommand("Incorrect number in command",lineNumber);
-					return;
+					//Command delimiter
+					break;
 				}
+				index++;
 			}
-			
+			if(numberLength == 0)
+			{
+				//All commands should have a number
+				continue;
+			}
 			
 			switch(command)
 			{
@@ -170,15 +159,27 @@ public class CommandController extends PeriodicEventHandler
 					seenMCommand = true;
 					break;
 				case 'X':
-					XValue = value*(10^(DECIMALS-decimals));
+					XValue = value;
+					for (int i = 0; i < DECIMALS-decimals; i++) 
+					{
+						XValue = XValue*10;
+					}
 					seenXCommand = true;
 					break;
 				case 'Y':
-					YValue = value*(10^(DECIMALS-decimals));
+					YValue = value;
+					for (int i = 0; i < DECIMALS-decimals; i++) 
+					{
+						YValue = YValue*10;
+					}
 					seenYCommand = true;
 					break;
 				case 'Z':
-					ZValue = value*(10^(DECIMALS-decimals));
+					ZValue = value;
+					for (int i = 0; i < DECIMALS-decimals; i++) 
+					{
+						ZValue = ZValue*10;
+					}
 					seenZCommand = true;
 					break;
 				case 'E':
@@ -198,15 +199,14 @@ public class CommandController extends PeriodicEventHandler
 					seenStarCommand = true;
 					break;
 				default:
-					resendCommand("Incorrect command",lineNumber);
 			}
 		}
-		
 		if(seenNCommand && seenStarCommand)
 		{
 			if(!verifyChecksum(cb.chars,cb.length,checksum))
 			{
 				resendCommand("Incorrect checksum",lineNumber);
+				cb.returnToPool();
 				return;
 			}
 		}
@@ -220,20 +220,23 @@ public class CommandController extends PeriodicEventHandler
 					break;
 				default:
 					resendCommand("Unknown G command",lineNumber);
+					cb.returnToPool();
+					return;
 			}
 		}
+		cb.returnToPool();
+		lineNumber++;
 	}
 	
 	private static void resendCommand(String message, int lineNumber)
 	{
-		System.out.print("rs ");
 		if(lineNumber >= 0)
 		{
 			System.out.print(lineNumber);
 		}
 		System.out.print("//");
 		System.out.print(message);
-		
+		System.out.print("\n");
 	}
 	
 	private static boolean verifyChecksum(char[] chars, int length, int checksum)

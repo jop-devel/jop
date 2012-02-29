@@ -26,14 +26,8 @@ package org.reprap;
 import javax.realtime.PeriodicParameters;
 import javax.realtime.PriorityParameters;
 import javax.realtime.RelativeTime;
-import javax.realtime.ThrowBoundaryError;
-import javax.safetycritical.ManagedMemory;
-import javax.safetycritical.Mission;
-import javax.safetycritical.MissionSequencer;
 import javax.safetycritical.PeriodicEventHandler;
-import javax.safetycritical.Safelet;
 import javax.safetycritical.StorageParameters;
-import javax.safetycritical.JopSystem;
 import com.jopdesign.io.*;
 
 public class SerialController extends PeriodicEventHandler
@@ -53,12 +47,9 @@ public class SerialController extends PeriodicEventHandler
 	{
 		super(new PriorityParameters(1),
 			  new PeriodicParameters(null, new RelativeTime(1,1000)),
-			  new StorageParameters(500, null, 0, 0));
+			  new StorageParameters(10, null, 0, 0));
 	}
 	
-	
-	LedSwitchFactory LSF = LedSwitchFactory.getLedSwitchFactory();
-	LedSwitch LS = LSF.getLedSwitch();
 	char[] chars = new char[32];
 	// First int contains number and second contains the length of number in char[]
 	int[] intParseResults = new int[2];
@@ -72,42 +63,51 @@ public class SerialController extends PeriodicEventHandler
 	{
 		if(!initialized)
 		{
-			buffer = CharacterBuffer.getEmptyBuffer();
 			System.out.println("start");
 			initialized = true;
 		}
+		if(buffer == null)
+		{
+			buffer = CharacterBuffer.getEmptyBuffer();
+			if(buffer == null)
+			{
+				//No empty buffers so cannot store read characters
+				return;
+			}
+		}
+		char character = '0';
 		try
 		{
-			char character = '0';
-			while(System.in.available() != 0)
+			if(System.in.available() == 0)
 			{
-				character = (char)System.in.read();
-				if(character == ';')
-				{
-					comment = true;
-				}
-				else if(character == '\n' || character == '\r')
-				{
-					comment = false;
-					if(buffer.length > 0)
-					{
-						//buffer.returnToPool();
-						//RepRapController.getInstance().LS.ledSwitch = 0xFFFFFFFF;
-						//buffer = CharacterBuffer.getEmptyBuffer();
-						//RepRapController.getInstance().LS.ledSwitch = 0xFFFFFFF0;
-					}
-				}
-				else if(buffer.length < CharacterBuffer.BUFFER_WIDTH && !comment)
-				{
-					//Ignore too long command lines. Hopefully full of comments
-					buffer.chars[buffer.length++] = character;
-				}
+				//No input
+				return;
 			}
+			character = (char)System.in.read();
 		}
 		catch(Exception e)
 		{
 			System.out.print("ERROR:");
 			System.out.print(e.getMessage());
+			return;
+		}
+		if(character == ';')
+		{
+			comment = true;
+		}
+		else if(character == '\n' || character == '\r')
+		{
+			comment = false;
+			if(buffer.length > 0)
+			{
+				buffer.returnToPool();
+				buffer = null;
+			}
+		}
+		else if(buffer.length < CharacterBuffer.BUFFER_WIDTH && !comment)
+		{
+			//Ignore too long command lines. Hopefully full of comments
+			buffer.chars[buffer.length++] = character;
 		}
 	}
 }

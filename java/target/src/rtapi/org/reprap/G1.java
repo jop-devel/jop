@@ -6,7 +6,7 @@ public class G1 extends Command
 	private static G1 first;
 	private static G1 last;
 	private static Object lock = new Object();
-	private static boolean initialized = false;
+	private static boolean initialized = initialize(); //Ensures that pool is created in immortal memory so that all PEH have access
 	
 	private G1 next;
 	private boolean XSet = false;
@@ -21,23 +21,25 @@ public class G1 extends Command
 	private int F = 0;
 	private boolean executed = false;
 	
+	private static boolean initialize()
+	{
+		//No need for mutex as the pool is empty
+		G1 current = new G1();
+		first = current;
+		for(int i = 0; i < POOL_SIZE-1; i++)
+		{
+			G1 temp = new G1();
+			current.next = temp;
+			current = temp;
+		}
+		last = current;
+		initialized = true;
+		return true;
+	}
+	
 	//The G1 command is put into the Command queue, NOT the G1 pool
 	public static boolean enqueue(boolean XSet, boolean YSet, boolean ZSet, boolean ESet, boolean FSet, int X, int Y, int Z, int E, int F)
 	{
-		if(!initialized)
-		{
-			//No need for mutex as the pool is empty
-			G1 current = new G1();
-			first = current;
-			for(int i = 0; i < POOL_SIZE-1; i++)
-			{
-				G1 temp = new G1();
-				current.next = temp;
-				current = temp;
-			}
-			last = current;
-			initialized = true;
-		}
 		G1 temp;
 		synchronized (lock) 
 		{

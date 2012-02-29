@@ -34,7 +34,7 @@ public class CharacterBuffer
 	private static CharacterBuffer lastEmpty;
 	private static Object lock1 = new Object();
 	private static Object lock2 = new Object();
-	private static boolean initialized = false;
+	private static boolean initialized = initialize(); //Ensures that pool is created in immortal memory so that all PEH have access
 	
 	private CharacterBuffer next;
 	private boolean empty;
@@ -46,6 +46,21 @@ public class CharacterBuffer
 		chars = new char[BUFFER_WIDTH];
 		length = 0;
 		empty = true;
+	}
+	
+	private static boolean initialize()
+	{
+		CharacterBuffer current = new CharacterBuffer();
+		firstEmpty = current;
+		for(int i = 0; i < POOL_SIZE-1; i++)
+		{
+			CharacterBuffer temp = new CharacterBuffer();
+			current.next = temp;
+			current = temp;
+		}
+		lastEmpty = current;
+		initialized = true;
+		return true;
 	}
 	
 	public void returnToPool()
@@ -66,6 +81,7 @@ public class CharacterBuffer
 				lastEmpty = this;
 				next = null;
 			}
+			return;
 		}
 		synchronized (lock2) 
 		{
@@ -85,19 +101,6 @@ public class CharacterBuffer
 	
 	public static CharacterBuffer getEmptyBuffer()
 	{
-		if(!initialized)
-		{
-			CharacterBuffer current = new CharacterBuffer();
-			firstEmpty = current;
-			for(int i = 0; i < POOL_SIZE-1; i++)
-			{
-				CharacterBuffer temp = new CharacterBuffer();
-				current.next = temp;
-				current = temp;
-			}
-			lastEmpty = current;
-			initialized = true;
-		}
 		CharacterBuffer temp;
 		synchronized (lock1) 
 		{

@@ -26,14 +26,8 @@ package org.reprap;
 import javax.realtime.PeriodicParameters;
 import javax.realtime.PriorityParameters;
 import javax.realtime.RelativeTime;
-import javax.realtime.ThrowBoundaryError;
-import javax.safetycritical.ManagedMemory;
-import javax.safetycritical.Mission;
-import javax.safetycritical.MissionSequencer;
 import javax.safetycritical.PeriodicEventHandler;
-import javax.safetycritical.Safelet;
 import javax.safetycritical.StorageParameters;
-import javax.safetycritical.JopSystem;
 import com.jopdesign.io.*;
 
 
@@ -54,7 +48,7 @@ public class RepRapController extends PeriodicEventHandler
 	{
 		super(new PriorityParameters(1),
 			  new PeriodicParameters(null, new RelativeTime(1,0)),
-			  new StorageParameters(300, null, 0, 0));
+			  new StorageParameters(50, null, 0, 0));
 	}
 	
 	ExpansionHeaderFactory EHF = ExpansionHeaderFactory.getExpansionHeaderFactory();

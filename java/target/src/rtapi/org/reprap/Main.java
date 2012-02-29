@@ -23,18 +23,13 @@
 */
 package org.reprap;
 
-import javax.realtime.PeriodicParameters;
 import javax.realtime.PriorityParameters;
-import javax.realtime.RelativeTime;
-import javax.realtime.ThrowBoundaryError;
-import javax.safetycritical.ManagedMemory;
 import javax.safetycritical.Mission;
 import javax.safetycritical.MissionSequencer;
 import javax.safetycritical.PeriodicEventHandler;
 import javax.safetycritical.Safelet;
 import javax.safetycritical.StorageParameters;
 import javax.safetycritical.JopSystem;
-import com.jopdesign.io.*;
 
 public class Main implements Safelet
 {
@@ -64,7 +59,7 @@ public class Main implements Safelet
 		
 		RepRapMissionSequencer()
 		{
-			super(new PriorityParameters(0),new StorageParameters(400, null, 0,0));
+			super(new PriorityParameters(0),new StorageParameters(1000, null, 0,0));
 		}
 				
 		@Override

@@ -27,15 +27,8 @@ package org.reprap;
 import javax.realtime.PeriodicParameters;
 import javax.realtime.PriorityParameters;
 import javax.realtime.RelativeTime;
-import javax.realtime.ThrowBoundaryError;
-import javax.safetycritical.ManagedMemory;
-import javax.safetycritical.Mission;
-import javax.safetycritical.MissionSequencer;
 import javax.safetycritical.PeriodicEventHandler;
-import javax.safetycritical.Safelet;
 import javax.safetycritical.StorageParameters;
-import javax.safetycritical.JopSystem;
-import com.jopdesign.io.*;
 
 public abstract class Command 
 {
@@ -51,7 +44,7 @@ public abstract class Command
 		if(worker == null)
 		{
 			worker = new PeriodicEventHandler(new PriorityParameters(1),
-					new PeriodicParameters(null, new RelativeTime(5,1000)),
+					new PeriodicParameters(null, new RelativeTime(5,0)),
 					new StorageParameters(10, null, 0, 0))
 			{
 				@Override
