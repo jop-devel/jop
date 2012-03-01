@@ -30,6 +30,7 @@ import com.jopdesign.common.MethodInfo;
  */
 public class ExecutionContext implements MethodContainer {
 
+    private final int hash;
     private final MethodInfo method;
     private final CallString callString;
 
@@ -39,6 +40,7 @@ public class ExecutionContext implements MethodContainer {
 
         this.method = method;
         this.callString = callString;
+        this.hash = callString.hashCode() * 31 + method.hashCode();
     }
 
     public ExecutionContext(MethodInfo method) {
@@ -46,6 +48,7 @@ public class ExecutionContext implements MethodContainer {
 
         this.method = method;
         this.callString = CallString.EMPTY;
+        this.hash = callString.hashCode() * 31 + method.hashCode();
     }
 
     public MethodInfo getMethodInfo() {
@@ -58,10 +61,7 @@ public class ExecutionContext implements MethodContainer {
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = callString.hashCode();
-        result = prime * result + method.hashCode();
-        return result;
+        return hash;
     }
 
     @Override

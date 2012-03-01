@@ -54,7 +54,7 @@ public class NBodyCalc implements Runnable {
 			
 			for(int i=0; i<NBodyScoped.N; i++){
 				tempBody = B[i];
-				move(tempBody, 0.1);
+				move(tempBody, (float) 0.1);
 				B[i] = tempBody;
 				//move(B[i], 0.1);
 			}
@@ -68,11 +68,11 @@ public class NBodyCalc implements Runnable {
 	
 	public void computeForce(BodyScoped bi, BodyScoped bj) {
 		
-		double r, dx, dy;
+		float r, dx, dy;
 
 		dx = (bj.position[0] - bi.position[0]);
 		dy = (bj.position[1] - bi.position[1]);
-		r = Math.sqrt(dx*dx + dy*dy);
+		r = (float) Math.sqrt(dx*dx + dy*dy);
 		
 		bi.Force[0] = (NBodyScoped.G * bi.mass * bj.mass)/(dx*dx + dy*dy);
 		bi.Force[1] = (bi.Force[0]*dx)/r;
@@ -87,7 +87,7 @@ public class NBodyCalc implements Runnable {
 
 	}
 	
-	public void move(BodyScoped bi, double dt){
+	public void move(BodyScoped bi, float dt){
 		
 		bi.speed[0] = bi.speed[0] + bi.acceleration[0]*dt;
 		bi.speed[1] = bi.speed[1] + bi.acceleration[1]*dt;

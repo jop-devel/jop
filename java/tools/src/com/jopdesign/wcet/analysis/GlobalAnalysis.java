@@ -50,8 +50,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.log4j.Logger;
-
 /**
  * Global IPET-based analysis, supporting variable block caches (all fit region approximation).
  *
@@ -82,7 +80,7 @@ public class GlobalAnalysis {
         }
 
         String key = m.getFQMethodName() + "_global_" + cacheMode;
-        SuperGraph sg = new SuperGraph(project.getAppInfo(),
+        SuperGraph sg = new SuperGraph(project,
                 project.getFlowGraph(m),
                 project.getProjectConfig().callstringLength(),
                 ctx.getCallString());
@@ -303,7 +301,7 @@ public class GlobalAnalysis {
             WCETTool project = stagedAnalysis.getWCETTool();
             int callStringLength = project.getProjectConfig().callstringLength();
             MethodInfo invoker = n.getBasicBlock().getMethodInfo();
-            MethodInfo invoked = n.getImplementedMethod();
+            MethodInfo invoked = n.getImplementingMethod();
             WCETProcessorModel proc = project.getWCETProcessorModel();
             MethodCache cache = proc.getMethodCache();
             long returnCost = cache.getMissOnReturnCost(proc, project.getFlowGraph(invoker));

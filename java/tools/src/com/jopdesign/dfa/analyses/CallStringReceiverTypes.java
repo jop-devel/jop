@@ -1344,6 +1344,13 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
         } else if (methodId.equals("com.jopdesign.sys.Native#condMove(IIZ)I")
                 || methodId.equals("com.jopdesign.sys.Native#condMoveRef(Ljava/lang/Object;Ljava/lang/Object;Z)Ljava/lang/Object;")) {
             filterSet(in, out, context.stackPtr - 3);
+        } else if (methodId.equals("com.jopdesign.sys.Native#invalidate()V")) {
+            filterSet(in, out, context.stackPtr);
+        } else if (methodId.equals("com.jopdesign.sys.Native#arrayLength(I)I")
+                || methodId.equals("com.jopdesign.sys.Native#invoke(I)V")) {
+            filterSet(in, out, context.stackPtr - 1);
+        } else if (methodId.equals("com.jopdesign.sys.Native#invoke(II)V")) {
+            filterSet(in, out, context.stackPtr - 2);
         } else {
             AppInfoError ex = new AppInfoError("Unknown native method: " + methodId);
             logger.error(ex);
@@ -1389,5 +1396,17 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
     	return targets;
 	}
 
+    @Override
+    public void copyResults(MethodInfo newContainer, Map<InstructionHandle, InstructionHandle> newHandles) {
+        for (Map.Entry<InstructionHandle,InstructionHandle> entry : newHandles.entrySet()) {
+            InstructionHandle oldHandle = entry.getKey();
+            InstructionHandle newHandle = entry.getValue();
+            if (newHandle == null) continue;
 
+            ContextMap<CallString, Set<String>> value = targets.get(oldHandle);
+            // TODO support updating the callstrings too
+            // TODO this does NOT update stackPtr,.. in the new context!
+            if (value != null) targets.put(newHandle, value.copy(newContainer));
+        }
+    }
 }

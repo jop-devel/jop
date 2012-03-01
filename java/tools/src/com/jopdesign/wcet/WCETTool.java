@@ -27,6 +27,8 @@ import com.jopdesign.common.ClassInfo;
 import com.jopdesign.common.EmptyTool;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.BasicBlock;
+import com.jopdesign.common.code.CFGCallgraphBuilder;
+import com.jopdesign.common.code.CFGProvider;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
@@ -39,7 +41,8 @@ import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
-import com.jopdesign.common.config.Option;
+import com.jopdesign.common.config.OptionGroup;
+import com.jopdesign.common.misc.AppInfoException;
 import com.jopdesign.common.misc.BadGraphError;
 import com.jopdesign.common.misc.BadGraphException;
 import com.jopdesign.common.misc.MethodNotFoundException;
@@ -49,6 +52,7 @@ import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.framework.ContextMap;
+import com.jopdesign.dfa.framework.DFACallgraphBuilder;
 import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.wcet.allocation.BlockAllocationModel;
 import com.jopdesign.wcet.allocation.HandleAllocationModel;
@@ -74,18 +78,22 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 /**
+ * Purpose: This class provides the interface to JOP's WCET tool
+ *
+ * <p>Note that it is currently not possible to create multiple instances of this tool, because the
+ * annotation loader would be registered more than once in this case. To analyze multiple WCA targets,
+ * the WCA tool must support this feature itself (e.g. by creating one callgraph per target internally).</p>
+ *
  * @author Stefan Hepp (stefan@stefant.org)
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  */
-public class WCETTool extends EmptyTool<WCETEventHandler> {
+public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider {
 
     public static final String VERSION = "1.0.1";
 
@@ -107,19 +115,13 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     //      print INFO for 'console.*' and WARN/ERROR only for the rest if '-q' and '-d' are not given 
     private Logger topLevelLogger = Logger.getLogger(LOG_WCET);
 
-    private static final Option<?>[][] optionList = {
-            ProjectConfig.projectOptions,
-            IPETConfig.ipetOptions,
-            UppAalConfig.uppaalOptions,
-            ReportConfig.reportOptions
-    };
-
     private WCETEventHandler eventHandler;
     private ProjectConfig projectConfig;
     private String projectName;
 
     private AppInfo appInfo;
     private CallGraph callGraph;
+    
     private DFATool dfaTool;
 
     private boolean genWCETReport;
@@ -130,9 +132,28 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     private boolean hasDfaResults;
     private Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverAnalysis = null;
 
+    private boolean standaloneOptions = true;
+    private boolean ipetOptions = true;
+    private boolean uppaalOptions = true;
+    private boolean reportOptions = true;
+
     public WCETTool() {
         super(VERSION);
         eventHandler = new WCETEventHandler(this);
+    }
+
+    /**
+     * Set which options should be exposed to the user.
+     * @param standalone if true, add options to set target method and to enable report generation
+     * @param ipet if true, add IPET options
+     * @param uppaal if true, add UPPAAL options
+     * @param reports if true, add report generation options
+     */
+    public void setAvailableOptions(boolean standalone, boolean ipet, boolean uppaal, boolean reports) {
+        standaloneOptions = standalone;
+        ipetOptions = ipet;
+        uppaalOptions = uppaal;
+        reportOptions = reports;
     }
 
     @Override
@@ -142,9 +163,12 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
     @Override
     public void registerOptions(Config config) {
-        config.addOptions(CallGraph.dumpOptions);
+        CallGraph.registerOptions(config);
         // TODO maybe put some of the options into OptionGroups to make '--help' a bit clearer
-        config.addOptions(WCETTool.optionList);
+        ProjectConfig.registerOptions(config, standaloneOptions, uppaalOptions, reportOptions);
+        config.addOptions(IPETConfig.ipetOptions, ipetOptions);
+        config.addOptions(UppAalConfig.uppaalOptions, uppaalOptions);
+        config.addOptions(ReportConfig.reportOptions, reportOptions);
     }
 
     @Override
@@ -153,7 +177,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         Config config = setup.getConfig();
 
         projectConfig = new ProjectConfig(config);
-        projectConfig.initConfig(setup.getMainSignature());
+        projectConfig.initConfig(setup.getMainMethodID());
 
         this.projectName = projectConfig.getProjectName();
 
@@ -201,7 +225,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         Config.checkDir(outDir, true);
     }
 
-    public void initialize() throws BadConfigurationException {
+    public void initialize(boolean loadLinkInfo, boolean initDFA) throws BadConfigurationException {
 
         if (projectConfig.saveResults()) {
             this.resultRecord = projectConfig.getResultFile();
@@ -215,20 +239,35 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             }
         }
 
-        linkerInfo = new LinkerInfo(this);
-        try {
-            linkerInfo.loadLinkInfo();
-        } catch (IOException e) {
-            throw new BadConfigurationException("Could not load link infos", e);
-        } catch (ClassNotFoundException e) {
-            throw new BadConfigurationException("Could not load link infos", e);
+        if (loadLinkInfo) {
+            linkerInfo = new LinkerInfo(this);
+            try {
+                linkerInfo.loadLinkInfo();
+            } catch (IOException e) {
+                throw new BadConfigurationException("Could not load link infos", e);
+            } catch (ClassNotFoundException e) {
+                throw new BadConfigurationException("Could not load link infos", e);
+            }
         }
 
         /* run dataflow analysis */
-        if (doDataflowAnalysis()) {
+        if (doDataflowAnalysis() && initDFA) {
             topLevelLogger.info("Starting DFA analysis");
             dataflowAnalysis();
             topLevelLogger.info("DFA analysis finished");
+        }
+
+        if (!appInfo.hasCallGraph()) {
+            DefaultCallgraphBuilder callGraphBuilder;
+            /* build callgraph for the whole program */
+            if (doDataflowAnalysis()) {
+                // build the callgraph using DFA results
+                callGraphBuilder = new DFACallgraphBuilder(getDfaTool(), appInfo.getCallstringLength());
+            } else {
+                callGraphBuilder = new DefaultCallgraphBuilder();
+            }
+            callGraphBuilder.setSkipNatives(true); // we do not want natives in the callgraph
+            appInfo.buildCallGraph(callGraphBuilder);
         }
 
         /* build callgraph for target method */
@@ -268,28 +307,43 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
      * @return the new callgraph.
      */
     public CallGraph rebuildCallGraph() {
-        DefaultCallgraphBuilder config = new DefaultCallgraphBuilder(projectConfig.callstringLength());
-        // we do not want to have native methods in the callgraph
-        config.setSkipNatives(true);
-        callGraph = CallGraph.buildCallGraph(projectConfig.getTargetMethodInfo(),
-                config);
-        callGraph.checkAcyclicity();
+    	/* This would be the ideal solution, but this way the root
+    	 * does NOT have an empty callstring
+    	 */
+        // callGraph = appInfo.getCallGraph().getSubGraph(projectConfig.getTargetMethodInfo());
+
+        /* Instead, we create a new "subgraph" based on the appInfo callgraph (which has been created using
+         * DFA results if available in initialize() or by some other tool), where the target method has an empty
+         * callstring, using the callstring length configured for the WCET tool (which is currently the same
+         * as the global setting).
+         */
+        DefaultCallgraphBuilder callGraphBuilder = new CFGCallgraphBuilder(projectConfig.callstringLength());
+        callGraphBuilder.setSkipNatives(true); // we do not want natives in the callgraph
+        callGraph = CallGraph.buildCallGraph(getTargetMethod(), callGraphBuilder);
+
+        try {
+            callGraph.checkAcyclicity();
+        } catch (AppInfoException e) {
+            throw new AssertionError(e);
+        }
         return callGraph;
     }
 
     public void dumpCallGraph(String graphName) {
+    	
         if (callGraph == null) return;
 
         Config config = projectConfig.getConfig();
 
         try {
             callGraph.dumpCallgraph(config, graphName, "target", null,
-                    config.getOption(ProjectConfig.DUMP_TARGET_CALLGRAPH), false);
+                    config.getDebugGroup().getOption(ProjectConfig.DUMP_TARGET_CALLGRAPH), false);
         } catch (IOException e) {
             logger.warn("Unable to dump the target method callgraph", e);
         }
     }
-
+    
+    /** @return the precomputed callgraph for WCET analysis */
     public CallGraph getCallGraph() {
         return callGraph;
     }
@@ -355,20 +409,47 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     }
 
     /**
-     * Convenience delegator to get the flowgraph of the given method
+     * Get the flowgraph of the given method.
+     * <p>
+     * A new callgraph is constructed when this method is called, changes to this graph are not
+     * automatically stored back to MethodCode. If you want to keep changes to the graph you need to keep a
+     * reference to this graph yourself.
+     * </p>
      *
      * @param mi the method to get the CFG for
      * @return the CFG for the method.
      */
     public ControlFlowGraph getFlowGraph(MethodInfo mi) {
         if (!mi.hasCode()) return null;
-        ControlFlowGraph cfg = mi.getCode().getControlFlowGraph(false);
+        ControlFlowGraph cfg;
         try {
+            /* TODO We need to make sure that changes to the CFG are not compiled back automatically
+             * but CFG#compile() is not yet fully implemented anyways.
+             * We could add an option to MethodCode#getControlFlowGraph() to get a graph which will not be compiled back.
+             *
+             * We could also create a new graph instead, would allow us to create CFGs per callstring and be consistent
+             * with this.callgraph. But as long as neither this.callgraph and appInfo.callgraph are not modified
+             * after rebuildCallGraph() has been called, there is no difference.
+             *
+             * However, if we create a new graph we have to
+             * - keep the new graph, if we just recreate them modifications by analyses will be lost and some things
+             *   like SuperGraph will break if we return new graphs every time.
+             * - provide a way to rebuild the CFGs if the code is modified, either by implementing WCETEventHandler.onMethodModified
+             *   or by providing a dispose() method which must be called before the analysis starts after any code modifications.
+             * - when we do not use a CFG anymore (e.g. because we recreate it) we need to call CFG.dispose() so that it
+             *   is not attached to the instruction handles anymore.
+             */
+            //cfg = new ControlFlowGraph(mi, CallString.EMPTY, callGraph);
+
+            cfg = mi.getCode().getControlFlowGraph(false);
+
             cfg.resolveVirtualInvokes();
-//	    cfg.insertSplitNodes();
-//	    cfg.insertSummaryNodes();
             cfg.insertReturnNodes();
             cfg.insertContinueLoopNodes();
+
+//    	    cfg.insertSplitNodes();
+//    	    cfg.insertSummaryNodes();
+
         } catch (BadGraphException e) {
             // TODO handle this somehow??
             throw new BadGraphError(e.getMessage(), e);
@@ -436,18 +517,19 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     public void recordResult(WcetCost wcet, double timeDiff, double solverTime) {
         if (resultRecord == null) return;
         Config c = projectConfig.getConfig();
+        OptionGroup o = JOPConfig.getOptions(c);
         if (projectConfig.addPerformanceResults()) {
             recordCVS("wcet", "ipet", wcet, timeDiff, solverTime,
-                    c.getOption(JOPConfig.CACHE_IMPL),
-                    c.getOption(JOPConfig.CACHE_SIZE_WORDS),
-                    c.getOption(JOPConfig.CACHE_BLOCKS),
+                    o.getOption(JOPConfig.CACHE_IMPL),
+                    o.getOption(JOPConfig.CACHE_SIZE_WORDS),
+                    o.getOption(JOPConfig.CACHE_BLOCKS),
                     c.getOption(IPETConfig.STATIC_CACHE_APPROX),
                     c.getOption(IPETConfig.ASSUME_MISS_ONCE_ON_INVOKE));
         } else {
             recordCVS("wcet", "ipet", wcet,
-                    c.getOption(JOPConfig.CACHE_IMPL),
-                    c.getOption(JOPConfig.CACHE_SIZE_WORDS),
-                    c.getOption(JOPConfig.CACHE_BLOCKS),
+                    o.getOption(JOPConfig.CACHE_IMPL),
+                    o.getOption(JOPConfig.CACHE_SIZE_WORDS),
+                    o.getOption(JOPConfig.CACHE_BLOCKS),
                     c.getOption(IPETConfig.STATIC_CACHE_APPROX),
                     c.getOption(IPETConfig.ASSUME_MISS_ONCE_ON_INVOKE));
         }
@@ -458,11 +540,12 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
                                    double timeDiff, double searchtime, double solvertimemax) {
         if (resultRecord == null) return;
         Config c = projectConfig.getConfig();
+        OptionGroup o = JOPConfig.getOptions(c);
         if (projectConfig.addPerformanceResults()) {
             recordCVS("wcet", "uppaal", wcet, timeDiff, searchtime, solvertimemax,
-                    c.getOption(JOPConfig.CACHE_IMPL),
-                    c.getOption(JOPConfig.CACHE_SIZE_WORDS),
-                    c.getOption(JOPConfig.CACHE_BLOCKS),
+                    o.getOption(JOPConfig.CACHE_IMPL),
+                    o.getOption(JOPConfig.CACHE_SIZE_WORDS),
+                    o.getOption(JOPConfig.CACHE_BLOCKS),
                     c.getOption(UppAalConfig.UPPAAL_CACHE_APPROX),
                     c.getOption(UppAalConfig.UPPAAL_COMPLEXITY_TRESHOLD),
                     c.getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES),
@@ -474,9 +557,9 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             );
         } else {
             recordCVS("wcet", "uppaal", wcet,
-                    c.getOption(JOPConfig.CACHE_IMPL),
-                    c.getOption(JOPConfig.CACHE_SIZE_WORDS),
-                    c.getOption(JOPConfig.CACHE_BLOCKS),
+                    o.getOption(JOPConfig.CACHE_IMPL),
+                    o.getOption(JOPConfig.CACHE_SIZE_WORDS),
+                    o.getOption(JOPConfig.CACHE_BLOCKS),
                     c.getOption(UppAalConfig.UPPAAL_CACHE_APPROX),
                     c.getOption(UppAalConfig.UPPAAL_COMPLEXITY_TRESHOLD),
                     c.getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES),
@@ -554,11 +637,13 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
 
     @SuppressWarnings("unchecked")
     public void dataflowAnalysis() {
-        int callstringLength = (int) projectConfig.callstringLength();
+        int callstringLength = projectConfig.callstringLength();
 
         // Moved DFA tool cache config to the DFA tool, but still ...
         // FIXME: At the moment, we do not have a nice directory structure respecting
         //        the fact that we perform many WCET analyses for one Application
+
+        dfaTool.setAnalyzeBootMethod(projectConfig.doAnalyzeBootMethod());
 
         // TODO this is the same code as in JCopter PhaseExecutor
         dfaTool.load();
@@ -570,6 +655,10 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
         dfaTool.runLoopboundAnalysis(callstringLength);
 
         this.hasDfaResults = true;
+    }
+
+    public void setHasDfaResults(boolean hasDfaResults) {
+        this.hasDfaResults = hasDfaResults;
     }
 
     /**
@@ -605,13 +694,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
     public Collection<MethodInfo> findImplementations(MethodInfo invokerM, InstructionHandle ih, CallString ctx) {
         InvokeSite is = invokerM.getCode().getInvokeSite(ih);
         // We do not use appInfo.findImplementations here so that the result is always consistent with the callgraph
-        Collection<MethodInfo> staticImpls = callGraph.findImplementingMethods(ctx.push(is));
-
-        // TODO we should use the DFA to refine the callgraph of AppInfo (or this.callgraph) after constructing the graph
-        // - Either construct AppInfo callgraph first, optimize it using DFA/.., then call WCETTool.rebuildCallgraph()
-        // - Or just optimize both AppInfo callgraph and this.callgraph using DFA/.. separately
-        staticImpls = dfaReceivers(ih, staticImpls, ctx);
-        return staticImpls;
+        return callGraph.findImplementations(ctx.push(is));
     }
 
     /**
@@ -643,8 +726,8 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             LoopBounds lbs = getDfaLoopBounds();
             Set<FlowEdge> edges = lbs.getInfeasibleEdges(block.getLastInstruction(), cs);
             for (FlowEdge e : edges) {
-                BasicBlockNode head = ControlFlowGraph.getHandleNode(e.getHead());
-                BasicBlockNode tail = ControlFlowGraph.getHandleNode(e.getTail());
+                BasicBlockNode head = cfg.getHandleNode(e.getHead());
+                BasicBlockNode tail = cfg.getHandleNode(e.getTail());
                 CFGEdge edge = cfg.getGraph().getEdge(tail, head);
                 if (edge != null) { // edge does not seem to exist any longer
                     retval.add(edge);
@@ -652,36 +735,6 @@ public class WCETTool extends EmptyTool<WCETEventHandler> {
             }
         }
         return retval;
-    }
-
-    // TODO: [wcet-app-info] dfaReceivers() is rather slow, for debugging purposes
-
-    private Collection<MethodInfo> dfaReceivers(InstructionHandle ih, Collection<MethodInfo> staticImpls, CallString ctx) {
-        if (this.receiverAnalysis != null && receiverAnalysis.containsKey(ih)) {
-            List<MethodInfo> dynImpls = new ArrayList<MethodInfo>();
-            Set<String> dynReceivers = new HashSet<String>();
-
-            ContextMap<CallString, Set<String>> allReceivers = receiverAnalysis.get(ih);
-            for (Entry<CallString, Set<String>> e : allReceivers.entrySet()) {
-                if (e.getKey().hasSuffix(ctx)) {
-                    dynReceivers.addAll(e.getValue());
-                }
-            }
-            for (MethodInfo impl : staticImpls) {
-                if (dynReceivers.contains(impl.getFQMethodName())) {
-                    dynReceivers.remove(impl.getFQMethodName());
-                    dynImpls.add(impl);
-                } else {
-                    logger.info("Static but not dynamic receiver: " + impl);
-                }
-            }
-            if (!dynReceivers.isEmpty()) {
-                throw new AssertionError("Bad receiver analysis ? Dynamic but not static receivers: " + dynReceivers);
-            }
-            return dynImpls;
-        } else {
-            return staticImpls;
-        }
     }
 
 }

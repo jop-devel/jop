@@ -31,15 +31,14 @@ import com.jopdesign.common.type.MemberID;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.framework.Analysis;
 import com.jopdesign.dfa.framework.AnalysisResultSerialization;
+import com.jopdesign.dfa.framework.AnalysisResultSerialization.ResultFormatter;
+import com.jopdesign.dfa.framework.AnalysisResultSerialization.Serializer;
 import com.jopdesign.dfa.framework.Context;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.FlowEdge;
+import com.jopdesign.dfa.framework.FlowEdge.SerializedFlowEdge;
 import com.jopdesign.dfa.framework.Interpreter;
 import com.jopdesign.dfa.framework.MethodHelper;
-import com.jopdesign.dfa.framework.AnalysisResultSerialization.ResultFormatter;
-import com.jopdesign.dfa.framework.AnalysisResultSerialization.Serializer;
-import com.jopdesign.dfa.framework.FlowEdge.SerializedFlowEdge;
-
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.generic.ANEWARRAY;
@@ -67,7 +66,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -1546,6 +1544,25 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                     out.put(l, in.get(l));
                 }
             }
+        } else if (methodId.equals("com.jopdesign.sys.Native#invalidate()V")) {
+            for (Location l : in.keySet()) {
+                if (l.stackLoc < context.stackPtr) {
+                    out.put(l, in.get(l));
+                }
+            }
+        } else if (methodId.equals("com.jopdesign.sys.Native#arrayLength(I)I")
+                || methodId.equals("com.jopdesign.sys.Native#invoke(I)V")) {
+            for (Location l : in.keySet()) {
+                if (l.stackLoc < context.stackPtr - 1) {
+                    out.put(l, in.get(l));
+                }
+            }
+        } else if (methodId.equals("com.jopdesign.sys.Native#invoke(II)V")) {
+            for (Location l : in.keySet()) {
+                if (l.stackLoc < context.stackPtr - 2) {
+                    out.put(l, in.get(l));
+                }
+            }
         } else {
         	AppInfoError ex = new AppInfoError("Unknown native method: " + methodId);
         	logger.error(ex);
@@ -1849,7 +1866,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 				Set<FlowEdge> edges) {
 			List<SerializedFlowEdge> serializedEdges = new ArrayList<SerializedFlowEdge>();
 			for(FlowEdge fe : edges) {
-				serializedEdges.add(new FlowEdge.SerializedFlowEdge(fe));
+                            if (!SerializedFlowEdge.exists(fe)) continue;
+		            serializedEdges.add(new FlowEdge.SerializedFlowEdge(fe));
 			}
 			return serializedEdges;
 		}
@@ -1885,4 +1903,51 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
     	return this.getResult();
 	}
 
+    @Override
+    public void copyResults(MethodInfo newContainer, Map<InstructionHandle, InstructionHandle> newHandles) {
+        for (Map.Entry<InstructionHandle,InstructionHandle> entry : newHandles.entrySet()) {
+            InstructionHandle oldHandle = entry.getKey();
+            InstructionHandle newHandle = entry.getValue();
+            if (newHandle == null) continue;
+
+            // TODO support updating the callstrings too
+            // TODO this does NOT update stackPtr,.. in the new context!
+
+            ContextMap<CallString, Pair<ValueMapping, ValueMapping>> value = bounds.get(oldHandle);
+            if (value != null) bounds.put(newHandle, value.copy(newContainer));
+
+            ContextMap<CallString, Interval> value1 = arrayIndices.get(oldHandle);
+            if (value1 != null) arrayIndices.put(newHandle, value1.copy(newContainer));
+
+            ContextMap<CallString, Integer> value2 = scopes.get(oldHandle);
+            if (value2 != null) scopes.put(newHandle, value2.copy(newContainer));
+
+            ContextMap<CallString, Interval[]> value3 = sizes.get(oldHandle);
+            if (value3 != null) sizes.put(newHandle, value3.copy(newContainer));
+
+            ContextMap<CallString,Set<FlowEdge>> old = infeasibles.get(oldHandle);
+            if (old != null) {
+                Map<CallString,Set<FlowEdge>> map = new HashMap<CallString, Set<FlowEdge>>(old.size());
+                for (CallString cs : old.keySet()) {
+                    Set<FlowEdge> newSet = new HashSet<FlowEdge>();
+                    for (FlowEdge edge : old.get(cs)) {
+                        InstructionHandle newHead = newHandles.get(edge.getHead());
+                        InstructionHandle newTail = newHandles.get(edge.getTail());
+                        if (newHead != null && newTail != null) {
+                            Context ctx = new Context(edge.getContext());
+                            ctx.setMethodInfo(newContainer);
+                            newSet.add(new FlowEdge(newTail, newHead, edge.getType(), ctx));
+                        }
+                    }
+                    map.put(cs,newSet);
+                }
+
+                Context c = old.getContext();
+                c.setMethodInfo(newContainer);
+                ContextMap<CallString,Set<FlowEdge>> edges =
+                        new ContextMap<CallString, Set<FlowEdge>>(c, map);
+                infeasibles.put(newHandle, edges);
+            }
+        }
+    }
 }

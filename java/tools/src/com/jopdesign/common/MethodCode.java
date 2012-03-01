@@ -84,7 +84,7 @@ public class MethodCode {
     private static final Object KEY_CUSTOMVALUES = new HashedString("MethodCode.CustomValues");
     // Keys to attach values directly to InstructionHandles, which are not handled by KeyManager
     private static final Object KEY_LINENUMBER = new HashedString("MethodCode.LineNumber");
-    private static final Object KEY_SOURCEFILE = new HashedString("MethodCode.SourceFile");
+    private static final Object KEY_SOURCECLASS = new HashedString("MethodCode.SourceClass");
     // We attach the LoopBounds as CustomKeys, so we can use the KeyManager to clear/copy/.. them.
     // TODO we could also attach them directly to InstructionHandles to save one map access (but then make this key private!)
     public static final CustomKey KEY_LOOPBOUND;
@@ -92,9 +92,6 @@ public class MethodCode {
     static {
         KEY_LOOPBOUND = KeyManager.getSingleton().registerKey(KeyType.CODE, "MethodCode.LoopBound");
     }
-
-    // We do not include KEY_INVOKESITE because it should not be copied when the handle is copied
-    private static final Object[] MANAGED_KEYS = {KEY_LINENUMBER, KEY_SOURCEFILE};
 
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_CODE+".MethodCode");
 
@@ -214,21 +211,36 @@ public class MethodCode {
      */
     public void removeLineNumbers() {
         methodGen.removeLineNumbers();
+        // TODO should we do something about the CFG?
+        for (InstructionHandle ih : methodGen.getInstructionList().getInstructionHandles()) {
+            ih.removeAttribute(KEY_SOURCECLASS);
+            ih.removeAttribute(KEY_LINENUMBER);
+        }
     }
 
-    public LineNumberGen setLineNumber(InstructionHandle ih, int src_line) {
-        LineNumberGen lg = getLineNumberEntry(ih, false);
-        if (lg != null) {
-            lg.setSourceLine(src_line);
-            return lg;
+    public void setLineNumber(InstructionHandle ih, int src_line) {
+        setLineNumber(ih, null, src_line);
+    }
+
+    /**
+     * Removes all line number entries from this instruction. This has the effect that the instruction
+     * gets the same line number as the previous instruction.
+     *
+     * @param ih the instruction to clear.
+     */
+    public void clearLineNumber(InstructionHandle ih) {
+        ih.removeAttribute(KEY_SOURCECLASS);
+        ih.removeAttribute(KEY_LINENUMBER);
+        LineNumberGen entry = getLineNumberEntry(ih, false);
+        if (entry != null) {
+            removeLineNumber(entry);
         }
-        return methodGen.addLineNumber(ih, src_line);
     }
 
     public LineNumberGen getLineNumberEntry(InstructionHandle ih, boolean checkPrevious) {
-        InstructionHandle prev = ih.getPrev();
+        InstructionHandle prev = ih;
         while (prev != null) {
-            InstructionTargeter[] targeter = ih.getTargeters();
+            InstructionTargeter[] targeter = prev.getTargeters();
             if (targeter != null) {
                 for (InstructionTargeter t : targeter) {
                     if (t instanceof LineNumberGen) {
@@ -238,7 +250,7 @@ public class MethodCode {
                 }
             }
             // no match found
-            if (checkPrevious) {
+            if (checkPrevious && prev.getAttribute(KEY_LINENUMBER) == null) {
                 prev = prev.getPrev();
             } else {
                 break;
@@ -248,28 +260,145 @@ public class MethodCode {
     }
 
     /**
-     * Get the line number of the instruction. If instruction handle attributes are not used,
-     * the positions of the instruction handles must be uptodate.
+     * Get the line number of the instruction. This may refer to a line number in another file.
+     * To get the correct source file for this instruction, use {@link #getSourceFileName(InstructionHandle)}.
      *
      * @see #getSourceFileName(InstructionHandle)
      * @param ih the instruction to check.
      * @return the line number of the instruction, or -1 if unknown.
      */
     public int getLineNumber(InstructionHandle ih) {
-        return getLineNumberTable().getSourceLine(ih.getPosition());
+        InstructionHandle handle = findLineNumberHandle(ih);
+        if (handle == null) return -1;
+
+        Integer line = (Integer) handle.getAttribute(KEY_LINENUMBER);
+        if (line != null) {
+            return line;
+        }
+        LineNumberGen entry = getLineNumberEntry(handle, false);
+        return entry != null ? entry.getSourceLine() : -1;
     }
 
-    public void setSourceFileName(InstructionHandle ih, String filename) {
-        ih.addAttribute(KEY_SOURCEFILE, filename);
+    public String getLineString(InstructionHandle ih) {
+        InstructionHandle handle = findLineNumberHandle(ih);
+        if (handle == null) {
+            return "<none>";
+        }
+        String className = getSourceClassAttribute(handle);
+        if (className != null) {
+            return className + ":" + getLineNumber(handle);
+        }
+        LineNumberGen lg = getLineNumberEntry(handle, false);
+        return String.valueOf( lg.getSourceLine() );
+    }
+
+    /**
+     * @param ih the *first* instruction which should be assigned to this source line.
+     *        Use {@link #clearLineNumber(InstructionHandle)} for all following instructions which have the same line.
+     * @param classInfo the classinfo containing the original source code, or null to use the class of this method
+     * @param line the line number to set
+     */
+    public void setLineNumber(InstructionHandle ih, ClassInfo classInfo, int line) {
+        LineNumberGen lg = getLineNumberEntry(ih, false);
+
+        if (classInfo == null || classInfo.equals(methodInfo.getClassInfo())) {
+            ih.removeAttribute(KEY_SOURCECLASS);
+            ih.removeAttribute(KEY_LINENUMBER);
+            if (lg != null) {
+                lg.setSourceLine(line);
+            } else {
+                methodGen.addLineNumber(ih, line);
+            }
+        } else {
+            // or should we attach the ClassInfo directly?
+            ih.addAttribute(KEY_SOURCECLASS, classInfo.getClassName());
+            ih.addAttribute(KEY_LINENUMBER, line);
+            if (lg != null) {
+                removeLineNumber(lg);
+            }
+        }
+    }
+
+    /**
+     * @param ih the instruction handle to check.
+     * @return the class info assigned to this handle or to a previous handle, default is the class info of the method.
+     */
+    public ClassInfo getSourceClassInfo(InstructionHandle ih) {
+        InstructionHandle handle = findLineNumberHandle(ih);
+        if (handle == null) return methodInfo.getClassInfo();
+
+        String sourceClass = (String) handle.getAttribute(KEY_SOURCECLASS);
+        if (sourceClass != null) {
+            return getAppInfo().getClassInfo(sourceClass);
+        }
+        return methodInfo.getClassInfo();
     }
 
     public String getSourceFileName(InstructionHandle ih) {
-        // We cannot store SourceFile info in Tables, so we always check the InstructionHandle..
-        String source = (String) ih.getAttribute(KEY_SOURCEFILE);
-        if (source != null) {
-            return source;
+        ClassInfo classInfo = getSourceClassInfo(ih);
+        if (classInfo == null) {
+            return null;
         }
-        return methodInfo.getClassInfo().getSourceFileName();
+        return classInfo.getSourceFileName();
+    }
+
+    /**
+     * This does not check previous instructions and only returns something other than null if the source class name
+     * is set and different from this methods' class.
+     *
+     * @see #getSourceClassInfo(InstructionHandle)
+     * @param ih the instruction handle to check.
+     * @return the source class name assigned to this handle, or null if no class name is assigned to this handle.
+     */
+    public String getSourceClassAttribute(InstructionHandle ih) {
+        String sourceClass = (String) ih.getAttribute(KEY_SOURCECLASS);
+        if (sourceClass != null && sourceClass.equals(getClassInfo().getClassName())) {
+            // we might actually convert this to a LineNumberGen entry..
+            return null;
+        }
+        return sourceClass;
+    }
+
+    private InstructionHandle findLineNumberHandle(InstructionHandle ih) {
+        InstructionHandle handle = ih;
+        while (handle != null) {
+            if (getLineNumberEntry(handle, false) != null) return handle;
+            if (handle.getAttribute(KEY_LINENUMBER) != null) return handle;
+            handle = handle.getPrev();
+        }
+        return null;
+    }
+
+    private void copyLineNumbers(MethodInfo sourceInfo, InstructionHandle to, InstructionHandle from) {
+        // TODO should we make this public?
+        MethodCode srcCode = sourceInfo != null ? sourceInfo.getCode() : this;
+        if (srcCode == null) {
+            throw new AppInfoError("Invalid operation: cannot copy line numbers from method without code");
+        }
+
+        String source = (String) from.getAttribute(KEY_SOURCECLASS);
+        if (source != null) {
+            int line = (Integer) from.getAttribute(KEY_LINENUMBER);
+            if (source.equals(getClassInfo().getClassName())) {
+                setLineNumber(to, line);
+            } else {
+                to.addAttribute(KEY_SOURCECLASS, source);
+                to.addAttribute(KEY_LINENUMBER, line);
+            }
+            return;
+        }
+
+        LineNumberGen entry = srcCode.getLineNumberEntry(from, false);
+        if (entry != null) {
+            int line = entry.getSourceLine();
+            source = srcCode.getClassInfo().getClassName();
+            if (source.equals(getClassInfo().getClassName())) {
+                setLineNumber(to, line);
+            } else {
+                to.addAttribute(KEY_SOURCECLASS, source);
+                to.addAttribute(KEY_LINENUMBER, line);
+            }
+        }
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -424,6 +553,7 @@ public class MethodCode {
             // If one only uses the IList to analyze code but does not modify it, we could keep an existing CFG.
             // Unfortunately, there is no 'const InstructionList' or 'UnmodifiableInstructionList', so we
             // can never be sure what the user will do with the list, so we kill the CFG to avoid inconsistencies.
+            modifyCode(true);
             removeCFG();
         }
 
@@ -443,11 +573,13 @@ public class MethodCode {
     public void setInstructionList(InstructionList il) {
         methodGen.getInstructionList().dispose();
         methodGen.setInstructionList(il);
+        modifyCode(false);
         removeCFG();
     }
 
     public InstructionHandle getInstructionHandle(int pos) {
-        InstructionList il = getInstructionList();
+        // we do not want to trigger events here ..
+        InstructionList il = prepareInstructionList();
         InstructionHandle ih = il.getStart();
         for (int i = 0; i < pos; i++) {
             ih = ih.getNext();
@@ -457,6 +589,8 @@ public class MethodCode {
 
     /**
      * Retarget all targeters (jumps, branches, exception ranges, linenumbers,..) of a handle to a new handle.
+     * If both the old and the new handle have a line number attached, the old line number is removed.
+     *
      * @param oldHandle the old target
      * @param newHandle the new target
      */
@@ -464,6 +598,12 @@ public class MethodCode {
         InstructionTargeter[] it = oldHandle.getTargeters();
         if (it == null) return;
         for (InstructionTargeter targeter : it) {
+            if (targeter instanceof LineNumberGen) {
+                // check if the target already has a line number attached to it..
+                if (getLineNumberEntry(newHandle, false) != null) {
+                    removeLineNumber((LineNumberGen) targeter);
+                }
+            }
             targeter.updateTarget(oldHandle, newHandle);
         }
     }
@@ -471,10 +611,7 @@ public class MethodCode {
     public void retarget(TargetLostException e, InstructionHandle newTarget) {
         InstructionHandle[] targets = e.getTargets();
         for (InstructionHandle target : targets) {
-            InstructionTargeter[] targeters = target.getTargeters();
-            for (InstructionTargeter targeter : targeters) {
-                targeter.updateTarget(target, newTarget);
-            }
+            retarget(target, newTarget);
         }
     }
 
@@ -493,13 +630,18 @@ public class MethodCode {
      *         list has been replaced.
      */
     public InstructionHandle replace(InstructionHandle replaceStart, int replaceCount, InstructionList source) {
-        return replace(replaceStart, replaceCount, null, source, source.getStart(), source.getLength(), true);
+        return replace(replaceStart, replaceCount, null, source.getStart(), source.getLength(), true);
     }
 
     /**
      * Replace instructions in this code with an instruction list.
      * If the number of instructions to replace differs from the number of source instructions, instruction
      * handles will be removed or inserted appropriately and the targets will be updated.
+     * <p>
+     *     Instruction handles will be reused, so attached values and targets will not be lost if the new length is not
+     *     shorter than the old length. Else instruction handles are removed and the targeters to removed instructions
+     *     are updated to the instruction after the next instruction after the deleted instructions.
+     * </p>
      * <p>
      * The source instructions must use the constant pool of this method.
      * </p>
@@ -514,13 +656,18 @@ public class MethodCode {
     public InstructionHandle replace(InstructionHandle replaceStart, int replaceCount, InstructionList source,
                                      boolean copyCustomKeys)
     {
-        return replace(replaceStart, replaceCount, null, source, source.getStart(), source.getLength(), copyCustomKeys);
+        return replace(replaceStart, replaceCount, null, source.getStart(), source.getLength(), copyCustomKeys);
     }
 
     /**
      * Replace instructions in this code with an instruction list.
      * If the number of instructions to replace differs from the number of source instructions, instruction
      * handles will be removed or inserted appropriately and the targets will be updated.
+     * <p>
+     *     Instruction handles will be reused, so attached values and targets will not be lost if the new length is not
+     *     shorter than the old length. Else instruction handles are removed and the targeters to removed instructions
+     *     are updated to the instruction after the next instruction after the deleted instructions.
+     * </p>
      *
      * @param replaceStart the first instruction in this code to replace
      * @param replaceCount the number of instructions in this code to replace
@@ -534,7 +681,7 @@ public class MethodCode {
     public InstructionHandle replace(InstructionHandle replaceStart, int replaceCount,
                                      MethodInfo sourceInfo, InstructionList source, boolean copyCustomKeys)
     {
-        return replace(replaceStart, replaceCount, sourceInfo, source, source.getStart(), source.getLength(), copyCustomKeys);
+        return replace(replaceStart, replaceCount, sourceInfo, source.getStart(), source.getLength(), copyCustomKeys);
     }
 
 
@@ -542,20 +689,23 @@ public class MethodCode {
      * Replace instructions in this code with an instruction list or a part of it.
      * If the number of instructions to replace differs from the number of source instructions, instruction
      * handles will be removed or inserted appropriately and the targets will be updated.
+     * <p>
+     *     Instruction handles will be reused, so attached values and targets will not be lost if the new length is not
+     *     shorter than the old length. Else instruction handles are removed and the targeters to removed instructions
+     *     are updated to the instruction after the next instruction after the deleted instructions.
+     * </p>
      *
      * @param replaceStart the first instruction in this code to replace
      * @param replaceCount the number of instructions in this code to replace
      * @param sourceInfo the MethodInfo containing the source instruction. If non-null, the instructions will be copied
      *                   using the constant pool from the given MethodInfo. If null, the instructions will not be copied.
-     * @param source the instructions to use as replacement.
      * @param sourceStart the first instruction in the source list to use for replacing the code.
      * @param sourceCount the number of instructions to use from the source.
      * @param copyCustomValues if true copy the custom values from the source.
      * @return the first handle in the target list after the inserted code, or null if the last instruction in this
      *         list has been replaced.
      */
-    public InstructionHandle replace(InstructionHandle replaceStart, int replaceCount,
-                                     MethodInfo sourceInfo, InstructionList source,
+    public InstructionHandle replace(InstructionHandle replaceStart, int replaceCount, MethodInfo sourceInfo,
                                      InstructionHandle sourceStart, int sourceCount, boolean copyCustomValues)
     {
         InstructionList il = getInstructionList();
@@ -572,10 +722,11 @@ public class MethodCode {
             } else {
                 instr = currSource.getInstruction();
             }
+            // TODO support branch instructions! need to replace the IH too
             current.setInstruction(instr);
 
             if (copyCustomValues) {
-                copyCustomValues(current, currSource);
+                copyCustomValues(sourceInfo, current, currSource);
             }
 
             current = current.getNext();
@@ -618,7 +769,7 @@ public class MethodCode {
                     current = il.insert(next, instr);
                 }
                 if (copyCustomValues) {
-                    copyCustomValues(current, currSource);
+                    copyCustomValues(sourceInfo, current, currSource);
                 }
                 currSource = currSource.getNext();
             }
@@ -770,6 +921,13 @@ public class MethodCode {
 
     /**
      * Get the control flow graph associated with this method code or create a new one.
+     * <p>
+     * By default, changes to the returned CFG are compiled back before the InstructionList of this method is accessed.
+     * If you want a CFG where changes to it are not compiled back automatically, use {@code new ControlFlowGraph(MethodInfo)}
+     * instead. Also if you want to construct a CFG for a specific context or with a different implementation finder,
+     * you need to construct a callgraph yourself, keep a reference to it as long as you want to keep modifications to the
+     * graph and you need ensure that changes to a graph invalidate other graphs of the same method yourself, if required.
+     * </p>
      * @param clean if true, compile and recreate the graph if {@link ControlFlowGraph#isClean()} returns false.
      * @return the CFG for this method.
      */
@@ -784,8 +942,10 @@ public class MethodCode {
         if ( this.cfg == null ) {
             try {
                 cfg = new ControlFlowGraph(this.getMethodInfo());
+                // TODO we do this for now by default for the 'main' CFG on creation
+                cfg.registerHandleNodes();
                 for (AppEventHandler ah : AppInfo.getSingleton().getEventHandlers()) {
-                    ah.onCreateControlFlowGraph(cfg, clean);
+                    ah.onCreateMethodControlFlowGraph(cfg, clean);
                 }
             } catch (BadGraphException e) {
                 throw new BadGraphError("Unable to create CFG for " + methodInfo, e);
@@ -810,10 +970,11 @@ public class MethodCode {
     }
 
     /**
-     * Compile all changes, and update maxStack and maxLocals.
+     * Compile all changes, and update maxStack, maxLocals and positions.
      */
     public void compile() {
-        prepareInstructionList();
+        InstructionList il = prepareInstructionList();
+        il.setPositions();
         methodGen.setMaxLocals();
         methodGen.setMaxStack();
     }
@@ -988,22 +1149,26 @@ public class MethodCode {
         return value;
     }
 
-    public void copyCustomValues(InstructionHandle to, InstructionHandle from) {
-        Object value;
-        for (Object key : MANAGED_KEYS) {
-            value = from.getAttribute(key);
-            if (value != null) to.addAttribute(key, value);
-            else to.removeAttribute(key);
-        }
-
+    /**
+     * Copy custom values and line numbers from one instruction to an instruction in this method.
+     * Source and target method are used to update line number entries correctly. CustomKeys are copied using
+     * shallow copy.
+     *
+     * @param sourceInfo the method containing the source handle. If null assume it is the same method as the target.
+     * @param to the target instruction.
+     * @param from the source instruction.
+     */
+    public void copyCustomValues(MethodInfo sourceInfo, InstructionHandle to, InstructionHandle from) {
         @SuppressWarnings({"unchecked"})
         Map<CustomKey,Object> map = (Map<CustomKey, Object>) from.getAttribute(KEY_CUSTOMVALUES);
         if (map == null) {
             to.removeAttribute(KEY_CUSTOMVALUES);
-            return;
+        } else {
+            Map<CustomKey,Object> newMap = new HashMap<CustomKey, Object>(map);
+            to.addAttribute(KEY_CUSTOMVALUES, newMap);
         }
-        Map<CustomKey,Object> newMap = new HashMap<CustomKey, Object>(map);
-        to.addAttribute(KEY_CUSTOMVALUES, newMap);
+
+        copyLineNumbers(sourceInfo, to, from);
     }
 
 
@@ -1016,5 +1181,11 @@ public class MethodCode {
             cfg.compile();
         }
         return methodGen.getInstructionList();
+    }
+
+    private void modifyCode(boolean beforeModify) {
+        for (AppEventHandler e : AppInfo.getSingleton().getEventHandlers()) {
+            e.onMethodCodeModify(this, beforeModify);
+        }
     }
 }

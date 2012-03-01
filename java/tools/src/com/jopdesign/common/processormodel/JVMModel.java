@@ -70,4 +70,29 @@ public class JVMModel implements ProcessorModel {
     public List<String> getNativeClasses() {
         return new ArrayList<String>(0);
     }
+
+    @Override
+    public List<String> getJVMRoots() {
+        return new ArrayList<String>(0);
+    }
+
+    @Override
+    public boolean keepJVMClasses() {
+        return false;
+    }
+
+    @Override
+    public int getMaxMethodSize() {
+        return 65535;
+    }
+
+    @Override
+    public int getMaxStackSize() {
+        return 65535;
+    }
+
+    @Override
+    public int getMaxLocals() {
+        return 65535;
+    }
 }

@@ -187,17 +187,18 @@ public class ObjectRefAnalysis {
 		private ExecuteOnceAnalysis eoAna;
 		private ExecutionContext scope;
 		public ExecOnceQuery(ExecuteOnceAnalysis eoAnalysis, ExecutionContext scope) {
-			this.eoAna = eoAnalysis;
-			this.scope = scope;
+		    this.eoAna = eoAnalysis;
+		    this.scope = scope;
 		}
 		public boolean query(InstructionHandle a) {
-			CFGNode n = ControlFlowGraph.getHandleNode(a);
-			if(n == null) {
-				Logger.getLogger("Object Cache Analysis").info("No node for instruction "+a);
-				return false;
-			} else {
-				return eoAna.isExecutedOnce(scope, n);
-			}
+                    ControlFlowGraph cfg = project.getFlowGraph(scope.getMethodInfo());
+		    CFGNode n = cfg.getHandleNode(a);
+		    if(n == null) {
+		        Logger.getLogger("Object Cache Analysis").info("No node for instruction "+a);
+		        return false;
+		    } else {
+		        return eoAna.isExecutedOnce(scope, n);
+		    }
 		}		
 	}
 	

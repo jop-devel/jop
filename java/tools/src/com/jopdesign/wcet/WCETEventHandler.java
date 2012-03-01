@@ -39,10 +39,10 @@ import com.jopdesign.wcet.annotations.BadAnnotationException;
 import com.jopdesign.wcet.annotations.LoopBoundExpr;
 import com.jopdesign.wcet.annotations.SourceAnnotationReader;
 import com.jopdesign.wcet.annotations.SourceAnnotations;
+import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -66,7 +66,9 @@ public class WCETEventHandler extends EmptyAppEventHandler {
     private WCETTool project;
     private SourceAnnotationReader annotationReader;
 
-	private Set<BasicBlock> loopBoundWarnings = new HashSet<BasicBlock>();
+    private Set<BasicBlock> printedLoopBoundInfoMessage = new HashSet<BasicBlock>();
+
+    private boolean ignoreMissingLoopBounds = false;
 
     public WCETEventHandler(WCETTool wcetTool) {
         this.project = wcetTool;
@@ -80,7 +82,7 @@ public class WCETEventHandler extends EmptyAppEventHandler {
     }
 
     @Override
-    public void onCreateControlFlowGraph(ControlFlowGraph cfg, boolean clean) {
+    public void onCreateControlFlowGraph(ControlFlowGraph cfg) {
         try {
             loadLoopAnnotations(cfg);
         } catch (BadAnnotationException e) {
@@ -98,6 +100,10 @@ public class WCETEventHandler extends EmptyAppEventHandler {
         }
         return annots;
 
+    }
+
+    public void setIgnoreMissingLoopBounds(boolean ignoreMissingLoopBounds) {
+        this.ignoreMissingLoopBounds = ignoreMissingLoopBounds;
     }
 
     public void loadLoopAnnotations(ClassInfo classInfo) throws BadAnnotationException {
@@ -120,12 +126,6 @@ public class WCETEventHandler extends EmptyAppEventHandler {
         MethodCode code = method.getCode();
         ExecutionContext eCtx = new ExecutionContext(cfg.getMethodInfo());
         
-        try {
-            wcaMap = getAnnotations(method.getClassInfo());
-        } catch (IOException e) {
-            throw new BadAnnotationException("IO Error reading annotation: " + e.getMessage(), e);
-        }
-        
         for (CFGNode n : cfg.getLoopColoring().getHeadOfLoops()) {
             BasicBlockNode headOfLoop = (BasicBlockNode) n;
             BasicBlock block = headOfLoop.getBasicBlock();
@@ -135,30 +135,71 @@ public class WCETEventHandler extends EmptyAppEventHandler {
                 // or at least check if the source-annotation is tighter than what is currently set?
                 continue;
             }
-            // search for loop annotation in range
-            int sourceRangeStart = code.getLineNumber(block.getFirstInstruction());
-            int sourceRangeStop = code.getLineNumber(block.getLastInstruction());
-            Collection<LoopBound> annots = wcaMap.annotationsForLineRange(sourceRangeStart, sourceRangeStop + 1);
-            if (annots.size() > 1) {
-                String reason = "Ambiguous Annotation [" + annots + "]";
-                throw new BadAnnotationException(reason, block, sourceRangeStart, sourceRangeStop);
+
+            Set<LoopBound> bounds = new HashSet<LoopBound>(2);
+
+            InstructionHandle first = block.getFirstInstruction();
+            InstructionHandle last = first;
+            ClassInfo sourceInfo = method.getCode().getSourceClassInfo(block.getFirstInstruction());
+
+            for (InstructionHandle ih : block.getInstructions()) {
+                ClassInfo cls = method.getCode().getSourceClassInfo(ih);
+                boolean isLast = ih.equals(block.getLastInstruction());
+                if (!cls.equals(sourceInfo) || isLast) {
+                    try {
+                        wcaMap = getAnnotations(method.getCode().getSourceClassInfo(block.getFirstInstruction()));
+                    } catch (IOException e) {
+                        throw new BadAnnotationException("IO Error reading annotation: " + e.getMessage(), e);
+                    }
+                    if (isLast) {
+                        last = ih;
+                    }
+                    // search for loop annotation in range
+                    int sourceRangeStart = code.getLineNumber(first);
+                    int sourceRangeStop = code.getLineNumber(last);
+                    bounds.addAll(wcaMap.annotationsForLineRange(sourceRangeStart, sourceRangeStop + 1));
+
+                    first = ih;
+                }
+                last = ih;
+            }
+
+            if (bounds.size() > 1) {
+                String reason = "Ambiguous Annotation [" + bounds + "]";
+                throw new BadAnnotationException(reason, code, block);
             }
             LoopBound loopAnnot = null;
-            if (annots.size() == 1) {
-                loopAnnot = annots.iterator().next();
+            if (bounds.size() == 1) {
+                loopAnnot = bounds.iterator().next();
             }
             // if we have loop bounds from DFA analysis, use them
             loopAnnot = dfaLoopBound(block, eCtx, loopAnnot);
             if (loopAnnot == null) {
 // 		throw new BadAnnotationException("No loop bound annotation",
 // 						 block,sourceRangeStart,sourceRangeStop);
-                logger.error("No loop bound annotation: " + method + ":" + n +
-                             " [line "+sourceRangeStart+"-"+sourceRangeStop+"]"+
-                             ".\nApproximating with " + DEFAULT_LOOP_BOUND + ", but result is not safe anymore.");
-                loopAnnot = LoopBound.boundedAbove(DEFAULT_LOOP_BOUND);
+                // Bit of a hack: if we load CFGs before the callgraph is constructed, this will log errors anyway
+                if (ignoreMissingLoopBounds) {
+                    logger.trace("No loop bound annotation: " + method + ":" + n +
+                            " " + getLineRangeText(code, block) +
+                            ".\nApproximating with " + DEFAULT_LOOP_BOUND + ", but result is not safe anymore.");
+                } else if (project.getCallGraph() != null && !project.getCallGraph().containsMethod(method)) {
+                    logger.debug("No loop bound annotation for non-WCET method: " + method + ":" + n +
+                                 " " + getLineRangeText(code, block) +
+                                 ".\nApproximating with " + DEFAULT_LOOP_BOUND);
+                } else {
+                    logger.error("No loop bound annotation: " + method + ":" + n +
+                                 " " + getLineRangeText(code, block) +
+                                 ".\nApproximating with " + DEFAULT_LOOP_BOUND + ", but result is not safe anymore.");
+                }
+                loopAnnot = LoopBound.defaultBound(DEFAULT_LOOP_BOUND);
             }
             block.setLoopBound(loopAnnot);
         }
+    }
+
+    private String getLineRangeText(MethodCode code, BasicBlock block) {
+        return "[line " + code.getLineString(block.getFirstInstruction()) + "-" +
+                          code.getLineString(block.getLastInstruction()) + "]";
     }
 
     /**
@@ -166,55 +207,63 @@ public class WCETEventHandler extends EmptyAppEventHandler {
      * merge it with the annotated value.
      * @return The loop bound to be used for further computations
      */
-    public LoopBound dfaLoopBound(BasicBlock headOfLoopBlock, ExecutionContext eCtx, LoopBound annotatedValue) {
+    public LoopBound dfaLoopBound(BasicBlock headOfLoopBlock, ExecutionContext eCtx, LoopBound annotatedBound) {
     	
-    	LoopBound dfaBound;
-        LoopBounds lbs = project.getDfaLoopBounds();
-        if(lbs != null) {
-            MethodInfo methodInfo = headOfLoopBlock.getMethodInfo();
-            // Insert a try-catch to deal with failures of the DFA analysis
-            int bound;
-            try {
-                bound = lbs.getBound(headOfLoopBlock.getLastInstruction(),eCtx.getCallString());
-            } catch(NullPointerException ex) {
-                // TODO not cool ..
-                ex.printStackTrace();
-                bound = -1;
-            }
-            if(bound < 0) {
-                dfaBound = annotatedValue;
-                if(! loopBoundWarnings.contains(headOfLoopBlock)) {
-                	logger.info("No DFA bound for " + methodInfo+". Using manual bound: "+annotatedValue);
-                	loopBoundWarnings.add(headOfLoopBlock);
-                }
-            } else if(annotatedValue == null) {
-                dfaBound = LoopBound.boundedAbove(bound);
-                logger.debug("Only DFA bound for "+methodInfo);
-            } else {
-                dfaBound = annotatedValue.clone();
-                // More testing would be nice
-                dfaBound.addBound(LoopBoundExpr.numUpperBound(bound), SymbolicMarker.LOOP_ENTRY); 
-                long loopUb = annotatedValue.getSimpleLoopBound().upperBound(eCtx);
-                if(bound < loopUb) {
-                    if(! loopBoundWarnings.contains(headOfLoopBlock)) {
-                        logger.info("DFA analysis reports a smaller upper bound :"+bound+ " < "+loopUb+
-                                " for "+methodInfo);
-                    	loopBoundWarnings.add(headOfLoopBlock);
-                    }
-                } else if (bound > loopUb) {
-                    logger.debug("DFA analysis reports a larger upper bound: "+bound+ " > "+loopUb+
-                                " for "+methodInfo);
-                } else {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("DFA and annotated loop bounds match for "+methodInfo);
-                    }
-                }
-            }
-        } else {
-            dfaBound = annotatedValue;
+        LoopBounds lbAnalysis = project.getDfaLoopBounds();
+        if(lbAnalysis == null) return annotatedBound;
+        
+        MethodInfo methodInfo = headOfLoopBlock.getMethodInfo();
+        int dfaUpperBound;
+        
+        // Insert a try-catch to deal with failures of the DFA analysis
+        // FIXME: Bad style
+        try {
+        	dfaUpperBound = lbAnalysis.getBound(headOfLoopBlock.getLastInstruction(),eCtx.getCallString());
+        } catch(NullPointerException ex) {
+        	logger.error("Failed to retrieve DFA loop bound values", ex);
+        	dfaUpperBound = -1;
         }
-                
-        return dfaBound;
+        if(dfaUpperBound < 0) {
+        	if(! printedLoopBoundInfoMessage.contains(headOfLoopBlock)) {
+        		logger.info("No DFA bound for " + methodInfo+"/"+headOfLoopBlock+
+        				". Using manual bound: "+annotatedBound);
+        		printedLoopBoundInfoMessage.add(headOfLoopBlock);
+        	}
+        	return annotatedBound;
+        } 
+
+        LoopBound loopBound;
+        if(annotatedBound == null) {
+        	loopBound = LoopBound.boundedAbove(dfaUpperBound);
+        	logger.debug("Only DFA bound for "+methodInfo+"headOfLoopBlock");
+        } else {
+        	loopBound = annotatedBound.clone();
+        	// More testing would be nice
+        	loopBound.addBound(LoopBoundExpr.numUpperBound(dfaUpperBound), SymbolicMarker.LOOP_ENTRY); 
+        	long loopUb = annotatedBound.getSimpleLoopBound().upperBound(eCtx);
+        	if(dfaUpperBound < loopUb) {
+        		/* This isn't unusual (context dependent loop bounds) */
+        		if (logger.isDebugEnabled()) {
+        			logger.debug("DFA analysis reports a smaller upper bound :"+dfaUpperBound+ " < "+loopUb+
+        					" for "+methodInfo+"/"+headOfLoopBlock);
+        		}
+        	} else if (dfaUpperBound > loopUb) {
+        		/* In principle this is possible, but usually a bad sign */
+        		logger.warn("DFA analysis reports a larger upper bound: "+dfaUpperBound+ " > "+loopUb+
+        				" for "+methodInfo);
+        	} else {
+        		if (logger.isDebugEnabled()) {
+        			logger.debug("DFA and annotated loop bounds match for "+methodInfo);
+        		}
+        	}
+        }
+
+    	if(! printedLoopBoundInfoMessage.contains(headOfLoopBlock)) {
+    		logger.info("DFA bound for " + methodInfo+"/"+headOfLoopBlock+
+    				": "+loopBound+". Manual bound info: "+annotatedBound);
+    		printedLoopBoundInfoMessage.add(headOfLoopBlock);
+    	}
+        return loopBound;
     }
 
 }

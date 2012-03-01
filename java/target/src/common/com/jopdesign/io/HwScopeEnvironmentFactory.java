@@ -6,20 +6,20 @@ import com.jopdesign.sys.Native;
 
 public class HwScopeEnvironmentFactory extends IOFactory {
 
-		private HWSensorA sensA;
-		private HWSensorB sensB;
+		private HWSensorM sensM;
+		private HWSensorC sensC;
 
 		// Handles should be the first static fields!
-		private static int SENSA_PTR;
-		private static int SENSA_MTAB;
+		private static int SENS_M_PTR;
+		private static int SENS_M_MTAB;
 		
-		private static int SENSB_PTR;
-		private static int SENSB_MTAB;
+		private static int SENS_C_PTR;
+		private static int SENS_C_MTAB;
 
 
 		HwScopeEnvironmentFactory() {
-			sensA = (HWSensorA) makeHWObject(new HWSensorA(),Const.SENSA_BASE, 0);
-			sensB = (HWSensorB) makeHWObject(new HWSensorB(),Const.SENSB_BASE, 1);
+			sensM = (HWSensorM) makeHWObject(new HWSensorM(),Const.SENS_M_BASE, 0);
+			sensC = (HWSensorC) makeHWObject(new HWSensorC(),Const.SENS_C_BASE, 1);
 
 		};
 		// that has to be overridden by each sub class to get
@@ -35,7 +35,7 @@ public class HwScopeEnvironmentFactory extends IOFactory {
 			return single;
 		}
 
-		public HWSensorA getSensA() { return sensA; }
-		public HWSensorB getSensB() { return sensB; }
+		public HWSensorM getSensM() { return sensM; }
+		public HWSensorC getSensC() { return sensC; }
 
 	}

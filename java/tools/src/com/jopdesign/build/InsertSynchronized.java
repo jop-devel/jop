@@ -51,6 +51,8 @@ public class InsertSynchronized implements ClassVisitor {
             if (!(method.isAbstract() || method.isNative())
                     && method.isSynchronized()) {
                 synchronize(method);
+                // TODO prevent code inserted more than once if this is executed both in the optimizer and in JOPizer
+                // method.setSynchronized(false);
             }
         }
         return true;
@@ -89,6 +91,9 @@ public class InsertSynchronized implements ClassVisitor {
                 // il.insert(ih, new GET_CURRENT_CLASS());
                 throw new JavaClassFormatError("synchronized on static methods not yet supported");
             } else {
+                // TODO this could become a bug if JCopter ever reassigns local variable slots, then
+                // we could not be sure that slot 0 holds the this reference anymore.. To be on the safe side
+                // we should check if there is an xSTORE_0 somewhere in the code
                 newh = il.insert(ih, new ALOAD(0));
             }
             il.insert(ih, new MONITOREXIT());

@@ -20,6 +20,7 @@
 package com.jopdesign.common.graphutils;
 
 import com.jopdesign.common.config.Config;
+import com.jopdesign.common.config.StringOption;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.AppInfoError;
 import org.apache.log4j.Logger;
@@ -45,18 +46,34 @@ public class InvokeDot {
     private static final Logger logger = Logger.getLogger(LogConfig.LOG_GRAPH+".InvokeDot");
     private static final String DEFAULT_CACHE_DIR = "dot-cache";
 
+    private static final StringOption PROGRAM_DOT =
+            new StringOption("program-dot", "if graphs should be generated from java, the path to the 'dot' binary", true);
+
+    public static void registerOptions(Config config) {
+        config.getDebugGroup().addOption(PROGRAM_DOT);
+    }
+
     public File getCacheFile(String filename) {
         return new File(cacheDir, filename);
     }
 
     public static void invokeDot(Config config, File dotFile, File outFile) throws IOException {
         // do nothing if dot has not been configured
-        if (!config.hasValue(Config.PROGRAM_DOT)) return;
+        if (!config.getDebugGroup().hasValue(PROGRAM_DOT)) return;
 
         File cacheDir = config.getOutDir(DEFAULT_CACHE_DIR);
-        InvokeDot id = new InvokeDot(config.getOption(Config.PROGRAM_DOT), cacheDir);
+        InvokeDot id = new InvokeDot(config.getDebugGroup().getOption(PROGRAM_DOT), cacheDir);
         id.runDot(dotFile, outFile);
     }
+
+    public static String getDotBinary(Config config) {
+        return config.getDebugGroup().getOption(PROGRAM_DOT);
+    }
+
+    public static boolean doInvokeDot(Config config) {
+        return (getDotBinary(config) != null) && !"".equals(getDotBinary(config));
+    }
+
 
     private String dotBinary;
     private File cacheDir;

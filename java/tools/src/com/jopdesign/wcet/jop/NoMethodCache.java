@@ -22,9 +22,9 @@ package com.jopdesign.wcet.jop;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.processormodel.JOPConfig.CacheImplementation;
 import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
-import com.jopdesign.common.processormodel.JOPConfig.CacheImplementation;
 
 public class NoMethodCache extends MethodCache {
 
@@ -37,7 +37,12 @@ public class NoMethodCache extends MethodCache {
 		return false;
 	}
 
-	@Override
+    @Override
+    public boolean allFit(long blocks) {
+        return false;
+    }
+
+    @Override
 	public boolean fitsInCache(int sizeInWords) {
 		return true;
 	}
@@ -51,7 +56,7 @@ public class NoMethodCache extends MethodCache {
 	public int requiredNumberOfBlocks(int sizeInWords) {
 		return 0;
 	}
-	@Override 
+	@Override
 	public long getMissOnReturnCost(WCETProcessorModel proc, ControlFlowGraph invoker) {
 		return 0;		
 	}

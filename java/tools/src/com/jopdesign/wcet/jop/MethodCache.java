@@ -48,6 +48,8 @@ public abstract class MethodCache {
 
     public abstract boolean allFit(MethodInfo m, CallString cs);
 
+    public abstract boolean allFit(long blocks);
+
     public abstract boolean isLRU();
 
     public abstract boolean fitsInCache(int sizeInWords);

@@ -23,11 +23,14 @@ package com.jopdesign.jcopter;
 import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.AppSetup;
 import com.jopdesign.common.EmptyTool;
+import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.dfa.DFATool;
+import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
+import com.jopdesign.wcet.jop.MethodCache;
 import org.apache.log4j.Logger;
 
 /**
@@ -41,13 +44,13 @@ public class JCopter extends EmptyTool<JCopterManager> {
     public static final String CONFIG_FILE_NAME = "jcopter.properties";
 
     public static final String LOG_ROOT = "jcopter";
+    public static final String LOG_ANALYSIS = "jcopter.analysis";
     public static final String LOG_OPTIMIZER = "jcopter.optimizer";
     public static final String LOG_INLINE = "jcopter.inline";
 
     private static final Logger logger = Logger.getLogger(LOG_ROOT + ".JCopter");
 
     private final JCopterManager manager;
-    private final AppInfo appInfo;
 
     private JCopterConfig config;
     private PhaseExecutor executor;
@@ -57,7 +60,6 @@ public class JCopter extends EmptyTool<JCopterManager> {
     public JCopter() {
         super(VERSION);
         manager = new JCopterManager();
-        appInfo = AppInfo.getSingleton();
     }
 
     @Override
@@ -72,21 +74,26 @@ public class JCopter extends EmptyTool<JCopterManager> {
         // TODO add options/profiles/.. to this so that only a subset of
         //      optimizations/analyses are initialized ? Overwrite PhaseExecutor for this?
         //      Or user simply uses phaseExecutor directly
-        PhaseExecutor.registerOptions(options);
+        PhaseExecutor.registerOptions(config);
     }
 
     @Override
     public void onSetupConfig(AppSetup setup) throws Config.BadConfigurationException {
-
         OptionGroup options = setup.getConfig().getOptions();
-        
+
         config = new JCopterConfig(options);
-        executor = new PhaseExecutor(this, options);
+
+        // Silence the CFG.. We know that ATHROW is bad.
+        ControlFlowGraph.setIgnoreATHROW(true);
     }
 
     @Override
     public void onSetupAppInfo(AppSetup setup, AppInfo appInfo) throws BadConfigurationException {
-        config.checkOptions();
+        OptionGroup options = setup.getConfig().getOptions();
+
+        config.initialize();
+
+        executor = new PhaseExecutor(this, options);
     }
 
     public JCopterConfig getJConfig() {
@@ -109,6 +116,14 @@ public class JCopter extends EmptyTool<JCopterManager> {
         return wcetTool;
     }
 
+    public WCETProcessorModel getWCETProcessorModel() {
+        return wcetTool.getWCETProcessorModel();
+    }
+
+    public MethodCache getMethodCache() {
+        return getWCETProcessorModel().getMethodCache();
+    }
+
     public void setWcetTool(WCETTool wcetTool) {
         this.wcetTool = wcetTool;
     }
@@ -117,14 +132,16 @@ public class JCopter extends EmptyTool<JCopterManager> {
         return dfaTool != null;
     }
 
-    public boolean useWCET() {
-        return wcetTool != null;
+    public boolean useWCA() {
+        return getJConfig().useWCA();
     }
 
     /**
      * Run all configured optimizations and perform the required analyses.
      */
     public void optimize() {
+
+        executor.setUpdateDFA(useDFA() && dfaTool.doUseCache() );
 
         // - (optional) perform receiver type DFA: reduce callgraph, maybe eliminate
         //   some nullpointer-checks. This is used only for the SimpleInliner since this will
@@ -151,36 +168,27 @@ public class JCopter extends EmptyTool<JCopterManager> {
         // - perform simple inlining: guaranteed not to increase worst case
         executor.performSimpleInline();
 
-        // - Rebuild callgraph and rerun DFA analyses since SimpleInliner changed the callstrings
-        //   and we do not have an implementation for Callgraph#merge and a framework to notify analyses
-        //   of callstring/callgraph changes (yet..)
-        if (useDFA()) {
-            executor.dataflowAnalysis(true);
-        }
+        if (getJConfig().doOptimizeNormal()) {
+            // - Rebuild callgraph and rerun DFA analyses since SimpleInliner changed the callstrings
+            //   and we do not have an implementation for Callgraph#merge and a framework to notify analyses
+            //   of callstring/callgraph changes (yet..)
+            if (useDFA()) {
+                executor.dataflowAnalysis(true);
+            }
 
-        executor.buildCallGraph(useDFA());
+            executor.buildCallGraph(useDFA());
 
-        // - Now we have full DFA results (if enabled) and an updated callgraph, now would be the time
-        //   for some cleanup optimizations before we start the WCA (but we may not have Loopbounds yet)
+            // - Now we have full DFA results (if enabled) and an updated callgraph, now would be the time
+            //   for some cleanup optimizations before we start the WCA (but we may not have Loopbounds yet)
 
-        // - perform WCET analysis, select methods for inlining
-        if (useWCET()) {
-            // First, rebuild the WCET-Tool callgraph, since we modified the appInfo graph already
-            wcetTool.rebuildCallGraph();
-
-            // TODO call WCET analysis, use WCET-oriented inline selector
-
-
+            // - perform inlining (check previous analysis results to avoid creating nullpointer checks),
+            //   duplicate/rename/.. methods, perform method extraction/splitting too?
+            executor.performGreedyOptimizer();
         } else {
-            logger.info("WCA tool is disabled, not performing WCET-driven optimizations.");
-
-            // use non-WCET-based inline selector
-
+            // we need an up-to-date call graph for code cleanup, but we skip the second full-blown DFA run if
+            // we only optimize at O1
+            executor.buildCallGraph(false);
         }
-
-        // - perform inlining (check previous analysis results to avoid creating nullpointer checks),
-        //   duplicate/rename/.. methods, perform method extraction/splitting too?
-        executor.performInline();
 
         // - perform code cleanup optimizations (load/store/param-passing, constantpool cleanup,
         //   remove unused members, constant folding, dead-code elimination (remove some more NP-checks,..),
@@ -192,6 +200,13 @@ public class JCopter extends EmptyTool<JCopterManager> {
         executor.relinkInvokesuper();
 
         executor.cleanupConstantPool();
+
+        if (getJConfig().doOptimizeNormal()) {
+            // We need to write the DFA results first. This modifies the CP and creates new entries
+            // due to dumb bcel creating debug attributes, but we need them in the class files, else the CP will
+            // not match up, since they might be created in a different order on load
+            executor.writeResults();
+        }
     }
 
 
@@ -209,9 +224,13 @@ public class JCopter extends EmptyTool<JCopterManager> {
         WCETTool wcetTool = new WCETTool();
         JCopter jcopter = new JCopter();
 
+        wcetTool.setAvailableOptions(false, true, false, false);
+
         setup.registerTool("dfa", dfaTool, true, false);
-        setup.registerTool("wca", wcetTool, true, true);
+        setup.registerTool("wca", wcetTool);
         setup.registerTool("jcopter", jcopter);
+
+        setup.addSourceLineOptions(true);
 
         setup.initAndLoad(args, true, true, true);
 
@@ -219,9 +238,9 @@ public class JCopter extends EmptyTool<JCopterManager> {
             wcetTool.setDfaTool(dfaTool);
             jcopter.setDfaTool(dfaTool);
         }
-        if (setup.useTool("wca")) {
-            jcopter.setWcetTool(wcetTool);
-        }
+        jcopter.setWcetTool(wcetTool);
+
+        wcetTool.getEventHandler().setIgnoreMissingLoopBounds(!jcopter.useWCA());
 
         // run optimizations
         jcopter.optimize();

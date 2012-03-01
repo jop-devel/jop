@@ -30,7 +30,10 @@ import com.jopdesign.wcet.ipet.IPETSolver;
 import com.jopdesign.wcet.ipet.IPETUtils;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  * Class for recursive maximization problems.
@@ -204,4 +207,13 @@ public abstract class RecursiveAnalysis<Context extends AnalysisContext, Rval> {
         return getCached(new CacheKey(invoked, ctx));
     }
 
+    public void clearCache(Set<MethodInfo> methods) {
+        Iterator<Entry<CacheKey,Rval>> it = costMap.entrySet().iterator();
+        while (it.hasNext()) {
+            CacheKey key = it.next().getKey();
+            if (methods.contains(key.m)) {
+                it.remove();
+            }
+        }
+    }
 }

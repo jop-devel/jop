@@ -25,7 +25,9 @@ import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.graphutils.ClassHierarchyTraverser;
 import com.jopdesign.common.graphutils.ClassVisitor;
 import com.jopdesign.common.logger.LogConfig;
+import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.JavaClassFormatError;
+import com.jopdesign.common.misc.Ternary;
 import com.jopdesign.common.type.MemberID;
 import com.jopdesign.common.type.MethodRef;
 import org.apache.bcel.classfile.Attribute;
@@ -200,6 +202,8 @@ public final class MethodInfo extends ClassMemberInfo {
     // Helper methods to find implementations and super methods
     //////////////////////////////////////////////////////////////////////////////
 
+
+
     /**
      * Check if this method is the same as or overrides a given method.
      * 
@@ -209,8 +213,51 @@ public final class MethodInfo extends ClassMemberInfo {
      * @return true if this method overrides the given method and can access the method.
      */
     public boolean overrides(MethodInfo superMethod, boolean checkSignature) {
+        return overrides(superMethod.getMethodRef(), checkSignature);
+    }
 
-        if (this.equals(superMethod)) {
+    /**
+     * @param interfaceMethod A method within an interface.
+     * @return true if this method implements the interface method, even if the class does not implement the interface.
+     */
+    public boolean implementsMethod(MethodRef interfaceMethod) {
+        if (interfaceMethod.isInterfaceMethod() != Ternary.TRUE) return false;
+        if (!getMethodSignature().equals(interfaceMethod.getMethodSignature())) {
+            return false;
+        }
+        // no need for access checks, interfaces are always public.
+        return true;
+    }
+
+    /**
+     * Check if this method is the same as or overrides a given method.
+     * <p>
+     * This checks the class of the reference if checkSignature is true, so even if the reference resolves
+     * to this method, this returns false if the reference refers to a subclass of this method's class.
+     * </p>
+     * <p>This might not work as expected for interface methods. To check if this method implements
+     * an interface method even if the class of this method does not implement the interface, use
+     * {@link #implementsMethod(MethodRef)} instead.</p>
+     *
+     * @param superMethod the superMethod to check, must refer to a known class.
+     * @param checkSignature if true, check if the given method has the same signature and if the reference refers to
+     *        a superclass of this method's class. If this is false, it is assumed that the signatures match and this
+     *        method's class is a subclass of the referred class.
+     * @return true if this method overrides the given method and can access the method.
+     */
+    public boolean overrides(MethodRef superMethod, boolean checkSignature) {
+
+        ClassInfo superClass = superMethod.getClassInfo();
+        if (superClass == null) {
+            // No need to check if the classname is equal to this method's class, in this case we would have a ClassInfo
+            throw new AppInfoError("Trying to lookup unknown class for " + superMethod+", not supported.");
+        }
+
+        if (superClass.equals(getClassInfo())) {
+            // refers to same class.. Must be the same method if the signature matches
+            if ( checkSignature && !getMethodSignature().equals(superMethod.getMethodSignature()) ) {
+                return false;
+            }
             return true;
         }
 
@@ -219,20 +266,31 @@ public final class MethodInfo extends ClassMemberInfo {
             return false;
         }
 
+        MethodInfo sm = superMethod.getMethodInfo();
+
+        // special case: check if this method is the method which is inherited to the referenced class
+        if ( this.equals(sm) ) {
+            return true;
+        }
+
         if (checkSignature) {
             if ( !getMethodSignature().equals(superMethod.getMethodSignature()) ) {
                 return false;
             }
-            if ( !getClassInfo().isSubclassOf(superMethod.getClassInfo()) ) {
+            if ( !getClassInfo().isSubclassOf(superClass) ) {
                 return false;
             }
         }
-        
-        if ( superMethod.isStatic() ) {
-            logger.warn("Instance method " + getMemberID()+" overrides static method "+superMethod.getMemberID());
+
+        if (sm == null) {
+            throw new AppInfoError("Trying to check unknown method "+superMethod+", this is not supported.");
+        }
+
+        if ( sm.isStatic() ) {
+            logger.warn("Instance method " + getMemberID()+" overrides static method "+sm.getMemberID());
         }
         
-        return getClassInfo().canAccess(superMethod);
+        return getClassInfo().canAccess(sm);
     }
 
     /**
@@ -346,6 +404,14 @@ public final class MethodInfo extends ClassMemberInfo {
         if (checkAccess && (isPrivate() || isStatic())) {
             if (isAbstract()) {
                 throw new JavaClassFormatError("Method is private or static but abstract!: "+toString());
+            }
+            implementations.add(this);
+            return implementations;
+        }
+
+        if ("<init>".equals(getShortName())) {
+            if (isAbstract()) {
+                throw new JavaClassFormatError("Found abstract constructor, this isn't right..: "+toString());
             }
             implementations.add(this);
             return implementations;

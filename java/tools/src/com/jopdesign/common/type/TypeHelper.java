@@ -20,10 +20,23 @@
 
 package com.jopdesign.common.type;
 
+import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.misc.AppInfoError;
 import org.apache.bcel.Constants;
+import org.apache.bcel.generic.ALOAD;
+import org.apache.bcel.generic.ASTORE;
 import org.apache.bcel.generic.BasicType;
+import org.apache.bcel.generic.DLOAD;
+import org.apache.bcel.generic.DSTORE;
+import org.apache.bcel.generic.FLOAD;
+import org.apache.bcel.generic.FSTORE;
+import org.apache.bcel.generic.ILOAD;
+import org.apache.bcel.generic.ISTORE;
+import org.apache.bcel.generic.LLOAD;
+import org.apache.bcel.generic.LSTORE;
+import org.apache.bcel.generic.LoadInstruction;
 import org.apache.bcel.generic.ReferenceType;
+import org.apache.bcel.generic.StoreInstruction;
 import org.apache.bcel.generic.Type;
 
 /**
@@ -39,6 +52,59 @@ public class TypeHelper {
         }
         return i;
     }
+
+    public static int getNumInvokeSlots(MethodInfo method) {
+        int slots = getNumSlots(method.getArgumentTypes());
+        if (!method.isStatic()) {
+            slots += 1;
+        }
+        return slots;
+    }
+
+    public static StoreInstruction createStoreInstruction(Type type, int slot) {
+        switch (type.getType()) {
+            case Constants.T_BOOLEAN:
+            case Constants.T_BYTE:
+            case Constants.T_CHAR:
+            case Constants.T_SHORT:
+            case Constants.T_INT:
+                return new ISTORE(slot);
+            case Constants.T_FLOAT:
+                return new FSTORE(slot);
+            case Constants.T_LONG:
+                return new LSTORE(slot);
+            case Constants.T_DOUBLE:
+                return new DSTORE(slot);
+            case Constants.T_OBJECT:
+            case Constants.T_ARRAY:
+                return new ASTORE(slot);
+            default:
+                throw new AppInfoError("Unsupported type "+type+" for slot "+slot);
+        }
+    }
+
+    public static LoadInstruction createLoadInstruction(Type type, int slot) {
+        switch (type.getType()) {
+            case Constants.T_BOOLEAN:
+            case Constants.T_BYTE:
+            case Constants.T_CHAR:
+            case Constants.T_SHORT:
+            case Constants.T_INT:
+                return new ILOAD(slot);
+            case Constants.T_FLOAT:
+                return new FLOAD(slot);
+            case Constants.T_LONG:
+                return new LLOAD(slot);
+            case Constants.T_DOUBLE:
+                return new DLOAD(slot);
+            case Constants.T_OBJECT:
+            case Constants.T_ARRAY:
+                return new ALOAD(slot);
+            default:
+                throw new AppInfoError("Unsupported type "+type+" for slot "+slot);
+        }
+    }
+
 
     /**
      * Check if we can assign something with type 'from' to something with type 'to'.
@@ -107,4 +173,5 @@ public class TypeHelper {
         }
         return true;
     }
+
 }

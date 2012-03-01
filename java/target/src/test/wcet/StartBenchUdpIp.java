@@ -22,6 +22,7 @@ package wcet;
 
 import jbe.BenchUdpIp;
 
+import com.jopdesign.sys.Config;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
@@ -30,10 +31,6 @@ public class StartBenchUdpIp {
     final static int CACHE_FLUSH = -51;
     final static int CACHE_DUMP = -53;
 
-	/**
-	 * Set to false for the WCET analysis, true for measurement
-	 */
-	final static boolean MEASURE = false;
 	final static boolean MEASURE_CACHE = false;
 	static int ts, te, to;
 
@@ -57,18 +54,18 @@ public class StartBenchUdpIp {
 			if (val<min) min = val;
 			if (val>max) max = val;
 		}
-		if (MEASURE) System.out.println(min);
-		if (MEASURE) System.out.println(max);
+		if (Config.MEASURE) System.out.println(min);
+		if (Config.MEASURE) System.out.println(max);
 	}
 	
 	static void invoke() {
 		measure();
-		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) te = Native.rdMem(Const.IO_CNT);
 		if (MEASURE_CACHE) Native.rdMem(CACHE_DUMP);
 	}
 
 	static void measure() {
-		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		if (Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		bui.loop();
 	}
 			

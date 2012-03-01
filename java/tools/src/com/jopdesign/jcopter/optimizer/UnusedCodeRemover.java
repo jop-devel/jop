@@ -27,6 +27,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.config.BooleanOption;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
+import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.common.tools.UsedCodeFinder;
 import com.jopdesign.common.tools.UsedCodeFinder.Mark;
 import com.jopdesign.jcopter.JCopter;
@@ -68,7 +69,22 @@ public class UnusedCodeRemover {
 
     public void execute() {
         ucf.resetMarks();
+        // This starts at all app roots and JVM roots, as well as all threads,
+        // <clinit> methods are marked in all reached classes
         ucf.markUsedMembers();
+
+        // We also need to mark everything else we do not want to remove ..
+        AppInfo appInfo = AppInfo.getSingleton();
+        ProcessorModel pm = appInfo.getProcessorModel();
+
+        if (pm.keepJVMClasses()) {
+            for (String clName : pm.getJVMClasses()) {
+                ClassInfo cls = appInfo.getClassInfo(clName);
+                if (cls != null) {
+                    ucf.markUsedMembers(cls, true);
+                }
+            }
+        }
 
         removeUnusedMembers();
     }
@@ -94,19 +110,18 @@ public class UnusedCodeRemover {
                 continue;
             }
 
-            if (appInfo.isHwObject(cls)) {
-                // Do not remove anything from hardware objects, else the mapping gets broken and
-                // chaos takes over!
-                logger.debug("Skipping used hardware object " +cls);
-                continue;
-            }
-
             unusedFields.clear();
             unusedMethods.clear();
 
-            for (FieldInfo f : cls.getFields()) {
-                if (ucf.getMark(f)==Mark.UNUSED) {
-                    unusedFields.add(f);
+            if (appInfo.isHwObject(cls)) {
+                // Do not remove fields from hardware objects, else the mapping gets broken and
+                // chaos takes over!
+                logger.debug("Skipping fields of used hardware object " +cls);
+            } else {
+                for (FieldInfo f : cls.getFields()) {
+                    if (ucf.getMark(f)==Mark.UNUSED) {
+                        unusedFields.add(f);
+                    }
                 }
             }
             for (MethodInfo m : cls.getMethods()) {
@@ -117,6 +132,7 @@ public class UnusedCodeRemover {
                 if (mark == Mark.MARKED && !m.isNative() && !m.isAbstract()) {
                     logger.info("Making unused method "+m+" abstract");
                     m.setAbstract(true);
+                    m.getClassInfo().setAbstract(true);
                 }
             }
 

@@ -22,13 +22,13 @@ package com.jopdesign.wcet.uppaal.translator;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
+import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
-import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;
@@ -110,11 +110,11 @@ public class JavaOneProcessPerMethodTranslator extends JavaTranslator {
             if (n.receiverFlowGraph().isLeafMethod() && config.collapseLeaves) {
                 RecursiveWcetAnalysis<AnalysisContextLocal> ilpAn =
                         new RecursiveWcetAnalysis<AnalysisContextLocal>(project, new LocalAnalysis());
-                WcetCost wcet = ilpAn.computeCost(n.getImplementedMethod(),
+                WcetCost wcet = ilpAn.computeCost(n.getImplementingMethod(),
                         new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_HIT));
                 tBuilder.waitAtLocation(waitInvokeLoc, wcet.getCost());
             } else {
-                int mid = javaTranslator.getMethodID(n.getImplementedMethod());
+                int mid = javaTranslator.getMethodID(n.getImplementingMethod());
                 tBuilder.getIncomingAttrs(waitInvokeLoc)
                         .setSync(SystemBuilder.methodChannel(mid) + "!");
                 tBuilder.getOutgoingAttrs(waitInvokeLoc)

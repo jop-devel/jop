@@ -79,7 +79,7 @@ public class DetailedMethodReport {
                                Map<ControlFlowGraph.CFGEdge, ?> edgeAnnotations) throws IOException {
         File cgdot = config.getOutFile(method, key + ".dot");
         File cgimg = config.getOutFile(method, key + ".png");
-        ControlFlowGraph flowGraph = method.getCode().getControlFlowGraph(false);
+        ControlFlowGraph flowGraph = project.getFlowGraph(method);
         if (nodeAnnotations != null || edgeAnnotations != null) {
             flowGraph.exportDOT(cgdot, nodeAnnotations, edgeAnnotations);
         } else {

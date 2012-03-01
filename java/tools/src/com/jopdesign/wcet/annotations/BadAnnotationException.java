@@ -20,6 +20,7 @@
 
 package com.jopdesign.wcet.annotations;
 
+import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.code.BasicBlock;
 
 public class BadAnnotationException extends Exception {
@@ -27,10 +28,11 @@ public class BadAnnotationException extends Exception {
     
     private BasicBlock block;
 
-    public BadAnnotationException(String reason, BasicBlock block, int codeLineStart, int codeLineEnd) {
+    public BadAnnotationException(String reason, MethodCode code, BasicBlock block) {
             super(reason+" for " + block.getLastInstruction()+
                   " in class " + block.getClassInfo().getClassName()  + ":" +
-                      codeLineStart + "-" + codeLineEnd);
+                      code.getLineString(block.getFirstInstruction()) + "-" +
+                      code.getLineString(block.getLastInstruction()));
             this.block = block;
     }
     public BadAnnotationException(String msg) {

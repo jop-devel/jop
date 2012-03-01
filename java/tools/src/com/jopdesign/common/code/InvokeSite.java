@@ -214,6 +214,49 @@ public class InvokeSite {
     }
 
     /**
+     * @param methodInfo a possible invokee
+     * @return true if this invokeSite may invoke the method. Does not use the callgraph to check.
+     *   For interface invoke sites this can return UNKNOWN if the class of the given method implementation
+     *   does not implement the referenced interface.
+     */
+    public Ternary canInvoke(MethodInfo methodInfo) {
+        assert methodInfo != null;
+
+        MethodRef invokeeRef = getInvokeeRef();
+        MethodInfo method = invokeeRef.getMethodInfo();
+
+        if (methodInfo.equals(method)) {
+            return Ternary.TRUE;
+        }
+
+        if (!isVirtual()) {
+            // if it is non-virtual and method is null, it must be a different method
+            // and therefore cannot be invoked
+            return Ternary.FALSE;
+        }
+
+        if (method == null) {
+            return Ternary.UNKNOWN;
+        }
+
+        if (!methodInfo.getClassInfo().isSubclassOf(invokeeRef.getClassInfo())) {
+            if (isInvokeInterface() && !methodInfo.getClassInfo().isInterface()) {
+                // for interface invokes, this is slightly different, since the class of the method
+                // might not be the receiver and might not implement the referenced interface.. we can only
+                // check the signature..
+                if (!invokeeRef.getMethodSignature().equals(methodInfo.getMethodSignature())) {
+                    return Ternary.FALSE;
+                }
+                return Ternary.UNKNOWN;
+            }
+
+            return Ternary.FALSE;
+        }
+
+        return Ternary.valueOf( methodInfo.overrides(method, true) );
+    }
+
+    /**
      * Create a string representation of this InvokeSite.
      * Note that the result is neither unique nor constant (since the position in the code can change).
      *

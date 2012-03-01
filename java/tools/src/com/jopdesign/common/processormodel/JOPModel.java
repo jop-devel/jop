@@ -26,7 +26,6 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.misc.JavaClassFormatError;
 import com.jopdesign.tools.JopInstr;
-
 import org.apache.bcel.generic.ANEWARRAY;
 import org.apache.bcel.generic.ATHROW;
 import org.apache.bcel.generic.BasicType;
@@ -56,6 +55,7 @@ public class JOPModel implements ProcessorModel {
     public static final String JVM_CLASS = "com.jopdesign.sys.JVM";
     public static final String STARTUP_CLASS = "com.jopdesign.sys.Startup";
     public static final String JOP_NATIVE = "com.jopdesign.sys.Native";
+    public static final String BOOT_METHOD = "com.jopdesign.sys.Startup#boot()V";
 
     private final String identifier;
     private final JOPConfig config;
@@ -196,4 +196,35 @@ public class JOPModel implements ProcessorModel {
         return jvmClasses;
     }
 
+    @Override
+    public List<String> getJVMRoots() {
+        List<String> roots = new ArrayList<String>(1);
+        // TODO anything else we need?
+        // Hardware objects, <clinit> are handled by AppSetup/UnusedCodeRemover, Runnables are always added as roots
+        roots.add(BOOT_METHOD);
+        return roots;
+    }
+
+    @Override
+    public boolean keepJVMClasses() {
+        // TODO maybe return enum here, keep only classes but allow removal of methods (or make them abstract?)
+        return true;
+    }
+
+    @Override
+    public int getMaxMethodSize() {
+        // TODO get this from cache config
+        return 512;
+    }
+
+    @Override
+    public int getMaxStackSize() {
+        return 32;
+    }
+
+    @Override
+    public int getMaxLocals() {
+        // TODO can this be changed for JOP?
+        return 32;
+    }
 }
