@@ -100,7 +100,7 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 		// TODO: this is a very quick hack to get privat memory
 		// working. The StorageParameters is incomplete. Was this
 		// updated in the spec?
-		privMem = new Memory((int) scp.getTotalBackingStoreSize());
+		privMem = new Memory((int) scp.getTotalBackingStoreSize(), (int) scp.getTotalBackingStoreSize());
 
 		final Runnable runner = new Runnable() {
 			@Override
