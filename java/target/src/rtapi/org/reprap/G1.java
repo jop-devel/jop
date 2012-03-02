@@ -9,16 +9,7 @@ public class G1 extends Command
 	private static boolean initialized = initialize(); //Ensures that pool is created in immortal memory so that all PEH have access
 	
 	private G1 next;
-	private boolean XSet = false;
-	private int X = 0;
-	private boolean YSet = false;
-	private int Y = 0;
-	private boolean ZSet = false;
-	private int Z = 0;
-	private boolean ESet = false;
-	private int E = 0;
-	private boolean FSet = false;
-	private int F = 0;
+	private Parameter parameters = new Parameter();
 	private boolean executed = false;
 	
 	private static boolean initialize()
@@ -38,7 +29,7 @@ public class G1 extends Command
 	}
 	
 	//The G1 command is put into the Command queue, NOT the G1 pool
-	public static boolean enqueue(boolean XSet, boolean YSet, boolean ZSet, boolean ESet, boolean FSet, int X, int Y, int Z, int E, int F)
+	public static boolean enqueue(Parameter parameters)
 	{
 		G1 temp;
 		synchronized (lock) 
@@ -58,16 +49,12 @@ public class G1 extends Command
 				}
 			}
 		}
-		temp.XSet = XSet;
-		temp.YSet = YSet;
-		temp.ZSet = ZSet;
-		temp.ESet = ESet;
-		temp.FSet = FSet;
-		temp.X = X;
-		temp.Y = Y;
-		temp.Z = Z;
-		temp.E = E;
-		temp.F = F;
+		temp.parameters.X = parameters.X;
+		temp.parameters.Y = parameters.Y;
+		temp.parameters.Z = parameters.Z;
+		temp.parameters.E = parameters.E;
+		temp.parameters.F = parameters.F;
+		temp.parameters.S = parameters.S;
 		temp.executed = false;
 		Command.enqueue(temp);
 		return true;
@@ -80,7 +67,8 @@ public class G1 extends Command
 		//Execute
 		if(!executed)
 		{
-			instance.setTarget(XSet,YSet,ZSet,ESet,FSet,X,Y,Z,E,F);
+			instance.setTarget(parameters);
+			executed=true;
 		}
 		
 		if(instance.inPosition())

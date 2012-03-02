@@ -33,6 +33,12 @@ import com.jopdesign.io.*;
 
 public class RepRapController extends PeriodicEventHandler
 {
+	public static final int DECIMALS = 1; //X,Y,Z and E values are turned into millimeter*10
+	private static final int X_STEPS_PER_MILLIMETER = 40; //= steps*microstepping^-1/(belt_pitch*pulley_teeth) = 200*(1/8)^-1/(5*8)
+	private static final int Y_STEPS_PER_MILLIMETER = X_STEPS_PER_MILLIMETER;
+	private static final int Z_STEPS_PER_MILLIMETER = 160; //= steps/distance_between_threads = 200/1.25
+	private static final int E_STEPS_PER_MILLIMETER = 376; //= steps*gear_ration/(Pi*diameter) = 200*(39/11)/(Pi*0.6)
+	
 	private static RepRapController instance;
 	
 	public static RepRapController getInstance()
@@ -49,6 +55,7 @@ public class RepRapController extends PeriodicEventHandler
 		super(new PriorityParameters(1),
 			  new PeriodicParameters(null, new RelativeTime(1,0)),
 			  new StorageParameters(50, null, 0, 0));
+		EH.expansionHeader = value;
 	}
 	
 	ExpansionHeaderFactory EHF = ExpansionHeaderFactory.getExpansionHeaderFactory();
@@ -56,153 +63,152 @@ public class RepRapController extends PeriodicEventHandler
 	LedSwitchFactory LSF = LedSwitchFactory.getLedSwitchFactory();
 	public LedSwitch LS = LSF.getLedSwitch();
 	
-	private int X = 0;
-	private int Y = 0;
-	private int Z = 0;
-	private int E = 0;
-	private int F = 0;
-	private int targetX = 0;
-	private int targetY = 0;
-	private int targetZ = 0;
-	private int targetE = 0;
-	private int targetF = 0;
-	private boolean inPosition = true;
+	private Parameter current = new Parameter();
+	private Parameter target = new Parameter();
 	
-	private Object lockTarget = new Object();
-	private Object lockPosition = new Object();
+	private int dX = 0;
+	private int dY = 0;
+	private int sX = 1;
+	private int sY = 1;
+	private int sZ = 1;
+	private int BresenhamError = 0;
+	
+	int value = 0x01040412;
+	boolean Stepping = false;
+	
+	private boolean inPosition = true;
 	
 	public boolean inPosition()
 	{
-		synchronized (lockPosition) 
+		synchronized (current) 
 		{
 			return inPosition;
 		}
 	}
 	
-	public void setTarget(boolean XSet, boolean YSet, boolean ZSet, boolean ESet, boolean FSet, int X, int Y, int Z, int E, int F)
+	public void setTarget(Parameter parameters)
 	{
-		synchronized (lockTarget) 
+		synchronized (current) 
 		{
-			if(XSet)
+		
+			//int highestMove = 0;
+			if(parameters.X > Integer.MIN_VALUE)
 			{
-				targetX = X;
+				target.X = (parameters.X*X_STEPS_PER_MILLIMETER)/10;
 			}
-			if(YSet)
+			if(parameters.Y > Integer.MIN_VALUE)
 			{
-				targetY = Y;
+				target.Y = (parameters.Y*Y_STEPS_PER_MILLIMETER)/10;
 			}
-			if(ZSet)
+			if(parameters.Z > Integer.MIN_VALUE)
 			{
-				targetZ = Z;
+				target.Z = (parameters.Z*Z_STEPS_PER_MILLIMETER)/10;
 			}
-			if(ESet)
+			if(parameters.E > Integer.MIN_VALUE)
 			{
-				targetE = E;
+				target.E = (parameters.E*E_STEPS_PER_MILLIMETER)/10;;
 			}
-			if(FSet)
+			if(parameters.F > Integer.MIN_VALUE)
 			{
-				targetF = F;
+				target.F = parameters.F;
 			}
+			
+			if(target.X > current.X)
+			{
+				dX = target.X-current.X;
+				value = setBit(value,8,true);
+				sX = 1;
+			}
+			else
+			{
+				dX = current.X-target.X;
+				value = setBit(value,8,false);
+				sX = -1;
+			}
+			if(target.Y > current.Y)
+			{
+				dY = target.Y-current.Y;
+				value = setBit(value,16,true);
+				sY = 1;
+			}
+			else
+			{
+				dY = current.Y-target.Y;
+				value = setBit(value,16,false);
+				sY = -1;
+			}
+			if(target.Z > current.Z)
+			{
+				value = setBit(value,22,false);
+				value = setBit(value,28,false);
+				sZ = 1;
+			}
+			else
+			{
+				value = setBit(value,22,true);
+				value = setBit(value,28,true);
+				sZ = -1;
+			}
+			BresenhamError = dX-dY;
 		}
 	}
-	
-	int oldvalue = 0x01040412;
-	boolean Stepping = false;
 	
 	@Override
 	public void handleAsyncEvent()
 	{
 		boolean inPosition = true;
-		int value = oldvalue;
 		int switchvalue = LS.ledSwitch;
-		int tempX;
-		int tempY;
-		int tempZ;
-		int tempE;
-		int tempF;
-		synchronized (lockTarget) 
+		synchronized (current) 
 		{
-			tempX = targetX;
-			tempY = targetY;
-			tempZ = targetZ;
-			tempE = targetE;
-			tempF = targetF;
-		}
-		if(Stepping)
-		{
-			value = setBit(value,0,false);
-			value = setBit(value,6,false);
-			value = setBit(value,12,false);
-			value = setBit(value,20,false);
-			value = setBit(value,26,false);
-			Stepping = false;
-		}
-		else
-		{
-			//Feeder
-			value = setBit(value,0,getBitValue(switchvalue,0));
-			value = setBit(value,2,getBitValue(switchvalue,1));
-			//Heater
-			value = setBit(value,23,getBitValue(switchvalue,17));
-			value = setBit(value,25,getBitValue(switchvalue,17));
-			if(X != tempX)
+			if(Stepping)
 			{
-				inPosition = false;
-				value = setBit(value,6,true);
-				boolean direction = false;
-				if(X < tempX)
-				{
-					X++;
-					direction = true;
-				}
-				else
-				{
-					X--;
-				}
-				value = setBit(value,8,direction);
+				value = setBit(value,0,false);
+				value = setBit(value,6,false);
+				value = setBit(value,12,false);
+				value = setBit(value,20,false);
+				value = setBit(value,26,false);
+				Stepping = false;
 			}
-			
-			if(Y != tempY)
+			else
 			{
-				inPosition = false;
-				value = setBit(value,12,true);
-				boolean direction = false;
-				if(Y < tempY)
+				//Feeder
+				value = setBit(value,0,getBitValue(switchvalue,0));
+				value = setBit(value,2,getBitValue(switchvalue,1));
+				//Heater
+				value = setBit(value,23,getBitValue(switchvalue,17));
+				value = setBit(value,25,getBitValue(switchvalue,17));
+				
+				int tempError = BresenhamError*2;
+				if(current.X != target.X)
 				{
-					Y++;
-					direction = true;
+					inPosition = false;
+					if(tempError > -dY)
+					{
+						BresenhamError -= dY;
+						value = setBit(value,6,true);
+						current.X += sX;
+					}
 				}
-				else
+				if(current.Y != target.Y)
 				{
-					Y--;
+					inPosition = false;
+					if(tempError < dX)
+					{
+						BresenhamError += dX;
+						value = setBit(value,12,true);
+						current.Y += sY;
+					}
 				}
-				value = setBit(value,16,direction);
+				if(current.Z != target.Z)
+				{
+					inPosition = false;
+					value = setBit(value,20,true);
+					value = setBit(value,26,true);
+					current.Z += sZ;
+				}
+				Stepping = true;
 			}
-			
-			if(Z != tempZ)
-			{
-				inPosition = false;
-				value = setBit(value,20,true);
-				value = setBit(value,26,true);
-				boolean direction = false;
-				if(Z < tempZ)
-				{
-					Z++;
-					direction = true;
-				}
-				else
-				{
-					Z--;
-				}
-				value = setBit(value,22,direction);
-				value = setBit(value,28,direction);
-			}
-			Stepping = true;
-		}
-		EH.expansionHeader = value;
-		oldvalue = value;
-		synchronized (lockPosition) 
-		{
+			EH.expansionHeader = value;
 			this.inPosition = inPosition;
 		}
 	}

@@ -63,51 +63,56 @@ public class SerialController extends PeriodicEventHandler
 	{
 		if(!initialized)
 		{
+			buffer = CharacterBuffer.getEmptyBuffer();
 			System.out.println("start");
 			initialized = true;
 		}
-		if(buffer == null)
+		//Fill a buffer if possible, but no while loop to avoid missing deadline
+		for (int i = buffer.length; i < CharacterBuffer.BUFFER_WIDTH; i++) 
 		{
-			buffer = CharacterBuffer.getEmptyBuffer();
 			if(buffer == null)
 			{
-				//No empty buffers so cannot store read characters
+				buffer = CharacterBuffer.getEmptyBuffer();
+				if(buffer == null)
+				{
+					//No empty buffers so cannot store read characters
+					return;
+				}
+			}
+			char character;
+			try
+			{
+				if(System.in.available() == 0)
+				{
+					//No input
+					return;
+				}
+				character = (char)System.in.read();
+			}
+			catch(Exception e)
+			{
+				System.out.print("ERROR:");
+				System.out.print(e.getMessage());
 				return;
 			}
-		}
-		char character = '0';
-		try
-		{
-			if(System.in.available() == 0)
+			if(character == ';')
 			{
-				//No input
-				return;
+				comment = true;
 			}
-			character = (char)System.in.read();
-		}
-		catch(Exception e)
-		{
-			System.out.print("ERROR:");
-			System.out.print(e.getMessage());
-			return;
-		}
-		if(character == ';')
-		{
-			comment = true;
-		}
-		else if(character == '\n' || character == '\r')
-		{
-			comment = false;
-			if(buffer.length > 0)
+			else if(character == '\n' || character == '\r')
 			{
-				buffer.returnToPool();
-				buffer = null;
+				comment = false;
+				if(buffer.length > 0)
+				{
+					buffer.returnToPool();
+					buffer = null;
+				}
 			}
-		}
-		else if(buffer.length < CharacterBuffer.BUFFER_WIDTH && !comment)
-		{
-			//Ignore too long command lines. Hopefully full of comments
-			buffer.chars[buffer.length++] = character;
+			else if(buffer.length < CharacterBuffer.BUFFER_WIDTH && !comment)
+			{
+				//Ignore too long command lines. Hopefully full of comments
+				buffer.chars[buffer.length++] = character;
+			}
 		}
 	}
 }

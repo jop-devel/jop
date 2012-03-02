@@ -210,6 +210,11 @@ public class Const {
 	
 	// LED & SWITCH on DE2
 	public static final int LS_BASE = IO_BASE+0x40;
+	
+	// Expansion header on DE2-70
+	public static final int EH_BASE = IO_BASE+0x30;
+	public static final int IIC_BASE = IO_BASE+0x50;
+	
 	// Ethernet interface on DE2
 	public static final int DM9000 = IO_BASE+0x50;
 	

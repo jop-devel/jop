@@ -200,7 +200,7 @@ begin
 			baud_rate => 115200,
 			txf_depth => 2,
 			txf_thres => 1,
-			rxf_depth => 2,
+			rxf_depth => 16,
 			rxf_thres => 1
 		)
 		port map(

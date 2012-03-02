@@ -31,7 +31,6 @@ import javax.safetycritical.StorageParameters;
 
 public class CommandController extends PeriodicEventHandler
 {
-	private static final int DECIMALS = 3;
 	private static CommandController instance;
 	
 	public static CommandController getInstance()
@@ -51,6 +50,7 @@ public class CommandController extends PeriodicEventHandler
 	}
 	
 	private int lineNumber = 0;
+	private Parameter parameters = new Parameter();
 	
 	@Override
 	public void handleAsyncEvent()
@@ -76,25 +76,14 @@ public class CommandController extends PeriodicEventHandler
 		
 		boolean seenGCommand = false;
 		boolean seenMCommand = false;
-		int commandNumber = -1;
+		int commandNumber = Integer.MIN_VALUE;
 		
-		boolean seenXCommand = false;
-		int XValue = 0;
-		
-		boolean seenYCommand = false;
-		int YValue = 0;
-		
-		boolean seenZCommand = false;
-		int ZValue = 0;
-		
-		boolean seenECommand = false;
-		int EValue = 0;
-		
-		boolean seenFCommand = false;
-		int FValue = 0;
-		
-		boolean seenSCommand = false;
-		int SValue = 0;
+		parameters.X = Integer.MIN_VALUE;
+		parameters.Y = Integer.MIN_VALUE;
+		parameters.Z = Integer.MIN_VALUE;
+		parameters.E = Integer.MIN_VALUE;
+		parameters.F = Integer.MIN_VALUE;
+		parameters.S = Integer.MIN_VALUE;
 		
 		boolean seenStarCommand = false;
 		int checksum = 0;
@@ -118,12 +107,10 @@ public class CommandController extends PeriodicEventHandler
 					numberLength++;
 					if(decimalpoint)
 					{
-						decimals++;
-						if(decimals > DECIMALS)
+						//Ignore the rest of the decimals
+						if(decimals < RepRapController.DECIMALS)
 						{
-							resendCommand("To many decimals in number",lineNumber);
-							cb.returnToPool();
-							return;
+							decimals++;
 						}
 					}
 				}
@@ -158,41 +145,39 @@ public class CommandController extends PeriodicEventHandler
 					commandNumber = value;
 					seenMCommand = true;
 					break;
-				case 'X':
-					XValue = value;
-					for (int i = 0; i < DECIMALS-decimals; i++) 
-					{
-						XValue = XValue*10;
-					}
-					seenXCommand = true;
-					break;
-				case 'Y':
-					YValue = value;
-					for (int i = 0; i < DECIMALS-decimals; i++) 
-					{
-						YValue = YValue*10;
-					}
-					seenYCommand = true;
-					break;
-				case 'Z':
-					ZValue = value;
-					for (int i = 0; i < DECIMALS-decimals; i++) 
-					{
-						ZValue = ZValue*10;
-					}
-					seenZCommand = true;
-					break;
-				case 'E':
-					EValue = value;
-					seenECommand = true;
-					break;
 				case 'F':
-					FValue = value;
-					seenFCommand = true;
+					parameters.F = value;
 					break;
 				case 'S':
-					SValue = value;
-					seenSCommand = true;
+					parameters.S = value;
+					break;
+				case 'X':
+					for (int i = 0; i < RepRapController.DECIMALS-decimals; i++) 
+					{
+						value = value*10;
+					}
+					parameters.X = value;
+					break;
+				case 'Y':
+					for (int i = 0; i < RepRapController.DECIMALS-decimals; i++) 
+					{
+						value = value*10;
+					}
+					parameters.Y = value;
+					break;
+				case 'Z':
+					for (int i = 0; i < RepRapController.DECIMALS-decimals; i++) 
+					{
+						value = value*10;
+					}
+					parameters.Z = value;
+					break;
+				case 'E':
+					for (int i = 0; i < RepRapController.DECIMALS-decimals; i++) 
+					{
+						value = value*10;
+					}
+					parameters.E = value;
 					break;
 				case '*':
 					checksum = value;
@@ -216,7 +201,7 @@ public class CommandController extends PeriodicEventHandler
 			{
 				case 0:
 				case 1:
-					G1.enqueue(seenXCommand,seenYCommand,seenZCommand,seenECommand,seenFCommand,XValue,YValue,ZValue,EValue,FValue);
+					G1.enqueue(parameters);
 					break;
 				default:
 					resendCommand("Unknown G command",lineNumber);
