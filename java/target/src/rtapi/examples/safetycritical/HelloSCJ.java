@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2008-2011, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2008-2012, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -58,7 +58,7 @@ public class HelloSCJ extends Mission implements Safelet {
 		PeriodicEventHandler peh = new PeriodicEventHandler(
 				new PriorityParameters(11), new PeriodicParameters(
 						new RelativeTime(0, 0), new RelativeTime(500, 0)),
-				new StorageParameters(10000, 1000, 1000)) {
+				new StorageParameters(10000, 1000, 1000), 500) {
 			int cnt;
 
 			public void handleAsyncEvent() {

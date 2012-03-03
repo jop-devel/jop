@@ -51,7 +51,7 @@ public class ScopeTest implements Safelet
 									peh = new PeriodicEventHandler(
 											new PriorityParameters(1),
 											new PeriodicParameters(null, new RelativeTime(1000,0)),
-											new StorageParameters(25, null, 0, 0)
+											new StorageParameters(1000, null, 0, 0), 500
 										  )
 									{
 										public Object innerObjectReference = null;
@@ -103,6 +103,11 @@ public class ScopeTest implements Safelet
 			};
 		}
 		return seq;
+	}
+
+	@Override
+	public long immortalMemorySize() {
+		return 20000;
 	}
 
 }

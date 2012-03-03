@@ -8,8 +8,8 @@ import javax.safetycritical.StorageParameters;
 public class Voltage extends PeriodicEventHandler{
 
 	public Voltage(PriorityParameters priority, PeriodicParameters parameters,
-			StorageParameters scp) {
-		super(priority, parameters, scp);
+			StorageParameters scp, long privSize) {
+		super(priority, parameters, scp, privSize);
 		// TODO Auto-generated constructor stub
 	}
 

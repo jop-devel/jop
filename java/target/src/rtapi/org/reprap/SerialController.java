@@ -47,7 +47,7 @@ public class SerialController extends PeriodicEventHandler
 	{
 		super(new PriorityParameters(1),
 			  new PeriodicParameters(null, new RelativeTime(1,1000)),
-			  new StorageParameters(10, null, 0, 0));
+			  new StorageParameters(10, null, 0, 0), 5);
 	}
 	
 	char[] chars = new char[32];

@@ -24,7 +24,7 @@ public class MonitorMission extends Mission{
 		
 		StorageParameters tempStorage = new StorageParameters(1000, 1000, 1000);
 				
-		Temperature t = new Temperature(tempPrio, tempPeriod, tempStorage);
+		Temperature t = new Temperature(tempPrio, tempPeriod, tempStorage, 500);
 		t.register();
 		
 		// Voltage handler. All parameters created explicitly
@@ -36,7 +36,7 @@ public class MonitorMission extends Mission{
 		
 		StorageParameters voltStorage = new StorageParameters(1000, 1000, 1000);
 				
-		Voltage v = new Voltage(voltPrio, voltPeriod, voltStorage);
+		Voltage v = new Voltage(voltPrio, voltPeriod, voltStorage, 500);
 		
 		v.register();
 		
