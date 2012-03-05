@@ -37,7 +37,10 @@ public class RepRapController extends PeriodicEventHandler
 	private static final int X_STEPS_PER_MILLIMETER = 40; //= steps*microstepping^-1/(belt_pitch*pulley_teeth) = 200*(1/8)^-1/(5*8)
 	private static final int Y_STEPS_PER_MILLIMETER = X_STEPS_PER_MILLIMETER;
 	private static final int Z_STEPS_PER_MILLIMETER = 160; //= steps/distance_between_threads = 200/1.25
-	private static final int E_STEPS_PER_MILLIMETER = 376; //= steps*gear_ration/(Pi*diameter) = 200*(39/11)/(Pi*0.6)
+	private static final int E_STEPS_PER_MILLIMETER = 37; //= steps*gear_ration/(Pi*diameter) = 200*(39/11)/(Pi*6)
+	private static final int MILLISECONDS_PER_SECOND = 1000;
+	private static final int SECONDS_PER_MINUTE = 60;
+	private static final int E_MAX_FEED_RATE = 800;
 	
 	private static RepRapController instance;
 	
@@ -63,20 +66,20 @@ public class RepRapController extends PeriodicEventHandler
 	LedSwitchFactory LSF = LedSwitchFactory.getLedSwitchFactory();
 	public LedSwitch LS = LSF.getLedSwitch();
 	
-	private Parameter current = new Parameter();
-	private Parameter target = new Parameter();
+	private Parameter current = new Parameter(0,0,0,0,E_MAX_FEED_RATE,200);//Current position
+	private Parameter target = new Parameter(0,0,0,0,E_MAX_FEED_RATE,200);//Target position
+	private Parameter delta = new Parameter(0,0,0,0,0,0);//The move length
+	private Parameter direction = new Parameter(1,1,1,1,0,0);//1 = positive direction, -1 = negative
+	private Parameter error = new Parameter(0,0,0,0,0,0);//Bresenham errors
+	private Parameter max = new Parameter(400000,800000,400000,Integer.MAX_VALUE,0,0);//Max X,Y,Z positions
 	
-	private int dX = 0;
-	private int dY = 0;
-	private int sX = 1;
-	private int sY = 1;
-	private int sZ = 1;
-	private int BresenhamError = 0;
+
+	private int dT = 0; // Time (1 millisecond pulse count) needed to perform move 
 	
 	int value = 0x01040412;
 	boolean Stepping = false;
 	
-	private boolean inPosition = true;
+	private boolean inPosition = false;
 	
 	public boolean inPosition()
 	{
@@ -90,127 +93,218 @@ public class RepRapController extends PeriodicEventHandler
 	{
 		synchronized (current) 
 		{
-		
 			//int highestMove = 0;
+			inPosition = false;
 			if(parameters.X > Integer.MIN_VALUE)
 			{
-				target.X = (parameters.X*X_STEPS_PER_MILLIMETER)/10;
+				target.X = (parameters.X*X_STEPS_PER_MILLIMETER)/(DECIMALS*10);
 			}
 			if(parameters.Y > Integer.MIN_VALUE)
 			{
-				target.Y = (parameters.Y*Y_STEPS_PER_MILLIMETER)/10;
+				target.Y = (parameters.Y*Y_STEPS_PER_MILLIMETER)/(DECIMALS*10);
 			}
 			if(parameters.Z > Integer.MIN_VALUE)
 			{
-				target.Z = (parameters.Z*Z_STEPS_PER_MILLIMETER)/10;
+				target.Z = (parameters.Z*Z_STEPS_PER_MILLIMETER)/(DECIMALS*10);
 			}
 			if(parameters.E > Integer.MIN_VALUE)
 			{
-				target.E = (parameters.E*E_STEPS_PER_MILLIMETER)/10;;
+				target.E = (parameters.E*E_STEPS_PER_MILLIMETER)/(DECIMALS*10);
 			}
-			if(parameters.F > Integer.MIN_VALUE)
+			if((parameters.F > Integer.MIN_VALUE) && (parameters.F > 0))
 			{
 				target.F = parameters.F;
+				current.F = target.F; //No acceleration yet
 			}
 			
 			if(target.X > current.X)
 			{
-				dX = target.X-current.X;
-				value = setBit(value,8,true);
-				sX = 1;
+				delta.X = target.X-current.X;
+				setBit(8,true);
+				direction.X = 1;
 			}
 			else
 			{
-				dX = current.X-target.X;
-				value = setBit(value,8,false);
-				sX = -1;
+				delta.X = current.X-target.X;
+				setBit(8,false);
+				direction.X = -1;
 			}
 			if(target.Y > current.Y)
 			{
-				dY = target.Y-current.Y;
-				value = setBit(value,16,true);
-				sY = 1;
+				delta.Y = target.Y-current.Y;
+				setBit(16,true);
+				direction.Y = 1;
 			}
 			else
 			{
-				dY = current.Y-target.Y;
-				value = setBit(value,16,false);
-				sY = -1;
+				delta.Y = current.Y-target.Y;
+				setBit(16,false);
+				direction.Y = -1;
 			}
 			if(target.Z > current.Z)
 			{
-				value = setBit(value,22,false);
-				value = setBit(value,28,false);
-				sZ = 1;
+				delta.Z = target.Z-current.Z;
+				setBit(22,false);
+				setBit(28,false);
+				direction.Z = 1;
 			}
 			else
 			{
-				value = setBit(value,22,true);
-				value = setBit(value,28,true);
-				sZ = -1;
+				delta.Z = current.Z-target.Z;
+				setBit(22,true);
+				setBit(28,true);
+				direction.Z = -1;
 			}
-			BresenhamError = dX-dY;
+			if(target.E >= current.E)
+			{
+				delta.E = target.E-current.E;
+				setBit(2,true);
+				direction.E = 1;
+			}
+			else
+			{
+				delta.E = current.E-target.E;
+				setBit(2,false);
+				direction.E = -1;
+			}
+			
+			//Already checked for negativity and division by zero. Divide by 2 to account for 1 pulse every other millisecond
+			dT = (delta.E*MILLISECONDS_PER_SECOND*SECONDS_PER_MINUTE)/(current.F*2*E_STEPS_PER_MILLIMETER);
+			
+			
+			//If the target time to extrude is less than the speed of the axis, set the speed to the axis speed
+			if(delta.X > dT)
+			{
+				dT = delta.X;
+			}
+			if(delta.Y > dT)
+			{
+				dT = delta.Y;
+			}
+			if(delta.Z > dT)
+			{
+				dT = delta.Z;
+			}
+			if(delta.E > dT)
+			{
+				dT = delta.E;
+			}
+			error.X = 2*delta.X - dT;
+			error.Y = 2*delta.Y - dT;
+			error.Z = 2*delta.Z - dT;
+			error.E = 2*delta.E - dT;
 		}
 	}
 	
 	@Override
 	public void handleAsyncEvent()
 	{
-		boolean inPosition = true;
 		int switchvalue = LS.ledSwitch;
+		int sensorvalue = EH.expansionHeader;
 		synchronized (current) 
 		{
 			if(Stepping)
 			{
-				value = setBit(value,0,false);
-				value = setBit(value,6,false);
-				value = setBit(value,12,false);
-				value = setBit(value,20,false);
-				value = setBit(value,26,false);
+				setBit(0,false);
+				setBit(6,false);
+				setBit(12,false);
+				setBit(20,false);
+				setBit(26,false);
 				Stepping = false;
 			}
 			else
 			{
-				//Feeder
-				value = setBit(value,0,getBitValue(switchvalue,0));
-				value = setBit(value,2,getBitValue(switchvalue,1));
 				//Heater
-				value = setBit(value,23,getBitValue(switchvalue,17));
-				value = setBit(value,25,getBitValue(switchvalue,17));
+				//setBit(23,getBitValue(switchvalue,17));
+				//setBit(25,getBitValue(switchvalue,17));
 				
-				int tempError = BresenhamError*2;
+				inPosition = true;
 				if(current.X != target.X)
 				{
-					inPosition = false;
-					if(tempError > -dY)
+					if(getBitValue(sensorvalue,7) && direction.X == -1)//Check endstop
 					{
-						BresenhamError -= dY;
-						value = setBit(value,6,true);
-						current.X += sX;
+						current.X = 0;
+						target.X = current.X;
+					}
+					else if(current.X == max.X && direction.X == 1)
+					{
+						target.X = current.X;
+					}
+					else
+					{
+						inPosition = false;
+						if(error.X > 0)
+						{
+							setBit(6,true);
+							current.X += direction.X;
+							error.X -= 2*dT;
+						}
 					}
 				}
 				if(current.Y != target.Y)
 				{
-					inPosition = false;
-					if(tempError < dX)
+					if(getBitValue(sensorvalue,5) && direction.Y == -1)//Check endstop
 					{
-						BresenhamError += dX;
-						value = setBit(value,12,true);
-						current.Y += sY;
+						current.Y = 0;
+						target.Y = current.Y;
+					}
+					else if(current.Y == max.Y && direction.Y == 1)
+					{
+						target.Y = current.Y;
+					}
+					else
+					{
+						inPosition = false;
+						if(error.Y > 0)
+						{
+							setBit(12,true);
+							current.Y += direction.Y;
+							error.Y -= 2*dT;
+						}
 					}
 				}
 				if(current.Z != target.Z)
 				{
+					if(getBitValue(sensorvalue,3) && direction.Z == -1)//Check endstop
+					{
+						current.Z = 0;
+						target.Z = current.Z;
+					}
+					else if(current.Z == max.Z && direction.Z == 1)
+					{
+						target.Z = current.Z;
+					}
+					else
+					{
+						inPosition = false;
+						if(error.Z > 0)
+						{
+							setBit(20,true);
+							setBit(26,true);
+							current.Z += direction.Z;
+							error.Z -= 2*dT;
+						}
+					}
+				}
+				if(current.E != target.E)
+				{
 					inPosition = false;
-					value = setBit(value,20,true);
-					value = setBit(value,26,true);
-					current.Z += sZ;
+					if(error.E > 0)
+					{
+						setBit(0,true);
+						current.E += direction.E;
+						error.E -= 2*dT;
+					}
 				}
 				Stepping = true;
+				error.X += 2*delta.X;
+				error.Y += 2*delta.Y;
+				error.Z += 2*delta.Z;
+				error.E += 2*delta.E;
+				Stepping = true;
 			}
-			EH.expansionHeader = value;
-			this.inPosition = inPosition;
 		}
+		EH.expansionHeader = value;
 	}
 	
 	private static boolean getBitValue(int Value, int BitNumber)
@@ -218,12 +312,13 @@ public class RepRapController extends PeriodicEventHandler
 		return (Value & (1 << BitNumber)) != 0;
 	}
 	
-	private static int setBit(int Number, int BitNumber, boolean Value)
+	private void setBit(int BitNumber, boolean Value)
 	{
 		if(Value)
 		{
-			return Number | (1 << BitNumber);
+			value = value | (1 << BitNumber);
+			return;
 		}
-		return Number & ~(1 << BitNumber);
+		value = value & ~(1 << BitNumber);
 	}
 }

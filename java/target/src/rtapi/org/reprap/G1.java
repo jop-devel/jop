@@ -65,17 +65,19 @@ public class G1 extends Command
 	{
 		RepRapController instance = RepRapController.getInstance();
 		//Execute
+		
 		if(!executed)
 		{
 			instance.setTarget(parameters);
 			executed=true;
 		}
-		
 		if(instance.inPosition())
 		{
+			System.out.println("Executed");
 			returnToPool();
 			return true;
 		}
+		
 		return false;
 	}
 	
