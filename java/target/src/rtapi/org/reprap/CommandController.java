@@ -195,12 +195,13 @@ public class CommandController extends PeriodicEventHandler
 				return;
 			}
 		}
-		if(seenGCommand)
+		else if(seenGCommand)
 		{
 			switch(commandNumber)
 			{
 				case 0:
 				case 1:
+					//Send ok to host here
 					G1.enqueue(parameters);
 					break;
 				default:
@@ -208,6 +209,12 @@ public class CommandController extends PeriodicEventHandler
 					cb.returnToPool();
 					return;
 			}
+		}
+		else
+		{
+			resendCommand("Unknown command!",lineNumber);
+			cb.returnToPool();
+			return;
 		}
 		cb.returnToPool();
 		lineNumber++;
