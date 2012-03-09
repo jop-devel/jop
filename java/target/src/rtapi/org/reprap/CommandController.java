@@ -47,7 +47,7 @@ public class CommandController extends PeriodicEventHandler
 	{
 		super(new PriorityParameters(1),
 			  new PeriodicParameters(null, new RelativeTime(1,0)),
-			  new StorageParameters(50, null, 0, 0));
+			  new StorageParameters(50, null, 0, 0), 5);
 	}
 	
 	private int lineNumber = 0;
