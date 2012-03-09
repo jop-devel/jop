@@ -89,35 +89,54 @@ public class RepRapController extends PeriodicEventHandler
 		}
 	}
 	
+	//Not threadsafe
+	private static void setParameters(Parameter source, Parameter target)
+	{
+		if(source.X > Integer.MIN_VALUE)
+		{
+			target.X = (source.X*X_STEPS_PER_MILLIMETER)/(DECIMALS*10);
+		}
+		if(source.Y > Integer.MIN_VALUE)
+		{
+			target.Y = (source.Y*Y_STEPS_PER_MILLIMETER)/(DECIMALS*10);
+		}
+		if(source.Z > Integer.MIN_VALUE)
+		{
+			target.Z = (source.Z*Z_STEPS_PER_MILLIMETER)/(DECIMALS*10);
+		}
+		if(source.E > Integer.MIN_VALUE)
+		{
+			target.E = (source.E*E_STEPS_PER_MILLIMETER)/(DECIMALS*10);
+		}
+		if(source.F > 0)
+		{
+			target.F = source.F;
+		}
+	}
+	
+	public void setPosition(Parameter parameters)
+	{
+		synchronized (current) 
+		{
+			setParameters(parameters,current);
+			target.X = current.X;
+			target.Y = current.Y;
+			target.Z = current.Z;
+			target.E = current.E;
+			target.F = current.F;
+			target.S = current.S;
+		}
+	}
+	
 	public void setTarget(Parameter parameters)
 	{
 		synchronized (current) 
 		{
 			//int highestMove = 0;
 			inPosition = false;
-			if(parameters.X > Integer.MIN_VALUE)
-			{
-				target.X = (parameters.X*X_STEPS_PER_MILLIMETER)/(DECIMALS*10);
-			}
-			if(parameters.Y > Integer.MIN_VALUE)
-			{
-				target.Y = (parameters.Y*Y_STEPS_PER_MILLIMETER)/(DECIMALS*10);
-			}
-			if(parameters.Z > Integer.MIN_VALUE)
-			{
-				target.Z = (parameters.Z*Z_STEPS_PER_MILLIMETER)/(DECIMALS*10);
-			}
-			if(parameters.E > Integer.MIN_VALUE)
-			{
-				target.E = (parameters.E*E_STEPS_PER_MILLIMETER)/(DECIMALS*10);
-			}
-			if((parameters.F > Integer.MIN_VALUE) && (parameters.F > 0))
-			{
-				target.F = parameters.F;
-				current.F = target.F; //No acceleration yet
-			}
-			
-			if(target.X > current.X)
+			setParameters(parameters,target);
+			current.F = target.F; //No acceleration yet
+			if(target.X >= current.X)
 			{
 				delta.X = target.X-current.X;
 				setBit(8,true);
@@ -129,7 +148,7 @@ public class RepRapController extends PeriodicEventHandler
 				setBit(8,false);
 				direction.X = -1;
 			}
-			if(target.Y > current.Y)
+			if(target.Y >= current.Y)
 			{
 				delta.Y = target.Y-current.Y;
 				setBit(16,true);
@@ -141,7 +160,7 @@ public class RepRapController extends PeriodicEventHandler
 				setBit(16,false);
 				direction.Y = -1;
 			}
-			if(target.Z > current.Z)
+			if(target.Z >= current.Z)
 			{
 				delta.Z = target.Z-current.Z;
 				setBit(22,false);
@@ -170,7 +189,12 @@ public class RepRapController extends PeriodicEventHandler
 			
 			//Already checked for negativity and division by zero. Divide by 2 to account for 1 pulse every other millisecond
 			dT = (delta.E*MILLISECONDS_PER_SECOND*SECONDS_PER_MINUTE)/(current.F*2*E_STEPS_PER_MILLIMETER);
-			
+			int tempdT = (delta.X*MILLISECONDS_PER_SECOND*SECONDS_PER_MINUTE)/(current.F*2*X_STEPS_PER_MILLIMETER);
+			dT = (tempdT > dT) ? tempdT : dT;
+			tempdT = (delta.Y*MILLISECONDS_PER_SECOND*SECONDS_PER_MINUTE)/(current.F*2*Y_STEPS_PER_MILLIMETER);
+			dT = (tempdT > dT) ? tempdT : dT;
+			tempdT = (delta.Z*MILLISECONDS_PER_SECOND*SECONDS_PER_MINUTE)/(current.F*2*Z_STEPS_PER_MILLIMETER);
+			dT = (tempdT > dT) ? tempdT : dT;
 			
 			//If the target time to extrude is less than the speed of the axis, set the speed to the axis speed
 			if(delta.X > dT)
@@ -200,7 +224,7 @@ public class RepRapController extends PeriodicEventHandler
 	public void handleAsyncEvent()
 	{
 		int switchvalue = LS.ledSwitch;
-		int sensorvalue = EH.expansionHeader;
+		int sensorvalue = switchvalue;//EH.expansionHeader;
 		synchronized (current) 
 		{
 			if(Stepping)
@@ -221,7 +245,7 @@ public class RepRapController extends PeriodicEventHandler
 				inPosition = true;
 				if(current.X != target.X)
 				{
-					if(getBitValue(sensorvalue,7) && direction.X == -1)//Check endstop
+					if(!getBitValue(sensorvalue,7) && direction.X == -1)//Check endstop
 					{
 						current.X = 0;
 						target.X = current.X;
@@ -243,7 +267,7 @@ public class RepRapController extends PeriodicEventHandler
 				}
 				if(current.Y != target.Y)
 				{
-					if(getBitValue(sensorvalue,5) && direction.Y == -1)//Check endstop
+					if(!getBitValue(sensorvalue,5) && direction.Y == -1)//Check endstop
 					{
 						current.Y = 0;
 						target.Y = current.Y;
@@ -265,7 +289,7 @@ public class RepRapController extends PeriodicEventHandler
 				}
 				if(current.Z != target.Z)
 				{
-					if(getBitValue(sensorvalue,3) && direction.Z == -1)//Check endstop
+					if(!getBitValue(sensorvalue,3) && direction.Z == -1)//Check endstop
 					{
 						current.Z = 0;
 						target.Z = current.Z;
@@ -296,7 +320,6 @@ public class RepRapController extends PeriodicEventHandler
 						error.E -= 2*dT;
 					}
 				}
-				Stepping = true;
 				error.X += 2*delta.X;
 				error.Y += 2*delta.Y;
 				error.Z += 2*delta.Z;

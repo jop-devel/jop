@@ -31,6 +31,7 @@ import javax.safetycritical.StorageParameters;
 
 public class CommandController extends PeriodicEventHandler
 {
+	private static final int MAX_NUMBER_LENGTH = 8;
 	private static CommandController instance;
 	
 	public static CommandController getInstance()
@@ -45,22 +46,135 @@ public class CommandController extends PeriodicEventHandler
 	private CommandController()
 	{
 		super(new PriorityParameters(1),
-			  new PeriodicParameters(null, new RelativeTime(10,0)),
+			  new PeriodicParameters(null, new RelativeTime(1,0)),
 			  new StorageParameters(50, null, 0, 0));
 	}
 	
 	private int lineNumber = 0;
 	private Parameter parameters = new Parameter();
+	private char[] buffer = new char[64];
+	private int chars = 0;
+	private boolean ready = false;
+	private boolean comment = false;
+	private boolean initialized = false;
+	private int timeout = -1;
+	private Object lock = new Object();
+	
+	//If the host isn't waiting for the M110 ok, there is no guarantee what the line number will be  
+	public void setLineNumber(int lineNumber)
+	{
+		this.lineNumber = lineNumber;
+	}
+	
+	public void resendCommand(String message)
+	{
+		synchronized (lock) 
+		{
+			System.out.print("rs ");
+			if(lineNumber >= 0)
+			{
+				System.out.print(lineNumber);
+			}
+			System.out.print(" //");
+			System.out.print(message);
+			System.out.print("\n\r");
+		}
+	}
+	
+	public void confirmCommand(String message)
+	{
+		synchronized (lock) 
+		{
+			System.out.print("ok ");
+			System.out.print("//");
+			if(lineNumber >= 0)
+			{
+				System.out.print(lineNumber);
+			}
+			if(message != null)
+			{
+				System.out.print(message);
+			}
+			System.out.print("\n\r");
+		}
+	}
+	
+	private boolean readSerial()
+	{
+		if(ready)
+		{
+			chars = 0;
+			ready = false;
+			comment = false;
+		}
+		for (int i = chars; i < buffer.length; i++) 
+		{
+			char character;
+			try
+			{
+				if(System.in.available() == 0)
+				{
+					//No input
+					System.out.print("");
+					return false;
+				}
+				character = (char)System.in.read();
+			}
+			catch(Exception e)
+			{
+				System.out.print("ERROR:");
+				System.out.print(e.getMessage());
+				return false;
+			}
+			if(character == ';')
+			{
+				comment = true;
+			}
+			else if(character == '\n' || character == '\r')
+			{
+				comment = false;
+				if(chars > 0)
+				{
+					ready = true;
+					return true;
+				}
+			}
+			else if(chars < buffer.length && !comment)
+			{
+				//Ignore too long command lines. Hopefully full of comments
+				buffer[chars++] = character;
+			}
+		}
+		chars = 0;
+		ready = false;
+		comment = false;
+		resendCommand("command too long");
+		return false;
+	}
 	
 	@Override
 	public void handleAsyncEvent()
 	{
-		CharacterBuffer cb = CharacterBuffer.getReadyBuffer();
-		if(cb == null)
+		if(!initialized)
 		{
-			//No commands to process
+			initialized = true;
+			System.out.print("start\n\r");
+		}
+		if(timeout == 500)
+		{
+			timeout = -1;
+			resendCommand("Command buffer full");
+		}
+		else if(timeout >= 0)
+		{
+			timeout++;
 			return;
 		}
+		if(!readSerial())
+		{
+			return;
+		}
+		
 		/*for (int i = 0; i < cb.length; i++) 
 		{
 			System.out.print(cb.chars[i]);
@@ -76,6 +190,7 @@ public class CommandController extends PeriodicEventHandler
 		
 		boolean seenGCommand = false;
 		boolean seenMCommand = false;
+		boolean seenTCommand = false;
 		int commandNumber = Integer.MIN_VALUE;
 		
 		parameters.X = Integer.MIN_VALUE;
@@ -89,26 +204,26 @@ public class CommandController extends PeriodicEventHandler
 		int checksum = 0;
 		
 		
-		while(index < cb.length)
+		while(index < chars)
 		{
-			char character = cb.chars[index];
+			char character = buffer[index];
 			char command = character;
 			index++;
 			int numberLength = 0;
 			int value = 0;
 			boolean decimalpoint = false;
 			int decimals = 0;
-			while(index < cb.length)
+			while(index < chars)
 			{
-				character = cb.chars[index];
+				character = buffer[index];
 				if(Character.digit(character, 10) > -1)
 				{
-					value = value * 10 + character-48;//Numbers start at character position 48
-					numberLength++;
-					if(decimalpoint)
+					//Ignore the rest of the decimals
+					if(numberLength < MAX_NUMBER_LENGTH && (!decimalpoint || decimals < RepRapController.DECIMALS))
 					{
-						//Ignore the rest of the decimals
-						if(decimals < RepRapController.DECIMALS)
+						value = value * 10 + character-48;//Numbers start at character position 48
+						numberLength++;
+						if(decimalpoint)
 						{
 							decimals++;
 						}
@@ -151,6 +266,10 @@ public class CommandController extends PeriodicEventHandler
 				case 'S':
 					parameters.S = value;
 					break;
+				case 'T':
+					commandNumber = value;
+					seenTCommand = true;
+					break;
 				case 'X':
 					for (int i = 0; i < RepRapController.DECIMALS-decimals; i++) 
 					{
@@ -186,49 +305,86 @@ public class CommandController extends PeriodicEventHandler
 				default:
 			}
 		}
+		
 		if(seenNCommand && seenStarCommand)
 		{
-			if(!verifyChecksum(cb.chars,cb.length,checksum))
+			if(!verifyChecksum(buffer,chars,checksum))
 			{
-				resendCommand("Incorrect checksum",lineNumber);
-				cb.returnToPool();
+				resendCommand("Incorrect checksum");
 				return;
 			}
 		}
-		else if(seenGCommand)
+		if(seenGCommand)
 		{
 			switch(commandNumber)
 			{
-				case 0:
+				case 0://Same as G1
 				case 1:
-					//Send ok to host here
-					G1.enqueue(parameters);
+					//Buffered command
+					if(!G1.enqueue(parameters))
+					{
+						timeout = 0;
+						return;
+					}
+					confirmCommand(null);
+					break;
+				case 21:
+					G21.enqueue();
+					break;
+				case 28:
+					//Buffered command
+					if(!G28.enqueue(parameters))
+					{
+						timeout = 0;
+						return;
+					}
+					confirmCommand(null);
+					break;
+				case 90:
+					G90.enqueue();
+					break;
+				case 92:
+					G92.enqueue(parameters);
 					break;
 				default:
-					resendCommand("Unknown G command",lineNumber);
-					cb.returnToPool();
+					resendCommand("Unknown4 G command");
 					return;
 			}
 		}
+		else if(seenMCommand)
+		{
+			switch(commandNumber)
+			{
+				case 105:
+					M105.enqueue();
+					break;
+				case 109:
+					M109.enqueue();
+					break;
+				case 110:
+					M110.enqueue(lineNumber);
+					break;
+				case 113:
+					M113.enqueue();
+					break;
+				case 140:
+					M140.enqueue();
+					break;
+				default:
+					resendCommand("Unknown3 M command");
+					return;
+			}
+		}
+		else if(seenTCommand)
+		{
+			T.enqueue(commandNumber);
+		}
 		else
 		{
-			resendCommand("Unknown command!",lineNumber);
-			cb.returnToPool();
+			resendCommand("Unknown2 command!");
 			return;
 		}
-		cb.returnToPool();
 		lineNumber++;
-	}
-	
-	private static void resendCommand(String message, int lineNumber)
-	{
-		if(lineNumber >= 0)
-		{
-			System.out.print(lineNumber);
-		}
-		System.out.print("//");
-		System.out.print(message);
-		System.out.print("\n");
 	}
 	
 	private static boolean verifyChecksum(char[] chars, int length, int checksum)

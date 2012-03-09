@@ -218,6 +218,7 @@ set_location_assignment PIN_E27 -to GPIO_0[4]
 set_location_assignment PIN_L22 -to GPIO_0[24]
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name VHDL_FILE "../../vhdl/scio/scio_DE2-70_reprap.vhd"
 set_global_assignment -name VHDL_FILE "../../vhdl/top/jop_de2-70reprap.vhd"
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/iic/i2c_master_top.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/iic/i2c_master_byte_ctrl.vhd
@@ -225,7 +226,6 @@ set_global_assignment -name VHDL_FILE ../../vhdl/scio/iic/i2c_master_bit_ctrl.vh
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc2wb.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_pack.vhd
 set_global_assignment -name VHDL_FILE "../../vhdl/scio/sc_DE2-70_expansionheader.vhd"
-set_global_assignment -name VHDL_FILE "../../vhdl/scio/scio_DE2-70_RepRap.vhd"
 set_global_assignment -name SDC_FILE jop.sdc
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_global.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_de2.vhd

@@ -94,7 +94,7 @@ public class Main implements Safelet
 				}
 				if(peh2 == null)
 				{
-					peh2 = SerialController.getInstance();
+					//peh2 = SerialController.getInstance();
 					//peh2 = new IICController();
 				}
 				if(peh3 == null)
