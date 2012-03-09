@@ -8,8 +8,8 @@ import javax.safetycritical.StorageParameters;
 public class Temperature extends PeriodicEventHandler {
 	
 	public Temperature(PriorityParameters priority,
-			PeriodicParameters parameters, StorageParameters scp) {
-		super(priority, parameters, scp);
+			PeriodicParameters parameters, StorageParameters scp, long privSize) {
+		super(priority, parameters, scp, privSize);
 		// TODO Auto-generated constructor stub
 	}
 

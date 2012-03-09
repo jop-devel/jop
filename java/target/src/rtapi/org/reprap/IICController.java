@@ -55,7 +55,7 @@ public class IICController extends PeriodicEventHandler
 	{
 		super(new PriorityParameters(1),
 			  new PeriodicParameters(null, new RelativeTime(500,0)),
-			  new StorageParameters(10, null, 0, 0));
+			  new StorageParameters(10, null, 0, 0), 5);
 	}
 	
 	@Override

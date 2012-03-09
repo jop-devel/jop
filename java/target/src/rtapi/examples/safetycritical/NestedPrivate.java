@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2008-2011, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2008-2012, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,14 +18,12 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package udclock;
+package examples.safetycritical;
 
 import java.io.IOException;
 import java.io.OutputStream;
 
 import javax.microedition.io.Connector;
-import javax.realtime.AbsoluteTime;
-import javax.realtime.Clock;
 import javax.realtime.PeriodicParameters;
 import javax.realtime.PriorityParameters;
 import javax.realtime.RelativeTime;
@@ -33,17 +31,15 @@ import javax.safetycritical.*;
 import javax.safetycritical.io.SimplePrintStream;
 
 /**
- * A minimal SCJ application - The SCJ Hello World
+ * Test nested private memories
  * 
  * @author Martin Schoeberl
  * 
  */
-public class HelloClock extends Mission implements Safelet {
+public class NestedPrivate extends Mission implements Safelet {
 
 	// work around...
-	static HelloClock single;
-	
-	static PassiveClock counter;
+	static NestedPrivate single;
 
 	static SimplePrintStream out;
 
@@ -58,20 +54,29 @@ public class HelloClock extends Mission implements Safelet {
 			throw new Error("No console available");
 		}
 		out = new SimplePrintStream(os);
-		
-		counter = new PassiveClock();
 
 		PeriodicEventHandler peh = new PeriodicEventHandler(
 				new PriorityParameters(11), new PeriodicParameters(
-						new RelativeTime(0, 0), new RelativeTime(1000, 0)),
+						new RelativeTime(0, 0), new RelativeTime(500, 0)),
 				new StorageParameters(10000, 1000, 1000), 500) {
 			int cnt;
 
 			public void handleAsyncEvent() {
-				AbsoluteTime time = Clock.getRealtimeClock().getTime();
-				out.print("It is " + time.getMilliseconds());
-				out.println(" counter " + counter.getTime().getMilliseconds());
+				out.println("Ping " + cnt);
 				++cnt;
+				Runnable r = new Runnable() {
+					public void run() {
+						for (int i=0; i<3; ++i) {
+							out.print(" iter " + i);							
+						}
+					}
+				};
+				// Generate more garbage
+				for (int i=0; i<10; ++i) {
+					// this would generate too much garbage in the initial private memory
+					// r.run();
+					ManagedMemory.enterPrivateMemory(500, r);
+				}
 				if (cnt > 5) {
 					// getCurrentMission is not yet working
 					single.requestTermination();
@@ -106,8 +111,10 @@ public class HelloClock extends Mission implements Safelet {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		Terminal.getTerminal().writeln("Hello SCJ World!");
-		single = new HelloClock();
+		// in SCJ we don't have System.out,
+		// but for now it's nice for debugging
+		System.out.println("Hello");
+		single = new NestedPrivate();
 		JopSystem.startMission(single);
 	}
 

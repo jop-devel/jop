@@ -45,7 +45,7 @@ public abstract class Command
 		{
 			worker = new PeriodicEventHandler(new PriorityParameters(1),
 					new PeriodicParameters(null, new RelativeTime(10,0)),
-					new StorageParameters(10, null, 0, 0))
+					new StorageParameters(10, null, 0, 0), 5)
 			{
 				@Override
 				public void handleAsyncEvent()

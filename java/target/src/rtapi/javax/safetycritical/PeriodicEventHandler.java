@@ -67,15 +67,15 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 	@SCJAllowed
 	@SCJRestricted(phase = INITIALIZATION)
 	public PeriodicEventHandler(PriorityParameters priority,
-			PeriodicParameters parameters, StorageParameters scp) {
-		this(priority, parameters, scp, "");
+			PeriodicParameters parameters, StorageParameters scp, long scopeSize) {
+		this(priority, parameters, scp, scopeSize, "");
 	}
 
 	@MemoryAreaEncloses(inner = { "this", "this", "this", "this" }, outer = {
 			"priority", "parameters", "scp", "name" })
 	@SCJAllowed(LEVEL_1)
 	public PeriodicEventHandler(PriorityParameters priority,
-			PeriodicParameters release, StorageParameters scp, String name) {
+			PeriodicParameters release, StorageParameters scp, long scopeSize, String name) {
 		// TODO: what are we doing with this Managed thing?
 		super(priority, release, scp, name);
 		this.priority = priority;
@@ -97,10 +97,7 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 			off = Integer.MAX_VALUE;
 		}
 		
-		// TODO: this is a very quick hack to get privat memory
-		// working. The StorageParameters is incomplete. Was this
-		// updated in the spec?
-		privMem = new Memory((int) scp.getTotalBackingStoreSize(), (int) scp.getTotalBackingStoreSize());
+		privMem = new Memory((int) scopeSize, (int) scp.getTotalBackingStoreSize());
 
 		final Runnable runner = new Runnable() {
 			@Override

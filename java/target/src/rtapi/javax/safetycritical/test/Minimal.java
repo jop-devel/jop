@@ -3,7 +3,6 @@ package javax.safetycritical.test;
 import javax.safetycritical.JopSystem;
 import javax.safetycritical.MissionSequencer;
 
-import edu.purdue.scjtck.bench.clock.ClockAccuracy;
 import joprt.RtThread;
 
 

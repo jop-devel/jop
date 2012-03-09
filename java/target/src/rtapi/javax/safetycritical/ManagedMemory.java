@@ -5,6 +5,8 @@ import javax.realtime.SizeEstimator;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
 
+import com.jopdesign.sys.Memory;
+
 /**
  * This class is not 'really' visible. Do we need it?
  * We need it for the static methods and enterPrivateMemoery.
@@ -48,7 +50,8 @@ public abstract class ManagedMemory extends LTMemory {
 	 */
 	@SCJAllowed
 	public static void enterPrivateMemory(long size, Runnable logic) {
-
+		Memory m = Memory.getCurrentMemory();
+		m.enterPrivateMemory((int) size, logic); 
 	}
 
 	/**
