@@ -117,13 +117,25 @@ class JVM {
 			
 		synchronized (GC.mutex) {
 			if (Config.USE_SCOPES) {
-				if (Config.USE_SCOPECHECKS) {
-				if (((value & 0x3E000000) >>> 25) > ((ref & 0x3E000000) >>> 25)){
-					GC.log("Illegal array reference");
+				
+				if (Config.USE_SCOPECHECKS){
+					
+					// Pointer version
+					//	if (((value & 0x3E000000) >>> 25) > ((ref & 0x3E000000) >>> 25)){
+					//	if ((value >>> 25) > (ref  >>> 25)){
+					//	GC.log("Illegal array reference");
+					//	}
+				
+					// Handler version (default)
+					int ref_level; 
+					int val_level; 
+					ref_level = Native.rdMem(ref + GC.OFF_SPACE);
+					val_level = Native.rdMem(value + GC.OFF_SPACE);
+					if (val_level > ref_level){
+						GC.log("Illegal array reference");
+					};
 				}
 
-//					JVMHelp.scopeCheck(ref, value);
-				}
 			} else {
 				// snapshot-at-beginning barrier
 				int oldVal = Native.arrayLoad(ref, index);
@@ -1109,14 +1121,22 @@ class JVM {
 		synchronized (GC.mutex) {
 			if (Config.USE_SCOPES) {
 				if (Config.USE_SCOPECHECKS) {
-					/**
-					 * val cannot be in a scoped region because if the scoped area is freed, then
-					 * we get a dangling reference in the modified static field
-					 */
-					if (((val & 0x3E000000) >>> 25) != 0){
+					
+					// Pointer version
+					//	if (((val & 0x3E000000) >>> 25) != 0){
+					//	if ((val >>> 25) != 0){
+					//	GC.log("Illegal static reference");
+					//}
+
+				// Handler version (Default)
+					int val_level; 
+					val_level = Native.rdMem(val + GC.OFF_SPACE);
+					if (val_level != 0){
 						GC.log("Illegal static reference");
-					}
+						}
+				
 				}
+
 			} else {
 				// snapshot-at-beginning barrier
 				int oldVal = Native.getStatic(addr);
@@ -1136,14 +1156,30 @@ class JVM {
 	private static void f_resE2() { JVMHelp.noim();}
 	private static void f_putfield_ref(int ref, int value, int index) {
 		
-		synchronized (GC.mutex) {			
+		synchronized (GC.mutex) {
+			
 			if (Config.USE_SCOPES) {
+
 				if (Config.USE_SCOPECHECKS) {
-					if (((value & 0x3E000000) >>> 25) > ((ref & 0x3E000000) >>> 25)){
+					
+					// Pointer version
+					//	if (((value & 0x3E000000) >>> 25) > ((ref & 0x3E000000) >>> 25)){
+					//	if ((value >>> 25) > (ref  >>> 25)){
+					//	GC.log("Illegal field reference");
+					//	}
+
+				// Handler version (default)
+					int ref_level; 
+					int val_level; 
+					ref_level = Native.rdMem(ref + GC.OFF_SPACE);
+					val_level = Native.rdMem(value + GC.OFF_SPACE);
+					if (val_level > ref_level){
 						GC.log("Illegal field reference");
 					}
 				}
-			} else {
+				
+			} 
+			else {
 				// snapshot-at-beginning barrier
 				int oldVal = Native.getField(ref, index);
 				// Is it white?

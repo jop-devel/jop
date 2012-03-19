@@ -573,8 +573,13 @@ public class GC {
 				if (Config.ADD_REF_INFO){
 					ptr = ptr | (sc.level << 25);	
 				}
+				
 				//Add scope info to object's handler field
 				Native.wrMem(sc.level, ptr+OFF_SPACE);
+				
+				// Add scoped memory area info into objects handle
+				// TODO: Choose an appropriate field since we also want scope level info in handle 
+				//Native.wrMem( Native.toInt(sc), ptr+OFF_SPACE);
 			}
 			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
 			Native.wrMem(cons+Const.CLASS_HEADR, ptr+OFF_MTAB_ALEN);
@@ -692,8 +697,13 @@ public class GC {
 				if (Config.ADD_REF_INFO){
 					ptr = ptr | (sc.level << 25);	
 				}
+				
 				//Add scope info to array's handler field
 				Native.wrMem(sc.level, ptr+OFF_SPACE);
+				
+				// Add scoped memory area info into array handle
+				// TODO: Choose an appropriate field since we also want scope level info in handle 
+				//Native.wrMem( Native.toInt(sc), ptr+OFF_SPACE);
 			}
 			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
 			Native.wrMem(arrayLength, ptr+OFF_MTAB_ALEN);
