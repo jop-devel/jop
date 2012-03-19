@@ -121,7 +121,6 @@ class JVM {
 				if (Config.USE_SCOPECHECKS){
 					
 					// Pointer version
-					//	if (((value & 0x3E000000) >>> 25) > ((ref & 0x3E000000) >>> 25)){
 					//	if ((value >>> 25) > (ref  >>> 25)){
 					//	GC.log("Illegal array reference");
 					//	}
@@ -1123,7 +1122,6 @@ class JVM {
 				if (Config.USE_SCOPECHECKS) {
 					
 					// Pointer version
-					//	if (((val & 0x3E000000) >>> 25) != 0){
 					//	if ((val >>> 25) != 0){
 					//	GC.log("Illegal static reference");
 					//}
@@ -1163,7 +1161,6 @@ class JVM {
 				if (Config.USE_SCOPECHECKS) {
 					
 					// Pointer version
-					//	if (((value & 0x3E000000) >>> 25) > ((ref & 0x3E000000) >>> 25)){
 					//	if ((value >>> 25) > (ref  >>> 25)){
 					//	GC.log("Illegal field reference");
 					//	}
