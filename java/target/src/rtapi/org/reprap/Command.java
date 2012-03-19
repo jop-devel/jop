@@ -44,7 +44,7 @@ public abstract class Command
 		if(worker == null)
 		{
 			worker = new PeriodicEventHandler(new PriorityParameters(1),
-					new PeriodicParameters(null, new RelativeTime(5,0)),
+					new PeriodicParameters(null, new RelativeTime(10,0)),
 					new StorageParameters(10, null, 0, 0), 5)
 			{
 				@Override
@@ -59,6 +59,7 @@ public abstract class Command
 					{
 						if(temp.execute())
 						{
+							temp.respond();
 							synchronized (lock) 
 							{
 								first = temp.next;
@@ -101,6 +102,6 @@ public abstract class Command
 	public void respond()
 	{
 		//responds with rs
-		
+		CommandController.getInstance().confirmCommand("");
 	}
 }

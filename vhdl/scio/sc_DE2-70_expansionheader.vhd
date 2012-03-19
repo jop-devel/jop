@@ -70,6 +70,10 @@ begin
 		end if;
 	end process;
 	
+	GPIO_0(3) <= 'Z';
+	GPIO_0(5) <= 'Z';
+	GPIO_0(7) <= 'Z';
+	
 	sc_rd_data(2 downto 0) <= (others => '0');
 	sc_rd_data(3) <= GPIO_0(3); --Endstop1
 	sc_rd_data(4) <= '0';

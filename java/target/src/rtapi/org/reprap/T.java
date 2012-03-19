@@ -23,34 +23,21 @@
 */
 package org.reprap;
 
-public class Parameter 
+//Set tool
+public class T extends Command
 {
+	private static T instance = new T();//Unbuffered command so only single instance
 	
-	public int X;
-	public int Y;
-	public int Z;
-	public int E;
-	public int F;
-	public int S;
-	
-	public Parameter(int X, int Y, int Z, int E, int F ,int S)
+	public static boolean enqueue(int toolid)
 	{
-		this.X = X;
-		this.Y = Y;
-		this.Z = Z;
-		this.E = E;
-		this.F = F;
-		this.S = S;
+		Command.enqueue(instance);
+		return true;
 	}
 	
-	public Parameter()
+	@Override
+	public boolean execute() 
 	{
-		this.X = 0;
-		this.Y = 0;
-		this.Z = 0;
-		this.E = 0;
-		this.F = 0;
-		this.S = 0;
+		//This command is supposed to set which tool is used. There is only support for a single tool so do nothing
+		return true;
 	}
-	
 }

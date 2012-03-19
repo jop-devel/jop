@@ -23,34 +23,25 @@
 */
 package org.reprap;
 
-public class Parameter 
+public class M110 extends Command
 {
+	private static M110 instance = new M110();//Unbuffered command so only single instance
 	
-	public int X;
-	public int Y;
-	public int Z;
-	public int E;
-	public int F;
-	public int S;
+	private int lineNumber;
 	
-	public Parameter(int X, int Y, int Z, int E, int F ,int S)
+	//The G1 command is put into the Command queue, NOT the G1 pool
+	public static boolean enqueue(int lineNumber)
 	{
-		this.X = X;
-		this.Y = Y;
-		this.Z = Z;
-		this.E = E;
-		this.F = F;
-		this.S = S;
+		instance.lineNumber = lineNumber;
+		Command.enqueue(instance);
+		return true;
 	}
 	
-	public Parameter()
+	@Override
+	public boolean execute() 
 	{
-		this.X = 0;
-		this.Y = 0;
-		this.Z = 0;
-		this.E = 0;
-		this.F = 0;
-		this.S = 0;
+		CommandController instance = CommandController.getInstance();
+		instance.setLineNumber(lineNumber);
+		return true;
 	}
-	
 }

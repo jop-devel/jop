@@ -23,34 +23,20 @@
 */
 package org.reprap;
 
-public class Parameter 
+public class G21 extends Command
 {
+	private static G21 instance = new G21();//Unbuffered command so only single instance
 	
-	public int X;
-	public int Y;
-	public int Z;
-	public int E;
-	public int F;
-	public int S;
-	
-	public Parameter(int X, int Y, int Z, int E, int F ,int S)
+	public static boolean enqueue()
 	{
-		this.X = X;
-		this.Y = Y;
-		this.Z = Z;
-		this.E = E;
-		this.F = F;
-		this.S = S;
+		Command.enqueue(instance);
+		return true;
 	}
 	
-	public Parameter()
+	@Override
+	public boolean execute() 
 	{
-		this.X = 0;
-		this.Y = 0;
-		this.Z = 0;
-		this.E = 0;
-		this.F = 0;
-		this.S = 0;
+		//This command is supposed to set the units to millimeters and this is currently the only option
+		return true;
 	}
-	
 }

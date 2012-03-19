@@ -23,26 +23,26 @@
 */
 package org.reprap;
 
-public class G1 extends Command
+public class G28 extends Command
 {
-	private static final int POOL_SIZE = 30;
-	private static G1 first;
-	private static G1 last;
+	private static final int POOL_SIZE = 15;
+	private static G28 first;
+	private static G28 last;
 	private static Object lock = new Object();
 	private static boolean initialized = initialize(); //Ensures that pool is created in immortal memory so that all PEH have access
 	
-	private G1 next;
+	private G28 next;
 	private Parameter parameters = new Parameter();
 	private boolean executed = false;
 	
 	private static boolean initialize()
 	{
 		//No need for mutex as the pool is empty
-		G1 current = new G1();
+		G28 current = new G28();
 		first = current;
 		for(int i = 0; i < POOL_SIZE-1; i++)
 		{
-			G1 temp = new G1();
+			G28 temp = new G28();
 			current.next = temp;
 			current = temp;
 		}
@@ -51,10 +51,10 @@ public class G1 extends Command
 		return true;
 	}
 	
-	//The G1 command is put into the Command queue, NOT the G1 pool
+	//The G28 command is put into the Command queue, NOT the G28 pool
 	public static boolean enqueue(Parameter parameters)
 	{
-		G1 temp;
+		G28 temp;
 		synchronized (lock) 
 		{
 			if(first == null)
@@ -69,12 +69,19 @@ public class G1 extends Command
 				last = null;
 			}
 		}
-		temp.parameters.X = parameters.X;
-		temp.parameters.Y = parameters.Y;
-		temp.parameters.Z = parameters.Z;
-		temp.parameters.E = parameters.E;
-		temp.parameters.F = parameters.F;
-		temp.parameters.S = parameters.S;
+		//Try to reach endstops by moving towards them 1 meter
+		if(parameters.X != Integer.MIN_VALUE)
+		{
+			temp.parameters.X = 0;//-1000*RepRapController.DECIMALS*10;
+		}
+		if(parameters.Y != Integer.MIN_VALUE)
+		{
+			temp.parameters.Y = 0;//-1000*RepRapController.DECIMALS*10;
+		}
+		if(parameters.Z != Integer.MIN_VALUE)
+		{
+			temp.parameters.Z = 0;//-1000*RepRapController.DECIMALS*10;
+		}
 		temp.executed = false;
 		Command.enqueue(temp);
 		return true;
@@ -116,7 +123,7 @@ public class G1 extends Command
 			next = null;
 		}
 	}
-
+	
 	@Override
 	public void respond() 
 	{
