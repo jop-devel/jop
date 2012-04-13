@@ -140,7 +140,9 @@ public class StorageParameters
   public StorageParameters(long totalBackingStore,
                            long nativeStackSize, long javaStackSize,
                            int messageLength,
-                           int stackTraceLength) { }
+                           int stackTraceLength) {
+	  this.totalBackingStore = totalBackingStore;	  
+  }
 
   
   /**
