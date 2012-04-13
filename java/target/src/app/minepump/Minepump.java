@@ -57,6 +57,7 @@ public class Minepump implements Safelet {
 		// The setUp function is then invoked on the safelet, continued by a call to getSequencer.
 		// The Sequencer is then responsible for running the missions, when finished, the tearDown
 		// method is invoked and the app is terminated.
+		JopSystem.startMission(new Minepump());
 	}
 
 	public long immortalMemorySize() {
@@ -64,27 +65,4 @@ public class Minepump implements Safelet {
 		return 1000;
 	}
 
-}
-
-class Main
-{
-	public static void main(String[] args)
-	{
-		JopSystem.startMission(new Minepump());
-		/*Safelet ss =  (Safelet) new Minepump();
-		MainMissionSequencer ms = (MainMissionSequencer) ss.getSequencer();
-				
-		//MissionDescriptor md = ms.getInitialMission();
-		// TODO: there is some chaos on mission and the classes
-		// for it -- needs a reread on current spec
-		// and a fix
-		//	MissionDescriptor md = ms.getNextMission();
-		//	MissionDescriptor md = null;
-		//	md.initialize();
-				
-		// this should be a loop
-		MainMission m = (MainMission) ms.getNextMission();
-		// that should be done in the sequencer
-		m.MyInitialize();*/	
-	}
 }

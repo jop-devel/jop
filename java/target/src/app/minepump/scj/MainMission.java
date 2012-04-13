@@ -81,7 +81,7 @@ public class MainMission extends Mission {
 			new PriorityParameters(11),
 			new PeriodicParameters(new RelativeTime(0,0), new RelativeTime(PERIODIC_GAS_PERIOD,0)),
 			new StorageParameters(100000L, 1000L, 1000L, 1000, 1000), // TODO update memory size
-			1000, // Set the size of the private scoped memory area for this event handler
+			10000, // Set the size of the private scoped memory area for this event handler
 			methaneSensor, waterpumpActuator);
 		methane.register();		
 		
@@ -90,7 +90,7 @@ public class MainMission extends Mission {
 			new PriorityParameters(11),
 			new PeriodicParameters(new RelativeTime(0,0), new RelativeTime(PERIODIC_WATER_PERIOD,0)),
 			new StorageParameters(100000L, 1000L, 1000L, 1000, 1000), // TODO update memory size
-			1000, // Set the size of the private scoped memory area for this event handler			
+			10000, // Set the size of the private scoped memory area for this event handler			
 			highWaterSensor,
 			lowWaterSensor,
 			waterpumpActuator);			
