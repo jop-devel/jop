@@ -1712,7 +1712,7 @@ System.out.println("ES Rdy");
 					if (i!=-1) {
 						melnr = i;
 						p = Flash.getPoint(melnr);
-						if (p.station) {
+						if ((p.station && p.stationLine1.length()!=0)) {
 							found = true;
 						}
 					} else {
@@ -1726,7 +1726,7 @@ System.out.println("ES Rdy");
 					if (i!=-1) {
 						melnr = i;
 						p = Flash.getPoint(melnr);
-						if (p.station) {
+						if ((p.station && p.stationLine1.length()!=0)) {
 							found = true;
 						}
 					} else {
@@ -1868,7 +1868,7 @@ System.out.println("np Problem");
 					if (i!=-1) {
 						melnr = i;
 						p = Flash.getPoint(melnr);
-						if (p.station || (right && p.hbRight) || (!right && p.hbLeft)) {
+						if ((p.station && p.stationLine1.length()!=0) || (right && p.hbRight) || (!right && p.hbLeft)) {
 							found = true;
 						}
 					} else {
@@ -1885,7 +1885,7 @@ System.out.println("np Problem");
 					if (i!=-1) {
 						melnr = i;
 						p = Flash.getPoint(melnr);
-						if (p.station || (right && p.hbRight) || (!right && p.hbLeft)) {
+						if ((p.station && p.stationLine1.length()!=0) || (right && p.hbRight) || (!right && p.hbLeft)) {
 							found = true;
 						}
 					} else {
