@@ -281,7 +281,7 @@ DEBUG_JOPSIM=
 #	application optimization with ProGuard:
 #	proguard.sourceforge.net/
 #	uncomment following line to use it
-#OPTIMIZE=mv java/target/dist/lib/classes.zip java/target/dist/lib/in.zip; java -jar java/lib/proguard.jar @optimize.pro
+#OPTIMIZE=mv java/target/dist/lib/classes.jar java/target/dist/lib/in.zip; java -jar java/lib/proguard.jar @optimize.pro
 
 ################################################################################
 # Make rules
@@ -448,12 +448,12 @@ else
 	done
 endif
 endif 
-	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
+	cd $(TARGET)/dist/classes && jar cf ../lib/classes.jar *
 # use SymbolManager for Paulo's version of JOPizer instead
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
-		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
+		-cp $(TARGET)/dist/lib/classes.jar -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
 #	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.debug.jdwp.jop.JopSymbolManager \
-#		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
+#		-cp $(TARGET)/dist/lib/classes.jar -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
 	java $(TOOLS_CP) com.jopdesign.tools.jop2dat $(TARGET)/dist/bin/$(JOPBIN)
 	cp *.dat modelsim
 	rm -f *.dat
@@ -774,7 +774,7 @@ WCET_UPPAAL?=no
 WCET_VERIFYTA?=verifyta	 # only needed if WCET_UPPAAL=yes
 wcet:
 	-mkdir -p $(TARGET)/wcet
-	# Reading the classes.zip does not work correctly for optimized code because we need the sourcelines.txt
+	# Reading the classes.jar does not work correctly for optimized code because we need the sourcelines.txt
 	for target in $(WCET_METHOD); do \
 	  java -Xss16M -Xmx1280M $(JAVA_OPT) \
 	    $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis \
@@ -798,11 +798,11 @@ dotgraph:
 
 dfa:
 	java -Xss16M $(TOOLS_CP) com.jopdesign.dfa.Main \
-		-cp $(TARGET)/dist/lib/classes.zip $(MAIN_CLASS)
+		-cp $(TARGET)/dist/lib/classes.jar $(MAIN_CLASS)
 
 test:
 	java $(TOOLS_CP) com.jopdesign.wcet.CallGraph \
-		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/wcet/$(P3)call.txt -sp $(TARGET_SOURCE) $(MAIN_CLASS)
+		-cp $(TARGET)/dist/lib/classes.jar -o $(TARGET)/wcet/$(P3)call.txt -sp $(TARGET_SOURCE) $(MAIN_CLASS)
 
 
 ###### end of Makefile #######
@@ -828,9 +828,9 @@ esim: ecl_app
 # do it from my eclipse workspace
 #
 ecl_app:
-	cd ../../workspace/cvs_jop_target/classes && jar cf ../../../cpu/jop/java/target/dist/lib/classes.zip *
+	cd ../../workspace/cvs_jop_target/classes && jar cf ../../../cpu/jop/java/target/dist/lib/classes.jar *
 	java $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
-		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
+		-cp $(TARGET)/dist/lib/classes.jar -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
 	java $(TOOLS_CP) com.jopdesign.tools.jop2dat $(TARGET)/dist/bin/$(JOPBIN)
 	cp *.dat modelsim
 	rm -f *.dat
@@ -841,12 +841,12 @@ ecl_app:
 #
 appinfo: tools
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.AppInfo \
-		-cp $(TARGET)/dist/lib/classes.zip $(MAIN_CLASS)
+		-cp $(TARGET)/dist/lib/classes.jar $(MAIN_CLASS)
 
 testapp: tools
 	make java_app
 	-mkdir $(TARGET)/xxx
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WCETPreprocess \
-		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/xxx $(MAIN_CLASS)
+		-cp $(TARGET)/dist/lib/classes.jar -o $(TARGET)/xxx $(MAIN_CLASS)
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
 		-cp $(TARGET)/xxx -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)

@@ -78,6 +78,9 @@ public class MethaneSensor extends Sensor {
 		public void addMeasurement(Bricks brick) {			   
 			this.history[this.INSERT_POINT] = brick;
 			this.INSERT_POINT++;
+			if (this.INSERT_POINT==history.length) {
+				this.INSERT_POINT = 0;
+			}
 		}
 		
 		public float getMethaneLevel() {
