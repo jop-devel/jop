@@ -220,8 +220,11 @@ public class Const {
 	
 	/* "Sensors" on hwScope Example.
 	 */
-	public static final int SENSA_BASE = IO_BASE+0x30;
-	public static final int SENSB_BASE = IO_BASE+0x50;
+	public static final int SENS_M_BASE = IO_BASE+0x30;
+	public static final int SENS_C_BASE = IO_BASE+0x50;
+	
+	// I2C port
+	public static final int I2C_M_BASE = IO_BASE+0x30;
 
 	
 	// Keyboard

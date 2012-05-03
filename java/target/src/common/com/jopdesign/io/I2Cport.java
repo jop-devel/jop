@@ -13,6 +13,9 @@ public class I2Cport extends HardwareObject {
 	public static final int TX_FIFO_OCCUPANCY_OUT = 0x00000780;
 	public static final int RX_FIFO_OCCUPANCY_IN = 0x00007800;
 	public static final int RX_FIFO_OCCUPANCY_OUT = 0x00078000;
+	public static final int TR_PROGRESS  = 0x00100000;
+	public static final int RESET_REP_START = 0x00080000;
+
 	
 	public static final int CNT_BASE = 28;
 		
