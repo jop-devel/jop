@@ -10,6 +10,8 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.all;
 USE ieee.std_logic_arith.all;
+
+library work;
 USE work.fifo_pkg.all;
 
 ENTITY synchronizer IS

@@ -10,13 +10,17 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.all;
 USE ieee.std_logic_unsigned.all;
+
+library work;
 USE work.fifo_pkg.all;
+
 --use work.i2c_pkg.all;
 
 ENTITY FIFO_read_control IS
 
 port (rclk           : in std_logic;
       reset          : in std_logic;
+      flush_fifo	: in std_logic;
       read_enable    : in std_logic;
       wptr_sync      : in std_logic_vector ((FIFO_ADD_WIDTH) downto 0);
       fifo_occu_out  : out std_logic_vector((FIFO_ADD_WIDTH - 1) downto 0);
@@ -43,6 +47,7 @@ COMPONENT counter IS
 
 port (clk         : in std_logic;
       reset       : in std_logic;
+      flush_fifo	: in std_logic;
       enable      : in std_logic;
       count_value : out std_logic_vector ((FIFO_ADD_WIDTH) downto 0)
       );
@@ -64,14 +69,15 @@ BEGIN
    
   -- NOTE
   -- Dual port ram from xilinx needs that "ren" signal stays high for two clock
-  -- cycles. Altera's dual port ram does not require this. 
-  
-  ren <= ren_i or ren_reg;
-  --ren <= ren_i;
-  
+  -- cycles. Altera's dual port ram does not require this.
+
+  --ren <= ren_i or ren_reg;
+  ren <= ren_i;
+
 -------------------------------------------------------------------
 RD_ADDRESS: counter port map (clk         => rclk,
                               reset       => reset,
+                              flush_fifo  => flush_fifo,
                               enable      => counter_en,
                               count_value => int_rptr
                               );

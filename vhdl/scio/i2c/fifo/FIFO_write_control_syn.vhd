@@ -10,22 +10,26 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.all;
 USE ieee.std_logic_unsigned.all;
+
+library work;
 USE work.fifo_pkg.all;
 
+
 ENTITY FIFO_write_control IS
-  
+
 port (wclk           : in std_logic;
       reset          : in std_logic;
+            flush_fifo	: in std_logic;
       write_enable   : in std_logic;
       rptr_sync      : in std_logic_vector ((FIFO_ADD_WIDTH) downto 0);
       fifo_occu_in   : out std_logic_vector((FIFO_ADD_WIDTH - 1) downto 0);
       full           : out std_logic;
       wptr           : out std_logic_vector ((FIFO_ADD_WIDTH) downto 0);
       waddr          : out std_logic_vector ((FIFO_ADD_WIDTH - 1) downto 0);
-      wen            : out std_logic_vector(0 downto 0)
-      --wen            : out std_logic
+      --wen            : out std_logic_vector(0 downto 0)
+      wen            : out std_logic
       );
-        
+
 END ENTITY FIFO_write_control;
 
 ARCHITECTURE comb OF FIFO_write_control IS
@@ -39,9 +43,10 @@ signal  rd_MSB    : std_logic;
 signal  wr_MSB    : std_logic;
 
 COMPONENT counter IS
-  
+
   port (clk        : in std_logic;
        reset       : in std_logic;
+             flush_fifo	: in std_logic;
        enable      : in std_logic;
        count_value : out std_logic_vector ((FIFO_ADD_WIDTH) downto 0)
        );
@@ -61,6 +66,7 @@ BEGIN
 -------------------------------------------------------------------
 WR_ADDRESS: counter port map (clk         => wclk,
                               reset       => reset,
+                              flush_fifo	=>  flush_fifo,
                               enable      => counter_en,
                               count_value => int_wptr
                               );
@@ -75,21 +81,21 @@ begin
       if wr_MSB /= rd_MSB then 
         fifo_occu_in <= (FIFO_WORDS) - (rd_add - wr_add);
 -- Independently of external write_enable, if the FIFO is full 
--- writting should be stopped 
+-- writting should be stopped
         if rd_add = wr_add then
           full <= '1';
-          wen(0) <= '0';
-          --wen <= '0';
+          --wen(0) <= '0';
+          wen <= '0';
           counter_en <= '0';
-        else               
-          full <= '0'; 
+        else
+          full <= '0';
           if write_enable = '1' then
-            wen(0) <= '1';
-            --wen <= '1';
+            --wen(0) <= '1';
+            wen <= '1';
             counter_en <= '1';
           else
-            wen(0) <= '0';
-            --wen <= '0';
+            --wen(0) <= '0';
+            wen <= '0';
             counter_en <= '0';
           end if;
         end if;
@@ -98,12 +104,12 @@ begin
         full <= '0';
 -- Write only if the FIFO is not full and environment wants to write
         if write_enable = '1' then
-        	wen(0) <= '1';
-            --wen <= '1';
+		--wen(0) <= '1';
+            wen <= '1';
             counter_en <= '1';
           else
-          	wen(0) <= '0';
-            --wen <= '0';
+		--wen(0) <= '0';
+            wen <= '0';
             counter_en <= '0';
           end if;
       end if;

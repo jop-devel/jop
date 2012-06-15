@@ -6,14 +6,19 @@ import com.jopdesign.sys.Native;
 
 public class I2CFactory extends IOFactory {
 	
-	private I2Cport iic;
+	private I2Cport iic_A;
+	private I2Cport iic_B;
 	
 	// Handles should be the first static fields!
-	private static int I2C_M_PTR;
-	private static int I2C_M_MTAB;
+	private static int I2C_A__M_PTR;
+	private static int I2C_A_M_MTAB;
+
+//	private static int I2C_B__M_PTR;
+//	private static int I2C_B_M_MTAB;
 	
 	I2CFactory() {
-		iic = (I2Cport) makeHWObject(new I2Cport(),Const.I2C_M_BASE, 0);
+		iic_A = (I2Cport) makeHWObject(new I2Cport(),Const.I2C_A_BASE, 0);
+//		iic_B = (I2Cport) makeHWObject(new I2Cport(),Const.I2C_B_BASE, 1);
 
 	};
 	// that has to be overridden by each sub class to get
@@ -29,6 +34,7 @@ public class I2CFactory extends IOFactory {
 		return single;
 	}
 
-	public I2Cport getI2Cport() { return iic; }
+	public I2Cport getI2CportA() { return iic_A; }
+//	public I2Cport getI2CportB() { return iic_B; }
 
 }

@@ -5,6 +5,8 @@
 Library IEEE;
 use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
+
+library work;
 use work.i2c_pkg.all;
 
 entity scl_sm_sync is

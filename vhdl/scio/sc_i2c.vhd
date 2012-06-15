@@ -246,9 +246,7 @@ port (
 	clk		: in std_logic;
 	reset	: in std_logic;
 
---
---	SimpCon IO interface
---
+	--	SimpCon IO interface
 	address		: in std_logic_vector(addr_bits-1 downto 0); 
 	sc_rd		: in std_logic;
 	sc_rd_data	: out std_logic_vector(31 downto 0); 
@@ -280,34 +278,43 @@ architecture sc_i2c_rtl of sc_i2c is
 --	constant RX_FIFO_STATUS	: std_logic_vector(3 downto 0):= "0110" ;
 -- 	constant MESSAGE		: std_logic_vector(3 downto 0):= "0111" ;
 	
+
 	component i2c
-	port (clk             : in    std_logic;
-	      reset           : in    std_logic;
-	      sda             : inout std_logic;
-	      scl             : inout std_logic;
-	      device_addr     : in    std_logic_vector (6 downto 0);
-	      masl            : in    std_logic;
-	      strt            : in    std_logic;
-	      txrx            : in    std_logic;
-	      message_size    : in    std_logic_vector (3 downto 0);
-	      rep_start       : in    std_logic;
-	      reset_rep_start : out   std_logic;
-	      busy            : out   std_logic;
-	      t_const         : in    timming;
-	      tx_fifo_wr_ena  : in    std_logic;
-	      tx_fifo_full    : out   std_logic;
-	      data_in         : in    std_logic_vector (7 downto 0);
-	      tx_fifo_occ_in  : out   std_logic_vector (3 downto 0);
-	      tx_fifo_occ_out : out   std_logic_vector (3 downto 0);
-	      rx_fifo_rd_ena  : in    std_logic;
-	      rx_fifo_empty   : out   std_logic;
-	      data_out        : out   std_logic_vector (7 downto 0);
-	      rx_fifo_occ_in  : out   std_logic_vector (3 downto 0);
-	      rx_fifo_occ_out : out   std_logic_vector (3 downto 0));
+		port(clk             : in    std_logic;
+			 reset           : in    std_logic;
+			 flush_fifo      : in    std_logic;
+			 sda             : inout std_logic;
+			 scl             : inout std_logic;
+			 device_addr     : in    std_logic_vector(6 downto 0);
+			 masl            : in    std_logic;
+			 strt            : in    std_logic;
+			 txrx            : in    std_logic;
+			 message_size    : in    std_logic_vector(3 downto 0);
+			 rep_start       : in    std_logic;
+			 reset_rep_start : out   std_logic;
+			 enable : in std_logic;
+			 busy            : out   std_logic;
+			 tr_progress     : out   std_logic;
+			 transaction     : out   std_logic;
+			 slave_addressed : out   std_logic;
+			 data_valid      : out   std_logic;
+			 t_const         : in    timming;
+			 tx_fifo_wr_ena  : in    std_logic;
+			 tx_fifo_full    : out   std_logic;
+			 tx_fifo_empty   : out   std_logic;
+			 data_in         : in    std_logic_vector(7 downto 0);
+			 tx_fifo_occ_in  : out   std_logic_vector(3 downto 0);
+			 tx_fifo_occ_out : out   std_logic_vector(3 downto 0);
+			 rx_fifo_rd_ena  : in    std_logic;
+			 rx_fifo_empty   : out   std_logic;
+			 rx_fifo_full    : out   std_logic;
+			 data_out        : out   std_logic_vector(7 downto 0);
+			 rx_fifo_occ_in  : out   std_logic_vector(3 downto 0);
+			 rx_fifo_occ_out : out   std_logic_vector(3 downto 0));
 	end component i2c;
- 	
-	signal control_reg 			: std_logic_vector(7 downto 0);
-	signal status_reg 			: std_logic_vector(19 downto 0);
+
+	signal control_reg 			: std_logic_vector(9 downto 0);
+	signal status_reg 			: std_logic_vector(25 downto 0);
 	signal sladd_reg 			: std_logic_vector(6 downto 0);
 	--signal tx_fifo_status_reg	: std_logic_vector(9 downto 0);
 	--signal rx_fifo_status_reg	: std_logic_vector(9 downto 0);
@@ -330,6 +337,7 @@ IIC: component i2c
 	port map (
 		clk             => clk,
 		reset           => reset,
+		flush_fifo      => control_reg(8),
 		sda             => sda,
 		scl             => scl,
 		device_addr     => sladd_reg,
@@ -339,15 +347,22 @@ IIC: component i2c
 		message_size    => control_reg(6 downto 3), 
 	    rep_start       => control_reg(7),
 	    reset_rep_start => status_reg(19),
+	    enable  => control_reg(9),
 		busy            => status_reg(0),
+		tr_progress 	=> status_reg(20),
+		transaction		=> status_reg(21),
+		slave_addressed => status_reg(24),
+		data_valid      => status_reg(25),
 		t_const			=> t_const_int,
 		tx_fifo_wr_ena  => tx_fifo_wren_int,
 		tx_fifo_full    => status_reg(1),
+		tx_fifo_empty   => status_reg(22),
 		data_in         => sc_wr_data(7 downto 0),
 		tx_fifo_occ_in  => status_reg(6 downto 3),
 		tx_fifo_occ_out => status_reg(10 downto 7),
 		rx_fifo_rd_ena  => rx_fifo_rden_int,
 		rx_fifo_empty   => status_reg(2),
+		rx_fifo_full    => status_reg(23),
 		data_out        => rx_fifo_rd_data_int,
 		rx_fifo_occ_in  => status_reg(14 downto 11), 
 		rx_fifo_occ_out => status_reg(18 downto 15)
@@ -386,15 +401,15 @@ IIC: component i2c
 					busy_read <= '0';
 					sc_rd_reg <= '0';
 					sc_rd_reg_1 <= '0';
-					sc_rd_data(7 downto 0) <= control_reg;
-			 	 	sc_rd_data(31 downto 8) <= (others => '0');
+					sc_rd_data(9 downto 0) <= control_reg;
+					sc_rd_data(31 downto 10) <= (others => '0');
 
 					when STATUS =>
 					busy_read <= '0';
 					sc_rd_reg <= '0';
 					sc_rd_reg_1 <= '0';
-					sc_rd_data(19 downto 0) <= status_reg;
-					sc_rd_data(31 downto 20) <= (others => '0');
+					sc_rd_data(25 downto 0) <= status_reg;
+					sc_rd_data(31 downto 26) <= (others => '0');
 
 					when SLADD =>
 					busy_read <= '0';
@@ -437,7 +452,7 @@ IIC: component i2c
 				case address(3 downto 0) is
 				
 					when CONTROL =>
-					control_reg(7 downto 0) <= sc_wr_data(7 downto 0);
+					control_reg(9 downto 0) <= sc_wr_data(9 downto 0);
 	
 					when SLADD =>
 					sladd_reg <= sc_wr_data(6 downto 0);

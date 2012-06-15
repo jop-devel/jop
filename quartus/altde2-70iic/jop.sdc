@@ -57,7 +57,7 @@ derive_pll_clocks
 set_max_delay -from [all_inputs] -to [all_registers] 2
 
 # the value is -th, so a negative hold time would be positive
-set_min_delay -from [all_inputs] -to [all_registers] -0.0
+set_min_delay -from [all_inputs] -to [all_registers] -2.0
 
 # -clock pll_inst|altpll_component|pll|clk[0] \
 #	-max 2 [all_inputs]

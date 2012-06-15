@@ -13,9 +13,10 @@ USE ieee.std_logic_unsigned.all;
 USE work.fifo_pkg.all;
 
 ENTITY counter IS
-   PORT( 
+   PORT(
       clk         : IN     std_logic;
       reset       : IN     std_logic;
+      flush_fifo	: in std_logic;
       enable      : IN     std_logic;
       count_value : OUT    std_logic_vector ((FIFO_ADD_WIDTH) DOWNTO 0)
        );
@@ -30,11 +31,11 @@ signal int_count_value : std_logic_vector ((FIFO_ADD_WIDTH) downto 0);
 BEGIN
 
 count_value <= int_count_value((FIFO_ADD_WIDTH) downto 0);
-  
-  PROCESS (clk,reset)
+
+  PROCESS (clk,reset, flush_fifo)
 
    BEGIN
-      if  reset = '1' then
+      if  reset = '1' or flush_fifo = '1' then
          int_count_value <= (others => '0');
       elsif (clk'EVENT and clk = '1')  then
             if enable = '1' then

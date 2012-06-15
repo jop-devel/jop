@@ -83,25 +83,25 @@ port (
 
 	sync_out : in sync_out_type := NO_SYNC;
 	sync_in	 : out sync_in_type;
-	
+
 -- serial interface
 
 	txd			: out std_logic;
 	rxd			: in std_logic;
 	ncts		: in std_logic;
 	nrts		: out std_logic;
-	
+
 --
 --	LEDs
 --
 	oLEDR		: out std_logic_vector(17 downto 0);
 --	oLEDG		: out std_logic_vector(7 downto 0);
-	
+
 --
 --	Switches
 --
 	iSW			: in std_logic_vector(17 downto 0);
-	
+
 -- watch dog
 
 	wd			: out std_logic;
@@ -111,23 +111,23 @@ port (
 	r			: inout std_logic_vector(20 downto 1);
 	t			: inout std_logic_vector(6 downto 1);
 	b			: inout std_logic_vector(10 downto 1);
-	
+
 	--I2C pins
 	sda		: inout std_logic;
 	scl		: inout std_logic
 
---ps2 kbd pins	
+--ps2 kbd pins
 --	kbd_clk_in :in std_logic;
 --	kbd_clk_out :out std_logic;
 --	kbd_data_in :in std_logic;
 --	kbd_data_out :out std_logic;
 --	kbd_data_oe :out std_logic;
 --	kbd_clk_oe :out std_logic;
-	
+
 -- ps2 mouse pins
 --    ps2_clk      : inout std_logic;
 --    ps2_data     : inout std_logic
-    
+
 -- remove the comment for RAM access counting
 -- ram_cnt 	: in std_logic
  );
@@ -152,16 +152,17 @@ architecture rtl of scio is
 	signal sc_rdy_cnt		: slave_rdy_cnt;
 
 	signal sel, sel_reg		: integer range 0 to 2**DECODE_BITS-1;
-	
+
 	-- The integer value should match the constant value set in Const.java file, fx.
 	-- if LEDSW_SLAVE = 3, then Const.LS_BASE = IO_BASE+0x30. The USB address is set
 	-- equal to 0x20.
 	constant SYS_SLAVE 		: integer := 0;
 	constant UART_SLAVE 	: integer := 1;
 	constant LEDSW_SLAVE 	: integer := 4;
-	constant I2C			: integer := 3;
+	constant I2C_A			: integer := 3;
+	constant I2C_B			: integer := 6;
 
-	-- remove the comment for RAM access counting 
+	-- remove the comment for RAM access counting
 	-- signal ram_count : std_logic;
 
 begin
@@ -209,7 +210,7 @@ begin
 			end if;
 		end if;
 	end process;
-			
+
 	sys: entity work.sc_sys generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
@@ -230,15 +231,15 @@ begin
 			irq_in => irq_in,
 			irq_out => irq_out,
 			exc_req => exc_req,
-			
+
 			sync_out => sync_out,
 			sync_in => sync_in,
-			
+
 			wd => wd
 			-- remove the comment for RAM access counting
 			-- ram_count => ram_count
 		);
-		
+
 	-- remove the comment for RAM access counting
 	-- ram_count <= ram_cnt;
 
@@ -267,25 +268,25 @@ begin
 			ncts => '0',
 			nrts => nrts
 	);
-	
+
 	lw : entity work.led_switch
 	port map
 	(
 		clk => clk,
 		reset => reset,
-		
+
 		sc_rd => sc_rd(LEDSW_SLAVE),
 		sc_rd_data => sc_dout(LEDSW_SLAVE),
 		sc_wr => sc_wr(LEDSW_SLAVE),
 		sc_wr_data => sc_io_out.wr_data,
 		sc_rdy_cnt => sc_rdy_cnt(LEDSW_SLAVE),
-		
+
 		oLEDR => oLEDR,
 --		oLEDG => oLEDG,
 		iSW => iSW
 	);
-		
-	iic: entity work.sc_i2c(sc_i2c_rtl)
+
+	iic_a: entity work.sc_i2c(sc_i2c_rtl)
 	generic map (
 		addr_bits => SLAVE_ADDR_BITS
 		)
@@ -293,13 +294,31 @@ begin
 		clk        => clk,
 		reset      => reset,
 		address    => sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
-		sc_rd      => sc_rd(I2C),
-		sc_rd_data => sc_dout(I2C),
-		sc_wr      => sc_wr(I2C),
+		sc_rd      => sc_rd(I2C_A),
+		sc_rd_data => sc_dout(I2C_A),
+		sc_wr      => sc_wr(I2C_A),
 		sc_wr_data => sc_io_out.wr_data,
-		sc_rdy_cnt => sc_rdy_cnt(I2C),
+		sc_rdy_cnt => sc_rdy_cnt(I2C_A),
 		sda        => sda,
 		scl        => scl
 		);
-	
+
+	iic_b: entity work.sc_i2c(sc_i2c_rtl)
+	generic map (
+		addr_bits => SLAVE_ADDR_BITS
+		)
+	port map (
+		clk        => clk,
+		reset      => reset,
+		address    => sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
+		sc_rd      => sc_rd(I2C_B),
+		sc_rd_data => sc_dout(I2C_B),
+		sc_wr      => sc_wr(I2C_B),
+		sc_wr_data => sc_io_out.wr_data,
+		sc_rdy_cnt => sc_rdy_cnt(I2C_B),
+		sda        => sda,
+		scl        => scl
+		);
+
+
 end rtl;
