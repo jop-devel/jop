@@ -1,8 +1,5 @@
 /*
-  This file is part of JOP, the Java Optimized Processor
-    see <http://www.jopdesign.com/>
-
-  Copyright (C) 2001-2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,15 +14,13 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+package org.reprap.commands;
 
-/*
-	Author: Tórur Biskopstø Strøm (torur.strom@gmail.com)
-*/
-package org.reprap;
+import org.reprap.Command;
 
-public class G90 extends Command
+public class G21 extends Command
 {
-	private static G90 instance = new G90();//Unbuffered command so only single instance
+	private static G21 instance = new G21();//Unbuffered command so only single instance
 	
 	public static boolean enqueue()
 	{
@@ -36,7 +31,7 @@ public class G90 extends Command
 	@Override
 	public boolean execute() 
 	{
-		//This command is supposed to set the positioning to absolute and this is currently the only option
+		//This command is supposed to set the units to millimeters and this is currently the only option
 		return true;
 	}
 }

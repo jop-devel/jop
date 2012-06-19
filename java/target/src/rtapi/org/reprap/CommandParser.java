@@ -1,8 +1,5 @@
 /*
-  This file is part of JOP, the Java Optimized Processor
-    see <http://www.jopdesign.com/>
-
-  Copyright (C) 2001-2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,10 +14,6 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-/*
-	Author: Tórur Biskopstø Strøm (torur.strom@gmail.com)
-*/
 package org.reprap;
 
 import javax.realtime.PeriodicParameters;
@@ -29,164 +22,82 @@ import javax.realtime.RelativeTime;
 import javax.safetycritical.PeriodicEventHandler;
 import javax.safetycritical.StorageParameters;
 
-public class CommandController extends PeriodicEventHandler
+import org.reprap.commands.G1;
+import org.reprap.commands.G21;
+import org.reprap.commands.G28;
+import org.reprap.commands.G90;
+import org.reprap.commands.G92;
+import org.reprap.commands.M105;
+import org.reprap.commands.M109;
+import org.reprap.commands.M110;
+import org.reprap.commands.M113;
+import org.reprap.commands.M140;
+import org.reprap.commands.T;
+
+public class CommandParser extends PeriodicEventHandler
 {
 	private static final int MAX_NUMBER_LENGTH = 8;
-	private static CommandController instance;
+	private static CommandParser instance;
 	
-	public static CommandController getInstance()
+	static CommandParser getInstance(HostController hostController, RepRapController repRapController)
 	{
 		if(instance == null)
 		{
-			instance = new CommandController();
+			instance = new CommandParser(hostController,repRapController);
 		}
 		return instance;
 	}
 	
-	private CommandController()
+	private HostController hostController;
+	private RepRapController repRapController;
+	private Parameter parameters = new Parameter();
+	
+	private int chars = 0;
+	private char[] buffer = new char[64];
+	
+	private boolean waitingG1Command = false;
+	private boolean waitingG28Command = false;
+	
+	private CommandParser(HostController hostController, RepRapController repRapController)
 	{
 		super(new PriorityParameters(1),
 			  new PeriodicParameters(null, new RelativeTime(1,0)),
 			  new StorageParameters(50, null, 0, 0), 5);
-	}
-	
-	private int lineNumber = 0;
-	private Parameter parameters = new Parameter();
-	private char[] buffer = new char[64];
-	private int chars = 0;
-	private boolean ready = false;
-	private boolean comment = false;
-	private boolean initialized = false;
-	private int timeout = -1;
-	private Object lock = new Object();
-	
-	//If the host isn't waiting for the M110 ok, there is no guarantee what the line number will be  
-	public void setLineNumber(int lineNumber)
-	{
-		this.lineNumber = lineNumber;
-	}
-	
-	public void resendCommand(String message)
-	{
-		synchronized (lock) 
-		{
-			System.out.print("rs ");
-			if(lineNumber >= 0)
-			{
-				System.out.print(lineNumber);
-			}
-			System.out.print(" //");
-			System.out.print(message);
-			System.out.print("\n\r");
-		}
-	}
-	
-	public void confirmCommand(String message)
-	{
-		synchronized (lock) 
-		{
-			System.out.print("ok ");
-			System.out.print("//");
-			if(lineNumber >= 0)
-			{
-				System.out.print(lineNumber);
-			}
-			if(message != null)
-			{
-				System.out.print(message);
-			}
-			System.out.print("\n\r");
-		}
-	}
-	
-	private boolean readSerial()
-	{
-		if(ready)
-		{
-			chars = 0;
-			ready = false;
-			comment = false;
-		}
-		for (int i = chars; i < buffer.length; i++) 
-		{
-			char character;
-			try
-			{
-				if(System.in.available() == 0)
-				{
-					//No input
-					System.out.print("");
-					return false;
-				}
-				character = (char)System.in.read();
-			}
-			catch(Exception e)
-			{
-				System.out.print("ERROR:");
-				System.out.print(e.getMessage());
-				return false;
-			}
-			if(character == ';')
-			{
-				comment = true;
-			}
-			else if(character == '\n' || character == '\r')
-			{
-				comment = false;
-				if(chars > 0)
-				{
-					ready = true;
-					return true;
-				}
-			}
-			else if(chars < buffer.length && !comment)
-			{
-				//Ignore too long command lines. Hopefully full of comments
-				buffer[chars++] = character;
-			}
-		}
-		chars = 0;
-		ready = false;
-		comment = false;
-		resendCommand("command too long");
-		return false;
+		this.hostController = hostController;
+		this.repRapController = repRapController;
 	}
 	
 	@Override
 	public void handleAsyncEvent()
 	{
-		if(!initialized)
+		if(waitingG1Command)
 		{
-			initialized = true;
-			System.out.print("start\n\r");
+			if(!G1.enqueue(parameters,repRapController))
+			{
+				//The command buffer is full so no need to parse further commands until there is space
+				return;
+			}
+			waitingG1Command = false;
 		}
-		if(timeout == 500)
+		else if(waitingG28Command)
 		{
-			timeout = -1;
-			resendCommand("Command buffer full");
+			if(!G28.enqueue(parameters,repRapController))
+			{
+				//The command buffer is full so no need to parse further commands until there is space
+				return;
+			}
+			waitingG28Command = false;
 		}
-		else if(timeout >= 0)
-		{
-			timeout++;
-			return;
-		}
-		if(!readSerial())
+		
+		if(!HostController.getInstance().getLine(buffer))
 		{
 			return;
 		}
 		
-		/*for (int i = 0; i < cb.length; i++) 
-		{
-			System.out.print(cb.chars[i]);
-			if(i == cb.length-1)
-			{
-				cb.returnToPool();
-				return;
-			}
-		}*/
 		int index = 0;
 		
 		boolean seenNCommand = false;
+		int lineNumber = 0;
 		
 		boolean seenGCommand = false;
 		boolean seenMCommand = false;
@@ -202,7 +113,6 @@ public class CommandController extends PeriodicEventHandler
 		
 		boolean seenStarCommand = false;
 		int checksum = 0;
-		
 		
 		while(index < chars)
 		{
@@ -310,7 +220,7 @@ public class CommandController extends PeriodicEventHandler
 		{
 			if(!verifyChecksum(buffer,chars,checksum))
 			{
-				resendCommand("Incorrect checksum");
+				hostController.resendCommand("Incorrect checksum");
 				return;
 			}
 		}
@@ -321,33 +231,33 @@ public class CommandController extends PeriodicEventHandler
 				case 0://Same as G1
 				case 1:
 					//Buffered command
-					if(!G1.enqueue(parameters))
+					if(!G1.enqueue(parameters,repRapController))
 					{
-						timeout = 0;
+						waitingG1Command = true;
 						return;
 					}
-					confirmCommand(null);
+					hostController.confirmCommand(null);
 					break;
 				case 21:
 					G21.enqueue();
 					break;
 				case 28:
 					//Buffered command
-					if(!G28.enqueue(parameters))
+					if(!G28.enqueue(parameters,repRapController))
 					{
-						timeout = 0;
+						waitingG28Command = true;
 						return;
 					}
-					confirmCommand(null);
+					hostController.confirmCommand(null);
 					break;
 				case 90:
 					G90.enqueue();
 					break;
 				case 92:
-					G92.enqueue(parameters);
+					G92.enqueue(parameters,repRapController);
 					break;
 				default:
-					resendCommand("Unknown4 G command");
+					hostController.resendCommand("Unknown G command");
 					return;
 			}
 		}
@@ -362,7 +272,7 @@ public class CommandController extends PeriodicEventHandler
 					M109.enqueue();
 					break;
 				case 110:
-					M110.enqueue(lineNumber);
+					M110.enqueue(lineNumber,hostController);
 					break;
 				case 113:
 					M113.enqueue();
@@ -371,7 +281,7 @@ public class CommandController extends PeriodicEventHandler
 					M140.enqueue();
 					break;
 				default:
-					resendCommand("Unknown3 M command");
+					hostController.resendCommand("Unknown M command");
 					return;
 			}
 		}
@@ -381,10 +291,9 @@ public class CommandController extends PeriodicEventHandler
 		}
 		else
 		{
-			resendCommand("Unknown2 command!");
+			hostController.resendCommand("Unknown command!");
 			return;
 		}
-		lineNumber++;
 	}
 	
 	private static boolean verifyChecksum(char[] chars, int length, int checksum)
