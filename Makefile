@@ -56,7 +56,7 @@ QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp d
 ifeq ($(USB),true)
 	QPROJ=usbmin
 else
-	QPROJ=cycmin
+	QPROJ=altde2-70
 endif
 
 #
@@ -67,8 +67,8 @@ XPROJ=ml50x
 XFPGA=false
 
 # Altera FPGA configuration cable
-BLASTER_TYPE=ByteBlasterMV
-#BLASTER_TYPE=USB-Blaster
+#BLASTER_TYPE=ByteBlasterMV
+BLASTER_TYPE=USB-Blaster
 
 ifeq ($(WINDIR),)
 	DOWN=./down
