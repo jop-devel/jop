@@ -203,14 +203,4 @@ public abstract class Clock {
   @SCJRestricted(maySelfSuspend = false)
   protected abstract boolean resetTargetTime(AbsoluteTime time);
   
-  /**
-   * Set the resolution of this. TBD: do we keep this in SCJ?
-   * 
-   * MS: I don't think we should support this.
-   * 
-   * @param resolution
-   */
-//	@BlockFree
-//	@SCJAllowed(LEVEL_1)
-  protected abstract void setResolution(javax.realtime.RelativeTime resolution);
 }

@@ -66,4 +66,17 @@ public abstract class ManagedMemory extends LTMemory {
 		return 123L; // dummy return
 	}
 
+	@SCJAllowed
+	@SCJRestricted(maySelfSuspend = false)
+	public long memoryConsumed() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@SCJAllowed
+	@SCJRestricted(maySelfSuspend = false)
+	public long memoryRemaining() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 }

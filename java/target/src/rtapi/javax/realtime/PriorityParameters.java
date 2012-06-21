@@ -39,8 +39,4 @@ public class PriorityParameters extends SchedulingParameters {
 		return priority;
 	}
 
-	// not scj allowed - shall be removed
-	public void setPriority(int priority) throws IllegalArgumentException {
-	}
-
 }

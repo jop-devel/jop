@@ -37,12 +37,12 @@ public class ScratchpadScope extends ScopedMemory {
 //		super(IOFactory.getFactory().getScratchpadMemory()[0]);
 	}
 
-	@Override
-	public void enter(Runnable logic)
-	{
-		// TODO Auto-generated method stub
-		
-	}
+//	@Override
+//	public void enter(Runnable logic)
+//	{
+//		// TODO Auto-generated method stub
+//		
+//	}
 
 	@Override
 	public long memoryConsumed()

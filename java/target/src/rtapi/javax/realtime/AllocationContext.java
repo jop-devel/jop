@@ -14,10 +14,6 @@ import static javax.safetycritical.annotate.Level.INFRASTRUCTURE;
 @SCJAllowed
 public interface AllocationContext {
 
-	@SCJAllowed(INFRASTRUCTURE)
-	public void enter(Runnable logic) throws IllegalThreadStateException,
-			IllegalArgumentException, ThrowBoundaryError;
-
 	/**
 	 * Execute some logic with this memory area as the default allocation
 	 * context. The effect on the scope stack is specified in the implementing

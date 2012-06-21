@@ -35,33 +35,14 @@ import static javax.safetycritical.annotate.Level.INFRASTRUCTURE;
 
 /**
  * 
- * All methods should be overridden by SCJ classes. MemoryArea
+ * All methods will be overridden by SCJ classes. MemoryArea
+ * remains a dummy class, as all other RTSJ memory classes.
  * 
  */
 @SCJAllowed
 public abstract class MemoryArea implements AllocationContext {
 
-	protected long size;
-	private Memory scope; // SHOULD ONLY BE ACCESSED BY INFRASTRUCTURE
-
-	MemoryArea(long size) {
-		this.size = size;
-	}
-
-	/**
-	 * SHOULD ONLY BE USED BY FRAMEWORK
-	 * 
-	 * MS: should probably not be used at all.
-	 */
-	public Memory getScope() {
-		return scope;
-	}
-
-	/**
-   * 
-   */
-	@SCJAllowed(INFRASTRUCTURE)
-	protected MemoryArea() {/* ... */
+	MemoryArea() {/* ... */
 	}
 
 	@SCJAllowed
@@ -69,11 +50,6 @@ public abstract class MemoryArea implements AllocationContext {
 	public static MemoryArea getMemoryArea(Object object) {
 		return null;
 	}
-
-	@Override
-	@SCJAllowed(INFRASTRUCTURE)
-	@SCJRestricted(maySelfSuspend = false)
-	public abstract void enter(Runnable logic);
 
 	/**
 	 * TBD: This method has no object argument, so this commentary is not

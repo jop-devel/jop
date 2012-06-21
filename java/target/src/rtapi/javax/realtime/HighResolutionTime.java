@@ -332,23 +332,4 @@ public abstract class HighResolutionTime { // implements Comparable {
         return sum;
     }
 
-	/************** unused RTSJ methods ******************************/
-
-	/**
-	 * Note: it is not "safe" to automatically convert from one clock basis to
-	 * another.
-	 */
-	public abstract RelativeTime relative(Clock clock);
-
-	public abstract RelativeTime relative(Clock clock, RelativeTime time);
-
-	public abstract AbsoluteTime absolute(Clock clock);
-
-	public abstract AbsoluteTime absolute(Clock clock, AbsoluteTime dest);
-
-	// We do not allow to set the clock
-	void setClock(Clock clock) {
-		this.clock = clock;
-	}
-
 }

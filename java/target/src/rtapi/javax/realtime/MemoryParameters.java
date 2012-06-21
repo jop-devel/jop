@@ -1,42 +1,24 @@
 package javax.realtime;
 
+import javax.safetycritical.annotate.SCJAllowed;
+
+/**
+ * MS: Shall this class be here? It is not referenced at all.
+ * Need to be checked with the spec...
+ * @author martin
+ *
+ */
+@SCJAllowed
 public class MemoryParameters // implements Cloneable
 {
+	@SCJAllowed
+
   public static final long NO_MAX = -1;
 
+	@SCJAllowed
   public MemoryParameters(long maxMemoryArea, long maxImmortal)
     throws IllegalArgumentException
   {
-    this(maxMemoryArea, maxImmortal,NO_MAX);
   }
 
-  public MemoryParameters(long maxMemoryArea,
-			  long maxImmortal,
-			  long allocationRate)
-    throws IllegalArgumentException
-  {
-  }
-
-  public long getAllocationRate() { return 0L; }
-
-  public long getMaxImmortal()    { return 0L; }
-
-  public long getMaxMemoryArea()  { return 0L; }
-
-  public void setAllocationRate(long allocationRate) {}
-
-  public boolean setMaxImmortalIfFeasible(long maximum) { return false; }
-
-  public boolean setMaxMemoryAreaIfFeasible(long maximum) { return false; }
-
-  public boolean setAllocationRateIfFeasible(long allocationRate)
-  {
-    return false;
-  }
-
-  boolean setMaxImmortal(long maximum) { return false; }
-
-  boolean setMaxMemoryArea(long maximum) { return false; }
-
-  public Object clone() { return null; }
 }

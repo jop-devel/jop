@@ -35,11 +35,13 @@ import javax.safetycritical.annotate.SCJRestricted;
  * We don't want to implement the meat of memory management in
  * an RTSJ class.
  * 
+ * A quick fix would be to make it abstract. And we will do ;-)
+ * 
  * @author martin
  *
  */
 @SCJAllowed
-public class LTMemory extends ScopedMemory {
+public abstract class LTMemory extends ScopedMemory {
 	
 	/**
 	 * We don't allow to use the constructor....
@@ -50,39 +52,4 @@ public class LTMemory extends ScopedMemory {
 //		super(size);
 	}
 
-	@SCJProtected
-	// public LTMemory(SizeEstimator estimator) { super(estimator); }
-	@SCJAllowed(LEVEL_0)
-	@SCJRestricted(maySelfSuspend = false)
-	public void enter(Runnable logic) {
-	}
-
-	@SCJAllowed
-	@SCJRestricted(maySelfSuspend = false)
-	public long memoryConsumed() {
-		return 0L; // dummy return
-	}
-
-	@SCJAllowed
-	@SCJRestricted(maySelfSuspend = false)
-	public long memoryRemaining() {
-		return 0L; // dummy return
-	}
-
-	@SCJAllowed
-	@SCJRestricted(maySelfSuspend = false)
-	public long size() {
-		return 0L; // dummy return
-	}
-
-	/**
-	 * @see javax.realtime.ScopedAllocationContext#resize(long)
-	 */
-	// @Override
-	// @SCJAllowed
-	// @SCJRestricted(maySelfSuspend = false)
-	// public void resize(long size)
-	// throws IllegalStateException
-	// {
-	// }
 }
