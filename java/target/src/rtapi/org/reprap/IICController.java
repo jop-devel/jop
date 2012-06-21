@@ -1,8 +1,5 @@
 /*
-  This file is part of JOP, the Java Optimized Processor
-    see <http://www.jopdesign.com/>
-
-  Copyright (C) 2001-2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,10 +14,6 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-/*
-	Author: Tórur Biskopstø Strøm (torur.strom@gmail.com)
-*/
 package org.reprap;
 
 import javax.realtime.PeriodicParameters;
@@ -34,7 +27,7 @@ public class IICController extends PeriodicEventHandler
 {
 	private static IICController instance;
 	
-	public static IICController getInstance()
+	static IICController getInstance()
 	{
 		if(instance == null)
 		{
@@ -50,6 +43,7 @@ public class IICController extends PeriodicEventHandler
 	int status = 0; // 0 init 1 write address 2 write data 3 read address 4 read data
 	int rdcnt = 0;
 	int slave_cnt = 0;
+	boolean started = false;
 	
 	IICController()
 	{
@@ -61,35 +55,39 @@ public class IICController extends PeriodicEventHandler
 	@Override
 	public void handleAsyncEvent()
 	{
-		if((iic.CR_SR & 0x00000002) == 1) // Transfer in progress
+		boolean allok = true;
+		
+		if(started)
 		{
-			System.out.println("Transfer in progress");
+			if((iic.CR_SR & 0x00000002) > 0) // Transfer in progress
+			{
+				System.out.println("Transfer in progress");
+				//allok = false;
+			}
+			if((iic.CR_SR & 0x00000080) > 0) // No ACK received
+			{
+				System.out.println("No ACK received");
+				//allok = false;
+			}
+			if((iic.CR_SR & 0x00000020) > 0) // Arbitration lost
+			{
+				System.out.println("Arbitration lost");
+				//allok = false;
+			}
 		}
-		if((iic.CR_SR & 0x00000080) > 0) // No ACK received
-		{
-			System.out.println("No ACK received");
-		}
-		if((iic.CR_SR & 0x00000020) > 0) // Arbitration lost
-		{
-			System.out.println("Arbitration lost");
-		}
-		if((iic.CR_SR & 0x00000040) > 0) // Busy bus
-		{
-			System.out.println("Busy bus");
-		}
-		if((iic.CR_SR & 0x00000001) > 0) // Interrupt
-		{
-			System.out.println("Interrupt");
-		}
-		//System.out.print("state");
-		//System.out.print(status);
-		//System.out.print(":");
+		
+		System.out.print("state");
+		System.out.print(status);
+		System.out.print(":");
+		System.out.println(iic.TXR_RXR);
 		
 		switch(status)
 		{
 			case 0:
-				iic.PRERlo = 239;//120; // set clk to 50/100 kHz
+				iic.PRERlo = 0x000000FF; // set clk to 183 Hz
+				iic.PRERhi = 0x000000FF; // set clk to 183 Hz
 				iic.CTR = 0x00000080; // start i2c core
+				started = true;
 				status = 1;
 				break;
 			case 1:
@@ -98,33 +96,21 @@ public class IICController extends PeriodicEventHandler
 				status = 2;
 				break;
 			case 2:
-				iic.TXR_RXR = 0x00000000; // data to transmit register
+				iic.TXR_RXR = 0x00000007; // data to transmit register
 				iic.CR_SR = 0x00000010; // write bit
-				status = 0;
+				status = 3;
 				break;
 			case 3:
-				iic.TXR_RXR = 0x00000091; // slave address to transmit register
-				iic.CR_SR = 0x00000090; // start and read bit
+				iic.TXR_RXR = 0x00000091; // slave address+read to transmit register
+				iic.CR_SR = 0x00000090; // start and write bit
 				status = 4;
 				break;
 			case 4:
 				iic.CR_SR = 0x00000020; // read and ack bit
-				System.out.print("Byte1:");
-				status = 5;
+				System.out.print("Byte:");
+				System.out.println(iic.TXR_RXR);
 				break;
-			case 5:
-				iic.CR_SR = 0x00000028; // read and nack bit
-				System.out.print("Byte2:");
-				rdcnt++;
-				if(rdcnt < 4)
-				{
-					status = 4;
-					break;
-				}
-				status = 6;
 			default:
-				//status = 3;
-				//rdcnt = 0;
 				break;
 		}
 		

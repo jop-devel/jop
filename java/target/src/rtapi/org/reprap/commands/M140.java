@@ -1,8 +1,5 @@
 /*
-  This file is part of JOP, the Java Optimized Processor
-    see <http://www.jopdesign.com/>
-
-  Copyright (C) 2001-2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,15 +14,14 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+package org.reprap.commands;
 
-/*
-	Author: Tórur Biskopstø Strøm (torur.strom@gmail.com)
-*/
-package org.reprap;
+import org.reprap.Command;
 
-public class M109 extends Command
+//Bed Temperature (Fast)
+public class M140 extends Command
 {
-	private static M109 instance = new M109();//Unbuffered command so only single instance
+	private static M140 instance = new M140();//Unbuffered command so only single instance
 	
 	public static boolean enqueue()
 	{
@@ -36,7 +32,7 @@ public class M109 extends Command
 	@Override
 	public boolean execute() 
 	{
-		//This command is supposed to set the extruder temp
+		//This command is supposed to set the extruder PWM
 		return true;
 	}
 }

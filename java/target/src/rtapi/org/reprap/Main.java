@@ -1,8 +1,5 @@
 /*
-  This file is part of JOP, the Java Optimized Processor
-    see <http://www.jopdesign.com/>
-
-  Copyright (C) 2001-2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -16,10 +13,6 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-/*
-	Author: Tórur Biskopstø Strøm (torur.strom@gmail.com)
 */
 package org.reprap;
 
@@ -74,10 +67,11 @@ public class Main implements Safelet
 		
 		public class RepRapMission extends Mission
 		{
-			PeriodicEventHandler peh1 = null;
-			PeriodicEventHandler peh2 = null;
-			PeriodicEventHandler peh3 = null;
+			RepRapController peh1 = null;
+			HostController peh2 = null;
+			CommandParser peh3 = null;
 			PeriodicEventHandler peh4 = null;
+			IICController peh5 = null;
 			
 			@Override
 			public long missionMemorySize()
@@ -94,16 +88,19 @@ public class Main implements Safelet
 				}
 				if(peh2 == null)
 				{
-					//peh2 = SerialController.getInstance();
-					//peh2 = new IICController();
+					peh2 = HostController.getInstance();
 				}
 				if(peh3 == null)
 				{
-					peh3 = CommandController.getInstance();
+					peh3 = CommandParser.getInstance(peh2,peh1);
 				}
 				if(peh4 == null)
 				{
 					peh4 = Command.getInstance();
+				}
+				if(peh5 == null)
+				{
+					peh5 = new IICController();
 				}
 			}
 		}

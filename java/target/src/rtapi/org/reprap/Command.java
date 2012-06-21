@@ -1,8 +1,5 @@
 /*
-  This file is part of JOP, the Java Optimized Processor
-    see <http://www.jopdesign.com/>
-
-  Copyright (C) 2001-2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,11 +14,6 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-/*
-	Author: Tórur Biskopstø Strøm (torur.strom@gmail.com)
-*/
-
 package org.reprap;
 
 import javax.realtime.PeriodicParameters;
@@ -37,13 +29,13 @@ public abstract class Command
 	private static Object lock = new Object();
 	
 	
-	private static PeriodicEventHandler worker;
+	private static PeriodicEventHandler CommandController;
 	
 	public static PeriodicEventHandler getInstance()
 	{
-		if(worker == null)
+		if(CommandController == null)
 		{
-			worker = new PeriodicEventHandler(new PriorityParameters(1),
+			CommandController = new PeriodicEventHandler(new PriorityParameters(1),
 					new PeriodicParameters(null, new RelativeTime(10,0)),
 					new StorageParameters(10, null, 0, 0), 5)
 			{
@@ -74,7 +66,7 @@ public abstract class Command
 				}
 			};
 		}
-		return worker;
+		return CommandController;
 	}
 	
 	protected static void enqueue(Command command)
@@ -97,11 +89,11 @@ public abstract class Command
 	
 	private Command next;
 	
-	public abstract boolean execute();
+	protected abstract boolean execute();
 	
-	public void respond()
+	protected void respond()
 	{
 		//responds with rs
-		CommandController.getInstance().confirmCommand("");
+		HostController.getInstance().confirmCommand("");
 	}
 }

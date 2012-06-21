@@ -1,8 +1,5 @@
 /*
-  This file is part of JOP, the Java Optimized Processor
-    see <http://www.jopdesign.com/>
-
-  Copyright (C) 2001-2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,22 +14,24 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+package org.reprap.commands;
 
-/*
-	Author: Tórur Biskopstø Strøm (torur.strom@gmail.com)
-*/
-package org.reprap;
+import org.reprap.Command;
+import org.reprap.CommandParser;
+import org.reprap.HostController;
 
 public class M110 extends Command
 {
 	private static M110 instance = new M110();//Unbuffered command so only single instance
 	
 	private int lineNumber;
+	private HostController hostController;
 	
 	//The G1 command is put into the Command queue, NOT the G1 pool
-	public static boolean enqueue(int lineNumber)
+	public static boolean enqueue(int lineNumber, HostController hostController)
 	{
 		instance.lineNumber = lineNumber;
+		instance.hostController = hostController;
 		Command.enqueue(instance);
 		return true;
 	}
@@ -40,8 +39,7 @@ public class M110 extends Command
 	@Override
 	public boolean execute() 
 	{
-		CommandController instance = CommandController.getInstance();
-		instance.setLineNumber(lineNumber);
+		hostController.setLineNumber(lineNumber);
 		return true;
 	}
 }
