@@ -48,7 +48,7 @@ public class Minepump implements Safelet {
 
     public MissionSequencer getSequencer() {
     	StorageParameters sp =
-            new StorageParameters(100000L, 1000L, 1000L); // TODO: Set memory size
+            new StorageParameters(100000L, null); // TODO: Set memory size
         return new MainMissionSequencer(new PriorityParameters(10), sp);
     }
 

@@ -13,7 +13,7 @@ public class MainSaflet implements Safelet{
 	public MissionSequencer<Mission> getSequencer() {
 		// TODO Auto-generated method stub
 		
-		StorageParameters sp = new StorageParameters(1000000000, 0, 0);
+		StorageParameters sp = new StorageParameters(1000000000, null);
 		MonitorMission m = new MonitorMission();
 		return new LinearMissionSequencer<Mission>(new PriorityParameters(13), sp, m); 
 	}

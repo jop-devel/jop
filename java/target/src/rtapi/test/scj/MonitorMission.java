@@ -22,7 +22,7 @@ public class MonitorMission extends Mission{
 		RelativeTime tPeriod = new RelativeTime(1000, 0);
 		PeriodicParameters tempPeriod = new PeriodicParameters(tStart, tPeriod);
 		
-		StorageParameters tempStorage = new StorageParameters(1000, 1000, 1000);
+		StorageParameters tempStorage = new StorageParameters(1000, null);
 				
 		Temperature t = new Temperature(tempPrio, tempPeriod, tempStorage, 500);
 		t.register();
@@ -34,7 +34,7 @@ public class MonitorMission extends Mission{
 		RelativeTime vPeriod = new RelativeTime(1000, 0);
 		PeriodicParameters voltPeriod = new PeriodicParameters(vStart, vPeriod);
 		
-		StorageParameters voltStorage = new StorageParameters(1000, 1000, 1000);
+		StorageParameters voltStorage = new StorageParameters(1000, null);
 				
 		Voltage v = new Voltage(voltPrio, voltPeriod, voltStorage, 500);
 		

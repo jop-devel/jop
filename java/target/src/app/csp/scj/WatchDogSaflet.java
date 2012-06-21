@@ -60,7 +60,7 @@ public class WatchDogSaflet implements Safelet{
 	@Override
 	public MissionSequencer<Mission> getSequencer() {
 
-		StorageParameters sp = new StorageParameters(1000000000, 0, 0);
+		StorageParameters sp = new StorageParameters(1000000000, null);
 		WatchDogMission m = new WatchDogMission();
 		return new LinearMissionSequencer<Mission>(new PriorityParameters(13), sp, m);
 	}

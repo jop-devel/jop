@@ -64,7 +64,7 @@ public class HelloClock extends Mission implements Safelet {
 		PeriodicEventHandler peh = new PeriodicEventHandler(
 				new PriorityParameters(11), new PeriodicParameters(
 						new RelativeTime(0, 0), new RelativeTime(1000, 0)),
-				new StorageParameters(10000, 1000, 1000), 500) {
+				new StorageParameters(10000, null), 500) {
 			int cnt;
 
 			public void handleAsyncEvent() {
@@ -85,7 +85,7 @@ public class HelloClock extends Mission implements Safelet {
 	@Override
 	public MissionSequencer getSequencer() {
 		// we assume this method is invoked only once
-		StorageParameters sp = new StorageParameters(1000000, 0, 0);
+		StorageParameters sp = new StorageParameters(1000000, null);
 		return new LinearMissionSequencer(new PriorityParameters(13), sp, this);
 	}
 

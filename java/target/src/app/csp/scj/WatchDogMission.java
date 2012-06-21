@@ -17,7 +17,7 @@ public class WatchDogMission extends Mission{
 
 		PriorityParameters wdPrio = new PriorityParameters(11);
 		PeriodicParameters wdPeriod = new PeriodicParameters(start, period);
-		StorageParameters  wdStorage = new StorageParameters(2048, 1024, 1024);
+		StorageParameters  wdStorage = new StorageParameters(2048, null);
 
 		WatchdogHandler WD = new WatchdogHandler(wdPrio, wdPeriod, wdStorage, 2048);
 		WD.register();
