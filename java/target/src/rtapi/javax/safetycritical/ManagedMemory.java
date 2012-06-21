@@ -38,13 +38,6 @@ public abstract class ManagedMemory extends LTMemory {
 	}
 
 	/**
-	 * @return the manager for this memory area.
-	 */
-	MissionManager getManager() {
-		return null;
-	}
-
-	/**
 	 * @param size
 	 * @param logic
 	 */
