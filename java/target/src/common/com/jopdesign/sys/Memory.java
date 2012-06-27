@@ -180,6 +180,7 @@ public class Memory {
 			int nr = s.active;
 			rtt = s.ref[nr];
 			outer = rtt.currentArea;
+			// TODO: Illegal reference when used as part of enterPrivateMemory
 			rtt.currentArea = this;
 			logic.run();
 			// exit the area
@@ -217,6 +218,9 @@ public class Memory {
 			rtt.currentArea = this;
 			logic.run();
 			// exit the area
+			
+			// TODO: Illegal reference when executeInArea() is called from
+			// a nested private memory.
 			rtt.currentArea = outer;
 		} else {
 			// without RtThreads running, main thread
@@ -257,6 +261,7 @@ public class Memory {
 		// so it is not!
 		// That is actually an example where we need allocateInArea().
 		if (inner==null) {
+			// TODO: Illegal reference
 			inner = new Memory();
 		}
 		// Now set all fields for inner and adapt this
