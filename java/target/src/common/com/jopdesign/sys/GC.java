@@ -24,7 +24,9 @@ package com.jopdesign.sys;
 
 
 /**
- *     Real-time garbage collection for JOP
+ *     Real-time garbage collection for JOP.
+ *     Also contains some scope support.
+ *     At the moment either GC or scopes.
  *     
  * @author Martin Schoeberl (martin@jopdesign.com)
  *
@@ -36,7 +38,10 @@ public class GC {
 	// for our RT-GC tests
 	static int full_heap_size;
 	
-	// Used in newObject and newArray to locate the object/array
+	/**
+	 * Length of the header when using scopes.
+	 * Can be shorter then the GC supporting handle.
+	 */
 	private static final int HEADER_SIZE = 4;
 	
 	/**
@@ -51,7 +56,7 @@ public class GC {
 	 * The handle contains following data:
 	 * 0 pointer to the object in the heap or 0 when the handle is free
 	 * 1 pointer to the method table or length of an array
-	 * 2 size - could be in class info
+	 * 2 denote in which space or scope the object is 
 	 * 3 type info: object, primitve array or ref array
 	 * 4 pointer to next handle of same type (used or free)
 	 * 5 gray list
@@ -62,8 +67,12 @@ public class GC {
 	 */
 	public static final int OFF_PTR = 0;
 	public static final int OFF_MTAB_ALEN = 1;
-	// public static final int OFF_SIZE = 2;
+	public static final int OFF_SPACE = 2;
 	public static final int OFF_TYPE = 3;
+	
+	// Scope level shares the to/from pointer
+	public static final int OFF_SCOPE_LEVEL = OFF_SPACE;
+	
 	
 	// size != array length (think about long/double)
 	
@@ -87,10 +96,6 @@ public class GC {
 	 * Special end of list marker -1
 	 */
 	static final int GREY_END = -1;
-	/**
-	 * Denote in which space or scope the object is
-	 */
-	static final int OFF_SPACE = 6;
 		
 	static final int TYPICAL_OBJ_SIZE = 5;
 	static int handle_cnt;
@@ -575,7 +580,7 @@ public class GC {
 				}
 				
 				//Add scope info to object's handler field
-				Native.wrMem(sc.level, ptr+OFF_SPACE);
+				Native.wrMem(sc.level, ptr+OFF_SCOPE_LEVEL);
 				
 				// Add scoped memory area info into objects handle
 				// TODO: Choose an appropriate field since we also want scope level info in handle 
@@ -699,7 +704,7 @@ public class GC {
 				}
 				
 				//Add scope info to array's handler field
-				Native.wrMem(sc.level, ptr+OFF_SPACE);
+				Native.wrMem(sc.level, ptr+OFF_SCOPE_LEVEL);
 				
 				// Add scoped memory area info into array handle
 				// TODO: Choose an appropriate field since we also want scope level info in handle 

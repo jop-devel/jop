@@ -38,7 +38,8 @@ class MyWorker implements Runnable{
 		Object[] Array = new Object[10];
 		
 		// Add GC.getOffSpace() method to GC.java
-		int i = Native.rdMem(Native.toInt(Array) + GC.getOffSpace());
+		int i = Native.rdMem(Native.toInt(Array) + GC.OFF_SCOPE_LEVEL);
+		System.out.println(Native.toInt(Array) + GC.OFF_SCOPE_LEVEL);
 		ArrayReferenceTest.terminal.writeln("Array level: " +i); // Expected value: 1
 		
 		for (int j = 0; j < Array.length; j++){
@@ -47,10 +48,12 @@ class MyWorker implements Runnable{
 		}
 		
 		// Pick a random element in the array...
-		int j = Native.rdMem(Native.toInt(Array[0]) + GC.getOffSpace());
+		int j = Native.rdMem(Native.toInt(Array[0]) + GC.OFF_SCOPE_LEVEL);
+		System.out.println(Native.toInt(Array[0]) + GC.OFF_SCOPE_LEVEL);
 		ArrayReferenceTest.terminal.writeln("Array object level: " + j); // Expected value: 1
 		
-		i = Native.rdMem(Native.toInt(Array) + GC.getOffSpace());
+		i = Native.rdMem(Native.toInt(Array) + GC.OFF_SCOPE_LEVEL);
+		System.out.println(Native.toInt(Array) + GC.OFF_SCOPE_LEVEL);
 		ArrayReferenceTest.terminal.writeln("Array level after storing elements: " +i); 
 												// Expected value: 1, as storing references
 												// in array elements should not change the 
