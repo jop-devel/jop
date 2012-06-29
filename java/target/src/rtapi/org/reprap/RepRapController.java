@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
+  Copyright (C) 2012, TÃ³rur BiskopstÃ¸ StrÃ¸m (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -35,18 +35,9 @@ public class RepRapController extends PeriodicEventHandler
 	private static final int SECONDS_PER_MINUTE = 60;
 	private static final int E_MAX_FEED_RATE = 800;
 	
-	private static RepRapController instance;
+	public static RepRapController instance;
 	
-	static RepRapController getInstance()
-	{
-		if(instance == null)
-		{
-			instance = new RepRapController();
-		}
-		return instance;
-	}
-	
-	private RepRapController()
+	RepRapController()
 	{
 		super(new PriorityParameters(1),
 			  new PeriodicParameters(null, new RelativeTime(1,0)),
@@ -109,107 +100,103 @@ public class RepRapController extends PeriodicEventHandler
 	
 	public void setPosition(Parameter parameters)
 	{
-		synchronized (current) 
-		{
-			setParameters(parameters,current);
-			target.X = current.X;
-			target.Y = current.Y;
-			target.Z = current.Z;
-			target.E = current.E;
-			target.F = current.F;
-			target.S = current.S;
-		}
+		setParameters(parameters,current);
+		target.X = current.X;
+		target.Y = current.Y;
+		target.Z = current.Z;
+		target.E = current.E;
+		target.F = current.F;
+		target.S = current.S;
 	}
 	
 	public void setTarget(Parameter parameters)
 	{
+		setParameters(parameters,target);
+		current.F = target.F; //No acceleration yet
+		if(target.X >= current.X)
+		{
+			delta.X = target.X-current.X;
+			setBit(8,true);
+			direction.X = 1;
+		}
+		else
+		{
+			delta.X = current.X-target.X;
+			setBit(8,false);
+			direction.X = -1;
+		}
+		if(target.Y >= current.Y)
+		{
+			delta.Y = target.Y-current.Y;
+			setBit(16,true);
+			direction.Y = 1;
+		}
+		else
+		{
+			delta.Y = current.Y-target.Y;
+			setBit(16,false);
+			direction.Y = -1;
+		}
+		if(target.Z >= current.Z)
+		{
+			delta.Z = target.Z-current.Z;
+			setBit(22,false);
+			setBit(28,false);
+			direction.Z = 1;
+		}
+		else
+		{
+			delta.Z = current.Z-target.Z;
+			setBit(22,true);
+			setBit(28,true);
+			direction.Z = -1;
+		}
+		if(target.E >= current.E)
+		{
+			delta.E = target.E-current.E;
+			setBit(2,true);
+			direction.E = 1;
+		}
+		else
+		{
+			delta.E = current.E-target.E;
+			setBit(2,false);
+			direction.E = -1;
+		}
+		
+		//Already checked for negativity and division by zero. Divide by 2 to account for 1 pulse every other millisecond
+		dT = (delta.E*MILLISECONDS_PER_SECOND*SECONDS_PER_MINUTE)/(current.F*2*E_STEPS_PER_MILLIMETER);
+		int tempdT = (delta.X*MILLISECONDS_PER_SECOND*SECONDS_PER_MINUTE)/(current.F*2*X_STEPS_PER_MILLIMETER);
+		dT = (tempdT > dT) ? tempdT : dT;
+		tempdT = (delta.Y*MILLISECONDS_PER_SECOND*SECONDS_PER_MINUTE)/(current.F*2*Y_STEPS_PER_MILLIMETER);
+		dT = (tempdT > dT) ? tempdT : dT;
+		tempdT = (delta.Z*MILLISECONDS_PER_SECOND*SECONDS_PER_MINUTE)/(current.F*2*Z_STEPS_PER_MILLIMETER);
+		dT = (tempdT > dT) ? tempdT : dT;
+		
+		//If the target time to extrude is less than the speed of the axis, set the speed to the axis speed
+		if(delta.X > dT)
+		{
+			dT = delta.X;
+		}
+		if(delta.Y > dT)
+		{
+			dT = delta.Y;
+		}
+		if(delta.Z > dT)
+		{
+			dT = delta.Z;
+		}
+		if(delta.E > dT)
+		{
+			dT = delta.E;
+		}
+		error.X = 2*delta.X - dT;
+		error.Y = 2*delta.Y - dT;
+		error.Z = 2*delta.Z - dT;
+		error.E = 2*delta.E - dT;
 		synchronized (current) 
 		{
-			//int highestMove = 0;
 			inPosition = false;
-			setParameters(parameters,target);
-			current.F = target.F; //No acceleration yet
-			if(target.X >= current.X)
-			{
-				delta.X = target.X-current.X;
-				setBit(8,true);
-				direction.X = 1;
-			}
-			else
-			{
-				delta.X = current.X-target.X;
-				setBit(8,false);
-				direction.X = -1;
-			}
-			if(target.Y >= current.Y)
-			{
-				delta.Y = target.Y-current.Y;
-				setBit(16,true);
-				direction.Y = 1;
-			}
-			else
-			{
-				delta.Y = current.Y-target.Y;
-				setBit(16,false);
-				direction.Y = -1;
-			}
-			if(target.Z >= current.Z)
-			{
-				delta.Z = target.Z-current.Z;
-				setBit(22,false);
-				setBit(28,false);
-				direction.Z = 1;
-			}
-			else
-			{
-				delta.Z = current.Z-target.Z;
-				setBit(22,true);
-				setBit(28,true);
-				direction.Z = -1;
-			}
-			if(target.E >= current.E)
-			{
-				delta.E = target.E-current.E;
-				setBit(2,true);
-				direction.E = 1;
-			}
-			else
-			{
-				delta.E = current.E-target.E;
-				setBit(2,false);
-				direction.E = -1;
-			}
-			
-			//Already checked for negativity and division by zero. Divide by 2 to account for 1 pulse every other millisecond
-			dT = (delta.E*MILLISECONDS_PER_SECOND*SECONDS_PER_MINUTE)/(current.F*2*E_STEPS_PER_MILLIMETER);
-			int tempdT = (delta.X*MILLISECONDS_PER_SECOND*SECONDS_PER_MINUTE)/(current.F*2*X_STEPS_PER_MILLIMETER);
-			dT = (tempdT > dT) ? tempdT : dT;
-			tempdT = (delta.Y*MILLISECONDS_PER_SECOND*SECONDS_PER_MINUTE)/(current.F*2*Y_STEPS_PER_MILLIMETER);
-			dT = (tempdT > dT) ? tempdT : dT;
-			tempdT = (delta.Z*MILLISECONDS_PER_SECOND*SECONDS_PER_MINUTE)/(current.F*2*Z_STEPS_PER_MILLIMETER);
-			dT = (tempdT > dT) ? tempdT : dT;
-			
-			//If the target time to extrude is less than the speed of the axis, set the speed to the axis speed
-			if(delta.X > dT)
-			{
-				dT = delta.X;
-			}
-			if(delta.Y > dT)
-			{
-				dT = delta.Y;
-			}
-			if(delta.Z > dT)
-			{
-				dT = delta.Z;
-			}
-			if(delta.E > dT)
-			{
-				dT = delta.E;
-			}
-			error.X = 2*delta.X - dT;
-			error.Y = 2*delta.Y - dT;
-			error.Z = 2*delta.Z - dT;
-			error.E = 2*delta.E - dT;
 		}
 	}
 	
@@ -218,106 +205,113 @@ public class RepRapController extends PeriodicEventHandler
 	{
 		int switchvalue = LS.ledSwitch;
 		int sensorvalue = switchvalue;//EH.expansionHeader;
-		synchronized (current) 
+		if(Stepping)
 		{
-			if(Stepping)
+			setBit(0,false);
+			setBit(6,false);
+			setBit(12,false);
+			setBit(20,false);
+			setBit(26,false);
+			Stepping = false;
+		}
+		else
+		{
+			//Heater
+			//setBit(23,getBitValue(switchvalue,17));
+			//setBit(25,getBitValue(switchvalue,17));
+			synchronized (current) 
 			{
-				setBit(0,false);
-				setBit(6,false);
-				setBit(12,false);
-				setBit(20,false);
-				setBit(26,false);
-				Stepping = false;
+				if(inPosition)
+				{
+					return;
+				}
 			}
-			else
+			boolean tempInPosition = true;
+			if(current.X != target.X)
 			{
-				//Heater
-				//setBit(23,getBitValue(switchvalue,17));
-				//setBit(25,getBitValue(switchvalue,17));
-				
-				inPosition = true;
-				if(current.X != target.X)
+				if(!getBitValue(sensorvalue,7) && direction.X == -1)//Check endstop
 				{
-					if(!getBitValue(sensorvalue,7) && direction.X == -1)//Check endstop
+					current.X = 0;
+					target.X = current.X;
+				}
+				else if(current.X == max.X && direction.X == 1)
+				{
+					target.X = current.X;
+				}
+				else
+				{
+					tempInPosition = false;
+					if(error.X > 0)
 					{
-						current.X = 0;
-						target.X = current.X;
-					}
-					else if(current.X == max.X && direction.X == 1)
-					{
-						target.X = current.X;
-					}
-					else
-					{
-						inPosition = false;
-						if(error.X > 0)
-						{
-							setBit(6,true);
-							current.X += direction.X;
-							error.X -= 2*dT;
-						}
+						setBit(6,true);
+						current.X += direction.X;
+						error.X -= 2*dT;
 					}
 				}
-				if(current.Y != target.Y)
+			}
+			if(current.Y != target.Y)
+			{
+				if(!getBitValue(sensorvalue,5) && direction.Y == -1)//Check endstop
 				{
-					if(!getBitValue(sensorvalue,5) && direction.Y == -1)//Check endstop
+					current.Y = 0;
+					target.Y = current.Y;
+				}
+				else if(current.Y == max.Y && direction.Y == 1)
+				{
+					target.Y = current.Y;
+				}
+				else
+				{
+					tempInPosition = false;
+					if(error.Y > 0)
 					{
-						current.Y = 0;
-						target.Y = current.Y;
-					}
-					else if(current.Y == max.Y && direction.Y == 1)
-					{
-						target.Y = current.Y;
-					}
-					else
-					{
-						inPosition = false;
-						if(error.Y > 0)
-						{
-							setBit(12,true);
-							current.Y += direction.Y;
-							error.Y -= 2*dT;
-						}
+						setBit(12,true);
+						current.Y += direction.Y;
+						error.Y -= 2*dT;
 					}
 				}
-				if(current.Z != target.Z)
+			}
+			if(current.Z != target.Z)
+			{
+				if(!getBitValue(sensorvalue,3) && direction.Z == -1)//Check endstop
 				{
-					if(!getBitValue(sensorvalue,3) && direction.Z == -1)//Check endstop
+					current.Z = 0;
+					target.Z = current.Z;
+				}
+				else if(current.Z == max.Z && direction.Z == 1)
+				{
+					target.Z = current.Z;
+				}
+				else
+				{
+					tempInPosition = false;
+					if(error.Z > 0)
 					{
-						current.Z = 0;
-						target.Z = current.Z;
-					}
-					else if(current.Z == max.Z && direction.Z == 1)
-					{
-						target.Z = current.Z;
-					}
-					else
-					{
-						inPosition = false;
-						if(error.Z > 0)
-						{
-							setBit(20,true);
-							setBit(26,true);
-							current.Z += direction.Z;
-							error.Z -= 2*dT;
-						}
+						setBit(20,true);
+						setBit(26,true);
+						current.Z += direction.Z;
+						error.Z -= 2*dT;
 					}
 				}
-				if(current.E != target.E)
+			}
+			if(current.E != target.E)
+			{
+				tempInPosition = false;
+				if(error.E > 0)
 				{
-					inPosition = false;
-					if(error.E > 0)
-					{
-						setBit(0,true);
-						current.E += direction.E;
-						error.E -= 2*dT;
-					}
+					setBit(0,true);
+					current.E += direction.E;
+					error.E -= 2*dT;
 				}
-				error.X += 2*delta.X;
-				error.Y += 2*delta.Y;
-				error.Z += 2*delta.Z;
-				error.E += 2*delta.E;
-				Stepping = true;
+			}
+			error.X += 2*delta.X;
+			error.Y += 2*delta.Y;
+			error.Z += 2*delta.Z;
+			error.E += 2*delta.E;
+			Stepping = true;
+			synchronized (current) 
+			{
+				inPosition = tempInPosition;
 			}
 		}
 		EH.expansionHeader = value;

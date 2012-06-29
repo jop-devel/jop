@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
+  Copyright (C) 2012, TÃ³rur BiskopstÃ¸ StrÃ¸m (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -26,23 +26,20 @@ public class G92 extends Command
 	private static G92 instance = new G92();//Unbuffered command so only single instance
 	
 	private Parameter parameters = new Parameter();
-	private RepRapController repRapController;
 	
-	public static boolean enqueue(Parameter parameters, RepRapController repRapController)
+	public static boolean enqueue(Parameter parameters)
 	{
 		instance.parameters.X = parameters.X;
 		instance.parameters.Y = parameters.Y;
 		instance.parameters.Z = parameters.Z;
 		instance.parameters.E = parameters.E;
-		instance.repRapController = repRapController;
-		Command.enqueue(instance);
-		return true;
+		return instance.addToQueue();
 	}
 	
 	@Override
 	public boolean execute() 
 	{
-		repRapController.setPosition(parameters);
+		RepRapController.instance.setPosition(parameters);
 		return true;
 	}
 }

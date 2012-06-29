@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
+  Copyright (C) 2012, TÃ³rur BiskopstÃ¸ StrÃ¸m (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -25,21 +25,18 @@ public class M110 extends Command
 	private static M110 instance = new M110();//Unbuffered command so only single instance
 	
 	private int lineNumber;
-	private HostController hostController;
 	
 	//The G1 command is put into the Command queue, NOT the G1 pool
-	public static boolean enqueue(int lineNumber, HostController hostController)
+	public static boolean enqueue(int lineNumber)
 	{
 		instance.lineNumber = lineNumber;
-		instance.hostController = hostController;
-		Command.enqueue(instance);
-		return true;
+		return instance.addToQueue();
 	}
 	
 	@Override
 	public boolean execute() 
 	{
-		hostController.setLineNumber(lineNumber);
+		HostController.instance.setLineNumber(lineNumber);
 		return true;
 	}
 }

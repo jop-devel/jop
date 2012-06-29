@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
+  Copyright (C) 2012, TÃ³rur BiskopstÃ¸ StrÃ¸m (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -25,16 +25,7 @@ import com.jopdesign.io.*;
 
 public class IICController extends PeriodicEventHandler
 {
-	private static IICController instance;
-	
-	static IICController getInstance()
-	{
-		if(instance == null)
-		{
-			instance = new IICController();
-		}
-		return instance;
-	}
+	static IICController instance;
 	
 	ExpansionHeaderFactory EHF = ExpansionHeaderFactory.getExpansionHeaderFactory();
 	ExpansionHeader EH = EHF.getExpansionHeader();
@@ -45,7 +36,7 @@ public class IICController extends PeriodicEventHandler
 	int slave_cnt = 0;
 	boolean started = false;
 	
-	IICController()
+	private IICController()
 	{
 		super(new PriorityParameters(1),
 			  new PeriodicParameters(null, new RelativeTime(500,0)),

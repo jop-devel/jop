@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
+  Copyright (C) 2012, TÃ³rur BiskopstÃ¸ StrÃ¸m (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -46,4 +46,8 @@ public class Parameter
 		this.S = 0;
 	}
 	
+	public Parameter clone()
+	{
+		return new Parameter(this.X,this.Y,this.Z,this.E,this.F,this.S);
+	}
 }

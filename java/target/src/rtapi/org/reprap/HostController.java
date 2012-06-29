@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
+  Copyright (C) 2012, TÃ³rur BiskopstÃ¸ StrÃ¸m (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -24,31 +24,24 @@ import javax.safetycritical.StorageParameters;
 
 public class HostController extends PeriodicEventHandler
 {
-	private static HostController instance;
+	public static HostController instance;
 	
-	static HostController getInstance()
-	{
-		if(instance == null)
-		{
-			instance = new HostController();
-		}
-		return instance;
-	}
+	private final String ok = "ok\n\r";
+	private final String rs = "rs\n\r";
 	
 	private char[] buffer = new char[64];
 	private boolean full = false;
 	private boolean comment = false;
 	private int characterCount = 0;
-	private Object serialLock = new Object();
 	private Object bufferLock = new Object();
 	private int lineNumber = 0;
 	
-	private HostController()
+	HostController()
 	{
-		super(new PriorityParameters(1),
+		super(new PriorityParameters(2),
 			  new PeriodicParameters(null, new RelativeTime(1,0)),
 			  new StorageParameters(50, null, 0, 0), 5);
-		System.out.print("start\n\r");
+		//System.out.print("start\n\r");
 	}
 	
 	@Override
@@ -62,7 +55,7 @@ public class HostController extends PeriodicEventHandler
 				return;
 			}
 		}
-		while (characterCount < buffer.length) 
+		for (int i = 0; i < buffer.length; i++) //@WCA loop=64
 		{
 			char character;
 			try
@@ -77,8 +70,11 @@ public class HostController extends PeriodicEventHandler
 			}
 			catch(Exception e)
 			{
-				System.out.print("ERROR:");
-				System.out.print(e.getMessage());
+				/*synchronized (sendLock) 
+				{
+					System.out.print("ERROR:");
+					System.out.print(e.getMessage());
+				}*/
 				return;
 			}
 			if(character == ';')
@@ -93,71 +89,76 @@ public class HostController extends PeriodicEventHandler
 					synchronized (bufferLock) 
 					{
 						full = true;
-					}
-					synchronized (serialLock) 
-					{
 						lineNumber++;
 					}
 					return;
 				}
 			}
-			else if(!comment) //Ignore comments
+			else if(!comment && characterCount < buffer.length) //Ignore comments
 			{
 				buffer[characterCount++] = character;
 			}
 		}
-		characterCount = 0;
-		resendCommand("command too long");
 	}
 	
-	void resendCommand(String message)
+	synchronized void resendCommand(String message)
 	{
-		synchronized (serialLock) 
-		{
-			System.out.print("rs ");
-			System.out.print(lineNumber);
-			System.out.print(" //");
-			System.out.print(message);
-			System.out.print("\n\r");
-		}
+		//reply("rs",message);
+		System.out.print(rs);
 	}
 	
-	void confirmCommand(String message)
+	synchronized void confirmCommand(String message)
 	{
-		synchronized (serialLock) 
-		{
-			System.out.print("ok ");
-			System.out.print("//");
-			System.out.print(lineNumber);
-			if(message != null)
-			{
-				System.out.print(message);
-			}
-			System.out.print("\n\r");
-		}
+		//reply("ok",message);
+		System.out.print(ok);
 	}
 	
-	boolean getLine(char[] buffer)
+	private void reply(String type, String message)
+	{
+		/*int tempLineNumber;
+		synchronized (bufferLock) 
+		{
+			tempLineNumber = lineNumber;
+		}
+		StringBuilder sb = new StringBuilder();
+		sb.append(type);
+		sb.append(" ");
+		sb.append(tempLineNumber);
+		sb.append("//");
+		sb.append(message);
+		sb.append("\n\r");
+		synchronized (sendLock) 
+		{
+			System.out.print(sb);
+		}*/
+	}
+	
+	int getLine(char[] buffer)
 	{
 		synchronized (bufferLock) 
 		{
-			if(full)
+			if(!full)
 			{
-				for (int i = 0; i < buffer.length && i < characterCount; i++) 
-				{
-					buffer[i] = this.buffer[i];
-				}
-				full = false;
-				return true;
+				return 0;
 			}
-			return false;
+		}
+		int tmpCharacterCount = characterCount;
+		characterCount = 0;
+		for (int i = 0; i < tmpCharacterCount; i++) //@WCA loop=64
+		{
+			buffer[i] = this.buffer[i];
+		}
+		synchronized (bufferLock) 
+		{
+			full = false;
+			return tmpCharacterCount;
 		}
 	}
 	
 	//If the host isn't waiting for the M110 ok, there is no guarantee what the line number will be  
 	public void setLineNumber(int lineNumber)
 	{
-		synchronized (serialLock) 
+		synchronized (bufferLock) 
 		{
 			this.lineNumber = lineNumber;
 		}

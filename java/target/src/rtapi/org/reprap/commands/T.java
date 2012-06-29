@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
+  Copyright (C) 2012, TÃ³rur BiskopstÃ¸ StrÃ¸m (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@ package org.reprap.commands;
 
 import org.reprap.Command;
 
+
 //Set tool
 public class T extends Command
 {
@@ -25,8 +26,7 @@ public class T extends Command
 	
 	public static boolean enqueue(int toolid)
 	{
-		Command.enqueue(instance);
-		return true;
+		return instance.addToQueue();
 	}
 	
 	@Override

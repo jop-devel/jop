@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
+  Copyright (C) 2012, TÃ³rur BiskopstÃ¸ StrÃ¸m (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -16,84 +16,21 @@
 */
 package org.reprap;
 
-import javax.realtime.PeriodicParameters;
-import javax.realtime.PriorityParameters;
-import javax.realtime.RelativeTime;
-import javax.safetycritical.PeriodicEventHandler;
-import javax.safetycritical.StorageParameters;
 
 public abstract class Command 
 {
-	private static Command first;
-	private static Command last;
-	private static Object lock = new Object();
-	
-	
-	private static PeriodicEventHandler CommandController;
-	
-	public static PeriodicEventHandler getInstance()
-	{
-		if(CommandController == null)
-		{
-			CommandController = new PeriodicEventHandler(new PriorityParameters(1),
-					new PeriodicParameters(null, new RelativeTime(10,0)),
-					new StorageParameters(10, null, 0, 0), 5)
-			{
-				@Override
-				public void handleAsyncEvent()
-				{
-					Command	temp;
-					synchronized (lock) 
-					{
-						temp = first;
-					}
-					if(temp != null)
-					{
-						if(temp.execute())
-						{
-							temp.respond();
-							synchronized (lock) 
-							{
-								first = temp.next;
-								if(first == null)
-								{
-									last = null;
-								}
-							}
-							temp.next = null;
-						}
-					}
-				}
-			};
-		}
-		return CommandController;
-	}
-	
-	protected static void enqueue(Command command)
-	{
-		synchronized (lock) 
-		{
-			if(last == null)
-			{
-				//Empty queue
-				first = command;
-			}
-			else
-			{
-				last.next = command;
-			}
-			last = command;
-			command.next = null;
-		}
-	}
-	
-	private Command next;
+	Command next;
 	
 	protected abstract boolean execute();
 	
 	protected void respond()
 	{
-		//responds with rs
-		HostController.getInstance().confirmCommand("");
+		HostController.instance.confirmCommand("");
+	}
+	
+	protected final boolean addToQueue()
+	{
+		CommandController.instance.enqueue(this);
+		return true;
 	}
 }

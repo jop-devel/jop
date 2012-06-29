@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
+  Copyright (C) 2012, TÃ³rur BiskopstÃ¸ StrÃ¸m (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 package org.reprap.commands;
 
 import org.reprap.Command;
+import org.reprap.CommandController;
 import org.reprap.Parameter;
 import org.reprap.RepRapController;
 
@@ -31,14 +32,13 @@ public class G28 extends Command
 	private G28 next;
 	private Parameter parameters = new Parameter();
 	private boolean executed = false;
-	private RepRapController repRapController;
 	
 	private static boolean initialize()
 	{
 		//No need for mutex as the pool is empty
 		G28 current = new G28();
 		first = current;
-		for(int i = 0; i < POOL_SIZE-1; i++)
+		for(int i = 0; i < POOL_SIZE-1; i++) //@WCA loop=15
 		{
 			G28 temp = new G28();
 			current.next = temp;
@@ -50,7 +50,7 @@ public class G28 extends Command
 	}
 	
 	//The G28 command is put into the Command queue, NOT the G28 pool
-	public static boolean enqueue(Parameter parameters, RepRapController repRapController)
+	public static boolean enqueue(Parameter parameters)
 	{
 		G28 temp;
 		synchronized (lock) 
@@ -81,9 +81,7 @@ public class G28 extends Command
 			temp.parameters.Z = 0;//-1000*RepRapController.DECIMALS*10;
 		}
 		temp.executed = false;
-		temp.repRapController = repRapController;
-		Command.enqueue(temp);
-		return true;
+		return temp.addToQueue();
 	}
 	
 	@Override
@@ -91,10 +89,10 @@ public class G28 extends Command
 	{
 		if(!executed)
 		{
-			repRapController.setTarget(parameters);
+			RepRapController.instance.setTarget(parameters);
 			executed=true;
 		}
-		if(repRapController.inPosition())
+		if(RepRapController.instance.inPosition())
 		{
 			returnToPool();
 			return true;
@@ -121,8 +119,8 @@ public class G28 extends Command
 	}
 	
 	@Override
-	public void respond() 
+	protected void respond() 
 	{
-		//Do nothing, already responded to this buffered command
+		//Do nothing, already confirmed
 	}
 }

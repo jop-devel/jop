@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
+  Copyright (C) 2012, TÃ³rur BiskopstÃ¸ StrÃ¸m (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,6 +17,8 @@
 package org.reprap.commands;
 
 import org.reprap.Command;
+import org.reprap.CommandController;
+import org.reprap.HostController;
 import org.reprap.Parameter;
 import org.reprap.RepRapController;
 
@@ -31,14 +33,13 @@ public class G1 extends Command
 	private G1 next;
 	private Parameter parameters = new Parameter();
 	private boolean executed = false;
-	private RepRapController repRapController;
 	
 	private static boolean initialize()
 	{
 		//No need for mutex as the pool is empty
 		G1 current = new G1();
 		first = current;
-		for(int i = 0; i < POOL_SIZE-1; i++)
+		for(int i = 0; i < POOL_SIZE-1; i++) //@WCA loop=30
 		{
 			G1 temp = new G1();
 			current.next = temp;
@@ -50,7 +51,7 @@ public class G1 extends Command
 	}
 	
 	//The G1 command is put into the Command queue, NOT the G1 pool
-	public static boolean enqueue(Parameter parameters, RepRapController repRapController)
+	public static boolean enqueue(Parameter parameters)
 	{
 		G1 temp;
 		synchronized (lock) 
@@ -74,9 +75,7 @@ public class G1 extends Command
 		temp.parameters.F = parameters.F;
 		temp.parameters.S = parameters.S;
 		temp.executed = false;
-		temp.repRapController = repRapController;
-		Command.enqueue(temp);
-		return true;
+		return temp.addToQueue();
 	}
 	
 	@Override
@@ -84,10 +83,10 @@ public class G1 extends Command
 	{
 		if(!executed)
 		{
-			repRapController.setTarget(parameters);
+			RepRapController.instance.setTarget(parameters);
 			executed=true;
 		}
-		if(repRapController.inPosition())
+		if(RepRapController.instance.inPosition())
 		{
 			returnToPool();
 			return true;
@@ -112,10 +111,10 @@ public class G1 extends Command
 			next = null;
 		}
 	}
-
+	
 	@Override
-	public void respond() 
+	protected void respond() 
 	{
-		//Do nothing, already responded to this buffered command
+		//Do nothing, already confirmed
 	}
 }
