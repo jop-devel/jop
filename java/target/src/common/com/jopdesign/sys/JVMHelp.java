@@ -321,9 +321,9 @@ synchronized (o) {
 		// but ncts is not used anymore =>
 		// no wait on an open serial line, just wait
 		// on the baud rate
-		while ((Native.rd(Const.IO_STATUS)&1)==0) {
+		/*while ((Native.rd(Const.IO_STATUS)&1)==0) {
 			;
-		}
+		}*/
 		Native.wr(c, Const.IO_UART);
 		// this is the USB port
 		/* we will NOT wait for the USB device to be compatible
@@ -341,7 +341,8 @@ synchronized (o) {
 	static void wr(String s) {
 
 		int i = s.length();		
-		for (int j=0; j<i; ++j) {
+		for (int j=0; j<i; ++j)  //@WCA loop=64 
+		{
 			wr(s.charAt(j));
 		}
 	}

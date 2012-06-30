@@ -772,7 +772,8 @@ class JVM {
 		int cnt = Native.rdMem(i+1);
 
 		i += 2;						// point to pairs
-		for (j=0; j<cnt; ++j) {
+		for (j=0; j<cnt; ++j) //@WCA loop=4 
+		{
 			if (Native.rdMem(i+(j<<1)) == key) {
 				off = Native.rdMem(i+(j<<1)+1);		// found match
 				break;

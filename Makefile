@@ -35,7 +35,7 @@ USB=false
 #		without the echo 'protocol' on USB
 #
 ifeq ($(USB),true)
-	COM_PORT=COM5
+	COM_PORT=COM1
 	COM_FLAG=-e -usb
 else
 	COM_FLAG=-e
@@ -56,7 +56,7 @@ QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp d
 ifeq ($(USB),true)
 	QPROJ=usbmin
 else
-	QPROJ=altde2-70
+	QPROJ=altde2-70reprap
 endif
 
 #
@@ -126,15 +126,15 @@ IPDEST=192.168.0.123
 ################################################################################
 
 # Jop RTS configuration
-USE_SCOPES=false
-USE_SCOPECHECKS=false
+USE_SCOPES=true
+USE_SCOPECHECKS=true
 ADD_REF_INFO=false
 MEASURE=true
 JOP_CONF_STR=USE_SCOPES=$(USE_SCOPES) USE_SCOPECHECKS=$(USE_SCOPECHECKS) ADD_REF_INFO=$(ADD_REF_INFO) MEASURE=$(MEASURE)
 
-P1=test
-P2=test
-P3=HelloWorld
+P1=rtapi
+P2=org/reprap
+P3=Main
 
 #
 # Run JVM Tests
@@ -175,8 +175,8 @@ JCOPTER_USE_WCA?=no
 #       WCET analysis
 #
 
-WCET_METHOD=measure
-# WCET_OPTIONS=
+WCET_METHOD=org.reprap.CommandParser.handleAsyncEvent
+WCET_OPTIONS=--use-dfa
 
 ################## end of configuration section ###################
 

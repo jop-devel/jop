@@ -244,7 +244,8 @@ public class JOPPrintStream extends PrintStream {
 	static void wr(String s) {
 
 		int i = s.length();
-		for (int j = 0; j < i; ++j) {
+		for (int j = 0; j < i; ++j) //@WCA loop=4 
+		{
 			JVMHelp.wr(s.charAt(j));
 		}
 	}
