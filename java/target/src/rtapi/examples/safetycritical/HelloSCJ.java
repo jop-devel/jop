@@ -41,6 +41,8 @@ public class HelloSCJ extends Mission implements Safelet {
 	// work around...
 	static HelloSCJ single;
 
+	// This will actually violate scope rules as the SimplePrintStream is
+	// allocated in mission memory
 	static SimplePrintStream out;
 
 	// From Mission
@@ -55,6 +57,7 @@ public class HelloSCJ extends Mission implements Safelet {
 		}
 		out = new SimplePrintStream(os);
 
+		
 		PeriodicEventHandler peh = new PeriodicEventHandler(
 				new PriorityParameters(11), new PeriodicParameters(
 						new RelativeTime(0, 0), new RelativeTime(500, 0)),
