@@ -55,7 +55,7 @@ public class HostController extends PeriodicEventHandler
 				return;
 			}
 		}
-		for (int i = 0; i < buffer.length; i++) //@WCA loop=64
+		for (int i = 0; i < 32; i++) //@WCA loop <= 32
 		{
 			char character;
 			try

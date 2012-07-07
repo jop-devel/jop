@@ -160,7 +160,7 @@ CALLSTRING_LENGTH=0
 #
 # dataflow analysis
 #
-USE_DFA?=no
+USE_DFA?=yes
 
 
 #
@@ -176,7 +176,7 @@ JCOPTER_USE_WCA?=no
 #
 
 WCET_METHOD=org.reprap.CommandParser.handleAsyncEvent
-WCET_OPTIONS=--use-dfa
+#WCET_OPTIONS=
 
 ################## end of configuration section ###################
 

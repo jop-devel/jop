@@ -244,7 +244,7 @@ public class JOPPrintStream extends PrintStream {
 	static void wr(String s) {
 
 		int i = s.length();
-		for (int j = 0; j < i; ++j) //@WCA loop=4 
+		for (int j = 0; j < 64; ++j) //@WCA loop <= 64 
 		{
 			JVMHelp.wr(s.charAt(j));
 		}
@@ -259,14 +259,16 @@ public class JOPPrintStream extends PrintStream {
 			// val = -val;
 			sign = -1;
 		}
-		for (i = 0; i < MAX_TMP - 1; ++i) {
+		for (i = 0; i < MAX_TMP - 1; ++i) // @WCA loop <= 32 
+		{
 			// tmp[i] = (val%10)+'0';
 			tmp[i] = ((val % 10) * sign) + '0';
 			val /= 10;
 			if (val == 0)
 				break;
 		}
-		for (val = i; val >= 0; --val) {
+		for (val = i; val >= 0; --val) // @WCA loop <= 32
+		{
 			wr((char) tmp[val]);
 		}
 		// wr(' ');

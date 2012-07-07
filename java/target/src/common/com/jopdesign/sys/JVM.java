@@ -1131,7 +1131,7 @@ class JVM {
 					int val_level; 
 					val_level = Native.rdMem(val + GC.OFF_SPACE);
 					if (val_level != 0){
-						GC.log("Illegal static reference");
+						//GC.log("Illegal static reference");
 						}
 				
 				}
@@ -1172,7 +1172,7 @@ class JVM {
 					ref_level = Native.rdMem(ref + GC.OFF_SPACE);
 					val_level = Native.rdMem(value + GC.OFF_SPACE);
 					if (val_level > ref_level){
-						GC.log("Illegal field reference");
+						//GC.log("Illegal field reference");
 					}
 				}
 				
