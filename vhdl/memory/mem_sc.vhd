@@ -656,7 +656,7 @@ begin
 
 		when ialrb =>
 			-- can we optimize this when we increment index at some state?			
-			if (unsigned(index) >= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0))) then
+			if (unsigned(index) >= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0))) and sc_mem_in.rdy_cnt /= 0 then
 				next_state <= abexc;				
 			-- either 1 or 0
 			elsif sc_mem_in.rdy_cnt(1)='0' then
