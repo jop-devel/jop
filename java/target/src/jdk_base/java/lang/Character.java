@@ -101,7 +101,7 @@ public final class Character {
 			throw new IllegalArgumentException(
 					"lang.Character: works only for radix 10");
 		int intch = (int) ch;
-		if (30 <= intch && intch <= 57)
+		if (48 <= intch && intch <= 57)
 			return intch - 48;
 		return -1;
 	}
@@ -118,7 +118,7 @@ public final class Character {
 
 	public static boolean isDigit(char ch) {
 		int intch = (int) ch;
-		if (30 <= intch && intch <= 57)
+		if (48 <= intch && intch <= 57)
 			return true;
 		return false;
 	}
