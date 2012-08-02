@@ -31,13 +31,20 @@ import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 /**
  * A utility class for simple mission sequences.
  * 
+ * 
  * @param <SpecificMission>
  */
 @SCJAllowed
 public class LinearMissionSequencer<SpecificMission extends Mission> extends
 		MissionSequencer<SpecificMission> {
+	
 	SpecificMission single;
-
+	SpecificMission[] missions_;
+	SpecificMission next_mission;
+	String name_;
+	
+	int mission_id = 0;
+	
 	@SCJAllowed
 	@SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
 	public LinearMissionSequencer(PriorityParameters priority,
@@ -45,19 +52,65 @@ public class LinearMissionSequencer<SpecificMission extends Mission> extends
 		super(priority, storage);
 		single = m;
 	}
+	
+	@SCJAllowed
+	@SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
+	public LinearMissionSequencer(PriorityParameters priority, 
+			StorageParameters storage, SpecificMission m, String name){
+		super(priority, storage);
+		single = m;
+		name_ = name;
+	}
 
 	@SCJAllowed
 	@SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
 	public LinearMissionSequencer(PriorityParameters priority,
 			StorageParameters storage, SpecificMission[] missions) {
 		super(priority, storage);
-		throw new Error("Implement me");
+		missions_ = missions;
+	}
+	
+	@SCJAllowed
+	@SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
+	public LinearMissionSequencer(PriorityParameters priority,
+			StorageParameters storage, SpecificMission[] missions, String name) {
+		super(priority, storage);
+		missions_ = missions;
+		name_ = name;
 	}
 
 	@SCJAllowed(SUPPORT)
 	@SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
 	@Override
 	protected SpecificMission getNextMission() {
-		return single;
+		
+		// For an array of missions
+		if (missions_ != null){
+			if (mission_id < missions_.length){
+				next_mission = missions_[mission_id];
+				mission_id++;
+			}else{
+				// No more missions, termination request??
+				next_mission = null;
+				requestSequenceTermination();
+			}
+		
+		// For a single mission
+		}else{
+			if(mission_id == 0){
+				next_mission = single;
+				mission_id++;
+			}else{
+				next_mission = null;
+				requestSequenceTermination();
+			}
+		}
+		
+		current_mission = next_mission;
+		
+//		if (next_mission != null)
+//			next_mission.initialize();
+		
+		return next_mission;
 	}
 }

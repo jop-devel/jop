@@ -49,6 +49,7 @@ public abstract class Mission {
 
 	@SCJAllowed(SUPPORT)
 	protected void cleanUp() {
+		System.out.println("Mission cleanup");
 	}
 
 	@SCJAllowed
@@ -79,6 +80,7 @@ public abstract class Mission {
 
 	@SCJAllowed
 	public static Mission getCurrentMission() {
-		return null;
+		return MissionSequencer.current_mission;
+		//return null;
 	}
 }

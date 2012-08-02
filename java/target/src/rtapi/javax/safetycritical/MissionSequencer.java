@@ -49,6 +49,8 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 	private SwEvent clean;
 //	private boolean cleanupDidRun;
 	public static boolean cleanupDidRun;
+	
+	public static Mission current_mission;
 
 	// why is this static?
 	// ok, in level 1 we have only one mission.
@@ -82,12 +84,21 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 				while (!MissionSequencer.terminationRequest) {
 					waitForNextPeriod();
 				}
-				getNextMission().cleanUp();
+				// Why do we need to call the cleanUp() method of the next
+				// mission after a termination request in the current mission?
+				//getNextMission().cleanUp();
+				
+				// Current mission cleanup method
+				current_mission.cleanUp();
+				
+				// MEH cleanUp method 
 				cleanUp();
+				
 				cleanupDidRun = true;
 			}
+			
 		};
-
+		
 		// clean = new SwEvent(0, 100) {
 		// public void handle() {
 		// if (!cleanupDidRun && terminationRequest) {
@@ -132,7 +143,10 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 
 	@SCJAllowed(LEVEL_2)
 	public final void requestSequenceTermination() {
-		this.getNextMission().requestTermination();
+		// Why do we need to call the cleanUp() method of the next
+		// mission after a termination request in the current mission?
+		//this.getNextMission().requestTermination();
+		current_mission.requestTermination();
 	}
 
 	@SCJAllowed(LEVEL_2)

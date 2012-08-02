@@ -18,7 +18,14 @@ import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 public class RepeatingMissionSequencer<SpecificMission extends Mission>
   extends MissionSequencer<SpecificMission>
 {
-  boolean returnedInitialMission;
+//  boolean returnedInitialMission;
+  
+	SpecificMission single;
+	SpecificMission[] missions_;
+	SpecificMission next_mission;
+	String name_;
+	
+	int mission_id = 0;
 
   /**
    * Throws IllegalStateException if invoked during initialization of
@@ -35,8 +42,24 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
                                 SpecificMission m)
   {
     super(priority, storage);
-    returnedInitialMission = false;
+    single = m;
+    
+//    returnedInitialMission = false;
   }
+  
+  @SCJAllowed
+  @SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
+  public RepeatingMissionSequencer(PriorityParameters priority,
+                                StorageParameters storage,
+                                SpecificMission m, String name)
+  {
+    super(priority, storage);
+    single = m;
+    name_ = name;
+    
+//    returnedInitialMission = false;
+  }
+
 
   /**
    * Throws IllegalStateException if invoked during initialization of
@@ -53,9 +76,23 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
                                 SpecificMission [] missions)
   {
     super(priority, storage);
-    returnedInitialMission = false;
+//    returnedInitialMission = false;
+    missions_ = missions;
   }
 
+  @SCJAllowed
+  @SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
+  public RepeatingMissionSequencer(PriorityParameters priority,
+                                StorageParameters storage,
+                                SpecificMission [] missions, String name)
+  {
+    super(priority, storage);
+//    returnedInitialMission = false;
+    missions_ = missions;
+    name_ = name;
+  }
+
+  
   /**
    * @see javax.safetycritical.MissionSequencer#getNextMission()
    */
@@ -64,7 +101,29 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
   @Override
   protected SpecificMission getNextMission()
   {
-    return null;
+	  
+		// For an array of missions
+		if (missions_ != null){
+			
+			if (mission_id == missions_.length){
+				mission_id = 0;
+			}
+			
+			next_mission = missions_[mission_id];
+			mission_id++;
+
+		
+		// For a single mission, always return the same mission
+		}else{
+			next_mission = single;
+		}
+		
+		current_mission = next_mission;
+		
+//		if (next_mission != null)
+//			next_mission.initialize();
+		
+		return next_mission;
   }
 }
 
