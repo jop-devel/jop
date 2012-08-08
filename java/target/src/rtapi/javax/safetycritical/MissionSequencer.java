@@ -95,6 +95,9 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 				cleanUp();
 				
 				cleanupDidRun = true;
+				
+				System.out.println("XXX");
+
 			}
 			
 		};

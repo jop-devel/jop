@@ -32,6 +32,10 @@ import javax.safetycritical.annotate.SCJAllowed;
 public class StorageParameters {
 
 	private long totalBackingStore;
+	
+	//jrri: what if we use the first element of the sizes array
+	// to specify the size of our scope?
+	private long scopeSize;
 
 	@SCJAllowed
 	public StorageParameters(long totalBackingStore, long[] sizes,
@@ -39,6 +43,9 @@ public class StorageParameters {
 
 	{
 		this.totalBackingStore = totalBackingStore;
+		
+		if(sizes != null)
+		this.scopeSize = sizes[0];
 	}
 
 	@SCJAllowed
@@ -46,8 +53,15 @@ public class StorageParameters {
 		this.totalBackingStore = totalBackingStore;
 	}
 
+	
+	// Both of these methods are not in the spec:
+	
 	long getTotalBackingStoreSize() {
 		return totalBackingStore;
+	}
+
+	long getScopeSize() {
+		return scopeSize;
 	}
 
 }

@@ -78,6 +78,8 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
     super(priority, storage);
 //    returnedInitialMission = false;
     missions_ = missions;
+	
+
   }
 
   @SCJAllowed
@@ -105,7 +107,7 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
 		// For an array of missions
 		if (missions_ != null){
 			
-			if (mission_id == missions_.length){
+			if (mission_id >= missions_.length){
 				mission_id = 0;
 			}
 			
