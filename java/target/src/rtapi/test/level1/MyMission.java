@@ -26,7 +26,8 @@ public class MyMission extends Mission{
 		RelativeTime eh0_period = new RelativeTime(1000, 0);
 		PeriodicParameters eh0_pparams = new PeriodicParameters(eh0_tart, eh0_period);
 		
-		StorageParameters eh0_storage = new StorageParameters(1024, null, 0, 0);
+		long[] sizes = {512};
+		StorageParameters eh0_storage = new StorageParameters(1024, sizes, 0, 0);
 		
 		EventHandler0 EH0 = new EventHandler0(eh0_prio, eh0_pparams, eh0_storage, 512);
 		EH0.register();

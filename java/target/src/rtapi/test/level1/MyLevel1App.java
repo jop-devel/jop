@@ -12,6 +12,7 @@ public class MyLevel1App {
 		
 		JopSystem.startMission(s);
 		
+		System.out.println("everything finished");
 	}
 
 

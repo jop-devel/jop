@@ -14,7 +14,9 @@ public class Level1Safelet implements Safelet{
 	public MissionSequencer<Mission> getSequencer() {
 
 		PriorityParameters seq_prio = new PriorityParameters(13);
-		StorageParameters seq_storage = new StorageParameters(1000000000, null, 0, 0);
+		long[] sizes = {0};
+		
+		StorageParameters seq_storage = new StorageParameters(1, sizes, 0, 0);
 
 		MyMission m0 = new MyMission(0);
 		MyMission m1 = new MyMission(1);
@@ -25,6 +27,7 @@ public class Level1Safelet implements Safelet{
 
 //		return new LinearMissionSequencer<Mission>(seq_prio, seq_storage, missions);
 		return new RepeatingMissionSequencer<Mission>(seq_prio, seq_storage, missions);
+		
 	
 	}
 
