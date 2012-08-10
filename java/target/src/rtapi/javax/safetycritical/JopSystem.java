@@ -45,6 +45,7 @@ public class JopSystem {
 		// this should be a loop
 		Mission m = ms.getNextMission();
 		// that should be done in the sequencer
+		System.out.println("Initialize");
 		m.initialize();
 		
 		
