@@ -27,6 +27,11 @@ import javax.realtime.ReleaseParameters;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
 
+import com.jopdesign.sys.Memory;
+import com.jopdesign.sys.RtThreadImpl;
+
+import joprt.RtThread;
+
 import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 import static javax.safetycritical.annotate.Phase.CLEANUP;
 import static javax.safetycritical.annotate.Level.SUPPORT;
@@ -43,6 +48,7 @@ public abstract class ManagedEventHandler extends BoundAsyncEventHandler
 		implements ManagedSchedulable {
 
 	private String name;
+	public Memory privMem;
 
 	@SCJAllowed(INFRASTRUCTURE)
 	@SCJRestricted(phase = INITIALIZATION)
@@ -50,7 +56,8 @@ public abstract class ManagedEventHandler extends BoundAsyncEventHandler
 			StorageParameters scp, String name) {
 		this.name = name;
 		if (scp != null) {
-			// create memory (backing store)
+			// Create private memory
+			privMem = new Memory((int) scp.getScopeSize(), (int) scp.getTotalBackingStoreSize());
 		}
 	}
 
@@ -58,6 +65,8 @@ public abstract class ManagedEventHandler extends BoundAsyncEventHandler
 	@SCJAllowed(SUPPORT)
 	@SCJRestricted(phase = CLEANUP)
 	public void cleanUp() {
+		
+		System.out.println("Handler cleanup");
 	}
 
 	// TODO: do we need to repeat it here?
@@ -75,5 +84,10 @@ public abstract class ManagedEventHandler extends BoundAsyncEventHandler
 	@SCJAllowed
 	@SCJRestricted(phase = INITIALIZATION)
 	public void register() {
+	}
+	
+	@SCJAllowed
+	public static ManagedEventHandler getCurrentHandler(){
+		return null;
 	}
 }

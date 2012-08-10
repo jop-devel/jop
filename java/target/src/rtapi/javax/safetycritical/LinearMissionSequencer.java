@@ -31,13 +31,22 @@ import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 /**
  * A utility class for simple mission sequences.
  * 
+ * 
  * @param <SpecificMission>
  */
 @SCJAllowed
 public class LinearMissionSequencer<SpecificMission extends Mission> extends
 		MissionSequencer<SpecificMission> {
+	
 	SpecificMission single;
-
+	SpecificMission[] missions_;
+	SpecificMission next_mission;
+	String name_;
+	
+	boolean returnedSingleMission = false;
+	
+	int mission_id = 0;
+	
 	@SCJAllowed
 	@SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
 	public LinearMissionSequencer(PriorityParameters priority,
@@ -45,19 +54,64 @@ public class LinearMissionSequencer<SpecificMission extends Mission> extends
 		super(priority, storage);
 		single = m;
 	}
+	
+	@SCJAllowed
+	@SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
+	public LinearMissionSequencer(PriorityParameters priority, 
+			StorageParameters storage, SpecificMission m, String name){
+		super(priority, storage);
+		single = m;
+		name_ = name;
+	}
 
 	@SCJAllowed
 	@SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
 	public LinearMissionSequencer(PriorityParameters priority,
 			StorageParameters storage, SpecificMission[] missions) {
 		super(priority, storage);
-		throw new Error("Implement me");
+		System.arraycopy(missions, 0, missions_, 0, missions.length);
+	}
+	
+	@SCJAllowed
+	@SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
+	public LinearMissionSequencer(PriorityParameters priority,
+			StorageParameters storage, SpecificMission[] missions, String name) {
+		super(priority, storage);
+		System.arraycopy(missions, 0, missions_, 0, missions.length);
+		name_ = name;
 	}
 
 	@SCJAllowed(SUPPORT)
 	@SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
 	@Override
 	protected SpecificMission getNextMission() {
-		return single;
+		
+		// For an array of missions
+		if (missions_ != null){
+			if (mission_id < missions_.length){
+				next_mission = missions_[mission_id];
+				mission_id++;
+			}else{
+				// No more missions, termination request??
+				next_mission = null;
+				requestSequenceTermination();
+			}
+		
+		// For a single mission
+		}else{
+			if(!returnedSingleMission){
+				next_mission = single;
+				returnedSingleMission = true;
+			}else{
+				next_mission = null;
+				requestSequenceTermination();
+			}
+		}
+		
+		// Just to avoid confusion with the names for the next mission 
+		// to be executed and the current executing mission.
+		current_mission = next_mission;
+		
+		return next_mission;
 	}
 }
