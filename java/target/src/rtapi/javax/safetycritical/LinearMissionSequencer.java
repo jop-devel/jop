@@ -43,6 +43,8 @@ public class LinearMissionSequencer<SpecificMission extends Mission> extends
 	SpecificMission next_mission;
 	String name_;
 	
+	boolean returnedSingleMission = false;
+	
 	int mission_id = 0;
 	
 	@SCJAllowed
@@ -67,7 +69,7 @@ public class LinearMissionSequencer<SpecificMission extends Mission> extends
 	public LinearMissionSequencer(PriorityParameters priority,
 			StorageParameters storage, SpecificMission[] missions) {
 		super(priority, storage);
-		missions_ = missions;
+		System.arraycopy(missions, 0, missions_, 0, missions.length);
 	}
 	
 	@SCJAllowed
@@ -75,7 +77,7 @@ public class LinearMissionSequencer<SpecificMission extends Mission> extends
 	public LinearMissionSequencer(PriorityParameters priority,
 			StorageParameters storage, SpecificMission[] missions, String name) {
 		super(priority, storage);
-		missions_ = missions;
+		System.arraycopy(missions, 0, missions_, 0, missions.length);
 		name_ = name;
 	}
 
@@ -97,19 +99,18 @@ public class LinearMissionSequencer<SpecificMission extends Mission> extends
 		
 		// For a single mission
 		}else{
-			if(mission_id == 0){
+			if(!returnedSingleMission){
 				next_mission = single;
-				mission_id++;
+				returnedSingleMission = true;
 			}else{
 				next_mission = null;
 				requestSequenceTermination();
 			}
 		}
 		
+		// Just to avoid confusion with the names for the next mission 
+		// to be executed and the current executing mission.
 		current_mission = next_mission;
-		
-//		if (next_mission != null)
-//			next_mission.initialize();
 		
 		return next_mission;
 	}

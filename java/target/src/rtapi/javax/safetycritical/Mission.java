@@ -34,6 +34,14 @@ import javax.safetycritical.annotate.Allocate.Area;
  */
 @SCJAllowed
 public abstract class Mission {
+	
+	// To keep track of the state of a mission
+	public static final int INACTIVE = 0;
+	public static final int INITIALIZATION = 1;
+	public static final int EXECUTION = 2;
+	public static final int CLEANUP = 3;
+	
+	public int phase = INACTIVE;
 
 	@Allocate( { Area.THIS })
 	@SCJAllowed

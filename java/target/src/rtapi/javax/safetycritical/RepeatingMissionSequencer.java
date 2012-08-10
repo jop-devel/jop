@@ -18,7 +18,6 @@ import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 public class RepeatingMissionSequencer<SpecificMission extends Mission>
   extends MissionSequencer<SpecificMission>
 {
-//  boolean returnedInitialMission;
   
 	SpecificMission single;
 	SpecificMission[] missions_;
@@ -113,7 +112,6 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
 			
 			next_mission = missions_[mission_id];
 			mission_id++;
-
 		
 		// For a single mission, always return the same mission
 		}else{
@@ -121,9 +119,6 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
 		}
 		
 		current_mission = next_mission;
-		
-//		if (next_mission != null)
-//			next_mission.initialize();
 		
 		return next_mission;
   }

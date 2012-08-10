@@ -30,6 +30,8 @@ import javax.safetycritical.annotate.MemoryAreaEncloses;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
 
+import com.jopdesign.sys.RtThreadImpl;
+
 import joprt.RtThread;
 import joprt.SwEvent;
 
@@ -79,6 +81,7 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 		super(priority, null, storage, name);
 		// just an idle thread that watches the termination request
 		// We should use the inital main thread to watch for termination...
+
 		new RtThread(0, 10000) {
 			public void run() {
 				while (!MissionSequencer.terminationRequest) {
@@ -96,11 +99,37 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 				
 				cleanupDidRun = true;
 				
-				System.out.println("XXX");
-
 			}
 			
 		};
+		
+//		final Runnable runner = new Runnable() {
+//			
+//			public void run() {
+//				handleAsyncEvent();
+//				
+//			}
+//		};
+//		
+//		new RtThread(0, 10000){
+//
+//			public void run() {
+//				while (!MissionSequencer.terminationRequest) {
+//
+//					// This should be the mission memory
+//					privMem.enter(runner);
+//					block();
+////					waitForNextPeriod();
+//				}
+//				// Current mission cleanup method
+//				current_mission.cleanUp();
+//				
+//				// MEH cleanUp method 
+//				cleanUp();
+//			}
+//		};
+		
+		
 		
 		// clean = new SwEvent(0, 100) {
 		// public void handle() {
@@ -128,10 +157,21 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 	@Override
 	@SCJAllowed(INFRASTRUCTURE)
 	public final void handleAsyncEvent() {
-		// Currently used as a means to start the single mission from another package
-		Mission mission = getNextMission();
-		mission.initialize();
-		RtThread.startMission();
+		
+//		System.out.println("getting new mission");
+//		
+////		if (current_mission.phase == Mission.INACTIVE){
+//			// Currently used as a means to start the single mission from another package
+//			Mission mission = getNextMission();
+//			
+//			mission.phase = Mission.INITIALIZATION;
+//			
+//			// TODO: The spec mentions something about mission memory resize...
+//			// mission.missionMemorySize();
+//			
+//			mission.initialize();
+//		}
+		
 	}
 
 	/**
