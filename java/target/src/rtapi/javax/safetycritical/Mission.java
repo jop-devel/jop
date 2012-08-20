@@ -91,4 +91,12 @@ public abstract class Mission {
 		return MissionSequencer.current_mission;
 		//return null;
 	}
+	
+	/**
+	 * NOT PART OF SPEC
+	 */
+	@SCJAllowed(SUPPORT)
+	protected abstract Runnable start();
+
+	
 }

@@ -38,9 +38,9 @@ import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 public class LinearMissionSequencer<SpecificMission extends Mission> extends
 		MissionSequencer<SpecificMission> {
 	
-	SpecificMission single;
-	SpecificMission[] missions_;
-	SpecificMission next_mission;
+	Mission single;
+	Mission[] missions_;
+	Mission next_mission;
 	String name_;
 	
 	boolean returnedSingleMission = false;
@@ -69,6 +69,8 @@ public class LinearMissionSequencer<SpecificMission extends Mission> extends
 	public LinearMissionSequencer(PriorityParameters priority,
 			StorageParameters storage, SpecificMission[] missions) {
 		super(priority, storage);
+		
+		missions_ = new Mission[missions.length];
 		System.arraycopy(missions, 0, missions_, 0, missions.length);
 	}
 	
@@ -77,6 +79,8 @@ public class LinearMissionSequencer<SpecificMission extends Mission> extends
 	public LinearMissionSequencer(PriorityParameters priority,
 			StorageParameters storage, SpecificMission[] missions, String name) {
 		super(priority, storage);
+		
+		missions_ = new Mission[missions.length];
 		System.arraycopy(missions, 0, missions_, 0, missions.length);
 		name_ = name;
 	}
@@ -112,6 +116,6 @@ public class LinearMissionSequencer<SpecificMission extends Mission> extends
 		// to be executed and the current executing mission.
 		current_mission = next_mission;
 		
-		return next_mission;
+		return (SpecificMission) next_mission;
 	}
 }
