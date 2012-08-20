@@ -19,9 +19,9 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
   extends MissionSequencer<SpecificMission>
 {
   
-	SpecificMission single;
-	SpecificMission[] missions_;
-	SpecificMission next_mission;
+	Mission single;
+	Mission[] missions_;
+	Mission next_mission;
 	String name_;
 	
 	int mission_id = 0;
@@ -76,9 +76,8 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
   {
     super(priority, storage);
 //    returnedInitialMission = false;
-    missions_ = missions;
-	
-
+	missions_ = new Mission[missions.length];
+	System.arraycopy(missions, 0, missions_, 0, missions.length);	
   }
 
   @SCJAllowed
@@ -89,7 +88,8 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
   {
     super(priority, storage);
 //    returnedInitialMission = false;
-    missions_ = missions;
+	missions_ = new Mission[missions.length];
+	System.arraycopy(missions, 0, missions_, 0, missions.length);
     name_ = name;
   }
 
@@ -120,7 +120,7 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
 		
 		current_mission = next_mission;
 		
-		return next_mission;
+		return (SpecificMission) next_mission;
   }
 }
 
