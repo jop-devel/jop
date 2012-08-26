@@ -304,7 +304,10 @@ public class State extends ejip.UdpHandler implements Runnable {
 				lastMsgDate = date;			
 				lastMsgTimestamp = time;
 			} else {
-				Main.logger.print("Msg. too old");
+// auskommentiert, da handleMsg() anscheinend zu gross wird
+//len(max:256)=257mreallocals(max:31)=12 margs(max:31)=1
+//wrong size: oebb.State.handleMsg()V
+//				Main.logger.print("Msg. too old");
 				// it's a too old packet
 				ejip.returnPacket(p);
 				return;
@@ -373,7 +376,9 @@ public class State extends ejip.UdpHandler implements Runnable {
 			// askVerschub wird bei Verschubruecknahme durch ZLB-Server wieder auf True gesetzt,
 			// damit hier eine FERL erteilt werden kann.
 			if (val==TYPE_VERSCH) {
-				if (Logic.askVerschub) {
+
+				if ((Logic.askVerschub) && ((type!=TYPE_ZUG) && (type!=TYPE_NF))) {
+				// nicht auf Verschub setzen, wenn BG schon einmal als Zug/Nebenfahrt angemeldet wurde
 					type = val;
 				}
 			} else {
@@ -476,16 +481,20 @@ public class State extends ejip.UdpHandler implements Runnable {
 		
 		// logging
 		if (ferlChanged) {
-			Main.logger.printSmall("Ferl changed, Logic.state=", Logic.state);
-			Main.logger.printSmall("From ", buf[Udp.DATA+4]&0xffff);
-			Main.logger.printSmall("To " , buf[Udp.DATA+5]>>>16);
+// nur gemacht, da handleMsg() anscheinend zu gross wird
+//len(max:256)=257mreallocals(max:31)=12 margs(max:31)=1
+//wrong size: oebb.State.handleMsg()V
+//			Main.logger.printSmall("Ferl changed, Logic.state=", Logic.state);
+//			Main.logger.printSmall("From ", buf[Udp.DATA+4]&0xffff);
+//			Main.logger.printSmall("To " , buf[Udp.DATA+5]>>>16);
+			Sladky1(Logic.state, buf[Udp.DATA+4]&0xffff, buf[Udp.DATA+5]>>>16);
 		}
 		
 		
-		if (val!=0 && ferlChanged && (Logic.state==Logic.ANM_OK || Logic.state==Logic.ZIEL
-				|| Logic.state==Logic.NOTHALT_OK || Logic.state==Logic.ERLAUBNIS)) {
-			Main.logger.printSmall("new ferl accepted with state check, from=", buf[Udp.DATA+4]&0xffff);			
-		}
+//		if (val!=0 && ferlChanged && (Logic.state==Logic.ANM_OK || Logic.state==Logic.ZIEL
+//				|| Logic.state==Logic.NOTHALT_OK || Logic.state==Logic.ERLAUBNIS)) {
+//			Main.logger.printSmall("new ferl accepted with state check, from=", buf[Udp.DATA+4]&0xffff);			
+//		}
 		// For a test accept FERL in any Logic.state
 		if (val!=0 && ferlChanged) {
 			// this is now a FERL event and we accept the change
@@ -493,7 +502,15 @@ public class State extends ejip.UdpHandler implements Runnable {
 			// askVerschub = False wenn Verschub mit Taste C abgebrochen wurde
 			// askVerschub wird bei Verschubruecknahme durch ZLB-Server wieder auf True gesetzt,
 			// damit hier eine FERL erteilt werden kann.
-			if (Logic.askVerschub) {
+			//
+			// nur bei askverschub=treu && (ZN=0 + type=verschub oder ZN!=0 + type!=verschub)
+			int val1 = (buf[Udp.DATA+6]&0xffff)>>>13;
+			if ((Logic.askVerschub) && 
+				(((strZugnr & 0xfffff)==0) && (val1==TYPE_VERSCH)) || (((strZugnr & 0xfffff)!=0) && (val1!=TYPE_VERSCH))
+				) {
+			
+//			}
+//			if (Logic.askVerschub) {
 				synchronized (this) {
 					start = buf[Udp.DATA+4]&0xffff;
 					end = buf[Udp.DATA+5]>>>16;
@@ -804,4 +821,13 @@ public class State extends ejip.UdpHandler implements Runnable {
 		return pos;
 	}
 
+// nur gemacht, da handleMsg() anscheinend zu gross wird
+//len(max:256)=257mreallocals(max:31)=12 margs(max:31)=1
+//wrong size: oebb.State.handleMsg()V
+	private void Sladky1(int state1, int from1, int to1) {
+			Main.logger.printSmall("Ferl changed, Logic.state=", state1);
+			Main.logger.printSmall("From ", from1);
+			Main.logger.printSmall("To " , to1);
+	} 
+	
 }
