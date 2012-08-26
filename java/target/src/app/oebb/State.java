@@ -367,8 +367,27 @@ public class State extends ejip.UdpHandler implements Runnable {
 		// all state update synchronized
 		synchronized (this) {
 			// update when Verschub
+			// Wenn Type vom ZLB-Server gerade auf Verschub gesetzt ist
+			// aber nur wenn Verschub nicht mit Taste C abgebrochen wurde
+			// askVerschub = False wenn Verschub mit Taste C abgebrochen wurde
+			// askVerschub wird bei Verschubruecknahme durch ZLB-Server wieder auf True gesetzt,
+			// damit hier eine FERL erteilt werden kann.
 			if (val==TYPE_VERSCH) {
-				type = val;
+				if (Logic.askVerschub) {
+					type = val;
+				}
+			} else {
+			// Wenn Type vom ZLB-Server nicht auf Verschub gesetzt ist
+			// Type zuruecksetzen nachdem ZLB-Server die Verschubfreigabe zurueckgenommen hat
+			// Damit bei Verschub-Ruecknahme am ZLB-Server
+			// der Type zurueckgesetzt wird, damit die Abfrage isVerschub() bei
+			// 'if (!isVerschub) break;' in verschub() dann False liefert und
+			// damit das Anmeldemenue kommt
+				if (type==TYPE_VERSCH) {
+					type = TYPE_UNKNOWN;
+				}				
+			// Sicherheitshalber immer aktivieren wenn vom ZLB-Server etwas anderes als Verschubfreigabe kommt
+			Logic.askVerschub = true;
 			}
 			// update ack with cmd as default action
 			cmdAck = cmd;
@@ -470,18 +489,27 @@ public class State extends ejip.UdpHandler implements Runnable {
 		// For a test accept FERL in any Logic.state
 		if (val!=0 && ferlChanged) {
 			// this is now a FERL event and we accept the change
-			synchronized (this) {
-				start = buf[Udp.DATA+4]&0xffff;
-				end = buf[Udp.DATA+5]>>>16;
-				startNF = buf[Udp.DATA+5]&0xffff;
+			// aber nur wenn Verschub nicht mit Taste C abgebrochen wurde
+			// askVerschub = False wenn Verschub mit Taste C abgebrochen wurde
+			// askVerschub wird bei Verschubruecknahme durch ZLB-Server wieder auf True gesetzt,
+			// damit hier eine FERL erteilt werden kann.
+			if (Logic.askVerschub) {
+				synchronized (this) {
+					start = buf[Udp.DATA+4]&0xffff;
+					end = buf[Udp.DATA+5]>>>16;
+					startNF = buf[Udp.DATA+5]&0xffff;
+				}
+				Main.logger.printSmall("new ferl accepted, from=", start);
+				synchronized (Status.dirMutex) {
+					// let Logik.check() update the direction
+					Status.direction = Gps.DIR_UNKNOWN;
+				}
+				if (type!=TYPE_VERSCH) {
+				// FERL nur machen, wenn nicht gerade Verschub vom ZLB-Server freigegeben ist
+					Dbg.wr("set FERL");
+					Logic.state = Logic.ERLAUBNIS;			
+				}
 			}
-			Main.logger.printSmall("new ferl accepted, from=", start);
-			synchronized (Status.dirMutex) {
-				// let Logik.check() update the direction
-				Status.direction = Gps.DIR_UNKNOWN;
-			}
-			Dbg.wr("set FERL");
-			Logic.state = Logic.ERLAUBNIS;			
 		}
 
 

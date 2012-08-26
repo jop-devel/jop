@@ -97,6 +97,8 @@ public class Logic extends RtThread {
 	static final int CHECK_TIMEOUT = 3;
 	
 	static boolean dlChecked;
+	
+	static boolean askVerschub;
 
 
 	Logic(int prio, int period, LinkLayer ipl) {
@@ -153,6 +155,8 @@ System.out.println("Logic.initVals()");
 		checkMove = false;
 		checkDirection = false;
 		Status.esMode = false;
+		
+		askVerschub = true;
 	}
 
 	public void run() {
@@ -896,7 +900,22 @@ System.out.println("Download server connect timeout");
 			to = state.end;
 		}
 		
-		if (!isVerschub) return true;
+		// isVerschub: Verschub is active and not canceled by pressing 'C'. 
+		// isVerschub:	True wenn Verschub vom ZLB-Server aktiviert ist
+		//				False wenn Verschub vom ZLB-Server nicht aktiviert ist oder
+		//					von check() bei Ueberschreitung der Verschubfreigabe auf False gesetzt
+		//					von verschub() bei Tastendruck C auf False gesetzt
+		// Verschub vom ZLB-Server nicht aktiviert, dann zurueck (True)
+		if (!isVerschub) {
+			synchronized (state) {
+			// damit bei Verschub-Ruecknahme am ZLB-Server bzw.
+			// Taste C im Verschub
+			// die Start-MLR bzw. Ziel-MLR wird auf Null gesetzt, wie es der ZLB-Server auch macht
+				state.start = 0;
+				state.end = 0;
+			}
+			return true;
+		}
 		
 		// Status.state change in loop()
 		if (Logic.state!=Logic.FDL_CONN || Status.dispMenu) return true;
@@ -920,10 +939,24 @@ System.out.println("Download server connect timeout");
 				from = state.start;
 				to = state.end;
 			}
-			if (!isVerschub) break;
+			if (!isVerschub) {
+				synchronized (state) {
+				// damit bei Verschub-Ruecknahme am ZLB-Server bzw.
+				// Taste C im Verschub
+				// die Start-MLR bzw. Ziel-MLR wird auf Null gesetzt, wie es der ZLB-Server auch macht
+					state.start = 0;
+					state.end = 0;
+			}			
+				break;
+			}
 
 			int val = Keyboard.rd();
 			if (val==Keyboard.C) {
+				synchronized (state) {
+					// start und end auf 0 setzen (wie auch vom ZLB-Server gesendet)
+					state.start = 0;
+					state.end = 0;
+				}			
 				isVerschub = false;
 				return false;
 			} else if (val==Keyboard.B) {
@@ -947,7 +980,7 @@ System.out.println("Download server connect timeout");
 		// load default strings for Verschub
 		Flash.loadStrNames(Main.state.strnr, 0, 0);
 
-		boolean askVerschub = verschub();
+		askVerschub = verschub();
 		if (Logic.state!=Logic.FDL_CONN || Status.dispMenu) return;
 		val = 0;
 		state.type = State.TYPE_UNKNOWN;
@@ -963,7 +996,7 @@ System.out.println("Download server connect timeout");
 				return;
 			}
 			// did we reset and get the data from the ZLB?
-			if (state.zugnr!=0 && state.type!=0) {
+			if (state.zugnr!=0 && state.type!=0 && Main.state.type!=Main.state.TYPE_VERSCH) {
 				if (state.start!=state.end) {
 					Logic.state = Logic.ERLAUBNIS;										
 				} else {
@@ -1047,10 +1080,17 @@ System.out.println("Download server connect timeout");
 		while (loop()) {
 			Display.write("Anmelden", "(bitte warten)", "(Fdl verständigen)");
 			// wait for Anmelden OK or we already got a FERL
-			if (Events.anmeldenOk || Main.state.start!=0 || hilfsbtr) {
+			// Aenderung: nur machen bei FERL vom ZLB-Server, wenn type nicht Verschub ist
+			// damit bei Taste C im Verschub
+			// keine FERL kommt
+			if (Events.anmeldenOk ||
+				((Main.state.start!=0) && (Main.state.type!=Main.state.TYPE_VERSCH)) || hilfsbtr) {
+			
 				Logic.state = Logic.ANM_OK;
 				Events.anmeldenOk = false;
-				if (Main.state.start!=Main.state.end) {
+				// startNF wird vom ZLB-Server nur bei einer FERL übertragen
+				// (Laut Ausprobieren so gesehen)
+				if ((Main.state.start!=Main.state.end) && (Main.state.startNF!=0)) {				
 					// we also got a FERL
 					Logic.state = Logic.ERLAUBNIS;
 				}
