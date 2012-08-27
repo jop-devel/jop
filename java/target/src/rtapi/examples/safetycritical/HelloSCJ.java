@@ -41,23 +41,23 @@ public class HelloSCJ extends Mission implements Safelet {
 	// work around...
 	static HelloSCJ single;
 
-	// This will actually violate scope rules as the SimplePrintStream is
-	// allocated in mission memory
+	// Allocate the output console in immortal memory for all missions
 	static SimplePrintStream out;
-
-	// From Mission
-	@Override
-	protected void initialize() {
-
-		OutputStream os = null;
+	static OutputStream os;
+	static {
 		try {
 			os = Connector.openOutputStream("console:");
 		} catch (IOException e) {
 			throw new Error("No console available");
 		}
-		out = new SimplePrintStream(os);
-
-		
+		out = new SimplePrintStream(os);		
+	}
+	
+	// From Mission
+	@Override
+	protected void initialize() {
+	
+		System.out.println("abc");
 		PeriodicEventHandler peh = new PeriodicEventHandler(
 				new PriorityParameters(11), new PeriodicParameters(
 						new RelativeTime(0, 0), new RelativeTime(500, 0)),
@@ -73,7 +73,13 @@ public class HelloSCJ extends Mission implements Safelet {
 				}
 			}
 		};
+		System.out.println("xyz");
 		peh.register();
+	}
+
+	@Override
+	public long missionMemorySize() {
+		return 100000;
 	}
 
 	// Safelet methods
@@ -82,11 +88,6 @@ public class HelloSCJ extends Mission implements Safelet {
 		// we assume this method is invoked only once
 		StorageParameters sp = new StorageParameters(1000000, null);
 		return new LinearMissionSequencer(new PriorityParameters(13), sp, this);
-	}
-
-	@Override
-	public long missionMemorySize() {
-		return 100000;
 	}
 
 	@Override

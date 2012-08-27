@@ -58,7 +58,7 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 	// ThreadConfiguration tconf;
 	String name;
 	
-	Memory privMem; 
+	//Memory privMem; 
 
 	RtThread thread;
 
@@ -97,7 +97,7 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 			off = Integer.MAX_VALUE;
 		}
 		
-		privMem = new Memory((int) scopeSize, (int) scp.getTotalBackingStoreSize());
+		//privMem = new Memory((int) scopeSize, (int) scp.getTotalBackingStoreSize());
 
 		final Runnable runner = new Runnable() {
 			@Override

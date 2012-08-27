@@ -24,6 +24,8 @@
  */
 package javax.safetycritical;
 
+import com.jopdesign.sys.Memory;
+
 import joprt.RtThread;
 
 /**
@@ -51,5 +53,26 @@ public class JopSystem {
 		Terminal.getTerminal().writeln("SCJ Start mission on JOP");
 		RtThread.startMission();
 	}
+	
+	public static void runMission(Safelet scj){
+		
+		MissionSequencer ms = scj.getSequencer();
+		
+		Memory missionMem;
+		Mission m;
+		
+		//initial mission
+		m = ms.getNextMission();
+		
+		while(m != null){
 
+			int x = (int) m.missionMemorySize();
+			
+			// In mission memory
+			Memory.getCurrentMemory().enterPrivateMemory(x, m.start());
+			
+			// When we return from mission memory
+			m = ms.getNextMission();
+		}
+	}
 }
