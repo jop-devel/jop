@@ -17,29 +17,36 @@
 package org.reprap.commands;
 
 import org.reprap.Command;
+import org.reprap.CommandController;
+import org.reprap.HostController;
 import org.reprap.Parameter;
 import org.reprap.RepRapController;
 
 //Set Position
 public class G92 extends Command
 {
-	private static G92 instance = new G92();//Unbuffered command so only single instance
-	
+	private RepRapController repRapController;
 	private Parameter parameters = new Parameter();
 	
-	public static boolean enqueue(Parameter parameters)
+	G92(HostController hostController, CommandController commandController, RepRapController repRapController) 
 	{
-		instance.parameters.X = parameters.X;
-		instance.parameters.Y = parameters.Y;
-		instance.parameters.Z = parameters.Z;
-		instance.parameters.E = parameters.E;
-		return instance.addToQueue();
+		super(hostController, commandController);
+		this.repRapController = repRapController;
+	}
+	
+	public boolean enqueue(Parameter parameters) 
+	{
+		this.parameters.X = parameters.X;
+		this.parameters.Y = parameters.Y;
+		this.parameters.Z = parameters.Z;
+		this.parameters.E = parameters.E;
+		return super.enqueue();
 	}
 	
 	@Override
 	public boolean execute() 
 	{
-		RepRapController.instance.setPosition(parameters);
+		repRapController.setPosition(parameters);
 		return true;
 	}
 }

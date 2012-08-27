@@ -19,7 +19,7 @@
 */
 
 /*
-	Author: Tórur Biskopstø Strøm (torur.strom@gmail.com)
+	Author: Tï¿½rur Biskopstï¿½ Strï¿½m (torur.strom@gmail.com)
 */
 
 package com.jopdesign.io;

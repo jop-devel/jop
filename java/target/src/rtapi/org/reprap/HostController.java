@@ -22,19 +22,25 @@ import javax.realtime.RelativeTime;
 import javax.safetycritical.PeriodicEventHandler;
 import javax.safetycritical.StorageParameters;
 
+import com.jopdesign.io.IOFactory;
+import com.jopdesign.io.SerialPort;
+
 public class HostController extends PeriodicEventHandler
 {
-	public static HostController instance;
+	public final static int MAX_STRING_LENGTH = 64;
+	//From Integer
+	private static final char[] digits = {
+	    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+	    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
+	    'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+	    'u', 'v', 'w', 'x', 'y', 'z',
+	};
 	
-	private final String ok = "ok\n\r";
-	private final String rs = "rs\n\r";
-	
-	private char[] buffer = new char[64];
-	private boolean full = false;
+	private CharacterBuffer buffer = new CharacterBuffer();
 	private boolean comment = false;
-	private int characterCount = 0;
 	private Object bufferLock = new Object();
 	private int lineNumber = 0;
+	private SerialPort SP = IOFactory.getFactory().getSerialPort();
 	
 	HostController()
 	{
@@ -47,26 +53,23 @@ public class HostController extends PeriodicEventHandler
 	@Override
 	public void handleAsyncEvent()
 	{
-		synchronized (bufferLock) 
+		//Buffer is still full so do nothing
+		if(buffer.isReady())
 		{
-			//Buffer is still full so do nothing
-			if(full)
-			{
-				return;
-			}
+			return;
 		}
 		for (int i = 0; i < 32; i++) //@WCA loop <= 32
 		{
 			char character;
 			try
 			{
-				if(System.in.available() == 0)
+				if(!SP.rxFull())
 				{
 					//No input
 					//System.out.print("");
 					return;
 				}
-				character = (char)System.in.read();
+				character = (char)SP.read();
 			}
 			catch(Exception e)
 			{
@@ -84,83 +87,99 @@ public class HostController extends PeriodicEventHandler
 			else if(character == '\n' || character == '\r')
 			{
 				comment = false;
-				if(characterCount > 0)
+				if(buffer.getCount() > 0)
 				{
-					synchronized (bufferLock) 
-					{
-						full = true;
-						lineNumber++;
-					}
+					buffer.setReady(true);
+					lineNumber++;
 					return;
 				}
 			}
-			else if(!comment && characterCount < buffer.length) //Ignore comments
+			else if(!comment) //Ignore comments
 			{
-				buffer[characterCount++] = character;
+				if(!buffer.addChar(character))
+				{
+					print("rs // Command too long\n\r");
+				}
 			}
 		}
 	}
 	
-	synchronized void resendCommand(String message)
+	void resendCommand(String message)
 	{
-		//reply("rs",message);
-		System.out.print(rs);
+		print("rs //");
+		print(message);
 	}
 	
-	synchronized void confirmCommand(String message)
+	public void confirmCommand(String message)
 	{
-		//reply("ok",message);
-		System.out.print(ok);
+		print("ok //");
+		print(message);
 	}
 	
-	private void reply(String type, String message)
+	char[] getLine()
 	{
-		/*int tempLineNumber;
-		synchronized (bufferLock) 
-		{
-			tempLineNumber = lineNumber;
-		}
-		StringBuilder sb = new StringBuilder();
-		sb.append(type);
-		sb.append(" ");
-		sb.append(tempLineNumber);
-		sb.append("//");
-		sb.append(message);
-		sb.append("\n\r");
-		synchronized (sendLock) 
-		{
-			System.out.print(sb);
-		}*/
-	}
-	
-	int getLine(char[] buffer)
-	{
-		synchronized (bufferLock) 
-		{
-			if(!full)
-			{
-				return 0;
-			}
-		}
-		int tmpCharacterCount = characterCount;
-		characterCount = 0;
-		for (int i = 0; i < tmpCharacterCount; i++) //@WCA loop=64
-		{
-			buffer[i] = this.buffer[i];
-		}
-		synchronized (bufferLock) 
-		{
-			full = false;
-			return tmpCharacterCount;
-		}
+		char[] chars = buffer.getChars();
+		buffer.setReady(false);
+		return chars;
 	}
 	
 	//If the host isn't waiting for the M110 ok, there is no guarantee what the line number will be  
-	public void setLineNumber(int lineNumber)
+	synchronized public void setLineNumber(int lineNumber)
 	{
-		synchronized (bufferLock) 
+		this.lineNumber = lineNumber;
+	}
+	
+	synchronized void print(String string)
+	{
+		for(int i = 0; i < string.length() && i < MAX_STRING_LENGTH; i++)
 		{
-			this.lineNumber = lineNumber;
+			SP.write(string.charAt(i));
+		}
+	}
+	
+	void print(int integer)
+	{
+		System.out.println(23);
+		SP.write(integer);
+	    
+		//////////From Integer////////////
+		int radix = 10;
+	    // For negative numbers, print out the absolute value w/ a leading '-'.
+	    // Use an array large enough for a binary number.
+	    char[] buffer = new char[33];
+	    int i = 33;
+	    boolean isNeg = false;
+	    if (integer < 0)
+		{
+	    	isNeg = true;
+	    	integer = -integer;
+		
+		    // When the value is MIN_VALUE, it overflows when made positive
+		    if (integer < 0)
+		    {
+		    	buffer[--i] = digits[(int) (-(integer + radix) % radix)];
+		    	integer = -(integer / radix);
+		    }
+		}
+	    
+	    do
+	    {
+	    	buffer[--i] = digits[integer % radix];
+	    	integer /= radix;
+	    }
+	    while (integer > 0); //@WCA loop=33
+
+	    if (isNeg)
+	      buffer[--i] = '-';
+	    
+	    print(buffer);
+	}
+	
+	synchronized void print(char[] chars)
+	{
+		for(int i = 0; i < chars.length && i < MAX_STRING_LENGTH; i++)
+		{
+			SP.write(chars[i]);
 		}
 	}
 	

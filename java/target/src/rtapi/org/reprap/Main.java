@@ -71,17 +71,28 @@ public class Main implements Safelet
 			@Override
 			public long missionMemorySize()
 			{
-				return 50;
+				return 5000;
 			}
+			
+			HostController hostController;
+			RepRapController repRapController;
+			CommandController commandController;
+			CommandParser commandParser;
 			
 			@Override
 			protected void initialize()
 			{
-				HostController.instance = new HostController();
-				RepRapController.instance = new RepRapController();
-				CommandParser.instance = new CommandParser();
-				CommandController.instance = new CommandController();
-				//IICController peh5 = IICController.instance;
+				hostController = new HostController();
+				repRapController = new RepRapController();
+				commandController = new CommandController();
+				commandParser = new CommandParser(hostController);
+			}
+
+			@Override
+			protected Runnable start() 
+			{
+				// TODO Auto-generated method stub
+				return null;
 			}
 		}
 	}

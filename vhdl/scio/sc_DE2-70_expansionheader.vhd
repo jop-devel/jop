@@ -9,7 +9,7 @@
 Library IEEE;
 use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
-
+use ieee.std_logic_unsigned.all;
 use work.jop_types.all;
 use work.sc_pack.all;
 use work.jop_config.all;
@@ -40,15 +40,56 @@ end expansionheader;
 
 
 architecture rtl of expansionheader is
+	signal readtemp : std_logic;
+	signal cnt : std_logic_vector(31 downto 0);
+	signal cntvalue : std_logic_vector(31 downto 0);
 begin
 	
-	--sc_rd_data <= GPIO_0;
-	--GPIO_0 <= sc_wr_data when sc_wr='1' else (others => 'Z');
-			
-	process(CLK)
+	process(clk, reset)
 	begin
-		if(rising_edge(CLK)) then
+		if(reset='1') then
+			GPIO_0(0) <= '0';
+			GPIO_0(1) <= '0';
+			GPIO_0(2) <= '0';
+			GPIO_0(4) <= '0';
+			GPIO_0(6) <= '0';
+			GPIO_0(8) <= '0';
+			GPIO_0(10) <= '0';
+			GPIO_0(12) <= '0';
+			GPIO_0(16) <= '0';
+			GPIO_0(18) <= '0';
+			GPIO_0(20) <= '0';
+			GPIO_0(22) <= '0';
+			GPIO_0(23) <= '0';
+			GPIO_0(24) <= '0';
+			GPIO_0(25) <= '0';
+			GPIO_0(26) <= '0';
+			GPIO_0(28) <= '0';
+			sc_rd_data <= (others => '0');
+			readtemp <= '0';
+			cntvalue <= (others => '0');
+			cnt <= (others => '0');
+		elsif(rising_edge(clk)) then
+			
+			if(readtemp = '1') then
+				if(GPIO_0(27) = '1') then
+					cntvalue <= cnt;
+					cnt <= (others => '0');
+					readtemp <= '0';
+				else
+					cnt <= cnt + 1;
+				end if;
+			else
+				if(cnt = 1000000) then
+					readtemp <= '1';
+					cnt <= (others => '0');
+				else
+					cnt <= cnt + 1;
+				end if;
+			end if;
+			
 			if(sc_wr = '1') then
+			
 				GPIO_0(0) <= sc_wr_data(0); --Motor1 step
 				GPIO_0(1) <= sc_wr_data(1); --Motor1 reset
 				GPIO_0(2) <= sc_wr_data(2); --Motor1 dir
@@ -66,21 +107,37 @@ begin
 				GPIO_0(25) <= sc_wr_data(25); --Heater2
 				GPIO_0(26) <= sc_wr_data(26); --Motor5 step
 				GPIO_0(28) <= sc_wr_data(28); --Motor5 dir
+				
+			elsif(sc_rd = '1') then
+--				sc_rd_data(2 downto 0) <= (others => '0');
+--				sc_rd_data(3) <= GPIO_0(3); --Endstop1
+--				sc_rd_data(4) <= '0';
+--				sc_rd_data(5) <= GPIO_0(5); --Endstop2
+--				sc_rd_data(6) <= '0';
+--				sc_rd_data(7) <= GPIO_0(7); --Endstop3
+--				sc_rd_data(26 downto 8) <= (others => '0');
+--				sc_rd_data(27) <= GPIO_0(27);
+--				sc_rd_data(31 downto 28) <= (others => '0');
+				sc_rd_data(31 downto 1) <= cntvalue(30 downto 0);
+				sc_rd_data(0) <= readtemp;
 			end if;
 		end if;
 	end process;
 	
-	GPIO_0(3) <= 'Z';
-	GPIO_0(5) <= 'Z';
-	GPIO_0(7) <= 'Z';
+	GPIO_0(9) <= '0';
+	GPIO_0(11) <= '0';
+	GPIO_0(13) <= '0';
+	GPIO_0(14) <= '0';
+	GPIO_0(15) <= '0';
+	GPIO_0(17) <= '0';
+	GPIO_0(19) <= '0';
+	GPIO_0(21) <= '0';
+	GPIO_0(30) <= '0';
+	GPIO_0(31) <= '0';
+	GPIO_0(29) <= '1';
 	
-	sc_rd_data(2 downto 0) <= (others => '0');
-	sc_rd_data(3) <= GPIO_0(3); --Endstop1
-	sc_rd_data(4) <= '0';
-	sc_rd_data(5) <= GPIO_0(5); --Endstop2
-	sc_rd_data(6) <= '0';
-	sc_rd_data(7) <= GPIO_0(7); --Endstop3
-	sc_rd_data(31 downto 8) <= (others => '0');
+	GPIO_0(27) <= '0' when (readtemp = '0') else 'Z';
+	
 
 end rtl;
 

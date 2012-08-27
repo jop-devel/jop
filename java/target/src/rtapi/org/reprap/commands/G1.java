@@ -22,60 +22,30 @@ import org.reprap.HostController;
 import org.reprap.Parameter;
 import org.reprap.RepRapController;
 
-public class G1 extends Command
+class G1 extends Command
 {
-	private static final int POOL_SIZE = 30;
-	private static G1 first;
-	private static G1 last;
-	private static Object lock = new Object();
-	private static boolean initialized = initialize(); //Ensures that pool is created in immortal memory so that all PEH have access
-	
-	private G1 next;
+	G1 next;
+	private RepRapController repRapController;
+	private G1Pool pool;
 	private Parameter parameters = new Parameter();
 	private boolean executed = false;
 	
-	private static boolean initialize()
+	G1(HostController hostController, CommandController commandController, RepRapController repRapController, G1Pool pool) 
 	{
-		//No need for mutex as the pool is empty
-		G1 current = new G1();
-		first = current;
-		for(int i = 0; i < POOL_SIZE-1; i++) //@WCA loop=30
-		{
-			G1 temp = new G1();
-			current.next = temp;
-			current = temp;
-		}
-		last = current;
-		initialized = true;
-		return true;
+		super(hostController, commandController);
+		this.repRapController = repRapController;
+		this.pool = pool;
 	}
 	
-	//The G1 command is put into the Command queue, NOT the G1 pool
-	public static boolean enqueue(Parameter parameters)
+	public void setParameters(Parameter parameters) 
 	{
-		G1 temp;
-		synchronized (lock) 
-		{
-			if(first == null)
-			{
-				//Empty pool
-				return false;
-			}
-			temp = first;
-			first = temp.next;
-			if(first == null)
-			{
-				last = null;
-			}
-		}
-		temp.parameters.X = parameters.X;
-		temp.parameters.Y = parameters.Y;
-		temp.parameters.Z = parameters.Z;
-		temp.parameters.E = parameters.E;
-		temp.parameters.F = parameters.F;
-		temp.parameters.S = parameters.S;
-		temp.executed = false;
-		return temp.addToQueue();
+		this.parameters.X = parameters.X;
+		this.parameters.Y = parameters.Y;
+		this.parameters.Z = parameters.Z;
+		this.parameters.E = parameters.E;
+		this.parameters.F = parameters.F;
+		this.parameters.S = parameters.S;
+		this.executed = false;
 	}
 	
 	@Override
@@ -83,33 +53,15 @@ public class G1 extends Command
 	{
 		if(!executed)
 		{
-			RepRapController.instance.setTarget(parameters);
+			repRapController.setTarget(parameters);
 			executed=true;
 		}
-		if(RepRapController.instance.inPosition())
+		if(repRapController.inPosition())
 		{
-			returnToPool();
+			pool.returnToPool(this);
 			return true;
 		}
 		return false;
-	}
-	
-	private void returnToPool()
-	{
-		synchronized (lock) 
-		{
-			if(last == null)
-			{
-				//Empty queue
-				first = this;
-			}
-			else
-			{
-				last.next = this;
-			}
-			last = this;
-			next = null;
-		}
 	}
 	
 	@Override

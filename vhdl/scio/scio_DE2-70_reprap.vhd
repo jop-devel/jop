@@ -251,50 +251,50 @@ begin
 	);
 	
 	
-	wb: entity work.sc2wb generic map (
-			addr_bits => 3
-		)
-		port map(
-			clk => clk,
-			reset => reset,
-
-			address => sc_io_out.address(2 downto 0),
-			wr_data => sc_io_out.wr_data,
-			rd => sc_rd(IIC),
-			wr => sc_wr(IIC),
-			rd_data => sc_dout(IIC),
-			rdy_cnt => sc_rdy_cnt(IIC),
-
-			wb_out => wb_out,
-			wb_in => wb_in
-	);
-	
-	i2c: entity work.i2c_master_top 
-		port map(
-			wb_clk_i => clk,               -- master clock input
-			wb_rst_i => reset,                 -- synchronous active high reset
-			wb_adr_i => wb_out.adr_o(2 downto 0), -- lower address bits
-			wb_dat_i => wb_out.dat_o(7 downto 0), -- Databus input
-			wb_dat_o => wb_in.dat_i(7 downto 0), -- Databus output
-			wb_we_i => wb_out.we_o, -- Write enable input
-			wb_stb_i => wb_out.stb_o, -- Strobe signals / core select signal
-			wb_cyc_i => wb_out.cyc_o, -- Valid bus cycle input
-			wb_ack_o => wb_in.ack_i, -- Bus cycle acknowledge output
-			wb_inta_o => open, -- interrupt request output signal
-
-			-- i2c lines
-			scl_pad_i => scl_pad_i,
-			scl_pad_o => scl_pad_o,
-			scl_padoen_o => scl_padoen_o,
-			sda_pad_i => sda_pad_i,
-			sda_pad_o => sda_pad_o,
-			sda_padoen_o => sda_padoen_o
-	);
-	
-	--All devices connected to SDA and SCL must have open drain or open collector outputs.
-	GPIO_0(29) <= scl_pad_o when (scl_padoen_o = '0') else 'Z'; 
-	GPIO_0(27) <= sda_pad_o when (sda_padoen_o = '0') else 'Z'; 
-	scl_pad_i <= GPIO_0(29); 
-	sda_pad_i <= GPIO_0(27);
+--	wb: entity work.sc2wb generic map (
+--			addr_bits => 3
+--		)
+--		port map(
+--			clk => clk,
+--			reset => reset,
+--
+--			address => sc_io_out.address(2 downto 0),
+--			wr_data => sc_io_out.wr_data,
+--			rd => sc_rd(IIC),
+--			wr => sc_wr(IIC),
+--			rd_data => sc_dout(IIC),
+--			rdy_cnt => sc_rdy_cnt(IIC),
+--
+--			wb_out => wb_out,
+--			wb_in => wb_in
+--	);
+--	
+--	i2c: entity work.i2c_master_top 
+--		port map(
+--			wb_clk_i => clk,               -- master clock input
+--			wb_rst_i => reset,                 -- synchronous active high reset
+--			wb_adr_i => wb_out.adr_o(2 downto 0), -- lower address bits
+--			wb_dat_i => wb_out.dat_o(7 downto 0), -- Databus input
+--			wb_dat_o => wb_in.dat_i(7 downto 0), -- Databus output
+--			wb_we_i => wb_out.we_o, -- Write enable input
+--			wb_stb_i => wb_out.stb_o, -- Strobe signals / core select signal
+--			wb_cyc_i => wb_out.cyc_o, -- Valid bus cycle input
+--			wb_ack_o => wb_in.ack_i, -- Bus cycle acknowledge output
+--			wb_inta_o => open, -- interrupt request output signal
+--
+--			-- i2c lines
+--			scl_pad_i => scl_pad_i,
+--			scl_pad_o => scl_pad_o,
+--			scl_padoen_o => scl_padoen_o,
+--			sda_pad_i => sda_pad_i,
+--			sda_pad_o => sda_pad_o,
+--			sda_padoen_o => sda_padoen_o
+--	);
+--	
+--	--All devices connected to SDA and SCL must have open drain or open collector outputs.
+--	GPIO_0(29) <= scl_pad_o when (scl_padoen_o = '0') else 'Z'; 
+--	GPIO_0(27) <= sda_pad_o when (sda_padoen_o = '0') else 'Z'; 
+--	scl_pad_i <= GPIO_0(29); 
+--	sda_pad_i <= GPIO_0(27);
 	
 end rtl;

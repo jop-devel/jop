@@ -17,15 +17,15 @@
 package org.reprap.commands;
 
 import org.reprap.Command;
+import org.reprap.CommandController;
+import org.reprap.HostController;
 
 
 public class M105 extends Command
 {
-	private static M105 instance = new M105();//Unbuffered command so only single instance
-	
-	public static boolean enqueue()
+	M105(HostController hostController, CommandController commandController) 
 	{
-		return instance.addToQueue();
+		super(hostController, commandController);
 	}
 	
 	@Override
@@ -38,6 +38,6 @@ public class M105 extends Command
 	@Override
 	public void respond() 
 	{
-		System.out.print("ok T:201 B:117\n\r");
+		hostController.confirmCommand("ok T:201 B:117\n\r");
 	}
 }

@@ -9,18 +9,14 @@ import javax.safetycritical.StorageParameters;
 
 public class CommandController extends PeriodicEventHandler
 {
-	
-	static CommandController instance;
-	
 	private Command first;
 	private Command last;
 	private Object lock = new Object();
 	
-	
 	CommandController()
 	{
 		super(new PriorityParameters(3),
-				new PeriodicParameters(null, new RelativeTime(10,0)),
+				new PeriodicParameters(null, new RelativeTime(20,0)),
 				new StorageParameters(10, null, 0, 0), 5);
 	}
 	

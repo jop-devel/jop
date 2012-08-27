@@ -17,16 +17,16 @@
 package org.reprap.commands;
 
 import org.reprap.Command;
+import org.reprap.CommandController;
+import org.reprap.HostController;
 
 
 //Bed Temperature (Fast)
 public class M140 extends Command
 {
-	private static M140 instance = new M140();//Unbuffered command so only single instance
-	
-	public static boolean enqueue()
+	M140(HostController hostController, CommandController commandController) 
 	{
-		return instance.addToQueue();
+		super(hostController, commandController);
 	}
 	
 	@Override

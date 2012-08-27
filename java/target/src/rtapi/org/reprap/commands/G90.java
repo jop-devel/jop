@@ -17,15 +17,15 @@
 package org.reprap.commands;
 
 import org.reprap.Command;
+import org.reprap.CommandController;
+import org.reprap.HostController;
 
 
 public class G90 extends Command
 {
-	private static G90 instance = new G90();//Unbuffered command so only single instance
-	
-	public static boolean enqueue()
+	G90(HostController hostController, CommandController commandController) 
 	{
-		return instance.addToQueue();
+		super(hostController, commandController);
 	}
 	
 	@Override

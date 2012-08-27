@@ -17,16 +17,16 @@
 package org.reprap.commands;
 
 import org.reprap.Command;
+import org.reprap.CommandController;
+import org.reprap.HostController;
 
 
 //Set tool
 public class T extends Command
 {
-	private static T instance = new T();//Unbuffered command so only single instance
-	
-	public static boolean enqueue(int toolid)
+	T(HostController hostController, CommandController commandController) 
 	{
-		return instance.addToQueue();
+		super(hostController, commandController);
 	}
 	
 	@Override

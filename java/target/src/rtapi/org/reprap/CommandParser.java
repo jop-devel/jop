@@ -22,36 +22,36 @@ import javax.realtime.RelativeTime;
 import javax.safetycritical.PeriodicEventHandler;
 import javax.safetycritical.StorageParameters;
 
-import org.reprap.commands.G1;
-import org.reprap.commands.G21;
-import org.reprap.commands.G28;
-import org.reprap.commands.G90;
-import org.reprap.commands.G92;
-import org.reprap.commands.M105;
-import org.reprap.commands.M109;
-import org.reprap.commands.M110;
-import org.reprap.commands.M113;
-import org.reprap.commands.M140;
-import org.reprap.commands.T;
+import org.reprap.commands.*;
 
 public class CommandParser extends PeriodicEventHandler
 {
 	private static final int MAX_NUMBER_LENGTH = 8;
 	
-	static CommandParser instance;
-
 	private Parameter parameters = new Parameter();
-	
 	private char[] buffer = new char[64];
-	
 	private boolean waitingG1Command = false;
 	private boolean waitingG28Command = false;
+	private HostController hostController;
 	
-	CommandParser()
+	private G1Pool G1Pool;
+	private G28Pool G28Pool;
+	private G21 G21;
+	private G90 G90;
+	private G92 G92;
+	private M105 M105;
+	private M109 M109;
+	private M110 M110;
+	private M113 M113;
+	private M140 M140;
+	private T T;
+	
+	CommandParser(HostController hostController)
 	{
 		super(new PriorityParameters(4),
-			  new PeriodicParameters(null, new RelativeTime(10,0)),
+			  new PeriodicParameters(null, new RelativeTime(20,0)),
 			  new StorageParameters(50, null, 0, 0), 5);
+		this.hostController = hostController;
 	}
 	
 	@Override
@@ -59,7 +59,7 @@ public class CommandParser extends PeriodicEventHandler
 	{
 		if(waitingG1Command)
 		{
-			if(!G1.enqueue(parameters))
+			if(!G1Pool.enqueue(parameters))
 			{
 				//The command buffer is full so no need to parse further commands until there is space
 				return;
@@ -68,15 +68,16 @@ public class CommandParser extends PeriodicEventHandler
 		}
 		else if(waitingG28Command)
 		{
-			if(!G28.enqueue(parameters))
+			if(!G28Pool.enqueue())
 			{
 				//The command buffer is full so no need to parse further commands until there is space
 				return;
 			}
 			waitingG28Command = false;
 		}
-		int chars = HostController.instance.getLine(buffer);
-		if(chars == 0)
+		char[] chars = hostController.getLine();
+		int length = chars.length;
+		if(chars.length == 0)
 		{
 			return;
 		}
@@ -98,7 +99,7 @@ public class CommandParser extends PeriodicEventHandler
 		boolean seenStarCommand = false;
 		int checksum = 0;
 		
-		for(int i = 0; i < chars; i++) //@WCA loop <= 64
+		for(int i = 0; i < length; i++) //@WCA loop <= 64
 		{
 			char character = buffer[i];
 			char command = character;
@@ -106,7 +107,7 @@ public class CommandParser extends PeriodicEventHandler
 			int value = 0;
 			boolean decimalpoint = false;
 			int decimals = 0;
-			for(int j = i+1; j < chars; j++) //@WCA loop<= 1
+			for(int j = i+1; j < length; j++) //@WCA loop<= 1
 			{
 				i++;
 				character = buffer[j];
@@ -201,9 +202,9 @@ public class CommandParser extends PeriodicEventHandler
 		
 		if(seenNCommand && seenStarCommand)
 		{
-			if(!verifyChecksum(buffer,chars,checksum))
+			if(!verifyChecksum(chars,checksum))
 			{
-				HostController.instance.resendCommand("Incorrect checksum");
+				hostController.resendCommand("Incorrect checksum");
 				return;
 			}
 		}
@@ -214,24 +215,24 @@ public class CommandParser extends PeriodicEventHandler
 				case 0://Same as G1
 				case 1:
 					//Buffered command
-					if(!G1.enqueue(parameters))
+					if(!G1Pool.enqueue(parameters))
 					{
 						waitingG1Command = true;
 						return;
 					}
-					HostController.instance.confirmCommand(null);
+					hostController.confirmCommand(null);
 					break;
 				case 21:
 					G21.enqueue();
 					break;
 				case 28:
 					//Buffered command
-					if(!G28.enqueue(parameters))
+					if(!G28Pool.enqueue())
 					{
 						waitingG28Command = true;
 						return;
 					}
-					HostController.instance.confirmCommand(null);
+					hostController.confirmCommand(null);
 					break;
 				case 90:
 					G90.enqueue();
@@ -240,7 +241,7 @@ public class CommandParser extends PeriodicEventHandler
 					G92.enqueue(parameters);
 					break;
 				default:
-					HostController.instance.resendCommand("Unknown G command");
+					hostController.resendCommand("Unknown G command");
 					return;
 			}
 		}
@@ -264,25 +265,25 @@ public class CommandParser extends PeriodicEventHandler
 					M140.enqueue();
 					break;
 				default:
-					HostController.instance.resendCommand("Unknown M command");
+					hostController.resendCommand("Unknown M command");
 					return;
 			}
 		}
 		else if(seenTCommand)
 		{
-			T.enqueue(commandNumber);
+			T.enqueue();
 		}
 		else
 		{
-			HostController.instance.resendCommand("Unknown command!");
+			hostController.resendCommand("Unknown command!");
 			return;
 		}
 	}
 	
-	private static boolean verifyChecksum(char[] chars, int length, int checksum)
+	private static boolean verifyChecksum(char[] chars, int checksum)
 	{
 		int calculatedChecksum = 0;
-		for(int i = 0; i < length && chars[i] != '*'; i++) //@WCA loop <= 64
+		for(int i = 0; i < chars.length && chars[i] != '*'; i++) //@WCA loop <= 64
 		{
 			calculatedChecksum = calculatedChecksum ^ chars[i];
 		}

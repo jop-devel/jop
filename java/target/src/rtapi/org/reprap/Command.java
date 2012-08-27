@@ -20,17 +20,25 @@ package org.reprap;
 public abstract class Command 
 {
 	Command next;
+	protected HostController hostController;
+	private CommandController commandController;
+	
+	protected Command(HostController hostController, CommandController commandController)
+	{
+		this.commandController = commandController;
+		this.hostController = hostController;
+	}
 	
 	protected abstract boolean execute();
 	
 	protected void respond()
 	{
-		HostController.instance.confirmCommand("");
+		hostController.confirmCommand("");
 	}
 	
-	protected final boolean addToQueue()
+	public boolean enqueue()
 	{
-		CommandController.instance.enqueue(this);
+		commandController.enqueue(this);
 		return true;
 	}
 }

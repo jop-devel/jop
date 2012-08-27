@@ -34,21 +34,17 @@ public class RepRapController extends PeriodicEventHandler
 	private static final int MILLISECONDS_PER_SECOND = 1000;
 	private static final int SECONDS_PER_MINUTE = 60;
 	private static final int E_MAX_FEED_RATE = 800;
-	
-	public static RepRapController instance;
-	
+
 	RepRapController()
 	{
 		super(new PriorityParameters(1),
-			  new PeriodicParameters(null, new RelativeTime(1,0)),
-			  new StorageParameters(50, null, 0, 0), 40);
+			  new PeriodicParameters(null, new RelativeTime(500,0)),
+			  new StorageParameters(100, null, 0, 0), 40);
 		EH.expansionHeader = value;
 	}
 	
-	ExpansionHeaderFactory EHF = ExpansionHeaderFactory.getExpansionHeaderFactory();
-	ExpansionHeader EH = EHF.getExpansionHeader();
-	LedSwitchFactory LSF = LedSwitchFactory.getLedSwitchFactory();
-	public LedSwitch LS = LSF.getLedSwitch();
+	private ExpansionHeader EH = ExpansionHeaderFactory.getExpansionHeaderFactory().getExpansionHeader();
+	private LedSwitch LS = LedSwitchFactory.getLedSwitchFactory().getLedSwitch();
 	
 	private Parameter current = new Parameter(0,0,0,0,E_MAX_FEED_RATE,200);//Current position
 	private Parameter target = new Parameter(0,0,0,0,E_MAX_FEED_RATE,200);//Target position
@@ -200,12 +196,25 @@ public class RepRapController extends PeriodicEventHandler
 		}
 	}
 	
+	private int count = 0;
+	private boolean reading = false;
+	
+	 static final char[] digits = {
+		    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+		    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
+		    'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+		    'u', 'v', 'w', 'x', 'y', 'z',
+		  };
+	char[] buffer = new char[33];
+	
 	@Override
 	public void handleAsyncEvent()
 	{
 		int switchvalue = LS.ledSwitch;
-		int sensorvalue = switchvalue;//EH.expansionHeader;
-		if(Stepping)
+		int sensorvalue = EH.expansionHeader;
+		LS.ledSwitch = sensorvalue;
+		    
+		/*if(Stepping)
 		{
 			setBit(0,false);
 			setBit(6,false);
@@ -313,7 +322,7 @@ public class RepRapController extends PeriodicEventHandler
 			{
 				inPosition = tempInPosition;
 			}
-		}
+		}*/
 		EH.expansionHeader = value;
 	}
 	

@@ -17,15 +17,15 @@
 package org.reprap.commands;
 
 import org.reprap.Command;
+import org.reprap.CommandController;
+import org.reprap.HostController;
 
 
 public class M113 extends Command
 {
-	private static M113 instance = new M113();//Unbuffered command so only single instance
-	
-	public static boolean enqueue()
+	M113(HostController hostController, CommandController commandController) 
 	{
-		return instance.addToQueue();
+		super(hostController, commandController);
 	}
 	
 	@Override

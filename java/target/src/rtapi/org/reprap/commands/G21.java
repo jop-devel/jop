@@ -17,15 +17,15 @@
 package org.reprap.commands;
 
 import org.reprap.Command;
+import org.reprap.CommandController;
+import org.reprap.HostController;
 
 
 public class G21 extends Command
 {
-	private static G21 instance = new G21();//Unbuffered command so only single instance
-	
-	public static boolean enqueue()
+	G21(HostController hostController, CommandController commandController) 
 	{
-		return instance.addToQueue();
+		super(hostController, commandController);
 	}
 	
 	@Override

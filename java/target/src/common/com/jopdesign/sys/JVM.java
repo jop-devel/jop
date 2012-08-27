@@ -772,8 +772,7 @@ class JVM {
 		int cnt = Native.rdMem(i+1);
 
 		i += 2;						// point to pairs
-		for (j=0; j<cnt; ++j) //@WCA loop=4 
-		{
+		for (j=0; j<cnt; ++j) {
 			if (Native.rdMem(i+(j<<1)) == key) {
 				off = Native.rdMem(i+(j<<1)+1);		// found match
 				break;
@@ -1131,7 +1130,7 @@ class JVM {
 					int val_level; 
 					val_level = Native.rdMem(val + GC.OFF_SPACE);
 					if (val_level != 0){
-						//GC.log("Illegal static reference");
+						GC.log("Illegal static reference");
 						}
 				
 				}
@@ -1172,7 +1171,7 @@ class JVM {
 					ref_level = Native.rdMem(ref + GC.OFF_SPACE);
 					val_level = Native.rdMem(value + GC.OFF_SPACE);
 					if (val_level > ref_level){
-						//GC.log("Illegal field reference");
+						GC.log("Illegal field reference");
 					}
 				}
 				

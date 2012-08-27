@@ -17,26 +17,28 @@
 package org.reprap.commands;
 
 import org.reprap.Command;
-import org.reprap.CommandParser;
+import org.reprap.CommandController;
 import org.reprap.HostController;
 
 public class M110 extends Command
 {
-	private static M110 instance = new M110();//Unbuffered command so only single instance
-	
 	private int lineNumber;
 	
-	//The G1 command is put into the Command queue, NOT the G1 pool
-	public static boolean enqueue(int lineNumber)
+	M110(HostController hostController, CommandController commandController) 
 	{
-		instance.lineNumber = lineNumber;
-		return instance.addToQueue();
+		super(hostController, commandController);
+	}
+	
+	public boolean enqueue(int lineNumber) 
+	{
+		this.lineNumber = lineNumber;
+		return super.enqueue();
 	}
 	
 	@Override
 	public boolean execute() 
 	{
-		HostController.instance.setLineNumber(lineNumber);
+		hostController.setLineNumber(lineNumber);
 		return true;
 	}
 }
