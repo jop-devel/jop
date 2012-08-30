@@ -33,7 +33,7 @@ public abstract class Command
 	
 	protected void respond()
 	{
-		hostController.confirmCommand("");
+		hostController.confirmCommand(null);
 	}
 	
 	public boolean enqueue()

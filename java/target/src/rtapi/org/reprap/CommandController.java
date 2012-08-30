@@ -11,7 +11,6 @@ public class CommandController extends PeriodicEventHandler
 {
 	private Command first;
 	private Command last;
-	private Object lock = new Object();
 	
 	CommandController()
 	{
@@ -24,44 +23,45 @@ public class CommandController extends PeriodicEventHandler
 	public void handleAsyncEvent()
 	{
 		Command	temp;
-		synchronized (lock) 
-		{
-			temp = first;
-		}
+		temp = getFirst();
 		if(temp != null)
 		{
 			if(temp.execute())
 			{
 				temp.respond();
-				synchronized (lock) 
-				{
-					first = temp.next;
-					if(first == null)
-					{
-						last = null;
-					}
-				}
+				setFirst(temp.next);
 				temp.next = null;
 			}
 		}
 	}
 	
-	public void enqueue(Command command)
+	synchronized private Command getFirst()
 	{
-		synchronized (lock) 
+		return first;
+	}
+	
+	synchronized private void setFirst(Command command)
+	{
+		first = command;
+		if(first == null)
 		{
-			if(last == null)
-			{
-				//Empty queue
-				first = command;
-			}
-			else
-			{
-				last.next = command;
-			}
-			last = command;
-			command.next = null;
+			last = null;
 		}
+	}
+	
+	synchronized public void enqueue(Command command)
+	{
+		if(last == null)
+		{
+			//Empty queue
+			first = command;
+		}
+		else
+		{
+			last.next = command;
+		}
+		last = command;
+		command.next = null;
 	}
 
 }

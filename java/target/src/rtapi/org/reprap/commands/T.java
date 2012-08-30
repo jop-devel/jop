@@ -24,7 +24,7 @@ import org.reprap.HostController;
 //Set tool
 public class T extends Command
 {
-	T(HostController hostController, CommandController commandController) 
+	public T(HostController hostController, CommandController commandController) 
 	{
 		super(hostController, commandController);
 	}

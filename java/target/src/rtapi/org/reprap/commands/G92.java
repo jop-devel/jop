@@ -28,7 +28,7 @@ public class G92 extends Command
 	private RepRapController repRapController;
 	private Parameter parameters = new Parameter();
 	
-	G92(HostController hostController, CommandController commandController, RepRapController repRapController) 
+	public G92(HostController hostController, CommandController commandController, RepRapController repRapController) 
 	{
 		super(hostController, commandController);
 		this.repRapController = repRapController;

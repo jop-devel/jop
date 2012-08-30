@@ -61,15 +61,17 @@ public class RepRapController extends PeriodicEventHandler
 	
 	private boolean inPosition = false;
 	
-	public boolean inPosition()
+	synchronized public boolean isInPosition()
 	{
-		synchronized (current) 
-		{
-			return inPosition;
-		}
+		return inPosition;
 	}
 	
-	//Not threadsafe
+	synchronized private void setInPosition(boolean inPosition)
+	{
+		this.inPosition = inPosition;
+	}
+	
+	//Not threadsafe but only called when in position
 	private static void setParameters(Parameter source, Parameter target)
 	{
 		if(source.X > Integer.MIN_VALUE)
@@ -94,6 +96,7 @@ public class RepRapController extends PeriodicEventHandler
 		}
 	}
 	
+	//Not threadsafe but only called when in position
 	public void setPosition(Parameter parameters)
 	{
 		setParameters(parameters,current);
@@ -105,6 +108,7 @@ public class RepRapController extends PeriodicEventHandler
 		target.S = current.S;
 	}
 	
+	//Not threadsafe but only called when in position
 	public void setTarget(Parameter parameters)
 	{
 		setParameters(parameters,target);
@@ -214,7 +218,7 @@ public class RepRapController extends PeriodicEventHandler
 		int sensorvalue = EH.expansionHeader;
 		LS.ledSwitch = sensorvalue;
 		    
-		/*if(Stepping)
+		if(Stepping)
 		{
 			setBit(0,false);
 			setBit(6,false);
@@ -228,12 +232,9 @@ public class RepRapController extends PeriodicEventHandler
 			//Heater
 			//setBit(23,getBitValue(switchvalue,17));
 			//setBit(25,getBitValue(switchvalue,17));
-			synchronized (current) 
+			if(isInPosition())
 			{
-				if(inPosition)
-				{
-					return;
-				}
+				return;
 			}
 			boolean tempInPosition = true;
 			if(current.X != target.X)
@@ -318,11 +319,8 @@ public class RepRapController extends PeriodicEventHandler
 			error.Z += 2*delta.Z;
 			error.E += 2*delta.E;
 			Stepping = true;
-			synchronized (current) 
-			{
-				inPosition = tempInPosition;
-			}
-		}*/
+			setInPosition(tempInPosition);
+		}
 		EH.expansionHeader = value;
 	}
 	
@@ -331,7 +329,7 @@ public class RepRapController extends PeriodicEventHandler
 		return (Value & (1 << BitNumber)) != 0;
 	}
 	
-	private void setBit(int BitNumber, boolean Value)
+	synchronized private void setBit(int BitNumber, boolean Value)
 	{
 		if(Value)
 		{

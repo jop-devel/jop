@@ -22,7 +22,7 @@ import org.reprap.HostController;
 
 public class M109 extends Command
 {
-	M109(HostController hostController, CommandController commandController) 
+	public M109(HostController hostController, CommandController commandController) 
 	{
 		super(hostController, commandController);
 	}

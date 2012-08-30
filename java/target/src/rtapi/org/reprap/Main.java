@@ -85,7 +85,7 @@ public class Main implements Safelet
 				hostController = new HostController();
 				repRapController = new RepRapController();
 				commandController = new CommandController();
-				commandParser = new CommandParser(hostController);
+				commandParser = new CommandParser(hostController,commandController,repRapController);
 			}
 
 			@Override

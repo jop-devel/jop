@@ -24,7 +24,7 @@ public class M110 extends Command
 {
 	private int lineNumber;
 	
-	M110(HostController hostController, CommandController commandController) 
+	public M110(HostController hostController, CommandController commandController) 
 	{
 		super(hostController, commandController);
 	}
@@ -38,7 +38,7 @@ public class M110 extends Command
 	@Override
 	public boolean execute() 
 	{
-		hostController.setLineNumber(lineNumber);
+		//hostController.setLineNumber(lineNumber);
 		return true;
 	}
 }

@@ -24,7 +24,7 @@ import org.reprap.HostController;
 //Bed Temperature (Fast)
 public class M140 extends Command
 {
-	M140(HostController hostController, CommandController commandController) 
+	public M140(HostController hostController, CommandController commandController) 
 	{
 		super(hostController, commandController);
 	}

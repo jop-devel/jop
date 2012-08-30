@@ -47,7 +47,7 @@ public class G28 extends Command
 			repRapController.setTarget(home);
 			executed=true;
 		}
-		if(repRapController.inPosition())
+		if(repRapController.isInPosition())
 		{
 			pool.returnToPool(this);
 			return true;

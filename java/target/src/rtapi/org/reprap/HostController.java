@@ -36,10 +36,15 @@ public class HostController extends PeriodicEventHandler
 	    'u', 'v', 'w', 'x', 'y', 'z',
 	};
 	
-	private CharacterBuffer buffer = new CharacterBuffer();
+	private final static char[] OK = {'o','k',' ','/','/'};
+	private final static char[] RS = {'r','s',' ','/','/'};
+	private final static char[] NEWLINE = {'\n','\r'};
+	
+	private CharacterBuffer inputBuffer = new CharacterBuffer(MAX_STRING_LENGTH);
+	private int inputCount = 0;
+	private boolean inputStatus = false;
+	private CharacterBuffer outputBuffer = new CharacterBuffer(MAX_STRING_LENGTH);
 	private boolean comment = false;
-	private Object bufferLock = new Object();
-	private int lineNumber = 0;
 	private SerialPort SP = IOFactory.getFactory().getSerialPort();
 	
 	HostController()
@@ -50,36 +55,39 @@ public class HostController extends PeriodicEventHandler
 		//System.out.print("start\n\r");
 	}
 	
+	synchronized private void setInputStatus(boolean status)
+	{
+		inputStatus = status;
+	}
+	
+	synchronized private boolean getInputStatus()
+	{
+		return inputStatus;
+	}
+	
 	@Override
 	public void handleAsyncEvent()
 	{
-		//Buffer is still full so do nothing
-		if(buffer.isReady())
+		char[] output = outputBuffer.getChars(16);
+		for (int i = 0; i < 16; i++) //@WCA loop <= 16
+		{
+			SP.write(output[i]);
+		}
+		//Input buffer is still full so do nothing
+		if(getInputStatus())
 		{
 			return;
 		}
-		for (int i = 0; i < 32; i++) //@WCA loop <= 32
+		for (int i = 0; i < 16; i++) //@WCA loop <= 16
 		{
 			char character;
-			try
+			if(!SP.rxFull())
 			{
-				if(!SP.rxFull())
-				{
-					//No input
-					//System.out.print("");
-					return;
-				}
-				character = (char)SP.read();
-			}
-			catch(Exception e)
-			{
-				/*synchronized (sendLock) 
-				{
-					System.out.print("ERROR:");
-					System.out.print(e.getMessage());
-				}*/
+				//No input
+				//System.out.print("");
 				return;
 			}
+			character = (char)SP.read();
 			if(character == ';')
 			{
 				comment = true;
@@ -87,61 +95,55 @@ public class HostController extends PeriodicEventHandler
 			else if(character == '\n' || character == '\r')
 			{
 				comment = false;
-				if(buffer.getCount() > 0)
+				if(inputCount > 0)
 				{
-					buffer.setReady(true);
-					lineNumber++;
+					setInputStatus(true);
 					return;
 				}
 			}
 			else if(!comment) //Ignore comments
 			{
-				if(!buffer.addChar(character))
+				if(inputBuffer.add(character))
 				{
-					print("rs // Command too long\n\r");
+					inputCount++;
+				}
+				else
+				{
+					//print("rs // Command too long\n\r");
 				}
 			}
 		}
 	}
 	
-	void resendCommand(String message)
+	void resendCommand(char[] message)
 	{
-		print("rs //");
-		print(message);
+		print(RS);
+		if(message != null)
+		{
+			print(message);
+		}
+		print(NEWLINE);
 	}
 	
-	public void confirmCommand(String message)
+	public void confirmCommand(char[] message)
 	{
-		print("ok //");
-		print(message);
+		print(OK);
+		if(message != null)
+		{
+			print(message);
+		}
+		print(NEWLINE);
 	}
 	
 	char[] getLine()
 	{
-		char[] chars = buffer.getChars();
-		buffer.setReady(false);
+		char[] chars = inputBuffer.getChars(0);
+		setInputStatus(false);
 		return chars;
 	}
 	
-	//If the host isn't waiting for the M110 ok, there is no guarantee what the line number will be  
-	synchronized public void setLineNumber(int lineNumber)
+	public static char[] intToChar(int integer)
 	{
-		this.lineNumber = lineNumber;
-	}
-	
-	synchronized void print(String string)
-	{
-		for(int i = 0; i < string.length() && i < MAX_STRING_LENGTH; i++)
-		{
-			SP.write(string.charAt(i));
-		}
-	}
-	
-	void print(int integer)
-	{
-		System.out.println(23);
-		SP.write(integer);
-	    
 		//////////From Integer////////////
 		int radix = 10;
 	    // For negative numbers, print out the absolute value w/ a leading '-'.
@@ -167,20 +169,17 @@ public class HostController extends PeriodicEventHandler
 	    	buffer[--i] = digits[integer % radix];
 	    	integer /= radix;
 	    }
-	    while (integer > 0); //@WCA loop=33
+	    while (integer > 0); //@WCA loop<=33
 
 	    if (isNeg)
 	      buffer[--i] = '-';
 	    
-	    print(buffer);
+	    return buffer;
 	}
 	
-	synchronized void print(char[] chars)
+	void print(char[] chars)
 	{
-		for(int i = 0; i < chars.length && i < MAX_STRING_LENGTH; i++)
-		{
-			SP.write(chars[i]);
-		}
+		outputBuffer.add(chars);
 	}
 	
 }

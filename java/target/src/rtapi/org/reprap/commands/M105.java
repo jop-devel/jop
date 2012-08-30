@@ -23,7 +23,9 @@ import org.reprap.HostController;
 
 public class M105 extends Command
 {
-	M105(HostController hostController, CommandController commandController) 
+	private static final char[] temp = {'T',':','2','0','1',' ','B',':','1','1','7'};
+	
+	public M105(HostController hostController, CommandController commandController) 
 	{
 		super(hostController, commandController);
 	}
@@ -38,6 +40,6 @@ public class M105 extends Command
 	@Override
 	public void respond() 
 	{
-		hostController.confirmCommand("ok T:201 B:117\n\r");
+		hostController.confirmCommand(temp);
 	}
 }

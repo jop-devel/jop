@@ -23,7 +23,7 @@ import org.reprap.HostController;
 
 public class M113 extends Command
 {
-	M113(HostController hostController, CommandController commandController) 
+	public M113(HostController hostController, CommandController commandController) 
 	{
 		super(hostController, commandController);
 	}

@@ -27,6 +27,10 @@ import org.reprap.commands.*;
 public class CommandParser extends PeriodicEventHandler
 {
 	private static final int MAX_NUMBER_LENGTH = 8;
+	private static final char[] INCORRECT_CHECKSUM = {'I','n','c','o','r','r','e','c','t',' ','c','h','e','c','k','s','u','m','!'};
+	private static final char[] UNKNOWN_G_COMMAND = {'U','n','k','n','o','w','n',' ','G',' ','c','o','m','m','a','n','d','!'};
+	private static final char[] UNKNOWN_M_COMMAND = {'U','n','k','n','o','w','n',' ','M',' ','c','o','m','m','a','n','d','!'};
+	private static final char[] UNKNOWN_COMMAND = {'U','n','k','n','o','w','n',' ','c','o','m','m','a','n','d','!'};
 	
 	private Parameter parameters = new Parameter();
 	private char[] buffer = new char[64];
@@ -46,12 +50,22 @@ public class CommandParser extends PeriodicEventHandler
 	private M140 M140;
 	private T T;
 	
-	CommandParser(HostController hostController)
+	CommandParser(HostController hostController, CommandController commandController, RepRapController repRapController)
 	{
 		super(new PriorityParameters(4),
 			  new PeriodicParameters(null, new RelativeTime(20,0)),
 			  new StorageParameters(50, null, 0, 0), 5);
 		this.hostController = hostController;
+		G1Pool = new G1Pool(hostController, commandController, repRapController);
+		G28Pool = new G28Pool(hostController, commandController, repRapController);
+		G21 = new G21(hostController, commandController);
+		G90 = new G90(hostController, commandController);
+		G92 = new G92(hostController, commandController,repRapController);
+		M105 = new M105(hostController, commandController);
+		M109 = new M109(hostController, commandController);
+		M110 = new M110(hostController, commandController);
+		M113 = new M113(hostController, commandController);
+		M140 = new M140(hostController, commandController);
 	}
 	
 	@Override
@@ -204,7 +218,7 @@ public class CommandParser extends PeriodicEventHandler
 		{
 			if(!verifyChecksum(chars,checksum))
 			{
-				hostController.resendCommand("Incorrect checksum");
+				hostController.resendCommand(INCORRECT_CHECKSUM);
 				return;
 			}
 		}
@@ -241,7 +255,7 @@ public class CommandParser extends PeriodicEventHandler
 					G92.enqueue(parameters);
 					break;
 				default:
-					hostController.resendCommand("Unknown G command");
+					hostController.resendCommand(UNKNOWN_G_COMMAND);
 					return;
 			}
 		}
@@ -265,7 +279,7 @@ public class CommandParser extends PeriodicEventHandler
 					M140.enqueue();
 					break;
 				default:
-					hostController.resendCommand("Unknown M command");
+					hostController.resendCommand(UNKNOWN_M_COMMAND);
 					return;
 			}
 		}
@@ -275,7 +289,7 @@ public class CommandParser extends PeriodicEventHandler
 		}
 		else
 		{
-			hostController.resendCommand("Unknown command!");
+			hostController.resendCommand(UNKNOWN_COMMAND);
 			return;
 		}
 	}

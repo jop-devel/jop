@@ -23,7 +23,7 @@ import org.reprap.HostController;
 
 public class G21 extends Command
 {
-	G21(HostController hostController, CommandController commandController) 
+	public G21(HostController hostController, CommandController commandController) 
 	{
 		super(hostController, commandController);
 	}

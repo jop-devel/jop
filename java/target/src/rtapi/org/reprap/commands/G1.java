@@ -56,7 +56,7 @@ class G1 extends Command
 			repRapController.setTarget(parameters);
 			executed=true;
 		}
-		if(repRapController.inPosition())
+		if(repRapController.isInPosition())
 		{
 			pool.returnToPool(this);
 			return true;
