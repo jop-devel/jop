@@ -26,7 +26,7 @@ import org.reprap.RepRapController;
 public class G92 extends Command
 {
 	private RepRapController repRapController;
-	private Parameter parameters = new Parameter();
+	private Parameter parameter = new Parameter();
 	
 	public G92(HostController hostController, CommandController commandController, RepRapController repRapController) 
 	{
@@ -34,19 +34,16 @@ public class G92 extends Command
 		this.repRapController = repRapController;
 	}
 	
-	public boolean enqueue(Parameter parameters) 
+	public boolean enqueue(Parameter parameter) 
 	{
-		this.parameters.X = parameters.X;
-		this.parameters.Y = parameters.Y;
-		this.parameters.Z = parameters.Z;
-		this.parameters.E = parameters.E;
+		this.parameter.copy(parameter);
 		return super.enqueue();
 	}
 	
 	@Override
 	public boolean execute() 
 	{
-		repRapController.setPosition(parameters);
+		repRapController.setPosition(parameter.clone());
 		return true;
 	}
 }

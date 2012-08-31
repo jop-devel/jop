@@ -39,6 +39,7 @@ public class HostController extends PeriodicEventHandler
 	private final static char[] OK = {'o','k',' ','/','/'};
 	private final static char[] RS = {'r','s',' ','/','/'};
 	private final static char[] NEWLINE = {'\n','\r'};
+	private final static char[] COMMAND_TOO_LONG = {'C','o','m','m','a','n','d',' ','t','o','o',' ','l','o','n','g','!'};
 	
 	private CharacterBuffer inputBuffer = new CharacterBuffer(MAX_STRING_LENGTH);
 	private int inputCount = 0;
@@ -51,7 +52,7 @@ public class HostController extends PeriodicEventHandler
 	{
 		super(new PriorityParameters(2),
 			  new PeriodicParameters(null, new RelativeTime(1,0)),
-			  new StorageParameters(50, null, 0, 0), 5);
+			  new StorageParameters(1000, null, 0, 0), 5);
 		//System.out.print("start\n\r");
 	}
 	
@@ -84,7 +85,6 @@ public class HostController extends PeriodicEventHandler
 			if(!SP.rxFull())
 			{
 				//No input
-				//System.out.print("");
 				return;
 			}
 			character = (char)SP.read();
@@ -106,10 +106,6 @@ public class HostController extends PeriodicEventHandler
 				if(inputBuffer.add(character))
 				{
 					inputCount++;
-				}
-				else
-				{
-					//print("rs // Command too long\n\r");
 				}
 			}
 		}

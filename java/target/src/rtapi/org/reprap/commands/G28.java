@@ -44,7 +44,7 @@ public class G28 extends Command
 		if(!executed)
 		{
 			//Try to reach endstops by moving towards them
-			repRapController.setTarget(home);
+			repRapController.setTarget(home.clone());
 			executed=true;
 		}
 		if(repRapController.isInPosition())

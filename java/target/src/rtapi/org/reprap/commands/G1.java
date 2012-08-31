@@ -27,7 +27,7 @@ class G1 extends Command
 	G1 next;
 	private RepRapController repRapController;
 	private G1Pool pool;
-	private Parameter parameters = new Parameter();
+	private Parameter parameter = new Parameter();
 	private boolean executed = false;
 	
 	G1(HostController hostController, CommandController commandController, RepRapController repRapController, G1Pool pool) 
@@ -37,14 +37,9 @@ class G1 extends Command
 		this.pool = pool;
 	}
 	
-	public void setParameters(Parameter parameters) 
+	public void setParameters(Parameter parameter) 
 	{
-		this.parameters.X = parameters.X;
-		this.parameters.Y = parameters.Y;
-		this.parameters.Z = parameters.Z;
-		this.parameters.E = parameters.E;
-		this.parameters.F = parameters.F;
-		this.parameters.S = parameters.S;
+		this.parameter.copy(parameter);
 		this.executed = false;
 	}
 	
@@ -53,7 +48,7 @@ class G1 extends Command
 	{
 		if(!executed)
 		{
-			repRapController.setTarget(parameters);
+			repRapController.setTarget(parameter.clone());
 			executed=true;
 		}
 		if(repRapController.isInPosition())

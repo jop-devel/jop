@@ -19,21 +19,21 @@ package org.reprap;
 public class Parameter 
 {
 	
-	public int X;
-	public int Y;
-	public int Z;
-	public int E;
-	public int F;
-	public int S;
+	int X;
+	int Y;
+	int Z;
+	int E;
+	int F;
+	int S;
 	
-	public Parameter(int X, int Y, int Z, int E, int F ,int S)
+	public Parameter(int x, int y, int z, int e, int f ,int s)
 	{
-		this.X = X;
-		this.Y = Y;
-		this.Z = Z;
-		this.E = E;
-		this.F = F;
-		this.S = S;
+		this.X = x;
+		this.Y = y;
+		this.Z = z;
+		this.E = e;
+		this.F = f;
+		this.S = s;
 	}
 	
 	public Parameter()
@@ -46,8 +46,28 @@ public class Parameter
 		this.S = 0;
 	}
 	
-	public Parameter clone()
+	synchronized public Parameter clone()
 	{
 		return new Parameter(this.X,this.Y,this.Z,this.E,this.F,this.S);
+	}
+	
+	synchronized public void copy(Parameter source)
+	{
+		X = source.X;
+		Y = source.Y;
+		Z = source.Z;
+		E = source.E;
+		F = source.F;
+		S = source.S;
+	}
+	
+	synchronized public void set(int x, int y, int z, int e, int f ,int s)
+	{
+		this.X = x;
+		this.Y = y;
+		this.Z = z;
+		this.E = e;
+		this.F = f;
+		this.S = s;
 	}
 }

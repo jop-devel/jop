@@ -32,7 +32,7 @@ public class CommandParser extends PeriodicEventHandler
 	private static final char[] UNKNOWN_M_COMMAND = {'U','n','k','n','o','w','n',' ','M',' ','c','o','m','m','a','n','d','!'};
 	private static final char[] UNKNOWN_COMMAND = {'U','n','k','n','o','w','n',' ','c','o','m','m','a','n','d','!'};
 	
-	private Parameter parameters = new Parameter();
+	private Parameter parameter = new Parameter();
 	private char[] buffer = new char[64];
 	private boolean waitingG1Command = false;
 	private boolean waitingG28Command = false;
@@ -53,8 +53,8 @@ public class CommandParser extends PeriodicEventHandler
 	CommandParser(HostController hostController, CommandController commandController, RepRapController repRapController)
 	{
 		super(new PriorityParameters(4),
-			  new PeriodicParameters(null, new RelativeTime(20,0)),
-			  new StorageParameters(50, null, 0, 0), 5);
+			  new PeriodicParameters(null, new RelativeTime(500,0)),
+			  new StorageParameters(2000, null, 0, 0), 5);
 		this.hostController = hostController;
 		G1Pool = new G1Pool(hostController, commandController, repRapController);
 		G28Pool = new G28Pool(hostController, commandController, repRapController);
@@ -71,9 +71,10 @@ public class CommandParser extends PeriodicEventHandler
 	@Override
 	public void handleAsyncEvent()
 	{
+		hostController.print(INCORRECT_CHECKSUM);
 		if(waitingG1Command)
 		{
-			if(!G1Pool.enqueue(parameters))
+			if(!G1Pool.enqueue(parameter.clone()))
 			{
 				//The command buffer is full so no need to parse further commands until there is space
 				return;
@@ -89,12 +90,13 @@ public class CommandParser extends PeriodicEventHandler
 			}
 			waitingG28Command = false;
 		}
-		char[] chars = hostController.getLine();
-		int length = chars.length;
-		if(chars.length == 0)
+		char[] chars =hostController.getLine();
+		
+		if(chars == null)
 		{
 			return;
 		}
+		int length = chars.length;
 		boolean seenNCommand = false;
 		int lineNumber = 0;
 		
@@ -103,12 +105,12 @@ public class CommandParser extends PeriodicEventHandler
 		boolean seenTCommand = false;
 		int commandNumber = Integer.MIN_VALUE;
 		
-		parameters.X = Integer.MIN_VALUE;
-		parameters.Y = Integer.MIN_VALUE;
-		parameters.Z = Integer.MIN_VALUE;
-		parameters.E = Integer.MIN_VALUE;
-		parameters.F = Integer.MIN_VALUE;
-		parameters.S = Integer.MIN_VALUE;
+		parameter.X = Integer.MIN_VALUE;
+		parameter.Y = Integer.MIN_VALUE;
+		parameter.Z = Integer.MIN_VALUE;
+		parameter.E = Integer.MIN_VALUE;
+		parameter.F = Integer.MIN_VALUE;
+		parameter.S = Integer.MIN_VALUE;
 		
 		boolean seenStarCommand = false;
 		int checksum = 0;
@@ -169,10 +171,10 @@ public class CommandParser extends PeriodicEventHandler
 					seenMCommand = true;
 					break;
 				case 'F':
-					parameters.F = value;
+					parameter.F = value;
 					break;
 				case 'S':
-					parameters.S = value;
+					parameter.S = value;
 					break;
 				case 'T':
 					commandNumber = value;
@@ -183,28 +185,28 @@ public class CommandParser extends PeriodicEventHandler
 					{
 						value = value*10;
 					}
-					parameters.X = value;
+					parameter.X = value;
 					break;
 				case 'Y':
 					for (int j = 0; j < RepRapController.DECIMALS-decimals; j++) //@WCA loop <= 1
 					{
 						value = value*10;
 					}
-					parameters.Y = value;
+					parameter.Y = value;
 					break;
 				case 'Z':
 					for (int j = 0; j < RepRapController.DECIMALS-decimals; j++) //@WCA loop <= 1
 					{
 						value = value*10;
 					}
-					parameters.Z = value;
+					parameter.Z = value;
 					break;
 				case 'E':
 					for (int j = 0; j < RepRapController.DECIMALS-decimals; j++) //@WCA loop=1
 					{
 						value = value*10;
 					}
-					parameters.E = value;
+					parameter.E = value;
 					break;
 				case '*':
 					checksum = value;
@@ -229,7 +231,7 @@ public class CommandParser extends PeriodicEventHandler
 				case 0://Same as G1
 				case 1:
 					//Buffered command
-					if(!G1Pool.enqueue(parameters))
+					if(!G1Pool.enqueue(parameter.clone()))
 					{
 						waitingG1Command = true;
 						return;
@@ -252,7 +254,7 @@ public class CommandParser extends PeriodicEventHandler
 					G90.enqueue();
 					break;
 				case 92:
-					G92.enqueue(parameters);
+					G92.enqueue(parameter.clone());
 					break;
 				default:
 					hostController.resendCommand(UNKNOWN_G_COMMAND);

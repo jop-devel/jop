@@ -67,7 +67,7 @@ public class CharacterBuffer
 	{
 		if(chars.length >= count+characters.length)
 		{
-			for(int i = 0; i < characters.length; i++)
+			for(int i = 0; i < characters.length; i++) //@WCA loop=64
 			{
 				chars[position] = characters[i];
 				position++;
