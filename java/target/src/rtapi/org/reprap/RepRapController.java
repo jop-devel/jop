@@ -38,8 +38,8 @@ public class RepRapController extends PeriodicEventHandler
 	RepRapController()
 	{
 		super(new PriorityParameters(1),
-			  new PeriodicParameters(null, new RelativeTime(500,0)),
-			  new StorageParameters(100, null, 0, 0), 40);
+			  new PeriodicParameters(null, new RelativeTime(1,0)),
+			  new StorageParameters(100, new long[]{100}, 0, 0), 0);
 		EH.expansionHeader = output;
 	}
 	
@@ -130,10 +130,7 @@ public class RepRapController extends PeriodicEventHandler
 		Parameter target = this.target.clone();
 		Parameter current = this.current.clone();
 		Parameter delta = this.delta.clone();
-		int directionX;
-		int directionY;
-		int directionZ;
-		int directionE;
+		Parameter direction = new Parameter();
 		int output = getOutput();
 		setParameter(newTarget,target);
 		
@@ -141,52 +138,52 @@ public class RepRapController extends PeriodicEventHandler
 		{
 			delta.X = target.X-current.X;
 			output = output | (1 << 8);
-			directionX = 1;
+			direction.X = 1;
 		}
 		else
 		{
 			delta.X = current.X-target.X;
 			output = output & ~(1 << 8);
-			directionX = -1;
+			direction.X = -1;
 		}
 		if(target.Y >= current.Y)
 		{
 			delta.Y = target.Y-current.Y;
 			
 			output = output | (1 << 16);
-			directionY = 1;
+			direction.Y = 1;
 		}
 		else
 		{
 			delta.Y = current.Y-target.Y;
 			output = output & ~(1 << 16);
-			directionY = -1;
+			direction.Y = -1;
 		}
 		if(target.Z >= current.Z)
 		{
 			delta.Z = target.Z-current.Z;
 			output = output & ~(1 << 22);
 			output = output & ~(1 << 28);
-			directionZ = 1;
+			direction.Z = 1;
 		}
 		else
 		{
 			delta.Z = current.Z-target.Z;
 			output = output | (1 << 22);
 			output = output | (1 << 28);
-			directionZ = -1;
+			direction.Z = -1;
 		}
 		if(target.E >= current.E)
 		{
 			delta.E = target.E-current.E;
 			output = output | (1 << 2);
-			directionE = 1;
+			direction.E = 1;
 		}
 		else
 		{
 			delta.E = current.E-target.E;
 			output = output & ~(1 << 2);
-			directionE = -1;
+			direction.E = -1;
 		}
 		
 		//Already checked for negativity and division by zero. Divide by 2 to account for 1 pulse every other millisecond
@@ -227,11 +224,11 @@ public class RepRapController extends PeriodicEventHandler
 		
 		//Copy new values back to working parameters
 		error.set(2*delta.X - dT, 2*delta.Y - dT, 2*delta.Z - dT, 2*delta.E - dT, 0, 0);
-		direction.set(directionX, directionY, directionZ, directionE, 0, 0);
-		delta.copy(delta);
+		this.direction.copy(direction);
+		this.delta.copy(delta);
 		setdT(dT);
 		setOutput(output);
-		target.copy(target);
+		this.target.copy(target);
 	}
 	
 	@Override

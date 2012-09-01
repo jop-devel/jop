@@ -53,7 +53,7 @@ public class Main implements Safelet
 		
 		RepRapMissionSequencer()
 		{
-			super(new PriorityParameters(0),new StorageParameters(1000, null, 0,0));
+			super(new PriorityParameters(0),new StorageParameters(1, null, 0,0));
 		}
 				
 		@Override
@@ -83,15 +83,14 @@ public class Main implements Safelet
 			protected void initialize()
 			{
 				hostController = new HostController();
-				//repRapController = new RepRapController();
-				//commandController = new CommandController();
-				//commandParser = new CommandParser(hostController,commandController,repRapController);
+				repRapController = new RepRapController();
+				commandController = new CommandController();
+				commandParser = new CommandParser(hostController,commandController,repRapController);
 			}
 
 			@Override
 			protected Runnable start() 
 			{
-				// TODO Auto-generated method stub
 				return null;
 			}
 		}

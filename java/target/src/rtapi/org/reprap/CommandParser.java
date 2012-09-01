@@ -53,8 +53,8 @@ public class CommandParser extends PeriodicEventHandler
 	CommandParser(HostController hostController, CommandController commandController, RepRapController repRapController)
 	{
 		super(new PriorityParameters(4),
-			  new PeriodicParameters(null, new RelativeTime(500,0)),
-			  new StorageParameters(2000, null, 0, 0), 5);
+			  new PeriodicParameters(null, new RelativeTime(20,0)),
+			  new StorageParameters(70, new long[]{70}, 0, 0), 0);
 		this.hostController = hostController;
 		G1Pool = new G1Pool(hostController, commandController, repRapController);
 		G28Pool = new G28Pool(hostController, commandController, repRapController);
@@ -71,7 +71,6 @@ public class CommandParser extends PeriodicEventHandler
 	@Override
 	public void handleAsyncEvent()
 	{
-		hostController.print(INCORRECT_CHECKSUM);
 		if(waitingG1Command)
 		{
 			if(!G1Pool.enqueue(parameter.clone()))
@@ -90,9 +89,9 @@ public class CommandParser extends PeriodicEventHandler
 			}
 			waitingG28Command = false;
 		}
-		char[] chars =hostController.getLine();
+		char[] chars = hostController.getLine();
 		
-		if(chars == null)
+		if(chars.length == 0)
 		{
 			return;
 		}

@@ -52,8 +52,7 @@ public class HostController extends PeriodicEventHandler
 	{
 		super(new PriorityParameters(2),
 			  new PeriodicParameters(null, new RelativeTime(1,0)),
-			  new StorageParameters(1000, null, 0, 0), 5);
-		//System.out.print("start\n\r");
+			  new StorageParameters(35, new long[]{35},0,0), 0);
 	}
 	
 	synchronized private void setInputStatus(boolean status)
@@ -70,7 +69,7 @@ public class HostController extends PeriodicEventHandler
 	public void handleAsyncEvent()
 	{
 		char[] output = outputBuffer.getChars(16);
-		for (int i = 0; i < 16; i++) //@WCA loop <= 16
+		for (int i = 0; i < output.length; i++) //@WCA loop <= 16
 		{
 			SP.write(output[i]);
 		}

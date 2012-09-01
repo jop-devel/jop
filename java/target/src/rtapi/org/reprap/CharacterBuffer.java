@@ -14,7 +14,7 @@ public class CharacterBuffer
 	//Creates new array but is only used by CommandParser.handleAsyncEvent
 	synchronized public char[] getChars(int amount)
 	{
-		if(amount == 0 || amount > count)
+		if(amount <= 0 || amount > count)
 		{
 			amount = count;
 		}
