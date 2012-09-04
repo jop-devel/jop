@@ -60,14 +60,4 @@ public class Parameter
 		F = source.F;
 		S = source.S;
 	}
-	
-	synchronized public void set(int x, int y, int z, int e, int f ,int s)
-	{
-		this.X = x;
-		this.Y = y;
-		this.Z = z;
-		this.E = e;
-		this.F = f;
-		this.S = s;
-	}
 }

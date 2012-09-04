@@ -33,7 +33,6 @@ public class CommandParser extends PeriodicEventHandler
 	private static final char[] UNKNOWN_COMMAND = {'U','n','k','n','o','w','n',' ','c','o','m','m','a','n','d','!'};
 	
 	private Parameter parameter = new Parameter();
-	private char[] buffer = new char[64];
 	private boolean waitingG1Command = false;
 	private boolean waitingG28Command = false;
 	private HostController hostController;
@@ -116,7 +115,7 @@ public class CommandParser extends PeriodicEventHandler
 		
 		for(int i = 0; i < length; i++) //@WCA loop <= 64
 		{
-			char character = buffer[i];
+			char character = chars[i];
 			char command = character;
 			int numberLength = 0;
 			int value = 0;
@@ -125,7 +124,7 @@ public class CommandParser extends PeriodicEventHandler
 			for(int j = i+1; j < length; j++) //@WCA loop<= 1
 			{
 				i++;
-				character = buffer[j];
+				character = chars[j];
 				if(Character.digit(character, 10) > -1)
 				{
 					//Ignore the rest of the decimals

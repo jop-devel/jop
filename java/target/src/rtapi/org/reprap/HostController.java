@@ -38,7 +38,7 @@ public class HostController extends PeriodicEventHandler
 	
 	private final static char[] OK = {'o','k',' ','/','/'};
 	private final static char[] RS = {'r','s',' ','/','/'};
-	private final static char[] NEWLINE = {'\n','\r'};
+	private final static char[] NEWLINE = {'\n'};
 	private final static char[] COMMAND_TOO_LONG = {'C','o','m','m','a','n','d',' ','t','o','o',' ','l','o','n','g','!'};
 	
 	private CharacterBuffer inputBuffer = new CharacterBuffer(MAX_STRING_LENGTH);
@@ -91,7 +91,7 @@ public class HostController extends PeriodicEventHandler
 			{
 				comment = true;
 			}
-			else if(character == '\n' || character == '\r')
+			else if(character == '\n')
 			{
 				comment = false;
 				if(inputCount > 0)

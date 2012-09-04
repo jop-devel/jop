@@ -40,7 +40,6 @@ public class RepRapController extends PeriodicEventHandler
 		super(new PriorityParameters(1),
 			  new PeriodicParameters(null, new RelativeTime(1,0)),
 			  new StorageParameters(100, new long[]{100}, 0, 0), 0);
-		EH.expansionHeader = output;
 	}
 	
 	private ExpansionHeader EH = ExpansionHeaderFactory.getExpansionHeaderFactory().getExpansionHeader();
@@ -63,32 +62,12 @@ public class RepRapController extends PeriodicEventHandler
 	
 	synchronized public boolean isInPosition()
 	{
-		return inPosition;
+		return inPosition & !Stepping;
 	}
 	
 	synchronized private void setInPosition(boolean inPosition)
 	{
 		this.inPosition = inPosition;
-	}
-	
-	synchronized private int getOutput()
-	{
-		return output;
-	}
-	
-	synchronized private void setOutput(int output)
-	{
-		this.output = output;
-	}
-	
-	synchronized private int getdT()
-	{
-		return dT;
-	}
-	
-	synchronized private void setdT(int dT)
-	{
-		this.dT = dT;
 	}
 	
 	//Not threadsafe
@@ -116,24 +95,17 @@ public class RepRapController extends PeriodicEventHandler
 		}
 	}
 	
+	//Not threadsafe
 	public void setPosition(Parameter position)
 	{
-		Parameter current = this.current.clone();
 		setParameter(position,current);
-		this.current.copy(current);
-		this.target.copy(current);
+		target.copy(current);
 	}
 	
+	//Not threadsafe
 	public void setTarget(Parameter newTarget)
 	{
-		//Copy working parameters
-		Parameter target = this.target.clone();
-		Parameter current = this.current.clone();
-		Parameter delta = this.delta.clone();
-		Parameter direction = new Parameter();
-		int output = getOutput();
 		setParameter(newTarget,target);
-		
 		if(target.X >= current.X)
 		{
 			delta.X = target.X-current.X;
@@ -187,7 +159,7 @@ public class RepRapController extends PeriodicEventHandler
 		}
 		
 		//Already checked for negativity and division by zero. Divide by 2 to account for 1 pulse every other millisecond
-		int dT = (delta.E*MILLISECONDS_PER_SECOND*SECONDS_PER_MINUTE)/(target.F*2*E_STEPS_PER_MILLIMETER);
+		dT = (delta.E*MILLISECONDS_PER_SECOND*SECONDS_PER_MINUTE)/(target.F*2*E_STEPS_PER_MILLIMETER);
 		int temp = (delta.X*MILLISECONDS_PER_SECOND*SECONDS_PER_MINUTE)/(target.F*2*X_STEPS_PER_MILLIMETER);
 		if(temp > dT)
 		{
@@ -221,23 +193,22 @@ public class RepRapController extends PeriodicEventHandler
 		{
 			dT = delta.E;
 		}
-		
-		//Copy new values back to working parameters
-		error.set(2*delta.X - dT, 2*delta.Y - dT, 2*delta.Z - dT, 2*delta.E - dT, 0, 0);
-		this.direction.copy(direction);
-		this.delta.copy(delta);
-		setdT(dT);
-		setOutput(output);
-		this.target.copy(target);
+		error.X = 2*delta.X - dT;
+		error.Y = 2*delta.Y - dT;
+		error.Z = 2*delta.Z - dT;
+		error.E = 2*delta.E - dT;
+		setInPosition(false);
 	}
 	
 	@Override
 	public void handleAsyncEvent()
 	{
 		int switchvalue = LS.ledSwitch;
-		int sensorvalue = EH.expansionHeader;
-		int output = getOutput();
-		
+		int sensorvalue = 0xFFFFFF;//EH.expansionHeader;
+		if(isInPosition())
+		{
+			return;
+		}
 		if(Stepping)
 		{
 			output = output & ~(1 << 0);
@@ -253,12 +224,6 @@ public class RepRapController extends PeriodicEventHandler
 			//setBit(23,getBitValue(switchvalue,17));
 			//setBit(25,getBitValue(switchvalue,17));
 			boolean tempInPosition = true;
-			int dT = getdT();
-			Parameter error = this.error.clone();
-			Parameter delta = this.delta.clone();
-			Parameter current = this.current.clone();
-			Parameter target = this.target.clone();
-			Parameter direction = this.direction.clone();
 			if(current.X != target.X)
 			{
 				if(!getBitValue(sensorvalue,7) && direction.X == -1)//Check endstop
@@ -341,14 +306,9 @@ public class RepRapController extends PeriodicEventHandler
 				error.E += 2*delta.E;
 			}
 			Stepping = true;
-			this.error.copy(error);
-			this.current.copy(current);
-			this.target.copy(target);
 			setInPosition(tempInPosition);
 		}
-		LS.ledSwitch = sensorvalue;
 		EH.expansionHeader = output;
-		setOutput(output);
 	}
 	
 	private static boolean getBitValue(int Value, int BitNumber)
