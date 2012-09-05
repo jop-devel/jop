@@ -113,7 +113,7 @@ public class CommandParser extends PeriodicEventHandler
 		boolean seenStarCommand = false;
 		int checksum = 0;
 		
-		for(int i = 0; i < length; i++) //@WCA loop <= 64
+		for(int i = 0; i < length; i++) //@WCA loop = 64
 		{
 			char character = chars[i];
 			char command = character;
@@ -121,7 +121,7 @@ public class CommandParser extends PeriodicEventHandler
 			int value = 0;
 			boolean decimalpoint = false;
 			int decimals = 0;
-			for(int j = i+1; j < length; j++) //@WCA loop<= 1
+			for(int j = i+1; j < length; j++) //@WCA loop = 1
 			{
 				i++;
 				character = chars[j];
@@ -179,21 +179,21 @@ public class CommandParser extends PeriodicEventHandler
 					seenTCommand = true;
 					break;
 				case 'X':
-					for (int j = 0; j < RepRapController.DECIMALS-decimals; j++) //@WCA loop <= 1
+					for (int j = 0; j < RepRapController.DECIMALS-decimals; j++) //@WCA loop = 1
 					{
 						value = value*10;
 					}
 					parameter.X = value;
 					break;
 				case 'Y':
-					for (int j = 0; j < RepRapController.DECIMALS-decimals; j++) //@WCA loop <= 1
+					for (int j = 0; j < RepRapController.DECIMALS-decimals; j++) //@WCA loop = 1
 					{
 						value = value*10;
 					}
 					parameter.Y = value;
 					break;
 				case 'Z':
-					for (int j = 0; j < RepRapController.DECIMALS-decimals; j++) //@WCA loop <= 1
+					for (int j = 0; j < RepRapController.DECIMALS-decimals; j++) //@WCA loop = 1
 					{
 						value = value*10;
 					}
@@ -297,7 +297,7 @@ public class CommandParser extends PeriodicEventHandler
 	private static boolean verifyChecksum(char[] chars, int checksum)
 	{
 		int calculatedChecksum = 0;
-		for(int i = 0; i < chars.length && chars[i] != '*'; i++) //@WCA loop <= 64
+		for(int i = 0; i < chars.length && chars[i] != '*'; i++) //@WCA loop = 64
 		{
 			calculatedChecksum = calculatedChecksum ^ chars[i];
 		}

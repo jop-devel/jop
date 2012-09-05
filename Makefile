@@ -175,7 +175,7 @@ JCOPTER_USE_WCA?=no
 #       WCET analysis
 #
 
-WCET_METHOD=org.reprap.RepRapController.handleAsyncEvent
+WCET_METHOD=org.reprap.commands.G1Pool.retreiveFromPool
 #WCET_OPTIONS=
 
 ################## end of configuration section ###################

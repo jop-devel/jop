@@ -69,7 +69,7 @@ public class HostController extends PeriodicEventHandler
 	public void handleAsyncEvent()
 	{
 		char[] output = outputBuffer.getChars(16);
-		for (int i = 0; i < output.length; i++) //@WCA loop <= 16
+		for (int i = 0; i < output.length; i++) //@WCA loop = 16
 		{
 			SP.write(output[i]);
 		}
@@ -78,7 +78,7 @@ public class HostController extends PeriodicEventHandler
 		{
 			return;
 		}
-		for (int i = 0; i < 16; i++) //@WCA loop <= 16
+		for (int i = 0; i < 16; i++) //@WCA loop = 16
 		{
 			char character;
 			if(!SP.rxFull())
@@ -164,7 +164,7 @@ public class HostController extends PeriodicEventHandler
 	    	buffer[--i] = digits[integer % radix];
 	    	integer /= radix;
 	    }
-	    while (integer > 0); //@WCA loop<=33
+	    while (integer > 0); //@WCA loop = 33
 
 	    if (isNeg)
 	      buffer[--i] = '-';
