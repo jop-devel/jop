@@ -1,26 +1,8 @@
 package edu.purdue.scjtck;
 
-import javax.realtime.AperiodicParameters;
-import javax.realtime.PeriodicParameters;
-import javax.realtime.PriorityParameters;
+import javax.realtime.*;
 import javax.realtime.PriorityScheduler;
-//import javax.realtime.RealtimeThread;
-import javax.realtime.RelativeTime;
-import javax.safetycritical.AperiodicEvent;
-import javax.safetycritical.AperiodicEventHandler;
-//import javax.safetycritical.ManagedMemory;
-import javax.safetycritical.ManagedThread;
-import javax.safetycritical.Mission;
-import javax.safetycritical.MissionSequencer;
-import javax.safetycritical.PeriodicEventHandler;
-import javax.safetycritical.Safelet;
-//import javax.safetycritical.SingleMissionSequencer;
-//import javax.safetycritical.StorageConfigurationParameters;
-import javax.safetycritical.StorageParameters;
-import javax.safetycritical.Terminal;
-import javax.safetycritical.annotate.Level;
-
-//import edu.purdue.scj.PropFileReader;
+import javax.safetycritical.*;
 
 public abstract class MainSafelet implements Safelet {
 
@@ -30,7 +12,7 @@ public abstract class MainSafelet implements Safelet {
 
     protected Thread _launcher;
 
-    /* Parameters generated from properties */
+    /* Parameters generated from Properties.java */
     protected PriorityParameters _priorityParam;
     protected AperiodicParameters _aperiodicParam;
     protected PeriodicParameters _periodicParam;
@@ -49,7 +31,8 @@ public abstract class MainSafelet implements Safelet {
 //        _aperiodicParam = new AperiodicParameters();
         _aperiodicParam = new AperiodicParameters(null,null);
 //        _storageParam = new StorageConfigurationParameters(0, 0, 0);
-        _storageParam = new StorageParameters(0, 0, 0);
+//        _storageParam = new StorageParameters(0, 0, 0);
+        _storageParam = new StorageParameters(0, null);
 
         Terminal.getTerminal().writeln(getInfo());
     }
@@ -87,7 +70,8 @@ public abstract class MainSafelet implements Safelet {
         public GeneralSingleMissionSequencer(Mission mission) {
             super(new PriorityParameters(_prop._priority),
 //                    new StorageConfigurationParameters(0, 0, 0), mission);
-            		new StorageParameters(0, 0, 0));
+//            		new StorageParameters(0, 0, 0));
+            		new StorageParameters(0, null));
             this.mission = mission;
         }
         @Override
@@ -101,21 +85,29 @@ public abstract class MainSafelet implements Safelet {
         public GeneralMissionSequencer() {
             super(new PriorityParameters(_prop._priority),
 //                    new StorageConfigurationParameters(0, 0, 0));
-            		new StorageParameters(0, 0, 0));
+            		new StorageParameters(0, null));
         }
     }
 
     public abstract class GeneralPeriodicEventHandler extends
             PeriodicEventHandler {
 
-        public GeneralPeriodicEventHandler() {
-            super(new PriorityParameters(_prop._priority),
-                    new PeriodicParameters(new RelativeTime(_prop._iDelay, 0),
-                            new RelativeTime(_prop._period, 0)),
-//                    new StorageConfigurationParameters(0, 0, 0),
-                    new StorageParameters(0, 0, 0));
-//                    _prop._schedObjMemSize);
-        }
+		public GeneralPeriodicEventHandler(){
+			super(new PriorityParameters(_prop._priority), 
+					new PeriodicParameters(new RelativeTime(_prop._iDelay, 0), new RelativeTime(_prop._period, 0)), 
+							new StorageParameters(0, null), 100);
+		}
+    	
+    	
+
+//        public GeneralPeriodicEventHandler() {
+//            super(new PriorityParameters(_prop._priority),
+//                    new PeriodicParameters(new RelativeTime(_prop._iDelay, 0),
+//                            //new RelativeTime(_prop._period, 0)),
+////                    new StorageConfigurationParameters(0, 0, 0),
+//                    new StorageParameters(0, null),100);
+////                    _prop._schedObjMemSize);
+//        }
     }
 
     public abstract class GeneralAperiodicEventHandler extends
@@ -126,9 +118,9 @@ public abstract class MainSafelet implements Safelet {
 //                    new AperiodicParameters(),
             		new AperiodicParameters(null,null),
 //                    new StorageConfigurationParameters(0, 0, 0),
-            		new StorageParameters(0, 0, 0),
+            		new StorageParameters(0, null));
 //                    _prop._schedObjMemSize);
-            		new AperiodicEvent[0]);
+//            		new AperiodicEvent[0]);
         }
 
         public GeneralAperiodicEventHandler(String name) {
@@ -136,20 +128,21 @@ public abstract class MainSafelet implements Safelet {
 //                    new AperiodicParameters(),
             		new AperiodicParameters(null,null),
 //                    new StorageConfigurationParameters(0, 0, 0),
-            		new StorageParameters(0, 0, 0),
+            		new StorageParameters(0, null));
 //                    _prop._schedObjMemSize, name);
-            		new AperiodicEvent[0],name);
+//            		new AperiodicEvent[0],name);
         }
     }
 
-    public class GeneralManagedThread extends ManagedThread {
-
-        public GeneralManagedThread() {
-            super(new PriorityParameters(_prop._priority),
-//                    new StorageConfigurationParameters(0, 0, 0), null);
-            		new StorageParameters(0, 0, 0), null);
-        }
-    }
+//	  No managed threads for now...
+//    public class GeneralManagedThread extends ManagedThread {
+//
+//        public GeneralManagedThread() {
+//            super(new PriorityParameters(_prop._priority),
+////                    new StorageConfigurationParameters(0, 0, 0), null);
+//            		new StorageParameters(0, 0, 0), null);
+//        }
+//    }
 
     public class Terminator extends PeriodicEventHandler {
 
@@ -159,7 +152,7 @@ public abstract class MainSafelet implements Safelet {
                     new RelativeTime(_prop._duration, 0), new RelativeTime(
                             Long.MAX_VALUE, 0)),
 //                    new StorageConfigurationParameters(0, 0, 0), 0);
-                      new StorageParameters(0, 0, 0));
+                      new StorageParameters(0, null),100);
         }
 
         @Override

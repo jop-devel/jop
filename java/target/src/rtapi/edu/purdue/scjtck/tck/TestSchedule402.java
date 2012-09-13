@@ -62,7 +62,7 @@ public class TestSchedule402 extends TestCase {
                         new PriorityParameters(_prop._priority),
                         new PeriodicParameters(null, new RelativeTime(200, 0)),
 //                        new StorageConfigurationParameters(0, 0, 0),
-                        new StorageParameters(0, 0, 0)){
+                        new StorageParameters(0, null),100){
 //                        _prop._schedObjMemSize) {
 //                    public void handleEvent() {
                 	public void handleAsyncEvent() {
@@ -135,4 +135,11 @@ public class TestSchedule402 extends TestCase {
             }
         });
     }
+
+	@Override
+	public long immortalMemorySize() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
 }
