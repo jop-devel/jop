@@ -231,11 +231,16 @@ begin
 	);
 	
 	eh : entity work.expansionheader
+	generic map 
+	(
+		addr_bits => SLAVE_ADDR_BITS
+	)
 	port map
 	(
 		clk => clk,
 		reset => reset,
 		
+		address => sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
 		sc_rd => sc_rd(EXPH_SLAVE),
 		sc_rd_data => sc_dout(EXPH_SLAVE),
 		sc_wr => sc_wr(EXPH_SLAVE),

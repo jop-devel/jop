@@ -52,7 +52,7 @@ public class CommandParser extends PeriodicEventHandler
 	CommandParser(HostController hostController, CommandController commandController, RepRapController repRapController)
 	{
 		super(new PriorityParameters(4),
-			  new PeriodicParameters(null, new RelativeTime(20,0)),
+			  new PeriodicParameters(null, new RelativeTime(60,0)),
 			  new StorageParameters(70, new long[]{70}, 0, 0), 0);
 		this.hostController = hostController;
 		G1Pool = new G1Pool(hostController, commandController, repRapController);

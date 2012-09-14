@@ -200,119 +200,210 @@ public class RepRapController extends PeriodicEventHandler
 		setInPosition(false);
 	}
 	
+	private int currentTemperature = 0;
+	private int targetTemperature = 0;
+	
+	synchronized public int getCurrentTemperature() 
+	{
+		return currentTemperature;
+	}
+	
+	synchronized public void setCurrentTemperature(int currentTemperature) 
+	{
+		this.currentTemperature = currentTemperature;
+	}
+	
+	synchronized public int getTargetTemperature() 
+	{
+		return targetTemperature;
+	}
+	
+	synchronized public void setTargetTemperature(int targetTemperature) 
+	{
+		this.targetTemperature = targetTemperature;
+	}
+	
+	private int prntcnt = 0;
+	private int tmpcnt = 0;
+	private int pwmcnt = 0;
+	private int swtchcnt = 0;
+	private int PWM = 10;
+	
 	@Override
 	public void handleAsyncEvent()
 	{
 		int switchvalue = LS.ledSwitch;
-		int sensorvalue = 0xFFFFFF;//EH.expansionHeader;
-		if(isInPosition())
+		int sensorvalue = EH.IO;
+		
+		tmpcnt++;
+		if(tmpcnt == 1000 )
 		{
-			return;
+			int temp = timingToTemperature(EH.ADC);
+			setCurrentTemperature(temp);
+			tmpcnt = 0;
 		}
-		if(Stepping)
+		if(swtchcnt == 500)
 		{
-			output = output & ~(1 << 0);
-			output = output & ~(1 << 6);
-			output = output & ~(1 << 12);
-			output = output & ~(1 << 20);
-			output = output & ~(1 << 26);
-			Stepping = false;
+			if(getBitValue(switchvalue,0))
+			{
+				if(getBitValue(switchvalue,1) && PWM < 100)
+				{
+					PWM++;
+				}
+				else if(!getBitValue(switchvalue,1) && PWM > 0)
+				{
+					PWM--;
+				}
+			}
+			swtchcnt = 0;
+		}
+		// Heater
+		if(pwmcnt <= PWM)
+		{
+			output = output | (1 << 23);
+			output = output | (1 << 25);
 		}
 		else
 		{
-			//Heater
-			//setBit(23,getBitValue(switchvalue,17));
-			//setBit(25,getBitValue(switchvalue,17));
-			boolean tempInPosition = true;
-			if(current.X != target.X)
-			{
-				if(!getBitValue(sensorvalue,7) && direction.X == -1)//Check endstop
-				{
-					current.X = 0;
-					target.X = current.X;
-				}
-				else if(current.X == max.X && direction.X == 1)
-				{
-					target.X = current.X;
-				}
-				else
-				{
-					tempInPosition = false;
-					if(error.X > 0)
-					{
-						output = output | (1 << 6);
-						current.X += direction.X;
-						error.X -= 2*dT;
-					}
-				}
-				error.X += 2*delta.X;
-			}
-			if(current.Y != target.Y)
-			{
-				if(!getBitValue(sensorvalue,5) && direction.Y == -1)//Check endstop
-				{
-					current.Y = 0;
-					target.Y = current.Y;
-				}
-				else if(current.Y == max.Y && direction.Y == 1)
-				{
-					target.Y = current.Y;
-				}
-				else
-				{
-					tempInPosition = false;
-					if(error.Y > 0)
-					{
-						output = output | (1 << 12);
-						current.Y += direction.Y;
-						error.Y -= 2*dT;
-					}
-				}
-				error.Y += 2*delta.Y;
-			}
-			if(current.Z != target.Z)
-			{
-				if(!getBitValue(sensorvalue,3) && direction.Z == -1)//Check endstop
-				{
-					current.Z = 0;
-					target.Z = current.Z;
-				}
-				else if(current.Z == max.Z && direction.Z == 1)
-				{
-					target.Z = current.Z;
-				}
-				else
-				{
-					tempInPosition = false;
-					if(error.Z > 0)
-					{
-						output = output | (1 << 20);
-						output = output | (1 << 26);
-						current.Z += direction.Z;
-						error.Z -= 2*dT;
-					}
-				}
-				error.Z += 2*delta.Z;
-			}
-			if(current.E != target.E)
-			{
-				tempInPosition = false;
-				if(error.E > 0)
-				{
-					output = output | (1 << 0);
-					current.E += direction.E;
-					error.E -= 2*dT;
-				}
-				error.E += 2*delta.E;
-			}
-			Stepping = true;
-			setInPosition(tempInPosition);
+			output = output & ~(1 << 23);
+			output = output & ~(1 << 25);
 		}
-		EH.expansionHeader = output;
+		if(pwmcnt == 100)
+		{
+			pwmcnt = 0;
+		}
+		if(prntcnt == 1000)
+		{
+			//System.out.println(adc);
+			//System.out.println(timingToTemperature(adc));
+			prntcnt = 0;
+		}
+		if(!isInPosition())
+		{
+			if(Stepping)
+			{
+				output = output & ~(1 << 0);
+				output = output & ~(1 << 6);
+				output = output & ~(1 << 12);
+				output = output & ~(1 << 20);
+				output = output & ~(1 << 26);
+				Stepping = false;
+			}
+			else
+			{
+				boolean tempInPosition = true;
+				if(current.X != target.X)
+				{
+					if(!getBitValue(sensorvalue,7) && direction.X == -1)//Check endstop
+					{
+						current.X = 0;
+						target.X = current.X;
+					}
+					else if(current.X == max.X && direction.X == 1)
+					{
+						target.X = current.X;
+					}
+					else
+					{
+						tempInPosition = false;
+						if(error.X > 0)
+						{
+							output = output | (1 << 6);
+							current.X += direction.X;
+							error.X -= 2*dT;
+						}
+					}
+					error.X += 2*delta.X;
+				}
+				if(current.Y != target.Y)
+				{
+					if(!getBitValue(sensorvalue,5) && direction.Y == -1)//Check endstop
+					{
+						current.Y = 0;
+						target.Y = current.Y;
+					}
+					else if(current.Y == max.Y && direction.Y == 1)
+					{
+						target.Y = current.Y;
+					}
+					else
+					{
+						tempInPosition = false;
+						if(error.Y > 0)
+						{
+							output = output | (1 << 12);
+							current.Y += direction.Y;
+							error.Y -= 2*dT;
+						}
+					}
+					error.Y += 2*delta.Y;
+				}
+				if(current.Z != target.Z)
+				{
+					if(!getBitValue(sensorvalue,3) && direction.Z == -1)//Check endstop
+					{
+						current.Z = 0;
+						target.Z = current.Z;
+					}
+					else if(current.Z == max.Z && direction.Z == 1)
+					{
+						target.Z = current.Z;
+					}
+					else
+					{
+						tempInPosition = false;
+						if(error.Z > 0)
+						{
+							output = output | (1 << 20);
+							output = output | (1 << 26);
+							current.Z += direction.Z;
+							error.Z -= 2*dT;
+						}
+					}
+					error.Z += 2*delta.Z;
+				}
+				if(current.E != target.E)
+				{
+					tempInPosition = false;
+					if(error.E > 0)
+					{
+						output = output | (1 << 0);
+						current.E += direction.E;
+						error.E -= 2*dT;
+					}
+					error.E += 2*delta.E;
+				}
+				Stepping = true;
+				setInPosition(tempInPosition);
+			}
+		}
+		EH.IO = output;
+		LS.ledSwitch = PWM;
 	}
 	
 	private static boolean getBitValue(int Value, int BitNumber)
 	{
 		return (Value & (1 << BitNumber)) != 0;
+	}
+	
+	private static final int[] TIMING = {1693,2213,3016,4078,5877,8158,12822,20636,32302,55876,88901,175887,331095};
+	private static final int[] TEMPERATURE = {209,197,187,163,150,138,117,99,85,68,56,38,22};
+	
+	private static int timingToTemperature(int timing)
+	{
+		if(timing <= 0)
+		{
+			return 0;
+		}
+		int i;
+		for(i = 0; i < TIMING.length-2; i++) //@WCA loop = 11
+		{
+			if(timing <= TIMING[i])
+			{
+				break;
+			}
+		}
+		//return (int)(TEMPERATURE[i]+(timing-TIMING[i])*((float)(TEMPERATURE[i+1]-TEMPERATURE[i])/(TIMING[i+1]-TIMING[i])));
+		return (int)(TEMPERATURE[i]+(timing-TIMING[i])*((1000000*(TEMPERATURE[i+1]-TEMPERATURE[i]))/(TIMING[i+1]-TIMING[i]))/1000000);
 	}
 }
