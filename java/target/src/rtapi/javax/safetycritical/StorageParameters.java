@@ -50,7 +50,7 @@ public class StorageParameters {
 
 	@SCJAllowed
 	public StorageParameters(long totalBackingStore, long[] sizes) {
-		this.totalBackingStore = totalBackingStore;
+		this(totalBackingStore, sizes, 0, 0);
 	}
 
 	
