@@ -1,7 +1,6 @@
 package edu.purdue.scjtck;
 
 import javax.safetycritical.JopSystem;
-import javax.safetycritical.Safelet;
 
 import edu.purdue.scjtck.tck.TestSchedule402;
 
@@ -12,7 +11,8 @@ public final class Launcher {
 
 	public static void main(final String[] args) {
 		
-		Safelet s = new TestSchedule402();
+		TestSchedule402 s = new TestSchedule402();
+		s.setup();
 		System.out.println("Safelet created");
 		
 		JopSystem.startMission(s);
