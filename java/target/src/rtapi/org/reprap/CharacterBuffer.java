@@ -63,22 +63,63 @@ public class CharacterBuffer
 		return false;
 	}
 	
-	synchronized public boolean add(char[] characters)
+	synchronized public void add(char[] characters)
 	{
-		if(chars.length >= count+characters.length)
+		if(characters == null || chars.length < count+characters.length)
 		{
-			for(int i = 0; i < characters.length; i++) //@WCA loop=64
-			{
-				chars[position] = characters[i];
-				position++;
-				if(position == chars.length)
-				{
-					position = 0;
-				}
-			}
-			count += characters.length;
-			return true;
+			return;
 		}
-		return false;
+		for(int i = 0; i < characters.length; i++) //@WCA loop=64
+		{
+			chars[position] = characters[i];
+			position++;
+			if(position == chars.length)
+			{
+				position = 0;
+			}
+		}
+		count += characters.length;
+	}
+	
+	synchronized public void add(char[] characters1,char[] characters2,char[] characters3)
+	{
+		addUnSafe(characters1);
+		addUnSafe(characters2);
+		addUnSafe(characters3);
+	}
+	
+	synchronized public void add(char[] characters1,char[] characters2,char[] characters3, char[] characters4)
+	{
+		addUnSafe(characters1);
+		addUnSafe(characters2);
+		addUnSafe(characters3);
+		addUnSafe(characters4);
+	}
+	
+	synchronized public void add(char[] characters1,char[] characters2,char[] characters3, char[] characters4, char[] characters5)
+	{
+		addUnSafe(characters1);
+		addUnSafe(characters2);
+		addUnSafe(characters3);
+		addUnSafe(characters4);
+		addUnSafe(characters5);
+	}
+	
+	private void addUnSafe(char[] characters)
+	{
+		if(characters == null || chars.length < count+characters.length)
+		{
+			return;
+		}
+		for(int i = 0; i < characters.length; i++) //@WCA loop=64
+		{
+			chars[position] = characters[i];
+			position++;
+			if(position == chars.length)
+			{
+				position = 0;
+			}
+		}
+		count += characters.length;
 	}
 }

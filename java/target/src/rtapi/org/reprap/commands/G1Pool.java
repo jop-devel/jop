@@ -35,7 +35,12 @@ public class G1Pool
 			return false;
 		}
 		temp.setParameters(parameters);
-		return temp.enqueue();
+		if(!temp.enqueue())
+		{
+			returnToPool(temp);
+			return false;
+		}
+		return true;
 	}
 	
 	synchronized private G1 retreiveFromPool()

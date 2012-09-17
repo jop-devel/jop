@@ -26,7 +26,7 @@ import com.jopdesign.io.*;
 
 public class RepRapController extends PeriodicEventHandler
 {
-	public static final int DECIMALS = 1; //X,Y,Z and E values are turned into millimeter*10
+	public static final int DECIMALS = 2; //X,Y,Z and E values are turned into millimeter*10
 	private static final int X_STEPS_PER_MILLIMETER = 40; //= steps*microstepping^-1/(belt_pitch*pulley_teeth) = 200*(1/8)^-1/(5*8)
 	private static final int Y_STEPS_PER_MILLIMETER = X_STEPS_PER_MILLIMETER;
 	private static final int Z_STEPS_PER_MILLIMETER = 160; //= steps/distance_between_threads = 200/1.25
@@ -34,6 +34,7 @@ public class RepRapController extends PeriodicEventHandler
 	private static final int MILLISECONDS_PER_SECOND = 1000;
 	private static final int SECONDS_PER_MINUTE = 60;
 	private static final int E_MAX_FEED_RATE = 800;
+	private static final int MAX_TEMPERATURE = 210;
 
 	RepRapController()
 	{
@@ -70,24 +71,85 @@ public class RepRapController extends PeriodicEventHandler
 		this.inPosition = inPosition;
 	}
 	
-	//Not threadsafe
-	public static void setParameter(Parameter source, Parameter target)
+	private boolean absolute = true;
+	
+	synchronized private boolean isAbsolute()
 	{
+		return absolute;
+	}
+	
+	synchronized public void setAbsolute(boolean absolute)
+	{
+		this.absolute = absolute;
+	}
+	
+	//Not threadsafe
+	public void setParameter(Parameter source, Parameter target)
+	{
+		boolean absolute = isAbsolute();
 		if(source.X > Integer.MIN_VALUE)
 		{
-			target.X = (source.X*X_STEPS_PER_MILLIMETER)/(DECIMALS*10);
+			int temp = source.X*X_STEPS_PER_MILLIMETER;
+			for (int i = 0; i < DECIMALS; i++) //@WCA loop = 1
+			{
+				temp = temp/10;
+			}
+			if(absolute)
+			{
+				target.X = temp;
+			}
+			else
+			{
+				target.X = current.X+temp;
+			}
 		}
 		if(source.Y > Integer.MIN_VALUE)
 		{
-			target.Y = (source.Y*Y_STEPS_PER_MILLIMETER)/(DECIMALS*10);
+			int temp = source.Y*Y_STEPS_PER_MILLIMETER;
+			for (int i = 0; i < DECIMALS; i++) //@WCA loop = 1
+			{
+				temp = temp/10;
+			}
+			if(absolute)
+			{
+				target.Y = temp;
+			}
+			else
+			{
+				target.Y = current.Y+temp;
+			}
 		}
 		if(source.Z > Integer.MIN_VALUE)
 		{
-			target.Z = (source.Z*Z_STEPS_PER_MILLIMETER)/(DECIMALS*10);
+			int temp = source.Z*Z_STEPS_PER_MILLIMETER;
+			for (int i = 0; i < DECIMALS; i++) //@WCA loop = 1
+			{
+				temp = temp/10;
+			}
+			if(absolute)
+			{
+				target.Z = temp;
+			}
+			else
+			{
+				target.Z = current.Z+temp;
+			}
 		}
 		if(source.E > Integer.MIN_VALUE)
 		{
-			target.E = (source.E*E_STEPS_PER_MILLIMETER)/(DECIMALS*10);
+			int temp = source.E*E_STEPS_PER_MILLIMETER;
+			for (int i = 0; i < DECIMALS; i++) //@WCA loop = 1
+			{
+				temp = temp/10;
+			}
+			if(absolute)
+			{
+				target.E = temp;
+			}
+			else
+			{
+				target.E = current.E+temp;
+			}
 		}
 		if(source.F > 0)
 		{
@@ -201,33 +263,41 @@ public class RepRapController extends PeriodicEventHandler
 	}
 	
 	private int currentTemperature = 0;
-	private int targetTemperature = 0;
+	private int targetTemperature = Integer.MIN_VALUE;
 	
 	synchronized public int getCurrentTemperature() 
 	{
 		return currentTemperature;
 	}
 	
-	synchronized public void setCurrentTemperature(int currentTemperature) 
+	synchronized private void setCurrentTemperature(int currentTemperature) 
 	{
 		this.currentTemperature = currentTemperature;
 	}
 	
-	synchronized public int getTargetTemperature() 
+	synchronized private int getTargetTemperature() 
 	{
 		return targetTemperature;
 	}
 	
 	synchronized public void setTargetTemperature(int targetTemperature) 
 	{
+		for (int i = 0; i < DECIMALS; i++) //@WCA loop = 1
+		{
+			targetTemperature = targetTemperature/10;
+		}
+		if(targetTemperature > MAX_TEMPERATURE)
+		{
+			targetTemperature = MAX_TEMPERATURE;
+		}
 		this.targetTemperature = targetTemperature;
 	}
 	
-	private int prntcnt = 0;
-	private int tmpcnt = 0;
-	private int pwmcnt = 0;
-	private int swtchcnt = 0;
-	private int PWM = 10;
+	private int tmpcnt1 = 0;
+	private int tmppnt = 0;
+	private int[] tmpval = new int[5];
+	private int tmpcnt2 = 0;
+	
 	
 	@Override
 	public void handleAsyncEvent()
@@ -235,48 +305,40 @@ public class RepRapController extends PeriodicEventHandler
 		int switchvalue = LS.ledSwitch;
 		int sensorvalue = EH.IO;
 		
-		tmpcnt++;
-		if(tmpcnt == 1000 )
+		tmpcnt1++;
+		if(tmpcnt1 == 1000)
 		{
-			int temp = timingToTemperature(EH.ADC);
-			setCurrentTemperature(temp);
-			tmpcnt = 0;
-		}
-		if(swtchcnt == 500)
-		{
-			if(getBitValue(switchvalue,0))
+			tmpcnt1 = 0;
+			int tmpCur = timingToTemperature(EH.ADC);
+			tmpval[tmppnt++] = tmpCur;
+			if(tmppnt == tmpval.length)
 			{
-				if(getBitValue(switchvalue,1) && PWM < 100)
-				{
-					PWM++;
-				}
-				else if(!getBitValue(switchvalue,1) && PWM > 0)
-				{
-					PWM--;
-				}
+				tmppnt = 0;
 			}
-			swtchcnt = 0;
+			//Heater
+			if(tmpCur < getTargetTemperature())
+			{
+				output = output | (1 << 23);
+				output = output | (1 << 25);
+			}
+			else
+			{
+				output = output & ~(1 << 23);
+				output = output & ~(1 << 25);
+			}
 		}
-		// Heater
-		if(pwmcnt <= PWM)
+		tmpcnt2++;
+		if(tmpcnt2 == 5000)
 		{
-			output = output | (1 << 23);
-			output = output | (1 << 25);
-		}
-		else
-		{
-			output = output & ~(1 << 23);
-			output = output & ~(1 << 25);
-		}
-		if(pwmcnt == 100)
-		{
-			pwmcnt = 0;
-		}
-		if(prntcnt == 1000)
-		{
-			//System.out.println(adc);
-			//System.out.println(timingToTemperature(adc));
-			prntcnt = 0;
+			tmpcnt2 = 0;
+			int temp = 0;
+			for (int i = 0; i < tmpval.length; i++) //@WCA loop = 5 
+			{
+				temp += tmpval[i];
+			}
+			temp = temp/tmpval.length;
+			setCurrentTemperature(temp);
+			LS.ledSwitch = temp;
 		}
 		if(!isInPosition())
 		{
@@ -378,7 +440,6 @@ public class RepRapController extends PeriodicEventHandler
 			}
 		}
 		EH.IO = output;
-		LS.ledSwitch = PWM;
 	}
 	
 	private static boolean getBitValue(int Value, int BitNumber)

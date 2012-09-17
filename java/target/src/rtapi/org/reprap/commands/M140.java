@@ -32,7 +32,7 @@ public class M140 extends Command
 	@Override
 	public boolean execute() 
 	{
-		//This command is supposed to set the extruder PWM
+		//This command is supposed to set the Bed Temperature
 		return true;
 	}
 }

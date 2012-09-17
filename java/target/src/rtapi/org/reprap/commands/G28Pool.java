@@ -34,7 +34,12 @@ public class G28Pool
 			return false;
 		}
 		temp.executed = false;
-		return temp.enqueue();
+		if(!temp.enqueue())
+		{
+			returnToPool(temp);
+			return false;
+		}
+		return true;
 	}
 	
 	synchronized private G28 retreiveFromPool()

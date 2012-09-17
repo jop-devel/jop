@@ -24,7 +24,8 @@ import org.reprap.RepRapController;
 
 public class G28 extends Command
 {
-	private static final Parameter home = new Parameter(Integer.MIN_VALUE,Integer.MIN_VALUE,Integer.MIN_VALUE,Integer.MIN_VALUE,Integer.MIN_VALUE,Integer.MIN_VALUE);
+	//private static final Parameter home = new Parameter(Integer.MIN_VALUE,Integer.MIN_VALUE,Integer.MIN_VALUE,Integer.MIN_VALUE,Integer.MIN_VALUE,Integer.MIN_VALUE);
+	private static final Parameter home = new Parameter(0,0,0,0,0,0);
 	
 	G28 next;
 	private RepRapController repRapController;

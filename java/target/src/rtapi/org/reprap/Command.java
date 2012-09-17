@@ -38,6 +38,10 @@ public abstract class Command
 	
 	public boolean enqueue()
 	{
+		if(next != null)
+		{
+			return false;
+		}
 		commandController.enqueue(this);
 		return true;
 	}

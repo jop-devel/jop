@@ -116,7 +116,7 @@ begin
 			cnt <= (others => '0');
 		elsif(rising_edge(clk)) then
 			if(readtemp = '1') then
-				if(GPIO_0(30) = '1' OR cnt = 4294967295) then
+				if(GPIO_0(30) = '1' OR cnt = 60000000) then
 					cntvalue <= cnt;
 					cnt <= (others => '0');
 					readtemp <= '0';

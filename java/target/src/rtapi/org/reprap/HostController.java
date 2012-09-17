@@ -16,6 +16,8 @@
 */
 package org.reprap;
 
+import java.io.IOException;
+
 import javax.realtime.PeriodicParameters;
 import javax.realtime.PriorityParameters;
 import javax.realtime.RelativeTime;
@@ -36,8 +38,9 @@ public class HostController extends PeriodicEventHandler
 	    'u', 'v', 'w', 'x', 'y', 'z',
 	};
 	
-	private final static char[] OK = {'o','k',' ','/','/'};
-	private final static char[] RS = {'r','s',' ','/','/'};
+	private final static char[] OK = {'o','k',' '};
+	private final static char[] RS = {'r','s',' '};
+	private final static char[] DEBUG = {' ','/','/'};
 	private final static char[] NEWLINE = {'\n'};
 	private final static char[] COMMAND_TOO_LONG = {'C','o','m','m','a','n','d',' ','t','o','o',' ','l','o','n','g','!'};
 	
@@ -96,6 +99,7 @@ public class HostController extends PeriodicEventHandler
 				comment = false;
 				if(inputCount > 0)
 				{
+					inputCount = 0;
 					setInputStatus(true);
 					return;
 				}
@@ -110,29 +114,33 @@ public class HostController extends PeriodicEventHandler
 		}
 	}
 	
-	void resendCommand(char[] message)
+	void resendCommand(int lineNumber, char[] debug)
 	{
-		print(RS);
-		if(message != null)
+		if(lineNumber > Integer.MIN_VALUE)
 		{
-			print(message);
+			outputBuffer.add(RS,intToChar(lineNumber),DEBUG,debug,NEWLINE);
 		}
-		print(NEWLINE);
+		else
+		{
+			outputBuffer.add(RS,DEBUG,debug,NEWLINE);
+		}
+		
 	}
 	
-	public void confirmCommand(char[] message)
+	public void confirmCommand(char[] response)
 	{
-		print(OK);
-		if(message != null)
-		{
-			print(message);
-		}
-		print(NEWLINE);
+		outputBuffer.add(OK,response,NEWLINE);
+	}
+	
+	public void confirmCommand(char[] response1, char[] response2, char[] response3)
+	{
+		outputBuffer.add(OK,response1,response2,response3,NEWLINE);
 	}
 	
 	char[] getLine()
 	{
 		char[] chars = inputBuffer.getChars(0);
+		//print(chars);
 		setInputStatus(false);
 		return chars;
 	}
@@ -159,7 +167,7 @@ public class HostController extends PeriodicEventHandler
 		    }
 		}
 	    
-	    do
+	    do //@WCA loop = 33
 	    {
 	    	buffer[--i] = digits[integer % radix];
 	    	integer /= radix;
@@ -169,10 +177,16 @@ public class HostController extends PeriodicEventHandler
 	    if (isNeg)
 	      buffer[--i] = '-';
 	    
-	    return buffer;
+	    
+	    char[] newBuffer = new char[33-i];
+	    for (int j = 0; j < newBuffer.length; j++) //@WCA loop = 33
+	    {
+	    	newBuffer[j] = buffer[i++];
+		}
+	    return newBuffer;
 	}
 	
-	void print(char[] chars)
+	private void print(char[] chars)
 	{
 		outputBuffer.add(chars);
 	}

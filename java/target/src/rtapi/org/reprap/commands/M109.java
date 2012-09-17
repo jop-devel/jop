@@ -19,18 +19,39 @@ package org.reprap.commands;
 import org.reprap.Command;
 import org.reprap.CommandController;
 import org.reprap.HostController;
+import org.reprap.RepRapController;
 
 public class M109 extends Command
 {
-	public M109(HostController hostController, CommandController commandController) 
+	private RepRapController repRapController;
+	private int temperature = 0;
+	private boolean executed = false;
+	
+	public M109(HostController hostController, CommandController commandController, RepRapController repRapController) 
 	{
 		super(hostController, commandController);
+		this.repRapController = repRapController;
+	}
+	
+	public boolean enqueue(int temperature) 
+	{
+		this.temperature = temperature;
+		executed = false;
+		return super.enqueue();
 	}
 	
 	@Override
 	public boolean execute() 
 	{
-		//This command is supposed to set the extruder temp
-		return true;
+		if(!executed)
+		{
+			repRapController.setTargetTemperature(temperature);
+		}
+		int temp = repRapController.getCurrentTemperature();
+		if(temp >= temperature-2 && temp <= temperature+10 )
+		{
+			return true;
+		}
+		return false;
 	}
 }

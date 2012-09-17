@@ -19,19 +19,24 @@ package org.reprap.commands;
 import org.reprap.Command;
 import org.reprap.CommandController;
 import org.reprap.HostController;
+import org.reprap.Parameter;
+import org.reprap.RepRapController;
 
-
+//Set absolute
 public class G90 extends Command
 {
-	public G90(HostController hostController, CommandController commandController) 
+	private RepRapController repRapController;
+	
+	public G90(HostController hostController, CommandController commandController, RepRapController repRapController) 
 	{
 		super(hostController, commandController);
+		this.repRapController = repRapController;
 	}
 	
 	@Override
 	public boolean execute() 
 	{
-		//This command is supposed to set the positioning to absolute and this is currently the only option
+		repRapController.setAbsolute(true);
 		return true;
 	}
 }

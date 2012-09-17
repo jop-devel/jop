@@ -27,10 +27,6 @@ import org.reprap.commands.*;
 public class CommandParser extends PeriodicEventHandler
 {
 	private static final int MAX_NUMBER_LENGTH = 8;
-	private static final char[] INCORRECT_CHECKSUM = {'I','n','c','o','r','r','e','c','t',' ','c','h','e','c','k','s','u','m','!'};
-	private static final char[] UNKNOWN_G_COMMAND = {'U','n','k','n','o','w','n',' ','G',' ','c','o','m','m','a','n','d','!'};
-	private static final char[] UNKNOWN_M_COMMAND = {'U','n','k','n','o','w','n',' ','M',' ','c','o','m','m','a','n','d','!'};
-	private static final char[] UNKNOWN_COMMAND = {'U','n','k','n','o','w','n',' ','c','o','m','m','a','n','d','!'};
 	
 	private Parameter parameter = new Parameter();
 	private boolean waitingG1Command = false;
@@ -41,7 +37,9 @@ public class CommandParser extends PeriodicEventHandler
 	private G28Pool G28Pool;
 	private G21 G21;
 	private G90 G90;
+	private G91 G91;
 	private G92 G92;
+	private M104 M104;
 	private M105 M105;
 	private M109 M109;
 	private M110 M110;
@@ -58,13 +56,16 @@ public class CommandParser extends PeriodicEventHandler
 		G1Pool = new G1Pool(hostController, commandController, repRapController);
 		G28Pool = new G28Pool(hostController, commandController, repRapController);
 		G21 = new G21(hostController, commandController);
-		G90 = new G90(hostController, commandController);
-		G92 = new G92(hostController, commandController,repRapController);
-		M105 = new M105(hostController, commandController);
-		M109 = new M109(hostController, commandController);
+		G90 = new G90(hostController, commandController, repRapController);
+		G91 = new G91(hostController, commandController, repRapController);
+		G92 = new G92(hostController, commandController, repRapController);
+		M104 = new M104(hostController, commandController, repRapController);
+		M105 = new M105(hostController, commandController, repRapController);
+		M109 = new M109(hostController, commandController, repRapController);
 		M110 = new M110(hostController, commandController);
 		M113 = new M113(hostController, commandController);
 		M140 = new M140(hostController, commandController);
+		T = new T(hostController, commandController);
 	}
 	
 	@Override
@@ -77,6 +78,7 @@ public class CommandParser extends PeriodicEventHandler
 				//The command buffer is full so no need to parse further commands until there is space
 				return;
 			}
+			hostController.confirmCommand(null);
 			waitingG1Command = false;
 		}
 		else if(waitingG28Command)
@@ -86,6 +88,7 @@ public class CommandParser extends PeriodicEventHandler
 				//The command buffer is full so no need to parse further commands until there is space
 				return;
 			}
+			hostController.confirmCommand(null);
 			waitingG28Command = false;
 		}
 		char[] chars = hostController.getLine();
@@ -96,7 +99,7 @@ public class CommandParser extends PeriodicEventHandler
 		}
 		int length = chars.length;
 		boolean seenNCommand = false;
-		int lineNumber = 0;
+		int lineNumberN = Integer.MIN_VALUE;
 		
 		boolean seenGCommand = false;
 		boolean seenMCommand = false;
@@ -120,10 +123,10 @@ public class CommandParser extends PeriodicEventHandler
 			int numberLength = 0;
 			int value = 0;
 			boolean decimalpoint = false;
+			boolean negative = false;
 			int decimals = 0;
 			for(int j = i+1; j < length; j++) //@WCA loop = 1
 			{
-				i++;
 				character = chars[j];
 				if(Character.digit(character, 10) > -1)
 				{
@@ -138,26 +141,36 @@ public class CommandParser extends PeriodicEventHandler
 						}
 					}
 				}
-				else if(character == '.')
+				else if(character == '.' && numberLength > 0)
 				{
 					decimalpoint = true;
+				}
+				else if(character == '-' && numberLength == 0)
+				{
+					negative = true;
 				}
 				else
 				{
 					//Command delimiter
 					break;
 				}
+				i++;
 			}
 			if(numberLength == 0)
 			{
 				//All commands should have a number
+				//hostController.resendCommand(INCORRECT_COMMAND);
 				continue;
+			}
+			if(negative)
+			{
+				value = -value;
 			}
 			
 			switch(command)
 			{
 				case 'N':
-					lineNumber = value;
+					lineNumberN = value;
 					seenNCommand = true;
 					break;
 				case 'G':
@@ -172,6 +185,10 @@ public class CommandParser extends PeriodicEventHandler
 					parameter.F = value;
 					break;
 				case 'S':
+					for (int j = 0; j < RepRapController.DECIMALS-decimals; j++) //@WCA loop = 1
+					{
+						value = value*10;
+					}
 					parameter.S = value;
 					break;
 				case 'T':
@@ -218,7 +235,7 @@ public class CommandParser extends PeriodicEventHandler
 		{
 			if(!verifyChecksum(chars,checksum))
 			{
-				hostController.resendCommand(INCORRECT_CHECKSUM);
+				hostController.resendCommand(lineNumberN,chars);
 				return;
 			}
 		}
@@ -251,11 +268,14 @@ public class CommandParser extends PeriodicEventHandler
 				case 90:
 					G90.enqueue();
 					break;
+				case 91:
+					G91.enqueue();
+					break;
 				case 92:
 					G92.enqueue(parameter.clone());
 					break;
 				default:
-					hostController.resendCommand(UNKNOWN_G_COMMAND);
+					hostController.resendCommand(lineNumberN,chars);
 					return;
 			}
 		}
@@ -263,14 +283,23 @@ public class CommandParser extends PeriodicEventHandler
 		{
 			switch(commandNumber)
 			{
+				case 104:
+					if(parameter.S != Integer.MIN_VALUE)
+					{
+						M104.enqueue(parameter.S);
+					}
+					break;
 				case 105:
 					M105.enqueue();
 					break;
 				case 109:
-					M109.enqueue();
+					if(parameter.S != Integer.MIN_VALUE)
+					{
+						M109.enqueue(parameter.S);
+					}
 					break;
 				case 110:
-					M110.enqueue(lineNumber);
+					M110.enqueue(lineNumberN);
 					break;
 				case 113:
 					M113.enqueue();
@@ -279,7 +308,7 @@ public class CommandParser extends PeriodicEventHandler
 					M140.enqueue();
 					break;
 				default:
-					hostController.resendCommand(UNKNOWN_M_COMMAND);
+					hostController.resendCommand(lineNumberN,chars);
 					return;
 			}
 		}
@@ -289,7 +318,7 @@ public class CommandParser extends PeriodicEventHandler
 		}
 		else
 		{
-			hostController.resendCommand(UNKNOWN_COMMAND);
+			hostController.resendCommand(lineNumberN,chars);
 			return;
 		}
 	}
