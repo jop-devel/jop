@@ -81,6 +81,12 @@ public class CharacterBuffer
 		count += characters.length;
 	}
 	
+	synchronized public void add(char[] characters1,char[] characters2)
+	{
+		addUnSafe(characters1);
+		addUnSafe(characters2);
+	}
+	
 	synchronized public void add(char[] characters1,char[] characters2,char[] characters3)
 	{
 		addUnSafe(characters1);
@@ -111,7 +117,8 @@ public class CharacterBuffer
 		{
 			return;
 		}
-		for(int i = 0; i < characters.length; i++) //@WCA loop=64
+		int length = characters.length;
+		for(int i = 0; i < length; i++) //@WCA loop=64
 		{
 			chars[position] = characters[i];
 			position++;

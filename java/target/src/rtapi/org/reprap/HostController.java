@@ -124,6 +124,19 @@ public class HostController extends PeriodicEventHandler
 		
 	}
 	
+	void resendCommand(int lineNumber)
+	{
+		if(lineNumber > Integer.MIN_VALUE)
+		{
+			outputBuffer.add(RS,intToChar(lineNumber),NEWLINE);
+		}
+		else
+		{
+			outputBuffer.add(RS,NEWLINE);
+		}
+		
+	}
+	
 	public void confirmCommand(char[] response)
 	{
 		outputBuffer.add(OK,response,NEWLINE);
@@ -164,12 +177,13 @@ public class HostController extends PeriodicEventHandler
 		    }
 		}
 	    
-	    do //@WCA loop = 33
+	    buffer[--i] = digits[integer % radix];
+    	integer /= radix;
+	    for(; integer > 0;) //@WCA loop = 33
 	    {
 	    	buffer[--i] = digits[integer % radix];
 	    	integer /= radix;
 	    }
-	    while (integer > 0); //@WCA loop = 33
 
 	    if (isNeg)
 	      buffer[--i] = '-';

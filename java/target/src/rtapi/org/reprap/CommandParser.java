@@ -75,23 +75,25 @@ public class CommandParser extends PeriodicEventHandler
 	{
 		if(waitingG1Command)
 		{
-			if(!G1Pool.enqueue(parameter))
+			if(G1Pool.enqueue(parameter))
 			{
-				//The command buffer is full so no need to parse further commands until there is space
+				hostController.confirmCommand(null);
+				waitingG1Command = false;
 				return;
 			}
-			hostController.confirmCommand(null);
-			waitingG1Command = false;
+			//The command buffer is full so no need to parse further commands until there is space
+			return;
 		}
 		else if(waitingG28Command)
 		{
-			if(!G28Pool.enqueue(parameter))
+			if(G28Pool.enqueue(parameter))
 			{
-				//The command buffer is full so no need to parse further commands until there is space
+				hostController.confirmCommand(null);
+				waitingG28Command = false;
 				return;
 			}
-			hostController.confirmCommand(null);
-			waitingG28Command = false;
+			//The command buffer is full so no need to parse further commands until there is space
+			return;
 		}
 		char[] chars = hostController.getLine();
 		
@@ -175,47 +177,55 @@ public class CommandParser extends PeriodicEventHandler
 				shiftedValue = shiftedValue*10;
 			}
 			
-			switch(command)
+			//Not using switch because of WCET analysis and JOP
+			if(command == 'N')
 			{
-				case 'N':
-					lineNumberN = value;
-					seenNCommand = true;
-					break;
-				case 'G':
-					commandNumber = value;
-					seenGCommand = true;
-					break;
-				case 'M':
-					commandNumber = value;
-					seenMCommand = true;
-					break;
-				case 'F':
-					parameter.F = shiftedValue;
-					break;
-				case 'S':
-					parameter.S = shiftedValue;
-					break;
-				case 'T':
-					commandNumber = value;
-					seenTCommand = true;
-					break;
-				case 'X':
-					parameter.X = shiftedValue;
-					break;
-				case 'Y':
-					parameter.Y = shiftedValue;
-					break;
-				case 'Z':
-					parameter.Z = shiftedValue;
-					break;
-				case 'E':
-					parameter.E = shiftedValue;
-					break;
-				case '*':
-					checksum = value;
-					seenStarCommand = true;
-					break;
-				default:
+				lineNumberN = value;
+				seenNCommand = true;
+			}
+			else if(command == 'G')
+			{
+				commandNumber = value;
+				seenGCommand = true;
+			}
+			else if(command == 'M')
+			{
+				commandNumber = value;
+				seenMCommand = true;
+			}
+			else if(command == 'F')
+			{
+				parameter.F = shiftedValue;
+			}
+			else if(command == 'S')
+			{
+				parameter.S = shiftedValue;
+			}
+			else if(command == 'T')
+			{
+				commandNumber = value;
+				seenTCommand = true;
+			}
+			else if(command == 'X')
+			{
+				parameter.X = shiftedValue;
+			}
+			else if(command == 'Y')
+			{
+				parameter.Y = shiftedValue;
+			}
+			else if(command == 'Z')
+			{
+				parameter.Z = shiftedValue;
+			}
+			else if(command == 'E')
+			{
+				parameter.E = shiftedValue;
+			}
+			else if(command == '*')
+			{
+				checksum = value;
+				seenStarCommand = true;
 			}
 		}
 		
@@ -223,84 +233,97 @@ public class CommandParser extends PeriodicEventHandler
 		{
 			if(!verifyChecksum(chars,checksum))
 			{
-				hostController.resendCommand(lineNumberN,chars);
+				//hostController.resendCommand(lineNumberN,chars);
+				hostController.resendCommand(lineNumberN);
 				return;
 			}
 		}
 		if(seenGCommand)
 		{
-			switch(commandNumber)
+			if(commandNumber == 0 || commandNumber == 1)
 			{
-				case 0://Same as G1
-				case 1:
-					//Buffered command
-					if(!G1Pool.enqueue(parameter))
-					{
-						waitingG1Command = true;
-						return;
-					}
-					hostController.confirmCommand(null);
-					break;
-				case 21:
-					G21.enqueue();
-					break;
-				case 28:
-					//Buffered command
-					if(!G28Pool.enqueue(parameter))
-					{
-						waitingG28Command = true;
-						return;
-					}
-					hostController.confirmCommand(null);
-					break;
-				case 90:
-					G90.enqueue();
-					break;
-				case 91:
-					G91.enqueue();
-					break;
-				case 92:
-					G92.enqueue(parameter);
-					break;
-				default:
-					hostController.resendCommand(lineNumberN,chars);
+				//Buffered command
+				if(!G1Pool.enqueue(parameter))
+				{
+					waitingG1Command = true;
 					return;
+				}
+				hostController.confirmCommand(null);
+			}
+			else if(commandNumber == 21)
+			{
+				G21.enqueue();
+			}
+			else if(commandNumber == 28)
+			{
+				//Buffered command
+				if(!G28Pool.enqueue(parameter))
+				{
+					waitingG28Command = true;
+					return;
+				}
+				hostController.confirmCommand(null);
+			}
+			else if(commandNumber == 90)
+			{
+				G90.enqueue();
+			}
+			else if(commandNumber == 91)
+			{
+				G91.enqueue();
+			}
+			else if(commandNumber == 92)
+			{
+				G92.enqueue(parameter);
+			}
+			else
+			{
+				//hostController.resendCommand(lineNumberN,chars);
+				hostController.resendCommand(lineNumberN);
+				return;
 			}
 		}
 		else if(seenMCommand)
 		{
-			switch(commandNumber)
+			if(commandNumber == 82)
 			{
-				case 82:
-					M82.enqueue();
-				break;
-				case 104:
-					if(parameter.S != Integer.MIN_VALUE)
-					{
-						M104.enqueue(parameter.S);
-					}
-					break;
-				case 105:
-					M105.enqueue();
-					break;
-				case 109:
-					if(parameter.S != Integer.MIN_VALUE)
-					{
-						M109.enqueue(parameter.S);
-					}
-					break;
-				case 110:
-					M110.enqueue(lineNumberN);
-					break;
-				case 113:
-					M113.enqueue();
-					break;
-				case 140:
-					M140.enqueue();
-					break;
-				default:
-					hostController.resendCommand(lineNumberN,chars);
-					return;
+				M82.enqueue();
+			}
+			else if(commandNumber == 104)
+			{
+				if(parameter.S != Integer.MIN_VALUE)
+				{
+					M104.enqueue(parameter.S);
+				}
+			}
+			else if(commandNumber == 105)
+			{
+				M105.enqueue();
+			}
+			else if(commandNumber == 109)
+			{
+				if(parameter.S != Integer.MIN_VALUE)
+				{
+					M109.enqueue(parameter.S);
+				}
+			}
+			else if(commandNumber == 110)
+			{
+				M110.enqueue(lineNumberN);
+			}
+			else if(commandNumber == 113)
+			{
+				M113.enqueue();
+			}
+			else if(commandNumber == 140)
+			{
+				M140.enqueue();
+			}
+			else
+			{
+				//hostController.resendCommand(lineNumberN,chars);
+				hostController.resendCommand(lineNumberN);
+				return;
 			}
 		}
 		else if(seenTCommand)
@@ -309,7 +332,8 @@ public class CommandParser extends PeriodicEventHandler
 		}
 		else
 		{
-			hostController.resendCommand(lineNumberN,chars);
+			//hostController.resendCommand(lineNumberN,chars);
+			hostController.resendCommand(lineNumberN);
 			return;
 		}
 	}
