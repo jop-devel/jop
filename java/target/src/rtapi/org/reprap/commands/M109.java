@@ -35,6 +35,10 @@ public class M109 extends Command
 	
 	public boolean enqueue(int temperature) 
 	{
+		for (int i = 0; i < RepRapController.DECIMALS; i++) //@WCA loop = 1
+		{
+			temperature = temperature/10;
+		}
 		this.temperature = temperature;
 		executed = false;
 		return super.enqueue();

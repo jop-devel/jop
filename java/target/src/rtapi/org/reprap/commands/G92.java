@@ -43,7 +43,7 @@ public class G92 extends Command
 	@Override
 	public boolean execute() 
 	{
-		repRapController.setPosition(parameter.clone());
+		repRapController.setPosition(parameter);
 		return true;
 	}
 }

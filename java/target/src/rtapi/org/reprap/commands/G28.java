@@ -24,8 +24,7 @@ import org.reprap.RepRapController;
 
 public class G28 extends Command
 {
-	//private static final Parameter home = new Parameter(Integer.MIN_VALUE,Integer.MIN_VALUE,Integer.MIN_VALUE,Integer.MIN_VALUE,Integer.MIN_VALUE,Integer.MIN_VALUE);
-	private static final Parameter home = new Parameter(0,0,0,0,0,0);
+	private final Parameter home = new Parameter();
 	
 	G28 next;
 	private RepRapController repRapController;
@@ -39,13 +38,22 @@ public class G28 extends Command
 		this.pool = pool;
 	}
 	
+	public void setParameters(Parameter parameter) 
+	{
+		home.X = (parameter.X > Integer.MIN_VALUE) ? 0 : Integer.MIN_VALUE;
+		home.Y = (parameter.Y > Integer.MIN_VALUE) ? 0 : Integer.MIN_VALUE;
+		home.Z = (parameter.Z > Integer.MIN_VALUE) ? 0 : Integer.MIN_VALUE;
+		home.E = (parameter.E > Integer.MIN_VALUE) ? 0 : Integer.MIN_VALUE;
+		this.executed = false;
+	}
+	
 	@Override
 	public boolean execute() 
 	{
 		if(!executed)
 		{
 			//Try to reach endstops by moving towards them
-			repRapController.setTarget(home.clone());
+			repRapController.setTarget(home);
 			executed=true;
 		}
 		if(repRapController.isInPosition())

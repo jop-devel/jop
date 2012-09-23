@@ -16,16 +16,11 @@
 */
 package org.reprap;
 
-import java.io.IOException;
-
 import javax.realtime.PeriodicParameters;
 import javax.realtime.PriorityParameters;
 import javax.realtime.RelativeTime;
 import javax.safetycritical.PeriodicEventHandler;
 import javax.safetycritical.StorageParameters;
-
-import com.jopdesign.io.IOFactory;
-import com.jopdesign.io.SerialPort;
 
 public class HostController extends PeriodicEventHandler
 {
@@ -49,7 +44,9 @@ public class HostController extends PeriodicEventHandler
 	private boolean inputStatus = false;
 	private CharacterBuffer outputBuffer = new CharacterBuffer(MAX_STRING_LENGTH);
 	private boolean comment = false;
-	private SerialPort SP = IOFactory.getFactory().getSerialPort();
+	
+	private HostInterface host = new HostInterface();
+	//private HostSimulator host = new HostSimulator();
 	
 	HostController()
 	{
@@ -74,7 +71,7 @@ public class HostController extends PeriodicEventHandler
 		char[] output = outputBuffer.getChars(16);
 		for (int i = 0; i < output.length; i++) //@WCA loop = 16
 		{
-			SP.write(output[i]);
+			host.write(output[i]);
 		}
 		//Input buffer is still full so do nothing
 		if(getInputStatus())
@@ -84,12 +81,12 @@ public class HostController extends PeriodicEventHandler
 		for (int i = 0; i < 16; i++) //@WCA loop = 16
 		{
 			char character;
-			if(!SP.rxFull())
+			if(!host.available())
 			{
 				//No input
 				return;
 			}
-			character = (char)SP.read();
+			character = host.read();
 			if(character == ';')
 			{
 				comment = true;

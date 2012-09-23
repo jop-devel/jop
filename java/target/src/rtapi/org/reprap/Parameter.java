@@ -19,12 +19,12 @@ package org.reprap;
 public class Parameter 
 {
 	
-	int X;
-	int Y;
-	int Z;
-	int E;
-	int F;
-	int S;
+	public int X;
+	public int Y;
+	public int Z;
+	public int E;
+	public int F;
+	public int S;
 	
 	public Parameter(int x, int y, int z, int e, int f ,int s)
 	{
@@ -38,17 +38,12 @@ public class Parameter
 	
 	public Parameter()
 	{
-		this.X = 0;
-		this.Y = 0;
-		this.Z = 0;
-		this.E = 0;
-		this.F = 0;
-		this.S = 0;
-	}
-	
-	synchronized public Parameter clone()
-	{
-		return new Parameter(this.X,this.Y,this.Z,this.E,this.F,this.S);
+		this.X = Integer.MIN_VALUE;
+		this.Y = Integer.MIN_VALUE;
+		this.Z = Integer.MIN_VALUE;
+		this.E = Integer.MIN_VALUE;
+		this.F = Integer.MIN_VALUE;
+		this.S = Integer.MIN_VALUE;
 	}
 	
 	synchronized public void copy(Parameter source)

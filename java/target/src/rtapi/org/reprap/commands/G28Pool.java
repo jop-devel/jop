@@ -2,6 +2,7 @@ package org.reprap.commands;
 
 import org.reprap.CommandController;
 import org.reprap.HostController;
+import org.reprap.Parameter;
 import org.reprap.RepRapController;
 
 public class G28Pool 
@@ -26,14 +27,14 @@ public class G28Pool
 	}
 	
 	//The G28 command is put into the Command queue, NOT the G28 pool
-	public boolean enqueue()
+	public boolean enqueue(Parameter parameters)
 	{
 		G28 temp = retreiveFromPool();
 		if(temp == null)
 		{
 			return false;
 		}
-		temp.executed = false;
+		temp.setParameters(parameters);
 		if(!temp.enqueue())
 		{
 			returnToPool(temp);

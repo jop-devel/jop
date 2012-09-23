@@ -19,49 +19,19 @@ package org.reprap.commands;
 import org.reprap.Command;
 import org.reprap.CommandController;
 import org.reprap.HostController;
-import org.reprap.Parameter;
-import org.reprap.RepRapController;
 
-class G1 extends Command
+//Set extrusion distances to absolute
+public class M82 extends Command
 {
-	G1 next;
-	private RepRapController repRapController;
-	private G1Pool pool;
-	private Parameter parameter = new Parameter();
-	private boolean executed = false;
 	
-	G1(HostController hostController, CommandController commandController, RepRapController repRapController, G1Pool pool) 
+	public M82(HostController hostController, CommandController commandController) 
 	{
 		super(hostController, commandController);
-		this.repRapController = repRapController;
-		this.pool = pool;
-	}
-	
-	public void setParameters(Parameter parameter) 
-	{
-		this.parameter.copy(parameter);
-		this.executed = false;
 	}
 	
 	@Override
 	public boolean execute() 
 	{
-		if(!executed)
-		{
-			repRapController.setTarget(parameter);
-			executed=true;
-		}
-		if(repRapController.isInPosition())
-		{
-			pool.returnToPool(this);
-			return true;
-		}
-		return false;
-	}
-	
-	@Override
-	protected void respond() 
-	{
-		//Do nothing, already confirmed
+		return true;
 	}
 }
