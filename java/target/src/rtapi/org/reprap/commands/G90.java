@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
+  Copyright (C) 2012, TÃ³rur BiskopstÃ¸ StrÃ¸m (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,21 +17,26 @@
 package org.reprap.commands;
 
 import org.reprap.Command;
+import org.reprap.CommandController;
+import org.reprap.HostController;
+import org.reprap.Parameter;
+import org.reprap.RepRapController;
 
+//Set absolute
 public class G90 extends Command
 {
-	private static G90 instance = new G90();//Unbuffered command so only single instance
+	private RepRapController repRapController;
 	
-	public static boolean enqueue()
+	public G90(HostController hostController, CommandController commandController, RepRapController repRapController) 
 	{
-		Command.enqueue(instance);
-		return true;
+		super(hostController, commandController);
+		this.repRapController = repRapController;
 	}
 	
 	@Override
 	public boolean execute() 
 	{
-		//This command is supposed to set the positioning to absolute and this is currently the only option
+		repRapController.setAbsolute(true);
 		return true;
 	}
 }
