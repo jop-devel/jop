@@ -22,16 +22,11 @@ import javax.realtime.RelativeTime;
 import javax.safetycritical.PeriodicEventHandler;
 import javax.safetycritical.StorageParameters;
 
+import com.jopdesign.io.*;
+
 public class HostController extends PeriodicEventHandler
 {
 	public final static int MAX_STRING_LENGTH = 64;
-	//From Integer
-	private static final char[] digits = {
-	    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-	    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
-	    'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
-	    'u', 'v', 'w', 'x', 'y', 'z',
-	};
 	
 	private final static char[] OK = {'o','k',' '};
 	private final static char[] RS = {'r','s',' '};
@@ -45,7 +40,7 @@ public class HostController extends PeriodicEventHandler
 	private CharacterBuffer outputBuffer = new CharacterBuffer(MAX_STRING_LENGTH);
 	private boolean comment = false;
 	
-	private HostInterface host = new HostInterface();
+	private SerialPort host = IOFactory.getFactory().getSerialPort();
 	//private HostSimulator host = new HostSimulator();
 	
 	HostController()
@@ -81,12 +76,12 @@ public class HostController extends PeriodicEventHandler
 		for (int i = 0; i < 16; i++) //@WCA loop = 16
 		{
 			char character;
-			if(!host.available())
+			if(!host.rxFull())
 			{
 				//No input
 				return;
 			}
-			character = host.read();
+			character = (char)host.read();
 			if(character == ';')
 			{
 				comment = true;
@@ -155,6 +150,8 @@ public class HostController extends PeriodicEventHandler
 		return chars;
 	}
 	
+	private static final char[] digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
+		
 	public static char[] intToChar(int integer)
 	{
 		//////////From Integer////////////
@@ -172,17 +169,17 @@ public class HostController extends PeriodicEventHandler
 		    // When the value is MIN_VALUE, it overflows when made positive
 		    if (integer < 0)
 		    {
-		    	buffer[--i] = digits[(int) (-(integer + radix) % radix)];
-		    	integer = -(integer / radix);
+		    	buffer[--i] = digits[(int) (Math.modulo10(-(integer + radix)))];
+		    	integer = -(Math.divs10(integer));
 		    }
 		}
 	    
-	    buffer[--i] = digits[integer % radix];
-    	integer /= radix;
+	    buffer[--i] = digits[Math.modulo10(integer)];
+    	integer = Math.divs10(integer);
 	    for(; integer > 0;) //@WCA loop = 33
 	    {
-	    	buffer[--i] = digits[integer % radix];
-	    	integer /= radix;
+	    	buffer[--i] = digits[Math.modulo10(integer)];
+	    	integer = Math.divs10(integer);
 	    }
 
 	    if (isNeg)

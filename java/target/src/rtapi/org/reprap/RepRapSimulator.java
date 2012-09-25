@@ -7,8 +7,6 @@ public class RepRapSimulator
 	private int Z = 0;
 	private int E = 0;
 	
-	private int IO = 0;
-	
 	private int temperature = 24*1000;
 	
 	public void write(int IOValue)
@@ -68,7 +66,7 @@ public class RepRapSimulator
 		}
 	}
 	
-	public int readEndstops()
+	public int readSensors()
 	{
 		int value = 0;
 		if(X == 0)

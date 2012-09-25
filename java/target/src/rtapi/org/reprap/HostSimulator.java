@@ -13,7 +13,7 @@ public class HostSimulator
 	private int pointer2 = 0;
 	private int ok = 2;
 	
-	public boolean available()
+	public boolean rxFull()
 	{
 		if(ok == 2)
 		{

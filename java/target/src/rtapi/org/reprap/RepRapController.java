@@ -26,7 +26,8 @@ import com.jopdesign.io.*;
 
 public class RepRapController extends PeriodicEventHandler
 {
-	public static final int DECIMALS = 2; //X,Y,Z and E values are turned into millimeter*10
+	public static final int NR_DECIMALS = 2; //X,Y,Z and E values are turned into millimeter*10
+	public static final int DECIMALS = 100; //X,Y,Z and E values are turned into millimeter*10
 	private static final int X_STEPS_PER_MILLIMETER = 40; //= steps*microstepping^-1/(belt_pitch*pulley_teeth) = 200*(1/8)^-1/(5*8)
 	private static final int Y_STEPS_PER_MILLIMETER = X_STEPS_PER_MILLIMETER;
 	private static final int Z_STEPS_PER_MILLIMETER = 160; //= steps/distance_between_threads = 200/1.25
@@ -42,9 +43,9 @@ public class RepRapController extends PeriodicEventHandler
 			  new StorageParameters(100, new long[]{100}, 0, 0), 0);
 	}
 	
-	private RepRapInterface reprap = new RepRapInterface();
+	private ExpansionHeader reprap = ExpansionHeaderFactory.getExpansionHeaderFactory().getExpansionHeader();
 	//private RepRapSimulator reprap = new RepRapSimulator();
-	private LedSwitch LS = LedSwitchFactory.getLedSwitchFactory().getLedSwitch();
+	//private LedSwitch LS = LedSwitchFactory.getLedSwitchFactory().getLedSwitch();
 	
 	private Parameter current = new Parameter(0,0,0,0,E_MAX_FEED_RATE,200);//Current position
 	private Parameter target = new Parameter(0,0,0,0,E_MAX_FEED_RATE,200);//Target position
@@ -58,104 +59,6 @@ public class RepRapController extends PeriodicEventHandler
 	
 	int output = 0x01040412;
 	boolean Stepping = false;
-	
-	
-	/*
-	 * Square root function from
-	 */
-	
-	final static int[] table = 
-		{
-	     0,    16,  22,  27,  32,  35,  39,  42,  45,  48,  50,  53,  55,  57,
-	     59,   61,  64,  65,  67,  69,  71,  73,  75,  76,  78,  80,  81,  83,
-	     84,   86,  87,  89,  90,  91,  93,  94,  96,  97,  98,  99, 101, 102,
-	     103, 104, 106, 107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118,
-	     119, 120, 121, 122, 123, 124, 125, 126, 128, 128, 129, 130, 131, 132,
-	     133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 144, 145,
-	     146, 147, 148, 149, 150, 150, 151, 152, 153, 154, 155, 155, 156, 157,
-	     158, 159, 160, 160, 161, 162, 163, 163, 164, 165, 166, 167, 167, 168,
-	     169, 170, 170, 171, 172, 173, 173, 174, 175, 176, 176, 177, 178, 178,
-	     179, 180, 181, 181, 182, 183, 183, 184, 185, 185, 186, 187, 187, 188,
-	     189, 189, 190, 191, 192, 192, 193, 193, 194, 195, 195, 196, 197, 197,
-	     198, 199, 199, 200, 201, 201, 202, 203, 203, 204, 204, 205, 206, 206,
-	     207, 208, 208, 209, 209, 210, 211, 211, 212, 212, 213, 214, 214, 215,
-	     215, 216, 217, 217, 218, 218, 219, 219, 220, 221, 221, 222, 222, 223,
-	     224, 224, 225, 225, 226, 226, 227, 227, 228, 229, 229, 230, 230, 231,
-	     231, 232, 232, 233, 234, 234, 235, 235, 236, 236, 237, 237, 238, 238,
-	     239, 240, 240, 241, 241, 242, 242, 243, 243, 244, 244, 245, 245, 246,
-	     246, 247, 247, 248, 248, 249, 249, 250, 250, 251, 251, 252, 252, 253,
-	     253, 254, 254, 255
-	  };
-
-	  /**
-	   * A faster replacement for (int)(java.lang.Math.sqrt(x)).  Completely accurate for x < 2147483648 (i.e. 2^31)...
-	   */
-	  static int sqrt(int x) {
-	    int xn;
-
-	    if (x >= 0x10000) {
-	      if (x >= 0x1000000) {
-	        if (x >= 0x10000000) {
-	          if (x >= 0x40000000) {
-	            xn = table[x >> 24] << 8;
-	          } else {
-	            xn = table[x >> 22] << 7;
-	          }
-	        } else {
-	          if (x >= 0x4000000) {
-	            xn = table[x >> 20] << 6;
-	          } else {
-	            xn = table[x >> 18] << 5;
-	          }
-	        }
-
-	        xn = (xn + 1 + (x / xn)) >> 1;
-	        xn = (xn + 1 + (x / xn)) >> 1;
-	        return ((xn * xn) > x) ? --xn : xn;
-	      } else {
-	        if (x >= 0x100000) {
-	          if (x >= 0x400000) {
-	            xn = table[x >> 16] << 4;
-	          } else {
-	            xn = table[x >> 14] << 3;
-	          }
-	        } else {
-	          if (x >= 0x40000) {
-	            xn = table[x >> 12] << 2;
-	          } else {
-	            xn = table[x >> 10] << 1;
-	          }
-	        }
-
-	        xn = (xn + 1 + (x / xn)) >> 1;
-
-	        return ((xn * xn) > x) ? --xn : xn;
-	      }
-	    } else {
-	      if (x >= 0x100) {
-	        if (x >= 0x1000) {
-	          if (x >= 0x4000) {
-	            xn = (table[x >> 8]) + 1;
-	          } else {
-	            xn = (table[x >> 6] >> 1) + 1;
-	          }
-	        } else {
-	          if (x >= 0x400) {
-	            xn = (table[x >> 4] >> 2) + 1;
-	          } else {
-	            xn = (table[x >> 2] >> 3) + 1;
-	          }
-	        }
-
-	        return ((xn * xn) > x) ? --xn : xn;
-	      } else {
-	        if (x >= 0) {
-	          return table[x] >> 4;
-	        }
-	      }
-	    }
-	    return -1;
-	  }
 	
 	private boolean inPosition = false;
 	
@@ -188,10 +91,8 @@ public class RepRapController extends PeriodicEventHandler
 		if(source.X > Integer.MIN_VALUE)
 		{
 			int temp = source.X*X_STEPS_PER_MILLIMETER;
-			for (int i = 0; i < DECIMALS; i++) //@WCA loop = 1
-			{
-				temp = temp/10;
-			}
+			//temp = temp/DECIMALS;
+			temp = Math.divs100(temp);
 			if(absolute)
 			{
 				target.X = temp;
@@ -204,10 +105,7 @@ public class RepRapController extends PeriodicEventHandler
 		if(source.Y > Integer.MIN_VALUE)
 		{
 			int temp = source.Y*Y_STEPS_PER_MILLIMETER;
-			for (int i = 0; i < DECIMALS; i++) //@WCA loop = 1
-			{
-				temp = temp/10;
-			}
+			temp = Math.divs100(temp);
 			if(absolute)
 			{
 				target.Y = temp;
@@ -220,10 +118,7 @@ public class RepRapController extends PeriodicEventHandler
 		if(source.Z > Integer.MIN_VALUE)
 		{
 			int temp = source.Z*Z_STEPS_PER_MILLIMETER;
-			for (int i = 0; i < DECIMALS; i++) //@WCA loop = 1
-			{
-				temp = temp/10;
-			}
+			temp = Math.divs100(temp);
 			if(absolute)
 			{
 				target.Z = temp;
@@ -236,10 +131,7 @@ public class RepRapController extends PeriodicEventHandler
 		if(source.E > Integer.MIN_VALUE)
 		{
 			int temp = source.E*E_STEPS_PER_MILLIMETER;
-			for (int i = 0; i < DECIMALS; i++) //@WCA loop = 1
-			{
-				temp = temp/10;
-			}
+			temp = Math.divs100(temp);
 			if(absolute)
 			{
 				target.E = temp;
@@ -252,10 +144,7 @@ public class RepRapController extends PeriodicEventHandler
 		if(source.F > 0)
 		{
 			int temp = source.F;
-			for (int i = 0; i < DECIMALS; i++) //@WCA loop = 1
-			{
-				temp = temp/10;
-			}
+			temp = Math.divs100(temp);
 			if(absolute)
 			{
 				target.F = temp;
@@ -332,7 +221,7 @@ public class RepRapController extends PeriodicEventHandler
 			direction.E = -1;
 		}
 		
-		int length = sqrt(delta.X/X_STEPS_PER_MILLIMETER*delta.X/X_STEPS_PER_MILLIMETER+delta.Y/Y_STEPS_PER_MILLIMETER*delta.Y/Y_STEPS_PER_MILLIMETER+
+		int length = Math.sqrt(delta.X/X_STEPS_PER_MILLIMETER*delta.X/X_STEPS_PER_MILLIMETER+delta.Y/Y_STEPS_PER_MILLIMETER*delta.Y/Y_STEPS_PER_MILLIMETER+
 				delta.Z/Z_STEPS_PER_MILLIMETER*delta.Z/Z_STEPS_PER_MILLIMETER+delta.E/E_STEPS_PER_MILLIMETER*delta.E/E_STEPS_PER_MILLIMETER);
 		//Already checked for negativity and division by zero. Divide by 2 to account for 1 pulse every other millisecond
 		dT = (length*STEPS_PER_MINUTE)/target.F;
@@ -374,17 +263,14 @@ public class RepRapController extends PeriodicEventHandler
 		this.currentTemperature = currentTemperature;
 	}
 	
-	synchronized private int getTargetTemperature() 
+	synchronized public int getTargetTemperature() 
 	{
 		return targetTemperature;
 	}
 	
 	synchronized public void setTargetTemperature(int targetTemperature) 
 	{
-		for (int i = 0; i < DECIMALS; i++) //@WCA loop = 1
-		{
-			targetTemperature = targetTemperature/10;
-		}
+		targetTemperature = Math.divs100(targetTemperature);;
 		if(targetTemperature > MAX_TEMPERATURE)
 		{
 			targetTemperature = MAX_TEMPERATURE;
@@ -432,9 +318,9 @@ public class RepRapController extends PeriodicEventHandler
 			{
 				temp += tmpval[i];
 			}
-			temp = temp/tmpval.length;
+			temp = Math.divs5(temp);
 			setCurrentTemperature(temp);
-			LS.ledSwitch = temp;
+			//LS.ledSwitch = temp;
 		}
 		if(!isInPosition())
 		{
@@ -450,7 +336,7 @@ public class RepRapController extends PeriodicEventHandler
 			else
 			{
 				boolean tempInPosition = true;
-				int sensorvalue = reprap.readEndstops();
+				int sensorvalue = reprap.readSensors();
 				if(current.X != target.X)
 				{
 					if((sensorvalue & (1 << 7)) == 0 && direction.X == -1)//Check endstop

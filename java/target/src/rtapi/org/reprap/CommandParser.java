@@ -26,7 +26,7 @@ import org.reprap.commands.*;
 
 public class CommandParser extends PeriodicEventHandler
 {
-	private static final int MAX_NUMBER_LENGTH = 8;
+	private static final int MAX_NUMBER_LENGTH = 5;
 	
 	private Parameter parameter = new Parameter();
 	private boolean waitingG1Command = false;
@@ -135,7 +135,7 @@ public class CommandParser extends PeriodicEventHandler
 				if(Character.digit(character, 10) > -1)
 				{
 					//Ignore the rest of the decimals
-					if(numberLength < MAX_NUMBER_LENGTH && (!decimalpoint || decimals < RepRapController.DECIMALS))
+					if(numberLength < MAX_NUMBER_LENGTH && (!decimalpoint || decimals < RepRapController.NR_DECIMALS))
 					{
 						value = value * 10 + character-48;//Numbers start at character position 48
 						numberLength++;
@@ -172,7 +172,7 @@ public class CommandParser extends PeriodicEventHandler
 			}
 			
 			int shiftedValue = value;
-			for (int j = 0; j < RepRapController.DECIMALS-decimals; j++) //@WCA loop = 1
+			for (int j = 0; j < RepRapController.NR_DECIMALS-decimals; j++) //@WCA loop = 2
 			{
 				shiftedValue = shiftedValue*10;
 			}
