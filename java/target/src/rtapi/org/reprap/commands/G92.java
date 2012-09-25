@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
+  Copyright (C) 2012, TÃ³rur BiskopstÃ¸ StrÃ¸m (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,32 +17,33 @@
 package org.reprap.commands;
 
 import org.reprap.Command;
+import org.reprap.CommandController;
+import org.reprap.HostController;
 import org.reprap.Parameter;
 import org.reprap.RepRapController;
 
 //Set Position
 public class G92 extends Command
 {
-	private static G92 instance = new G92();//Unbuffered command so only single instance
-	
-	private Parameter parameters = new Parameter();
 	private RepRapController repRapController;
+	private Parameter parameter = new Parameter();
 	
-	public static boolean enqueue(Parameter parameters, RepRapController repRapController)
+	public G92(HostController hostController, CommandController commandController, RepRapController repRapController) 
 	{
-		instance.parameters.X = parameters.X;
-		instance.parameters.Y = parameters.Y;
-		instance.parameters.Z = parameters.Z;
-		instance.parameters.E = parameters.E;
-		instance.repRapController = repRapController;
-		Command.enqueue(instance);
-		return true;
+		super(hostController, commandController);
+		this.repRapController = repRapController;
+	}
+	
+	public boolean enqueue(Parameter parameter) 
+	{
+		this.parameter.copy(parameter);
+		return super.enqueue();
 	}
 	
 	@Override
 	public boolean execute() 
 	{
-		repRapController.setPosition(parameters);
+		repRapController.setPosition(parameter);
 		return true;
 	}
 }

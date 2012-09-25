@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
+  Copyright (C) 2012, TÃ³rur BiskopstÃ¸ StrÃ¸m (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,73 +17,34 @@
 package org.reprap.commands;
 
 import org.reprap.Command;
+import org.reprap.CommandController;
+import org.reprap.HostController;
 import org.reprap.Parameter;
 import org.reprap.RepRapController;
 
 public class G28 extends Command
 {
-	private static final int POOL_SIZE = 15;
-	private static G28 first;
-	private static G28 last;
-	private static Object lock = new Object();
-	private static boolean initialized = initialize(); //Ensures that pool is created in immortal memory so that all PEH have access
+	private final Parameter home = new Parameter();
 	
-	private G28 next;
-	private Parameter parameters = new Parameter();
-	private boolean executed = false;
+	G28 next;
 	private RepRapController repRapController;
+	private G28Pool pool;
+	boolean executed = false;
 	
-	private static boolean initialize()
+	G28(HostController hostController, CommandController commandController, RepRapController repRapController, G28Pool pool) 
 	{
-		//No need for mutex as the pool is empty
-		G28 current = new G28();
-		first = current;
-		for(int i = 0; i < POOL_SIZE-1; i++)
-		{
-			G28 temp = new G28();
-			current.next = temp;
-			current = temp;
-		}
-		last = current;
-		initialized = true;
-		return true;
+		super(hostController, commandController);
+		this.repRapController = repRapController;
+		this.pool = pool;
 	}
 	
-	//The G28 command is put into the Command queue, NOT the G28 pool
-	public static boolean enqueue(Parameter parameters, RepRapController repRapController)
+	public void setParameters(Parameter parameter) 
 	{
-		G28 temp;
-		synchronized (lock) 
-		{
-			if(first == null)
-			{
-				//Empty pool
-				return false;
-			}
-			temp = first;
-			first = temp.next;
-			if(first == null)
-			{
-				last = null;
-			}
-		}
-		//Try to reach endstops by moving towards them 1 meter
-		if(parameters.X != Integer.MIN_VALUE)
-		{
-			temp.parameters.X = 0;//-1000*RepRapController.DECIMALS*10;
-		}
-		if(parameters.Y != Integer.MIN_VALUE)
-		{
-			temp.parameters.Y = 0;//-1000*RepRapController.DECIMALS*10;
-		}
-		if(parameters.Z != Integer.MIN_VALUE)
-		{
-			temp.parameters.Z = 0;//-1000*RepRapController.DECIMALS*10;
-		}
-		temp.executed = false;
-		temp.repRapController = repRapController;
-		Command.enqueue(temp);
-		return true;
+		home.X = (parameter.X > Integer.MIN_VALUE) ? 0 : Integer.MIN_VALUE;
+		home.Y = (parameter.Y > Integer.MIN_VALUE) ? 0 : Integer.MIN_VALUE;
+		home.Z = (parameter.Z > Integer.MIN_VALUE) ? 0 : Integer.MIN_VALUE;
+		home.E = (parameter.E > Integer.MIN_VALUE) ? 0 : Integer.MIN_VALUE;
+		this.executed = false;
 	}
 	
 	@Override
@@ -91,38 +52,21 @@ public class G28 extends Command
 	{
 		if(!executed)
 		{
-			repRapController.setTarget(parameters);
+			//Try to reach endstops by moving towards them
+			repRapController.setTarget(home);
 			executed=true;
 		}
-		if(repRapController.inPosition())
+		if(repRapController.isInPosition())
 		{
-			returnToPool();
+			pool.returnToPool(this);
 			return true;
 		}
 		return false;
 	}
 	
-	private void returnToPool()
-	{
-		synchronized (lock) 
-		{
-			if(last == null)
-			{
-				//Empty queue
-				first = this;
-			}
-			else
-			{
-				last.next = this;
-			}
-			last = this;
-			next = null;
-		}
-	}
-	
 	@Override
-	public void respond() 
+	protected void respond() 
 	{
-		//Do nothing, already responded to this buffered command
+		//Do nothing, already confirmed
 	}
 }

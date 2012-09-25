@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
+  Copyright (C) 2012, TÃ³rur BiskopstÃ¸ StrÃ¸m (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,66 +17,30 @@
 package org.reprap.commands;
 
 import org.reprap.Command;
+import org.reprap.CommandController;
+import org.reprap.HostController;
 import org.reprap.Parameter;
 import org.reprap.RepRapController;
 
-public class G1 extends Command
+class G1 extends Command
 {
-	private static final int POOL_SIZE = 30;
-	private static G1 first;
-	private static G1 last;
-	private static Object lock = new Object();
-	private static boolean initialized = initialize(); //Ensures that pool is created in immortal memory so that all PEH have access
-	
-	private G1 next;
-	private Parameter parameters = new Parameter();
-	private boolean executed = false;
+	G1 next;
 	private RepRapController repRapController;
+	private G1Pool pool;
+	private Parameter parameter = new Parameter();
+	private boolean executed = false;
 	
-	private static boolean initialize()
+	G1(HostController hostController, CommandController commandController, RepRapController repRapController, G1Pool pool) 
 	{
-		//No need for mutex as the pool is empty
-		G1 current = new G1();
-		first = current;
-		for(int i = 0; i < POOL_SIZE-1; i++)
-		{
-			G1 temp = new G1();
-			current.next = temp;
-			current = temp;
-		}
-		last = current;
-		initialized = true;
-		return true;
+		super(hostController, commandController);
+		this.repRapController = repRapController;
+		this.pool = pool;
 	}
 	
-	//The G1 command is put into the Command queue, NOT the G1 pool
-	public static boolean enqueue(Parameter parameters, RepRapController repRapController)
+	public void setParameters(Parameter parameter) 
 	{
-		G1 temp;
-		synchronized (lock) 
-		{
-			if(first == null)
-			{
-				//Empty pool
-				return false;
-			}
-			temp = first;
-			first = temp.next;
-			if(first == null)
-			{
-				last = null;
-			}
-		}
-		temp.parameters.X = parameters.X;
-		temp.parameters.Y = parameters.Y;
-		temp.parameters.Z = parameters.Z;
-		temp.parameters.E = parameters.E;
-		temp.parameters.F = parameters.F;
-		temp.parameters.S = parameters.S;
-		temp.executed = false;
-		temp.repRapController = repRapController;
-		Command.enqueue(temp);
-		return true;
+		this.parameter.copy(parameter);
+		this.executed = false;
 	}
 	
 	@Override
@@ -84,38 +48,20 @@ public class G1 extends Command
 	{
 		if(!executed)
 		{
-			repRapController.setTarget(parameters);
+			repRapController.setTarget(parameter);
 			executed=true;
 		}
-		if(repRapController.inPosition())
+		if(repRapController.isInPosition())
 		{
-			returnToPool();
+			pool.returnToPool(this);
 			return true;
 		}
 		return false;
 	}
 	
-	private void returnToPool()
-	{
-		synchronized (lock) 
-		{
-			if(last == null)
-			{
-				//Empty queue
-				first = this;
-			}
-			else
-			{
-				last.next = this;
-			}
-			last = this;
-			next = null;
-		}
-	}
-
 	@Override
-	public void respond() 
+	protected void respond() 
 	{
-		//Do nothing, already responded to this buffered command
+		//Do nothing, already confirmed
 	}
 }

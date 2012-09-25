@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
+  Copyright (C) 2012, TÃ³rur BiskopstÃ¸ StrÃ¸m (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -26,24 +26,33 @@ public class Parameter
 	public int F;
 	public int S;
 	
-	public Parameter(int X, int Y, int Z, int E, int F ,int S)
+	public Parameter(int x, int y, int z, int e, int f ,int s)
 	{
-		this.X = X;
-		this.Y = Y;
-		this.Z = Z;
-		this.E = E;
-		this.F = F;
-		this.S = S;
+		this.X = x;
+		this.Y = y;
+		this.Z = z;
+		this.E = e;
+		this.F = f;
+		this.S = s;
 	}
 	
 	public Parameter()
 	{
-		this.X = 0;
-		this.Y = 0;
-		this.Z = 0;
-		this.E = 0;
-		this.F = 0;
-		this.S = 0;
+		this.X = Integer.MIN_VALUE;
+		this.Y = Integer.MIN_VALUE;
+		this.Z = Integer.MIN_VALUE;
+		this.E = Integer.MIN_VALUE;
+		this.F = Integer.MIN_VALUE;
+		this.S = Integer.MIN_VALUE;
 	}
 	
+	synchronized public void copy(Parameter source)
+	{
+		X = source.X;
+		Y = source.Y;
+		Z = source.Z;
+		E = source.E;
+		F = source.F;
+		S = source.S;
+	}
 }

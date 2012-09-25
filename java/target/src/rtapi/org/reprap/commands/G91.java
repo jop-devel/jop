@@ -19,17 +19,15 @@ package org.reprap.commands;
 import org.reprap.Command;
 import org.reprap.CommandController;
 import org.reprap.HostController;
+import org.reprap.Parameter;
 import org.reprap.RepRapController;
 
-
-public class M105 extends Command
+//Set absolute
+public class G91 extends Command
 {
-	private static final char[] T = {'T',':'};
-	private static final char[] B = {' ','B',':','5','0'};
-	
 	private RepRapController repRapController;
 	
-	public M105(HostController hostController, CommandController commandController, RepRapController repRapController) 
+	public G91(HostController hostController, CommandController commandController, RepRapController repRapController) 
 	{
 		super(hostController, commandController);
 		this.repRapController = repRapController;
@@ -38,13 +36,7 @@ public class M105 extends Command
 	@Override
 	public boolean execute() 
 	{
-		//This command is supposed to return the extruder and bed temperatures
+		repRapController.setAbsolute(false);
 		return true;
-	}
-	
-	@Override
-	public void respond() 
-	{
-		hostController.confirmCommand(T,HostController.intToChar(repRapController.getCurrentTemperature()),B);
 	}
 }
