@@ -19,32 +19,19 @@ package org.reprap.commands;
 import org.reprap.Command;
 import org.reprap.CommandController;
 import org.reprap.HostController;
-import org.reprap.RepRapController;
 
-
-public class M105 extends Command
+//Set extrusion distances to absolute
+public class M82 extends Command
 {
-	private static final char[] T = {'T',':'};
-	private static final char[] B = {' ','B',':','5','0'};
 	
-	private RepRapController repRapController;
-	
-	public M105(HostController hostController, CommandController commandController, RepRapController repRapController) 
+	public M82(HostController hostController, CommandController commandController) 
 	{
 		super(hostController, commandController);
-		this.repRapController = repRapController;
 	}
 	
 	@Override
 	public boolean execute() 
 	{
-		//This command is supposed to return the extruder and bed temperatures
 		return true;
-	}
-	
-	@Override
-	public void respond() 
-	{
-		hostController.confirmCommand(T,HostController.intToChar(repRapController.getCurrentTemperature()),B);
 	}
 }

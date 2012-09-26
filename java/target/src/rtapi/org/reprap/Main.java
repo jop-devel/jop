@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
+  Copyright (C) 2012, TÃ³rur BiskopstÃ¸ StrÃ¸m (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ import javax.safetycritical.PeriodicEventHandler;
 import javax.safetycritical.Safelet;
 import javax.safetycritical.StorageParameters;
 import javax.safetycritical.JopSystem;
+
 
 public class Main implements Safelet
 {
@@ -52,7 +53,7 @@ public class Main implements Safelet
 		
 		RepRapMissionSequencer()
 		{
-			super(new PriorityParameters(0),new StorageParameters(1000, null, 0,0));
+			super(new PriorityParameters(0),new StorageParameters(1, null, 0,0));
 		}
 				
 		@Override
@@ -66,42 +67,31 @@ public class Main implements Safelet
 		}
 		
 		public class RepRapMission extends Mission
-		{
-			RepRapController peh1 = null;
-			HostController peh2 = null;
-			CommandParser peh3 = null;
-			PeriodicEventHandler peh4 = null;
-			IICController peh5 = null;
-			
+		{			
 			@Override
 			public long missionMemorySize()
 			{
-				return 50;
+				return 5000;
 			}
+			
+			HostController hostController;
+			RepRapController repRapController;
+			CommandController commandController;
+			CommandParser commandParser;
 			
 			@Override
 			protected void initialize()
 			{
-				if(peh1 == null)
-				{
-					peh1 = RepRapController.getInstance();
-				}
-				if(peh2 == null)
-				{
-					peh2 = HostController.getInstance();
-				}
-				if(peh3 == null)
-				{
-					peh3 = CommandParser.getInstance(peh2,peh1);
-				}
-				if(peh4 == null)
-				{
-					peh4 = Command.getInstance();
-				}
-				if(peh5 == null)
-				{
-					peh5 = new IICController();
-				}
+				hostController = new HostController();
+				repRapController = new RepRapController();
+				commandController = new CommandController();
+				commandParser = new CommandParser(hostController,commandController,repRapController);
+			}
+
+			@Override
+			protected Runnable start() 
+			{
+				return null;
 			}
 		}
 	}

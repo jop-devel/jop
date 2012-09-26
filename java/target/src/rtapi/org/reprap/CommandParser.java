@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012, Tórur Biskopstø Strøm (torur.strom@gmail.com)
+  Copyright (C) 2012, TÃ³rur BiskopstÃ¸ StrÃ¸m (torur.strom@gmail.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -22,49 +22,52 @@ import javax.realtime.RelativeTime;
 import javax.safetycritical.PeriodicEventHandler;
 import javax.safetycritical.StorageParameters;
 
-import org.reprap.commands.G1;
-import org.reprap.commands.G21;
-import org.reprap.commands.G28;
-import org.reprap.commands.G90;
-import org.reprap.commands.G92;
-import org.reprap.commands.M105;
-import org.reprap.commands.M109;
-import org.reprap.commands.M110;
-import org.reprap.commands.M113;
-import org.reprap.commands.M140;
-import org.reprap.commands.T;
+import org.reprap.commands.*;
 
 public class CommandParser extends PeriodicEventHandler
 {
-	private static final int MAX_NUMBER_LENGTH = 8;
-	private static CommandParser instance;
+	private static final int MAX_NUMBER_LENGTH = 5;
 	
-	static CommandParser getInstance(HostController hostController, RepRapController repRapController)
-	{
-		if(instance == null)
-		{
-			instance = new CommandParser(hostController,repRapController);
-		}
-		return instance;
-	}
-	
-	private HostController hostController;
-	private RepRapController repRapController;
-	private Parameter parameters = new Parameter();
-	
-	private int chars = 0;
-	private char[] buffer = new char[64];
-	
+	private Parameter parameter = new Parameter();
 	private boolean waitingG1Command = false;
 	private boolean waitingG28Command = false;
+	private HostController hostController;
 	
-	private CommandParser(HostController hostController, RepRapController repRapController)
+	private G1Pool G1Pool;
+	private G28Pool G28Pool;
+	private G21 G21;
+	private G90 G90;
+	private G91 G91;
+	private G92 G92;
+	private M82 M82;
+	private M104 M104;
+	private M105 M105;
+	private M109 M109;
+	private M110 M110;
+	private M113 M113;
+	private M140 M140;
+	private T T;
+	
+	CommandParser(HostController hostController, CommandController commandController, RepRapController repRapController)
 	{
-		super(new PriorityParameters(1),
-			  new PeriodicParameters(null, new RelativeTime(1,0)),
-			  new StorageParameters(50, null, 0, 0), 5);
+		super(new PriorityParameters(4),
+			  new PeriodicParameters(null, new RelativeTime(60,0)),
+			  new StorageParameters(100, new long[]{100}, 0, 0), 0);
 		this.hostController = hostController;
-		this.repRapController = repRapController;
+		G1Pool = new G1Pool(hostController, commandController, repRapController);
+		G28Pool = new G28Pool(hostController, commandController, repRapController);
+		G21 = new G21(hostController, commandController);
+		G90 = new G90(hostController, commandController, repRapController);
+		G91 = new G91(hostController, commandController, repRapController);
+		G92 = new G92(hostController, commandController, repRapController);
+		M82 = new M82(hostController, commandController);
+		M104 = new M104(hostController, commandController, repRapController);
+		M105 = new M105(hostController, commandController, repRapController);
+		M109 = new M109(hostController, commandController, repRapController);
+		M110 = new M110(hostController, commandController);
+		M113 = new M113(hostController, commandController);
+		M140 = new M140(hostController, commandController);
+		T = new T(hostController, commandController);
 	}
 	
 	@Override
@@ -72,64 +75,67 @@ public class CommandParser extends PeriodicEventHandler
 	{
 		if(waitingG1Command)
 		{
-			if(!G1.enqueue(parameters,repRapController))
+			if(G1Pool.enqueue(parameter))
 			{
-				//The command buffer is full so no need to parse further commands until there is space
+				hostController.confirmCommand(null);
+				waitingG1Command = false;
 				return;
 			}
-			waitingG1Command = false;
+			//The command buffer is full so no need to parse further commands until there is space
+			return;
 		}
 		else if(waitingG28Command)
 		{
-			if(!G28.enqueue(parameters,repRapController))
+			if(G28Pool.enqueue(parameter))
 			{
-				//The command buffer is full so no need to parse further commands until there is space
+				hostController.confirmCommand(null);
+				waitingG28Command = false;
 				return;
 			}
-			waitingG28Command = false;
+			//The command buffer is full so no need to parse further commands until there is space
+			return;
 		}
+		char[] chars = hostController.getLine();
 		
-		if(!HostController.getInstance().getLine(buffer))
+		if(chars.length == 0)
 		{
 			return;
 		}
-		
-		int index = 0;
-		
+		int length = chars.length;
 		boolean seenNCommand = false;
-		int lineNumber = 0;
+		int lineNumberN = Integer.MIN_VALUE;
 		
 		boolean seenGCommand = false;
 		boolean seenMCommand = false;
 		boolean seenTCommand = false;
 		int commandNumber = Integer.MIN_VALUE;
 		
-		parameters.X = Integer.MIN_VALUE;
-		parameters.Y = Integer.MIN_VALUE;
-		parameters.Z = Integer.MIN_VALUE;
-		parameters.E = Integer.MIN_VALUE;
-		parameters.F = Integer.MIN_VALUE;
-		parameters.S = Integer.MIN_VALUE;
+		parameter.X = Integer.MIN_VALUE;
+		parameter.Y = Integer.MIN_VALUE;
+		parameter.Z = Integer.MIN_VALUE;
+		parameter.E = Integer.MIN_VALUE;
+		parameter.F = Integer.MIN_VALUE;
+		parameter.S = Integer.MIN_VALUE;
 		
 		boolean seenStarCommand = false;
 		int checksum = 0;
 		
-		while(index < chars)
+		for(int i = 0; i < length; i++) //@WCA loop = 64
 		{
-			char character = buffer[index];
+			char character = chars[i];
 			char command = character;
-			index++;
 			int numberLength = 0;
 			int value = 0;
 			boolean decimalpoint = false;
+			boolean negative = false;
 			int decimals = 0;
-			while(index < chars)
+			for(int j = i+1; j < length; j++) //@WCA loop = 1
 			{
-				character = buffer[index];
+				character = chars[j];
 				if(Character.digit(character, 10) > -1)
 				{
 					//Ignore the rest of the decimals
-					if(numberLength < MAX_NUMBER_LENGTH && (!decimalpoint || decimals < RepRapController.DECIMALS))
+					if(numberLength < MAX_NUMBER_LENGTH && (!decimalpoint || decimals < RepRapController.NR_DECIMALS))
 					{
 						value = value * 10 + character-48;//Numbers start at character position 48
 						numberLength++;
@@ -139,167 +145,203 @@ public class CommandParser extends PeriodicEventHandler
 						}
 					}
 				}
-				else if(character == '.')
+				else if(character == '.' && numberLength > 0)
 				{
 					decimalpoint = true;
+				}
+				else if(character == '-' && numberLength == 0)
+				{
+					negative = true;
 				}
 				else
 				{
 					//Command delimiter
 					break;
 				}
-				index++;
+				i++;
 			}
 			if(numberLength == 0)
 			{
 				//All commands should have a number
+				//hostController.resendCommand(INCORRECT_COMMAND);
 				continue;
 			}
-			
-			switch(command)
+			if(negative)
 			{
-				case 'N':
-					lineNumber = value;
-					seenNCommand = true;
-					break;
-				case 'G':
-					commandNumber = value;
-					seenGCommand = true;
-					break;
-				case 'M':
-					commandNumber = value;
-					seenMCommand = true;
-					break;
-				case 'F':
-					parameters.F = value;
-					break;
-				case 'S':
-					parameters.S = value;
-					break;
-				case 'T':
-					commandNumber = value;
-					seenTCommand = true;
-					break;
-				case 'X':
-					for (int i = 0; i < RepRapController.DECIMALS-decimals; i++) 
-					{
-						value = value*10;
-					}
-					parameters.X = value;
-					break;
-				case 'Y':
-					for (int i = 0; i < RepRapController.DECIMALS-decimals; i++) 
-					{
-						value = value*10;
-					}
-					parameters.Y = value;
-					break;
-				case 'Z':
-					for (int i = 0; i < RepRapController.DECIMALS-decimals; i++) 
-					{
-						value = value*10;
-					}
-					parameters.Z = value;
-					break;
-				case 'E':
-					for (int i = 0; i < RepRapController.DECIMALS-decimals; i++) 
-					{
-						value = value*10;
-					}
-					parameters.E = value;
-					break;
-				case '*':
-					checksum = value;
-					seenStarCommand = true;
-					break;
-				default:
+				value = -value;
+			}
+			
+			int shiftedValue = value;
+			for (int j = 0; j < RepRapController.NR_DECIMALS-decimals; j++) //@WCA loop = 2
+			{
+				shiftedValue = shiftedValue*10;
+			}
+			
+			//Not using switch because of WCET analysis and JOP
+			if(command == 'N')
+			{
+				lineNumberN = value;
+				seenNCommand = true;
+			}
+			else if(command == 'G')
+			{
+				commandNumber = value;
+				seenGCommand = true;
+			}
+			else if(command == 'M')
+			{
+				commandNumber = value;
+				seenMCommand = true;
+			}
+			else if(command == 'F')
+			{
+				parameter.F = shiftedValue;
+			}
+			else if(command == 'S')
+			{
+				parameter.S = shiftedValue;
+			}
+			else if(command == 'T')
+			{
+				commandNumber = value;
+				seenTCommand = true;
+			}
+			else if(command == 'X')
+			{
+				parameter.X = shiftedValue;
+			}
+			else if(command == 'Y')
+			{
+				parameter.Y = shiftedValue;
+			}
+			else if(command == 'Z')
+			{
+				parameter.Z = shiftedValue;
+			}
+			else if(command == 'E')
+			{
+				parameter.E = shiftedValue;
+			}
+			else if(command == '*')
+			{
+				checksum = value;
+				seenStarCommand = true;
 			}
 		}
 		
 		if(seenNCommand && seenStarCommand)
 		{
-			if(!verifyChecksum(buffer,chars,checksum))
+			if(!verifyChecksum(chars,checksum))
 			{
-				hostController.resendCommand("Incorrect checksum");
+				//hostController.resendCommand(lineNumberN,chars);
+				hostController.resendCommand(lineNumberN);
 				return;
 			}
 		}
 		if(seenGCommand)
 		{
-			switch(commandNumber)
+			if(commandNumber == 0 || commandNumber == 1)
 			{
-				case 0://Same as G1
-				case 1:
-					//Buffered command
-					if(!G1.enqueue(parameters,repRapController))
-					{
-						waitingG1Command = true;
-						return;
-					}
-					hostController.confirmCommand(null);
-					break;
-				case 21:
-					G21.enqueue();
-					break;
-				case 28:
-					//Buffered command
-					if(!G28.enqueue(parameters,repRapController))
-					{
-						waitingG28Command = true;
-						return;
-					}
-					hostController.confirmCommand(null);
-					break;
-				case 90:
-					G90.enqueue();
-					break;
-				case 92:
-					G92.enqueue(parameters,repRapController);
-					break;
-				default:
-					hostController.resendCommand("Unknown G command");
+				//Buffered command
+				if(!G1Pool.enqueue(parameter))
+				{
+					waitingG1Command = true;
 					return;
+				}
+				hostController.confirmCommand(null);
+			}
+			else if(commandNumber == 21)
+			{
+				G21.enqueue();
+			}
+			else if(commandNumber == 28)
+			{
+				//Buffered command
+				if(!G28Pool.enqueue(parameter))
+				{
+					waitingG28Command = true;
+					return;
+				}
+				hostController.confirmCommand(null);
+			}
+			else if(commandNumber == 90)
+			{
+				G90.enqueue();
+			}
+			else if(commandNumber == 91)
+			{
+				G91.enqueue();
+			}
+			else if(commandNumber == 92)
+			{
+				G92.enqueue(parameter);
+			}
+			else
+			{
+				//hostController.resendCommand(lineNumberN,chars);
+				hostController.resendCommand(lineNumberN);
+				return;
 			}
 		}
 		else if(seenMCommand)
 		{
-			switch(commandNumber)
+			if(commandNumber == 82)
 			{
-				case 105:
-					M105.enqueue();
-					break;
-				case 109:
-					M109.enqueue();
-					break;
-				case 110:
-					M110.enqueue(lineNumber,hostController);
-					break;
-				case 113:
-					M113.enqueue();
-					break;
-				case 140:
-					M140.enqueue();
-					break;
-				default:
-					hostController.resendCommand("Unknown M command");
-					return;
+				M82.enqueue();
+			}
+			else if(commandNumber == 104)
+			{
+				if(parameter.S != Integer.MIN_VALUE)
+				{
+					M104.enqueue(parameter.S);
+				}
+			}
+			else if(commandNumber == 105)
+			{
+				M105.enqueue();
+			}
+			else if(commandNumber == 109)
+			{
+				if(parameter.S != Integer.MIN_VALUE)
+				{
+					M109.enqueue(parameter.S);
+				}
+			}
+			else if(commandNumber == 110)
+			{
+				M110.enqueue(lineNumberN);
+			}
+			else if(commandNumber == 113)
+			{
+				M113.enqueue();
+			}
+			else if(commandNumber == 140)
+			{
+				M140.enqueue();
+			}
+			else
+			{
+				//hostController.resendCommand(lineNumberN,chars);
+				hostController.resendCommand(lineNumberN);
+				return;
 			}
 		}
 		else if(seenTCommand)
 		{
-			T.enqueue(commandNumber);
+			T.enqueue();
 		}
 		else
 		{
-			hostController.resendCommand("Unknown command!");
+			//hostController.resendCommand(lineNumberN,chars);
+			hostController.resendCommand(lineNumberN);
 			return;
 		}
 	}
 	
-	private static boolean verifyChecksum(char[] chars, int length, int checksum)
+	private static boolean verifyChecksum(char[] chars, int checksum)
 	{
 		int calculatedChecksum = 0;
-		for(int i = 0; i < length && chars[i] != '*'; i++)
+		for(int i = 0; i < chars.length && chars[i] != '*'; i++) //@WCA loop = 64
 		{
 			calculatedChecksum = calculatedChecksum ^ chars[i];
 		}

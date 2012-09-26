@@ -21,30 +21,27 @@ import org.reprap.CommandController;
 import org.reprap.HostController;
 import org.reprap.RepRapController;
 
-
-public class M105 extends Command
+public class M104 extends Command
 {
-	private static final char[] T = {'T',':'};
-	private static final char[] B = {' ','B',':','5','0'};
-	
 	private RepRapController repRapController;
+	private int temperature = 0;
 	
-	public M105(HostController hostController, CommandController commandController, RepRapController repRapController) 
+	public M104(HostController hostController, CommandController commandController, RepRapController repRapController) 
 	{
 		super(hostController, commandController);
 		this.repRapController = repRapController;
 	}
 	
-	@Override
-	public boolean execute() 
+	public boolean enqueue(int temperature) 
 	{
-		//This command is supposed to return the extruder and bed temperatures
-		return true;
+		this.temperature = temperature;
+		return super.enqueue();
 	}
 	
 	@Override
-	public void respond() 
+	public boolean execute() 
 	{
-		hostController.confirmCommand(T,HostController.intToChar(repRapController.getCurrentTemperature()),B);
+		repRapController.setTargetTemperature(temperature);
+		return true;
 	}
 }

@@ -13,7 +13,6 @@ use ieee.numeric_std.all;
 use work.jop_types.all;
 use work.sc_pack.all;
 use work.jop_config.all;
-use work.wb_pack.all;
 
 entity scio is
 generic (cpu_id : integer := 0; cpu_cnt : integer := 1);
@@ -111,11 +110,6 @@ architecture rtl of scio is
 	-- remove the comment for RAM access counting 
 	-- signal ram_count : std_logic;
 	
-	signal wb_in : wb_master_in_type;
-	signal wb_out : wb_master_out_type;
-	
-	signal scl_pad_i,scl_pad_o,scl_padoen_o,sda_pad_i,sda_pad_o,sda_padoen_o  : std_logic;   
-
 begin
 
 --
@@ -198,9 +192,9 @@ begin
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 			baud_rate => 115200,
-			txf_depth => 32,
+			txf_depth => 16,
 			txf_thres => 1,
-			rxf_depth => 32,
+			rxf_depth => 16,
 			rxf_thres => 1
 		)
 		port map(
@@ -237,11 +231,16 @@ begin
 	);
 	
 	eh : entity work.expansionheader
+	generic map 
+	(
+		addr_bits => SLAVE_ADDR_BITS
+	)
 	port map
 	(
 		clk => clk,
 		reset => reset,
 		
+		address => sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
 		sc_rd => sc_rd(EXPH_SLAVE),
 		sc_rd_data => sc_dout(EXPH_SLAVE),
 		sc_wr => sc_wr(EXPH_SLAVE),
@@ -249,52 +248,5 @@ begin
 		sc_rdy_cnt => sc_rdy_cnt(EXPH_SLAVE),
 		GPIO_0 => GPIO_0
 	);
-	
-	
-	wb: entity work.sc2wb generic map (
-			addr_bits => 3
-		)
-		port map(
-			clk => clk,
-			reset => reset,
-
-			address => sc_io_out.address(2 downto 0),
-			wr_data => sc_io_out.wr_data,
-			rd => sc_rd(IIC),
-			wr => sc_wr(IIC),
-			rd_data => sc_dout(IIC),
-			rdy_cnt => sc_rdy_cnt(IIC),
-
-			wb_out => wb_out,
-			wb_in => wb_in
-	);
-	
-	i2c: entity work.i2c_master_top 
-		port map(
-			wb_clk_i => clk,               -- master clock input
-			wb_rst_i => reset,                 -- synchronous active high reset
-			wb_adr_i => wb_out.adr_o(2 downto 0), -- lower address bits
-			wb_dat_i => wb_out.dat_o(7 downto 0), -- Databus input
-			wb_dat_o => wb_in.dat_i(7 downto 0), -- Databus output
-			wb_we_i => wb_out.we_o, -- Write enable input
-			wb_stb_i => wb_out.stb_o, -- Strobe signals / core select signal
-			wb_cyc_i => wb_out.cyc_o, -- Valid bus cycle input
-			wb_ack_o => wb_in.ack_i, -- Bus cycle acknowledge output
-			wb_inta_o => open, -- interrupt request output signal
-
-			-- i2c lines
-			scl_pad_i => scl_pad_i,
-			scl_pad_o => scl_pad_o,
-			scl_padoen_o => scl_padoen_o,
-			sda_pad_i => sda_pad_i,
-			sda_pad_o => sda_pad_o,
-			sda_padoen_o => sda_padoen_o
-	);
-	
-	--All devices connected to SDA and SCL must have open drain or open collector outputs.
-	GPIO_0(29) <= scl_pad_o when (scl_padoen_o = '0') else 'Z'; 
-	GPIO_0(27) <= sda_pad_o when (sda_padoen_o = '0') else 'Z'; 
-	scl_pad_i <= GPIO_0(29); 
-	sda_pad_i <= GPIO_0(27);
 	
 end rtl;
