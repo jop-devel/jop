@@ -53,7 +53,7 @@ public class WatchdogHandler extends PeriodicEventHandler{
 
 			if (((conn.tx_port.status & I2Cport.DATA_VALID)) == 0) {
 
-				System.out.println("Tout : " + conn.destination);
+				//System.out.println("Tout : " + conn.destination);
 
 
 			} else {
@@ -80,7 +80,7 @@ public class WatchdogHandler extends PeriodicEventHandler{
 				// res_flags = buffer.header[3];
 
 				// Print received data
-				System.out.println("OK : " + source);
+				//System.out.println("OK : " + source);
 
 				CSP.freeCSPbuffer(buffer);
 
