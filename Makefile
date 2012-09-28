@@ -557,6 +557,13 @@ sim_csp: java_app
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SIMULATION
 	cd modelsim && make csp
 
+#
+#	Modelsim target for Gomspace CSP in JOP
+#
+sim_iic: java_app
+	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SIMULATION
+	cd modelsim && make iic	
+
 
 #
 #	JopSim target

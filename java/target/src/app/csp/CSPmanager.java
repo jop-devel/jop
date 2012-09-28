@@ -22,14 +22,12 @@ public class CSPmanager {
 	 */
 	public static void i2c_send(CSPconnection conn, int[] data) {
 
-		// Get a CSP buffer
+		// Get a free CSP buffer
 		CSPbuffer buffer = CSP.getCSPbuffer();
 
 		if(data == null){
 			buffer.data = null;
-		}
-
-		if (data != null) {
+		}else{
 			buffer.length[0] = data.length >>> 8;
 			buffer.length[1] = data.length & 0x000000FF;
 		}
@@ -77,7 +75,7 @@ public class CSPmanager {
 		// Now the i2cFrame should be ready
 		conn.tx_port.CSPwrite(conn.destination * 2, buffer);
 
-		System.out.println("Packet sent " + conn.destination);
+//		System.out.println("Packet sent " + conn.destination);
 
 		// Return only when the data has been transmitted
 		while ((conn.tx_port.status & I2Cport.BUS_BUSY) == 1);
