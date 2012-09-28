@@ -49,7 +49,7 @@ public class CSP {
 		}
 	}
 
-	public static CSPbuffer getCSPbuffer() {
+	public static synchronized CSPbuffer getCSPbuffer() {
 
 		// Look sequetially into all the buffers until a free one is found.
 		// A more efficient way to search can be implemented in the future...
@@ -64,7 +64,7 @@ public class CSP {
 		return null;
 	}
 
-	public static void freeCSPbuffer(CSPbuffer buffer) {
+	public static synchronized void freeCSPbuffer(CSPbuffer buffer) {
 
 		buffer.free = true;
 

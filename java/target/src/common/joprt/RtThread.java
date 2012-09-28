@@ -71,22 +71,6 @@ public class RtThread implements Runnable {
 
 		return thr.waitForNextPeriod();
 	}
-	
-	public void block() {
-
-		thr.blockEvent();
-	}
-
-	public void fire() {
-
-		thr.fire();
-	}
-	
-	public void setEvent() {
-
-		thr.setEvent();
-		
-	}
 
 	/**
 	 * Set the processor number

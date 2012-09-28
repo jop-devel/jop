@@ -24,12 +24,11 @@ import static javax.safetycritical.annotate.Level.LEVEL_1;
 
 import javax.realtime.AperiodicParameters;
 import javax.realtime.PriorityParameters;
-import javax.realtime.RelativeTime;
 import javax.safetycritical.annotate.MemoryAreaEncloses;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
 
-import joprt.RtThread;
+import joprt.SwEvent;
 
 import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 
@@ -42,7 +41,7 @@ public abstract class AperiodicEventHandler extends ManagedEventHandler {
 	
 	String name;
 	
-	RtThread thread;
+	SwEvent event;
 	
 	@MemoryAreaEncloses(inner = { "this", "this", "this", "this" }, outer = {
 			"priority", "release_info", "mem_info", "event" })
@@ -71,17 +70,14 @@ public abstract class AperiodicEventHandler extends ManagedEventHandler {
 		
 		this.name = name;
 
-		thread = new RtThread(priority.getPriority(), 100000) {
+		event = new SwEvent(priority.getPriority(), 100000){
 			
-			public void run() {
-				while (!MissionSequencer.terminationRequest) {
-					privMem.enter(runner);
-					block();
-				}
+			@Override
+			public void handle() {
+				privMem.enter(runner);
 			}
+			
 		};
-		
-		thread.setEvent();
 		
 	}
 
@@ -124,7 +120,6 @@ public abstract class AperiodicEventHandler extends ManagedEventHandler {
 	}
 	
 	public final void release(){
-		thread.fire();
-		
+		event.fire();
 	}
 }
