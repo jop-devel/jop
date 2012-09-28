@@ -28,7 +28,7 @@ public class Services
   @SCJAllowed(LEVEL_1)
   public static int getDefaultCeiling()
   {
-    return 30;
+    return 39;
   }
   
   /**
