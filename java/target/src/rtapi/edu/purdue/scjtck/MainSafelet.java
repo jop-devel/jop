@@ -1,173 +1,153 @@
 package edu.purdue.scjtck;
 
-import javax.realtime.AperiodicParameters;
-import javax.realtime.PeriodicParameters;
-import javax.realtime.PriorityParameters;
+import javax.realtime.*;
 import javax.realtime.PriorityScheduler;
-//import javax.realtime.RealtimeThread;
-import javax.realtime.RelativeTime;
-import javax.safetycritical.AperiodicEvent;
-import javax.safetycritical.AperiodicEventHandler;
-//import javax.safetycritical.ManagedMemory;
-import javax.safetycritical.ManagedThread;
-import javax.safetycritical.Mission;
-import javax.safetycritical.MissionSequencer;
-import javax.safetycritical.PeriodicEventHandler;
-import javax.safetycritical.Safelet;
-//import javax.safetycritical.SingleMissionSequencer;
-//import javax.safetycritical.StorageConfigurationParameters;
-import javax.safetycritical.StorageParameters;
-import javax.safetycritical.Terminal;
+import javax.safetycritical.*;
 import javax.safetycritical.annotate.Level;
-
-//import edu.purdue.scj.PropFileReader;
 
 public abstract class MainSafelet implements Safelet {
 
 	protected abstract String getArgs();
-	
-    protected Properties _prop = new Properties();
 
-    protected Thread _launcher;
+	protected Properties _prop = new Properties();
 
-    /* Parameters generated from properties */
-    protected PriorityParameters _priorityParam;
-    protected AperiodicParameters _aperiodicParam;
-    protected PeriodicParameters _periodicParam;
-//    protected StorageConfigurationParameters _storageParam;
-    protected StorageParameters _storageParam;
+	protected Thread _launcher;
 
-    /* ----------------- Methods ------------------- */
+	/* Parameters generated from Properties.java */
+	// jrri: Are these used for something?
+	protected PriorityParameters _priorityParam;
+	protected AperiodicParameters _aperiodicParam;
+	protected PeriodicParameters _periodicParam;
+	protected StorageParameters _storageParam;
 
-    public void setup() {
-//        _launcher = Thread.currentThread();
-//        _prop.parseArgs(PropFileReader.readAll());
-    	_prop.parseArgs(getArgs());
-        _priorityParam = new PriorityParameters(_prop._priority);
-        _periodicParam = new PeriodicParameters(new RelativeTime(_prop._iDelay,
-                0), new RelativeTime(_prop._period, 0));
-//        _aperiodicParam = new AperiodicParameters();
-        _aperiodicParam = new AperiodicParameters(null,null);
-//        _storageParam = new StorageConfigurationParameters(0, 0, 0);
-        _storageParam = new StorageParameters(0, 0, 0);
+	// protected StorageConfigurationParameters _storageParam;
 
-        Terminal.getTerminal().writeln(getInfo());
-    }
+	/* ----------------- Methods ------------------- */
 
-    public void teardown() {
-        Terminal.getTerminal().writeln(report());
-    }
+	// Current spec has no setup() method as part of the Safelet interface
+	public void setup() {
+		// _launcher = Thread.currentThread();
+		// _prop.parseArgs(PropFileReader.readAll());
+		_prop.parseArgs(getArgs());
+		_priorityParam = new PriorityParameters(_prop._priority);
+		_periodicParam = new PeriodicParameters(new RelativeTime(_prop._iDelay,
+				0), new RelativeTime(_prop._period, 0));
+		// _aperiodicParam = new AperiodicParameters();
+		_aperiodicParam = new AperiodicParameters(null, null);
+		// _storageParam = new StorageConfigurationParameters(0, 0, 0);
+		// _storageParam = new StorageParameters(0, 0, 0);
+		_storageParam = new StorageParameters(0, null);
 
-    /*public Level getLevel() {
-        return null;//_prop._level;
-    }*/
+		Terminal.getTerminal().writeln(getInfo());
+	}
 
-    protected abstract String getInfo();
+	// Current spec has no teardown() method as part of the Safelet interface
+	public void teardown() {
+		Terminal.getTerminal().writeln(report());
+	}
 
-    protected abstract String report();
+//	public Level getLevel() {
+//		return _prop._level;
+//	}
 
-    /* -------------- Wrapped Classes -------------- */
-    public abstract class GeneralMission extends Mission {
-        public long missionMemorySize() {
-            return _prop._missionMemSize;
-        }
+	protected abstract String getInfo();
 
-        @Override
-//        protected void cleanup() {
-        protected void cleanUp() {
-//            super.cleanup();
-        	super.cleanUp();
-//            _launcher.interrupt();
-        }
-    }
+	protected abstract String report();
 
-//    public class GeneralSingleMissionSequencer extends SingleMissionSequencer {
-    public class GeneralSingleMissionSequencer extends MissionSequencer {
-    	private Mission mission;
-        public GeneralSingleMissionSequencer(Mission mission) {
-            super(new PriorityParameters(_prop._priority),
-//                    new StorageConfigurationParameters(0, 0, 0), mission);
-            		new StorageParameters(0, 0, 0));
-            this.mission = mission;
-        }
-        @Override
-        protected Mission getNextMission()
-        {
-        	return mission;
-        }
-    }
+	/* -------------- Wrapped Classes -------------- */
 
-    public abstract class GeneralMissionSequencer extends MissionSequencer {
-        public GeneralMissionSequencer() {
-            super(new PriorityParameters(_prop._priority),
-//                    new StorageConfigurationParameters(0, 0, 0));
-            		new StorageParameters(0, 0, 0));
-        }
-    }
+	public abstract class GeneralMission extends Mission {
+		public long missionMemorySize() {
+			return _prop._missionMemSize;
+		}
 
-    public abstract class GeneralPeriodicEventHandler extends
-            PeriodicEventHandler {
+		@Override
+		protected void cleanUp() {
+			super.cleanUp();
+			// _launcher.interrupt();
+		}
+	}
 
-        public GeneralPeriodicEventHandler() {
-            super(new PriorityParameters(_prop._priority),
-                    new PeriodicParameters(new RelativeTime(_prop._iDelay, 0),
-                            new RelativeTime(_prop._period, 0)),
-//                    new StorageConfigurationParameters(0, 0, 0),
-                    new StorageParameters(0, 0, 0));
-//                    _prop._schedObjMemSize);
-        }
-    }
+	// public class GeneralSingleMissionSequencer extends SingleMissionSequencer
+	// {
+	public class GeneralSingleMissionSequencer extends MissionSequencer {
+		private Mission mission;
 
-    public abstract class GeneralAperiodicEventHandler extends
-            AperiodicEventHandler {
+		public GeneralSingleMissionSequencer(Mission mission) {
+			super(new PriorityParameters(_prop._priority),
+					new StorageParameters(_prop._schedObjBackStoreSize, new long[] {  _prop._schedObjScopeSize }));
+			this.mission = mission;
+		}
 
-        public GeneralAperiodicEventHandler() {
-            super(new PriorityParameters(_prop._priority),
-//                    new AperiodicParameters(),
-            		new AperiodicParameters(null,null),
-//                    new StorageConfigurationParameters(0, 0, 0),
-            		new StorageParameters(0, 0, 0),
-//                    _prop._schedObjMemSize);
-            		new AperiodicEvent[0]);
-        }
+		@Override
+		protected Mission getNextMission() {
+			current_mission = mission;
+			return mission;
+		}
+	}
 
-        public GeneralAperiodicEventHandler(String name) {
-            super(new PriorityParameters(_prop._priority),
-//                    new AperiodicParameters(),
-            		new AperiodicParameters(null,null),
-//                    new StorageConfigurationParameters(0, 0, 0),
-            		new StorageParameters(0, 0, 0),
-//                    _prop._schedObjMemSize, name);
-            		new AperiodicEvent[0],name);
-        }
-    }
+	public abstract class GeneralMissionSequencer extends MissionSequencer {
+		public GeneralMissionSequencer() {
+			super(new PriorityParameters(_prop._priority),
+					new StorageParameters(_prop._schedObjBackStoreSize, new long[] { _prop._schedObjScopeSize }));
+		}
+	}
 
-    public class GeneralManagedThread extends ManagedThread {
+	public abstract class GeneralPeriodicEventHandler extends
+			PeriodicEventHandler {
 
-        public GeneralManagedThread() {
-            super(new PriorityParameters(_prop._priority),
-//                    new StorageConfigurationParameters(0, 0, 0), null);
-            		new StorageParameters(0, 0, 0), null);
-        }
-    }
+		public GeneralPeriodicEventHandler() {
+			super(new PriorityParameters(_prop._priority),
+					new PeriodicParameters(new RelativeTime(_prop._iDelay, 0),
+							new RelativeTime(_prop._period, 0)),
+					new StorageParameters(_prop._schedObjBackStoreSize, new long[] { _prop._schedObjScopeSize }), 0);
+		}
 
-    public class Terminator extends PeriodicEventHandler {
+	}
 
-        public Terminator() {
-            super(new PriorityParameters(PriorityScheduler.instance()
-                    .getMaxPriority()), new PeriodicParameters(
-                    new RelativeTime(_prop._duration, 0), new RelativeTime(
-                            Long.MAX_VALUE, 0)),
-//                    new StorageConfigurationParameters(0, 0, 0), 0);
-                      new StorageParameters(0, 0, 0));
-        }
+	public abstract class GeneralAperiodicEventHandler extends
+			AperiodicEventHandler {
 
-        @Override
-//        public void handleEvent() {
-        public void handleAsyncEvent() {
-        	getSequencer().requestSequenceTermination();
-//            ((ManagedMemory) RealtimeThread.getCurrentMemoryArea())
-//                    .getManager().getMission().requestSequenceTermination();
-        }
-    }
+		public GeneralAperiodicEventHandler() {
+			super(new PriorityParameters(_prop._priority),
+					new AperiodicParameters(null, null), new StorageParameters(
+							_prop._schedObjBackStoreSize, new long[] { _prop._schedObjScopeSize }));
+		}
+
+		public GeneralAperiodicEventHandler(String name) {
+			super(new PriorityParameters(_prop._priority),
+					new AperiodicParameters(null, null), new StorageParameters(
+							_prop._schedObjBackStoreSize, new long[] { _prop._schedObjScopeSize }), name);
+		}
+	}
+
+	// No managed threads for now...
+	// public class GeneralManagedThread extends ManagedThread {
+	//
+	// public GeneralManagedThread() {
+	// super(new PriorityParameters(_prop._priority),
+	// // new StorageConfigurationParameters(0, 0, 0), null);
+	// new StorageParameters(0, 0, 0), null);
+	// }
+	// }
+
+	public class Terminator extends PeriodicEventHandler {
+
+		public Terminator() {
+			super(new PriorityParameters(PriorityScheduler.instance()
+					.getMaxPriority()), new PeriodicParameters(
+					new RelativeTime(_prop._duration, 0), new RelativeTime(
+							Long.MAX_VALUE, 0)), new StorageParameters(_prop._schedObjBackStoreSize,
+					new long[] { _prop._schedObjScopeSize }), 0);
+		}
+
+		@Override
+		public void handleAsyncEvent() {
+			Mission.getCurrentMission().requestSequenceTermination();
+			teardown();
+			// getSequencer().requestSequenceTermination();
+			// ((ManagedMemory) RealtimeThread.getCurrentMemoryArea())
+			// .getManager().getMission().requestSequenceTermination();
+		}
+	}
 }

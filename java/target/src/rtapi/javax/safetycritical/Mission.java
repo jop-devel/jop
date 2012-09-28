@@ -95,8 +95,8 @@ public abstract class Mission {
 	/**
 	 * NOT PART OF SPEC
 	 */
-	@SCJAllowed(SUPPORT)
-	protected abstract Runnable start();
+//	@SCJAllowed(SUPPORT)
+//	protected abstract Runnable start();
 
 	
 }
