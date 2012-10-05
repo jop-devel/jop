@@ -28,11 +28,18 @@ public final class CyclicSchedule
    * have zero PeriodicEventHandlers associated with them.  This would
    * represent a period of time during which the Level0Mission is idle.
    */
+	
+	private Frame[] frames_;
+	private RelativeTime cycleDuration;
+	
   @Allocate({ Area.THIS })
   @MemoryAreaEncloses(inner = { "this" }, outer = { "frames" })
   @SCJAllowed
   public CyclicSchedule(Frame[] frames)
   {
+	  
+	  System.arraycopy(frames, 0, frames_, 0, frames.length);
+	  cycleDuration = new RelativeTime();
   }
 
   /**
@@ -55,7 +62,12 @@ public final class CyclicSchedule
   // @Allocate( { Area.CURRENT })
   // @SCJAllowed
   final RelativeTime getCycleDuration() {
-      return null;
+	  
+	  for (int i = 0; i < frames_.length-1; i++){
+		  cycleDuration = cycleDuration.add(cycleDuration,frames_[i].duration_);
+	  }
+	  
+      return cycleDuration;
   }
 
   /**
@@ -80,6 +92,6 @@ public final class CyclicSchedule
    // @Allocate({ THIS })
   final Frame[] getFrames()
   {
-    return null;
+    return frames_;
   }
 }
