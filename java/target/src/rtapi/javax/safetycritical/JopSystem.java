@@ -35,7 +35,10 @@ import joprt.RtThread;
 public class JopSystem {
 	
 	public static void startMission(Safelet scj) {
+		
 		MissionSequencer ms = scj.getSequencer();
+		System.out.println("Good");
+		
 //		MissionDescriptor md = ms.getInitialMission();
 		// TODO: there is some chaos on mission and the classes
 		// for it -- needs a reread on current spec
@@ -47,6 +50,7 @@ public class JopSystem {
 		// this should be a loop
 		Mission m = ms.getNextMission();
 		// that should be done in the sequencer
+		
 		m.initialize();
 		
 		
@@ -54,25 +58,25 @@ public class JopSystem {
 		RtThread.startMission();
 	}
 	
-	public static void runMission(Safelet scj){
-		
-		MissionSequencer ms = scj.getSequencer();
-		
-		Memory missionMem;
-		Mission m;
-		
-		//initial mission
-		m = ms.getNextMission();
-		
-		while(m != null){
-
-			int x = (int) m.missionMemorySize();
-			
-			// In mission memory
-			Memory.getCurrentMemory().enterPrivateMemory(x, m.start());
-			
-			// When we return from mission memory
-			m = ms.getNextMission();
-		}
-	}
+//	public static void runMission(Safelet scj){
+//		
+//		MissionSequencer ms = scj.getSequencer();
+//		
+//		Memory missionMem;
+//		Mission m;
+//		
+//		//initial mission
+//		m = ms.getNextMission();
+//		
+//		while(m != null){
+//
+//			int x = (int) m.missionMemorySize();
+//			
+//			// In mission memory
+//			Memory.getCurrentMemory().enterPrivateMemory(x, m.start());
+//			
+//			// When we return from mission memory
+//			m = ms.getNextMission();
+//		}
+//	}
 }

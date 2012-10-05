@@ -40,7 +40,6 @@ import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 public abstract class AperiodicEventHandler extends ManagedEventHandler {
 	
 	String name;
-	
 	SwEvent event;
 	
 	@MemoryAreaEncloses(inner = { "this", "this", "this", "this" }, outer = {

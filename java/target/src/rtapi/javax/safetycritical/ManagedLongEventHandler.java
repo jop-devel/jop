@@ -7,82 +7,92 @@ import javax.realtime.ReleaseParameters;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
 
+import com.jopdesign.sys.Memory;
+
 import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 import static javax.safetycritical.annotate.Level.SUPPORT;
 
-
 /**
  * ManagedLongEventHandler
- *
+ * 
  */
 @SCJAllowed
-public abstract class ManagedLongEventHandler extends BoundAsyncLongEventHandler
-  implements ManagedSchedulable
-{
-  /**
-   * Constructor to create an event handler.
-   * <p>
-   * Does not perform memory allocation. Does not allow this to escape local
-   * scope. Builds links from this to priority, parameters, and name so those
-   * three arguments must reside in scopes that enclose this.
-   *
-   * @param priority
-   *        specifies the priority parameters for this periodic event
-   *        handler. Must not be null.
-   *
-   * @param release
-   *        specifies the periodic release parameters, in particular the
-   *        start time and period. Note that a relative start time is not
-   *        relative to NOW but relative to the point in time when
-   *        initialization is finished and the timers are started. This
-   *        argument must not be null.
-   *         
-   * @param scp
-   *        The scp parameter describes the organization of memory
-   *        dedicated to execution of the underlying thread. (added by MS)
-   *
-   * @throws IllegalArgumentException
-   *         if priority parameters are null.
-   */
-  @SCJAllowed
-  @SCJRestricted(phase = INITIALIZATION)
-  ManagedLongEventHandler(PriorityParameters priority,
-              ReleaseParameters release,
-              StorageParameters scp,
-              String name)
-  {
-  }
+public abstract class ManagedLongEventHandler extends
+		BoundAsyncLongEventHandler implements ManagedSchedulable {
+	/**
+	 * Constructor to create an event handler.
+	 * <p>
+	 * Does not perform memory allocation. Does not allow this to escape local
+	 * scope. Builds links from this to priority, parameters, and name so those
+	 * three arguments must reside in scopes that enclose this.
+	 * 
+	 * @param priority
+	 *            specifies the priority parameters for this periodic event
+	 *            handler. Must not be null.
+	 * 
+	 * @param release
+	 *            specifies the periodic release parameters, in particular the
+	 *            start time and period. Note that a relative start time is not
+	 *            relative to NOW but relative to the point in time when
+	 *            initialization is finished and the timers are started. This
+	 *            argument must not be null.
+	 * 
+	 * @param scp
+	 *            The scp parameter describes the organization of memory
+	 *            dedicated to execution of the underlying thread. (added by MS)
+	 * 
+	 * @throws IllegalArgumentException
+	 *             if priority parameters are null.
+	 */
 
-  /**
-   * Application developers override this method with code to be executed when
-   * this event handler's execution is disabled (upon termination of the
-   * enclosing mission).
-   *
-   */
-  @Override
-  @SCJAllowed(SUPPORT)
-  public void cleanUp() {}
+	private String name;
+	public Memory privMem;
 
-  /**
-   * Application developers override this method with code to be executed
-   * whenever the event(s) to which this event handler is bound is fired.
-   */
-  @SCJAllowed
-  public abstract void handleAsyncEvent();
+	@SCJAllowed
+	@SCJRestricted(phase = INITIALIZATION)
+	ManagedLongEventHandler(PriorityParameters priority,
+			ReleaseParameters release, StorageParameters scp, String name) {
+		this.name = name;
+		if (scp != null) {
+			// Create private memory
+			privMem = new Memory((int) scp.getScopeSize(),
+					(int) scp.getTotalBackingStoreSize());
+		}
 
-  /**
-   * @return the name of this event handler.
-   */
-  @SCJAllowed
-  public String getName()
-  {
-    return null;
-  }
+	}
 
-  /**
-   * @see javax.safetycritical.ManagedSchedulable#register()
-   */
-  @Override
-  @SCJAllowed
-  public void register() {}
+	/**
+	 * Application developers override this method with code to be executed when
+	 * this event handler's execution is disabled (upon termination of the
+	 * enclosing mission).
+	 * 
+	 */
+	@Override
+	@SCJAllowed(SUPPORT)
+	public void cleanUp() {
+	}
+
+	/**
+	 * Application developers override this method with code to be executed
+	 * whenever the event(s) to which this event handler is bound is fired.
+	 */
+	@SCJAllowed
+	public abstract void handleAsyncEvent(long data);
+
+	/**
+	 * @return the name of this event handler.
+	 */
+	@SCJAllowed
+	public String getName() {
+		return name;
+	}
+
+	/**
+	 * @see javax.safetycritical.ManagedSchedulable#register()
+	 */
+	@Override
+	@SCJAllowed
+	public void register() {
+	}
+
 }

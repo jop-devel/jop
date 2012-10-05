@@ -2,27 +2,36 @@ package javax.safetycritical;
 
 import javax.realtime.LTMemory;
 import javax.realtime.SizeEstimator;
+import javax.safetycritical.annotate.Phase;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
 
 import com.jopdesign.sys.Memory;
 
 /**
- * This class is not 'really' visible. Do we need it?
- * We need it for the static methods and enterPrivateMemoery.
- * However, we probably don't need PrivateMemory.
+ * This class is not 'really' visible. Do we need it? We need it for the static
+ * methods and enterPrivateMemoery. However, we probably don't need
+ * PrivateMemory.
  */
 @SCJAllowed
 public abstract class ManagedMemory extends LTMemory {
 
-	public ManagedMemory(long size) {
-		super(size);
+	ManagedMemory(int size, int bsSize) {
+		super(size, bsSize);
 	}
+
+	ManagedMemory(int size) {
+		this(size, 0);
+	}
+
+	// public ManagedMemory(long size) {
+	// super(size);
+	// }
 
 	// ManagedMemory(SizeEstimator estimator) { super(estimator); }
 
 	/**
-	 * @return
+	 * @return the current managed memory area.
 	 */
 	@SCJAllowed
 	public static ManagedMemory getCurrentManagedMemory() {
@@ -30,7 +39,7 @@ public abstract class ManagedMemory extends LTMemory {
 	}
 
 	/**
-	 * @return
+	 * @return The maximum size for a new managed memory area.
 	 */
 	@SCJAllowed
 	public static long getMaxManagedMemorySize() {
@@ -44,7 +53,15 @@ public abstract class ManagedMemory extends LTMemory {
 	@SCJAllowed
 	public static void enterPrivateMemory(long size, Runnable logic) {
 		Memory m = Memory.getCurrentMemory();
-		m.enterPrivateMemory((int) size, logic); 
+		m.enterPrivateMemory((int) size, logic);
+	}
+	
+	public static void executeInAreaOf(Object obj, Runnable logic){
+		
+	}
+	
+	public static void executeInOuterArea(Runnable logic){
+		
 	}
 
 	/**
@@ -56,9 +73,8 @@ public abstract class ManagedMemory extends LTMemory {
 	}
 
 	/**
-	 * A simple test. This method is not in spec source.
-	 * Override the inherited method to avoid implementing the logic in RTSJ
-	 * classes.
+	 * A simple test. This method is not in spec source. Override the inherited
+	 * method to avoid implementing the logic in RTSJ classes.
 	 */
 	@SCJAllowed
 	@SCJRestricted(maySelfSuspend = false)

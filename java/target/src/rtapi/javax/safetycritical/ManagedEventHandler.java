@@ -86,8 +86,9 @@ public abstract class ManagedEventHandler extends BoundAsyncEventHandler
 	public void register() {
 	}
 	
-	@SCJAllowed
-	public static ManagedEventHandler getCurrentHandler(){
-		return null;
-	}
+	//jrri: Not in v 0.9 of spec
+//	@SCJAllowed
+//	public static ManagedEventHandler getCurrentHandler(){
+//		return null;
+//	}
 }

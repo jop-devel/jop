@@ -1,14 +1,22 @@
 package javax.safetycritical;
 
-
 import javax.realtime.SizeEstimator;
 import javax.safetycritical.annotate.SCJAllowed;
 
 @SCJAllowed
-public class PrivateMemory extends ManagedMemory
-{
-  protected PrivateMemory(long size) { super(size); }
+public class PrivateMemory extends ManagedMemory {
 
-//  public PrivateMemory(SizeEstimator estimator) { super(estimator); }
+	PrivateMemory(int size, int bsSize) {
+		super(size, bsSize);
+	}
+	
+
+	PrivateMemory(int size) {
+		this(size, 0);
+	}
+
+	// protected PrivateMemory(long size) { super(size); }
+
+	// public PrivateMemory(SizeEstimator estimator) { super(estimator); }
 
 }
