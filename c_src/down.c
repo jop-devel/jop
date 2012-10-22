@@ -50,18 +50,18 @@ int wr(HANDLE hCom, unsigned char data) {
 
 	WriteFile(hCom, &data, 1, &cnt, NULL);
 //	printf("%d-", data); fflush(stdout);
-	if (!usb) {
-		ReadFile(hCom, &c, 1, &cnt, NULL);
-//		printf("%d ", c); fflush(stdout);
-		if (data != c) {
-			printf("error during download\n");
-			exit(-1);
-		}
-		if (cnt!=1) {
-			printf("timeout during download\n");
-			exit(-1);
-		}
-	}
+	// if (!usb) {
+		// ReadFile(hCom, &c, 1, &cnt, NULL);
+		// printf("%d ", c); fflush(stdout);
+		// if (data != c) {
+			// printf("error during download\n");
+			// exit(-1);
+		// }
+		// if (cnt!=1) {
+			// printf("timeout during download\n");
+			// exit(-1);
+		// }
+	// }
 
 	return 0;
 }

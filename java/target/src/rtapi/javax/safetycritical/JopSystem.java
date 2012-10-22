@@ -69,7 +69,7 @@ public class JopSystem {
 			int x = (int) m.missionMemorySize();
 			
 			// In mission memory
-			Memory.getCurrentMemory().enterPrivateMemory(x, m.start());
+			//Memory.getCurrentMemory().enterPrivateMemory(x, m.start());
 			
 			// When we return from mission memory
 			m = ms.getNextMission();

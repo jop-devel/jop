@@ -20,6 +20,7 @@ package org.reprap;
 public abstract class Command 
 {
 	Command next;
+	boolean enqueued = false;
 	protected HostController hostController;
 	private CommandController commandController;
 	
@@ -38,11 +39,6 @@ public abstract class Command
 	
 	public boolean enqueue()
 	{
-		if(next != null)
-		{
-			return false;
-		}
-		commandController.enqueue(this);
-		return true;
+		return commandController.enqueue(this);
 	}
 }

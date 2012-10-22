@@ -27,14 +27,18 @@ public class CharacterBuffer
 		chars = new char[size];
 	}
 	
-	//Creates new array but is only used by CommandParser.handleAsyncEvent
-	synchronized public char[] getChars(int amount)
+	//Creates new array but is only used inside handleAsyncEvent
+	synchronized public int copy(char[] buffer)
 	{
-		if(amount <= 0 || amount > count)
+		if(buffer == null)
+		{
+			return 0;
+		}
+		int amount = buffer.length;
+		if(amount > count)
 		{
 			amount = count;
 		}
-		char[] newChars = new char[amount];
 		int length = chars.length;
 		int start;
 		if(count > position)
@@ -47,20 +51,21 @@ public class CharacterBuffer
 		}
 		count -= amount;
 		int j = 0;
-		if((start+amount) > length)
+		int remainder = amount;
+		if((start+remainder) > length)
 		{
 			for (int i = start; i < length; i++) //@WCA loop=1
 			{
-				newChars[j++] = chars[i];
+				buffer[j++] = chars[i];
 			}
-			amount -= (length-start);
+			remainder -= (length-start);
 			start = 0;
 		}
-		for (int i = start; i < amount+start; i++) //@WCA loop=64
+		for (int i = start; i < remainder+start; i++) //@WCA loop=64
 		{
-			newChars[j++] = chars[i];
+			buffer[j++] = chars[i];
 		}
-		return newChars;
+		return amount;
 	}
 	
 	synchronized public boolean add(char character)
@@ -129,11 +134,15 @@ public class CharacterBuffer
 	
 	private void addUnSafe(char[] characters)
 	{
-		if(characters == null || chars.length < count+characters.length)
+		if(characters == null)
 		{
 			return;
 		}
 		int length = characters.length;
+		if(chars.length < count+length)
+		{
+			length = chars.length-count;
+		}
 		for(int i = 0; i < length; i++) //@WCA loop=64
 		{
 			chars[position] = characters[i];
@@ -143,6 +152,6 @@ public class CharacterBuffer
 				position = 0;
 			}
 		}
-		count += characters.length;
+		count += length;
 	}
 }

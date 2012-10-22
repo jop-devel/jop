@@ -27,8 +27,7 @@ import com.jopdesign.io.*;
 public class RepRapController extends PeriodicEventHandler
 {
 	public static final int NR_DECIMALS = 2; //X,Y,Z and E values are turned into millimeter*10
-	public static final int DECIMALS = 100; //X,Y,Z and E values are turned into millimeter*10
-	private static final int X_STEPS_PER_MILLIMETER = 40; //= steps*microstepping^-1/(belt_pitch*pulley_teeth) = 200*(1/8)^-1/(5*8)
+	private static final int X_STEPS_PER_MILLIMETER = 40; //= (steps*microstepping^-1)/(belt_pitch*pulley_teeth) = (200*(1/8)^-1)/(5*8)
 	private static final int Y_STEPS_PER_MILLIMETER = X_STEPS_PER_MILLIMETER;
 	private static final int Z_STEPS_PER_MILLIMETER = 160; //= steps/distance_between_threads = 200/1.25
 	private static final int E_STEPS_PER_MILLIMETER = 37; //= steps*gear_ration/(Pi*diameter) = 200*(39/11)/(Pi*6)
@@ -64,7 +63,7 @@ public class RepRapController extends PeriodicEventHandler
 	
 	synchronized public boolean isInPosition()
 	{
-		return inPosition & !Stepping;
+		return inPosition;
 	}
 	
 	synchronized private void setInPosition(boolean inPosition)
@@ -270,7 +269,7 @@ public class RepRapController extends PeriodicEventHandler
 	
 	synchronized public void setTargetTemperature(int targetTemperature) 
 	{
-		targetTemperature = Math.divs100(targetTemperature);;
+		targetTemperature = Math.divs100(targetTemperature);
 		if(targetTemperature > MAX_TEMPERATURE)
 		{
 			targetTemperature = MAX_TEMPERATURE;
@@ -279,24 +278,17 @@ public class RepRapController extends PeriodicEventHandler
 	}
 	
 	private int tmpcnt1 = 0;
-	private int tmppnt = 0;
-	private int[] tmpval = new int[5];
-	private int tmpcnt2 = 0;
-	
 	
 	@Override
 	public void handleAsyncEvent()
 	{
 		tmpcnt1++;
-		if(tmpcnt1 == 1000)
+		if(tmpcnt1 == 500)
 		{
 			tmpcnt1 = 0;
 			int tmpCur = reprap.readTemperature();
-			tmpval[tmppnt++] = tmpCur;
-			if(tmppnt == tmpval.length)
-			{
-				tmppnt = 0;
-			}
+			setCurrentTemperature(tmpCur);
+			//LS.ledSwitch = tmpCur;
 			//Heater
 			if(tmpCur < getTargetTemperature())
 			{
@@ -308,19 +300,7 @@ public class RepRapController extends PeriodicEventHandler
 				//output = output & ~(1 << 23);
 				output = output & ~(1 << 25);
 			}
-		}
-		tmpcnt2++;
-		if(tmpcnt2 == 5000)
-		{
-			tmpcnt2 = 0;
-			int temp = 0;
-			for (int i = 0; i < tmpval.length; i++) //@WCA loop = 5 
-			{
-				temp += tmpval[i];
-			}
-			temp = Math.divs5(temp);
-			setCurrentTemperature(temp);
-			//LS.ledSwitch = temp;
+			
 		}
 		if(!isInPosition())
 		{
@@ -335,6 +315,7 @@ public class RepRapController extends PeriodicEventHandler
 			}
 			else
 			{
+				Stepping = true;
 				boolean tempInPosition = true;
 				int sensorvalue = reprap.readSensors();
 				if(current.X != target.X)
@@ -418,7 +399,6 @@ public class RepRapController extends PeriodicEventHandler
 					}
 					error.E += 2*delta.E;
 				}
-				Stepping = true;
 				setInPosition(tempInPosition);
 			}
 		}

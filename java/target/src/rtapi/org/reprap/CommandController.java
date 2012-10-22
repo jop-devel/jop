@@ -45,8 +45,7 @@ public class CommandController extends PeriodicEventHandler
 			if(temp.execute())
 			{
 				temp.respond();
-				setFirst(temp.next);
-				temp.next = null;
+				setNext(temp);
 			}
 		}
 	}
@@ -56,17 +55,22 @@ public class CommandController extends PeriodicEventHandler
 		return first;
 	}
 	
-	synchronized private void setFirst(Command command)
+	synchronized private void setNext(Command command)
 	{
-		first = command;
+		first = command.next;
 		if(first == null)
 		{
 			last = null;
 		}
+		command.enqueued = false;
 	}
 	
-	synchronized public void enqueue(Command command)
+	synchronized public boolean enqueue(Command command)
 	{
+		if(command.enqueued)
+		{
+			return false;
+		}
 		if(last == null)
 		{
 			//Empty queue
@@ -78,6 +82,8 @@ public class CommandController extends PeriodicEventHandler
 		}
 		last = command;
 		command.next = null;
+		command.enqueued = true;
+		return true;
 	}
 
 }
