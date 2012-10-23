@@ -35,10 +35,10 @@ USB=false
 #		without the echo 'protocol' on USB
 #
 ifeq ($(USB),true)
-	COM_PORT=COM1
+	COM_PORT=COM5
 	COM_FLAG=-e -usb
 else
-	COM_FLAG=-e
+	COM_FLAG=-e -usb
 ifeq ($(WINDIR),)
 	COM_PORT=/dev/ttyS0
 else 
