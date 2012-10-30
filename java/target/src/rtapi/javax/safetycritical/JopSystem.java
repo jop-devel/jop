@@ -37,7 +37,7 @@ public class JopSystem {
 	public static void startMission(Safelet scj) {
 		
 		MissionSequencer ms = scj.getSequencer();
-		System.out.println("Good");
+//		System.out.println("Good");
 		
 //		MissionDescriptor md = ms.getInitialMission();
 		// TODO: there is some chaos on mission and the classes
@@ -53,9 +53,98 @@ public class JopSystem {
 		
 		m.initialize();
 		
+		debug(m);
 		
 		Terminal.getTerminal().writeln("SCJ Start mission on JOP");
-		RtThread.startMission();
+		//RtThread.startMission();
+	}
+	
+	public static void startCycle(Safelet scj){
+		
+		CyclicExecutor missionEx = new CyclicExecutor(); 
+
+		Memory missionMem = new Memory(100,100);
+		
+		MissionSequencer ms = scj.getSequencer();
+		
+		CyclicExecutive ce = (CyclicExecutive) ms.getNextMission();
+		missionMem.resize(ce.missionMemorySize());
+		missionEx.ce = ce;
+		
+		// Change allocation context to Mission memory
+		missionMem.enter(missionEx);
+		
+	}
+	
+	static class CyclicExecutor implements Runnable {
+		
+		CyclicExecutive ce;
+		
+		@Override
+		public void run() {
+			
+			// Private memory for all periodic handlers
+			// should be reused.
+			Memory privateMemory = new Memory(100,100);
+
+			ce.initialize();
+			/**
+			 * Upon return from initialize(), the infrastructure invokes the 
+			 * mission’s getSchedule method in a Level 0 run-time environment.
+			 * The infrastructure creates an array representing all of the
+			 * ManagedSchedulable objects that were registered by the initialize
+			 * method and passes this array as an argument to the mission’s
+			 * getSchedule method
+			 */
+			CyclicSchedule schedule = ce.getSchedule(ce.peHandlers);
+			Frame[] frames = schedule.getFrames();
+			FrameExecutor frameEx = new FrameExecutor(frames);
+			
+			for (int i = 0; i < frames.length; i++) {
+				for (int j = 0; j < frames[i].handlers_.length; j++) {
+					// Resize private memory according to handlers
+					// storage parameters
+					privateMemory.resize(0);
+
+					frameEx.i = i;
+					frameEx.j = j;
+
+					privateMemory.enter(frameEx);
+				}
+			}
+		}
+		
+	}
+	
+	static class FrameExecutor implements Runnable {
+		
+		int i,j = 0;
+		Frame[] frames;
+		
+		public FrameExecutor(Frame[] frames) {
+			this.frames = frames;
+		}
+
+		@Override
+		public void run() {
+			frames[i].handlers_[j].handleAsyncEvent();
+		}
+		
+	}
+	
+	public static void debug(Mission m){
+		System.out.println("Periodic handlers in mission: " +m.peHandlerCount);
+		System.out.println("Current periodic handler index:  " +m.peHandlerIndex);
+		System.out.println("Periodic handler array size:  " +m.peHandlers.length);
+
+		System.out.println("Aperiodic handlers in mission: " +m.aeHandlerCount);
+		System.out.println("Current aperiodic handler index:  " +m.aeHandlerIndex);
+		System.out.println("Aperiodic handler array size:  " +m.aeHandlers.length);
+
+		System.out.println("Aperiodic long handlers in mission: " +m.aleHandlerCount);
+		System.out.println("Current aperiodic long handler index:  " +m.aleHandlerIndex);
+		System.out.println("Aperiodic long handler array size:  " +m.aleHandlers.length);
+
 	}
 	
 //	public static void runMission(Safelet scj){

@@ -51,20 +51,20 @@ public abstract class MemoryArea implements AllocationContext {
 		return null;
 	}
 
-	/**
-	 * TBD: This method has no object argument, so this commentary is not
-	 * meaningful.
-	 * 
-	 * Execute <code>logic</code> in the memory area containing
-	 * <code>object</code>.
-	 * 
-	 * "@param" object is the reference for determining the area in which to
-	 * execute <code>logic</code>.
-	 * 
-	 * @param logic
-	 *            is the runnable to execute in the memory area containing
-	 *            <code>object</code>.
-	 */
+//	/**
+//	 * TBD: This method has no object argument, so this commentary is not
+//	 * meaningful.
+//	 * 
+//	 * Execute <code>logic</code> in the memory area containing
+//	 * <code>object</code>.
+//	 * 
+//	 * "@param" object is the reference for determining the area in which to
+//	 * execute <code>logic</code>.
+//	 * 
+//	 * @param logic
+//	 *            is the runnable to execute in the memory area containing
+//	 *            <code>object</code>.
+//	 */
 	@Override
 	@Allocate(sameAreaAs = { "object" })
 	@MemoryAreaEncloses(inner = { "logic" }, outer = { "this" })

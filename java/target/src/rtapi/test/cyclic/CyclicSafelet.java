@@ -26,7 +26,6 @@ public class CyclicSafelet implements Safelet<Mission>{
 	
 	@Override
 	public long immortalMemorySize() {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 	

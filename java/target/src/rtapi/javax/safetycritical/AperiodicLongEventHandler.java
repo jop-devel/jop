@@ -131,9 +131,14 @@ public abstract class AperiodicLongEventHandler extends ManagedLongEventHandler 
 	 *      the aperiodic events passed during constructions.
 	 */
 	@SCJAllowed
-	@Override
 	@SCJRestricted(phase = INITIALIZATION)
 	public final void register() {
+		Mission m = Mission.getCurrentMission();
+		if(m.aleHandlers == null){
+			m.aleHandlers = new AperiodicLongEventHandler[m.aleHandlerCount];
+		}
+		m.aleHandlers[m.aleHandlerIndex] = this;
+		m.aleHandlerIndex++;
 	}
 	
 	public final void release(long data){

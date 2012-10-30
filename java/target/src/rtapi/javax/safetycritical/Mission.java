@@ -23,6 +23,8 @@ package javax.safetycritical;
 import static javax.safetycritical.annotate.Level.LEVEL_1;
 import static javax.safetycritical.annotate.Level.SUPPORT;
 
+import javax.realtime.AsyncEventHandler;
+import javax.realtime.AsyncLongEventHandler;
 import javax.safetycritical.annotate.Allocate;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.Allocate.Area;
@@ -42,6 +44,25 @@ public abstract class Mission {
 	public static final int CLEANUP = 3;
 	
 	public int phase = INACTIVE;
+	
+	// True only for subclasses of CyclicExecutive
+	boolean isCyclicExecutive = false;
+	
+	// Array containing the Handlers registered
+	// while executing the initialize() method. 
+	// The total number of handlers should be
+	// known in advance
+	protected PeriodicEventHandler[] peHandlers;
+	int peHandlerIndex = 0;
+	protected int peHandlerCount = 1;
+
+	AperiodicEventHandler[] aeHandlers;
+	int aeHandlerIndex = 0;
+	protected int aeHandlerCount = 1;
+
+	AsyncLongEventHandler[] aleHandlers;
+	int aleHandlerIndex = 0;
+	protected int aleHandlerCount = 1;
 
 	@Allocate( { Area.THIS })
 	@SCJAllowed

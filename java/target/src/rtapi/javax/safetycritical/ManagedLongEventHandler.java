@@ -87,12 +87,12 @@ public abstract class ManagedLongEventHandler extends
 		return name;
 	}
 
-	/**
-	 * @see javax.safetycritical.ManagedSchedulable#register()
-	 */
-	@Override
-	@SCJAllowed
-	public void register() {
-	}
+//	/**
+//	 * @see javax.safetycritical.ManagedSchedulable#register()
+//	 */
+//	@SCJAllowed
+//	public void register() {
+//
+//	}
 
 }

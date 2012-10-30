@@ -42,14 +42,23 @@ import javax.safetycritical.annotate.SCJRestricted;
  */
 @SCJAllowed
 public abstract class LTMemory extends ScopedMemory {
+
+//	protected LTMemory(int size, int bsSize) {
+//		super(size, bsSize);
+//		// TODO Auto-generated constructor stub
+//	}
+//
+//	protected LTMemory(int size) {
+//		this(size,0);
+//	}
 	
 	/**
 	 * We don't allow to use the constructor....
 	 * @param size
 	 */
-	@SCJProtected
-	public LTMemory(long size) {
-//		super(size);
-	}
+//	@SCJProtected
+//	public LTMemory(long size) {
+////		super(size);
+//	}
 
 }

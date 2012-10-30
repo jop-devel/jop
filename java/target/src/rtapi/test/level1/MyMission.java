@@ -10,6 +10,9 @@ import javax.safetycritical.StorageParameters;
 public class MyMission extends Mission{
 	
 	int number;
+	int totalPeriodicHandlers = 1;
+	int totalAperiodicHandlers = 1;
+	int totalAperiodicLongHandlers = 1;
 	
 	MyMission(int number){
 		
@@ -20,21 +23,30 @@ public class MyMission extends Mission{
 	@Override
 	protected void initialize() {
 		
-		phase = Mission.INITIALIZATION;
+		phase = Mission.INIT;
 		
-		TestPEH EH0;
-		TestAEH EH1;
+		TestPEH peh;
+		TestAEH aeh;
+		TestALEH aleh;
 		
-		System.out.println("Mission "+number+ " initialization");
+		System.out.println("Mission " +number+ " initialization");
+		peHandlerCount = totalPeriodicHandlers;
+		aeHandlerCount = totalAperiodicHandlers;
+		aleHandlerCount = totalAperiodicLongHandlers;
 		
 		long[] sizes = {512};
 		PriorityParameters eh1_prio = new PriorityParameters(14);
 		AperiodicParameters eh1_pparams = new AperiodicParameters(null, null);
 		
 		StorageParameters eh1_storage = new StorageParameters(1024, sizes, 0, 0);
-		EH1 = new TestAEH(eh1_prio, eh1_pparams, eh1_storage, "Aperiodic Handler 1");
-		EH1.register();
-		
+		aeh = new TestAEH(eh1_prio, eh1_pparams, eh1_storage, "Aperiodic Handler 1");
+		System.out.println("About to register...");
+		aeh.register();
+
+		aleh = new TestALEH(eh1_prio, eh1_pparams, eh1_storage, "Aperiodic Long Handler");
+		System.out.println("About to register...");
+		aleh.register();
+
 		PriorityParameters eh0_prio = new PriorityParameters(13);
 		RelativeTime eh0_tart = new RelativeTime(0,0);
 		RelativeTime eh0_period = new RelativeTime(1000, 0);
@@ -43,8 +55,10 @@ public class MyMission extends Mission{
 		
 		StorageParameters eh0_storage = new StorageParameters(1024, sizes, 0, 0);
 		
-		EH0 = new TestPEH(eh0_prio, eh0_pparams, eh0_storage, 512, EH1);
-		EH0.register();
+		peh = new TestPEH(eh0_prio, eh0_pparams, eh0_storage, 512, aeh,aleh);
+		
+		System.out.println("About to register...");
+		peh.register();
 		
 
 		

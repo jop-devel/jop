@@ -100,10 +100,15 @@ public abstract class AperiodicEventHandler extends ManagedEventHandler {
 //		super(null, null, null, null);
 //	}
 
-	@Override
 	@SCJAllowed
 	@SCJRestricted(phase = INITIALIZATION)
 	public final void register() {
+		Mission m = Mission.getCurrentMission();
+		if(m.aeHandlers == null){
+			m.aeHandlers = new AperiodicEventHandler[m.aeHandlerCount];
+		}
+		m.aeHandlers[m.aeHandlerIndex] = this;
+		m.aeHandlerIndex++;
 	}
 
 	/**

@@ -177,7 +177,6 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 	/**
 	 * Inherited because we extend MEH although we could use composition....
 	 */
-	@Override
 	@SCJAllowed
 	@SCJRestricted(phase = INITIALIZATION)
 	public final void register() {

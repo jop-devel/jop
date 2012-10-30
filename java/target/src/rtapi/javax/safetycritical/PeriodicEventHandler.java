@@ -31,8 +31,6 @@ import javax.safetycritical.annotate.MemoryAreaEncloses;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
 
-import javax.safetycritical.*;
-
 import com.jopdesign.sys.Memory;
 
 import static javax.safetycritical.annotate.Phase.INITIALIZATION;
@@ -103,7 +101,7 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 			@Override
 			public void run() {
 				handleAsyncEvent();
-			}	
+			}
 		};
 
 		thread = new RtThread(priority.getPriority(), p, off) {
@@ -118,9 +116,13 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 	}
 
 	@SCJAllowed
-	@Override
 	@SCJRestricted(phase = INITIALIZATION)
 	public final void register() {
-
+		Mission m = Mission.getCurrentMission();
+		if(m.peHandlers == null){
+			m.peHandlers = new PeriodicEventHandler[m.peHandlerCount];
+		}
+		m.peHandlers[m.peHandlerIndex] = this;
+		m.peHandlerIndex++;
 	}
 }

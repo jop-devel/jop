@@ -64,7 +64,7 @@ public abstract class CyclicExecutive extends Mission {
 	 * 
 	 * @param storage
 	 */
-
+	
 
 //	@SCJAllowed
 //	@MemoryAreaEncloses(inner = { "this" }, outer = { "sequencer" })
@@ -75,6 +75,7 @@ public abstract class CyclicExecutive extends Mission {
 	@SCJAllowed
 	@MemoryAreaEncloses(inner = { "this" }, outer = { "sequencer" })
 	public CyclicExecutive() {
+		isCyclicExecutive = true;
 	}
 
 	/**
@@ -89,6 +90,4 @@ public abstract class CyclicExecutive extends Mission {
 		return null;
 	}
 	
-	protected void startCycle(){ 
-	}
 }
