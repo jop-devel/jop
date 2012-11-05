@@ -23,10 +23,19 @@ public final class Frame {
 	 * PeriodicEventHandlers are sorted into decreasing priority order prior to
 	 * invoking this constructor.
 	 */
+	
+	RelativeTime duration_;
+    PeriodicEventHandler[] handlers_;
+	
 	@Allocate({ Area.THIS })
 	@MemoryAreaEncloses(inner = { "this", "this" }, outer = { "duration",
 			"handlers" })
 	@SCJAllowed
 	public Frame(RelativeTime duration, PeriodicEventHandler[] handlers) {
+		
+		duration_ = duration;
+		handlers_ = handlers;
 	}
+	
+	
 }
