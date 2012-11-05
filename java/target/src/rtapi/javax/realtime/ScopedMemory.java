@@ -97,4 +97,13 @@ import javax.safetycritical.annotate.SCJAllowed;
 @SCJAllowed
 public abstract class ScopedMemory extends MemoryArea implements
 		ScopedAllocationContext {
+
+//	ScopedMemory(int size, int bsSize) {
+//		super(size, bsSize);
+//	}
+//
+//	ScopedMemory(int size) {
+//		this(size,0);
+//	}
+
 }

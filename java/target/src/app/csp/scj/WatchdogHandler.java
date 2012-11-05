@@ -19,11 +19,13 @@ public class WatchdogHandler extends PeriodicEventHandler{
 
 	private CSPconnection conn;
 	int source;
+	int nextSlave;
 
 	public WatchdogHandler(PriorityParameters priority, PeriodicParameters parameters,
-			StorageParameters scp, long scopeSize) {
+			StorageParameters scp, long scopeSize, int nextSlave) {
 		super(priority, parameters, scp, scopeSize);
 
+		this.nextSlave = nextSlave;
 		init();
 
 	}
@@ -38,9 +40,9 @@ public class WatchdogHandler extends PeriodicEventHandler{
 	@Override
 	public void handleAsyncEvent() {
 
-		for (int i = 0; i < WatchDogSaflet.NUM_SLAVES; i++) {
+//		for (int i = 0; i < WatchDogSaflet.NUM_SLAVES; i++) {
 
-			conn.destination = WatchDogSaflet.slaves[i];
+			conn.destination = WatchDogSaflet.slaves[nextSlave];
 
 			conn.tx_port.masterTX();
 
@@ -48,26 +50,32 @@ public class WatchdogHandler extends PeriodicEventHandler{
 			CSPmanager.i2c_send(conn, null);
 
 			conn.tx_port.slaveMode();
+			
+			if(nextSlave >= WatchDogSaflet.NUM_SLAVES-1){
+				nextSlave = 0;
+			}else{
+				nextSlave++;
+			}
 
-			RtThread.sleepMs(WatchDogSaflet.WD_TIMEOUT);
+//			RtThread.sleepMs(WatchDogSaflet.WD_TIMEOUT);
 
-			if (((conn.tx_port.status & I2Cport.DATA_VALID)) == 0) {
+//			if (((conn.tx_port.status & I2Cport.DATA_VALID)) == 0) {
 
 				//System.out.println("Tout : " + conn.destination);
 
 
-			} else {
+//			} else {
 
 				// Get one free CSPbuffer
-				CSPbuffer buffer = CSP.getCSPbuffer();
+//				CSPbuffer buffer = CSP.getCSPbuffer();
 
 				// Read the data in the RX buffer
-				CSPmanager.i2c_callback(conn, buffer);
+//				CSPmanager.i2c_callback(conn, buffer);
 
 				// Process header
-				conn.prio = buffer.header[0] >>> 6;
+//				conn.prio = buffer.header[0] >>> 6;
 
-				source = (buffer.header[0] >>> 1) & (0x1F);
+//				source = (buffer.header[0] >>> 1) & (0x1F);
 
 				// destination = ( (buffer.header[0] << 4) & 0x10 ) |
 				// ((buffer.header[1] >>> 4) & 0x0F);
@@ -82,10 +90,10 @@ public class WatchdogHandler extends PeriodicEventHandler{
 				// Print received data
 				//System.out.println("OK : " + source);
 
-				CSP.freeCSPbuffer(buffer);
+//				CSP.freeCSPbuffer(buffer);
 
-			}
-		}
+//			}
+//		}
 
 
 	}
