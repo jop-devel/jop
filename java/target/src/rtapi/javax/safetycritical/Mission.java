@@ -38,10 +38,10 @@ import javax.safetycritical.annotate.Allocate.Area;
 public abstract class Mission {
 	
 	// To keep track of the state of a mission
-	public static final int INACTIVE = 0;
-	public static final int INIT = 1;
-	public static final int EXECUTION = 2;
-	public static final int CLEANUP = 3;
+	public final int INACTIVE = 0;
+	public final int INIT = 1;
+	public final int EXECUTION = 2;
+	public final int CLEANUP = 3;
 	
 	public int phase = INACTIVE;
 	
@@ -53,15 +53,15 @@ public abstract class Mission {
 	// The total number of handlers should be
 	// known in advance
 	protected PeriodicEventHandler[] peHandlers;
-	int peHandlerIndex = 0;
+	protected int peHandlerIndex = 0;
 	protected int peHandlerCount = 1;
 
-	AperiodicEventHandler[] aeHandlers;
-	int aeHandlerIndex = 0;
+	protected AperiodicEventHandler[] aeHandlers;
+	protected int aeHandlerIndex = 0;
 	protected int aeHandlerCount = 1;
 
-	AsyncLongEventHandler[] aleHandlers;
-	int aleHandlerIndex = 0;
+	protected AsyncLongEventHandler[] aleHandlers;
+	protected int aleHandlerIndex = 0;
 	protected int aleHandlerCount = 1;
 
 	@Allocate( { Area.THIS })
@@ -78,7 +78,7 @@ public abstract class Mission {
 
 	@SCJAllowed(SUPPORT)
 	protected void cleanUp() {
-		System.out.println("Mission cleanup");
+		Terminal.getTerminal().writeln("Mission cleanup");
 	}
 
 	@SCJAllowed
@@ -89,7 +89,7 @@ public abstract class Mission {
 		// That does not work when requestTermination is invoked
 		// before startMission()
 		// clean.fire();
-		System.out.println("Termination request");
+//		System.out.println("Termination request");
 	}
 
 	@SCJAllowed

@@ -113,7 +113,7 @@ public abstract class AperiodicLongEventHandler extends ManagedLongEventHandler 
 		
 		this.name = name;
 
-		event = new SwEvent(priority.getPriority(), 100000){
+		event = new SwEvent(priority.getPriority(), 0){
 			
 			@Override
 			public void handle() {

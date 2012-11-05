@@ -318,7 +318,8 @@ public class Memory {
 		return endLocalPtr - allocPtr;
 	}
 	
-	public void resize(long size){
-		
+	public int bStoreRemaining(){
+		return endBsPtr - allocBsPtr;
 	}
+	
 }

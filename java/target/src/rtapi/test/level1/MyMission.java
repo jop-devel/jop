@@ -23,8 +23,6 @@ public class MyMission extends Mission{
 	@Override
 	protected void initialize() {
 		
-		phase = Mission.INIT;
-		
 		TestPEH peh;
 		TestAEH aeh;
 		TestALEH aleh;

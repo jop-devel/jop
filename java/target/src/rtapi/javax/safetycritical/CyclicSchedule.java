@@ -37,7 +37,7 @@ public final class CyclicSchedule
   @SCJAllowed
   public CyclicSchedule(Frame[] frames)
   {
-	  
+	  frames_ = new Frame[frames.length];
 	  System.arraycopy(frames, 0, frames_, 0, frames.length);
 	  cycleDuration = new RelativeTime();
   }

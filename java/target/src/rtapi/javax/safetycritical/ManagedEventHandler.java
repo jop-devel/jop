@@ -48,20 +48,12 @@ public abstract class ManagedEventHandler extends BoundAsyncEventHandler
 		implements ManagedSchedulable {
 
 	private String name;
-	protected Memory privMem;
 
 	@SCJAllowed(INFRASTRUCTURE)
 	@SCJRestricted(phase = INITIALIZATION)
 	ManagedEventHandler(PriorityParameters priority, ReleaseParameters release,
 			StorageParameters scp, String name) {
 		this.name = name;
-		if (scp != null) {
-			// Create private memory, except for cyclic executives
-			Mission m = Mission.getCurrentMission();
-			if(!m.isCyclicExecutive){
-				privMem = new Memory((int) scp.getScopeSize(), (int) scp.getTotalBackingStoreSize());
-			}
-		}
 	}
 
 	@Override

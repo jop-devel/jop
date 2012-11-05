@@ -11,11 +11,12 @@ public class CyclicApp {
 		public static void main(String args[]) {
 
 			term = Terminal.getTerminal();
+			JopSystem js = new JopSystem();
 
 			CyclicSafelet s = new CyclicSafelet();
 			term.writeln("Safelet created");
 
-			JopSystem.startCycle(s);
+			js.startCycle(s);
 
 			term.writeln("Main method finished");
 		}

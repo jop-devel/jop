@@ -43,6 +43,12 @@ public class AperiodicParameters extends ReleaseParameters {
 	private AsyncEventHandler missHandler;
 	
 	@SCJAllowed(LEVEL_1)
+	public AperiodicParameters() {
+		this.deadline = null;
+		this.missHandler = null;
+	}
+
+	@SCJAllowed(LEVEL_1)
 	public AperiodicParameters(RelativeTime deadline,
 			AsyncEventHandler missHandler) {
 		this.deadline = deadline;

@@ -4,23 +4,21 @@ import static javax.safetycritical.annotate.Level.SUPPORT;
 import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 
 import javax.realtime.PriorityParameters;
-import javax.safetycritical.Mission;
+import javax.safetycritical.CyclicExecutive;
 import javax.safetycritical.MissionSequencer;
 import javax.safetycritical.Safelet;
 import javax.safetycritical.StorageParameters;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
 
-public class CyclicSafelet implements Safelet<Mission>{
+public class CyclicSafelet implements Safelet<CyclicExecutive>{
 
 	@Override
-	public MissionSequencer<Mission> getSequencer() {
+	public MissionSequencer<CyclicExecutive> getSequencer() {
 		
-		Mission m = new MyCyclicMission();
-		
-		PriorityParameters mission_prio = new PriorityParameters(10);
-		StorageParameters mission_sto = new StorageParameters(1024, new long[] {512});
-		return new SingleMissionSequencer(mission_prio, mission_sto, m);
+		PriorityParameters sequencerPrio = new PriorityParameters(10);
+		StorageParameters sequencerSto = new StorageParameters(1024, new long[] {512});
+		return new SingleMissionSequencer(sequencerPrio, sequencerSto);
 		
 	}
 	
@@ -29,21 +27,37 @@ public class CyclicSafelet implements Safelet<Mission>{
 		return 0;
 	}
 	
-	class SingleMissionSequencer extends MissionSequencer<Mission> {
+	class SingleMissionSequencer extends MissionSequencer<CyclicExecutive> {
 
-		Mission single;
+		boolean served = false;
 
 		public SingleMissionSequencer(PriorityParameters priority,
-				StorageParameters storage, Mission m) {
+				StorageParameters storage) {
 			super(priority, storage);
-			single = m;
+		}
+		
+		CyclicExecutive newMission() {
+			
+			CyclicExecutive single = new CyclicMission();
+			return single;
 		}
 
 		@SCJAllowed(SUPPORT)
 		@SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
 		@Override
-		protected Mission getNextMission() {
-			return single;
+		protected CyclicExecutive getNextMission() {
+			if(!served){
+				current_mission = newMission();
+				
+				// Comment the following line to have an infinite
+				// stream of missions
+				served = true;
+				
+				return (CyclicExecutive) current_mission;
+			}
+			
+			current_mission = null;
+			return null;
 		}
 
 	}

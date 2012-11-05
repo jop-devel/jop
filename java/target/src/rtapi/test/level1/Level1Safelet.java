@@ -12,7 +12,7 @@ public class Level1Safelet implements Safelet{
 
 	@Override
 	public MissionSequencer<Mission> getSequencer() {
-
+		
 		PriorityParameters seq_prio = new PriorityParameters(13);
 		long[] sizes = {1024};
 		
