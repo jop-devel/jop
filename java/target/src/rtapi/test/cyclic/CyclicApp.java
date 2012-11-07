@@ -18,7 +18,7 @@ public class CyclicApp {
 
 			js.startCycle(s);
 
-			term.writeln("Main method finished");
+			term.writeln("Application finished");
 		}
 
 
