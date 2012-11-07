@@ -83,7 +83,6 @@ public class JopSystem {
 	class CyclicExecutor implements Runnable {
 
 		MissionSequencer<CyclicExecutive> ms;
-		CyclicExecutive ce;
 		Helper helper;
 		
 		public CyclicExecutor(Helper helper) {
@@ -92,6 +91,8 @@ public class JopSystem {
 
 		@Override
 		public void run() {
+			
+			CyclicExecutive ce;
 
 			// Mission object is created in Mission Memory
 			ce = (CyclicExecutive) ms.getNextMission();
