@@ -5,7 +5,7 @@
 
 JOPDIR=../vhdl
 #OPTIONS=-93 -quiet -check_synthesis -lint -pedanticerrors
-OPTIONS=-93 -quiet
+OPTIONS=-2008 -quiet +acc
 
 # Mody accordingly to point to the Modelsim Xilix and Altera 
 # simulation libraries. Use it for the simulation with the 
@@ -38,23 +38,22 @@ cmp: clean base
 
 # simulation with the i2c controller and an i2c eeprom
 iic: clean base
-	vmap simprim $(XIL_VHDL_LIB)/simprim
-	vmap unimacro $(XIL_VHDL_LIB)/unimacro
-	vmap unisim $(XIL_VHDL_LIB)/unisim
-	vmap xilinxcorelib $(XIL_VHDL_LIB)/xilinxcorelib
-	vmap altera_mf $(ALT_VHDL_LIB)/altera_mf
+	#vmap simprim $(XIL_VHDL_LIB)/simprim
+	#vmap unimacro $(XIL_VHDL_LIB)/unimacro
+	#vmap unisim $(XIL_VHDL_LIB)/unisim
+	#vmap xilinxcorelib $(XIL_VHDL_LIB)/xilinxcorelib
+	#vmap altera_mf $(ALT_VHDL_LIB)/altera_mf
 	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/led_switch.vhd
 	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/i2c_pkg.vhd
+	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/shift_reg.vhd
 	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/fifo/fifo_pkg.vhd
-	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/fifo/counter_synth.vhd
-	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/fifo/dual_port_ram_alt.vhd
-	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/fifo/dual_port_ram_xil.vhd
-	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/fifo/FIFO_read_control_syn.vhd
-	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/fifo/FIFO_write_control_syn.vhd
-	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/fifo/synchronizer_synth.vhd
-	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/fifo/async_fifo_syn.vhd
-	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/scl_sm_sync.vhd
-	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/main_i2c_sm_sync.vhd
+	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/fifo/dual_port_ram.vhd
+	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/fifo/read_control.vhd
+	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/fifo/write_control.vhd
+	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/fifo/synchronizer.vhd
+	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/fifo/async_fifo.vhd
+	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/scl_control.vhd
+	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/sda_control.vhd
 	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/i2c/i2c.vhd
 	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/sc_i2c.vhd
 	$(WINE) vcom $(OPTIONS) $(JOPDIR)/scio/scio_de2-70_i2c_dual.vhd
