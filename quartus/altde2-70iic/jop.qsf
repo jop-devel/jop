@@ -37,7 +37,7 @@ set_global_assignment -name DEVICE_FILTER_PIN_COUNT 896
 set_global_assignment -name RESERVE_ALL_UNUSED_PINS "AS INPUT TRI-STATED"
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD LVCMOS
 set_global_assignment -name RESERVE_ASDO_AFTER_CONFIGURATION "AS INPUT TRI-STATED"
-set_global_assignment -name IGNORE_CLOCK_SETTINGS ON
+set_global_assignment -name IGNORE_CLOCK_SETTINGS OFF
 
 
 set_global_assignment -name CYCLONE_OPTIMIZATION_TECHNIQUE SPEED
@@ -612,34 +612,50 @@ set_global_assignment -name OUTPUT_PIN_LOAD 10 -section_id "3.3-V PCI-X"
 
 
 set_global_assignment -name MISC_FILE "/home/jrri/Documents/DTU/phd/jop/quartus/altde2-70iic/jop.dpf"
-set_global_assignment -name ENABLE_SIGNALTAP ON
+set_global_assignment -name ENABLE_SIGNALTAP OFF
 set_global_assignment -name USE_SIGNALTAP_FILE stp1.stp
-set_global_assignment -name SLD_NODE_CREATOR_ID 110 -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_ENTITY_NAME sld_signaltap -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_NODE_INFO=805334528" -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_POWER_UP_TRIGGER=0" -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_STORAGE_QUALIFIER_INVERSION_MASK_LENGTH=0" -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_ATTRIBUTE_MEM_MODE=OFF" -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_STATE_FLOW_USE_GENERATED=0" -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_STATE_BITS=11" -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_BUFFER_FULL_STOP=1" -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_CURRENT_RESOURCE_WIDTH=1" -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_TRIGGER_LEVEL=1" -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_TRIGGER_IN_ENABLED=0" -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_ADVANCED_TRIGGER_ENTITY=basic,1," -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_TRIGGER_LEVEL_PIPELINE=1" -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_ENABLE_ADVANCED_TRIGGER=0" -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_SEGMENT_SIZE=65536" -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_SAMPLE_DEPTH=65536" -section_id auto_signaltap_0
-set_global_assignment -name VHDL_FILE "../../vhdl/scio/scio_de2-70_i2c.vhd"
+
+set_global_assignment -name MISC_FILE "/home/jrri/Documents/jop/quartus/altde2-70iic/jop.dpf"
+
+##
+## Use the configuration below to use internal I2C bus
+##
+#set_instance_assignment -name WEAK_PULL_UP_RESISTOR OFF -to sda
+#set_instance_assignment -name WEAK_PULL_UP_RESISTOR OFF -to scl
+#set_location_assignment PIN_J18 -to scl
+#set_location_assignment PIN_H18 -to sda
+
+##
+## Use the configuration below to use GPIO header pins for SCL and SDA
+##
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to sda
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to scl
+set_location_assignment PIN_G27 -to scl
+set_location_assignment PIN_G28 -to sda
+
+set_instance_assignment -name CLOCK_SETTINGS scl -to scl
+set_global_assignment -name CYCLONEII_OPTIMIZATION_TECHNIQUE SPEED
+set_global_assignment -name FMAX_REQUIREMENT "5 MHz" -section_id scl
+set_global_assignment -name OPTIMIZE_POWER_DURING_SYNTHESIS "EXTRA EFFORT"
+set_global_assignment -name SYNTH_TIMING_DRIVEN_SYNTHESIS ON
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/async_fifo.vhd
+set_global_assignment -name VHDL_FILE "../../vhdl/top/jop_de2-70iic.vhd"
+set_global_assignment -name VHDL_FILE "../../vhdl/scio/scio_de2-70_i2c_dual.vhd"
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_i2c.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/write_control.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/synchronizer.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/read_control.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/dual_port_ram.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/fifo_pkg.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/shift_reg.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/sda_control.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/scl_control.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/i2c_pkg.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/i2c.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/scl_sm_sync.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/main_i2c_sm_sync.vhd
 set_global_assignment -name SDC_FILE jop.sdc
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_global.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_de2.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_ssram32.vhd
-set_global_assignment -name VHDL_FILE "../../vhdl/top/jop_de2-70iic.vhd"
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc2_pll.vhd
@@ -663,61 +679,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/async_fifo_syn.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/counter_synth.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/dual_port_ram_alt.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/FIFO_read_control_syn.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/FIFO_write_control_syn.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/synchronizer_synth.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/fifo/fifo_pkg.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/i2c/i2c_pkg.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_i2c.vhd
 set_global_assignment -name QIP_FILE signaltap.qip
 set_global_assignment -name SIGNALTAP_FILE iic.stp
 set_global_assignment -name SIGNALTAP_FILE stp1.stp
-set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_clk -to clk -section_id auto_signaltap_0
-set_global_assignment -name FMAX_REQUIREMENT "5 MHz" -section_id sclk
-set_global_assignment -name FMAX_REQUIREMENT "5 MHz" -section_id sdat
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_DATA_BITS=14" -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_TRIGGER_BITS=14" -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_INVERSION_MASK=000000000000000000000000000000000000000000000000000000000000000000000000" -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_INVERSION_MASK_LENGTH=72" -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_NODE_CRC_HIWORD=29782" -section_id auto_signaltap_0
-set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[5] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|data_valid_s" -section_id auto_signaltap_0
-set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[6] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|i2c_state.ack_header" -section_id auto_signaltap_0
-set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[7] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|i2c_state.idle" -section_id auto_signaltap_0
-set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[8] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|i2c_state.rx_data" -section_id auto_signaltap_0
-set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[9] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|i2c_state.send_ack" -section_id auto_signaltap_0
-set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[10] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|i2c_state.tx_data" -section_id auto_signaltap_0
-set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[11] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|i2c_state.tx_header" -section_id auto_signaltap_0
-set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[12] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|i2c_state.wait_ack" -section_id auto_signaltap_0
-set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[13] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|start" -section_id auto_signaltap_0
-set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[5] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|data_valid_s" -section_id auto_signaltap_0
-set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[6] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|i2c_state.ack_header" -section_id auto_signaltap_0
-set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[7] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|i2c_state.idle" -section_id auto_signaltap_0
-set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[8] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|i2c_state.rx_data" -section_id auto_signaltap_0
-set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[9] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|i2c_state.send_ack" -section_id auto_signaltap_0
-set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[10] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|i2c_state.tx_data" -section_id auto_signaltap_0
-set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[11] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|i2c_state.tx_header" -section_id auto_signaltap_0
-set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[12] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|i2c_state.wait_ack" -section_id auto_signaltap_0
-set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[13] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|start" -section_id auto_signaltap_0
-
-set_global_assignment -name MISC_FILE "/home/jrri/Documents/jop/quartus/altde2-70iic/jop.dpf"
-set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to sda
-set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to scl
-set_location_assignment PIN_G27 -to scl
-set_location_assignment PIN_G28 -to sda
-set_instance_assignment -name CLOCK_SETTINGS sclk -to scl
-set_instance_assignment -name CLOCK_SETTINGS sdat -to sda
-set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[0] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|reset" -section_id auto_signaltap_0
-set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[1] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|transaction_s" -section_id auto_signaltap_0
-set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[2] -to "scio:io|sc_i2c:iic|i2c:IIC|strt" -section_id auto_signaltap_0
-set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[3] -to scl -section_id auto_signaltap_0
-set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[4] -to sda -section_id auto_signaltap_0
-set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[0] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|reset" -section_id auto_signaltap_0
-set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[1] -to "scio:io|sc_i2c:iic|i2c:IIC|main_i2c_sm_sync:I2C_PROC|transaction_s" -section_id auto_signaltap_0
-set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[2] -to "scio:io|sc_i2c:iic|i2c:IIC|strt" -section_id auto_signaltap_0
-set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[3] -to scl -section_id auto_signaltap_0
-set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[4] -to sda -section_id auto_signaltap_0
-set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_NODE_CRC_LOWORD=19440" -section_id auto_signaltap_0
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
