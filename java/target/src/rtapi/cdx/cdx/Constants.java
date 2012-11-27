@@ -47,11 +47,11 @@ public final class Constants {
     public static int           DETECTOR_PRIORITY                        = 9;                                       // DETECTOR_STARTUP_PRIORITY
                                                                                                                      // +
                                                                                                                      // 1;
-    public static long          PERSISTENT_DETECTOR_SCOPE_SIZE           = 5*100*1000;
-    public static long          DETECTOR_PERIOD                          = 50;
-    public static long          TRANSIENT_DETECTOR_SCOPE_SIZE            = 5*100*1000;
+    public static long          PERSISTENT_DETECTOR_SCOPE_SIZE           = 1*25*1000;
+    public static long          DETECTOR_PERIOD                          = 4000;
+    public static long          TRANSIENT_DETECTOR_SCOPE_SIZE            = 1*25*1000;
 
-    public static int           MAX_FRAMES                               = 1000;
+    public static int           MAX_FRAMES                               = 2;
 
     public static int           TIME_SCALE                               = 1;
     public static int           FPS                                      = 50;
@@ -68,8 +68,8 @@ public final class Constants {
     public static String        SPEC_NOISE_ARGS                          = "-a -b -g -s100 -m10 -M10 -t _213_javac";
     public static boolean       USE_SPEC_NOISE                           = false;
 
-    public static int           DETECTOR_NOISE_REACHABLE_POINTERS        = 1000000;
-    public static int           DETECTOR_NOISE_ALLOCATE_POINTERS         = 10000;
+    public static int           DETECTOR_NOISE_REACHABLE_POINTERS        = 10000;
+    public static int           DETECTOR_NOISE_ALLOCATE_POINTERS         = 100;
     public static int           DETECTOR_NOISE_ALLOCATION_SIZE           = 64;
     public static boolean       DETECTOR_NOISE_VARIABLE_ALLOCATION_SIZE  = false;
     public static int           DETECTOR_NOISE_ALLOCATION_SIZE_INCREMENT = 13;

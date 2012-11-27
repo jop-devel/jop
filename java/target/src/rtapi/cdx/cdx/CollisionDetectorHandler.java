@@ -22,6 +22,8 @@
  */
 package cdx.cdx;
 
+import javax.realtime.PeriodicParameters;
+import javax.realtime.PriorityParameters;
 import javax.safetycritical.Mission;
 import javax.safetycritical.PeriodicEventHandler;
 import javax.safetycritical.StorageParameters;
@@ -31,21 +33,30 @@ import cdx.cdx.unannotated.NanoClock;
 /*@javax.safetycritical.annotate.Scope("cdx.Level0Safelet")*/
 /*@javax.safetycritical.annotate.RunsIn("cdx.CollisionDetectorHandler")*/
 public class CollisionDetectorHandler extends PeriodicEventHandler {
-    private final TransientDetectorScopeEntry cd = new TransientDetectorScopeEntry(
+	
+    public CollisionDetectorHandler(PriorityParameters priority,
+			PeriodicParameters parameters, StorageParameters scp, long scopeSize) {
+		super(priority, parameters, scp, scopeSize);
+	}
+
+	private final TransientDetectorScopeEntry cd = new TransientDetectorScopeEntry(
             new StateTable(), Constants.GOOD_VOXEL_SIZE);
+	
     public final NoiseGenerator noiseGenerator = new NoiseGenerator();
 
     public boolean stop = false;
 
-    public CollisionDetectorHandler() {
-
-        // these very large limits are reported to work with stack traces... of
-        // errors encountered...
-        // most likely they are unnecessarily large
-        super(null, null, null, Constants.TRANSIENT_DETECTOR_SCOPE_SIZE);
-    }
+//    public CollisionDetectorHandler() {
+//
+//        // these very large limits are reported to work with stack traces... of
+//        // errors encountered...
+//        // most likely they are unnecessarily large
+//        super(new PriorityParameters(10), new PeriodicParameters(null, new RelativeTime(10, 0)), 
+//        		new StorageParameters(1024, new long[] { 256 }),128 );
+//    }
 
     public void runDetectorInScope(final TransientDetectorScopeEntry cd) {
+    	
         Benchmarker.set(14);
 
         final RawFrame f = cdx.cdx.ImmortalEntry.frameBuffer.getFrame();
@@ -70,8 +81,9 @@ public class CollisionDetectorHandler extends PeriodicEventHandler {
         cd.setFrame(f);
         Benchmarker.done(Benchmarker.RAPITA_SETFRAME);
         // actually runs the detection logic in the given scope
+        
         cd.run();
-
+        
         final long timeAfter = NanoClock.now();
         final long heapFreeAfter = Runtime.getRuntime().freeMemory();
 
@@ -82,7 +94,7 @@ public class CollisionDetectorHandler extends PeriodicEventHandler {
             ImmortalEntry.heapFreeAfter[ImmortalEntry.recordedRuns] = heapFreeAfter;
             ImmortalEntry.recordedRuns++;
         }
-
+        
         cdx.cdx.ImmortalEntry.framesProcessed++;
 
         if ((cdx.cdx.ImmortalEntry.framesProcessed + cdx.cdx.ImmortalEntry.droppedFrames) == cdx.cdx.Constants.MAX_FRAMES)
@@ -90,9 +102,11 @@ public class CollisionDetectorHandler extends PeriodicEventHandler {
         Benchmarker.done(14);
     }
 
-    public void handleEvent() {
+    public void handleAsyncEvent() {
+    	
         try {
             if (!stop) {
+            	
                 long now = NanoClock.now();
                 ImmortalEntry.detectorReleaseTimes[ImmortalEntry.recordedDetectorReleaseTimes] = now;
                 ImmortalEntry.detectorReportedMiss[ImmortalEntry.recordedDetectorReleaseTimes] = false;
@@ -112,18 +126,5 @@ public class CollisionDetectorHandler extends PeriodicEventHandler {
     //@Override
     public void cleanUp() {
         // TODO Auto-generated method stub
-        
-    }
-
-    //@Override
-    public void register() {
-        // TODO Auto-generated method stub
-        
-    }
-
-    //@Override
-    public StorageParameters getThreadConfigurationParameters() {
-        // TODO Auto-generated method stub
-        return null;
     }
 }
