@@ -24,6 +24,8 @@ package cdx.cdx;
 
 import java.io.DataOutputStream;
 
+import com.jopdesign.sys.Memory;
+
 /**
  * This thread runs only during start-up to run other threads. It runs in immortal memory, is allocated in immortal
  * memory, and it's constructor runs in immortal memory. It is a singleton, allocation from the Main class Ales: this
@@ -31,6 +33,11 @@ import java.io.DataOutputStream;
  */
 /*@javax.safetycritical.annotate.Scope("immortal")*/
 public class ImmortalEntry implements Runnable {
+	
+	static public String MemArea = "";
+	static public Memory mem = null;
+	static public DetectorStats DS = null;
+	static public DetectorReleaseStats DRS = null;
 
     static public Object           initMonitor                  = new Object();
     static public boolean          detectorReady                = false;
@@ -87,8 +94,80 @@ public class ImmortalEntry implements Runnable {
 
         frameBuffer = new FrameBuffer();
         
+        DS = new DetectorStats();
+        DRS = new DetectorReleaseStats();
+        
         /* start the detector at rounded-up time, so that the measurements are not subject
          * to phase shift
          */
     }
+    
+	class DetectorStats implements Runnable {
+		
+		int index = 0;
+
+		@Override
+		public void run() {
+			System.out.print(ImmortalEntry.timesBefore[index]);
+			System.out.print(" ");
+			System.out.print(ImmortalEntry.timesAfter[index]);
+			System.out.print(" ");
+			System.out.print(ImmortalEntry.detectedCollisions[index]);
+			System.out.print(" ");
+			System.out.print(ImmortalEntry.suspectedCollisions[index]);
+			System.out.print(" 0 0 0 ");
+			System.out.println(index);
+		}
+	}
+	
+	class DetectorReleaseStats implements Runnable {
+
+		int index = 0;
+
+		@Override
+		public void run() {
+			System.out.print(ImmortalEntry.detectorReleaseTimes[index]);
+			System.out.print(" ");
+			System.out.print(index * Constants.DETECTOR_PERIOD * 1000000L
+					+ ImmortalEntry.detectorReleaseTimes[0]);
+			System.out.print(" ");
+			System.out.print(ImmortalEntry.detectorReportedMiss[index] ? 1 : 0);
+			System.out.print(" ");
+			System.out.println(index);
+		}
+	}
+
+
+    
+    public static void memStats() {
+    	
+		mem = Memory.getCurrentMemory();
+
+		switch (mem.level) {
+
+		case 0:
+			MemArea = "Immortal";
+			break;
+		case 1:
+			MemArea = "Mission";
+			break;
+		case 2:
+			MemArea = "Private";
+			break;
+		default:
+			MemArea = "Nested private";
+			break;
+
+		}
+    	
+    	System.out.println("");
+    	System.out.println("============ "+MemArea+" memory stats ============");
+		System.out.println("Mem. size: "+ mem.size());
+		System.out.println("Mem. remaining: "+ mem.memoryRemaining());
+		System.out.println("Mem. consumed: "+ mem.memoryConsumed());
+		System.out.println("Bs. remaining: "+ mem.bStoreRemaining());
+		System.out.println("============ "+MemArea+" memory stats ============");
+		System.out.println("");
+    }
+    
 }

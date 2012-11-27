@@ -63,11 +63,14 @@ public class JopSystem {
 		// Maximum memory size required for all 
 		// missions in the application, should 
 		// be known in advance
-		int MAX_MISSION_MEM = 1500;
-
+		int MAX_MISSION_MEM = 1*106*1000;
+		
 		Helper helper = new Helper();
 		
 		CyclicExecutor cycExec = new CyclicExecutor(helper);
+
+		scj.initialize();
+		
 		
 		MissionSequencer<CyclicExecutive> ms = scj.getSequencer();
 		cycExec.ms = ms;
@@ -136,22 +139,26 @@ public class JopSystem {
 				
 				Memory handlerPrivMemory = new Memory((int) ce.maxHandlerSize,
 						(int) ce.maxHandlerBsSize);
-
+				
 				HandlerExecutor handlerExecutor = new HandlerExecutor();
-
+				
 				AbsoluteTime frameEnd = new AbsoluteTime();
 				AbsoluteTime now = new AbsoluteTime();
 
 				MissionSequencer.terminationRequest = false;
+				
 				while (!ce.terminationPending()) {
-
+					
 					for (int i = 0; i < frames.length; i++) {
-						Frame f = frames[i];
+						//Frame f = frames[i];
+						
 						frameEnd = Clock.getRealtimeClock().getTime(frameEnd);
-						frameEnd.add(f.duration_, frameEnd);
-						for (int j = 0; j < frames[i].handlers_.length; j++) {
+						frameEnd.add(frames[i].duration_, frameEnd);
 
-							handlerExecutor.handler = f.handlers_[j];
+						for (int j = 0; j < frames[i].handlers_.length; j++) {
+							
+							handlerExecutor.handler = frames[i].handlers_[j];
+							
 							/**
 							 * Since no two PeriodicEventHandlers in a Level 0
 							 * application are permitted to execute
@@ -162,6 +169,7 @@ public class JopSystem {
 							 * of a periodic event handler at the end of its
 							 * release.
 							 */
+							
 							handlerPrivMemory.enter(handlerExecutor);
 						}
 

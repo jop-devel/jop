@@ -46,6 +46,11 @@ import static javax.safetycritical.annotate.Phase.INITIALIZATION;
  */
 @SCJAllowed
 public interface Safelet<MissionLevel extends Mission> {
+	
+	
+	@SCJAllowed(SUPPORT)
+	@SCJRestricted(phase = INITIALIZATION)
+	public void initialize();
 
 	/**
 	 * The infrastructure invokes getSequencer to obtain the MissionSequencer
