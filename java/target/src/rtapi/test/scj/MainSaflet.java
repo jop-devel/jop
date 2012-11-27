@@ -6,6 +6,10 @@ import javax.safetycritical.Mission;
 import javax.safetycritical.MissionSequencer;
 import javax.safetycritical.Safelet;
 import javax.safetycritical.StorageParameters;
+import javax.safetycritical.annotate.Level;
+import javax.safetycritical.annotate.Phase;
+import javax.safetycritical.annotate.SCJAllowed;
+import javax.safetycritical.annotate.SCJRestricted;
 
 public class MainSaflet implements Safelet{
 
@@ -22,6 +26,14 @@ public class MainSaflet implements Safelet{
 	public long immortalMemorySize() {
 		// TODO Auto-generated method stub
 		return 100;
+	}
+
+	@Override
+	@SCJAllowed(Level.SUPPORT)
+	@SCJRestricted(phase = Phase.INITIALIZATION)
+	public void initialize() {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

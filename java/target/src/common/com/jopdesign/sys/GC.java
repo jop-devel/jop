@@ -550,7 +550,7 @@ public class GC {
 	 * @param cons pointer to class struct
 	 * @return address of the handle
 	 */
-	static int newObject(int cons) {
+	public static int newObject(int cons) {
 		int size = Native.rdMem(cons);			// instance size
 		
 		if (Config.USE_SCOPES) {
@@ -666,7 +666,7 @@ public class GC {
 		return ref;
 	}
 	
-	static int newArray(int size, int type) {
+	public static int newArray(int size, int type) {
 		if (size < 0) {
 			throw new NegativeArraySizeException();
 		}
@@ -949,6 +949,10 @@ public class GC {
 	static void log(String s) {
 		JVMHelp.wr(s);
 		JVMHelp.wr("\n");
+	}
+	
+	public int newObj2(int ref){
+		return newObject(ref);
 	}
 
 }

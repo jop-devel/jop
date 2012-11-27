@@ -452,4 +452,12 @@ public final class Math {
 		}
 	}
 
+	public static long ceil(float f) {
+		if (Const.SUPPORT_FLOAT) {
+			return (int) f;
+		} else {
+			throw new RuntimeException("Not implemented");
+		}
+	}
+
 }

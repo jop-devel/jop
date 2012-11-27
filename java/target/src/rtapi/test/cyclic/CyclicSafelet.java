@@ -8,6 +8,8 @@ import javax.safetycritical.CyclicExecutive;
 import javax.safetycritical.MissionSequencer;
 import javax.safetycritical.Safelet;
 import javax.safetycritical.StorageParameters;
+import javax.safetycritical.annotate.Level;
+import javax.safetycritical.annotate.Phase;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
 
@@ -60,6 +62,14 @@ public class CyclicSafelet implements Safelet<CyclicExecutive>{
 			return null;
 		}
 
+	}
+
+	@Override
+	@SCJAllowed(Level.SUPPORT)
+	@SCJRestricted(phase = Phase.INITIALIZATION)
+	public void initialize() {
+		// TODO Auto-generated method stub
+		
 	}
 
 

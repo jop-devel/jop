@@ -28,7 +28,8 @@ import cdx.utils.javacp.util.HashSet;
 import cdx.utils.javacp.util.Iterator;
 import cdx.utils.javacp.util.LinkedList;
 import cdx.utils.javacp.util.List;
-import javax.realtime.MemoryArea;
+import javax.safetycritical.ManagedMemory;
+
 import cdx.collision.Vector3d;
 
 /**
@@ -40,10 +41,12 @@ import cdx.collision.Vector3d;
 /* @javax.safetycritical.annotate.Scope("cdx.Level0Safelet") */
 /* @javax.safetycritical.annotate.RunsIn("cdx.CollisionDetectorHandler") */
 public class TransientDetectorScopeEntry implements Runnable {
-
-    private StateTable state;
-    private float voxelSize;
-    private RawFrame currentFrame;
+	
+//    private StateTable state;
+	public StateTable state;
+//    private float voxelSize;
+	public float voxelSize;
+    public RawFrame currentFrame;
 
     /*
      * public TransientDetectorScopeEntry(final StateTable s, final float
@@ -56,16 +59,18 @@ public class TransientDetectorScopeEntry implements Runnable {
     }
 
     public void run() {
+    	
         Benchmarker.set(1);
-
+        
         Benchmarker.set(Benchmarker.RAPITA_REDUCER_INIT);
         final Reducer reducer = new Reducer(voxelSize);
         Benchmarker.done(Benchmarker.RAPITA_REDUCER_INIT);
-
+        
         Benchmarker.set(Benchmarker.LOOK_FOR_COLLISIONS);
+        
         int numberOfCollisions = lookForCollisions(reducer, createMotions());
+        
         Benchmarker.done(Benchmarker.LOOK_FOR_COLLISIONS);
-
         if (cdx.cdx.ImmortalEntry.recordedRuns < cdx.cdx.ImmortalEntry.maxDetectorRuns) {
             cdx.cdx.ImmortalEntry.detectedCollisions[cdx.cdx.ImmortalEntry.recordedRuns] = numberOfCollisions;
         }
@@ -104,6 +109,7 @@ public class TransientDetectorScopeEntry implements Runnable {
 
     public int lookForCollisions(final Reducer reducer, final List motions) {
         Benchmarker.set(2);
+        
         final List check = reduceCollisionSet(reducer, motions);
         // final CollisionCollector c = new CollisionCollector();
 
@@ -111,12 +117,18 @@ public class TransientDetectorScopeEntry implements Runnable {
         if (cdx.cdx.ImmortalEntry.recordedRuns < cdx.cdx.ImmortalEntry.maxDetectorRuns) {
             cdx.cdx.ImmortalEntry.suspectedCollisions[cdx.cdx.ImmortalEntry.recordedRuns] = suspectedSize;
         }
-
+        
         int c = 0;
         final List ret = new LinkedList();
-        for (final Iterator iter = check.iterator(); iter.hasNext();)
-            c += determineCollisions((List) iter.next(), ret);
+        
+        for (final Iterator iter = check.iterator(); iter.hasNext();){
+        	
+        	c += determineCollisions((List) iter.next(), ret);
+        	
+        }
+            
         Benchmarker.done(2);
+//        System.out.println("Good2");
         return c; // .getCollisions();
     }
 
@@ -172,11 +184,20 @@ public class TransientDetectorScopeEntry implements Runnable {
     }
 
     public int determineCollisions(final List motions, List ret) {
+    	
         // (Peta) changed to iterators so that it's not killing the algorithm
         Benchmarker.set(5);
         int _ret = 0;
-        Motion[] _motions = (Motion[]) motions.toArray(new Motion[motions
-                .size()]);
+        
+//        System.out.println("Good");
+        Object[] objs = motions.toArray(new Motion[motions.size()]);
+//        System.out.println("GoodX");
+        
+        Motion[] _motions = new Motion[objs.length];
+        System.arraycopy(objs, 0, _motions, 0, objs.length);
+        
+//        Motion[] _motions = (Motion[]) motions.toArray(new Motion[motions.size()]);
+        
         // Motion[] _motions= (Motion)motions.toArray();
         for (int i = 0; i < _motions.length - 1; i++) {
             final Motion one = _motions[i]; // m2==two, m=one
@@ -247,14 +268,15 @@ public class TransientDetectorScopeEntry implements Runnable {
      */
     public List createMotions() {
         Benchmarker.set(6);
+
         final List ret = new LinkedList();
         final HashSet poked = new HashSet();
-
+        
         Aircraft craft;
         Vector3d new_pos;
-
+        
         for (int i = 0, pos = 0; i < currentFrame.planeCnt; i++) {
-
+        	
             final float x = currentFrame.positions[3 * i], y = currentFrame.positions[3 * i + 1], z = currentFrame.positions[3 * i + 2];
             final byte[] cs = new byte[currentFrame.lengths[i]];
             for (int j = 0; j < cs.length; j++)
@@ -262,21 +284,22 @@ public class TransientDetectorScopeEntry implements Runnable {
             pos += cs.length;
             craft = new Aircraft(cs);
             new_pos = new Vector3d(x, y, z);
-
+            
             poked.add(craft);
+            
             // get the last known position of this aircraft
-            final cdx.statetable.Vector3d old_pos = state
-                    .get(new CallSign(craft.getCallsign()));
+            final cdx.statetable.Vector3d old_pos = state.get(new CallSign(craft.getCallsign()));
 
             if (old_pos == null) {
                 // we have detected a new aircraft
 
                 // here, we create a new callsign and store the aircraft into
                 // the state table.
-                state.put(mkCallsignInPersistentScope(craft.getCallsign()),
-                        new_pos.x, new_pos.y, new_pos.z);
-
+            	
+            	state.put(mkCallsignInPersistentScope(craft.getCallsign()) , new_pos.x, new_pos.y, new_pos.z);
+            	
                 final Motion m = new Motion(craft, new_pos);
+                
                 if (cdx.cdx.Constants.DEBUG_DETECTOR
                         || cdx.cdx.Constants.SYNCHRONOUS_DETECTOR) {
                     System.out
@@ -285,6 +308,7 @@ public class TransientDetectorScopeEntry implements Runnable {
                 }
 
                 ret.add(m);
+                
             } else {
                 // this is already detected aircraft, we we need to update its
                 // position
@@ -303,6 +327,7 @@ public class TransientDetectorScopeEntry implements Runnable {
             }
         }
         Benchmarker.done(6);
+        
         return ret;
     }
 
@@ -319,20 +344,47 @@ public class TransientDetectorScopeEntry implements Runnable {
             c = new CallSign(cs);
         }
     }
+    
+    static class H implements Runnable {
+    	
+    	byte[] cs_ret;
+    	byte[] cs_in;
+    	
+		@Override
+		public void run() {
+			
+			cs_ret = new byte[cs_in.length];
+			
+		}
+    	
+    	
+    }
 
     private final R r = new R();
+    private final H h = new H();
 
     CallSign mkCallsignInPersistentScope(final byte[] cs) {
-        try {
-            r.cs = (byte[]) MemoryArea.newArrayInArea(r, byte.class, cs.length);
-        } catch (IllegalAccessException e) {
+//        try {
+
+    		h.cs_in = cs;
+        	ManagedMemory.executeInAreaOf(r, h);
+        	
+        	r.cs = h.cs_ret;
+//          r.cs = (byte[]) MemoryArea.newArrayInArea(r, byte.class, cs.length);
+            
+            
+            
+//        } catch (IllegalAccessException e) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        for (int i = 0; i < cs.length; i++)
+//            e.printStackTrace();
+//        }
+        	
+        for (int i = 0; i < cs.length; i++){
             r.cs[i] = cs[i];
+        }
+//        MemoryArea.getMemoryArea(state).executeInArea(r);
+        ManagedMemory.executeInAreaOf(state, r);
         
-        MemoryArea.getMemoryArea(state).executeInArea(r);
         return r.c;
     }
 
