@@ -55,7 +55,7 @@ public class HelloSCJ extends Mission implements Safelet {
 	
 	// From Mission
 	@Override
-	protected void initialize() {
+	public void initialize() {
 	
 		System.out.println("abc");
 		PeriodicEventHandler peh = new PeriodicEventHandler(
