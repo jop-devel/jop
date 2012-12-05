@@ -61,7 +61,7 @@ public class HelloSCJ extends Mission implements Safelet {
 		PeriodicEventHandler peh = new PeriodicEventHandler(
 				new PriorityParameters(11), new PeriodicParameters(
 						new RelativeTime(0, 0), new RelativeTime(500, 0)),
-				new StorageParameters(10000, null), 500) {
+				new StorageParameters(10000, new long[] {512}), 500) {
 			int cnt;
 
 			public void handleAsyncEvent() {
