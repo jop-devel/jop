@@ -22,10 +22,11 @@ public class WatchDogSaflet implements Safelet{
 	static SimplePrintStream out;
 
 	static final int SRC_ADDRESS = 15;
+	static final int DEST_ADDRESS = 1;
 	static final int NUM_SLAVES = 10;
 	static final int WD_TIMEOUT = 1;
 
-	public static I2Cport portA;
+	public static I2Cport portA, portB;
 	public static int[] slaves;
 
 	public void setup(){
@@ -44,6 +45,10 @@ public class WatchDogSaflet implements Safelet{
 		// Source IIC
 		portA = fact.getI2CportA();
 		portA.initConf(SRC_ADDRESS);
+		
+		// Destination IIC
+		portB = fact.getI2CportB();
+		portB.initConf(DEST_ADDRESS);
 
 		// Initialize CSP buffer pool
 		CSP.initBufferPool();

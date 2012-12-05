@@ -20,26 +20,27 @@
  *
  *   See: http://sss.cs.purdue.edu/projects/oscj/
  */
+package cdx;
+import javax.safetycritical.CyclicExecutive;
+import javax.safetycritical.JopSystem;
 import javax.safetycritical.Safelet;
 
-import cdx.cdx.Constants;
 import cdx.cdx.Level0Safelet;
-import cdx.edu.purdue.scj.utils.Utils;
 
+// ----- NOTE ----- Set the following values ----- NOTE -----
+//
+//	IM_SIZE to 20000 in Memory.java
+//	STACK_SIZE = 512 in Const.java
+//	RAM_LEN = 512 in Jopa.java
+//	
 public class Launcher {
     public static void main(final String[] args) {
-        if (args.length > 0)
-            Constants.NUMBER_OF_PLANES = Integer.parseInt(args[0]);
-        if (args.length > 1)
-            Constants.DETECTOR_PERIOD = Integer.parseInt(args[1]);
-        if (args.length > 2)
-            Constants.MAX_FRAMES = Integer.parseInt(args[2]);
-        Utils.debugPrint("Planes: " + Constants.NUMBER_OF_PLANES);
-        Utils.debugPrint("Period: " + Constants.DETECTOR_PERIOD);
-        Utils.debugPrint("Frames: " + Constants.MAX_FRAMES);
-        Safelet safelet = new Level0Safelet();
-        safelet.setup();
-        safelet.getSequencer().start();
-        safelet.teardown();
+    	
+        Safelet<CyclicExecutive> safelet = new Level0Safelet();
+
+        JopSystem js = new JopSystem();
+
+        js.startCycle(safelet);
+        
     }
 }

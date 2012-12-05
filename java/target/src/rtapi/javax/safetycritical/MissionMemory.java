@@ -20,10 +20,10 @@ class MissionMemory extends ManagedMemory
    * Package private constructor
    * @param size is the amount of memory that this area can hold.
    */
-  MissionMemory(long size) 
-  { 
-	super(size);
-	
-  }
+//  MissionMemory(int size) 
+//  { 
+//	super(size);
+//	
+//  }
 
 }
