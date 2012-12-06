@@ -38,7 +38,7 @@ ifeq ($(USB),true)
 	COM_PORT=COM5
 	COM_FLAG=-e -usb
 else
-	COM_FLAG=-e -usb
+	COM_FLAG=-e
 ifeq ($(WINDIR),)
 	COM_PORT=/dev/ttyS0
 else 
@@ -56,7 +56,7 @@ QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp d
 ifeq ($(USB),true)
 	QPROJ=usbmin
 else
-	QPROJ=altde2-70reprap
+	QPROJ=altde2-70
 endif
 
 #
@@ -126,19 +126,19 @@ IPDEST=192.168.0.123
 ################################################################################
 
 # Jop RTS configuration
-USE_SCOPES=true
-USE_SCOPECHECKS=true
+USE_SCOPES=false
+USE_SCOPECHECKS=false
 ADD_REF_INFO=false
 MEASURE=true
 JOP_CONF_STR=USE_SCOPES=$(USE_SCOPES) USE_SCOPECHECKS=$(USE_SCOPECHECKS) ADD_REF_INFO=$(ADD_REF_INFO) MEASURE=$(MEASURE)
 
-P1=rtapi
-P2=org/reprap
-P3=Main
+P1=test
+P2=test
+P3=HelloWorld
 
 #
 # Run JVM Tests
-
+# 
 #P2=jvm
 #P3=DoAll
 
@@ -160,7 +160,7 @@ CALLSTRING_LENGTH=0
 #
 # dataflow analysis
 #
-USE_DFA?=yes
+USE_DFA?=no
 
 
 #
@@ -175,8 +175,8 @@ JCOPTER_USE_WCA?=no
 #       WCET analysis
 #
 
-WCET_METHOD=org.reprap.RepRapController.handleAsyncEvent
-#WCET_OPTIONS=
+WCET_METHOD=measure
+# WCET_OPTIONS=
 
 ################## end of configuration section ###################
 

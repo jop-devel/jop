@@ -455,12 +455,12 @@ ser4:
 			wait
 			ldmrd
 
-//			ldi	io_uart			// write byte to uart
-//			stmwa
-//			dup					// echo for down.c, 'handshake'
-//			stmwd		
-//			wait
-//			wait
+			ldi	io_uart			// write byte to uart
+			stmwa
+			dup					// echo for down.c, 'handshake'
+			stmwd		
+			wait
+			wait
 // ************** end change for load from serial line *********************
 #endif
 #endif

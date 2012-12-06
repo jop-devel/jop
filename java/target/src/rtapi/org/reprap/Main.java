@@ -63,6 +63,7 @@ public class Main implements Safelet
 			{
 				mission = new RepRapMission();
 			}
+			current_mission = mission;
 			return mission;
 		}
 		
@@ -88,6 +89,10 @@ public class Main implements Safelet
 				commandParser = new CommandParser(hostController,commandController,repRapController);
 			}
 		}
+	}
+
+	@Override
+	public void initialize() {
 	}
 }
 			
