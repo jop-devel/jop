@@ -28,6 +28,8 @@ import javax.safetycritical.annotate.MemoryAreaEncloses;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
 
+import com.jopdesign.sys.Memory;
+
 import joprt.SwEvent;
 
 import static javax.safetycritical.annotate.Phase.INITIALIZATION;
@@ -38,11 +40,11 @@ import static javax.safetycritical.annotate.Phase.INITIALIZATION;
  */
 @SCJAllowed(LEVEL_1)
 public abstract class AperiodicEventHandler extends ManagedEventHandler {
-	
+
 	String name;
-	
 	SwEvent event;
-	
+	Memory privMem;
+
 	@MemoryAreaEncloses(inner = { "this", "this", "this", "this" }, outer = {
 			"priority", "release_info", "mem_info", "event" })
 	@SCJAllowed(LEVEL_1)
@@ -57,54 +59,65 @@ public abstract class AperiodicEventHandler extends ManagedEventHandler {
 	@SCJAllowed(LEVEL_1)
 	@SCJRestricted(phase = INITIALIZATION)
 	public AperiodicEventHandler(PriorityParameters priority,
-			AperiodicParameters release, StorageParameters scp,
-			String name) {
+			AperiodicParameters release, StorageParameters scp, String name) {
 		super(priority, release, scp, name);
-		
+
+		if (scp != null) {
+			privMem = new Memory((int) scp.getScopeSize(),
+					(int) scp.getTotalBackingStoreSize());
+		}
+
 		final Runnable runner = new Runnable() {
 			@Override
 			public void run() {
 				handleAsyncEvent();
-			}	
+			}
 		};
-		
+
 		this.name = name;
 
-		event = new SwEvent(priority.getPriority(), 100000){
-			
+		// Aperiodic = Sporadic with minimum inter-arrival time set to zero
+		event = new SwEvent(priority.getPriority(), 0) {
+
 			@Override
 			public void handle() {
 				privMem.enter(runner);
 			}
-			
+
 		};
-		
+
 	}
 
-//	@MemoryAreaEncloses(inner = { "this", "this", "this", "this" }, outer = {
-//			"priority", "release_info", "scp", "events" })
-//	@SCJAllowed(LEVEL_1)
-//	@SCJRestricted(phase = INITIALIZATION)
-//	public AperiodicEventHandler(PriorityParameters priority,
-//			AperiodicParameters release, StorageParameters scp,
-//			AperiodicEvent[] events) {
-//		super(null, null, null, null);
-//	}
-//
-//	@MemoryAreaEncloses(inner = { "this", "this", "this", "this", "this" }, outer = {
-//			"priority", "release_info", "scp", "events", "name" })
-//	@SCJAllowed(LEVEL_1)
-//	@SCJRestricted(phase = INITIALIZATION)
-//	public AperiodicEventHandler(PriorityParameters priority,
-//			AperiodicParameters release, StorageParameters scp,
-//			AperiodicEvent[] events, String name) {
-//		super(null, null, null, null);
-//	}
+	// @MemoryAreaEncloses(inner = { "this", "this", "this", "this" }, outer = {
+	// "priority", "release_info", "scp", "events" })
+	// @SCJAllowed(LEVEL_1)
+	// @SCJRestricted(phase = INITIALIZATION)
+	// public AperiodicEventHandler(PriorityParameters priority,
+	// AperiodicParameters release, StorageParameters scp,
+	// AperiodicEvent[] events) {
+	// super(null, null, null, null);
+	// }
+	//
+	// @MemoryAreaEncloses(inner = { "this", "this", "this", "this", "this" },
+	// outer = {
+	// "priority", "release_info", "scp", "events", "name" })
+	// @SCJAllowed(LEVEL_1)
+	// @SCJRestricted(phase = INITIALIZATION)
+	// public AperiodicEventHandler(PriorityParameters priority,
+	// AperiodicParameters release, StorageParameters scp,
+	// AperiodicEvent[] events, String name) {
+	// super(null, null, null, null);
+	// }
 
-	@Override
 	@SCJAllowed
 	@SCJRestricted(phase = INITIALIZATION)
 	public final void register() {
+		Mission m = Mission.getCurrentMission();
+		if (m.aeHandlers == null) {
+			m.aeHandlers = new AperiodicEventHandler[m.aeHandlerCount];
+		}
+		m.aeHandlers[m.aeHandlerIndex] = this;
+		m.aeHandlerIndex++;
 	}
 
 	/**
@@ -118,8 +131,8 @@ public abstract class AperiodicEventHandler extends ManagedEventHandler {
 	void unblock() {
 		// TODO Auto-generated method stub
 	}
-	
-	public final void release(){
+
+	public final void release() {
 		event.fire();
 	}
 }

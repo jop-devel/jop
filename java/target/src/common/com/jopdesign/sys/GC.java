@@ -42,7 +42,7 @@ public class GC {
 	 * Length of the header when using scopes.
 	 * Can be shorter then the GC supporting handle.
 	 */
-	private static final int HEADER_SIZE = 4;
+	private static final int HEADER_SIZE = 6;
 	
 	/**
 	 * Fields in the handle structure.
@@ -72,6 +72,10 @@ public class GC {
 	
 	// Scope level shares the to/from pointer
 	public static final int OFF_SCOPE_LEVEL = OFF_SPACE;
+	
+	// Offset with memory reference. Can we use this field?
+	// Does not work for arrays
+	public static final int OFF_MEM = 5;
 	
 	
 	// size != array length (think about long/double)
@@ -546,7 +550,7 @@ public class GC {
 	 * @param cons pointer to class struct
 	 * @return address of the handle
 	 */
-	static int newObject(int cons) {
+	public static int newObject(int cons) {
 		int size = Native.rdMem(cons);			// instance size
 		
 		if (Config.USE_SCOPES) {
@@ -584,7 +588,7 @@ public class GC {
 				
 				// Add scoped memory area info into objects handle
 				// TODO: Choose an appropriate field since we also want scope level info in handle 
-				//Native.wrMem( Native.toInt(sc), ptr+OFF_SPACE);
+				Native.wrMem( Native.toInt(sc), ptr+OFF_MEM);
 			}
 			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
 			Native.wrMem(cons+Const.CLASS_HEADR, ptr+OFF_MTAB_ALEN);
@@ -662,7 +666,7 @@ public class GC {
 		return ref;
 	}
 	
-	static int newArray(int size, int type) {
+	public static int newArray(int size, int type) {
 		if (size < 0) {
 			throw new NegativeArraySizeException();
 		}
@@ -707,8 +711,9 @@ public class GC {
 				Native.wrMem(sc.level, ptr+OFF_SCOPE_LEVEL);
 				
 				// Add scoped memory area info into array handle
-				// TODO: Choose an appropriate field since we also want scope level info in handle 
-				//Native.wrMem( Native.toInt(sc), ptr+OFF_SPACE);
+				// TODO: Choose an appropriate field since we also want scope level info in handle
+				// TODO: Does not work in arrays
+				 Native.wrMem( Native.toInt(sc), ptr+OFF_MEM);
 			}
 			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
 			Native.wrMem(arrayLength, ptr+OFF_MTAB_ALEN);
@@ -944,6 +949,10 @@ public class GC {
 	static void log(String s) {
 		JVMHelp.wr(s);
 		JVMHelp.wr("\n");
+	}
+	
+	public int newObj2(int ref){
+		return newObject(ref);
 	}
 
 }

@@ -1,418 +1,259 @@
+--! @todo Arbitration lost
+--! @todo Clock Sync
+--! @todo Hold SCL
+--! @todo Currently, whenever the TX buffer is empty the transmission finishes with a TBUF_ERROR
+--! @todo Status register should keep its value after the end of a transaction until a new transaction is started
+--! @todo Problem when message size = 0
+--! @todo Write some data in the TX buffer of the slave in tescase_2 (rep start)
+--! @todo Adjust .ucf file (xilinx board)
+
+
+--! @test Test 0: Timing in SCL clock generation
+--! @test Test 1: Master single byte transfer
+--! @test Test 2: Master multiple byte transfer (less than TBUF size)
+--! @test Test 3: Master multiple byte transfer (bigger than TBUF size)
+--! @test Test 4: Master single byte read
+--! @test Test 5: Master multiple byte read (less than RBUF size)
+--! @test Test 6: Master multiple byte read (bigger than RBUF size)
+--! @test Test 7: Slave single byte write
+--! @test Test 8: Slave multiple byte write (less than TBUF size)
+--! @test Test 9: Slave multiple byte write (bigger than TBUF size)
+--! @test Test 10: Slave single byte read
+--! @test Test 11: Slave multiple byte read (less than TBUF size)
+--! @test Test 12: Slave multiple byte read (bigger than TBUF size)
+
+--! @bug In Slave transmitter, one additional byte is transmitted after the master stops the transmission with a NACK
+
+--! @file i2c.vhd
+--! @brief I2C protocol controller top level entity. 
+--! @details 
+--! @author    Juan Ricardo Rios, jrri@imm.dtu.dk
+--! @version   
+--! @date      2011-2012
+--! @copyright GNU Public License.
+
 library IEEE;
 use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.i2c_pkg.all;
+use work.fifo_pkg.all;
 
 entity i2c is
-  port(
+	generic(TBUFF_ADD : integer := 4;  --! Transmit buffer size (2**TBUFF_ADD)
+		    RBUFF_ADD : integer := 4   --! Receive buffer size (2**RBUFF_ADD)
+	);
 
-    clk        : in std_logic;
-    reset      : in std_logic;
-    flush_fifo : in std_logic;
+	port(
 
-    sda : inout std_logic;
-    scl : inout std_logic;
+		-- Clock and reset inputs
+		clk                  : in    std_logic; --! System input clock
+		reset                : in    std_logic; --! Global reset signal
 
-    device_addr : in std_logic_vector(6 downto 0);
+		-- External world connections
+		sda                  : inout std_logic; --! Serial data line 
+		scl                  : inout std_logic; --! Bus clock
 
-    masl            : in  std_logic;
-    strt            : in  std_logic;
-    txrx            : in  std_logic;
-    message_size    : in  std_logic_vector(3 downto 0);
-    rep_start       : in  std_logic;
-    reset_rep_start : out std_logic;
-    enable : in std_logic;
+		-- Microprocessor interface
+		control              : in    control_type; --! Record with different control inputs
+		status               : out   status_type; --! Record with different status outputs
+		address              : in    std_logic_vector(6 downto 0); --! Address of the device when used as slave
+		msg_size             : in    std_logic_vector(15 downto 0);
 
-    busy            : out std_logic;
-    tr_progress     : out std_logic;
-    transaction     : out std_logic;
-    slave_addressed : out std_logic;
-    data_valid      : out std_logic;
+		tx_fifo_occupancy_rd : out   std_logic_vector(15 downto 0); --! Transmitter buffer read occupancy level
+		tx_fifo_occupancy_wr : out   std_logic_vector(15 downto 0); --! Transmitter buffer write occupancy level
+		rx_fifo_occupancy_rd : out   std_logic_vector(15 downto 0); --! Receive buffer read occupancy level
+		rx_fifo_occupancy_wr : out   std_logic_vector(15 downto 0); --! Receive buffer write occupancy level
 
-    t_const : in timming;
+		t_const              : in    timing_type; --! Time constants. Modify to adjust to your bus clock requirements
 
-    -- FIFO signals
-    tx_fifo_wr_ena  : in  std_logic;
-    tx_fifo_full    : out std_logic;
-    tx_fifo_empty   : out std_logic;
-    data_in         : in  std_logic_vector(7 downto 0);
-    tx_fifo_occ_in  : out std_logic_vector(3 downto 0);
-    tx_fifo_occ_out : out std_logic_vector(3 downto 0);
+		-- RX fifo
+		read_enable          : in    std_logic; --! Receive buffer read enable
+		read_data_out        : out   std_logic_vector(I2C_DATA_SIZE - 1 downto 0); --! Receive buffer data read
 
-    rx_fifo_rd_ena  : in  std_logic;
-    rx_fifo_empty   : out std_logic;
-    rx_fifo_full    : out std_logic;
-    data_out        : out std_logic_vector(7 downto 0);
-    rx_fifo_occ_in  : out std_logic_vector(3 downto 0);
-    rx_fifo_occ_out : out std_logic_vector(3 downto 0)
-
-    );
-
+		-- TX fifo
+		write_enable         : in    std_logic; --! Transmit buffer write enable
+		write_data_in        : in    std_logic_vector(I2C_DATA_SIZE - 1 downto 0) --! Transmit buffer data to write
+	);
 
 end entity i2c;
 
+architecture i2c_arch of i2c is
 
-architecture i2c_rtl of i2c is
-  
-  component scl_sm_sync
-    port (clk             : in  std_logic;
-          reset           : in  std_logic;
-          scl_oe          : out std_logic;
-          scl_int         : in  std_logic;
-          busy            : in  std_logic;
-          idle_state      : in  std_logic;
---            bit_cnt         : in  std_logic_vector (3 downto 0);
-          master_stop     : in  std_logic;
-          i2c_rep_strt    : in  std_logic;
-          reset_rep_start : out std_logic;
-          sda_scl         : out std_logic;
-          sda_ctrl        : out std_logic;
-          masl            : in  std_logic;
-          strt            : in  std_logic;
-          t_const         : in  timming
-          --scl_monitor     : out std_logic_vector (10 downto 0)
-          );
-  end component scl_sm_sync;
-
-  component main_i2c_sm_sync
-    port (clk             : in  std_logic;
-          scl             : in  std_logic;
-          reset           : in  std_logic;
-          sda_masl        : out std_logic;
-          sda             : in  std_logic;
-          device_addr     : in  std_logic_vector (6 downto 0);
-          i2c_stop        : out std_logic;
-          i2c_rep_strt    : out std_logic;
-          busy            : out std_logic;
-          message_size    : in  std_logic_vector (3 downto 0);
-          enable : in std_logic;
-          idle_state      : out std_logic;
-          txrx            : in  std_logic;
-          masl            : in  std_logic;
-          rep_start       : in  std_logic;
-          tr_progress     : out std_logic;
-          transaction     : out std_logic;
-          slave_addressed : out std_logic;
-          data_valid      : out std_logic;
-          rst_valid       : in  std_logic;
-          tx_fifo_rd_ena  : out std_logic;
-          data_in         : in  std_logic_vector (7 downto 0);
-          tx_fifo_empty   : in  std_logic;
-          rx_fifo_wr_ena  : out std_logic;
-          data_out        : out std_logic_vector (7 downto 0);
-          rx_fifo_full    : in  std_logic
-          --main_i2c_monitor : out std_logic_vector (7 downto 0)
-          );
-  end component main_i2c_sm_sync;
-
-  component async_fifo
-    port (reset         : in  std_logic;
-          flush_fifo    : in  std_logic;
-          wclk          : in  std_logic;
-          rclk          : in  std_logic;
-          write_enable  : in  std_logic;
-          read_enable   : in  std_logic;
-          fifo_occu_in  : out std_logic_vector (3 downto 0);
-          fifo_occu_out : out std_logic_vector (3 downto 0);
-          write_data_in : in  std_logic_vector (7 downto 0);
-          read_data_out : out std_logic_vector (7 downto 0);
-          full          : out std_logic;
-          empty         : out std_logic);
-  end component async_fifo;
-
-  constant RESET_LEVEL : std_logic := '1';
-
-  type tx_fifo_control_state_type is (idle, read, waiting);
-  type rx_fifo_control_state_type is (idle, write, waiting);
-
-  signal tx_fifo_control_state      : tx_fifo_control_state_type;
-  signal tx_fifo_control_next_state : tx_fifo_control_state_type;
-
-  signal rx_fifo_control_state      : rx_fifo_control_state_type;
-  signal rx_fifo_control_next_state : rx_fifo_control_state_type;
-
-  signal busy_int        : std_logic;
-  signal scl_oe_int      : std_logic;
---   signal bit_cnt_int     : std_logic_vector (3 downto 0);
-  signal master_stop_int : std_logic;
-  signal sda_scl_int     : std_logic;
-  signal sda_ctrl_int    : std_logic;
-  signal sda_masl_int    : std_logic;
-  signal sda_oe          : std_logic;
-
-  --signal ack_state_int: std_logic;
-  signal idle_state_int     : std_logic;
-  signal tx_fifo_rd_ena_int : std_logic;
-  signal tx_fifo_empty_int  : std_logic;
-  signal rx_fifo_wr_ena_int : std_logic;
-  signal i2c_data_out       : std_logic_vector (7 downto 0);
-  signal rx_fifo_full_int   : std_logic;
-  signal i2c_data_in        : std_logic_vector (7 downto 0);
-  signal tx_fifo_read       : std_logic;
-  signal rx_fifo_write      : std_logic;
-
-  signal scl_int : std_logic;
+	signal from_sda_to_scl : sda_control_in_type;
+	signal from_scl_to_sda : sda_control_out_type;
+	signal from_sda_to_scl_reg : sda_control_in_type;
+	signal from_scl_to_sda_reg : sda_control_out_type;
 
 
-  --- BEGIN CHIPSCOPE -----
+	signal status_a_int : status_type;
 
---  component chipscope_icon
---  PORT (
---    CONTROL0 : INOUT STD_LOGIC_VECTOR(35 DOWNTO 0)
---       );
---
---end component;
---
---component chipscope_ila
---  PORT (
---    CONTROL : INOUT STD_LOGIC_VECTOR(35 DOWNTO 0);
---    CLK : IN STD_LOGIC;
---    TRIG0 : IN STD_LOGIC_VECTOR(31 DOWNTO 0));
---
---end component;
---
---signal trig : std_logic_vector(31 downto 0);
---signal control_int : STD_LOGIC_VECTOR(35 DOWNTO 0);
---
----- Synplicity black box declaration
---attribute syn_black_box : boolean;
---attribute syn_black_box of chipscope_icon: component is true;
---attribute syn_black_box of chipscope_ila: component is true;
---
---signal scl_monitor_int: std_logic_vector (10 downto 0);
---signal master_monitor_int: std_logic_vector (7 downto 0);
---
-  --- END CHIPSCOPE -----
+	signal tx_fifo_in_int  : fifo_in_type;
+	signal tx_fifo_out_int : fifo_out_type;
 
+	signal rx_fifo_in_int  : fifo_in_type;
+	signal rx_fifo_out_int : fifo_out_type;
 
-  signal i2c_rep_strt_int : std_logic;
+	signal sda_in : std_logic;
+	signal scl_in : std_logic;
+
+	signal sda_out : std_logic;
+	signal scl_out : std_logic;
+
+	signal sda_out_reg : std_logic := '1';
+	signal scl_out_reg : std_logic := '1';
+
+	component scl_control
+		port(clk           : in  std_logic;
+			 reset         : in  std_logic;
+			 scl_in        : in  std_logic;
+			 scl_out       : out std_logic;
+			 ctrl_from_sda : in  sda_control_in_type;
+			 ctrl_to_sda   : out sda_control_out_type;
+			 control_in    : in  control_type;
+			 status_in     : in  status_type;
+			 t_const       : in  timing_type);
+	end component scl_control;
+	
+	component sda_control
+		port(clk           : in    std_logic;
+			 reset         : in    std_logic;
+			 scl_in        : in    std_logic;
+			 sda_in        : inout std_logic;
+			 sda_out       : out   std_logic;
+			 address       : in    std_logic_vector(6 downto 0);
+			 control_in    : in    control_type;
+			 status_out    : out   status_type;
+			 msg_size      : in    std_logic_vector(15 downto 0);
+			 ctrl_from_scl : in    sda_control_out_type;
+			 ctrl_to_scl   : out   sda_control_in_type;
+			 read_enable   : out   std_logic;
+			 read_data_out : in    std_logic_vector(I2C_DATA_SIZE - 1 downto 0);
+			 tx_empty      : in    std_logic;
+			 write_enable  : out   std_logic;
+			 write_data_in : out   std_logic_vector(I2C_DATA_SIZE - 1 downto 0);
+			 full          : in    std_logic;
+			 rx_empty      : in    std_logic);
+	end component sda_control;
+
 begin
 
+	scl <= 'Z' when scl_out_reg = '1' else '0';
+	sda <= 'Z' when sda_out_reg = '1' else '0';
+	
+	status <= status_a_int;
 
-  --- BEGIN CHIPSCOPE -----
+	-- RX buffer
+	read_data_out              <= rx_fifo_out_int.read_data_out;
+	rx_fifo_in_int.read_enable <= read_enable;
+	rx_fifo_occupancy_rd       <= rx_fifo_out_int.occupancy_rd;
+	rx_fifo_occupancy_wr       <= rx_fifo_out_int.occupancy_wr;
+	rx_fifo_in_int.flush       <= control.RX_FLUSH;
 
---  trig(0) <= sda;
---  trig(1) <= scl;
---  trig(2) <= sda_oe;
---  trig(3) <= scl_oe_int;
---  trig(4) <= sda_ctrl_int;
---  trig(5) <= sda_scl_int;
---  trig(6) <= sda_masl_int;
-----   trig(7) <= tx_fifo_read;
---  trig(7) <= rx_fifo_rd_ena;
---  trig(8) <= rx_fifo_full_int;
---  --trig(8) <= rx_fifo_rd_ena;
---  trig(9) <= master_stop_int;
---  trig(10) <= busy_int;
---  trig(11) <= masl;
---  trig(12) <= strt;
---  trig(23 downto 13) <=  scl_monitor_int;
---  trig(31 downto 24) <= master_monitor_int; 
---
+	-- TX buffer
+	tx_fifo_in_int.write_enable  <= write_enable;
+	tx_fifo_in_int.write_data_in <= write_data_in;
+	tx_fifo_occupancy_rd         <= tx_fifo_out_int.occupancy_rd;
+	tx_fifo_occupancy_wr         <= tx_fifo_out_int.occupancy_wr;
+	tx_fifo_in_int.flush         <= control.TX_FLUSH;
+	
+		SAMPLE : process(clk, reset)
+	begin
+		if reset = RESET_LEVEL then
+			scl_in <= '1';
+			sda_in <= '1';
+			scl_out_reg <= '1';
+			sda_out_reg <= '1';
+			
+			from_sda_to_scl_reg.RSTART <= '0';
+			from_sda_to_scl_reg.START <= '0';
+			from_sda_to_scl_reg.STOP <= '0';
+			
+			from_scl_to_sda_reg.SCL_ARB_LOST <= '0';
+			from_scl_to_sda_reg.SDA_ENA <= '0';
+			from_scl_to_sda_reg.SDA_ENA <= '0';
+			
+		elsif rising_edge(clk) then
+		
+			from_sda_to_scl_reg <= from_sda_to_scl;
+			from_scl_to_sda_reg <= from_scl_to_sda;
 
---  CHS_0 : chipscope_icon
---  port map (
---    CONTROL0 => control_int);
---  
---  CHS_1 : chipscope_ila
---  port map (
---    CONTROL => control_int,
---    CLK => clk,
---    TRIG0 => trig);
---  
+			-- Sample SCL
+			if scl = '0' then
+				scl_in <= '0';
+			else
+				scl_in <= '1';
+			end if;
 
-  --- END CHIPSCOPE -----
+			-- Sample SDA
+			if sda = '0' then
+				sda_in <= '0';
+			else
+				sda_in <= '1';
+			end if;
 
-  
-  sample_scl : process(clk, reset)
+			-- SCL output
+			scl_out_reg <= scl_out;
 
-  begin
+			-- SDA output
+			sda_out_reg <= sda_out;
 
-    if reset = RESET_LEVEL then
-      scl_int <= '1';
-    elsif clk'event and clk = '1' then
+		end if;
 
-      if scl = '0' then
-        scl_int <= '0';
-      else
-        scl_int <= '1';
-      end if;
+	end process SAMPLE;
 
-    end if;
+	--	SCL_CTRL : entity work.scl_control
+	SCL_CTRL : scl_control
+		port map(clk           => clk,
+			     reset         => reset,
+			     scl_in => scl_in,
+			     scl_out           => scl_out,
+			     ctrl_from_sda => from_sda_to_scl,
+			     ctrl_to_sda   => from_scl_to_sda,
+			     control_in    => control,
+			     status_in     => status_a_int,
+			     t_const       => t_const);
 
-  end process sample_scl;
+	--	SDA_CTRL : entity work.sda_control
+	SDA_CTRL : sda_control
+		port map(clk           => clk,
+			     reset         => reset,
+			     scl_in        => scl,
+			     sda_in        => sda_in,
+			     sda_out       => sda_out,
+			     control_in    => control,
+			     status_out    => status_a_int,
+			     msg_size      => msg_size,
+			     address       => address,
+			     ctrl_from_scl => from_scl_to_sda_reg,
+			     ctrl_to_scl   => from_sda_to_scl,
+			     read_enable   => tx_fifo_in_int.read_enable, 
+			     read_data_out => tx_fifo_out_int.read_data_out,
+			     tx_empty      => tx_fifo_out_int.empty,
+			     write_enable  => rx_fifo_in_int.write_enable,
+			     write_data_in => rx_fifo_in_int.write_data_in,
+			     full          => rx_fifo_out_int.full,
+			     rx_empty      => rx_fifo_out_int.empty
+		);
 
+	TX_FIFO : entity work.async_fifo
+		generic map(asynch  => "FALSE",
+			        ADDRESS => TBUFF_ADD,
+			        DATA_SIZE => I2C_DATA_SIZE)
+		port map(reset    => reset,
+			     wclk     => clk,
+			     rclk     => clk,
+			     fifo_in  => tx_fifo_in_int,
+			     fifo_out => tx_fifo_out_int);
 
-  SCL_PROC : component scl_sm_sync
-    port map (
-      clk             => clk,
-      reset           => reset,
-      scl_oe          => scl_oe_int,
-      scl_int         => scl_int,
-      busy            => busy_int,
-      idle_state      => idle_state_int,
---       bit_cnt     => bit_cnt_int,
-      master_stop     => master_stop_int,
-      i2c_rep_strt    => i2c_rep_strt_int,
-      reset_rep_start => reset_rep_start,
-      sda_scl         => sda_scl_int,
-      sda_ctrl        => sda_ctrl_int,
-      masl            => masl,
-      strt            => strt,
-      t_const         => t_const
-      --scl_monitor  => scl_monitor_int
-      );
+	RX_FIFO : entity work.async_fifo
+		generic map(asynch  => "FALSE",
+			        ADDRESS => RBUFF_ADD,
+			        DATA_SIZE => I2C_DATA_SIZE)
+		port map(reset    => reset,
+			     wclk     => clk,
+			     rclk     => clk,
+			     fifo_in  => rx_fifo_in_int,
+			     fifo_out => rx_fifo_out_int);
 
-
---TODO Rename 
--- sda_masl to sda_i2c
--- master_sm_sync to i2c_sm_sync
-  I2C_PROC : component main_i2c_sm_sync
-    port map (
-      clk             => clk,
-      scl             => scl,
-      reset           => reset,
-      sda_masl        => sda_masl_int,
-      sda             => sda,
-      device_addr     => device_addr,
-      i2c_stop        => master_stop_int,
-      i2c_rep_strt    => i2c_rep_strt_int,
-      busy            => busy_int,
-      message_size    => message_size,
-      enable  => enable,
-      idle_state      => idle_state_int,
-      txrx            => txrx,
-      masl            => masl,
-      rep_start       => rep_start,
-      tr_progress     => tr_progress,
-      transaction     => transaction,
-      slave_addressed => slave_addressed,
-      data_valid      => data_valid,
-      rst_valid       => rx_fifo_rd_ena,
-      tx_fifo_rd_ena  => tx_fifo_rd_ena_int,
-      data_in         => i2c_data_in,
-      tx_fifo_empty   => tx_fifo_empty_int,
-      rx_fifo_wr_ena  => rx_fifo_wr_ena_int,
-      data_out        => i2c_data_out,
-      rx_fifo_full    => rx_fifo_full_int
-      --main_i2c_monitor => master_monitor_int
-      );
-
-  scl    <= '0'         when scl_oe_int = '0'   else 'Z';
-  sda_oe <= sda_scl_int when sda_ctrl_int = '1' else sda_masl_int;
-  sda    <= '0'         when sda_oe = '0'       else 'Z';
-
-  busy <= busy_int;
-
-  TX_FIFO_C : process(clk, reset, tx_fifo_control_state, tx_fifo_rd_ena_int)
-  begin
-    
-    tx_fifo_control_next_state <= tx_fifo_control_state;
-
-    case tx_fifo_control_state is
-      
-      when idle =>
-        tx_fifo_read <= '0';
-        if tx_fifo_rd_ena_int = '1' then
-          tx_fifo_control_next_state <= read;
-        end if;
-        
-      when read =>
-        tx_fifo_read               <= '1';
-        tx_fifo_control_next_state <= waiting;
-        
-      when waiting =>
-        tx_fifo_read <= '0';
-        if tx_fifo_rd_ena_int = '1' then
-          tx_fifo_control_next_state <= waiting;
-        else
-          tx_fifo_control_next_state <= idle;
-        end if;
-        
-    end case;
-
-    if reset = RESET_LEVEL then
-      tx_fifo_control_state <= idle;
-    elsif clk'event and clk = '1' then
-      tx_fifo_control_state <= tx_fifo_control_next_state;
-    end if;
-    
-  end process TX_FIFO_C;
-
-  tx_fifo_empty <= tx_fifo_empty_int;
-
-  TX_FIFO : component async_fifo
-
-    port map (
-      reset         => reset,
-      flush_fifo    => flush_fifo,
-      wclk          => clk,             -- uP clock domain
-      rclk          => clk,             -- I2C clock domain
-      write_enable  => tx_fifo_wr_ena,
-      read_enable   => tx_fifo_read,
-      fifo_occu_in  => tx_fifo_occ_in,
-      fifo_occu_out => tx_fifo_occ_out,
-      write_data_in => data_in,
-      read_data_out => i2c_data_in,
-      full          => tx_fifo_full,
-      empty         => tx_fifo_empty_int
-      );
-
--- RX FIFO controller
-  RX_FIFO_C : process(clk, reset, rx_fifo_control_state, rx_fifo_wr_ena_int)
-  begin
-    
-    rx_fifo_control_next_state <= rx_fifo_control_state;
-
-
-    case rx_fifo_control_state is
-      
-      when idle =>
-        rx_fifo_write <= '0';
-        if rx_fifo_wr_ena_int = '1' then
-          rx_fifo_control_next_state <= write;
-        end if;
-        
-      when write =>
-        rx_fifo_write              <= '1';
-        rx_fifo_control_next_state <= waiting;
-        
-      when waiting =>
-        rx_fifo_write <= '0';
-        if rx_fifo_wr_ena_int = '1' then
-          rx_fifo_control_next_state <= waiting;
-        else
-          rx_fifo_control_next_state <= idle;
-        end if;
-
-    end case;
-
-    if reset = RESET_LEVEL then
-      rx_fifo_control_state <= idle;
-    elsif clk'event and clk = '1' then
-      rx_fifo_control_state <= rx_fifo_control_next_state;
-    end if;
-    
-  end process RX_FIFO_C;
-
-  rx_fifo_full <= rx_fifo_full_int;
-
-  RX_FIFO : component async_fifo
-
-    port map (
-      reset         => reset,
-      flush_fifo    => flush_fifo,
-      wclk          => clk,             -- I2C clock domain
-      rclk          => clk,             -- uP clock domain
-      write_enable  => rx_fifo_write,
-      read_enable   => rx_fifo_rd_ena,
-      fifo_occu_in  => rx_fifo_occ_in,
-      fifo_occu_out => rx_fifo_occ_out,
-      write_data_in => i2c_data_out,
-      read_data_out => data_out,
-      full          => rx_fifo_full_int,
-      empty         => rx_fifo_empty
-      );
-
-end architecture i2c_rtl;
+end architecture i2c_arch;

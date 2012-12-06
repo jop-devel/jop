@@ -277,6 +277,10 @@ DEBUG_JOPIZER=
 #DEBUG_JOPSIM=$(DEBUG_PARAMETERS)
 DEBUG_JOPSIM=
 
+# Use local RXTX libary if other not specified
+# e.g RXTXcomm-2.2pre2
+JAVA_RXTX_LIB?=java/lib/RXTXcomm.jar
+
 #
 #	application optimization with ProGuard:
 #	proguard.sourceforge.net/
@@ -640,7 +644,7 @@ config_xilinx:
 
 download:
 #	this is the Java version for downloading
-#	java -cp java/tools/dist/lib/jop-tools.jar$(S)java/lib/RXTXcomm.jar com.jopdesign.tools.JavaDown \
+#	java -cp java/tools/dist/lib/jop-tools.jar$(S)$(JAVA_RXTX_LIB) com.jopdesign.tools.JavaDown \
 #		$(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
 
 #	this is the download version with down.exe

@@ -222,7 +222,7 @@ public class RepRapController extends PeriodicEventHandler
 		
 		int length = Math.sqrt(delta.X/X_STEPS_PER_MILLIMETER*delta.X/X_STEPS_PER_MILLIMETER+delta.Y/Y_STEPS_PER_MILLIMETER*delta.Y/Y_STEPS_PER_MILLIMETER+
 				delta.Z/Z_STEPS_PER_MILLIMETER*delta.Z/Z_STEPS_PER_MILLIMETER+delta.E/E_STEPS_PER_MILLIMETER*delta.E/E_STEPS_PER_MILLIMETER);
-		//Already checked for negativity and division by zero. Divide by 2 to account for 1 pulse every other millisecond
+
 		dT = (length*STEPS_PER_MINUTE)/target.F;
 		
 		//If the target time to extrude is less than the speed of the axis, set the speed to the axis speed
@@ -320,12 +320,12 @@ public class RepRapController extends PeriodicEventHandler
 				int sensorvalue = reprap.readSensors();
 				if(current.X != target.X)
 				{
-					if((sensorvalue & (1 << 7)) == 0 && direction.X == -1)//Check endstop
+					/*if((sensorvalue & (1 << 7)) == 0 && direction.X == -1)//Check endstop
 					{
 						current.X = 0;
 						target.X = current.X;
 					}
-					else if(current.X == max.X && direction.X == 1)
+					else*/ if(current.X == max.X && direction.X == 1)
 					{
 						target.X = current.X;
 					}
@@ -343,12 +343,12 @@ public class RepRapController extends PeriodicEventHandler
 				}
 				if(current.Y != target.Y)
 				{
-					if((sensorvalue & (1 << 5)) == 0 && direction.Y == -1)//Check endstop
+					/*if((sensorvalue & (1 << 5)) == 0 && direction.Y == -1)//Check endstop
 					{
 						current.Y = 0;
 						target.Y = current.Y;
 					}
-					else if(current.Y == max.Y && direction.Y == 1)
+					else*/ if(current.Y == max.Y && direction.Y == 1)
 					{
 						target.Y = current.Y;
 					}
@@ -366,12 +366,12 @@ public class RepRapController extends PeriodicEventHandler
 				}
 				if(current.Z != target.Z)
 				{
-					if((sensorvalue & (1 << 3)) == 0 && direction.Z == -1)//Check endstop
+					/*if((sensorvalue & (1 << 3)) == 0 && direction.Z == -1)//Check endstop
 					{
 						current.Z = 0;
 						target.Z = current.Z;
 					}
-					else if(current.Z == max.Z && direction.Z == 1)
+					else*/ if(current.Z == max.Z && direction.Z == 1)
 					{
 						target.Z = current.Z;
 					}

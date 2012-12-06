@@ -24,6 +24,8 @@ package cdx.cdx;
 
 import cdx.utils.javacp.util.HashMap;
 import javax.realtime.MemoryArea;
+import javax.safetycritical.ManagedMemory;
+
 import cdx.statetable.Vector3d;
 
 /**
@@ -61,6 +63,7 @@ public class StateTable {
             if (v == null) {
                 v = allocatedVectors[usedVectors++]; // FIXME: What if we exceed MAX?
                 motionVectors.put(callsign, v);
+
             }
             v.x = x;
             v.y = y;
@@ -70,11 +73,15 @@ public class StateTable {
     private final R r = new R();
 
     public void put(final CallSign callsign, final float x, final float y, final float z) {
+    	
         r.callsign = callsign;
         r.x = x;
         r.y = y;
         r.z = z;
-        MemoryArea.getMemoryArea(this).executeInArea(r);
+//        r.run();
+        ManagedMemory.executeInAreaOf(this, r);
+//        MemoryArea.getMemoryArea(this).executeInArea(r);
+        
     }
 
     public Vector3d get(final CallSign callsign) {

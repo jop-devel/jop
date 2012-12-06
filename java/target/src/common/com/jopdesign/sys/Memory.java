@@ -62,7 +62,7 @@ public class Memory {
 	/** Parent scope */
 	Memory parent;
 	/** Nesting level */
-	int level;
+	public int level;
 	
 	/**
 	 * A reference for an inner memory that shall be reused
@@ -73,7 +73,7 @@ public class Memory {
 	/**
 	 * The singleton reference for the immortal memory.
 	 */
-	static Memory immortal;
+	public static Memory immortal;
 
 	
 	Memory() {
@@ -111,7 +111,7 @@ public class Memory {
 		}
 		// If backing store size is not set, take all
 		if (bsSize==0) {
-			bsSize = parent.endBsPtr-parent.allocBsPtr+1;			
+			bsSize = parent.endBsPtr-parent.allocBsPtr+1;
 		}
 
 		// new memory area is within parents backing store and
@@ -290,4 +290,36 @@ public class Memory {
 	}
 	
 	// executeInArea -- don't forget to synchronize new
+	
+	public static Memory getMemoryArea(Object object){
+		
+		// Debug stuff
+//		int i = Native.toInt(object);
+//		System.out.println("Object reference: "+i);
+//				
+//		int j = Native.rdMem(i+GC.OFF_MEM);
+//		System.out.println("Memory object reference: "+j);
+
+		Memory m = (Memory)Native.toObject(
+			    Native.rdMem(Native.toInt(object)+ GC.OFF_MEM));
+		
+		return m;
+	}
+	
+	public int size(){
+		return endLocalPtr - startPtr + 1;
+	}
+	
+	public int memoryConsumed(){
+		return allocPtr - startPtr + 1;
+	}
+	
+	public int memoryRemaining(){
+		return endLocalPtr - allocPtr;
+	}
+	
+	public int bStoreRemaining(){
+		return endBsPtr - allocBsPtr;
+	}
+	
 }

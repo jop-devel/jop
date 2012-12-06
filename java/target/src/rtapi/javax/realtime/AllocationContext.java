@@ -14,21 +14,22 @@ import static javax.safetycritical.annotate.Level.INFRASTRUCTURE;
 @SCJAllowed
 public interface AllocationContext {
 
-	/**
+	 /**
 	 * Execute some logic with this memory area as the default allocation
 	 * context. The effect on the scope stack is specified in the implementing
 	 * classes.
-	 * 
+	 *
 	 * @param logic
-	 *            is the runnable to execute in this memory area.
+	 * is the runnable to execute in this memory area.
 	 */
-	@SCJAllowed
-	public void executeInArea(Runnable logic);
+	 @SCJAllowed
+	 public void executeInArea(Runnable logic);
 
 	/**
 	 * Get the amount of allocated memory in this memory area.
 	 * 
-	 * @return the amount of memory consumed.
+	 * @return the amount of memory in bytes consumed so far in this memory
+	 *         area.
 	 */
 	@SCJAllowed
 	public long memoryConsumed();
@@ -36,14 +37,14 @@ public interface AllocationContext {
 	/**
 	 * Get the amount of memory available for allocation in this memory area.
 	 * 
-	 * @return the amount of memory remaining.
+	 * @return the amount of memory in bytes remaining in this memory area.
 	 */
 	@SCJAllowed
 	public long memoryRemaining();
 
 	/**
-	 * Create a new array of the given type in this memory area. This method may
-	 * be concurrently used by multiple threads.
+	 * Create an array object of the given type and length number in this memory
+	 * area. This method may be concurrently used by multiple threads.
 	 * 
 	 * @param type
 	 *            is the class of object this memory area should hold. An array
@@ -100,36 +101,42 @@ public interface AllocationContext {
 	 * Create a new instance of a class in this memory area using the chosen
 	 * constructor.
 	 * 
-	 * @param constructor to use.
+	 * @param constructor
+	 *            to use.
 	 * 
-	 * @param arguments the arguments required by the chosen constructor.
+	 * @param arguments
+	 *            the arguments required by the chosen constructor.
 	 * 
 	 * @return the new object.
 	 * 
-	 * @throws ExceptionInInitializerError when an unexpected exception has
-	 * occurred in a static initializer.
+	 * @throws ExceptionInInitializerError
+	 *             when an unexpected exception has occurred in a static
+	 *             initializer.
 	 * 
-	 * @throws IllegalAccessException when the class or initializer is
-	 * inaccessible under Java access control.
+	 * @throws IllegalAccessException
+	 *             when the class or initializer is inaccessible under Java
+	 *             access control.
 	 * 
-	 * @throws IllegalArgumentException when constructor is null, or the
-	 * argument array does not contain the number of arguments required by
-	 * constructor. A null value for arguments is treated like an array of
-	 * length 0.
+	 * @throws IllegalArgumentException
+	 *             when constructor is null, or the argument array does not
+	 *             contain the number of arguments required by constructor. A
+	 *             null value for arguments is treated like an array of length
+	 *             0.
 	 * 
-	 * @throws InstantiationException when the specified class object could not
-	 * be instantiated. Possible causes are the class is an interface, abstract
-	 * class, or array.
+	 * @throws InstantiationException
+	 *             when the specified class object could not be instantiated.
+	 *             Possible causes are the class is an interface, abstract
+	 *             class, or array.
 	 * 
-	 * @throws InvocationTargetException when the underlying constructor throws
-	 * an exception.
+	 * @throws InvocationTargetException
+	 *             when the underlying constructor throws an exception.
 	 * 
-	 * public Object newInstance(Constructor constructor, Object[] arguments)
-	 * throws ExceptionInInitializerError, IllegalAccessException,
-	 * IllegalArgumentException, InstantiationException,
-	 * InvocationTargetException;
+	 *             public Object newInstance(Constructor constructor, Object[]
+	 *             arguments) throws ExceptionInInitializerError,
+	 *             IllegalAccessException, IllegalArgumentException,
+	 *             InstantiationException, InvocationTargetException;
 	 */
-	
+
 	/**
 	 * Get the size of this memory area.
 	 * 

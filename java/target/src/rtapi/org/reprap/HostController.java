@@ -39,7 +39,7 @@ public class HostController extends PeriodicEventHandler
 	private boolean inputStatus = false;
 	private CharacterBuffer outputBuffer = new CharacterBuffer(MAX_STRING_LENGTH);
 	private boolean comment = false;
-	private char[] output = new char[16];
+	private char[] output = new char[14];
 	
 	private SerialPort host = IOFactory.getFactory().getSerialPort();
 	//private HostSimulator host = new HostSimulator();
@@ -65,7 +65,7 @@ public class HostController extends PeriodicEventHandler
 	public void handleAsyncEvent()
 	{
 		int length = outputBuffer.copy(output);
-		for (int i = 0; i < length; i++) //@WCA loop = 16
+		for (int i = 0; i < length; i++) //@WCA loop = 14
 		{
 			host.write(output[i]);
 		}
@@ -111,13 +111,13 @@ public class HostController extends PeriodicEventHandler
 	{
 		if(lineNumber > Integer.MIN_VALUE)
 		{
-			outputBuffer.add(RS,intToChar(lineNumber),DEBUG,debug,NEWLINE);
-			//outputBuffer.add(RS,intToChar(lineNumber),NEWLINE);
+			//outputBuffer.add(RS,intToChar(lineNumber),DEBUG,debug,NEWLINE);
+			outputBuffer.add(RS,intToChar(lineNumber),NEWLINE);
 		}
 		else
 		{
-			outputBuffer.add(RS,DEBUG,debug,NEWLINE);
-			//outputBuffer.add(RS,NEWLINE);
+			//outputBuffer.add(RS,DEBUG,debug,NEWLINE);
+			outputBuffer.add(RS,NEWLINE);
 		}
 		
 	}

@@ -10,7 +10,7 @@ import static javax.safetycritical.annotate.Level.LEVEL_2;
 @SCJAllowed(LEVEL_1)
 public class PriorityScheduler extends javax.realtime.PriorityScheduler {
 
-  public static PriorityScheduler instance() { return null; }
+//  public static PriorityScheduler instance() { return null; }
 
 
   @BlockFree

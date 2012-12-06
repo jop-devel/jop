@@ -225,7 +225,7 @@ public class Const {
 
 	// I2C ports
 	public static final int I2C_A_BASE = IO_BASE+0x30;
-//	public static final int I2C_B_BASE = IO_BASE+0x60;
+	public static final int I2C_B_BASE = IO_BASE+0x60;
 	
 	// Keyboard
 	public static final int KB_CTRL = IO_BASE+0x30+0;
