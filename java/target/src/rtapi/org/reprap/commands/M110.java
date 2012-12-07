@@ -22,23 +22,16 @@ import org.reprap.HostController;
 
 public class M110 extends Command
 {
-	private int lineNumber;
 	
 	public M110(HostController hostController, CommandController commandController) 
 	{
 		super(hostController, commandController);
 	}
 	
-	public boolean enqueue(int lineNumber) 
-	{
-		this.lineNumber = lineNumber;
-		return super.enqueue();
-	}
-	
 	@Override
 	public boolean execute() 
 	{
-		//hostController.setLineNumber(lineNumber);
+		//Line number is already set in CommandParser so do nothing
 		return true;
 	}
 }

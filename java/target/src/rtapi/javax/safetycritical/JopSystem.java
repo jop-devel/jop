@@ -109,11 +109,11 @@ public class JopSystem {
 				
 				/**
 				 * Upon return from initialize(), the infrastructure invokes the
-				 * missionâ€™s getSchedule method in a Level 0 run-time
+				 * mission’s getSchedule method in a Level 0 run-time
 				 * environment. The infrastructure creates an array representing
 				 * all of the ManagedSchedulable objects that were registered by
 				 * the initialize method and passes this array as an argument to
-				 * the missionâ€™s getSchedule method
+				 * the mission’s getSchedule method
 				 */
 
 				CyclicSchedule schedule = ce.getSchedule(ce.peHandlers);
@@ -121,7 +121,7 @@ public class JopSystem {
 
 				/**
 				 * The total size required can be the maximum of the backing
-				 * store sizes needed for each handlerâ€™s private memories.
+				 * store sizes needed for each handler’s private memories.
 				 */
 //				long maxScopeSize = 0;
 //				long maxBsSize = 0;

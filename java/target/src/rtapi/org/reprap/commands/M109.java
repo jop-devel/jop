@@ -45,8 +45,12 @@ public class M109 extends Command
 	{
 		if(!executed)
 		{
-			repRapController.setTargetTemperature(temperature);
+			if(temperature != Integer.MIN_VALUE)
+			{
+				repRapController.setTargetTemperature(temperature);
+			}
 			temperature = repRapController.getTargetTemperature();
+			executed = true;
 		}
 		int temp = repRapController.getCurrentTemperature();
 		if(temp >= temperature-2 && temp <= temperature+10 )
