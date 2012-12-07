@@ -25,6 +25,8 @@ public class RepRapSimulator
 	
 	private int temperature = 24*1000;
 	
+	int count = 0;
+	
 	public void write(int IOValue)
 	{
 		if((IOValue & (1 << 6)) > 0) // pulse X
@@ -80,22 +82,28 @@ public class RepRapSimulator
 		{
 			temperature--;
 		}
+		count++;
+		if(count == 1000)
+		{
+			//System.out.println("X:"+X+" Y:"+Y+" Z:"+Z+" E:"+E);
+			count = 0;
+		}
 	}
 	
 	public int readSensors()
 	{
-		int value = 0;
+		int value = 168;
 		if(X == 0)
 		{
-			value = value | (1 << 7);
+			value = value & ~(1 << 7);
 		}
 		if(Y == 0)
 		{
-			value = value | (1 << 5);
+			value = value & ~(1 << 5);
 		}
 		if(Z == 0)
 		{
-			value = value | (1 << 3);
+			value = value & ~(1 << 3);
 		}
 		return value;
 	}
