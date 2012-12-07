@@ -28,10 +28,11 @@ public class CommandParser extends PeriodicEventHandler
 {
 	private static final int MAX_NUMBER_LENGTH = 5;
 	
-	private Parameter parameter = new Parameter();
-	private boolean waitingG1Command = false;
-	private boolean waitingG28Command = false;
+	private boolean waiting = false;
 	private HostController hostController;
+	private int lineNumber = 0;
+	private char[] chars = new char[64];
+	private int length = 0;
 	
 	private G1Pool G1Pool;
 	private G28Pool G28Pool;
@@ -73,35 +74,19 @@ public class CommandParser extends PeriodicEventHandler
 	@Override
 	public void handleAsyncEvent()
 	{
-		if(waitingG1Command)
+		if(!waiting)
 		{
-			if(G1Pool.enqueue(parameter))
+			length = hostController.getLine(chars);
+			if(length == 0)
 			{
-				hostController.confirmCommand(null);
-				waitingG1Command = false;
 				return;
 			}
-			//The command buffer is full so no need to parse further commands until there is space
-			return;
 		}
-		else if(waitingG28Command)
+		else
 		{
-			if(G28Pool.enqueue(parameter))
-			{
-				hostController.confirmCommand(null);
-				waitingG28Command = false;
-				return;
-			}
-			//The command buffer is full so no need to parse further commands until there is space
-			return;
+			waiting = false;
 		}
-		char[] chars = hostController.getLine();
 		
-		if(chars.length == 0)
-		{
-			return;
-		}
-		int length = chars.length;
 		boolean seenNCommand = false;
 		int lineNumberN = Integer.MIN_VALUE;
 		
@@ -110,12 +95,7 @@ public class CommandParser extends PeriodicEventHandler
 		boolean seenTCommand = false;
 		int commandNumber = Integer.MIN_VALUE;
 		
-		parameter.X = Integer.MIN_VALUE;
-		parameter.Y = Integer.MIN_VALUE;
-		parameter.Z = Integer.MIN_VALUE;
-		parameter.E = Integer.MIN_VALUE;
-		parameter.F = Integer.MIN_VALUE;
-		parameter.S = Integer.MIN_VALUE;
+		Parameter parameter = new Parameter();
 		
 		boolean seenStarCommand = false;
 		int checksum = 0;
@@ -172,7 +152,7 @@ public class CommandParser extends PeriodicEventHandler
 			}
 			
 			int shiftedValue = value;
-			for (int j = 0; j < RepRapController.NR_DECIMALS-decimals; j++) //@WCA loop = 2
+			for (int j = 0; j < RepRapController.NR_DECIMALS-decimals; j++) //@WCA loop = 1
 			{
 				shiftedValue = shiftedValue*10;
 			}
@@ -231,13 +211,13 @@ public class CommandParser extends PeriodicEventHandler
 		
 		if(seenNCommand && seenStarCommand)
 		{
-			if(!verifyChecksum(chars,checksum))
+			if(!verifyChecksum(chars,checksum) || (lineNumberN != -1 && lineNumberN != lineNumber))
 			{
-				//hostController.resendCommand(lineNumberN,chars);
-				hostController.resendCommand(lineNumberN);
+				hostController.resendCommand(lineNumber,chars);
 				return;
 			}
 		}
+		
 		if(seenGCommand)
 		{
 			if(commandNumber == 0 || commandNumber == 1)
@@ -245,41 +225,40 @@ public class CommandParser extends PeriodicEventHandler
 				//Buffered command
 				if(!G1Pool.enqueue(parameter))
 				{
-					waitingG1Command = true;
+					waiting = true;
 					return;
 				}
 				hostController.confirmCommand(null);
 			}
 			else if(commandNumber == 21)
 			{
-				G21.enqueue();
+				waiting = !G21.enqueue();
 			}
 			else if(commandNumber == 28)
 			{
 				//Buffered command
 				if(!G28Pool.enqueue(parameter))
 				{
-					waitingG28Command = true;
+					waiting = true;
 					return;
 				}
 				hostController.confirmCommand(null);
 			}
 			else if(commandNumber == 90)
 			{
-				G90.enqueue();
+				waiting = !G90.enqueue();
 			}
 			else if(commandNumber == 91)
 			{
-				G91.enqueue();
+				waiting = !G91.enqueue();
 			}
 			else if(commandNumber == 92)
 			{
-				G92.enqueue(parameter);
+				waiting = !G92.enqueue(parameter);
 			}
 			else
 			{
-				//hostController.resendCommand(lineNumberN,chars);
-				hostController.resendCommand(lineNumberN);
+				hostController.resendCommand(lineNumberN,chars);
 				return;
 			}
 		}
@@ -287,54 +266,59 @@ public class CommandParser extends PeriodicEventHandler
 		{
 			if(commandNumber == 82)
 			{
-				M82.enqueue();
+				waiting = !M82.enqueue();
 			}
 			else if(commandNumber == 104)
 			{
-				if(parameter.S != Integer.MIN_VALUE)
-				{
-					M104.enqueue(parameter.S);
-				}
+				waiting = !M104.enqueue(parameter.S);
 			}
 			else if(commandNumber == 105)
 			{
-				M105.enqueue();
+				waiting = !M105.enqueue();
 			}
 			else if(commandNumber == 109)
 			{
-				if(parameter.S != Integer.MIN_VALUE)
-				{
-					M109.enqueue(parameter.S);
-				}
+				waiting = !M109.enqueue(parameter.S);
 			}
 			else if(commandNumber == 110)
 			{
-				M110.enqueue(lineNumberN);
+				if(!M110.enqueue())
+				{
+					waiting = true;
+					return;
+				}
+				lineNumber = lineNumberN;
 			}
 			else if(commandNumber == 113)
 			{
-				M113.enqueue();
+				waiting = !M113.enqueue();
 			}
 			else if(commandNumber == 140)
 			{
-				M140.enqueue();
+				waiting = !M140.enqueue();
 			}
 			else
 			{
-				//hostController.resendCommand(lineNumberN,chars);
-				hostController.resendCommand(lineNumberN);
+				hostController.resendCommand(lineNumberN,chars);
 				return;
 			}
 		}
 		else if(seenTCommand)
 		{
-			T.enqueue();
+			waiting = !T.enqueue();
 		}
 		else
 		{
-			//hostController.resendCommand(lineNumberN,chars);
-			hostController.resendCommand(lineNumberN);
+			hostController.resendCommand(lineNumberN,chars);
 			return;
+		}
+		if(waiting)
+		{
+			return;
+		}
+		if(seenNCommand && seenStarCommand)
+		{
+			lineNumber++;
 		}
 	}
 	

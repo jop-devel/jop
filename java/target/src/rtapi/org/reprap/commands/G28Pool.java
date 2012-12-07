@@ -23,7 +23,7 @@ import org.reprap.RepRapController;
 
 public class G28Pool 
 {
-	private final static int POOL_SIZE = 30;
+	private final static int POOL_SIZE = 5;
 	
 	private G28 first;
 	private G28 last;

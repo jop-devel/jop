@@ -41,7 +41,10 @@ public class M104 extends Command
 	@Override
 	public boolean execute() 
 	{
-		repRapController.setTargetTemperature(temperature);
+		if(temperature != Integer.MIN_VALUE)
+		{
+			repRapController.setTargetTemperature(temperature);
+		}
 		return true;
 	}
 }

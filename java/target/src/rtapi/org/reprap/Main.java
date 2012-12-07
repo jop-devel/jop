@@ -63,6 +63,7 @@ public class Main implements Safelet
 			{
 				mission = new RepRapMission();
 			}
+			current_mission = mission;
 			return mission;
 		}
 		
@@ -71,7 +72,7 @@ public class Main implements Safelet
 			@Override
 			public long missionMemorySize()
 			{
-				return 5000;
+				return 0;
 			}
 			
 			HostController hostController;
@@ -87,13 +88,11 @@ public class Main implements Safelet
 				commandController = new CommandController();
 				commandParser = new CommandParser(hostController,commandController,repRapController);
 			}
-
-			@Override
-			protected Runnable start() 
-			{
-				return null;
-			}
 		}
+	}
+
+	@Override
+	public void initialize() {
 	}
 }
 			
