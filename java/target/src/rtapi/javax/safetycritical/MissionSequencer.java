@@ -52,7 +52,7 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 //	private boolean cleanupDidRun;
 	public static boolean cleanupDidRun;
 	
-	public static Mission current_mission;
+	protected Mission current_mission;
 
 	// why is this static?
 	// ok, in level 1 we have only one mission.
@@ -157,6 +157,8 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 	@Override
 	@SCJAllowed(INFRASTRUCTURE)
 	public final void handleAsyncEvent() {
+		
+		current_mission.setSequencer(this);
 		
 //		System.out.println("getting new mission");
 //		
