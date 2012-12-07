@@ -48,6 +48,8 @@ public abstract class Mission {
 	// True only for subclasses of CyclicExecutive
 	boolean isCyclicExecutive = false;
 	
+	static MissionSequencer currentSequencer = null;
+	
 	// Array containing the Handlers registered
 	// while executing the initialize() method. 
 	// The total number of handlers should be
@@ -109,13 +111,17 @@ public abstract class Mission {
 
 	@SCJAllowed
 	public static Mission getCurrentMission() {
-		return MissionSequencer.current_mission;
+		return currentSequencer.current_mission;
+//		return MissionSequencer.current_mission;
 		//return null;
 	}
 	
 	/**
 	 * NOT PART OF SPEC
 	 */
+	void setSequencer(MissionSequencer sequencer){
+		currentSequencer = sequencer;
+	}
 //	@SCJAllowed(SUPPORT)
 //	protected abstract Runnable start();
 
