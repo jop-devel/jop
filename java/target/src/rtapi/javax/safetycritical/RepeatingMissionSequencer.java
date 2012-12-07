@@ -21,7 +21,7 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
   
 	Mission single;
 	Mission[] missions_;
-	Mission next_mission;
+//	Mission next_mission;
 	String name_;
 	
 	int mission_id = 0;
@@ -110,17 +110,17 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
 				mission_id = 0;
 			}
 			
-			next_mission = missions_[mission_id];
+			current_mission = missions_[mission_id];
+			handleAsyncEvent();
 			mission_id++;
 		
 		// For a single mission, always return the same mission
 		}else{
-			next_mission = single;
+			current_mission = single;
+			handleAsyncEvent();
 		}
 		
-		current_mission = next_mission;
-		
-		return (SpecificMission) next_mission;
+		return (SpecificMission) current_mission;
   }
 }
 
