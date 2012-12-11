@@ -5,6 +5,7 @@ import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 
 import javax.realtime.PriorityParameters;
 import javax.safetycritical.CyclicExecutive;
+import javax.safetycritical.Mission;
 import javax.safetycritical.MissionSequencer;
 import javax.safetycritical.Safelet;
 import javax.safetycritical.StorageParameters;
@@ -20,6 +21,7 @@ public class CyclicSafelet implements Safelet<CyclicExecutive>{
 		
 		PriorityParameters sequencerPrio = new PriorityParameters(10);
 		StorageParameters sequencerSto = new StorageParameters(1024, new long[] {512});
+		
 		return new SingleMissionSequencer(sequencerPrio, sequencerSto);
 		
 	}
@@ -32,6 +34,7 @@ public class CyclicSafelet implements Safelet<CyclicExecutive>{
 	class SingleMissionSequencer extends MissionSequencer<CyclicExecutive> {
 
 		boolean served = false;
+		Mission mission;
 
 		public SingleMissionSequencer(PriorityParameters priority,
 				StorageParameters storage) {
@@ -49,16 +52,16 @@ public class CyclicSafelet implements Safelet<CyclicExecutive>{
 		@Override
 		protected CyclicExecutive getNextMission() {
 			if(!served){
-				current_mission = newMission();
+				mission = newMission();
 				
 				// Comment the following line to have an infinite
 				// stream of missions
 				served = true;
 				
-				return (CyclicExecutive) current_mission;
+				return (CyclicExecutive) mission;
 			}
 			
-			current_mission = null;
+			mission = null;
 			return null;
 		}
 
@@ -67,8 +70,8 @@ public class CyclicSafelet implements Safelet<CyclicExecutive>{
 	@Override
 	@SCJAllowed(Level.SUPPORT)
 	@SCJRestricted(phase = Phase.INITIALIZATION)
-	public void initialize() {
-		// TODO Auto-generated method stub
+	public void initializeApplication() {
+		ImmortalEntry.setup();
 		
 	}
 

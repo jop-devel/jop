@@ -29,7 +29,14 @@ import static javax.safetycritical.annotate.Level.SUPPORT;
 import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 
 /**
- * A utility class for simple mission sequences.
+ * A LinearMissionSequencer is a MissionSequencer that serves the needs of a
+ * common design pattern in which the sequence of Mission executions is known
+ * prior to execution and all missions can be preallocated within an
+ * outer-nested memory area. The parameter <SpecificMission> allows application
+ * code to differentiate between LinearMissionSequencers that are designed for
+ * use in Level 0 vs. other environments. For example, a
+ * LinearMissionSequencer<CyclicExecutive> is known to only run missions that
+ * are suitable for execution within a Level 0 run-time environment.
  * 
  * 
  * @param <SpecificMission>
@@ -37,51 +44,154 @@ import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 @SCJAllowed
 public class LinearMissionSequencer<SpecificMission extends Mission> extends
 		MissionSequencer<SpecificMission> {
-	
+
 	Mission single;
 	Mission[] missions_;
-	Mission next_mission;
+	boolean repeat_;
 	String name_;
-	
-	boolean returnedSingleMission = false;
-	
+
+	boolean served = false;
+
 	int mission_id = 0;
-	
-	@SCJAllowed
-	@SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
-	public LinearMissionSequencer(PriorityParameters priority,
-			StorageParameters storage, SpecificMission m) {
-		super(priority, storage);
-		single = m;
-	}
-	
-	@SCJAllowed
-	@SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
-	public LinearMissionSequencer(PriorityParameters priority, 
-			StorageParameters storage, SpecificMission m, String name){
-		super(priority, storage);
-		single = m;
-		name_ = name;
-	}
+	private Mission mission;
+
+	/**
+	 * Construct a LinearMissionSequencer object to oversee execution of the
+	 * single mission m.
+	 * 
+	 * Throws IllegalArgumentException if any of the arguments equals null.
+	 * 
+	 * @param priority
+	 *            The priority at which the MissionSequencer’s bound thread
+	 *            executes.
+	 * @param storage
+	 *            The memory resources to be dedicated to execution of this
+	 *            Mission Sequencer’s bound thread.
+	 * @param repeat
+	 *            When repeat is true, the specified mission shall be repeated
+	 *            indefinitely.
+	 * @param m
+	 *            The single mission that runs under the oversight of this
+	 *            LinearMissionSequencer.
+	 */
 
 	@SCJAllowed
 	@SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
 	public LinearMissionSequencer(PriorityParameters priority,
-			StorageParameters storage, SpecificMission[] missions) {
-		super(priority, storage);
-		
-		missions_ = new Mission[missions.length];
-		System.arraycopy(missions, 0, missions_, 0, missions.length);
+			StorageParameters storage, boolean repeat, SpecificMission m)
+			throws IllegalArgumentException {
+		this(priority, storage, repeat, m, "");
 	}
-	
+
+	/**
+	 * Construct a LinearMissionSequencer object to oversee execution of the
+	 * single mission m.
+	 * 
+	 * @param priority
+	 *            The priority at which the MissionSequencer’s bound thread
+	 *            executes.
+	 * @param storage
+	 *            The memory resources to be dedicated to execution of this
+	 *            Mission Sequencer’s bound thread.
+	 * @param repeat
+	 *            When repeat is true, the specified mission shall be repeated
+	 *            indefinitely.
+	 * @param m
+	 *            The single mission that runs under the oversight of this
+	 *            LinearMissionSequencer.
+	 * @param name
+	 *            The name by which this LinearMissionSequencer will be
+	 *            identified in traces for use in debug or in toString.
+	 */
 	@SCJAllowed
 	@SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
 	public LinearMissionSequencer(PriorityParameters priority,
-			StorageParameters storage, SpecificMission[] missions, String name) {
-		super(priority, storage);
-		
+			StorageParameters storage, boolean repeat, SpecificMission m,
+			String name) throws IllegalArgumentException {
+		super(priority, storage, name);
+
+		if ((priority == null) | (storage == null) | (m == null)) {
+			throw new IllegalArgumentException();
+		}
+
+		single = m;
+		repeat_ = repeat;
+		name_ = name;
+	}
+
+	/**
+	 * Construct a LinearMissionSequencer object to oversee execution of the
+	 * sequence of missions represented by the missions parameter. The
+	 * LinearMission- Sequencer runs the sequence of missions identified in its
+	 * missions array exactly once, from low to high index position within the
+	 * array. The constructor allocates a copy of its missions array argument
+	 * within the current scope.
+	 * 
+	 * @param priority
+	 *            The priority at which the MissionSequencer’s bound thread
+	 *            executes.
+	 * @param storage
+	 *            The memory resources to be dedicated to execution of this
+	 *            MissionSequencer’s bound thread.
+	 * @param missions
+	 *            An array representing the sequence of missions to be executed
+	 *            under the oversight of this LinearMissionSequencer. It is
+	 *            required that the elements of the missions array reside in a
+	 *            scope that encloses the scope of this. The missions array
+	 *            itself may reside in a more inner-nested temporary scope.
+	 * @param repeat
+	 *            When repeat is true, the specified list of missions shall be
+	 *            repeated indefinitely.
+	 */
+	@SCJAllowed
+	@SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
+	public LinearMissionSequencer(PriorityParameters priority,
+			StorageParameters storage, SpecificMission[] missions,
+			boolean repeat) throws IllegalArgumentException {
+		this(priority, storage, missions, repeat, "");
+	}
+
+	/**
+	 * Construct a LinearMissionSequencer object to oversee execution of the
+	 * sequence of missions represented by the missions parameter. The
+	 * LinearMission- Sequencer runs the sequence of missions identified in its
+	 * missions array exactly once, from low to high index position within the
+	 * array. The constructor allocates a copy of its missions array argument
+	 * within the current scope.
+	 * 
+	 * @param priority
+	 *            The priority at which the MissionSequencer’s bound thread
+	 *            executes.
+	 * @param storage
+	 *            The memory resources to be dedicated to execution of this
+	 *            MissionSequencer’s bound thread.
+	 * @param missions
+	 *            An array representing the sequence of missions to be executed
+	 *            under the oversight of this LinearMissionSequencer. It is
+	 *            required that the elements of the missions array reside in a
+	 *            scope that encloses the scope of this. The missions array
+	 *            itself may reside in a more inner-nested temporary scope.
+	 * @param repeat
+	 *            When repeat is true, the specified list of missions shall be
+	 *            repeated indefinitely.
+	 * @name The name by which this LinearMissionSequencer will be identified in
+	 *       traces for use in debug or in toString.
+	 */
+	@SCJAllowed
+	@SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
+	public LinearMissionSequencer(PriorityParameters priority,
+			StorageParameters storage, SpecificMission[] missions,
+			boolean repeat, String name) throws IllegalArgumentException {
+
+		super(priority, storage, name);
+
+		if ((priority == null) | (storage == null) | (missions == null)) {
+			throw new IllegalArgumentException();
+		}
+
 		missions_ = new Mission[missions.length];
 		System.arraycopy(missions, 0, missions_, 0, missions.length);
+		repeat_ = repeat;
 		name_ = name;
 	}
 
@@ -89,33 +199,36 @@ public class LinearMissionSequencer<SpecificMission extends Mission> extends
 	@SCJRestricted(phase = INITIALIZATION, maySelfSuspend = false)
 	@Override
 	protected SpecificMission getNextMission() {
-		
+
 		// For an array of missions
-		if (missions_ != null){
-			if (mission_id < missions_.length){
-				next_mission = missions_[mission_id];
+		if (missions_ != null) {
+			if (mission_id < missions_.length) {
+				mission = missions_[mission_id];
 				mission_id++;
-			}else{
+				if ((repeat_) & (mission_id >= missions_.length)) {
+					mission_id = 0;
+				}
+			} else {
 				// No more missions, termination request??
-				next_mission = null;
+				mission = null;
 				requestSequenceTermination();
 			}
-		
-		// For a single mission
-		}else{
-			if(!returnedSingleMission){
-				next_mission = single;
-				returnedSingleMission = true;
-			}else{
-				next_mission = null;
-				requestSequenceTermination();
+
+			// For a single mission
+		} else {
+			if (repeat_) {
+				mission = single;
+			} else {
+				if (!served) {
+					mission = single;
+					served = true;
+				} else {
+					mission = null;
+					requestSequenceTermination();
+				}
 			}
 		}
-		
-		// Just to avoid confusion with the names for the next mission 
-		// to be executed and the current executing mission.
-		current_mission = next_mission;
-		
-		return (SpecificMission) next_mission;
+
+		return (SpecificMission) mission;
 	}
 }

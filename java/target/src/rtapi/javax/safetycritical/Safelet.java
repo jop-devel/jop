@@ -50,7 +50,7 @@ public interface Safelet<MissionLevel extends Mission> {
 	
 	@SCJAllowed(SUPPORT)
 	@SCJRestricted(phase = INITIALIZATION)
-	public void initialize();
+	public void initializeApplication();
 
 	/**
 	 * The infrastructure invokes getSequencer to obtain the MissionSequencer

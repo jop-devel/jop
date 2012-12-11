@@ -32,7 +32,8 @@ public class CommandController extends PeriodicEventHandler
 	{
 		super(new PriorityParameters(3),
 				new PeriodicParameters(null, new RelativeTime(20,0)),
-				new StorageParameters(100, new long[]{100}, 0, 0), 0);
+//				new StorageParameters(100, new long[]{100}, 0, 0), 0);
+				new StorageParameters(100, null, 0, 0), 100);
 	}
 	
 	@Override

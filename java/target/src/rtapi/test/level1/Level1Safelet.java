@@ -29,8 +29,8 @@ public class Level1Safelet implements Safelet{
 		missions[0] = m0;
 		missions[1] = m1;
 
-//		return new LinearMissionSequencer<Mission>(seq_prio, seq_storage, missions);
-		return new RepeatingMissionSequencer<Mission>(seq_prio, seq_storage, missions);
+		return new LinearMissionSequencer<Mission>(seq_prio, seq_storage, missions, false);
+//		return new RepeatingMissionSequencer<Mission>(seq_prio, seq_storage, missions);
 		
 	
 	}
@@ -43,7 +43,7 @@ public class Level1Safelet implements Safelet{
 	@Override
 	@SCJAllowed(Level.SUPPORT)
 	@SCJRestricted(phase = Phase.INITIALIZATION)
-	public void initialize() {
+	public void initializeApplication() {
 		// TODO Auto-generated method stub
 		
 	}

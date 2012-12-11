@@ -23,11 +23,15 @@ package javax.safetycritical;
 import static javax.safetycritical.annotate.Level.LEVEL_1;
 import static javax.safetycritical.annotate.Level.SUPPORT;
 
+import java.util.Vector;
+
 import javax.realtime.AsyncEventHandler;
 import javax.realtime.AsyncLongEventHandler;
 import javax.safetycritical.annotate.Allocate;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.Allocate.Area;
+
+import com.jopdesign.sys.Native;
 
 /**
  * 
@@ -36,37 +40,32 @@ import javax.safetycritical.annotate.Allocate.Area;
  */
 @SCJAllowed
 public abstract class Mission {
+
+	// Workaround to avoid illegal reference:
+	// Store the address itself (a number) of 
+	// the structure containing the handler's 
+	// registerd in this mission.
+	int eventHandlersRef;
+	boolean hasEventHandlers = false;
 	
+	// See below...
+	int longEventHandlersRef;
+	boolean hasLongEventHandlers = false;
+
 	// To keep track of the state of a mission
-	public final int INACTIVE = 0;
-	public final int INIT = 1;
-	public final int EXECUTION = 2;
-	public final int CLEANUP = 3;
-	
+	static final int INACTIVE = 0;
+	static final int INITIIALIZATION = 1;
+	static final int EXECUTION = 2;
+	static final int CLEANUP = 3;
+
 	public int phase = INACTIVE;
-	
+
 	// True only for subclasses of CyclicExecutive
 	boolean isCyclicExecutive = false;
-	
+
 	static MissionSequencer currentSequencer = null;
-	
-	// Array containing the Handlers registered
-	// while executing the initialize() method. 
-	// The total number of handlers should be
-	// known in advance
-	protected PeriodicEventHandler[] peHandlers;
-	protected int peHandlerIndex = 0;
-	protected int peHandlerCount = 1;
 
-	protected AperiodicEventHandler[] aeHandlers;
-	protected int aeHandlerIndex = 0;
-	protected int aeHandlerCount = 1;
-
-	protected AsyncLongEventHandler[] aleHandlers;
-	protected int aleHandlerIndex = 0;
-	protected int aleHandlerCount = 1;
-
-	@Allocate( { Area.THIS })
+	@Allocate({ Area.THIS })
 	@SCJAllowed
 	public Mission() {
 	}
@@ -80,7 +79,41 @@ public abstract class Mission {
 
 	@SCJAllowed(SUPPORT)
 	protected void cleanUp() {
+
 		Terminal.getTerminal().writeln("Mission cleanup");
+
+		if (hasEventHandlers) {
+			Vector eventHandlers = getHandlers();
+			for (int i = 0; i < eventHandlers.size(); i++) {
+				((ManagedEventHandler) eventHandlers.elementAt(i)).cleanUp();
+			}
+
+			// The vector lives in mission memory. The removeAllElements()
+			// method sets all references to handlers to null. The handler
+			// objects are collected when the mission finishes (i.e. when
+			// mission memory is exited).
+			eventHandlers.removeAllElements();
+
+			// This is actually needed only if mission objects live in immortal
+			// memory.
+			hasEventHandlers = false;
+			eventHandlersRef = 0;
+
+		}
+
+		if (hasLongEventHandlers) {
+			Vector longEventHandlers = getLongHandlers();
+			for (int i = 0; i < longEventHandlers.size(); i++) {
+				((ManagedLongEventHandler) longEventHandlers.elementAt(i))
+						.cleanUp();
+			}
+
+			longEventHandlers.removeAllElements();
+			longEventHandlersRef = 0;
+			hasLongEventHandlers = false;
+
+		}
+
 	}
 
 	@SCJAllowed
@@ -91,7 +124,7 @@ public abstract class Mission {
 		// That does not work when requestTermination is invoked
 		// before startMission()
 		// clean.fire();
-//		System.out.println("Termination request");
+		// System.out.println("Termination request");
 	}
 
 	@SCJAllowed
@@ -112,18 +145,22 @@ public abstract class Mission {
 	@SCJAllowed
 	public static Mission getCurrentMission() {
 		return currentSequencer.current_mission;
-//		return MissionSequencer.current_mission;
-		//return null;
+		// return MissionSequencer.current_mission;
+		// return null;
 	}
-	
-	/**
-	 * NOT PART OF SPEC
-	 */
-	void setSequencer(MissionSequencer sequencer){
-		currentSequencer = sequencer;
-	}
-//	@SCJAllowed(SUPPORT)
-//	protected abstract Runnable start();
 
-	
+	/**
+	 * NOT PART OF SPEC, implementation specific
+	 */
+	Vector getHandlers() {
+		return (Vector) Native.toObject(eventHandlersRef);
+	}
+
+	Vector getLongHandlers() {
+		return (Vector) Native.toObject(longEventHandlersRef);
+	}
+
+	// @SCJAllowed(SUPPORT)
+	// protected abstract Runnable start();
+
 }

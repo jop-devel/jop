@@ -23,8 +23,12 @@
  */
 package javax.safetycritical;
 
+import java.util.Vector;
+
 import javax.realtime.AbsoluteTime;
 import javax.realtime.Clock;
+
+import test.cyclic.ImmortalEntry;
 
 import com.jopdesign.sys.Memory;
 
@@ -39,6 +43,7 @@ public class JopSystem {
 	public static void startMission(Safelet scj) {
 
 		MissionSequencer ms = scj.getSequencer();
+		Mission.currentSequencer = ms;
 
 		// MissionDescriptor md = ms.getInitialMission();
 		// TODO: there is some chaos on mission and the classes
@@ -50,6 +55,7 @@ public class JopSystem {
 
 		// this should be a loop
 		Mission m = ms.getNextMission();
+		ms.current_mission = m;
 		// that should be done in the sequencer
 
 		m.initialize();
@@ -59,27 +65,28 @@ public class JopSystem {
 	}
 
 	public void startCycle(Safelet<CyclicExecutive> scj) {
-		
-		// Maximum memory size required for all 
-		// missions in the application, should 
+
+		// Maximum memory size required for all
+		// missions in the application, should
 		// be known in advance
-		int MAX_MISSION_MEM = 1*106*1000;
+		int MAX_MISSION_MEM = 1 * 106 * 1000;
 		
 		Helper helper = new Helper();
-		
+
 		CyclicExecutor cycExec = new CyclicExecutor(helper);
 
-		scj.initialize();
-		
-		
+		scj.initializeApplication();
+
 		MissionSequencer<CyclicExecutive> ms = scj.getSequencer();
+		Mission.currentSequencer = ms;
 		cycExec.ms = ms;
-		
+
 		while (helper.nextMission) {
-			
+
 			// Change allocation context to Mission memory
-			Memory.getCurrentMemory().enterPrivateMemory(MAX_MISSION_MEM, cycExec);
-			
+			Memory.getCurrentMemory().enterPrivateMemory(MAX_MISSION_MEM,
+					cycExec);
+
 		}
 	}
 
@@ -87,78 +94,90 @@ public class JopSystem {
 
 		MissionSequencer<CyclicExecutive> ms;
 		Helper helper;
-		
+
 		public CyclicExecutor(Helper helper) {
 			this.helper = helper;
 		}
 
 		@Override
 		public void run() {
-			
+
 			CyclicExecutive ce;
 
 			// Mission object is created in Mission Memory
 			ce = (CyclicExecutive) ms.getNextMission();
+			ms.current_mission = ce;
 
 			if (ce != null) {
-				
+
 				Terminal.getTerminal().writeln("Got new mission...");
-				
+
 				// Current memory is mission memory
+				ce.phase = Mission.INITIIALIZATION;
 				ce.initialize();
-				
+
 				/**
 				 * Upon return from initialize(), the infrastructure invokes the
-				 * mission’s getSchedule method in a Level 0 run-time
+				 * mission's getSchedule method in a Level 0 run-time
 				 * environment. The infrastructure creates an array representing
 				 * all of the ManagedSchedulable objects that were registered by
 				 * the initialize method and passes this array as an argument to
-				 * the mission’s getSchedule method
+				 * the mission's getSchedule method
 				 */
 
-				CyclicSchedule schedule = ce.getSchedule(ce.peHandlers);
+				Vector v = ce.getHandlers();
+				PeriodicEventHandler[] peHandlers = new PeriodicEventHandler[v
+						.size()];
+				v.copyInto(peHandlers);
+
+				ce.phase = Mission.EXECUTION;
+				CyclicSchedule schedule = ce.getSchedule(peHandlers);
 				Frame[] frames = schedule.getFrames();
 
 				/**
 				 * The total size required can be the maximum of the backing
-				 * store sizes needed for each handler’s private memories.
+				 * store sizes needed for each handler's private memories.
 				 */
-//				long maxScopeSize = 0;
-//				long maxBsSize = 0;
-//				for (int i = 0; i < frames.length; i++) {
-//					for (int j = 0; j < frames[i].handlers_.length; j++) {
-//						long k = frames[i].handlers_[j].scp.getScopeSize();
-//						long l = frames[i].handlers_[j].scp
-//								.getTotalBackingStoreSize();
-//
-//						maxScopeSize = (k > maxScopeSize) ? k : maxScopeSize;
-//						maxBsSize = (l > maxBsSize) ? l : maxBsSize;
-//
-//					}
-//				}
-				
-				Memory handlerPrivMemory = new Memory((int) ce.maxHandlerSize,
-						(int) ce.maxHandlerBsSize);
-				
+				long maxScopeSize = 0;
+				long maxBsSize = 0;
+				for (int i = 0; i < frames.length; i++) {
+					for (int j = 0; j < frames[i].handlers_.length; j++) {
+						long k = frames[i].handlers_[j].getScopeSize();
+						long l = frames[i].handlers_[j].storage	.getTotalBackingStoreSize();
+
+						maxScopeSize = (k > maxScopeSize) ? k : maxScopeSize;
+						maxBsSize = (l > maxBsSize) ? l : maxBsSize;
+
+					}
+				}
+
+				Memory handlerPrivMemory = new Memory((int) maxScopeSize,
+						(int) maxBsSize);
+
 				HandlerExecutor handlerExecutor = new HandlerExecutor();
-				
-				AbsoluteTime frameEnd = new AbsoluteTime();
+
 				AbsoluteTime now = new AbsoluteTime();
 
+				AbsoluteTime next = new AbsoluteTime();
+				next = Clock.getRealtimeClock().getTime(next).add(1000, 0);
+
 				MissionSequencer.terminationRequest = false;
-				
+
 				while (!ce.terminationPending()) {
-					
+
 					for (int i = 0; i < frames.length; i++) {
-						//Frame f = frames[i];
-						
-						frameEnd = Clock.getRealtimeClock().getTime(frameEnd);
-						frameEnd.add(frames[i].duration_, frameEnd);
+
+						while (Clock.getRealtimeClock().getTime(now)
+								.compareTo(next) < 0) {
+							;
+						}
+
+						//ImmortalEntry.log.addEvent("F" + i);
 
 						for (int j = 0; j < frames[i].handlers_.length; j++) {
-							
+
 							handlerExecutor.handler = frames[i].handlers_[j];
-							
+
 							/**
 							 * Since no two PeriodicEventHandlers in a Level 0
 							 * application are permitted to execute
@@ -169,28 +188,24 @@ public class JopSystem {
 							 * of a periodic event handler at the end of its
 							 * release.
 							 */
-							
+
 							handlerPrivMemory.enter(handlerExecutor);
 						}
 
+						next = next.add(frames[i].duration_, next);
+
 						if (Clock.getRealtimeClock().getTime(now)
-								.compareTo(frameEnd) > 0) {
+								.compareTo(next) > 0) {
 							// Frame overrun
 							Terminal.getTerminal().writeln("Frame overrun");
-						}
-
-						while (Clock.getRealtimeClock().getTime(now)
-								.compareTo(frameEnd) < 0) {
-							;
 						}
 					}
 				}
 
-				for (int i = 0; i < ce.peHandlers.length; i++) {
-					ce.peHandlers[i].cleanUp();
-				}
+				ce.phase = Mission.CLEANUP;
 				ce.cleanUp();
-			}else{
+				ce.phase = Mission.INACTIVE;
+			} else {
 				Terminal.getTerminal().writeln("No more missions...");
 				helper.nextMission = false;
 			}
@@ -207,14 +222,10 @@ public class JopSystem {
 		}
 
 	}
-	
+
 	class Helper {
 		boolean nextMission = true;
 	}
-
-
-	
-
 
 	// public static void runMission(Safelet scj){
 	//

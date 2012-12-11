@@ -22,6 +22,8 @@ package javax.safetycritical;
 
 import static javax.safetycritical.annotate.Level.LEVEL_1;
 
+import java.util.Vector;
+
 import javax.realtime.AperiodicParameters;
 import javax.realtime.PriorityParameters;
 import javax.safetycritical.annotate.MemoryAreaEncloses;
@@ -29,6 +31,7 @@ import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
 
 import com.jopdesign.sys.Memory;
+import com.jopdesign.sys.Native;
 
 import joprt.SwEvent;
 
@@ -50,8 +53,8 @@ public abstract class AperiodicEventHandler extends ManagedEventHandler {
 	@SCJAllowed(LEVEL_1)
 	@SCJRestricted(phase = INITIALIZATION)
 	public AperiodicEventHandler(PriorityParameters priority,
-			AperiodicParameters release, StorageParameters scp) {
-		this(priority, release, scp, "");
+			AperiodicParameters release, StorageParameters storage, long scopeSize) {
+		this(priority, release, storage, scopeSize, "");
 	}
 
 	@MemoryAreaEncloses(inner = { "this", "this", "this", "this", "this" }, outer = {
@@ -59,12 +62,11 @@ public abstract class AperiodicEventHandler extends ManagedEventHandler {
 	@SCJAllowed(LEVEL_1)
 	@SCJRestricted(phase = INITIALIZATION)
 	public AperiodicEventHandler(PriorityParameters priority,
-			AperiodicParameters release, StorageParameters scp, String name) {
-		super(priority, release, scp, name);
+			AperiodicParameters release, StorageParameters storage, long scopeSize, String name) {
+		super(priority, release, storage, name);
 
-		if (scp != null) {
-			privMem = new Memory((int) scp.getScopeSize(),
-					(int) scp.getTotalBackingStoreSize());
+		if (storage != null) {
+			privMem = new Memory((int) scopeSize, (int) storage.getTotalBackingStoreSize());
 		}
 
 		final Runnable runner = new Runnable() {
@@ -113,11 +115,13 @@ public abstract class AperiodicEventHandler extends ManagedEventHandler {
 	@SCJRestricted(phase = INITIALIZATION)
 	public final void register() {
 		Mission m = Mission.getCurrentMission();
-		if (m.aeHandlers == null) {
-			m.aeHandlers = new AperiodicEventHandler[m.aeHandlerCount];
+		if (!m.hasEventHandlers){
+//			System.out.println("creating MEH vector...");
+			m.eventHandlersRef = Native.toInt(new Vector());
+			m.hasEventHandlers = true;
 		}
-		m.aeHandlers[m.aeHandlerIndex] = this;
-		m.aeHandlerIndex++;
+		
+		((Vector) Native.toObject(m.eventHandlersRef)).addElement(this);
 	}
 
 	/**

@@ -21,10 +21,10 @@ public class TestPEH extends PeriodicEventHandler {
 
 	Random rnd = new Random();
 
-	public TestPEH(PriorityParameters priority, PeriodicParameters parameters,
-			StorageParameters scp, long scopeSize, AperiodicEventHandler aeh,
+	public TestPEH(PriorityParameters priority, PeriodicParameters release,
+			StorageParameters storage, long scopeSize, AperiodicEventHandler aeh,
 			AperiodicLongEventHandler aleh) {
-		super(priority, parameters, scp, scopeSize);
+		super(priority, release, storage, scopeSize);
 		this.aeh = aeh;
 		this.aleh = aleh;
 	}
@@ -33,9 +33,9 @@ public class TestPEH extends PeriodicEventHandler {
 	public void handleAsyncEvent() {
 
 		Terminal.getTerminal().writeln("PEH");
-		Object object = new Object();
-		Memory m = Memory.getMemoryArea(object);
-		Terminal.getTerminal().writeln("Level: "+m.level);
+//		Object object = new Object();
+//		Memory m = Memory.getMemoryArea(object);
+//		Terminal.getTerminal().writeln("Level: "+m.level);
 
 		if (rnd.nextInt(3) == 1) {
 			aeh.release();
