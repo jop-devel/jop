@@ -1,8 +1,17 @@
 package edu.purdue.scjtck;
 
-import javax.realtime.*;
+import javax.realtime.AperiodicParameters;
+import javax.realtime.PeriodicParameters;
+import javax.realtime.PriorityParameters;
 import javax.realtime.PriorityScheduler;
-import javax.safetycritical.*;
+import javax.realtime.RelativeTime;
+import javax.safetycritical.AperiodicEventHandler;
+import javax.safetycritical.Mission;
+import javax.safetycritical.MissionSequencer;
+import javax.safetycritical.PeriodicEventHandler;
+import javax.safetycritical.Safelet;
+import javax.safetycritical.StorageParameters;
+import javax.safetycritical.Terminal;
 import javax.safetycritical.annotate.Level;
 
 public abstract class MainSafelet implements Safelet {
@@ -24,8 +33,7 @@ public abstract class MainSafelet implements Safelet {
 
 	/* ----------------- Methods ------------------- */
 
-	// Current spec has no setup() method as part of the Safelet interface
-	public void setup() {
+	public void initializeApplication() {
 		// _launcher = Thread.currentThread();
 		// _prop.parseArgs(PropFileReader.readAll());
 		_prop.parseArgs(getArgs());
@@ -75,13 +83,12 @@ public abstract class MainSafelet implements Safelet {
 
 		public GeneralSingleMissionSequencer(Mission mission) {
 			super(new PriorityParameters(_prop._priority),
-					new StorageParameters(_prop._schedObjBackStoreSize, new long[] {  _prop._schedObjScopeSize }));
+					new StorageParameters(_prop._schedObjBackStoreSize, null));
 			this.mission = mission;
 		}
 
 		@Override
 		protected Mission getNextMission() {
-			current_mission = mission;
 			return mission;
 		}
 	}
@@ -89,7 +96,7 @@ public abstract class MainSafelet implements Safelet {
 	public abstract class GeneralMissionSequencer extends MissionSequencer {
 		public GeneralMissionSequencer() {
 			super(new PriorityParameters(_prop._priority),
-					new StorageParameters(_prop._schedObjBackStoreSize, new long[] { _prop._schedObjScopeSize }));
+					new StorageParameters(_prop._schedObjBackStoreSize, null));
 		}
 	}
 
@@ -100,7 +107,7 @@ public abstract class MainSafelet implements Safelet {
 			super(new PriorityParameters(_prop._priority),
 					new PeriodicParameters(new RelativeTime(_prop._iDelay, 0),
 							new RelativeTime(_prop._period, 0)),
-					new StorageParameters(_prop._schedObjBackStoreSize, new long[] { _prop._schedObjScopeSize }), 0);
+					new StorageParameters(_prop._schedObjBackStoreSize, null), _prop._schedObjScopeSize);
 		}
 
 	}
@@ -111,13 +118,13 @@ public abstract class MainSafelet implements Safelet {
 		public GeneralAperiodicEventHandler() {
 			super(new PriorityParameters(_prop._priority),
 					new AperiodicParameters(null, null), new StorageParameters(
-							_prop._schedObjBackStoreSize, new long[] { _prop._schedObjScopeSize }));
+							_prop._schedObjBackStoreSize, null) , _prop._schedObjScopeSize );
 		}
 
 		public GeneralAperiodicEventHandler(String name) {
 			super(new PriorityParameters(_prop._priority),
 					new AperiodicParameters(null, null), new StorageParameters(
-							_prop._schedObjBackStoreSize, new long[] { _prop._schedObjScopeSize }), name);
+							_prop._schedObjBackStoreSize, null), _prop._schedObjScopeSize, name);
 		}
 	}
 
@@ -138,7 +145,7 @@ public abstract class MainSafelet implements Safelet {
 					.getMaxPriority()), new PeriodicParameters(
 					new RelativeTime(_prop._duration, 0), new RelativeTime(
 							Long.MAX_VALUE, 0)), new StorageParameters(_prop._schedObjBackStoreSize,
-					new long[] { _prop._schedObjScopeSize }), 0);
+					null), _prop._schedObjScopeSize);
 		}
 
 		@Override

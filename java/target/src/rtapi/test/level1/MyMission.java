@@ -28,21 +28,18 @@ public class MyMission extends Mission{
 		TestALEH aleh;
 		
 		System.out.println("Mission " +number+ " initialization");
-		peHandlerCount = totalPeriodicHandlers;
-		aeHandlerCount = totalAperiodicHandlers;
-		aleHandlerCount = totalAperiodicLongHandlers;
+//		peHandlerCount = totalPeriodicHandlers;
+//		aeHandlerCount = totalAperiodicHandlers;
+//		aleHandlerCount = totalAperiodicLongHandlers;
 		
-		long[] sizes = {512};
 		PriorityParameters eh1_prio = new PriorityParameters(14);
 		AperiodicParameters eh1_pparams = new AperiodicParameters(null, null);
 		
-		StorageParameters eh1_storage = new StorageParameters(1024, sizes, 0, 0);
-		aeh = new TestAEH(eh1_prio, eh1_pparams, eh1_storage, "Aperiodic Handler 1");
-		System.out.println("About to register...");
+		StorageParameters eh1_storage = new StorageParameters(1024, null, 0, 0);
+		aeh = new TestAEH(eh1_prio, eh1_pparams, eh1_storage, 512, "Aperiodic Handler 1");
 		aeh.register();
 
-		aleh = new TestALEH(eh1_prio, eh1_pparams, eh1_storage, "Aperiodic Long Handler");
-		System.out.println("About to register...");
+		aleh = new TestALEH(eh1_prio, eh1_pparams, eh1_storage, 512, "Aperiodic Long Handler");
 		aleh.register();
 
 		PriorityParameters eh0_prio = new PriorityParameters(13);
@@ -51,11 +48,10 @@ public class MyMission extends Mission{
 		PeriodicParameters eh0_pparams = new PeriodicParameters(eh0_tart, eh0_period);
 		
 		
-		StorageParameters eh0_storage = new StorageParameters(1024, sizes, 0, 0);
+		StorageParameters eh0_storage = new StorageParameters(1024, null, 0, 0);
 		
 		peh = new TestPEH(eh0_prio, eh0_pparams, eh0_storage, 512, aeh,aleh);
 		
-		System.out.println("About to register...");
 		peh.register();
 		
 

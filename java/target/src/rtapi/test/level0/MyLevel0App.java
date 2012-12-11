@@ -13,9 +13,8 @@ public class MyLevel0App {
 		Level0Safelet s = new Level0Safelet();
 		term.writeln("Safelet created");
 
-		JopSystem.runMission(s);
-
-		// JopSystem.startMission(s);
+		JopSystem js = new JopSystem();
+		js.startCycle(s);
 
 		term.writeln("Main method finished");
 	}

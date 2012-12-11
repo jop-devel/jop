@@ -29,8 +29,8 @@ import javax.safetycritical.Terminal;
 public class TestAEH extends AperiodicEventHandler{
 
 	public TestAEH(PriorityParameters priority,
-			AperiodicParameters release, StorageParameters scp, String name) {
-		super(priority, release, scp, name);
+			AperiodicParameters release, StorageParameters storage, long scopeSize, String name) {
+		super(priority, release, storage, scopeSize, name);
 		// TODO Auto-generated constructor stub
 	}
 

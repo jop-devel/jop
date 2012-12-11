@@ -28,6 +28,10 @@ import javax.realtime.PeriodicParameters;
 import javax.realtime.PriorityParameters;
 import javax.realtime.RelativeTime;
 import javax.safetycritical.*;
+import javax.safetycritical.annotate.Level;
+import javax.safetycritical.annotate.Phase;
+import javax.safetycritical.annotate.SCJAllowed;
+import javax.safetycritical.annotate.SCJRestricted;
 import javax.safetycritical.io.SimplePrintStream;
 
 /**
@@ -42,6 +46,14 @@ public class InOutParameter extends Mission implements Safelet {
 	static InOutParameter single;
 
 	static SimplePrintStream out;
+	
+	@Override
+	@SCJAllowed(Level.SUPPORT)
+	@SCJRestricted(phase = Phase.INITIALIZATION)
+	public void initializeApplication() {
+		// TODO Auto-generated method stub
+		
+	}
 
 	// From Mission
 	@Override
@@ -97,7 +109,7 @@ public class InOutParameter extends Mission implements Safelet {
 	public MissionSequencer getSequencer() {
 		// we assume this method is invoked only once
 		StorageParameters sp = new StorageParameters(1000000, null);
-		return new LinearMissionSequencer(new PriorityParameters(13), sp, this);
+		return new LinearMissionSequencer(new PriorityParameters(13), sp, false, this);
 	}
 
 	@Override

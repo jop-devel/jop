@@ -61,7 +61,7 @@ public abstract class ManagedEventHandler extends BoundAsyncEventHandler
 	@SCJRestricted(phase = CLEANUP)
 	public void cleanUp() {
 		
-		System.out.println("Handler cleanup");
+		System.out.println("MEH cleanup");
 	}
 
 	// TODO: do we need to repeat it here?

@@ -72,9 +72,6 @@ public abstract class CyclicExecutive extends Mission {
 
 	// jrri: According to v.0.90 of spec, the constructor has no arguments
 
-	protected int maxHandlerSize;
-	protected int maxHandlerBsSize;
-	
 	@SCJAllowed
 	@MemoryAreaEncloses(inner = { "this" }, outer = { "sequencer" })
 	public CyclicExecutive() {

@@ -2,11 +2,16 @@ package javax.safetycritical;
 
 import static javax.safetycritical.annotate.Level.LEVEL_1;
 
+import java.util.Vector;
+
 import javax.realtime.AperiodicParameters;
 import javax.realtime.PriorityParameters;
 import javax.safetycritical.annotate.MemoryAreaEncloses;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
+
+import com.jopdesign.sys.Memory;
+import com.jopdesign.sys.Native;
 
 import joprt.SwEvent;
 
@@ -18,6 +23,7 @@ public abstract class AperiodicLongEventHandler extends ManagedLongEventHandler 
 	String name;
 	SwEvent event;
 	long _data;
+	Memory privMem;
 
 
 	/**
@@ -57,8 +63,8 @@ public abstract class AperiodicLongEventHandler extends ManagedLongEventHandler 
 	@SCJAllowed(LEVEL_1)
 	@SCJRestricted(phase = INITIALIZATION)
 	public AperiodicLongEventHandler(PriorityParameters priority,
-			AperiodicParameters release_info, StorageParameters scp) {
-		this(priority, release_info, scp, "");
+			AperiodicParameters release, StorageParameters storage, long scopeSize) {
+		this(priority, release, storage, scopeSize, "");
 	}
 
 	/**
@@ -101,9 +107,16 @@ public abstract class AperiodicLongEventHandler extends ManagedLongEventHandler 
 	@SCJAllowed(LEVEL_1)
 	@SCJRestricted(phase = INITIALIZATION)
 	public AperiodicLongEventHandler(PriorityParameters priority,
-			AperiodicParameters release_info, StorageParameters scp,
-			String name) {
-		super(priority, release_info, scp, name);
+			AperiodicParameters release, StorageParameters storage,
+			long scopeSize, String name) {
+		super(priority, release, storage, name);
+		
+		if (storage != null) {
+			// Create private memory
+			privMem = new Memory((int) scopeSize,
+					(int) storage.getTotalBackingStoreSize());
+		}
+		
 		final Runnable runner = new Runnable() {
 			@Override
 			public void run() {
@@ -134,11 +147,13 @@ public abstract class AperiodicLongEventHandler extends ManagedLongEventHandler 
 	@SCJRestricted(phase = INITIALIZATION)
 	public final void register() {
 		Mission m = Mission.getCurrentMission();
-		if(m.aleHandlers == null){
-			m.aleHandlers = new AperiodicLongEventHandler[m.aleHandlerCount];
+		if (!m.hasLongEventHandlers){
+//			System.out.println("creating MLEH vector...");
+			m.longEventHandlersRef = Native.toInt(new Vector());
+			m.hasLongEventHandlers = true;
 		}
-		m.aleHandlers[m.aleHandlerIndex] = this;
-		m.aleHandlerIndex++;
+		
+		((Vector) Native.toObject(m.longEventHandlersRef)).addElement(this);
 	}
 	
 	public final void release(long data){

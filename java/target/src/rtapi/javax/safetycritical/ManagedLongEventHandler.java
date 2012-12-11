@@ -46,19 +46,12 @@ public abstract class ManagedLongEventHandler extends
 	 */
 
 	private String name;
-	public Memory privMem;
-
+	
 	@SCJAllowed
 	@SCJRestricted(phase = INITIALIZATION)
 	ManagedLongEventHandler(PriorityParameters priority,
-			ReleaseParameters release, StorageParameters scp, String name) {
+			ReleaseParameters release, StorageParameters storage, String name) {
 		this.name = name;
-		if (scp != null) {
-			// Create private memory
-			privMem = new Memory((int) scp.getScopeSize(),
-					(int) scp.getTotalBackingStoreSize());
-		}
-
 	}
 
 	/**
@@ -70,6 +63,7 @@ public abstract class ManagedLongEventHandler extends
 	@Override
 	@SCJAllowed(SUPPORT)
 	public void cleanUp() {
+		System.out.println("MLEH cleanup");
 	}
 
 	/**

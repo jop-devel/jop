@@ -47,7 +47,8 @@ public final class Constants {
     public static int           DETECTOR_PRIORITY                        = 9;                                       // DETECTOR_STARTUP_PRIORITY
                                                                                                                      // +
                                                                                                                      // 1;
-    public static long          PERSISTENT_DETECTOR_SCOPE_SIZE           = 1*25*1000;
+    public static long          PERSISTENT_DETECTOR_BS_SIZE              = 1*25*1000;
+    public static long          PERSISTENT_DETECTOR_SCOPE_SIZE           = PERSISTENT_DETECTOR_BS_SIZE >>> 1;
     public static long          DETECTOR_PERIOD                          = 4000;
     public static long          TRANSIENT_DETECTOR_SCOPE_SIZE            = 1*25*1000;
 

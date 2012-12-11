@@ -23,7 +23,9 @@ public EventHandler(PriorityParameters priority,
 
 	@Override
 	public void handleAsyncEvent() {
-		System.out.println(this.getName());
+		
+		ImmortalEntry.term.writeln(getName());
+//		System.out.println(this.getName());
 		count++;
 		if(count == 1){
 			Mission.getCurrentMission().requestSequenceTermination();
