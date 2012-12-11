@@ -58,8 +58,9 @@ public class CollisionDetectorHandler extends PeriodicEventHandler {
     public void runDetectorInScope(final TransientDetectorScopeEntry cd) {
     	
         Benchmarker.set(14);
-
+        
         final RawFrame f = cdx.cdx.ImmortalEntry.frameBuffer.getFrame();
+        
         if (f == null) {
             ImmortalEntry.frameNotReadyCount++;
             System.out.println("Frame not ready");
@@ -81,7 +82,6 @@ public class CollisionDetectorHandler extends PeriodicEventHandler {
         cd.setFrame(f);
         Benchmarker.done(Benchmarker.RAPITA_SETFRAME);
         // actually runs the detection logic in the given scope
-        
         cd.run();
         
         final long timeAfter = NanoClock.now();
@@ -106,12 +106,10 @@ public class CollisionDetectorHandler extends PeriodicEventHandler {
     	
         try {
             if (!stop) {
-            	
                 long now = NanoClock.now();
                 ImmortalEntry.detectorReleaseTimes[ImmortalEntry.recordedDetectorReleaseTimes] = now;
                 ImmortalEntry.detectorReportedMiss[ImmortalEntry.recordedDetectorReleaseTimes] = false;
                 ImmortalEntry.recordedDetectorReleaseTimes++;
-
                 runDetectorInScope(cd);
             } else {
                 Mission.getCurrentMission().requestSequenceTermination();

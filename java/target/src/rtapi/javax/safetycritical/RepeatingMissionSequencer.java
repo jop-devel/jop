@@ -19,9 +19,9 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
   extends MissionSequencer<SpecificMission>
 {
   
-	Mission single;
-	Mission[] missions_;
-//	Mission next_mission;
+	private Mission single;
+	private Mission[] missions_;
+	private Mission mission;
 	String name_;
 	
 	int mission_id = 0;
@@ -40,10 +40,8 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
                                 StorageParameters storage,
                                 SpecificMission m)
   {
-    super(priority, storage);
-    single = m;
+    this(priority, storage, m, "");
     
-//    returnedInitialMission = false;
   }
   
   @SCJAllowed
@@ -52,11 +50,10 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
                                 StorageParameters storage,
                                 SpecificMission m, String name)
   {
-    super(priority, storage);
+    super(priority, storage, name);
     single = m;
     name_ = name;
     
-//    returnedInitialMission = false;
   }
 
 
@@ -74,10 +71,8 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
                                 StorageParameters storage,
                                 SpecificMission [] missions)
   {
-    super(priority, storage);
-//    returnedInitialMission = false;
-	missions_ = new Mission[missions.length];
-	System.arraycopy(missions, 0, missions_, 0, missions.length);	
+    this(priority, storage, missions, "");
+
   }
 
   @SCJAllowed
@@ -86,8 +81,7 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
                                 StorageParameters storage,
                                 SpecificMission [] missions, String name)
   {
-    super(priority, storage);
-//    returnedInitialMission = false;
+    super(priority, storage, name);
 	missions_ = new Mission[missions.length];
 	System.arraycopy(missions, 0, missions_, 0, missions.length);
     name_ = name;
@@ -110,17 +104,15 @@ public class RepeatingMissionSequencer<SpecificMission extends Mission>
 				mission_id = 0;
 			}
 			
-			current_mission = missions_[mission_id];
-			handleAsyncEvent();
+			mission = missions_[mission_id];
 			mission_id++;
 		
 		// For a single mission, always return the same mission
 		}else{
-			current_mission = single;
-			handleAsyncEvent();
+			mission = single;
 		}
 		
-		return (SpecificMission) current_mission;
+		return (SpecificMission) mission;
   }
 }
 

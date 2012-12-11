@@ -23,6 +23,8 @@ package javax.safetycritical;
 import static javax.safetycritical.annotate.Level.LEVEL_1;
 import static javax.safetycritical.annotate.Level.LEVEL_0;
 
+import java.util.Vector;
+
 import javax.realtime.AbsoluteTime;
 import javax.realtime.HighResolutionTime;
 import javax.realtime.PeriodicParameters;
@@ -32,7 +34,10 @@ import javax.safetycritical.annotate.MemoryAreaEncloses;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
 
+import test.level0.MyLevel0App;
+
 import com.jopdesign.sys.Memory;
+import com.jopdesign.sys.Native;
 
 import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 
@@ -53,34 +58,37 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 
 	PriorityParameters priority;
 	RelativeTime start, period;
-	StorageParameters scp;
+	StorageParameters storage;
 	// ThreadConfiguration tconf;
 	String name;
 	Mission m;
 	Memory privMem;
 
 	RtThread thread;
+	
+	long scopeSize;
 
 	@MemoryAreaEncloses(inner = { "this", "this", "this" }, outer = {
 			"priority", "parameters", "scp" })
 	@SCJAllowed
 	@SCJRestricted(phase = INITIALIZATION)
 	public PeriodicEventHandler(PriorityParameters priority,
-			PeriodicParameters parameters, StorageParameters scp, long scopeSize) {
-		this(priority, parameters, scp, scopeSize, "");
+			PeriodicParameters release, StorageParameters storage, long scopeSize) {
+		this(priority, release, storage, scopeSize, "");
 	}
 
 	@MemoryAreaEncloses(inner = { "this", "this", "this", "this" }, outer = {
 			"priority", "parameters", "scp", "name" })
 	@SCJAllowed(LEVEL_1)
 	public PeriodicEventHandler(PriorityParameters priority,
-			PeriodicParameters release, StorageParameters scp, long scopeSize,
+			PeriodicParameters release, StorageParameters storage, long scopeSize,
 			String name) {
 		// TODO: what are we doing with this Managed thing?
-		super(priority, release, scp, name);
+		super(priority, release, storage, name);
 
 		this.priority = priority;
-		this.scp = scp;
+		this.storage = storage;
+		this.scopeSize = scopeSize;
 
 		start = (RelativeTime) release.getStart();
 		period = release.getPeriod();
@@ -100,19 +108,18 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 
 		m = Mission.getCurrentMission();
 
-		if (scp != null) {
-			// Create handler's private memory, except for cyclic executives.
+		if (storage != null) {
+			// Create handler's private memory, except for cyclic executives, where
+			// a single private memory is reused for all handlers.
 			// Mission should not be null at this point, as PEH's are created at
 			// mission initialization.
 			if (!m.isCyclicExecutive) {
-				privMem = new Memory((int) scp.getScopeSize(),
-						(int) scp.getTotalBackingStoreSize());
+				privMem = new Memory((int) scopeSize, (int) storage.getTotalBackingStoreSize());
 			}
 		}
 
-		// privMem = new Memory((int) scopeSize, (int)
-		// scp.getTotalBackingStoreSize());
-
+		// No need to create this runnable or a RT thread for cyclic executives
+		// where handler's handleAsyncEvent method is called directly. 
 		if (!m.isCyclicExecutive) {
 			final Runnable runner = new Runnable() {
 				@Override
@@ -137,26 +144,30 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 	@SCJAllowed
 	@SCJRestricted(phase = INITIALIZATION)
 	public final void register() {
-		Mission m = Mission.getCurrentMission();
-		if (m.peHandlers == null) {
-			m.peHandlers = new PeriodicEventHandler[m.peHandlerCount];
+		
+		final Mission m = Mission.getCurrentMission();
+		
+		if (!m.hasEventHandlers){
+//			System.out.println("creating MEH vector...");
+			m.eventHandlersRef = Native.toInt(new Vector());
+			m.hasEventHandlers = true;
 		}
-
-		m.peHandlers[m.peHandlerIndex] = this;
-
-		m.peHandlerIndex++;
+		
+		((Vector) Native.toObject(m.eventHandlersRef)).addElement(this);
+		
+		
 	}
 
 	/**
 	 * Get the actual start time of this handler. The actual start time of the
-	 * handler is different from the requested start time (passed at
-	 * construction time) when the requested start time is an absolute time that
-	 * would occur before the mission has been started. In this case, the actual
-	 * start time is the time the mission started. If the actual start time is
-	 * equal to the effect start time, then the method behaves as if
-	 * getResquestStartTime() method has been called. If it is different, then a
-	 * newly created time object is returned. The time value is associated with
-	 * the same clock as that used with the original start time parameter.
+	 * handler is different from the requested start time (passed at construction
+	 * time) when the requested start time is an absolute time that would occur 
+	 * before the mission has been started. In this case, the actual start time 
+	 * is the time the mission started. If the actual start time is equal to the 
+	 * effect start time, then the method behaves as if getResquestedStartTime() 
+	 * method has been called. If it is different, then a newly created time object 
+	 * is returned. The time value is associated with the same clock as that used 
+	 * with the original start time parameter.
 	 * 
 	 * @return a reference to a time parameter based on the clock used to start
 	 *         the timer.
@@ -264,5 +275,11 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 			throws ArithmeticException, IllegalStateException {
 		return null;
 	}
-
+	
+	/**
+	 * Not on spec, implementation specific
+	 */
+	long getScopeSize(){
+		return this.scopeSize;
+	}
 }

@@ -20,28 +20,37 @@
 
 package test.level0;
 
-import javax.realtime.*;
-import javax.safetycritical.*;
+import javax.realtime.PriorityParameters;
+import javax.safetycritical.CyclicExecutive;
+import javax.safetycritical.LinearMissionSequencer;
+import javax.safetycritical.MissionSequencer;
+import javax.safetycritical.RepeatingMissionSequencer;
+import javax.safetycritical.Safelet;
+import javax.safetycritical.StorageParameters;
+import javax.safetycritical.annotate.Level;
+import javax.safetycritical.annotate.Phase;
+import javax.safetycritical.annotate.SCJAllowed;
+import javax.safetycritical.annotate.SCJRestricted;
 
-public class Level0Safelet implements Safelet<Mission> {
+public class Level0Safelet implements Safelet<CyclicExecutive> {
 
 	@Override
-	public MissionSequencer<Mission> getSequencer() {
+	public MissionSequencer<CyclicExecutive> getSequencer() {
 
 		PriorityParameters seq_prio = new PriorityParameters(13);
 		long[] sizes = { 1024 };
 
 		StorageParameters seq_storage = new StorageParameters(2048, sizes, 0, 0);
 
-		Level0Mission missions[] = new Level0Mission[10];
+		Level0Mission missions[] = new Level0Mission[2];
 		for (int i = 0; i < missions.length; i++) {
 			missions[i] = new Level0Mission(i);
 		}
 
 		// Choose between repeating or linear sequencers
-		// return new LinearMissionSequencer<Mission>(seq_prio, seq_storage,
-		// 		missions);
-		return new RepeatingMissionSequencer<Mission>(seq_prio, seq_storage,
+//		return new LinearMissionSequencer<CyclicExecutive>(seq_prio, seq_storage,
+//		 		missions, true);
+		return new RepeatingMissionSequencer<CyclicExecutive>(seq_prio, seq_storage,
 				missions);
 
 	}
@@ -50,6 +59,14 @@ public class Level0Safelet implements Safelet<Mission> {
 	public long immortalMemorySize() {
 		// TODO Auto-generated method stub
 		return 0;
+	}
+
+	@Override
+	@SCJAllowed(Level.SUPPORT)
+	@SCJRestricted(phase = Phase.INITIALIZATION)
+	public void initializeApplication() {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

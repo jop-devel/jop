@@ -12,7 +12,7 @@ public final class Launcher {
 	public static void main(final String[] args) {
 		
 		TestSchedule402 s = new TestSchedule402();
-		s.setup();
+		s.initializeApplication();
 		System.out.println("Safelet created");
 		
 		JopSystem.startMission(s);

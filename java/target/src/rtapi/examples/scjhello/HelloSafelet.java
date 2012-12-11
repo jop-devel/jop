@@ -21,6 +21,10 @@
 package examples.scjhello;
 
 import javax.safetycritical.*;
+import javax.safetycritical.annotate.Level;
+import javax.safetycritical.annotate.Phase;
+import javax.safetycritical.annotate.SCJAllowed;
+import javax.safetycritical.annotate.SCJRestricted;
 
 
 /**
@@ -53,6 +57,15 @@ public class HelloSafelet implements Safelet {
 		// but for now it's nice for debugging
 		System.out.println("Hello");
 		JopSystem.startMission(new HelloSafelet());
+	}
+
+
+	@Override
+	@SCJAllowed(Level.SUPPORT)
+	@SCJRestricted(phase = Phase.INITIALIZATION)
+	public void initializeApplication() {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

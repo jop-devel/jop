@@ -23,9 +23,6 @@ public class Level0Mission extends CyclicExecutive {
 	@SCJAllowed(Level.SUPPORT)
 	protected void initialize() {
 
-		maxHandlerBsSize = (int) Constants.PERSISTENT_DETECTOR_SCOPE_SIZE;
-		maxHandlerSize = maxHandlerBsSize / 2;
-
 		try {
 			ImmortalEntry.detectorThreadStart = NanoClock.now();
 			AbsoluteTime releaseAt = NanoClock
@@ -34,7 +31,7 @@ public class Level0Mission extends CyclicExecutive {
 			ImmortalEntry.detectorFirstRelease = NanoClock.convert(releaseAt);
 			CollisionDetectorHandler cdh = new CollisionDetectorHandler(null,
 					new PeriodicParameters(null, new RelativeTime(10, 0)),
-					new StorageParameters(1024, new long[] { 256 }), 128);
+					new StorageParameters(Constants.PERSISTENT_DETECTOR_BS_SIZE, null), Constants.PERSISTENT_DETECTOR_SCOPE_SIZE);
 
 			cdh.register();
 

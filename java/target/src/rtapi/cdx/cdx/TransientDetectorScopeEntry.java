@@ -63,14 +63,15 @@ public class TransientDetectorScopeEntry implements Runnable {
         Benchmarker.set(1);
         
         Benchmarker.set(Benchmarker.RAPITA_REDUCER_INIT);
+        
         final Reducer reducer = new Reducer(voxelSize);
         Benchmarker.done(Benchmarker.RAPITA_REDUCER_INIT);
         
         Benchmarker.set(Benchmarker.LOOK_FOR_COLLISIONS);
         
         int numberOfCollisions = lookForCollisions(reducer, createMotions());
-        
         Benchmarker.done(Benchmarker.LOOK_FOR_COLLISIONS);
+
         if (cdx.cdx.ImmortalEntry.recordedRuns < cdx.cdx.ImmortalEntry.maxDetectorRuns) {
             cdx.cdx.ImmortalEntry.detectedCollisions[cdx.cdx.ImmortalEntry.recordedRuns] = numberOfCollisions;
         }
@@ -104,12 +105,13 @@ public class TransientDetectorScopeEntry implements Runnable {
 
             System.out.println("");
         }
+        
         Benchmarker.done(1);
     }
 
     public int lookForCollisions(final Reducer reducer, final List motions) {
         Benchmarker.set(2);
-        
+
         final List check = reduceCollisionSet(reducer, motions);
         // final CollisionCollector c = new CollisionCollector();
 
@@ -267,6 +269,7 @@ public class TransientDetectorScopeEntry implements Runnable {
      * @return
      */
     public List createMotions() {
+    	
         Benchmarker.set(6);
 
         final List ret = new LinkedList();
@@ -274,7 +277,7 @@ public class TransientDetectorScopeEntry implements Runnable {
         
         Aircraft craft;
         Vector3d new_pos;
-        
+
         for (int i = 0, pos = 0; i < currentFrame.planeCnt; i++) {
         	
             final float x = currentFrame.positions[3 * i], y = currentFrame.positions[3 * i + 1], z = currentFrame.positions[3 * i + 2];
@@ -289,6 +292,7 @@ public class TransientDetectorScopeEntry implements Runnable {
             
             // get the last known position of this aircraft
             final cdx.statetable.Vector3d old_pos = state.get(new CallSign(craft.getCallsign()));
+            
 
             if (old_pos == null) {
                 // we have detected a new aircraft
@@ -296,17 +300,18 @@ public class TransientDetectorScopeEntry implements Runnable {
                 // here, we create a new callsign and store the aircraft into
                 // the state table.
             	
+            	// FIXME: There are illegal static references in the following line because
+            	// it performs a change in memory area. Currently JOP has this issue. 
             	state.put(mkCallsignInPersistentScope(craft.getCallsign()) , new_pos.x, new_pos.y, new_pos.z);
-            	
-                final Motion m = new Motion(craft, new_pos);
                 
+            	final Motion m = new Motion(craft, new_pos);
                 if (cdx.cdx.Constants.DEBUG_DETECTOR
                         || cdx.cdx.Constants.SYNCHRONOUS_DETECTOR) {
                     System.out
                             .println("createMotions: old position is null, adding motion: "
                                     + m);
                 }
-
+                
                 ret.add(m);
                 
             } else {
@@ -325,9 +330,12 @@ public class TransientDetectorScopeEntry implements Runnable {
 
                 ret.add(m);
             }
+        	
+            
+            
         }
         Benchmarker.done(6);
-        
+       
         return ret;
     }
 
@@ -365,7 +373,6 @@ public class TransientDetectorScopeEntry implements Runnable {
 
     CallSign mkCallsignInPersistentScope(final byte[] cs) {
 //        try {
-
     		h.cs_in = cs;
         	ManagedMemory.executeInAreaOf(r, h);
         	
@@ -384,7 +391,6 @@ public class TransientDetectorScopeEntry implements Runnable {
         }
 //        MemoryArea.getMemoryArea(state).executeInArea(r);
         ManagedMemory.executeInAreaOf(state, r);
-        
         return r.c;
     }
 

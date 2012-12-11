@@ -47,6 +47,8 @@ import javax.safetycritical.MissionSequencer;
 //import javax.safetycritical.PeriodicEventHandler;
 import javax.safetycritical.Safelet;
 import javax.safetycritical.StorageParameters;
+import javax.safetycritical.annotate.Level;
+import javax.safetycritical.annotate.Phase;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
 
@@ -63,10 +65,21 @@ public class Level0Safelet implements Safelet<CyclicExecutive>{
     
     //---------------------- Safelet methods
 	@Override
+	@SCJAllowed(Level.SUPPORT)
+	@SCJRestricted(phase = Phase.INITIALIZATION)
+	public void initializeApplication() {
+		// TODO Auto-generated method stub
+		Constants.PRESIMULATE = true;
+        new ImmortalEntry().run();
+        new Simulator().generate();
+		
+	}
+	
+	@Override
 	public MissionSequencer<CyclicExecutive> getSequencer() {
 
 		PriorityParameters sequencerPrio = new PriorityParameters(10);
-		StorageParameters sequencerSto = new StorageParameters(1024, new long[] {512});
+		StorageParameters sequencerSto = new StorageParameters(1024, null);
 		return new SingleMissionSequencer(sequencerPrio, sequencerSto);
 	}
 
@@ -77,11 +90,11 @@ public class Level0Safelet implements Safelet<CyclicExecutive>{
 		return 0;
 	}
 	
-	   public void initialize() {
-	        Constants.PRESIMULATE = true;
-	        new ImmortalEntry().run();
-	        new Simulator().generate();
-	    }
+//	   public void initialize() {
+//	        Constants.PRESIMULATE = true;
+//	        new ImmortalEntry().run();
+//	        new Simulator().generate();
+//	    }
 
     
     
@@ -197,6 +210,7 @@ public class Level0Safelet implements Safelet<CyclicExecutive>{
 class SingleMissionSequencer extends MissionSequencer<CyclicExecutive> {
 
 	boolean served = false;
+	private CyclicExecutive mission = null;
 
 	public SingleMissionSequencer(PriorityParameters priority,
 			StorageParameters storage) {
@@ -214,15 +228,15 @@ class SingleMissionSequencer extends MissionSequencer<CyclicExecutive> {
 	@Override
 	protected CyclicExecutive getNextMission() {
 		if (!served) {
-			current_mission = newMission();
+			mission = newMission();
 
 			// Comment the following line to have an infinite
 			// stream of missions
 			served = true;
 
-			return (CyclicExecutive) current_mission;
+			return mission;
 		} else {
-			current_mission = null;
+			mission = null;
 			return null;
 		}
 	}

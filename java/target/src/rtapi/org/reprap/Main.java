@@ -63,7 +63,7 @@ public class Main implements Safelet
 			{
 				mission = new RepRapMission();
 			}
-			current_mission = mission;
+//			current_mission = mission;
 			return mission;
 		}
 		
@@ -92,7 +92,7 @@ public class Main implements Safelet
 	}
 
 	@Override
-	public void initialize() {
+	public void initializeApplication() {
 	}
 }
 			
