@@ -46,9 +46,17 @@ import static javax.safetycritical.annotate.Phase.INITIALIZATION;
  */
 @SCJAllowed
 public interface Safelet<MissionLevel extends Mission> {
-	
-	
+
+	/**
+	 * The infrastructure shall invoke <code>initializeApplication</code> in the
+	 * allocation context of immortal memory. The application can use this
+	 * method to allocate data structures that are in immortal memory.
+	 * <code>initializeApplication</code> shall be invoked after
+	 * <code>immortalMemorySize</code>, and before <code>getSequencer</code>.
+	 */
 	@SCJAllowed(SUPPORT)
+	// MS: looks like there is a change in the annotation system in SCJ
+//	@SCJRestricted(INITIALIZATION)
 	@SCJRestricted(phase = INITIALIZATION)
 	public void initializeApplication();
 

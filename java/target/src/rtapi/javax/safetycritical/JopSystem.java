@@ -28,6 +28,7 @@ import java.util.Vector;
 import javax.realtime.AbsoluteTime;
 import javax.realtime.Clock;
 
+// MS: what is this here?
 import test.cyclic.ImmortalEntry;
 
 import com.jopdesign.sys.Memory;
@@ -37,11 +38,15 @@ import joprt.RtThread;
 /**
  * @author Martin Schoeberl
  * 
+ * I'm not sure that so much code shall be in this JOP specific class.
+ * 
  */
 public class JopSystem {
 
 	public static void startMission(Safelet scj) {
 
+		scj.initializeApplication();
+		
 		MissionSequencer ms = scj.getSequencer();
 		Mission.currentSequencer = ms;
 
@@ -58,6 +63,7 @@ public class JopSystem {
 		ms.current_mission = m;
 		// that should be done in the sequencer
 
+		// this should also run in mission memory
 		m.initialize();
 
 		Terminal.getTerminal().writeln("SCJ Start mission on JOP");
