@@ -141,6 +141,8 @@ architecture rtl of scio is
 	constant SLAVE_CNT : integer := 8;
 	-- Number of bits that can be used inside the slave
 	constant SLAVE_ADDR_BITS : integer := 4;
+	
+	constant NUM_IO_INT : integer := 2;
 
 	type slave_bit is array(0 to SLAVE_CNT-1) of std_logic;
 	signal sc_rd, sc_wr		: slave_bit;
@@ -152,6 +154,8 @@ architecture rtl of scio is
 	signal sc_rdy_cnt		: slave_rdy_cnt;
 
 	signal sel, sel_reg		: integer range 0 to 2**DECODE_BITS-1;
+	
+	signal io_int: std_logic_vector(NUM_IO_INT-1 downto 0);
 
 	-- The integer value should match the constant value set in Const.java file, fx.
 	-- if LEDSW_SLAVE = 3, then Const.LS_BASE = IO_BASE+0x30. The USB address is set
@@ -161,6 +165,9 @@ architecture rtl of scio is
 	constant LEDSW_SLAVE 	: integer := 4;
 	constant I2C_A			: integer := 3;
 	constant I2C_B			: integer := 6;
+	
+	constant INT_0 : integer:= 0;
+	constant INT_1 : integer:= 1;
 
 	-- remove the comment for RAM access counting
 	-- signal ram_count : std_logic;
@@ -215,7 +222,8 @@ begin
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 			cpu_id => cpu_id,
-			cpu_cnt => cpu_cnt
+			cpu_cnt => cpu_cnt,
+			num_io_int => NUM_IO_INT
 		)
 		port map(
 			clk => clk,
@@ -231,6 +239,8 @@ begin
 			irq_in => irq_in,
 			irq_out => irq_out,
 			exc_req => exc_req,
+			
+			io_int => io_int,
 
 			sync_out => sync_out,
 			sync_in => sync_in,
@@ -299,6 +309,7 @@ begin
 		sc_wr      => sc_wr(I2C_A),
 		sc_wr_data => sc_io_out.wr_data,
 		sc_rdy_cnt => sc_rdy_cnt(I2C_A),
+		irq         => io_int(INT_0),
 		sda        => sda,
 		scl        => scl
 		);
@@ -316,6 +327,7 @@ begin
 		sc_wr      => sc_wr(I2C_B),
 		sc_wr_data => sc_io_out.wr_data,
 		sc_rdy_cnt => sc_rdy_cnt(I2C_B),
+		irq         => io_int(INT_1),
 		sda        => sda,
 		scl        => scl
 		);

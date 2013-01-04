@@ -22,6 +22,9 @@ entity sc_i2c is
 
 		sc_rdy_cnt : out   unsigned(1 downto 0);
 
+		-- Interrupt request
+		irq        : out   std_logic;
+
 		-- I2C interface
 		sda        : inout std_logic;
 		scl        : inout std_logic
@@ -123,6 +126,7 @@ begin
 			     rx_fifo_occupancy_rd => rx_occ_rd_reg,
 			     rx_fifo_occupancy_wr => rx_occ_wr_reg,
 			     t_const              => timing_t,
+			     irq                  => irq,
 			     read_enable          => rx_fifo_rden,
 			     read_data_out        => sc_rd_data_int,
 			     write_enable         => tx_fifo_wren,
@@ -142,15 +146,15 @@ begin
 			th_reg          <= (others => '0');
 			tl_reg          <= (others => '0');
 
-			sc_rd_reg   <= '0';
-			busy_read   <= '0';
+			sc_rd_reg <= '0';
+			busy_read <= '0';
 
 		elsif rising_edge(clk) then
 
 			-- read
 			if sc_rd = '1' then
-				sc_rd_reg   <= '0';
-				busy_read   <= '0';
+				sc_rd_reg <= '0';
+				busy_read <= '0';
 
 				case address(3 downto 0) is
 					when CONTROL =>
@@ -170,25 +174,25 @@ begin
 						sc_rd_data(31 downto I2C_MSG_SIZE)    <= (others => '0');
 
 					when TIME_CON_H =>
-						sc_rd_data  <= th_reg;
+						sc_rd_data <= th_reg;
 
 					when TIME_CON_L =>
-						sc_rd_data  <= tl_reg;
+						sc_rd_data <= tl_reg;
 
 					when TX_OCCUP =>
-						sc_rd_data  <= tx_occu_reg;
+						sc_rd_data <= tx_occu_reg;
 
 					when RX_OCCUP =>
-						sc_rd_data  <= rx_occu_reg;
+						sc_rd_data <= rx_occu_reg;
 
 					when DATA_READ =>
-						busy_read   <= '1';
-						sc_rd_reg   <= '1';
+						busy_read <= '1';
+						sc_rd_reg <= '1';
 
 					when others =>
-						sc_rd_reg   <= '0';
-						busy_read   <= '0';
-						sc_rd_data  <= (others => '0');
+						sc_rd_reg  <= '0';
+						busy_read  <= '0';
+						sc_rd_data <= (others => '0');
 
 				end case;
 

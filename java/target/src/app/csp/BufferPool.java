@@ -2,29 +2,27 @@ package csp;
 
 public class BufferPool {
 
-	// Next free CSPbuffer
-	private int next = 0;
-
-	//
-	private CSPbuffer[] pool;
+	private Buffer[] pool;
+	private int used = 0;
 
 	public BufferPool() {
 
-		pool = new CSPbuffer[Conf.MAX_BUFFER_COUNT];
+		pool = new Buffer[Constants.MAX_BUFFER_COUNT];
 
 		// Initialize buffer pool
-		for (int i = 0; i < Conf.MAX_BUFFER_COUNT; i++) {
-			pool[i] = new CSPbuffer();
+		for (int i = 0; i < Constants.MAX_BUFFER_COUNT; i++) {
+			pool[i] = new Buffer();
 		}
 
 	}
 
-	public CSPbuffer getCSPbuffer() {
+	public Buffer getCSPbuffer() {
 
 		// Look into all the buffers until a free one is found
-		for (int i = 0; i < Conf.MAX_BUFFER_COUNT; i++) {
+		for (int i = 0; i < Constants.MAX_BUFFER_COUNT; i++) { // @WCA loop = Constants.MAX_BUFFER_COUNT
 			if (pool[i].free) {
 				pool[i].free = false;
+				used++;
 				return pool[i];
 			}
 		}
@@ -33,9 +31,12 @@ public class BufferPool {
 		return null;
 	}
 
-	public void freeCSPbuffer(CSPbuffer buffer) {
-
+	public void freeCSPbuffer(Buffer buffer) {
 		buffer.free = true;
-
+		used--;
+	}
+	
+	public int getOccupancy(){
+		return Constants.MAX_BUFFER_COUNT - used;
 	}
 }

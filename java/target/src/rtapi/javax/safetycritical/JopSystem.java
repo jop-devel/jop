@@ -28,9 +28,6 @@ import java.util.Vector;
 import javax.realtime.AbsoluteTime;
 import javax.realtime.Clock;
 
-// MS: what is this here?
-import test.cyclic.ImmortalEntry;
-
 import com.jopdesign.sys.Memory;
 
 import joprt.RtThread;
@@ -177,8 +174,6 @@ public class JopSystem {
 								.compareTo(next) < 0) {
 							;
 						}
-
-						//ImmortalEntry.log.addEvent("F" + i);
 
 						for (int j = 0; j < frames[i].handlers_.length; j++) {
 
