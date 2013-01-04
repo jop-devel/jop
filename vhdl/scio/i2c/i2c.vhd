@@ -40,8 +40,8 @@ use work.i2c_pkg.all;
 use work.fifo_pkg.all;
 
 entity i2c is
-	generic(TBUFF_ADD : integer := 4;  --! Transmit buffer size (2**TBUFF_ADD)
-		    RBUFF_ADD : integer := 4   --! Receive buffer size (2**RBUFF_ADD)
+	generic(TBUFF_ADD : integer := 4;   --! Transmit buffer size (2**TBUFF_ADD)
+		    RBUFF_ADD : integer := 4    --! Receive buffer size (2**RBUFF_ADD)
 	);
 
 	port(
@@ -67,6 +67,8 @@ entity i2c is
 
 		t_const              : in    timing_type; --! Time constants. Modify to adjust to your bus clock requirements
 
+		irq                  : out   std_logic;
+
 		-- RX fifo
 		read_enable          : in    std_logic; --! Receive buffer read enable
 		read_data_out        : out   std_logic_vector(I2C_DATA_SIZE - 1 downto 0); --! Receive buffer data read
@@ -79,12 +81,13 @@ entity i2c is
 end entity i2c;
 
 architecture i2c_arch of i2c is
+	type int_state_type is (idle, gen_int, int_wait);
+	signal int_state, int_next_state : int_state_type;
 
-	signal from_sda_to_scl : sda_control_in_type;
-	signal from_scl_to_sda : sda_control_out_type;
+	signal from_sda_to_scl     : sda_control_in_type;
+	signal from_scl_to_sda     : sda_control_out_type;
 	signal from_sda_to_scl_reg : sda_control_in_type;
 	signal from_scl_to_sda_reg : sda_control_out_type;
-
 
 	signal status_a_int : status_type;
 
@@ -114,7 +117,7 @@ architecture i2c_arch of i2c is
 			 status_in     : in  status_type;
 			 t_const       : in  timing_type);
 	end component scl_control;
-	
+
 	component sda_control
 		port(clk           : in    std_logic;
 			 reset         : in    std_logic;
@@ -137,10 +140,9 @@ architecture i2c_arch of i2c is
 	end component sda_control;
 
 begin
-
 	scl <= 'Z' when scl_out_reg = '1' else '0';
 	sda <= 'Z' when sda_out_reg = '1' else '0';
-	
+
 	status <= status_a_int;
 
 	-- RX buffer
@@ -156,25 +158,56 @@ begin
 	tx_fifo_occupancy_rd         <= tx_fifo_out_int.occupancy_rd;
 	tx_fifo_occupancy_wr         <= tx_fifo_out_int.occupancy_wr;
 	tx_fifo_in_int.flush         <= control.TX_FLUSH;
-	
-		SAMPLE : process(clk, reset)
+
+	INTERRUPT : process(clk, reset)
 	begin
 		if reset = RESET_LEVEL then
-			scl_in <= '1';
-			sda_in <= '1';
+			irq       <= '0';
+			int_state <= idle;
+	
+		elsif rising_edge(clk) then
+	
+			case int_state is
+				when idle =>
+					irq <= '0';
+					if status_a_int.DATA_RDY = '1' then
+						int_state <= gen_int;
+					else
+						int_state <= idle;
+					end if;
+				when gen_int =>
+					irq       <= '1';
+					int_state <= int_wait;
+				when int_wait =>
+					irq <= '0';
+					if status_a_int.DATA_RDY = '1' then
+						int_state <= int_wait;
+					else
+						int_state <= idle;
+					end if;
+			end case;
+
+		end if;
+
+	end process INTERRUPT;
+
+	SAMPLE : process(clk, reset)
+	begin
+		if reset = RESET_LEVEL then
+			scl_in      <= '1';
+			sda_in      <= '1';
 			scl_out_reg <= '1';
 			sda_out_reg <= '1';
-			
+
 			from_sda_to_scl_reg.RSTART <= '0';
-			from_sda_to_scl_reg.START <= '0';
-			from_sda_to_scl_reg.STOP <= '0';
-			
+			from_sda_to_scl_reg.START  <= '0';
+			from_sda_to_scl_reg.STOP   <= '0';
+
 			from_scl_to_sda_reg.SCL_ARB_LOST <= '0';
-			from_scl_to_sda_reg.SDA_ENA <= '0';
-			from_scl_to_sda_reg.SDA_ENA <= '0';
-			
+			from_scl_to_sda_reg.SDA_ENA      <= '0';
+			from_scl_to_sda_reg.SDA_ENA      <= '0';
+
 		elsif rising_edge(clk) then
-		
 			from_sda_to_scl_reg <= from_sda_to_scl;
 			from_scl_to_sda_reg <= from_scl_to_sda;
 
@@ -206,8 +239,8 @@ begin
 	SCL_CTRL : scl_control
 		port map(clk           => clk,
 			     reset         => reset,
-			     scl_in => scl_in,
-			     scl_out           => scl_out,
+			     scl_in        => scl_in,
+			     scl_out       => scl_out,
 			     ctrl_from_sda => from_sda_to_scl,
 			     ctrl_to_sda   => from_scl_to_sda,
 			     control_in    => control,
@@ -227,7 +260,7 @@ begin
 			     address       => address,
 			     ctrl_from_scl => from_scl_to_sda_reg,
 			     ctrl_to_scl   => from_sda_to_scl,
-			     read_enable   => tx_fifo_in_int.read_enable, 
+			     read_enable   => tx_fifo_in_int.read_enable,
 			     read_data_out => tx_fifo_out_int.read_data_out,
 			     tx_empty      => tx_fifo_out_int.empty,
 			     write_enable  => rx_fifo_in_int.write_enable,
@@ -237,8 +270,8 @@ begin
 		);
 
 	TX_FIFO : entity work.async_fifo
-		generic map(asynch  => "FALSE",
-			        ADDRESS => TBUFF_ADD,
+		generic map(asynch    => "FALSE",
+			        ADDRESS   => TBUFF_ADD,
 			        DATA_SIZE => I2C_DATA_SIZE)
 		port map(reset    => reset,
 			     wclk     => clk,
@@ -247,8 +280,8 @@ begin
 			     fifo_out => tx_fifo_out_int);
 
 	RX_FIFO : entity work.async_fifo
-		generic map(asynch  => "FALSE",
-			        ADDRESS => RBUFF_ADD,
+		generic map(asynch    => "FALSE",
+			        ADDRESS   => RBUFF_ADD,
 			        DATA_SIZE => I2C_DATA_SIZE)
 		port map(reset    => reset,
 			     wclk     => clk,
