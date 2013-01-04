@@ -29,7 +29,7 @@ add wave -noupdate -format Logic /tb_jop/scl_int
 #add wave -noupdate -format Logic /tb_jop/joptop/io/iic/sc_rd_reg_1
 
 
-add wave -noupdate -divider {IIC master}
+add wave -noupdate -divider {IIC device A}
 
 add wave -noupdate -format Logic /tb_jop/joptop/io/iic_a/I2C/SDA_CTRL/state
 add wave -noupdate -format Logic /tb_jop/joptop/io/iic_a/I2C/SDA_CTRL/byte_count
@@ -37,6 +37,7 @@ add wave -noupdate -format Logic /tb_jop/joptop/io/iic_a/I2C/SDA_CTRL/msg_size
 
 add wave -noupdate -format Logic /tb_jop/joptop/io/iic_a/I2C/SDA_CTRL/t_hold_start_reg
 
+add wave -noupdate -format Logic /tb_jop/joptop/io/iic_a/irq
 add wave -noupdate -format Logic /tb_jop/joptop/io/iic_a/control_reg
 add wave -noupdate -format Logic /tb_jop/joptop/io/iic_a/status_reg
 add wave -noupdate -format Logic /tb_jop/joptop/io/iic_a/dev_address_reg
@@ -76,13 +77,15 @@ add wave -noupdate -format Logic /tb_jop/joptop/io/iic_a/IIC/I2C_PROC/data_valid
 #add wave -noupdate -format Logic /tb_jop/joptop/io/iic/i2c/mas_proc/ma_scl.STOP
 #add wave -noupdate -format Logic /tb_jop/joptop/io/iic/i2c/mas_proc/ma_scl.ZERO_BIT
 
-add wave -noupdate -divider {IIC slave}
+add wave -noupdate -divider {IIC device B}
 
 add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/I2C/SDA_CTRL/state
 add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/I2C/sda_out
 add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/I2C/SDA_CTRL/byte_count
 add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/I2C/SDA_CTRL/msg_size
 
+add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/irq
+add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/I2C/int_state
 add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/control_reg
 add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/status_reg
 add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/dev_address_reg
@@ -98,18 +101,18 @@ add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/I2C/SDA_CTRL/load
 add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/I2C/SDA_CTRL/load_reg
 add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/rx_fifo_rden
 add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/I2C/rx_fifo_in_int.write_enable
+add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/I2C/SDA_CTRL/sda_data_in
 
 
 
-
-add wave -noupdate -format Logic /tb_jop/joptop/io/iic_a/IIC/I2C_PROC/transaction
-add wave -noupdate -format Logic /tb_jop/joptop/io/iic_a/IIC/transaction
-add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/tx_fifo_wren_int
-add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/rx_fifo_rden_int
-add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/IIC/rx_fifo_write
-add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/IIC/data_valid
-add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/IIC/I2C_PROC/data_valid_s
-add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/IIC/I2C_PROC/header_ok
+#add wave -noupdate -format Logic /tb_jop/joptop/io/iic_a/IIC/I2C_PROC/transaction
+#add wave -noupdate -format Logic /tb_jop/joptop/io/iic_a/IIC/transaction
+#add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/tx_fifo_wren_int
+#add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/rx_fifo_rden_int
+#add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/IIC/rx_fifo_write
+#add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/IIC/data_valid
+#add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/IIC/I2C_PROC/data_valid_s
+#add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/IIC/I2C_PROC/header_ok
 
 #add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/i2c/ma_tx_fifo_read.rd_data
 add wave -noupdate -format Logic /tb_jop/joptop/io/iic_b/i2c/ma_tx_fifo_read.empty

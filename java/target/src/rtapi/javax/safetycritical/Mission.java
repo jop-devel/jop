@@ -42,15 +42,19 @@ import com.jopdesign.sys.Native;
 public abstract class Mission {
 
 	// Workaround to avoid illegal reference:
-	// Store the address itself (a number) of 
-	// the structure containing the handler's 
+	// Store the address itself (a number) of
+	// the structure containing the handler's
 	// registerd in this mission.
 	int eventHandlersRef;
 	boolean hasEventHandlers = false;
-	
-	// See below...
+
+	// See above...
 	int longEventHandlersRef;
 	boolean hasLongEventHandlers = false;
+
+	// See above...
+	int managedInterruptRef;
+	boolean hasManagedInterrupt = false;
 
 	// To keep track of the state of a mission
 	static final int INACTIVE = 0;
@@ -114,6 +118,17 @@ public abstract class Mission {
 
 		}
 
+		Vector managedInterrupt = getInterrupts();
+		if (managedInterrupt != null) {
+			for (int i = 0; i < managedInterrupt.size(); i++) {
+				((ManagedInterruptServiceRoutine) managedInterrupt.elementAt(i))
+						.unregister();
+			}
+			
+			managedInterrupt.removeAllElements();
+			managedInterruptRef = 0;
+			hasManagedInterrupt = false;
+		}
 	}
 
 	@SCJAllowed
@@ -158,6 +173,15 @@ public abstract class Mission {
 
 	Vector getLongHandlers() {
 		return (Vector) Native.toObject(longEventHandlersRef);
+	}
+
+	public Vector getInterrupts() {
+		if (hasManagedInterrupt) {
+			return (Vector) Native.toObject(managedInterruptRef);
+		} else {
+			return null;
+		}
+		
 	}
 
 	// @SCJAllowed(SUPPORT)

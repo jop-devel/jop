@@ -34,8 +34,6 @@ import javax.safetycritical.annotate.MemoryAreaEncloses;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
 
-import test.level0.MyLevel0App;
-
 import com.jopdesign.sys.Memory;
 import com.jopdesign.sys.Native;
 
@@ -85,7 +83,7 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 			String name) {
 		// TODO: what are we doing with this Managed thing?
 		super(priority, release, storage, name);
-
+		
 		this.priority = priority;
 		this.storage = storage;
 		this.scopeSize = scopeSize;
@@ -114,7 +112,9 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 			// Mission should not be null at this point, as PEH's are created at
 			// mission initialization.
 			if (!m.isCyclicExecutive) {
+				
 				privMem = new Memory((int) scopeSize, (int) storage.getTotalBackingStoreSize());
+				
 			}
 		}
 
