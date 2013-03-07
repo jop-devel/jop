@@ -362,7 +362,6 @@ end process;
 
 	-- HW methods
     cp1 : entity work.mac_coprocessor 
-        generic map ( id => x"01", version => x"1234" )
         port map (
                 clk => clk_int,
                 reset => int_res,
@@ -379,7 +378,6 @@ end process;
                 cc_in_rdy => cc_2_rdy
             );
     cp2 : entity work.mac_coprocessor 
-        generic map ( id => x"02", version => x"abcd" )
         port map (
                 clk => clk_int,
                 reset => int_res,
