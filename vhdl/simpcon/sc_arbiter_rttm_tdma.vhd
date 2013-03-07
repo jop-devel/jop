@@ -59,7 +59,7 @@ use work.sc_pack.all;
 use work.sc_arbiter_pack.all;
 use work.jop_types.all;
 
-entity arbiter is
+entity arbiter_rttm_tdm is
 generic(
 			addr_bits : integer;
 			cpu_cnt	: integer);		-- number of masters for the arbiter
@@ -74,10 +74,10 @@ port (
 			tm_in_transaction : in std_logic_vector(0 to cpu_cnt-1);
 			tm_broadcast	: out tm_broadcast_type
 );
-end arbiter;
+end arbiter_rttm_tdm;
 
 
-architecture rtl of arbiter is
+architecture rtl of arbiter_rttm_tdm is
 
 -- stores the signals in a register of each master
 

@@ -303,7 +303,7 @@ end process;
 		commit_token_grant => commit_token_grant
 		);
 			
-	arbiter: entity work.arbiter
+	arbiter: entity work.arbiter_rttm_tdm
 		generic map(
 			addr_bits => SC_ADDR_SIZE,
 			cpu_cnt => cpu_cnt

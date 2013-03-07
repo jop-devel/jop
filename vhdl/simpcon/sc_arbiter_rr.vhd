@@ -51,25 +51,9 @@ use work.sc_pack.all;
 use work.sc_arbiter_pack.all;
 use work.jop_types.all;
 
-entity arbiter is
-	generic(
-		addr_bits : integer;
-		cpu_cnt	: integer; -- number of masters for the arbiter
-		write_gap : integer; -- dummy to be compatible with TDMA arbiter
-		read_gap  : integer;
-		slot_length : integer
-		);
-	port (
-		clk, reset	: in std_logic;			
-		arb_out			: in arb_out_type(0 to CPU_CNT-1);
-		arb_in			: out arb_in_type(0 to CPU_CNT-1);
-		mem_out			: out sc_out_type;
-		mem_in			: in sc_in_type
-		);
-end arbiter;
+-- entity interface compatible with arbiter_fair
 
-
-architecture rtl of arbiter is
+architecture rtl_rr of arbiter is
 
 -- stores the signals in a register of each master
 	signal reg_out, next_reg_out : arb_out_type(0 to CPU_CNT-1);
@@ -260,4 +244,4 @@ begin
 		end loop;  -- i		
 	end process mux;
 
-end rtl;
+end rtl_rr;

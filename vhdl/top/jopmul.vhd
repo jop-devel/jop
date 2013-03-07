@@ -243,7 +243,7 @@ end process;
 				irq_out(i), exc_req(i));
 	end generate;
 			
-	arbiter: entity work.arbiter
+	arbiter: entity work.arbiter_tdma
 		generic map(
 			addr_bits => SC_ADDR_SIZE,
 			cpu_cnt => cpu_cnt,
