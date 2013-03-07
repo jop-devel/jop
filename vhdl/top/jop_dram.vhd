@@ -180,7 +180,7 @@ begin
               b         => open
               );
 
-  scm: entity work.sc_mem_if
+  scm: entity work.sc_dram16
     port map (
       clk        => clk,                -- [in]
       reset      => int_res,              -- [in]

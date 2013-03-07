@@ -337,7 +337,7 @@ end process;
 	end process hold_tm_broadcast;
 
 
-	scm: entity work.sc_mem_if
+	scm: entity work.sc_ssram32
 		generic map (
 			ram_ws => ram_cnt-1,
 			addr_bits => tm_addr_width			-- edit
