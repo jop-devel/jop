@@ -29,6 +29,8 @@ import javax.safetycritical.annotate.SCJRestricted;
 
 /**
  * A minimal SCJ application - The SCJ Hello World
+ * Now in a version of an application defined class
+ * for each needed class.
  * 
  * @author Martin Schoeberl
  * 
