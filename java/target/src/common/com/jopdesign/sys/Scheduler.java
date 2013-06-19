@@ -3,6 +3,8 @@ package com.jopdesign.sys;
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 
+import javax.realtime.precedence.DependencyManager;
+
 /**
  * Represent the scheduler and thread queue for one CPU.
  * Created and set in startMisison()
@@ -36,6 +38,8 @@ class Scheduler implements Runnable {
 		}
 	}
 	
+	static DependencyManager dm = DependencyManager.instance();
+
 	Scheduler(int core) {
 		active = 0;			// main thread (or idle thread) is first thread
 		cnt = 0;			// stays 0 till startMission
@@ -113,7 +117,9 @@ class Scheduler implements Runnable {
 			} else if (event[i] == NO_EVENT) {
 				diff = next[i]-j;			// check only periodic
 				if (diff < TIM_OFF) {
-					break;					// found a ready task
+					if(dm.isFree(ref[i].rtt)) {
+						break;					// found a ready task
+					}
 				} else if (diff < k) {
 					k = diff;				// next interrupt time of higher priority thread
 				}

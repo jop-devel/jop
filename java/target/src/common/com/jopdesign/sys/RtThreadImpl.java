@@ -29,6 +29,8 @@ import com.jopdesign.io.SysDevice;
 
 import joprt.RtThread;
 
+import javax.realtime.precedence.DependencyManager;
+
 /**
  * @author Martin
  * 
@@ -416,6 +418,10 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		Scheduler s = Scheduler.sched[sys.cpuId];
 
 		Native.wr(0, Const.IO_INT_ENA);
+
+		// Notify dependency manager that this job is done
+		DependencyManager dm = DependencyManager.instance();
+		dm.doneJob(rtt);
 
 		nxt = s.next[nr] + period;
 

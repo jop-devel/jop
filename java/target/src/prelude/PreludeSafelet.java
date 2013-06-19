@@ -11,6 +11,7 @@ import javax.safetycritical.annotate.SCJRestricted;
 
 public class PreludeSafelet implements Safelet {
 
+	public static final int TICK_SCALE = 10;
 	public static final int PRIVATE_MEMORY_SIZE = 1024;
 	public static final int MISSION_MEMORY_SIZE = 64*1024;
 	public static final int IMMORTAL_MEMORY_SIZE = 64*1024;
