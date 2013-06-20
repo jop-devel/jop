@@ -12,8 +12,10 @@ public class PreludeHandler extends PeriodicEventHandler {
 	private PreludeTask task;
 	private PeriodicParameters periodicParams;
 
+	static int prio;
+
 	public PreludeHandler(PreludeTask task, PeriodicParameters params) {
-		super(new PriorityParameters(0), params,
+		super(new PriorityParameters(prio++), params,
 			  new StorageParameters(PreludeSafelet.PRIVATE_MEMORY_SIZE, null),
 			  PreludeSafelet.PRIVATE_MEMORY_SIZE,
 			  task.name);
