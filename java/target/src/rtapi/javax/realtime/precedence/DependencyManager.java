@@ -26,15 +26,23 @@ public class DependencyManager {
 		}
 	}
 
-	// Map for periodic parameters
-	Map<Runnable, PeriodicParameters> periodMap
-		= new HashMap<Runnable, PeriodicParameters>();
-	// Map for job counters
-	Map<Runnable, JobCounter> jobMap
-		= new HashMap<Runnable, JobCounter>();
+	// Map for task properties
+	Map<Runnable, TaskProperties> taskMap
+		= new HashMap<Runnable, TaskProperties>();
 
-	// We need a mutable object for the job counters, Integer is immutable
-	private static class JobCounter { public long cnt; }
+	// Class for task properties and state
+	private static class TaskProperties {
+		public final PeriodicParameters periodicParams;
+		public List<Runnable> succs;
+		public int job;
+		public boolean pending;
+		public TaskProperties(PeriodicParameters p) {
+			periodicParams = p;
+			succs = new ArrayList<Runnable>();
+			job = 0;
+			pending = false;
+		}
+	}
 
 	// Register a precedences constraint between to Runnables
 	public void register(Runnable pred,
@@ -47,21 +55,23 @@ public class DependencyManager {
 		//System.out.println(Native.toInt(pred));
 		//System.out.println(Native.toInt(succ));
 		
+		// Build map of precedences
 		if (!precMap.containsKey(succ)) {
 			precMap.put(succ, new ArrayList<PrecEntry>());
 		}
 		List<PrecEntry> precs = precMap.get(succ);
 		precs.add(new PrecEntry(pred, prec));
 
-		periodMap.put(pred, predParams);
-		periodMap.put(succ, succParams);
-
-		if (jobMap.get(pred) == null) {
-			jobMap.put(pred, new JobCounter());
+		// Build map with task properties
+		if (taskMap.get(pred) == null) {
+			taskMap.put(pred, new TaskProperties(predParams));
 		}
-		if (jobMap.get(succ) == null) {
-			jobMap.put(succ, new JobCounter());
+		if (taskMap.get(succ) == null) {
+			taskMap.put(succ, new TaskProperties(succParams));
 		}
+		// Add successors
+		List<Runnable> succs = taskMap.get(pred).succs;
+		succs.add(succ);
 	}
 
 	// Check if dependencies are fulfilled
@@ -72,16 +82,19 @@ public class DependencyManager {
 
 		List<PrecEntry> precs = precMap.get(s);
 		if (precs != null) {
-			long job = jobMap.get(s).cnt;
-			long period = periodMap.get(s).getPeriod().getMilliseconds();
+			TaskProperties t = taskMap.get(s);
+			long job = t.job;
+			long period = t.periodicParams.getPeriod().getMilliseconds();
 
 			for (int k = precs.size()-1; k >= 0; --k) {
-				PrecEntry p = precs.get(k);
-				long predJob = jobMap.get(p.pred).cnt;
-				long predPeriod = periodMap.get(p.pred).getPeriod().getMilliseconds();
+				PrecEntry prec = precs.get(k);
+				TaskProperties predProps = taskMap.get(prec.pred);
+				long predJob = predProps.job;
+				long predPeriod = predProps.periodicParams.getPeriod().getMilliseconds();
+
 				long lcm = lcm(period, predPeriod);
-				for (int i = 0; i < p.prec.pattern.length; i++) {
-				 	DepWord dw = p.prec.pattern[i];
+				for (int i = 0; i < prec.prec.pattern.length; i++) {
+				 	DepWord dw = prec.prec.pattern[i];
 					// TODO: fix for corner cases (T==HP, etc)
 					if (dw.predJob == predJob % (lcm/predPeriod) &&
 						dw.succJob == job % (lcm/period) &&
@@ -95,19 +108,45 @@ public class DependencyManager {
 	}
 
 	// Notify that a job was executed
-	public void doneJob(Runnable s) {
-		JobCounter j = jobMap.get(s);
-		if (j != null) {
-			j.cnt++;
+	public void doneJob(Runnable s, Runnable[] r) {
+		int i = 0;
+
+		// Update job counter
+		TaskProperties t = taskMap.get(s);
+		if (t != null) {
+			t.job++;
+
+			// Return freed successors
+			List<Runnable> succs = t.succs;
+			if (succs != null) {
+				for (int k = succs.size()-1; k >= 0; --k) {
+					Runnable succ = succs.get(i);
+					TaskProperties succProps = taskMap.get(succ);
+					if (succProps.pending && isFree(succ)) {
+						r[i++] = succ;
+						// Implicitly clear pending flag
+						succProps.pending = false;
+					}
+				}
+			}
+		}
+
+		// return array is null-terminated
+		if (i < r.length) {
+			r[i] = null;
 		}
 	}
 
 	// Register that the scheduler should be notified as soon as the
 	// Runnable becomes free
 	public void setPending(Runnable s) {
+		TaskProperties t = taskMap.get(s);
+		t.pending = true;
 	}
 	// Clear pending flag
 	public void clearPending(Runnable s) {
+		TaskProperties t = taskMap.get(s);
+		t.pending = false;
 	}
 
 	// The DependencyManager is a singleton for now
@@ -117,6 +156,10 @@ public class DependencyManager {
 	}
 	public static DependencyManager instance() {
 		return INSTANCE;
+	}
+
+	public int getMaxFreed() {
+		return taskMap.size();
 	}
 
 	// Helper method to compute least common multiple

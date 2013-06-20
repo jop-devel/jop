@@ -421,7 +421,11 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 
 		// Notify dependency manager that this job is done
 		DependencyManager dm = DependencyManager.instance();
-		dm.doneJob(rtt);
+		dm.doneJob(rtt, s.freed);
+		// Notify other cores of freed tasks
+		for (int i = 0; i < s.freed.length && s.freed[i] != null; i++) {
+		 	// TODO: trigger scheuling event on correct core
+		}
 
 		nxt = s.next[nr] + period;
 

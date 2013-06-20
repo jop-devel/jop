@@ -39,6 +39,7 @@ class Scheduler implements Runnable {
 	}
 	
 	static DependencyManager dm = DependencyManager.instance();
+	Runnable[] freed;
 
 	Scheduler(int core) {
 		active = 0;			// main thread (or idle thread) is first thread
@@ -119,6 +120,8 @@ class Scheduler implements Runnable {
 				if (diff < TIM_OFF) {
 					if(dm.isFree(ref[i].rtt)) {
 						break;					// found a ready task
+					} else {
+						dm.setPending(ref[i].rtt); // this task is waiting for a dependency
 					}
 				} else if (diff < k) {
 					k = diff;				// next interrupt time of higher priority thread
@@ -202,6 +205,8 @@ class Scheduler implements Runnable {
 		next = new int[cnt];
 		event = new int[cnt];
 		tmp = cnt-1;
+
+		freed = new Runnable[dm.getMaxFreed()];
 	}
 
 	/**
