@@ -34,8 +34,8 @@ public class DependencyManager {
 	private static class TaskProperties {
 		public PeriodicParameters periodicParams;
 		public List<Runnable> succs;
-		public int job;
-		public boolean pending;
+		public volatile long job;
+		public volatile boolean pending;
 		public TaskProperties(PeriodicParameters p) {
 			periodicParams = p;
 			succs = new ArrayList<Runnable>();
