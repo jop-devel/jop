@@ -43,9 +43,13 @@ public class PreludeMission extends Mission {
 			PreludeHandler pred = handler[getTaskIdx(precSet[i].pred)];
 			PreludeHandler succ = handler[getTaskIdx(precSet[i].succ)];
 
-			dm.register(pred.getThread(), pred.getPeriodicParams(),
-						succ.getThread(), succ.getPeriodicParams(),
-						precSet[i].prec);
+			if (precSet[i].prec == null) {
+				dm.register(pred.getThread(), succ.getThread());
+			} else {
+				dm.register(pred.getThread(), pred.getPeriodicParams(),
+							succ.getThread(), succ.getPeriodicParams(),
+							precSet[i].prec);
+			}
 		}
 	}
 

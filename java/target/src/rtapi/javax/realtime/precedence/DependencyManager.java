@@ -32,7 +32,7 @@ public class DependencyManager {
 
 	// Class for task properties and state
 	private static class TaskProperties {
-		public final PeriodicParameters periodicParams;
+		public PeriodicParameters periodicParams;
 		public List<Runnable> succs;
 		public int job;
 		public boolean pending;
@@ -44,7 +44,13 @@ public class DependencyManager {
 		}
 	}
 
-	// Register a precedences constraint between to Runnables
+	// Register a simple precedence constraint between two Runnables
+	public void register(Runnable pred,
+						 Runnable succ) {
+		register(pred, null, succ, null, null);
+	}
+
+	// Register an extended precedence constraint
 	public void register(Runnable pred,
 						 PeriodicParameters predParams,
 						 Runnable succ,
@@ -63,11 +69,18 @@ public class DependencyManager {
 		precs.add(new PrecEntry(pred, prec));
 
 		// Build map with task properties
-		if (taskMap.get(pred) == null) {
+		TaskProperties t;
+		t = taskMap.get(pred);
+		if (t == null) {
 			taskMap.put(pred, new TaskProperties(predParams));
+		} else if (t.periodicParams == null) {
+			t.periodicParams = predParams;
 		}
-		if (taskMap.get(succ) == null) {
+		t = taskMap.get(succ);
+		if (t == null) {
 			taskMap.put(succ, new TaskProperties(succParams));
+		} else if (t.periodicParams == null) {
+			t.periodicParams = succParams;			
 		}
 		// Add successors
 		List<Runnable> succs = taskMap.get(pred).succs;
@@ -84,22 +97,28 @@ public class DependencyManager {
 		if (precs != null) {
 			TaskProperties t = taskMap.get(s);
 			long job = t.job;
-			long period = t.periodicParams.getPeriod().getMilliseconds();
+			long period = t.periodicParams == null ? 1
+				: t.periodicParams.getPeriod().getMilliseconds();
 
 			for (int k = precs.size()-1; k >= 0; --k) {
 				PrecEntry prec = precs.get(k);
 				TaskProperties predProps = taskMap.get(prec.pred);
 				long predJob = predProps.job;
-				long predPeriod = predProps.periodicParams.getPeriod().getMilliseconds();
 
-				long lcm = lcm(period, predPeriod);
-				for (int i = 0; i < prec.prec.pattern.length; i++) {
-				 	DepWord dw = prec.prec.pattern[i];
-					// TODO: fix for corner cases (T==HP, etc)
-					if (dw.predJob == predJob % (lcm/predPeriod) &&
-						dw.succJob == job % (lcm/period) &&
-						predJob / (lcm/predPeriod) == job / (lcm/period)) {
-						return false;
+				if (prec.prec == null) {
+					return predJob > job;
+				} else {
+					long predPeriod = predProps.periodicParams == null ? 1
+						: predProps.periodicParams.getPeriod().getMilliseconds();
+					long lcm = lcm(period, predPeriod);
+					for (int i = 0; i < prec.prec.pattern.length; i++) {
+						DepWord dw = prec.prec.pattern[i];
+						// TODO: fix for corner cases (T==HP, etc)
+						if (dw.predJob == predJob % (lcm/predPeriod) &&
+							dw.succJob == job % (lcm/period) &&
+							predJob / (lcm/predPeriod) == job / (lcm/period)) {
+							return false;
+						}
 					}
 				}
 			}
