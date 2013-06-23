@@ -1,5 +1,10 @@
 package javax.realtime.precedence;
 
+import javax.safetycritical.annotate.SCJAllowed;
+import javax.safetycritical.annotate.SCJRestricted;
+import static javax.safetycritical.annotate.Phase.INITIALIZATION;
+import static javax.safetycritical.annotate.Level.INFRASTRUCTURE;
+
 import javax.realtime.PeriodicParameters;
 import javax.realtime.Scheduler;
 
@@ -10,6 +15,7 @@ import java.util.ArrayList;
 
 import com.jopdesign.sys.*;
 
+@SCJAllowed
 public class DependencyManager {
 
 	// Map for precedences
@@ -45,22 +51,22 @@ public class DependencyManager {
 	}
 
 	// Register a simple precedence constraint between two Runnables
+	@SCJAllowed
+	@SCJRestricted(maySelfSuspend = false, phase = INITIALIZATION)
 	public void register(Runnable pred,
 						 Runnable succ) {
 		register(pred, null, succ, null, null);
 	}
 
 	// Register an extended precedence constraint
+	@SCJAllowed
+	@SCJRestricted(maySelfSuspend = false, phase = INITIALIZATION)
 	public void register(Runnable pred,
 						 PeriodicParameters predParams,
 						 Runnable succ,
 						 PeriodicParameters succParams,
 						 Precedence prec) {
 
-		//System.out.println("register");
-		//System.out.println(Native.toInt(pred));
-		//System.out.println(Native.toInt(succ));
-		
 		// Build map of precedences
 		if (!precMap.containsKey(succ)) {
 			precMap.put(succ, new ArrayList<PrecEntry>());
@@ -88,10 +94,7 @@ public class DependencyManager {
 	}
 
 	// Check if dependencies are fulfilled
-	public boolean isFree(Runnable s) {
-
-		//System.out.println("isFree");
-		//System.out.println(Native.toInt(s));
+	private boolean isFree(Runnable s) {
 
 		List<PrecEntry> precs = precMap.get(s);
 		if (precs != null) {
@@ -126,7 +129,31 @@ public class DependencyManager {
 		return true;
 	}
 
+	// Check if dependencies are fulfilled and handle pending flag
+	// appropriately
+	@SCJAllowed(INFRASTRUCTURE)
+	@SCJRestricted(maySelfSuspend = false, mayAllocate = false)
+	public boolean checkFree(Runnable s) {
+
+		TaskProperties t = taskMap.get(s);
+		if (t != null) {
+			// Set pending flag
+			t.pending = true;
+			// Check dependencies
+			boolean free = isFree(s);		
+			// Clear pending flag again if task is free
+			if (free) {
+				t.pending = false;
+			}
+			return free;
+		} else {
+			return true;
+		}
+	}
+
 	// Notify that a job was executed
+	@SCJAllowed(INFRASTRUCTURE)
+	@SCJRestricted(maySelfSuspend = false, mayAllocate = false)
 	public void doneJob(Runnable s, Runnable[] r) {
 		int i = 0;
 
@@ -143,7 +170,7 @@ public class DependencyManager {
 					TaskProperties succProps = taskMap.get(succ);
 					if (succProps.pending && isFree(succ)) {
 						r[i++] = succ;
-						// Implicitly clear pending flag
+						// Clear pending flag
 						succProps.pending = false;
 					}
 				}
@@ -156,13 +183,16 @@ public class DependencyManager {
 		}
 	}
 
-	// Register that the scheduler should be notified as soon as the
-	// Runnable becomes free
-	public void setPending(Runnable s) {
+	// Get current state of pending flag
+	@SCJAllowed(INFRASTRUCTURE)
+	@SCJRestricted(maySelfSuspend = false, mayAllocate = false)
+	public boolean getPending(Runnable s) {
 		TaskProperties t = taskMap.get(s);
-		t.pending = true;
+		return t.pending;
 	}
 	// Clear pending flag
+	@SCJAllowed(INFRASTRUCTURE)
+	@SCJRestricted(maySelfSuspend = false, mayAllocate = false)
 	public void clearPending(Runnable s) {
 		TaskProperties t = taskMap.get(s);
 		t.pending = false;
@@ -173,10 +203,15 @@ public class DependencyManager {
 	static final private DependencyManager INSTANCE = new DependencyManager();
 	private DependencyManager() {
 	}
+
+	@SCJAllowed
+	@SCJRestricted(maySelfSuspend = false, mayAllocate = false)
 	public static DependencyManager instance() {
 		return INSTANCE;
 	}
 
+	@SCJAllowed(INFRASTRUCTURE)
+	@SCJRestricted(maySelfSuspend = false, mayAllocate = false)
 	public int getMaxFreed() {
 		return taskMap.size();
 	}

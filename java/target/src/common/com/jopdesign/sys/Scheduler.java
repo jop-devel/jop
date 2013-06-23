@@ -118,16 +118,15 @@ class Scheduler implements Runnable {
 			} else if (event[i] == NO_EVENT) {
 				diff = next[i]-j;			// check only periodic
 				if (diff < TIM_OFF) {
-					if(dm.isFree(ref[i].rtt)) {
+					if(dm.checkFree(ref[i].rtt)) {
 						break;					// found a ready task
-					} else {
-						dm.setPending(ref[i].rtt); // this task is waiting for a dependency
 					}
 				} else if (diff < k) {
 					k = diff;				// next interrupt time of higher priority thread
 				}
 			}
 		}
+
 		// i is next ready thread (index into the list)
 		// If none is ready i points to idle task or main thread (fist in the list)
 		active = i;

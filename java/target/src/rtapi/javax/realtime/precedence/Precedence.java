@@ -1,5 +1,8 @@
 package javax.realtime.precedence;
 
+import javax.safetycritical.annotate.SCJAllowed;
+
+@SCJAllowed
 public class Precedence {
 	public final DepWord [] prefix;
 	public final DepWord [] pattern;
