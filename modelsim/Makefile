@@ -5,7 +5,7 @@
 
 JOPDIR=../vhdl
 #OPTIONS=-93 -quiet -check_synthesis -lint -pedanticerrors
-OPTIONS=-2008 -quiet +acc
+OPTIONS=-2008 -quiet
 
 # Mody accordingly to point to the Modelsim Xilix and Altera 
 # simulation libraries. Use it for the simulation with the 

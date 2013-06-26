@@ -1,9 +1,14 @@
 package com.jopdesign.io;
 
-import csp.CSPbuffer;
-import csp.Conf;
+import javax.realtime.RawInt;
+import javax.safetycritical.annotate.Level;
+import javax.safetycritical.annotate.SCJAllowed;
+import javax.safetycritical.annotate.SCJRestricted;
 
-public class I2Cport extends HardwareObject {
+import csp.Buffer;
+import csp.Constants;
+
+public class I2Cport extends HardwareObject implements RawInt{
 	
 	// TX/RX buffer size in bytes. This size is the size of the FIFO's in
 	// the hardware controller. To modify it you should modify the VHDL files.
@@ -108,6 +113,13 @@ public class I2Cport extends HardwareObject {
 	}
 	
 	/**
+	 * Set device in slave mode without changing the device address
+	 */
+	public void slaveMode(){
+		control = SLAVE;
+	}
+	
+	/**
 	 * Display the contents of the control, status and address registers
 	 */
 	final public void dumpRegisters(){
@@ -175,6 +187,42 @@ public class I2Cport extends HardwareObject {
 		for (int i=0; i < occu; i++){
 			data[i] = rx_fifo_data;
 		}
+	}
+	
+	/**
+	 * Write "size" bytes to the slave identified with by the address in the first
+	 * byte of the transmit buffer.This method is particularly useful if you have
+	 * previously written data to the transmit buffer. It assumes that the first seven
+	 * bits of the byte to whom the transmit buffer points is the slave address. The LSB
+	 * of this same byte must be zero. This is a non-blocking operation. Once the 
+	 * transmission is started the hardware will take care of finishing it and
+	 * clearing the BUS_BUSY flag in the status register.
+	 * 
+	 * @param size
+	 *            How many bytes will be written to the slave. 
+	 */
+	public void write(int size){
+		
+		// Clear STRT bit in case there was a previous transaction
+		control = control & CLEAR_STRT;
+		
+		if((status & BUS_BUSY) == 0){
+			// Set I2C to master
+			control = MASTER;
+			
+			if(size > 1){
+				msg_size = size + 1;
+			}else{
+				msg_size = 1;
+			}
+
+			// Initiate transmission, set STRT bit = 1
+			control = control | STRT;
+
+		}else{
+			System.out.println("Can't start transmission, bus busy");
+		}
+		
 	}
 
 	/**
@@ -338,6 +386,35 @@ public class I2Cport extends HardwareObject {
 		msg_size = readSize - 1;
 		
 		control = control | STRT;
+		
+	}
+	
+	int getRegister(int address){
+		
+		switch (address) {
+		case 0:
+			return control;
+		case 1:	
+			return status;
+		default:
+			return 0;
+		}
+		
+	}
+
+	@Override
+	@SCJAllowed(Level.LEVEL_0)
+	@SCJRestricted(mayAllocate = false, maySelfSuspend = false)
+	public int get() {
+		
+		return 0;
+	}
+
+	@Override
+	@SCJAllowed(Level.LEVEL_0)
+	@SCJRestricted(mayAllocate = false, maySelfSuspend = false)
+	public void put(int value) {
+		// TODO Auto-generated method stub
 		
 	}
 	
