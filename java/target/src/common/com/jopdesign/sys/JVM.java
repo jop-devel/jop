@@ -20,6 +20,9 @@
 
 package com.jopdesign.sys;
 
+import com.jopdesign.io.CAM;
+import com.jopdesign.io.CAMFactory;
+
 import util.Timer;
 
 class JVM {
@@ -979,7 +982,9 @@ class JVM {
 	}
 
 
-	private static int enterCnt;
+	//private static int enterCnt;
+	
+	private static CAM CAM = CAMFactory.getCAMFactory().getCAM();
 
 	private static void f_monitorenter(int objAddr) {
 
@@ -987,8 +992,19 @@ class JVM {
 */
 		// is there a race condition???????????????? when timer int happens NOW!
 		Native.wr(0, Const.IO_INT_ENA);
-		++enterCnt;
+		//++enterCnt;
 		// JVMHelp.wr('M');
+		
+		Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
+		RtThreadImpl th = s.ref[s.active];
+		CAM.ADDRESS = objAddr;
+		int thAddr = Native.toInt(th);
+		CAM.VALUE = thAddr;
+		if(CAM.VALUE != thAddr)
+		{
+			//Add thread to lock list and suspend it
+		}
+		Native.wr(1, Const.IO_INT_ENA);
 	}
 
 	private static void f_monitorexit(int objAddr) {
@@ -996,14 +1012,22 @@ class JVM {
 /* is now in jvm.asm
 */
 		// JVMHelp.wr('E');
-		--enterCnt;
+		/*--enterCnt;
 		if (enterCnt<0) {
 			JVMHelp.wr('^');
 			for (;;);
 		}
 		if (enterCnt==0) {
 			Native.wr(1, Const.IO_INT_ENA);
-		}
+		}*/
+		
+		Native.wr(0, Const.IO_INT_ENA);
+		Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
+		RtThreadImpl th = s.ref[s.active];
+		CAM.ADDRESS = objAddr;
+		int thAddr = CAM.ADDRESS; //Dummy read that clears the address
+		//Find the next thread in the lock list and enable it (add it to CAM)
+		Native.wr(1, Const.IO_INT_ENA);
 	}
 
 

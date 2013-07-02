@@ -105,7 +105,7 @@ architecture rtl of scio is
 	constant UART_SLAVE 	: integer := 1;
 	constant LEDSW_SLAVE 	: integer := 4;
 	constant EXPH_SLAVE 	: integer := 3;
-	constant IIC			: integer := 5;
+	constant CAM_SLAVE			: integer := 5;
 	
 	-- remove the comment for RAM access counting 
 	-- signal ram_count : std_logic;
@@ -247,6 +247,23 @@ begin
 		sc_wr_data => sc_io_out.wr_data,
 		sc_rdy_cnt => sc_rdy_cnt(EXPH_SLAVE),
 		GPIO_0 => GPIO_0
+	);
+	
+	ca : entity work.cam
+	generic map 
+	(
+		sc_width => SLAVE_ADDR_BITS
+	)
+	port map
+	(
+		clock => clk,
+		reset => reset,
+		
+		sc_address => sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
+		sc_rd => sc_rd(CAM_SLAVE),
+		sc_rd_data => sc_dout(CAM_SLAVE),
+		sc_wr => sc_wr(CAM_SLAVE),
+		sc_wr_data => sc_io_out.wr_data
 	);
 	
 end rtl;
