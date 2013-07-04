@@ -985,25 +985,12 @@ class JVM {
 
 /* is now in jvm.asm
 */
-		// is there a race condition???????????????? when timer int happens NOW!
-		Native.wr(0, Const.IO_INT_ENA);
-		++enterCnt;
-		// JVMHelp.wr('M');
 	}
 
 	private static void f_monitorexit(int objAddr) {
 
 /* is now in jvm.asm
 */
-		// JVMHelp.wr('E');
-		--enterCnt;
-		if (enterCnt<0) {
-			JVMHelp.wr('^');
-			for (;;);
-		}
-		if (enterCnt==0) {
-			Native.wr(1, Const.IO_INT_ENA);
-		}
 	}
 
 
