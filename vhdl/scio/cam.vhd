@@ -28,11 +28,11 @@ end cam;
 architecture rtl of cam is
 	signal match, empty  		: std_logic_vector(data_depth-1 downto 0);
 	type DATA_ARRAY is array (data_depth-1 downto 0) of std_logic_vector(data_width-1 downto 0);
-	signal addresses, values  : DATA_ARRAY;
+	signal addresses  : DATA_ARRAY;
 	signal matched : std_logic;
-	signal current_address, current_value : std_logic_vector(data_width-1 downto 0);
+	signal current_address : std_logic_vector(data_width-1 downto 0);
 	--signal empty_position, match_position : std_logic_vector(integer(ceil(log2(real(data_depth))))-1 downto 0);
-	signal empty_position, match_position : integer range 0 to data_depth;
+	signal empty_position, match_position : integer range 0 to data_depth-1;
 begin
 
 	comparator: for i in 0 to data_depth-1 generate
@@ -68,10 +68,8 @@ begin
 		if(reset='1') then
 			empty <= (others => '1');
 			current_address <= (others => '0');
-			current_value <= (others => '0');
 			for i in 0 to data_depth-1 loop
 				addresses(i) <= (others => '0');
-				values(i) <= (others => '0');
 			end loop;
 		elsif(rising_edge(clock)) then
 			if(sc_address(0) = '0') then
@@ -79,25 +77,21 @@ begin
 					--write address
 					current_address <= sc_wr_data;
 				elsif(sc_rd = '1') then
-					--clear entry
-					empty(match_position) <= '1';
+					--read result
+					if(matched = '0') then
+						--store non-existant address and value
+						addresses(empty_position) <= current_address;
+						empty(empty_position) <= '0';
+						sc_rd_data <= '1' & std_logic_vector(to_unsigned(empty_position, data_depth-1));
+					else
+						--return existing value
+						sc_rd_data <= '1' & std_logic_vector(to_unsigned(match_position, data_depth-1));
+					end if;
 				end if;
 			else
 				if(sc_wr = '1') then
-					--write value
-					current_value <= sc_wr_data;
-				elsif(sc_rd = '1') then
-					--read result
-						if(matched = '0') then
-							--store non-existant address and value
-							addresses(empty_position) <= current_address;
-							values(empty_position) <= current_value;
-							empty(empty_position) <= '0';
-							sc_rd_data <= current_value;
-						else
-							--return existing value
-							sc_rd_data <= values(match_position);
-						end if;
+					--clear entry
+					empty(match_position) <= '1';
 				end if;
 			end if;
 		end if;
