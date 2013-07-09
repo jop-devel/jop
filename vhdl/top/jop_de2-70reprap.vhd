@@ -182,6 +182,14 @@ end component;
 -- remove the comment for RAM access counting
 -- signal ram_count		: std_logic;
 
+
+	type CAM_DATA_ARRAY is array (cpu_cnt-1 downto 0) of std_logic_vector(31 downto 0);
+	type CAM_ADDRESS_ARRAY is array (cpu_cnt-1 downto 0) of std_logic_vector(3 downto 0);
+	type CAM_SIGNAL_ARRAY is array (cpu_cnt-1 downto 0) of std_logic;
+	signal cam_rd_data, cam_wr_data  : CAM_DATA_ARRAY;
+	signal cam_rd, cam_wr  : CAM_SIGNAL_ARRAY;
+	signal cam_address  : CAM_ADDRESS_ARRAY;
+
 begin
 
 	ser_ncts <= '0';
@@ -255,7 +263,7 @@ end process;
 			sc_mem_out, sc_mem_in);
 
 	-- io for processor 0
-	io: entity work.scio generic map (
+	io: entity work.scio_main generic map (
 			cpu_id => 0,
 			cpu_cnt => cpu_cnt
 		)
@@ -284,6 +292,8 @@ end process;
 			-- remove the comment for RAM access counting
 			-- ram_cnt => ram_count
 		);
+		
+		
 		
 	-- io for processors with only sc_sys
 	gen_io: for i in 1 to cpu_cnt-1 generate
@@ -380,5 +390,28 @@ end process;
 	
 	oSRAM_CE2 <= not ram_ncs;	
     oSRAM_CE3_N <= ram_ncs;
+	 
+	 
+	 
+	 
+	 
+	ca : entity work.cam
+	generic map 
+	(
+		sc_width => 4
+	)
+	port map
+	(
+		clock => clk,
+		reset => reset,
+		
+		sc_address => sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
+		sc_rd => sc_rd(CAM_SLAVE),
+		sc_rd_data => sc_dout(CAM_SLAVE),
+		sc_wr => sc_wr(CAM_SLAVE),
+		sc_wr_data => sc_io_out.wr_data
+	);
+	 
+	 
 
 end rtl;
