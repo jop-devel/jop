@@ -42,7 +42,7 @@ public class GC {
 	 * Length of the header when using scopes.
 	 * Can be shorter then the GC supporting handle.
 	 */
-	private static final int HEADER_SIZE = 6;
+	private static final int HEADER_SIZE = 8;
 	
 	/**
 	 * Fields in the handle structure.
@@ -202,6 +202,7 @@ public class GC {
 				freeList = ref;
 				Native.wrMem(0, ref+OFF_GREY);
 				Native.wrMem(0, ref+OFF_SPACE);
+				Native.wrMem(0, ref+OFF_LOCK);
 			}
 			// clean the heap
 			int end = heapStartA+2*semi_size;
@@ -598,6 +599,7 @@ public class GC {
 			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
 			Native.wrMem(cons+Const.CLASS_HEADR, ptr+OFF_MTAB_ALEN);
 			Native.wrMem(0, ptr+OFF_TYPE);
+			Native.wrMem(0, ptr+OFF_LOCK);
 			// TODO: memory initialization is needed
 			// either on scope creation+exit or in new
 			return ptr;		
@@ -659,13 +661,15 @@ public class GC {
 			// mark it as BLACK - means it will be in toSpace
 			Native.wrMem(toSpace, ref+OFF_SPACE);
 			// TODO: should not be necessary - now just for sure
-			Native.wrMem(0, ref+OFF_GREY);
+			// Native.wrMem(0, ref+OFF_GREY);
 			// BTW: when we create mutex we synchronize on the not yet
 			// created Object!
 			// ref. flags used for array marker
 			Native.wrMem(IS_OBJ, ref+OFF_TYPE);
 			// pointer to method table in the handle
 			Native.wrMem(cons+Const.CLASS_HEADR, ref+OFF_MTAB_ALEN);
+			// TODO: should not be necessary - now just for sure
+			// Native.wrMem(0, ref+OFF_LOCK);
 		}
 
 		return ref;
@@ -723,6 +727,7 @@ public class GC {
 			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
 			Native.wrMem(arrayLength, ptr+OFF_MTAB_ALEN);
 			Native.wrMem(type, ptr+OFF_TYPE); // Array type
+			Native.wrMem(0, ptr+OFF_LOCK);
 			return ptr;
 		}
 
@@ -780,11 +785,13 @@ public class GC {
 			// mark it as BLACK - means it will be in toSpace
 			Native.wrMem(toSpace, ref+OFF_SPACE);
 			// TODO: should not be necessary - now just for sure
-			Native.wrMem(0, ref+OFF_GREY);
+			// Native.wrMem(0, ref+OFF_GREY);
 			// ref. flags used for array marker
 			Native.wrMem(type, ref+OFF_TYPE);
 			// array length in the handle
 			Native.wrMem(arrayLength, ref+OFF_MTAB_ALEN);
+			// TODO: should not be necessary - now just for sure
+			// Native.wrMem(0, ref+OFF_LOCK);
 		}
 		return ref;
 		
