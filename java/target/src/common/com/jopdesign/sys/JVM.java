@@ -20,6 +20,9 @@
 
 package com.jopdesign.sys;
 
+import com.jopdesign.io.CAM;
+import com.jopdesign.io.CAMFactory;
+
 import util.Timer;
 
 class JVM {
@@ -984,6 +987,13 @@ class JVM {
 
 	}
 
+	
+	private static int[] queue_front = new int[Const.CAM_SIZE];
+	private static int[] queue_back = new int[Const.CAM_SIZE];
+	private static int[] entry_count = new int[Const.CAM_SIZE];
+	private static int entries = 0;
+	
+	private static CAM cam = CAMFactory.getCAMFactory().getCAM();
 
 	private static void f_monitorenter(int objAddr) {
 
@@ -998,69 +1008,47 @@ class JVM {
 		RtThreadImpl c = s.ref[s.active];
 
 		// retrieve lock or create new one
-		Lock l = null;
-
 		Native.lock();
 
-		if (Native.rd(objAddr+GC.OFF_LOCK) == 0) {
-			// rtlib.Buffer.empty()
-			int i = Lock.Pool.rdPtr;
-			if (i == Lock.Pool.wrPtr) {
+		cam.ADDRESS = objAddr;
+		int result = cam.ADDRESS;
+		int index = result & 0x7FFFFFFF;
+		int current_thread = Native.toInt(c);
+		if ((result & 0x80000000) == 0) {
+			// new lock
+			entries++;
+			if (entries >= Const.CAM_SIZE) {
 				// JVMHelp.wr("run out of locks!\n");
 				throw JVMHelp.IMSExc;
 			} else {
-				int d[] = Lock.Pool.data;
-				// rtlib.Buffer.read()
-				l = Native.toLock(d[i++]);
-				if (i >= d.length) i=0;
-				Lock.Pool.rdPtr = i;
+				queue_front[index] = current_thread;
+				queue_back[index] = queue_front[index];
 			}
-			Native.wr(Native.toInt(l), objAddr+GC.OFF_LOCK);
-		} else {			
-			l = Native.toLock(Native.rd(objAddr+GC.OFF_LOCK));
-		}
-
-		if (l.holder == Native.toInt(c) && l.level > 0) {
-			// we already hold the lock
-			++l.level;
-			++c.lockLevel;
-			Native.unlock();
-			return;
 		} else {
-			// enqueue this thread
-			if (l.queue == 0) {
-				l.queue = Native.toInt(c);
-				l.tail = Native.toInt(c);
-			} else {
-				RtThreadImpl t = Native.toRtThreadImpl(l.tail);				
-				t.lockQueue = Native.toInt(c);
-				l.tail = Native.toInt(c);
+			// lock already exists
+			if(queue_front[index] != current_thread) {
+			
+				// someone else is holding the lock
+				RtThreadImpl t = Native.toRtThreadImpl(queue_back[index]);				
+				t.lockQueue = current_thread;
+				queue_back[index] = current_thread;
+				
+				// "boost" priority by masking scheduling interrupt
+				Native.wr(0xfffffffe, Const.IO_INTMASK);
+				
+				Native.unlock();
+
+				// wait until lock is free
+				for (;;) {
+					Native.lock();
+					if(queue_front[index] == current_thread) { // @WCA loop <= 1
+						break;
+					}
+					Native.unlock();
+				}
 			}
-
-			// "boost" priority by masking scheduling interrupt
-			Native.wr(0xfffffffe, Const.IO_INTMASK);
 		}
-
-		Native.unlock();
-
-		// wait until lock is free
-		for (;;) {
-			Native.lock();
-			if (l.level == 0 && l.queue == Native.toInt(c)) { // @WCA loop <= 1
-				break;
-			}
-			Native.unlock();
-		}
-
-		// remove from queue
-		l.queue = c.lockQueue;
-		c.lockQueue = 0;
-
-		// enter lock
-		l.holder = Native.toInt(c);
-		++l.level;		
-		++c.lockLevel;
-
+		entry_count[index]++;
 		Native.unlock();
 	}
 
@@ -1076,40 +1064,37 @@ class JVM {
 		Scheduler s = Scheduler.sched[Native.rd(Const.IO_CPU_ID)];
 		RtThreadImpl c = s.ref[s.active];
 
-		// get lock (must exist already, and we are holding it!)
-		Lock l = Native.toLock(Native.rd(objAddr+GC.OFF_LOCK));
-		if (l == null) {
-			// JVMHelp.wr("missing lock on monitorexit!\n");
-			throw JVMHelp.IMSExc;
-		}
-
 		// decrease lock level, return lock if possible
 		Native.lock();
-
-		int level = --l.level;
-		// kill lock and return to pool
-		if (level == 0 && l.queue == 0) {
-			Native.wr(0, objAddr+GC.OFF_LOCK);
-
-			// rtlib.Buffer.write
-			int i = Lock.Pool.wrPtr;
-			int d[] = Lock.Pool.data;
-			d[i++] = Native.toInt(l);
-			if (i>=d.length) i=0;
-			Lock.Pool.wrPtr = i;
+		
+		cam.ADDRESS = objAddr;
+		int result = cam.ADDRESS;
+		int index = result & 0x7FFFFFFF;
+		int current_thread = Native.toInt(c);
+		
+		if ((result & 0x80000000) == 0) {
+			// non-existing lock, which shouldn't happen
+			throw JVMHelp.IMSExc;
 		}
-
-		Native.unlock();
-
-		// unboost thread 
-		Native.lock();
-
-		int lockLevel = --c.lockLevel;
-		if (lockLevel == 0) {
+		
+		entry_count[index]--;
+		if(entry_count[index] == 0) {
+			// current thread is finished with lock
 			// "unboost" priority by unmasking scheduling interrupt
 			Native.wr(0xffffffff, Const.IO_INTMASK);
+			if(queue_front[index] == queue_back[index]) {
+				// last thread in queue
+				queue_front[index] = 0;
+				queue_back[index] = 0;
+				// remove lock from CAM
+				cam.RESET = 0;
+				entries--;
+			}
+			else {
+				queue_front[index] = c.lockQueue;
+				c.lockQueue = 0;
+			}
 		}
-
 		Native.unlock();
 	}
 

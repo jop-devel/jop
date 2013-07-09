@@ -19,6 +19,6 @@ package com.jopdesign.io;
 
 public final class CAM extends HardwareObject
 {	
-	public volatile int ADDRESS;
-	public volatile int VALUE;
+	public volatile int ADDRESS; //Write address and read index
+	public volatile int RESET; //Read to reset entry specified by address
 }
