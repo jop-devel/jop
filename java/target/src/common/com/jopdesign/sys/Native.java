@@ -40,6 +40,7 @@ public class Native {
 	public static native void setVP(int val);
 	public static native void int2extMem(int intAdr, int[] extAdr, int cnt);
 	public static native void ext2intMem(int[] extAdr, int intAdr, int cnt);
+
 	public static native long makeLong(int hWord, int lWord);
 	public static native void invoke(int arg, int ptr);
 	public static native void invoke(int ptr);
@@ -50,7 +51,12 @@ public class Native {
 	public static native float toFloat(int i);
 	public static native long toLong(double d);
 	public static native double toDouble(long l);
+	public static native Lock toLock(int i);
+	public static native RtThreadImpl toRtThreadImpl(int i);
+
 	public static native void monitorExit(int ref);
+	public static native void lock();
+	public static native void unlock();
 	public static native int condMove(int a, int b, boolean cond);
 	public static native Object condMoveRef(Object a, Object b, boolean cond);
 	public static native void invalidate();

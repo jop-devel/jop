@@ -39,7 +39,7 @@ public class Const {
 	 * Size of class header part.
 	 * Difference between class struct and method table.
 	 */
-	static final int CLASS_HEADR = 5;
+	static final int CLASS_HEADR = 8;
 	/**
 	 * Size of instance relative to class struct.
 	 */
@@ -56,11 +56,11 @@ public class Const {
 	/**
 	 * Class info start relative to start of MTAB.
 	 */
-	public static final int MTAB2CLINFO = -5;
+	public static final int MTAB2CLINFO = -8;
 	/**
 	 * GC_INFO field relative to start of MTAB.
 	 */
-	static final int MTAB2GC_INFO = -3;
+	static final int MTAB2GC_INFO = -6;
 	
 	/**
 	 * Size of the on-chip stack cache including the area

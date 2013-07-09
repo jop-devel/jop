@@ -81,12 +81,12 @@ public class SystemCopy extends TestCase
 		// arrays do not have their type field in String
 		// constants.
 		
-		// This test case should throw an eception
-		System.arraycopy("abcde", 0, cDest, 0, 3);
-		System.out.println(cDest);
-		if (cDest[2]!='c') {
-			return false;
-		}
+		// This test case should throw an exception
+		// System.arraycopy("abcde", 0, cDest, 0, 3);
+		// System.out.println(cDest);
+		// if (cDest[2]!='c') {
+		// 	return false;
+		// }
 		
 		String s = "aa";
 		Object o = null;

@@ -134,6 +134,10 @@ public class RtThreadImpl {
 	static boolean initDone;
 	static boolean mission;
 
+	// fields for lock implementation
+	static volatile boolean useLocks;
+	int lockLevel;
+	volatile int lockQueue;
 
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 
@@ -353,6 +357,8 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		for (i=0; i<sys.nrCpu; ++i) {
 			Scheduler.sched[i].addMain();
 		}
+
+		useLocks = true;
 
 		// running threads (state!=CREATED)
 		// are not started

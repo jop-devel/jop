@@ -101,6 +101,11 @@ public class GC {
 	 */
 	static final int GREY_END = -1;
 		
+	/**
+	 * Field that points to the object's lock
+	 */
+	static final int OFF_LOCK = 7;
+
 	static final int TYPICAL_OBJ_SIZE = 5;
 	static int handle_cnt;
 	/**
