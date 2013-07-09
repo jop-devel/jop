@@ -20,9 +20,6 @@
 
 package com.jopdesign.sys;
 
-import com.jopdesign.io.CAM;
-import com.jopdesign.io.CAMFactory;
-
 import util.Timer;
 
 class JVM {
@@ -825,6 +822,8 @@ class JVM {
 	private static void f_arraylength() { JVMHelp.noim(); /* jvm.asm */ }
 
 	private static Throwable f_athrow(Throwable t) {
+
+		Native.lock();
 		
 		if (Const.USE_RTTM) {
 			// abort transaction on any exception 
@@ -849,10 +848,11 @@ class JVM {
 			int tabstart = (i >>> 10) + (i & 0x3ff);
 			i = Native.rdMem(tabstart);
 			int tablen = i & 0xffff;
-			int mode = i & 0x10000;
+			int isSync = i & 0x10000;
+			int isStat = i & 0x20000;
 			
 			// search exception table
-			for (j = tabstart+1; j < tabstart+1+2*tablen; j+=2) {
+			for (j = tabstart+1; j < tabstart+1+(tablen<<1); j+=2) {
 				
 				// extract table entry
 				i = Native.rdMem(j);
@@ -877,16 +877,18 @@ class JVM {
 
 						// return with faked frame
 						Native.setSP(fp+4);
+						Native.unlock();
 						return t;
 					}
 				}
 			}
 
 			// do monitorexit if necessary
-			if (mode != 0) {
-				i = Native.rdIntMem(fp+5); // reference is right above the frame
-				// TODO: object to lock is found somewhere else for static methods
- 				Native.monitorExit(i);
+			if (isSync != 0) {
+				// TODO: object to lock is found somewhere else for static methods, pass null for now
+				i = Native.rdIntMem(vp); // reference is first argument of caller
+				if (isStat != 0) i = 0;
+ 				f_monitorexit(i);
 			}
 
 			// go up one frame
@@ -902,6 +904,7 @@ class JVM {
 		JVMHelp.wr("\n");
 		JVMHelp.trace(Native.getSP());
 
+		// Native.unlock(); // No need to unlock if we're about to crash anyway
 		System.exit(1);
 		return t;
 	}
@@ -982,52 +985,132 @@ class JVM {
 	}
 
 
-	//private static int enterCnt;
-	
-	private static CAM CAM = CAMFactory.getCAMFactory().getCAM();
-
 	private static void f_monitorenter(int objAddr) {
 
-/* is now in jvm.asm
-*/
-		// is there a race condition???????????????? when timer int happens NOW!
-		Native.wr(0, Const.IO_INT_ENA);
-		//++enterCnt;
-		// JVMHelp.wr('M');
-		
-		Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
-		RtThreadImpl th = s.ref[s.active];
-		CAM.ADDRESS = objAddr;
-		int thAddr = Native.toInt(th);
-		CAM.VALUE = thAddr;
-		if(CAM.VALUE != thAddr)
-		{
-			//Add thread to lock list and suspend it
+		// we cannot do real locking during startup
+		if (!RtThreadImpl.useLocks || objAddr == 0) {
+			Native.lock();
+			return;
 		}
-		Native.wr(1, Const.IO_INT_ENA);
+
+		// get current thread
+		Scheduler s = Scheduler.sched[Native.rd(Const.IO_CPU_ID)];
+		RtThreadImpl c = s.ref[s.active];
+
+		// retrieve lock or create new one
+		Lock l = null;
+
+		Native.lock();
+
+		if (Native.rd(objAddr+GC.OFF_LOCK) == 0) {
+			// rtlib.Buffer.empty()
+			int i = Lock.Pool.rdPtr;
+			if (i == Lock.Pool.wrPtr) {
+				// JVMHelp.wr("run out of locks!\n");
+				throw JVMHelp.IMSExc;
+			} else {
+				int d[] = Lock.Pool.data;
+				// rtlib.Buffer.read()
+				l = Native.toLock(d[i++]);
+				if (i >= d.length) i=0;
+				Lock.Pool.rdPtr = i;
+			}
+			Native.wr(Native.toInt(l), objAddr+GC.OFF_LOCK);
+		} else {			
+			l = Native.toLock(Native.rd(objAddr+GC.OFF_LOCK));
+		}
+
+		if (l.holder == Native.toInt(c) && l.level > 0) {
+			// we already hold the lock
+			++l.level;
+			++c.lockLevel;
+			Native.unlock();
+			return;
+		} else {
+			// enqueue this thread
+			if (l.queue == 0) {
+				l.queue = Native.toInt(c);
+				l.tail = Native.toInt(c);
+			} else {
+				RtThreadImpl t = Native.toRtThreadImpl(l.tail);				
+				t.lockQueue = Native.toInt(c);
+				l.tail = Native.toInt(c);
+			}
+
+			// "boost" priority by masking scheduling interrupt
+			Native.wr(0xfffffffe, Const.IO_INTMASK);
+		}
+
+		Native.unlock();
+
+		// wait until lock is free
+		for (;;) {
+			Native.lock();
+			if (l.level == 0 && l.queue == Native.toInt(c)) { // @WCA loop <= 1
+				break;
+			}
+			Native.unlock();
+		}
+
+		// remove from queue
+		l.queue = c.lockQueue;
+		c.lockQueue = 0;
+
+		// enter lock
+		l.holder = Native.toInt(c);
+		++l.level;		
+		++c.lockLevel;
+
+		Native.unlock();
 	}
 
 	private static void f_monitorexit(int objAddr) {
 
-/* is now in jvm.asm
-*/
-		// JVMHelp.wr('E');
-		/*--enterCnt;
-		if (enterCnt<0) {
-			JVMHelp.wr('^');
-			for (;;);
+		// we cannot do real locking during startup
+		if (!RtThreadImpl.useLocks || objAddr == 0) {
+			Native.unlock();
+			return;
 		}
-		if (enterCnt==0) {
-			Native.wr(1, Const.IO_INT_ENA);
-		}*/
-		
-		Native.wr(0, Const.IO_INT_ENA);
-		Scheduler s = Scheduler.sched[RtThreadImpl.sys.cpuId];
-		RtThreadImpl th = s.ref[s.active];
-		CAM.ADDRESS = objAddr;
-		int thAddr = CAM.ADDRESS; //Dummy read that clears the address
-		//Find the next thread in the lock list and enable it (add it to CAM)
-		Native.wr(1, Const.IO_INT_ENA);
+
+		// get current thread
+		Scheduler s = Scheduler.sched[Native.rd(Const.IO_CPU_ID)];
+		RtThreadImpl c = s.ref[s.active];
+
+		// get lock (must exist already, and we are holding it!)
+		Lock l = Native.toLock(Native.rd(objAddr+GC.OFF_LOCK));
+		if (l == null) {
+			// JVMHelp.wr("missing lock on monitorexit!\n");
+			throw JVMHelp.IMSExc;
+		}
+
+		// decrease lock level, return lock if possible
+		Native.lock();
+
+		int level = --l.level;
+		// kill lock and return to pool
+		if (level == 0 && l.queue == 0) {
+			Native.wr(0, objAddr+GC.OFF_LOCK);
+
+			// rtlib.Buffer.write
+			int i = Lock.Pool.wrPtr;
+			int d[] = Lock.Pool.data;
+			d[i++] = Native.toInt(l);
+			if (i>=d.length) i=0;
+			Lock.Pool.wrPtr = i;
+		}
+
+		Native.unlock();
+
+		// unboost thread 
+		Native.lock();
+
+		int lockLevel = --c.lockLevel;
+		if (lockLevel == 0) {
+			// "unboost" priority by unmasking scheduling interrupt
+			Native.wr(0xffffffff, Const.IO_INTMASK);
+		}
+
+		Native.unlock();
 	}
 
 
@@ -1120,8 +1203,8 @@ class JVM {
 	private static void f_resCB() { JVMHelp.noim();}
 	private static void f_resCC() { JVMHelp.noim();}
 	private static void f_resCD() { JVMHelp.noim();}
-	private static void f_resCE() { JVMHelp.noim();}
-	private static void f_resCF() { JVMHelp.noim();}
+	private static void f_lock() { JVMHelp.noim(); /* jvm.asm */ }
+	private static void f_unlock() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_jopsys_null() { JVMHelp.noim();}
 	private static void f_jopsys_rd() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_jopsys_wr() { JVMHelp.noim(); /* jvm.asm */ }

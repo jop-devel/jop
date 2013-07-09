@@ -1472,16 +1472,10 @@ System.out.println("new heap: "+heap);
 					jjvmConst(193);
 					break;
 				case 194 :		// monitorenter
-					if (io.monEnter()) {
-						sp--;	// we don't use the objref
-					} else {
-						pc--;	// restart if we don't get the global lock
-					}
-					invalCache();
+					invoke(jjp+(194<<1));
 					break;
 				case 195 :		// monitorexit
-					sp--;		// we don't use the objref
-					io.monExit();
+					invoke(jjp+(195<<1));
 					break;
 				case 196 :		// wide
 					noim(196);
@@ -1513,11 +1507,11 @@ System.out.println("new heap: "+heap);
 				case 205 :		// resCD
 					noim(205);
 					break;
-				case 206 :		// resCE
-					noim(206);
+				case 206 :		// jopsys_lock
+					// noim(206);
 					break;
-				case 207 :		// resCF
-					noim(207);
+				case 207 :		// jopsys_unlock
+					// noim(207);
 					break;
 				case 208 :		// jopsys_null
 					noim(208);
