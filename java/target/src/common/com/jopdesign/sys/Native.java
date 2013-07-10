@@ -51,7 +51,7 @@ public class Native {
 	public static native float toFloat(int i);
 	public static native long toLong(double d);
 	public static native double toDouble(long l);
-	public static native Lock toLock(int i);
+	//public static native Lock toLock(int i);
 	public static native RtThreadImpl toRtThreadImpl(int i);
 
 	public static native void monitorExit(int ref);

@@ -141,7 +141,6 @@ public class JopClassInfo extends OldClassInfo implements Serializable {
         int instSize;
         // fieldname and signature
         String[] key;
-		public String[] fieldName;
         // index in the object
         int[] idx;
         int[] size;
@@ -751,22 +750,15 @@ public class JopClassInfo extends OldClassInfo implements Serializable {
         out.println("//");
         out.println("//\t" + classRefAddress + ": " + clazz.getClassName()+" class info");
         out.println("//");
-        /* link info: class addresses */
-        outLinkInfo.println("class "+clazz.getClassName()+" "+methodsAddress+" "+cpoolAddress);
-
         out.println("\t\t" + instSize + ",\t//\tinstance size");
-
-        // link info: class addresses
-        outLinkInfo.println("class "+clazz.getClassName()+" "+methodsAddress+" "+cpoolAddress);
-        outLinkInfo.println(" -instSize "+instSize);
-        
         for (i = 0; i < clft.len; ++i) {
             if (!clft.isStatic[i]) {
                 out.println("\t\t\t\t//\t" + clft.idx[i] + " " + clft.key[i]);
-                /* link info: field offset */
-                outLinkInfo.println(" -field " + clft.key[i] + " " +clft.idx[i]);
             }
         }
+        // link info: class addresses
+        outLinkInfo.println("class "+clazz.getClassName()+" "+methodsAddress+" "+cpoolAddress);
+        outLinkInfo.println(" -instSize "+instSize);
 
         out.println("\t\t" + staticValueVarAddress
                 + ",\t//\tpointer to static primitive fields");
@@ -799,10 +791,6 @@ public class JopClassInfo extends OldClassInfo implements Serializable {
         }
         out.println("\t\t" + iftableAddress
                 + ",\t//\tpointer to interface table");
-		for (i = 0; i < 2; i++) {
-			out.println("\t\t0,\t//\tdummy");
-		}
-        out.println("\t\t0,\t//\tlock");
 
         if (!clazz.isInterface()) {
             out.println("//");

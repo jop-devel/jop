@@ -62,7 +62,7 @@ public abstract class PeriodicEventHandler extends ManagedEventHandler {
 	Mission m;
 	Memory privMem;
 
-	RtThread thread;
+	protected RtThread thread;
 	
 	long scopeSize;
 
