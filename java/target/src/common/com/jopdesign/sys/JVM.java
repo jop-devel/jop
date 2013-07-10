@@ -1020,10 +1020,10 @@ class JVM {
 			if (entries >= Const.CAM_SIZE) {
 				// JVMHelp.wr("run out of locks!\n");
 				throw JVMHelp.IMSExc;
-			} else {
-				queue_front[index] = current_thread;
-				queue_back[index] = queue_front[index];
 			}
+		
+			queue_front[index] = current_thread;
+			queue_back[index] = queue_front[index];
 		} else {
 			// lock already exists
 			if(queue_front[index] != current_thread) {
@@ -1048,6 +1048,7 @@ class JVM {
 				}
 			}
 		}
+		c.lockLevel++;
 		entry_count[index]++;
 		Native.unlock();
 	}
@@ -1078,10 +1079,9 @@ class JVM {
 		}
 		
 		entry_count[index]--;
+		c.lockLevel--;
 		if(entry_count[index] == 0) {
 			// current thread is finished with lock
-			// "unboost" priority by unmasking scheduling interrupt
-			Native.wr(0xffffffff, Const.IO_INTMASK);
 			if(queue_front[index] == queue_back[index]) {
 				// last thread in queue
 				queue_front[index] = 0;
@@ -1092,8 +1092,13 @@ class JVM {
 			}
 			else {
 				queue_front[index] = c.lockQueue;
-				c.lockQueue = 0;
 			}
+			c.lockQueue = 0;
+		}
+		if(c.lockLevel == 0) {
+			// current thread doesn't hold any more locks
+			// "unboost" priority by unmasking scheduling interrupt
+			Native.wr(0xffffffff, Const.IO_INTMASK);
 		}
 		Native.unlock();
 	}
