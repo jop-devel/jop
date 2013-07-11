@@ -8,6 +8,8 @@ import javax.safetycritical.MissionSequencer;
 import javax.safetycritical.PeriodicEventHandler;
 //import javax.safetycritical.StorageConfigurationParameters;
 import javax.safetycritical.StorageParameters;
+import javax.safetycritical.annotate.Level;
+import javax.safetycritical.annotate.SCJAllowed;
 
 /**
  * Level 1
@@ -18,75 +20,82 @@ import javax.safetycritical.StorageParameters;
 public class TestSchedule406 extends TestCase {
 
 	@Override
-	protected String getArgs()
-	{
+	protected String getArgs() {
 		return "-L 1 -I 100";
 	}
-	
-    public MissionSequencer getSequencer() {
-        return new GeneralSingleMissionSequencer(new GeneralMission() {
 
-            private volatile int _curRunner;
-            private volatile boolean _done;
-            private volatile boolean _preempted;
-            private long _iter = _prop._iterations;
+	public MissionSequencer getSequencer() {
+		return new GeneralSingleMissionSequencer(new GeneralMission() {
 
-            public void initialize() {
+			private volatile int _curRunner;
+			private volatile boolean _done;
+			private volatile boolean _preempted;
+			private long _iter = _prop._iterations;
 
-                int NOR_PRIORITY = PriorityScheduler.instance()
-                        .getNormPriority();
-                int MIN_PRIORITY = PriorityScheduler.instance()
-                        .getMinPriority();
+			public void initialize() {
 
-                PriorityParameters high = new PriorityParameters(NOR_PRIORITY);
-                PriorityParameters low = new PriorityParameters(NOR_PRIORITY
-                        - (NOR_PRIORITY - MIN_PRIORITY) / 2);
+				int NOR_PRIORITY = PriorityScheduler.instance()
+						.getNormPriority();
+				int MIN_PRIORITY = PriorityScheduler.instance()
+						.getMinPriority();
 
-                for (int i = 0; i < 5; i++) {
-                    final int index = i;
+				PriorityParameters high = new PriorityParameters(NOR_PRIORITY);
+				PriorityParameters low = new PriorityParameters(NOR_PRIORITY
+						- (NOR_PRIORITY - MIN_PRIORITY) / 2);
 
-                    // final String s = index + " back to run";
-                    new PeriodicEventHandler(low, new PeriodicParameters(null,
-                            new RelativeTime(Long.MAX_VALUE, 0)),
-//                            new StorageConfigurationParameters(0, 0, 0),
-                            new StorageParameters(0, 0, 0)){
-//                            _prop._schedObjMemSize) {
-//                        public void handleEvent() {
-                        public void handleAsyncEvent() {
-                            while (!_done) {
-                                if (_preempted) {
-                                    int curRunner = _curRunner;
-                                    _preempted = false;
+				for (int i = 0; i < 5; i++) {
+					final int index = i;
 
-                                    if (curRunner != index)
-                                        fail("Thread being preempted should be placed in front of the run queue");
+					// final String s = index + " back to run";
+					new PeriodicEventHandler(low, new PeriodicParameters(null,
+							new RelativeTime(Long.MAX_VALUE, 0)),
+							new StorageParameters(_prop._schedObjBackStoreSize,
+									null), _prop._schedObjScopeSize) {
 
-                                    // Terminal.getTerminal().writeln(s);
-                                    Thread.yield();
+						@Override
+						public void handleAsyncEvent() {
+							while (!_done) {
+								if (_preempted) {
+									int curRunner = _curRunner;
+									_preempted = false;
 
-                                } else
-                                    _curRunner = index;
-                            }
-                        }
-                    };
-                }
-                new PeriodicEventHandler(high, new PeriodicParameters(
-                        new RelativeTime(20, 0), new RelativeTime(100, 0)),
-//                        new StorageConfigurationParameters(0, 0, 0),
-                        new StorageParameters(0, 0, 0)){
-//                        _prop._schedObjMemSize) {
-//                    public void handleEvent() {
-                    public void handleAsyncEvent() {
-                        _preempted = true;
-                        if (--_iter <= 0) {
-                            _done = true;
-                            requestSequenceTermination();
-                        }
-                        // Terminal.getTerminal().writeln(
-                        // _curRunner + " ------------- being preempted");
-                    }
-                };
-            }
-        });
-    }
+									if (curRunner != index)
+										fail("Thread being preempted should be placed in front of the run queue");
+
+									// Terminal.getTerminal().writeln(s);
+									Thread.yield();
+
+								} else
+									_curRunner = index;
+							}
+						}
+					};
+				}
+
+				new PeriodicEventHandler(high, new PeriodicParameters(
+						new RelativeTime(20, 0), new RelativeTime(100, 0)),
+						new StorageParameters(_prop._schedObjBackStoreSize,
+								null), _prop._schedObjScopeSize) {
+					
+					@Override
+					public void handleAsyncEvent() {
+						_preempted = true;
+						if (--_iter <= 0) {
+							_done = true;
+							requestSequenceTermination();
+						}
+						// Terminal.getTerminal().writeln(
+						// _curRunner + " ------------- being preempted");
+					}
+				};
+			}
+		});
+	}
+
+	@Override
+	@SCJAllowed(Level.SUPPORT)
+	public long immortalMemorySize() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 }

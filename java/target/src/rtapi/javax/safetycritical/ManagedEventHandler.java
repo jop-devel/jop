@@ -27,6 +27,11 @@ import javax.realtime.ReleaseParameters;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
 
+import com.jopdesign.sys.Memory;
+import com.jopdesign.sys.RtThreadImpl;
+
+import joprt.RtThread;
+
 import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 import static javax.safetycritical.annotate.Phase.CLEANUP;
 import static javax.safetycritical.annotate.Level.SUPPORT;
@@ -49,15 +54,14 @@ public abstract class ManagedEventHandler extends BoundAsyncEventHandler
 	ManagedEventHandler(PriorityParameters priority, ReleaseParameters release,
 			StorageParameters scp, String name) {
 		this.name = name;
-		if (scp != null) {
-			// create memory (backing store)
-		}
 	}
 
 	@Override
 	@SCJAllowed(SUPPORT)
 	@SCJRestricted(phase = CLEANUP)
 	public void cleanUp() {
+		
+		System.out.println("MEH cleanup");
 	}
 
 	// TODO: do we need to repeat it here?
@@ -71,9 +75,17 @@ public abstract class ManagedEventHandler extends BoundAsyncEventHandler
 		return name;
 	}
 
-	@Override
-	@SCJAllowed
-	@SCJRestricted(phase = INITIALIZATION)
-	public void register() {
-	}
+	//jrri: Not in v 0.9 of spec
+//	@Override
+//	@SCJAllowed
+//	@SCJRestricted(phase = INITIALIZATION)
+//	public void register() {
+//		
+//	}
+	
+	//jrri: Not in v 0.9 of spec
+//	@SCJAllowed
+//	public static ManagedEventHandler getCurrentHandler(){
+//		return null;
+//	}
 }

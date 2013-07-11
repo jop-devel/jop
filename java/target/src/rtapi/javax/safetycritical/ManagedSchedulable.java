@@ -32,12 +32,14 @@ import static javax.safetycritical.annotate.Phase.CLEANUP;
 @SCJAllowed
 public interface ManagedSchedulable extends javax.realtime.Schedulable
 {
-  /**
-   * Register the task with its Mission.
-   */
-  @SCJAllowed
-  @SCJRestricted(phase = INITIALIZATION)
-  public void register();
+
+	// jrri: Not in v0.90 of spec
+	//  /**
+//   * Register the task with its Mission.
+//   */
+//  @SCJAllowed
+//  @SCJRestricted(phase = INITIALIZATION)
+//  public void register();
 
   @SCJAllowed(SUPPORT)
   @SCJRestricted(phase = CLEANUP)

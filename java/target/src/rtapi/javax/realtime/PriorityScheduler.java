@@ -48,7 +48,7 @@ public class PriorityScheduler extends Scheduler {
 	@BlockFree
 	@SCJAllowed(LEVEL_1)
 	public int getMaxPriority() {
-		return 99;
+		return 39;
 	}
 
 	@BlockFree

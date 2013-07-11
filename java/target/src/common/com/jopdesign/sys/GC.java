@@ -24,7 +24,9 @@ package com.jopdesign.sys;
 
 
 /**
- *     Real-time garbage collection for JOP
+ *     Real-time garbage collection for JOP.
+ *     Also contains some scope support.
+ *     At the moment either GC or scopes.
  *     
  * @author Martin Schoeberl (martin@jopdesign.com)
  *
@@ -36,8 +38,11 @@ public class GC {
 	// for our RT-GC tests
 	static int full_heap_size;
 	
-	// Used in newObject and newArray to locate the object/array
-	private static final int HEADER_SIZE = 4;
+	/**
+	 * Length of the header when using scopes.
+	 * Can be shorter then the GC supporting handle.
+	 */
+	private static final int HEADER_SIZE = 6;
 	
 	/**
 	 * Fields in the handle structure.
@@ -51,7 +56,7 @@ public class GC {
 	 * The handle contains following data:
 	 * 0 pointer to the object in the heap or 0 when the handle is free
 	 * 1 pointer to the method table or length of an array
-	 * 2 size - could be in class info
+	 * 2 denote in which space or scope the object is 
 	 * 3 type info: object, primitve array or ref array
 	 * 4 pointer to next handle of same type (used or free)
 	 * 5 gray list
@@ -62,11 +67,16 @@ public class GC {
 	 */
 	public static final int OFF_PTR = 0;
 	public static final int OFF_MTAB_ALEN = 1;
-	public static final int OFF_SIZE = 2;
+	public static final int OFF_SPACE = 2;
 	public static final int OFF_TYPE = 3;
-	// reuse the size field for the scope level, as the size
-	// field is (hopefully) only used by the GC
-	public static final int OFF_SCOPE = 2;
+	
+	// Scope level shares the to/from pointer
+	public static final int OFF_SCOPE_LEVEL = OFF_SPACE;
+	
+	// Offset with memory reference. Can we use this field?
+	// Does not work for arrays
+	public static final int OFF_MEM = 5;
+	
 	
 	// size != array length (think about long/double)
 	
@@ -90,10 +100,6 @@ public class GC {
 	 * Special end of list marker -1
 	 */
 	static final int GREY_END = -1;
-	/**
-	 * Denote in which space the object is
-	 */
-	static final int OFF_SPACE = 6;
 		
 	static final int TYPICAL_OBJ_SIZE = 5;
 	static int handle_cnt;
@@ -356,11 +362,11 @@ public class GC {
 			// allready moved
 			// can this happen? - yes, as we do not check it in mark
 			// TODO: no, it's checked in push()
-			// What happens when the actuall scanning object is
+			// What happens when the actual scanning object is
 			// again pushed on the gray stack by the mutator?
 			if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
 				// it happens 
-//				log("mark/copy allready in toSpace");
+//				log("mark/copy already in toSpace");
 				continue;
 			}
 			
@@ -368,10 +374,9 @@ public class GC {
 //			if (Native.rdMem(ref+OFF_PTR)==0) {
 //				log("mark/copy OFF_PTR=0!!!");
 //				continue; 
-//			}
-			
+//			}			
 				
-			// push all childs
+			// push all children
 				
 			// get pointer to object
 			int addr = Native.rdMem(ref);
@@ -396,13 +401,29 @@ public class GC {
 					flags >>>= 1;
 				}				
 			}
-			
+
+			// Do not copy objects from somewhere else than fromspace
+			if (Native.rdMem(ref+OFF_SPACE)!=fromSpace) {
+//				log("mark/copy not in fromSpace");
+				continue;
+			}
+
 			// now copy it - color it BLACK			
 			int size;
 			int dest;
 
+			if (flags==IS_OBJ) {
+				// plain object
+				size = Native.rdMem(Native.rdMem(ref+OFF_MTAB_ALEN)-Const.CLASS_HEADR);
+			} else if (flags==7 || flags==11) {
+				// long or double array
+				size = Native.rdMem(ref+OFF_MTAB_ALEN) << 1;
+			} else {
+				// other array
+				size = Native.rdMem(ref+OFF_MTAB_ALEN);
+			}
+
 			synchronized(mutex) {
-				size = Native.rdMem(ref+OFF_SIZE);
 				dest = copyPtr;
 				copyPtr += size;			
 
@@ -529,7 +550,7 @@ public class GC {
 	 * @param cons pointer to class struct
 	 * @return address of the handle
 	 */
-	static int newObject(int cons) {
+	public static int newObject(int cons) {
 		int size = Native.rdMem(cons);			// instance size
 		
 		if (Config.USE_SCOPES) {
@@ -561,8 +582,13 @@ public class GC {
 				if (Config.ADD_REF_INFO){
 					ptr = ptr | (sc.level << 25);	
 				}
+				
 				//Add scope info to object's handler field
-				Native.wrMem(sc.level , ptr+OFF_SCOPE);
+				Native.wrMem(sc.level, ptr+OFF_SCOPE_LEVEL);
+				
+				// Add scoped memory area info into objects handle
+				// TODO: Choose an appropriate field since we also want scope level info in handle 
+				Native.wrMem( Native.toInt(sc), ptr+OFF_MEM);
 			}
 			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
 			Native.wrMem(cons+Const.CLASS_HEADR, ptr+OFF_MTAB_ALEN);
@@ -625,8 +651,6 @@ public class GC {
 			useList = ref;
 			// pointer to real object, also marks it as non free
 			Native.wrMem(allocPtr, ref); // +OFF_PTR
-			// should be from the class info
-			Native.wrMem(size, ref+OFF_SIZE);
 			// mark it as BLACK - means it will be in toSpace
 			Native.wrMem(toSpace, ref+OFF_SPACE);
 			// TODO: should not be necessary - now just for sure
@@ -642,7 +666,7 @@ public class GC {
 		return ref;
 	}
 	
-	static int newArray(int size, int type) {
+	public static int newArray(int size, int type) {
 		if (size < 0) {
 			throw new NegativeArraySizeException();
 		}
@@ -682,8 +706,14 @@ public class GC {
 				if (Config.ADD_REF_INFO){
 					ptr = ptr | (sc.level << 25);	
 				}
+				
 				//Add scope info to array's handler field
-				Native.wrMem(sc.level , ptr+OFF_SCOPE);
+				Native.wrMem(sc.level, ptr+OFF_SCOPE_LEVEL);
+				
+				// Add scoped memory area info into array handle
+				// TODO: Choose an appropriate field since we also want scope level info in handle
+				// TODO: Does not work in arrays
+				 Native.wrMem( Native.toInt(sc), ptr+OFF_MEM);
 			}
 			Native.wrMem(ptr+HEADER_SIZE, ptr+OFF_PTR);
 			Native.wrMem(arrayLength, ptr+OFF_MTAB_ALEN);
@@ -742,8 +772,6 @@ public class GC {
 			useList = ref;
 			// pointer to real object, also marks it as non free
 			Native.wrMem(allocPtr, ref); // +OFF_PTR
-			// should be from the class info
-			Native.wrMem(size, ref+OFF_SIZE);
 			// mark it as BLACK - means it will be in toSpace
 			Native.wrMem(toSpace, ref+OFF_SPACE);
 			// TODO: should not be necessary - now just for sure
@@ -921,6 +949,10 @@ public class GC {
 	static void log(String s) {
 		JVMHelp.wr(s);
 		JVMHelp.wr("\n");
+	}
+	
+	public int newObj2(int ref){
+		return newObject(ref);
 	}
 
 }

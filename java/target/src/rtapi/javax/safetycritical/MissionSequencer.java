@@ -30,6 +30,8 @@ import javax.safetycritical.annotate.MemoryAreaEncloses;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
 
+import com.jopdesign.sys.RtThreadImpl;
+
 import joprt.RtThread;
 import joprt.SwEvent;
 
@@ -49,6 +51,8 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 	private SwEvent clean;
 //	private boolean cleanupDidRun;
 	public static boolean cleanupDidRun;
+	
+	Mission current_mission;
 
 	// why is this static?
 	// ok, in level 1 we have only one mission.
@@ -77,17 +81,56 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 		super(priority, null, storage, name);
 		// just an idle thread that watches the termination request
 		// We should use the inital main thread to watch for termination...
+
 		new RtThread(0, 10000) {
 			public void run() {
 				while (!MissionSequencer.terminationRequest) {
 					waitForNextPeriod();
 				}
-				getNextMission().cleanUp();
+				// Why do we need to call the cleanUp() method of the next
+				// mission after a termination request in the current mission?
+				//getNextMission().cleanUp();
+				
+				// Current mission cleanup method
+				current_mission.cleanUp();
+				
+				// MEH cleanUp method 
 				cleanUp();
+				
 				cleanupDidRun = true;
+				
 			}
+			
 		};
-
+		
+//		final Runnable runner = new Runnable() {
+//			
+//			public void run() {
+//				handleAsyncEvent();
+//				
+//			}
+//		};
+//		
+//		new RtThread(0, 10000){
+//
+//			public void run() {
+//				while (!MissionSequencer.terminationRequest) {
+//
+//					// This should be the mission memory
+//					privMem.enter(runner);
+//					block();
+////					waitForNextPeriod();
+//				}
+//				// Current mission cleanup method
+//				current_mission.cleanUp();
+//				
+//				// MEH cleanUp method 
+//				cleanUp();
+//			}
+//		};
+		
+		
+		
 		// clean = new SwEvent(0, 100) {
 		// public void handle() {
 		// if (!cleanupDidRun && terminationRequest) {
@@ -114,16 +157,28 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 	@Override
 	@SCJAllowed(INFRASTRUCTURE)
 	public final void handleAsyncEvent() {
-		// Currently used as a means to start the single mission from another package
-		Mission mission = getNextMission();
-		mission.initialize();
-		RtThread.startMission();
+		
+//		current_mission.setSequencer(this);
+		
+//		System.out.println("getting new mission");
+//		
+////		if (current_mission.phase == Mission.INACTIVE){
+//			// Currently used as a means to start the single mission from another package
+//			Mission mission = getNextMission();
+//			
+//			mission.phase = Mission.INITIALIZATION;
+//			
+//			// TODO: The spec mentions something about mission memory resize...
+//			// mission.missionMemorySize();
+//			
+//			mission.initialize();
+//		}
+		
 	}
 
 	/**
 	 * Inherited because we extend MEH although we could use composition....
 	 */
-	@Override
 	@SCJAllowed
 	@SCJRestricted(phase = INITIALIZATION)
 	public final void register() {
@@ -132,7 +187,10 @@ public abstract class MissionSequencer<SpecificMission extends Mission> extends
 
 	@SCJAllowed(LEVEL_2)
 	public final void requestSequenceTermination() {
-		this.getNextMission().requestTermination();
+		// Why do we need to call the cleanUp() method of the next
+		// mission after a termination request in the current mission?
+		//this.getNextMission().requestTermination();
+		current_mission.requestTermination();
 	}
 
 	@SCJAllowed(LEVEL_2)

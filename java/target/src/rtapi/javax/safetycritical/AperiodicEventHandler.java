@@ -22,11 +22,18 @@ package javax.safetycritical;
 
 import static javax.safetycritical.annotate.Level.LEVEL_1;
 
+import java.util.Vector;
+
 import javax.realtime.AperiodicParameters;
 import javax.realtime.PriorityParameters;
 import javax.safetycritical.annotate.MemoryAreaEncloses;
 import javax.safetycritical.annotate.SCJAllowed;
 import javax.safetycritical.annotate.SCJRestricted;
+
+import com.jopdesign.sys.Memory;
+import com.jopdesign.sys.Native;
+
+import joprt.SwEvent;
 
 import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 
@@ -37,14 +44,17 @@ import static javax.safetycritical.annotate.Phase.INITIALIZATION;
 @SCJAllowed(LEVEL_1)
 public abstract class AperiodicEventHandler extends ManagedEventHandler {
 
+	String name;
+	SwEvent event;
+	Memory privMem;
+
 	@MemoryAreaEncloses(inner = { "this", "this", "this", "this" }, outer = {
 			"priority", "release_info", "mem_info", "event" })
 	@SCJAllowed(LEVEL_1)
 	@SCJRestricted(phase = INITIALIZATION)
 	public AperiodicEventHandler(PriorityParameters priority,
-			AperiodicParameters release, StorageParameters scp,
-			AperiodicEvent event) {
-		super(null, null, null, null);
+			AperiodicParameters release, StorageParameters storage, long scopeSize) {
+		this(priority, release, storage, scopeSize, "");
 	}
 
 	@MemoryAreaEncloses(inner = { "this", "this", "this", "this", "this" }, outer = {
@@ -52,35 +62,66 @@ public abstract class AperiodicEventHandler extends ManagedEventHandler {
 	@SCJAllowed(LEVEL_1)
 	@SCJRestricted(phase = INITIALIZATION)
 	public AperiodicEventHandler(PriorityParameters priority,
-			AperiodicParameters release, StorageParameters scp,
-			AperiodicEvent event, String name) {
-		super(null, null, null, null);
+			AperiodicParameters release, StorageParameters storage, long scopeSize, String name) {
+		super(priority, release, storage, name);
+
+		if (storage != null) {
+			privMem = new Memory((int) scopeSize, (int) storage.getTotalBackingStoreSize());
+		}
+
+		final Runnable runner = new Runnable() {
+			@Override
+			public void run() {
+				handleAsyncEvent();
+			}
+		};
+
+		this.name = name;
+
+		// Aperiodic = Sporadic with minimum inter-arrival time set to zero
+		event = new SwEvent(priority.getPriority(), 0) {
+
+			@Override
+			public void handle() {
+				privMem.enter(runner);
+			}
+
+		};
+
 	}
 
-	@MemoryAreaEncloses(inner = { "this", "this", "this", "this" }, outer = {
-			"priority", "release_info", "scp", "events" })
-	@SCJAllowed(LEVEL_1)
-	@SCJRestricted(phase = INITIALIZATION)
-	public AperiodicEventHandler(PriorityParameters priority,
-			AperiodicParameters release, StorageParameters scp,
-			AperiodicEvent[] events) {
-		super(null, null, null, null);
-	}
+	// @MemoryAreaEncloses(inner = { "this", "this", "this", "this" }, outer = {
+	// "priority", "release_info", "scp", "events" })
+	// @SCJAllowed(LEVEL_1)
+	// @SCJRestricted(phase = INITIALIZATION)
+	// public AperiodicEventHandler(PriorityParameters priority,
+	// AperiodicParameters release, StorageParameters scp,
+	// AperiodicEvent[] events) {
+	// super(null, null, null, null);
+	// }
+	//
+	// @MemoryAreaEncloses(inner = { "this", "this", "this", "this", "this" },
+	// outer = {
+	// "priority", "release_info", "scp", "events", "name" })
+	// @SCJAllowed(LEVEL_1)
+	// @SCJRestricted(phase = INITIALIZATION)
+	// public AperiodicEventHandler(PriorityParameters priority,
+	// AperiodicParameters release, StorageParameters scp,
+	// AperiodicEvent[] events, String name) {
+	// super(null, null, null, null);
+	// }
 
-	@MemoryAreaEncloses(inner = { "this", "this", "this", "this", "this" }, outer = {
-			"priority", "release_info", "scp", "events", "name" })
-	@SCJAllowed(LEVEL_1)
-	@SCJRestricted(phase = INITIALIZATION)
-	public AperiodicEventHandler(PriorityParameters priority,
-			AperiodicParameters release, StorageParameters scp,
-			AperiodicEvent[] events, String name) {
-		super(null, null, null, null);
-	}
-
-	@Override
 	@SCJAllowed
 	@SCJRestricted(phase = INITIALIZATION)
 	public final void register() {
+		Mission m = Mission.getCurrentMission();
+		if (!m.hasEventHandlers){
+//			System.out.println("creating MEH vector...");
+			m.eventHandlersRef = Native.toInt(new Vector());
+			m.hasEventHandlers = true;
+		}
+		
+		((Vector) Native.toObject(m.eventHandlersRef)).addElement(this);
 	}
 
 	/**
@@ -93,5 +134,9 @@ public abstract class AperiodicEventHandler extends ManagedEventHandler {
 	 */
 	void unblock() {
 		// TODO Auto-generated method stub
+	}
+
+	public final void release() {
+		event.fire();
 	}
 }

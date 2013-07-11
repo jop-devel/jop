@@ -6,12 +6,13 @@ import javax.safetycritical.annotate.Level;
 
 public class Properties {
 
-    //public Level _level = Level.LEVEL_2;
-    public long _duration = 3000;
-    public long _period = 250;
+//    public Level _level = Level.LEVEL_1;
+    public long _duration = 300;
+    public long _period = 50;
     public long _iDelay = 0;
     public long _missionMemSize = 5000;
-    public long _schedObjMemSize = 5000;
+    public long _schedObjBackStoreSize = 5000;
+    public long _schedObjScopeSize = 2500;
     public int _threads = 1;
     public int _priority = PriorityScheduler.instance().getNormPriority();
     public int _iterations = 100;
@@ -78,7 +79,7 @@ public class Properties {
 			_missionMemSize = Long.valueOf(value);
 			break;
 		case 'm':
-			_schedObjMemSize = Long.valueOf(value);
+			_schedObjBackStoreSize = Long.valueOf(value);
 			break;
 		case 'R':
 			_priority = Integer.valueOf(value);

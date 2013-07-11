@@ -6,7 +6,7 @@ LOG_DIR=`pwd`/logs
 
 # get the JOP source tree
 rm -rf jop
-git clone git://www.soc.tuwien.ac.at/jop.git
+git clone git://github.com/jop-devel/jop.git
 cd jop
 
 # Make sure working tree is clean

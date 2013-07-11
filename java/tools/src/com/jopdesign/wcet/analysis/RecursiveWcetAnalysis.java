@@ -152,6 +152,7 @@ public class RecursiveWcetAnalysis<Context extends AnalysisContext>
                 for (CFGNode node : nodeFlow.keySet()) {
                     if (!(node instanceof InvokeNode)) continue;
                     InvokeNode inv = (InvokeNode) node;
+                    if (!inv.isVirtualInstance()) continue;
 
                     InvokeNode virt = inv.getVirtualNode();
                     if (virt != null) {

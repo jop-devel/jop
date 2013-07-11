@@ -30,6 +30,10 @@ import javax.realtime.PeriodicParameters;
 import javax.realtime.PriorityParameters;
 import javax.realtime.RelativeTime;
 import javax.safetycritical.*;
+import javax.safetycritical.annotate.Level;
+import javax.safetycritical.annotate.Phase;
+import javax.safetycritical.annotate.SCJAllowed;
+import javax.safetycritical.annotate.SCJRestricted;
 import javax.safetycritical.io.SimplePrintStream;
 
 /**
@@ -46,6 +50,14 @@ public class HelloClock extends Mission implements Safelet {
 	static PassiveClock counter;
 
 	static SimplePrintStream out;
+	
+	@Override
+	@SCJAllowed(Level.SUPPORT)
+	@SCJRestricted(phase = Phase.INITIALIZATION)
+	public void initializeApplication() {
+		// TODO Auto-generated method stub
+		
+	}
 
 	// From Mission
 	@Override
@@ -64,7 +76,7 @@ public class HelloClock extends Mission implements Safelet {
 		PeriodicEventHandler peh = new PeriodicEventHandler(
 				new PriorityParameters(11), new PeriodicParameters(
 						new RelativeTime(0, 0), new RelativeTime(1000, 0)),
-				new StorageParameters(10000, 1000, 1000)) {
+				new StorageParameters(10000, null), 500) {
 			int cnt;
 
 			public void handleAsyncEvent() {
@@ -85,8 +97,8 @@ public class HelloClock extends Mission implements Safelet {
 	@Override
 	public MissionSequencer getSequencer() {
 		// we assume this method is invoked only once
-		StorageParameters sp = new StorageParameters(1000000, 0, 0);
-		return new LinearMissionSequencer(new PriorityParameters(13), sp, this);
+		StorageParameters sp = new StorageParameters(1000000, null);
+		return new LinearMissionSequencer(new PriorityParameters(13), sp, false, this);
 	}
 
 	@Override

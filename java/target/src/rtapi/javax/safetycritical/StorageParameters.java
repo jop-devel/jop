@@ -1,204 +1,54 @@
+/*
+  This file is part of JOP, the Java Optimized Processor
+    see <http://www.jopdesign.com/>
+
+  Copyright (C) 2008-2011, Martin Schoeberl (martin@jopdesign.com)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package javax.safetycritical;
+
 import javax.safetycritical.annotate.SCJAllowed;
 
 /**
  * StorageParameters
- *
+ * 
+ * This class might get renamed to MemoryParameters (back again).
+ * 
  */
 @SCJAllowed
-public class StorageParameters
-{
-	
-	
-  long totalBackingStore;
-  long nativeStack;
-  long javaStack;
-	
-  /**
-   * Get the amount of backing store set aside for the
-   * current schedulable object.
-   * 
-   * @return the total size
-   */
-  public static long backingStoreSize() { return 0; }
+public class StorageParameters {
 
-  /**
-   * Get the amount of backing store consumed by the
-   * current schedulable object.
-   *
-   * @return the amount consumed.
-   */
-  public static long backingStoreConsumed() { return 0; }
+	private long totalBackingStore;
 
-  /**
-   * Get the amount of backing store available for use
-   * by the current schedulable object.
-   *
-   * @return the amount remaining.
-   */
-  public static long backingStoreRemaining() { return 0; }
-  /**
-   * Get the amount of native stack size set asside for the
-   * current schedulable object.
-   * 
-   * @return the total size
-   */
-  public static long nativeStackSize() { return 0; }
+	@SCJAllowed
+	public StorageParameters(long totalBackingStore, long[] sizes,
+			int messageLength, int stackTraceLength)
 
-  /**
-   * Get the amount of native stack size consumed by the
-   * current schedulable object.
-   *
-   * @return the amount consumed.
-   */
-  public static long nativeStackConsumed() { return 0; }
+	{
+		this.totalBackingStore = totalBackingStore;
+	}
 
-  /**
-   * Get the amount of native stack size available for use
-   * by the current schedulable object.
-   *
-   * @return the amount remaining.
-   */
-  public static long nativeStackRemaining() { return 0; }
-  /**
-   * Get the amount of stack space for Java objects set aside for the
-   * current schedulable object.
-   * 
-   * @return the total size
-   */
-  public static long javaStackSize() { return 0; }
+	@SCJAllowed
+	public StorageParameters(long totalBackingStore, long[] sizes) {
+		this(totalBackingStore, sizes, 0, 0);
+	}
 
-  /**
-   * Get the amount of stack space for Java objects consumed by the
-   * current schedulable object.
-   *
-   * @return the amount consumed.
-   */
-  public static long javaStackConsumed() { return 0; }
+	// Both of these methods are not in the spec:
 
-  /**
-   * Get the amount of stack space for Java objects available for use
-   * by the current schedulable object.
-   *
-   * @return the amount remaining.
-   */
-  public static long javaStackRemaining() { return 0; }
-
-  /**
-   * Stack sizes for schedulable objects and sequencers. Passed as
-   * parameter to the constructor of mission sequencers and
-   * schedulable objects.
-   *
-   * TBD: kelvin changed nativeStack and javaStack to long.  Note that
-   * getJavaStackSize() and getNativeStackSize() methods were already
-   * declared to return long.  It seems that we have an implicit
-   * assumption that memory sizes are represented by long.  do others
-   * agree with this change?
-   *
-   * @param totalBackingStore size of the backing store reservation
-   *        for worst-case scope usage in bytes
-   * @param nativeStack size of native stack in bytes (vendor specific)
-   * @param javaStack size of Java execution stack in bytes (vendor specific)
-   */
-  @SCJAllowed
-  public StorageParameters(long totalBackingStore,
-                           long nativeStack, long javaStack) 
-  {
-	  this.totalBackingStore = totalBackingStore;
-	  this.nativeStack = nativeStack;
-	  this.javaStack = javaStack;
-  }
-  
-  /**
-   * Stack sizes for schedulable objects and sequencers. Passed as
-   * parameter to the constructor of mission sequencers and
-   * schedulable objects. 
-   *
-   * TBD: kelvin changed nativeStack and javaStack to long.  Note that
-   * getJavaStackSize() and getNativeStackSize() methods were already
-   * declared to return long.  It seems that we have an implicit
-   * assumption that memory sizes are represented by long.  do others
-   * agree with this change?
-   *
-   * @param totalBackingStore size of the backing store reservation
-   *        for worst-case scope usage in bytes 
-   *
-   * @param nativeStack size of native stack in bytes (vendor specific)
-   *
-   * @param javaStack size of Java execution stack in bytes (vendor specific)
-   *
-   * @param messageLength length of the space in bytes dedicated to
-   *        message associated with this Schedulable object's
-   *        ThrowBoundaryError exception plus all the method  
-   *        names/identifiers in the stack backtrace
-   *
-   * @param stackTraceLength the number of byte for the
-   *        StackTraceElement array dedicated to stack backtrace associated
-   *        with this Schedulable object's ThrowBoundaryError exception. 
-   */
-  @SCJAllowed
-  public StorageParameters(long totalBackingStore,
-                           long nativeStackSize, long javaStackSize,
-                           int messageLength,
-                           int stackTraceLength) { }
-
-  
-  /**
-   * This is the only constructor that should exist according to the current spec.
-   * It should be properly implemented.
-   * Tórur - 1/7/2011
-   * */
-  @SCJAllowed
-  public StorageParameters(long totalBackingStore,
-                           long[] sizes, 
-                           int messageLength,
-                           int stackTraceLength) 
-  {
-	  this.totalBackingStore = totalBackingStore;
-  }
-  
-  /**
-   *
-   * @return the size of the total backing store available for scoped
-   *         memory areas created by the assocated SO.
-   */
-  @SCJAllowed
-  public long getTotalBackingStoreSize() 
-  { 
-	return totalBackingStore; 
-  }
-    
-  /**
-   *
-   * @return the size of the native method stack available to the assocated SO.
-   */
-  @SCJAllowed
-  public long getNativeStackSize() 
-  { 
-	return nativeStack; 
-  }
-    
-  /**
-   *
-   * @return the size of the Java stack available to the assocated SO.
-   */ 
-  @SCJAllowed
-  public long getJavaStackSize() 
-  { 
-	return javaStack; 
-  }
-    
-  /**
-   * 
-   * return the length of the message buffer
-   */
-  @SCJAllowed
-  public int getMessageLength(){return 0; }
-
-  /**
-   * 
-   * return the length of the stack trace buffer
-   */
-  @SCJAllowed
-  public int getStackTraceLength() {return 0; }
+	long getTotalBackingStoreSize() {
+		return totalBackingStore;
+	}
 }

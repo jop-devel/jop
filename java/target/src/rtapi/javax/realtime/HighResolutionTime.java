@@ -275,18 +275,18 @@ public abstract class HighResolutionTime { // implements Comparable {
 		nanos = time.nanos;
 	}
 
-	/**
-	 * Behaves exactly like target.wait() but with the enhancement that it waits
-	 * with a precision of HighResolutionTime.
-	 * 
-	 * @param target
-	 *            The object on which to wait. The current thread must have a
-	 *            lock on the object.
-	 * @param time
-	 *            The time for which to wait. If it is RelativeTime(0,0) then
-	 *            wait indefinitely. If it is null then wait indefinitely.
-	 * @throws java.lang.InterruptedException
-	 */
+//	/**
+//	 * Behaves exactly like target.wait() but with the enhancement that it waits
+//	 * with a precision of HighResolutionTime.
+//	 * 
+//	 * @param target
+//	 *            The object on which to wait. The current thread must have a
+//	 *            lock on the object.
+//	 * @param time
+//	 *            The time for which to wait. If it is RelativeTime(0,0) then
+//	 *            wait indefinitely. If it is null then wait indefinitely.
+//	 * @throws java.lang.InterruptedException
+//	 */
 //	@SCJAllowed(LEVEL_2)
 //    public static void waitForObject(java.lang.Object target,
 //            HighResolutionTime time) throws java.lang.InterruptedException {
@@ -331,24 +331,5 @@ public abstract class HighResolutionTime { // implements Comparable {
 
         return sum;
     }
-
-	/************** unused RTSJ methods ******************************/
-
-	/**
-	 * Note: it is not "safe" to automatically convert from one clock basis to
-	 * another.
-	 */
-	public abstract RelativeTime relative(Clock clock);
-
-	public abstract RelativeTime relative(Clock clock, RelativeTime time);
-
-	public abstract AbsoluteTime absolute(Clock clock);
-
-	public abstract AbsoluteTime absolute(Clock clock, AbsoluteTime dest);
-
-	// We do not allow to set the clock
-	void setClock(Clock clock) {
-		this.clock = clock;
-	}
 
 }

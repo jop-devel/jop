@@ -97,13 +97,5 @@ public class RealtimeClock extends Clock {
 		return false;
 	}
 
-	/* (non-Javadoc)
-	 * @see javax.realtime.Clock#setResolution(javax.realtime.RelativeTime)
-	 */
-	@Override
-	protected void setResolution(RelativeTime resolution) {
-		// TODO Auto-generated method stub
-
-	}
 
 }

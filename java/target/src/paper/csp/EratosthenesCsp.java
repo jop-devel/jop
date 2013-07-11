@@ -102,8 +102,8 @@ public class EratosthenesCsp implements Runnable {
 				
 				if(r.sendAlong(lvl, candidate)) {
 					System.out.println("->");
-					NoC.b_send1(1, lvl);
-					NoC.b_send1(1, candidate);
+					NoC.nb_send1(1, lvl);
+					NoC.nb_send1(1, candidate);
 				
 				} else {
 //					System.out.println(".");
@@ -125,8 +125,8 @@ public class EratosthenesCsp implements Runnable {
 			// check it against the current prime
 			if(sendAlong(lvl, candidate)) {
 				// send it further
-				NoC.b_send1(nid, lvl);
-				NoC.b_send1(nid, candidate);
+				NoC.nb_send1(nid, lvl);
+				NoC.nb_send1(nid, candidate);
 //				RtThread.sleepMs(10);
 			}
 		   }

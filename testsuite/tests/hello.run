@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e -v
-make java_app
-jtag testsuite/urjtag.config 
-make download COM_PORT=/dev/ttyS0
+#make java_app
+#jtag testsuite/urjtag.config 
+make japp COM_PORT=/dev/ttyS0
 #make wcet | grep 'wcet:'

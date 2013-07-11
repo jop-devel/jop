@@ -6,7 +6,7 @@ public abstract class TestCase extends MainSafelet {
 
 //    private String _name = getClass().getName();
 	private String _name = "NYI";
-    private boolean _passed = true;
+    private boolean _passed = true; 
     private int _freeSlot;
     private final int _MAX_MESSAGES_PER_TESTCASE = 4;
     private String[] _errorMessages = new String[_MAX_MESSAGES_PER_TESTCASE + 1];
@@ -16,8 +16,9 @@ public abstract class TestCase extends MainSafelet {
 
         info += "*********************************\n";
         info += " " + _name + "\n";
-        info += " MissionMem: " + _prop._missionMemSize + "\n";
+        info += " MissionMem: " + _prop._missionMemSize + "\n"; 
 //        info += " " + getLevel() + "\tPriority " + _prop._priority + "\n";
+        info += " Priority " + _prop._priority + "\n";
         info += " Period " + _prop._period + "\tDuration " + _prop._duration
                 + "\n";
         info += "*********************************";
@@ -26,11 +27,15 @@ public abstract class TestCase extends MainSafelet {
     }
 
     protected String report() {
+    	
         String result = "";
+       
         if (!_passed) {
             result += "Failed:\n";
-            for (int i = 0; i < _freeSlot; i++)
-                result += " [" + i + "] " + _errorMessages[i] + "\n";
+            for (int i = 0; i < _freeSlot; i++){
+            	result += " [" + i + "] " + _errorMessages[i] + "\n";
+            }
+                
         }
         return result;
     }

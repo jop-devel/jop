@@ -15,79 +15,6 @@ import static javax.safetycritical.annotate.Allocate.Area.THIS;
 @SCJAllowed
 public final class CyclicSchedule
 {
-  @SCJAllowed
-  public final static class Frame
-  {
-    /**
-     * Allocates and retains private shallow copies of the duration
-     * and handlers array within the same memory
-     * area as this. The elements within the copy of the handlers array are
-     * the exact same elements as in the handlers array. Thus, it is
-     * essential that the elements of the handlers array reside in memory
-     * areas that enclose this.  Under normal circumstances, this
-     * Frame object is instantiated within the MissionMemory area that
-     * corresponds to the Level0Mission that is to be scheduled.
-     * <p>
-     * Within each execution frame of the CyclicSchedule, the
-     * PeriodicEventHandler objects represented by the handlers 
-     * array will be fired in same order as they appear within this
-     * array.  Normally, PeriodicEventHandlers are sorted into
-     * decreasing priority order prior to invoking this constructor.
-     */
-    @Allocate({ Area.THIS })
-    @MemoryAreaEncloses(inner = { "this",     "this"     },
-                        outer = { "duration", "handlers" })
-    @SCJAllowed
-    public Frame(RelativeTime duration, PeriodicEventHandler[] handlers)
-    {
-    }
-
-    /**
-     * TBD: Kelvin proposes to make this package access and final.
-     * That way, we don't have to copy the returned value.  Ok?
-     *
-     * Performs no allocation. Returns a reference to the internal
-     * representation of the frame duration, which is 
-     * intended to be treated as read-only.
-     * Any modifications to the returned RelativeTime object will have
-     * potentially disastrous, but undefined results.  
-     * The returned object resides in the
-     * same scope as this Frame object.  Under normal
-     * circumstances, this Frame object resides in the
-     * MissionMemory area that corresponds to the Level0Mission that
-     * it is scheduling.
-     */
-    // @SCJAllowed
-    final RelativeTime getDuration()
-    {
-      return null;
-    }
-
-    /**
-     * TBD: Kelvin proposes to make this package access and final.  That way, we
-     * don't need to copy the handlers array.  
-     *
-     * @return a reference to the shared internal representation of
-     * the array of PeriodicEventHandler objects that are to be
-     * executed during this frame of time.  The array is sorted in
-     * order of decreasing priority.  Thus, the highest priority event
-     * handler is the first entry in the array.  Event handlers are
-     * executed in the same order as they are listed in the returned
-     * array.  Note that the returned array is shared with this
-     * Frame object and is intended to be treated as read-only.
-     * Any modifications to the array will have
-     * potentially disastrous, but undefined results.  
-     * The returned object resides in the
-     * same scope as this Frame object.  Under normal
-     * circumstances, this Frame object resides in the same MissionMemory area
-     * as the Level0Mission that it is scheduling.  
-     */
-    // @SCJAllowed
-    final PeriodicEventHandler[] getHandlers()
-    {
-      return null;
-    }
-  }
 
   /**
    * Construct a cyclic schedule by copying the frames array into a
@@ -101,11 +28,18 @@ public final class CyclicSchedule
    * have zero PeriodicEventHandlers associated with them.  This would
    * represent a period of time during which the Level0Mission is idle.
    */
+	
+	private Frame[] frames_;
+	private RelativeTime cycleDuration;
+	
   @Allocate({ Area.THIS })
   @MemoryAreaEncloses(inner = { "this" }, outer = { "frames" })
   @SCJAllowed
   public CyclicSchedule(Frame[] frames)
   {
+	  frames_ = new Frame[frames.length];
+	  System.arraycopy(frames, 0, frames_, 0, frames.length);
+	  cycleDuration = new RelativeTime();
   }
 
   /**
@@ -128,7 +62,12 @@ public final class CyclicSchedule
   // @Allocate( { Area.CURRENT })
   // @SCJAllowed
   final RelativeTime getCycleDuration() {
-      return null;
+	  
+	  for (int i = 0; i < frames_.length-1; i++){
+		  cycleDuration = cycleDuration.add(cycleDuration,frames_[i].duration_);
+	  }
+	  
+      return cycleDuration;
   }
 
   /**
@@ -153,6 +92,6 @@ public final class CyclicSchedule
    // @Allocate({ THIS })
   final Frame[] getFrames()
   {
-    return null;
+    return frames_;
   }
 }

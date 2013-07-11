@@ -210,8 +210,22 @@ public class Const {
 	
 	// LED & SWITCH on DE2
 	public static final int LS_BASE = IO_BASE+0x40;
+	
+	// Expansion header on DE2-70
+	public static final int EH_BASE = IO_BASE+0x30;
+	public static final int IIC_BASE = IO_BASE+0x50;
+	
 	// Ethernet interface on DE2
 	public static final int DM9000 = IO_BASE+0x50;
+	
+	/* "Sensors" on hwScope Example.
+	 */
+	public static final int SENS_M_BASE = IO_BASE+0x30;
+	public static final int SENS_C_BASE = IO_BASE+0x50;
+
+	// I2C ports
+	public static final int I2C_A_BASE = IO_BASE+0x30;
+	public static final int I2C_B_BASE = IO_BASE+0x60;
 	
 	// Keyboard
 	public static final int KB_CTRL = IO_BASE+0x30+0;

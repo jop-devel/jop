@@ -247,34 +247,4 @@ public class RelativeTime extends HighResolutionTime {
         return add(-time.millis, -time.nanos);
 	}
 
-	/************** unused RTSJ methods ******************************/
-
-	/**
-	 * Note: it is not "safe" to automatically convert from one clock basis to
-	 * another.
-	 */
-	public AbsoluteTime absolute(Clock clock) {
-		return absolute(clock);
-	}
-
-	/**
-	 * Note: it is not "safe" to automatically convert from one clock basis to
-	 * another.
-	 */
-	public RelativeTime relative(Clock clock) {
-		return null; // dummy return
-	}
-
-	// clock conversion
-	public RelativeTime(RelativeTime time, Clock clock) {
-		this();
-	}
-
-	public AbsoluteTime absolute(Clock clock, AbsoluteTime destination) {
-		return null;
-	}
-
-	public RelativeTime relative(Clock clock, RelativeTime destination) {
-		return null;
-	}
 }

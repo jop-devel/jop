@@ -22,8 +22,10 @@ abstract public class GenericPortListener implements Runnable {
 	abstract void getOneMessage() throws IOException;
 	
 	public void run() {
-		while(!Thread.interrupted()) {
-			
+		// MS: there is no Thread.interrupted in JOP. One should use periodic threads.
+		// This code might have never been executed on JOP.... so shall we keep it?
+//		while(!Thread.interrupted()) {
+		while (true) {
 			try {
 				getOneMessage();
 			} catch (IOException e) {

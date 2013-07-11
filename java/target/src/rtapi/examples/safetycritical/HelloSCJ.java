@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2008-2011, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2008-2012, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -31,34 +31,54 @@ import javax.safetycritical.*;
 import javax.safetycritical.io.SimplePrintStream;
 
 /**
- * A minimal SCJ application - The SCJ Hello World
+ * A minimal SCJ application - The SCJ version of Hello World
  * 
  * @author Martin Schoeberl
  * 
  */
 public class HelloSCJ extends Mission implements Safelet {
 
-	// work around...
-	static HelloSCJ single;
-
 	static SimplePrintStream out;
+	static OutputStream os;
 
-	// From Mission
+	// Safelet methods
 	@Override
-	protected void initialize() {
+	public long immortalMemorySize() {
+		return 1000;
+	}
 
-		OutputStream os = null;
+	@Override
+	public void initializeApplication() {
+		// Allocate the output console in immortal memory for all missions
 		try {
 			os = Connector.openOutputStream("console:");
 		} catch (IOException e) {
 			throw new Error("No console available");
 		}
 		out = new SimplePrintStream(os);
+	}
+
+	@Override
+	public MissionSequencer<Mission> getSequencer() {
+		// we assume this method is invoked only once
+		StorageParameters sp = new StorageParameters(1000000, null);
+		return new LinearMissionSequencer<Mission>(new PriorityParameters(13),
+				sp, false, this);
+	}
+
+	// From Mission
+	@Override
+	public long missionMemorySize() {
+		return 100000;
+	}
+
+	@Override
+	public void initialize() {
 
 		PeriodicEventHandler peh = new PeriodicEventHandler(
 				new PriorityParameters(11), new PeriodicParameters(
-						new RelativeTime(0, 0), new RelativeTime(1000, 0)),
-				new StorageParameters(10000, 1000, 1000)) {
+						new RelativeTime(0, 0), new RelativeTime(500, 0)),
+				new StorageParameters(10000, null), 500) {
 			int cnt;
 
 			public void handleAsyncEvent() {
@@ -66,29 +86,12 @@ public class HelloSCJ extends Mission implements Safelet {
 				++cnt;
 				if (cnt > 5) {
 					// getCurrentMission is not yet working
-					single.requestTermination();
+					// single.requestTermination();
+					Mission.getCurrentMission().requestSequenceTermination();
 				}
 			}
 		};
 		peh.register();
-	}
-
-	// Safelet methods
-	@Override
-	public MissionSequencer getSequencer() {
-		// we assume this method is invoked only once
-		StorageParameters sp = new StorageParameters(1000000, 0, 0);
-		return new LinearMissionSequencer(new PriorityParameters(13), sp, this);
-	}
-
-	@Override
-	public long missionMemorySize() {
-		return 100000;
-	}
-
-	@Override
-	public long immortalMemorySize() {
-		return 1000;
 	}
 
 	/**
@@ -98,9 +101,10 @@ public class HelloSCJ extends Mission implements Safelet {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		// in SCJ we don't have System.out,
+		// but for now it's nice for debugging
 		System.out.println("Hello");
-		Terminal.getTerminal().writeln("Hello SCJ World!");
-		single = new HelloSCJ();
+		HelloSCJ single = new HelloSCJ();
 		JopSystem.startMission(single);
 	}
 

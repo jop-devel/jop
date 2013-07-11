@@ -5,7 +5,7 @@ import javax.realtime.*;
 
 import joprt.RtThread;
 
-public class PrivateScope extends LTPhysicalMemory {
+public class PrivateScope { // extends LTPhysicalMemory {
 	
 	static RuntimeException notOwner = new RuntimeException("Not the current owner");
 
@@ -15,8 +15,9 @@ public class PrivateScope extends LTPhysicalMemory {
 //	private RtThread owner;
 
 	public PrivateScope(long size) {
-		super(PhysicalMemoryManager.ON_CHIP_PRIVATE, size);
-//		owner = RtThread.currentRtThread();
+//		super(PhysicalMemoryManager.ON_CHIP_PRIVATE, size);
+
+		//		owner = RtThread.currentRtThread();
 //		this.owner = RealtimeThread.currentRealtimeThread();
 	}
 
@@ -26,7 +27,8 @@ public class PrivateScope extends LTPhysicalMemory {
 			// the calling thread doesn't own this scope
 //			throw notOwner;
 //		} else {
-			super.enter(R);
+		throw new Error("We need to find a new SCJ solution for local SPM");
+//			super.enter(R);
 //		}
 	}
 

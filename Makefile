@@ -26,7 +26,7 @@
 #
 #	Set USB to true for an FTDI chip based board (dspio, usbmin, lego)
 #
-USB=true
+USB=false
 
 #
 #	com1 is the usual serial port
@@ -56,7 +56,7 @@ QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp d
 ifeq ($(USB),true)
 	QPROJ=usbmin
 else
-	QPROJ=cycmin
+	QPROJ=altde2-70
 endif
 
 #
@@ -67,8 +67,8 @@ XPROJ=ml50x
 XFPGA=false
 
 # Altera FPGA configuration cable
-BLASTER_TYPE=ByteBlasterMV
-#BLASTER_TYPE=USB-Blaster
+#BLASTER_TYPE=ByteBlasterMV
+BLASTER_TYPE=USB-Blaster
 
 ifeq ($(WINDIR),)
 	DOWN=./down
@@ -220,7 +220,7 @@ else
 	TARGET_SOURCE=$(TARGET_SRC_PATH)/common$(S)$(TARGET_SRC_PATH)/jdk_base$(S)$(TARGET_SRC_PATH)/jdk11$(S)$(TARGET_SRC_PATH)/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
 endif
 endif
-TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5 -encoding Latin1
+TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5 -target 1.5 -encoding Latin1
 GCC_PARAMS=
 
 # uncomment this to use RTTM
@@ -281,11 +281,15 @@ DEBUG_JOPIZER=
 #DEBUG_JOPSIM=$(DEBUG_PARAMETERS)
 DEBUG_JOPSIM=
 
+# Use local RXTX libary if other not specified
+# e.g RXTXcomm-2.2pre2
+JAVA_RXTX_LIB?=java/lib/RXTXcomm.jar
+
 #
 #	application optimization with ProGuard:
 #	proguard.sourceforge.net/
 #	uncomment following line to use it
-#OPTIMIZE=mv java/target/dist/lib/classes.zip java/target/dist/lib/in.zip; java -jar java/lib/proguard.jar @optimize.pro
+#OPTIMIZE=mv java/target/dist/lib/classes.jar java/target/dist/lib/in.zip; java -jar java/lib/proguard.jar @optimize.pro
 
 ################################################################################
 # Make rules
@@ -437,9 +441,10 @@ endif
 # Optimize
 ifeq ($(USE_JCOPTER),yes)
 ifeq (${JCOPTER_USE_WCA},no)
+	rm -rf $(TARGET)/dist/classes.unopt; \
 	mv $(TARGET)/dist/classes $(TARGET)/dist/classes.unopt
 	java -Xmx1280M $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.jcopter.JCopter \
-	   -c $(TARGET)/dist/classes -o $(TARGET)/dist --classdir $(TARGET)/dist/classes.opt \
+	   -c $(TARGET)/dist/classes.unopt -o $(TARGET)/dist --classdir $(TARGET)/dist/classes \
 	   --no-use-wca $(JCOPTER_OPTIONS) $(MAIN_CLASS)
 else
 	for target in ${WCET_METHOD}; do \
@@ -451,12 +456,12 @@ else
 	done
 endif
 endif 
-	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
+	cd $(TARGET)/dist/classes && jar cf ../lib/classes.jar *
 # use SymbolManager for Paulo's version of JOPizer instead
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
-		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
+		-cp $(TARGET)/dist/lib/classes.jar -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
 #	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.debug.jdwp.jop.JopSymbolManager \
-#		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
+#		-cp $(TARGET)/dist/lib/classes.jar -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
 	java $(TOOLS_CP) com.jopdesign.tools.jop2dat $(TARGET)/dist/bin/$(JOPBIN)
 	cp *.dat modelsim
 	rm -f *.dat
@@ -560,6 +565,13 @@ sim_csp: java_app
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SIMULATION
 	cd modelsim && make csp
 
+#
+#	Modelsim target for Gomspace CSP in JOP
+#
+sim_iic: java_app
+	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SIMULATION
+	cd modelsim && make iic	
+
 
 #
 #	JopSim target
@@ -636,7 +648,7 @@ config_xilinx:
 
 download:
 #	this is the Java version for downloading
-#	java -cp java/tools/dist/lib/jop-tools.jar$(S)java/lib/RXTXcomm.jar com.jopdesign.tools.JavaDown \
+#	java -cp java/tools/dist/lib/jop-tools.jar$(S)$(JAVA_RXTX_LIB) com.jopdesign.tools.JavaDown \
 #		$(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
 
 #	this is the download version with down.exe
@@ -777,7 +789,7 @@ WCET_UPPAAL?=no
 WCET_VERIFYTA?=verifyta	 # only needed if WCET_UPPAAL=yes
 wcet:
 	-mkdir -p $(TARGET)/wcet
-	# Reading the classes.zip does not work correctly for optimized code because we need the sourcelines.txt
+	# Reading the classes.jar does not work correctly for optimized code because we need the sourcelines.txt
 	for target in $(WCET_METHOD); do \
 	  java -Xss16M -Xmx1280M $(JAVA_OPT) \
 	    $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis \
@@ -803,11 +815,11 @@ wcet_report:
 
 dfa:
 	java -Xss16M $(TOOLS_CP) com.jopdesign.dfa.Main \
-		-cp $(TARGET)/dist/lib/classes.zip $(MAIN_CLASS)
+		-cp $(TARGET)/dist/lib/classes.jar $(MAIN_CLASS)
 
 test:
 	java $(TOOLS_CP) com.jopdesign.wcet.CallGraph \
-		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/wcet/$(P3)call.txt -sp $(TARGET_SOURCE) $(MAIN_CLASS)
+		-cp $(TARGET)/dist/lib/classes.jar -o $(TARGET)/wcet/$(P3)call.txt -sp $(TARGET_SOURCE) $(MAIN_CLASS)
 
 
 ###### end of Makefile #######
@@ -833,9 +845,9 @@ esim: ecl_app
 # do it from my eclipse workspace
 #
 ecl_app:
-	cd ../../workspace/cvs_jop_target/classes && jar cf ../../../cpu/jop/java/target/dist/lib/classes.zip *
+	cd ../../workspace/cvs_jop_target/classes && jar cf ../../../cpu/jop/java/target/dist/lib/classes.jar *
 	java $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
-		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
+		-cp $(TARGET)/dist/lib/classes.jar -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
 	java $(TOOLS_CP) com.jopdesign.tools.jop2dat $(TARGET)/dist/bin/$(JOPBIN)
 	cp *.dat modelsim
 	rm -f *.dat
@@ -846,12 +858,12 @@ ecl_app:
 #
 appinfo: tools
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.AppInfo \
-		-cp $(TARGET)/dist/lib/classes.zip $(MAIN_CLASS)
+		-cp $(TARGET)/dist/lib/classes.jar $(MAIN_CLASS)
 
 testapp: tools
 	make java_app
 	-mkdir $(TARGET)/xxx
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WCETPreprocess \
-		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/xxx $(MAIN_CLASS)
+		-cp $(TARGET)/dist/lib/classes.jar -o $(TARGET)/xxx $(MAIN_CLASS)
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
 		-cp $(TARGET)/xxx -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)

@@ -83,23 +83,23 @@ public abstract class Clock {
   @SCJRestricted(maySelfSuspend = false)
   public abstract AbsoluteTime getTime();
   
-  /**
-   * Gets the current time in an existing object. The time
-   * represented by the given AbsoluteTime is changed at some
-   * time between the invocation of the method and the return of
-   * the method. Note: This method will return an absolute time
-   * value that represents the clock's notion of an absolute
-   * time. For clocks that do not measure calendar time this
-   * absolute time may not represent a wall clock time.  
-   * @param dest The instance of AbsoluteTime object which will
-   * be updated in place. The clock association of the dest
-   * parameter is ignored. When dest is not null the returned
-   * object is associated with this clock. If dest is null, then
-   * nothing happens. 
-   * @return The instance of AbsoluteTime passed as parameter,
-   * representing the current time, associated with this  clock,
-   * or null if dest was null. 
-   */
+	/**
+	 * Gets the current time in an existing object. The time represented by the
+	 * given AbsoluteTime is changed at some time between the invocation of the
+	 * method and the return of the method. Note: This method will return an
+	 * absolute time value that represents the clock's notion of an absolute
+	 * time. For clocks that do not measure calendar time this absolute time may
+	 * not represent a wall clock time.
+	 * 
+	 * @param dest
+	 *            The instance of AbsoluteTime object which will be updated in
+	 *            place. The clock association of the dest parameter is ignored.
+	 *            When dest is not null the returned object is associated with
+	 *            this clock. If dest is null, then nothing happens.
+	 * @return The instance of AbsoluteTime passed as parameter, representing
+	 *         the current time, associated with this clock, or null if dest was
+	 *         null.
+	 */
   @SCJAllowed
   @SCJRestricted(mayAllocate = false, maySelfSuspend = false)
   public abstract AbsoluteTime getTime(AbsoluteTime dest);
@@ -203,14 +203,4 @@ public abstract class Clock {
   @SCJRestricted(maySelfSuspend = false)
   protected abstract boolean resetTargetTime(AbsoluteTime time);
   
-  /**
-   * Set the resolution of this. TBD: do we keep this in SCJ?
-   * 
-   * MS: I don't think we should support this.
-   * 
-   * @param resolution
-   */
-//	@BlockFree
-//	@SCJAllowed(LEVEL_1)
-  protected abstract void setResolution(javax.realtime.RelativeTime resolution);
 }

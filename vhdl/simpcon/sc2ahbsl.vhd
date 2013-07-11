@@ -50,7 +50,7 @@ port (
 	clk, reset	: in std_logic;
 
 --	SimpCon memory interface
-	scmo		: in sc_mem_out_type;
+	scmo		: in sc_out_type;
 	scmi		: out sc_in_type;
 
 -- AMBA slave interface

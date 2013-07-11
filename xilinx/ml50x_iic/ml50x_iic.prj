@@ -1,0 +1,51 @@
+vhdl work  ../../vhdl/top/jop_ml50x_iic.vhd
+vhdl work  ../../vhdl/top/jop_config_global.vhd
+vhdl work  ../../vhdl/top/jop_config_ml50x.vhd
+
+vhdl work  ../../vhdl/core/jop_types.vhd
+vhdl work  ../../vhdl/core/bcfetch.vhd
+vhdl work  ../../vhdl/core/fetch.vhd
+vhdl work  ../../vhdl/core/shift.vhd
+vhdl work  ../../vhdl/core/cache.vhd
+vhdl work  ../../vhdl/core/stack.vhd
+vhdl work  ../../vhdl/core/mul.vhd
+vhdl work  ../../vhdl/core/core.vhd
+vhdl work  ../../vhdl/core/decode.vhd
+vhdl work  ../../vhdl/core/jopcpu.vhd
+
+vhdl work  ../../vhdl/simpcon/sc_pack.vhd
+vhdl work  ../../vhdl/simpcon/sc_arbiter_pack.vhd
+vhdl work  ../../vhdl/simpcon/sc_arbiter_fixedpr.vhd
+
+vhdl work  ../../vhdl/scio/fifo.vhd
+vhdl work  ../../vhdl/scio/sc_uart.vhd
+vhdl work  ../../vhdl/scio/sc_sys.vhd
+vhdl work  ../../vhdl/scio/sc_i2c.vhd
+vhdl work  ../../vhdl/scio/scio_ml50x_iic.vhd
+
+vhdl work  ../../vhdl/scio/i2c/fifo/async_fifo_syn.vhd
+vhdl work  ../../vhdl/scio/i2c/fifo/counter_synth.vhd
+vhdl work  ../../vhdl/scio/i2c/fifo/dual_port_ram_xil.vhd
+vhdl work  ../../vhdl/scio/i2c/fifo/FIFO_read_control_syn.vhd
+vhdl work  ../../vhdl/scio/i2c/fifo/FIFO_write_control_syn.vhd
+vhdl work  ../../vhdl/scio/i2c/fifo/synchronizer_synth.vhd
+vhdl work  ../../vhdl/scio/i2c/fifo/fifo_pkg.vhd
+vhdl work  ../../vhdl/scio/i2c/i2c_pkg.vhd
+vhdl work  ../../vhdl/scio/i2c/main_i2c_sm_sync.vhd
+vhdl work  ../../vhdl/scio/i2c/scl_sm_sync.vhd
+vhdl work  ../../vhdl/scio/i2c/i2c.vhd
+
+vhdl work  ../../vhdl/cache/ocache.vhd
+
+vhdl work  ../../vhdl/xilinx/xs3_jbc.vhd
+vhdl work  ../../vhdl/xilinx/xram.vhd
+verilog work  ../../vhdl/xilinx/xc5pll.v
+
+vhdl work  ../../vhdl/memory/sdpram.vhd
+vhdl work  ../../vhdl/memory/mem_sc.vhd
+vhdl work  ../../vhdl/memory/sc_sram32.vhd
+
+vhdl work  ../../vhdl/jtbl.vhd
+vhdl work  ../../vhdl/rom.vhd
+vhdl work  ../../vhdl/xv4ram_block.vhd
+

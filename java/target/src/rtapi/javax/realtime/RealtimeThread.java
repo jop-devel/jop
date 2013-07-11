@@ -23,54 +23,24 @@
 package javax.realtime;
 
 import static javax.safetycritical.annotate.Level.LEVEL_1;
-import static javax.safetycritical.annotate.Level.LEVEL_2;
 
 import javax.safetycritical.annotate.SCJAllowed;
-import javax.safetycritical.annotate.SCJProtected;
 import javax.safetycritical.annotate.SCJRestricted;
 
 /**
  * What it the real usage of RealtimeThread in SCJ?
+ * It is *just* the static method to get the current allocation context!!!
  * 
  * @author martin
  *
  */
 @SCJAllowed(LEVEL_1)
 public class RealtimeThread extends Thread implements Schedulable {
-	// public RealtimeThread(SchedulingParameters scheduling,
-	// ReleaseParameters release,
-	// MemoryParameters memory,
-	// MemoryArea area,
-	// ProcessingGroupParameters group,
-	// java.lang.Runnable logic)
-	// { // skeleton
-	// }
 
-	/**
-	 * Should not be visible.
-	 */
-	@SCJProtected
-	public RealtimeThread(SchedulingParameters schedule, MemoryArea area) {
+
+	// no instances allowed in level 0/1
+	private RealtimeThread() {
 		super(null);
-	}
-
-	@SCJProtected
-	public RealtimeThread() {
-		super(null);
-	}
-
-	public void deschedulePeriodic() {
-	}
-
-	/**
-	 * Do we need this information in SCJ? We don't have the concept of threads
-	 * in Level 1.
-	 * 
-	 */
-	@SCJAllowed(LEVEL_2)
-	@SCJRestricted(maySelfSuspend = false)
-	public static RealtimeThread currentRealtimeThread() {
-		throw new Error("implement me");
 	}
 
 	@SCJAllowed(LEVEL_1)
@@ -78,78 +48,4 @@ public class RealtimeThread extends Thread implements Schedulable {
 	public static MemoryArea getCurrentMemoryArea() {
 		throw new Error("implement me");
 	}
-
-	@SCJAllowed(LEVEL_2)
-	@SCJRestricted(maySelfSuspend = true)
-	public static void sleep(javax.realtime.HighResolutionTime time)
-			throws InterruptedException {
-	};
-
-	/**
-	 * Allocates no memory. Does not allow this to escape local variables. The
-	 * returned object may reside in scoped memory, within a scope that encloses
-	 * this.
-	 */
-	@SCJAllowed(LEVEL_2)
-	@SCJRestricted(maySelfSuspend = false)
-	public MemoryArea getMemoryArea() {
-		throw new Error("implement me");
-	}
-
-	/**
-	 * Not @SCJAllowed because ThreadConfigurationParameters releases
-	 * MemoryParameters.
-	 */
-	public MemoryParameters getMemoryParameters() {
-		return null; // dummy return
-	}
-
-	/**
-	 * Allocates no memory. Does not allow this to escape local variables. The
-	 * returned object may reside in scoped memory, within a scope that encloses
-	 * this.
-	 * <p>
-	 * No allocation because ReleaseParameters are immutable.
-	 */
-	// @BlockFree
-	// @SCJAllowed(LEVEL_2)
-	public ReleaseParameters getReleaseParameters() {
-		return null; // dummy return
-	}
-
-	/**
-	 * Allocates no memory. Does not allow this to escape local variables. The
-	 * returned object may reside in scoped memory, within a scope that encloses
-	 * this.
-	 * <p>
-	 * No allocation because SchedulingParameters are immutable.
-	 */
-	// @BlockFree
-	// @SCJAllowed(LEVEL_2)
-	public SchedulingParameters getSchedulingParameters() {
-		return null; // dummy return
-	}
-
-	/**
-	 * Allocates no memory. Treats the implicit this argument as a variable
-	 * residing in scoped memory.
-	 */
-	public void start() {
-	}
-
-	public void release() {
-	}
-
-	public static boolean waitForNextRelease() {
-		return false; // dummy return
-	}
-
-	public static int getMemoryAreaStackDepth() {
-		return -1;
-	}
-
-	public static MemoryArea getOuterMemoryArea(int delta) {
-		return null;
-	}
-
 }

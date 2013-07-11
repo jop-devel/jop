@@ -281,30 +281,4 @@ public class AbsoluteTime extends HighResolutionTime {
 	public RelativeTime subtract(AbsoluteTime time) {
 		return subtract(time, null);
 	}
-
-	/************** unused RTSJ methods ******************************/
-
-	/*
-	 * Note: it is not "safe" to automatically convert from one clock basis to
-	 * another.
-	 */
-	public RelativeTime relative(Clock clock) {
-		return relative(clock);
-	}
-
-	public AbsoluteTime(AbsoluteTime time, Clock clock) {
-		this();
-	}
-
-	public AbsoluteTime absolute(Clock clock, AbsoluteTime dest) {
-		return null;
-	}
-
-	public AbsoluteTime absolute(Clock clock) {
-		return this;
-	}
-
-	public RelativeTime relative(Clock clock, RelativeTime dest) {
-		return null;
-	}
 }
