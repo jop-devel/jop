@@ -986,13 +986,8 @@ class JVM {
 		}
 
 	}
-
-	private static int[] current_owner = new int[Const.CAM_SIZE];
-	private static int[] queue_front = new int[Const.CAM_SIZE];
-	private static int[] queue_back = new int[Const.CAM_SIZE];
-	private static int[] entry_count = new int[Const.CAM_SIZE];
-	private static int entries = 0;
 	
+	private static int entries = 0;
 	private static CAM cam = CAMFactory.getCAMFactory().getCAM();
 
 	private static void f_monitorenter(int objAddr) {
@@ -1015,6 +1010,7 @@ class JVM {
 		int result = cam.ADDRESS; // Adding the lock
 		int index = result & 0x7FFFFFFF;
 		int current_thread = Native.toInt(c);
+		Lock lock = Native.toLock(Lock.locks[index]);
 		if ((result & 0x80000000) == 0) {
 			// new lock
 			entries++;
@@ -1022,24 +1018,23 @@ class JVM {
 				// JVMHelp.wr("run out of locks!\n");
 				throw JVMHelp.IMSExc;
 			}
-		
-			current_owner[index] = current_thread;
+			lock.current_owner = current_thread;
 		} else {
 			// lock already exists
-			if(current_owner[index] != current_thread) {
+			if(lock.current_owner != current_thread) {
 			
 				// someone else is holding the lock
 				
-				if(queue_front[index] == 0) {
+				if(lock.queue_front == 0) {
 					// no queue so start one
-					queue_front[index] = current_thread;
-					queue_back[index] = current_thread;
+					lock.queue_front = current_thread;
+					lock.queue_back = current_thread;
 				}
 				else {
 					// add current thread to end of queue
-					RtThreadImpl t = Native.toRtThreadImpl(queue_back[index]);				
+					RtThreadImpl t = Native.toRtThreadImpl(lock.queue_back);				
 					t.lockQueue = current_thread;
-					queue_back[index] = current_thread;
+					lock.queue_back = current_thread;
 				}
 				
 				// "boost" priority by masking scheduling interrupt
@@ -1050,7 +1045,7 @@ class JVM {
 				// wait until lock is free
 				for (;;) {
 					Native.lock();
-					if(current_owner[index] == current_thread) { // @WCA loop <= 1
+					if(lock.current_owner == current_thread) { // @WCA loop <= 1
 						break;
 					}
 					Native.unlock();
@@ -1058,7 +1053,7 @@ class JVM {
 			}
 		}
 		c.lockLevel++;
-		entry_count[index]++;
+		lock.entry_count++;
 		Native.unlock();
 	}
 
@@ -1082,17 +1077,17 @@ class JVM {
 		int result = cam.ADDRESS;
 		int index = result & 0x7FFFFFFF;
 		int current_thread = Native.toInt(c);
-		
+		Lock lock = Native.toLock(Lock.locks[index]);
 		if ((result & 0x80000000) == 0) {
 			// non-existing lock, which shouldn't happen
 			throw JVMHelp.IMSExc;
 		}
 		
-		entry_count[index]--;
+		lock.entry_count--;
 		c.lockLevel--;
-		if(entry_count[index] == 0) {
+		if(lock.entry_count == 0) {
 			// current thread is finished with lock
-			if(queue_front[index] == 0) {
+			if(lock.queue_front == 0) {
 				// no queue
 				// remove lock from CAM
 				cam.RESET = 0;
@@ -1100,19 +1095,19 @@ class JVM {
 			}
 			else {
 				// move front of queue to current_owner
-				int new_owner = queue_front[index];
-				current_owner[index] = new_owner;
+				int new_owner = lock.queue_front;
+				lock.current_owner = new_owner;
 				RtThreadImpl t = Native.toRtThreadImpl(new_owner);
 				if(t.lockQueue != 0)
 				{
 					// there are threads left in the queue so shift to the front
-					queue_front[index] = t.lockQueue;
+					lock.queue_front = t.lockQueue;
 				}
 				else
 				{
 					// last thread in queue
-					queue_front[index] = 0;
-					queue_back[index] = 0;
+					lock.queue_front = 0;
+					lock.queue_back = 0;
 				}
 				t.lockQueue = 0;
 			}

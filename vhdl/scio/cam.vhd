@@ -82,10 +82,10 @@ begin
 						--store non-existant address and value
 						addresses(empty_position) <= current_address;
 						empty(empty_position) <= '0';
-						sc_rd_data <= '0' & std_logic_vector(to_unsigned(empty_position, data_depth-1));
+						sc_rd_data <= '0' &  std_logic_vector(to_unsigned(empty_position, 31));
 					else
 						--return existing value
-						sc_rd_data <= '1' & std_logic_vector(to_unsigned(match_position, data_depth-1));
+						sc_rd_data <= '1' & std_logic_vector(to_unsigned(match_position, 31));
 					end if;
 				end if;
 			else

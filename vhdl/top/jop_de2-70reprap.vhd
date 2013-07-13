@@ -50,7 +50,7 @@ generic (
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 5;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 4		-- number of cpus
+	cpu_cnt		: integer := 12		-- number of cpus
 );
 
 port (
@@ -270,7 +270,7 @@ end process;
 			sc_mem_out, sc_mem_in);
 
 	-- io for processor 0
-	io0: entity work.scio generic map (
+	io0: entity work.scio_main generic map (
 			cpu_id => 0,
 			cpu_cnt => cpu_cnt
 		)
@@ -289,7 +289,6 @@ end process;
 			oLEDR => oLEDR,
 --			oLEDG => oLEDG,
 			iSW => iSW,
-			GPIO_0 => open,
 			
 			cam_address => cam_address_array(0),
 			cam_rd => cam_rd_array(0),
@@ -307,7 +306,7 @@ end process;
 		);
 		
 	-- io for processor 1
-	io1: entity work.scio generic map (
+	io1: entity work.scio_eh generic map (
 			cpu_id => 1,
 			cpu_cnt => cpu_cnt
 		)
@@ -318,14 +317,6 @@ end process;
 			sync_out => sync_out_array(1),
 			sync_in => sync_in_array(1),
 
-			txd => open,
-			rxd => '0',
-			ncts => '0',
-			nrts => open,
-			
-			oLEDR => open,
---			oLEDG => oLEDG,
-			iSW => (others => '0'),
 			GPIO_0 => GPIO_0,
 			
 			cam_address => cam_address_array(1),
@@ -345,7 +336,7 @@ end process;
 		
 		
 	gen_io: for i in 2 to cpu_cnt-1 generate
-		io2: entity work.scio generic map (
+		io2: entity work.scio_small generic map (
 			cpu_id => i,
 			cpu_cnt => cpu_cnt
 		)
@@ -356,15 +347,6 @@ end process;
 			sync_out => sync_out_array(i),
 			sync_in => sync_in_array(i),
 
-			txd => open,
-			rxd => '0',
-			ncts => '0',
-			nrts => open,
-			
-			oLEDR => open,
---			oLEDG => oLEDG,
-			iSW => (others => '0'),
-			GPIO_0 => open,
 			
 			cam_address => cam_address_array(i),
 			cam_rd => cam_rd_array(i),
