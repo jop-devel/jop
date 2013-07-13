@@ -50,7 +50,7 @@ generic (
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 5;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 8		-- number of cpus
+	cpu_cnt		: integer := 4		-- number of cpus
 );
 
 port (
@@ -270,7 +270,7 @@ end process;
 			sc_mem_out, sc_mem_in);
 
 	-- io for processor 0
-	io: entity work.scio_main generic map (
+	io0: entity work.scio generic map (
 			cpu_id => 0,
 			cpu_cnt => cpu_cnt
 		)
@@ -289,7 +289,7 @@ end process;
 			oLEDR => oLEDR,
 --			oLEDG => oLEDG,
 			iSW => iSW,
-			GPIO_0 => GPIO_0,
+			GPIO_0 => open,
 			
 			cam_address => cam_address_array(0),
 			cam_rd => cam_rd_array(0),
@@ -306,9 +306,46 @@ end process;
 			-- ram_cnt => ram_count
 		);
 		
+	-- io for processor 1
+	io1: entity work.scio generic map (
+			cpu_id => 1,
+			cpu_cnt => cpu_cnt
+		)
+		port map (clk_int, int_res,
+			sc_io_out(1), sc_io_in(1),
+			irq_in(1), irq_out(1), exc_req(1),
+
+			sync_out => sync_out_array(1),
+			sync_in => sync_in_array(1),
+
+			txd => open,
+			rxd => '0',
+			ncts => '0',
+			nrts => open,
+			
+			oLEDR => open,
+--			oLEDG => oLEDG,
+			iSW => (others => '0'),
+			GPIO_0 => GPIO_0,
+			
+			cam_address => cam_address_array(1),
+			cam_rd => cam_rd_array(1),
+			cam_rd_data => cam_rd_data,
+			cam_wr => cam_wr_array(1),
+			cam_wr_data => cam_wr_data_array(1),
+						
+			wd => wd_out(1),
+			l => open,
+			r => open,
+			t => open,
+			b => open
+			-- remove the comment for RAM access counting
+			-- ram_cnt => ram_count
+		);
 		
-	gen_io: for i in 1 to cpu_cnt-1 generate
-		io2: entity work.scio_spare generic map (
+		
+	gen_io: for i in 2 to cpu_cnt-1 generate
+		io2: entity work.scio generic map (
 			cpu_id => i,
 			cpu_cnt => cpu_cnt
 		)
@@ -318,6 +355,16 @@ end process;
 
 			sync_out => sync_out_array(i),
 			sync_in => sync_in_array(i),
+
+			txd => open,
+			rxd => '0',
+			ncts => '0',
+			nrts => open,
+			
+			oLEDR => open,
+--			oLEDG => oLEDG,
+			iSW => (others => '0'),
+			GPIO_0 => open,
 			
 			cam_address => cam_address_array(i),
 			cam_rd => cam_rd_array(i),
