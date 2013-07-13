@@ -70,6 +70,7 @@ public class CommandParser extends PeriodicEventHandler
 		M113 = new M113(hostController, commandController);
 		M140 = new M140(hostController, commandController);
 		T = new T(hostController, commandController);
+		this.thread.setProcessor(3);
 	}
 	
 	@Override
