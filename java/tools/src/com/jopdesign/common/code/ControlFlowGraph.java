@@ -55,8 +55,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -660,7 +660,7 @@ public class ControlFlowGraph {
         CFGNode subExit = new VirtualNode(VirtualNodeKind.EXIT);
         this.graph =
                 new DefaultFlowGraph<CFGNode, CFGEdge>(CFGEdge.class, subEntry, subExit);
-        this.deadNodes = new HashSet<CFGNode>();
+        this.deadNodes = new LinkedHashSet<CFGNode>();
         // TODO should we do this? currently only used to create an internal subgraph
         //sendCreateGraphEvent();
     }
@@ -670,7 +670,7 @@ public class ControlFlowGraph {
     private void createFlowGraph(MethodInfo method) {
         logger.debug("creating flow graph for: " + method);
         Map<Integer, BasicBlockNode> nodeTable =
-                new HashMap<Integer, BasicBlockNode>();
+                new LinkedHashMap<Integer, BasicBlockNode>();
         graph = new DefaultFlowGraph<CFGNode, CFGEdge>(
                 CFGEdge.class,
                 new VirtualNode(VirtualNodeKind.ENTRY),
@@ -946,7 +946,7 @@ public class ControlFlowGraph {
 	}
 	
     public Map<BasicBlock, BasicBlockNode> buildBlockNodeMap() {
-        Map<BasicBlock, BasicBlockNode> map = new HashMap<BasicBlock, BasicBlockNode>(blocks.size());
+        Map<BasicBlock, BasicBlockNode> map = new LinkedHashMap<BasicBlock, BasicBlockNode>(blocks.size());
         for (CFGNode node : graph.vertexSet()) {
             if (node instanceof BasicBlockNode) {
                 BasicBlockNode bbn = (BasicBlockNode) node;
@@ -1193,7 +1193,7 @@ public class ControlFlowGraph {
         TopologicalOrderIterator<CFGNode, DefaultEdge> lnfIter =
                 new TopologicalOrderIterator<CFGNode, DefaultEdge>(loopNestForest);
         List<CFGNode> summaryLoops = new ArrayList<CFGNode>();
-        Set<CFGNode> marked = new HashSet<CFGNode>();
+        Set<CFGNode> marked = new LinkedHashSet<CFGNode>();
         while (lnfIter.hasNext()) {
             CFGNode hol = lnfIter.next();
             if (marked.contains(hol)) continue;
@@ -1297,7 +1297,7 @@ public class ControlFlowGraph {
      *         blocks with loopbounds attached.
      */
     public Map<CFGNode, LoopBound> buildLoopBoundMap() {
-        Map<CFGNode, LoopBound> map = new HashMap<CFGNode, LoopBound>();
+        Map<CFGNode, LoopBound> map = new LinkedHashMap<CFGNode, LoopBound>();
         for (CFGNode node : graph.vertexSet()) {
             LoopBound lb = node.getLoopBound();
             if (lb != null) {

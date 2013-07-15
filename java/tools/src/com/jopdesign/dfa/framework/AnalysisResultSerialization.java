@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
@@ -49,7 +49,7 @@ public class AnalysisResultSerialization<R> {
 	private Map<String, Map<CallStringSerialization, Map<Integer, R>>> serializedResults;
 
 	public AnalysisResultSerialization() {
-		this.serializedResults = new HashMap<String, Map<CallStringSerialization,Map<Integer,R>>>();
+		this.serializedResults = new LinkedHashMap<String, Map<CallStringSerialization,Map<Integer,R>>>();
 	}
 
 	private AnalysisResultSerialization(Map<String, Map<CallStringSerialization, Map<Integer, R>>> serialized) {
@@ -108,7 +108,7 @@ public class AnalysisResultSerialization<R> {
 		 */
 		Context currentContext;
 		Map<InstructionHandle, ContextMap<CallString, T>> resultMap =
-			new HashMap<InstructionHandle, ContextMap<CallString,T>>();
+			new LinkedHashMap<InstructionHandle, ContextMap<CallString,T>>();
 		for(Entry<String, Map<CallStringSerialization, Map<Integer, R>>> miEntry : serializedResults.entrySet()) {
 			
 			MethodInfo mi = appInfo.getMethodInfo(MemberID.parse(miEntry.getKey()));
@@ -128,7 +128,7 @@ public class AnalysisResultSerialization<R> {
 					
 					ContextMap<CallString, T> ctxMap = resultMap.get(instr);	
 					if(ctxMap == null) {
-						ctxMap = new ContextMap<CallString, T>(currentContext, new HashMap<CallString, T>());
+						ctxMap = new ContextMap<CallString, T>(currentContext, new LinkedHashMap<CallString, T>());
 						resultMap.put(instr, ctxMap);
 					}
 					
@@ -149,7 +149,7 @@ public class AnalysisResultSerialization<R> {
 			              CallString cs,
 			              R result) {
 		Map<CallStringSerialization, Map<Integer, R>> csMap =
-			getOrCreateMapEntry (serializedResults, method.getFQMethodName(), HashMap.class);
+			getOrCreateMapEntry (serializedResults, method.getFQMethodName(), LinkedHashMap.class);
 		Map<Integer, R> posMap =
 			getOrCreateMapEntry(csMap, new CallStringSerialization(cs), TreeMap.class);
 		if(posMap.containsKey(pos)) {

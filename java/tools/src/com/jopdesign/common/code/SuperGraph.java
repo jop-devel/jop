@@ -42,8 +42,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -583,7 +583,7 @@ public class SuperGraph {
 
         public CFGNodeIterator() {
             this.sgIterator = superGraph.vertexSet().iterator();
-            this.cfgsVisited = new HashSet<ControlFlowGraph>();
+            this.cfgsVisited = new LinkedHashSet<ControlFlowGraph>();
             if (sgIterator.hasNext()) {
                 sgIterator = null; // empty
             } else {
@@ -664,7 +664,7 @@ public class SuperGraph {
 
     	this.rootNode = new ContextCFG(rootCFG, rootCallString);
     	this.superGraph = new DirectedMultigraph<ContextCFG, SuperEdge>(SuperEdge.class);
-    	this.superEdgePairs = new HashMap<SuperInvokeEdge, SuperReturnEdge>();
+    	this.superEdgePairs = new LinkedHashMap<SuperInvokeEdge, SuperReturnEdge>();
     	createSuperGraph();
     }
 
@@ -880,7 +880,7 @@ public class SuperGraph {
     public Map<MethodInfo, List<Pair<SuperInvokeEdge, SuperReturnEdge>>> getCallSites() {
 
         Map<MethodInfo, List<Pair<SuperInvokeEdge, SuperReturnEdge>>> iMap =
-                new HashMap<MethodInfo, List<Pair<SuperInvokeEdge, SuperReturnEdge>>>();
+                new LinkedHashMap<MethodInfo, List<Pair<SuperInvokeEdge, SuperReturnEdge>>>();
         for (ContextCFG node : superGraph.vertexSet()) {
 
             List<Pair<SuperInvokeEdge, SuperReturnEdge>> callSites = getCallSitesInvoking(node);

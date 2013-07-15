@@ -26,7 +26,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph.CallgraphBuilder;
 
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -86,7 +86,7 @@ public class DefaultCallgraphBuilder implements CallgraphBuilder {
 
         // TODO use only callstring length 1, split nodes only if required using DFA/.. later on?
 
-        Set<ExecutionContext> newContexts = new HashSet<ExecutionContext>();
+        Set<ExecutionContext> newContexts = new LinkedHashSet<ExecutionContext>();
 
         invokeLoop:
         for(InvokeSite invokeSite : findInvokeSites(method.getCode())) {

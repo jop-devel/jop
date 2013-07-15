@@ -25,7 +25,7 @@ import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import org.apache.bcel.generic.InstructionHandle;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -50,7 +50,7 @@ public class CFGCallgraphBuilder extends DefaultCallgraphBuilder {
     @Override
     protected Set<InvokeSite> findInvokeSites(MethodCode code) {
         ControlFlowGraph cfg = code.getControlFlowGraph(false);
-        Set<InvokeSite> invokeSites = new HashSet<InvokeSite>();
+        Set<InvokeSite> invokeSites = new LinkedHashSet<InvokeSite>();
 
         // dead nodes are always removed from the CFG, so no need to traverse down from entry, just visit all nodes
         // Basic blocks however are not removed from the block list..

@@ -30,7 +30,7 @@ import com.jopdesign.dfa.DFATool;
 import org.apache.log4j.Logger;
 
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -71,7 +71,7 @@ public class DFACallgraphBuilder extends DefaultCallgraphBuilder {
             return appInfo.findImplementations(invokeSite, context.getCallString());
         }
 
-        Set<MethodInfo> methods = new HashSet<MethodInfo>(receivers.size());
+        Set<MethodInfo> methods = new LinkedHashSet<MethodInfo>(receivers.size());
         for (String rcv: receivers) {
             MemberID mId = MemberID.parse(rcv);
             methods.add(appInfo.getMethodRef(mId).getMethodInfo());

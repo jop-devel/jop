@@ -74,8 +74,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -399,7 +399,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         analysis.initialize(main, context);
 
         InstructionHandle entry = prologue.getCode().getInstructionList().getStart();
-        interpreter.interpret(context, entry, new HashMap(), true);
+        interpreter.interpret(context, entry, new LinkedHashMap(), true);
 
         /* cache results if requested */
         writeCachedResults(analysis);
@@ -425,7 +425,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
          * pointer equality for CFG edges :(
          */
         InstructionHandle entry = entryCode.getInstructionList(false,false).getStart();
-        interpreter.interpret(context, entry, new HashMap<InstructionHandle, ContextMap<K, V>>(), true);
+        interpreter.interpret(context, entry, new LinkedHashMap<InstructionHandle, ContextMap<K, V>>(), true);
 
         return localAnalysis.getResult();
     }
@@ -444,7 +444,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         if (map == null) {
             return null;
         }
-        Set<String> retval = new HashSet<String>();
+        Set<String> retval = new LinkedHashSet<String>();
         for (CallString c : map.keySet()) {
             if (c.hasSuffix(cs)) {
                 retval.addAll(map.get(c));
@@ -455,7 +455,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
     public Set<MethodInfo> getReceiverMethods(InstructionHandle stmt, CallString cs) {
         Set<String> receivers = getReceivers(stmt, cs);
-        Set<MethodInfo> methods = new HashSet<MethodInfo>(receivers.size());
+        Set<MethodInfo> methods = new LinkedHashSet<MethodInfo>(receivers.size());
         for (String rcv : receivers) {
             MemberID mID = MemberID.parse(rcv);
             methods.add(appInfo.getMethodInfoInherited(mID));

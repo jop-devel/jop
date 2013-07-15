@@ -38,7 +38,7 @@ import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -163,7 +163,7 @@ public class GreedyConfig {
     }
 
     public Set<MethodInfo> getTargetMethodSet() {
-        return new HashSet<MethodInfo>(targets);
+        return new LinkedHashSet<MethodInfo>(targets);
     }
 
     public AnalysisType getCacheAnalysisType() {
@@ -198,7 +198,7 @@ public class GreedyConfig {
     }
 
     public Set<MethodInfo> getWCATargetSet() {
-        return new HashSet<MethodInfo>(getWCATargets());
+        return new LinkedHashSet<MethodInfo>(getWCATargets());
     }
 
     public boolean useWCA() {

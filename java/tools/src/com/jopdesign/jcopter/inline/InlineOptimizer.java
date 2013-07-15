@@ -65,8 +65,8 @@ import org.apache.log4j.Logger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -241,8 +241,8 @@ public class InlineOptimizer implements CodeOptimizer {
             MethodCode invokeeCode = invokee.getCode();
             InstructionList iList = invokeeCode.getInstructionList(true, false);
 
-            Map<InstructionHandle,InstructionHandle> instrMap = new HashMap<InstructionHandle, InstructionHandle>();
-            Map<InvokeSite,InvokeSite> invokeMap = new HashMap<InvokeSite, InvokeSite>();
+            Map<InstructionHandle,InstructionHandle> instrMap = new LinkedHashMap<InstructionHandle, InstructionHandle>();
+            Map<InvokeSite,InvokeSite> invokeMap = new LinkedHashMap<InvokeSite, InvokeSite>();
 
             StacksizeAnalysis stacksize = analyses.getStacksizeAnalysis(invokee);
 
@@ -414,7 +414,7 @@ public class InlineOptimizer implements CodeOptimizer {
 
         private void updateAnalyses(AnalysisManager analyses, Map<InvokeSite,InvokeSite> invokeMap) {
 
-            analyses.getExecFrequencyAnalysis().inline(invokeSite, invokee, new HashSet<InvokeSite>(invokeMap.values()) );
+            analyses.getExecFrequencyAnalysis().inline(invokeSite, invokee, new LinkedHashSet<InvokeSite>(invokeMap.values()) );
 
             analyses.getMethodCacheAnalysis().inline(this, invokeSite, invokee);
 
@@ -708,7 +708,7 @@ public class InlineOptimizer implements CodeOptimizer {
         this.processorModel = appInfo.getProcessorModel();
 
         this.helper = new InlineHelper(jcopter, config);
-        this.callstrings = new HashMap<InstructionHandle, CallString>();
+        this.callstrings = new LinkedHashMap<InstructionHandle, CallString>();
 
         // TODO get from config, preciseCycleEstimate is not yet fully implemented
         preciseSizeEstimate = true;

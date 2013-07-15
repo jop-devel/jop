@@ -59,8 +59,8 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -91,8 +91,8 @@ public class WCAInvoker extends ExecFrequencyProvider {
         this.wcaTargets = wcaTargets;
         cacheApproximation = defaultApproximation;
         wcetTool = jcopter.getWcetTool();
-        wcaNodeFlow = new HashMap<ExecutionContext, Map<CFGNode, Long>>();
-        execCounts = new HashMap<MethodInfo, Long>();
+        wcaNodeFlow = new LinkedHashMap<ExecutionContext, Map<CFGNode, Long>>();
+        execCounts = new LinkedHashMap<MethodInfo, Long>();
     }
 
     public JCopter getJcopter() {
@@ -269,7 +269,7 @@ public class WCAInvoker extends ExecFrequencyProvider {
         // and recalculate all results
         CallGraph callGraph = wcetTool.getCallGraph();
 
-        final Set<ExecutionContext> rootNodes = new HashSet<ExecutionContext>();
+        final Set<ExecutionContext> rootNodes = new LinkedHashSet<ExecutionContext>();
 
         for (MethodInfo root : changedMethods) {
             rootNodes.addAll(callGraph.getNodes(root));
@@ -317,7 +317,7 @@ public class WCAInvoker extends ExecFrequencyProvider {
         TopologicalOrderIterator<ExecutionContext,ContextEdge> topOrder =
                 new TopologicalOrderIterator<ExecutionContext, ContextEdge>(reversed);
 
-        Set<MethodInfo> changed = new HashSet<MethodInfo>();
+        Set<MethodInfo> changed = new LinkedHashSet<MethodInfo>();
 
         while (topOrder.hasNext()) {
             ExecutionContext node = topOrder.next();

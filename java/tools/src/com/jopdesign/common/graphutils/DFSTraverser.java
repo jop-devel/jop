@@ -24,7 +24,7 @@ import org.jgrapht.DirectedGraph;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -112,7 +112,7 @@ public class DFSTraverser<V,E> {
 
     public DFSTraverser(DFSVisitor<V,E> visitor) {
         this.visitor = visitor;
-        discovery = new HashMap<V, Integer>();
+        discovery = new LinkedHashMap<V, Integer>();
         time = 0;
     }
 

@@ -52,8 +52,8 @@ import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
@@ -91,9 +91,9 @@ public class MethodCacheAnalysis {
         this.cache = jcopter.getMethodCache();
         this.callGraph = callGraph;
 
-        cacheBlocks = new HashMap<ExecutionContext, Integer>(callGraph.getNodes().size());
-        reachableMethods = new HashMap<ExecutionContext, Set<MethodInfo>>(callGraph.getNodes().size());
-        classifyChanges = new HashSet<MethodInfo>();
+        cacheBlocks = new LinkedHashMap<ExecutionContext, Integer>(callGraph.getNodes().size());
+        reachableMethods = new LinkedHashMap<ExecutionContext, Set<MethodInfo>>(callGraph.getNodes().size());
+        classifyChanges = new LinkedHashSet<MethodInfo>();
     }
 
     public CallGraph getCallGraph() {
@@ -354,9 +354,9 @@ public class MethodCacheAnalysis {
 
             // find out how many additional persistent cache misses we have
             // find out border of new all-fit region
-            Map<MethodInfo,Integer> deltaExec = new HashMap<MethodInfo, Integer>();
+            Map<MethodInfo,Integer> deltaExec = new LinkedHashMap<MethodInfo, Integer>();
             int deltaCount = 0;
-            Set<ExecutionContext> border = new HashSet<ExecutionContext>();
+            Set<ExecutionContext> border = new LinkedHashSet<ExecutionContext>();
 
             if (deltaBlocks < 0) {
                 throw new AppInfoError("Not implemented");
@@ -390,7 +390,7 @@ public class MethodCacheAnalysis {
 
             // find out cache miss costs of new all-fit region
             int regionCosts = 0;
-            Set<MethodInfo> visited = new HashSet<MethodInfo>();
+            Set<MethodInfo> visited = new LinkedHashSet<MethodInfo>();
             for (ExecutionContext context : border) {
                 for (MethodInfo reachable : reachableMethods.get(context)) {
                     if (visited.add(reachable)) {
@@ -428,7 +428,7 @@ public class MethodCacheAnalysis {
     public Set<MethodInfo> getMissCountChangeSet(ExecFrequencyProvider ecp) {
         if (analysisType == AnalysisType.ALWAYS_HIT) return Collections.emptySet();
 
-        Set<MethodInfo> countChanges = new HashSet<MethodInfo>(classifyChanges);
+        Set<MethodInfo> countChanges = new LinkedHashSet<MethodInfo>(classifyChanges);
 
         // we check the exec analysis for changed exec counts,
         // need to update change sets since cache miss counts changed for cache-misses
@@ -463,7 +463,7 @@ public class MethodCacheAnalysis {
     public void inline(CodeModification modification, InvokeSite invokeSite, MethodInfo invokee) {
         if (analysisType == AnalysisType.ALWAYS_HIT || analysisType == AnalysisType.ALWAYS_MISS) return;
 
-        Set<ExecutionContext> nodes = new HashSet<ExecutionContext>();
+        Set<ExecutionContext> nodes = new LinkedHashSet<ExecutionContext>();
 
         // We need to go down first, find all new nodes
         MethodInfo invoker = invokeSite.getInvoker();
@@ -569,7 +569,7 @@ public class MethodCacheAnalysis {
 
             // We could make this more memory efficient, because in many cases we do not need a
             // separate set for each node, but this would be more complicated to calculate
-            Set<MethodInfo> reachable = new HashSet<MethodInfo>();
+            Set<MethodInfo> reachable = new LinkedHashSet<MethodInfo>();
 
             reachable.add(node.getMethodInfo());
             // we only need to add all children to the set, no need to go down the graph
@@ -620,14 +620,14 @@ public class MethodCacheAnalysis {
         final Map<ExecutionContext,Set<MethodInfo>> removeMethods = findRemovedMethods(roots, removed);
 
         // next, calculate blocks of removed methods
-        final Map<MethodInfo,Integer> blocks = new HashMap<MethodInfo, Integer>(removed.size());
+        final Map<MethodInfo,Integer> blocks = new LinkedHashMap<MethodInfo, Integer>(removed.size());
         for (MethodInfo m : removed) {
             int size = MiscUtils.bytesToWords(getMethodSize(m));
             blocks.put(m, cache.requiredNumberOfBlocks(size));
         }
 
         // finally, go up all invokers, sum up reachable method set changes and deltaBlocks per node, check all-fit
-        final Set<MethodInfo> changeSet = new HashSet<MethodInfo>();
+        final Set<MethodInfo> changeSet = new LinkedHashSet<MethodInfo>();
 
         DFSVisitor<ExecutionContext,ContextEdge> visitor = new EmptyDFSVisitor<ExecutionContext, ContextEdge>() {
             @Override
@@ -672,8 +672,8 @@ public class MethodCacheAnalysis {
     private Map<ExecutionContext,Set<MethodInfo>> findRemovedMethods(Set<ExecutionContext> roots,
                                                                      Collection<MethodInfo> removed)
     {
-        Map<ExecutionContext,Set<MethodInfo>> removeMethods = new HashMap<ExecutionContext, Set<MethodInfo>>();
-        HashSet<ExecutionContext> queue = new HashSet<ExecutionContext>(roots);
+        Map<ExecutionContext,Set<MethodInfo>> removeMethods = new LinkedHashMap<ExecutionContext, Set<MethodInfo>>();
+        LinkedHashSet<ExecutionContext> queue = new LinkedHashSet<ExecutionContext>(roots);
 
         while (!queue.isEmpty()) {
             ExecutionContext node = queue.iterator().next();
@@ -688,7 +688,7 @@ public class MethodCacheAnalysis {
             // This ensures that the size of the sets only decreases and we eventually reach a fixpoint
             Set<MethodInfo> set = removeMethods.get(node);
             if (set == null) {
-                set = new HashSet<MethodInfo>(removed.size());
+                set = new LinkedHashSet<MethodInfo>(removed.size());
                 removeMethods.put(node, set);
                 for (MethodInfo m : removed) {
                     // initially add method to remove set if it is reachable from this node
@@ -736,7 +736,7 @@ public class MethodCacheAnalysis {
     }
 
     private Set<ExecutionContext> findAllFitBorder(Collection<ExecutionContext> nodes) {
-        final Set<ExecutionContext> border = new HashSet<ExecutionContext>();
+        final Set<ExecutionContext> border = new LinkedHashSet<ExecutionContext>();
 
         DFSVisitor<ExecutionContext,ContextEdge> visitor = new EmptyDFSVisitor<ExecutionContext, ContextEdge>() {
             @Override

@@ -61,8 +61,7 @@ import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -93,9 +92,9 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 
     public ContextMap<CallString, Set<TypeMapping>> initial(InstructionHandle stmt) {
         ContextMap<CallString, Set<TypeMapping>> init =
-                new ContextMap<CallString, Set<TypeMapping>>(new Context(), new HashMap<CallString, Set<TypeMapping>>());
+                new ContextMap<CallString, Set<TypeMapping>>(new Context(), new LinkedHashMap<CallString, Set<TypeMapping>>());
 
-        Set<TypeMapping> s = new HashSet<TypeMapping>();
+        Set<TypeMapping> s = new LinkedHashSet<TypeMapping>();
         s.add(new TypeMapping("com.jopdesign.io.IOFactory.sp", "com.jopdesign.io.SerialPort"));
         s.add(new TypeMapping("com.jopdesign.io.IOFactory.sys", "com.jopdesign.io.SysDevice"));
 
@@ -106,7 +105,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 
     public void initialize(MethodInfo mi, Context context) {
         String sig = mi.getFQMethodName();
-        threads.put(sig, new ContextMap<CallString, Set<TypeMapping>>(context, new HashMap<CallString, Set<TypeMapping>>()));
+        threads.put(sig, new ContextMap<CallString, Set<TypeMapping>>(context, new LinkedHashMap<CallString, Set<TypeMapping>>()));
     }
 
     public ContextMap<CallString, Set<TypeMapping>> join(ContextMap<CallString, Set<TypeMapping>> s1, ContextMap<CallString, Set<TypeMapping>> s2) {
@@ -119,14 +118,14 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
             return new ContextMap<CallString, Set<TypeMapping>>(s1);
         }
 
-        ContextMap<CallString, Set<TypeMapping>> result = new ContextMap<CallString, Set<TypeMapping>>(new Context(s2.getContext()), new HashMap<CallString, Set<TypeMapping>>());
+        ContextMap<CallString, Set<TypeMapping>> result = new ContextMap<CallString, Set<TypeMapping>>(new Context(s2.getContext()), new LinkedHashMap<CallString, Set<TypeMapping>>());
         result.putAll(s1);
         result.putAll(s2);
 
         Set<TypeMapping> a = s1.get(s2.getContext().callString);
         Set<TypeMapping> b = s2.get(s2.getContext().callString);
 
-        Set<TypeMapping> merged = new HashSet<TypeMapping>();
+        Set<TypeMapping> merged = new LinkedHashSet<TypeMapping>();
         if (a != null) {
             merged.addAll(a);
         }
@@ -183,15 +182,15 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 
         Context context = new Context(input.getContext());
         Set<TypeMapping> in = input.get(context.callString);
-        ContextMap<CallString, Set<TypeMapping>> retval = new ContextMap<CallString, Set<TypeMapping>>(context, new HashMap<CallString, Set<TypeMapping>>());
+        ContextMap<CallString, Set<TypeMapping>> retval = new ContextMap<CallString, Set<TypeMapping>>(context, new LinkedHashMap<CallString, Set<TypeMapping>>());
 
-        Set<TypeMapping> result = new HashSet<TypeMapping>();
+        Set<TypeMapping> result = new LinkedHashSet<TypeMapping>();
         retval.put(context.callString, result);
 
         Instruction instruction = stmt.getInstruction();
 
 // 		if (context.method.startsWith("ttpa.protocol.MultiPartner")
-// 			|| context.method.startsWith("java.util.HashMap.put")
+// 			|| context.method.startsWith("java.util.LinkedHashMap.put")
 // 			// || context.method.startsWith("java.util.Stack")
 // 			) {
 // 			System.out.println(context.method+": "+stmt+" / "+context.callString.asList());
@@ -232,7 +231,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
             case Constants.LDC:
             case Constants.LDC_W: {
                 LDC instr = (LDC) instruction;
-                result = new HashSet<TypeMapping>(in);
+                result = new LinkedHashSet<TypeMapping>(in);
                 retval.put(context.callString, result);
                 Type type = instr.getType(context.constPool());
                 if (type.equals(Type.STRING)) {
@@ -879,7 +878,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
             case Constants.LMUL:
             case Constants.LDIV:
             case Constants.LREM:
-                result = new HashSet<TypeMapping>(in);
+                result = new LinkedHashSet<TypeMapping>(in);
                 retval.put(context.callString, result);
                 doInvokeStatic("com.jopdesign.sys.JVM.f_" + stmt.getInstruction().getName() + "(JJ)J", stmt, context, input, interpreter, state, retval);
                 break;
@@ -1122,9 +1121,9 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 
         // carry only minimal information with call
         Set<TypeMapping> in = input.get(context.callString);
-        Set<TypeMapping> out = new HashSet<TypeMapping>();
+        Set<TypeMapping> out = new LinkedHashSet<TypeMapping>();
 
-        ContextMap<CallString, Set<TypeMapping>> tmpresult = new ContextMap<CallString, Set<TypeMapping>>(c, new HashMap<CallString, Set<TypeMapping>>());
+        ContextMap<CallString, Set<TypeMapping>> tmpresult = new ContextMap<CallString, Set<TypeMapping>>(c, new LinkedHashMap<CallString, Set<TypeMapping>>());
         tmpresult.put(c.callString, out);
 
         for (TypeMapping m : in) {
@@ -1208,9 +1207,9 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 
             // carry only minimal information with call
             Set<TypeMapping> in = input.get(context.callString);
-            Set<TypeMapping> out = new HashSet<TypeMapping>();
+            Set<TypeMapping> out = new LinkedHashSet<TypeMapping>();
 
-            ContextMap<CallString, Set<TypeMapping>> tmpresult = new ContextMap<CallString, Set<TypeMapping>>(c, new HashMap<CallString, Set<TypeMapping>>());
+            ContextMap<CallString, Set<TypeMapping>> tmpresult = new ContextMap<CallString, Set<TypeMapping>>(c, new LinkedHashMap<CallString, Set<TypeMapping>>());
             tmpresult.put(c.callString, out);
 
             for (TypeMapping m : in) {
@@ -1261,10 +1260,10 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
                 int varPtr = c.stackPtr - MethodHelper.getArgSize(method);
 
                 // prepare input information
-                ContextMap<CallString, Set<TypeMapping>> threadInput = new ContextMap<CallString, Set<TypeMapping>>(c, new HashMap<CallString, Set<TypeMapping>>());
+                ContextMap<CallString, Set<TypeMapping>> threadInput = new ContextMap<CallString, Set<TypeMapping>>(c, new LinkedHashMap<CallString, Set<TypeMapping>>());
                 for (CallString cs : input.keySet()) {
                     Set<TypeMapping> s = input.get(cs);
-                    Set<TypeMapping> o = new HashSet<TypeMapping>();
+                    Set<TypeMapping> o = new LinkedHashSet<TypeMapping>();
                     filterSet(s, o, 0);
                     threadInput.put(cs, o);
                 }
@@ -1279,13 +1278,13 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
                 InstructionHandle exit = p.getExitHandle(method);
                 ContextMap<CallString, Set<TypeMapping>> threadResult;
                 if (r.get(exit) != null) {
-                    threadResult = new ContextMap<CallString, Set<TypeMapping>>(c, new HashMap<CallString, Set<TypeMapping>>());
-                    threadResult.put(c.callString, new HashSet<TypeMapping>());
+                    threadResult = new ContextMap<CallString, Set<TypeMapping>>(c, new LinkedHashMap<CallString, Set<TypeMapping>>());
+                    threadResult.put(c.callString, new LinkedHashSet<TypeMapping>());
                     Set<TypeMapping> returned = r.get(exit).get(c.callString);
                     filterReturnSet(returned, threadResult.get(c.callString), varPtr);
                 } else {
-                    threadResult = new ContextMap<CallString, Set<TypeMapping>>(c, new HashMap<CallString, Set<TypeMapping>>());
-                    threadResult.put(c.callString, new HashSet<TypeMapping>());
+                    threadResult = new ContextMap<CallString, Set<TypeMapping>>(c, new LinkedHashMap<CallString, Set<TypeMapping>>());
+                    threadResult.put(c.callString, new LinkedHashSet<TypeMapping>());
                 }
 
                 if (!threadResult.equals(savedResult)) {
@@ -1306,7 +1305,7 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
         String methodId = method.getMemberID().toString();
 
         Set<TypeMapping> in = input.get(context.callString);
-        Set<TypeMapping> out = new HashSet<TypeMapping>();
+        Set<TypeMapping> out = new LinkedHashSet<TypeMapping>();
 
         if (methodId.equals("com.jopdesign.sys.Native#rd(I)I")
                 || methodId.equals("com.jopdesign.sys.Native#rdMem(I)I")
@@ -1364,10 +1363,10 @@ public class CallStringReceiverTypes implements Analysis<CallString, Set<TypeMap
 
     private void recordReceiver(InstructionHandle stmt, Context context, String target) {
         if (targets.get(stmt) == null) {
-            targets.put(stmt, new ContextMap<CallString, Set<String>>(context, new HashMap<CallString, Set<String>>()));
+            targets.put(stmt, new ContextMap<CallString, Set<String>>(context, new LinkedHashMap<CallString, Set<String>>()));
         }
         if (targets.get(stmt).get(context.callString) == null) {
-            targets.get(stmt).put(context.callString, new HashSet<String>());
+            targets.get(stmt).put(context.callString, new LinkedHashSet<String>());
         }
         targets.get(stmt).get(context.callString).add(target);
     }
