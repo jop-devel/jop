@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 /**
- * Export JGraphT graphs to .DOT, with custom attributes.
+ * Export graphs to .DOT, with custom attributes. Supports JGraphT graphs via {@code JGraphTAdapter}
  *
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  * @param <V> node type
@@ -37,6 +37,29 @@ import java.util.Map.Entry;
  */
 public class AdvancedDOTExporter<V, E> {
 
+	public interface GraphAdapter<V,E> {
+		public V getEdgeSource(E e);
+		public V getEdgeTarget(E e);
+	}
+	
+	public static class JGraphTAdapter<V,E> implements GraphAdapter<V,E> {
+		private Graph<V, E> backing;
+
+		public JGraphTAdapter(Graph<V,E> g) {
+			this.backing = g;			
+		}
+
+		@Override
+		public V getEdgeSource(E e) {
+			return backing.getEdgeSource(e);
+		}
+
+		@Override
+		public V getEdgeTarget(E e) {
+			return backing.getEdgeTarget(e);
+		}
+	}
+	
     public enum MultiLineAlignment {
         ML_ALIGN_LEFT, ML_ALIGN_CENTER, ML_ALIGN_RIGHT
     }
@@ -291,13 +314,24 @@ public class AdvancedDOTExporter<V, E> {
      * @throws IOException if {@code writer} raises an IO exception
      */
     public void exportDOTDiGraph(Writer writer, Graph<V, E> graph) throws IOException {
+    	exportDOTDiGraph(writer, graph.vertexSet(), graph.edgeSet(), new JGraphTAdapter<V,E>(graph));
+    }
+    
+    /**
+     * Create a DOT digraph for the given graph
+     *
+     * @param writer target for the export
+     * @param graph  the graph to export
+     * @throws IOException if {@code writer} raises an IO exception
+     */
+    public void exportDOTDiGraph(Writer writer, Iterable<V> vertexSet, Iterable<E> edgeSet, GraphAdapter<V,E> topo) throws IOException {
         writer.append("digraph cfg\n{\n");
         if (!this.graphAttributes.isEmpty()) {
             writer.append("graph ");
             appendAttributes(writer, this.graphAttributes);
             writer.append(";\n");
         }
-        for (V n : graph.vertexSet()) {
+        for (V n : vertexSet) {
             int id = nodeLabeller.getID(n);
             Map<String, String> attrs = new HashMap<String, String>(this.nodeAttributes);
             nodeLabeller.setAttributes(n, attrs);
@@ -306,9 +340,9 @@ public class AdvancedDOTExporter<V, E> {
             appendAttributes(writer, attrs);
             writer.append(";\n");
         }
-        for (E e : graph.edgeSet()) {
-            int idSrc = nodeLabeller.getID(graph.getEdgeSource(e));
-            int idTarget = nodeLabeller.getID(graph.getEdgeTarget(e));
+        for (E e : edgeSet) {
+            int idSrc = nodeLabeller.getID(topo.getEdgeSource(e));
+            int idTarget = nodeLabeller.getID(topo.getEdgeTarget(e));
             Map<String, String> attrs = new HashMap<String, String>(this.edgeAttributes);
             edgeLabeller.setAttributes(e, attrs);
 

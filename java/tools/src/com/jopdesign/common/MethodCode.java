@@ -65,8 +65,8 @@ import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -830,9 +830,9 @@ public class MethodCode {
      * @return a list of all invoke sites in this code.
      */
     public Set<InvokeSite> getInvokeSites() {
-        Set<InvokeSite> invokes = new HashSet<InvokeSite>();
+        Set<InvokeSite> invokes = new LinkedHashSet<InvokeSite>();
         if (hasCFG()) {
-            for (CFGNode node : cfg.getGraph().vertexSet()) {
+            for (CFGNode node : cfg.vertexSet()) {
                 if (node instanceof InvokeNode) {
                     invokes.add( ((InvokeNode)node).getInvokeSite() );
                 }
@@ -1111,7 +1111,7 @@ public class MethodCode {
         @SuppressWarnings({"unchecked"})
         Map<CustomKey,Object> map = (Map<CustomKey, Object>) ih.getAttribute(KEY_CUSTOMVALUES);
         if (map == null) {
-            map = new HashMap<CustomKey, Object>(1);
+            map = new LinkedHashMap<CustomKey, Object>(1);
             ih.addAttribute(KEY_CUSTOMVALUES, map);
         }
         return map.put(key, value);
@@ -1164,7 +1164,7 @@ public class MethodCode {
         if (map == null) {
             to.removeAttribute(KEY_CUSTOMVALUES);
         } else {
-            Map<CustomKey,Object> newMap = new HashMap<CustomKey, Object>(map);
+            Map<CustomKey,Object> newMap = new LinkedHashMap<CustomKey, Object>(map);
             to.addAttribute(KEY_CUSTOMVALUES, newMap);
         }
 

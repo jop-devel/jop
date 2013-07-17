@@ -29,10 +29,12 @@ public class HeaderAllocationModel extends AllocationWcetModel {
 		super(p);
 	}
 	
+	@Override
 	public long computeObjectSize(long raw) {
 		return HEADER_SIZE+raw;
 	}
 
+	@Override
 	public long computeArraySize(long raw) {
 		return HEADER_SIZE+raw;
 	}

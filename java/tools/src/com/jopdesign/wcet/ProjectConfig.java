@@ -82,6 +82,9 @@ public class ProjectConfig {
     public static final BooleanOption WCET_PREPROCESS =
             new BooleanOption("wcet-preprocess", "Perform bytecode preprocessing (same as running WCETPreprocess first)", false);
 
+    public static final BooleanOption BLOCKING_TIME_ANALYSIS =
+            new BooleanOption("blocking-time-analysis","perform experimental synchronized block analysis",true);
+
     public static final BooleanOption OBJECT_CACHE_ANALYSIS =
             new BooleanOption("object-cache-analysis","perform experimental object cache analysis",false);
 
@@ -110,6 +113,7 @@ public class ProjectConfig {
     private static final Option<?>[] standaloneOptions =
     {
             TARGET_METHOD,
+            BLOCKING_TIME_ANALYSIS,
             WCET_PREPROCESS,
             OBJECT_CACHE_ANALYSIS,
             LOAD_LINKINFO,
@@ -271,10 +275,6 @@ public class ProjectConfig {
         return config.getOption(DO_GENERATE_REPORTS);
     }
 
-    public int callstringLength() {
-        return appInfo.getCallstringLength();
-    }
-
     public boolean doObjectCacheAnalysis() {
         return this.config.getOption(OBJECT_CACHE_ANALYSIS);
     }
@@ -314,4 +314,11 @@ public class ProjectConfig {
     public boolean doAnalyzeBootMethod() {
         return config.getOption(DFA_ANALYZE_BOOT);
     }
+
+	/**
+	 * @return whether to perform analysis of synchronized blocks
+	 */
+	public boolean doBlockingTimeAnalysis() {
+		return config.getOption(BLOCKING_TIME_ANALYSIS);
+	}
 }

@@ -36,13 +36,12 @@ import com.jopdesign.common.AppSetup;
  *
  * TODO moved to WCET package to avoid import clashes, maybe move back to build package?
  *      The main method does not need to be used anymore, since WCETTool calls preprocess() anyway.
- *
+ * FIXME [bh] should really be moved to build, and not called WCETPreprocess - it is vital that both JOPizer
+ *       and WCA use the same code, and so both should call the same 'PreLinker' transformations
  * @author Martin Schoeberl
  * @author Stefan Hepp
  */
 public class WCETPreprocess {
-
-    private static final long serialVersionUID = 1L;
 
     public WCETPreprocess() {
     }

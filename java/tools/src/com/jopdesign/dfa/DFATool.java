@@ -33,6 +33,7 @@ import com.jopdesign.common.MemberInfo.AccessType;
 import com.jopdesign.common.MethodCode;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.config.StringOption;
@@ -44,6 +45,7 @@ import com.jopdesign.common.type.Descriptor;
 import com.jopdesign.common.type.MemberID;
 import com.jopdesign.dfa.analyses.CallStringReceiverTypes;
 import com.jopdesign.dfa.analyses.LoopBounds;
+import com.jopdesign.dfa.analyses.SymbolicPointsTo;
 import com.jopdesign.dfa.analyses.ValueMapping;
 import com.jopdesign.dfa.framework.Analysis;
 import com.jopdesign.dfa.framework.AnalysisResultSerialization;
@@ -72,8 +74,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -397,7 +399,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         analysis.initialize(main, context);
 
         InstructionHandle entry = prologue.getCode().getInstructionList().getStart();
-        interpreter.interpret(context, entry, new HashMap(), true);
+        interpreter.interpret(context, entry, new LinkedHashMap(), true);
 
         /* cache results if requested */
         writeCachedResults(analysis);
@@ -405,20 +407,27 @@ public class DFATool extends EmptyTool<AppEventHandler> {
     }
 
     public <K, V>
-    Map runLocalAnalysis(Analysis<K, V> analysis, MethodInfo start) {
+    Map runLocalAnalysis(Analysis<K,V> localAnalysis, ExecutionContext scope) {
 
-        Interpreter<K, V> interpreter = new Interpreter<K, V>(analysis, this);
+        Interpreter<K, V> interpreter = new Interpreter<K, V>(localAnalysis, this);
 
-        if (start == null) throw new AssertionError("No such method: " + start);
+        if (scope == null) throw new AssertionError("No such method: " + scope);
         Context context = new Context();
-        context.stackPtr = start.getCode().getMaxLocals();
-        context.setMethodInfo(start);
+        MethodCode entryCode = scope.getMethodInfo().getCode();
+        context.stackPtr = entryCode.getMaxLocals();
+        context.setMethodInfo(scope.getMethodInfo());
+        context.setCallString(scope.getCallString());
+        localAnalysis.initialize(scope.getMethodInfo(), context);
+        
+        /* Here used to be a extremely-hard-to-trackdown bug!
+         * Without the boolean parameters, getInstructionList() will dispose
+         * the CFG, a very bad idea during WCET analysis which relies on
+         * pointer equality for CFG edges :(
+         */
+        InstructionHandle entry = entryCode.getInstructionList(false,false).getStart();
+        interpreter.interpret(context, entry, new LinkedHashMap<InstructionHandle, ContextMap<K, V>>(), true);
 
-        analysis.initialize(start, context);
-        InstructionHandle entry = start.getCode().getInstructionList().getStart();
-        interpreter.interpret(context, entry, new HashMap<InstructionHandle, ContextMap<K, V>>(), true);
-
-        return analysis.getResult();
+        return localAnalysis.getResult();
     }
 
 
@@ -435,7 +444,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
         if (map == null) {
             return null;
         }
-        Set<String> retval = new HashSet<String>();
+        Set<String> retval = new LinkedHashSet<String>();
         for (CallString c : map.keySet()) {
             if (c.hasSuffix(cs)) {
                 retval.addAll(map.get(c));
@@ -446,7 +455,7 @@ public class DFATool extends EmptyTool<AppEventHandler> {
 
     public Set<MethodInfo> getReceiverMethods(InstructionHandle stmt, CallString cs) {
         Set<String> receivers = getReceivers(stmt, cs);
-        Set<MethodInfo> methods = new HashSet<MethodInfo>(receivers.size());
+        Set<MethodInfo> methods = new LinkedHashSet<MethodInfo>(receivers.size());
         for (String rcv : receivers) {
             MemberID mID = MemberID.parse(rcv);
             methods.add(appInfo.getMethodInfoInherited(mID));

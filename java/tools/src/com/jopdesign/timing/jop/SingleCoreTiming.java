@@ -13,7 +13,6 @@ import java.util.Map.Entry;
 
 import com.jopdesign.timing.ConsoleTable;
 import com.jopdesign.timing.InstructionInfo;
-import com.jopdesign.timing.WCETInstruction;
 import com.jopdesign.timing.ConsoleTable.Alignment;
 import com.jopdesign.timing.ConsoleTable.TableRow;
 import com.jopdesign.timing.jop.MicrocodeAnalysis.MicrocodeVerificationException;
@@ -51,14 +50,18 @@ public class SingleCoreTiming extends JOPTimingTable {
 
 	private TreeMap<Integer, Vector<MicropathTiming>> timingTable;
 
+	@Override
 	public boolean hasTimingInfo(int opcode) {
 		return this.timingTable.containsKey(opcode);
 	}
 
 	private long minCyclesHiddenOnInvoke = 0;
+
 	private long minCyclesHiddenOnReturn = 0;
 
-	public long getCycles(int opcode, boolean isHit, int words) {
+	@Override
+	protected long getCycles(int opcode, boolean isHit, int words) {
+		
 		Vector<MicropathTiming> timing = this.getTiming(opcode);
 		if(hasBytecodeLoad(timing) &&
 		   ! JopInstr.isInJava(opcode) &&
@@ -83,6 +86,7 @@ public class SingleCoreTiming extends JOPTimingTable {
 	}
 
 	public Vector<MicropathTiming> getTiming(int opcode) {
+		
 		if(analysisErrors.containsKey(opcode)) {
 			throw new AssertionError("Failed to analyse microcode timing: "+opcode);
 		}
@@ -217,8 +221,8 @@ public class SingleCoreTiming extends JOPTimingTable {
 		.addColumn("timing path", Alignment.ALIGN_LEFT)
 		.addColumn("(1,2,H)",Alignment.ALIGN_RIGHT)
 		.addColumn("(1,2,32)",Alignment.ALIGN_RIGHT)
-		.addColumn("(2,2,H)",Alignment.ALIGN_RIGHT)
-		.addColumn("(2,2,32)",Alignment.ALIGN_RIGHT);
+		.addColumn("(3,5,H)",Alignment.ALIGN_RIGHT)
+		.addColumn("(3,5,32)",Alignment.ALIGN_RIGHT);
 		for(int i = 0; i < 256; i++) {
 			int opcode = i;
 			if(JopInstr.isReserved(opcode)) continue;
@@ -234,7 +238,7 @@ public class SingleCoreTiming extends JOPTimingTable {
 				tt.configureWaitStates(1, 2);
 				long exampleTiming1 = tt.getCycles(opcode, true, 0);
 				long exampleTiming2 = tt.getCycles(opcode, false, 32);
-				tt.configureWaitStates(2, 2);
+				tt.configureWaitStates(3, 5);
 				long exampleTiming3 = tt.getCycles(opcode, true, 0);
 				long exampleTiming4 = tt.getCycles(opcode, false, 32);
 				row.addCell(timingPath)
@@ -253,18 +257,19 @@ public class SingleCoreTiming extends JOPTimingTable {
 				tt.minCyclesHiddenOnInvoke,tt.minCyclesHiddenOnReturn));
 		return table;
 	}
+	
 	private static void checkWithWCETInstruction(SingleCoreTiming tt) {
-		// demo config
-		tt.configureWaitStates(1, 2);
+		// demo config (DE2/70)
+		tt.configureWaitStates(3,5);		
+		WCETInstruction wcetInst = new WCETInstruction(3,5);
 		// test set
 		boolean[] testHit  = { true, true, false, false, false };
 		int[]     testLoad = {    1,  128,     1,    11,    57 };
 
 		Map<Integer,String> failures = new TreeMap<Integer,String>();
-		tt.configureWaitStates(WCETInstruction.r, WCETInstruction.w);
 		outer:
 		for(int i = 0; i < 256; i++) {
-			long wiTime0 = WCETInstruction.getCycles(i, false, 0);
+			long wiTime0 = wcetInst.getCycles(i, false, 0);
 			if(JopInstr.isReserved(i)) {
 				if(wiTime0 >= 0) {
 					failures.put(i,"WCETInstruction has timing: "+wiTime0+", but JopInstr says this is a RESERVED INSTRUCTION");
@@ -295,7 +300,7 @@ public class SingleCoreTiming extends JOPTimingTable {
 				continue;
 			}
 			for(int j = 0; j < testHit.length; j++) {
-				long wiT = WCETInstruction.getCycles(i, ! testHit[j], testLoad[j]);
+				long wiT = wcetInst.getCycles(i, ! testHit[j], testLoad[j]);
 				long wiMA = tt.getCycles(i, testHit[j],testLoad[j]);
 				if(wiT != wiMA) {
 					failures.put(i,"WCETInstruction has DIFFERENT TIMING INFO "+

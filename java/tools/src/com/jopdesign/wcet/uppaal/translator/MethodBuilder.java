@@ -19,12 +19,13 @@
 */
 package com.jopdesign.wcet.uppaal.translator;
 
+import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.CfgVisitor;
+import com.jopdesign.common.code.ControlFlowGraph.ReturnNode;
 import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.common.graphutils.FlowGraph;
 import com.jopdesign.common.graphutils.LoopColoring;
 import com.jopdesign.common.graphutils.ProgressMeasure.RelativeProgress;
 import com.jopdesign.wcet.WCETProcessorModel;
@@ -32,7 +33,8 @@ import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.LocalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveWcetAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 import com.jopdesign.wcet.uppaal.model.Location;
 import com.jopdesign.wcet.uppaal.model.Transition;
 import com.jopdesign.wcet.uppaal.model.TransitionAttributes;
@@ -70,31 +72,38 @@ public class MethodBuilder implements CfgVisitor {
 		this.methodAuto = methodAuto;
 		this.invokeBuilder = invokeBuilder;
 	}
+	
 	public void build() {
+
 		this.nodeTemplates = new HashMap<CFGNode, SubAutomaton>();
 		this.tBuilder.addDescription("Template for method "+cfg.getMethodInfo());
-		FlowGraph<CFGNode, ControlFlowGraph.CFGEdge> graph = cfg.getGraph();
 		/* Translate the CFGs nodes */
-		for(CFGNode node : graph.vertexSet()) {
+		for(CFGNode node : cfg.vertexSet()) {
 			node.accept(this);
 		}
 		/* Translate the CFGs edges */
-		for(ControlFlowGraph.CFGEdge edge : graph.edgeSet()) {
+		for(ControlFlowGraph.CFGEdge edge : cfg.edgeSet()) {
 			buildEdge(edge);
 		}
 	}
 
-	public void visitSpecialNode(ControlFlowGraph.DedicatedNode n) {
+	public void visitVirtualNode(ControlFlowGraph.VirtualNode n) {
 		SubAutomaton localTranslation = null;
 		switch(n.getKind()) {
-		case ENTRY: localTranslation = SubAutomaton.singleton(methodAuto.getEntry()); break;
-		case EXIT:  localTranslation = SubAutomaton.singleton(methodAuto.getExit()); break;
-		case SPLIT: localTranslation = createSpecialCommited("SPLIT_"+n.getId(), n);break;
-		case JOIN:  localTranslation = createSpecialCommited("JOIN_"+n.getId(), n);break;
+		case ENTRY:  localTranslation = SubAutomaton.singleton(methodAuto.getEntry()); break;
+		case EXIT:   localTranslation = SubAutomaton.singleton(methodAuto.getExit()); break;
+		case SPLIT:  localTranslation = createSpecialCommited("SPLIT_"+n.getId(), n);break;
+		case JOIN:   localTranslation = createSpecialCommited("JOIN_"+n.getId(), n);break;
+		case RETURN: localTranslation = createSpecialCommited("RETURN_"+n.getId(), n);break;
 		}
 		this.nodeTemplates.put(n,localTranslation);
 	}
-	private SubAutomaton createSpecialCommited(String name, ControlFlowGraph.DedicatedNode n) {
+	
+	public void visitReturnNode(ReturnNode n) {
+		visitVirtualNode(n);
+	}
+	
+	private SubAutomaton createSpecialCommited(String name, ControlFlowGraph.VirtualNode n) {
 		Location split = tBuilder.createLocation(name+"_"+this.mId+"_"+n.getId());
 		split.setCommited();
 		return SubAutomaton.singleton(split);
@@ -108,12 +117,14 @@ public class MethodBuilder implements CfgVisitor {
 	}
 
 	public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
+
 		ExecutionContext ctx = new ExecutionContext(n.getBasicBlock().getMethodInfo());
+		MethodCacheAnalysis mca = new MethodCacheAnalysis(jTrans.getProject());
 		WCETProcessorModel proc = jTrans.getProject().getWCETProcessorModel();
 		SubAutomaton invokeAuto;
 		long staticWCET = proc.basicBlockWCET(ctx, n.getBasicBlock());
 		if(jTrans.getCacheSim().isAlwaysMiss()) {
-			staticWCET+=proc.getInvokeReturnMissCost(n.invokerFlowGraph(),n.receiverFlowGraph());
+			staticWCET += mca.getInvokeReturnMissCost(n.getInvokeSite(),CallString.EMPTY);
 		}
 		invokeAuto = invokeBuilder.translateInvoke(this,n,staticWCET);
 		this.nodeTemplates.put(n,invokeAuto);
@@ -126,19 +137,20 @@ public class MethodBuilder implements CfgVisitor {
 					new LocalAnalysis());
 		WcetCost cost = an.runWCETComputation("SUBGRAPH"+n.getId(),
 				n.getSubGraph(),
-				new AnalysisContextLocal(StaticCacheApproximation.ALWAYS_MISS)
+				new AnalysisContextLocal(CacheCostCalculationMethod.ALWAYS_MISS)
 		).getTotalCost();
 		SubAutomaton sumLoc = createBasicBlock(n.getId(),cost.getCost());
 		this.nodeTemplates.put(n,sumLoc);
 	}
+
 	private void buildEdge(ControlFlowGraph.CFGEdge edge) {
-		FlowGraph<CFGNode, ControlFlowGraph.CFGEdge> graph = cfg.getGraph();
+
 		Set<CFGNode> hols = cfg.getLoopColoring().getHeadOfLoops();
 		Set<ControlFlowGraph.CFGEdge> backEdges = cfg.getLoopColoring().getBackEdges();
 		Map<ControlFlowGraph.CFGEdge, LoopColoring.IterationBranchLabel<CFGNode>> edgeColoring =
 			cfg.getLoopColoring().getIterationBranchEdges();
-		CFGNode src = graph.getEdgeSource(edge);
-		CFGNode target = graph.getEdgeTarget(edge);
+		CFGNode src = cfg.getEdgeSource(edge);
+		CFGNode target = cfg.getEdgeTarget(edge);
 		if(src == cfg.getEntry() && target == cfg.getExit()) return;
 		Transition transition = tBuilder.createTransition(
 				nodeTemplates.get(src).getExit(),

@@ -75,9 +75,7 @@ public class WcetAppInfoTest {
             {
                 System.out.println("Writing supergraph graph to "+pConfig.getOutFile("supergraph.png"));
                 File dotFile = pConfig.getOutFile("callgraph.dot");
-                FileWriter dotWriter = new FileWriter(dotFile);
-                sg.exportDOT(dotWriter);			
-                dotWriter.close();			
+                sg.exportDOT(dotFile);			
                 InvokeDot.invokeDot(wcetTool.getConfig(), dotFile, pConfig.getOutFile("supergraph.png"));
             }
             CallGraph cg = appInfo.buildCallGraph(false);

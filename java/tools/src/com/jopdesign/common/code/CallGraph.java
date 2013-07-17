@@ -66,8 +66,8 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -160,7 +160,7 @@ public class CallGraph implements ImplementationFinder {
 
         public MethodNode(MethodInfo methodInfo) {
             this.methodInfo = methodInfo;
-            instances = new HashSet<ExecutionContext>();
+            instances = new LinkedHashSet<ExecutionContext>();
         }
 
         public MethodInfo getMethodInfo() {
@@ -194,7 +194,7 @@ public class CallGraph implements ImplementationFinder {
         private final Set<InvokeSite> invokeSites;
 
         public InvokeEdge() {
-            invokeSites = new HashSet<InvokeSite>();
+            invokeSites = new LinkedHashSet<InvokeSite>();
         }
 
         public Set<InvokeSite> getInvokeSites() {
@@ -484,7 +484,7 @@ public class CallGraph implements ImplementationFinder {
      */
     public static CallGraph buildCallGraph(AppInfo appInfo, CallgraphBuilder builder) {
         Collection<MethodInfo> rootMethods = appInfo.getRootMethods();
-        Set<ExecutionContext> roots = new HashSet<ExecutionContext>(rootMethods.size());
+        Set<ExecutionContext> roots = new LinkedHashSet<ExecutionContext>(rootMethods.size());
 
         for (MethodInfo m : rootMethods) {
             roots.add(new ExecutionContext(m));
@@ -511,9 +511,9 @@ public class CallGraph implements ImplementationFinder {
      * @param builder the builder class to use to build this graph
      */
     protected CallGraph(Collection<ExecutionContext> rootMethods, CallgraphBuilder builder) {
-        this.rootNodes = new HashSet<ExecutionContext>(rootMethods);
+        this.rootNodes = new LinkedHashSet<ExecutionContext>(rootMethods);
         this.builder = builder;
-        this.subgraphs = new HashMap<CallGraph,SubgraphUpdateListener>(1);
+        this.subgraphs = new LinkedHashMap<CallGraph,SubgraphUpdateListener>(1);
 
         // We need a custom ContextEdge here to keep the references to the vertices for the removeEdge listener
         this.callGraph = new ListenableDirectedGraph<ExecutionContext,ContextEdge>(
@@ -524,8 +524,8 @@ public class CallGraph implements ImplementationFinder {
                         return new ContextEdge(sourceVertex,targetVertex);
                     }
                 }) );
-        this.methodNodes = new HashMap<MethodInfo, MethodNode>();
-        this.classInfos = new HashSet<ClassInfo>();
+        this.methodNodes = new LinkedHashMap<MethodInfo, MethodNode>();
+        this.classInfos = new LinkedHashSet<ClassInfo>();
     }
 
     protected CallGraph(CallGraph parent, Collection<ExecutionContext> rootNodes, CallgraphBuilder builder) {
@@ -733,7 +733,7 @@ public class CallGraph implements ImplementationFinder {
     }
 
     public Set<ExecutionContext> getNodes(CallString cs, MethodInfo m) {
-        Set<ExecutionContext> nodes = new HashSet<ExecutionContext>();
+        Set<ExecutionContext> nodes = new LinkedHashSet<ExecutionContext>();
         for (ExecutionContext ec : methodNodes.get(m).getInstances()) {
             if (ec.getCallString().matches(cs)) {
                 nodes.add(ec);
@@ -776,7 +776,7 @@ public class CallGraph implements ImplementationFinder {
      *     all invoke sites for which there are no invokees.
      */
     public Map<InvokeSite, Set<ExecutionContext>> getChildsPerInvokeSite(ExecutionContext node) {
-        Map<InvokeSite,Set<ExecutionContext>> map = new HashMap<InvokeSite, Set<ExecutionContext>>();
+        Map<InvokeSite,Set<ExecutionContext>> map = new LinkedHashMap<InvokeSite, Set<ExecutionContext>>();
 
         List<ExecutionContext> emptyCSNodes = new LinkedList<ExecutionContext>();
 
@@ -789,7 +789,7 @@ public class CallGraph implements ImplementationFinder {
 
                 Set<ExecutionContext> childs = map.get(child.getCallString().top());
                 if (childs == null) {
-                    childs = new HashSet<ExecutionContext>();
+                    childs = new LinkedHashSet<ExecutionContext>();
                     map.put(child.getCallString().top(), childs);
                 }
                 childs.add(child);
@@ -806,7 +806,7 @@ public class CallGraph implements ImplementationFinder {
 
             Set<ExecutionContext> childs = map.get(invokeSite);
             if (childs == null) {
-                childs = new HashSet<ExecutionContext>();
+                childs = new LinkedHashSet<ExecutionContext>();
                 map.put(invokeSite, childs);
             }
 
@@ -831,7 +831,7 @@ public class CallGraph implements ImplementationFinder {
     }
 
     public Set<ClassInfo> getRootClasses() {
-        Set<ClassInfo> classes = new HashSet<ClassInfo>(2);
+        Set<ClassInfo> classes = new LinkedHashSet<ClassInfo>(2);
         for (ExecutionContext root : rootNodes) {
             classes.add(root.getMethodInfo().getClassInfo());
         }
@@ -848,7 +848,7 @@ public class CallGraph implements ImplementationFinder {
      * @return The methods of all root nodes.
      */
     public Set<MethodInfo> getRootMethods() {
-        Set<MethodInfo> methods = new HashSet<MethodInfo>();
+        Set<MethodInfo> methods = new LinkedHashSet<MethodInfo>();
         for (ExecutionContext root : rootNodes) {
             methods.add(root.getMethodInfo());
         }
@@ -911,7 +911,7 @@ public class CallGraph implements ImplementationFinder {
         if (exists && removeUnreachable) {
             // do we need to worry about loosing connectivity?
             ExecutionContext target = edge.getTarget();
-            Set<ExecutionContext> queue = new HashSet<ExecutionContext>();
+            Set<ExecutionContext> queue = new LinkedHashSet<ExecutionContext>();
             queue.add(target);
 
             while (!queue.isEmpty()) {
@@ -1294,7 +1294,7 @@ public class CallGraph implements ImplementationFinder {
      */
     public Set<MethodInfo> getDirectInvokers(MethodInfo invokee) {
         MethodNode node = getMethodNode(invokee);
-        Set<MethodInfo> invokers = new HashSet<MethodInfo>();
+        Set<MethodInfo> invokers = new LinkedHashSet<MethodInfo>();
 
         for (ExecutionContext ec : node.getInstances()) {
             for (ContextEdge edge : callGraph.incomingEdgesOf(ec)) {
@@ -1307,7 +1307,7 @@ public class CallGraph implements ImplementationFinder {
 
     public Set<InvokeSite> getInvokeSites(MethodInfo invokee) {
         MethodNode node = getMethodNode(invokee);
-        Set<InvokeSite> invokeSites = new HashSet<InvokeSite>();
+        Set<InvokeSite> invokeSites = new LinkedHashSet<InvokeSite>();
 
         for (ExecutionContext ec : node.getInstances()) {
             if (ec.getCallString().isEmpty()) {
@@ -1347,7 +1347,7 @@ public class CallGraph implements ImplementationFinder {
     public Set<MethodInfo> getInvokedMethods(MethodInfo method) {
         MethodNode node = getMethodNode(method);
 
-        Set<MethodInfo> invokees = new HashSet<MethodInfo>();
+        Set<MethodInfo> invokees = new LinkedHashSet<MethodInfo>();
 
         if (mergedCallGraph != null) {
             for (InvokeEdge edge : mergedCallGraph.outgoingEdgesOf(node)) {
@@ -1424,7 +1424,7 @@ public class CallGraph implements ImplementationFinder {
      * @return a list of all reachable methods, sorted in topological order
      */
     public Set<MethodInfo> getReachableImplementationsSet(MethodInfo rootMethod) {
-        Set<MethodInfo> implemented = new HashSet<MethodInfo>();
+        Set<MethodInfo> implemented = new LinkedHashSet<MethodInfo>();
 
         for(ExecutionContext cgNode : methodNodes.get(rootMethod).getInstances()) {
             DepthFirstIterator<ExecutionContext, ContextEdge> ti =
@@ -1453,7 +1453,7 @@ public class CallGraph implements ImplementationFinder {
 
     public List<MethodInfo> getReachableImplementations(ExecutionContext cgNode) {
         final List<MethodInfo> implemented = new ArrayList<MethodInfo>();
-        final Set<MethodInfo> visited = new HashSet<MethodInfo>();
+        final Set<MethodInfo> visited = new LinkedHashSet<MethodInfo>();
 
         DepthFirstIterator<ExecutionContext, ContextEdge> ti =
                 new DepthFirstIterator<ExecutionContext, ContextEdge>(callGraph,cgNode);
@@ -1502,7 +1502,7 @@ public class CallGraph implements ImplementationFinder {
      * @return a list of all reachable implementations, sorted in DFS order
      */
     public Set<MethodInfo> getReachableImplementationsSet(ExecutionContext cgNode) {
-        Set<MethodInfo> implemented = new HashSet<MethodInfo>();
+        Set<MethodInfo> implemented = new LinkedHashSet<MethodInfo>();
 
         DepthFirstIterator<ExecutionContext, ContextEdge> ti =
                 new DepthFirstIterator<ExecutionContext, ContextEdge>(callGraph,cgNode);
@@ -1527,7 +1527,7 @@ public class CallGraph implements ImplementationFinder {
      */
     public Set<MethodInfo> findImplementations(CallString cs) {
         Collection<ExecutionContext> nodes = findImplementationContexts(cs);
-        Set<MethodInfo> methods = new HashSet<MethodInfo>(nodes.size());
+        Set<MethodInfo> methods = new LinkedHashSet<MethodInfo>(nodes.size());
         for (ExecutionContext node : nodes) {
             methods.add(node.getMethodInfo());
         }
@@ -1551,11 +1551,11 @@ public class CallGraph implements ImplementationFinder {
      */
     public Set<ExecutionContext> findImplementationContexts(CallString cs) {
         if (cs.length() == 0) {
-            throw new AssertionError("Callstring must not be empty!");
+            throw new AssertionError("findImplementationContexts: callstring must not be empty!");
         }
 
         InvokeSite invoke = cs.top();
-        Set<ExecutionContext> methods = new HashSet<ExecutionContext>();
+        Set<ExecutionContext> methods = new LinkedHashSet<ExecutionContext>();
 
         MethodRef invokeeRef = invoke.getInvokeeRef();
 
@@ -1608,7 +1608,7 @@ public class CallGraph implements ImplementationFinder {
      */
     public Set<ExecutionContext> getReferencedMethods(MethodInfo m) {
         Set<ExecutionContext> nodes = getNodes(m);
-        Set<ExecutionContext> succs = new HashSet<ExecutionContext>();
+        Set<ExecutionContext> succs = new LinkedHashSet<ExecutionContext>();
         for(ExecutionContext node : nodes) {
             for(ContextEdge e : callGraph.outgoingEdgesOf(node)) {
                 succs.add(callGraph.getEdgeTarget(e));
@@ -1830,10 +1830,10 @@ public class CallGraph implements ImplementationFinder {
         }
         ExecutionContext rootNode = rootNodes.iterator().next();
 
-        this.maxDistanceToRoot = new HashMap<ExecutionContext,Integer>();
+        this.maxDistanceToRoot = new LinkedHashMap<ExecutionContext,Integer>();
         this.maxCallStackLeaf = rootNode;
-        this.maxCallstackDAG  = new HashMap<ExecutionContext,ExecutionContext>();
-        this.subgraphHeight = new HashMap<ExecutionContext, Integer>();
+        this.maxCallstackDAG  = new LinkedHashMap<ExecutionContext,ExecutionContext>();
+        this.subgraphHeight = new LinkedHashMap<ExecutionContext, Integer>();
 
         /* calculate longest distance to root and max call stack DAG */
         List<ExecutionContext> toList = new ArrayList<ExecutionContext>();
@@ -1876,7 +1876,7 @@ public class CallGraph implements ImplementationFinder {
         maxDistanceToRoot = null;
         maxCallstackDAG = null;
         subgraphHeight = null;
-        leafNodeCache = new HashMap<MethodInfo, Boolean>();
+        leafNodeCache = new LinkedHashMap<MethodInfo, Boolean>();
     }
 
     /**

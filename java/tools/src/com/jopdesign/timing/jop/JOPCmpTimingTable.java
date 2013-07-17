@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.Date;
 
 import com.jopdesign.timing.ConsoleTable;
-import com.jopdesign.timing.WCETInstruction;
 import com.jopdesign.timing.ConsoleTable.Alignment;
 import com.jopdesign.timing.ConsoleTable.TableRow;
 import com.jopdesign.tools.JopInstr;
@@ -20,23 +19,41 @@ public class JOPCmpTimingTable extends JOPTimingTable {
 	public static JOPCmpTimingTable getCmpTimingTable(
 			File asmFile, int rws, int wws, int cpus, int timeslot) throws IOException {
 		MicropathTable mpt = MicropathTable.getTimingTableFromAsmFile(asmFile);
-		JOPCmpTimingTable tt = new JOPCmpTimingTable(mpt);
-		tt.configureWaitStates(rws, wws);
-		tt.configureMultiprocessor(cpus, timeslot);
-		return tt;
+		return new JOPCmpTimingTable(mpt, cpus, timeslot, rws, wws);
 	}
-	public void configureMultiprocessor(int cpus, int timeslot) {
-		WCETInstruction.initCMP(cpus, timeslot);
-	}
-	protected JOPCmpTimingTable(MicropathTable mpt) {
+
+	private WCETInstruction instTimingInfo;
+	private int cpus;
+	private int timeslot;
+	
+	protected JOPCmpTimingTable(MicropathTable mpt, int cpus, int timeslot, int rws, int wws) {
 		super(mpt);
+		instTimingInfo = new WCETInstruction(cpus, timeslot, rws, wws);
 	}
 
 	@Override
-	public long getCycles(int opcode, boolean isHit, int methodLoadWords) {
-		long cycles = WCETInstruction.getCycles(opcode, ! isHit, methodLoadWords);
+	public void configureWaitStates(int rws, int wws) {
+		configure(cpus, timeslot, rws, wws);
+	}
+
+	/**
+	 * @param cpus number of CPUs
+	 * @param timeslot timeslot length
+	 * @param rws read wait states  (r)
+	 * @param wws write wait states (w)
+	 */
+	public void configure(int cpus, int timeslot, int rws, int wws) {
+		super.configureWaitStates(rws, wws);
+		this.cpus     = cpus;
+		this.timeslot = timeslot;
+		instTimingInfo.configureCMP(cpus, timeslot, rws, wws);		
+	}
+	
+	@Override
+	protected long getCycles(int opcode, boolean isHit, int methodLoadWords) {
+		long cycles = instTimingInfo.getCycles(opcode, ! isHit, methodLoadWords);
 		if(JopInstr.isInJava(opcode)) {
-			cycles = WCETInstruction.getCycles(org.apache.bcel.Constants.INVOKESTATIC, ! isHit, methodLoadWords);
+			cycles = instTimingInfo.getCycles(org.apache.bcel.Constants.INVOKESTATIC, ! isHit, methodLoadWords);
 		}
 		return cycles;
 	}
@@ -105,8 +122,7 @@ public class JOPCmpTimingTable extends JOPTimingTable {
 				row.addCell("... not supported ...",cmpTestConfig.length,Alignment.ALIGN_LEFT);
 			} else {
 				for(int[] conf : cmpTestConfig) {
-					tt.configureWaitStates(conf[0], conf[1]);
-					tt.configureMultiprocessor(conf[2], conf[3]);
+					tt.configure(conf[2], conf[3], conf[0], conf[1]);
 					long timingHit = tt.getCycles(opcode, true, 0);
 					long timingMiss1 = tt.getCycles(opcode, false, 1);
 					long timingMiss2 = tt.getCycles(opcode, false, 2);

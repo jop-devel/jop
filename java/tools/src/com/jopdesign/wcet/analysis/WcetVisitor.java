@@ -34,7 +34,7 @@ public abstract class WcetVisitor implements CfgVisitor {
 		this.cost = null;
 	}
 
-	public void visitSpecialNode(ControlFlowGraph.DedicatedNode n) {
+	public void visitVirtualNode(ControlFlowGraph.VirtualNode n) {
 	}
 
 	public void visitSummaryNode(ControlFlowGraph.SummaryNode n) {

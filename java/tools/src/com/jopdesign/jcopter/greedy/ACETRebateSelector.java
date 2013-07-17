@@ -24,7 +24,7 @@ import com.jopdesign.common.MethodInfo;
 import com.jopdesign.jcopter.analysis.AnalysisManager;
 import com.jopdesign.jcopter.analysis.ExecFrequencyProvider;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -43,7 +43,7 @@ public class ACETRebateSelector extends QueueSelector {
 
     @Override
     public Set<MethodInfo> updateChangeSet(ExecFrequencyProvider ecp, Set<MethodInfo> optimizedMethods, Set<MethodInfo> candidateChanges) {
-        Set<MethodInfo> changeSet = new HashSet<MethodInfo>(candidateChanges);
+        Set<MethodInfo> changeSet = new LinkedHashSet<MethodInfo>(candidateChanges);
         changeSet.addAll( analyses.getExecFrequencyAnalysis().getChangeSet() );
         changeSet.addAll( analyses.getMethodCacheAnalysis().getMissCountChangeSet(ecp) );
         return changeSet;

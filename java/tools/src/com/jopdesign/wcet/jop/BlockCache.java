@@ -1,20 +1,19 @@
 package com.jopdesign.wcet.jop;
 
-import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.config.Config;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.common.processormodel.JOPConfig.CacheImplementation;
+import com.jopdesign.timing.MethodCacheTiming;
 import com.jopdesign.wcet.WCETTool;
 
-public class BlockCache extends MethodCache {
+public class BlockCache extends MethodCacheImplementation {
 
 	private boolean isLRU;
 	private int blockCount;
 	private int blockSize;
 
-	public BlockCache(WCETTool p, boolean isLRU, int cacheSizeWords, int blockCount) {
-		super(p,cacheSizeWords);
+	public BlockCache(WCETTool p, MethodCacheTiming timing, boolean isLRU, int cacheSizeWords, int blockCount) {
+		super(p,timing,cacheSizeWords);
 		this.isLRU = isLRU;
 		this.blockCount = blockCount;
 		if(cacheSizeWords % blockCount != 0) {
@@ -25,16 +24,11 @@ public class BlockCache extends MethodCache {
 	public int getBlockSize() {
 		return blockSize;
 	}
-	public static MethodCache fromConfig(WCETTool p, boolean isLRU) {
+	public static MethodCache fromConfig(WCETTool p, MethodCacheTiming timing, boolean isLRU) {
 		Config c = p.getConfig();
-		return new BlockCache(p,isLRU,
+		return new BlockCache(p,timing,isLRU,
 							  c.getOption(JOPConfig.CACHE_SIZE_WORDS).intValue(),
 				              c.getOption(JOPConfig.CACHE_BLOCKS).intValue());
-	}
-
-	@Override
-	public boolean allFit(MethodInfo m, CallString cs) {
-		return allFit(super.getAllFitCacheBlocks(m, cs));
 	}
 
     @Override
@@ -61,6 +55,7 @@ public class BlockCache extends MethodCache {
 		else return CacheImplementation.FIFO_CACHE;
 	}
 
+	@Override
 	public int getNumBlocks() {
 		return this.blockCount;
 	}

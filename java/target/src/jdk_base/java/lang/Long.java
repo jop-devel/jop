@@ -210,7 +210,7 @@ public final class Long {
 		do {
 			buffer[--i] = digits[(int) (num % radix)];
 			num /= radix;
-		} while (num > 0);
+		} while (num > 0 && i > 0);
 
 		if (isNeg)
 			buffer[--i] = '-';

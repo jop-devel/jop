@@ -27,7 +27,7 @@ import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -84,7 +84,7 @@ public class BackEdgeFinder<V,E> {
             newGraph.addVertex(node);
         }
 
-        Set<E> edgeSet = new HashSet<E>(graph.edgeSet());
+        Set<E> edgeSet = new LinkedHashSet<E>(graph.edgeSet());
         edgeSet.removeAll(backEdges);
 
         for (E edge : edgeSet) {

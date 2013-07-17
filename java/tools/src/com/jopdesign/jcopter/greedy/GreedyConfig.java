@@ -33,12 +33,12 @@ import com.jopdesign.common.config.StringOption;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.JCopterConfig;
 import com.jopdesign.jcopter.analysis.MethodCacheAnalysis.AnalysisType;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -74,10 +74,10 @@ public class GreedyConfig {
                     "Select the cache analysis type",
                     AnalysisType.ALWAYS_HIT);
 
-    private static final EnumOption<StaticCacheApproximation> WCA_CACHE_APPROXIMATION =
-            new EnumOption<StaticCacheApproximation>("wca-cache-analysis",
+    private static final EnumOption<CacheCostCalculationMethod> WCA_CACHE_APPROXIMATION =
+            new EnumOption<CacheCostCalculationMethod>("wca-cache-analysis",
                     "Set the cache analysis type to be used by the WCA",
-                    StaticCacheApproximation.ALL_FIT_REGIONS);
+                    CacheCostCalculationMethod.ALL_FIT_REGIONS);
 
     private static final EnumOption<DUMPTYPE> DUMP_TARGET_CALLGRAPH =
             new EnumOption<DUMPTYPE>("dump-target-callgraph", "Dump the callgraph of the target methods", DUMPTYPE.off);
@@ -163,7 +163,7 @@ public class GreedyConfig {
     }
 
     public Set<MethodInfo> getTargetMethodSet() {
-        return new HashSet<MethodInfo>(targets);
+        return new LinkedHashSet<MethodInfo>(targets);
     }
 
     public AnalysisType getCacheAnalysisType() {
@@ -174,22 +174,22 @@ public class GreedyConfig {
         return !options.hasValue(WCA_CACHE_APPROXIMATION);
     }
 
-    public StaticCacheApproximation getCacheApproximation() {
-        StaticCacheApproximation defaultValue = options.getOption(WCA_CACHE_APPROXIMATION);
+    public CacheCostCalculationMethod getCacheApproximation() {
+        CacheCostCalculationMethod defaultValue = options.getOption(WCA_CACHE_APPROXIMATION);
         if (defaultValue != null) {
             return defaultValue;
         }
         AnalysisType analysisType = getCacheAnalysisType();
         if (analysisType == AnalysisType.ALWAYS_HIT) {
-            return StaticCacheApproximation.ALWAYS_HIT;
+            return CacheCostCalculationMethod.ALWAYS_HIT;
         }
         if (analysisType == AnalysisType.ALWAYS_MISS) {
-            return StaticCacheApproximation.ALWAYS_MISS;
+            return CacheCostCalculationMethod.ALWAYS_MISS;
         }
         if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT) {
-            return StaticCacheApproximation.ALL_FIT_SIMPLE;
+            return CacheCostCalculationMethod.ALL_FIT_SIMPLE;
         }
-        return StaticCacheApproximation.ALL_FIT_REGIONS;
+        return CacheCostCalculationMethod.ALL_FIT_REGIONS;
     }
 
     public List<MethodInfo> getWCATargets() {
@@ -198,7 +198,7 @@ public class GreedyConfig {
     }
 
     public Set<MethodInfo> getWCATargetSet() {
-        return new HashSet<MethodInfo>(getWCATargets());
+        return new LinkedHashSet<MethodInfo>(getWCATargets());
     }
 
     public boolean useWCA() {

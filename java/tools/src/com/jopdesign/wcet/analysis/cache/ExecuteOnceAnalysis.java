@@ -70,7 +70,7 @@ public class ExecuteOnceAnalysis {
             scope = new ExecutionContext(scope.getMethodInfo()); /* Remove call string */
             ControlFlowGraph cfg = project.getFlowGraph(scope.getMethodInfo());
             Set<MethodInfo> inLoop = new HashSet<MethodInfo>();
-            for (CFGNode node : cfg.getGraph().vertexSet()) {
+            for (CFGNode node : cfg.vertexSet()) {
                 if (!(node instanceof ControlFlowGraph.InvokeNode)) continue;
                 ControlFlowGraph.InvokeNode iNode = (ControlFlowGraph.InvokeNode) node;
                 if (!cfg.getLoopColoring().getLoopColor(node).isEmpty()) {
@@ -86,10 +86,10 @@ public class ExecuteOnceAnalysis {
 
     public boolean isExecutedOnce(ExecutionContext scope, CFGNode node) {
         ControlFlowGraph cfg = node.getControlFlowGraph();
+        scope = new ExecutionContext(scope.getMethodInfo()); /* Remove call string */
         Set<MethodInfo> inLoopMethods = inLoopSet.get(scope);
         if (inLoopMethods == null) {
-            Logger.getLogger("Object Cache Analysis").warning("No loop information for " + scope.getMethodInfo().getFQMethodName() + " @ " +
-                    scope.getCallString().toString());
+            Logger.getLogger("Object Cache Analysis").warning("No loop information for " + scope.getMethodInfo().getFQMethodName());
             return false;
         }
         if (!inLoopMethods.contains(cfg.getMethodInfo())) {

@@ -19,61 +19,46 @@
  */
 package com.jopdesign.wcet;
 
-import com.jopdesign.common.code.BasicBlock;
-import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.common.code.InvokeSite;
-import com.jopdesign.wcet.jop.MethodCache;
+import java.io.Writer;
+
 import org.apache.bcel.generic.InstructionHandle;
+
+import com.jopdesign.common.code.BasicBlock;
+import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.wcet.jop.CacheModel;
+import com.jopdesign.wcet.jop.MethodCache;
+import com.jopdesign.wcet.jop.ObjectCache;
 
 public interface WCETProcessorModel {
 
 	/** A human readable name of the Processor Model */
     String getName();
 
+    /** get execution time for the instruction handle in the given execution context (callstring+method)*/
 	long getExecutionTime(ExecutionContext context, InstructionHandle i);
 
+	/** get execution time for the basic block in the given execution context */
 	long basicBlockWCET(ExecutionContext context, BasicBlock codeBlock);
 
-	boolean hasMethodCache();
-
+	/** TODO: print timing table to the given stream */
+	// void printTimingTable(Writer out);
+	
 	/**
-	 * return method cache, or NoMethodCache if the processor does not have a method cache
-	 * @return
+	 * Get method cache model, or NO_METHOD_CACHE if there is no method cache in this model
+	 * @return the method cache
 	 */
     MethodCache getMethodCache();
 
 	/**
-	 * get the miss penalty (method cache)
-	 * FIXME: We have to rewrite this portion of the analyzer - hardcoding miss penalties
-	 * is to inflexible
-	 * @param numberOfWords ... size of the method
-	 * @param loadOnInvoke  ... whether the method is loaded on invoke
-	 * @return
+	 * Obtain the object cache model
+	 * @return The model, or {@code null} if there is no object cache in this model
 	 */
-    long getMethodCacheMissPenalty(int numberOfWords, boolean loadOnInvoke);
+	ObjectCache getObjectCache();
 
 	/**
-	 * FIXME: We have to rewrite this portion of the analyzer - hardcoding miss penalties
-	 * is to inflexible
-	 * @param invokerFlowGraph
-	 * @param receiverFlowGraph
-	 * @return
+	 * @return a list of all caches implemented in the processor model
 	 */
-    long getInvokeReturnMissCost(ControlFlowGraph invokerFlowGraph, ControlFlowGraph receiverFlowGraph);
+	Iterable<CacheModel> getCaches();
 
-    /**
-     * @param invokeSite invoke site
-     * @param invokeeWords the size of the invokee in words
-     * @return the number of additional cycles required by the invoke if the invoke is a cache miss.
-     */
-    long getInvokeCacheMissPenalty(InvokeSite invokeSite, int invokeeWords);
-
-    /**
-     * @param invokeSite the invoke site to which the invokee returns
-     * @param invokerWords the size of the invoker in words
-     * @return the number of additional cycles required by the return in the invokee if the return is a cache miss.
-     */
-    long getReturnCacheMissPenalty(InvokeSite invokeSite, int invokerWords);
 
 }

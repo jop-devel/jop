@@ -233,7 +233,7 @@ public final class Integer
         buffer[--i] = digits[num % radix];
         num /= radix;
       }
-    while (num > 0);
+    while (num > 0 && i > 0);
 
     if (isNeg)
       buffer[--i] = '-';
@@ -280,7 +280,7 @@ public final class Integer
 	  if(str.value.length != str.length())
 		  throw new Error("lang.Integer.parseInt(): String count and length do not match");
 	  for(int i = 0; i < str.value.length;i++){
-		  if(!Character.isDigit(str.value[i]))
+		  if(!Character.isDigit(str.value[i]) && (str.value[i] != '-' || i > 0))
 			  throw new Error("lang.Integer.parseInt(): String contains not only Digits");
 	  }
     if (! decode && str == null)

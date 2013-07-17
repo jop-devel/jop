@@ -22,18 +22,18 @@ package com.jopdesign.wcet.analysis;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 
 public class AnalysisContextLocal implements AnalysisContext {
 
 	protected final CallString callString;
-	protected final StaticCacheApproximation mode;
+	protected final CacheCostCalculationMethod mode;
 
-	public AnalysisContextLocal(StaticCacheApproximation mode) {
+	public AnalysisContextLocal(CacheCostCalculationMethod mode) {
 		 this(mode, CallString.EMPTY);
 	}
 	
-	public AnalysisContextLocal(StaticCacheApproximation mode, CallString callString) {
+	public AnalysisContextLocal(CacheCostCalculationMethod mode, CallString callString) {
 		this.mode = mode;
 		this.callString = callString;
 	}
@@ -44,11 +44,11 @@ public class AnalysisContextLocal implements AnalysisContext {
 		return callString;
 	}
 	
-	public StaticCacheApproximation getCacheApproxMode() {
+	public CacheCostCalculationMethod getCacheApproxMode() {
 		return mode;
 	}
 
-	public AnalysisContextLocal withCacheApprox(StaticCacheApproximation mode) {
+	public AnalysisContextLocal withCacheApprox(CacheCostCalculationMethod mode) {
 		return new AnalysisContextLocal(mode, this.callString);
 	}
 	

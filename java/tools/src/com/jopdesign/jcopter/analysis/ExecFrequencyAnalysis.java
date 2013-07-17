@@ -43,8 +43,8 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -101,18 +101,18 @@ public class ExecFrequencyAnalysis extends ExecFrequencyProvider {
 
     public ExecFrequencyAnalysis(AnalysisManager analyses, Map<ExecutionContext, Long> roots) {
         this.analyses = analyses;
-        this.roots = new HashMap<ExecutionContext, Long>(roots);
+        this.roots = new LinkedHashMap<ExecutionContext, Long>(roots);
         callGraph = AppInfo.getSingleton().getCallGraph();
-        nodeCount =  new HashMap<ExecutionContext, Long>();
-        changeSet = new HashSet<MethodInfo>(1);
+        nodeCount =  new LinkedHashMap<ExecutionContext, Long>();
+        changeSet = new LinkedHashSet<MethodInfo>(1);
     }
 
     public ExecFrequencyAnalysis(AnalysisManager analyses, CallGraph callGraph) {
         this.analyses = analyses;
         this.callGraph = callGraph;
-        nodeCount =  new HashMap<ExecutionContext, Long>();
-        changeSet = new HashSet<MethodInfo>(1);
-        roots = new HashMap<ExecutionContext, Long>(callGraph.getRootNodes().size());
+        nodeCount =  new LinkedHashMap<ExecutionContext, Long>();
+        changeSet = new LinkedHashSet<MethodInfo>(1);
+        roots = new LinkedHashMap<ExecutionContext, Long>(callGraph.getRootNodes().size());
         for (ExecutionContext node : callGraph.getRootNodes()) {
             roots.put(node, 1L);
         }
@@ -137,7 +137,6 @@ public class ExecFrequencyAnalysis extends ExecFrequencyProvider {
     @Override
     public long getExecCount(MethodInfo methodInfo) {
         long count = 0;
-
         for (ExecutionContext ec : callGraph.getNodes(methodInfo)) {
             Long c = nodeCount.get(ec);
             count += c;
@@ -274,7 +273,6 @@ public class ExecFrequencyAnalysis extends ExecFrequencyProvider {
     ////////////////////////////////////////////////////////////////////////////////////
 
     private void addExecCount(ExecutionContext node, long count) {
-        // logger.info("Adding to " + node+": "+count);
         Long c = nodeCount.get(node);
         long val = (c == null) ? 0 : c;
         val += count;

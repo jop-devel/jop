@@ -68,8 +68,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,8 +82,8 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
     private static final Logger logger = Logger.getLogger(DFATool.LOG_DFA_ANALYSES + "." + NAME);
 
     // used to print messages only once if trace is not enabled
-    private Set<String> noReceiverWarnings = new HashSet<String>();
-    private Set<String> unknownReceiverWarnings = new HashSet<String>();
+    private Set<String> noReceiverWarnings = new LinkedHashSet<String>();
+    private Set<String> unknownReceiverWarnings = new LinkedHashSet<String>();
 
     public LoopBounds(int callStringLength) {
         this.callStringLength = callStringLength;
@@ -99,10 +98,10 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
     }
 
     public ContextMap<CallString, Map<Location, ValueMapping>> initial(InstructionHandle stmt) {
-        ContextMap<CallString, Map<Location, ValueMapping>> retval = new ContextMap<CallString, Map<Location, ValueMapping>>(new Context(), new HashMap<CallString, Map<Location, ValueMapping>>());
+        ContextMap<CallString, Map<Location, ValueMapping>> retval = new ContextMap<CallString, Map<Location, ValueMapping>>(new Context(), new LinkedHashMap<CallString, Map<Location, ValueMapping>>());
 
         CallString l = CallString.EMPTY;
-        Map<Location, ValueMapping> init = new HashMap<Location, ValueMapping>();
+        Map<Location, ValueMapping> init = new LinkedHashMap<Location, ValueMapping>();
 
         ValueMapping value;
 
@@ -116,13 +115,13 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
     }
 
     private Map<InstructionHandle, ContextMap<CallString, Pair<ValueMapping, ValueMapping>>> bounds = new LinkedHashMap<InstructionHandle, ContextMap<CallString, Pair<ValueMapping, ValueMapping>>>();
-    private Map<InstructionHandle, ContextMap<CallString, Integer>> scopes = new HashMap<InstructionHandle, ContextMap<CallString, Integer>>();
+    private Map<InstructionHandle, ContextMap<CallString, Integer>> scopes = new LinkedHashMap<InstructionHandle, ContextMap<CallString, Integer>>();
     private Map<InstructionHandle, ContextMap<CallString, Interval[]>> sizes = new LinkedHashMap<InstructionHandle, ContextMap<CallString, Interval[]>>();
-    private Map<InstructionHandle, ContextMap<CallString, Set<FlowEdge>>> infeasibles = new HashMap<InstructionHandle, ContextMap<CallString, Set<FlowEdge>>>();
+    private Map<InstructionHandle, ContextMap<CallString, Set<FlowEdge>>> infeasibles = new LinkedHashMap<InstructionHandle, ContextMap<CallString, Set<FlowEdge>>>();
 
 
     private Map<InstructionHandle, ContextMap<CallString, Interval>> arrayIndices =
-            new HashMap<InstructionHandle, ContextMap<CallString, Interval>>();
+            new LinkedHashMap<InstructionHandle, ContextMap<CallString, Interval>>();
 
     public void initialize(MethodInfo sig, Context context) {
     }
@@ -139,7 +138,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
             return new ContextMap<CallString, Map<Location, ValueMapping>>(s1);
         }
 
-        ContextMap<CallString, Map<Location, ValueMapping>> result = new ContextMap<CallString, Map<Location, ValueMapping>>(new Context(s1.getContext()), new HashMap<CallString, Map<Location, ValueMapping>>());
+        ContextMap<CallString, Map<Location, ValueMapping>> result = new ContextMap<CallString, Map<Location, ValueMapping>>(new Context(s1.getContext()), new LinkedHashMap<CallString, Map<Location, ValueMapping>>());
         result.putAll(s1);
         result.putAll(s2);
 
@@ -148,13 +147,13 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
         if (a != null || b != null) {
             if (a == null) {
-                a = new HashMap<Location, ValueMapping>();
+                a = new LinkedHashMap<Location, ValueMapping>();
             }
             if (b == null) {
-                b = new HashMap<Location, ValueMapping>();
+                b = new LinkedHashMap<Location, ValueMapping>();
             }
 
-            Map<Location, ValueMapping> merged = new HashMap<Location, ValueMapping>(a);
+            Map<Location, ValueMapping> merged = new LinkedHashMap<Location, ValueMapping>(a);
 
             for (Location l : b.keySet()) {
                 ValueMapping x = a.get(l);
@@ -225,7 +224,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
         Context context = new Context(input.getContext());
         Map<Location, ValueMapping> in = (Map<Location, ValueMapping>) input.get(context.callString);
 
-        ContextMap<CallString, Map<Location, ValueMapping>> retval = new ContextMap<CallString, Map<Location, ValueMapping>>(context, new HashMap<CallString, Map<Location, ValueMapping>>());
+        ContextMap<CallString, Map<Location, ValueMapping>> retval = new ContextMap<CallString, Map<Location, ValueMapping>>(context, new LinkedHashMap<CallString, Map<Location, ValueMapping>>());
 
         Instruction instruction = stmt.getInstruction();
 
@@ -245,7 +244,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
             return retval;
         }
 
-        Map<Location, ValueMapping> result = new HashMap<Location, ValueMapping>();
+        Map<Location, ValueMapping> result = new LinkedHashMap<Location, ValueMapping>();
         retval.put(context.callString, result);
 
 //		System.out.println(context.method+": "+stmt);
@@ -276,7 +275,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
             case Constants.BIPUSH:
             case Constants.SIPUSH: {
                 ConstantPushInstruction instr = (ConstantPushInstruction) instruction;
-                result = new HashMap<Location, ValueMapping>(in);
+                result = new LinkedHashMap<Location, ValueMapping>(in);
                 retval.put(context.callString, result);
                 int value = instr.getValue().intValue();
                 result.put(new Location(context.stackPtr), new ValueMapping(value));
@@ -291,7 +290,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
             case Constants.LDC:
             case Constants.LDC_W: {
                 LDC instr = (LDC) instruction;
-                result = new HashMap<Location, ValueMapping>(in);
+                result = new LinkedHashMap<Location, ValueMapping>(in);
                 retval.put(context.callString, result);
                 Type type = instr.getType(context.constPool());
                 if (type.equals(Type.INT)) {
@@ -522,7 +521,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
             case Constants.GETSTATIC: {
                 GETSTATIC instr = (GETSTATIC) instruction;
 
-                result = new HashMap<Location, ValueMapping>(in);
+                result = new LinkedHashMap<Location, ValueMapping>(in);
                 retval.put(context.callString, result);
 
                 DFATool p = interpreter.getDFATool();
@@ -1148,7 +1147,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
     private void recordArrayIndex(InstructionHandle stmt, Context context, Interval assigned) {
         ContextMap<CallString, Interval> indexMap = arrayIndices.get(stmt);
         if (indexMap == null) {
-            indexMap = new ContextMap<CallString, Interval>(context, new HashMap<CallString, Interval>());
+            indexMap = new ContextMap<CallString, Interval>(context, new LinkedHashMap<CallString, Interval>());
             arrayIndices.put(stmt, indexMap);
         }
         indexMap.put(context.callString, assigned);
@@ -1164,7 +1163,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
     private void checkScope(Context context, InstructionHandle stmt) {
         if (scopes.get(stmt) == null) {
-            scopes.put(stmt, new ContextMap<CallString, Integer>(context, new HashMap<CallString, Integer>()));
+            scopes.put(stmt, new ContextMap<CallString, Integer>(context, new LinkedHashMap<CallString, Integer>()));
         }
         if (scopes.get(stmt).get(context.callString) == null) {
             ValueMapping.scope = ++ValueMapping.scopeCnt;
@@ -1424,7 +1423,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
             // carry only minimal information with call
             Map<Location, ValueMapping> in = input.get(context.callString);
-            Map<Location, ValueMapping> out = new HashMap<Location, ValueMapping>();
+            Map<Location, ValueMapping> out = new LinkedHashMap<Location, ValueMapping>();
             for (Location l : in.keySet()) {
                 if (l.stackLoc < 0) {
                     out.put(l, in.get(l));
@@ -1434,7 +1433,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
                 }
             }
 
-            ContextMap<CallString, Map<Location, ValueMapping>> tmpresult = new ContextMap<CallString, Map<Location, ValueMapping>>(c, new HashMap<CallString, Map<Location, ValueMapping>>());
+            ContextMap<CallString, Map<Location, ValueMapping>> tmpresult = new ContextMap<CallString, Map<Location, ValueMapping>>(c, new LinkedHashMap<CallString, Map<Location, ValueMapping>>());
             tmpresult.put(c.callString, out);
 
             InstructionHandle entry = p.getEntryHandle(method);
@@ -1483,7 +1482,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
         String methodId = method.getMemberID().toString();
 
         Map<Location, ValueMapping> in = input.get(context.callString);
-        Map<Location, ValueMapping> out = new HashMap<Location, ValueMapping>();
+        Map<Location, ValueMapping> out = new LinkedHashMap<Location, ValueMapping>();
 
         if (methodId.equals("com.jopdesign.sys.Native#rd(I)I")
                 || methodId.equals("com.jopdesign.sys.Native#rdMem(I)I")
@@ -1577,7 +1576,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
     private void recordBound(InstructionHandle stmt, Context context, FlowEdge edge, ValueMapping bound) {
         ContextMap<CallString, Pair<ValueMapping, ValueMapping>> map = bounds.get(stmt);
         if (map == null) {
-            map = new ContextMap<CallString, Pair<ValueMapping, ValueMapping>>(context, new HashMap<CallString, Pair<ValueMapping, ValueMapping>>());
+            map = new ContextMap<CallString, Pair<ValueMapping, ValueMapping>>(context, new LinkedHashMap<CallString, Pair<ValueMapping, ValueMapping>>());
             bounds.put(stmt, map);
         }
         Pair<ValueMapping, ValueMapping> b = map.get(context.callString);
@@ -1660,7 +1659,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
         ContextMap<CallString, Interval[]> sizeMap;
         sizeMap = sizes.get(stmt);
         if (sizeMap == null) {
-            sizeMap = new ContextMap<CallString, Interval[]>(context, new HashMap<CallString, Interval[]>());
+            sizeMap = new ContextMap<CallString, Interval[]>(context, new LinkedHashMap<CallString, Interval[]>());
         }
         Interval[] v = new Interval[1];
         v[0] = size;
@@ -1672,7 +1671,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
         ContextMap<CallString, Interval[]> sizeMap;
         sizeMap = sizes.get(stmt);
         if (sizeMap == null) {
-            sizeMap = new ContextMap<CallString, Interval[]>(context, new HashMap<CallString, Interval[]>());
+            sizeMap = new ContextMap<CallString, Interval[]>(context, new LinkedHashMap<CallString, Interval[]>());
         }
         sizeMap.put(context.callString, size);
         sizes.put(stmt, sizeMap);
@@ -1700,12 +1699,12 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
         ContextMap<CallString, Set<FlowEdge>> infMap;
         infMap = infeasibles.get(stmt);
         if (infMap == null) {
-            infMap = new ContextMap<CallString, Set<FlowEdge>>(context, new HashMap<CallString, Set<FlowEdge>>());
+            infMap = new ContextMap<CallString, Set<FlowEdge>>(context, new LinkedHashMap<CallString, Set<FlowEdge>>());
             infeasibles.put(stmt, infMap);
         }
         Set<FlowEdge> flowSet = infMap.get(context.callString);
         if (flowSet == null) {
-            flowSet = new HashSet<FlowEdge>();
+            flowSet = new LinkedHashSet<FlowEdge>();
             infMap.put(context.callString, flowSet);
         }
         flowSet.add(edge);
@@ -1730,7 +1729,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
     public Set<FlowEdge> getInfeasibleEdges(InstructionHandle stmt, CallString cs) {
         ContextMap<CallString, Set<FlowEdge>> map = infeasibles.get(stmt);
-        Set<FlowEdge> retval = new HashSet<FlowEdge>();
+        Set<FlowEdge> retval = new LinkedHashSet<FlowEdge>();
         if (map == null) { // no infeasibility information here
             return retval;
         }
@@ -1854,7 +1853,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 				List<SerializedFlowEdge> serializedEdges, AppInfo appInfo) 
 				throws IOException, MethodNotFoundException {
 
-			Set<FlowEdge> edges = new HashSet<FlowEdge>();
+			Set<FlowEdge> edges = new LinkedHashSet<FlowEdge>();
 			for(SerializedFlowEdge sfe : serializedEdges) {
 				edges.add(sfe.toFlowEdge(appInfo));
 			}
@@ -1927,9 +1926,9 @@ public class LoopBounds implements Analysis<CallString, Map<Location, ValueMappi
 
             ContextMap<CallString,Set<FlowEdge>> old = infeasibles.get(oldHandle);
             if (old != null) {
-                Map<CallString,Set<FlowEdge>> map = new HashMap<CallString, Set<FlowEdge>>(old.size());
+                Map<CallString,Set<FlowEdge>> map = new LinkedHashMap<CallString, Set<FlowEdge>>(old.size());
                 for (CallString cs : old.keySet()) {
-                    Set<FlowEdge> newSet = new HashSet<FlowEdge>();
+                    Set<FlowEdge> newSet = new LinkedHashSet<FlowEdge>();
                     for (FlowEdge edge : old.get(cs)) {
                         InstructionHandle newHead = newHandles.get(edge.getHead());
                         InstructionHandle newTail = newHandles.get(edge.getTail());

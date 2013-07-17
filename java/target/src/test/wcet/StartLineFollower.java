@@ -38,7 +38,7 @@ public class StartLineFollower {
 		to = te-ts;
 		LineFollower.init();
 		invoke();
-		if (Config.MEASURE) System.out.println(te-ts-to);
+		if (Config.MEASURE) { System.out.print("max: "); System.out.println(te-ts-to); }
 	}
 	
 	static void invoke() {

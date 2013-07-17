@@ -51,7 +51,7 @@ import com.jopdesign.jcopter.optimizer.UnusedCodeRemover;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -207,11 +207,11 @@ public class PhaseExecutor {
 
         try {
             // Dumping the full graph is a bit much, we split it into several graphs
-            Set<ExecutionContext> appRoots = new HashSet<ExecutionContext>();
-            Set<ExecutionContext> jvmRoots = new HashSet<ExecutionContext>();
-            Set<ExecutionContext> clinitRoots = new HashSet<ExecutionContext>();
+            Set<ExecutionContext> appRoots = new LinkedHashSet<ExecutionContext>();
+            Set<ExecutionContext> jvmRoots = new LinkedHashSet<ExecutionContext>();
+            Set<ExecutionContext> clinitRoots = new LinkedHashSet<ExecutionContext>();
 
-            Set<String> jvmClasses = new HashSet<String>();
+            Set<String> jvmClasses = new LinkedHashSet<String>();
             if (appInfo.getProcessorModel() != null) {
                 jvmClasses.addAll( appInfo.getProcessorModel().getJVMClasses() );
                 jvmClasses.addAll( appInfo.getProcessorModel().getNativeClasses() );

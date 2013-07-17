@@ -24,7 +24,6 @@ import com.jopdesign.common.AppInfo;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallGraph;
 import com.jopdesign.common.code.CallGraph.ContextEdge;
-import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph.InvokeNode;
 import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.InvokeSite;
@@ -36,7 +35,6 @@ import com.jopdesign.common.graphutils.GraphUtils;
 import com.jopdesign.common.misc.AppInfoError;
 import com.jopdesign.common.misc.MiscUtils;
 import com.jopdesign.jcopter.JCopter;
-import com.jopdesign.wcet.WCETProcessorModel;
 import com.jopdesign.wcet.WCETTool;
 import com.jopdesign.wcet.analysis.AnalysisContextLocal;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
@@ -45,7 +43,7 @@ import com.jopdesign.wcet.analysis.RecursiveAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveStrategy;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.ipet.IPETConfig;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 import com.jopdesign.wcet.jop.MethodCache;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
@@ -54,8 +52,8 @@ import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
@@ -93,9 +91,9 @@ public class MethodCacheAnalysis {
         this.cache = jcopter.getMethodCache();
         this.callGraph = callGraph;
 
-        cacheBlocks = new HashMap<ExecutionContext, Integer>(callGraph.getNodes().size());
-        reachableMethods = new HashMap<ExecutionContext, Set<MethodInfo>>(callGraph.getNodes().size());
-        classifyChanges = new HashSet<MethodInfo>();
+        cacheBlocks = new LinkedHashMap<ExecutionContext, Integer>(callGraph.getNodes().size());
+        reachableMethods = new LinkedHashMap<ExecutionContext, Set<MethodInfo>>(callGraph.getNodes().size());
+        classifyChanges = new LinkedHashSet<MethodInfo>();
     }
 
     public CallGraph getCallGraph() {
@@ -162,9 +160,8 @@ public class MethodCacheAnalysis {
         int sizeInvoker = getMethodSize(invokeSite.getInvoker());
         sizeInvoker = MiscUtils.bytesToWords(sizeInvoker);
 
-        WCETProcessorModel pm = jcopter.getWCETProcessorModel();
-        long invokeCosts = pm.getInvokeCacheMissPenalty(invokeSite, size);
-        long returnCosts = pm.getReturnCacheMissPenalty(invokeSite, sizeInvoker);
+        long invokeCosts = cache.getMissPenaltyOnInvoke(size, invokeSite.getInvokeInstruction());
+        long returnCosts = cache.getMissPenaltyOnReturn(sizeInvoker,invokeSite.getInvokeeRef().getDescriptor().getType());
 
         return getInvokeReturnCacheCosts(ecp, invokeSite, invokeCosts, returnCosts);
     }
@@ -280,7 +277,6 @@ public class MethodCacheAnalysis {
 
         MethodInfo method = modification.getMethod();
 
-        WCETProcessorModel pm = jcopter.getWCETProcessorModel();
         int size = getMethodSize(method);
         int oldWords = MiscUtils.bytesToWords(size);
         int newWords = MiscUtils.bytesToWords(size+deltaBytes);
@@ -289,10 +285,10 @@ public class MethodCacheAnalysis {
         //int newBlocks = getRequiredBlocks(method) + deltaBlocks;
 
         // calc various cache miss cost deltas
-        long deltaInvokeCacheMissCosts = pm.getMethodCacheMissPenalty(newWords, true) -
-                                         pm.getMethodCacheMissPenalty(oldWords, true);
-        long deltaReturnCacheMissCosts = pm.getMethodCacheMissPenalty(newWords, false) -
-                                         pm.getMethodCacheMissPenalty(oldWords, false);
+        long deltaInvokeCacheMissCosts = cache.getMissPenalty(newWords, true) -
+                                         cache.getMissPenalty(oldWords, true);
+        long deltaReturnCacheMissCosts = cache.getMissPenalty(newWords, false) -
+                                         cache.getMissPenalty(oldWords, false);
 
         long costs = 0;
 
@@ -320,7 +316,6 @@ public class MethodCacheAnalysis {
                                                             modification.getRemovedInvokees(), false);
 
         AppInfo appInfo = AppInfo.getSingleton();
-        WCETProcessorModel pm = jcopter.getWCETProcessorModel();
 
         // In all nodes where we have changes, we need to sum up the new costs
         long deltaCosts = 0;
@@ -340,8 +335,8 @@ public class MethodCacheAnalysis {
                 int sizeInvoker = getMethodSize(invokeSite.getInvoker());
                 sizeInvoker = MiscUtils.bytesToWords(sizeInvoker);
 
-                long invokeCosts = pm.getInvokeCacheMissPenalty(invokeSite, size);
-                long returnCosts = pm.getReturnCacheMissPenalty(invokeSite, sizeInvoker);
+                long invokeCosts = cache.getMissPenaltyOnInvoke(size, invokeSite.getInvokeInstruction());
+                long returnCosts = cache.getMissPenaltyOnReturn(sizeInvoker,invokeSite.getInvokeeRef().getDescriptor().getType());
 
                 long count = ecp.getExecCount(invokeSite);
                 if (analysisType == AnalysisType.ALL_FIT_REGIONS) {
@@ -359,9 +354,9 @@ public class MethodCacheAnalysis {
 
             // find out how many additional persistent cache misses we have
             // find out border of new all-fit region
-            Map<MethodInfo,Integer> deltaExec = new HashMap<MethodInfo, Integer>();
+            Map<MethodInfo,Integer> deltaExec = new LinkedHashMap<MethodInfo, Integer>();
             int deltaCount = 0;
-            Set<ExecutionContext> border = new HashSet<ExecutionContext>();
+            Set<ExecutionContext> border = new LinkedHashSet<ExecutionContext>();
 
             if (deltaBlocks < 0) {
                 throw new AppInfoError("Not implemented");
@@ -395,11 +390,11 @@ public class MethodCacheAnalysis {
 
             // find out cache miss costs of new all-fit region
             int regionCosts = 0;
-            Set<MethodInfo> visited = new HashSet<MethodInfo>();
+            Set<MethodInfo> visited = new LinkedHashSet<MethodInfo>();
             for (ExecutionContext context : border) {
                 for (MethodInfo reachable : reachableMethods.get(context)) {
                     if (visited.add(reachable)) {
-                        regionCosts += pm.getMethodCacheMissPenalty(reachable.getCode().getNumberOfWords(), cache.isLRU());
+                        regionCosts += cache.getMissPenalty(reachable.getCode().getNumberOfWords(), cache.isLRU());
                     }
                 }
             }
@@ -433,7 +428,7 @@ public class MethodCacheAnalysis {
     public Set<MethodInfo> getMissCountChangeSet(ExecFrequencyProvider ecp) {
         if (analysisType == AnalysisType.ALWAYS_HIT) return Collections.emptySet();
 
-        Set<MethodInfo> countChanges = new HashSet<MethodInfo>(classifyChanges);
+        Set<MethodInfo> countChanges = new LinkedHashSet<MethodInfo>(classifyChanges);
 
         // we check the exec analysis for changed exec counts,
         // need to update change sets since cache miss counts changed for cache-misses
@@ -468,7 +463,7 @@ public class MethodCacheAnalysis {
     public void inline(CodeModification modification, InvokeSite invokeSite, MethodInfo invokee) {
         if (analysisType == AnalysisType.ALWAYS_HIT || analysisType == AnalysisType.ALWAYS_MISS) return;
 
-        Set<ExecutionContext> nodes = new HashSet<ExecutionContext>();
+        Set<ExecutionContext> nodes = new LinkedHashSet<ExecutionContext>();
 
         // We need to go down first, find all new nodes
         MethodInfo invoker = invokeSite.getInvoker();
@@ -532,7 +527,7 @@ public class MethodCacheAnalysis {
     ///////////////////////////////////////////////////////////////////////////////////
 
     public RecursiveStrategy<AnalysisContextLocal,WcetCost>
-           createRecursiveStrategy(WCETTool tool, IPETConfig ipetConfig, StaticCacheApproximation cacheApprox)
+           createRecursiveStrategy(WCETTool tool, IPETConfig ipetConfig, CacheCostCalculationMethod cacheApprox)
     {
         if (cacheApprox.needsInterProcIPET()) {
             // TODO use method-cache for all-fit
@@ -543,19 +538,14 @@ public class MethodCacheAnalysis {
             @Override
             public WcetCost recursiveCost(RecursiveAnalysis<AnalysisContextLocal, WcetCost> stagedAnalysis,
                                           InvokeNode n, AnalysisContextLocal ctx) {
-                AnalysisContextLocal newCtx = ctx;
 
+            	AnalysisContextLocal newCtx = ctx;
                 if (analysisType == AnalysisType.ALWAYS_MISS_OR_HIT &&
-                        allFit(cache, n.getInvokeSite().getInvoker(), ctx.getCallString()))
+                        allFit(stagedAnalysis.getWCETTool(), n.getInvokeSite().getInvoker(), ctx.getCallString()))
                 {
-                    newCtx = ctx.withCacheApprox(StaticCacheApproximation.ALWAYS_HIT);
+                    newCtx = ctx.withCacheApprox(CacheCostCalculationMethod.ALWAYS_HIT);
                 }
                 return super.recursiveCost(stagedAnalysis, n, newCtx);
-            }
-
-            @Override
-            protected boolean allFit(MethodCache cache, MethodInfo method, CallString callString) {
-                return MethodCacheAnalysis.this.allFit(new ExecutionContext(method, callString));
             }
         };
     }
@@ -570,14 +560,6 @@ public class MethodCacheAnalysis {
         return method.getCode().getNumberOfBytes();
     }
 
-    private int getRequiredBlocks(MethodInfo method) {
-        int blocks = 0;
-        for (ExecutionContext node : callGraph.getNodes(method)) {
-            blocks = Math.max(blocks, cacheBlocks.get(node));
-        }
-        return blocks;
-    }
-
     private void updateNodes(SimpleDirectedGraph<ExecutionContext,ContextEdge> closure,
                              Set<ExecutionContext> nodes, boolean reuseResults)
     {
@@ -587,7 +569,7 @@ public class MethodCacheAnalysis {
 
             // We could make this more memory efficient, because in many cases we do not need a
             // separate set for each node, but this would be more complicated to calculate
-            Set<MethodInfo> reachable = new HashSet<MethodInfo>();
+            Set<MethodInfo> reachable = new LinkedHashSet<MethodInfo>();
 
             reachable.add(node.getMethodInfo());
             // we only need to add all children to the set, no need to go down the graph
@@ -638,14 +620,14 @@ public class MethodCacheAnalysis {
         final Map<ExecutionContext,Set<MethodInfo>> removeMethods = findRemovedMethods(roots, removed);
 
         // next, calculate blocks of removed methods
-        final Map<MethodInfo,Integer> blocks = new HashMap<MethodInfo, Integer>(removed.size());
+        final Map<MethodInfo,Integer> blocks = new LinkedHashMap<MethodInfo, Integer>(removed.size());
         for (MethodInfo m : removed) {
             int size = MiscUtils.bytesToWords(getMethodSize(m));
             blocks.put(m, cache.requiredNumberOfBlocks(size));
         }
 
         // finally, go up all invokers, sum up reachable method set changes and deltaBlocks per node, check all-fit
-        final Set<MethodInfo> changeSet = new HashSet<MethodInfo>();
+        final Set<MethodInfo> changeSet = new LinkedHashSet<MethodInfo>();
 
         DFSVisitor<ExecutionContext,ContextEdge> visitor = new EmptyDFSVisitor<ExecutionContext, ContextEdge>() {
             @Override
@@ -690,8 +672,8 @@ public class MethodCacheAnalysis {
     private Map<ExecutionContext,Set<MethodInfo>> findRemovedMethods(Set<ExecutionContext> roots,
                                                                      Collection<MethodInfo> removed)
     {
-        Map<ExecutionContext,Set<MethodInfo>> removeMethods = new HashMap<ExecutionContext, Set<MethodInfo>>();
-        HashSet<ExecutionContext> queue = new HashSet<ExecutionContext>(roots);
+        Map<ExecutionContext,Set<MethodInfo>> removeMethods = new LinkedHashMap<ExecutionContext, Set<MethodInfo>>();
+        LinkedHashSet<ExecutionContext> queue = new LinkedHashSet<ExecutionContext>(roots);
 
         while (!queue.isEmpty()) {
             ExecutionContext node = queue.iterator().next();
@@ -706,7 +688,7 @@ public class MethodCacheAnalysis {
             // This ensures that the size of the sets only decreases and we eventually reach a fixpoint
             Set<MethodInfo> set = removeMethods.get(node);
             if (set == null) {
-                set = new HashSet<MethodInfo>(removed.size());
+                set = new LinkedHashSet<MethodInfo>(removed.size());
                 removeMethods.put(node, set);
                 for (MethodInfo m : removed) {
                     // initially add method to remove set if it is reachable from this node
@@ -754,7 +736,7 @@ public class MethodCacheAnalysis {
     }
 
     private Set<ExecutionContext> findAllFitBorder(Collection<ExecutionContext> nodes) {
-        final Set<ExecutionContext> border = new HashSet<ExecutionContext>();
+        final Set<ExecutionContext> border = new LinkedHashSet<ExecutionContext>();
 
         DFSVisitor<ExecutionContext,ContextEdge> visitor = new EmptyDFSVisitor<ExecutionContext, ContextEdge>() {
             @Override

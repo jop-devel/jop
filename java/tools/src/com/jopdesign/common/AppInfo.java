@@ -69,8 +69,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -140,11 +140,11 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
         loadLibraries = true;
         exitOnMissingClass = false;
 
-        classes = new HashMap<String, ClassInfo>();
-        roots = new HashSet<MemberInfo>();
-        hwObjectClasses = new HashSet<String>();
-        libraryClasses = new HashSet<String>(1);
-        ignoredClasses = new HashSet<String>(1);
+        classes = new LinkedHashMap<String, ClassInfo>();
+        roots = new LinkedHashSet<MemberInfo>();
+        hwObjectClasses = new LinkedHashSet<String>();
+        libraryClasses = new LinkedHashSet<String>(1);
+        ignoredClasses = new LinkedHashSet<String>(1);
 
         eventHandlers = new ArrayList<AppEventHandler>(3);
     }
@@ -268,7 +268,8 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
         try {
             info = loadClass(className, false, false);
         } catch (ClassInfoNotFoundException e) {
-            handleClassLoadFailure(e.getMessage(), e);
+        	String msg = "Failed to load class '"+className+"' from '"+getClassPath()+"' in '" + new File(".").getAbsolutePath() + "'";
+            handleClassLoadFailure(msg, e);
         }
         return info;
     }
@@ -356,7 +357,7 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
     public void removeClasses(Collection<ClassInfo> classes) {
 
         // first, collect all nested classes and remove duplicates.
-        final Map<String,ClassInfo> map = new HashMap<String, ClassInfo>(classes.size());
+        final Map<String,ClassInfo> map = new LinkedHashMap<String, ClassInfo>(classes.size());
 
         for (ClassInfo classInfo : classes) {
 
@@ -813,7 +814,7 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
      * @return a set of all classinfos of all roots. 
      */
     public Collection<ClassInfo> getRootClasses() {
-        Set<ClassInfo> rootClasses = new HashSet<ClassInfo>();
+        Set<ClassInfo> rootClasses = new LinkedHashSet<ClassInfo>();
         for (MemberInfo root : roots) {
             rootClasses.add(root.getClassInfo());
         }
@@ -825,7 +826,7 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
      * @return a set of all root methods.
      */
     public Set<MethodInfo> getRootMethods() {
-        Set<MethodInfo> methods = new HashSet<MethodInfo>();
+        Set<MethodInfo> methods = new LinkedHashSet<MethodInfo>();
         for (MemberInfo root : roots) {
             addRootMethods(methods, root);
         }
@@ -844,7 +845,7 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
      * @return a set of all application root methods.
      */
     public Set<MethodInfo> getAppRootMethods() {
-        Set<MethodInfo> methods = new HashSet<MethodInfo>();
+        Set<MethodInfo> methods = new LinkedHashSet<MethodInfo>();
         if (processor == null) {
             return getRootMethods();
         }
@@ -862,7 +863,7 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
     }
 
     public Set<MethodInfo> getJvmRootMethods() {
-        Set<MethodInfo> methods = new HashSet<MethodInfo>();
+        Set<MethodInfo> methods = new LinkedHashSet<MethodInfo>();
         if (processor == null) {
             return methods;
         }
@@ -1086,7 +1087,7 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
         // We could use the callgraph to check them too, but only if the callstring length of the
         // callgraph is at least one, else we will get incorrect results
         if (!invokeSite.isVirtual()) {
-            Set<MethodInfo> methods = new HashSet<MethodInfo>();
+            Set<MethodInfo> methods = new LinkedHashSet<MethodInfo>();
 
             MethodInfo method = invokeSite.getInvokeeRef().getMethodInfo();
             if (method == null) {
@@ -1132,7 +1133,7 @@ public final class AppInfo implements ImplementationFinder, CFGProvider {
      * @return all possible implementations, including native methods.
      */
     public Set<MethodInfo> findImplementations(final MethodRef invokee) {
-        final Set<MethodInfo> methods = new HashSet<MethodInfo>();
+        final Set<MethodInfo> methods = new LinkedHashSet<MethodInfo>();
 
         // 'method' may refer to an inherited MethodInfo or to an interface method if there is no implementation
         final MethodInfo method = invokee.getMethodInfo();

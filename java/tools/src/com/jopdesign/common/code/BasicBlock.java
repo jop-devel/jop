@@ -38,6 +38,7 @@ import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.JsrInstruction;
+import org.apache.bcel.generic.MONITORENTER;
 import org.apache.bcel.generic.PUTFIELD;
 import org.apache.bcel.generic.PUTSTATIC;
 import org.apache.bcel.generic.ReturnInstruction;
@@ -311,6 +312,25 @@ public class BasicBlock {
 
         return map;
     }
+    
+    /**
+     * @return a human readable string representation of the location of the first instruction
+     * in the basic block
+     */
+    public String getStartLine() {
+    	ClassInfo cls = null;
+    	int line = -1;
+    	for(InstructionHandle ih : instructions) {
+    		cls = methodCode.getSourceClassInfo(ih);
+    		line = methodCode.getLineNumber(this.getFirstInstruction());
+    		if(line >= 0) break;
+    	}
+    	if(line >= 0) {
+    		 return cls.getSourceFileName()+":"+line;
+    	} else {
+    		 return getMethodInfo().getClassInfo().getSourceFileName()+":"+getMethodInfo().getFQMethodName();    		
+    	}
+    }
 
 
 
@@ -418,8 +438,7 @@ public class BasicBlock {
             flowInfo.splitAfter = true;
         }
 
-        // Not neccesarily, but nice for WCET analysis
-
+        // Not 100% necessary, but simplifies program analysis a lot
         @Override
         public void visitInvokeInstruction(InvokeInstruction obj) {
             if (!methodCode.getAppInfo().getProcessorModel().isSpecialInvoke(methodCode.getMethodInfo(), obj)) {
@@ -427,7 +446,13 @@ public class BasicBlock {
                 flowInfo.splitAfter = true;
             }
         }
-
+        
+        // Not necessary, but nice for synchronized block analysis
+        @Override
+        public void visitMONITORENTER(MONITORENTER obj) {
+            flowInfo.splitBefore = true;
+        }
+        
         @Override
         public void visitReturnInstruction(ReturnInstruction obj) {
             flowInfo.splitAfter = true;

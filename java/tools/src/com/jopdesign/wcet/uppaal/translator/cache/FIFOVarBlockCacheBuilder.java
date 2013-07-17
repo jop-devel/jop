@@ -80,7 +80,7 @@ public class FIFOVarBlockCacheBuilder extends VarBlockCacheBuilder {
 	
 	public long getWaitTime(WCETProcessorModel proc, ControlFlowGraph cfg, boolean isInvoke) {
 		if((assumeEmptyCache && isInvoke) ||
-		   cfg.isLeafMethod()) return cache.getMissOnInvokeCost(proc, cfg);
-		else return cache.getMaxMissCost(proc, cfg);
+		   cfg.isLeafMethod()) return cache.getMissOnInvokeCost(cfg);
+		else return cache.getMaxMissCost(cfg);
 	}
 }

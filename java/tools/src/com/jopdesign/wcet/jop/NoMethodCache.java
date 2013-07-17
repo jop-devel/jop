@@ -19,23 +19,28 @@
  */
 package com.jopdesign.wcet.jop;
 
+import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.InvokeInstruction;
+import org.apache.bcel.generic.Type;
+
 import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.code.CallString;
-import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.processormodel.JOPConfig.CacheImplementation;
-import com.jopdesign.wcet.WCETProcessorModel;
-import com.jopdesign.wcet.WCETTool;
 
-public class NoMethodCache extends MethodCache {
+public class NoMethodCache implements MethodCache {
 
-	public NoMethodCache(WCETTool p) {
-		super(p,0);
+	public NoMethodCache() {
 	}
+
 
 	@Override
-	public boolean allFit(MethodInfo m, CallString cs) {
-		return false;
+	public CacheImplementation getName() {
+		return CacheImplementation.NO_METHOD_CACHE;
 	}
+
+    @Override
+    public long getSizeInWords() {    	
+    	return 0;
+    }
 
     @Override
     public boolean allFit(long blocks) {
@@ -46,6 +51,11 @@ public class NoMethodCache extends MethodCache {
 	public boolean fitsInCache(int sizeInWords) {
 		return true;
 	}
+    
+    @Override
+    public int getNumBlocks() { 
+    	return 0;
+    }
 
 	@Override
 	public boolean isLRU() {
@@ -56,17 +66,30 @@ public class NoMethodCache extends MethodCache {
 	public int requiredNumberOfBlocks(int sizeInWords) {
 		return 0;
 	}
+
 	@Override
-	public long getMissOnReturnCost(WCETProcessorModel proc, ControlFlowGraph invoker) {
-		return 0;		
-	}
-	@Override 
-	public long getInvokeReturnMissCost(WCETProcessorModel proc, ControlFlowGraph invoker, ControlFlowGraph invoked) {
-		return 0;		
+	public long getMissPenalty(int words, boolean isInvokeInstruction) {
+
+		return 0;
 	}
 
 	@Override
-	public CacheImplementation getName() {
-		return CacheImplementation.NO_METHOD_CACHE;
+	public long getMissPenaltyOnInvoke(int invokeeWords,
+			Instruction invokeInstruction) {
+		
+		return 0;
 	}
+
+	@Override
+	public long getMissPenaltyOnReturn(int invokerWords, Type returnType) {
+
+		return 0;
+	}
+
+	@Override
+	public int requiredNumberOfBlocks(MethodInfo mi) {
+
+		return 0;
+	}
+
 }

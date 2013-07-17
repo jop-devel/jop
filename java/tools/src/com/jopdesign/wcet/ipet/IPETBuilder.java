@@ -22,14 +22,15 @@ package com.jopdesign.wcet.ipet;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.CallStringProvider;
 import com.jopdesign.common.code.ControlFlowGraph;
-import com.jopdesign.common.code.SuperGraph.CallContext;
 import com.jopdesign.wcet.WCETTool;
 
 /**
+ * XXX: Not used any more in the new global analysis framework
  * Purpose: Build context-dependend constraints for IPET problems
  * Regardless of the underlying graphs, IPET graphs consist of ExecutionEdges,
  * and the IPETBuilder is a factory for those edges
  */
+@Deprecated
 public class IPETBuilder<Ctx extends CallStringProvider> {
     /**
      * One edge in the IPET model (distinguished by context and the represented model)
@@ -43,6 +44,7 @@ public class IPETBuilder<Ctx extends CallStringProvider> {
             this.ctx = ctx;
             this.model = e;
         }
+
 
         public Object getModel() {
             return this.model;
@@ -109,13 +111,6 @@ public class IPETBuilder<Ctx extends CallStringProvider> {
      */
     public IPETBuilder.ExecutionEdge newEdge(Object model) {
         return new IPETBuilder.ExecutionEdge(ctx, model);
-    }
-
-    /**
-     * Create a new execution edge in a different context
-     */
-    public IPETBuilder.ExecutionEdge newEdgeInContext(Object model, CallContext otherContext) {
-        return new IPETBuilder.ExecutionEdge(otherContext, model);
     }
 
     /**

@@ -66,7 +66,7 @@ public class ConstantCache {
         for (int i = methods.size() - 1; i >= 0; i--) {
             MethodInfo mi = methods.get(i);
             ControlFlowGraph cfg = project.getFlowGraph(mi);
-            for (CFGNode n : cfg.getGraph().vertexSet()) {
+            for (CFGNode n : cfg.vertexSet()) {
                 BasicBlock bb = n.getBasicBlock();
                 if (bb == null) continue;
                 for (InstructionHandle ii : bb.getInstructions()) {

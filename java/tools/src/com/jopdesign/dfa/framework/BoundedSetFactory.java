@@ -21,7 +21,7 @@
 package com.jopdesign.dfa.framework;
 
 import java.io.Serializable;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /** 
@@ -82,10 +82,10 @@ public class BoundedSetFactory<V> {
 		private boolean isSaturated;
 		
 		public BoundedSetImpl() {
-			setImpl = new HashSet<V>();
+			setImpl = new LinkedHashSet<V>();
 		}
 		
-		private BoundedSetImpl(HashSet<V> set) {
+		private BoundedSetImpl(LinkedHashSet<V> set) {
 			if(set.size() > limit) {
 				this.isSaturated = true;
 			} else {
@@ -108,7 +108,7 @@ public class BoundedSetFactory<V> {
 			if(this.isSaturated()) return this;
 			else if(other != null && other.isSaturated()) return other;
 			
-			HashSet<V> joinedSet = new HashSet<V>();
+			LinkedHashSet<V> joinedSet = new LinkedHashSet<V>();
 			joinedSet.addAll(this.getSet());
 			if(other!=null) joinedSet.addAll(other.getSet());
 			BoundedSetImpl r = new BoundedSetImpl(joinedSet);
@@ -165,7 +165,7 @@ public class BoundedSetFactory<V> {
 		}
 		
 		public BoundedSet<V> newBoundedSet() {
-			return new BoundedSetImpl(new HashSet<V>());
+			return new BoundedSetImpl(new LinkedHashSet<V>());
 		}
 	}
 
