@@ -124,7 +124,7 @@ public class SuperGraph1 {
 		invoke();
 		if (Config.MEASURE) {
 			dt = te-ts-to;
-			System.out.print("wcet[r()]:");
+			System.out.print("max: ");
             System.out.println(dt);
         }
 		if (Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);

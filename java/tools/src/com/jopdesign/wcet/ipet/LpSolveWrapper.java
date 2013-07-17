@@ -26,7 +26,6 @@ import lpsolve.LpSolveException;
 import org.apache.log4j.Logger;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
@@ -39,6 +38,22 @@ import java.util.TreeMap;
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  */
 public class LpSolveWrapper<T> {
+	
+	/* FIXME: do know yet how to get correct information on variables after presolving.
+	 * Therefore, presolving is only enabled if you just need a objective value */
+	private static final int PRESOLVE_OPTIONS =
+		  0
+	  //  | LpSolve.PRESOLVE_COLS
+	  //  | LpSolve.PRESOLVE_ROWS
+	  //  |  LpSolve.PRESOLVE_LINDEP | LpSolve.PRESOLVE_SOS 
+	      | LpSolve.PRESOLVE_ELIMEQ2    // doc says may lead to numerical stability problems; 
+		                              // this is the presolver that brings significant speedup
+	   // | LpSolve.PRESOLVE_PROBEFIX   // try to fix binary variables (little speedup)
+	   // | LpSolve.PRESOLVE_PROBEREDUCE
+	      | LpSolve.PRESOLVE_ROWDOMINATE
+	  //  | LpSolve.PRESOLVE_COLDOMINATE
+		;
+
 	/**
 	 * Status of the lp solver (typed copy of basic LP solve status numbers)
 	 */
@@ -52,20 +67,24 @@ public class LpSolveWrapper<T> {
 			this.statusCode = c;
 		}
 	}
-	private static final long LP_SOLVE_SEC_TIMEOUT = 20;
-	private static long solverTime = 0;
+	private static final long LP_SOLVE_SEC_TIMEOUT = 1200;
+	private static long solverTime = 0, resetSolverTime = 0;
 
 	/**
 	 * Get time spend in the solver since the last call to {@link #resetSolverTime()}
+     *
 	 * @return the time spend in the solver in seconds
 	 */
-	public static double getSolverTime() { return ((double)solverTime)/1.0E9; }
+	public static double getSolverTime() { return solverTime/1.0E9; }
 
+	public static double getTotalSolverTime() { return (resetSolverTime+solverTime)/1.0E9; }
+	
 	/**
-	 * Reset the cummulative solver time to 0.
+	 * Reset the solver time statistic to 0 (does not affect totalSolverTime).
 	 */
-	public static void resetSolverTime() { solverTime = 0; }
+	public static void resetSolverTime() { resetSolverTime += solverTime; solverTime = 0; }
 
+	
 	private static Map<Integer,SolverStatus> readMap = null;
 
 	/**
@@ -125,6 +144,7 @@ public class LpSolveWrapper<T> {
 	private LpSolve lpsolve;
 	private int numVars;
 	private IDProvider<T> idProvider;
+	private boolean isILP;
 
 	/**
 	 * Create a new (I)LP problem with the given number of variables. Note that
@@ -132,22 +152,23 @@ public class LpSolveWrapper<T> {
 	 * @param numVars     number of variables
 	 * @param idProvider  mapping variables to ids. The id of a variable has to be in the range
 	 * 					  [1..numVars].
-	 * @param intVars     if true, all variables are considered to be integral, otherwise rational
+	 * @param isILP  if true, solves the ILP problem, otherwise the relaxed problem
 	 * @throws LpSolveException
 	 */
-	public LpSolveWrapper(int numVars, boolean intVars, IDProvider<T> idProvider)
+	public LpSolveWrapper(int numVars, boolean isILP, IDProvider<T> idProvider)
 		throws LpSolveException {
 		this.numVars = numVars;
 		this.idProvider = idProvider;
 		this.lpsolve = LpSolve.makeLp(0,numVars);
-
+		this.isILP = isILP;
+		
 		lpsolve.setPrintSol(LpSolve.FALSE);
 		lpsolve.setTrace(false);
 		lpsolve.setDebug(false);
 		lpsolve.setVerbose(LpSolve.SEVERE);
 
 		for(int i = 1; i <= numVars; i++) {
-			lpsolve.setInt(i, intVars);
+			lpsolve.setInt(i, isILP ? true : false);
 		}
 		lpsolve.setAddRowmode(true);
 	}
@@ -206,7 +227,7 @@ public class LpSolveWrapper<T> {
 			solverTime = stop-start;
 		}		
 	}
-	
+		
 	/**
 	 * Solve the I(LP)
 	 * @param objVec if non-null, write the solution into this array
@@ -214,12 +235,34 @@ public class LpSolveWrapper<T> {
 	 * @throws LpSolveException
 	 */
 	public double solve(double[] objVec) throws LpSolveException {
+		return solve(objVec, false);
+	}
+
+	
+	/**
+	 * Solve the I(LP)
+	 * @param presolve whether to use presolving
+	 * @return the objective value
+	 * @throws LpSolveException
+	 */
+	public double solve(boolean preSolve) throws LpSolveException {
+		return solve(null, preSolve);
+	}
+
+	/* either presolving, or a solution vector (at the moment) */
+	private double solve(double[] objVec, boolean preSolve) throws LpSolveException {
 		freeze();
 		
-	    lpsolve.setTimeout(LP_SOLVE_SEC_TIMEOUT);
-		SolverThread thr = new SolverThread();
+		/* Presolving gives a speedup of factor 5 on the 'min-cache-blocks' problem for StartKfl */
+		/* But, the flow in the variables seems to be wrong; need to check whether this can be fixed */
+		if(preSolve) {
+			lpsolve.setPresolve(PRESOLVE_OPTIONS,lpsolve.getPresolveloops());
+		}
+		lpsolve.setTimeout(LP_SOLVE_SEC_TIMEOUT);
+
+	    SolverThread thr = new SolverThread();
 		thr.start();
-    	int cnt=1;
+    	int cnt=0;
 	    while(true) {
 	    	boolean interrupted = false;
 		    try {
@@ -227,11 +270,21 @@ public class LpSolveWrapper<T> {
 			} catch (InterruptedException e) {
 				interrupted = true;
 			}
-		    if(! thr.isAlive()) break;
+		    if(! thr.isAlive()) {
+		    	break;
+		    }
 		    if(!interrupted) {
-		    	System.err.println("LP Solve: Hard Problem, calculating ("+(cnt++)+"s)");
+		    	if(++cnt == 1) {		    		
+			    	System.err.print("LP Solve: Hard Problem, calculating: .");
+			    	System.err.flush();
+		    	} else {
+		    		System.err.print(".");
+			    	System.err.flush();
+		    	}
 		    }
 	    }
+	    if(cnt>0) System.err.println(cnt+" seconds");
+
 		LpSolveWrapper.solverTime += (thr.solverTime);
 		SolverStatus st = getSolverStatus(thr.result);
 		if(objVec != null) this.lpsolve.getVariables(objVec);
@@ -242,8 +295,8 @@ public class LpSolveWrapper<T> {
 					System.out.println(String.format("Objective entry %d: %.2f",i++,obj));
 				}
 			}
-			throw new LpSolveException("Failed to solve LP problem: "+st+" // "+
-					(objVec != null ? Arrays.toString(objVec) : " no info "));
+			throw new LpSolveException("Failed to solve LP problem: status="+st+", exc="+thr.exception);
+			//		(objVec != null ? Arrays.toString(objVec) : " no info "));
 		}
 		return this.lpsolve.getObjective();
 	}
@@ -276,10 +329,12 @@ public class LpSolveWrapper<T> {
 	 * @param dv
 	 */
 	public void setBinary(T dv) {
-		try {
-			this.lpsolve.setBinary(this.idProvider.getID(dv), true);
-		} catch (LpSolveException e) {
-			throw new AssertionError("setBinary failed for dv "+dv);
+		if(isILP) {
+			try {
+				this.lpsolve.setBinary(this.idProvider.getID(dv), true);
+			} catch (LpSolveException e) {
+				throw new AssertionError("setBinary failed for dv "+dv);
+			}
 		}
 	}
 }

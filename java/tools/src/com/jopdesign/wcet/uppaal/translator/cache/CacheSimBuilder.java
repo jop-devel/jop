@@ -27,5 +27,5 @@ public abstract class CacheSimBuilder {
 	public abstract void appendDeclarations(NTASystem system, String NUM_METHODS);
 	public abstract boolean isDynamic();
 	public abstract boolean isAlwaysMiss();
-	public abstract long getWaitTime(WCETProcessorModel proc, ControlFlowGraph cfg, boolean isInvoke);
+	public abstract long getWaitTime(WCETProcessorModel p, ControlFlowGraph cfg, boolean isInvoke);
 }

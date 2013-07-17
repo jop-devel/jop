@@ -301,9 +301,7 @@
 
 	<target name="run-jcopter" description="Run JCopter on the compiled target" if="use-jcopter">
 		<java classpathref="tools-cp" classname="com.jopdesign.jcopter.JCopter">
-		    <arg line="--jop.jop-asm-file asm/generated/jvmusb.asm
-					   -c ${target}/dist/classes -o ${target}/dist --classdir ${target}/dist/classes.opt
-					   --dump-target-callgraph merged
+		    <arg line="-c ${target}/dist/classes -o ${target}/dist --classdir ${target}/dist/classes.opt
 					   --wcet-preprocess 
 					   --use-dfa --dfa-cache-dir dfa-cache
 					   --target-method ${wcet-method} ${main-class}"/>
@@ -781,12 +779,9 @@
 			fork="true">
 		  <jvmarg line="-Xms1280M -Xmx1280M"/>
 			<sysproperty key="java.library.path" value=".:${java.library.path}"/>
-			<arg line="--jop.jop-asm-file asm/generated/jvmusb.asm					   
-					   --classpath ${target}/dist/lib/classes.zip
+			<arg line="--classpath ${target}/dist/lib/classes.zip
 					   --sp ${target-source-flattened}
 					   --reportdir ${target}/wcet
-					   --dump-target-callgraph merged
-					   --program-dot /usr/bin/dot
 					   --wcet-preprocess 
 					   --target-method ${wcet-method} ${main-class}"/>
 		</java>

@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -56,11 +57,20 @@ public class MiscUtils {
         boolean query(Arg a);
     }
     
-    public interface Function1<Arg, Ret> {
+    public interface F1<Arg, Ret> {
         Ret apply(Arg v);
     }
 
-    public interface Function2<Arg1, Arg2, Ret> {
+    public static<A,R> F1<A,R> const1(final R c) {
+    	return new F1<A, R>() {
+			@Override
+			public R apply(A v) {
+				return c;
+			}
+		};
+    }
+    
+    public interface F2<Arg1, Arg2, Ret> {
         Ret apply(Arg1 v1, Arg2 v2);
     }
 
@@ -84,7 +94,40 @@ public class MiscUtils {
         set.add(val);
     }
 
-    public static <T> T[] concat(T val, T[] vals) {
+	/**
+	 * Increment the counter for the given key, inserting the default if the key if it is not present
+	 * @param counters a dictionary of counters
+	 * @param key the key to modify
+	 * @param startValue the start value for the counter if the key is not present
+	 * @return the new value for the key
+	 */
+	public static<T> long increment(Map<T, Long> counters, T key, long startValue) {
+
+		return incrementBy(counters, key, 1, startValue);
+	}
+
+	/**
+	 * Increment the counter by step for the given key, inserting the default if the key if it is not present
+	 * @param counters a dictionary of counters
+	 * @param key the key to modify
+	 * @param step the amount to increment
+	 * @param startValue the start value for the counter if the key is not present
+	 * @return the new value for the key
+	 */
+	public static<T> long incrementBy(Map<T, Long> counters, T key, long step, long startValue) {
+		
+		long val;
+		if(! counters.containsKey(key)) {
+			val = startValue + step;
+		} else {
+			val = counters.get(key) + step;
+		}
+		counters.put(key, val);
+		return val;
+	}
+
+
+	public static <T> T[] concat(T val, T[] vals) {
         List<T> v = new ArrayList<T>(vals.length+1);
         v.add(val);
         v.addAll(Arrays.asList(vals));
@@ -108,7 +151,7 @@ public class MiscUtils {
      */
     public static <K, V>
     TreeMap<K, List<V>> partialSort(
-            Collection<V> values, Function1<V, K> priority) {
+            Collection<V> values, F1<V, K> priority) {
 
         TreeMap<K, List<V>> buckets = new TreeMap<K, List<V>>();
         for (V v : values) {
@@ -237,11 +280,12 @@ public class MiscUtils {
      * @param fill minimal length of the key, filled with whitespace
      */
     public static <K, V>
-    void printMap(PrintStream out, Map<K, V> map, int fill) {
-        final int _fill = fill;
-        printMap(out, map, new Function2<K, V, String>() {
+    void printMap(PrintStream out, Map<K, V> map, int fill, int indent) {
+
+    	final String formatString = "%"+((indent>0) ? indent:"")+"s"+"%" + ((fill>0) ? fill:"") + "s ==> %s";
+        printMap(out, map, new F2<K, V, String>() {
             public String apply(K v1, V v2) {
-                return String.format("%" + _fill + "s ==> %s", v1, v2);
+                return String.format(formatString, "", v1, v2);
             }
         });
     }
@@ -249,7 +293,7 @@ public class MiscUtils {
     public static <K, V>
     void printMap(PrintStream out,
                   Map<? extends K, ? extends V> map,
-                  Function2<K, V, String> printer) {
+                  F2<K, V, String> printer) {
         for (Entry<? extends K, ? extends V> entry : map.entrySet()) {
             out.println(printer.apply(entry.getKey(), entry.getValue()));
         }
@@ -326,10 +370,10 @@ public class MiscUtils {
      * @param max maximum number of entries to print
      * @return a string representation of this collection with up to max entries. 
      */
-    public static String toString(Collection entries, int max) {
+    public static String toString(Collection<?> entries, int max) {
         StringBuffer sb = new StringBuffer("[");
         int cnt = Math.min(entries.size(), max);
-        Iterator it = entries.iterator();
+        Iterator<?> it = entries.iterator();
         for (int i = 0; i < cnt; i++) {
             if (i > 0) sb.append(",");
             sb.append(it.next().toString());
@@ -409,5 +453,32 @@ public class MiscUtils {
 		ObjectInputStream ois = new ObjectInputStream(fis);
 		return ois.readObject();
 	}
+
+	/**
+	 * Group a list of objects by one of their attributes, updating
+	 * an existing map from keys to object lists
+     *
+	 * @param <T> the type of the objects
+	 * @param <A> the type of the object attribute
+	 * @param getAttribute function to extract the attribute from objects
+	 * @param groupMap an existing map from attributes to all objects with this attribute.
+	 *        if null, a new {@code HashMap} will be created.
+	 * @param objects
+	 * @return the updated map
+	 */
+	public static <T,A>
+	Map<A, List<T>> group(
+			F1<T, A> getAttribute,
+			Map<A, List<T>> groupMap,
+			Iterable<T> objects
+			) {
+		if(groupMap == null) groupMap = new HashMap<A, List<T>>();
+		for(T e : objects) {
+			addToList(groupMap, getAttribute.apply(e), e);
+		}
+		return groupMap;
+	}
+
+
 
 }

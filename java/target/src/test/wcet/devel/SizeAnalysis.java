@@ -38,23 +38,22 @@ public class SizeAnalysis {
     static int[] arr3;
     
     public static void main(String[] args) {
-	
-	ts = Native.rdMem(Const.IO_CNT);
-	te = Native.rdMem(Const.IO_CNT);
-	to = te-ts;
-	int min = 0x7fffffff;
-	int max = 0;
-	int val = 0;
-	init();
-	if (MEASURE_CACHE) Native.wrMem(1,CACHE_FLUSH);
-	invoke();
-	val = te-ts-to;
-	if (val<min) min = val;
-	if (val>max) max = val;
-	
-	if (Config.MEASURE) System.out.println(min);
-	if (Config.MEASURE) System.out.println(max);
+
+    	ts = Native.rdMem(Const.IO_CNT);
+    	te = Native.rdMem(Const.IO_CNT);
+    	to = te-ts;
+    	int min = 0x7fffffff;
+    	int max = 0;
+    	int val = 0;
+    	init();
+    	if (MEASURE_CACHE) Native.wrMem(1,CACHE_FLUSH);
+    	invoke();
+    	val = te-ts-to;
+    	if (Config.MEASURE)       { 
+    		System.out.print("max: "); System.out.println(val);
+    	}
     }
+
     static void init() {
 	arr1 = new int[10];
 	arr2 = new int[5];
@@ -68,9 +67,10 @@ public class SizeAnalysis {
     }
     
     static void measure() {
-	copy(arr1,arr2);
-	copy(arr2,arr3);
-	copy(arr3,arr1);
+    	if (Config.MEASURE) ts = Native.rdMem(Const.IO_CNT);
+    	copy(arr1,arr2);
+    	copy(arr2,arr3);
+    	copy(arr3,arr1);
     }
     
     static void copy(int a[], int b[]) {

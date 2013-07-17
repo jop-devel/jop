@@ -26,7 +26,7 @@ import com.jopdesign.common.logger.LogConfig;
 import org.apache.log4j.Logger;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -45,14 +45,14 @@ public class AppLoader {
 
     public AppLoader() {
         queue = new LinkedList<ClassInfo>();
-        visited = new HashSet<String>();
+        visited = new LinkedHashSet<String>();
         newClasses = new LinkedList<ClassInfo>();
         followNatives = true;
     }
 
     public AppLoader(boolean followNatives) {
         queue = new LinkedList<ClassInfo>();
-        visited = new HashSet<String>();
+        visited = new LinkedHashSet<String>();
         newClasses = new LinkedList<ClassInfo>();
         this.followNatives = followNatives;
     }

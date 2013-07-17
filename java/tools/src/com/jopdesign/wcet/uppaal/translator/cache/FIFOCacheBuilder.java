@@ -33,16 +33,20 @@ public class FIFOCacheBuilder extends DynamicCacheBuilder {
 	private int simNumBlocks;
 	private boolean assumeEmptyCache;
 	public FIFOCacheBuilder(BlockCache blockCache, boolean assumeEmptyCache) {
+		
 		this.cache = blockCache;
 		this.assumeEmptyCache = assumeEmptyCache;
 		if(assumeEmptyCache) this.simNumBlocks = blockCache.getNumBlocks();
 		else                 this.simNumBlocks = blockCache.getNumBlocks() / 2;
 	}
+	
 	@Override
 	public long getWaitTime(WCETProcessorModel proc, ControlFlowGraph cfg, boolean isInvoke) {
-		if(isInvoke && assumeEmptyCache) return this.cache.getMissOnInvokeCost(proc, cfg);
-		else                             return this.cache.getMaxMissCost(proc, cfg);
+
+		if(isInvoke && assumeEmptyCache) return this.cache.getMissOnInvokeCost(cfg);
+		else                             return this.cache.getMaxMissCost(cfg);
 	}
+	
 	@Override
 	public void appendDeclarations(NTASystem system,String NUM_METHODS) {
 		this.NUM_METHODS = NUM_METHODS;

@@ -22,15 +22,17 @@ package com.jopdesign.wcet.analysis;
 import com.jopdesign.common.MethodInfo;
 import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.code.ControlFlowGraph;
+import com.jopdesign.common.code.ExecutionContext;
 import com.jopdesign.common.code.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.ControlFlowGraph.CfgVisitor;
-import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.ControlFlowGraph.ReturnNode;
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.graphutils.ProgressMeasure;
 import com.jopdesign.common.graphutils.ProgressMeasure.RelativeProgress;
 import com.jopdesign.wcet.WCETTool;
+import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -49,19 +51,26 @@ import java.util.Map.Entry;
 public class TreeAnalysis {
     private class LocalCostVisitor extends WcetVisitor {
         private AnalysisContext ctx;
+		private MethodCacheAnalysis mca;
 
         public LocalCostVisitor(AnalysisContext c, WCETTool p) {
             super(p);
+            mca = new MethodCacheAnalysis(p);
             ctx = c;
         }
 
         @Override
         public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
-            MethodInfo method = n.getImplementingMethod();
+
+        	MethodInfo method = n.getImplementingMethod();
+            /* deal with pruned (infeasible) receivers */
+        	if(! methodWCET.containsKey(method)) {
+        		WCETTool.logger.info("Pruned InvokeNode: "+n.getImplementingMethod());
+        		cost.addNonLocalCost(Long.MIN_VALUE);
+        		return;
+        	}        	
             visitBasicBlockNode(n);
-            cost.addCacheCost(project.getWCETProcessorModel().getInvokeReturnMissCost(
-                    n.invokerFlowGraph(),
-                    n.receiverFlowGraph()));
+            cost.addCacheCost(mca.getInvokeReturnMissCost(n.getInvokeSite(), ctx.getCallString()));
             cost.addNonLocalCost(methodWCET.get(method));
         }
 
@@ -69,6 +78,11 @@ public class TreeAnalysis {
         public void visitBasicBlockNode(BasicBlockNode n) {
             cost.addLocalCost(project.getWCETProcessorModel().basicBlockWCET(ctx.getExecutionContext(n), n.getBasicBlock()));
         }
+
+		@Override
+		public void visitReturnNode(ReturnNode n) {
+			
+		}
     }
 
     private class ProgressVisitor implements CfgVisitor {
@@ -85,13 +99,23 @@ public class TreeAnalysis {
         }
 
         public void visitInvokeNode(ControlFlowGraph.InvokeNode n) {
+            /* deal with pruned (infeasible) receivers */
+        	if(! subProgress.containsKey(n.getImplementingMethod())) {
+        		WCETTool.logger.info("Pruned InvokeNode: "+n.getImplementingMethod());
+        		progress = Long.MIN_VALUE; /* not possible */
+        		return;
+        	}
             Long aLong = subProgress.get(n.getImplementingMethod());
             long invokedProgress = aLong;
             progress = 1 + invokedProgress;
         }
 
-        public void visitSpecialNode(ControlFlowGraph.DedicatedNode n) {
+        public void visitVirtualNode(ControlFlowGraph.VirtualNode n) {
             progress = 1;
+        }
+
+        public void visitReturnNode(ControlFlowGraph.ReturnNode n) {
+        	visitVirtualNode(n);
         }
 
         public void visitSummaryNode(ControlFlowGraph.SummaryNode n) {
@@ -114,21 +138,21 @@ public class TreeAnalysis {
     public TreeAnalysis(WCETTool p, boolean filterLeafMethods) {
         this.project = p;
         this.filterLeafMethods = filterLeafMethods;
-        computeProgress(p.getTargetMethod());
+        computeProgress(p.getTargetMethod(), CallString.EMPTY);
     }
 
     /* FIXME: filter leaf methods is really a ugly hack,
          * but needs some work to play nice with uppaal eliminate-leaf-methods optimizations
          */
 
-    public void computeProgress(MethodInfo targetMethod) {
-        List<MethodInfo> reachable = project.getCallGraph().getReachableImplementations(targetMethod);
+    public void computeProgress(MethodInfo targetMethod, CallString cs) {
+        List<MethodInfo> reachable = project.getCallGraph().getReachableImplementations(targetMethod,cs);
         Collections.reverse(reachable);
         for (MethodInfo mi : reachable) {
             ControlFlowGraph cfg = project.getFlowGraph(mi);
             Map<CFGNode, Long> localProgress = new HashMap<CFGNode, Long>();
             ProgressVisitor progressVisitor = new ProgressVisitor(maxProgress);
-            for (CFGNode n : cfg.getGraph().vertexSet()) {
+            for (CFGNode n : cfg.vertexSet()) {
                 localProgress.put(n, progressVisitor.getProgress(n));
             }
             ProgressMeasure<CFGNode, CFGEdge> pm =
@@ -174,8 +198,8 @@ public class TreeAnalysis {
         for (MethodInfo mi : reachable) {
             ControlFlowGraph cfg = project.getFlowGraph(mi);
             Map<CFGNode, Long> localCost = new HashMap<CFGNode, Long>();
-            LocalCostVisitor lcv = new LocalCostVisitor(new AnalysisContextSimple(CallString.EMPTY), project);
-            for (CFGNode n : cfg.getGraph().vertexSet()) {
+            LocalCostVisitor lcv = new LocalCostVisitor(new AnalysisContextCallString(CallString.EMPTY), project);
+            for (CFGNode n : cfg.vertexSet()) {
                 localCost.put(n, lcv.computeCost(n).getCost());
             }
             ProgressMeasure<CFGNode, ControlFlowGraph.CFGEdge> pm =

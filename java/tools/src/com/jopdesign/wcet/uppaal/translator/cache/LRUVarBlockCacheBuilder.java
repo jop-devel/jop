@@ -77,6 +77,7 @@ public class LRUVarBlockCacheBuilder extends VarBlockCacheBuilder {
 		return SystemBuilder.constArray(cacheElems);
 	}
 	public long getWaitTime(WCETProcessorModel proc, ControlFlowGraph cfg, boolean isInvoke) {
-		return proc.getMethodCacheMissPenalty(cfg.getNumberOfWords(), isInvoke);
+
+		return proc.getMethodCache().getMissPenalty(cfg.getNumberOfWords(), isInvoke);
 	}
 }

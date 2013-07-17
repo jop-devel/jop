@@ -44,7 +44,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -169,8 +169,8 @@ public abstract class RebateSelector implements CandidateSelector {
         this.processorModel = AppInfo.getSingleton().getProcessorModel();
 
         usesCodeRemover = analyses.getJCopter().getExecutor().useCodeRemover();
-        methodData = new HashMap<MethodInfo, MethodData>();
-        depthMap = new HashMap<MethodInfo, Integer>();
+        methodData = new LinkedHashMap<MethodInfo, MethodData>();
+        depthMap = new LinkedHashMap<MethodInfo, Integer>();
     }
 
     @Override

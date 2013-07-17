@@ -29,7 +29,7 @@ import org.jgrapht.traverse.DepthFirstIterator;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -123,7 +123,7 @@ public class TopOrder<V, E> {
     public List<V> getTopologicalTraversal() {
         if (topTraversal != null) return topTraversal;
         topTraversal = new LinkedList<V>();
-        Set<E> edgeSet = new HashSet<E>(graph.edgeSet());
+        Set<E> edgeSet = new LinkedHashSet<E>(graph.edgeSet());
         for (E backEdge : this.getBackEdges()) {
             edgeSet.remove(backEdge);
         }
@@ -207,7 +207,7 @@ public class TopOrder<V, E> {
     public static <V, E> Set<V> findDeadNodes(DirectedGraph<V, E> graph, V entry) {
         /* CAVEAT: Do not use ConnectivityInspector; it considers graphs as undirected */
         BellmanFordShortestPath<V, E> bfsp = new BellmanFordShortestPath<V, E>(graph, entry);
-        Set<V> deads = new HashSet<V>();
+        Set<V> deads = new LinkedHashSet<V>();
         for (V node : graph.vertexSet()) {
             if (node == entry) continue;
             if (bfsp.getPathEdgeList(node) == null) {
@@ -229,7 +229,7 @@ public class TopOrder<V, E> {
         BellmanFordShortestPath<V, E> bfspRev = new BellmanFordShortestPath<V, E>(
                 new EdgeReversedGraph<V, E>(graph),
                 exit);
-        Set<V> stucks = new HashSet<V>();
+        Set<V> stucks = new LinkedHashSet<V>();
         for (V node : graph.vertexSet()) {
             if (node == exit) continue;
             if (bfspRev.getPathEdgeList(node) == null) {

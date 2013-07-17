@@ -218,7 +218,7 @@ public class SystemBuilder {
 		sys.append("system ");
 		/* bucket sort templates by priority */
 		TreeMap<Integer, List<Template>> templatesByPrio =
-			MiscUtils.partialSort(templates.keySet(), new MiscUtils.Function1<Template, Integer>() {
+			MiscUtils.partialSort(templates.keySet(), new MiscUtils.F1<Template, Integer>() {
                 public Integer apply(Template t) {
                     return priorities.get(t);
                 }

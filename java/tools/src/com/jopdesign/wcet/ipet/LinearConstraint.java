@@ -60,6 +60,7 @@ public class LinearConstraint<T> {
 	 */
 	public void addLHS(T var, long coeff) { vec.add(var,coeff); }
 	public void addLHS(T var) { vec.add(var,1); }
+	public void addLHS(Iterable<T> vars) { for(T v : vars) addLHS(v); }
 
 	/**
 	 * Add the constant integer <code>d</code> to the left-hand-side of the constraint
@@ -74,6 +75,7 @@ public class LinearConstraint<T> {
 	 */
 	public void addRHS(T var, long coeff) { vec.add(var,-coeff); }
 	public void addRHS(T var) { vec.add(var,-1); }
+	public void addRHS(Iterable<T> vars) { for(T v : vars) addRHS(v); }
 
 	/**
 	 * Add the constant integer <code>d</code> to the right-hand-side of the constraint

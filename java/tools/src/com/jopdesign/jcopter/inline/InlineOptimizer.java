@@ -40,6 +40,8 @@ import com.jopdesign.jcopter.analysis.StacksizeAnalysis;
 import com.jopdesign.jcopter.greedy.Candidate;
 import com.jopdesign.jcopter.greedy.CodeOptimizer;
 import com.jopdesign.wcet.WCETProcessorModel;
+import com.jopdesign.wcet.jop.MethodCache;
+
 import org.apache.bcel.generic.ASTORE;
 import org.apache.bcel.generic.ATHROW;
 import org.apache.bcel.generic.BranchInstruction;
@@ -63,8 +65,8 @@ import org.apache.log4j.Logger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -239,8 +241,8 @@ public class InlineOptimizer implements CodeOptimizer {
             MethodCode invokeeCode = invokee.getCode();
             InstructionList iList = invokeeCode.getInstructionList(true, false);
 
-            Map<InstructionHandle,InstructionHandle> instrMap = new HashMap<InstructionHandle, InstructionHandle>();
-            Map<InvokeSite,InvokeSite> invokeMap = new HashMap<InvokeSite, InvokeSite>();
+            Map<InstructionHandle,InstructionHandle> instrMap = new LinkedHashMap<InstructionHandle, InstructionHandle>();
+            Map<InvokeSite,InvokeSite> invokeMap = new LinkedHashMap<InvokeSite, InvokeSite>();
 
             StacksizeAnalysis stacksize = analyses.getStacksizeAnalysis(invokee);
 
@@ -412,7 +414,7 @@ public class InlineOptimizer implements CodeOptimizer {
 
         private void updateAnalyses(AnalysisManager analyses, Map<InvokeSite,InvokeSite> invokeMap) {
 
-            analyses.getExecFrequencyAnalysis().inline(invokeSite, invokee, new HashSet<InvokeSite>(invokeMap.values()) );
+            analyses.getExecFrequencyAnalysis().inline(invokeSite, invokee, new LinkedHashSet<InvokeSite>(invokeMap.values()) );
 
             analyses.getMethodCacheAnalysis().inline(this, invokeSite, invokee);
 
@@ -453,22 +455,25 @@ public class InlineOptimizer implements CodeOptimizer {
         }
 
         private void calcCacheMissCosts(AnalysisManager analyses, int deltaBytes) {
-            WCETProcessorModel pm = analyses.getJCopter().getWCETProcessorModel();
+
+        	MethodCache cache = analyses.getJCopter().getMethodCache();
 
             int invokerBytes = invokeSite.getInvoker().getCode().getNumberOfBytes();
             int invokerWords = MiscUtils.bytesToWords(invokerBytes);
             int invokeeWords = invokee.getCode().getNumberOfWords();
 
             // we save the cache miss costs for the invoke and the return of the old invoke
-            invokeCacheCosts = pm.getInvokeCacheMissPenalty(invokeSite, invokerWords);
-            returnCacheCosts = pm.getReturnCacheMissPenalty(invokeSite, invokeeWords);
+            invokeCacheCosts = cache.getMissPenaltyOnInvoke(invokerWords, invokeSite.getInvokeInstruction());
+            returnCacheCosts = cache.getMissPenaltyOnReturn(invokeeWords, invokeSite.getInvokeeRef().getDescriptor().getType());
 
             // for every return in the inlined code, we have additional return cache miss costs
             int newWords = MiscUtils.bytesToWords(invokerBytes + deltaBytes);
             // TODO this is not quite correct, the old invoke return is the invokesite in the invokee, not the invoker,
             //      but this currently returns the maximum value for all returns anyway
-            invokeeDeltaReturnCosts = pm.getReturnCacheMissPenalty(invokeSite, newWords) -
-                                      pm.getReturnCacheMissPenalty(invokeSite, invokeeWords);
+            // XXX [bh] now we do use the instruction information: therefore switched to use other form which
+            //     ignores the instruction
+            invokeeDeltaReturnCosts = cache.getMissPenalty(newWords, false) -
+            						  cache.getMissPenalty(invokeeWords, false);
         }
 
         @Override
@@ -703,7 +708,7 @@ public class InlineOptimizer implements CodeOptimizer {
         this.processorModel = appInfo.getProcessorModel();
 
         this.helper = new InlineHelper(jcopter, config);
-        this.callstrings = new HashMap<InstructionHandle, CallString>();
+        this.callstrings = new LinkedHashMap<InstructionHandle, CallString>();
 
         // TODO get from config, preciseCycleEstimate is not yet fully implemented
         preciseSizeEstimate = true;

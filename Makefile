@@ -162,6 +162,10 @@ CALLSTRING_LENGTH=0
 #
 USE_DFA?=no
 
+ifeq ($(USE_DFA),yes)
+DFA_CACHE=--dfa-cache-dir java/target/wcet/dfa-cache
+endif
+
 
 #
 #	Application optimization with JCopter
@@ -792,7 +796,7 @@ wcet:
 		--classpath $(TARGET)/dist/classes --sp $(TARGET_SOURCE) \
 		--target-method $${target} \
 		-o "$(TARGET)/wcet/\$${projectname}" \
-		--use-dfa $(WCET_DFA) \
+		--use-dfa $(WCET_DFA) $(DFA_CACHE) \
 		--uppaal $(WCET_UPPAAL) --uppaal-verifier $(WCET_VERIFYTA) \
 		--callstring-length $(CALLSTRING_LENGTH) \
 		$(WCET_OPTIONS) $(MAIN_CLASS) || exit 1; \
@@ -803,9 +807,11 @@ wcet_help:
 	java $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis --help
 
 
-# dotgraph works for wcet.WCETAnalyser
-dotgraph:
-	cd $(TARGET)/wcet/$(P2).$(P3)_$(WCET_METHOD)/report && make
+# report works for wcet.WCETAnalyser
+WCET_REPORT_DIR=$(TARGET)/wcet/$(subst /,_,$(P2))_$(P3)_$(WCET_METHOD)/report
+wcet_report:
+	cd  $(WCET_REPORT_DIR) && make
+	firefox $(WCET_REPORT_DIR)/index.html
 
 dfa:
 	java -Xss16M $(TOOLS_CP) com.jopdesign.dfa.Main \

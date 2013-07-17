@@ -25,20 +25,20 @@ package test;
  */
 public class InvokeSpecialTest {
     public static void main(String[] args) {
-        C c = new C();
-        B b = new B();
+    	InvokeSpecialTestC c = new InvokeSpecialTestC();
+    	InvokeSpecialTestB b = new InvokeSpecialTestB();
         System.out.println("   C " + c.b());
-        System.out.println("(B)C " + ((B)c).b());
+        System.out.println("(B)C " + ((InvokeSpecialTestB)c).b());
         System.out.println("   B " + b.b());
     }
 }
 
-class A {
+class InvokeSpecialTestA {
     public int a() {
         return 1;
     }
 }
-class B extends A {
+class InvokeSpecialTestB extends InvokeSpecialTestA {
     public int b() {
         return super.a();
     }
@@ -46,7 +46,7 @@ class B extends A {
         return 2;
     }
 }
-class C extends B {
+class InvokeSpecialTestC extends InvokeSpecialTestB {
     public int a() {
         return 3;
     }

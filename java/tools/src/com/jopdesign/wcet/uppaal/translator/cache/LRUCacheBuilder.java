@@ -69,6 +69,7 @@ public class LRUCacheBuilder extends DynamicCacheBuilder {
 	}
 	@Override
 	public long getWaitTime(WCETProcessorModel proc, ControlFlowGraph cfg,boolean isInvoke) {
-		return proc.getMethodCacheMissPenalty(cfg.getNumberOfWords(), isInvoke);
+
+		return proc.getMethodCache().getMissPenalty(cfg.getNumberOfWords(), isInvoke);
 	}
 }

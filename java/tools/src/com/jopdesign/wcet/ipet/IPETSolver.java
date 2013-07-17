@@ -22,7 +22,7 @@ package com.jopdesign.wcet.ipet;
 
 import com.jopdesign.common.graphutils.IDProvider;
 import com.jopdesign.common.misc.MiscUtils;
-import com.jopdesign.wcet.ipet.IPETBuilder.ExecutionEdge;
+
 import lpsolve.LpSolveException;
 
 import java.io.File;
@@ -47,7 +47,7 @@ import java.util.Set;
  *
  * @author Benedikt Huber (benedikt@vmars.tuwien.ac.at)
  */
-public class IPETSolver {
+public class IPETSolver<T> {
 
     /**
      * If you use the BIGM method, be aware that you risk numeric instabilities for larger flows,
@@ -55,12 +55,14 @@ public class IPETSolver {
      */
     public static final long BIGM = Long.MAX_VALUE;
 
-    private List<LinearConstraint<ExecutionEdge>> edgeConstraints = new ArrayList<LinearConstraint<ExecutionEdge>>();
-    private Map<ExecutionEdge, Long> edgeCost = new HashMap<ExecutionEdge, Long>();
-    private Set<ExecutionEdge> edgeSet = new HashSet<ExecutionEdge>();
+	private static final boolean USE_PRESOLVE = true;
 
-    private HashMap<ExecutionEdge, Integer> edgeIdMap = null;
-    private HashMap<Integer, ExecutionEdge> idEdgeMap = null;
+    private List<LinearConstraint<T>> edgeConstraints = new ArrayList<LinearConstraint<T>>();
+    private Map<T, Long> edgeCost = new HashMap<T, Long>();
+    private Set<T> edgeSet = new HashSet<T>();
+
+    private HashMap<T, Integer> edgeIdMap = null;
+    private HashMap<Integer, T> idEdgeMap = null;
 
     private File outDir;
 
@@ -76,25 +78,25 @@ public class IPETSolver {
         outDir = config.doDumpIlp() ? config.getOutDir() : null;
     }
 
-    public void addConstraint(LinearConstraint<ExecutionEdge> lc) {
+    public void addConstraint(LinearConstraint<T> lc) {
         this.edgeConstraints.add(lc);
-        for (ExecutionEdge edge : lc.getLinearVectorOnLHS().getCoeffs().keySet()) {
+        for (T edge : lc.getLinearVectorOnLHS().getCoeffs().keySet()) {
             this.edgeSet.add(edge);
         }
     }
 
-    public void addConstraints(Collection<LinearConstraint<ExecutionEdge>> cs) {
-        for (LinearConstraint<ExecutionEdge> lc : cs) addConstraint(lc);
+    public void addConstraints(Collection<LinearConstraint<T>> cs) {
+        for (LinearConstraint<T> lc : cs) addConstraint(lc);
     }
 
-    public void addConstraints(Collection<LinearConstraint<ExecutionEdge>> cs, String debugMsg) {
-        for (LinearConstraint<ExecutionEdge> lc : cs) {
+    public void addConstraints(Collection<LinearConstraint<T>> cs, String debugMsg) {
+        for (LinearConstraint<T> lc : cs) {
             System.err.println("[constraint][" + debugMsg + "]: " + lc);
             addConstraint(lc);
         }
     }
 
-    public void addEdgeCost(ExecutionEdge e, long cost) {
+    public void addEdgeCost(T e, long cost) {
         if (this.edgeCost.containsKey(e)) edgeCost.put(e, edgeCost.get(e) + cost);
         else edgeCost.put(e, cost);
         this.edgeSet.add(e);
@@ -104,10 +106,18 @@ public class IPETSolver {
      * @param key
      * @return
      */
-    public long getEdgeCost(ExecutionEdge key) {
+    public long getEdgeCost(T key) {
         if (edgeCost.containsKey(key)) return edgeCost.get(key);
         else return 0;
     }
+
+	public Map<T, Long> getCostVector() {		
+		return this.edgeCost;
+	}
+
+	public void setCostVector(Map<T, Long> edgeCost) {
+		this.edgeCost = edgeCost;
+	}
 
     /**
      * Solve the max cost network flow problem using {@link LpSolveWrapper}.
@@ -116,42 +126,66 @@ public class IPETSolver {
      * @return the cost of the solution
      * @throws Exception if the ILP solver fails
      */
-    public double solve(Map<ExecutionEdge, Long> flowMapOut) throws Exception {
+    public double solve(Map<T, Long> flowMapOut) throws LpSolveException {
+    	return solve(flowMapOut, true);
+    }
 
+    /**
+     * Solve the max cost network flow problem using {@link LpSolveWrapper}.
+     *
+     * @param flowMapOut if not null, write solution into this map, assigning a flow to each edge
+     * @param isILP      if false, assumes all variables are rational (relaxed problem)
+     * @return the cost of the solution
+     * @throws LpSolveException 
+     * @throws Exception if the ILP solver fails
+     */
+     public double solve(Map<T, Long> flowMapOut, boolean isILP) throws LpSolveException {
         IDProvider<Object> idProvider = this.generateMapping();
-        LpSolveWrapper<Object> wrapper = new LpSolveWrapper<Object>(edgeSet.size(), true, idProvider);
+        LpSolveWrapper<Object> wrapper = new LpSolveWrapper<Object>(edgeSet.size(), isILP, idProvider);
 
         /* Add Constraints */
-        for (LinearConstraint<ExecutionEdge> lc : edgeConstraints) {
+        for (LinearConstraint<T> lc : edgeConstraints) {
             wrapper.addConstraint(lc);
         }
 
         /* build cost objective */
-        LinearVector<ExecutionEdge> costVec = new LinearVector<ExecutionEdge>();
-        for (Entry<ExecutionEdge, Long> entry : this.edgeCost.entrySet()) {
+        LinearVector<T> costVec = new LinearVector<T>();
+        for (Entry<T, Long> entry : this.edgeCost.entrySet()) {
 
             long costFactor = entry.getValue();
             costVec.add(entry.getKey(), costFactor);
         }
 
         wrapper.setObjective(costVec, true);
-        double[] objVec = new double[edgeSet.size()];
         wrapper.freeze();
 
+        File dumpFile = null;
         if (this.outDir != null) {
-            dumpILP(wrapper);
+            try {
+				dumpFile = dumpILP(wrapper);
+			} catch (IOException e) {
+				throw new LpSolveException("Failed to write ILP: " + e.getMessage());
+			}
         }
-        double sol = Math.round(wrapper.solve(objVec));
 
+        double sol;
         if (flowMapOut != null) {
-            for (int i = 0; i < idEdgeMap.size(); i++) {
+            double[] objVec = new double[edgeSet.size()];
+        	sol = Math.round(wrapper.solve(objVec));
+        	for (int i = 0; i < idEdgeMap.size(); i++) {
                 flowMapOut.put(idEdgeMap.get(i + 1), Math.round(objVec[i]));
             }
+        } else {
+        	try {
+        		sol = Math.round(wrapper.solve(USE_PRESOLVE));
+        	} catch(LpSolveException ex) {
+        		throw new LpSolveException(ex.getMessage() + ". ILP dump: "+dumpFile);
+        	}
         }
         return sol;
     }
 
-    private void dumpILP(LpSolveWrapper<?> wrapper) throws LpSolveException, IOException {
+    private File dumpILP(LpSolveWrapper<?> wrapper) throws LpSolveException, IOException {
         outDir.mkdirs();
         File outFile = File.createTempFile(MiscUtils.sanitizeFileName(this.problemName), ".lp", outDir);
         wrapper.dumpToFile(outFile);
@@ -163,7 +197,7 @@ public class IPETSolver {
         }
         try {
             fw.append("/* Mapping: \n");
-            for (Entry<ExecutionEdge, Integer> e : this.edgeIdMap.entrySet()) {
+            for (Entry<T, Integer> e : this.edgeIdMap.entrySet()) {
                 fw.append("    " + e.getKey() + " -> C" + e.getValue() + "\n");
             }
             fw.append(this.toString());
@@ -177,6 +211,7 @@ public class IPETSolver {
                 throw new LpSolveException("Failed to close ILP file: "+e.getMessage());
             }
         }
+        return outFile;
     }
 
     @Override
@@ -184,7 +219,7 @@ public class IPETSolver {
         StringBuffer s = new StringBuffer();
         s.append("Max-Cost-Flow problem with cost vector: ");
         boolean first = true;
-        for (Entry<ExecutionEdge, Long> e : edgeCost.entrySet()) {
+        for (Entry<T, Long> e : edgeCost.entrySet()) {
             if (first) first = false;
             else s.append(" + ");
             s.append(e.getValue());
@@ -192,7 +227,7 @@ public class IPETSolver {
             s.append(e.getKey());
         }
         s.append("\nFlow\n");
-        for (LinearConstraint<ExecutionEdge> lc : edgeConstraints) {
+        for (LinearConstraint<T> lc : edgeConstraints) {
             s.append(lc);
             s.append('\n');
         }
@@ -218,11 +253,11 @@ public class IPETSolver {
      *-------------------------------------------------------------------------------------------*/
 
     private IDProvider<Object> generateMapping() {
-        this.edgeIdMap = new HashMap<ExecutionEdge, Integer>();
-        this.idEdgeMap = new HashMap<Integer, ExecutionEdge>();
+        this.edgeIdMap = new HashMap<T, Integer>();
+        this.idEdgeMap = new HashMap<Integer, T>();
 
         int key = 1;
-        for (ExecutionEdge e : edgeSet) {
+        for (T e : edgeSet) {
             edgeIdMap.put(e, key);
             idEdgeMap.put(key, e);
             key += 1;
@@ -239,6 +274,7 @@ public class IPETSolver {
             }
         };
     }
+
 
 
 }

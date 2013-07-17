@@ -73,7 +73,7 @@ public class JOPModel implements ProcessorModel {
         key.append("jop");
         if(config.isCmp()) key.append("-cmp");
         // TODO this may differ from WCETProcessorModel.getName(), check.
-        key.append("-").append(config.getCacheName());
+        key.append("-").append(config.getMethodCacheImpl());
         identifier = key.toString();
     }
 

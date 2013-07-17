@@ -192,7 +192,7 @@ public class ProgressMeasure<V, E> {
         ProgressMeasure<Integer, DefaultEdge> pm =
                 new ProgressMeasure<Integer, DefaultEdge>(testGraph, testLoopColors, testLoopBounds, testBlockMeasure);
         Map<Integer, Long> maxProgress = pm.getMaxProgress();
-        MiscUtils.printMap(System.out, new TreeMap<Integer, Long>(maxProgress), 10);
+        MiscUtils.printMap(System.out, new TreeMap<Integer, Long>(maxProgress), 10, 0);
 
         /* compute relative updates */
         for (Entry<DefaultEdge, RelativeProgress<Integer>> x : pm.computeRelativeProgress().entrySet()) {

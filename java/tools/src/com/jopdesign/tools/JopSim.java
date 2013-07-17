@@ -33,7 +33,7 @@
 package com.jopdesign.tools;
 
 import com.jopdesign.sys.Const;
-import com.jopdesign.timing.WCETInstruction;
+import com.jopdesign.timing.jop.WCETInstruction;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -178,7 +178,7 @@ public class JopSim {
 	//
 	//	only for statistics
 	//
-
+	private WCETInstruction timing;
 	static int[] bcTiming = new int[256];
 	int[] bcStat = new int[256];
 	int rdMemCnt;
@@ -226,9 +226,16 @@ public class JopSim {
 			System.out.println(instr + " instruction word ("+(instr*4/1024)+" KB)");
 			System.out.println(heap + " words mem read ("+(heap*4/1024)+" KB)");
 			empty_heap = heap;
-
+			
+			// FIXME: timing should be configurable
+			if(nrCpus == 1) {
+				timing = new WCETInstruction(WCETInstruction.DEFAULT_R, WCETInstruction.DEFAULT_W);
+			} else {
+				timing = new WCETInstruction(nrCpus, WCETInstruction.DEFAULT_TIMESLOT, WCETInstruction.DEFAULT_R, WCETInstruction.DEFAULT_W);
+			}
+			
 			for (int i=0; i<256; ++i) {
-				int j = WCETInstruction.getCycles(i, false, 0);
+				int j = timing.getCycles(i, false, 0);
 				if (j==-1) j = 80; // rough estimate for invokation of Java implementation
 				bcTiming[i] = j;
 			}
@@ -588,7 +595,7 @@ System.out.println(mp+" "+pc);
 	
 	void waitCache(int hiddenCycles) {
 		
-		int penalty = WCETInstruction.calculateB(cache.lastAccessWasHit(),cache.wordsLastRead);
+		int penalty = timing.calculateB(cache.lastAccessWasHit(),cache.wordsLastRead);
 		penalty = Math.max(0, penalty-hiddenCycles);
 		this.cacheCost += penalty;
 		this.clkCnt += penalty;
@@ -1799,7 +1806,7 @@ System.out.println("new heap: "+heap);
 		sum = sumcnt = 0;
 		for (int i=0; i<256; ++i) {
 			if (bcStat[i] > 0) {
-				int cnt = WCETInstruction.getCyclesEstimate(i, false, 0);
+				int cnt = timing.getCyclesEstimate(i, false, 0);
 //				System.out.println(bcStat[i]+"\t"+(bcStat[i]*cnt)+"\t"+JopInstr.name(i));
 				sum += bcStat[i];
 				sumcnt += bcStat[i]*cnt;

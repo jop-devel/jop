@@ -50,8 +50,8 @@ import org.apache.log4j.Logger;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -84,15 +84,15 @@ public final class ClassInfo extends MemberInfo {
         cpg = classGen.getConstantPool();
 
         superClass = null;
-        subClasses = new HashSet<ClassInfo>();
+        subClasses = new LinkedHashSet<ClassInfo>();
         fullyKnown = Ternary.UNKNOWN;
 
         innerClasses = new InnerClassesInfo(this, classGen);
 
         Method[] cgMethods = classGen.getMethods();
         Field[] cgFields = classGen.getFields();
-        methods = new HashMap<String, MethodInfo>(cgMethods.length);
-        fields = new HashMap<String, FieldInfo>(cgFields.length);
+        methods = new LinkedHashMap<String, MethodInfo>(cgMethods.length);
+        fields = new LinkedHashMap<String, FieldInfo>(cgFields.length);
 
         // we create all FieldInfos and MethodInfos now and save a lot of trouble later
         for (Method m : cgMethods) {
@@ -458,7 +458,7 @@ public final class ClassInfo extends MemberInfo {
      */
     public Set<ClassInfo> getInterfaces() {
         String[] names = classGen.getInterfaceNames();
-        Set<ClassInfo> interfaces = new HashSet<ClassInfo>(names.length);
+        Set<ClassInfo> interfaces = new LinkedHashSet<ClassInfo>(names.length);
         for (String name : names) {
             ClassInfo cls = getAppInfo().getClassInfo(name);
             if (cls != null) {
@@ -562,7 +562,7 @@ public final class ClassInfo extends MemberInfo {
      * @return a set of all superclasses and all interfaces of this class.
      */
     public Set<ClassInfo> getAncestors() {
-        Set<ClassInfo> sc = new HashSet<ClassInfo>();
+        Set<ClassInfo> sc = new LinkedHashSet<ClassInfo>();
         List<ClassInfo> queue = new LinkedList<ClassInfo>();
 
         sc.add(this);
@@ -779,7 +779,7 @@ public final class ClassInfo extends MemberInfo {
     }
 
     public Set<MethodInfo> getMethodByName(String name) {
-        Set<MethodInfo> mList = new HashSet<MethodInfo>();
+        Set<MethodInfo> mList = new LinkedHashSet<MethodInfo>();
         for (MethodInfo m : methods.values()) {
             if (m.getShortName().equals(name)) {
                 mList.add(m);
