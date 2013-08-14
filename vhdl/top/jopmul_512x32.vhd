@@ -73,7 +73,6 @@ port (
 	oLEDR		: out std_logic_vector(17 downto 0);
 --	oLEDG		: out std_logic_vector(7 downto 0);
 
-
 	
 --
 --	Switches
@@ -140,9 +139,13 @@ end component;
 	
 	signal sc_io_out		: sc_out_array_type(0 to cpu_cnt-1);
 	signal sc_io_in			: sc_in_array_type(0 to cpu_cnt-1);
-	signal irq_in			  : irq_in_array_type(0 to cpu_cnt-1);
+	signal irq_in			: irq_in_array_type(0 to cpu_cnt-1);
 	signal irq_out			: irq_out_array_type(0 to cpu_cnt-1);
 	signal exc_req			: exception_array_type(0 to cpu_cnt-1);
+
+	signal xc_int : std_logic_vector(0 to cpu_cnt-1);
+	type xc_out_array is array (0 to cpu_cnt-1) of std_logic_vector(cpu_cnt-1 downto 0);
+	signal xc_out : xc_out_array;
 
 --
 --	IO interface
@@ -261,6 +264,9 @@ end process;
 			sync_out => sync_out_array(0),
 			sync_in => sync_in_array(0),
 
+			xc_int => xc_int(0),
+			xc_out => xc_out(0),
+
 			txd => ser_txd,
 			rxd => ser_rxd,
 			ncts => oUART_CTS,
@@ -303,13 +309,29 @@ end process;
 			
 			sync_out => sync_out_array(i),
 			sync_in => sync_in_array(i),
+
+			xc_int => xc_int(i),
+			xc_out => xc_out(i),
+
 			wd => wd_out(i)
 			-- remove the comment for RAM access counting
 			-- ram_count => ram_count
 		);
 	end generate;
 
-	scm: entity work.sc_mem_if
+	xc: process (xc_out)
+		variable t : std_logic;
+	begin  -- process xc
+		for i in 0 to cpu_cnt-1 loop
+			t := '0';
+			for k in 0 to cpu_cnt-1 loop
+				t := t or xc_out(k)(i);
+			end loop;  -- k
+			xc_int(i) <= t;
+		end loop;  -- i
+	end process xc;
+
+    scm: entity work.sc_mem_if
 		generic map (
 			ram_ws => ram_cnt-1,
 			addr_bits => 19
