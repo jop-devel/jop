@@ -65,6 +65,7 @@ public class RtThreadImpl {
 			}
 			// add scheduler for the core s
 			JVMHelp.addInterruptHandler(sys.cpuId, 0, s);
+			JVMHelp.addInterruptHandler(sys.cpuId, 1, s);
 
 			started = true;
 
@@ -215,7 +216,15 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		cpuId = id;
 	}
 
-	private static void genInt() {
+	public static void genXInt(int core) {
+		// just schedule an interrupt
+		// schedule() gets called.
+		Native.wr(core, Const.IO_XCINT);
+		for (int j=0;j<10;++j) ; // @WCA loop = 10
+		// in case we trigger ourselves
+	}
+
+	public static void genInt() {
 		
 		// just schedule an interrupt
 		// schedule() gets called.
@@ -424,7 +433,12 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		dm.doneJob(rtt, s.freed);
 		// Notify other cores of freed tasks
 		for (int i = 0; i < s.freed.length && s.freed[i] != null; i++) {
-		 	// TODO: trigger scheuling event on correct core
+			RtThread thr = (RtThread)s.freed[i];
+			RtThreadImpl rti = thr.getThread();
+			if (rti.cpuId != this.cpuId) {
+				// Trigger scheduling event on other core
+				Native.wr(rti.cpuId, Const.IO_XCINT);
+			}
 		}
 
 		nxt = s.next[nr] + period;
@@ -462,11 +476,13 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 	public void fire() {
 		Scheduler.sched[this.cpuId].event[this.nr] = Scheduler.EV_FIRED;
 		// if prio higher...
-// should not be allowed befor startMission
-		// TODO: for cross CPU event fire we need to generate the interrupt
-		// for the other core!
-		genInt();
-
+		// should not be allowed before startMission
+		// Generate the interrupt for the appropriate core
+		if (sys.cpuId != this.cpuId) {
+			genXInt(this.cpuId);
+		} else {
+			genInt();
+		}
 	}
 	
 	public void blockEvent() {

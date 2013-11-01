@@ -26,7 +26,7 @@ package joprt;
 
 import com.jopdesign.sys.RtThreadImpl;
 
-public class RtThread implements Runnable {
+public class RtThread implements javax.realtime.Schedulable {
 
 	RtThreadImpl thr;
 	private Runnable runner = null;
@@ -52,6 +52,10 @@ public class RtThread implements Runnable {
 	public RtThread(Runnable runner, int prio, int us, int off) {
 		this.runner = runner;
 		thr = new RtThreadImpl(this, prio, us, off);
+	}
+
+	public RtThreadImpl getThread() {
+		return thr;
 	}
 
 	public void run() {

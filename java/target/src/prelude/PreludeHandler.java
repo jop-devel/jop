@@ -2,6 +2,7 @@ package prelude;
 
 import javax.realtime.PeriodicParameters;
 import javax.realtime.PriorityParameters;
+import javax.realtime.Schedulable;
 
 import javax.safetycritical.Mission;
 import javax.safetycritical.PeriodicEventHandler;
@@ -14,13 +15,14 @@ public class PreludeHandler extends PeriodicEventHandler {
 
 	static int prio;
 
-	public PreludeHandler(PreludeTask task, PeriodicParameters params) {
+	public PreludeHandler(PreludeTask task, PeriodicParameters params, int core) {
 		super(new PriorityParameters(prio++), params,
 			  new StorageParameters(PreludeSafelet.PRIVATE_MEMORY_SIZE, null),
 			  PreludeSafelet.PRIVATE_MEMORY_SIZE,
 			  task.name);
 		this.task = task;
 		this.periodicParams = params;
+		this.thread.setProcessor(core);
 	}
 
 	public PeriodicParameters getPeriodicParams() {
@@ -32,7 +34,7 @@ public class PreludeHandler extends PeriodicEventHandler {
 		task.run();
 	}
 
-	public Runnable getThread() {
+	public Schedulable getThread() {
 		return thread;
 	}
 }

@@ -7,72 +7,78 @@ import static javax.safetycritical.annotate.Level.INFRASTRUCTURE;
 
 import javax.realtime.PeriodicParameters;
 import javax.realtime.Scheduler;
+import javax.realtime.Schedulable;
 
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 
-import com.jopdesign.sys.*;
-
 @SCJAllowed
 public class DependencyManager {
 
 	// Map for precedences
-	Map<Runnable, List<PrecEntry>> precMap
-		= new HashMap<Runnable, List<PrecEntry>>();
+	Map<Schedulable, List<PrecEntry>> precMap
+		= new HashMap<Schedulable, List<PrecEntry>>();
 
 	// Class for precedence entries
 	private static class PrecEntry {
-		public final Runnable pred;
+		public final Schedulable pred;
 		public final Precedence prec;
-		public PrecEntry(Runnable pred, Precedence prec) {
+		public final long predRate;
+		public final long succRate;
+		public PrecEntry(Schedulable pred, Schedulable succ, Precedence prec,
+						 Map<Schedulable, TaskProperties> taskMap) {
 			this.pred = pred;
 			this.prec = prec;
+
+			TaskProperties predProps = taskMap.get(pred);
+			long predPeriod = predProps.periodicParams == null ? 1
+				: predProps.periodicParams.getPeriod().getMilliseconds();
+			TaskProperties succProps = taskMap.get(succ);
+			long succPeriod = succProps.periodicParams == null ? 1
+				: succProps.periodicParams.getPeriod().getMilliseconds();
+
+			long lcm = lcm(predPeriod, succPeriod);
+			this.predRate = lcm/predPeriod;
+			this.succRate = lcm/succPeriod;
 		}
 	}
 
 	// Map for task properties
-	Map<Runnable, TaskProperties> taskMap
-		= new HashMap<Runnable, TaskProperties>();
+	Map<Schedulable, TaskProperties> taskMap
+		= new HashMap<Schedulable, TaskProperties>();
 
 	// Class for task properties and state
 	private static class TaskProperties {
 		public PeriodicParameters periodicParams;
-		public List<Runnable> succs;
+		public List<Schedulable> succs;
 		public volatile long job;
 		public volatile boolean pending;
 		public TaskProperties(PeriodicParameters p) {
 			periodicParams = p;
-			succs = new ArrayList<Runnable>();
+			succs = new ArrayList<Schedulable>();
 			job = 0;
 			pending = false;
 		}
 	}
 
-	// Register a simple precedence constraint between two Runnables
+	// Register a simple precedence constraint between two Schedulables
 	@SCJAllowed
 	@SCJRestricted(maySelfSuspend = false, phase = INITIALIZATION)
-	public void register(Runnable pred,
-						 Runnable succ) {
+	public void register(Schedulable pred,
+						 Schedulable succ) {
 		register(pred, null, succ, null, null);
 	}
 
 	// Register an extended precedence constraint
 	@SCJAllowed
 	@SCJRestricted(maySelfSuspend = false, phase = INITIALIZATION)
-	public void register(Runnable pred,
+	public void register(Schedulable pred,
 						 PeriodicParameters predParams,
-						 Runnable succ,
+						 Schedulable succ,
 						 PeriodicParameters succParams,
 						 Precedence prec) {
-
-		// Build map of precedences
-		if (!precMap.containsKey(succ)) {
-			precMap.put(succ, new ArrayList<PrecEntry>());
-		}
-		List<PrecEntry> precs = precMap.get(succ);
-		precs.add(new PrecEntry(pred, prec));
 
 		// Build map with task properties
 		TaskProperties t;
@@ -89,19 +95,24 @@ public class DependencyManager {
 			t.periodicParams = succParams;			
 		}
 		// Add successors
-		List<Runnable> succs = taskMap.get(pred).succs;
+		List<Schedulable> succs = taskMap.get(pred).succs;
 		succs.add(succ);
+
+		// Build map of precedences
+		if (!precMap.containsKey(succ)) {
+			precMap.put(succ, new ArrayList<PrecEntry>());
+		}
+		List<PrecEntry> precs = precMap.get(succ);
+		precs.add(new PrecEntry(pred, succ, prec, taskMap));
 	}
 
 	// Check if dependencies are fulfilled
-	private boolean isFree(Runnable s) {
+	private boolean isFree(Schedulable s) {
 
 		List<PrecEntry> precs = precMap.get(s);
 		if (precs != null) {
 			TaskProperties t = taskMap.get(s);
 			long job = t.job;
-			long period = t.periodicParams == null ? 1
-				: t.periodicParams.getPeriod().getMilliseconds();
 
 			for (int k = precs.size()-1; k >= 0; --k) {
 				PrecEntry prec = precs.get(k);
@@ -111,15 +122,14 @@ public class DependencyManager {
 				if (prec.prec == null) {
 					return predJob > job;
 				} else {
-					long predPeriod = predProps.periodicParams == null ? 1
-						: predProps.periodicParams.getPeriod().getMilliseconds();
-					long lcm = lcm(period, predPeriod);
+					long succRate = prec.succRate;
+					long predRate = prec.predRate;
 					for (int i = 0; i < prec.prec.pattern.length; i++) {
 						DepWord dw = prec.prec.pattern[i];
-						// TODO: fix for corner cases (T==HP, etc)
-						if (dw.predJob == predJob % (lcm/predPeriod) &&
-							dw.succJob == job % (lcm/period) &&
-							predJob / (lcm/predPeriod) == job / (lcm/period)) {
+						// TODO: check corner cases (T==HP, etc)
+						if (dw.predJob == predJob % predRate &&
+							dw.succJob == job % succRate &&
+							predJob / predRate == job / succRate) {
 							return false;
 						}
 					}
@@ -133,7 +143,7 @@ public class DependencyManager {
 	// appropriately
 	@SCJAllowed(INFRASTRUCTURE)
 	@SCJRestricted(maySelfSuspend = false, mayAllocate = false)
-	public boolean checkFree(Runnable s) {
+	public boolean checkFree(Schedulable s) {
 
 		TaskProperties t = taskMap.get(s);
 		if (t != null) {
@@ -154,7 +164,7 @@ public class DependencyManager {
 	// Notify that a job was executed
 	@SCJAllowed(INFRASTRUCTURE)
 	@SCJRestricted(maySelfSuspend = false, mayAllocate = false)
-	public void doneJob(Runnable s, Runnable[] r) {
+	public void doneJob(Schedulable s, Schedulable[] r) {
 		int i = 0;
 
 		// Update job counter
@@ -163,10 +173,10 @@ public class DependencyManager {
 			t.job++;
 
 			// Return freed successors
-			List<Runnable> succs = t.succs;
+			List<Schedulable> succs = t.succs;
 			if (succs != null) {
 				for (int k = succs.size()-1; k >= 0; --k) {
-					Runnable succ = succs.get(i);
+					Schedulable succ = succs.get(k);
 					TaskProperties succProps = taskMap.get(succ);
 					if (succProps.pending && isFree(succ)) {
 						r[i++] = succ;
@@ -186,14 +196,14 @@ public class DependencyManager {
 	// Get current state of pending flag
 	@SCJAllowed(INFRASTRUCTURE)
 	@SCJRestricted(maySelfSuspend = false, mayAllocate = false)
-	public boolean getPending(Runnable s) {
+	public boolean getPending(Schedulable s) {
 		TaskProperties t = taskMap.get(s);
 		return t.pending;
 	}
 	// Clear pending flag
 	@SCJAllowed(INFRASTRUCTURE)
 	@SCJRestricted(maySelfSuspend = false, mayAllocate = false)
-	public void clearPending(Runnable s) {
+	public void clearPending(Schedulable s) {
 		TaskProperties t = taskMap.get(s);
 		t.pending = false;
 	}
@@ -217,7 +227,7 @@ public class DependencyManager {
 	}
 
 	// Helper method to compute least common multiple
-	private long lcm(long a, long b) {
+	private static long lcm(long a, long b) {
         long x, z, y = 1, i = 2;
         /* x = min(a,b)
          * z = max(a,b)

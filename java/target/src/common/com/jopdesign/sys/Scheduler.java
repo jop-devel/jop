@@ -3,6 +3,7 @@ package com.jopdesign.sys;
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 
+import javax.realtime.Schedulable;
 import javax.realtime.precedence.DependencyManager;
 
 /**
@@ -39,7 +40,7 @@ class Scheduler implements Runnable {
 	}
 	
 	static DependencyManager dm = DependencyManager.instance();
-	Runnable[] freed;
+	Schedulable[] freed;
 
 	Scheduler(int core) {
 		active = 0;			// main thread (or idle thread) is first thread
@@ -57,7 +58,7 @@ class Scheduler implements Runnable {
 	 * TODO: a cross-core SW event is only detected at a scheduler
 	 * invocation due to a thread on this core or at idle tick. 
 	 */
-	final static int IDL_TICK = 1000000;
+	final static int IDL_TICK = 1000000000;
 
 	// use local memory for two values
 	private final static int TIM_VAL_ADDR = 0x1e;
@@ -205,7 +206,7 @@ class Scheduler implements Runnable {
 		event = new int[cnt];
 		tmp = cnt-1;
 
-		freed = new Runnable[dm.getMaxFreed()];
+		freed = new Schedulable[dm.getMaxFreed()];
 	}
 
 	/**

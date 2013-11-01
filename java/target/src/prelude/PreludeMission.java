@@ -33,7 +33,7 @@ public class PreludeMission extends Mission {
 				(new RelativeTime(PreludeSafelet.TICK_SCALE*taskSet[i].initialRelease, 0),
 				 new RelativeTime(PreludeSafelet.TICK_SCALE*taskSet[i].period, 0),
 				 new RelativeTime(PreludeSafelet.TICK_SCALE*taskSet[i].deadline, 0), null);
-			handler[i] = new PreludeHandler(taskSet[i], p);
+			handler[i] = new PreludeHandler(taskSet[i], p, i % 3);
 			handler[i].register();
 		}
 

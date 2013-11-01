@@ -1,5 +1,10 @@
 package prelude;
 
+import javax.microedition.io.Connector;
+import javax.safetycritical.io.SimplePrintStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 import javax.safetycritical.Safelet;
 import javax.safetycritical.MissionSequencer;
 import javax.safetycritical.JopSystem;
@@ -11,10 +16,10 @@ import javax.safetycritical.annotate.SCJRestricted;
 
 public class PreludeSafelet implements Safelet {
 
-	public static final int TICK_SCALE = 10;
+	public static final int TICK_SCALE = 1;
 	public static final int PRIVATE_MEMORY_SIZE = 1024;
-	public static final int MISSION_MEMORY_SIZE = 64*1024;
-	public static final int IMMORTAL_MEMORY_SIZE = 64*1024;
+	public static final int MISSION_MEMORY_SIZE = 16*1024;
+	public static final int IMMORTAL_MEMORY_SIZE = 16*1024;
 
 	private static PreludeTask [] taskSet;
 	private static PreludePrecedence [] precSet;
@@ -42,10 +47,19 @@ public class PreludeSafelet implements Safelet {
 	}
 
 
+	public static SimplePrintStream out;
+	public static OutputStream os;
+
 	@Override
 	@SCJAllowed(Level.SUPPORT)
 	@SCJRestricted(phase = Phase.INITIALIZATION)
 	public void initializeApplication() {
-		// TODO
+		// Allocate the output console in immortal memory for all missions
+		try {
+			os = Connector.openOutputStream("console:");
+		} catch (IOException e) {
+			throw new Error("No console available");
+		}
+		out = new SimplePrintStream(os);
 	}
 }
