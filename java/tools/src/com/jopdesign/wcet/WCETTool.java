@@ -37,6 +37,7 @@ import com.jopdesign.common.code.ControlFlowGraph.CFGEdge;
 import com.jopdesign.common.code.ControlFlowGraph.CFGNode;
 import com.jopdesign.common.code.DefaultCallgraphBuilder;
 import com.jopdesign.common.code.ExecutionContext;
+import com.jopdesign.common.code.InfeasibleEdgeProvider;
 import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.common.code.LoopBound;
 import com.jopdesign.common.config.Config;
@@ -51,9 +52,10 @@ import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.common.processormodel.ProcessorModel;
 import com.jopdesign.dfa.DFATool;
 import com.jopdesign.dfa.analyses.LoopBounds;
-import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.DFACallgraphBuilder;
 import com.jopdesign.dfa.framework.FlowEdge;
+import com.jopdesign.timing.TimingTable;
+import com.jopdesign.timing.jop.JOPTimingTable;
 import com.jopdesign.wcet.allocation.BlockAllocationModel;
 import com.jopdesign.wcet.allocation.HandleAllocationModel;
 import com.jopdesign.wcet.allocation.HeaderAllocationModel;
@@ -80,20 +82,35 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
- * Purpose: This class provides the interface to JOP's WCET tool
- *
+ * <p>Purpose: This class provides the interface to JOP's WCET tool</p>
+ * <p>
  * <p>Note that it is currently not possible to create multiple instances of this tool, because the
  * annotation loader would be registered more than once in this case. To analyze multiple WCA targets,
- * the WCA tool must support this feature itself (e.g. by creating one callgraph per target internally).</p>
+ * the WCA tool must support this feature itself (e.g. by creating one callgraph per target internally).</p> 
  *
+ * For a typical usage, you would
+ * <ul>
+ * <li/> Create a tool instance:
+ *  <pre>WCETTool wcetTool = new WCETTool();</pre>
+ * <li/> Register and Initialize the WCET tool:
+ *  <pre>setup.registerTool("wcet", wcetTool);</pre>
+ *  <pre>wcetTool.initialize(); </pre>
+ * <li/> Create analysis instance:
+ * <pre> RecursiveWcetAnalysis an = 
+ *         new RecursiveWcetAnalysis(wcetTool,ipetConfig,strategy);</pre>
+ * <li/> Run Analysis:
+ * <pre> wcet = an.computeCost(wcetTool.getTargetMethod(), analysisContex); </pre>
+ * </ul>
+ * </p>
+ * 
+ * @see WCETAnalysis
  * @author Stefan Hepp (stefan@stefant.org)
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  */
-public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider {
+public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider, InfeasibleEdgeProvider {
 
     public static final String VERSION = "1.0.1";
 
@@ -130,7 +147,6 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
     private File resultRecord;
     private LinkerInfo linkerInfo;
     private boolean hasDfaResults;
-    private Map<InstructionHandle, ContextMap<CallString, Set<String>>> receiverAnalysis = null;
 
     private boolean standaloneOptions = true;
     private boolean ipetOptions = true;
@@ -299,6 +315,12 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
     public Config getConfig() {
         return projectConfig.getConfig();
     }
+    
+	public int getCallstringLength() {
+
+		return appInfo.getCallstringLength();
+	}
+
 
     /**
      * Rebuild the WCET callgraph, starting at the target method.
@@ -307,6 +329,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
      * @return the new callgraph.
      */
     public CallGraph rebuildCallGraph() {
+    	
     	/* This would be the ideal solution, but this way the root
     	 * does NOT have an empty callstring
     	 */
@@ -317,7 +340,7 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
          * callstring, using the callstring length configured for the WCET tool (which is currently the same
          * as the global setting).
          */
-        DefaultCallgraphBuilder callGraphBuilder = new CFGCallgraphBuilder(projectConfig.callstringLength());
+        DefaultCallgraphBuilder callGraphBuilder = new CFGCallgraphBuilder(getCallstringLength());
         callGraphBuilder.setSkipNatives(true); // we do not want natives in the callgraph
         callGraph = CallGraph.buildCallGraph(getTargetMethod(), callGraphBuilder);
 
@@ -420,7 +443,9 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
      * @return the CFG for the method.
      */
     public ControlFlowGraph getFlowGraph(MethodInfo mi) {
-        if (!mi.hasCode()) return null;
+        if (!mi.hasCode()) {
+        	throw new AssertionError("No CFG for MethodInfo "+mi);
+        }
         ControlFlowGraph cfg;
         try {
             /* TODO We need to make sure that changes to the CFG are not compiled back automatically
@@ -446,7 +471,6 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
             cfg.resolveVirtualInvokes();
             cfg.insertReturnNodes();
             cfg.insertContinueLoopNodes();
-
 //    	    cfg.insertSplitNodes();
 //    	    cfg.insertSummaryNodes();
 
@@ -454,14 +478,15 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
             // TODO handle this somehow??
             throw new BadGraphError(e.getMessage(), e);
         }
+        
         return cfg;
     }
 
+	// TODO move somewhere else?
     public LoopBound getLoopBound(CFGNode node, CallString cs) {
 
     	LoopBound globalBound = node.getLoopBound();
         ExecutionContext eCtx = new ExecutionContext(node.getControlFlowGraph().getMethodInfo(), cs);
-    	// TODO move somewhere else?
         if (node.getBasicBlock() != null) {
             return this.getEventHandler().dfaLoopBound(node.getBasicBlock(), eCtx, globalBound);
         } else {
@@ -500,8 +525,8 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
 
     public int computeCyclomaticComplexity(MethodInfo m) {
         ControlFlowGraph g = getFlowGraph(m);
-        int nLocal = g.getGraph().vertexSet().size();
-        int eLocal = g.getGraph().edgeSet().size();
+        int nLocal = g.vertexSet().size();
+        int eLocal = g.edgeSet().size();
         int pLocal = g.buildLoopBoundMap().size();
         int ccLocal = eLocal - nLocal + 2 * pLocal;
         int ccGlobal = 0;
@@ -635,11 +660,9 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         return dfaTool != null;
     }
 
-    @SuppressWarnings("unchecked")
     public void dataflowAnalysis() {
-        int callstringLength = projectConfig.callstringLength();
 
-        // Moved DFA tool cache config to the DFA tool, but still ...
+    	// Moved DFA tool cache config to the DFA tool, but still ...
         // FIXME: At the moment, we do not have a nice directory structure respecting
         //        the fact that we perform many WCET analyses for one Application
 
@@ -649,10 +672,10 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         dfaTool.load();
         
         topLevelLogger.info("Receiver analysis");
-        this.receiverAnalysis = dfaTool.runReceiverAnalysis(callstringLength);
+        dfaTool.runReceiverAnalysis(getCallstringLength());
 
         topLevelLogger.info("Loop bound analysis");
-        dfaTool.runLoopboundAnalysis(callstringLength);
+        dfaTool.runLoopboundAnalysis(getCallstringLength());
 
         this.hasDfaResults = true;
     }
@@ -713,6 +736,12 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
         return edges;
     }
 
+	@Override
+	public boolean isInfeasibleReceiver(MethodInfo method, CallString cs) {
+		
+		return ! this.getCallGraph().hasNode(method, cs);
+	}
+
     /**
      * Get infeasible edges for certain basic block call string
      * @param cfg the CFG containing the block
@@ -728,13 +757,17 @@ public class WCETTool extends EmptyTool<WCETEventHandler> implements CFGProvider
             for (FlowEdge e : edges) {
                 BasicBlockNode head = cfg.getHandleNode(e.getHead());
                 BasicBlockNode tail = cfg.getHandleNode(e.getTail());
-                CFGEdge edge = cfg.getGraph().getEdge(tail, head);
-                if (edge != null) { // edge does not seem to exist any longer
-                    retval.add(edge);
+                CFGEdge edge = cfg.getEdge(tail, head);
+                if (edge != null) { 
+                    retval.add(edge); 
+                } else {
+                	// edge does was removed from the CFG
+                	// logger.warn("The infeasible edge between "+head+" and "+tail+" does not exist");                	
                 }
             }
         }
         return retval;
     }
+
 
 }

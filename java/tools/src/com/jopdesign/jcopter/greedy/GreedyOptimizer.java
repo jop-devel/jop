@@ -37,8 +37,8 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -177,7 +177,7 @@ public class GreedyOptimizer {
 
             // We do not want to include the wca methods in the second pass because inlining there could have negative
             // effects on the WCET path due to the cache
-            Set<MethodInfo> others = new HashSet<MethodInfo>(analyses.getTargetCallGraph().getMethodInfos());
+            Set<MethodInfo> others = new LinkedHashSet<MethodInfo>(analyses.getTargetCallGraph().getMethodInfos());
             others.removeAll(wcaMethods);
 
             logger.info("Optimizing non-WCA code");
@@ -253,7 +253,7 @@ public class GreedyOptimizer {
     private void optimizeMethods(AnalysisManager analyses, ExecFrequencyProvider ecp,
                                  CandidateSelector selector, Set<MethodInfo> methods)
     {
-        Map<MethodInfo,MethodData> methodData = new HashMap<MethodInfo, MethodData>(methods.size());
+        Map<MethodInfo,MethodData> methodData = new LinkedHashMap<MethodInfo, MethodData>(methods.size());
 
         selector.clear();
 
@@ -286,8 +286,8 @@ public class GreedyOptimizer {
         // now use the RebateSelector to order the candidates
         selector.sortCandidates(ecp);
 
-        Set<MethodInfo> optimizedMethods = new HashSet<MethodInfo>();
-        Set<MethodInfo> candidateChanges = new HashSet<MethodInfo>();
+        Set<MethodInfo> optimizedMethods = new LinkedHashSet<MethodInfo>();
+        Set<MethodInfo> candidateChanges = new LinkedHashSet<MethodInfo>();
 
         Collection<Candidate> candidates = selector.selectNextCandidates(ecp);
         while (candidates != null) {

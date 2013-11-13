@@ -29,14 +29,14 @@ import com.jopdesign.common.config.Config.BadConfigurationError;
 import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.jcopter.JCopter;
 import com.jopdesign.jcopter.analysis.MethodCacheAnalysis.AnalysisType;
-import com.jopdesign.wcet.ipet.IPETConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.IPETConfig.CacheCostCalculationMethod;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -60,7 +60,7 @@ public class AnalysisManager {
 
     public AnalysisManager(JCopter jcopter) {
         this.jcopter = jcopter;
-        stacksizeMap = new HashMap<MethodInfo, StacksizeAnalysis>();
+        stacksizeMap = new LinkedHashMap<MethodInfo, StacksizeAnalysis>();
     }
 
     public JCopter getJCopter() {
@@ -77,12 +77,12 @@ public class AnalysisManager {
      * @param updateWCEP if true, let the wcaInvoker provide a global WCET path and keep it up-to-date
      */
     public void initAnalyses(Set<MethodInfo> targets, AnalysisType cacheAnalysisType,
-                             StaticCacheApproximation cacheApproximation, boolean useMethodCacheStrategy,
+                             CacheCostCalculationMethod cacheApproximation, boolean useMethodCacheStrategy,
                              Set<MethodInfo> wcaRoots, boolean updateWCEP)
     {
         logger.info("Initializing analyses..");
 
-        Set<MethodInfo> allTargets = new HashSet<MethodInfo>(targets);
+        Set<MethodInfo> allTargets = new LinkedHashSet<MethodInfo>(targets);
         if (wcaRoots != null) {
             // Just make sure the WCA callgraph is contained in the target graph..
             allTargets.addAll(wcaRoots);
@@ -147,7 +147,7 @@ public class AnalysisManager {
     public Set<MethodInfo> getWCAMethods() {
         if (wcaInvoker == null) return Collections.emptySet();
 
-        Set<MethodInfo> methods = new HashSet<MethodInfo>();
+        Set<MethodInfo> methods = new LinkedHashSet<MethodInfo>();
         for (MethodInfo root : wcaInvoker.getWcaTargets()) {
             methods.addAll( targetCallGraph.getReachableImplementationsSet(root) );
         }
@@ -169,7 +169,7 @@ public class AnalysisManager {
      * @return all callgraphs used by the analyses (including the AppInfo callgraph) which are not backed by other callgraphs.
      */
     public Set<CallGraph> getCallGraphs() {
-        Set<CallGraph> graphs = new HashSet<CallGraph>(4);
+        Set<CallGraph> graphs = new LinkedHashSet<CallGraph>(4);
         graphs.add(getAppInfoCallGraph());
         graphs.add(getTargetCallGraph());
         graphs.addAll(getWCACallGraphs());

@@ -1,0 +1,17 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+source "${DIR}/wcet.sh"
+
+# StartLift
+export P1=test;export P2=wcet;export P3=StartLineFollower
+echo "[Lift] $(logfile '$KEY')" >&2
+
+make_sim jsim 2236
+make_wcet cs-0-dfa-no  2313 CALLSTRING_LENGTH=0 USE_DFA=no
+make_wcet cs-0-dfa-yes 2305 CALLSTRING_LENGTH=0 USE_DFA=yes
+make_wcet cs-1-dfa-yes 2305 CALLSTRING_LENGTH=1 USE_DFA=yes
+
+make_sim jsim-opt 2236        USE_JCOPTER=yes USE_DFA=yes
+make_wcet cs-0-dfa-opt 2305 CALLSTRING_LENGTH=0 USE_DFA=yes
+

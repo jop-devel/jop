@@ -23,8 +23,8 @@ package com.jopdesign.common.graphutils;
 import org.jgrapht.DirectedGraph;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -106,8 +106,8 @@ public class TopologicalTraverser<V,E> {
 
 
     protected void initialize() {
-        indegreeMap = new HashMap<V, Integer>();
-        marked = new HashSet<V>();
+        indegreeMap = new LinkedHashMap<V, Integer>();
+        marked = new LinkedHashSet<V>();
     }
 
     public boolean isRoot(V node) {

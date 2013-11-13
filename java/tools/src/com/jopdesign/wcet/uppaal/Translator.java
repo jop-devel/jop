@@ -65,7 +65,6 @@ public class Translator {
 		XmlSerializationException, FileNotFoundException {
 		String xml = XmlBuilder.domToString(sys.toXML());
 		PrintStream outStreamXML = System.out, outStreamQ = System.out;
-		File fileTemplate = null;
 		outStreamXML = new PrintStream(getModelFile());
 		outStreamQ = new PrintStream(getQueryFile());
 		outStreamXML.println(xml);
@@ -76,10 +75,6 @@ public class Translator {
 		stringBuilder.append("E<> (M0.E && t >= 0)\n");
 		
 		outStreamQ.println(stringBuilder.toString());
-		if(fileTemplate != null) {
-			logger.info("Wrote XML file to " + fileTemplate);
-			outStreamXML.close(); outStreamQ.close();
-		}
 		outStreamXML.close();
 		outStreamQ.close();
 	}

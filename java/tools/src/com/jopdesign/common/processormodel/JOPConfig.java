@@ -26,8 +26,8 @@ import com.jopdesign.common.config.IntegerOption;
 import com.jopdesign.common.config.Option;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.config.StringOption;
-import com.jopdesign.timing.WCETInstruction;
 import com.jopdesign.timing.jop.MicrocodeAnalysis;
+import com.jopdesign.timing.jop.WCETInstruction;
 
 import java.io.File;
 
@@ -39,15 +39,15 @@ public class JOPConfig {
     // FIXME: default values are fetched from WCETInstruction until transition to
     // new timing system is complete
     public static final IntegerOption READ_WAIT_STATES =
-            new IntegerOption("jop-rws", "JOP read wait states", WCETInstruction.r);
+            new IntegerOption("jop-rws", "JOP read wait states", WCETInstruction.DEFAULT_R);
     public static final IntegerOption WRITE_WAIT_STATES =
-            new IntegerOption("jop-wws", "JOP write wait states", WCETInstruction.w);
+            new IntegerOption("jop-wws", "JOP write wait states", WCETInstruction.DEFAULT_W);
     public static final BooleanOption MULTIPROCESSOR =
-            new BooleanOption("jop-cmp", "JOP multiprocessor configuration", WCETInstruction.CMP_WCET);
+            new BooleanOption("jop-cmp", "JOP multiprocessor configuration", false);
     public static final IntegerOption CMP_CPUS =
-            new IntegerOption("jop-cmp-cpus", "JOP number of processors", WCETInstruction.CPUS);
+            new IntegerOption("jop-cmp-cpus", "JOP number of processors", WCETInstruction.DEFAULT_CPUS);
     public static final IntegerOption CMP_TIMESLOT =
-            new IntegerOption("jop-cmp-timeslot", "JOP arbiter timeslot cycles", WCETInstruction.TIMESLOT);
+            new IntegerOption("jop-cmp-timeslot", "JOP arbiter timeslot cycles", WCETInstruction.DEFAULT_TIMESLOT);
 
     public static final BooleanOption OBJECT_CACHE =
             new BooleanOption("jop-object-cache", "JOP object cache configuration", false);
@@ -55,14 +55,19 @@ public class JOPConfig {
             new IntegerOption("jop-ocache-associativity", "JOP object associativity", 16);
     public static final IntegerOption OBJECT_CACHE_WORDS_PER_LINE =
             new IntegerOption("jop-ocache-words-per-line", "JOP object cache: words per line", 16);
+    
+    // Timing defaults according to ms implementation
+    // Block Size: 1 word
+    // Hit: 5 cycles
+    // Miss: 6+2r cycles (10 on dspio)
     public static final IntegerOption OBJECT_CACHE_BLOCK_SIZE =
             new IntegerOption("jop-ocache-fill", "JOP object cache: size of a cache block in words (burst)", 1);
-    private static final IntegerOption OBJECT_CACHE_HIT_CYCLES =
-            new IntegerOption("jop-ocache-hit-cycles", "JOP object access cycles on cache hit", 1);
-    private static final IntegerOption OBJECT_CACHE_LOAD_FIELD_CYCLES =
-            new IntegerOption("jop-ocache-load-field-cycles", "JOP object cache load cycles for field (bypass)", 2);
-    private static final IntegerOption OBJECT_CACHE_LOAD_BLOCK_CYCLES =
-            new IntegerOption("jop-ocache-load-line-cycles", "JOP object cache load cycles for cache block (miss)", 2);
+    public static final IntegerOption OBJECT_CACHE_HIT_CYCLES =
+            new IntegerOption("jop-ocache-hit-cycles", "JOP object access cycles on cache hit", 5);
+    public static final IntegerOption OBJECT_CACHE_LOAD_FIELD_CYCLES =
+            new IntegerOption("jop-ocache-load-field-cycles", "JOP object cache load cycles for field (bypass)", 6+2*WCETInstruction.DEFAULT_R);
+    public static final IntegerOption OBJECT_CACHE_LOAD_BLOCK_CYCLES =
+            new IntegerOption("jop-ocache-load-block-cycles", "JOP object cache load cycles for cache block (miss)", 6+2*WCETInstruction.DEFAULT_R);
 
     /**
      * Supported method cache implementations:
@@ -112,15 +117,10 @@ public class JOPConfig {
     private int timeslot;
     private File asmFile;
 
-    private CacheImplementation objectCacheName;
-    private int objectCacheAssociativity;
-    private int objectCacheBlockSize;
-    private boolean objectCacheFieldTag;
-    private int objectCacheLineSize;
-    private long objectCacheHitCycles;
-    private long objectCacheLoadFieldCycles;
-    private long objectCacheLoadBlockCycles;
+    private CacheImplementation methodCacheName;
 
+	private boolean hasObjectCache;
+    
     public static OptionGroup getOptions(Config configData) {
         return configData.getOptions().getGroup("jop");
     }
@@ -140,16 +140,8 @@ public class JOPConfig {
         this.cpus = jopConfig.getOption(CMP_CPUS).intValue();
         this.timeslot = jopConfig.getOption(CMP_TIMESLOT).intValue();
 
-        this.objectCacheName = jopConfig.getOption(CACHE_IMPL);
-
-        this.objectCacheAssociativity = jopConfig.getOption(OBJECT_CACHE_ASSOCIATIVITY).intValue();
-        this.objectCacheBlockSize = jopConfig.getOption(OBJECT_CACHE_BLOCK_SIZE).intValue();
-        this.objectCacheFieldTag = false;
-        this.objectCacheLineSize = jopConfig.getOption(OBJECT_CACHE_WORDS_PER_LINE).intValue();
-
-        this.objectCacheHitCycles = jopConfig.getOption(OBJECT_CACHE_HIT_CYCLES);
-        this.objectCacheLoadFieldCycles = jopConfig.getOption(OBJECT_CACHE_LOAD_FIELD_CYCLES);
-        this.objectCacheLoadBlockCycles = jopConfig.getOption(OBJECT_CACHE_LOAD_BLOCK_CYCLES);
+        this.methodCacheName = jopConfig.getOption(CACHE_IMPL);
+        this.hasObjectCache = jopConfig.getOption(OBJECT_CACHE);
     }
 
     public int rws() {
@@ -176,93 +168,12 @@ public class JOPConfig {
         return asmFile;
     }
 
-    public boolean isObjectCacheFieldTag() {
-        return objectCacheFieldTag;
+    public CacheImplementation getMethodCacheImpl() {
+        return methodCacheName ;
     }
 
-    public long getObjectCacheHitCycles() {
-        return objectCacheHitCycles;
-    }
-
-    public CacheImplementation getCacheName() {
-        return objectCacheName;
-    }
-
-    /**
-     * @return the associativity of the object cache
-     */
-    public long getObjectCacheAssociativity() {
-        return this.objectCacheAssociativity;
-    }
-
-    public void setObjectCacheAssociativity(int assoc) {
-        this.objectCacheAssociativity = assoc;
-    }
-
-    public boolean objectCacheSingleField() {
-        return this.objectCacheFieldTag;
-    }
-
-    /**
-     * @param b whether to use fields as tag (only for experiments)
-     */
-    public void setObjectCacheFieldTag(boolean b) {
-        this.objectCacheFieldTag = b;
-    }
-
-    public int getObjectCacheLineSize() {
-        return objectCacheLineSize;
-    }
-
-    public int getObjectCacheBlockSize() {
-        return objectCacheBlockSize;
-    }
-
-    public int getObjectCacheMaxCachedFieldIndex() {
-        if (this.objectCacheSingleField()) return Integer.MAX_VALUE;
-        else return objectCacheLineSize - 1;
-    }
-
-    public void setObjectCacheLineSize(int lineSize) {
-        this.objectCacheLineSize = lineSize;
-    }
-
-    public void setObjectCacheBlockSize(int blockSize) {
-        this.objectCacheBlockSize = blockSize;
-    }
-
-    public long getObjectCacheLoadBlockCycles() {
-        return this.objectCacheLoadBlockCycles;
-    }
-
-    public long getObjectCacheBypassTime() {
-        return this.objectCacheLoadFieldCycles;
-    }
-
-    public void setObjectCacheHitCycles(long objectCacheHitCycles) {
-        this.objectCacheHitCycles = objectCacheHitCycles;
-    }
-
-    public void setObjectCacheLoadFieldCycles(long objectCacheLoadFieldCycles) {
-        this.objectCacheLoadFieldCycles = objectCacheLoadFieldCycles;
-    }
-
-    public void setObjectCacheLoadBlockCycles(long objectCacheLoadBlockCycles) {
-        this.objectCacheLoadBlockCycles = objectCacheLoadBlockCycles;
-    }
-
-    /* Removed for now, as is not flexible enough */
-//	public long getObjectCacheAccessTime(int words) {
-//		int  burstLength = this.objectCacheMaxBurst;
-//		long delay       = this.objectCacheAccessDelay;
-//		long cyclesPerWord = this.objectCacheCyclesPerWord;
-//		int fullBursts = words / burstLength;
-//		int lastBurst  = words % burstLength;
-//		long accessTime = delay + cyclesPerWord * lastBurst;
-//		for(int i = 0; i < fullBursts; i++) {
-//			accessTime += delay + cyclesPerWord * burstLength;
-//		}
-//		return accessTime;
-//	}
+	public boolean hasObjectCache() {
+		return hasObjectCache;
+	}
 
 }

@@ -59,8 +59,8 @@ public class LoadOnReturn {
 		invoke();
 		int val = te-ts-to;
 		int cacheCost = ce-cs;
-		if (Config.MEASURE)       { System.out.print("wcet: "); System.out.println(val);             }
-		if (MEASURE_CACHE) { System.out.print("cache cost: "); System.out.println(cacheCost); }
+		if (Config.MEASURE)       { System.out.print("max: "); System.out.println(val);             }
+		if (MEASURE_CACHE)        { System.out.print("cache cost: "); System.out.println(cacheCost); }
 	}
 	
 	static void invoke() {

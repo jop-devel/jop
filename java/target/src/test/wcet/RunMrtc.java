@@ -42,7 +42,6 @@ public class RunMrtc {
 	/**
 	 * Set to false for the WCET analysis, true for measurement
 	 */
-	final static boolean MEASURE = false;
 	static int ts, te, to;
 	static BinarySearch bs = new BinarySearch();
 //	static BubbleSort b = new BubbleSort();
@@ -67,18 +66,17 @@ public class RunMrtc {
 		te = Native.rdMem(Const.IO_CNT);
 		to = te - ts;
 		invoke();
-		if (MEASURE)
-			System.out.println(te - ts - to);
+		if (Config.MEASURE) { System.out.print("max: "); System.out.println(te-ts-to); }
 	}
 
 	static void invoke() {
 		measure();
-		if (MEASURE)
+		if (Config.MEASURE)
 			te = Native.rdMem(Const.IO_CNT);
 	}
 
 	static void measure() {
-		if (MEASURE)
+		if (Config.MEASURE)
 			ts = Native.rdMem(Const.IO_CNT);
 		bs.binarySearch(-1); // Use non-existent key to drive worst-case performance
 		// b.bubbleSort();

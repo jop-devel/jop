@@ -27,7 +27,7 @@ import com.jopdesign.jcopter.analysis.WCAInvoker;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -61,7 +61,7 @@ public class WCEPRebateSelector extends RebateSelector {
 
         WCAInvoker wcaInvoker = analyses.getWCAInvoker();
 
-        Set<MethodInfo> visited = new HashSet<MethodInfo>();
+        Set<MethodInfo> visited = new LinkedHashSet<MethodInfo>();
         LinkedList<MethodInfo> queue = new LinkedList<MethodInfo>();
 
         // go down all methods in the callgraph which are on the WCET path, find best candidate

@@ -1,0 +1,13 @@
+MAX_ASSOC=10
+MAX_FIELDS=5
+1.upto(MAX_ASSOC) { |i|    
+  1.upto(MAX_FIELDS) { |j|
+    args = (0..(i-1)).map { |ix| "objs#{j}[#{ix}]" }
+    puts "      loop_#{i}_#{j}(#{args.join(",")});"
+  }
+}
+1.upto(MAX_ASSOC) { |i|
+  1.upto(MAX_FIELDS) { |j|
+
+  }
+}

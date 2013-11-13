@@ -1,0 +1,17 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+source "${DIR}/wcet.sh"
+
+# StartKfl
+export P1=test;export P2=wcet;export P3=StartKfl
+echo "[Kfl] $(logfile '$KEY')" >&2
+
+make_java
+make_sim jsim 10040
+make_wcet cs-0-dfa-no 37407 CALLSTRING_LENGTH=0 USE_DFA=no
+make_wcet cs-0-dfa-yes 22269 CALLSTRING_LENGTH=0 USE_DFA=yes
+make_wcet cs-1-dfa-yes 20299 CALLSTRING_LENGTH=1 USE_DFA=yes
+
+make_sim jsim-wcopt 10040 USE_JCOPTER=yes USE_DFA=yes JCOPTER_USE_WCA=yes
+make_wcet cs-1-dfa-wcopt 20299 CALLSTRING_LENGTH=1 USE_DFA=yes

@@ -27,7 +27,8 @@ import com.jopdesign.common.config.Config.BadConfigurationException;
 import com.jopdesign.common.graphutils.InvokeDot;
 import com.jopdesign.common.logger.LogConfig;
 import com.jopdesign.common.misc.MiscUtils;
-import com.jopdesign.timing.WCETInstruction;
+import com.jopdesign.common.processormodel.JOPConfig;
+import com.jopdesign.timing.jop.WCETInstruction;
 import com.jopdesign.wcet.WCETTool;
 import org.apache.bcel.classfile.LineNumber;
 import org.apache.log4j.Logger;
@@ -153,7 +154,11 @@ public class Report {
     private void generateBytecodeTable() throws IOException {
         File file = config.getReportFile("Bytecode WCET Table.txt");
         FileWriter fw = new FileWriter(file);
-        fw.append(WCETInstruction.toWCAString());
+        
+        // FIXME: generate proper timing table
+        JOPConfig jopConfig = new JOPConfig(project.getConfig());
+        fw.append(new WCETInstruction(jopConfig.rws(), jopConfig.wws()).toWCAString());
+
         fw.close();
         this.addPage("input/bytecodetable", file.getName());
     }
@@ -212,7 +217,7 @@ public class Report {
             }
             ControlFlowGraph flowGraph = project.getFlowGraph(m);
             Map<String, Object> stats = new TreeMap<String, Object>();
-            stats.put("#nodes", flowGraph.getGraph().vertexSet().size() - 2 /* entry+exit */);
+            stats.put("#nodes", flowGraph.vertexSet().size() - 2 /* entry+exit */);
             stats.put("number of words", flowGraph.getNumberOfWords());
             this.addDetailedReport(m,
                     new DetailedMethodReport(config, project, m, "CFG", stats, null, null),

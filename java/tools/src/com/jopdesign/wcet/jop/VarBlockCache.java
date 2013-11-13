@@ -19,33 +19,32 @@
  */
 package com.jopdesign.wcet.jop;
 
-import com.jopdesign.common.MethodInfo;
-import com.jopdesign.common.code.CallString;
 import com.jopdesign.common.config.OptionGroup;
 import com.jopdesign.common.processormodel.JOPConfig;
 import com.jopdesign.common.processormodel.JOPConfig.CacheImplementation;
+import com.jopdesign.timing.MethodCacheTiming;
 import com.jopdesign.wcet.WCETTool;
 
-public class VarBlockCache extends MethodCache {
+public class VarBlockCache extends MethodCacheImplementation {
 
 	private int blockCount;
 	private int blockSize;
 	private boolean isLRU;
 
-	public VarBlockCache(WCETTool p, int blockCount, int cacheSizeInWords, boolean isLRU) {
-		super(p,cacheSizeInWords);
+	public VarBlockCache(WCETTool p, MethodCacheTiming timing, int blockCount, int cacheSizeInWords, boolean isLRU) {
+
+		super(p,timing,cacheSizeInWords);
 		this.blockCount = blockCount;
 		if(cacheSizeWords % blockCount != 0) {
-			throw new AssertionError("Bad cache size / blockCount: "+
-		                             cacheSizeWords+" / "+blockCount);
+			throw new AssertionError("Bad cache size / blockCount: " + cacheSizeWords + " / " + blockCount);
 		}
 		this.blockSize = cacheSizeWords / blockCount;
 		this.isLRU = isLRU;
 	}
 
-	public static MethodCache fromConfig(WCETTool p, boolean isLRU) {
+	public static MethodCache fromConfig(WCETTool p, MethodCacheTiming timing, boolean isLRU) {
 		OptionGroup o = JOPConfig.getOptions(p.getConfig());
-		return new VarBlockCache(p,
+		return new VarBlockCache(p, timing,
 				                 o.getOption(JOPConfig.CACHE_BLOCKS).intValue(),
 								 o.getOption(JOPConfig.CACHE_SIZE_WORDS).intValue(),
 								 isLRU);
@@ -55,11 +54,6 @@ public class VarBlockCache extends MethodCache {
 	@Override
 	public int requiredNumberOfBlocks(int sizeInWords) {
 		return ((sizeInWords+blockSize-1) / blockSize);
-	}
-
-	@Override
-	public boolean allFit(MethodInfo m, CallString cs) {
-		return allFit(super.getAllFitCacheBlocks(m, cs));
 	}
 
     @Override
@@ -85,5 +79,14 @@ public class VarBlockCache extends MethodCache {
 
 	public int getNumBlocks() {
 		return this.blockCount;
+	}
+	
+	@Override
+	public String toString() {
+		if(isLRU()) {
+			return "m$-LRU-" + blockCount + "x" + blockSize;
+		} else {
+			return "m$-" + blockCount + "x" + blockSize;
+		}
 	}
 }

@@ -166,7 +166,7 @@ public class GC {
 			RtThreadImpl.initArea = Memory.getImmortal(mem_start, mem_size-1);
 		} else {
 			full_heap_size = mem_size-mem_start;
-			handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
+			handle_cnt = full_heap_size/(2*TYPICAL_OBJ_SIZE+HANDLE_SIZE);
 			semi_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
 			
 			heapStartA = mem_start+handle_cnt*HANDLE_SIZE;

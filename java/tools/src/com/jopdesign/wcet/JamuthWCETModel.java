@@ -22,15 +22,19 @@ package com.jopdesign.wcet;
 import com.jopdesign.common.code.BasicBlock;
 import com.jopdesign.common.code.ControlFlowGraph;
 import com.jopdesign.common.code.ExecutionContext;
-import com.jopdesign.common.code.InvokeSite;
 import com.jopdesign.timing.jamuth.JamuthInstructionInfo;
 import com.jopdesign.timing.jamuth.JamuthTimingTable;
+import com.jopdesign.wcet.jop.CacheModel;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.jop.NoMethodCache;
+import com.jopdesign.wcet.jop.ObjectCache;
+
 import org.apache.bcel.generic.BranchHandle;
 import org.apache.bcel.generic.InstructionHandle;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class JamuthWCETModel implements WCETProcessorModel {
 	private JamuthTimingTable tt;
@@ -38,7 +42,7 @@ public class JamuthWCETModel implements WCETProcessorModel {
 
 	public JamuthWCETModel(WCETTool p) {
 		tt = new JamuthTimingTable();
-		NO_METHOD_CACHE = new NoMethodCache(p);
+		NO_METHOD_CACHE = new NoMethodCache();
 	}
 	
 	public String getName() {
@@ -81,30 +85,20 @@ public class JamuthWCETModel implements WCETProcessorModel {
 		return 0;
 	}
 
+	@Override
 	public MethodCache getMethodCache() {
 		return NO_METHOD_CACHE;
 	}
 
-	public int getMethodCacheLoadTime(int words, boolean loadOnInvoke) {
-		return 0;
-		// throw new AssertionError("jamuth model does not have method cache");
+	@Override
+	public ObjectCache getObjectCache() {
+		return null;
 	}
 
-	public boolean hasMethodCache() {
-		return false;
+	@Override
+	public List<CacheModel> getCaches() {
+		return Collections.emptyList();
 	}
 
-	public long getMethodCacheMissPenalty(int numberOfWords, boolean loadOnInvoke) {
-		return 0;
-	}
 
-    @Override
-    public long getInvokeCacheMissPenalty(InvokeSite invokeSite, int invokeeWords) {
-        return 0;
-    }
-
-    @Override
-    public long getReturnCacheMissPenalty(InvokeSite invokeSite, int invokerWords) {
-        return 0;
-    }
 }
