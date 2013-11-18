@@ -66,7 +66,8 @@ public class HostController extends PeriodicEventHandler
 	@Override
 	public void handleAsyncEvent()
 	{
-		int length = outputBuffer.copy(output);
+		host.write('a');
+		/*int length = outputBuffer.copy(output);
 		for (int i = 0; i < length; i++) //@WCA loop = 14
 		{
 			host.write(output[i]);
@@ -106,7 +107,7 @@ public class HostController extends PeriodicEventHandler
 					inputCount++;
 				}
 			}
-		}
+		}*/
 	}
 	
 	void resendCommand(int lineNumber, char[] debug)

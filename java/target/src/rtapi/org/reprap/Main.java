@@ -75,22 +75,22 @@ public class Main implements Safelet
 			}
 			
 			HostController hostController;
-			//TestCAM testCAM1;
-			//TestCAM testCAM2;
-			RepRapController repRapController;
-			CommandController commandController;
-			CommandParser commandParser;
+			TestCAM testCAM1;
+			TestCAM testCAM2;
+			//RepRapController repRapController;
+			//CommandController commandController;
+			//CommandParser commandParser;
 			
 			@Override
 			protected void initialize()
 			{
 				hostController = new HostController();
-				//testCAM1 = new TestCAM(hostController,1);
-				//testCAM2 = new TestCAM(hostController,2);
+				testCAM1 = new TestCAM(hostController,1);
+				testCAM2 = new TestCAM(hostController,2);
 								
-				repRapController = new RepRapController();
-				commandController = new CommandController();
-				commandParser = new CommandParser(hostController,commandController,repRapController);
+				//repRapController = new RepRapController();
+				//commandController = new CommandController();
+				//commandParser = new CommandParser(hostController,commandController,repRapController);
 			}
 		}
 	}

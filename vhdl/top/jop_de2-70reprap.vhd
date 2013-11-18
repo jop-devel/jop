@@ -183,20 +183,6 @@ end component;
 -- remove the comment for RAM access counting
 -- signal ram_count		: std_logic;
 
-
-	type CAM_DATA_TYPE is array (cpu_cnt-1 downto 0) of std_logic_vector(31 downto 0);
-	type CAM_ADDRESS_TYPE is array (cpu_cnt-1 downto 0) of std_logic_vector(3 downto 0);
-	type CAM_DATA_MATRIX_TYPE is array (31 downto 0) of std_logic_vector(cpu_cnt-1 downto 0);
-	type CAM_ADDRESS_MATRIX_TYPE is array (3 downto 0) of std_logic_vector(cpu_cnt-1 downto 0);
-	signal cam_wr_data_array  : CAM_DATA_TYPE;
-	signal cam_rd_array, cam_wr_array  : std_logic_vector(cpu_cnt-1 downto 0);
-	signal cam_address_array  : CAM_ADDRESS_TYPE;
-	signal cam_data_matrix  : CAM_DATA_MATRIX_TYPE;
-	signal cam_address_matrix : CAM_ADDRESS_MATRIX_TYPE;
-	signal cam_address  : std_logic_vector(3 downto 0);
-	signal cam_rd, cam_wr  : std_logic;
-	signal cam_rd_data, cam_wr_data  : std_logic_vector(31 downto 0);
-
 begin
 
 	ser_ncts <= '0';
@@ -289,12 +275,6 @@ end process;
 			oLEDR => oLEDR,
 --			oLEDG => oLEDG,
 			iSW => iSW,
-			
-			cam_address => cam_address_array(0),
-			cam_rd => cam_rd_array(0),
-			cam_rd_data => cam_rd_data,
-			cam_wr => cam_wr_array(0),
-			cam_wr_data => cam_wr_data_array(0),
 						
 			wd => wd_out(0),
 			l => open,
@@ -318,12 +298,6 @@ end process;
 			sync_in => sync_in_array(1),
 
 			GPIO_0 => GPIO_0,
-			
-			cam_address => cam_address_array(1),
-			cam_rd => cam_rd_array(1),
-			cam_rd_data => cam_rd_data,
-			cam_wr => cam_wr_array(1),
-			cam_wr_data => cam_wr_data_array(1),
 						
 			wd => wd_out(1),
 			l => open,
@@ -346,13 +320,6 @@ end process;
 
 			sync_out => sync_out_array(i),
 			sync_in => sync_in_array(i),
-
-			
-			cam_address => cam_address_array(i),
-			cam_rd => cam_rd_array(i),
-			cam_rd_data => cam_rd_data,
-			cam_wr => cam_wr_array(i),
-			cam_wr_data => cam_wr_data_array(i),
 						
 			wd => wd_out(i),
 			l => open,
@@ -386,14 +353,17 @@ end process;
 		
 		
 	-- syncronization of processors
-	sync: entity work.cmpsync generic map (
-		cpu_cnt => cpu_cnt)
+	sync: entity work.islu generic map 
+	(
+		cpu_cnt => cpu_cnt,
+		lock_cnt => 32
+	)
 		port map
 		(
-			clk => clk_int,
+			clock => clk_int,
 			reset => int_res,
-			sync_in_array => sync_in_array,
-			sync_out_array => sync_out_array
+			sync_in => sync_in_array,
+			sync_out => sync_out_array
 		);
 		
 		
@@ -428,48 +398,6 @@ end process;
 	oSRAM_ADV_N	<= '1';
 	
 	oSRAM_CE2 <= not ram_ncs;	
-    oSRAM_CE3_N <= ram_ncs;
-	 
-	 
-	 
-	cam_data_reduce_outer : 
-	for i in 0 to 31 generate
-		cam_data_reduce_inner:
-		for j in 0 to cpu_cnt-1 generate 
-			cam_data_matrix(i)(j) <= cam_wr_array(j) AND cam_wr_data_array(j)(i);
-		end generate;
-		cam_wr_data(i) <= OR_REDUCE(cam_data_matrix(i));
-	end generate;
-	
-	cam_address_reduce_outer: 
-	for i in 0 to 3 generate
-		cam_address_reduce_inner:
-		for j in 0 to cpu_cnt-1 generate 
-			cam_address_matrix(i)(j) <= (cam_wr_array(j) OR cam_rd_array(j)) AND cam_address_array(j)(i);
-		end generate;
-		cam_address(i) <= OR_REDUCE(cam_address_matrix(i));
-	end generate;
-	
-	cam_rd <= OR_REDUCE(cam_rd_array);
-	cam_wr <= OR_REDUCE(cam_wr_array);
-	 
-	ca : entity work.cam
-	generic map 
-	(
-		sc_width => 4
-	)
-	port map
-	(
-		clock => clk_int,
-		reset => int_res,
-		
-		sc_address => cam_address,
-		sc_rd => cam_rd,
-		sc_rd_data => cam_rd_data,
-		sc_wr => cam_wr,
-		sc_wr_data => cam_wr_data
-	);
-	 
-	 
+    oSRAM_CE3_N <= ram_ncs; 
 
 end rtl;

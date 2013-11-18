@@ -56,9 +56,9 @@ public final class SysDevice extends HardwareObject {
 	public volatile int exception;
 	
 	/**
-	 * Global lock
+	 * Lock acquisition (ISLU)
 	 */
-	public volatile int lock;
+	public volatile int lock_acquire;
 	
 	/**
 	 * Processor number
@@ -66,9 +66,9 @@ public final class SysDevice extends HardwareObject {
 	public volatile int cpuId;
 	
 	/**
-	 * CMP sync???
+	 * Lock release (ISLU)
 	 */
-	public volatile int signal;
+	public volatile int lock_release;
 	
 	/**
 	 * Interrupt mask for individual interrupts

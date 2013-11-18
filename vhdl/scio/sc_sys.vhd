@@ -165,7 +165,6 @@ architecture rtl of sc_sys is
 	signal exc_type			: std_logic_vector(7 downto 0);
 		
 	signal cpu_identity		: std_logic_vector(31 downto 0);
-	signal lock_reqest		: std_logic;
 	
 	-- remove the comment for RAM access counting
 	-- signal ram_counter	: std_logic_vector(31 downto 0);
@@ -202,16 +201,12 @@ architecture rtl of sc_sys is
 	-- delay instruction
 	signal dly_timeout	: std_logic_vector(31 downto 0);
 	signal dly_block	: std_logic;
-	
-	signal lock_reqest_dly: std_logic;
 
 begin
 
 	cpu_identity <= std_logic_vector(to_unsigned(cpu_id,32));
 	rdy_cnt <= "11" when 
-		(sync_out.halted='1' and lock_reqest='1') or
-		(lock_reqest='1' and lock_reqest_dly='0') or 
-		dly_block='1' else "00";
+		sync_out.halted='1' or	dly_block='1' else "00";
 	
 --
 --	read cnt values
@@ -236,12 +231,12 @@ begin
 					rd_data(7 downto 0) <= exc_type;
 					rd_data(31 downto 8) <= (others => '0');
 				when "0101" =>
-					rd_data(0) <= lock_reqest;
+					rd_data(0) <= sync_out.status;
 					rd_data(31 downto 1) <= (others => '0');				
 				when "0110" =>
 					rd_data <= cpu_identity;
 				when "0111" =>
-					rd_data(0) <= sync_out.s_out;
+					rd_data(0) <= sync_out.status;
 					rd_data(31 downto 1) <= (others => '0');
 				-- remove the comment for RAM access counting
 				-- when "1010" =>
@@ -275,10 +270,8 @@ end process;
 process(clk, reset) begin
 	if reset='1' then
 		timer_dly <= '0';
-		lock_reqest_dly <= '0'; -- TODO
 	elsif rising_edge(clk) then
 		timer_dly <= timer_equ;
-		lock_reqest_dly <= lock_reqest;
 	end if;
 end process;
 
@@ -390,9 +383,9 @@ begin
 		int_ena <= '0';
 		timer_cnt <= (others => '0');
 		wd <= '0';
-		sync_in.s_in <= '0';
-		sync_in.lock_req <= '0';
-		lock_reqest <= '0';
+		sync_in.req <= '0';
+		sync_in.op <= '0';
+		sync_in.data <= (others => '0');
 
 		exc_type <= (others => '0');
 		exc_pend <= '0';
@@ -447,6 +440,8 @@ begin
 			exc_type(2 downto 0) <= EXC_ROLLBACK;
 			exc_pend <= '1';
 		end if;
+		
+		sync_in.req <= '0';
 
 		if wr='1' then
 			case address(3 downto 0) is
@@ -462,12 +457,15 @@ begin
 					exc_type <= wr_data(7 downto 0);
 					exc_pend <= '1';
 				when "0101" =>
-					sync_in.lock_req <= wr_data(0);	
-					lock_reqest <= wr_data(0);
+					sync_in.req <= '1';
+					sync_in.data <= wr_data;
+					sync_in.op <= '0';
 				when "0110" =>
 					-- nothing, processor id is read only
 				when "0111" =>
-					sync_in.s_in <= wr_data(0);
+					sync_in.req <= '1';
+					sync_in.data <= wr_data;
+					sync_in.op <= '1';
 				when "1000" =>
 					mask <= wr_data(NUM_INT-1 downto 0);
 				when "1001" =>		-- clear interrupts

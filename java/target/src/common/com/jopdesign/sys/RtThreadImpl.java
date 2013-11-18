@@ -134,11 +134,6 @@ public class RtThreadImpl {
 	static boolean initDone;
 	static boolean mission;
 
-	// fields for lock implementation
-	static volatile boolean useLocks;
-	int lockLevel;
-	volatile int lockQueue;
-
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 
 
@@ -358,8 +353,6 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 			Scheduler.sched[i].addMain();
 		}
 
-		useLocks = true;
-
 		// running threads (state!=CREATED)
 		// are not started
 		// TODO: where are 'normal' Threads placed?
@@ -388,9 +381,6 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 			Startup.setRunnable(cmps[i], i);
 			
 		}
-		
-		// start the other CPUs
-		sys.signal = 1;
 
 		// busy wait for start threads of other cores
 		for (;;) {

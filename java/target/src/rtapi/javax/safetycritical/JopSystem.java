@@ -28,6 +28,7 @@ import java.util.Vector;
 import javax.realtime.AbsoluteTime;
 import javax.realtime.Clock;
 
+import com.jopdesign.io.IOFactory;
 import com.jopdesign.sys.Memory;
 
 import joprt.RtThread;
@@ -62,7 +63,11 @@ public class JopSystem {
 
 		// this should also run in mission memory
 		m.initialize();
-
+		//IOFactory.getFactory().getSysDevice().lock_acquire = 0;
+		if(IOFactory.getFactory().getSysDevice().lock_acquire == 0)
+		{
+			Terminal.getTerminal().writeln("yesss");
+		}
 		Terminal.getTerminal().writeln("SCJ Start mission on JOP");
 		RtThread.startMission();
 	}

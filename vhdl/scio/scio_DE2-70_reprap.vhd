@@ -56,16 +56,6 @@ port (
 --
 	iSW			: in std_logic_vector(17 downto 0);
 	
---
--- CAM
---
-	
-	cam_address : out std_logic_vector(3 downto 0);
-	cam_rd : out std_logic;
-	cam_rd_data : in std_logic_vector(31 downto 0);
-	cam_wr : out std_logic;
-	cam_wr_data : out std_logic_vector(31 downto 0);
-	
 -- watch dog
 
 	wd			: out std_logic;
@@ -235,12 +225,6 @@ begin
 		iSW => iSW
 	);
 	
-	cam_address <= sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0);
-	cam_rd <= sc_rd(CAM_SLAVE);
-	sc_dout(CAM_SLAVE) <= cam_rd_data; 
-	cam_wr <= sc_wr(CAM_SLAVE);
-	cam_wr_data <= sc_io_out.wr_data;
-	
 end rtl;
 
 Library IEEE;
@@ -279,16 +263,6 @@ port (
 -- Expansion header
 --
 	GPIO_0	: inout std_logic_vector(31 downto 0);
-	
---
--- CAM
---
-	
-	cam_address : out std_logic_vector(3 downto 0);
-	cam_rd : out std_logic;
-	cam_rd_data : in std_logic_vector(31 downto 0);
-	cam_wr : out std_logic;
-	cam_wr_data : out std_logic_vector(31 downto 0);
 	
 -- watch dog
 
@@ -436,12 +410,6 @@ begin
 		GPIO_0 => GPIO_0
 	);
 	
-	cam_address <= sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0);
-	cam_rd <= sc_rd(CAM_SLAVE);
-	sc_dout(CAM_SLAVE) <= cam_rd_data; 
-	cam_wr <= sc_wr(CAM_SLAVE);
-	cam_wr_data <= sc_io_out.wr_data;
-	
 end rtl;
 
 Library IEEE;
@@ -475,16 +443,6 @@ port (
 
 	sync_out : in sync_out_type := NO_SYNC;
 	sync_in	 : out sync_in_type;
-	
---
--- CAM
---
-	
-	cam_address : out std_logic_vector(3 downto 0);
-	cam_rd : out std_logic;
-	cam_rd_data : in std_logic_vector(31 downto 0);
-	cam_wr : out std_logic;
-	cam_wr_data : out std_logic_vector(31 downto 0);
 	
 -- watch dog
 
@@ -530,7 +488,6 @@ architecture rtl of scio_small is
 	constant UART_SLAVE 	: integer := 1;
 	constant LEDSW_SLAVE 	: integer := 4;
 	constant EXPH_SLAVE 	: integer := 3;
-	constant CAM_SLAVE			: integer := 5;
 	
 	-- remove the comment for RAM access counting 
 	-- signal ram_count : std_logic;
@@ -612,11 +569,5 @@ begin
 		
 	-- remove the comment for RAM access counting
 	-- ram_count <= ram_cnt;
-	
-	cam_address <= sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0);
-	cam_rd <= sc_rd(CAM_SLAVE);
-	sc_dout(CAM_SLAVE) <= cam_rd_data; 
-	cam_wr <= sc_wr(CAM_SLAVE);
-	cam_wr_data <= sc_io_out.wr_data;
 	
 end rtl;

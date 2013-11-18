@@ -92,8 +92,6 @@ public class Thread implements Runnable {
 					runCmp[i] = new Helper();
 					Startup.setRunnable(runCmp[i], i);
 				}
-				// start the other CPUs
-				sys.signal = 1;
 			}			
 		}
 	}

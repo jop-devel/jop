@@ -20,8 +20,8 @@
 
 package com.jopdesign.sys;
 
-import com.jopdesign.io.CAM;
-import com.jopdesign.io.CAMFactory;
+import com.jopdesign.io.IOFactory;
+import com.jopdesign.io.SysDevice;
 
 import util.Timer;
 
@@ -988,136 +988,16 @@ class JVM {
 	}
 	
 	private static int entries = 0;
-	private static CAM cam = CAMFactory.getCAMFactory().getCAM();
-
 	private static void f_monitorenter(int objAddr) {
-
-		// we cannot do real locking during startup
-		if (!RtThreadImpl.useLocks || objAddr == 0) {
-			Native.lock();
-			return;
-		}
-
-		// get current thread
-		Scheduler s = Scheduler.sched[Native.rd(Const.IO_CPU_ID)];
-		RtThreadImpl c = s.ref[s.active];
-
-		// retrieve lock or create new one
-		Native.lock();
-
-		// Accessing a hardware object - The CAM
-		cam.ADDRESS = objAddr; // Writing the object address to the CAM
-		int result = cam.ADDRESS; // Adding the lock
-		int index = result & 0x7FFFFFFF;
-		int current_thread = Native.toInt(c);
-		Lock lock = Native.toLock(Lock.locks[index]);
-		if ((result & 0x80000000) == 0) {
-			// new lock
-			entries++;
-			if (entries >= Const.CAM_SIZE) {
-				// JVMHelp.wr("run out of locks!\n");
-				throw JVMHelp.IMSExc;
-			}
-			lock.current_owner = current_thread;
-		} else {
-			// lock already exists
-			if(lock.current_owner != current_thread) {
-			
-				// someone else is holding the lock
-				
-				if(lock.queue_front == 0) {
-					// no queue so start one
-					lock.queue_front = current_thread;
-					lock.queue_back = current_thread;
-				}
-				else {
-					// add current thread to end of queue
-					RtThreadImpl t = Native.toRtThreadImpl(lock.queue_back);				
-					t.lockQueue = current_thread;
-					lock.queue_back = current_thread;
-				}
-				
-				// "boost" priority by masking scheduling interrupt
-				Native.wr(0xfffffffe, Const.IO_INTMASK);
-				
-				Native.unlock();
-
-				// wait until lock is free
-				for (;;) {
-					Native.lock();
-					if(lock.current_owner == current_thread) { // @WCA loop <= 1
-						break;
-					}
-					Native.unlock();
-				}
-			}
-		}
-		c.lockLevel++;
-		lock.entry_count++;
-		Native.unlock();
+		// Sends the address to the ISLU (locking unit)
+		// The unit takes care of the rest!
+		//RtThreadImpl.sys.lock_acquire = objAddr;
 	}
 
 	private static void f_monitorexit(int objAddr) {
-
-		// we cannot do real locking during startup
-		if (!RtThreadImpl.useLocks || objAddr == 0) {
-			Native.unlock();
-			return;
-		}
-
-		// get current thread
-		Scheduler s = Scheduler.sched[Native.rd(Const.IO_CPU_ID)];
-		RtThreadImpl c = s.ref[s.active];
-
-		// decrease lock level, return lock if possible
-		Native.lock();
-		
-		// Accessing a hardware object - The CAM
-		cam.ADDRESS = objAddr;
-		int result = cam.ADDRESS;
-		int index = result & 0x7FFFFFFF;
-		int current_thread = Native.toInt(c);
-		Lock lock = Native.toLock(Lock.locks[index]);
-		if ((result & 0x80000000) == 0) {
-			// non-existing lock, which shouldn't happen
-			throw JVMHelp.IMSExc;
-		}
-		
-		lock.entry_count--;
-		c.lockLevel--;
-		if(lock.entry_count == 0) {
-			// current thread is finished with lock
-			if(lock.queue_front == 0) {
-				// no queue
-				// remove lock from CAM
-				cam.RESET = 0;
-				entries--;
-			}
-			else {
-				// move front of queue to current_owner
-				int new_owner = lock.queue_front;
-				lock.current_owner = new_owner;
-				RtThreadImpl t = Native.toRtThreadImpl(new_owner);
-				if(t.lockQueue != 0)
-				{
-					// there are threads left in the queue so shift to the front
-					lock.queue_front = t.lockQueue;
-				}
-				else
-				{
-					// last thread in queue
-					lock.queue_front = 0;
-					lock.queue_back = 0;
-				}
-				t.lockQueue = 0;
-			}
-			if(c.lockLevel == 0) {
-				// current thread doesn't hold any more locks
-				// "unboost" priority by unmasking scheduling interrupt
-				Native.wr(0xffffffff, Const.IO_INTMASK);
-			}
-		}
-		Native.unlock();
+		// Sends the address to the ISLU (locking unit)
+		// The unit takes care of the rest!
+		//RtThreadImpl.sys.lock_release = objAddr;
 	}
 
 
