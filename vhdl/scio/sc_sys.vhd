@@ -236,8 +236,9 @@ begin
 				when "0110" =>
 					rd_data <= cpu_identity;
 				when "0111" =>
-					rd_data(0) <= sync_out.status;
+					rd_data(0) <= sync_out.s_out;
 					rd_data(31 downto 1) <= (others => '0');
+					
 				-- remove the comment for RAM access counting
 				-- when "1010" =>
 				--	rd_data(31 downto 0) <= ram_counter;
@@ -386,6 +387,7 @@ begin
 		sync_in.req <= '0';
 		sync_in.op <= '0';
 		sync_in.data <= (others => '0');
+		sync_in.s_in <= '0';
 
 		exc_type <= (others => '0');
 		exc_pend <= '0';
@@ -461,11 +463,12 @@ begin
 					sync_in.data <= wr_data;
 					sync_in.op <= '0';
 				when "0110" =>
-					-- nothing, processor id is read only
-				when "0111" =>
+					-- processor id is read only so use it for lock release
 					sync_in.req <= '1';
 					sync_in.data <= wr_data;
 					sync_in.op <= '1';
+				when "0111" =>
+					sync_in.s_in <= wr_data(0);
 				when "1000" =>
 					mask <= wr_data(NUM_INT-1 downto 0);
 				when "1001" =>		-- clear interrupts

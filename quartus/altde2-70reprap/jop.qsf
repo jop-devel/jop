@@ -221,7 +221,6 @@ set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (VHDL)"
 set_global_assignment -name EDA_OUTPUT_DATA_FORMAT VHDL -section_id eda_simulation
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/islu.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_pack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/cam.vhd
 set_global_assignment -name VHDL_FILE "../../vhdl/scio/scio_DE2-70_reprap.vhd"
 set_global_assignment -name VHDL_FILE "../../vhdl/top/jop_de2-70reprap.vhd"
 set_global_assignment -name VHDL_FILE "../../vhdl/scio/sc_DE2-70_expansionheader.vhd"

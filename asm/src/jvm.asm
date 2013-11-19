@@ -1492,9 +1492,9 @@ jopsys_unlock:
 			nop
 
 			// free the global lock
-			ldi	io_lock
+			ldi	io_cpu_id
 			stmwa				// write ext. mem address
-			ldi	0
+			ldi	1
 			stmwd				// write ext. mem data
 			wait
 			wait

@@ -9,7 +9,7 @@ use work.jop_types.all;
  
 entity islu is
 
-generic (cpu_cnt : integer := 12; lock_cnt : integer := 32);
+generic (cpu_cnt : integer := 4; lock_cnt : integer := 32);
 	port (
 		clock		: in std_logic;
 		reset	: in std_logic;		
@@ -30,11 +30,12 @@ architecture rtl of islu is
 	signal entry  : entry_array(lock_cnt-1 downto 0);
 	signal cpu : std_logic_vector(cpu_cnt_width-1 downto 0);
 	signal sync : std_logic_vector(cpu_cnt-1 downto 0);
+	signal status : std_logic_vector(cpu_cnt-1 downto 0);
 	type COUNT_ARRAY is array (lock_cnt-1 downto 0) of std_logic_vector(7 downto 0); -- Defines how many lock entries are allowed
 	signal count : COUNT_ARRAY;
 	type LOCK_CPU_ARRAY is array (lock_cnt-1 downto 0) of std_logic_vector(cpu_cnt_width-1 downto 0);
 	signal current : LOCK_CPU_ARRAY;
-	signal queue_head, queue_tail, queue_front : LOCK_CPU_ARRAY;
+	signal queue_head, queue_tail : LOCK_CPU_ARRAY;
 	
 	signal data_r  : ENTRY_ARRAY(cpu_cnt-1 downto 0);
 	signal op_r, register_i, register_o : std_logic_vector(cpu_cnt-1 downto 0);
@@ -46,7 +47,7 @@ architecture rtl of islu is
 	signal ram_write_address, ram_read_address : std_logic_vector(cpu_cnt_width+lock_cnt_width-1 downto 0);
 	signal ram_we : std_logic;
 	
-	signal lock_count : integer range lock_cnt downto 0 := 0;
+	signal lock_count : std_logic_vector(lock_cnt_width downto 0);
 	
 
 	component islu_ram is
@@ -63,10 +64,19 @@ architecture rtl of islu is
 	end component;
 	
 begin
-
-	sync_loop: for i in 0 to cpu_cnt-1 generate
-		sync_out(i).halted <= '1' when sync_in(i).req = '1' or register_i(i) /= register_o(i) or sync(i) = '1' else '0';
-	end generate;
+	
+	process (reset,sync_in,sync,register_i,register_o,status)
+	begin
+		for i in 0 to cpu_cnt-1 loop
+			if((sync_in(i).req = '1') or (register_i(i) /= register_o(i)) or (sync(i) = '1')) then
+				sync_out(i).halted <= '1';
+			else
+				sync_out(i).halted <= '0';
+			end if;
+			sync_out(i).status <= status(i);
+			sync_out(i).s_out <= sync_in(0).s_in;  -- Bootup signal used in jvm.asm
+		end loop;
+	end process;
 
 
 	queue_ram : islu_ram generic map(
@@ -146,17 +156,14 @@ begin
 			
 			queue_head <= (others => (others => '0'));
 			queue_tail <= (others => (others => '0'));
-			queue_front <= (others => (others => '0'));
 			count <= (others => (others => '0'));
 			entry <= (others => (others => '0'));
 			empty <= (others => '1');
 			sync <= (others => '0');
+			status <= (others => '0');
 			current <= (others => (others => '0'));
 			ram_we <= '0';
-			for i in 0 to cpu_cnt-1 loop
-				sync_out(i).status <= '0';
-			end loop;
-			lock_count <= 0;
+			lock_count <= (others => '0');
 		elsif(rising_edge(clock)) then
 			ram_we <= '0';
 			
@@ -181,7 +188,7 @@ begin
 				when state_operation =>
 					state <= state_idle;
 					register_o(to_integer(unsigned(cpu))) <= not(register_o(to_integer(unsigned(cpu))));
-					sync_out(to_integer(unsigned(cpu))).status <= '0';
+					status(to_integer(unsigned(cpu))) <= '0';
 					if(match = '1') then
 						if(op_r(to_integer(unsigned(cpu))) = '0') then
 							if(current(match_index) = cpu) then 
@@ -192,10 +199,6 @@ begin
 								ram_we <= '1'; -- Writes cpu to the address written at the previous pipeline stage
 								queue_tail(match_index) <= std_logic_vector(unsigned(queue_tail(match_index))+1);
 								sync(to_integer(unsigned(cpu))) <= '1';
-								if(queue_head(match_index) = queue_tail(match_index)) then
-									-- Queue is empty so insert current cpu as front
-									queue_front(match_index) <= cpu;
-								end if;
 							end if;
 						else
 							-- Erase lock
@@ -207,26 +210,25 @@ begin
 								if(queue_head(match_index) = queue_tail(match_index)) then
 									-- Queue is empty
 									empty(match_index) <= '1';
+									lock_count <= std_logic_vector(unsigned(lock_count)-1);
 								else
 									-- Unblock next cpu
-									current(match_index) <= queue_front(match_index);
-									queue_front(match_index) <= ram_data_out;
-									sync(to_integer(unsigned(queue_front(match_index)))) <= '0';
+									current(match_index) <= ram_data_out;
+									sync(to_integer(unsigned(ram_data_out))) <= '0';
 									queue_head(match_index) <= std_logic_vector(unsigned(queue_head(match_index))+1);
 								end if;
-								lock_count <= lock_count-1;
 							else
 								count(match_index) <= std_logic_vector(unsigned(count(match_index))-1);
 							end if;
 						end if;
 					else
-						if(lock_count = lock_cnt) then
-							sync_out(to_integer(unsigned(cpu))).status <= '1';
+						if(to_integer(unsigned(lock_count)) = lock_cnt) then
+							status(to_integer(unsigned(cpu))) <= '1';
 						elsif(op_r(to_integer(unsigned(cpu))) = '0') then
 							empty(empty_index) <= '0';
 							entry(empty_index) <= data_r(to_integer(unsigned(cpu)));
 							current(empty_index) <= cpu;
-							lock_count <= lock_count+1;
+							lock_count <= std_logic_vector(unsigned(lock_count)+1);
 						end if;
 					end if;
 			end case;

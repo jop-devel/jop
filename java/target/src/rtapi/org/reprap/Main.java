@@ -85,8 +85,8 @@ public class Main implements Safelet
 			protected void initialize()
 			{
 				hostController = new HostController();
-				testCAM1 = new TestCAM(hostController,1);
-				testCAM2 = new TestCAM(hostController,2);
+				testCAM1 = new TestCAM(hostController,0);
+				testCAM2 = new TestCAM(hostController,1);
 								
 				//repRapController = new RepRapController();
 				//commandController = new CommandController();
