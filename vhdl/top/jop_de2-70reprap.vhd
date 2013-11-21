@@ -50,7 +50,7 @@ generic (
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 5;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 12		-- number of cpus
+	cpu_cnt		: integer := 2		-- number of cpus
 );
 
 port (
@@ -216,8 +216,8 @@ end process;
 		c1	=> clk_int_inv,
 		locked => pll_lock
 	);
--- clk_int <= clk;
-
+ --clk_int <= clk;
+--clk_int_inv <= not(clk_int);
 -- process(wd_out)
 -- variable wd_help : std_logic;
 -- 	begin
@@ -275,7 +275,7 @@ end process;
 			oLEDR => oLEDR,
 --			oLEDG => oLEDG,
 			iSW => iSW,
-						
+			--iSW => (others => '0'),		
 			wd => wd_out(0),
 			l => open,
 			r => open,

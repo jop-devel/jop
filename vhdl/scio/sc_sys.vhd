@@ -341,10 +341,10 @@ process(clk, reset) begin
 
 end process;
 
-	irq_gate <= int_pend and int_ena;
+	irq_gate <= int_pend and int_ena and sync_out.int_ena;
 	irq_in.irq <= irq_gate and not irq_dly;
 	irq_in.exc <= exc_pend and not exc_dly;
-	irq_in.ena <= int_ena;
+	irq_in.ena <= int_ena and sync_out.int_ena;
 
 
 

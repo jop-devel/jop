@@ -982,31 +982,17 @@ class JVM {
 
 	}
 	
-	//private static int entries = 0;
 	private static void f_monitorenter(int objAddr) {
-		
-		//if (!RtThreadImpl.useLocks || objAddr == 0) {
-		Native.lock();
-		//	return;
-		//}
 		// Sends the address to the ISLU (locking unit)
 		// The unit takes care of the rest!
-		//Native.wr(0xfffffffe, Const.IO_INTMASK);
-		//RtThreadImpl.sys.lock_acquire = objAddr;
-		//Native.wr(0xffffffff, Const.IO_INTMASK);
+		Native.wr(objAddr, Const.IO_LOCK);
+		
 	}
 
 	private static void f_monitorexit(int objAddr) {
 		// Sends the address to the ISLU (locking unit)
 		// The unit takes care of the rest!
-		//Native.wr(0xfffffffe, Const.IO_INTMASK);
-		//if (!RtThreadImpl.useLocks || objAddr == 0) {
-		Native.unlock();
-		//	return;
-		//}
-		
-		//RtThreadImpl.sys.cpuId = objAddr;
-		//Native.wr(0xffffffff, Const.IO_INTMASK);
+		Native.wr(objAddr, Const.IO_CPU_ID);
 	}
 
 

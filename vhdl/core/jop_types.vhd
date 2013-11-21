@@ -158,9 +158,10 @@ package jop_types is
 		status	: std_logic;
 		halted  : std_logic;
 		s_out	: std_logic;
+		int_ena : std_logic;
 	end record;
 	
-	constant NO_SYNC : sync_out_type := (status => '0', halted => '0', s_out => '0');
+	constant NO_SYNC : sync_out_type := (status => '0', halted => '0', s_out => '0', int_ena => '1');
 	type sync_in_array_type is array (integer range <>) of sync_in_type;
 	type sync_out_array_type is array (integer range <>) of sync_out_type;
 

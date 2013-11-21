@@ -14,8 +14,8 @@ generic (cpu_cnt : integer := 4; lock_cnt : integer := 32);
 		clock		: in std_logic;
 		reset	: in std_logic;		
 		
-		sync_in	: in sync_in_array_type(cpu_cnt-1 downto 0);
-		sync_out	: out sync_out_array_type(cpu_cnt-1 downto 0)
+		sync_in	: in sync_in_array_type(0 to cpu_cnt-1);
+		sync_out	: out sync_out_array_type(0 to cpu_cnt-1)
 	);
 end islu;
 
@@ -37,6 +37,9 @@ architecture rtl of islu is
 	signal current : LOCK_CPU_ARRAY;
 	signal queue_head, queue_tail : LOCK_CPU_ARRAY;
 	
+	type LOCK_COUNT_ARRAY is array (cpu_cnt-1 downto 0) of std_logic_vector(lock_cnt_width-1 downto 0); -- Counts the number of locks that a core owns/waits for
+	signal lock_count : LOCK_COUNT_ARRAY;
+	
 	signal data_r  : ENTRY_ARRAY(cpu_cnt-1 downto 0);
 	signal op_r, register_i, register_o : std_logic_vector(cpu_cnt-1 downto 0);
 	
@@ -47,21 +50,10 @@ architecture rtl of islu is
 	signal ram_write_address, ram_read_address : std_logic_vector(cpu_cnt_width+lock_cnt_width-1 downto 0);
 	signal ram_we : std_logic;
 	
-	signal lock_count : std_logic_vector(lock_cnt_width downto 0);
+	TYPE RAM_ARRAY IS ARRAY(2**cpu_cnt_width+lock_cnt_width-1 downto 0) OF std_logic_vector(cpu_cnt_width-1 DOWNTO 0);
+   SIGNAL ram : RAM_ARRAY;
 	
-
-	component islu_ram is
-	generic (data_width : integer := 4; address_width : integer := 8);
-   port
-   (
-      clock: in   std_logic;
-      data:  in   std_logic_vector (data_width-1 downto 0);
-      write_address:  in   std_logic_vector (address_width-1 downto 0);
-      read_address:   in   std_logic_vector (address_width-1 downto 0);
-      we:    in   std_logic;
-      q:     out  std_logic_vector (data_width-1 downto 0)
-   );
-	end component;
+	signal total_lock_count : std_logic_vector(lock_cnt_width downto 0);
 	
 begin
 	
@@ -73,25 +65,25 @@ begin
 			else
 				sync_out(i).halted <= '0';
 			end if;
+			if(to_integer(unsigned(lock_count(i))) = 0) then
+				sync_out(i).int_ena <= '1';
+			else
+				sync_out(i).int_ena <= '0';
+			end if;
 			sync_out(i).status <= status(i);
 			sync_out(i).s_out <= sync_in(0).s_in;  -- Bootup signal used in jvm.asm
 		end loop;
 	end process;
-
-
-	queue_ram : islu_ram generic map(
-		data_width => cpu_cnt_width,
-		address_width => cpu_cnt_width+lock_cnt_width
-	)
-	port map (
-		clock	 => clock,
-		data	 => ram_data_in,
-		write_address	=> ram_write_address,
-		read_address	=> ram_read_address,
-		we	=> ram_we,
-		q => ram_data_out
-	);
-
+	
+	process (clock)
+   begin
+      if (rising_edge(clock)) then
+         if (ram_we = '1') then
+            ram(to_integer(unsigned(ram_write_address))) <= ram_data_in;
+         end if;
+         ram_data_out <= ram(to_integer(unsigned(ram_read_address)));
+      end if;
+   end process;
 	
 	empty_encoder: process(clock,reset)
 	begin
@@ -163,7 +155,8 @@ begin
 			status <= (others => '0');
 			current <= (others => (others => '0'));
 			ram_we <= '0';
-			lock_count <= (others => '0');
+			total_lock_count <= (others => '0');
+			lock_count <= (others => (others => '0'));
 		elsif(rising_edge(clock)) then
 			ram_we <= '0';
 			
@@ -199,6 +192,7 @@ begin
 								ram_we <= '1'; -- Writes cpu to the address written at the previous pipeline stage
 								queue_tail(match_index) <= std_logic_vector(unsigned(queue_tail(match_index))+1);
 								sync(to_integer(unsigned(cpu))) <= '1';
+								lock_count(to_integer(unsigned(cpu))) <= std_logic_vector(unsigned(lock_count(to_integer(unsigned(cpu))))+1);
 							end if;
 						else
 							-- Erase lock
@@ -210,58 +204,31 @@ begin
 								if(queue_head(match_index) = queue_tail(match_index)) then
 									-- Queue is empty
 									empty(match_index) <= '1';
-									lock_count <= std_logic_vector(unsigned(lock_count)-1);
+									total_lock_count <= std_logic_vector(unsigned(total_lock_count)-1);
 								else
 									-- Unblock next cpu
 									current(match_index) <= ram_data_out;
 									sync(to_integer(unsigned(ram_data_out))) <= '0';
 									queue_head(match_index) <= std_logic_vector(unsigned(queue_head(match_index))+1);
 								end if;
+								lock_count(to_integer(unsigned(cpu))) <= std_logic_vector(unsigned(lock_count(to_integer(unsigned(cpu))))-1);
 							else
 								count(match_index) <= std_logic_vector(unsigned(count(match_index))-1);
 							end if;
 						end if;
 					else
-						if(to_integer(unsigned(lock_count)) = lock_cnt) then
+						if(to_integer(unsigned(total_lock_count)) = lock_cnt) then
+							-- No lock entries left so return error
 							status(to_integer(unsigned(cpu))) <= '1';
 						elsif(op_r(to_integer(unsigned(cpu))) = '0') then
 							empty(empty_index) <= '0';
 							entry(empty_index) <= data_r(to_integer(unsigned(cpu)));
 							current(empty_index) <= cpu;
-							lock_count <= std_logic_vector(unsigned(lock_count)+1);
+							total_lock_count <= std_logic_vector(unsigned(total_lock_count)+1);
+							lock_count(to_integer(unsigned(cpu))) <= std_logic_vector(unsigned(lock_count(to_integer(unsigned(cpu))))+1);
 						end if;
 					end if;
 			end case;
 		end if;
    end process;
 end rtl;
-
-LIBRARY ieee;
-USE ieee.std_logic_1164.ALL;
-USE ieee.numeric_std.ALL;
-ENTITY islu_ram IS
-	generic (data_width : integer := 4; address_width : integer := 8);
-   PORT
-   (
-      clock: IN   std_logic;
-      data:  IN   std_logic_vector (data_width-1 DOWNTO 0);
-      write_address:  IN   std_logic_vector (address_width-1 DOWNTO 0);
-      read_address:   IN   std_logic_vector (address_width-1 DOWNTO 0);
-      we:    IN   std_logic;
-      q:     OUT  std_logic_vector (data_width-1 DOWNTO 0)
-   );
-END islu_ram;
-ARCHITECTURE rtl OF islu_ram IS
-   TYPE mem IS ARRAY(2**address_width-1 downto 0) OF std_logic_vector(data_width-1 DOWNTO 0);
-   SIGNAL ram_block : mem;
-BEGIN
-   PROCESS (clock)
-   BEGIN
-      IF (rising_edge(clock)) THEN
-         IF (we = '1') THEN
-            ram_block(to_integer(unsigned(write_address))) <= data;
-         END IF;
-         q <= ram_block(to_integer(unsigned(read_address)));
-      END IF;
-   END PROCESS;
-END rtl;
