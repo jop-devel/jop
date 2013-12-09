@@ -1461,7 +1461,7 @@ saload:
 			wait
 			ldmrd nxt
 
-jopsys_lock:
+monitorenter:
 			ldi	io_int_ena
 			stmwa				// write ext. mem address
 			ldi	0
@@ -1475,13 +1475,12 @@ jopsys_lock:
 			// request the global lock
 			ldi	io_lock
 			stmwa				// write ext. mem address
-			ldi	1
 			stmwd				// write ext. mem data
 			wait
 			wait
 			nop nxt
 
-jopsys_unlock:
+monitorexit:
 			ldm	lockcnt
 			ldi	1
 			sub
@@ -1500,7 +1499,6 @@ jopsys_unlock:
 			wait
 			ldi	io_int_ena
 			stmwa
-			ldi	1
 			stmwd				// write ext. mem data
 			wait
 			wait

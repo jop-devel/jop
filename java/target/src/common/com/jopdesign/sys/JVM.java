@@ -821,7 +821,7 @@ class JVM {
 
 	private static Throwable f_athrow(Throwable t) {
 
-		Native.lock();
+		Native.lock(0); // Just lock on address 0 as a form of Global lock
 		
 		if (Const.USE_RTTM) {
 			// abort transaction on any exception 
@@ -875,7 +875,7 @@ class JVM {
 
 						// return with faked frame
 						Native.setSP(fp+4);
-						Native.unlock();
+						Native.unlock(0);
 						return t;
 					}
 				}
@@ -886,7 +886,7 @@ class JVM {
 				// TODO: object to lock is found somewhere else for static methods, pass null for now
 				i = Native.rdIntMem(vp); // reference is first argument of caller
 				if (isStat != 0) i = 0;
- 				f_monitorexit(i);
+ 				Native.unlock(i);
 			}
 
 			// go up one frame
@@ -982,19 +982,8 @@ class JVM {
 
 	}
 	
-	private static void f_monitorenter(int objAddr) {
-		// Sends the address to the ISLU (locking unit)
-		// The unit takes care of the rest!
-		Native.wr(objAddr, Const.IO_LOCK);
-		
-	}
-
-	private static void f_monitorexit(int objAddr) {
-		// Sends the address to the ISLU (locking unit)
-		// The unit takes care of the rest!
-		Native.wr(objAddr, Const.IO_CPU_ID);
-	}
-
+	private static void f_monitorenter(int objAddr) {JVMHelp.noim(); /* jvm.asm */ }
+	private static void f_monitorexit(int objAddr) {JVMHelp.noim(); /* jvm.asm */ }
 
 	private static void f_wide() { JVMHelp.noim();}
 	
@@ -1085,8 +1074,8 @@ class JVM {
 	private static void f_resCB() { JVMHelp.noim();}
 	private static void f_resCC() { JVMHelp.noim();}
 	private static void f_resCD() { JVMHelp.noim();}
-	private static void f_lock() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_unlock() { JVMHelp.noim(); /* jvm.asm */ }
+	private static void f_resCE() { JVMHelp.noim();}
+	private static void f_resCF() { JVMHelp.noim();}
 	private static void f_jopsys_null() { JVMHelp.noim();}
 	private static void f_jopsys_rd() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_jopsys_wr() { JVMHelp.noim(); /* jvm.asm */ }

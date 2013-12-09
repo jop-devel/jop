@@ -2,8 +2,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
---use ieee.std_logic_unsigned.all;
---use ieee.std_logic_misc.all;
 use ieee.math_real.all;
 use work.jop_types.all;
  
@@ -37,8 +35,8 @@ architecture rtl of islu is
 	signal current : LOCK_CPU_ARRAY;
 	signal queue_head, queue_tail : LOCK_CPU_ARRAY;
 	
-	type LOCK_COUNT_ARRAY is array (cpu_cnt-1 downto 0) of std_logic_vector(lock_cnt_width-1 downto 0); -- Counts the number of locks that a core owns/waits for
-	signal lock_count : LOCK_COUNT_ARRAY;
+--	type LOCK_COUNT_ARRAY is array (cpu_cnt-1 downto 0) of std_logic_vector(lock_cnt_width-1 downto 0); -- Counts the number of locks that a core owns/waits for
+--	signal lock_count : LOCK_COUNT_ARRAY;
 	
 	signal data_r  : ENTRY_ARRAY(cpu_cnt-1 downto 0);
 	signal op_r, register_i, register_o : std_logic_vector(cpu_cnt-1 downto 0);
@@ -65,11 +63,11 @@ begin
 			else
 				sync_out(i).halted <= '0';
 			end if;
-			if(to_integer(unsigned(lock_count(i))) = 0) then
-				sync_out(i).int_ena <= '1';
-			else
-				sync_out(i).int_ena <= '0';
-			end if;
+--			if(to_integer(unsigned(lock_count(i))) = 0) then
+--				sync_out(i).int_ena <= '1';
+--			else
+--				sync_out(i).int_ena <= '0';
+--			end if;
 			sync_out(i).status <= status(i);
 			sync_out(i).s_out <= sync_in(0).s_in;  -- Bootup signal used in jvm.asm
 		end loop;
@@ -156,7 +154,7 @@ begin
 			current <= (others => (others => '0'));
 			ram_we <= '0';
 			total_lock_count <= (others => '0');
-			lock_count <= (others => (others => '0'));
+--			lock_count <= (others => (others => '0'));
 		elsif(rising_edge(clock)) then
 			ram_we <= '0';
 			
@@ -192,7 +190,7 @@ begin
 								ram_we <= '1'; -- Writes cpu to the address written at the previous pipeline stage
 								queue_tail(match_index) <= std_logic_vector(unsigned(queue_tail(match_index))+1);
 								sync(to_integer(unsigned(cpu))) <= '1';
-								lock_count(to_integer(unsigned(cpu))) <= std_logic_vector(unsigned(lock_count(to_integer(unsigned(cpu))))+1);
+--								lock_count(to_integer(unsigned(cpu))) <= std_logic_vector(unsigned(lock_count(to_integer(unsigned(cpu))))+1);
 							end if;
 						else
 							-- Erase lock
@@ -211,7 +209,7 @@ begin
 									sync(to_integer(unsigned(ram_data_out))) <= '0';
 									queue_head(match_index) <= std_logic_vector(unsigned(queue_head(match_index))+1);
 								end if;
-								lock_count(to_integer(unsigned(cpu))) <= std_logic_vector(unsigned(lock_count(to_integer(unsigned(cpu))))-1);
+--								lock_count(to_integer(unsigned(cpu))) <= std_logic_vector(unsigned(lock_count(to_integer(unsigned(cpu))))-1);
 							else
 								count(match_index) <= std_logic_vector(unsigned(count(match_index))-1);
 							end if;
@@ -225,7 +223,7 @@ begin
 							entry(empty_index) <= data_r(to_integer(unsigned(cpu)));
 							current(empty_index) <= cpu;
 							total_lock_count <= std_logic_vector(unsigned(total_lock_count)+1);
-							lock_count(to_integer(unsigned(cpu))) <= std_logic_vector(unsigned(lock_count(to_integer(unsigned(cpu))))+1);
+--							lock_count(to_integer(unsigned(cpu))) <= std_logic_vector(unsigned(lock_count(to_integer(unsigned(cpu))))+1);
 						end if;
 					end if;
 			end case;

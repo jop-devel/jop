@@ -206,7 +206,8 @@ begin
 
 	cpu_identity <= std_logic_vector(to_unsigned(cpu_id,32));
 	rdy_cnt <= "11" when 
-		sync_out.halted='1' or	dly_block='1' else "00";
+--		sync_out.halted='1' or	dly_block='1' else "00";
+		dly_block='1' else "00";
 	
 --
 --	read cnt values
@@ -231,8 +232,9 @@ begin
 					rd_data(7 downto 0) <= exc_type;
 					rd_data(31 downto 8) <= (others => '0');
 				when "0101" =>
-					rd_data(0) <= sync_out.status;
-					rd_data(31 downto 1) <= (others => '0');				
+					rd_data(0) <= sync_out.halted;
+					rd_data(1) <= sync_out.status;
+					rd_data(31 downto 2) <= (others => '0');				
 				when "0110" =>
 					rd_data <= cpu_identity;
 				when "0111" =>
@@ -341,10 +343,12 @@ process(clk, reset) begin
 
 end process;
 
-	irq_gate <= int_pend and int_ena and sync_out.int_ena;
+--	irq_gate <= int_pend and int_ena and sync_out.int_ena;
+	irq_gate <= int_pend and int_ena;
 	irq_in.irq <= irq_gate and not irq_dly;
 	irq_in.exc <= exc_pend and not exc_dly;
-	irq_in.ena <= int_ena and sync_out.int_ena;
+--	irq_in.ena <= int_ena and sync_out.int_ena;
+	irq_in.ena <= int_ena;
 
 
 
