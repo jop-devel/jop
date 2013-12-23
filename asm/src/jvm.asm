@@ -184,7 +184,8 @@ io_uart		=	-111
 
 exc_np		=	2
 exc_ab		=	3
-
+exc_mon     =   5
+        
 io_lock = -123
 io_cpu_id = -122
 io_signal = -121
@@ -1462,47 +1463,92 @@ saload:
 			ldmrd nxt
 
 monitorenter:
+			// disable interrupts
 			ldi	io_int_ena
 			stmwa				// write ext. mem address
 			ldi	0
 			stmwd				// write ext. mem data
+			wait
+			wait
+			// increment lock count
 			ldm	lockcnt
 			ldi	1
 			add
-			wait
-			wait
 			stm	lockcnt
+
 			// request the global lock
 			ldi	io_lock
 			stmwa				// write ext. mem address
 			stmwd				// write ext. mem data
 			wait
 			wait
+        
+			// while (value from islu > 0)
+monitorenter_loop:
+			// read value from islu
+			ldi io_lock
+			stmra
+			wait
+			wait
+			ldmrd
+			// if (value from islu == 0) exit
+			dup
+			nop
+			bz monitorenter_ok
+			nop
+			nop
+			// if (value from islu < 0) exit
+			dup
+			ldi 31
+			ushr
+			nop
+			bnz monitorenter_ok
+			nop
+			nop
+			// if (value from islu == 1) continue
+			ldi 1
+			sub
+			nop
+			bz monitorenter_loop
+			nop
+			nop
+			// else throw exception
+			ldi io_exc
+			stmwa
+			ldi exc_mon
+			stmwd
+			wait
+			wait
 			nop nxt
+monitorenter_ok:        
+			pop nxt
 
 monitorexit:
+			// write lock ref to islu
+			ldi	io_cpu_id
+			stmwa				// write ext. mem address
+			stmwd				// write ext. mem data
+			wait
+			wait
+
+			// decrement lock count
 			ldm	lockcnt
 			ldi	1
 			sub
 			dup
 			stm	lockcnt
-			bnz	lock_no_ena
+			// if (lock count != 0) exit
+			bnz	monitorexit_no_ena
 			nop
 			nop
-
-			// free the global lock
-			ldi	io_cpu_id
-			stmwa				// write ext. mem address
-			ldi	1
-			stmwd				// write ext. mem data
-			wait
-			wait
+			// enable interrupts
 			ldi	io_int_ena
 			stmwa
+			ldi 1
 			stmwd				// write ext. mem data
 			wait
 			wait
-lock_no_ena:	nop		nxt
+monitorexit_no_ena:	nop nxt
 
 //		
 // long bytecodes

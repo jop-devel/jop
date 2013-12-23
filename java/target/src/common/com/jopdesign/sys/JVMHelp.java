@@ -82,6 +82,11 @@ public class JVMHelp {
 
 		throw ABExc;
 	}
+
+	public static void monitorState() {
+
+		throw IMSExc;
+	}
 	
 	static int saved_sp;
 	/**
@@ -153,6 +158,8 @@ synchronized (o) {
 			throw ArithExc;
 		} else if (i==Const.EXC_ROLLBACK) {
 			throw RetryExc;
+		} else if (i==Const.EXC_MON) {
+			throw IMSExc;
 		}
 
 		for (;;);
