@@ -16,13 +16,18 @@
 */
 package org.reprap;
 
+import java.io.EOFException;
+
 import javax.realtime.PeriodicParameters;
 import javax.realtime.PriorityParameters;
 import javax.realtime.RelativeTime;
 import javax.safetycritical.PeriodicEventHandler;
 import javax.safetycritical.StorageParameters;
+import javax.safetycritical.Terminal;
 
 import com.jopdesign.io.*;
+import com.jopdesign.sys.Const;
+import com.jopdesign.sys.Native;
 
 public class TestCAM extends PeriodicEventHandler
 {
@@ -41,17 +46,19 @@ public class TestCAM extends PeriodicEventHandler
 		
 	}
 	
-	char[] chars = {'c','o','r','e'};
-	
 	@Override
 	public void handleAsyncEvent()
 	{
-		synchronized (hostController) {
-			hostController.print(chars);
-			char[] idchars = HostController.intToChar(id);
-			hostController.print(idchars);
-		}
+			//synchronized (hostController) {
+				hostController.print(HostController.intToChar(id));
+				hostController.print(HostController.intToChar(id));
+				hostController.print(HostController.intToChar(id));
+				hostController.print(HostController.intToChar(id));
+				char[] test = new char[4];
+				//test[6] = 'a';
+				
+			//}
+		
 		
 	}
-	
 }

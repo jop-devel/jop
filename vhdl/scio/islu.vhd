@@ -22,16 +22,16 @@ architecture rtl of islu is
 	constant cpu_cnt_width : integer := integer(ceil(log2(real(cpu_cnt))));
 	constant lock_cnt_width : integer := integer(ceil(log2(real(lock_cnt)))); 
 	signal match  		: std_logic;
-	signal empty  		: std_logic_vector(lock_cnt-1 downto 0);
+	signal empty  		: unsigned(lock_cnt-1 downto 0);
 	signal match_index,empty_index  		: integer range lock_cnt-1 downto 0;
-	type ENTRY_ARRAY is array (integer range <>) of std_logic_vector(31 downto 0); -- Sets the lock width
+	type ENTRY_ARRAY is array (integer range <>) of unsigned(31 downto 0); -- Sets the lock width
 	signal entry  : entry_array(lock_cnt-1 downto 0);
-	signal cpu : std_logic_vector(cpu_cnt_width-1 downto 0);
-	signal sync : std_logic_vector(cpu_cnt-1 downto 0);
-	signal status : std_logic_vector(cpu_cnt-1 downto 0);
-	type COUNT_ARRAY is array (lock_cnt-1 downto 0) of std_logic_vector(7 downto 0); -- Defines how many lock entries are allowed
+	signal cpu : unsigned(cpu_cnt_width-1 downto 0);
+	signal sync : unsigned(cpu_cnt-1 downto 0);
+	signal status : unsigned(cpu_cnt-1 downto 0);
+	type COUNT_ARRAY is array (lock_cnt-1 downto 0) of unsigned(7 downto 0); -- Defines how many lock entries are allowed
 	signal count : COUNT_ARRAY;
-	type LOCK_CPU_ARRAY is array (lock_cnt-1 downto 0) of std_logic_vector(cpu_cnt_width-1 downto 0);
+	type LOCK_CPU_ARRAY is array (lock_cnt-1 downto 0) of unsigned(cpu_cnt_width-1 downto 0);
 	signal current : LOCK_CPU_ARRAY;
 	signal queue_head, queue_tail : LOCK_CPU_ARRAY;
 	
@@ -39,19 +39,19 @@ architecture rtl of islu is
 --	signal lock_count : LOCK_COUNT_ARRAY;
 	
 	signal data_r  : ENTRY_ARRAY(cpu_cnt-1 downto 0);
-	signal op_r, register_i, register_o : std_logic_vector(cpu_cnt-1 downto 0);
+	signal op_r, register_i, register_o : unsigned(cpu_cnt-1 downto 0);
 	
 	type state_type is (state_idle,state_ram,state_ram_delay,state_operation);
 	signal state: state_type;
 	
-	signal ram_data_in, ram_data_out : std_logic_vector(cpu_cnt_width-1 downto 0);
-	signal ram_write_address, ram_read_address : std_logic_vector(cpu_cnt_width+lock_cnt_width-1 downto 0);
+	signal ram_data_in, ram_data_out : unsigned(cpu_cnt_width-1 downto 0);
+	signal ram_write_address, ram_read_address : unsigned(cpu_cnt_width+lock_cnt_width-1 downto 0);
 	signal ram_we : std_logic;
 	
-	TYPE RAM_ARRAY IS ARRAY(2**cpu_cnt_width+lock_cnt_width-1 downto 0) OF std_logic_vector(cpu_cnt_width-1 DOWNTO 0);
+	TYPE RAM_ARRAY IS ARRAY(2**cpu_cnt_width+lock_cnt_width-1 downto 0) OF unsigned(cpu_cnt_width-1 DOWNTO 0);
    SIGNAL ram : RAM_ARRAY;
 	
-	signal total_lock_count : std_logic_vector(lock_cnt_width downto 0);
+	signal total_lock_count : unsigned(lock_cnt_width downto 0);
 	
 begin
 	
@@ -77,9 +77,9 @@ begin
    begin
       if (rising_edge(clock)) then
          if (ram_we = '1') then
-            ram(to_integer(unsigned(ram_write_address))) <= ram_data_in;
+            ram(to_integer(ram_write_address)) <= ram_data_in;
          end if;
-         ram_data_out <= ram(to_integer(unsigned(ram_read_address)));
+         ram_data_out <= ram(to_integer(ram_read_address));
       end if;
    end process;
 	
@@ -106,7 +106,7 @@ begin
 			match_index <= 0;
 			match <= '0';
 			for i in lock_cnt-1 downto 0 loop
-				if(entry(i) = data_r(to_integer(unsigned(cpu))) and empty(i) = '0') then
+				if(entry(i) = data_r(to_integer(cpu)) and empty(i) = '0') then
 					match_index <= i;
 					match <= '1';
 				end if;
@@ -124,7 +124,7 @@ begin
 			for i in 0 to cpu_cnt-1 loop
 				if(sync_in(i).req = '1') then
 					op_r(i) <= sync_in(i).op;
-					data_r(i) <= sync_in(i).data;
+					data_r(i) <= unsigned(sync_in(i).data);
 					register_i(i) <= not(register_i(i));
 				end if;
 			end loop;
@@ -160,17 +160,17 @@ begin
 			
 			case state is
 				when state_idle =>
-					if(register_i(to_integer(unsigned(cpu))) /= register_o(to_integer(unsigned(cpu)))) then
+					if(register_i(to_integer(cpu)) /= register_o(to_integer(cpu))) then
 						state <= state_ram;
 					else
-						cpu <= std_logic_vector(unsigned(cpu)+1);
+						cpu <= cpu+1;
 					end if;
 					
 				when state_ram =>
 					state <= state_ram_delay;
 					
-					ram_read_address <= std_logic_vector(to_unsigned(match_index, lock_cnt_width)) & queue_head(match_index);
-					ram_write_address <= std_logic_vector(to_unsigned(match_index, lock_cnt_width)) & queue_tail(match_index);	
+					ram_read_address <= to_unsigned(match_index,lock_cnt_width) & queue_head(match_index);
+					ram_write_address <= to_unsigned(match_index,lock_cnt_width) & queue_tail(match_index);	
 					ram_data_in <= cpu;
 					
 				when state_ram_delay =>
@@ -178,18 +178,18 @@ begin
 		
 				when state_operation =>
 					state <= state_idle;
-					register_o(to_integer(unsigned(cpu))) <= not(register_o(to_integer(unsigned(cpu))));
-					status(to_integer(unsigned(cpu))) <= '0';
+					register_o(to_integer(cpu)) <= not(register_o(to_integer(cpu)));
+					status(to_integer(cpu)) <= '0';
 					if(match = '1') then
-						if(op_r(to_integer(unsigned(cpu))) = '0') then
+						if(op_r(to_integer(cpu)) = '0') then
 							if(current(match_index) = cpu) then 
 								-- Current cpu is owner so increment entry
-								count(match_index) <= std_logic_vector(unsigned(count(match_index))+1);
+								count(match_index) <= count(match_index)+1;
 							else
 								-- Current cpu is not owner so enqueue
 								ram_we <= '1'; -- Writes cpu to the address written at the previous pipeline stage
-								queue_tail(match_index) <= std_logic_vector(unsigned(queue_tail(match_index))+1);
-								sync(to_integer(unsigned(cpu))) <= '1';
+								queue_tail(match_index) <= queue_tail(match_index)+1;
+								sync(to_integer(cpu)) <= '1';
 --								lock_count(to_integer(unsigned(cpu))) <= std_logic_vector(unsigned(lock_count(to_integer(unsigned(cpu))))+1);
 							end if;
 						else
@@ -197,32 +197,32 @@ begin
 							-- We assume that only the current owner will try to modify the lock
 							-- (Enqueued cores should be blocked)
 							
-							if(unsigned(count(match_index)) = 0) then 
+							if(count(match_index) = 0) then 
 								-- Current cpu is finished with lock
 								if(queue_head(match_index) = queue_tail(match_index)) then
 									-- Queue is empty
 									empty(match_index) <= '1';
-									total_lock_count <= std_logic_vector(unsigned(total_lock_count)-1);
+									total_lock_count <= total_lock_count-1;
 								else
 									-- Unblock next cpu
 									current(match_index) <= ram_data_out;
-									sync(to_integer(unsigned(ram_data_out))) <= '0';
-									queue_head(match_index) <= std_logic_vector(unsigned(queue_head(match_index))+1);
+									sync(to_integer(ram_data_out)) <= '0';
+									queue_head(match_index) <= queue_head(match_index)+1;
 								end if;
 --								lock_count(to_integer(unsigned(cpu))) <= std_logic_vector(unsigned(lock_count(to_integer(unsigned(cpu))))-1);
 							else
-								count(match_index) <= std_logic_vector(unsigned(count(match_index))-1);
+								count(match_index) <= count(match_index)-1;
 							end if;
 						end if;
 					else
-						if(to_integer(unsigned(total_lock_count)) = lock_cnt) then
+						if(to_integer(total_lock_count) = lock_cnt) then
 							-- No lock entries left so return error
-							status(to_integer(unsigned(cpu))) <= '1';
-						elsif(op_r(to_integer(unsigned(cpu))) = '0') then
+							status(to_integer(cpu)) <= '1';
+						elsif(op_r(to_integer(cpu)) = '0') then
 							empty(empty_index) <= '0';
-							entry(empty_index) <= data_r(to_integer(unsigned(cpu)));
+							entry(empty_index) <= data_r(to_integer(cpu));
 							current(empty_index) <= cpu;
-							total_lock_count <= std_logic_vector(unsigned(total_lock_count)+1);
+							total_lock_count <= total_lock_count+1;
 --							lock_count(to_integer(unsigned(cpu))) <= std_logic_vector(unsigned(lock_count(to_integer(unsigned(cpu))))+1);
 						end if;
 					end if;

@@ -138,8 +138,6 @@ public class RtThreadImpl {
 
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 	
-	// fields for lock implementation
-	static volatile boolean useLocks;
 
 	//	no synchronization necessary:
 	//	doInit() is called on first new RtThread() =>
@@ -356,8 +354,6 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		for (i=0; i<sys.nrCpu; ++i) {
 			Scheduler.sched[i].addMain();
 		}
-
-		useLocks = true;
 		
 		// running threads (state!=CREATED)
 		// are not started
