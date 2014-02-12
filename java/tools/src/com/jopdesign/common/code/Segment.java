@@ -84,6 +84,12 @@ public class Segment {
 		this.entries = entries;
 		this.exits = exits;
 		buildSegment();
+		if(this.getEntryEdges().size() == 0) {
+		    throw new AssertionError("Segment: no entry edges");
+		}
+		if(this.getExitEdges().size() == 0) {
+		    throw new AssertionError("Segment: no exit edges");
+		}
 		this.edgeFilter = Filter.isContainedIn(this.edges);
 	}
 
@@ -166,7 +172,7 @@ public class Segment {
 			SuperGraphEdge current = worklist.pop();
 			if(edges.contains(current)) continue; /* continue if marked black */
 			edges.add(current); /* mark black */
-			
+
 			/* If this is an exit egde, remember that it has been visited, and continue */
 			if(exits.contains(current)) {
 				actualExits.add(current);
@@ -261,7 +267,21 @@ public class Segment {
 					currentNestingLevel--;
 					if(currentNestingLevel == 0) {
 						isExit = true;
-						Iterators.addAll(monitorExitEdges, cfg.outgoingEdgesOf(currentNode));
+                        // If monitorexit is not implemented in Java, the outgoing edges of the
+                        // basic block that contains monitorexit end the synchronized block.
+                        // In order to avoid imprecision, it is advisable that monitorexit is the
+                        // last statement in the basic block.
+                        // We also handle the case when monitorexit is implemented in Java. In this case,
+                        // currentNode will be a SpecialInvokeNode, urrentNode's only
+                        // successor will be the corresponding ReturnNode, and the outgoing edges of
+                        // the ReturnNode are the exit edges for the synchronized segment.
+                        CFGNode onlySuccessor =
+                                Iterators.fromSingleton(cfg.getSuccessors(currentNode));
+                        if(onlySuccessor != null && onlySuccessor instanceof ControlFlowGraph.ReturnNode) {
+                            Iterators.addAll(monitorExitEdges, cfg.outgoingEdgesOf(onlySuccessor));
+                        } else {
+                            Iterators.addAll(monitorExitEdges, cfg.outgoingEdgesOf(currentNode));
+                        }
 						break;
 					}
 				} else if(ih.getInstruction() instanceof MONITORENTER) {
@@ -280,7 +300,7 @@ public class Segment {
 				if(! visited.contains(nextNode)) {
 					visited.add(nextNode);
 					if(cfg.outgoingEdgesOf(nextNode).isEmpty()) {
-						throw new AssertionError("Found monitor-exit free path from monitorenter to the end of a function. In: "+cfg);						
+						throw new AssertionError("Found monitor-exit free path from monitorenter to the end of a function. In: "+cfg);
 					} else if(nextNode.getBasicBlock() == null) {
 						for(CFGNode node : cfg.getSuccessors(nextNode)) {
 							todo.add(new Pair<CFGNode, Integer>(node, nextPair.second()));
@@ -294,10 +314,10 @@ public class Segment {
 				}
 			}
 		} while(currentNode != null);
-		
+
 		Set<SuperGraphEdge> exitEdges = Iterators.addAll(new HashSet<SuperGraphEdge>(), 
 				superGraph.liftCFGEdges(rootMethod, monitorExitEdges));
-		return new Segment(superGraph, entryEdges, exitEdges);                                               
+		return new Segment(superGraph, entryEdges, exitEdges);
 	}
 
 

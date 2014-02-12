@@ -80,6 +80,9 @@ public class IPETSolver<T> {
 
     public void addConstraint(LinearConstraint<T> lc) {
         this.edgeConstraints.add(lc);
+	if(lc.isContradiction()) {
+	    throw new AssertionError("Adding contradition to ILP: "+lc);
+	}
         for (T edge : lc.getLinearVectorOnLHS().getCoeffs().keySet()) {
             this.edgeSet.add(edge);
         }
