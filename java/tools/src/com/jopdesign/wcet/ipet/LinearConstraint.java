@@ -97,19 +97,37 @@ public class LinearConstraint<T> {
 	public long getInhomogenousTermOnRHS() {
 		return this.inhom;
 	}
-	/** 
-	 * the the type of the constraint: &lt;=, = or &gt;=
-	 * @return 
+	/**
+	 * the type of the constraint: &lt;=, = or &gt;=
+	 * @return the type of the constraint
 	 */
 	public ConstraintType getConstraintType() {
 		return op;
 	}
 
+	/**
+	 * Detect inconsistent constraints, based on the fact that the
+	 * inequalities '0 = c','0 = -c', '0 &lt; -c' and
+	 * '0 &gt; c' are contradictions for any 'c &gt; 0'.
+	 *
+	 * @return true if the constraint is a contradiction, false
+	 *  if no contradiction could be detected
+	 */
+	public boolean isContradiction() {
+	    if(vec.size() != 0) return false;
+	    switch(op) {
+	    case Equal: return (inhom != 0);
+	    case LessEqual: return (inhom < 0);
+	    case GreaterEqual: return (inhom > 0);
+	    }
+	    return false;
+	}
+
 	@Override
 	public LinearConstraint<T> clone() {
-		return new LinearConstraint<T>(this);		
+		return new LinearConstraint<T>(this);
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuffer s = new StringBuffer();
