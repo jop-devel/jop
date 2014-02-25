@@ -26,8 +26,9 @@
 --
 --	2006-08-06	adapted from jopcyc.vhd
 --	2007-06-04	Use jopcpu and change component interface to records
---  2010-06-25  Working version with SSRAM
---
+-- 2010-06-25  Working version with SSRAM
+-- 2012-02-27 Adapted for RepRap project
+-- 2013-11-21 Working with ISLU
 
 
 library ieee;
@@ -50,7 +51,7 @@ generic (
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 5;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 2		-- number of cpus
+	cpu_cnt		: integer := 4		-- number of cpus
 );
 
 port (
@@ -353,7 +354,7 @@ end process;
 		
 		
 	-- syncronization of processors
-	sync: entity work.islu generic map 
+	sync: entity work.ihlu generic map 
 	(
 		cpu_cnt => cpu_cnt,
 		lock_cnt => 32

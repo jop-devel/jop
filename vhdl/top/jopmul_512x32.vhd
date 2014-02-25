@@ -49,7 +49,7 @@ generic (
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 5;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 8		-- number of cpus
+	cpu_cnt		: integer := 1		-- number of cpus
 );
 
 port (
@@ -328,17 +328,19 @@ end process;
 			ram_noe => ram_noe,
 			ram_nwe => ram_nwe
 		);
-		
-		
+	
 	-- syncronization of processors
-	sync: entity work.cmpsync generic map (
-		cpu_cnt => cpu_cnt)
+	sync: entity work.ihlu generic map 
+		(
+			cpu_cnt => cpu_cnt,
+			lock_cnt => 16
+		)
 		port map
 		(
-			clk => clk_int,
+			clock => clk_int,
 			reset => int_res,
-			sync_in_array => sync_in_array,
-			sync_out_array => sync_out_array
+			sync_in => sync_in_array,
+			sync_out => sync_out_array
 		);
 		
 		

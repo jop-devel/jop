@@ -5,9 +5,9 @@ use ieee.numeric_std.all;
 use ieee.math_real.all;
 use work.jop_types.all;
  
-entity islu is
+entity ihlu is
 
-generic (cpu_cnt : integer := 4; lock_cnt : integer := 32);
+generic (cpu_cnt : integer := 8; lock_cnt : integer := 32);
 	port (
 		clock		: in std_logic;
 		reset	: in std_logic;		
@@ -15,9 +15,9 @@ generic (cpu_cnt : integer := 4; lock_cnt : integer := 32);
 		sync_in	: in sync_in_array_type(0 to cpu_cnt-1);
 		sync_out	: out sync_out_array_type(0 to cpu_cnt-1)
 	);
-end islu;
+end ihlu;
 
-architecture rtl of islu is
+architecture rtl of ihlu is
 
 	constant cpu_cnt_width : integer := integer(ceil(log2(real(cpu_cnt))));
 	constant lock_cnt_width : integer := integer(ceil(log2(real(lock_cnt)))); 

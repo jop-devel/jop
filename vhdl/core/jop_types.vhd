@@ -146,7 +146,7 @@ package jop_types is
 	type irq_out_array_type is array (integer range <>) of irq_ack_type;
 	type exception_array_type is array (integer range <>) of exception_type;
 	
-	-- ISLU synchronization
+	-- IHLU synchronization
 	type sync_in_type is record
 		req	: std_logic;
 		op	: std_logic;
