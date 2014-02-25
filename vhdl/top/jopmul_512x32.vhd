@@ -33,6 +33,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.std_logic_misc.all;
 
 use work.jop_types.all;
 use work.sc_pack.all;
@@ -49,7 +50,7 @@ generic (
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 5;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 8		-- number of cpus
+	cpu_cnt		: integer := 1		-- number of cpus
 );
 
 port (
@@ -96,6 +97,7 @@ port (
 	oSRAM_ADV_N	 : out std_logic;
 	oSRAM_CE2	 : out std_logic;
 	oSRAM_CE3_N  : out std_logic
+
 );
 end jop;
 
@@ -177,6 +179,19 @@ end component;
 -- remove the comment for RAM access counting
 -- signal ram_count		: std_logic;
 
+	type CAM_DATA_TYPE is array (cpu_cnt-1 downto 0) of std_logic_vector(31 downto 0);
+	type CAM_ADDRESS_TYPE is array (cpu_cnt-1 downto 0) of std_logic_vector(3 downto 0);
+	type CAM_DATA_MATRIX_TYPE is array (31 downto 0) of std_logic_vector(cpu_cnt-1 downto 0);
+	type CAM_ADDRESS_MATRIX_TYPE is array (3 downto 0) of std_logic_vector(cpu_cnt-1 downto 0);
+	signal cam_wr_data_array  : CAM_DATA_TYPE;
+	signal cam_rd_array, cam_wr_array  : std_logic_vector(cpu_cnt-1 downto 0);
+	signal cam_address_array  : CAM_ADDRESS_TYPE;
+	signal cam_data_matrix  : CAM_DATA_MATRIX_TYPE;
+	signal cam_address_matrix : CAM_ADDRESS_MATRIX_TYPE;
+	signal cam_address  : std_logic_vector(3 downto 0);
+	signal cam_rd, cam_wr  : std_logic;
+	signal cam_rd_data, cam_wr_data  : std_logic_vector(31 downto 0);
+
 begin
 
 	ser_ncts <= '0';
@@ -250,7 +265,7 @@ end process;
 			sc_mem_out, sc_mem_in);
 
 	-- io for processor 0
-	io: entity work.scio generic map (
+	io: entity work.scio_main generic map (
 			cpu_id => 0,
 			cpu_cnt => cpu_cnt
 		)
@@ -269,6 +284,12 @@ end process;
 			oLEDR => oLEDR,
 --			oLEDG => oLEDG,
 			iSW => iSW,
+			
+			cam_address => cam_address_array(0),
+			cam_rd => cam_rd_array(0),
+			cam_rd_data => cam_rd_data,
+			cam_wr => cam_wr_array(0),
+			cam_wr_data => cam_wr_data_array(0),
 						
 			wd => wd_out(0),
 			l => open,
@@ -279,33 +300,32 @@ end process;
 			-- ram_cnt => ram_count
 		);
 		
-	-- io for processors with only sc_sys
 	gen_io: for i in 1 to cpu_cnt-1 generate
-		io2: entity work.sc_sys generic map (
-			addr_bits => 4,
-			clk_freq => clk_freq,
+		io2: entity work.scio_small generic map (
 			cpu_id => i,
 			cpu_cnt => cpu_cnt
 		)
-		port map(
-			clk => clk_int,
-			reset => int_res,
-			address => sc_io_out(i).address(3 downto 0),
-			wr_data => sc_io_out(i).wr_data,
-			rd => sc_io_out(i).rd,
-			wr => sc_io_out(i).wr,
-			rd_data => sc_io_in(i).rd_data,
-			rdy_cnt => sc_io_in(i).rdy_cnt,
-			
-			irq_in => irq_in(i),
-			irq_out => irq_out(i),
-			exc_req => exc_req(i),
-			
+		port map (clk_int, int_res,
+			sc_io_out(i), sc_io_in(i),
+			irq_in(i), irq_out(i), exc_req(i),
+
 			sync_out => sync_out_array(i),
 			sync_in => sync_in_array(i),
-			wd => wd_out(i)
+
+			
+			cam_address => cam_address_array(i),
+			cam_rd => cam_rd_array(i),
+			cam_rd_data => cam_rd_data,
+			cam_wr => cam_wr_array(i),
+			cam_wr_data => cam_wr_data_array(i),
+						
+			wd => wd_out(i),
+			l => open,
+			r => open,
+			t => open,
+			b => open
 			-- remove the comment for RAM access counting
-			-- ram_count => ram_count
+			-- ram_cnt => ram_count
 		);
 	end generate;
 
@@ -374,5 +394,45 @@ end process;
 	
 	oSRAM_CE2 <= not ram_ncs;	
     oSRAM_CE3_N <= ram_ncs;
+	 
+	  
+	 
+	cam_data_reduce_outer : 
+	for i in 0 to 31 generate
+		cam_data_reduce_inner:
+		for j in 0 to cpu_cnt-1 generate 
+			cam_data_matrix(i)(j) <= cam_wr_array(j) AND cam_wr_data_array(j)(i);
+		end generate;
+		cam_wr_data(i) <= OR_REDUCE(cam_data_matrix(i));
+	end generate;
+	
+	cam_address_reduce_outer: 
+	for i in 0 to 3 generate
+		cam_address_reduce_inner:
+		for j in 0 to cpu_cnt-1 generate 
+			cam_address_matrix(i)(j) <= (cam_wr_array(j) OR cam_rd_array(j)) AND cam_address_array(j)(i);
+		end generate;
+		cam_address(i) <= OR_REDUCE(cam_address_matrix(i));
+	end generate;
+	
+	cam_rd <= OR_REDUCE(cam_rd_array);
+	cam_wr <= OR_REDUCE(cam_wr_array);
+	 
+	ca : entity work.cam
+	generic map 
+	(
+		sc_width => 4
+	)
+	port map
+	(
+		clock => clk_int,
+		reset => int_res,
+		
+		sc_address => cam_address,
+		sc_rd => cam_rd,
+		sc_rd_data => cam_rd_data,
+		sc_wr => cam_wr,
+		sc_wr_data => cam_wr_data
+	);
 
 end rtl;
