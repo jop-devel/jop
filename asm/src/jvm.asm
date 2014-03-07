@@ -1463,19 +1463,6 @@ saload:
 			ldmrd nxt
 
 monitorenter:
-			// disable interrupts
-			ldi	io_int_ena
-			stmwa				// write ext. mem address
-			ldi	0
-			stmwd				// write ext. mem data
-			wait
-			wait
-			// increment lock count
-			ldm	lockcnt
-			ldi	1
-			add
-			stm	lockcnt
-			
 			// request the global lock
 			ldi	io_lock
 			stmwa				// write ext. mem address
@@ -1515,25 +1502,7 @@ monitorexit:
 			stmwd				// write ext. mem data
 			wait
 			wait
-
-			// decrement lock count
-			ldm	lockcnt
-			ldi	1
-			sub
-			dup
-			stm	lockcnt
-			// if (lock count != 0) exit
-			bnz	monitorexit_no_ena
-			nop
-			nop
-			// enable interrupts
-			ldi	io_int_ena
-			stmwa
-			ldi 1
-			stmwd				// write ext. mem data
-			wait
-			wait
-monitorexit_no_ena:	nop nxt
+			nop nxt
 
 //		
 // long bytecodes
