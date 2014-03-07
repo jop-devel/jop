@@ -1475,43 +1475,28 @@ monitorenter:
 			ldi	1
 			add
 			stm	lockcnt
-
+			
 			// request the global lock
 			ldi	io_lock
 			stmwa				// write ext. mem address
 			stmwd				// write ext. mem data
 			wait
 			wait
-        
-			// while (value from islu > 0)
-monitorenter_loop:
+			
 			// read value from islu
 			ldi io_lock
 			stmra
 			wait
 			wait
 			ldmrd
+			
 			// if (value from islu == 0) exit
-			dup
+			nop
 			nop
 			bz monitorenter_ok
 			nop
 			nop
-			// if (value from islu < 0) exit
-			dup
-			ldi 31
-			ushr
-			nop
-			bnz monitorenter_ok
-			nop
-			nop
-			// if (value from islu == 1) continue
-			ldi 1
-			sub
-			nop
-			bz monitorenter_loop
-			nop
-			nop
+			
 			// else throw exception
 			ldi io_exc
 			stmwa
@@ -1521,7 +1506,7 @@ monitorenter_loop:
 			wait
 			nop nxt
 monitorenter_ok:        
-			pop nxt
+			nop nxt
 
 monitorexit:
 			// write lock ref to islu

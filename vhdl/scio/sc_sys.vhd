@@ -206,8 +206,7 @@ begin
 
 	cpu_identity <= std_logic_vector(to_unsigned(cpu_id,32));
 	rdy_cnt <= "11" when 
---		sync_out.halted='1' or	dly_block='1' else "00";
-		dly_block='1' else "00";
+		sync_out.halted='1' or	dly_block='1' else "00";
 	
 --
 --	read cnt values
