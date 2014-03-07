@@ -152,6 +152,8 @@ public final class Main {
 	private static void runStreamBenchmarks() {
 		System.out.println("Stream Benchmarks:");
 		execute(new jembench.stream.AES());
+		execute(new jembench.stream.Increment(48,1));
+		execute(new jembench.stream.Increment(48,100));
 		System.out.println();
 	}
 

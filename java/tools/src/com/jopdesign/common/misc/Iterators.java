@@ -217,6 +217,23 @@ public class Iterators {
 		return Collections.singleton(elem);
 	}
 
+    /**
+     * if there is only one object in the iterable, return this object
+     * @param <T> type of the objects the Iterable returns
+     * @param coll the Iterable that will be traversed using iterator()
+     * @return the only object in the Iterable, or null if the Iterable
+     * contains no or more than one object
+     */
+    public static<T> T fromSingleton(Iterable<T> coll) {
+      Iterator<T> iter = coll.iterator();
+      if(! iter.hasNext())
+          return null;
+      T obj = iter.next();
+      if(iter.hasNext())
+          return null;
+      return obj;
+    }
+
 	public static<T> int size(Iterable<T> nodes) {
 		
 		int i = 0;

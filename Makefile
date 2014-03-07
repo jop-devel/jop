@@ -834,23 +834,6 @@ test:
 # some MS specific setting - just ignore it
 #
 
-# shortcut for my work in Eclipse on TCP/IP
-eapp: ecl_app config_usb download
-
-esim: ecl_app
-	java $(DEBUG_JOPSIM) -cp java/tools/dist/lib/jop-tools.jar -Dlog="false" \
-	com.jopdesign.tools.JopSim java/target/dist/bin/$(JOPBIN)
-
-#
-# do it from my eclipse workspace
-#
-ecl_app:
-	cd ../../workspace/cvs_jop_target/classes && jar cf ../../../cpu/jop/java/target/dist/lib/classes.jar *
-	java $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
-		-cp $(TARGET)/dist/lib/classes.jar -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
-	java $(TOOLS_CP) com.jopdesign.tools.jop2dat $(TARGET)/dist/bin/$(JOPBIN)
-	cp *.dat modelsim
-	rm -f *.dat
 
 #
 # test AppInfo

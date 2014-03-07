@@ -136,7 +136,7 @@ public class AES extends StreamBenchmark {
 				if (!free.empty() && !q1.full()) {
 					final byte[]  block = free.deq();
 					for (int  i = 0; i < block.length; i++) {
-						block[i] = (byte)rnd.nextInt();
+						block[i] = (byte)(i<<2 ^ i);
 					}
 					q1.enq(block);
 					++cnt;
@@ -236,7 +236,7 @@ public class AES extends StreamBenchmark {
 				if (!q3.empty() && !free.full()) {
 					final byte[]  block = q3.deq();
 					for (int i = 0; i < block.length; i++) {
-						if(block[i] != (byte)rnd.nextInt())  ok = false;
+						if(block[i] != (byte)(i<<2 ^ i))  ok = false;
 					}
 					free.enq(block);
 					++cnt;
