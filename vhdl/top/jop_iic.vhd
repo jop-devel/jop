@@ -27,6 +27,7 @@ use work.jop_types.all;
 use work.sc_pack.all;
 use work.jop_config.all;
 
+-- MS: which FPGA board is this?
 
 entity jop_iic is
 
