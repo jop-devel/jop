@@ -330,11 +330,10 @@ end process;
 			ram_nwe => ram_nwe
 		);
 	
-	-- syncronization of processors
+	-- synchronization of processors
 	sync: entity work.ihlu generic map 
 		(
-			cpu_cnt => cpu_cnt,
-			lock_cnt => 32
+			cpu_cnt => cpu_cnt
 		)
 		port map
 		(
