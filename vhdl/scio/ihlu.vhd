@@ -9,11 +9,11 @@ entity ihlu is
 
 generic (cpu_cnt : integer := 12; lock_cnt : integer := 4);
 	port (
-		clock		: in std_logic;
+		clock	: in std_logic;
 		reset	: in std_logic;		
 		
 		sync_in	: in sync_in_array_type(0 to cpu_cnt-1);
-		sync_out	: out sync_out_array_type(0 to cpu_cnt-1)
+		sync_out: out sync_out_array_type(0 to cpu_cnt-1)
 	);
 end ihlu;
 
@@ -35,9 +35,6 @@ architecture rtl of ihlu is
 	signal current : LOCK_CPU_ARRAY;
 	signal queue_head, queue_tail : LOCK_CPU_ARRAY;
 	
-	type LOCK_COUNT_ARRAY is array (cpu_cnt-1 downto 0) of unsigned(lock_cnt_width-1 downto 0); -- Counts the number of locks that a core owns/waits for
-	signal lock_count : LOCK_COUNT_ARRAY;
-	
 	signal data_r  : ENTRY_ARRAY(cpu_cnt-1 downto 0);
 	signal op_r, register_i, register_o : unsigned(cpu_cnt-1 downto 0);
 	
@@ -55,18 +52,13 @@ architecture rtl of ihlu is
 	
 begin
 	
-	process (reset,sync_in,sync,register_i,register_o,status,lock_count)
+	process (reset,sync_in,sync,register_i,register_o,status)
 	begin
 		for i in 0 to cpu_cnt-1 loop
 			if((sync_in(i).req = '1') or (register_i(i) /= register_o(i)) or (sync(i) = '1')) then
 				sync_out(i).halted <= '1';
 			else
 				sync_out(i).halted <= '0';
-			end if;
-			if(to_integer(lock_count(i)) = 0) then
-				sync_out(i).int_ena <= '1';
-			else
-				sync_out(i).int_ena <= '0';
 			end if;
 			sync_out(i).status <= status(i);
 			sync_out(i).s_out <= sync_in(0).s_in;  -- Bootup signal used in jvm.asm
@@ -154,7 +146,6 @@ begin
 			current <= (others => (others => '0'));
 			ram_we <= '0';
 			total_lock_count <= (others => '0');
-			lock_count <= (others => (others => '0'));
 		elsif(rising_edge(clock)) then
 			ram_we <= '0';
 			
@@ -194,7 +185,6 @@ begin
 								ram_we <= '1'; -- Writes cpu to the address written at the previous pipeline stage
 								queue_tail(match_index) <= queue_tail(match_index)+1;
 								sync(to_integer(cpu)) <= '1';
-								lock_count(to_integer(cpu)) <= lock_count(to_integer(cpu))+1;
 							end if;
 						else
 							-- Erase lock
@@ -213,7 +203,6 @@ begin
 									sync(to_integer(ram_data_out)) <= '0';
 									queue_head(match_index) <= queue_head(match_index)+1;
 								end if;
-								lock_count(to_integer(cpu)) <= lock_count(to_integer(cpu))-1;
 							else
 								count(match_index) <= count(match_index)-1;
 							end if;
@@ -227,7 +216,6 @@ begin
 							entry(empty_index) <= data_r(to_integer(cpu));
 							current(empty_index) <= cpu;
 							total_lock_count <= total_lock_count+1;
-							lock_count(to_integer(cpu)) <= lock_count(to_integer(cpu))+1;
 						end if;
 					end if;
 			end case;
