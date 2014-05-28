@@ -46,6 +46,7 @@ public class JVMHelp {
 	static ArrayIndexOutOfBoundsException ABExc;
 	static ArithmeticException ArithExc;
 	static ClassCastException CCExc;
+	static IllegalMonitorStateException IMSExc;
 	
 	static RetryException RetryExc;
 
@@ -80,6 +81,11 @@ public class JVMHelp {
 	public static void arrayBound() {
 
 		throw ABExc;
+	}
+
+	public static void monitorState() {
+
+		throw IMSExc;
 	}
 	
 	static int saved_sp;
@@ -152,6 +158,8 @@ synchronized (o) {
 			throw ArithExc;
 		} else if (i==Const.EXC_ROLLBACK) {
 			throw RetryExc;
+		} else if (i==Const.EXC_MON) {
+			throw IMSExc;
 		}
 
 		for (;;);
@@ -181,7 +189,8 @@ synchronized (o) {
 		ABExc = new ArrayIndexOutOfBoundsException();
 		ArithExc = new ArithmeticException();
 		CCExc = new ClassCastException();
-		
+		IMSExc = new IllegalMonitorStateException();
+
 		RetryExc = RetryException.instance;
 
 	}

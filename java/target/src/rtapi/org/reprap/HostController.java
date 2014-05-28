@@ -50,6 +50,7 @@ public class HostController extends PeriodicEventHandler
 			  new PeriodicParameters(null, new RelativeTime(1,0)),
 //			  new StorageParameters(35, new long[]{35},0,0), 0);
 			  new StorageParameters(35, null,0,0), 35);
+		this.thread.setProcessor(0);
 	}
 	
 	synchronized private void setInputStatus(boolean status)

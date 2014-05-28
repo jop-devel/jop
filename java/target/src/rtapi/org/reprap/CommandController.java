@@ -34,6 +34,7 @@ public class CommandController extends PeriodicEventHandler
 				new PeriodicParameters(null, new RelativeTime(20,0)),
 //				new StorageParameters(100, new long[]{100}, 0, 0), 0);
 				new StorageParameters(100, null, 0, 0), 100);
+		this.thread.setProcessor(2);
 	}
 	
 	@Override

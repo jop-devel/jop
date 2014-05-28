@@ -20,8 +20,6 @@
 
 package com.jopdesign.sys;
 
-import util.Timer;
-
 class JVM {
 
 	private static void f_nop() { JVMHelp.noim(); /* jvm.asm */ }
@@ -822,6 +820,8 @@ class JVM {
 	private static void f_arraylength() { JVMHelp.noim(); /* jvm.asm */ }
 
 	private static Throwable f_athrow(Throwable t) {
+
+		Native.lock(0); // Just lock on address 0 as a form of Global lock
 		
 		if (Const.USE_RTTM) {
 			// abort transaction on any exception 
@@ -846,10 +846,11 @@ class JVM {
 			int tabstart = (i >>> 10) + (i & 0x3ff);
 			i = Native.rdMem(tabstart);
 			int tablen = i & 0xffff;
-			int mode = i & 0x10000;
+			int isSync = i & 0x10000;
+			int isStat = i & 0x20000;
 			
 			// search exception table
-			for (j = tabstart+1; j < tabstart+1+2*tablen; j+=2) {
+			for (j = tabstart+1; j < tabstart+1+(tablen<<1); j+=2) {
 				
 				// extract table entry
 				i = Native.rdMem(j);
@@ -874,16 +875,18 @@ class JVM {
 
 						// return with faked frame
 						Native.setSP(fp+4);
+						Native.unlock(0);
 						return t;
 					}
 				}
 			}
 
 			// do monitorexit if necessary
-			if (mode != 0) {
-				i = Native.rdIntMem(fp+5); // reference is right above the frame
-				// TODO: object to lock is found somewhere else for static methods
- 				Native.monitorExit(i);
+			if (isSync != 0) {
+				// TODO: object to lock is found somewhere else for static methods, pass null for now
+				i = Native.rdIntMem(vp); // reference is first argument of caller
+				if (isStat != 0) i = 0;
+ 				Native.unlock(i);
 			}
 
 			// go up one frame
@@ -899,6 +902,7 @@ class JVM {
 		JVMHelp.wr("\n");
 		JVMHelp.trace(Native.getSP());
 
+		// Native.unlock(); // No need to unlock if we're about to crash anyway
 		System.exit(1);
 		return t;
 	}
@@ -977,22 +981,9 @@ class JVM {
 		}
 
 	}
-
-
-	private static int enterCnt;
-
-	private static void f_monitorenter(int objAddr) {
-
-/* is now in jvm.asm
-*/
-	}
-
-	private static void f_monitorexit(int objAddr) {
-
-/* is now in jvm.asm
-*/
-	}
-
+	
+	private static void f_monitorenter(int objAddr) {JVMHelp.noim(); /* jvm.asm */ }
+	private static void f_monitorexit(int objAddr) {JVMHelp.noim(); /* jvm.asm */ }
 
 	private static void f_wide() { JVMHelp.noim();}
 	

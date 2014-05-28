@@ -285,15 +285,15 @@ end process;
 
 		);
 		
-	-- syncronization of processors
-	sync: entity work.cmpsync generic map (
-		cpu_cnt => cpu_cnt)
+	-- synchronization of processors
+	sync: entity work.ihlu generic map (
+			cpu_cnt => cpu_cnt)
 		port map
 		(
-			clk => clk_int,
+			clock => clk_int,
 			reset => int_res,
-			sync_in_array => sync_in_array,
-			sync_out_array => sync_out_array
+			sync_in => sync_in_array,
+			sync_out => sync_out_array
 		);
 	
 	-- io for processor 0

@@ -24,6 +24,8 @@
 
 package com.jopdesign.sys;
 
+import javax.safetycritical.Terminal;
+
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 
@@ -134,9 +136,8 @@ public class RtThreadImpl {
 	static boolean initDone;
 	static boolean mission;
 
-
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
-
+	
 
 	//	no synchronization necessary:
 	//	doInit() is called on first new RtThread() =>
@@ -353,7 +354,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		for (i=0; i<sys.nrCpu; ++i) {
 			Scheduler.sched[i].addMain();
 		}
-
+		
 		// running threads (state!=CREATED)
 		// are not started
 		// TODO: where are 'normal' Threads placed?
@@ -385,7 +386,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		
 		// start the other CPUs
 		sys.signal = 1;
-
+		
 		// busy wait for start threads of other cores
 		for (;;) {
 			boolean ready = true;

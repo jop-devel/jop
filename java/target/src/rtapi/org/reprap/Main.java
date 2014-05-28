@@ -63,7 +63,6 @@ public class Main implements Safelet
 			{
 				mission = new RepRapMission();
 			}
-//			current_mission = mission;
 			return mission;
 		}
 		

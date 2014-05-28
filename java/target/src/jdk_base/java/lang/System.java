@@ -75,8 +75,8 @@ public final class System {
 			int srcPtr = Native.rdMem(srcHandle);
 			int dstPtr = Native.rdMem(dstHandle);
 
-			int srcLen = Native.rdMem(srcHandle+1);
-			int dstLen = Native.rdMem(dstHandle+1);
+			int srcLen = Native.rdMem(srcHandle+GC.OFF_MTAB_ALEN);
+			int dstLen = Native.rdMem(dstHandle+GC.OFF_MTAB_ALEN);
 			if ((srcOffset < 0) || (dstOffset < 0) || (length < 0)
 					|| (srcEnd > srcLen) || (dstEnd > dstLen))
 				throw new IndexOutOfBoundsException();

@@ -158,7 +158,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhd files
 //
-version		= 20110107
+version		= 20130708
 
 //
 //	start of stack area in the on-chip RAM
@@ -184,7 +184,8 @@ io_uart		=	-111
 
 exc_np		=	2
 exc_ab		=	3
-
+exc_mon     =   5
+        
 io_lock = -123
 io_cpu_id = -122
 io_signal = -121
@@ -215,7 +216,7 @@ fpu_const_res = -13
 	jjp		?		// pointer to meth. table of Java JVM functions
 	jjhp	?		// pointer to meth. table of Java JVM help functions
 
-	moncnt	?		// counter for monitor
+	lockcnt	?		// counter for lock
 
 //
 //	local vars
@@ -1462,56 +1463,80 @@ saload:
 			ldmrd nxt
 
 monitorenter:
- 			pop					// drop reference
-//			bz null_pointer		// null pointer check
+			// disable interrupts
 			ldi	io_int_ena
 			stmwa				// write ext. mem address
 			ldi	0
 			stmwd				// write ext. mem data
-			ldm	moncnt
+			wait
+			wait
+			
+			// increment lock count
+			ldm	lockcnt
 			ldi	1
 			add
-			wait
-			wait
-			cinval				// invalidate earlier, just in case
-			stm	moncnt
+			stm	lockcnt
+			
 			// request the global lock
 			ldi	io_lock
 			stmwa				// write ext. mem address
-			ldi	1
 			stmwd				// write ext. mem data
+			wait
+			wait
+			
+			// read value from islu
+			ldi io_lock
+			stmra
+			wait
+			wait
+			ldmrd
+			
+			// if (value from islu == 0) exit
+			nop
+			nop
+			bz monitorenter_ok
+			nop
+			nop
+			
+			// else throw exception
+			ldi io_exc
+			stmwa
+			ldi exc_mon
+			stmwd
 			wait
 			wait
 			nop nxt
+monitorenter_ok:        
+			nop nxt
 
 monitorexit:
-			pop					// drop reference
-//			bz null_pointer		// null pointer check
-			ldm	moncnt
+			// write lock ref to islu
+			ldi	io_cpu_id
+			stmwa				// write ext. mem address
+			stmwd				// write ext. mem data
+			wait
+			wait
+
+			// decrement lock count
+			ldm	lockcnt
 			ldi	1
 			sub
 			dup
-			stm	moncnt
-			bnz	mon_no_ena
-			// can be exec in in branch delay?
-			// up to now yes, but we change the write
-			// some time....
-			// nop
-			// nop
-			// free the global lock
-			ldi	io_lock
-			stmwa				// write ext. mem address
-			ldi	0
-			stmwd				// write ext. mem data
-			wait
-			wait
+			stm	lockcnt
+			
+			// if (lock count != 0) exit
+			bnz	monitorexit_no_ena
+			nop
+			nop
+			
+			// enable interrupts
 			ldi	io_int_ena
 			stmwa
-			ldi	1
+			ldi 1
 			stmwd				// write ext. mem data
 			wait
 			wait
-mon_no_ena:	nop		nxt
+monitorexit_no_ena:	nop nxt
 
 //		
 // long bytecodes

@@ -114,16 +114,16 @@ public class Const {
 
 	// Exception numbers - 1-7 reserved for HW generated exceptions
 	/**
-	 * Hardware generated excpetion number for stack overflow.
+	 * Hardware generated exception number for stack overflow.
 	 */
 	public static final int EXC_SPOV = 1;
 	/**
-	 * Hardware generated excpetion number for
+	 * Hardware generated exception number for
 	 * null pointer assignment.
 	 */
 	public static final int EXC_NP = 2;
 	/**
-	 * Hardware generated excpetion number for
+	 * Hardware generated exception number for
 	 * out of bounds exception.
 	 */
 	public static final int EXC_AB = 3;
@@ -132,6 +132,11 @@ public class Const {
 	 * RTTM rollback exception.
 	 */
 	public static final int EXC_ROLLBACK = 4;
+	/**
+	 * Hardware generated exception number for
+	 * illegal monitor state exception.
+	 */
+	public static final int EXC_MON = 5;
 	
 	/**
 	 * Software generated divide by zero exception.
@@ -174,6 +179,7 @@ public class Const {
 	public static final int IO_WD = IO_BASE+3;
 	public static final int IO_EXCPT = IO_BASE+4;
 	public static final int IO_LOCK = IO_BASE+5;
+	public static final int IO_UNLOCK = IO_BASE+6; // mirrors CPU id, write-only
 	public static final int IO_CPU_ID = IO_BASE+6;
 	public static final int IO_SIGNAL = IO_BASE+7;
 	/**
@@ -213,7 +219,6 @@ public class Const {
 	
 	// Expansion header on DE2-70
 	public static final int EH_BASE = IO_BASE+0x30;
-	public static final int IIC_BASE = IO_BASE+0x50;
 	
 	// Ethernet interface on DE2
 	public static final int DM9000 = IO_BASE+0x50;

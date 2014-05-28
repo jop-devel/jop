@@ -41,6 +41,7 @@ public class RepRapController extends PeriodicEventHandler
 			  new PeriodicParameters(null, new RelativeTime(1,0)),
 //			  new StorageParameters(100, new long[]{100}, 0, 0), 0);
 			  new StorageParameters(100, null, 0, 0), 100);
+		this.thread.setProcessor(1);
 	}
 	
 	private ExpansionHeader reprap = ExpansionHeaderFactory.getExpansionHeaderFactory().getExpansionHeader();
