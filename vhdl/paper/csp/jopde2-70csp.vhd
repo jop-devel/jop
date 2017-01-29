@@ -346,7 +346,7 @@ end process;
 		);
 	end generate;
 
-	scm: entity work.sc_mem_if
+	scm: entity work.sc_ssram32
 		generic map (
 			ram_ws => ram_cnt-1,
 			addr_bits => 19

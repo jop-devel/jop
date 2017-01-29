@@ -65,7 +65,7 @@ use work.jop_types.all;
 --               minimal slot_length <= 3;
 -- Nexys2: 24, 24, 32 (number assigned by Flavius)
 
-entity arbiter is
+entity arbiter_tdma is
 	generic(
 		addr_bits : integer;
 		cpu_cnt	: integer;
@@ -80,10 +80,10 @@ entity arbiter is
 		mem_out			: out sc_out_type;
 		mem_in			: in sc_in_type
 		);
-end arbiter;
+end arbiter_tdma;
 
 
-architecture rtl of arbiter is
+architecture rtl of arbiter_tdma is
 
 -- stores the signals in a register of each master
 	signal reg_out, next_reg_out : arb_out_type(0 to cpu_cnt-1);

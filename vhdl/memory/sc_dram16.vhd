@@ -6,7 +6,7 @@ use ieee.numeric_std.all;
 use work.sc_pack.all;
 use work.dram_pack.all;
 
-entity sc_mem_if is
+entity sc_dram16 is
 --  generic (addr_bits : integer);
 
   port (
@@ -23,9 +23,9 @@ entity sc_mem_if is
     dram_data : inout dram_data_type
 
     );
-end sc_mem_if;
+end sc_dram16;
 
-architecture rtl of sc_mem_if is
+architecture rtl of sc_dram16 is
 
   signal zeros : std_logic_vector(31 downto 0);
 -------------------------------------------------------------------------------

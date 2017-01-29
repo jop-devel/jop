@@ -51,7 +51,7 @@ use ieee.numeric_std.all;
 use work.jop_types.all;
 use work.sc_pack.all;
 
-entity sc_mem_if is
+entity sc_sram16 is
 generic (ram_ws : integer; addr_bits : integer);
 
 port (
@@ -75,9 +75,9 @@ port (
 	ram_nwe		: out std_logic
 
 );
-end sc_mem_if;
+end sc_sram16;
 
-architecture rtl of sc_mem_if is
+architecture rtl of sc_sram16 is
 
 --
 --	signals for mem interface

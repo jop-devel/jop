@@ -243,7 +243,7 @@ end process;
 				irq_out(i), exc_req(i));
 	end generate;
 			
-	arbiter: entity work.arbiter
+	arbiter: entity work.arbiter_tdma
 		generic map(
 			addr_bits => SC_ADDR_SIZE,
 			cpu_cnt => cpu_cnt,
@@ -259,7 +259,7 @@ end process;
 			-- sync_out_array(1)
 			);
 
-	scm: entity work.sc_mem_if
+	scm: entity work.sc_sram32_flash
 		generic map (
 			ram_ws => ram_cnt-1,
 			rom_ws => rom_cnt-1

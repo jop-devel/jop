@@ -220,7 +220,7 @@ end process;
 			b => open
 		);
 
-	scm: entity work.sc_mem_if
+	scm: entity work.sc_sram16
 		generic map (
 			ram_ws => ram_cnt-1,
 			addr_bits => 18

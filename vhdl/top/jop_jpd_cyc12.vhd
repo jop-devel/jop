@@ -258,7 +258,7 @@ end process;
 			-- sync_out_array(1)
 			);
 
-	scm: entity work.sc_mem_if
+	scm: entity work.sc_sram32_flash
 		generic map (
 			ram_ws => ram_cnt-1,
 			rom_ws => rom_cnt-1
@@ -362,7 +362,6 @@ end process;
 
 	-- HW methods
     cp1 : entity work.mac_coprocessor 
-        generic map ( id => x"01", version => x"1234" )
         port map (
                 clk => clk_int,
                 reset => int_res,
@@ -379,7 +378,6 @@ end process;
                 cc_in_rdy => cc_2_rdy
             );
     cp2 : entity work.mac_coprocessor 
-        generic map ( id => x"02", version => x"abcd" )
         port map (
                 clk => clk_int,
                 reset => int_res,

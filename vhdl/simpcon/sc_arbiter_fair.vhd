@@ -49,10 +49,7 @@ use work.jop_types.all;
 entity arbiter is
 generic(
 		addr_bits : integer;
-		cpu_cnt	: integer; -- number of masters for the arbiter
-		write_gap : integer; -- dummy to be compatible with TDMA arbiter
-		read_gap  : integer;
-		slot_length : integer
+		cpu_cnt	: integer -- number of masters for the arbiter
 		);
 port (
 			clk, reset	: in std_logic;			
@@ -64,7 +61,7 @@ port (
 end arbiter;
 
 
-architecture rtl of arbiter is
+architecture rtl_fair of arbiter is
 
 -- stores the signals in a register of each master
 
@@ -443,4 +440,4 @@ gen_rdy_cnt: for i in 0 to cpu_cnt-1 generate
 	end process;
 end generate;
 
-end rtl;
+end rtl_fair;

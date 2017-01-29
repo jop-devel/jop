@@ -203,8 +203,8 @@ end process;
 			-- remove the comment for RAM access counting
 			-- ram_cnt => ram_count
 		);
-
-	scm: entity work.sc_mem_if
+	
+	scm: entity work.sc_sram16
 		generic map (
 			ram_ws => ram_cnt-1,
 			addr_bits => 18

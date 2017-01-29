@@ -37,25 +37,9 @@ use ieee.numeric_std.all;
 use work.sc_pack.all;
 use work.sc_arbiter_pack.all;
 
-entity arbiter is
-generic(
-		addr_bits : integer;
-		cpu_cnt	: integer; -- number of masters for the arbiter
-		write_gap : integer; -- dummy to be compatible with TDMA arbiter
-		read_gap  : integer;
-		slot_length : integer
-		);
-port (
-			clk, reset	: in std_logic;			
-			arb_out			: in arb_out_type(0 to cpu_cnt-1);
-			arb_in			: out arb_in_type(0 to cpu_cnt-1);
-			mem_out			: out sc_out_type;
-			mem_in			: in sc_in_type
-);
-end arbiter;
+-- entity interface compatible with arbiter_fair
 
-
-architecture rtl of arbiter is
+architecture rtl_fixedpr_int of arbiter is
 
 -- signals for the input register of each master
 
@@ -481,4 +465,4 @@ gen_rdy_cnt: for i in 0 to cpu_cnt-1 generate
 	end process;
 end generate;
 
-end rtl;
+end rtl_fixedpr_int;

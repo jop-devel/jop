@@ -245,7 +245,7 @@ end process;
 			sc_arb_out, sc_arb_in,
 			sc_mem_out, sc_mem_in);
 
-	scm: entity work.sc_mem_if
+	scm: entity work.sc_sram32_flash
 		generic map (
 			ram_ws => ram_cnt-1,
 			rom_ws => rom_cnt-1

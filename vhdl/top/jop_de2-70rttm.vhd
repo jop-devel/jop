@@ -282,7 +282,7 @@ end process;
 		commit_token_grant => commit_token_grant
 		);
 
-	arbiter : entity work.arbiter
+	arbiter : entity work.arbiter_rttm_tdm
 		generic map(
 			addr_bits => SC_ADDR_SIZE,
 			cpu_cnt	=> cpu_cnt)
@@ -337,7 +337,7 @@ end process;
 	end process hold_tm_broadcast;
 
 
-	scm: entity work.sc_mem_if
+	scm: entity work.sc_ssram32
 		generic map (
 			ram_ws => ram_cnt-1,
 			addr_bits => tm_addr_width			-- edit
